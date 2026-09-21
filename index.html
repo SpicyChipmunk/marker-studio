@@ -304,7 +304,7 @@ const families=Object.keys(fmap).map(name=>{const idxs=fmap[name];let sx=0,sy=0,
  idxs.forEach(i=>{const{h,s,l}=HS[i];const rad=h*Math.PI/180;sx+=Math.cos(rad)*s;sy+=Math.sin(rad)*s;ss+=s;const d=Math.abs(l-.5);if(d<best){best=d;rep=i;}});
  let avgH=Math.atan2(sy,sx)*180/Math.PI;if(avgH<0)avgH+=360;
  return{name,idxs,avgH,neutral:ss/idxs.length<.12,repHex:COLORS[rep].hex,repL:HS[rep].l};});
-const FAM_ORDER=['Yellow','Yellow-Red / Orange','Earth / Skin / Brown','Red','Red-Violet','Violet','Blue-Violet','Blue','Blue-Green','Green','Yellow-Green','Cool Grey','Neutral Grey','Toner Grey','Blue-Green-Yellow','Yellow-Green-Yellow','Warm Grey','Green Grey','Fluorescent','Neutral / Black'];
+const FAM_ORDER=['Red','Yellow-Red / Orange','Yellow','Yellow-Green-Yellow','Yellow-Green','Green','Blue-Green-Yellow','Blue-Green','Blue','Blue-Violet','Violet','Red-Violet','Earth / Skin / Brown','Warm Grey','Toner Grey','Neutral Grey','Cool Grey','Green Grey','Neutral / Black','Fluorescent'];
 families.sort((a,b)=>{const ia=FAM_ORDER.indexOf(a.name),ib=FAM_ORDER.indexOf(b.name);return(ia<0?99:ia)-(ib<0?99:ib);});
 
 let state=load();
