@@ -76,7 +76,7 @@ body{min-height:100vh;background:var(--bg);color:var(--ink);
 .hint{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;color:var(--sub);pointer-events:none}
 .palette{position:relative;height:clamp(240px,48vh,350px)}
 .bands{display:flex;height:100%}
-.band{flex:1;position:relative;display:flex;align-items:flex-end;justify-content:center;padding:16px 3px;background:#1a1a20;overflow:hidden}
+.band{flex:1;position:relative;display:flex;align-items:flex-end;justify-content:center;padding:16px 3px;background:#1a1a20;overflow:hidden;cursor:pointer}
 .band::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,0) 46%,rgba(0,0,0,.16))}
 .band .bcode{position:relative;z-index:1;font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:clamp(12px,3.3vw,22px);text-shadow:0 2px 12px rgba(0,0,0,.32)}
 .band.bin{animation:bin .5s cubic-bezier(.2,1.2,.35,1) both}
@@ -110,6 +110,9 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 #undo:disabled{opacity:.4;cursor:not-allowed}
 #reset[data-arm="1"]{color:#ff6b63;border-color:rgba(255,107,99,.5)}
 #exportWrap{margin:2px 0 6px}
+#redrawWrap{margin:8px 0 0}
+#redraw{width:100%;height:48px;background:var(--glass);color:var(--ink);border:1px solid var(--line);border-radius:13px;font-weight:600}
+#redraw:disabled{opacity:.4;cursor:not-allowed}
 #exportBtn{width:100%;height:48px;background:var(--glass);color:var(--ink);border:1px solid var(--line);border-radius:13px;font-weight:600}
 #exportBtn:disabled{opacity:.4;cursor:not-allowed}
 .rail{height:3px;background:var(--line);border-radius:20px;overflow:hidden;margin:16px 2px 9px}
@@ -178,6 +181,7 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
  </div>
 
  <div class="actions" id="actions"><button id="draw">Draw a marker</button><button id="undo">Undo</button><button id="reset">Reset</button></div>
+ <div id="redrawWrap"><button id="redraw">Re-draw</button></div>
  <div id="exportWrap"><button id="exportBtn">Save image</button></div>
  <div id="trackWrap"><div class="rail"><div class="rail-fill" id="fill"></div></div><div class="status" id="status"></div></div>
 
@@ -220,7 +224,7 @@ const stage=$('stage'),swatch=$('swatch'),code=$('code'),hint=$('hint'),readout=
  actions=$('actions'),findWrap=$('findWrap'),searchInput=$('q'),findResults=$('findResults'),results=$('results'),
  matchn=$('matchn'),copyBtn=$('copyBtn'),filtersEl=$('filters'),findActions=$('findActions'),toRandom=$('toRandom'),
  toPalette=$('toPalette'),poolBar=$('poolBar'),poolN=$('poolN'),poolClear=$('poolClear'),exportWrap=$('exportWrap'),
- exportBtn=$('exportBtn'),imgOverlay=$('imgOverlay'),cardImg=$('cardImg'),cardCap=$('cardCap'),dlLink=$('dlLink'),
+ exportBtn=$('exportBtn'),redrawWrap=$('redrawWrap'),redrawBtn=$('redraw'),imgOverlay=$('imgOverlay'),cardImg=$('cardImg'),cardCap=$('cardCap'),dlLink=$('dlLink'),
  ovClose=$('ovClose'),root=document.documentElement;
 const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
 const buzz=n=>{try{navigator.vibrate&&navigator.vibrate(n);}catch(e){}};
@@ -308,7 +312,7 @@ function genPalette(n,harmony){n=n||state.palSize;harmony=harmony||state.harmony
  return out;}
 function buildBands(n){bands.innerHTML='';for(let k=0;k<n;k++){const b=document.createElement('div');b.className='band';b.innerHTML='<span class="bcode"></span>';bands.appendChild(b);}}
 function showPalette(pal,animate){phint.style.display='none';buildBands(pal.length);const bs=[...bands.querySelectorAll('.band')];
- bs.forEach((b,k)=>{const c=COLORS[pal[k]];b.style.background=c.hex;const cd=b.querySelector('.bcode');cd.textContent=c.code;cd.style.color=txt(c.hex);
+ bs.forEach((b,k)=>{const c=COLORS[pal[k]];b.style.background=c.hex;b.title='Tap to re-roll';const cd=b.querySelector('.bcode');cd.textContent=c.code;cd.style.color=txt(c.hex);
   if(animate&&!reduce){b.style.animationDelay=(k*55)+'ms';b.classList.add('bin');}});
  if(animate)pulse();const base=COLORS[pal[0]];
  readout.innerHTML='<div><div class="name">'+HARM[state.harmony]+'</div><div class="fam">'+base.name+' base</div></div><div class="hex">'+pal.map(i=>COLORS[i].code).join('  ')+'</div>';
@@ -374,12 +378,13 @@ function chrome(){const M=state.mode,rnd=M==='random',pal=M==='palette',fnd=M===
  findWrap.style.display=fnd?'':'none';findActions.style.display=fnd?'flex':'none';findResults.style.display=fnd?'':'none';
  filtersEl.style.display=pooled?'none':'';poolBar.style.display=pooled?'flex':'none';if(pooled)poolN.textContent=state.pool.length;
  exportWrap.style.display=fnd?'none':'';exportBtn.disabled=(rnd&&!state.drawn.length)||(pal&&!state.palettes.length);
+ redrawWrap.style.display=rnd?'':'none';
  [...segs.children].forEach(b=>b.classList.toggle('on',+b.dataset.n===state.palSize));
  [...harm.children].forEach(b=>b.classList.toggle('on',b.dataset.h===state.harmony));
  const af=anyFam(),at=anyTone(),as=anySat();
  if(rnd){const{t,u,left}=counts();fill.style.width=(t?u/t*100:0)+'%';status.innerHTML='<b>'+u+'</b> drawn, <b>'+left+'</b> left in your pool';
   const bad=pooled?(left===0?'Pool complete':null):(!af?'Turn on a family':!at?'Turn on a tone':!as?'Turn on saturation':left===0?'Pool complete':null);
-  drawBtn.disabled=!!bad||rolling;drawBtn.textContent=bad||'Draw a marker';undoBtn.disabled=state.drawn.length===0;}
+  drawBtn.disabled=!!bad||rolling;drawBtn.textContent=bad||'Draw a marker';undoBtn.disabled=state.drawn.length===0;redrawBtn.disabled=state.drawn.length===0||left===0||rolling;}
  else if(pal){const bad=pooled?null:(!af?'Turn on a family':!at?'Turn on a tone':!as?'Turn on saturation':null);
   drawBtn.disabled=!!bad;drawBtn.textContent=bad||'Generate palette';undoBtn.disabled=state.palettes.length===0;}
  famsEl.innerHTML=families.map(f=>{let cnt=0;for(const i of f.idxs)if(inTone(i)&&inSat(i))cnt++;const off=state.excluded.has(f.name)?1:0;
@@ -410,6 +415,37 @@ function doDraw(){if(rolling)return;disarm();const dn=new Set(state.drawn),pool=
  const tick=()=>{swatch.style.background=COLORS[(Math.random()*COLORS.length)|0].hex;i++;
   if(i>=delays.length-3)buzz(6);if(i<delays.length)setTimeout(tick,delays[i]);else{rolling=false;commit();buzz(32);}};
  setTimeout(tick,delays[0]);}
+function doReDraw(){if(rolling||state.mode!=='random'||!state.drawn.length)return;disarm();
+ const dn=new Set(state.drawn),pool=[];
+ COLORS.forEach((c,i)=>{if(inPool(i)&&!dn.has(i))pool.push(i);});
+ if(!pool.length)return;const pick=pool[(Math.random()*pool.length)|0];retrigger(drawBtn,'flash');
+ const commit=()=>{state.drawn[0]=pick;save();showColor(pick,true);chrome();const fc=pile.querySelector('.cell');if(fc&&!reduce)fc.classList.add('in');};
+ if(reduce){commit();return;}
+ rolling=true;drawBtn.disabled=true;redrawBtn.disabled=true;undoBtn.disabled=true;code.style.display='none';
+ const delays=[38,42,48,58,72,94,126,170];let i=0;
+ const tick=()=>{swatch.style.background=COLORS[(Math.random()*COLORS.length)|0].hex;i++;
+  if(i>=delays.length-3)buzz(6);if(i<delays.length)setTimeout(tick,delays[i]);else{rolling=false;commit();buzz(32);}};
+ setTimeout(tick,delays[0]);}
+function bandCandidates(cur,exclude){const fam=COLORS[cur].fam,tl=HS[cur].l;let arr=[];
+ for(let i=0;i<COLORS.length;i++){if(i===cur||exclude.has(i)||!inPool(i))continue;if(COLORS[i].fam===fam)arr.push([Math.abs(HS[i].l-tl),i]);}
+ if(!arr.length){for(let i=0;i<COLORS.length;i++){if(i===cur||exclude.has(i)||!inPool(i))continue;arr.push([hueDist(HS[i].h,HS[cur].h)/180+Math.abs(HS[i].l-tl)*0.6,i]);}}
+ arr.sort((a,b)=>a[0]-b[0]);return arr.slice(0,6).map(x=>x[1]);}
+function doReRollBand(k){if(rolling||state.mode!=='palette')return;
+ const pal=state.palettes[state.palettes.length-1];if(!pal||k>=pal.length)return;
+ const cand=bandCandidates(pal[k],new Set(pal));if(!cand.length)return;
+ const pick=cand[(Math.random()*cand.length)|0];
+ const b=[...bands.children][k];if(!b)return;const cd=b.querySelector('.bcode');
+ const finish=()=>{pal[k]=pick;state.palettes[state.palettes.length-1]=pal;save();
+  const c=COLORS[pick];b.style.background=c.hex;cd.textContent=c.code;cd.style.color=txt(c.hex);
+  if(!reduce){b.style.animationDelay='0ms';b.classList.remove('bin');void b.offsetWidth;b.classList.add('bin');}
+  const base=COLORS[pal[0]];
+  readout.innerHTML='<div><div class="name">'+HARM[state.harmony]+'</div><div class="fam">'+base.name+' base</div></div><div class="hex">'+pal.map(i=>COLORS[i].code).join('  ')+'</div>';
+  setAmb(base.hex);buzz(24);};
+ if(reduce){finish();return;}
+ rolling=true;drawBtn.disabled=true;let i=0;const delays=[40,46,54,66,84,110,150];
+ const tick=()=>{b.style.background=COLORS[(Math.random()*COLORS.length)|0].hex;cd.textContent='';i++;
+  if(i<delays.length)setTimeout(tick,delays[i]);else{rolling=false;finish();chrome();}};
+ setTimeout(tick,delays[0]);}
 function doGenerate(){if(rolling)return;disarm();const pal=genPalette(state.palSize,state.harmony);if(!pal)return;retrigger(drawBtn,'flash');
  const commit=()=>{state.palettes.push(pal);if(state.palettes.length>24)state.palettes.shift();save();showPalette(pal,true);chrome();buzz(28);};
  if(reduce){commit();return;}
@@ -438,9 +474,12 @@ resetBtn.addEventListener('click',()=>{const has=state.mode==='palette'?state.pa
  if(resetBtn.dataset.arm==='1'){disarm();if(state.mode==='palette')state.palettes=[];else state.drawn=[];save();fullRender();return;}
  resetBtn.dataset.arm='1';resetBtn.textContent='Confirm?';armT=setTimeout(disarm,3000);});
 drawBtn.addEventListener('click',action);
+redrawBtn.addEventListener('click',doReDraw);
 undoBtn.addEventListener('click',undo);
 swatch.addEventListener('click',()=>{if(state.mode==='random'&&!drawBtn.disabled&&!rolling)doDraw();});
-palette.addEventListener('click',()=>{if(state.mode==='palette'&&!drawBtn.disabled&&!rolling)doGenerate();});
+palette.addEventListener('click',e=>{if(state.mode!=='palette'||rolling)return;const b=e.target.closest('.band');
+ if(b){const k=[...bands.children].indexOf(b);if(k>=0)doReRollBand(k);}
+ else if(!drawBtn.disabled)doGenerate();});
 pile.addEventListener('click',e=>{const cell=e.target.closest('.cell');if(!cell)return;const idx=+cell.dataset.i;state.drawn=state.drawn.filter(x=>x!==idx);save();fullRender();});
 results.addEventListener('click',async e=>{const cell=e.target.closest('.cell');if(!cell)return;const c=COLORS[+cell.dataset.i];const ok=await copyText(c.code);flashCopy(ok?'Copied '+c.code:'Copy failed');});
 copyBtn.addEventListener('click',async()=>{const m=finderMatches();if(!m.length){flashCopy('Nothing to copy');return;}const ok=await copyText(m.map(i=>COLORS[i].code).join(', '));flashCopy(ok?'Copied '+m.length:'Copy failed');});
