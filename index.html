@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0b0e">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Marker Studio">
+<meta name="application-name" content="Marker Studio">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Marker Studio — Ohuhu Honolulu B 320</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0b0e;--raise:#141419;--ink:#f4f2ec;--sub:rgba(244,242,236,.52);
+ --line:rgba(255,255,255,.09);--glass:rgba(255,255,255,.035);--amb:transparent}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{min-height:100vh;background:var(--bg);color:var(--ink);
+ font-family:"Hanken Grotesk",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:16px;line-height:1.45;
+ -webkit-font-smoothing:antialiased;position:relative;overflow-x:hidden}
+.ambient{position:fixed;inset:0;z-index:0;pointer-events:none;
+ background:radial-gradient(120% 80% at 50% -8%,var(--amb),transparent 60%);opacity:.62;transition:background .8s ease}
+.grain{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:calc(30px + env(safe-area-inset-top,0px)) calc(18px + env(safe-area-inset-right,0px)) calc(80px + env(safe-area-inset-bottom,0px)) calc(18px + env(safe-area-inset-left,0px))}
+.head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+.title{font-family:"Fraunces",Georgia,serif;font-size:20px;font-weight:500;letter-spacing:-.01em}
+.set{font-size:12.5px;color:var(--sub);letter-spacing:.02em}
+.modes{display:inline-flex;background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:3px;margin-bottom:14px}
+.modes button{height:38px;padding:0 17px;border:none;border-radius:11px;background:transparent;color:var(--sub);
+ font-family:inherit;font-weight:600;font-size:14px;cursor:pointer;transition:color .2s ease,background .3s ease}
+.modes button.on{background:var(--ink);color:#151318}
+.optrow{display:flex;align-items:center;gap:11px;margin:0 2px 14px}
+.optrow .szlbl{font-size:13px;color:var(--sub);min-width:58px}
+.segs{display:inline-flex;flex-wrap:wrap;gap:3px;background:var(--glass);border:1px solid var(--line);border-radius:11px;padding:3px}
+.segs button{height:32px;width:38px;padding:0;border:none;border-radius:8px;background:transparent;color:var(--sub);
+ font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;transition:color .2s ease,background .25s ease}
+.segs.wide button{width:auto;padding:0 13px}
+.segs button.on{background:var(--ink);color:#151318}
+.search{width:100%;height:48px;padding:0 15px;border:1px solid var(--line);border-radius:13px;background:var(--glass);color:var(--ink);font-family:inherit;font-size:15px}
+.search::placeholder{color:var(--sub)}
+.search:focus{outline:2px solid var(--ink);outline-offset:1px}
+.findactions{display:none;gap:10px;margin:0 2px 16px}
+.findactions button{flex:1;height:48px;border-radius:13px;font-size:14px}
+.findactions button:disabled{opacity:.4;cursor:not-allowed}
+.poolbar{display:none;align-items:center;gap:10px;margin:0 2px 16px;padding:11px 14px;border:1px solid var(--line);border-radius:13px;background:var(--glass);font-size:13.5px;color:var(--sub)}
+.poolbar b{color:var(--ink);font-weight:600}
+.poolbar .x{margin-left:auto;color:var(--ink);cursor:pointer;font-weight:600;border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:12.5px}
+
+.hero{position:relative;perspective:1100px}
+.halo{position:absolute;inset:-46px;border-radius:44px;z-index:0;pointer-events:none;opacity:0;background:radial-gradient(closest-side,var(--amb),transparent 72%)}
+.halo.go{animation:halo .85s ease-out}
+@keyframes halo{0%{opacity:.95;transform:scale(.82)}100%{opacity:0;transform:scale(1.3)}}
+.stage{position:relative;z-index:1;border:1px solid var(--line);border-radius:24px;overflow:hidden;background:var(--raise);
+ box-shadow:0 30px 80px -40px var(--amb),0 1px 0 rgba(255,255,255,.04) inset;
+ transform:perspective(1100px) rotateX(0) rotateY(0);transition:transform .5s cubic-bezier(.2,.7,.2,1),box-shadow .8s ease;transform-style:preserve-3d;will-change:transform}
+.stage.tilting{transition:box-shadow .8s ease}
+.stage.pulse{animation:spulse .85s ease-out}
+@keyframes spulse{0%{box-shadow:0 30px 80px -40px var(--amb)}32%{box-shadow:0 34px 100px -24px var(--amb),0 0 70px -6px var(--amb)}100%{box-shadow:0 30px 80px -40px var(--amb)}}
+.swatch{position:relative;height:clamp(240px,48vh,350px);overflow:hidden;display:flex;align-items:flex-end;padding:26px 28px;background:#1a1a20;isolation:isolate;cursor:pointer}
+.ripple{position:absolute;left:50%;top:57%;width:340%;aspect-ratio:1/1;transform:translate(-50%,-50%) scale(0);border-radius:50%;z-index:1;pointer-events:none}
+.ripple.go{animation:flood .66s cubic-bezier(.22,.61,.36,1) forwards}
+@keyframes flood{to{transform:translate(-50%,-50%) scale(1)}}
+.sheen{position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;background:linear-gradient(115deg,transparent 34%,rgba(255,255,255,.30) 48%,transparent 62%);transform:translateX(-130%);animation:glint 7s ease-in-out infinite}
+@keyframes glint{0%{transform:translateX(-130%)}55%{transform:translateX(130%)}100%{transform:translateX(130%)}}
+.shine{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;mix-blend-mode:screen;transform:translateX(-130%);background:linear-gradient(115deg,transparent 36%,rgba(255,255,255,.6) 50%,transparent 64%)}
+.shine.go{animation:shineSweep .58s ease-out}
+@keyframes shineSweep{0%{transform:translateX(-130%);opacity:.95}100%{transform:translateX(130%);opacity:0}}
+.glare{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity .3s ease;mix-blend-mode:screen;background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.32),transparent 45%)}
+.swatch::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(160deg,rgba(255,255,255,.20),rgba(255,255,255,0) 42%,rgba(0,0,0,.16))}
+.code{position:relative;z-index:4;font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:clamp(54px,15.5vw,96px);line-height:.9;letter-spacing:-.02em;text-shadow:0 2px 26px rgba(0,0,0,.30);font-variant-numeric:tabular-nums}
+.code.pop{animation:codepop .5s cubic-bezier(.2,1.25,.35,1) both}
+@keyframes codepop{0%{opacity:0;transform:scale(1.18) translateY(8px);filter:blur(4px)}55%{filter:blur(0)}100%{opacity:1;transform:none}}
+.hint{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;color:var(--sub);pointer-events:none}
+.palette{position:relative;height:clamp(240px,48vh,350px)}
+.bands{display:flex;height:100%}
+.band{flex:1;position:relative;display:flex;align-items:flex-end;justify-content:center;padding:16px 3px;background:#1a1a20;overflow:hidden}
+.band::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,0) 46%,rgba(0,0,0,.16))}
+.band .bcode{position:relative;z-index:1;font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:clamp(12px,3.3vw,22px);text-shadow:0 2px 12px rgba(0,0,0,.32)}
+.band.bin{animation:bin .5s cubic-bezier(.2,1.2,.35,1) both}
+@keyframes bin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.phint{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;color:var(--sub);pointer-events:none}
+.ghmark{width:56px;height:auto;opacity:.45;animation:breathe 4.5s ease-in-out infinite}
+.ghtext{font-size:15px;color:var(--sub)}
+@keyframes breathe{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:.6;transform:translateY(-5px)}}
+.rgroup{margin-top:16px;animation:rgin .42s ease both}
+.rgroup:first-child{margin-top:0}
+.rghead{display:flex;align-items:center;gap:8px;margin:0 2px 8px;font-size:11.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--sub)}
+.rgdot{width:11px;height:11px;border-radius:50%}
+.rgn{opacity:.6}
+@keyframes rgin{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.readout{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;padding:16px 24px 22px;min-height:72px}
+.readout.pop{animation:rpop .5s ease both}
+@keyframes rpop{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.readout .name{font-family:"Fraunces",Georgia,serif;font-size:25px;font-weight:500;letter-spacing:-.01em}
+.readout .fam{font-size:12.5px;color:var(--sub);margin-top:2px}
+.readout .hex{font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums;letter-spacing:.04em;white-space:nowrap;text-align:right}
+.actions{display:flex;gap:10px;margin:18px 0 6px}
+button{font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;border-radius:15px;border:1px solid var(--line);background:var(--glass);color:var(--ink);height:54px;padding:0 18px;-webkit-tap-highlight-color:transparent;transition:transform .06s ease,box-shadow .5s ease,opacity .25s ease,background .25s ease}
+button:active{transform:translateY(1px)}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+#draw{position:relative;overflow:hidden;flex:1;background:linear-gradient(180deg,#fbfaf6,#e7e3d8);color:#151318;border:none;box-shadow:0 12px 34px -14px var(--amb),0 1px 0 rgba(255,255,255,.6) inset;font-weight:700;letter-spacing:.01em}
+#draw::before{content:"";position:absolute;top:0;left:-60%;width:44%;height:100%;transform:skewX(-20deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);opacity:0}
+#draw.flash::before{animation:sweep .6s ease}
+@keyframes sweep{0%{left:-60%;opacity:.9}100%{left:130%;opacity:0}}
+#draw:disabled{background:var(--glass);color:var(--sub);box-shadow:none;cursor:not-allowed}
+#undo,#reset{color:var(--sub);padding:0 15px}
+#undo:disabled{opacity:.4;cursor:not-allowed}
+#reset[data-arm="1"]{color:#ff6b63;border-color:rgba(255,107,99,.5)}
+#exportWrap{margin:2px 0 6px}
+#exportBtn{width:100%;height:48px;background:var(--glass);color:var(--ink);border:1px solid var(--line);border-radius:13px;font-weight:600}
+#exportBtn:disabled{opacity:.4;cursor:not-allowed}
+.rail{height:3px;background:var(--line);border-radius:20px;overflow:hidden;margin:16px 2px 9px}
+.rail-fill{height:100%;width:0;background:linear-gradient(90deg,var(--ink),rgba(244,242,236,.5));border-radius:20px;transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.status{font-size:13.5px;color:var(--sub);margin:0 2px 24px;letter-spacing:.01em}
+.status b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.fam-head{display:flex;justify-content:space-between;align-items:center;margin:22px 2px 13px}
+.fam-head .lbl{font-family:"Fraunces",Georgia,serif;font-size:16px;font-weight:500}
+.quick{display:flex;gap:5px}
+.quick button{height:33px;padding:0 13px;font-size:13px;border-radius:10px;font-weight:500}
+.fams{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:9px;height:40px;padding:0 14px 0 11px;border:1px solid var(--line);border-radius:13px;background:var(--glass);cursor:pointer;font-size:14px;font-weight:500;color:var(--ink);user-select:none;transition:opacity .2s ease,border-color .2s ease,transform .1s ease}
+.chip:hover{border-color:rgba(255,255,255,.2)}
+.chip:active{transform:scale(.96)}
+.chip .dot{width:16px;height:16px;border-radius:50%}
+.chip .rem{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums;min-width:16px;text-align:right}
+.chip[data-off="1"]{opacity:.38}
+.chip[data-off="1"] .dot{filter:grayscale(1) brightness(.8);box-shadow:none!important}
+.chip[data-empty="1"] .rem{opacity:.5}
+.pile-head{margin:30px 2px 13px;display:flex;gap:9px;align-items:center}
+.pile-head .lbl{font-family:"Fraunces",Georgia,serif;font-size:16px;font-weight:500}
+.pile-head .n{color:var(--sub);font-weight:400;font-size:13px}
+.pile-head .tiptap{margin-left:auto;color:var(--sub);font-size:11.5px}
+.copybtn{margin-left:auto;height:34px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--glass);color:var(--ink);font-family:inherit;font-weight:600;font-size:12.5px;cursor:pointer}
+.copybtn:active{transform:translateY(1px)}
+.pile{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:7px}
+.cell{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--raise);cursor:pointer;transition:transform .1s ease,opacity .2s ease}
+.cell:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.22)}
+.cell:active{transform:scale(.94)}
+.cell .sq{height:36px}
+.cell .cc{font-size:10px;font-weight:600;text-align:center;padding:4px 2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--sub)}
+.cell.in{animation:cellin .55s cubic-bezier(.2,.8,.2,1) both}
+@keyframes cellin{from{opacity:0;transform:scale(.6) translateY(-6px)}to{opacity:1;transform:none}}
+.empty{color:var(--sub);font-size:13.5px;padding:8px 2px}
+.overlay{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.72);backdrop-filter:blur(6px)}
+.overlay.on{display:flex}
+.ocard{max-width:100%;max-height:100%;display:flex;flex-direction:column;gap:13px;align-items:center}
+.ocard img{max-width:100%;max-height:66vh;border-radius:16px;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000}
+.ocap{color:var(--ink);font-size:13.5px;text-align:center;opacity:.85;max-width:340px}
+.orow{display:flex;gap:10px}
+.orow a,.orow button{height:46px;padding:0 18px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-family:inherit;font-weight:600;font-size:14px;border:1px solid var(--line);background:var(--glass);color:var(--ink);cursor:pointer}
+@media(prefers-reduced-motion:reduce){.sheen,.halo,.stage,.cell.in,.shine,.code.pop,.readout.pop,.band.bin,.ghmark,.rgroup,#draw::before{animation:none!important}.stage{transition:none!important}}
+</style></head><body>
+<div class="ambient" id="ambient"></div><div class="grain"></div>
+<div class="wrap">
+ <div class="head"><div class="title">Marker Studio</div><div class="set">Ohuhu Honolulu B · 320</div></div>
+ <div class="modes"><button id="mRandom" class="on">Random</button><button id="mPalette">Palette</button><button id="mFinder">Finder</button></div>
+ <div class="optrow" id="harmWrap" style="display:none"><span class="szlbl">Harmony</span>
+  <div class="segs wide" id="harm"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button></div></div>
+ <div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl">Colors</span>
+  <div class="segs" id="segs"><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button><button data-n="5">5</button><button data-n="6">6</button></div></div>
+ <div id="findWrap" style="display:none;margin:0 2px 14px"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off"></div>
+ <div class="findactions" id="findActions"><button id="toRandom">Draw from these</button><button id="toPalette">Palette from these</button></div>
+ <div class="poolbar" id="poolBar">Working from a Finder selection · <b id="poolN">0</b> colors<span class="x" id="poolClear">Clear</span></div>
+
+ <div class="hero" id="hero">
+  <div class="halo" id="halo"></div>
+  <div class="stage" id="stage">
+   <div class="swatch" id="swatch">
+    <div class="sheen"></div><div class="shine"></div><div class="glare" id="glare"></div>
+    <div class="code" id="code"></div><div class="hint" id="hint"><svg class="ghmark" viewBox="0 0 64 150" fill="none" aria-hidden="true"><rect x="18" y="18" width="28" height="98" rx="9" stroke="currentColor" stroke-width="2.2"/><line x1="18" y1="33" x2="46" y2="33" stroke="currentColor" stroke-width="2.2"/><path d="M25 116 h14 l-3 20 h-8 z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg><div class="ghtext">Tap to draw your first color</div></div>
+   </div>
+   <div class="palette" id="palette" style="display:none"><div class="bands" id="bands"></div><div class="phint" id="phint"><svg class="ghmark" viewBox="0 0 64 150" fill="none" aria-hidden="true"><rect x="18" y="18" width="28" height="98" rx="9" stroke="currentColor" stroke-width="2.2"/><line x1="18" y1="33" x2="46" y2="33" stroke="currentColor" stroke-width="2.2"/><path d="M25 116 h14 l-3 20 h-8 z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg><div class="ghtext">Tap to generate a palette</div></div></div>
+   <div class="readout" id="readout"></div>
+  </div>
+ </div>
+
+ <div class="actions" id="actions"><button id="draw">Draw a marker</button><button id="undo">Undo</button><button id="reset">Reset</button></div>
+ <div id="exportWrap"><button id="exportBtn">Save image</button></div>
+ <div id="trackWrap"><div class="rail"><div class="rail-fill" id="fill"></div></div><div class="status" id="status"></div></div>
+
+ <div id="filters">
+  <div class="fam-head"><span class="lbl">Tone</span><span class="quick"><button id="toneAll">All</button><button id="toneNone">None</button></span></div>
+  <div class="fams" id="tones"></div>
+  <div class="fam-head"><span class="lbl">Saturation</span><span class="quick"><button id="satAll">All</button><button id="satNone">None</button></span></div>
+  <div class="fams" id="sats"></div>
+  <div class="fam-head"><span class="lbl">Families</span><span class="quick"><button id="all">All</button><button id="none">None</button></span></div>
+  <div class="fams" id="fams"></div>
+ </div>
+
+ <div id="drawnWrap">
+  <div class="pile-head"><span class="lbl">Drawn</span><span class="n" id="pilen"></span><span class="tiptap" id="tiptap"></span></div>
+  <div class="pile" id="pile"><div class="empty" id="pileEmpty">Colors you draw collect here.</div></div>
+ </div>
+ <div id="findResults" style="display:none">
+  <div class="pile-head"><span class="lbl">Matches</span><span class="n" id="matchn"></span><button class="copybtn" id="copyBtn">Copy codes</button></div>
+  <div id="results"></div>
+ </div>
+</div>
+
+<div class="overlay" id="imgOverlay"><div class="ocard">
+ <img id="cardImg" alt="Swatch card">
+ <div class="ocap" id="cardCap">Long-press the image to save it to your photos.</div>
+ <div class="orow"><a id="dlLink" download="ohuhu-card.png">Download</a><button id="ovClose">Close</button></div>
+</div></div>
+
+<script>
+const COLORS=[{"code":"120","name":"Black","hex":"#2b2c2b","old":"120","fam":"Neutral / Black"},{"code":"B015","name":"Celadon Blue","hex":"#167aa8","old":"B090","fam":"Blue"},{"code":"B02","name":"Light Minty Blue","hex":"#c8e8eb","old":"BG4","fam":"Blue"},{"code":"B03","name":"Frost","hex":"#c9e1e8","old":"B030","fam":"Blue"},{"code":"B05","name":"Robin Egg Blue","hex":"#b5dde9","old":"B050","fam":"Blue"},{"code":"B06","name":"Light Cerulean","hex":"#94d5e8","old":"B110","fam":"Blue"},{"code":"B08","name":"Cotton Candy Blue","hex":"#88cfdf","old":"PB7","fam":"Blue"},{"code":"B09","name":"Tahitian Blue","hex":"#5fbdd8","old":"B070","fam":"Blue"},{"code":"B111","name":"Pool Blue","hex":"#1fa3d9","old":"PB8","fam":"Blue"},{"code":"B112","name":"Process Blue","hex":"#1e97c8","old":"B080","fam":"Blue"},{"code":"B114","name":"Cerulean Blue","hex":"#1d7b9f","old":"B64","fam":"Blue"},{"code":"B115","name":"Classic Blue","hex":"#14629d","old":"PB6","fam":"Blue"},{"code":"B21","name":"Porcelain Blue","hex":"#e5f2f2","old":"MG020","fam":"Blue"},{"code":"B27","name":"Fog Blue","hex":"#c7d8e4","old":"MG030","fam":"Blue"},{"code":"B28","name":"Smoke Blue","hex":"#b0d3e4","old":"B250","fam":"Blue"},{"code":"B310","name":"Blue Dusk","hex":"#b1c8d1","old":"BG\u216103","fam":"Blue"},{"code":"B311","name":"Stone Blue","hex":"#96bcc9","old":"MG060","fam":"Blue"},{"code":"B315","name":"Deep Cerulean","hex":"#508094","old":"PB11","fam":"Blue"},{"code":"B411","name":"Rich Slate Blue","hex":"#7b99a8","old":"BG\u216105","fam":"Blue"},{"code":"B412","name":"Gunmetal Blue","hex":"#628391","old":"MG100","fam":"Blue"},{"code":"B415","name":"Stormy Night","hex":"#4c5c66","old":"BG\u216109","fam":"Blue"},{"code":"BG011","name":"Teal","hex":"#1db2b7","old":"G500","fam":"Blue-Green"},{"code":"BG04","name":"Sea Spray","hex":"#bce1e4","old":"G322","fam":"Blue-Green"},{"code":"BG05","name":"Light Sea Blue","hex":"#aadbde","old":"BG68","fam":"Blue-Green"},{"code":"BG09","name":"Aquamarine","hex":"#8ed0cf","old":"G326","fam":"Blue-Green"},{"code":"BG114","name":"Faded Teal","hex":"#5fbcc3","old":"PB9","fam":"Blue-Green"},{"code":"BG19","name":"Sea Blue","hex":"#92d1d2","old":"G324","fam":"Blue-Green"},{"code":"BG21","name":"Mint Whisp","hex":"#ebf4ed","old":"G320","fam":"Blue-Green"},{"code":"BG211","name":"Spearmint","hex":"#7dc7ac","old":"G360","fam":"Blue-Green"},{"code":"BG212","name":"Bright Pine Green","hex":"#35b392","old":"G4","fam":"Blue-Green"},{"code":"BG215","name":"Dark Pine Green","hex":"#24917a","old":"BG8","fam":"Blue-Green"},{"code":"BG24","name":"Sea Glass Blue","hex":"#c9e4d1","old":"G420","fam":"Blue-Green"},{"code":"BG310","name":"Seafoam Green","hex":"#b2ddd5","old":"G340","fam":"Blue-Green"},{"code":"BG311","name":"Turquoise","hex":"#4fbca9","old":"PB10","fam":"Blue-Green"},{"code":"BG314","name":"Peacock Green","hex":"#22918a","old":"BG6","fam":"Blue-Green"},{"code":"BG315","name":"Castleton Green","hex":"#33867c","old":"BG7","fam":"Blue-Green"},{"code":"BGY00","name":"Cashmere Grey","hex":"#d9dfdf","old":"BG050","fam":"Blue-Green-Yellow"},{"code":"BGY02","name":"Pigeon Grey","hex":"#bbc4c8","old":"BG9","fam":"Blue-Green-Yellow"},{"code":"BGY13","name":"Seagull Grey","hex":"#a2a9ac","old":"GG060","fam":"Blue-Green-Yellow"},{"code":"BGY15","name":"Blue Steel Grey","hex":"#95a1a5","old":"GG5","fam":"Blue-Green-Yellow"},{"code":"BGY18","name":"Graphite Grey","hex":"#727b7d","old":"GG9","fam":"Blue-Green-Yellow"},{"code":"BGY24","name":"Storm Grey","hex":"#74838b","old":"CG\u216107","fam":"Blue-Green-Yellow"},{"code":"BGY25","name":"Cracked Pepper","hex":"#6c777e","old":"CG\u216108","fam":"Blue-Green-Yellow"},{"code":"BGY35","name":"Iron Grey","hex":"#666c75","old":"CG\u216109","fam":"Blue-Green-Yellow"},{"code":"BGY38","name":"Charcoal Grey","hex":"#52555a","old":"NG09","fam":"Blue-Green-Yellow"},{"code":"BV013","name":"French Ultramarine","hex":"#425eaa","old":"B380","fam":"Blue-Violet"},{"code":"BV015","name":"Deep Ultramarine","hex":"#4b56a4","old":"B440","fam":"Blue-Violet"},{"code":"BV05","name":"Cornflower","hex":"#a9c7e9","old":"B340","fam":"Blue-Violet"},{"code":"BV08","name":"Havelock Blue","hex":"#88aad7","old":"B350","fam":"Blue-Violet"},{"code":"BV115","name":"Shadow Blue","hex":"#737496","old":"V450","fam":"Blue-Violet"},{"code":"BV15","name":"Dusty Periwinkle","hex":"#c4c8dc","old":"V340","fam":"Blue-Violet"},{"code":"BV210","name":"Blueberry","hex":"#5761a8","old":"V390","fam":"Blue-Violet"},{"code":"BV26","name":"Pale Blue Violet","hex":"#b9bade","old":"R25","fam":"Blue-Violet"},{"code":"BV28","name":"Bluebonnet","hex":"#7082c1","old":"V370","fam":"Blue-Violet"},{"code":"BV29","name":"Iris","hex":"#6675aa","old":"R13","fam":"Blue-Violet"},{"code":"BV31","name":"Cloud Blue","hex":"#e5eaee","old":"BG3","fam":"Blue-Violet"},{"code":"BV310","name":"Brilliant Blue","hex":"#578ac3","old":"PB2","fam":"Blue-Violet"},{"code":"BV311","name":"Royal Blue","hex":"#206ab4","old":"B180","fam":"Blue-Violet"},{"code":"BV312","name":"Deep Royal Blue","hex":"#2168b3","old":"B190","fam":"Blue-Violet"},{"code":"BV314","name":"Lapis Lazuli","hex":"#4c72a7","old":"PB3","fam":"Blue-Violet"},{"code":"BV315","name":"Cobalt Blue","hex":"#396b98","old":"PB4","fam":"Blue-Violet"},{"code":"BV32","name":"Pale Sky Blue","hex":"#deecf3","old":"B220","fam":"Blue-Violet"},{"code":"BV35","name":"Arctic Blue","hex":"#bcdbed","old":"B120","fam":"Blue-Violet"},{"code":"BV38","name":"Sky Blue","hex":"#92bae0","old":"PB1","fam":"Blue-Violet"},{"code":"BV414","name":"Denim Blue","hex":"#7198bb","old":"B270","fam":"Blue-Violet"},{"code":"BV415","name":"Antwerp Blue","hex":"#4687ab","old":"B290","fam":"Blue-Violet"},{"code":"BV48","name":"Distressed Denim","hex":"#a0bbd3","old":"B260","fam":"Blue-Violet"},{"code":"BV514","name":"Vintage Navy","hex":"#546e9b","old":"PB5","fam":"Blue-Violet"},{"code":"BV58","name":"Crystal Blue","hex":"#8fc8ea","old":"B140","fam":"Blue-Violet"},{"code":"CG01","name":"Cloud Grey","hex":"#eeefee","old":"CG020","fam":"Cool Grey"},{"code":"CG02","name":"Light Grey","hex":"#e8ebea","old":"CG030","fam":"Cool Grey"},{"code":"CG17","name":"Cool Grey","hex":"#a3a8ae","old":"CG5","fam":"Cool Grey"},{"code":"CG18","name":"Icy Grey","hex":"#9ea7af","old":"CG\u216104","fam":"Cool Grey"},{"code":"CG24","name":"Grey","hex":"#bdc1c0","old":"CG050","fam":"Cool Grey"},{"code":"CG25","name":"Deep Grey","hex":"#a9acac","old":"NG03","fam":"Cool Grey"},{"code":"CG28","name":"Web Grey","hex":"#7e8488","old":"CG070","fam":"Cool Grey"},{"code":"E011","name":"Pale Camo Green","hex":"#aeaa97","old":"E434","fam":"Earth / Skin / Brown"},{"code":"E05","name":"Pale Moss","hex":"#e5e8d1","old":"G220","fam":"Earth / Skin / Brown"},{"code":"E06","name":"Bog Mist Green","hex":"#dcd8c2","old":"E432","fam":"Earth / Skin / Brown"},{"code":"E14","name":"Khaki Beige","hex":"#dcd3c1","old":"YG040","fam":"Earth / Skin / Brown"},{"code":"E17","name":"Sage Grey","hex":"#dbceaa","old":"Y250","fam":"Earth / Skin / Brown"},{"code":"E19","name":"Dried Sage","hex":"#d0c6ab","old":"YG080","fam":"Earth / Skin / Brown"},{"code":"E211","name":"Light Elm Wood","hex":"#d5ba8a","old":"E440","fam":"Earth / Skin / Brown"},{"code":"E212","name":"Dusty Olive","hex":"#c0ad79","old":"Y7","fam":"Earth / Skin / Brown"},{"code":"E22","name":"Lime Juice","hex":"#f2e8c8","old":"GY173","fam":"Earth / Skin / Brown"},{"code":"E26","name":"Pale Celery","hex":"#ead9b1","old":"Y230","fam":"Earth / Skin / Brown"},{"code":"E311","name":"Sandbar Brown","hex":"#bda486","old":"E300","fam":"Earth / Skin / Brown"},{"code":"E313","name":"Swamp Mud","hex":"#907b5f","old":"E450","fam":"Earth / Skin / Brown"},{"code":"E314","name":"Military Olive","hex":"#7a6657","old":"E460","fam":"Earth / Skin / Brown"},{"code":"E413","name":"Dark Brown","hex":"#9e7f6a","old":"E310","fam":"Earth / Skin / Brown"},{"code":"E415","name":"Cedar brown","hex":"#906e59","old":"BR1","fam":"Earth / Skin / Brown"},{"code":"E44","name":"Soft Sand","hex":"#f6daba","old":"E160","fam":"Earth / Skin / Brown"},{"code":"E46","name":"Coral Sand","hex":"#edbe97","old":"E220","fam":"Earth / Skin / Brown"},{"code":"E511","name":"Chocolate Mocha","hex":"#996e62","old":"Y12","fam":"Earth / Skin / Brown"},{"code":"E515","name":"Black Brown","hex":"#635453","old":"Y13","fam":"Earth / Skin / Brown"},{"code":"E58","name":"Fawn Brown","hex":"#c99e84","old":"E170","fam":"Earth / Skin / Brown"},{"code":"E610","name":"Light Mahogany","hex":"#c17466","old":"E060","fam":"Earth / Skin / Brown"},{"code":"E614","name":"Maple Syrup","hex":"#906256","old":"E130","fam":"Earth / Skin / Brown"},{"code":"E69","name":"Russet brown","hex":"#b77a67","old":"E120","fam":"Earth / Skin / Brown"},{"code":"E713","name":"Red Bean","hex":"#9a5f5f","old":"R284","fam":"Earth / Skin / Brown"},{"code":"E85","name":"Cherry Taupe","hex":"#e9c5c3","old":"E050","fam":"Earth / Skin / Brown"},{"code":"E914","name":"Bark Brown","hex":"#826560","old":"E430","fam":"Earth / Skin / Brown"},{"code":"E92","name":"Ash Rose","hex":"#e4d4cc","old":"E380","fam":"Earth / Skin / Brown"},{"code":"E97","name":"Deep Rose Grey","hex":"#c3a79c","old":"E400","fam":"Earth / Skin / Brown"},{"code":"FY00","name":"Fluorescent Yellow","hex":"#eae853","old":"FY010","fam":"Fluorescent"},{"code":"FY01","name":"Fluorescent Orange","hex":"#f2913f","old":"FY020","fam":"Fluorescent"},{"code":"FY02","name":"Fluorescent Red","hex":"#ec6a67","old":"FY030","fam":"Fluorescent"},{"code":"FY04","name":"Fluorescent Violet","hex":"#7e82be","old":"FY050","fam":"Fluorescent"},{"code":"G012","name":"Mineral Green","hex":"#a2c5b9","old":"G330","fam":"Green"},{"code":"G013","name":"Muted Turquoise","hex":"#82b4b3","old":"BG5","fam":"Green"},{"code":"G112","name":"Pale Cobalt Green","hex":"#96bdad","old":"G9","fam":"Green"},{"code":"G113","name":"Dusty Jade Green","hex":"#72a897","old":"G6","fam":"Green"},{"code":"G114","name":"Aged Pine Green","hex":"#66998a","old":"G5","fam":"Green"},{"code":"G210","name":"Sea Green","hex":"#81bb9b","old":"G490","fam":"Green"},{"code":"G24","name":"Celadon","hex":"#c7d6c5","old":"G410","fam":"Green"},{"code":"G310","name":"Shamrock Green","hex":"#6ab178","old":"G2","fam":"Green"},{"code":"G311","name":"Jade Green","hex":"#61bb85","old":"G3","fam":"Green"},{"code":"G312","name":"Emerald Green","hex":"#299a73","old":"G1","fam":"Green"},{"code":"G313","name":"Green","hex":"#2b8761","old":"G390","fam":"Green"},{"code":"G315","name":"Dark Emerald","hex":"#237f6c","old":"BG1","fam":"Green"},{"code":"G316","name":"Deep Jade Green","hex":"#307365","old":"BG2","fam":"Green"},{"code":"G34","name":"Pale Green","hex":"#d3e9cd","old":"G120","fam":"Green"},{"code":"G36","name":"Glass Green","hex":"#96cc9d","old":"G8","fam":"Green"},{"code":"G41","name":"Peppermint","hex":"#dcedd2","old":"G110","fam":"Green"},{"code":"G410","name":"Grass Green","hex":"#96bd6b","old":"GY2","fam":"Green"},{"code":"G43","name":"Vintage Pale Green","hex":"#dfebd1","old":"GY172","fam":"Green"},{"code":"G44","name":"Sea Glass Green","hex":"#c3e1bc","old":"G440","fam":"Green"},{"code":"G47","name":"Spring Green","hex":"#acd496","old":"G140","fam":"Green"},{"code":"G49","name":"Sour Apple","hex":"#b2d192","old":"GY1","fam":"Green"},{"code":"GG03","name":"Silver Cloud","hex":"#d7e0dd","old":"GG1","fam":"Green Grey"},{"code":"GG05","name":"Evergreen Fog","hex":"#9cafaa","old":"GG3","fam":"Green Grey"},{"code":"GG07","name":"Steel Grey","hex":"#898c8c","old":"GG110","fam":"Green Grey"},{"code":"GG10","name":"Soft Cool Grey","hex":"#d6d8d8","old":"CG2","fam":"Green Grey"},{"code":"GG11","name":"Fog Grey","hex":"#bdc0c3","old":"BG060","fam":"Green Grey"},{"code":"GG12","name":"Pastel Icy Grey","hex":"#b1bdc3","old":"BG070","fam":"Green Grey"},{"code":"GG15","name":"Dark Neutral Grey","hex":"#60666a","old":"NG07","fam":"Green Grey"},{"code":"GG16","name":"Dark Anchor Grey","hex":"#686e73","old":"NG06","fam":"Green Grey"},{"code":"GG24","name":"Wispy Grey","hex":"#d2d7cf","old":"GG020","fam":"Green Grey"},{"code":"GG25","name":"Pilgrim Haze","hex":"#bbc7c1","old":"GG040","fam":"Green Grey"},{"code":"R012","name":"Fruit Punch","hex":"#e36157","old":"R070","fam":"Red"},{"code":"R013","name":"Tomato","hex":"#dd6c5a","old":"Y5","fam":"Red"},{"code":"R014","name":"Deep Vermilion","hex":"#c8554e","old":"R2","fam":"Red"},{"code":"R015","name":"Crimson","hex":"#b2484f","old":"R3","fam":"Red"},{"code":"R016","name":"Chili Red","hex":"#b03f39","old":"R180","fam":"Red"},{"code":"R112","name":"Reddish Pink","hex":"#e66d73","old":"R150","fam":"Red"},{"code":"R15","name":"Lychee Juice","hex":"#f8c6c2","old":"R110","fam":"Red"},{"code":"R16","name":"Light Salmon","hex":"#f8caca","old":"R21","fam":"Red"},{"code":"R210","name":"Deep Blush","hex":"#de859b","old":"R1","fam":"Red"},{"code":"R211","name":"Ruby","hex":"#b4516c","old":"R230","fam":"Red"},{"code":"R212","name":"Mulberry","hex":"#bd5071","old":"R170","fam":"Red"},{"code":"R213","name":"Pomegranate","hex":"#bb5164","old":"R6","fam":"Red"},{"code":"R215","name":"Morello Cherry","hex":"#984f56","old":"R8","fam":"Red"},{"code":"R22","name":"Ballet Pink","hex":"#fce6ea","old":"RV260","fam":"Red"},{"code":"R23","name":"Sakura","hex":"#fadbe2","old":"RV270","fam":"Red"},{"code":"R25","name":"Tender Pink","hex":"#f5b1c4","old":"RV300","fam":"Red"},{"code":"R26","name":"Valentine Pink","hex":"#eca7bb","old":"R190","fam":"Red"},{"code":"R27","name":"Pink Satin","hex":"#e493ac","old":"R120","fam":"Red"},{"code":"R28","name":"Pink Carnation","hex":"#ed9db6","old":"R9","fam":"Red"},{"code":"R310","name":"Purplish Pink","hex":"#cf7297","old":"RV330","fam":"Red"},{"code":"R312","name":"Magenta","hex":"#be5675","old":"RV350","fam":"Red"},{"code":"R38","name":"Rose Pink","hex":"#e590ae","old":"R23","fam":"Red"},{"code":"R410","name":"Raspberry","hex":"#d86877","old":"R160","fam":"Red"},{"code":"R412","name":"Cerise","hex":"#ce506a","old":"R4","fam":"Red"},{"code":"R413","name":"Amaranth","hex":"#c3546f","old":"R5","fam":"Red"},{"code":"R46","name":"Old Rose","hex":"#dd8d92","old":"R12","fam":"Red"},{"code":"R48","name":"Cherry Rose","hex":"#df7384","old":"R200","fam":"Red"},{"code":"R50","name":"Orchid Wisp","hex":"#f8ebef","old":"R242","fam":"Red"},{"code":"R513","name":"Deep Wine","hex":"#955561","old":"R290","fam":"Red"},{"code":"R514","name":"Prune Juice","hex":"#915264","old":"R7","fam":"Red"},{"code":"R54","name":"Lavender Fog","hex":"#e4cad5","old":"R250","fam":"Red"},{"code":"R56","name":"Puce","hex":"#d6b4bf","old":"R270","fam":"Red"},{"code":"R57","name":"Rose Dust","hex":"#c68b9f","old":"R280","fam":"Red"},{"code":"R59","name":"Wine Berry","hex":"#9c576a","old":"R240","fam":"Red"},{"code":"R612","name":"Raisin","hex":"#825e69","old":"R340","fam":"Red"},{"code":"R615","name":"Black Grape","hex":"#6c5c64","old":"R350","fam":"Red"},{"code":"R69","name":"Dark Mauve","hex":"#a0777b","old":"R282","fam":"Red"},{"code":"RV01","name":"Water Lily","hex":"#fdf4f9","old":"RV010","fam":"Red-Violet"},{"code":"RV04","name":"Light Orchid","hex":"#f4c6dd","old":"RV030","fam":"Red-Violet"},{"code":"RV05","name":"Pink Pearl","hex":"#f6c1d7","old":"RV280","fam":"Red-Violet"},{"code":"RV08","name":"Pastel Pink","hex":"#ed9bc0","old":"R10","fam":"Red-Violet"},{"code":"RV09","name":"Disco Pink","hex":"#ee86b3","old":"RV070","fam":"Red-Violet"},{"code":"RV111","name":"Hot Pink","hex":"#e6549a","old":"RP6","fam":"Red-Violet"},{"code":"RV17","name":"Pink","hex":"#f3acc0","old":"R22","fam":"Red-Violet"},{"code":"RV18","name":"Bubblegum","hex":"#f19bb9","old":"R14","fam":"Red-Violet"},{"code":"RV19","name":"Dahlia Pink","hex":"#ee91b9","old":"R15","fam":"Red-Violet"},{"code":"RV212","name":"Rich Raspberry","hex":"#e13187","old":"RP1","fam":"Red-Violet"},{"code":"RV23","name":"Pink Wisp","hex":"#f8dfeb","old":"RV130","fam":"Red-Violet"},{"code":"RV25","name":"Rosy Lilac","hex":"#ecbbd4","old":"RV180","fam":"Red-Violet"},{"code":"RV28","name":"Hibiscus Pink","hex":"#d58dae","old":"RV200","fam":"Red-Violet"},{"code":"RV29","name":"Plum Pink","hex":"#d378a3","old":"RV320","fam":"Red-Violet"},{"code":"RV310","name":"Fuchsia","hex":"#d55e9d","old":"RV100","fam":"Red-Violet"},{"code":"RV311","name":"Pansy","hex":"#c64994","old":"P2","fam":"Red-Violet"},{"code":"RV314","name":"Grape Juice","hex":"#9d4574","old":"P1","fam":"Red-Violet"},{"code":"RV316","name":"Grape Jelly","hex":"#7e447e","old":"R16","fam":"Red-Violet"},{"code":"RV33","name":"Thistle","hex":"#efd4e7","old":"RV160","fam":"Red-Violet"},{"code":"RV34","name":"Faded Lilac","hex":"#efd4e7","old":"V020","fam":"Red-Violet"},{"code":"RV35","name":"Bright Lilac","hex":"#e6c9df","old":"V150","fam":"Red-Violet"},{"code":"RV39","name":"Bright Fuchsia","hex":"#e176aa","old":"RV080","fam":"Red-Violet"},{"code":"RV514","name":"Violet Merlot","hex":"#96637e","old":"RV240","fam":"Red-Violet"},{"code":"RV515","name":"Ripe Mulberry","hex":"#8b5277","old":"RV250","fam":"Red-Violet"},{"code":"RV57","name":"Dark Lilac","hex":"#d8aed0","old":"V160","fam":"Red-Violet"},{"code":"V010","name":"Faded Violet","hex":"#997bb5","old":"P4","fam":"Violet"},{"code":"V013","name":"violet","hex":"#8a5c97","old":"V210","fam":"Violet"},{"code":"V015","name":"Deep Violet","hex":"#8a7194","old":"V080","fam":"Violet"},{"code":"V08","name":"Light Violet","hex":"#ae8fc0","old":"V050","fam":"Violet"},{"code":"V112","name":"Vivid Violet","hex":"#ab6fad","old":"V070","fam":"Violet"},{"code":"V13","name":"Greyed Lavender","hex":"#e1d7e8","old":"R11","fam":"Violet"},{"code":"V14","name":"Pale Purple","hex":"#d4bad9","old":"V030","fam":"Violet"},{"code":"V18","name":"Bright Lavender","hex":"#dbb5d5","old":"P3","fam":"Violet"},{"code":"V216","name":"Morning Glory","hex":"#60509f","old":"R17","fam":"Violet"},{"code":"V22","name":"Lavender Wisp","hex":"#e1d4e9","old":"V230","fam":"Violet"},{"code":"V29","name":"Dull Violet","hex":"#9889b7","old":"V060","fam":"Violet"},{"code":"V32","name":"Icy Periwinkle","hex":"#e2e8f4","old":"V322","fam":"Violet"},{"code":"V34","name":"Periwinkle","hex":"#deddef","old":"V330","fam":"Violet"},{"code":"V38","name":"Deep Periwinkle","hex":"#b2b2d9","old":"R24","fam":"Violet"},{"code":"V412","name":"Lobelia","hex":"#a291c2","old":"V270","fam":"Violet"},{"code":"V414","name":"Electric Indigo","hex":"#6d64a5","old":"V320","fam":"Violet"},{"code":"V416","name":"Deep Purple","hex":"#4e4389","old":"P5","fam":"Violet"},{"code":"V46","name":"Lavender","hex":"#b4a9d3","old":"V250","fam":"Violet"},{"code":"WG01","name":"Lite Lavender","hex":"#e0d8dd","old":"RG110","fam":"Warm Grey"},{"code":"WG04","name":"Icy Lavender","hex":"#dbd4d7","old":"RG120","fam":"Warm Grey"},{"code":"WG06","name":"Star Dust","hex":"#b4aab0","old":"RG150","fam":"Warm Grey"},{"code":"WG08","name":"Heathered Grape","hex":"#92888e","old":"RG080","fam":"Warm Grey"},{"code":"WG10","name":"Porcelain","hex":"#f6f7f5","old":"CG\u216100","fam":"Warm Grey"},{"code":"WG26","name":"Silver Grey","hex":"#bfb6b4","old":"WG3","fam":"Warm Grey"},{"code":"WG27","name":"Antique Silver","hex":"#aba5a2","old":"WG4","fam":"Warm Grey"},{"code":"WG37","name":"Dark Charcoal","hex":"#646163","old":"WG09","fam":"Warm Grey"},{"code":"WG38","name":"Caviar","hex":"#555656","old":"WG130","fam":"Warm Grey"},{"code":"Y00","name":"Lemon Mist","hex":"#fcfcef","old":"Y010","fam":"Yellow"},{"code":"Y02","name":"Lemon Chiffon","hex":"#f7f0c0","old":"Y030","fam":"Yellow"},{"code":"Y03","name":"Pastel Yellow","hex":"#f7f4c9","old":"G030","fam":"Yellow"},{"code":"Y06","name":"Butter","hex":"#f7eb92","old":"Y040","fam":"Yellow"},{"code":"Y07","name":"Banana Cream","hex":"#f0dc89","old":"GY6","fam":"Yellow"},{"code":"Y09","name":"Summer Lemon","hex":"#edd571","old":"Y050","fam":"Yellow"},{"code":"Y111","name":"Mustard","hex":"#f0b52e","old":"Y2","fam":"Yellow"},{"code":"Y14","name":"Pale Lemon Yellow","hex":"#f2f2a3","old":"G020","fam":"Yellow"},{"code":"Y17","name":"Bright Lemon Yellow","hex":"#f4e668","old":"Y080","fam":"Yellow"},{"code":"Y19","name":"Canary","hex":"#f5d532","old":"Y070","fam":"Yellow"},{"code":"Y213","name":"Dark Marigold","hex":"#e39442","old":"YR2","fam":"Yellow"},{"code":"Y215","name":"Toffee","hex":"#d48a45","old":"Y180","fam":"Yellow"},{"code":"Y216","name":"Caramel","hex":"#ca9349","old":"YR1","fam":"Yellow"},{"code":"Y26","name":"Light Gold","hex":"#f0cb6e","old":"Y3","fam":"Yellow"},{"code":"Y27","name":"Sunflower","hex":"#eec25e","old":"Y1","fam":"Yellow"},{"code":"Y28","name":"Corn Yellow","hex":"#e3be54","old":"Y6","fam":"Yellow"},{"code":"Y29","name":"Melon Yellow","hex":"#eda63c","old":"YR33","fam":"Yellow"},{"code":"Y311","name":"Termite Beige","hex":"#d9b56e","old":"Y270","fam":"Yellow"},{"code":"Y315","name":"Olive Yellow","hex":"#c1944b","old":"Y8","fam":"Yellow"},{"code":"Y34","name":"Eggnog yellow","hex":"#fcf4df","old":"Y121","fam":"Yellow"},{"code":"Y39","name":"Straw","hex":"#ebc786","old":"Y260","fam":"Yellow"},{"code":"Y410","name":"Goldenrod","hex":"#ecb56d","old":"YR260","fam":"Yellow"},{"code":"Y412","name":"Apple Cider","hex":"#e6af83","old":"E490","fam":"Yellow"},{"code":"Y413","name":"Fawn","hex":"#d8a77b","old":"E240","fam":"Yellow"},{"code":"Y415","name":"Sand Storm","hex":"#ca965f","old":"Y9","fam":"Yellow"},{"code":"Y416","name":"Golden Brown","hex":"#b0794b","old":"Y210","fam":"Yellow"},{"code":"Y42","name":"Warm Ivory","hex":"#fae6cc","old":"Y110","fam":"Yellow"},{"code":"Y45","name":"Cream","hex":"#f2cba1","old":"YR240","fam":"Yellow"},{"code":"Y46","name":"Peach Yogurt","hex":"#f2bc82","old":"YR250","fam":"Yellow"},{"code":"Y49","name":"Autumn Leaf","hex":"#ecb668","old":"Y140","fam":"Yellow"},{"code":"Y515","name":"Light Walnut","hex":"#b98969","old":"E370","fam":"Yellow"},{"code":"Y55","name":"Golden Champagne","hex":"#fbe7c4","old":"Y120","fam":"Yellow"},{"code":"Y59","name":"Marigold Yellow","hex":"#e9bf7f","old":"Y130","fam":"Yellow"},{"code":"Y611","name":"Dark Sand","hex":"#d1ac82","old":"Y11","fam":"Yellow"},{"code":"Y62","name":"Sandy Beige","hex":"#f8eadb","old":"E280","fam":"Yellow"},{"code":"Y69","name":"Milk Tea","hex":"#e5caab","old":"E210","fam":"Yellow"},{"code":"YG012","name":"Yellow Green","hex":"#d1d376","old":"GY4","fam":"Yellow-Green"},{"code":"YG015","name":"Dark Olive","hex":"#8f8c52","old":"GY42","fam":"Yellow-Green"},{"code":"YG06","name":"Sugarcane","hex":"#e1e6a9","old":"GY7","fam":"Yellow-Green"},{"code":"YG07","name":"Honeydew Melon","hex":"#dee091","old":"G050","fam":"Yellow-Green"},{"code":"YG111","name":"Celery","hex":"#e7de8e","old":"G060","fam":"Yellow-Green"},{"code":"YG112","name":"Lemon Lime","hex":"#e6da6f","old":"G070","fam":"Yellow-Green"},{"code":"YG113","name":"Pear Green","hex":"#d8cc50","old":"G080","fam":"Yellow-Green"},{"code":"YG211","name":"Edamame","hex":"#b3bc54","old":"GY5","fam":"Yellow-Green"},{"code":"YG212","name":"Guacamole","hex":"#a29650","old":"GY8","fam":"Yellow-Green"},{"code":"YG215","name":"Thatch Green","hex":"#8f8869","old":"G300","fam":"Yellow-Green"},{"code":"YG29","name":"Apple Green","hex":"#bcc77c","old":"G260","fam":"Yellow-Green"},{"code":"YG312","name":"Artichoke Green","hex":"#aebf87","old":"G270","fam":"Yellow-Green"},{"code":"YG36","name":"Beige Green","hex":"#becaa7","old":"G240","fam":"Yellow-Green"},{"code":"YG413","name":"Fern Green","hex":"#7ca16e","old":"G470","fam":"Yellow-Green"},{"code":"YG414","name":"Dark Fern Green","hex":"#6d8c68","old":"GY43","fam":"Yellow-Green"},{"code":"YG415","name":"Cascade Green","hex":"#5f7566","old":"G7","fam":"Yellow-Green"},{"code":"YG510","name":"Bud Green","hex":"#b1c763","old":"GY3","fam":"Yellow-Green"},{"code":"YG610","name":"Bright Lime","hex":"#9ecc5a","old":"G170","fam":"Yellow-Green"},{"code":"YG611","name":"Mantis Green","hex":"#93c05c","old":"G190","fam":"Yellow-Green"},{"code":"YG66","name":"Fresh Green","hex":"#d5e7af","old":"G130","fam":"Yellow-Green"},{"code":"YGY02","name":"Abalone Grey","hex":"#e8e2da","old":"RG030","fam":"Yellow-Green-Yellow"},{"code":"YGY05","name":"Dovetail Grey","hex":"#c2b6b4","old":"RG050","fam":"Yellow-Green-Yellow"},{"code":"YGY11","name":"Collingwood Grey","hex":"#dad1c4","old":"WG01","fam":"Yellow-Green-Yellow"},{"code":"YGY13","name":"Oyster Grey","hex":"#dddbce","old":"WG050","fam":"Yellow-Green-Yellow"},{"code":"YGY17","name":"Platinum Grey","hex":"#c5b9af","old":"WG070","fam":"Yellow-Green-Yellow"},{"code":"YGY18","name":"Stone Grey","hex":"#968c85","old":"WG090","fam":"Yellow-Green-Yellow"},{"code":"YR00","name":"Barely Blush","hex":"#fceedf","old":"E010","fam":"Yellow-Red / Orange"},{"code":"YR015","name":"Burnt Orange","hex":"#dc834a","old":"YR172","fam":"Yellow-Red / Orange"},{"code":"YR03","name":"Pastel Blush","hex":"#fdebdb","old":"YR220","fam":"Yellow-Red / Orange"},{"code":"YR04","name":"Pastel Peach","hex":"#fae8d6","old":"R18","fam":"Yellow-Red / Orange"},{"code":"YR06","name":"Raw Cashew","hex":"#f9dbc2","old":"E090","fam":"Yellow-Red / Orange"},{"code":"YR07","name":"Salmon Orange","hex":"#f9c19f","old":"YR4","fam":"Yellow-Red / Orange"},{"code":"YR11","name":"Peachy Blush","hex":"#fde2d3","old":"YR110","fam":"Yellow-Red / Orange"},{"code":"YR111","name":"Persimmon","hex":"#f08f43","old":"Y10","fam":"Yellow-Red / Orange"},{"code":"YR112","name":"Orange","hex":"#f0873d","old":"YR3","fam":"Yellow-Red / Orange"},{"code":"YR17","name":"Sunset Orange","hex":"#f6bb8a","old":"Y4","fam":"Yellow-Red / Orange"},{"code":"YR19","name":"Marigold Orange","hex":"#f6b35d","old":"YR170","fam":"Yellow-Red / Orange"},{"code":"YR213","name":"Squash Orange","hex":"#e67d56","old":"YR180","fam":"Yellow-Red / Orange"},{"code":"YR215","name":"Aged Cherry Wood","hex":"#bb6151","old":"E080","fam":"Yellow-Red / Orange"},{"code":"YR312","name":"Light Earth Brown","hex":"#d19271","old":"E110","fam":"Yellow-Red / Orange"},{"code":"YR313","name":"Potato Brown","hex":"#bd7d59","old":"BR2","fam":"Yellow-Red / Orange"},{"code":"YR314","name":"Sandalwood","hex":"#ae7054","old":"E260","fam":"Yellow-Red / Orange"},{"code":"YR33","name":"Rose Cream","hex":"#fae1d3","old":"R19","fam":"Yellow-Red / Orange"},{"code":"YR34","name":"Peach Cream","hex":"#f9cfc0","old":"R20","fam":"Yellow-Red / Orange"},{"code":"YR39","name":"Cinnamon","hex":"#e7a688","old":"BR3","fam":"Yellow-Red / Orange"},{"code":"YR43","name":"Pale Cherry Pink","hex":"#fde2d7","old":"R080","fam":"Yellow-Red / Orange"},{"code":"YR45","name":"Rosewater","hex":"#f5cfc1","old":"E030","fam":"Yellow-Red / Orange"},{"code":"YR47","name":"Dusty Peach","hex":"#f7cdbf","old":"R29","fam":"Yellow-Red / Orange"},{"code":"YR511","name":"Pale Coral","hex":"#f2a183","old":"YR090","fam":"Yellow-Red / Orange"},{"code":"YR513","name":"Papaya","hex":"#ee7d56","old":"YR190","fam":"Yellow-Red / Orange"},{"code":"YR515","name":"Burnt Sienna","hex":"#cc795a","old":"YR5","fam":"Yellow-Red / Orange"},{"code":"YR52","name":"Cameo Rose","hex":"#fbe6de","old":"YR030","fam":"Yellow-Red / Orange"},{"code":"YR55","name":"Pink Lemonade","hex":"#f3ccc1","old":"E470","fam":"Yellow-Red / Orange"},{"code":"YR57","name":"Tropical Peach","hex":"#f7bca8","old":"BR208","fam":"Yellow-Red / Orange"},{"code":"YR58","name":"Pink Sand","hex":"#f9c4b7","old":"R050","fam":"Yellow-Red / Orange"},{"code":"YR59","name":"Cantaloupe","hex":"#f6b79e","old":"YR070","fam":"Yellow-Red / Orange"},{"code":"E111","name":"Pewter Green","hex":"#bdad96","old":"YG100","fam":"Earth / Skin / Brown"},{"code":"YR56","name":"Light Apricot Pink","hex":"#f7d1c3","old":"R090","fam":"Yellow-Red / Orange"}];
+const KEY="ohuhu-hb320-picker-v3",OLD="ohuhu-hb320-picker-v2";
+const HARM={complementary:'Complementary',analogous:'Analogous',triadic:'Triadic'};
+const $=id=>document.getElementById(id);
+const stage=$('stage'),swatch=$('swatch'),code=$('code'),hint=$('hint'),readout=$('readout'),drawBtn=$('draw'),
+ undoBtn=$('undo'),resetBtn=$('reset'),fill=$('fill'),status=$('status'),famsEl=$('fams'),pile=$('pile'),
+ pileEmpty=$('pileEmpty'),pilen=$('pilen'),tiptap=$('tiptap'),ambient=$('ambient'),halo=$('halo'),glare=$('glare'),
+ shineEl=swatch.querySelector('.shine'),palette=$('palette'),bands=$('bands'),phint=$('phint'),trackWrap=$('trackWrap'),
+ drawnWrap=$('drawnWrap'),mRandom=$('mRandom'),mPalette=$('mPalette'),mFinder=$('mFinder'),sizeWrap=$('sizeWrap'),
+ segs=$('segs'),harmWrap=$('harmWrap'),harm=$('harm'),tonesEl=$('tones'),satsEl=$('sats'),hero=$('hero'),
+ actions=$('actions'),findWrap=$('findWrap'),searchInput=$('q'),findResults=$('findResults'),results=$('results'),
+ matchn=$('matchn'),copyBtn=$('copyBtn'),filtersEl=$('filters'),findActions=$('findActions'),toRandom=$('toRandom'),
+ toPalette=$('toPalette'),poolBar=$('poolBar'),poolN=$('poolN'),poolClear=$('poolClear'),exportWrap=$('exportWrap'),
+ exportBtn=$('exportBtn'),imgOverlay=$('imgOverlay'),cardImg=$('cardImg'),cardCap=$('cardCap'),dlLink=$('dlLink'),
+ ovClose=$('ovClose'),root=document.documentElement;
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const buzz=n=>{try{navigator.vibrate&&navigator.vibrate(n);}catch(e){}};
+
+function rgb(hex){let h=hex.slice(1);return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function rgba(hex,a){const[r,g,b]=rgb(hex);return`rgba(${r},${g},${b},${a})`;}
+function txt(hex){const[r,g,b]=rgb(hex);return(r*299+g*587+b*114)/1000>142?'#141216':'#fff';}
+function hsl(hex){const[R,G,B]=rgb(hex),r=R/255,g=G/255,b=B/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;
+ let s=0,hu=0;if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);
+  hu=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;hu*=60;}return{h:hu,s,l,c:mx-mn};}
+const HS=COLORS.map(c=>hsl(c.hex));
+const TONE=HS.map(o=>o.l>=.80?'pale':o.l>=.62?'light':o.l>=.46?'mid':'dark');
+const TONE_DEFS=[{k:'pale',t:'Pale',d:'#f0efe9'},{k:'light',t:'Light',d:'#cfccc3'},{k:'mid',t:'Mid',d:'#8b8880'},{k:'dark',t:'Dark',d:'#2c2b30'}];
+const SAT=HS.map(o=>o.c<.18?'muted':o.c<.42?'medium':'vivid');
+const SAT_DEFS=[{k:'muted',t:'Muted',d:'#7f8a90'},{k:'medium',t:'Medium',d:'#4f9dc4'},{k:'vivid',t:'Vivid',d:'#0e8fd6'}];
+function hueDist(a,b){const d=Math.abs(a-b)%360;return Math.min(d,360-d);}
+
+const fmap={};COLORS.forEach((c,i)=>{(fmap[c.fam]=fmap[c.fam]||[]).push(i);});
+const families=Object.keys(fmap).map(name=>{const idxs=fmap[name];let sx=0,sy=0,ss=0,rep=idxs[0],best=9;
+ idxs.forEach(i=>{const{h,s,l}=HS[i];const rad=h*Math.PI/180;sx+=Math.cos(rad)*s;sy+=Math.sin(rad)*s;ss+=s;const d=Math.abs(l-.5);if(d<best){best=d;rep=i;}});
+ let avgH=Math.atan2(sy,sx)*180/Math.PI;if(avgH<0)avgH+=360;
+ return{name,idxs,avgH,neutral:ss/idxs.length<.12,repHex:COLORS[rep].hex,repL:HS[rep].l};});
+const FAM_ORDER=['Yellow','Yellow-Red / Orange','Earth / Skin / Brown','Red','Red-Violet','Violet','Blue-Violet','Blue','Blue-Green','Green','Yellow-Green','Cool Grey','Blue-Green-Yellow','Yellow-Green-Yellow','Warm Grey','Green Grey','Fluorescent','Neutral / Black'];
+families.sort((a,b)=>{const ia=FAM_ORDER.indexOf(a.name),ib=FAM_ORDER.indexOf(b.name);return(ia<0?99:ia)-(ib<0?99:ib);});
+
+let state=load();
+if(!state.palSize)state.palSize=4;if(!state.harmony)state.harmony='complementary';
+if(!state.tones)state.tones=new Set(['pale','light','mid','dark']);if(!state.sats)state.sats=new Set(['muted','medium','vivid']);
+if(!['random','palette','finder'].includes(state.mode))state.mode='random';
+if(!Array.isArray(state.pool))state.pool=null;
+let poolSet=state.pool?new Set(state.pool):null;
+let searchStr='';
+function load(){const TK=['pale','light','mid','dark'],SK=['muted','medium','vivid'];
+ const mk=(a,v)=>{const f=Array.isArray(a)?a.filter(k=>v.includes(k)):null;return new Set(f&&f.length===a.length&&f.length?f:v);};
+ try{const v=JSON.parse(localStorage.getItem(KEY));if(v)return{mode:v.mode||'random',palSize:v.palSize||4,harmony:v.harmony||'complementary',tones:mk(v.tones,TK),sats:mk(v.sats,SK),drawn:v.drawn||[],excluded:new Set(v.excluded||[]),palettes:v.palettes||[],pool:Array.isArray(v.pool)?v.pool:null};}catch(e){}
+ try{const o=JSON.parse(localStorage.getItem(OLD));if(o&&Array.isArray(o.drawn))return{mode:'random',palSize:4,harmony:'complementary',tones:new Set(TK),sats:new Set(SK),drawn:o.drawn,excluded:new Set(o.excluded||[]),palettes:[],pool:null};}catch(e){}
+ return{mode:'random',palSize:4,harmony:'complementary',tones:new Set(TK),sats:new Set(SK),drawn:[],excluded:new Set(),palettes:[],pool:null};}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({mode:state.mode,palSize:state.palSize,harmony:state.harmony,tones:[...state.tones],sats:[...state.sats],drawn:state.drawn,excluded:[...state.excluded],palettes:state.palettes,pool:state.pool}));}catch(e){}}
+function inTone(i){return state.tones.has(TONE[i]);}
+function inSat(i){return state.sats.has(SAT[i]);}
+function passes(i){return !state.excluded.has(COLORS[i].fam)&&inTone(i)&&inSat(i);}
+function matchesSearch(i){if(!searchStr)return true;const c=COLORS[i];return (c.code+' '+c.name+' '+(c.old||'')).toLowerCase().includes(searchStr);}
+function avail(i){return passes(i)&&matchesSearch(i);}
+function setPool(a){state.pool=a&&a.length?a.slice():null;poolSet=state.pool?new Set(state.pool):null;}
+function inPool(i){return state.pool?poolSet.has(i):passes(i);}
+function counts(){const dn=new Set(state.drawn);let t=0,u=0;COLORS.forEach((c,i)=>{if(inPool(i)){t++;if(dn.has(i))u++;}});return{t,u,left:t-u};}
+const anyFam=()=>families.some(f=>!state.excluded.has(f.name));
+const anyTone=()=>state.tones.size>0;
+const anySat=()=>state.sats.size>0;
+
+function retrigger(el,cls){el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
+function pulse(){if(reduce)return;retrigger(halo,'go');retrigger(stage,'pulse');}
+function shine(){if(reduce)return;retrigger(shineEl,'go');}
+function setAmb(hex){root.style.setProperty('--amb',hex?rgba(hex,.5):'transparent');
+ ambient.style.background=hex?'radial-gradient(120% 80% at 50% -8%,'+rgba(hex,.56)+',transparent 60%)':'';}
+function flood(hex){if(reduce){swatch.style.background=hex;return;}
+ const r=document.createElement('span');r.className='ripple';r.style.background=hex;swatch.appendChild(r);
+ requestAnimationFrame(()=>r.classList.add('go'));r.addEventListener('animationend',()=>{swatch.style.background=hex;r.remove();},{once:true});}
+
+function showColor(idx,animate){const c=COLORS[idx];hint.style.display='none';code.style.display='';code.style.color=txt(c.hex);
+ if(animate){flood(c.hex);code.textContent=c.code;retrigger(code,'pop');pulse();shine();}else{swatch.style.background=c.hex;code.textContent=c.code;}
+ const old=c.old&&c.old!==c.code?' — was '+c.old:'';
+ readout.innerHTML='<div><div class="name">'+c.name+'</div><div class="fam">'+c.fam+old+'</div></div><div class="hex">'+c.hex.toUpperCase()+'</div>';
+ if(animate)retrigger(readout,'pop');setAmb(c.hex);}
+function clearColor(){code.style.display='none';hint.style.display='';swatch.style.background='#1a1a20';readout.innerHTML='';setAmb(null);}
+
+function nearest(target,opt){opt=opt||{};const ex=opt.exclude||new Set();let best=-1,bc=1e9;
+ for(let i=0;i<COLORS.length;i++){if(ex.has(i)||!inPool(i))continue;const o=HS[i];if(o.s<(opt.minS!=null?opt.minS:.16))continue;
+  let cost=hueDist(o.h,target)/180+(1-o.s)*.15+(opt.preferL!=null?Math.abs(o.l-opt.preferL)*.55:0);if(cost<bc){bc=cost;best=i;}}
+ if(best<0){for(let i=0;i<COLORS.length;i++){if(ex.has(i)||!inPool(i))continue;const o=HS[i];
+  let cost=hueDist(o.h,target)/180+(opt.preferL!=null?Math.abs(o.l-opt.preferL)*.55:0);if(cost<bc){bc=cost;best=i;}}}
+ return best;}
+function poleColors(hue,k,ex){const res=[];if(k<=0)return res;
+ const lts=k===1?[.52]:Array.from({length:k},(_,i)=>.74-(.74-.30)*(i/(k-1)));
+ for(const lt of lts){const idx=nearest(hue,{exclude:ex,preferL:lt});if(idx<0)return null;ex.add(idx);res.push(idx);}return res;}
+function genPalette(n,harmony){n=n||state.palSize;harmony=harmony||state.harmony;
+ const cands=[];for(let i=0;i<COLORS.length;i++){if(!inPool(i))continue;const o=HS[i];if(o.s>.3&&o.l>.25&&o.l<.8)cands.push(i);}
+ if(!cands.length)return null;const bh=HS[cands[(Math.random()*cands.length)|0]].h;const ex=new Set();let out=[];
+ if(harmony==='analogous'){const span=n<=2?22:38;
+  for(let i=0;i<n;i++){const hT=(bh+(n===1?0:(-span+2*span*i/(n-1)))+360)%360;const lT=n===1?.52:.72-(.72-.32)*(i/(n-1));
+   const idx=nearest(hT,{exclude:ex,preferL:lT});if(idx<0)return null;ex.add(idx);out.push(idx);}return out;}
+ const anchors=harmony==='triadic'?[0,120,240]:[0,180];const A=anchors.length;
+ for(let ai=0;ai<A;ai++){const k=Math.floor(n/A)+(ai<n%A?1:0);if(!k)continue;
+  const pole=poleColors((bh+anchors[ai])%360,k,ex);if(!pole)return null;pole.sort((a,b)=>HS[b].l-HS[a].l);out.push(...pole);}
+ return out;}
+function buildBands(n){bands.innerHTML='';for(let k=0;k<n;k++){const b=document.createElement('div');b.className='band';b.innerHTML='<span class="bcode"></span>';bands.appendChild(b);}}
+function showPalette(pal,animate){phint.style.display='none';buildBands(pal.length);const bs=[...bands.querySelectorAll('.band')];
+ bs.forEach((b,k)=>{const c=COLORS[pal[k]];b.style.background=c.hex;const cd=b.querySelector('.bcode');cd.textContent=c.code;cd.style.color=txt(c.hex);
+  if(animate&&!reduce){b.style.animationDelay=(k*55)+'ms';b.classList.add('bin');}});
+ if(animate)pulse();const base=COLORS[pal[0]];
+ readout.innerHTML='<div><div class="name">'+HARM[state.harmony]+'</div><div class="fam">'+base.name+' base</div></div><div class="hex">'+pal.map(i=>COLORS[i].code).join('  ')+'</div>';
+ if(animate)retrigger(readout,'pop');setAmb(base.hex);}
+function clearPalette(){phint.style.display='';bands.innerHTML='';readout.innerHTML='';setAmb(null);}
+
+function finderMatches(){const out=[];for(let i=0;i<COLORS.length;i++){if(avail(i))out.push(i);}return out;}
+function cellHtml(i){const c=COLORS[i];const old=c.old&&c.old!==c.code?' · old '+c.old:'';
+ return '<div class="cell" data-i="'+i+'" title="'+c.name+' · '+c.hex.toUpperCase()+old+' · tap to copy"><div class="sq" style="background:'+c.hex+'"></div><div class="cc">'+c.code+'</div></div>';}
+function renderResults(){const m=finderMatches();matchn.textContent='('+m.length+(m.length===1?' marker)':' markers)');
+ toRandom.disabled=toPalette.disabled=!m.length;
+ if(!m.length){results.innerHTML='<div class="empty">No markers match these filters.</div>';return;}
+ const by={};for(const i of m)(by[COLORS[i].fam]=by[COLORS[i].fam]||[]).push(i);
+ let html='',s=0;for(const f of families){const list=by[f.name];if(!list)continue;
+  html+='<div class="rgroup" style="animation-delay:'+(s*45)+'ms"><div class="rghead"><span class="rgdot" style="background:'+f.repHex+'"></span>'+f.name+' <span class="rgn">'+list.length+'</span></div><div class="pile">'+list.map(cellHtml).join('')+'</div></div>';s++;}
+ results.innerHTML=html;}
+let copyT=null;
+function flashCopy(msg){copyBtn.textContent=msg;clearTimeout(copyT);copyT=setTimeout(()=>{copyBtn.textContent='Copy codes';},1400);}
+async function copyText(text){try{await navigator.clipboard.writeText(text);return true;}catch(e){}
+ try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(e){return false;}}
+
+/* export image */
+function roundRect(x,X,Y,w,h,r){x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath();}
+function mix(a,b,t){const A=rgb(a),B=rgb(b);return'rgb('+Math.round(A[0]+(B[0]-A[0])*t)+','+Math.round(A[1]+(B[1]-A[1])*t)+','+Math.round(A[2]+(B[2]-A[2])*t)+')';}
+function trunc(x,s,max){if(x.measureText(s).width<=max)return s;while(s.length&&x.measureText(s+'…').width>max)s=s.slice(0,-1);return s+'…';}
+async function makeCard(idxs,kind){const scale=2,W=600,pad=44,gap=12,headerH=132,footerH=54;
+ const dom=COLORS[idxs[0]].hex,few=idxs.length<=8;let bodyH,cols,cellW,sqH,rowH;
+ if(few){rowH=76;bodyH=idxs.length*rowH;}else{cols=Math.max(5,Math.min(7,Math.floor((W-2*pad)/84)));cellW=(W-2*pad-gap*(cols-1))/cols;sqH=cellW*.8;const rows=Math.ceil(idxs.length/cols);bodyH=rows*(sqH+20)+(rows-1)*gap;}
+ const H=headerH+bodyH+footerH;
+ const cv=document.createElement('canvas');cv.width=W*scale;cv.height=H*scale;const x=cv.getContext('2d');x.scale(scale,scale);
+ x.fillStyle=mix('#0c0c10',dom,.06);x.fillRect(0,0,W,H);
+ let g=x.createRadialGradient(W*.5,-H*.05,0,W*.5,-H*.05,W*.95);g.addColorStop(0,rgba(dom,.30));g.addColorStop(1,rgba(dom,0));x.fillStyle=g;x.fillRect(0,0,W,H);
+ g=x.createRadialGradient(W*.5,H*.55,H*.28,W*.5,H*.55,H*.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.42)');x.fillStyle=g;x.fillRect(0,0,W,H);
+ g=x.createLinearGradient(0,0,W*.7,H*.5);g.addColorStop(0,'rgba(255,255,255,.07)');g.addColorStop(.45,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,W,H);
+ try{await document.fonts.ready;}catch(e){}
+ x.textBaseline='alphabetic';x.textAlign='left';
+ x.fillStyle='rgba(244,242,236,.5)';x.font='600 12px "Hanken Grotesk", system-ui, sans-serif';try{x.letterSpacing='2px';}catch(e){}x.fillText('OHUHU HONOLULU B · 320',pad,pad+14);try{x.letterSpacing='0px';}catch(e){}
+ x.fillStyle='#f5f3ee';x.font='500 34px Fraunces, Georgia, serif';x.fillText(kind==='palette'?HARM[state.harmony]+' palette':'Drawn markers',pad,pad+54);
+ x.fillStyle='rgba(244,242,236,.5)';x.font='400 15px "Hanken Grotesk", system-ui, sans-serif';x.fillText(idxs.length+' color'+(idxs.length>1?'s':''),pad,pad+78);
+ let y=headerH;
+ if(few){for(const i of idxs){const c=COLORS[i],tc=txt(c.hex);
+   roundRect(x,pad,y,150,64,13);x.fillStyle=c.hex;x.fill();
+   const sg=x.createLinearGradient(pad,y,pad,y+64);sg.addColorStop(0,'rgba(255,255,255,.20)');sg.addColorStop(.5,'rgba(255,255,255,0)');roundRect(x,pad,y,150,64,13);x.fillStyle=sg;x.fill();
+   x.fillStyle=tc;x.font='500 22px Fraunces, Georgia, serif';x.textAlign='left';x.fillText(c.code,pad+16,y+41);
+   x.fillStyle='#f2efe9';x.font='500 17px "Hanken Grotesk", system-ui, sans-serif';x.fillText(trunc(x,c.name,W-pad-(pad+172)-78),pad+172,y+34);
+   x.fillStyle='rgba(244,242,236,.5)';x.font='14px "Hanken Grotesk", system-ui, sans-serif';x.textAlign='right';x.fillText(c.hex.toUpperCase(),W-pad,y+41);x.textAlign='left';y+=rowH;}
+ }else{let col=0,cx=pad;for(const i of idxs){const c=COLORS[i];roundRect(x,cx,y,cellW,sqH,9);x.fillStyle=c.hex;x.fill();
+   const sg=x.createLinearGradient(cx,y,cx,y+sqH);sg.addColorStop(0,'rgba(255,255,255,.18)');sg.addColorStop(.5,'rgba(255,255,255,0)');roundRect(x,cx,y,cellW,sqH,9);x.fillStyle=sg;x.fill();
+   x.fillStyle='rgba(244,242,236,.72)';x.font='600 10px "Hanken Grotesk", system-ui, sans-serif';x.textAlign='center';x.fillText(c.code,cx+cellW/2,y+sqH+14);x.textAlign='left';
+   col++;if(col>=cols){col=0;cx=pad;y+=sqH+20+gap;}else cx+=cellW+gap;}}
+ x.strokeStyle='rgba(255,255,255,.1)';x.lineWidth=1;x.beginPath();x.moveTo(pad,H-38);x.lineTo(W-pad,H-38);x.stroke();
+ x.fillStyle='rgba(244,242,236,.42)';x.font='13px "Hanken Grotesk", system-ui, sans-serif';x.textAlign='left';x.fillText('Marker picker · Honolulu B 320',pad,H-16);
+ return cv.toDataURL('image/png');}
+function showOverlay(url,fname){cardImg.src=url;dlLink.href=url;dlLink.download=fname;imgOverlay.classList.add('on');}
+function closeOverlay(){imgOverlay.classList.remove('on');cardImg.src='';}
+
+/* chrome */
+function chrome(){const M=state.mode,rnd=M==='random',pal=M==='palette',fnd=M==='finder';const pooled=!!state.pool&&!fnd;
+ mRandom.classList.toggle('on',rnd);mPalette.classList.toggle('on',pal);mFinder.classList.toggle('on',fnd);
+ hero.style.display=fnd?'none':'';swatch.style.display=rnd?'':'none';palette.style.display=pal?'':'none';
+ actions.style.display=fnd?'none':'flex';trackWrap.style.display=rnd?'':'none';drawnWrap.style.display=rnd?'':'none';
+ harmWrap.style.display=pal?'flex':'none';sizeWrap.style.display=pal?'flex':'none';
+ findWrap.style.display=fnd?'':'none';findActions.style.display=fnd?'flex':'none';findResults.style.display=fnd?'':'none';
+ filtersEl.style.display=pooled?'none':'';poolBar.style.display=pooled?'flex':'none';if(pooled)poolN.textContent=state.pool.length;
+ exportWrap.style.display=fnd?'none':'';exportBtn.disabled=(rnd&&!state.drawn.length)||(pal&&!state.palettes.length);
+ [...segs.children].forEach(b=>b.classList.toggle('on',+b.dataset.n===state.palSize));
+ [...harm.children].forEach(b=>b.classList.toggle('on',b.dataset.h===state.harmony));
+ const af=anyFam(),at=anyTone(),as=anySat();
+ if(rnd){const{t,u,left}=counts();fill.style.width=(t?u/t*100:0)+'%';status.innerHTML='<b>'+u+'</b> drawn, <b>'+left+'</b> left in your pool';
+  const bad=pooled?(left===0?'Pool complete':null):(!af?'Turn on a family':!at?'Turn on a tone':!as?'Turn on saturation':left===0?'Pool complete':null);
+  drawBtn.disabled=!!bad||rolling;drawBtn.textContent=bad||'Draw a marker';undoBtn.disabled=state.drawn.length===0;}
+ else if(pal){const bad=pooled?null:(!af?'Turn on a family':!at?'Turn on a tone':!as?'Turn on saturation':null);
+  drawBtn.disabled=!!bad;drawBtn.textContent=bad||'Generate palette';undoBtn.disabled=state.palettes.length===0;}
+ famsEl.innerHTML=families.map(f=>{let cnt=0;for(const i of f.idxs)if(inTone(i)&&inSat(i))cnt++;const off=state.excluded.has(f.name)?1:0;
+  const glow=off?'':';box-shadow:0 0 9px '+rgba(f.repHex,.6);
+  return '<button class="chip" data-fam="'+f.name+'" data-off="'+off+'" data-empty="'+(cnt?0:1)+'" aria-pressed="'+(off?0:1)+'"><span class="dot" style="background:'+f.repHex+glow+'"></span>'+f.name+' <span class="rem">'+cnt+'</span></button>';}).join('');
+ tonesEl.innerHTML=TONE_DEFS.map(td=>{const on=state.tones.has(td.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(TONE[i]!==td.k||state.excluded.has(COLORS[i].fam)||!inSat(i))continue;cnt++;}
+  return '<button class="chip" data-tone="'+td.k+'" data-off="'+(on?0:1)+'" data-empty="'+(cnt?0:1)+'" aria-pressed="'+(on?1:0)+'"><span class="dot" style="background:'+td.d+';box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)"></span>'+td.t+' <span class="rem">'+cnt+'</span></button>';}).join('');
+ satsEl.innerHTML=SAT_DEFS.map(sd=>{const on=state.sats.has(sd.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(SAT[i]!==sd.k||state.excluded.has(COLORS[i].fam)||!inTone(i))continue;cnt++;}
+  return '<button class="chip" data-sat="'+sd.k+'" data-off="'+(on?0:1)+'" data-empty="'+(cnt?0:1)+'" aria-pressed="'+(on?1:0)+'"><span class="dot" style="background:'+sd.d+'"></span>'+sd.t+' <span class="rem">'+cnt+'</span></button>';}).join('');
+ if(rnd){pilen.textContent=state.drawn.length?'('+state.drawn.length+')':'';tiptap.textContent=state.drawn.length?'tap a color to return it':'';
+  if(state.drawn.length){pileEmpty.style.display='none';
+   pile.innerHTML=state.drawn.map(i=>{const c=COLORS[i];return '<div class="cell" data-i="'+i+'" title="'+c.name+' — tap to return"><div class="sq" style="background:'+c.hex+'"></div><div class="cc">'+c.code+'</div></div>';}).join('');
+  }else{pile.innerHTML='';pile.appendChild(pileEmpty);pileEmpty.style.display='';}}
+ if(fnd)renderResults();}
+
+function fullRender(){chrome();
+ if(state.mode==='palette'){const p=state.palettes[state.palettes.length-1];if(p)showPalette(p,false);else clearPalette();}
+ else if(state.mode==='random'){const c=state.drawn[0];if(c!=null)showColor(c,false);else clearColor();}}
+
+let rolling=false;
+function doDraw(){if(rolling)return;disarm();const dn=new Set(state.drawn),pool=[];
+ COLORS.forEach((c,i)=>{if(inPool(i)&&!dn.has(i))pool.push(i);});
+ if(!pool.length)return;const pick=pool[(Math.random()*pool.length)|0];retrigger(drawBtn,'flash');
+ const commit=()=>{state.drawn.unshift(pick);save();showColor(pick,true);chrome();const fc=pile.querySelector('.cell');if(fc&&!reduce)fc.classList.add('in');};
+ if(reduce){commit();return;}
+ rolling=true;drawBtn.disabled=true;code.style.display='none';hint.style.display='none';
+ const delays=[38,42,48,58,72,94,126,170];let i=0;
+ const tick=()=>{swatch.style.background=COLORS[(Math.random()*COLORS.length)|0].hex;i++;
+  if(i>=delays.length-3)buzz(6);if(i<delays.length)setTimeout(tick,delays[i]);else{rolling=false;commit();buzz(32);}};
+ setTimeout(tick,delays[0]);}
+function doGenerate(){if(rolling)return;disarm();const pal=genPalette(state.palSize,state.harmony);if(!pal)return;retrigger(drawBtn,'flash');
+ const commit=()=>{state.palettes.push(pal);if(state.palettes.length>24)state.palettes.shift();save();showPalette(pal,true);chrome();buzz(28);};
+ if(reduce){commit();return;}
+ rolling=true;drawBtn.disabled=true;phint.style.display='none';buildBands(pal.length);const bs=[...bands.querySelectorAll('.band')];
+ let t=0;const max=9;const iv=setInterval(()=>{t++;bs.forEach(b=>b.style.background=COLORS[(Math.random()*COLORS.length)|0].hex);
+  if(t>=max-2)buzz(5);if(t>=max){clearInterval(iv);rolling=false;commit();}},50);}
+
+function action(){state.mode==='palette'?doGenerate():state.mode==='random'?doDraw():0;}
+function undo(){if(rolling)return;if(state.mode==='palette'){if(!state.palettes.length)return;state.palettes.pop();}
+ else if(state.mode==='random'){if(!state.drawn.length)return;state.drawn.shift();}else return;save();fullRender();}
+function regenReplace(){const pal=genPalette(state.palSize,state.harmony);if(pal){if(state.palettes.length)state.palettes.pop();state.palettes.push(pal);save();showPalette(pal,true);}}
+function setSize(n){if(rolling||state.palSize===n)return;state.palSize=n;save();if(state.mode==='palette')regenReplace();chrome();}
+function setHarmony(h){if(rolling||state.harmony===h)return;state.harmony=h;save();if(state.mode==='palette')regenReplace();chrome();}
+function handoff(target){const m=finderMatches();if(!m.length)return;setPool(m);disarm();state.mode=target;save();fullRender();}
+
+if(!reduce){stage.addEventListener('pointermove',e=>{const r=stage.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;stage.classList.add('tilting');
+  stage.style.transform='perspective(1100px) rotateX('+((.5-y)*12).toFixed(2)+'deg) rotateY('+((x-.5)*12).toFixed(2)+'deg)';
+  glare.style.setProperty('--gx',(x*100).toFixed(1)+'%');glare.style.setProperty('--gy',(y*100).toFixed(1)+'%');glare.style.opacity='1';});
+ const rest=()=>{stage.classList.remove('tilting');stage.style.transform='';glare.style.opacity='0';};
+ stage.addEventListener('pointerleave',rest);stage.addEventListener('pointerup',rest);stage.addEventListener('pointercancel',rest);}
+
+let armT=null;
+function disarm(){if(armT){clearTimeout(armT);armT=null;}resetBtn.dataset.arm='0';resetBtn.textContent='Reset';}
+resetBtn.addEventListener('click',()=>{const has=state.mode==='palette'?state.palettes.length:state.drawn.length;if(!has)return;
+ if(resetBtn.dataset.arm==='1'){disarm();if(state.mode==='palette')state.palettes=[];else state.drawn=[];save();fullRender();return;}
+ resetBtn.dataset.arm='1';resetBtn.textContent='Confirm?';armT=setTimeout(disarm,3000);});
+drawBtn.addEventListener('click',action);
+undoBtn.addEventListener('click',undo);
+swatch.addEventListener('click',()=>{if(state.mode==='random'&&!drawBtn.disabled&&!rolling)doDraw();});
+palette.addEventListener('click',()=>{if(state.mode==='palette'&&!drawBtn.disabled&&!rolling)doGenerate();});
+pile.addEventListener('click',e=>{const cell=e.target.closest('.cell');if(!cell)return;const idx=+cell.dataset.i;state.drawn=state.drawn.filter(x=>x!==idx);save();fullRender();});
+results.addEventListener('click',async e=>{const cell=e.target.closest('.cell');if(!cell)return;const c=COLORS[+cell.dataset.i];const ok=await copyText(c.code);flashCopy(ok?'Copied '+c.code:'Copy failed');});
+copyBtn.addEventListener('click',async()=>{const m=finderMatches();if(!m.length){flashCopy('Nothing to copy');return;}const ok=await copyText(m.map(i=>COLORS[i].code).join(', '));flashCopy(ok?'Copied '+m.length:'Copy failed');});
+searchInput.addEventListener('input',()=>{searchStr=(searchInput.value||'').trim().toLowerCase();if(state.mode==='finder')renderResults();});
+toRandom.addEventListener('click',()=>handoff('random'));
+toPalette.addEventListener('click',()=>handoff('palette'));
+poolClear.addEventListener('click',()=>{setPool(null);save();fullRender();});
+exportBtn.addEventListener('click',async()=>{let idxs,sub,fn;
+ if(state.mode==='palette'){const p=state.palettes[state.palettes.length-1];if(!p)return;idxs=p;sub=HARM[state.harmony]+' palette · '+p.length+' colors';fn='ohuhu-palette.png';}
+ else if(state.mode==='random'){if(!state.drawn.length)return;idxs=state.drawn.slice().reverse();sub='Drawn markers · '+idxs.length;fn='ohuhu-drawn.png';}else return;
+ exportBtn.disabled=true;const old=exportBtn.textContent;exportBtn.textContent='Rendering…';
+ try{const url=await makeCard(idxs,state.mode);showOverlay(url,fn);}catch(e){}
+ exportBtn.textContent=old;exportBtn.disabled=false;});
+ovClose.addEventListener('click',closeOverlay);
+imgOverlay.addEventListener('click',e=>{if(e.target===imgOverlay)closeOverlay();});
+segs.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;setSize(+b.dataset.n);});
+harm.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;setHarmony(b.dataset.h);});
+function setMode(m){if(state.mode===m||rolling)return;disarm();state.mode=m;save();fullRender();}
+mRandom.addEventListener('click',()=>setMode('random'));
+mPalette.addEventListener('click',()=>setMode('palette'));
+mFinder.addEventListener('click',()=>setMode('finder'));
+$('all').addEventListener('click',()=>{state.excluded.clear();save();fullRender();});
+$('none').addEventListener('click',()=>{families.forEach(f=>state.excluded.add(f.name));save();fullRender();});
+$('toneAll').addEventListener('click',()=>{state.tones=new Set(TONE_DEFS.map(t=>t.k));save();fullRender();});
+$('toneNone').addEventListener('click',()=>{state.tones=new Set();save();fullRender();});
+$('satAll').addEventListener('click',()=>{state.sats=new Set(SAT_DEFS.map(s=>s.k));save();fullRender();});
+$('satNone').addEventListener('click',()=>{state.sats=new Set();save();fullRender();});
+famsEl.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const f=b.dataset.fam;if(state.excluded.has(f))state.excluded.delete(f);else state.excluded.add(f);save();fullRender();});
+tonesEl.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const k=b.dataset.tone;if(state.tones.has(k))state.tones.delete(k);else state.tones.add(k);save();fullRender();});
+satsEl.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const k=b.dataset.sat;if(state.sats.has(k))state.sats.delete(k);else state.sats.add(k);save();fullRender();});
+
+fullRender();
+</script><script>if('serviceWorker'in navigator){addEventListener('load',function(){navigator.serviceWorker.register('service-worker.js').catch(function(){});});}</script></body></html>
