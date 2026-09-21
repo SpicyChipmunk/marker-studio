@@ -97,7 +97,11 @@ body{min-height:100vh;background:var(--bg);color:var(--ink);
 .readout .name{font-family:"Fraunces",Georgia,serif;font-size:25px;font-weight:500;letter-spacing:-.01em}
 .readout .fam{font-size:12.5px;color:var(--sub);margin-top:2px}
 .readout .hex{font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums;letter-spacing:.04em;white-space:nowrap;text-align:right}
-.actions{display:flex;gap:10px;margin:18px 0 6px}
+.actions{display:flex;gap:10px}
+#primaryRow{margin-top:18px}
+#secondaryRow{margin:10px 0 6px}
+#secondaryRow button{flex:1}
+#swap{padding:0 20px}
 button{font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;border-radius:15px;border:1px solid var(--line);background:var(--glass);color:var(--ink);height:54px;padding:0 18px;-webkit-tap-highlight-color:transparent;transition:transform .06s ease,box-shadow .5s ease,opacity .25s ease,background .25s ease}
 button:active{transform:translateY(1px)}
 button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
@@ -110,9 +114,6 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 #undo:disabled{opacity:.4;cursor:not-allowed}
 #reset[data-arm="1"]{color:#ff6b63;border-color:rgba(255,107,99,.5)}
 #exportWrap{margin:2px 0 6px}
-#redrawWrap{margin:8px 0 0}
-#redraw{width:100%;height:48px;background:var(--glass);color:var(--ink);border:1px solid var(--line);border-radius:13px;font-weight:600}
-#redraw:disabled{opacity:.4;cursor:not-allowed}
 #exportBtn{width:100%;height:48px;background:var(--glass);color:var(--ink);border:1px solid var(--line);border-radius:13px;font-weight:600}
 #exportBtn:disabled{opacity:.4;cursor:not-allowed}
 .rail{height:3px;background:var(--line);border-radius:20px;overflow:hidden;margin:16px 2px 9px}
@@ -180,8 +181,8 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   </div>
  </div>
 
- <div class="actions" id="actions"><button id="draw">Draw a marker</button><button id="undo">Undo</button><button id="reset">Reset</button></div>
- <div id="redrawWrap"><button id="redraw">Re-draw</button></div>
+ <div class="actions" id="primaryRow"><button id="draw">Draw a marker</button><button id="swap">Swap</button></div>
+ <div class="actions" id="secondaryRow"><button id="undo">Remove</button><button id="reset">Reset</button></div>
  <div id="exportWrap"><button id="exportBtn">Save image</button></div>
  <div id="trackWrap"><div class="rail"><div class="rail-fill" id="fill"></div></div><div class="status" id="status"></div></div>
 
@@ -221,10 +222,10 @@ const stage=$('stage'),swatch=$('swatch'),code=$('code'),hint=$('hint'),readout=
  shineEl=swatch.querySelector('.shine'),palette=$('palette'),bands=$('bands'),phint=$('phint'),trackWrap=$('trackWrap'),
  drawnWrap=$('drawnWrap'),mRandom=$('mRandom'),mPalette=$('mPalette'),mFinder=$('mFinder'),sizeWrap=$('sizeWrap'),
  segs=$('segs'),harmWrap=$('harmWrap'),harm=$('harm'),tonesEl=$('tones'),satsEl=$('sats'),hero=$('hero'),
- actions=$('actions'),findWrap=$('findWrap'),searchInput=$('q'),findResults=$('findResults'),results=$('results'),
+ primaryRow=$('primaryRow'),secondaryRow=$('secondaryRow'),findWrap=$('findWrap'),searchInput=$('q'),findResults=$('findResults'),results=$('results'),
  matchn=$('matchn'),copyBtn=$('copyBtn'),filtersEl=$('filters'),findActions=$('findActions'),toRandom=$('toRandom'),
  toPalette=$('toPalette'),poolBar=$('poolBar'),poolN=$('poolN'),poolClear=$('poolClear'),exportWrap=$('exportWrap'),
- exportBtn=$('exportBtn'),redrawWrap=$('redrawWrap'),redrawBtn=$('redraw'),imgOverlay=$('imgOverlay'),cardImg=$('cardImg'),cardCap=$('cardCap'),dlLink=$('dlLink'),
+ exportBtn=$('exportBtn'),swapBtn=$('swap'),imgOverlay=$('imgOverlay'),cardImg=$('cardImg'),cardCap=$('cardCap'),dlLink=$('dlLink'),
  ovClose=$('ovClose'),root=document.documentElement;
 const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
 const buzz=n=>{try{navigator.vibrate&&navigator.vibrate(n);}catch(e){}};
@@ -373,18 +374,17 @@ function closeOverlay(){imgOverlay.classList.remove('on');cardImg.src='';}
 function chrome(){const M=state.mode,rnd=M==='random',pal=M==='palette',fnd=M==='finder';const pooled=!!state.pool&&!fnd;
  mRandom.classList.toggle('on',rnd);mPalette.classList.toggle('on',pal);mFinder.classList.toggle('on',fnd);
  hero.style.display=fnd?'none':'';swatch.style.display=rnd?'':'none';palette.style.display=pal?'':'none';
- actions.style.display=fnd?'none':'flex';trackWrap.style.display=rnd?'':'none';drawnWrap.style.display=rnd?'':'none';
+ primaryRow.style.display=fnd?'none':'flex';secondaryRow.style.display=fnd?'none':'flex';swapBtn.style.display=rnd?'':'none';undoBtn.textContent=rnd?'Remove':'Undo';trackWrap.style.display=rnd?'':'none';drawnWrap.style.display=rnd?'':'none';
  harmWrap.style.display=pal?'flex':'none';sizeWrap.style.display=pal?'flex':'none';
  findWrap.style.display=fnd?'':'none';findActions.style.display=fnd?'flex':'none';findResults.style.display=fnd?'':'none';
  filtersEl.style.display=pooled?'none':'';poolBar.style.display=pooled?'flex':'none';if(pooled)poolN.textContent=state.pool.length;
  exportWrap.style.display=fnd?'none':'';exportBtn.disabled=(rnd&&!state.drawn.length)||(pal&&!state.palettes.length);
- redrawWrap.style.display=rnd?'':'none';
  [...segs.children].forEach(b=>b.classList.toggle('on',+b.dataset.n===state.palSize));
  [...harm.children].forEach(b=>b.classList.toggle('on',b.dataset.h===state.harmony));
  const af=anyFam(),at=anyTone(),as=anySat();
  if(rnd){const{t,u,left}=counts();fill.style.width=(t?u/t*100:0)+'%';status.innerHTML='<b>'+u+'</b> drawn, <b>'+left+'</b> left in your pool';
   const bad=pooled?(left===0?'Pool complete':null):(!af?'Turn on a family':!at?'Turn on a tone':!as?'Turn on saturation':left===0?'Pool complete':null);
-  drawBtn.disabled=!!bad||rolling;drawBtn.textContent=bad||'Draw a marker';undoBtn.disabled=state.drawn.length===0;redrawBtn.disabled=state.drawn.length===0||left===0||rolling;}
+  drawBtn.disabled=!!bad||rolling;drawBtn.textContent=bad||'Draw a marker';undoBtn.disabled=state.drawn.length===0;swapBtn.disabled=state.drawn.length===0||left===0||rolling;}
  else if(pal){const bad=pooled?null:(!af?'Turn on a family':!at?'Turn on a tone':!as?'Turn on saturation':null);
   drawBtn.disabled=!!bad;drawBtn.textContent=bad||'Generate palette';undoBtn.disabled=state.palettes.length===0;}
  famsEl.innerHTML=families.map(f=>{let cnt=0;for(const i of f.idxs)if(inTone(i)&&inSat(i))cnt++;const off=state.excluded.has(f.name)?1:0;
@@ -421,7 +421,7 @@ function doReDraw(){if(rolling||state.mode!=='random'||!state.drawn.length)retur
  if(!pool.length)return;const pick=pool[(Math.random()*pool.length)|0];retrigger(drawBtn,'flash');
  const commit=()=>{state.drawn[0]=pick;save();showColor(pick,true);chrome();const fc=pile.querySelector('.cell');if(fc&&!reduce)fc.classList.add('in');};
  if(reduce){commit();return;}
- rolling=true;drawBtn.disabled=true;redrawBtn.disabled=true;undoBtn.disabled=true;code.style.display='none';
+ rolling=true;drawBtn.disabled=true;swapBtn.disabled=true;undoBtn.disabled=true;code.style.display='none';
  const delays=[38,42,48,58,72,94,126,170];let i=0;
  const tick=()=>{swatch.style.background=COLORS[(Math.random()*COLORS.length)|0].hex;i++;
   if(i>=delays.length-3)buzz(6);if(i<delays.length)setTimeout(tick,delays[i]);else{rolling=false;commit();buzz(32);}};
@@ -474,7 +474,7 @@ resetBtn.addEventListener('click',()=>{const has=state.mode==='palette'?state.pa
  if(resetBtn.dataset.arm==='1'){disarm();if(state.mode==='palette')state.palettes=[];else state.drawn=[];save();fullRender();return;}
  resetBtn.dataset.arm='1';resetBtn.textContent='Confirm?';armT=setTimeout(disarm,3000);});
 drawBtn.addEventListener('click',action);
-redrawBtn.addEventListener('click',doReDraw);
+swapBtn.addEventListener('click',doReDraw);
 undoBtn.addEventListener('click',undo);
 swatch.addEventListener('click',()=>{if(state.mode==='random'&&!drawBtn.disabled&&!rolling)doDraw();});
 palette.addEventListener('click',e=>{if(state.mode!=='palette'||rolling)return;const b=e.target.closest('.band');
