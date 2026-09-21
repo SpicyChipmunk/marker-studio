@@ -238,7 +238,9 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   <div class="ocap" style="max-width:none;text-align:left;margin:0 0 10px" id="backupCap">Copy this text and keep it somewhere safe. To restore, paste a backup here and tap Restore.</div>
   <textarea id="backupText" spellcheck="false" style="width:100%;height:130px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--glass);color:var(--ink);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize:none"></textarea>
  </div>
- <div class="orow"><button id="backupCopy">Copy</button><button id="backupRestore">Restore</button><button id="backupClose">Close</button></div>
+ <input type="file" id="backupFile" accept=".txt,application/json,text/plain" style="display:none">
+ <div class="orow"><button id="backupDownload">Download .txt</button><button id="backupImport">Import file</button><button id="backupCopy">Copy</button></div>
+ <div class="orow"><button id="backupRestore">Restore</button><button id="backupClose">Close</button></div>
 </div></div>
 
 <script>
@@ -255,6 +257,7 @@ const stage=$('stage'),swatch=$('swatch'),code=$('code'),hint=$('hint'),readout=
  ownWrap=$('ownWrap'),ownTools=$('ownTools'),ownView=$('ownView'),ownAllBtn=$('ownAll'),ownNoneBtn=$('ownNone'),unownWrap=$('unownWrap'),
  backupBtn=$('backupBtn'),backupOverlay=$('backupOverlay'),backupText=$('backupText'),backupCopy=$('backupCopy'),
  backupRestore=$('backupRestore'),backupClose=$('backupClose'),backupCap=$('backupCap'),ownHint=$('ownHint'),
+ backupDownload=$('backupDownload'),backupImport=$('backupImport'),backupFile=$('backupFile'),
  primaryRow=$('primaryRow'),secondaryRow=$('secondaryRow'),findWrap=$('findWrap'),searchInput=$('q'),findResults=$('findResults'),results=$('results'),
  matchn=$('matchn'),copyBtn=$('copyBtn'),filtersEl=$('filters'),findActions=$('findActions'),toRandom=$('toRandom'),
  toPalette=$('toPalette'),poolBar=$('poolBar'),poolN=$('poolN'),poolClear=$('poolClear'),exportWrap=$('exportWrap'),
@@ -442,14 +445,15 @@ function chrome(){const M=state.mode,rnd=M==='random',pal=M==='palette',fnd=M===
   drawBtn.disabled=!!bad||rolling;drawBtn.textContent=bad||'Draw a marker';undoBtn.disabled=state.drawn.length===0;swapBtn.disabled=state.drawn.length===0||left===0||rolling;}
  else if(pal){const bad=pooled?null:(!af?'Turn on a family':!at?'Turn on a tone':!as?'Turn on saturation':!ab?'Turn on a brand':null);
   drawBtn.disabled=!!bad;drawBtn.textContent=bad||'Generate palette';undoBtn.disabled=state.palettes.length===0;}
- brandsEl.innerHTML=BRAND_DEFS.map(bd=>{const on=state.brands.has(bd.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(COLORS[i].brand!==bd.k||state.excluded.has(COLORS[i].fam)||!inTone(i)||!inSat(i))continue;cnt++;}
+ const ownCount=(rnd||pal)||(fnd&&state.finderScope==='owned')||(col&&state.collView==='owned');
+ brandsEl.innerHTML=BRAND_DEFS.map(bd=>{const on=state.brands.has(bd.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(COLORS[i].brand!==bd.k||state.excluded.has(COLORS[i].fam)||!inTone(i)||!inSat(i)||(ownCount&&!isOwned(i)))continue;cnt++;}
   return '<button class="chip" data-brand="'+bd.k+'" data-off="'+(on?0:1)+'" data-empty="'+(cnt?0:1)+'" aria-pressed="'+(on?1:0)+'">'+bd.t+' <span class="rem">'+cnt+'</span></button>';}).join('');
- famsEl.innerHTML=families.map(f=>{let cnt=0;for(const i of f.idxs)if(inTone(i)&&inSat(i)&&inBrand(i))cnt++;const off=state.excluded.has(f.name)?1:0;
+ famsEl.innerHTML=families.map(f=>{let cnt=0;for(const i of f.idxs)if(inTone(i)&&inSat(i)&&inBrand(i)&&(!ownCount||isOwned(i)))cnt++;const off=state.excluded.has(f.name)?1:0;
   const glow=off?'':';box-shadow:0 0 9px '+rgba(f.repHex,.6);
   return '<button class="chip" data-fam="'+f.name+'" data-off="'+off+'" data-empty="'+(cnt?0:1)+'" aria-pressed="'+(off?0:1)+'"><span class="dot" style="background:'+f.repHex+glow+'"></span>'+f.name+' <span class="rem">'+cnt+'</span></button>';}).join('');
- tonesEl.innerHTML=TONE_DEFS.map(td=>{const on=state.tones.has(td.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(TONE[i]!==td.k||state.excluded.has(COLORS[i].fam)||!inSat(i)||!inBrand(i))continue;cnt++;}
+ tonesEl.innerHTML=TONE_DEFS.map(td=>{const on=state.tones.has(td.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(TONE[i]!==td.k||state.excluded.has(COLORS[i].fam)||!inSat(i)||!inBrand(i)||(ownCount&&!isOwned(i)))continue;cnt++;}
   return '<button class="chip" data-tone="'+td.k+'" data-off="'+(on?0:1)+'" data-empty="'+(cnt?0:1)+'" aria-pressed="'+(on?1:0)+'"><span class="dot" style="background:'+td.d+';box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)"></span>'+td.t+' <span class="rem">'+cnt+'</span></button>';}).join('');
- satsEl.innerHTML=SAT_DEFS.map(sd=>{const on=state.sats.has(sd.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(SAT[i]!==sd.k||state.excluded.has(COLORS[i].fam)||!inTone(i)||!inBrand(i))continue;cnt++;}
+ satsEl.innerHTML=SAT_DEFS.map(sd=>{const on=state.sats.has(sd.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(SAT[i]!==sd.k||state.excluded.has(COLORS[i].fam)||!inTone(i)||!inBrand(i)||(ownCount&&!isOwned(i)))continue;cnt++;}
   return '<button class="chip" data-sat="'+sd.k+'" data-off="'+(on?0:1)+'" data-empty="'+(cnt?0:1)+'" aria-pressed="'+(on?1:0)+'"><span class="dot" style="background:'+sd.d+'"></span>'+sd.t+' <span class="rem">'+cnt+'</span></button>';}).join('');
  if(rnd){pilen.textContent=state.drawn.length?'('+state.drawn.length+')':'';tiptap.textContent=state.drawn.length?'tap a color to return it':'';
   if(state.drawn.length){pileEmpty.style.display='none';
@@ -592,6 +596,9 @@ backupBtn.addEventListener('click',openBackup);
 backupClose.addEventListener('click',()=>backupOverlay.classList.remove('on'));
 backupOverlay.addEventListener('click',e=>{if(e.target===backupOverlay)backupOverlay.classList.remove('on');});
 backupCopy.addEventListener('click',async()=>{const ok=await copyText(backupText.value);backupCap.textContent=ok?'Copied to clipboard.':'Could not copy — select the text and copy manually.';});
+backupDownload.addEventListener('click',()=>{try{const blob=new Blob([backupText.value],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='marker-collection-backup.txt';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);backupCap.textContent='Saved marker-collection-backup.txt to your device.';}catch(e){backupCap.textContent='Download was blocked here — use Copy instead, or try from the installed app.';}});
+backupImport.addEventListener('click',()=>backupFile.click());
+backupFile.addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{backupText.value=(r.result||'').toString();backupCap.textContent='Loaded from file — tap Restore to apply.';};r.onerror=()=>{backupCap.textContent='Could not read that file.';};r.readAsText(f);backupFile.value='';});
 backupRestore.addEventListener('click',()=>{try{const o=JSON.parse(backupText.value.trim());const arr=Array.isArray(o)?o:(o&&Array.isArray(o.owned)?o.owned:null);if(!arr)throw 0;const valid=new Set(COLORS.map(c=>c.brand+'|'+c.code));state.owned=new Set(arr.filter(k=>valid.has(k)));save();backupOverlay.classList.remove('on');fullRender();}catch(e){backupCap.textContent='That does not look like a valid backup. Paste the full text you copied.';}});
 
 fullRender();
