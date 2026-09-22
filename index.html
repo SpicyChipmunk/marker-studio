@@ -108,6 +108,7 @@ body{min-height:100vh;background:var(--bg);color:var(--ink);
 @keyframes rpop{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 .readout .name{font-family:"Fraunces",Georgia,serif;font-size:25px;font-weight:500;letter-spacing:-.01em}
 .readout .fam{font-size:12.5px;color:var(--sub);margin-top:2px}
+.readout .ts{font-size:11.5px;color:var(--sub);opacity:.8;margin-top:2px;letter-spacing:.02em}
 .readout .hex{font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums;letter-spacing:.04em;white-space:nowrap;text-align:right}
 .actions{display:flex;gap:10px}
 #primaryRow{margin-top:18px}
@@ -136,6 +137,18 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .status b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
 .fam-head{display:flex;justify-content:space-between;align-items:center;margin:22px 2px 13px}
 .fam-head .lbl{font-family:"Fraunces",Georgia,serif;font-size:16px;font-weight:500}
+.filterbar{display:flex;align-items:center;gap:10px;margin:22px 2px 12px;padding:12px 15px;border:1px solid var(--line);border-radius:14px;background:var(--glass);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;transition:border-color .2s ease}
+.filterbar:hover{border-color:rgba(255,255,255,.18)}
+.filterbar .fb-label{font-family:"Fraunces",Georgia,serif;font-size:15px;font-weight:500;color:var(--ink)}
+.filterbar .fb-sum{flex:1;font-size:12.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.filterbar .fb-chev{display:flex;color:var(--sub);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.filterbar.open .fb-chev{transform:rotate(180deg)}
+#filters{animation:fdrop .28s ease}
+@keyframes fdrop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+#filters .fam-head:first-child{margin-top:10px}
+@keyframes swapfade{from{opacity:.3;transform:translateY(5px)}to{opacity:1;transform:none}}
+.swap{animation:swapfade .32s cubic-bezier(.2,.8,.2,1)}
+.hint,.phint{background:radial-gradient(130% 90% at 50% 38%,rgba(255,255,255,.06),rgba(255,255,255,0) 62%)}
 .quick{display:flex;gap:5px}
 .quick button{height:33px;padding:0 13px;font-size:13px;border-radius:10px;font-weight:500}
 .fams{display:flex;flex-wrap:wrap;gap:8px}
@@ -173,7 +186,7 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .ocap{color:var(--ink);font-size:13.5px;text-align:center;opacity:.85;max-width:340px}
 .orow{display:flex;gap:10px}
 .orow a,.orow button{height:46px;padding:0 18px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-family:inherit;font-weight:600;font-size:14px;border:1px solid var(--line);background:var(--glass);color:var(--ink);cursor:pointer}
-@media(prefers-reduced-motion:reduce){.sheen,.halo,.stage,.cell.in,.shine,.code.pop,.readout.pop,.band.bin,.ghmark,.rgroup,#draw::before{animation:none!important}.stage{transition:none!important}}
+@media(prefers-reduced-motion:reduce){.sheen,.halo,.stage,.cell.in,.shine,.code.pop,.readout.pop,.band.bin,.ghmark,.rgroup,#filters,.swap,#draw::before{animation:none!important}.stage{transition:none!important}}
 </style></head><body>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap">
@@ -189,7 +202,7 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
  <div class="optrow" id="scopeWrap" style="display:none"><span class="szlbl">Search</span>
   <div class="segs wide" id="findScope"><button data-s="owned">Owned</button><button data-s="all">Catalog</button></div></div>
  <div class="optrow" id="ownWrap" style="display:none"><span class="szlbl">Show</span>
-  <div class="segs wide" id="ownView"><button data-v="owned">Owned</button><button data-v="all">All</button></div></div>
+  <div class="segs wide" id="ownView"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button></div></div>
  <div class="findactions" id="ownTools" style="display:none"><button id="ownAll">Own all shown</button><button id="backupBtn">Back up</button></div>
  <div id="ownHint" style="display:none;margin:0 2px 14px;font-size:12.5px;color:var(--sub)"></div>
  <div class="findactions" id="findActions"><button id="toRandom">Draw from these</button><button id="toPalette">Palette from these</button></div>
@@ -212,6 +225,7 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
  <div id="exportWrap"><button id="exportBtn">Save image</button></div>
  <div id="trackWrap"><div class="rail"><div class="rail-fill" id="fill"></div></div><div class="status" id="status"></div></div>
 
+ <div id="filterBar" class="filterbar"><span class="fb-label">Filters</span><span class="fb-sum" id="filterSum"></span><span class="fb-chev" id="filterChev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"></path></svg></span></div>
  <div id="filters">
   <div class="fam-head"><span class="lbl">Brand</span><span class="quick"><button id="brandAll">All</button><button id="brandNone">None</button></span></div>
   <div class="fams" id="brands"></div>
@@ -219,7 +233,7 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   <div class="fams" id="tones"></div>
   <div class="fam-head"><span class="lbl">Saturation</span><span class="quick"><button id="satAll">All</button><button id="satNone">None</button></span></div>
   <div class="fams" id="sats"></div>
-  <div class="fam-head"><span class="lbl">Families</span><span class="quick"><button id="all">All</button><button id="none">None</button></span></div>
+  <div class="fam-head"><span class="lbl">Families</span><span class="quick"><button id="famWarm">Warm</button><button id="famCool">Cool</button><button id="all">All</button><button id="none">None</button></span></div>
   <div class="fams" id="fams"></div>
  </div>
 
@@ -278,7 +292,7 @@ const stage=$('stage'),swatch=$('swatch'),code=$('code'),hint=$('hint'),readout=
  backupDownload=$('backupDownload'),backupImport=$('backupImport'),backupFile=$('backupFile'),
  seedWrap=$('seedWrap'),seedBtn=$('seedBtn'),seedOverlay=$('seedOverlay'),seedSearch=$('seedSearch'),seedGrid=$('seedGrid'),seedRandom=$('seedRandom'),seedClose=$('seedClose'),
  primaryRow=$('primaryRow'),secondaryRow=$('secondaryRow'),findWrap=$('findWrap'),searchInput=$('q'),findResults=$('findResults'),results=$('results'),
- matchn=$('matchn'),copyBtn=$('copyBtn'),filtersEl=$('filters'),findActions=$('findActions'),toRandom=$('toRandom'),
+ matchn=$('matchn'),copyBtn=$('copyBtn'),filtersEl=$('filters'),filterBar=$('filterBar'),filterSum=$('filterSum'),findActions=$('findActions'),toRandom=$('toRandom'),
  toPalette=$('toPalette'),poolBar=$('poolBar'),poolN=$('poolN'),poolClear=$('poolClear'),exportWrap=$('exportWrap'),
  exportBtn=$('exportBtn'),swapBtn=$('swap'),poolGrid=$('poolGrid'),pooln=$('pooln'),imgOverlay=$('imgOverlay'),cardImg=$('cardImg'),cardCap=$('cardCap'),dlLink=$('dlLink'),
  ovClose=$('ovClose'),root=document.documentElement;
@@ -292,10 +306,10 @@ function hsl(hex){const[R,G,B]=rgb(hex),r=R/255,g=G/255,b=B/255,mx=Math.max(r,g,
  let s=0,hu=0;if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);
   hu=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;hu*=60;}return{h:hu,s,l,c:mx-mn};}
 const HS=COLORS.map(c=>hsl(c.hex));
-const TONE=HS.map(o=>o.l>=.80?'pale':o.l>=.62?'light':o.l>=.46?'mid':'dark');
+const TONE=HS.map(o=>o.l>=.80?'pale':o.l>=.62?'light':o.l>=.49?'mid':'dark');
 const TONE_DEFS=[{k:'pale',t:'Pale',d:'#f0efe9'},{k:'light',t:'Light',d:'#cfccc3'},{k:'mid',t:'Mid',d:'#8b8880'},{k:'dark',t:'Dark',d:'#2c2b30'}];
-const SAT=HS.map(o=>o.c<.18?'muted':o.c<.42?'medium':'vivid');
-const SAT_DEFS=[{k:'muted',t:'Muted',d:'#7f8a90'},{k:'medium',t:'Medium',d:'#4f9dc4'},{k:'vivid',t:'Vivid',d:'#0e8fd6'}];
+const SAT=HS.map(o=>o.c<.125?'neutral':o.c<.26?'muted':o.c<.42?'medium':'vivid');
+const SAT_DEFS=[{k:'neutral',t:'Neutral',d:'#8c8c8f'},{k:'muted',t:'Muted',d:'#6f8a99'},{k:'medium',t:'Medium',d:'#3f9dc4'},{k:'vivid',t:'Vivid',d:'#0e8fd6'}];
 const BRAND_DEFS=[{k:'Ohuhu',t:'Ohuhu'},{k:'Copic',t:'Copic'}];
 function hueDist(a,b){const d=Math.abs(a-b)%360;return Math.min(d,360-d);}
 
@@ -310,7 +324,8 @@ families.sort((a,b)=>{const ia=FAM_ORDER.indexOf(a.name),ib=FAM_ORDER.indexOf(b.
 let state=load();
 if(!state.palSize)state.palSize=4;if(!state.harmony)state.harmony='complementary';
 {const R=HARM_RANGE[state.harmony]||[2,6];state.palSize=Math.max(R[0],Math.min(R[1],state.palSize));}
-if(!state.tones)state.tones=new Set(['pale','light','mid','dark']);if(!state.sats)state.sats=new Set(['muted','medium','vivid']);
+if(!state.tones)state.tones=new Set(['pale','light','mid','dark']);if(!state.sats)state.sats=new Set(['neutral','muted','medium','vivid']);
+if(!state.satsUpgraded){state.sats=new Set(['neutral','muted','medium','vivid']);state.satsUpgraded=true;}
 if(!['random','palette','finder','collection'].includes(state.mode))state.mode='random';
 if(!Array.isArray(state.pool))state.pool=null;
 state.brands=Array.isArray(state.brands)?new Set(state.brands.filter(b=>b==='Ohuhu'||b==='Copic')):new Set(['Ohuhu','Copic']);
@@ -318,19 +333,20 @@ if(!state.brands.size)state.brands=new Set(['Ohuhu','Copic']);
 const EXTRA_OHUHU=new Set(["B04","BV18","BV39","BV45","BV515","E47","E49","E513","E514","E59","E612","E615","E66","E711","E75","E81","E814","G48","R12","R14","RV02","RV07","RV32","V016","Y110","Y210","Y212","Y43","Y48","Y56","YG35","YR01","YR02","YR05","YR09","YR214","YR25","YR29","YR37","YR38","YR54"]);
 const defaultOwned=()=>new Set(COLORS.filter(c=>c.brand==='Ohuhu'&&!EXTRA_OHUHU.has(c.code)).map(c=>c.brand+'|'+c.code));
 state.owned=(Array.isArray(state.owned)&&state.owned.length)?new Set(state.owned):defaultOwned();
-if(!['owned','all'].includes(state.collView))state.collView='owned';
+if(!['owned','unowned','all'].includes(state.collView))state.collView='owned';
+if(typeof state.filtersOpen!=='boolean')state.filtersOpen=false;
 if(!state.scopeFlipped){state.finderScope='owned';state.scopeFlipped=true;}
 if(!['all','owned'].includes(state.finderScope))state.finderScope='owned';
 if(state.seed===undefined)state.seed=null;
 if(!Array.isArray(state.locked))state.locked=[];
 let poolSet=state.pool?new Set(state.pool):null;
 let searchStr='';
-function load(){const TK=['pale','light','mid','dark'],SK=['muted','medium','vivid'];
+function load(){const TK=['pale','light','mid','dark'],SK=['neutral','muted','medium','vivid'];
  const mk=(a,v)=>{const f=Array.isArray(a)?a.filter(k=>v.includes(k)):null;return new Set(f&&f.length===a.length&&f.length?f:v);};
- try{const v=JSON.parse(localStorage.getItem(KEY));if(v)return{mode:v.mode||'random',palSize:v.palSize||4,harmony:v.harmony||'complementary',tones:mk(v.tones,TK),sats:mk(v.sats,SK),drawn:v.drawn||[],excluded:new Set(v.excluded||[]),palettes:v.palettes||[],pool:Array.isArray(v.pool)?v.pool:null,brands:Array.isArray(v.brands)?v.brands:null,owned:Array.isArray(v.owned)?v.owned:null,collView:v.collView||v.finderView||null,finderScope:v.finderScope||null,scopeFlipped:!!v.scopeFlipped,seed:v.seed||null,locked:Array.isArray(v.locked)?v.locked:null};}catch(e){}
+ try{const v=JSON.parse(localStorage.getItem(KEY));if(v)return{mode:v.mode||'random',palSize:v.palSize||4,harmony:v.harmony||'complementary',tones:mk(v.tones,TK),sats:mk(v.sats,SK),drawn:v.drawn||[],excluded:new Set(v.excluded||[]),palettes:v.palettes||[],pool:Array.isArray(v.pool)?v.pool:null,brands:Array.isArray(v.brands)?v.brands:null,owned:Array.isArray(v.owned)?v.owned:null,collView:v.collView||v.finderView||null,finderScope:v.finderScope||null,scopeFlipped:!!v.scopeFlipped,satsUpgraded:!!v.satsUpgraded,seed:v.seed||null,locked:Array.isArray(v.locked)?v.locked:null,filtersOpen:!!v.filtersOpen};}catch(e){}
  try{const o=JSON.parse(localStorage.getItem(OLD));if(o&&Array.isArray(o.drawn))return{mode:'random',palSize:4,harmony:'complementary',tones:new Set(TK),sats:new Set(SK),drawn:o.drawn,excluded:new Set(o.excluded||[]),palettes:[],pool:null};}catch(e){}
  return{mode:'random',palSize:4,harmony:'complementary',tones:new Set(TK),sats:new Set(SK),drawn:[],excluded:new Set(),palettes:[],pool:null};}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({mode:state.mode,palSize:state.palSize,harmony:state.harmony,tones:[...state.tones],sats:[...state.sats],drawn:state.drawn,excluded:[...state.excluded],palettes:state.palettes,pool:state.pool,brands:[...state.brands],owned:[...state.owned],collView:state.collView,finderScope:state.finderScope,scopeFlipped:state.scopeFlipped,seed:state.seed,locked:state.locked}));}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({mode:state.mode,palSize:state.palSize,harmony:state.harmony,tones:[...state.tones],sats:[...state.sats],drawn:state.drawn,excluded:[...state.excluded],palettes:state.palettes,pool:state.pool,brands:[...state.brands],owned:[...state.owned],collView:state.collView,finderScope:state.finderScope,scopeFlipped:state.scopeFlipped,satsUpgraded:state.satsUpgraded,seed:state.seed,locked:state.locked,filtersOpen:state.filtersOpen}));}catch(e){}}
 function inTone(i){return state.tones.has(TONE[i]);}
 function inSat(i){return state.sats.has(SAT[i]);}
 const mkey=i=>COLORS[i].brand+'|'+COLORS[i].code;
@@ -359,7 +375,8 @@ function flood(hex){if(reduce){swatch.style.background=hex;return;}
 function showColor(idx,animate){const c=COLORS[idx];hint.style.display='none';code.style.display='';code.style.color=txt(c.hex);
  if(animate){flood(c.hex);code.textContent=c.code;retrigger(code,'pop');pulse();shine();}else{swatch.style.background=c.hex;code.textContent=c.code;}
  const old=c.old&&c.old!==c.code?' — was '+c.old:'';
- readout.innerHTML='<div><div class="name">'+c.name+'</div><div class="fam">'+c.brand+' · '+c.fam+old+'</div></div><div class="hex">'+c.hex.toUpperCase()+'</div>';
+ const tl=(TONE_DEFS.find(t=>t.k===TONE[idx])||{}).t||'',sl=(SAT_DEFS.find(s=>s.k===SAT[idx])||{}).t||'';
+ readout.innerHTML='<div><div class="name">'+c.name+'</div><div class="fam">'+c.brand+' · '+c.fam+old+'</div><div class="ts">'+tl+' · '+sl+'</div></div><div class="hex">'+c.hex.toUpperCase()+'</div>';
  if(animate)retrigger(readout,'pop');setAmb(c.hex);}
 function clearColor(){code.style.display='none';hint.style.display='';swatch.style.background='#1a1a20';readout.innerHTML='';setAmb(null);}
 
@@ -410,10 +427,10 @@ function showPalette(pal,animate){phint.style.display='none';buildBands(pal.leng
  if(animate)retrigger(readout,'pop');setAmb(base.hex);}
 function clearPalette(){phint.style.display='';bands.innerHTML='';readout.innerHTML='';setAmb(null);}
 
-function finderMatches(){const ownedOnly=state.mode==='collection'?state.collView==='owned':state.finderScope==='owned';
- const out=[];for(let i=0;i<COLORS.length;i++){if(!avail(i))continue;if(ownedOnly&&!isOwned(i))continue;out.push(i);}return out;}
+function finderMatches(){const view=state.mode==='collection'?state.collView:(state.finderScope==='owned'?'owned':'all');
+ const out=[];for(let i=0;i<COLORS.length;i++){if(!avail(i))continue;if(view==='owned'&&!isOwned(i))continue;if(view==='unowned'&&isOwned(i))continue;out.push(i);}return out;}
 function cellHtml(i){const c=COLORS[i];const col=state.mode==='collection';const own=isOwned(i);const old=c.old&&c.old!==c.code?' · old '+c.old:'';
- const cls='cell'+(col&&!own?' notown':'');const check=(col&&own)?'<span class="owncheck">\u2713</span>':'';
+ const cls='cell'+((col&&!own&&state.collView!=='unowned')?' notown':'');const check=(col&&own)?'<span class="owncheck">\u2713</span>':'';
  const act=col?(own?'remove':'add'):'copy';
  return '<div class="'+cls+'" data-i="'+i+'" title="'+c.brand+' '+c.code+' · '+c.name+old+' · tap to '+act+'">'+check+'<span class="bt">'+c.brand[0]+'</span><div class="sq" style="background:'+c.hex+'"></div><div class="cc">'+c.code+'</div></div>';}
 let armRemoveIdx=null,armRemoveT=null;
@@ -468,6 +485,13 @@ function showOverlay(url,fname){cardImg.src=url;dlLink.href=url;dlLink.download=
 function closeOverlay(){imgOverlay.classList.remove('on');cardImg.src='';}
 
 /* chrome */
+function filterSummary(){const parts=[];
+ if(state.brands.size<BRAND_DEFS.length)parts.push([...state.brands].join(', ')||'no brand');
+ const onF=families.filter(f=>!state.excluded.has(f.name));
+ if(onF.length<families.length)parts.push(onF.length===0?'no family':onF.length<=3?onF.map(f=>f.name.replace(' / ',' ')).join(', '):onF.length+' families');
+ if(state.tones.size<TONE_DEFS.length)parts.push(TONE_DEFS.filter(t=>state.tones.has(t.k)).map(t=>t.t).join(', ')||'no tone');
+ if(state.sats.size<SAT_DEFS.length)parts.push(SAT_DEFS.filter(s=>state.sats.has(s.k)).map(s=>s.t).join(', ')||'no saturation');
+ return parts.length?parts.join(' · '):'All markers';}
 function chrome(){const M=state.mode,rnd=M==='random',pal=M==='palette',fnd=M==='finder',col=M==='collection',browse=fnd||col;const pooled=!!state.pool&&!browse;
  mRandom.classList.toggle('on',rnd);mPalette.classList.toggle('on',pal);mFinder.classList.toggle('on',fnd);mCollection.classList.toggle('on',col);
  hero.style.display=browse?'none':'';swatch.style.display=rnd?'':'none';palette.style.display=pal?'':'none';
@@ -476,9 +500,9 @@ function chrome(){const M=state.mode,rnd=M==='random',pal=M==='palette',fnd=M===
  if(pal){const si=keyIdx(state.seed);seedBtn.innerHTML=si!=null?COLORS[si].brand+' '+COLORS[si].code+' <span class="sx">✕</span>':'Random base';}
  findWrap.style.display=browse?'':'none';findResults.style.display=browse?'':'none';
  scopeWrap.style.display=fnd?'flex':'none';findActions.style.display=fnd?'flex':'none';[...findScope.children].forEach(b=>b.classList.toggle('on',b.dataset.s===state.finderScope));
- ownWrap.style.display=col?'flex':'none';ownTools.style.display=col?'flex':'none';unownWrap.style.display=col?'flex':'none';[...ownView.children].forEach(b=>b.classList.toggle('on',b.dataset.v===state.collView));
- ownHint.style.display=col?'':'none';if(col)ownHint.textContent=state.collView==='all'?'Tap to add. Tap an owned swatch twice to remove. Narrow with filters, then “Own all shown”.':'Your collection. Tap a swatch twice to remove it, or switch to All to add more.';
- filtersEl.style.display=pooled?'none':'';poolBar.style.display=pooled?'flex':'none';if(pooled)poolN.textContent=state.pool.length;
+ ownWrap.style.display=col?'flex':'none';ownTools.style.display=col?'flex':'none';unownWrap.style.display=(col&&state.collView!=='unowned')?'flex':'none';[...ownView.children].forEach(b=>b.classList.toggle('on',b.dataset.v===state.collView));
+ ownHint.style.display=col?'':'none';if(col)ownHint.textContent=state.collView==='unowned'?'Markers you don’t own yet — the gaps in your collection. Tap to add as you buy them.':state.collView==='all'?'Tap to add. Tap an owned swatch twice to remove. Narrow with filters, then “Own all shown”.':'Your collection. Tap a swatch twice to remove it, or switch to All to add more.';
+ filterBar.style.display=pooled?'none':'';filtersEl.style.display=(pooled||!state.filtersOpen)?'none':'';filterBar.classList.toggle('open',state.filtersOpen&&!pooled);filterSum.textContent=filterSummary();poolBar.style.display=pooled?'flex':'none';if(pooled)poolN.textContent=state.pool.length;
  exportWrap.style.display=fnd?'none':'';exportBtn.disabled=(rnd&&!state.drawn.length)||(pal&&!state.palettes.length);
  {const R=HARM_RANGE[state.harmony]||[2,6];[...segs.children].forEach(b=>{const n=+b.dataset.n;const okn=n>=R[0]&&n<=R[1];b.disabled=!okn;b.classList.toggle('on',okn&&n===state.palSize);});}
  [...harm.children].forEach(b=>b.classList.toggle('on',b.dataset.h===state.harmony));
@@ -488,15 +512,15 @@ function chrome(){const M=state.mode,rnd=M==='random',pal=M==='palette',fnd=M===
   drawBtn.disabled=!!bad||rolling;drawBtn.textContent=bad||'Draw a marker';undoBtn.disabled=state.drawn.length===0;swapBtn.disabled=state.drawn.length===0||left===0||rolling;}
  else if(pal){const bad=pooled?null:(!af?'Turn on a family':!at?'Turn on a tone':!as?'Turn on saturation':!ab?'Turn on a brand':null);
   drawBtn.disabled=!!bad;drawBtn.textContent=bad||'Generate palette';undoBtn.disabled=state.palettes.length===0;}
- const ownCount=(rnd||pal)||(fnd&&state.finderScope==='owned')||(col&&state.collView==='owned');
- brandsEl.innerHTML=BRAND_DEFS.map(bd=>{const on=state.brands.has(bd.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(COLORS[i].brand!==bd.k||state.excluded.has(COLORS[i].fam)||!inTone(i)||!inSat(i)||(ownCount&&!isOwned(i)))continue;cnt++;}
+ const countView=(rnd||pal)?'owned':fnd?(state.finderScope==='owned'?'owned':'all'):col?state.collView:'all';const passOwn=i=>countView==='owned'?isOwned(i):countView==='unowned'?!isOwned(i):true;
+ brandsEl.innerHTML=BRAND_DEFS.map(bd=>{const on=state.brands.has(bd.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(COLORS[i].brand!==bd.k||state.excluded.has(COLORS[i].fam)||!inTone(i)||!inSat(i)||!passOwn(i))continue;cnt++;}
   return '<button class="chip" data-brand="'+bd.k+'" data-off="'+(on?0:1)+'" data-empty="'+(cnt?0:1)+'" aria-pressed="'+(on?1:0)+'">'+bd.t+' <span class="rem">'+cnt+'</span></button>';}).join('');
- famsEl.innerHTML=families.map(f=>{let cnt=0;for(const i of f.idxs)if(inTone(i)&&inSat(i)&&inBrand(i)&&(!ownCount||isOwned(i)))cnt++;const off=state.excluded.has(f.name)?1:0;
+ famsEl.innerHTML=families.map(f=>{let cnt=0;for(const i of f.idxs)if(inTone(i)&&inSat(i)&&inBrand(i)&&passOwn(i))cnt++;const off=state.excluded.has(f.name)?1:0;
   const glow=off?'':';box-shadow:0 0 9px '+rgba(f.repHex,.6);
   return '<button class="chip" data-fam="'+f.name+'" data-off="'+off+'" data-empty="'+(cnt?0:1)+'" aria-pressed="'+(off?0:1)+'"><span class="dot" style="background:'+f.repHex+glow+'"></span>'+f.name+' <span class="rem">'+cnt+'</span></button>';}).join('');
- tonesEl.innerHTML=TONE_DEFS.map(td=>{const on=state.tones.has(td.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(TONE[i]!==td.k||state.excluded.has(COLORS[i].fam)||!inSat(i)||!inBrand(i)||(ownCount&&!isOwned(i)))continue;cnt++;}
+ tonesEl.innerHTML=TONE_DEFS.map(td=>{const on=state.tones.has(td.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(TONE[i]!==td.k||state.excluded.has(COLORS[i].fam)||!inSat(i)||!inBrand(i)||!passOwn(i))continue;cnt++;}
   return '<button class="chip" data-tone="'+td.k+'" data-off="'+(on?0:1)+'" data-empty="'+(cnt?0:1)+'" aria-pressed="'+(on?1:0)+'"><span class="dot" style="background:'+td.d+';box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)"></span>'+td.t+' <span class="rem">'+cnt+'</span></button>';}).join('');
- satsEl.innerHTML=SAT_DEFS.map(sd=>{const on=state.sats.has(sd.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(SAT[i]!==sd.k||state.excluded.has(COLORS[i].fam)||!inTone(i)||!inBrand(i)||(ownCount&&!isOwned(i)))continue;cnt++;}
+ satsEl.innerHTML=SAT_DEFS.map(sd=>{const on=state.sats.has(sd.k);let cnt=0;for(let i=0;i<COLORS.length;i++){if(SAT[i]!==sd.k||state.excluded.has(COLORS[i].fam)||!inTone(i)||!inBrand(i)||!passOwn(i))continue;cnt++;}
   return '<button class="chip" data-sat="'+sd.k+'" data-off="'+(on?0:1)+'" data-empty="'+(cnt?0:1)+'" aria-pressed="'+(on?1:0)+'"><span class="dot" style="background:'+sd.d+'"></span>'+sd.t+' <span class="rem">'+cnt+'</span></button>';}).join('');
  if(rnd){pilen.textContent=state.drawn.length?'('+state.drawn.length+')':'';tiptap.textContent=state.drawn.length?'tap a color to return it':'';
   if(state.drawn.length){pileEmpty.style.display='none';
@@ -628,12 +652,17 @@ seedGrid.addEventListener('click',e=>{const cell=e.target.closest('.cell');if(!c
 seedRandom.addEventListener('click',()=>{seedOverlay.classList.remove('on');setSeed(null);});
 seedClose.addEventListener('click',()=>seedOverlay.classList.remove('on'));
 seedOverlay.addEventListener('click',e=>{if(e.target===seedOverlay)seedOverlay.classList.remove('on');});
-function setMode(m){if(state.mode===m||rolling)return;disarm();unownDisarm();armRemoveClear();state.mode=m;save();fullRender();}
+function setMode(m){if(state.mode===m||rolling)return;disarm();unownDisarm();armRemoveClear();state.mode=m;save();fullRender();
+ if(!reduce){const c=document.querySelector('.wrap');c.classList.remove('swap');void c.offsetWidth;c.classList.add('swap');}}
 mRandom.addEventListener('click',()=>setMode('random'));
 mPalette.addEventListener('click',()=>setMode('palette'));
 mFinder.addEventListener('click',()=>setMode('finder'));
 mCollection.addEventListener('click',()=>setMode('collection'));
 findScope.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.finderScope=b.dataset.s;save();fullRender();});
+const WARM_FAMS=new Set(['Red-Violet','Red','Yellow-Red / Orange','Yellow','Yellow-Green','Yellow-Green-Yellow','Earth / Skin / Brown','Warm Grey','Toner Grey']);
+const COOL_FAMS=new Set(['Green','Blue-Green','Blue-Green-Yellow','Blue','Blue-Violet','Violet','Cool Grey','Green Grey']);
+$('famWarm').addEventListener('click',()=>{state.excluded=new Set(families.filter(f=>!WARM_FAMS.has(f.name)).map(f=>f.name));save();fullRender();});
+$('famCool').addEventListener('click',()=>{state.excluded=new Set(families.filter(f=>!COOL_FAMS.has(f.name)).map(f=>f.name));save();fullRender();});
 $('all').addEventListener('click',()=>{state.excluded.clear();save();fullRender();});
 $('none').addEventListener('click',()=>{families.forEach(f=>state.excluded.add(f.name));save();fullRender();});
 $('toneAll').addEventListener('click',()=>{state.tones=new Set(TONE_DEFS.map(t=>t.k));save();fullRender();});
@@ -646,6 +675,7 @@ satsEl.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)retu
 brandsEl.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const k=b.dataset.brand;if(state.brands.has(k))state.brands.delete(k);else state.brands.add(k);save();fullRender();});
 $('brandAll').addEventListener('click',()=>{state.brands=new Set(BRAND_DEFS.map(b=>b.k));save();fullRender();});
 $('brandNone').addEventListener('click',()=>{state.brands=new Set();save();fullRender();});
+filterBar.addEventListener('click',()=>{state.filtersOpen=!state.filtersOpen;save();chrome();});
 ownView.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.collView=b.dataset.v;save();fullRender();});
 ownAllBtn.addEventListener('click',()=>{finderMatches().forEach(i=>state.owned.add(mkey(i)));save();fullRender();});
 let unownT=null;
