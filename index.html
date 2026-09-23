@@ -224,7 +224,7 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
  <div class="optrow" id="ownWrap" style="display:none"><span class="szlbl">Show</span>
   <div class="segs wide" id="ownView"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button></div></div>
  <div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
-  <div class="segs wide" id="gapSort"><button data-g="code">Code</button><button data-g="gap">Fill gaps</button><button data-g="complete">Complete</button></div></div>
+  <div class="segs wide" id="gapSort"><button data-g="code">Code</button><button data-g="gap">Fill gaps</button><button data-g="complete">Complete</button><button data-g="ramps">Ramps</button></div></div>
  <div class="findactions" id="ownTools" style="display:none"><button id="ownAll">Own all shown</button><button id="backupBtn">Back up</button></div>
  <div id="ownHint" style="display:none;margin:0 2px 14px;font-size:12.5px;color:var(--sub)"></div>
  <div class="findactions" id="findActions"><button id="toRandom">Draw from these</button><button id="toPalette">Palette from these</button></div>
@@ -340,6 +340,21 @@ function completeGroups(){const map={};for(let i=0;i<COLORS.length;i++){if(!pass
  const groups=Object.keys(map).map(f=>({fam:f,owned:map[f].owned,total:map[f].total,un:map[f].un})).filter(g=>g.un.length>0);
  groups.sort((a,b)=>{const ra=a.owned/a.total,rb=b.owned/b.total;if(rb!==ra)return rb-ra;if(b.owned!==a.owned)return b.owned-a.owned;return b.total-a.total;});
  groups.forEach(g=>g.un.sort((x,y)=>HS[x].l-HS[y].l));return groups;}
+function rampRank(cands){if(!cands.length)return [];const TH=8;
+ const sub=(a,b)=>[LAB[a][0]-LAB[b][0],LAB[a][1]-LAB[b][1],LAB[a][2]-LAB[b][2]];
+ const nrm=v=>Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+ const present={};for(let i=0;i<COLORS.length;i++)if(isOwned(i)){const f=COLORS[i].fam;(present[f]=present[f]||[]).push(i);}
+ const scoreOf=c=>{const arr=present[COLORS[c].fam];if(!arr||arr.length<2)return -1;
+  let n1=-1,d1=1e9;for(const o of arr){const d=nrm(sub(o,c));if(d<d1){d1=d;n1=o;}}
+  if(n1<0)return -1;const v1=sub(n1,c);let opp=false;
+  for(const o of arr){if(o===n1)continue;const vo=sub(o,c);if(v1[0]*vo[0]+v1[1]*vo[1]+v1[2]*vo[2]<0){opp=true;break;}}
+  return opp?d1:-1;};
+ const remaining=new Set(cands),order=[],score=new Map();
+ for(const c of remaining)score.set(c,scoreOf(c));
+ while(remaining.size){let bp=null,bs=-1;for(const c of remaining){const s=score.get(c);if(s>bs){bs=s;bp=c;}}
+  if(bp==null||bs<TH)break;remaining.delete(bp);order.push(bp);const f=COLORS[bp].fam;present[f].push(bp);
+  for(const c of remaining)if(COLORS[c].fam===f)score.set(c,scoreOf(c));}
+ return order;}
 function gapRank(cands){if(!cands.length)return [];const owned=[];for(let i=0;i<COLORS.length;i++)if(isOwned(i))owned.push(i);
  const D=(a,b)=>{const l=a[0]-b[0],m=a[1]-b[1],n=a[2]-b[2];return Math.sqrt(l*l+m*m+n*n);};
  const dmin=cands.map(ci=>{const la=LAB[ci];let mn=Infinity;for(const oi of owned){const d=D(la,LAB[oi]);if(d<mn)mn=d;}return mn;});
@@ -377,7 +392,7 @@ state.owned=(Array.isArray(state.owned)&&state.owned.length)?new Set(state.owned
 if(state.ownedSeedV!==2){state.owned=defaultOwned();state.ownedSeedV=2;}
 if(!['owned','unowned','all'].includes(state.collView))state.collView='owned';
 if(typeof state.filtersOpen!=='boolean')state.filtersOpen=false;
-if(!['code','gap','complete'].includes(state.gapSort))state.gapSort='code';
+if(!['code','gap','complete','ramps'].includes(state.gapSort))state.gapSort='code';
 if(!Array.isArray(state.customPal))state.customPal=[];
 if(!Array.isArray(state.saved))state.saved=[];
 if(!state.scopeFlipped){state.finderScope='owned';state.scopeFlipped=true;}
@@ -388,7 +403,7 @@ let poolSet=state.pool?new Set(state.pool):null;
 let searchStr='';
 function load(){const TK=['pale','light','mid','dark'],SK=['neutral','muted','medium','vivid'];
  const mk=(a,v)=>{const f=Array.isArray(a)?a.filter(k=>v.includes(k)):null;return new Set(f&&f.length===a.length&&f.length?f:v);};
- try{const v=JSON.parse(localStorage.getItem(KEY));if(v)return{mode:v.mode||'random',palSize:v.palSize||4,harmony:v.harmony||'complementary',tones:mk(v.tones,TK),sats:mk(v.sats,SK),drawn:v.drawn||[],excluded:new Set(v.excluded||[]),palettes:v.palettes||[],pool:Array.isArray(v.pool)?v.pool:null,brands:Array.isArray(v.brands)?v.brands:null,owned:Array.isArray(v.owned)?v.owned:null,collView:v.collView||v.finderView||null,finderScope:v.finderScope||null,scopeFlipped:!!v.scopeFlipped,satsUpgraded:!!v.satsUpgraded,seed:v.seed||null,locked:Array.isArray(v.locked)?v.locked:null,filtersOpen:!!v.filtersOpen,gapSort:['code','gap','complete'].includes(v.gapSort)?v.gapSort:'code',customPal:Array.isArray(v.customPal)?v.customPal:null,saved:Array.isArray(v.saved)?v.saved:null,ownedSeedV:v.ownedSeedV||null};}catch(e){}
+ try{const v=JSON.parse(localStorage.getItem(KEY));if(v)return{mode:v.mode||'random',palSize:v.palSize||4,harmony:v.harmony||'complementary',tones:mk(v.tones,TK),sats:mk(v.sats,SK),drawn:v.drawn||[],excluded:new Set(v.excluded||[]),palettes:v.palettes||[],pool:Array.isArray(v.pool)?v.pool:null,brands:Array.isArray(v.brands)?v.brands:null,owned:Array.isArray(v.owned)?v.owned:null,collView:v.collView||v.finderView||null,finderScope:v.finderScope||null,scopeFlipped:!!v.scopeFlipped,satsUpgraded:!!v.satsUpgraded,seed:v.seed||null,locked:Array.isArray(v.locked)?v.locked:null,filtersOpen:!!v.filtersOpen,gapSort:['code','gap','complete','ramps'].includes(v.gapSort)?v.gapSort:'code',customPal:Array.isArray(v.customPal)?v.customPal:null,saved:Array.isArray(v.saved)?v.saved:null,ownedSeedV:v.ownedSeedV||null};}catch(e){}
  try{const o=JSON.parse(localStorage.getItem(OLD));if(o&&Array.isArray(o.drawn))return{mode:'random',palSize:4,harmony:'complementary',tones:new Set(TK),sats:new Set(SK),drawn:o.drawn,excluded:new Set(o.excluded||[]),palettes:[],pool:null};}catch(e){}
  return{mode:'random',palSize:4,harmony:'complementary',tones:new Set(TK),sats:new Set(SK),drawn:[],excluded:new Set(),palettes:[],pool:null};}
 function save(){try{localStorage.setItem(KEY,JSON.stringify({mode:state.mode,palSize:state.palSize,harmony:state.harmony,tones:[...state.tones],sats:[...state.sats],drawn:state.drawn,excluded:[...state.excluded],palettes:state.palettes,pool:state.pool,brands:[...state.brands],owned:[...state.owned],collView:state.collView,finderScope:state.finderScope,scopeFlipped:state.scopeFlipped,satsUpgraded:state.satsUpgraded,seed:state.seed,locked:state.locked,filtersOpen:state.filtersOpen,gapSort:state.gapSort,customPal:state.customPal,saved:state.saved,ownedSeedV:state.ownedSeedV}));}catch(e){}}
@@ -525,6 +540,7 @@ function renderResults(){armRemoveClear();const m=finderMatches();matchn.textCon
  if(!m.length){results.innerHTML='<div class="empty">No markers match these filters.</div>';return;}
  if(state.mode==='collection'&&state.collView==='unowned'&&state.gapSort==='gap'){const order=gapRank(m);results.innerHTML='<div class="rgroup"><div class="pile">'+order.map((i,idx)=>cellHtml(i,idx+1)).join('')+'</div></div>';return;}
  if(state.mode==='collection'&&state.collView==='unowned'&&state.gapSort==='complete'){let html='',s=0;for(const gp of completeGroups()){const rep=families.find(f=>f.name===gp.fam);html+='<div class="rgroup" style="animation-delay:'+(s*45)+'ms"><div class="rghead"><span class="rgdot" style="background:'+(rep?rep.repHex:'#888')+'"></span>'+gp.fam+' <span class="rgn">'+gp.owned+'/'+gp.total+'</span></div><div class="pile">'+gp.un.map(i=>cellHtml(i)).join('')+'</div></div>';s++;}results.innerHTML=html;return;}
+ if(state.mode==='collection'&&state.collView==='unowned'&&state.gapSort==='ramps'){const order=rampRank(m);matchn.textContent='('+order.length+(order.length===1?' ramp gap)':' ramp gaps)');if(!order.length){results.innerHTML='<div class="empty">No tonal gaps to bridge in this scope — your ramps are already smooth. Try widening the filters or owning more of a family first.</div>';return;}results.innerHTML='<div class="rgroup"><div class="pile">'+order.map((i,idx)=>cellHtml(i,idx+1)).join('')+'</div></div>';return;}
  const by={};for(const i of m)(by[COLORS[i].fam]=by[COLORS[i].fam]||[]).push(i);
  let html='',s=0;for(const f of families){const list=by[f.name];if(!list)continue;
   html+='<div class="rgroup" style="animation-delay:'+(s*45)+'ms"><div class="rghead"><span class="rgdot" style="background:'+f.repHex+'"></span>'+f.name+' <span class="rgn">'+list.length+'</span></div><div class="pile">'+list.map(i=>cellHtml(i)).join('')+'</div></div>';s++;}
@@ -587,7 +603,7 @@ function chrome(){const M=state.mode,rnd=M==='random',pal=M==='palette',fnd=M===
  scopeWrap.style.display=fnd?'flex':'none';findActions.style.display=fnd?'flex':'none';[...findScope.children].forEach(b=>b.classList.toggle('on',b.dataset.s===state.finderScope));
  ownWrap.style.display=col?'flex':'none';ownTools.style.display=col?'flex':'none';unownWrap.style.display=(col&&state.collView!=='unowned')?'flex':'none';[...ownView.children].forEach(b=>b.classList.toggle('on',b.dataset.v===state.collView));
  gapWrap.style.display=(col&&state.collView==='unowned')?'flex':'none';[...gapSort.children].forEach(b=>b.classList.toggle('on',b.dataset.g===state.gapSort));
- ownHint.style.display=col?'':'none';if(col)ownHint.textContent=state.collView==='unowned'?(state.gapSort==='gap'?'Ranked to fill the biggest gaps in your collection — each pick adds coverage in a different area. Tap to add.':state.gapSort==='complete'?'Families you’ve invested in most, ordered by how close each is to complete. Tap to finish the ones you use.':'Markers you don’t own yet — the gaps in your collection. Tap to add as you buy them.'):state.collView==='all'?'Tap to add. Tap an owned swatch twice to remove. Narrow with filters, then “Own all shown”.':'Your collection. Tap a swatch twice to remove it, or switch to All to add more.';
+ ownHint.style.display=col?'':'none';if(col)ownHint.textContent=state.collView==='unowned'?(state.gapSort==='gap'?'Ranked to fill the biggest gaps in your collection — each pick adds coverage in a different area. Tap to add.':state.gapSort==='complete'?'Families you’ve invested in most, ordered by how close each is to complete. Tap to finish the ones you use.':state.gapSort==='ramps'?'Markers that best bridge a tonal jump between two you already own — smoother blends. Ranked by how much each closes the gap.':'Markers you don’t own yet — the gaps in your collection. Tap to add as you buy them.'):state.collView==='all'?'Tap to add. Tap an owned swatch twice to remove. Narrow with filters, then “Own all shown”.':'Your collection. Tap a swatch twice to remove it, or switch to All to add more.';
  filterBar.style.display=pooled?'none':'';filtersEl.style.display=(pooled||!state.filtersOpen)?'none':'';filterBar.classList.toggle('open',state.filtersOpen&&!pooled);filterSum.textContent=filterSummary();poolBar.style.display=pooled?'flex':'none';if(pooled)poolN.textContent=state.pool.length;
  libRow.style.display=(pal||rnd)?'flex':'none';saveBtn.disabled=(pal&&!currentPaletteIdxs().length)||(rnd&&!state.drawn.length);exportBtn.disabled=(rnd&&!state.drawn.length)||(pal&&(state.harmony==='custom'?!(state.customPal||[]).some(x=>x!=null):!state.palettes.length));
  {const R=HARM_RANGE[state.harmony]||[2,6];[...segs.children].forEach(b=>{const n=+b.dataset.n;const okn=n>=R[0]&&n<=R[1];b.disabled=!okn;b.classList.toggle('on',okn&&n===state.palSize);});}
