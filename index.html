@@ -191,6 +191,7 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .cell.notown:hover{transform:none}
 .owncheck{position:absolute;top:2px;right:4px;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55);line-height:1;z-index:1}
 .bt{position:absolute;top:3px;left:4px;font-size:9px;font-weight:700;color:#fff;background:rgba(0,0,0,.4);border-radius:4px;padding:1px 4px;line-height:1.2;z-index:1}
+.rankb{position:absolute;top:2px;right:3px;font-size:9px;font-weight:700;color:#151318;background:var(--ink);border-radius:5px;padding:1px 5px;line-height:1.3;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.4)}
 .cell:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.22)}
 .cell:active{transform:scale(.94)}
 .cell .sq{height:36px}
@@ -222,6 +223,8 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   <div class="segs wide" id="findScope"><button data-s="owned">Owned</button><button data-s="all">Catalog</button></div></div>
  <div class="optrow" id="ownWrap" style="display:none"><span class="szlbl">Show</span>
   <div class="segs wide" id="ownView"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button></div></div>
+ <div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
+  <div class="segs wide" id="gapSort"><button data-g="code">Code</button><button data-g="gap">Fill gaps</button><button data-g="complete">Complete</button></div></div>
  <div class="findactions" id="ownTools" style="display:none"><button id="ownAll">Own all shown</button><button id="backupBtn">Back up</button></div>
  <div id="ownHint" style="display:none;margin:0 2px 14px;font-size:12.5px;color:var(--sub)"></div>
  <div class="findactions" id="findActions"><button id="toRandom">Draw from these</button><button id="toPalette">Palette from these</button></div>
@@ -313,7 +316,7 @@ const stage=$('stage'),swatch=$('swatch'),code=$('code'),hint=$('hint'),readout=
  segs=$('segs'),harmWrap=$('harmWrap'),harm=$('harm'),tonesEl=$('tones'),satsEl=$('sats'),brandsEl=$('brands'),hero=$('hero'),
  ownWrap=$('ownWrap'),ownTools=$('ownTools'),ownView=$('ownView'),ownAllBtn=$('ownAll'),ownNoneBtn=$('ownNone'),unownWrap=$('unownWrap'),
  backupBtn=$('backupBtn'),backupOverlay=$('backupOverlay'),backupText=$('backupText'),backupCopy=$('backupCopy'),
- backupRestore=$('backupRestore'),backupClose=$('backupClose'),backupCap=$('backupCap'),ownHint=$('ownHint'),pickTitle=$('pickTitle'),pickCap=$('pickCap'),
+ backupRestore=$('backupRestore'),backupClose=$('backupClose'),backupCap=$('backupCap'),ownHint=$('ownHint'),gapWrap=$('gapWrap'),gapSort=$('gapSort'),pickTitle=$('pickTitle'),pickCap=$('pickCap'),
  backupDownload=$('backupDownload'),backupImport=$('backupImport'),backupFile=$('backupFile'),
  seedWrap=$('seedWrap'),seedBtn=$('seedBtn'),seedOverlay=$('seedOverlay'),seedSearch=$('seedSearch'),seedGrid=$('seedGrid'),seedRandom=$('seedRandom'),seedClose=$('seedClose'),
  primaryRow=$('primaryRow'),secondaryRow=$('secondaryRow'),findWrap=$('findWrap'),searchInput=$('q'),findResults=$('findResults'),results=$('results'),
@@ -331,6 +334,18 @@ function hsl(hex){const[R,G,B]=rgb(hex),r=R/255,g=G/255,b=B/255,mx=Math.max(r,g,
  let s=0,hu=0;if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);
   hu=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;hu*=60;}return{h:hu,s,l,c:mx-mn};}
 const HS=COLORS.map(c=>hsl(c.hex));
+function hexToLab(hex){const s=hex.replace('#','');let r=parseInt(s.substr(0,2),16)/255,g=parseInt(s.substr(2,2),16)/255,b=parseInt(s.substr(4,2),16)/255;const f=v=>v>0.04045?Math.pow((v+0.055)/1.055,2.4):v/12.92;r=f(r);g=f(g);b=f(b);let x=(r*0.4124+g*0.3576+b*0.1805)/0.95047,y=(r*0.2126+g*0.7152+b*0.0722),z=(r*0.0193+g*0.1192+b*0.9505)/1.08883;const t=v=>v>0.008856?Math.cbrt(v):7.787*v+16/116;x=t(x);y=t(y);z=t(z);return [116*y-16,500*(x-y),200*(y-z)];}
+const LAB=COLORS.map(c=>hexToLab(c.hex));
+function completeGroups(){const map={};for(let i=0;i<COLORS.length;i++){if(!passes(i))continue;const f=COLORS[i].fam;(map[f]=map[f]||{owned:0,total:0,un:[]});map[f].total++;if(isOwned(i))map[f].owned++;else map[f].un.push(i);}
+ const groups=Object.keys(map).map(f=>({fam:f,owned:map[f].owned,total:map[f].total,un:map[f].un})).filter(g=>g.un.length>0);
+ groups.sort((a,b)=>{const ra=a.owned/a.total,rb=b.owned/b.total;if(rb!==ra)return rb-ra;if(b.owned!==a.owned)return b.owned-a.owned;return b.total-a.total;});
+ groups.forEach(g=>g.un.sort((x,y)=>HS[x].l-HS[y].l));return groups;}
+function gapRank(cands){if(!cands.length)return [];const owned=[];for(let i=0;i<COLORS.length;i++)if(isOwned(i))owned.push(i);
+ const D=(a,b)=>{const l=a[0]-b[0],m=a[1]-b[1],n=a[2]-b[2];return Math.sqrt(l*l+m*m+n*n);};
+ const dmin=cands.map(ci=>{const la=LAB[ci];let mn=Infinity;for(const oi of owned){const d=D(la,LAB[oi]);if(d<mn)mn=d;}return mn;});
+ const n=cands.length,used=new Array(n).fill(false),order=[];
+ for(let step=0;step<n;step++){let bi=-1,bd=-1;for(let j=0;j<n;j++)if(!used[j]&&dmin[j]>bd){bd=dmin[j];bi=j;}if(bi<0)break;used[bi]=true;order.push(cands[bi]);const pk=LAB[cands[bi]];for(let j=0;j<n;j++)if(!used[j]){const d=D(LAB[cands[j]],pk);if(d<dmin[j])dmin[j]=d;}}
+ return order;}
 const TONE=HS.map(o=>o.l>=.80?'pale':o.l>=.62?'light':o.l>=.49?'mid':'dark');
 const TONE_DEFS=[{k:'pale',t:'Pale',d:'#f0efe9'},{k:'light',t:'Light',d:'#cfccc3'},{k:'mid',t:'Mid',d:'#8b8880'},{k:'dark',t:'Dark',d:'#2c2b30'}];
 const SAT=HS.map(o=>o.c<.125?'neutral':o.c<.26?'muted':o.c<.42?'medium':'vivid');
@@ -356,10 +371,13 @@ if(!Array.isArray(state.pool))state.pool=null;
 state.brands=Array.isArray(state.brands)?new Set(state.brands.filter(b=>b==='Ohuhu'||b==='Copic')):new Set(['Ohuhu','Copic']);
 if(!state.brands.size)state.brands=new Set(['Ohuhu','Copic']);
 const EXTRA_OHUHU=new Set(["B04","BV18","BV39","BV45","BV515","E47","E49","E513","E514","E59","E612","E615","E66","E711","E75","E81","E814","G48","R12","R14","RV02","RV07","RV32","V016","Y110","Y210","Y212","Y43","Y48","Y56","YG35","YR01","YR02","YR05","YR09","YR214","YR25","YR29","YR37","YR38","YR54"]);
-const defaultOwned=()=>new Set(COLORS.filter(c=>c.brand==='Ohuhu'&&!EXTRA_OHUHU.has(c.code)).map(c=>c.brand+'|'+c.code));
+const DEFAULT_COPIC=new Set(["V20", "R89", "YG67", "V15", "BG75", "BV13", "YR31", "Y15", "R29", "YR09", "G14", "YG99", "YR04", "100", "B04", "BV17", "RV14", "C-6", "C-8", "V28", "YG63", "Y21", "RV66", "BG11", "R85", "B37", "Y13", "B21", "E50", "E59", "BG18", "BG49", "BG13", "B05", "B39", "Y17", "B32", "B00", "Y35", "G17", "V17", "B29", "YG11", "RV11", "R39", "YG13", "RV23", "BV11", "RV10", "G29", "E37", "V12", "G28", "Y19", "Y38", "YG93", "R20", "N-5", "R14", "R83", "BV02", "E21", "BV04", "E33", "RV25", "RV21", "RV63", "E09", "YG03", "YG17", "E35", "B02", "V09", "N-3", "BG10", "Y18", "B99", "RV13", "YG95", "BV01", "E31", "R24", "G00", "YR07", "RV69", "RV29", "R22", "G21", "YG23", "B34", "G05", "B60", "BG15", "G24", "Y11", "BG78", "R08", "BG72", "BG32"]);
+const defaultOwned=()=>new Set(COLORS.filter(c=>(c.brand==='Ohuhu'&&!EXTRA_OHUHU.has(c.code))||(c.brand==='Copic'&&DEFAULT_COPIC.has(c.code))).map(c=>c.brand+'|'+c.code));
 state.owned=(Array.isArray(state.owned)&&state.owned.length)?new Set(state.owned):defaultOwned();
+if(state.ownedSeedV!==2){state.owned=defaultOwned();state.ownedSeedV=2;}
 if(!['owned','unowned','all'].includes(state.collView))state.collView='owned';
 if(typeof state.filtersOpen!=='boolean')state.filtersOpen=false;
+if(!['code','gap','complete'].includes(state.gapSort))state.gapSort='code';
 if(!Array.isArray(state.customPal))state.customPal=[];
 if(!Array.isArray(state.saved))state.saved=[];
 if(!state.scopeFlipped){state.finderScope='owned';state.scopeFlipped=true;}
@@ -370,10 +388,10 @@ let poolSet=state.pool?new Set(state.pool):null;
 let searchStr='';
 function load(){const TK=['pale','light','mid','dark'],SK=['neutral','muted','medium','vivid'];
  const mk=(a,v)=>{const f=Array.isArray(a)?a.filter(k=>v.includes(k)):null;return new Set(f&&f.length===a.length&&f.length?f:v);};
- try{const v=JSON.parse(localStorage.getItem(KEY));if(v)return{mode:v.mode||'random',palSize:v.palSize||4,harmony:v.harmony||'complementary',tones:mk(v.tones,TK),sats:mk(v.sats,SK),drawn:v.drawn||[],excluded:new Set(v.excluded||[]),palettes:v.palettes||[],pool:Array.isArray(v.pool)?v.pool:null,brands:Array.isArray(v.brands)?v.brands:null,owned:Array.isArray(v.owned)?v.owned:null,collView:v.collView||v.finderView||null,finderScope:v.finderScope||null,scopeFlipped:!!v.scopeFlipped,satsUpgraded:!!v.satsUpgraded,seed:v.seed||null,locked:Array.isArray(v.locked)?v.locked:null,filtersOpen:!!v.filtersOpen,customPal:Array.isArray(v.customPal)?v.customPal:null,saved:Array.isArray(v.saved)?v.saved:null};}catch(e){}
+ try{const v=JSON.parse(localStorage.getItem(KEY));if(v)return{mode:v.mode||'random',palSize:v.palSize||4,harmony:v.harmony||'complementary',tones:mk(v.tones,TK),sats:mk(v.sats,SK),drawn:v.drawn||[],excluded:new Set(v.excluded||[]),palettes:v.palettes||[],pool:Array.isArray(v.pool)?v.pool:null,brands:Array.isArray(v.brands)?v.brands:null,owned:Array.isArray(v.owned)?v.owned:null,collView:v.collView||v.finderView||null,finderScope:v.finderScope||null,scopeFlipped:!!v.scopeFlipped,satsUpgraded:!!v.satsUpgraded,seed:v.seed||null,locked:Array.isArray(v.locked)?v.locked:null,filtersOpen:!!v.filtersOpen,gapSort:['code','gap','complete'].includes(v.gapSort)?v.gapSort:'code',customPal:Array.isArray(v.customPal)?v.customPal:null,saved:Array.isArray(v.saved)?v.saved:null,ownedSeedV:v.ownedSeedV||null};}catch(e){}
  try{const o=JSON.parse(localStorage.getItem(OLD));if(o&&Array.isArray(o.drawn))return{mode:'random',palSize:4,harmony:'complementary',tones:new Set(TK),sats:new Set(SK),drawn:o.drawn,excluded:new Set(o.excluded||[]),palettes:[],pool:null};}catch(e){}
  return{mode:'random',palSize:4,harmony:'complementary',tones:new Set(TK),sats:new Set(SK),drawn:[],excluded:new Set(),palettes:[],pool:null};}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({mode:state.mode,palSize:state.palSize,harmony:state.harmony,tones:[...state.tones],sats:[...state.sats],drawn:state.drawn,excluded:[...state.excluded],palettes:state.palettes,pool:state.pool,brands:[...state.brands],owned:[...state.owned],collView:state.collView,finderScope:state.finderScope,scopeFlipped:state.scopeFlipped,satsUpgraded:state.satsUpgraded,seed:state.seed,locked:state.locked,filtersOpen:state.filtersOpen,customPal:state.customPal,saved:state.saved}));}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({mode:state.mode,palSize:state.palSize,harmony:state.harmony,tones:[...state.tones],sats:[...state.sats],drawn:state.drawn,excluded:[...state.excluded],palettes:state.palettes,pool:state.pool,brands:[...state.brands],owned:[...state.owned],collView:state.collView,finderScope:state.finderScope,scopeFlipped:state.scopeFlipped,satsUpgraded:state.satsUpgraded,seed:state.seed,locked:state.locked,filtersOpen:state.filtersOpen,gapSort:state.gapSort,customPal:state.customPal,saved:state.saved,ownedSeedV:state.ownedSeedV}));}catch(e){}}
 function inTone(i){return state.tones.has(TONE[i]);}
 function inSat(i){return state.sats.has(SAT[i]);}
 const mkey=i=>COLORS[i].brand+'|'+COLORS[i].code;
@@ -494,10 +512,10 @@ function showCustom(){ensureCustomSize();palette.classList.add('custommode');phi
 
 function finderMatches(){const view=state.mode==='collection'?state.collView:(state.finderScope==='owned'?'owned':'all');
  const out=[];for(let i=0;i<COLORS.length;i++){if(!avail(i))continue;if(view==='owned'&&!isOwned(i))continue;if(view==='unowned'&&isOwned(i))continue;out.push(i);}return out;}
-function cellHtml(i){const c=COLORS[i];const col=state.mode==='collection';const own=isOwned(i);const old=c.old&&c.old!==c.code?' · old '+c.old:'';
+function cellHtml(i,rank){const c=COLORS[i];const col=state.mode==='collection';const own=isOwned(i);const old=c.old&&c.old!==c.code?' · old '+c.old:'';const rk=rank?'<span class="rankb">'+rank+'</span>':'';
  const cls='cell'+((col&&!own&&state.collView!=='unowned')?' notown':'');const check=(col&&own)?'<span class="owncheck">\u2713</span>':'';
  const act=col?(own?'remove':'add'):'copy';
- return '<div class="'+cls+'" data-i="'+i+'" title="'+c.brand+' '+c.code+' · '+c.name+old+' · tap to '+act+'">'+check+'<span class="bt">'+c.brand[0]+'</span><div class="sq" style="background:'+c.hex+'"></div><div class="cc">'+c.code+'</div></div>';}
+ return '<div class="'+cls+'" data-i="'+i+'" title="'+c.brand+' '+c.code+' · '+c.name+old+' · tap to '+act+'">'+check+rk+'<span class="bt">'+c.brand[0]+'</span><div class="sq" style="background:'+c.hex+'"></div><div class="cc">'+c.code+'</div></div>';}
 let armRemoveIdx=null,armRemoveT=null;
 function armRemoveClear(){if(armRemoveT){clearTimeout(armRemoveT);armRemoveT=null;}
  if(armRemoveIdx!=null){const el=results.querySelector('.cell[data-i="'+armRemoveIdx+'"]');if(el){el.classList.remove('arm');const q=el.querySelector('.rmq');if(q)q.remove();}armRemoveIdx=null;}}
@@ -505,9 +523,11 @@ function armRemove(i,cell){armRemoveClear();armRemoveIdx=i;cell.classList.add('a
 function renderResults(){armRemoveClear();const m=finderMatches();matchn.textContent='('+m.length+(m.length===1?' marker)':' markers)');
  toRandom.disabled=toPalette.disabled=!m.length;
  if(!m.length){results.innerHTML='<div class="empty">No markers match these filters.</div>';return;}
+ if(state.mode==='collection'&&state.collView==='unowned'&&state.gapSort==='gap'){const order=gapRank(m);results.innerHTML='<div class="rgroup"><div class="pile">'+order.map((i,idx)=>cellHtml(i,idx+1)).join('')+'</div></div>';return;}
+ if(state.mode==='collection'&&state.collView==='unowned'&&state.gapSort==='complete'){let html='',s=0;for(const gp of completeGroups()){const rep=families.find(f=>f.name===gp.fam);html+='<div class="rgroup" style="animation-delay:'+(s*45)+'ms"><div class="rghead"><span class="rgdot" style="background:'+(rep?rep.repHex:'#888')+'"></span>'+gp.fam+' <span class="rgn">'+gp.owned+'/'+gp.total+'</span></div><div class="pile">'+gp.un.map(i=>cellHtml(i)).join('')+'</div></div>';s++;}results.innerHTML=html;return;}
  const by={};for(const i of m)(by[COLORS[i].fam]=by[COLORS[i].fam]||[]).push(i);
  let html='',s=0;for(const f of families){const list=by[f.name];if(!list)continue;
-  html+='<div class="rgroup" style="animation-delay:'+(s*45)+'ms"><div class="rghead"><span class="rgdot" style="background:'+f.repHex+'"></span>'+f.name+' <span class="rgn">'+list.length+'</span></div><div class="pile">'+list.map(cellHtml).join('')+'</div></div>';s++;}
+  html+='<div class="rgroup" style="animation-delay:'+(s*45)+'ms"><div class="rghead"><span class="rgdot" style="background:'+f.repHex+'"></span>'+f.name+' <span class="rgn">'+list.length+'</span></div><div class="pile">'+list.map(i=>cellHtml(i)).join('')+'</div></div>';s++;}
  results.innerHTML=html;}
 let copyT=null;
 function flashCopy(msg){copyBtn.textContent=msg;clearTimeout(copyT);copyT=setTimeout(()=>{copyBtn.textContent='Copy codes';},1400);}
@@ -566,7 +586,8 @@ function chrome(){const M=state.mode,rnd=M==='random',pal=M==='palette',fnd=M===
  findWrap.style.display=browse?'':'none';findResults.style.display=browse?'':'none';
  scopeWrap.style.display=fnd?'flex':'none';findActions.style.display=fnd?'flex':'none';[...findScope.children].forEach(b=>b.classList.toggle('on',b.dataset.s===state.finderScope));
  ownWrap.style.display=col?'flex':'none';ownTools.style.display=col?'flex':'none';unownWrap.style.display=(col&&state.collView!=='unowned')?'flex':'none';[...ownView.children].forEach(b=>b.classList.toggle('on',b.dataset.v===state.collView));
- ownHint.style.display=col?'':'none';if(col)ownHint.textContent=state.collView==='unowned'?'Markers you don’t own yet — the gaps in your collection. Tap to add as you buy them.':state.collView==='all'?'Tap to add. Tap an owned swatch twice to remove. Narrow with filters, then “Own all shown”.':'Your collection. Tap a swatch twice to remove it, or switch to All to add more.';
+ gapWrap.style.display=(col&&state.collView==='unowned')?'flex':'none';[...gapSort.children].forEach(b=>b.classList.toggle('on',b.dataset.g===state.gapSort));
+ ownHint.style.display=col?'':'none';if(col)ownHint.textContent=state.collView==='unowned'?(state.gapSort==='gap'?'Ranked to fill the biggest gaps in your collection — each pick adds coverage in a different area. Tap to add.':state.gapSort==='complete'?'Families you’ve invested in most, ordered by how close each is to complete. Tap to finish the ones you use.':'Markers you don’t own yet — the gaps in your collection. Tap to add as you buy them.'):state.collView==='all'?'Tap to add. Tap an owned swatch twice to remove. Narrow with filters, then “Own all shown”.':'Your collection. Tap a swatch twice to remove it, or switch to All to add more.';
  filterBar.style.display=pooled?'none':'';filtersEl.style.display=(pooled||!state.filtersOpen)?'none':'';filterBar.classList.toggle('open',state.filtersOpen&&!pooled);filterSum.textContent=filterSummary();poolBar.style.display=pooled?'flex':'none';if(pooled)poolN.textContent=state.pool.length;
  libRow.style.display=(pal||rnd)?'flex':'none';saveBtn.disabled=(pal&&!currentPaletteIdxs().length)||(rnd&&!state.drawn.length);exportBtn.disabled=(rnd&&!state.drawn.length)||(pal&&(state.harmony==='custom'?!(state.customPal||[]).some(x=>x!=null):!state.palettes.length));
  {const R=HARM_RANGE[state.harmony]||[2,6];[...segs.children].forEach(b=>{const n=+b.dataset.n;const okn=n>=R[0]&&n<=R[1];b.disabled=!okn;b.classList.toggle('on',okn&&n===state.palSize);});}
@@ -760,6 +781,7 @@ brandsEl.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)re
 $('brandAll').addEventListener('click',()=>{state.brands=new Set(BRAND_DEFS.map(b=>b.k));save();fullRender();});
 $('brandNone').addEventListener('click',()=>{state.brands=new Set();save();fullRender();});
 filterBar.addEventListener('click',()=>{state.filtersOpen=!state.filtersOpen;save();chrome();});
+gapSort.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const g=b.dataset.g;if(g&&g!==state.gapSort){state.gapSort=g;save();renderResults();chrome();}});
 ownView.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.collView=b.dataset.v;save();fullRender();});
 ownAllBtn.addEventListener('click',()=>{finderMatches().forEach(i=>state.owned.add(mkey(i)));save();fullRender();});
 let unownT=null;
