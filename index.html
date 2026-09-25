@@ -1425,7 +1425,7 @@ fullRender();
     eyeB.addEventListener('click',function(){try{new window.EyeDropper().open().then(function(r){sample(r.sRGBHex);}).catch(function(){});}catch(e){}});
   }
   // --- camera matching ---
-  var _camStream=null,_camTimer=0,_camPt={x:0.5,y:0.5},_camFrozen=false,_camOC=document.createElement('canvas'),_camOCx=_camOC.getContext('2d',{willReadFrequently:true});
+  var _camStream=null,_camTimer=0,_camPt={x:0.5,y:0.5},_camFrozen=false,_camDrag=false,_camRaf=0,_camOC=document.createElement('canvas'),_camOCx=_camOC.getContext('2d',{willReadFrequently:true});
   var camBtn=document.getElementById('matchCamBtn'),camWrap=document.getElementById('matchCamWrap'),video=document.getElementById('matchVideo'),reticle=document.getElementById('matchReticle'),freezeB=document.getElementById('matchFreeze'),camStopB=document.getElementById('matchCamStop');
   function camPatchHex(){
     var vw=video.videoWidth,vh=video.videoHeight;if(!vw||!vh)return null;
@@ -1453,12 +1453,12 @@ fullRender();
   function moveReticle(clientX,clientY){
     var r=video.getBoundingClientRect();if(!r.width||!r.height)return;
     var rx=Math.max(0,Math.min(1,(clientX-r.left)/r.width)),ry=Math.max(0,Math.min(1,(clientY-r.top)/r.height));
-    _camPt.x=rx;_camPt.y=ry;if(reticle){reticle.style.left=(rx*100)+'%';reticle.style.top=(ry*100)+'%';}
+    _camPt.x=rx;_camPt.y=ry;if(reticle){reticle.style.left=(rx*100)+'%';reticle.style.top=(ry*100)+'%';}if(!_camRaf)_camRaf=requestAnimationFrame(function(){_camRaf=0;var hex=camPatchHex();if(hex)sample(hex);});
   }
   if(camBtn&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){camBtn.style.display='';camBtn.addEventListener('click',startCam);}
   if(freezeB)freezeB.addEventListener('click',function(){_camFrozen=!_camFrozen;freezeB.textContent=_camFrozen?'Live':'Freeze';if(_camFrozen){try{video.pause();}catch(e){}}else{var p=video.play();if(p&&p.catch)p.catch(function(){});}});
   if(camStopB)camStopB.addEventListener('click',stopCam);
-  if(video)video.addEventListener('pointerdown',function(e){e.preventDefault();moveReticle(e.clientX,e.clientY);});
+  if(video){video.addEventListener('pointerdown',function(e){_camDrag=true;try{video.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();moveReticle(e.clientX,e.clientY);});video.addEventListener('pointermove',function(e){if(!_camDrag)return;e.preventDefault();moveReticle(e.clientX,e.clientY);});video.addEventListener('pointerup',function(e){_camDrag=false;try{video.releasePointerCapture(e.pointerId);}catch(_){}});video.addEventListener('pointercancel',function(){_camDrag=false;});}
 })();
 
 
