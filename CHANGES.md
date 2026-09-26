@@ -50,7 +50,7 @@ The data-loss, security and main UI bugs were reproduced in headless Chromium ag
 
 **Editing & findability**
 - **Split and Add work while zoomed in**: one finger draws, two fingers pinch and pan together. On desktop, ctrl/⌘ + scroll (or a trackpad pinch) zooms at the pointer, and scrolling pans once zoomed.
-- "Add a set you own" is near the top of **every** Markers view, and each set shows how much of it you already own (✓ 24, or 12/24). It opens automatically when your collection is empty.
+- "Add a set you own" appears in **every** Markers view, and each set shows how much of it you already own (✓ 24, or 12/24). It sits collapsed at the bottom next to "Back up collection". When the collection is empty it moves to the top and opens automatically.
 - One name everywhere: **Library** (was also "View saved guides" and "Saved guides").
 
 **Durability & accessibility**
@@ -59,3 +59,21 @@ The data-loss, security and main UI bugs were reproduced in headless Chromium ag
 - Keyboard: swatches, palette bands, lock toggles, Library rows and the filter bar are focusable and work with Enter/Space. Pop-ups are dialogs: focus moves in, Tab stays inside, and Esc returns focus to where you were. There's a visible focus ring, labels on icon-only buttons (zoom, delete, blend, name dice, swatches), and `aria-current` on the section tabs.
 - Scroll padding keeps focused controls clear of the pinned picture and the bottom bar.
 - Service worker cache bumped to `marker-studio-v235`.
+
+# Changes — v236 (guide screen polish + print)
+
+- **Surprise me** moved out of the Colours tab. It now sits under the guide name, since it changes both colours and style. After it runs, a one-line note says what it picked, e.g. "Split-comp palette · Serpentine · Vivid · 10 markers".
+- **Share tab** grouped into three sections:
+  - Show it off: Reveal & share, Share image
+  - Print: Save PDF, Letter/A4, and "Include blend companions", moved here from Display
+  - Plan & keep: Blend plan, Save as palette, and one Guide file button (share or download)
+
+  Paper size and the companions choice are remembered.
+- **PDF export rebuilt** at print resolution (200 dpi) on real Letter or A4 pages:
+  - Page 1 is the colouring page: the outline with marker codes, scaled to fill the page.
+  - Page 2 is the colour key: a coloured preview, then a table grouped by colour family (swatch · brand · code · full name · sections).
+  - With blend companions, it adds Lighter and Darker columns. Shades you don't own are marked "buy", and a "To complete every blend" list follows.
+  - The preview grows to use spare room when the whole key fits on page 2. Long keys continue onto extra pages with the column headings repeated. Every page has a footer with page numbers.
+- **Share image** key no longer overflows between columns; names are shortened to fit.
+- **Pinned picture no longer changes size while scrolling on phones.** It's sized from the stable viewport height (`svh`), and only recalculates when the width changes (e.g. rotating the phone). On phones the address bar showing and hiding changed the height and resized the picture.
+- Service worker cache bumped to `marker-studio-v236`.
