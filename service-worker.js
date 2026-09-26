@@ -1,4 +1,4 @@
-const CACHE='marker-studio-v236';
+const CACHE='marker-studio-v237';
 const CORE=['./','./index.html'];
 const OPTIONAL=['./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(CORE).then(function(){return Promise.allSettled(OPTIONAL.map(function(u){return c.add(u);}));});}).then(()=>self.skipWaiting()));});

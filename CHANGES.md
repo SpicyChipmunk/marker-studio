@@ -77,3 +77,15 @@ The data-loss, security and main UI bugs were reproduced in headless Chromium ag
 - **Share image** key no longer overflows between columns; names are shortened to fit.
 - **Pinned picture no longer changes size while scrolling on phones.** It's sized from the stable viewport height (`svh`), and only recalculates when the width changes (e.g. rotating the phone). On phones the address bar showing and hiding changed the height and resized the picture.
 - Service worker cache bumped to `marker-studio-v236`.
+
+# Changes — v237 (Match a colour)
+
+- Rebuilt as a proper panel: solid card, a small ✕, and one short subtitle.
+- **One source at a time:** a Photo · Camera · Hex code switch, plus Screen where the browser supports it. It opens on Photo. Camera and Screen only appear when the device supports them.
+  - **Photo:** a "Choose a photo" area, then the photo (at most 44% of the screen height) with the sampling ring and a "Change photo" link.
+  - **Camera:** starts when you pick the tab and stops when you leave it or close the panel. The live view has a fixed height. Freeze/Go live and Light sit over the bottom of the video, a LIVE/FROZEN badge in the corner, and Stop camera in the hint line. Sampling accounts for how the video is cropped to fit, so the ring samples exactly where it sits.
+  - **Hex code:** a large colour picker next to a hex field.
+- **Best match right under the source**, updating as you drag: a You | Marker split swatch, match quality ("Very close match"), code, name, brand and a Copy button.
+- Below it: **Also in your collection** (the next 4) and **Closer ones you could buy** (read-only, only shown when they beat your best owned match). Tap any row to copy it; the ΔE number moved into a tooltip.
+- A clear empty state, and a message when you have no markers yet.
+- Service worker cache bumped to `marker-studio-v237`.
