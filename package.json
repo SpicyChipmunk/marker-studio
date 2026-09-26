@@ -1,0 +1,14 @@
+{
+  "name": "marker-studio",
+  "version": "0.1.0",
+  "description": "A phone-first PWA that turns line-art photos into marker-by-number colouring guides, matched to the markers you own (Ohuhu, Copic).",
+  "type": "module",
+  "license": "MIT",
+  "author": "SpicyChipmunk",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
