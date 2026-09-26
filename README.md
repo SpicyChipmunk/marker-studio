@@ -39,12 +39,19 @@ Two suites, run against the real shipped code:
 - `save-load.test.mjs` — guide persistence: the label-map encode (`lmapURL`)
   round-trips losslessly through a canvas/Image polyfill (including labels above
   255), and `currentDesignObj` persists Toggle state and settings.
+- `robustness.test.mjs` — input-quality detection (`segQuality`): flags blank,
+  low-contrast, dark/photo, and over-segmented inputs so the app can warn the
+  user instead of producing a bad guide, while passing clean line art.
+- `matching.test.mjs` — the colour-matching subsystem: `nearest` is checked
+  against an exact reimplementation of its cost function (pool control via
+  `setPool`), covering exclude, the neutral-pool fallback, `preferL`, and
+  determinism, plus `keyIdx` round-trips.
 
 The section-finder core is reached through a small, additive **test-export
 seam** in `index.html`: one block, guarded by `globalThis.__MS_TEST`, that
 exposes the closure's functions and state to the harness. It is **inert in the
 browser** (the flag is only ever set by the harness) and does not change app
-behaviour.
+behaviour. A second, read-only seam exposes the marker table (`COLORS`/`HS`) so the matching tests can pick targets and verify the closest pick; it is guarded the same way.
 
 The harness includes a small, lossless canvas/Image polyfill so the label-map
 encode and payload persistence run in Node. Not yet covered: the *full*

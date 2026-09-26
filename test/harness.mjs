@@ -113,3 +113,5 @@ export function loadApp() {
 export const app = loadApp();
 // Section-finder core (segmentation, undo, save/load) exposed via the seam:
 export const core = app.__mstest;
+// Collection/matching data (read-only) exposed via a second seam:
+export const matching = app.__match;
