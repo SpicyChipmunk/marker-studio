@@ -28,7 +28,7 @@ node --test
 
 ### Test coverage today
 
-Two suites, run against the real shipped code:
+The suites run against the real shipped code:
 
 - `color.test.mjs` — pure colour/format helpers (`hexToLab`, `rgb`, `hsl`,
   `mix`, `hueDist`, `txt`, `normCode`).
@@ -46,6 +46,15 @@ Two suites, run against the real shipped code:
   against an exact reimplementation of its cost function (pool control via
   `setPool`), covering exclude, the neutral-pool fallback, `preferL`, and
   determinism, plus `keyIdx` round-trips.
+- `design.test.mjs` — label placement (labels land inside irregular sections,
+  e.g. a C-shape whose centroid is outside it), the set picker's "already
+  owned" marking, and the guide-backup reminder's at-risk count.
+- `fixes.test.mjs` — regressions from the v234 review: one-time collection
+  migrations don't re-run on every launch, an emptied collection stays empty,
+  library entries from files/backups are sanitised (ids, thumbnails, keys),
+  `esc`/`safeThumb`, and generated-palette guides persist their palette.
+  Persistence tests boot a fresh app per case via `createApp()` with an
+  in-memory `localStorage` (`memoryStorage()` in the harness).
 
 The section-finder core is reached through a small, additive **test-export
 seam** in `index.html`: one block, guarded by `globalThis.__MS_TEST`, that

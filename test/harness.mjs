@@ -82,6 +82,14 @@ const fakeDocument = new Proxy({}, {
 let cached = null;
 export function loadApp() {
   if (cached) return cached;
+  cached = createApp();
+  return cached;
+}
+
+// A fresh, uncached app instance. `overrides` are merged into the global
+// context before the script runs (e.g. a real-ish localStorage to test
+// persistence across a simulated reload).
+export function createApp(overrides = {}) {
   const html = fs.readFileSync(INDEX, 'utf8');
   const js = extractAppScript(html);
   const ctx = {
@@ -102,12 +110,26 @@ export function loadApp() {
     // Browser auto-creates globals for elements with these ids; shim them:
     SF: stub, mCollection: stub, savedOverlay: stub,
   };
+  Object.assign(ctx, overrides);
   ctx.window = ctx; ctx.self = ctx; ctx.globalThis = ctx;
   ctx.__MS_TEST = true; // activates the (otherwise-inert) test-export seam in index.html
   vm.createContext(ctx);
   vm.runInContext(js, ctx, { timeout: 10000, filename: 'index.html#app' });
-  cached = ctx;
+  // top-level `let`/`const` bindings aren't globals; expose a peek for tests
+  ctx.__eval = (src) => vm.runInContext(src, ctx);
   return ctx;
+}
+
+// Minimal in-memory Storage implementation.
+export function memoryStorage(init = {}) {
+  const m = new Map(Object.entries(init));
+  return {
+    getItem: (k) => (m.has(k) ? m.get(k) : null),
+    setItem: (k, v) => { m.set(k, String(v)); },
+    removeItem: (k) => { m.delete(k); },
+    clear: () => m.clear(),
+    _map: m,
+  };
 }
 
 export const app = loadApp();
