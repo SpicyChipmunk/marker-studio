@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { createApp } from './harness.mjs';
 
 // every setting, by the name of the variable that holds it (as __mstest.styleVars reads them)
-const NAMES = ['family', 'palette', 'gradShape', 'dir', 'look', 'emphasis', 'limitN', 'noAdj', 'gradSeed', 'blendFall', 'blendMix',
+const NAMES = ['family', 'palette', 'gradShape', 'dir', 'look', 'emphasis', 'limitN', 'noAdj', 'balance', 'balM', 'balS', 'balA', 'balSeed', 'noRep', 'gradSeed', 'blendFall', 'blendMix',
   'texAmt', 'radC', 'shadeMode', 'shadeSun', 'shadeRound', 'shadeLines', 'shadeHi', 'shadeLo', 'shadeLight', 'shadeMain', 'shadeShadow', 'shadeHilite', 'shadeFlat', 'photoXf',
   'photoOp', 'photoPaper', 'expand', 'expandChar', 'paletteSource', 'savedPalId', 'genHarmony', 'genPal', 'minPos', 'bgTrim',
   'addAutoClose'];
@@ -18,7 +18,7 @@ test('each style setting’s first value (a guide that changes nothing is saved 
   for (const k of NAMES) got[k] = plain(sv[k]);
   assert.deepEqual(got, {
     family: 'gradient', palette: 'all', gradShape: 'serpentine', dir: 1, look: 'auto', emphasis: 'neutral', limitN: 16,
-    noAdj: false, gradSeed: 0, blendFall: 2, blendMix: 'soft', texAmt: 0.5, radC: null, shadeMode: 'off', shadeSun: { x: 0.2, y: 0.12 },
+    noAdj: false, balance: 'main', balM: 'auto', balS: 'auto', balA: 'auto', balSeed: 0, noRep: false, gradSeed: 0, blendFall: 2, blendMix: 'soft', texAmt: 0.5, radC: null, shadeMode: 'off', shadeSun: { x: 0.2, y: 0.12 },
     shadeRound: 0.5, shadeLines: true, shadeHi: 0.5, shadeLo: 0.5, shadeLight: 'auto', shadeMain: true, shadeShadow: 'same', shadeHilite: 'same',
     shadeFlat: {}, photoXf: null,
     photoOp: 0.65, photoPaper: true, expand: false, expandChar: 0.5, paletteSource: 'owned', savedPalId: null,
@@ -37,6 +37,7 @@ function scene() {
   core.assignData = { order: [1, 3], assign: { 1: { mkey: 'Ohuhu|R16' }, 3: { mkey: 'Ohuhu|B06' } }, N: 2 };
   Object.assign(sv, {
     family: 'blend', palette: 'cool', gradShape: 'diagonal', dir: -1, look: 'ltd', emphasis: 'pastel', limitN: 7, noAdj: true,
+    balance: 'mixed', balM: 'blue', balS: 'auto', balA: 'orange', balSeed: 0.5, noRep: true,
     gradSeed: 0.25, blendFall: 3.4, blendMix: 'vivid', texAmt: 0.75, radC: { x: 0.3, y: 0.7 }, shadeMode: 'shadow', shadeSun: { x: 0.9, y: 0.05 },
     shadeRound: 0.35, shadeLines: false, shadeHi: 0.6, shadeLo: 0.15, shadeLight: 'sun', shadeShadow: 'grey', shadeHilite: 'paper',
     shadeFlat: { 3: 1, 1: 1 },
@@ -54,7 +55,7 @@ test('the saved style: its exact text, nesting and order', () => {
   assert.equal(
     JSON.stringify(d.payload.style),
     '{"family":"blend","palette":"cool","gradShape":"diagonal","dir":-1,"look":"ltd","emphasis":"pastel","limitN":7,' +
-      '"noAdj":true,' +
+      '"noAdj":true,"balance":"mixed","balM":"blue","balS":"auto","balA":"orange","balSeed":0.5,"noRep":true,' +
       '"gradSeed":0.25,"blendFall":3.4,"blendVivid":true,"blendMix":"vivid","texAmt":0.75,"radC":{"x":0.3,"y":0.7},' +
       '"shade":{"mode":"shadow","x":0.9,"y":0.05,"round":0.35,"lines":false,"hi":0.6,"lo":0.15,"lightSrc":"sun","light":"sun","main":true,"shadow":"grey","hilite":"paper","flat":[1,3]},' +
       '"photo":null,"expand":true,"expandChar":0.1,"paletteSource":"saved","savedPalId":99,"genHarmony":"tetradic",' +
@@ -109,14 +110,14 @@ test('STYLE_FIELDS: every default is its variable’s first value, and what a fi
     assert.deepEqual(plain(f.check(undefined, f.def)), plain(f.def), f.key + ' (missing)');
     n++;
   }
-  assert.equal(n, 33);
+  assert.equal(n, 39);
 });
 
 test('STYLE_FIELDS: where each setting is saved (in the order written) and which ones Undo keeps', () => {
   const core = createApp().__mstest;
   assert.deepEqual([...core.styleFields].map((f) => f.in + '.' + f.key + (f.undo ? '' : ' (no undo)')), [
     'style.family', 'style.palette', 'style.gradShape', 'style.dir', 'style.look', 'style.emphasis', 'style.limitN',
-    'style.noAdj', 'style.gradSeed', 'style.blendFall', 'style.blendVivid (no undo)', 'style.blendMix', 'style.texAmt', 'style.radC',
+    'style.noAdj', 'style.balance', 'style.balM', 'style.balS', 'style.balA', 'style.balSeed', 'style.noRep', 'style.gradSeed', 'style.blendFall', 'style.blendVivid (no undo)', 'style.blendMix', 'style.texAmt', 'style.radC',
     'shade.mode', 'shade.x', 'shade.y', 'shade.round', 'shade.lines', 'shade.hi', 'shade.lo', 'shade.lightSrc', 'shade.light (no undo)', 'shade.main', 'shade.shadow',
     'shade.hilite', 'shade.flat',
     'style.photo (no undo)', 'style.expand', 'style.expandChar', 'style.paletteSource', 'style.savedPalId',

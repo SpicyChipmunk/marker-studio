@@ -149,6 +149,12 @@ function planLabel1(p, q) {
   if (a.dir !== b.dir) return 'Direction: ' + (b.dir < 0 ? 'Reversed' : 'Forward');
   if (a.look !== b.look) return 'Look: ' + (LOOK_LABEL[b.look] || b.look);
   if (a.noAdj !== b.noAdj) return 'Touching sections different ' + onoff(b.noAdj);
+  if (a.balance !== b.balance) return 'Balance: ' + (b.balance === 'main' ? 'Main colour' : 'Mixed');
+  if (a.balM !== b.balM) return 'Main colour: ' + (BAL_FAM[b.balM] ? BAL_FAM[b.balM].n : 'Auto');
+  if (a.balS !== b.balS) return 'Second colour: ' + (BAL_FAM[b.balS] ? BAL_FAM[b.balS].n : 'Auto');
+  if (a.balA !== b.balA) return 'Accent: ' + (BAL_FAM[b.balA] ? BAL_FAM[b.balA].n : 'Auto');
+  if (a.balSeed !== b.balSeed) return 'Other pairings';
+  if (a.noRep !== b.noRep) return 'No repeats ' + onoff(b.noRep);
   if (a.blendFall !== b.blendFall) return 'Spread changed';
   if (a.blendMix !== b.blendMix) return 'Mix: ' + (BLEND_MIX_LABEL[b.blendMix] || b.blendMix);
   if (a.anchors.length !== b.anchors.length)

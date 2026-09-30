@@ -331,7 +331,8 @@ test('Surprise picks a Look and a Mood too (mostly Auto and Any)', async () => {
   }
   assert.ok(looks.has('auto') && looks.size >= 2, [...looks].join());
   assert.ok(moods.has('neutral') && moods.size >= 3, [...moods].join());
-  assert.match(await page.evaluate(() => __mstest.planLabel), / look · \w+ mood · /);
+  // (a Gradient says its Look; since v283 one Surprise in three is Random with a main colour, which says that instead)
+  assert.match(await page.evaluate(() => __mstest.planLabel), /(?: look|Random, main colour [^·]+) · \w+ mood · /);
   assert.deepEqual(errors, []);
 });
 

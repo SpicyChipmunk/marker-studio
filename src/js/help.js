@@ -5,6 +5,7 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'Random has a Balance: Main colour lays one colour over about 60% of the picture, a second over 30% and an accent over 10% (tap the bar to choose them). Mixed is Random as before, now with No repeats. Surprise can pick it too.',
   'Test strip (Share › Print › Pages): a page of boxes to try each marker, and its highlight, base and shadow, on your own paper. Radial gradients have a ⊕ to drag where the rings start, and a zone’s sections can be chosen with the keyboard.',
   'Shading per zone: in Shading, the chips choose a zone to shade or leave flat, with its own roundness, highlights and shadows. The light stays one for the whole picture.',
   'Zones: give part of your picture its own pattern and colours. In Pattern, tap ＋ Zone, then tap or drag across sections. Colour along can go zone by zone.',

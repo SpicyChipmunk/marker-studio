@@ -357,6 +357,11 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     generatePalette: generatePalette,
     activePool: activePool,
     thinGreyM: thinGreyM,
+    balPlan: balPlan,
+    balFamOf: balFamOf,
+    buildNoRep: buildNoRep,
+    buildBalance: buildBalance,
+    noRepPool: noRepPool,
     poolMsg: poolMsg,
     lookNote: lookNote,
     // the Gradient's parts (30-palette-assign), for the unit tests
@@ -526,6 +531,42 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       },
       set noAdj(v) {
         noAdj = v;
+      },
+      get balance() {
+        return balance;
+      },
+      set balance(v) {
+        balance = v;
+      },
+      get balM() {
+        return balM;
+      },
+      set balM(v) {
+        balM = v;
+      },
+      get balS() {
+        return balS;
+      },
+      set balS(v) {
+        balS = v;
+      },
+      get balA() {
+        return balA;
+      },
+      set balA(v) {
+        balA = v;
+      },
+      get balSeed() {
+        return balSeed;
+      },
+      set balSeed(v) {
+        balSeed = v;
+      },
+      get noRep() {
+        return noRep;
+      },
+      set noRep(v) {
+        noRep = v;
       },
       get gradSeed() {
         return gradSeed;

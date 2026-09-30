@@ -45,6 +45,16 @@ function ctlWirePatternFamily() {
           pickPhotoRef();
           return;
         }
+        // (Random's first main colour is anyone's guess, not the same pairing on every guide: 31-balance)
+        if (
+          family === 'random' &&
+          balance === 'main' &&
+          !balSeed &&
+          balM === 'auto' &&
+          balS === 'auto' &&
+          balA === 'auto'
+        )
+          balSeed = Math.random() * 0.998 + 0.001;
         if (family !== 'photo') photoAlign = false;
         else if (!_phBumped) {
           _phBumped = true;
@@ -304,6 +314,7 @@ function ctlWirePatternOptions() {
     });
   var _br = document.getElementById('sfBrush');
   if (_br) _br.addEventListener('click', openBrushPop);
+  balWire();
   var _na = document.getElementById('sfNoAdj');
   if (_na)
     _na.addEventListener('change', function (e) {

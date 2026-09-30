@@ -11,12 +11,15 @@ function ctlPlan() {
   const _snote = surpriseNote
     ? HARM[genHarmony] +
       ' palette \u00b7 ' +
-      gradShape.charAt(0).toUpperCase() +
-      gradShape.slice(1) +
-      (dir < 0 ? ' (reversed)' : '') +
+      (family === 'random'
+        ? 'Random, main colour ' + surpriseRoles()
+        : gradShape.charAt(0).toUpperCase() +
+          gradShape.slice(1) +
+          (dir < 0 ? ' (reversed)' : '') +
+          ' \u00b7 ' +
+          LOOK_LABEL[look] +
+          ' look') +
       ' \u00b7 ' +
-      LOOK_LABEL[look] +
-      ' look \u00b7 ' +
       MOODS[emphasis].label +
       ' mood \u00b7 ' +
       (lastPoolN || limitN) +
@@ -89,17 +92,23 @@ function ctlPlanColours() {
   if (family !== 'manual') {
     var _srcSeed = paletteSource === 'saved' || paletteSource === 'generate',
       _psz = sliderMax(),
-      _cnt = Math.min(limitN, _psz);
+      _cnt = Math.min(limitN, _psz),
+      // (Random's No repeats: as many as there are sections, so the count has nothing to say)
+      _nr = family === 'random' && balance === 'mixed' && noRep;
     _mkH +=
-      '<label class="sfmkcount">Markers in this ' +
+      '<label class="sfmkcount' +
+      (_nr ? ' sfoff' : '') +
+      '">Markers in this ' +
       (zones.length ? 'zone' : 'guide') +
       ' <b id="sfMkNlbl">' +
-      (_cnt >= _psz ? 'all (' + _psz + ')' : _cnt) +
+      (_nr ? 'one per section' : _cnt >= _psz ? 'all (' + _psz + ')' : _cnt) +
       '</b><input type="range" id="sfMkCount" min="2" max="' +
       _psz +
       '" value="' +
       _cnt +
-      '"></label>';
+      '"' +
+      (_nr ? ' disabled' : '') +
+      '></label>';
     if (_srcSeed) {
       _expH +=
         '<label class="sfchk sfc-check sfc-inline sfc-mt8"><input type="checkbox" id="sfExpand"' +
@@ -201,14 +210,28 @@ function ctlPlanColours() {
     _iShow = family !== 'manual' && family !== 'photo',
     // a saved palette is used as it is: its Mood is greyed out (the line under it says so)
     _mOff = _iShow && paletteSource === 'saved' && curSeedLen() > 0;
+  // (Random's Main colour with a colour chosen by hand: the colours are chosen, so Temperature has nothing to steer)
+  var _tOff =
+    _tShow &&
+    family === 'random' &&
+    balance === 'main' &&
+    paletteSource === 'owned' &&
+    (balM !== 'auto' || balS !== 'auto' || balA !== 'auto');
   if (_tShow) html += '<div class="sflean">Within your filters, lean toward\u2026</div>';
   if (_tShow)
     html +=
-      '<div class="sfsublbl">Temperature</div><div id="sfPal" role="group" aria-label="Temperature" class="sfc-segs">' +
-      ctlSeg('cool', 'Cool', palette === 'cool') +
-      ctlSeg('warm', 'Warm', palette === 'warm') +
-      ctlSeg('all', 'Any', palette === 'all') +
-      '</div>';
+      '<div class="sfsublbl' +
+      (_tOff ? ' sfoff' : '') +
+      '">Temperature</div><div id="sfPal" role="group" aria-label="Temperature" class="sfc-segs' +
+      (_tOff ? ' sfoff' : '') +
+      '">' +
+      ctlSeg('cool', 'Cool', palette === 'cool', _tOff) +
+      ctlSeg('warm', 'Warm', palette === 'warm', _tOff) +
+      ctlSeg('all', 'Any', palette === 'all', _tOff) +
+      '</div>' +
+      (_tOff
+        ? '<div class="sfc-note sfc-mt6">Main colour sets this: its colours are chosen (Pattern).</div>'
+        : '');
   if (_iShow)
     html +=
       '<div class="sfsublbl' +
@@ -319,10 +342,8 @@ function ctlPlanPattern() {
     const _ln = lookNote();
     if (_ln) html += '<div id="sfLookNote" class="sfc-note sfc-mt6">' + _ln + '</div>';
   } else if (family === 'random') {
-    html +=
-      '<label class="sfchk sfc-check sfc-inline sfc-mt10"><input type="checkbox" id="sfNoAdj"' +
-      (noAdj ? ' checked' : '') +
-      '> Keep touching sections clearly different</label>';
+    // (Balance, its bar, Keep touching sections clearly different and No repeats: 31-balance)
+    html += balHTML();
   } else if (family === 'blend') {
     html +=
       infoLine(

@@ -63,6 +63,8 @@ test('Random on the sample: with “Keep touching sections clearly different”,
   await sampleGuide(page);
   await tab(page, 'pattern');
   await click(page, '#sfFam [data-v="random"]'); await idle(page);
+  // (Mixed: Random as it always was; Main colour below)
+  await click(page, '#sfBal [data-v="mixed"]'); await idle(page);
   assert.equal((await page.textContent('label:has(#sfNoAdj)')).trim(), 'Keep touching sections clearly different');
   const pairs = await touching(page);
   assert.ok(pairs.length > 40, pairs.length + ' touching pairs');
@@ -78,6 +80,12 @@ test('Random on the sample: with “Keep touching sections clearly different”,
   assert.equal(await page.evaluate(() => __mstest.planLabel), 'Touching sections different on');
   for (let r = 0; r < 5; r++) {
     assert.deepEqual(await clashes(page, pairs), { same: 0, alike: 0 }, 'roll ' + r);
+    await click(page, '#sfShuffle'); await idle(page);
+  }
+  // Main colour keeps it too (taking another role's marker where the role's own all look alike)
+  await click(page, '#sfBal [data-v="main"]'); await idle(page);
+  for (let r = 0; r < 5; r++) {
+    assert.deepEqual(await clashes(page, pairs), { same: 0, alike: 0 }, 'Main colour, roll ' + r);
     await click(page, '#sfShuffle'); await idle(page);
   }
   assert.deepEqual(errors, []);

@@ -21,7 +21,7 @@ test('Undo names a zone step: made, deleted, renamed, sections added or taken ou
 
 test('a saved zone\'s settings are checked as a guide\'s are: odd values open as the default, good ones as saved', () => {
   const t = createApp().__mstest, keys = t.ZONE_KEYS;
-  assert.deepEqual([...keys].sort(), ['blendFall', 'blendMix', 'dir', 'emphasis', 'expand', 'expandChar', 'family', 'genHarmony', 'genPal', 'gradSeed', 'gradShape', 'limitN', 'look', 'noAdj', 'palette', 'paletteSource', 'radC', 'savedPalId'].sort(), 'the zone\'s own settings: pattern and colours (and Radial\'s centre), not shading, texture or the photo');
+  assert.deepEqual([...keys].sort(), ['balA', 'balM', 'balS', 'balSeed', 'balance', 'blendFall', 'blendMix', 'dir', 'emphasis', 'expand', 'expandChar', 'family', 'genHarmony', 'genPal', 'gradSeed', 'gradShape', 'limitN', 'look', 'noAdj', 'noRep', 'palette', 'paletteSource', 'radC', 'savedPalId'].sort(), 'the zone\'s own settings: pattern and colours (and Radial\'s centre), not shading, texture or the photo');
   const good = t.zoneStOpen({ family: 'random', gradShape: 'radial', dir: -1, limitN: 9, palette: 'warm', look: 'ltd', blendMix: 'paint', radC: { x: 0.25, y: 0.8 } });
   assert.deepEqual([good.family, good.gradShape, good.dir, good.limitN, good.palette, good.look, good.blendMix, good.radC], ['random', 'radial', -1, 9, 'warm', 'ltd', 'paint', { x: 0.25, y: 0.8 }]);
   const odd = t.zoneStOpen({ family: 'rainbow', gradShape: 5, dir: 0, limitN: 'x', palette: null, gradSeed: 7, radC: { x: 'a', y: 2 } });

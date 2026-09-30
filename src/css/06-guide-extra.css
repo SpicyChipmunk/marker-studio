@@ -1263,3 +1263,121 @@ html.sfsheetsd .mstoast {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
+/* Random's Balance (v283): the bar of roles, each a button in its markers' colours, and the family sheet */
+#sfRoot #sfCtl .sfbalbar {
+  display: flex;
+  gap: 2px;
+  margin-top: 12px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+#sfRoot #sfCtl .sfbalseg {
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#sfRoot #sfCtl .sfbalseg {
+  display: flex;
+  align-items: center;
+}
+#sfRoot #sfCtl .sfbalsp {
+  white-space: pre;
+}
+/* (a name too long for its part gives way; the share always shows) */
+#sfRoot #sfCtl .sfbalsn {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#sfRoot #sfCtl .sfbalsn:empty {
+  display: none;
+}
+#sfRoot #sfCtl .sfbalsp {
+  flex: none;
+}
+#sfRoot .sfbalopt:disabled {
+  opacity: 0.5;
+}
+#sfRoot #sfCtl .sfbalseg:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -4px;
+}
+#sfRoot #sfCtl .sfbalrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+#sfRoot #sfCtl .sfbalrow .sfghost {
+  margin: 0;
+  flex: none;
+}
+#sfRoot .sfbalopts {
+  display: flex;
+  flex-direction: column;
+}
+#sfRoot .sfbalopt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 6px 4px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+#sfRoot .sfbalopt[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.07);
+}
+#sfRoot .sfbalopt[aria-pressed='true'] .sfbaltt::after {
+  content: ' \2713';
+}
+#sfRoot .sfbalnm {
+  flex: 0 0 34%;
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+}
+#sfRoot .sfbalopt[data-k='auto'] .sfbalnm {
+  flex: none;
+}
+#sfRoot .sfbalsub {
+  font-weight: 400;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+#sfRoot .sfbalopt[data-k='auto'] .sfbalsub {
+  margin-left: 8px;
+}
+#sfRoot .sfbalsw {
+  flex: 1 1 auto;
+  height: 22px;
+  border-radius: 6px;
+}
+#sfRoot .sfbaln {
+  flex: 0 0 28px;
+  text-align: right;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+#sfRoot .sfmkcount.sfoff {
+  opacity: 0.55;
+}

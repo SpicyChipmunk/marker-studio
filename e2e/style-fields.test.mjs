@@ -36,7 +36,8 @@ const SEEDED = () => {
 // today's defaults: what a guide that says nothing opens with
 const DEF_STYLE = {
   family: 'gradient', palette: 'all', gradShape: 'serpentine', dir: 1, look: 'auto', emphasis: 'neutral', limitN: 16,
-  noAdj: false, gradSeed: 0, blendFall: 2, blendVivid: false, blendMix: 'soft', texAmt: 0.5, radC: null,
+  noAdj: false, balance: 'main', balM: 'auto', balS: 'auto', balA: 'auto', balSeed: 0, noRep: false,
+  gradSeed: 0, blendFall: 2, blendVivid: false, blendMix: 'soft', texAmt: 0.5, radC: null,
   // (lightSrc: where the light comes from, v281; light: what older copies are told, the sun only when it's chosen)
   shade: { mode: 'off', x: 0.2, y: 0.12, round: 0.5, lines: true, hi: 0.5, lo: 0.5, lightSrc: 'auto', light: 'photo', main: true, shadow: 'same', hilite: 'same', flat: [] },
   photo: null, expand: false, expandChar: 0.5, paletteSource: 'owned', savedPalId: null, genHarmony: 'analogous', genPal: [],
@@ -58,6 +59,7 @@ async function nonDefault(page) {
     return {
       style: {
         family: 'random', palette: 'warm', gradShape: 'radial', dir: -1, look: 'ltd', emphasis: 'earthy', limitN: 11, noAdj: true,
+        balance: 'mixed', balM: 'blue', balS: 'teal', balA: 'orange', balSeed: 0.4, noRep: true,
         gradSeed: 0.37, blendFall: 3.2, blendVivid: false, blendMix: 'paint', texAmt: 0.2, radC: { x: 0.3, y: 0.6 },
         shade: { mode: 'full', x: 0.7, y: 0.8, round: 0.9, lines: false, hi: 0.3, lo: 0.65, lightSrc: 'sun', light: 'sun', main: false, shadow: 'cool', hilite: 'warm', flat: [o[2], o[5]] },
         photo: null, expand: true, expandChar: 0.25, paletteSource: 'generate', savedPalId: 4242, genHarmony: 'triadic',
@@ -217,6 +219,7 @@ async function captureAll() {
 const ODD_TYPES = {
   family: 5, palette: null, gradShape: ['radial'], dir: '-1', look: 2, emphasis: true, limitN: '12', noAdj: 'true', gradSeed: '0.5',
   blendFall: 'abc', blendVivid: 1, blendMix: 2, texAmt: null, radC: 'middle',
+  balance: 3, balM: 'purple', balS: 1, balA: null, balSeed: 'x', noRep: 'yes',
   shade: { mode: 1, x: '0.3', y: null, round: true, lines: 'no', hi: {}, lo: [], light: 3, shadow: 1, hilite: {}, flat: 'x' },
   photo: 'x', expand: 'yes', expandChar: false, paletteSource: 1, savedPalId: '12', genHarmony: 7, genPal: 'Ohuhu|R16',
 };
@@ -225,21 +228,21 @@ const ODD_TYPES_PAY = { minSize: '30', minPos: '__delete', bgTrim: null, addAuto
 // is no photo)
 const ODD_TYPES_OPEN = DEF_STYLE;
 const ODD_HIGH = {
-  ...DEF_STYLE, limitN: 1e9, gradSeed: 1.5, blendFall: 9, texAmt: 2, radC: { x: 3, y: 1.5 }, expandChar: 7, savedPalId: 1e300,
+  ...DEF_STYLE, limitN: 1e9, gradSeed: 1.5, blendFall: 9, texAmt: 2, radC: { x: 3, y: 1.5 }, balSeed: 2, expandChar: 7, savedPalId: 1e300,
   shade: { mode: 'shadow', x: 3, y: 1.01, round: 5, lines: false, hi: 2, lo: 100, light: 'sun', shadow: 'grey', hilite: 'paper', flat: [] },
 };
 const ODD_HIGH_PAY = { minSize: 500, minPos: '__delete', bgTrim: 101, addAutoClose: true };
 const ODD_HIGH_OPEN = {
-  ...DEF_STYLE, limitN: 999, gradSeed: 1, blendFall: 4, texAmt: 1, radC: { x: 1, y: 1 }, expandChar: 1, savedPalId: 1e300,
+  ...DEF_STYLE, limitN: 999, gradSeed: 1, blendFall: 4, texAmt: 1, radC: { x: 1, y: 1 }, balSeed: 1, expandChar: 1, savedPalId: 1e300,
   shade: { mode: 'shadow', x: 1, y: 1, round: 1, lines: false, hi: 1, lo: 1, lightSrc: 'sun', light: 'sun', main: true, shadow: 'grey', hilite: 'paper', flat: [] },
 };
 const ODD_LOW = {
-  ...DEF_STYLE, limitN: -5, gradSeed: -1, blendFall: 0, texAmt: -5, radC: { x: -1, y: -0.5 }, expandChar: -0.1, savedPalId: -7,
+  ...DEF_STYLE, limitN: -5, gradSeed: -1, blendFall: 0, texAmt: -5, radC: { x: -1, y: -0.5 }, balSeed: -1, expandChar: -0.1, savedPalId: -7,
   shade: { mode: 'full', x: -1, y: -0.5, round: -2, lines: true, hi: -1, lo: -0.01, light: 'photo', flat: [] },
 };
 const ODD_LOW_PAY = { minSize: -3, minPos: '__delete', bgTrim: -50, addAutoClose: false };
 const ODD_LOW_OPEN = {
-  ...DEF_STYLE, limitN: 2, gradSeed: 0, blendFall: 0.6, texAmt: 0, radC: { x: 0, y: 0 }, expandChar: 0, savedPalId: -7,
+  ...DEF_STYLE, limitN: 2, gradSeed: 0, blendFall: 0.6, texAmt: 0, radC: { x: 0, y: 0 }, balSeed: 0, expandChar: 0, savedPalId: -7,
   // (light 'photo' in a file from before v281 was its default: auto)
   shade: { mode: 'full', x: 0, y: 0, round: 0, lines: true, hi: 0, lo: 0, lightSrc: 'auto', light: 'photo', main: true, shadow: 'same', hilite: 'same', flat: [] },
 };
@@ -247,6 +250,7 @@ const ODD_LOW_OPEN = {
 // through, as are "custom" and "photo", which Generate palette doesn't offer: today's behaviour, kept)
 const ODD_ENUM = {
   ...DEF_STYLE, family: 'rainbow', palette: 'hot', gradShape: 'spiral', dir: 0, look: 'fancy', emphasis: 'loud', limitN: 11.6, blendMix: 'loud',
+  balance: 'loud', balM: 'magenta', balA: 'Blues',
   shade: { ...DEF_STYLE.shade, mode: 'on', light: 'moon', shadow: 'dark', hilite: 'glow' },
   paletteSource: 'bought', genHarmony: 'constructor', genPal: [5, 'Ohuhu|R16', null, 9999999, 'no such key'],
 };
@@ -360,7 +364,7 @@ test('Undo: every field it keeps goes back after a change that was never committ
     const t = __mstest, sv = t.styleVars, o = t.assignData.order;
     Object.assign(sv, {
       family: 'blend', palette: 'cool', gradShape: 'diagonal', dir: 1, look: 'smooth', emphasis: 'vivid', limitN: 9, noAdj: false,
-      gradSeed: 0.81, blendFall: 1.4, blendMix: 'vivid', texAmt: 0.9, radC: { x: 0.2, y: 0.25 }, shadeMode: 'shadow', shadeSun: { x: 0.1, y: 0.9 },
+      gradSeed: 0.81, blendFall: 1.4, blendMix: 'vivid', texAmt: 0.9, radC: { x: 0.2, y: 0.25 }, balance: 'main', balM: 'green', balS: 'auto', balA: 'red', balSeed: 0.9, noRep: false, shadeMode: 'shadow', shadeSun: { x: 0.1, y: 0.9 },
       shadeRound: 0.1, shadeLines: true, shadeHi: 0.8, shadeLo: 0.2, shadeLight: 'photo', shadeMain: true, shadeFlat: { [o[9]]: 1 },
       photoOp: 0.33, photoPaper: false, expand: false, expandChar: 0.9, paletteSource: 'owned', savedPalId: 55,
       shadeShadow: 'grey', shadeHilite: 'paper',
@@ -493,7 +497,8 @@ test('an old guide missing a field opens with today’s default for it, and the 
     const style = { ...v.style };
     delete style[k];
     await openWith(page, 'Missing ' + k, { ...v, style });
-    assert.deepEqual(await settings(page), { ...s1, style: { ...s1.style, [k]: DEF_STYLE[k] } }, 'missing ' + k);
+    // (a Random guide from before Balance opens Mixed, as it looked)
+    assert.deepEqual(await settings(page), { ...s1, style: { ...s1.style, [k]: k === 'balance' ? 'mixed' : DEF_STYLE[k] } }, 'missing ' + k);
     n++;
   }
   for (const k of Object.keys(DEF_STYLE.shade)) {
@@ -512,7 +517,7 @@ test('an old guide missing a field opens with today’s default for it, and the 
     assert.deepEqual(await settings(page), { ...s1, [k]: DEF_PAY[k] }, 'missing ' + k);
     n++;
   }
-  assert.equal(n, 21 + 13 + 3);
+  assert.equal(n, 27 + 13 + 3);
   // a guide saved before v277 has only minPos, on the old scale: 26 (137 px) opens as about the same size
   await openWith(page, 'Before v277', { ...v, minSize: '__delete', minPos: 26 });
   assert.equal((await settings(page)).minSize, 80);
@@ -554,7 +559,7 @@ test('odd values in a saved file (wrong type, out of range, unknown choice) open
   // numbers that aren't finite (possible through the test seam, not in a JSON file): the default, not the limit
   await page.evaluate(() => {
     const d = __mstest.currentDesignObj(), p = d.payload;
-    p.style = { limitN: Infinity, gradSeed: NaN, blendFall: -Infinity, texAmt: NaN, radC: { x: NaN, y: Infinity }, expandChar: Infinity, savedPalId: Infinity, shade: { x: Infinity, y: NaN, round: -Infinity } };
+    p.style = { limitN: Infinity, gradSeed: NaN, blendFall: -Infinity, texAmt: NaN, radC: { x: NaN, y: Infinity }, balSeed: NaN, expandChar: Infinity, savedPalId: Infinity, shade: { x: Infinity, y: NaN, round: -Infinity } };
     p.minSize = Infinity; delete p.minPos; p.bgTrim = NaN;
     __mstest.openDesignObj(Object.assign({}, p, { name: 'Infinite', W: d.W, H: d.H }), null);
   });

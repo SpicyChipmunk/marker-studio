@@ -2,7 +2,7 @@
 
 Run this once on an iPhone (Safari) and once on an Android phone (Chrome) after each release. Open the live GitHub Pages URL, not a local file. Mark each line ✅ / ❌ and add a note for any ❌ (a screenshot helps).
 
-**Before you start:** if the app is already on the phone, open it and tap **Reload** when the "Marker Studio was updated" message appears. The small version number at the bottom of Home should match the latest release (e.g. v282).
+**Before you start:** if the app is already on the phone, open it and tap **Reload** when the "Marker Studio was updated" message appears. The small version number at the bottom of Home should match the latest release (e.g. v283).
 
 ## 1. Install and first run (3 min)
 
@@ -77,6 +77,20 @@ On a guide, open **Style** and set **Shading** to **Light & shadow**.
 - [ ] The picker shows codes under each swatch, grouped by colour, with **Recently used** at the top the next time.
 - [ ] **Blend:** a tap still adds an anchor; press and hold a section shows Change colour / Pin. **Manual:** a tap opens the picker.
 - [ ] **Style → Pin colours:** taps pin and unpin sections directly.
+
+## 3c. Random's Balance, v283 (5 min)
+
+On one of your own photographed pages, then the sample.
+
+- [ ] **Main colour:** Pattern › Random. Balance shows **Main colour** on, and a bar of three colours ("Greens · 60%", "Teals · 30%", "10%"). The picture is mostly the first colour, a third the second, and small bright accents spread over it (none on the biggest sections). The line under it says what's used.
+- [ ] **Choosing colours:** tap the first part of the bar: a sheet of Auto and your colour families as strips of your markers. Pick one: the picture changes, Undo says "Main colour: …", and Colours › Temperature greys out ("Main colour sets this"). Pick, for the main colour, the family the second has: they swap.
+- [ ] **Other pairings** gives a different pairing each time; **Shuffle** keeps the colours and moves them about.
+- [ ] **Does it look good?** Try three or four pairings on your page. Do the accents read as accents (not sprinkles, not blobs)? Is 60/30/10 about right, or would you want the main colour stronger or weaker?
+- [ ] **Mixed** looks like Random did before. Tick **No repeats**: every section a different marker; Colours says "one per section".
+- [ ] **Surprise** a few times: now and then it picks Random with a main colour, and its message says so.
+- [ ] **A zone:** make a small zone on Random › Main colour: its line says it's too small for an accent.
+- [ ] **Save, leave, reopen:** the colours are as they were. An older guide on Random opens on Mixed, unchanged.
+- [ ] **The Print sheet** (Share › Print…): it sits right under the picture, with no gap between them (the fix for the flaky WebKit test).
 
 ## 3b. Test strip, Radial's centre and zones, v282 (6 min)
 

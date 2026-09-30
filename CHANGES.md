@@ -1021,3 +1021,48 @@ Two independent reviews of v279's Zones (one on saving, section edits and Undo; 
   - Unit tests: `test/gradient.test.mjs` (+1, greys), `test/shading.test.mjs` (+2, highlight ≠ shadow and glazes as a second pass), `test/style-fields.test.mjs` and `test/zones.test.mjs` (`radC`).
   - The style golden was re-recorded: with `radC` taken out, all 53 captures hash exactly as before.
 - Cache bumped to `marker-studio-v282`.
+
+# Changes — v283 (Random's Balance)
+
+- **Balance** (Pattern › Random): **Mixed | Main colour**.
+  - **Main colour** lays one colour family over about 60% of the picture, a second over 30% and an accent over 10%, by area. A bar shows the three roles in their markers' colours ("Greens · 60%", "Teals · 30%", "10%").
+  - Tap a part of the bar to choose its colour: a sheet lists Auto and your colour families as strips of your own markers, with how many you have. **↻ Other pairings** rolls the roles left on Auto for a different pairing. A line under the bar says what's used ("9 greens, 5 teals and 2 violets of yours").
+  - **Mixed** is Random as it always was, now with **No repeats**: every section gets a different marker. With fewer markers than sections, each marker is used once before any is used twice, with repeats kept apart. The marker count then reads "one per section".
+- **How Main colour chooses:**
+  - **Colour families go by how a marker looks, not its code.** Hues are measured the Oklab way, which keeps saturated blues apart from violets; browns and beiges, and greys, have their own families.
+  - **The marker count is shared** about half to the main colour, a third to the second, and 1–2 accents, each role spread from light to dark. With shading on, markers nearer the middle are taken, so each still has lighter and darker companions.
+  - **Auto:**
+    - The main colour is a family of the Temperature's. Any family can be used if none of those can, or once you've chosen a role yourself; Temperature then greys out ("Main colour sets this").
+    - The accent is the family most across the colour wheel, with bright markers. With the Pastel mood, it's the one whose lightness stands out most. Any bright colour can be the accent for greys.
+    - The second is a family next to the main colour, or browns with a warm one.
+    - A family with too few markers borrows the nearest in hue from next to it, and the line says so ("1 red, with 1 pink and 1 orange"). One role that can't be filled leaves two (70/30).
+  - **A saved or generated palette** is used whole: its biggest colour leads and its other colours join the role nearest them.
+  - **Choosing a family another role has** swaps them. Families that can't fill a role are greyed in the sheet.
+- **Laying it out:**
+  - Roles go by area. Accents go on middling sections spread over the picture, never the biggest nor slivers too small to colour.
+  - A zone of fewer than 10 sections has no accent.
+  - Pinned sections keep their markers and count towards their role's share.
+  - "Keep touching sections clearly different" holds in Main colour too, taking another role's marker where a role's own all look alike.
+  - Shuffle lays it again with the same colours.
+- **Defaults:** a guide that switches to Random now starts on Main colour, with a first pairing that varies from guide to guide. A Random guide saved before v283 opens on Mixed, exactly as it looked. Each zone has its own Balance.
+- **Surprise** picks Random with a main colour about one time in three, its roles the generated palette's own colours. Its message says so ("Triadic palette · Random, main colour yellows, with oranges and a violet accent · …"). The random numbers for the palette are drawn as before, so a Gradient Surprise comes out as it did.
+- **Undo** names each change: "Balance: Main colour", "Main colour: Blues", "Accent: Auto", "Other pairings", "No repeats on".
+- **Fixed:** the Print sheet could sit a few pixels below the picture in Safari. The app placed it before WebKit had finished the scroll that pins the picture, and only moved it when the picture changed size. It's now placed again a frame later, and on every scroll. This was the WebKit flaky test (tabs.test.mjs).
+- **Found by a fresh-eyes review before release, and fixed:**
+  - Speed: accents were chosen in time that grew with the square of the number of accents, 4–5 s on 3,600 sections. It's now about 0.2 s. No repeats took 10–15 s with Keep touching sections different on; it's now about 0.7 s.
+  - No repeats could put the same marker on touching sections with few markers.
+  - Temperature could stop Main colour altogether.
+  - The accent vanished on pictures with very many small sections.
+  - Lemon yellows were counted as yellow-greens.
+  - Bar labels could have poor contrast and hide their percentage.
+  - The notes were wrong in several cases: No repeats with few markers, small zones, palettes, borrowed markers.
+  - "They swap" didn't swap when the other role was on Auto.
+  - Other pairings could repeat the same pairing, and now says so when there's no other.
+  - Showing No repeats' note made a generated palette.
+- Help: the glossary's Random; What's new. Device checklist 3c. GUIDE-LAYOUT: Balance.
+- **Tests:**
+  - `test/balance.test.mjs` (10): families, Auto, by hand, thin families, areas, pins, palettes, No repeats, neighbours, speed.
+  - `e2e/balance.test.mjs` (7).
+  - The Random "keep touching sections different" test covers Main colour too.
+  - The style tests and golden now include the six new settings. With them taken out, only the three Random states changed (Random now starts on Main colour); the other 50 are as before.
+- Cache bumped to `marker-studio-v283`.

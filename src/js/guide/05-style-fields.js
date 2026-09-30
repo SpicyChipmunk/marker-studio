@@ -62,6 +62,21 @@ function styleHarmony(v, d) {
 function shadeFlatList() {
   return Object.keys(shadeFlat).map(Number);
 }
+// Balance's colour families (their names and hues: BAL_FAM, 31-balance), or Auto
+const BAL_CHOICES = [
+  'auto',
+  'pink',
+  'red',
+  'orange',
+  'yellow',
+  'ygreen',
+  'green',
+  'teal',
+  'blue',
+  'violet',
+  'brown',
+  'grey',
+];
 const STYLE_FIELDS = [
   {
     key: 'family',
@@ -85,6 +100,22 @@ const STYLE_FIELDS = [
   { key: 'emphasis', in: 'style', def: 'neutral', check: styleOne(MOOD_KEYS), undo: true },
   { key: 'limitN', in: 'style', def: 16, check: styleWhole(2, 999), undo: true },
   { key: 'noAdj', in: 'style', def: false, check: styleBool, undo: true },
+  // Random's Balance (v283): a guide saved before it that uses Random opens as Mixed, as it looked; any other opens on
+  // Main colour, what Random starts with when chosen now
+  {
+    key: 'balance',
+    in: 'style',
+    def: 'main',
+    check: function (v, d, src) {
+      return v === 'main' || v === 'mixed' ? v : src && src.family === 'random' ? 'mixed' : d;
+    },
+    undo: true,
+  },
+  { key: 'balM', in: 'style', def: 'auto', check: styleOne(BAL_CHOICES), undo: true },
+  { key: 'balS', in: 'style', def: 'auto', check: styleOne(BAL_CHOICES), undo: true },
+  { key: 'balA', in: 'style', def: 'auto', check: styleOne(BAL_CHOICES), undo: true },
+  { key: 'balSeed', in: 'style', def: 0, check: styleNum(0, 1), undo: true },
+  { key: 'noRep', in: 'style', def: false, check: styleBool, undo: true },
   { key: 'gradSeed', in: 'style', def: 0, check: styleNum(0, 1), undo: true },
   { key: 'blendFall', in: 'style', def: 2, check: styleNum(0.6, 4), undo: true },
   // Blend's Mix. Before it there was only a "Keep colours vivid" tick box, saved as blendVivid: a guide saved then
@@ -292,6 +323,42 @@ const STYLE_VAR = {
   },
   set noAdj(v) {
     noAdj = v;
+  },
+  get balance() {
+    return balance;
+  },
+  set balance(v) {
+    balance = v;
+  },
+  get balM() {
+    return balM;
+  },
+  set balM(v) {
+    balM = v;
+  },
+  get balS() {
+    return balS;
+  },
+  set balS(v) {
+    balS = v;
+  },
+  get balA() {
+    return balA;
+  },
+  set balA(v) {
+    balA = v;
+  },
+  get balSeed() {
+    return balSeed;
+  },
+  set balSeed(v) {
+    balSeed = v;
+  },
+  get noRep() {
+    return noRep;
+  },
+  set noRep(v) {
+    noRep = v;
   },
   get gradSeed() {
     return gradSeed;

@@ -1237,6 +1237,29 @@ const MOOD_WORDS = {
   earthy: ['earthy', 'nearest to earthy'],
 };
 function poolMsg() {
+  // (Random's Main colour and No repeats choose their own markers: 31-balance)
+  if (family === 'random' && balance === 'main') {
+    const p = balPlan();
+    if (p.ok)
+      return (
+        'Using ' +
+        p.used +
+        ' of ' +
+        (p.seeded ? 'the palette\u2019s' : coll.length + (isDemo() ? ' catalogue' : '')) +
+        ' markers, shared out by Main colour (Pattern tab)'
+      );
+  }
+  if (family === 'random' && balance === 'mixed' && noRep) {
+    const k = noRepPool(zoneList(), true).length;
+    return (
+      'Using ' +
+      k +
+      ' of ' +
+      coll.length +
+      ' markers: one per section' +
+      (k < zoneList().length ? ' as far as they go' : '')
+    );
+  }
   const N = zoneList().length,
     grad = gradFamily(),
     need = grad ? Math.min(limitN, N) : limitN,
@@ -1331,7 +1354,7 @@ function assignOne(cl) {
     note('No ' + palette + ' markers in your collection \u2014 pick another palette.');
     return false;
   }
-  if (family === 'random') buildRandom(cl, pool);
+  if (family === 'random') buildRandomBal(cl, pool);
   else if (family === 'blend') {
     if (anchors.length === 0) seedAnchors();
     blendAssign(cl, pool);
@@ -1624,6 +1647,15 @@ function surprise() {
   // (drawn after the palette, so the palette a given run of random numbers makes is as it was before there were Looks)
   var looks = ['auto', 'auto', 'auto', 'smooth', 'ltd'];
   look = looks[(Math.random() * looks.length) | 0];
+  // about one in three: Random with a main colour, its roles the generated palette's own colours (v283; drawn last, for
+  // the same reason)
+  if (Math.random() < 1 / 3) {
+    family = 'random';
+    balance = 'main';
+    balM = balS = balA = 'auto';
+    balSeed = Math.random();
+    noRep = false;
+  }
   surpriseNote = true;
   planWhy = '\u2728 Surprise';
   reassign();

@@ -157,7 +157,11 @@ function picScroll() {
   }
   d = Math.round(d * 100) / 100;
   const s = geo.full ? Math.round(((geo.full - d) / geo.full) * 1e5) / 1e5 : 1;
-  if (d === picD && s === picS) return;
+  if (d === picD && s === picS) {
+    // (the page scrolled but the picture kept its size: an open sheet still follows the picture's foot)
+    if (sheetO) placeSheet();
+    return;
+  }
   picD = d;
   picS = s;
   picEl.style.transform = d ? 'translateY(' + d + 'px) scale(' + s + ')' : '';
@@ -708,6 +712,11 @@ function openSheet(o) {
   sheetO = { el: el, o: o, opener: op, y0: y0, y1: window.scrollY };
   document.documentElement.classList.add('sfsheeton');
   placeSheet();
+  // (and again a frame later: Safari can settle the scroll that pinned the picture, and the page's overflow, after
+  // this frame, leaving a gap of a few pixels between the picture and the sheet)
+  requestAnimationFrame(function () {
+    if (sheetO && sheetO.el === el) placeSheet();
+  });
   touchRule();
   el.addEventListener('keydown', sheetTab);
   const f =

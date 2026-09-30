@@ -154,6 +154,16 @@ let emphasis = 'neutral'; // written by: 05-style-fields, 30-palette-assign, 50-
 // written by: 05-style-fields, 30-palette-assign, 46-photo, 50-controls, 99-close (test)
 let limitN = 16;
 let noAdj = false; // written by: 05-style-fields, 50-controls, 99-close (test)
+// Random's Balance (v283, 31-balance): 'main' (one main colour, a second and an accent, about 60/30/10 of the
+// picture) or 'mixed' (every marker alike, as Random always was); balM, balS, balA: each role's colour family
+// (BAL_FAM) or 'auto'; balSeed: which pairing Auto chose (Other pairings rolls it); noRep: Mixed's No repeats.
+// Written by: 05-style-fields, 30-palette-assign, 52-controls-plan-wire, 99-close (test)
+let balance = 'main';
+let balM = 'auto';
+let balS = 'auto';
+let balA = 'auto';
+let balSeed = 0;
+let noRep = false;
 let gradSeed = 0; // written by: 05-style-fields, 30-palette-assign, 50-controls, 99-close (test)
 // Radial's centre ({ x, y } as parts of the picture's width and height), or null: the middle of what the flow runs
 // over (the zone's own, or the picture). v282. Written by: 05-style-fields, 30-palette-assign, 99-close (test)

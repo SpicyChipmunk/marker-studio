@@ -1,7 +1,7 @@
 {
  "sample": {
-  "sha256": "e5fcbe2d14f33a1b2125edb6ca1170e4a6d092b69f49103a7acba661cd507c6a",
-  "bytes": 4045,
+  "sha256": "4f2bd98dbd11d36c41e96824423682c4442fd764c832be775e8ce9822ffd89ce",
+  "bytes": 4130,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -11,6 +11,12 @@
    "emphasis": "neutral",
    "limitN": 16,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -42,8 +48,8 @@
   }
  },
  "sample-share": {
-  "sha256": "e5fcbe2d14f33a1b2125edb6ca1170e4a6d092b69f49103a7acba661cd507c6a",
-  "bytes": 4045,
+  "sha256": "4f2bd98dbd11d36c41e96824423682c4442fd764c832be775e8ce9822ffd89ce",
+  "bytes": 4130,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -53,6 +59,12 @@
    "emphasis": "neutral",
    "limitN": 16,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -84,8 +96,8 @@
   }
  },
  "sample-edits": {
-  "sha256": "b8c3cc7dbe390c97fc5a6ec9c0106942c60afac40b49f3ed67d0e21080b0bd75",
-  "bytes": 4055,
+  "sha256": "d6b98dab8b985ef639545df93bb30f8313bbb37026a1bc04d52d82059dd3b676",
+  "bytes": 4140,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -95,6 +107,12 @@
    "emphasis": "neutral",
    "limitN": 16,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -126,8 +144,8 @@
   }
  },
  "limitN": {
-  "sha256": "367e792b4ddb01d8fe14ed524c17f4e123f86eaec9e68349d6ee2c5ef166e207",
-  "bytes": 4010,
+  "sha256": "ba99ea911c8fc39631e7bd519d6bd58fb7bab94741a1be55fea63b1561a9d6f5",
+  "bytes": 4095,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -137,6 +155,12 @@
    "emphasis": "neutral",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -168,8 +192,8 @@
   }
  },
  "palette": {
-  "sha256": "c20841f662bc01fc90c7010f983ddf455bc80cf6595aef40372005275a327c63",
-  "bytes": 3978,
+  "sha256": "b4cecdc4fd9a51ab2c96dc1702521c7f2c0a0dd3a4b49c6bac3c39e8729e4d8c",
+  "bytes": 4063,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -179,6 +203,12 @@
    "emphasis": "neutral",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -210,8 +240,8 @@
   }
  },
  "emphasis": {
-  "sha256": "39ff3db2a5bd3f12b810e6bf197f1070ea253532761e2d5bacd54a85abfbbaef",
-  "bytes": 3959,
+  "sha256": "c7affefe9b5431b43c1899933ff099aa0bd91852f19886eda1c648e6e4a54498",
+  "bytes": 4044,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -221,6 +251,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -252,8 +288,8 @@
   }
  },
  "generate": {
-  "sha256": "a418114b77a4b06744a98de0340549db8c797a06b687e50efbca7652099845b9",
-  "bytes": 4069,
+  "sha256": "01d042f3d6a3ca14435ccbf13315b95bdfc836085b7c6692da8b70c65634383c",
+  "bytes": 4154,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -263,6 +299,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -303,8 +345,8 @@
   }
  },
  "harmony": {
-  "sha256": "b4fdca33b92a9139731525259c9d62264ad66f777da1c0bc4fe213740c398674",
-  "bytes": 4101,
+  "sha256": "2ae745eea7f91877dfd906657db93de636e63334c20cc54b0ffadbc64ae2370c",
+  "bytes": 4186,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -314,6 +356,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -356,8 +404,8 @@
   }
  },
  "expand": {
-  "sha256": "929e55f7496d2ab8dba93b59a0ee0082293acb23e08c0d5d99716330ed678dab",
-  "bytes": 4100,
+  "sha256": "ebab8f033bcb200752725fe7f05c1aac1eda37c98b0170873b5be9e0b77f08a6",
+  "bytes": 4185,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -367,6 +415,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -409,8 +463,8 @@
   }
  },
  "expandChar": {
-  "sha256": "8c98c6520144cea63d2f079f795c164e396cad0d691a4bea496c22168b9401d4",
-  "bytes": 4100,
+  "sha256": "16e76ae701ed8407dedb834471c66a6977122e5961ff6fda37f95391da624e2a",
+  "bytes": 4185,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -420,6 +474,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -462,8 +522,8 @@
   }
  },
  "gradShape": {
-  "sha256": "6a6e27a346cb44c8e910d7762822c59ddef7cd96f81a1eef9b6bd1597ce4685a",
-  "bytes": 4107,
+  "sha256": "46db9cb4ef7e1cd6e530ea8d51d1ec0583514cee6851918df07d642fd9c2da98",
+  "bytes": 4192,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -473,6 +533,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -515,8 +581,8 @@
   }
  },
  "dir": {
-  "sha256": "7a9013cde5da4d1becd4c1974686928543935a5cbc7c94ffbaf5bde23f7827df",
-  "bytes": 4124,
+  "sha256": "2123f809b297c2224cd7a8a11c5e9c0866141b7138610de64314950710a23ee7",
+  "bytes": 4209,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -526,6 +592,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -568,8 +640,8 @@
   }
  },
  "shuffle": {
-  "sha256": "fcc063b0f5ee2118c238d7a0c20033a6f041526659486e37780e98ae47160df0",
-  "bytes": 4149,
+  "sha256": "074c868a3eec403580b157eeb41ceecac55d6092305b5d7ffa0033c9677c5923",
+  "bytes": 4234,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -579,6 +651,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 2,
    "blendVivid": false,
@@ -621,8 +699,8 @@
   }
  },
  "look": {
-  "sha256": "662e95cb9113780fa283b3ae1e1529bd16f02a4752998d9d1e8ee3d0821a32cc",
-  "bytes": 4162,
+  "sha256": "e6c5cbb91f9563951fb39eee8ff5ec7e127090c467f7c286b70d9891228f762c",
+  "bytes": 4247,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -632,6 +710,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 2,
    "blendVivid": false,
@@ -674,8 +758,8 @@
   }
  },
  "look-auto": {
-  "sha256": "fcc063b0f5ee2118c238d7a0c20033a6f041526659486e37780e98ae47160df0",
-  "bytes": 4149,
+  "sha256": "074c868a3eec403580b157eeb41ceecac55d6092305b5d7ffa0033c9677c5923",
+  "bytes": 4234,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -685,6 +769,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 2,
    "blendVivid": false,
@@ -727,8 +817,8 @@
   }
  },
  "random": {
-  "sha256": "e7a160ca666830cfdceab073a09827377f3212bf942eb49692a635163221caff",
-  "bytes": 4133,
+  "sha256": "f834dd1d28d94bd8aaf8df82e1f86f8c0dda195464d7f16491c2147463599109",
+  "bytes": 4204,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -738,6 +828,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 2,
    "blendVivid": false,
@@ -780,8 +876,8 @@
   }
  },
  "random-shuffle": {
-  "sha256": "8e67a21c851275b5c9e4ef90f2f4e31391fe68a6a42cdcc08ac3b83ef9217b03",
-  "bytes": 4180,
+  "sha256": "5d53869342405a8fdc65c334728465e68197353015373c60332bfd823092c466",
+  "bytes": 4278,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -791,6 +887,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 2,
    "blendVivid": false,
@@ -833,8 +935,8 @@
   }
  },
  "noAdj": {
-  "sha256": "8ddeb826703d259895dc204f7838316a01ceb744e47981005506bc2c33f8e107",
-  "bytes": 4179,
+  "sha256": "b1d4f02f3b8b062b7e809bc22e263fc917751071024adc40fb3701a073e4b06e",
+  "bytes": 4279,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -844,6 +946,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 2,
    "blendVivid": false,
@@ -886,8 +994,8 @@
   }
  },
  "blend": {
-  "sha256": "3f96cd808b955507eeac2b349e3092ae2a5d26b7c059cef8eb29d7ca88a6b27a",
-  "bytes": 4251,
+  "sha256": "524e5e3e45ee2a18c39a7151a828ee5af8db17079f205b68853b9f22111f156f",
+  "bytes": 4353,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -897,6 +1005,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 2,
    "blendVivid": false,
@@ -939,8 +1053,8 @@
   }
  },
  "blendFall": {
-  "sha256": "f7c3420220fa6d6f51f7767770ef5176d81a446186756fa09309d1f01094792b",
-  "bytes": 4246,
+  "sha256": "c738c3aedae5effed32fdcc8301f1c47c6d653f08ca87eca47a561152e679bdd",
+  "bytes": 4348,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -950,6 +1064,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": false,
@@ -992,8 +1112,8 @@
   }
  },
  "blendMix-paint": {
-  "sha256": "e19755d0c93b9630908179854d5cf9cbc6c21abd3d6ccf159006113135ef3773",
-  "bytes": 4244,
+  "sha256": "fdad4575953c1466fbeec054ac9aa2b2dce6fdfcb764751f2c1d7407cd1d6143",
+  "bytes": 4346,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1003,6 +1123,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": false,
@@ -1045,8 +1171,8 @@
   }
  },
  "blendMix": {
-  "sha256": "5abc9276c0f2f419ff83ddaf45bd3d6b1aef05f7250487c275294bf4a10873a1",
-  "bytes": 4253,
+  "sha256": "5bdc446a9cf4d31a7d89a17ea29a6c2729b6f676ecac771c56c63353f97233ce",
+  "bytes": 4355,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1056,6 +1182,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1098,8 +1230,8 @@
   }
  },
  "shadeMode": {
-  "sha256": "a9d1fe4481ddde34f38deb50ee1413153e11bbe09b0b70f08f4de055118cb168",
-  "bytes": 4254,
+  "sha256": "53f9475163c25f343b5f36ade30dfc057b6a507fcacfc223a5b274ec5beb2cb8",
+  "bytes": 4356,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1109,6 +1241,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1151,8 +1289,8 @@
   }
  },
  "shadeHi": {
-  "sha256": "bd368c0bad47ab1b761c9c8115b62eaa57e65678652a46cc9a2320e19e9a43d4",
-  "bytes": 4254,
+  "sha256": "e7ff52f20b1bced05d8bedcae969c6b3fb7e50d0d496d7a8abcc4dc5582c9927",
+  "bytes": 4356,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1162,6 +1300,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1204,8 +1348,8 @@
   }
  },
  "shadeLo": {
-  "sha256": "880d6822f748cd30918ffb971be88d50da24d3cf8852e8e56e43598540e7e20c",
-  "bytes": 4254,
+  "sha256": "de6cb220402a387122d376fcc32d2128eee5ece79ff7796b3416eb40343fd094",
+  "bytes": 4356,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1215,6 +1359,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1257,8 +1407,8 @@
   }
  },
  "shadeRound": {
-  "sha256": "470f10f26afc3739e13928af4274a5cc58cd0c11e2e2e58b0d7b2b119858e3c3",
-  "bytes": 4254,
+  "sha256": "f7dd129fc8b80984d8396ad164885ac4f5aef8230c2a81b08d115814af8f8069",
+  "bytes": 4356,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1268,6 +1418,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1310,8 +1466,8 @@
   }
  },
  "shadeLines": {
-  "sha256": "fe7cd69d7caa4622a9a47e00202ae4045a4b971d9a959d9a13a37b4f577e0cb0",
-  "bytes": 4255,
+  "sha256": "511dd5470e2f88b55dff40332ee0023f74bbb69d4c51fb323f14b909f0d576d5",
+  "bytes": 4357,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1321,6 +1477,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1363,8 +1525,8 @@
   }
  },
  "shadeHilite": {
-  "sha256": "b38accb3ff4e7c61a34a3edc0fdb740cd4905e71b3214e5c588cc01e93ad9e15",
-  "bytes": 4255,
+  "sha256": "db7b9e42b84ecd5940388281285e5e40d090ceb3986e7af1ba18680ba3308c06",
+  "bytes": 4357,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1374,6 +1536,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1416,8 +1584,8 @@
   }
  },
  "shadeShadow": {
-  "sha256": "a0b811d15ac4e53b8fac2e011e2a0609f7cf8d8ac9c3aa228ab461a5485721f1",
-  "bytes": 4255,
+  "sha256": "4321d240d0e9ce412db7d6bcff6f4178353ea3e1f4662f2bfbc01675c3de74e7",
+  "bytes": 4357,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1427,6 +1595,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1469,8 +1643,8 @@
   }
  },
  "shadeSunFlat": {
-  "sha256": "877915d7ca9ab9da009acfe5b4e1ea25953bc9bed62b309549bdaa32ae7e8fae",
-  "bytes": 4257,
+  "sha256": "6862811a309512f94b8c69ab88f4737ad2afbef6a69270911c2ff571f4348ec7",
+  "bytes": 4359,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1480,6 +1654,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1525,8 +1705,8 @@
   }
  },
  "texAmt": {
-  "sha256": "f49df2733ec6db4fd8980fca64c69983d2539c587def99513de4a0e8d0c90b72",
-  "bytes": 4258,
+  "sha256": "e1931e2914e15c16a00fb4bf2ef35fddf8bacfe8bd12a61c298b1e0c8c857213",
+  "bytes": 4360,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1536,6 +1716,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1581,8 +1767,8 @@
   }
  },
  "texAmt-share": {
-  "sha256": "f49df2733ec6db4fd8980fca64c69983d2539c587def99513de4a0e8d0c90b72",
-  "bytes": 4258,
+  "sha256": "e1931e2914e15c16a00fb4bf2ef35fddf8bacfe8bd12a61c298b1e0c8c857213",
+  "bytes": 4360,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1592,6 +1778,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1637,8 +1829,8 @@
   }
  },
  "manual": {
-  "sha256": "ae04b334d4b738fb64aec8a08771ef21a00f67c88bdf2ba8a74d50a6199724a6",
-  "bytes": 4259,
+  "sha256": "edbfee406db7a476c4ed47da1f6ed79540c0a7f8390fd0ede8ab115a6c81f97d",
+  "bytes": 4361,
   "style": {
    "family": "manual",
    "palette": "warm",
@@ -1648,6 +1840,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1693,8 +1891,8 @@
   }
  },
  "gradient": {
-  "sha256": "f78c87d112c0ffe918d946da17fc541273c5d3ab608f2a9b6d2882ac94cc9c9a",
-  "bytes": 4316,
+  "sha256": "02d1da6d78688bae3a30d8a6f54790fa26d722dad0ad763cd9082d2f47fb9a50",
+  "bytes": 4418,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -1704,6 +1902,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1749,8 +1953,8 @@
   }
  },
  "pins": {
-  "sha256": "bb7c10ff9f481a1edaab59e8c6a69e214439036e6ba596a7b617555a6247bc17",
-  "bytes": 4354,
+  "sha256": "f5df32e5834c11266011bd25a8d21f2fff692d9e636693ed694e536b3626b072",
+  "bytes": 4456,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -1760,6 +1964,12 @@
    "emphasis": "vivid",
    "limitN": 10,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.7074760721996429,
    "blendFall": 3,
    "blendVivid": true,
@@ -1805,8 +2015,8 @@
   }
  },
  "surprise": {
-  "sha256": "2d5e86131bccbdb0175f0fa0c362782a280768fcb5d14df81ec0a49eccea96a3",
-  "bytes": 4401,
+  "sha256": "7fa43b6c6013af12e42d454df72b3bd4df18b87451ad41ad4f309fdddf110085",
+  "bytes": 4503,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -1816,6 +2026,12 @@
    "emphasis": "neutral",
    "limitN": 18,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.33968470781110227,
    "blendFall": 3,
    "blendVivid": true,
@@ -1859,8 +2075,8 @@
   }
  },
  "savedPalette": {
-  "sha256": "ca426fdc40be66b753166461c1d7c5307b566368338ca96c9dd1e00cd90372ea",
-  "bytes": 4400,
+  "sha256": "4b48e115f18b9287eda41bd655fe526065bbeabd18a4dc1f47fa85e5c326cfe2",
+  "bytes": 4502,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -1870,6 +2086,12 @@
    "emphasis": "neutral",
    "limitN": 18,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.33968470781110227,
    "blendFall": 3,
    "blendVivid": true,
@@ -1913,8 +2135,8 @@
   }
  },
  "savedPalette-render": {
-  "sha256": "a11e7be9e5efeac1d9d599d5be615172be7f9dde941ba3b1eb3f320c88391e29",
-  "bytes": 4403,
+  "sha256": "83652246be1989220e70f05c144592de8bcc4093fbc48b37465f49cf4bc97eac",
+  "bytes": 4505,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -1924,6 +2146,12 @@
    "emphasis": "neutral",
    "limitN": 18,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.33968470781110227,
    "blendFall": 3,
    "blendVivid": true,
@@ -1968,8 +2196,8 @@
  },
  "edits-pending": null,
  "edits-pending-edits": {
-  "sha256": "cffc71a39240e47fa60eb721e9c82d3151d4db1c2e25c023102ab69c018b9418",
-  "bytes": 4419,
+  "sha256": "fe13d9ca6e356c76d0ed001f58cd5c17fcf0e97d06d9b075bf2300a7ecfd960a",
+  "bytes": 4521,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -1979,6 +2207,12 @@
    "emphasis": "neutral",
    "limitN": 18,
    "noAdj": true,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0.4480622271411121,
+   "noRep": false,
    "gradSeed": 0.33968470781110227,
    "blendFall": 3,
    "blendVivid": true,
@@ -2022,8 +2256,8 @@
   }
  },
  "photo": {
-  "sha256": "ab458331bc82a0999a1fd1e052a989ef1d6656d4e1ac6af01917c3348132c3d1",
-  "bytes": 3934,
+  "sha256": "de52b5282427b445b8eed1b8b02424377dfb319cb357260dea9ec35950e6da26",
+  "bytes": 4019,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2033,6 +2267,12 @@
    "emphasis": "neutral",
    "limitN": 24,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -2075,8 +2315,8 @@
   }
  },
  "photo-share": {
-  "sha256": "ab458331bc82a0999a1fd1e052a989ef1d6656d4e1ac6af01917c3348132c3d1",
-  "bytes": 3934,
+  "sha256": "de52b5282427b445b8eed1b8b02424377dfb319cb357260dea9ec35950e6da26",
+  "bytes": 4019,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2086,6 +2326,12 @@
    "emphasis": "neutral",
    "limitN": 24,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -2128,8 +2374,8 @@
   }
  },
  "photoOp": {
-  "sha256": "295158eb7193b88ce85fa729eeae4946848596ac7cedd4de3086d90b56b3ab08",
-  "bytes": 3933,
+  "sha256": "ce6633c751ee9cef48b2d200c75bd6d1cbb1bb6508b8a819d72d627e02ba02f5",
+  "bytes": 4018,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2139,6 +2385,12 @@
    "emphasis": "neutral",
    "limitN": 24,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -2181,8 +2433,8 @@
   }
  },
  "photoPaper": {
-  "sha256": "d8c54d906f5a1f041301e56bae0fff3f989b7d7b8d87ff04b0d6177a1c2ff622",
-  "bytes": 3934,
+  "sha256": "7799779bf1a9882560f5e4f2c6efa381bc73a39240b623f195888fb8ab2892dd",
+  "bytes": 4019,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2192,6 +2444,12 @@
    "emphasis": "neutral",
    "limitN": 24,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -2234,8 +2492,8 @@
   }
  },
  "photo-shade": {
-  "sha256": "97976ec0eafcc67100de32886ec6a1fae1dd02e3e1fb3978714b11d20c021a3e",
-  "bytes": 3937,
+  "sha256": "a5adc01a8f395224134372de4170a29001f5c0edbe61223b8da00d6eb598b309",
+  "bytes": 4022,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2245,6 +2503,12 @@
    "emphasis": "neutral",
    "limitN": 24,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -2287,8 +2551,8 @@
   }
  },
  "photo-shadeLight": {
-  "sha256": "cc8bd886094031113f5cdc77d59b4e018dd9b610ab9f0fb9535948d754ad52ff",
-  "bytes": 3934,
+  "sha256": "88fd81d1db283b6a9665a39c407b04430f5f1f52311f2ec51f2de48a228c7b29",
+  "bytes": 4019,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2298,6 +2562,12 @@
    "emphasis": "neutral",
    "limitN": 24,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -2340,8 +2610,8 @@
   }
  },
  "photo-gradient": {
-  "sha256": "3552b446a48bbba20dd0818a6a7107e736bcc5ff033d3f60e2e62077dcc62f4b",
-  "bytes": 4295,
+  "sha256": "9ce77654f52b6cf785c3a3ed8c75ecadcdece5215560106c79e063a2b2944256",
+  "bytes": 4380,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2351,6 +2621,12 @@
    "emphasis": "neutral",
    "limitN": 24,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -2393,8 +2669,8 @@
   }
  },
  "photo-gradient-share": {
-  "sha256": "26c1202f383d0adbbd4525f7742296b95fbc1d8a2fc15cf017f64af2af993852",
-  "bytes": 4281,
+  "sha256": "a075314a79ec692ae7cda75cdd85fd569f5b23e2514d6ee8f2a104008368f256",
+  "bytes": 4366,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2404,6 +2680,12 @@
    "emphasis": "neutral",
    "limitN": 24,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -2446,8 +2728,8 @@
   }
  },
  "open-all-set": {
-  "sha256": "64fce5ac28fc62e4b2c1f9c440eea695faa81bfb9d6060c3d5ab0a8de246dc48",
-  "bytes": 4100,
+  "sha256": "fc5accc96da87f61ca0036d8835b4ba56004f14104ba2cfcf7bd784e86683625",
+  "bytes": 4189,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -2457,6 +2739,12 @@
    "emphasis": "earthy",
    "limitN": 11,
    "noAdj": true,
+   "balance": "mixed",
+   "balM": "blue",
+   "balS": "teal",
+   "balA": "orange",
+   "balSeed": 0.4,
+   "noRep": true,
    "gradSeed": 0.37,
    "blendFall": 3.2,
    "blendVivid": false,
@@ -2498,8 +2786,8 @@
   }
  },
  "open-odd-types": {
-  "sha256": "ef868f4863c9870bb3f8d250bc06620589ebd248618e3255beaca0a7ea94a06a",
-  "bytes": 4042,
+  "sha256": "c2c6fc72e61929f0cdd6ed671fbd802650f0169093f99561057e1573963aa94f",
+  "bytes": 4127,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2509,6 +2797,12 @@
    "emphasis": "neutral",
    "limitN": 16,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -2540,8 +2834,8 @@
   }
  },
  "open-odd-high": {
-  "sha256": "c300db51accaa6c7f266eba30f485836526106f05fcfce19e245289e5665e9e9",
-  "bytes": 4044,
+  "sha256": "7d4e2921c029934456d897c3bece5ebd1189e617fb9fdc169597f1ba193a16cb",
+  "bytes": 4129,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2551,6 +2845,12 @@
    "emphasis": "neutral",
    "limitN": 999,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 1,
+   "noRep": false,
    "gradSeed": 1,
    "blendFall": 4,
    "blendVivid": false,
@@ -2585,8 +2885,8 @@
   }
  },
  "open-odd-low": {
-  "sha256": "b843fb1878de42b724284e0bcaf616411e9891a2823760e7c2154eea8b5e1880",
-  "bytes": 4034,
+  "sha256": "8aae5166aa0572396d9cae98d9485ac09a2a4ce97036f9b48a729b96ad3c14f6",
+  "bytes": 4119,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2596,6 +2896,12 @@
    "emphasis": "neutral",
    "limitN": 2,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 0.6,
    "blendVivid": false,
@@ -2630,8 +2936,8 @@
   }
  },
  "open-odd-enum": {
-  "sha256": "b899133f4bfe0a12abb50d726799e6808cfb636dfa9f549f365982aa65925e39",
-  "bytes": 4085,
+  "sha256": "f2af4afafcd1b8ce8e8bd39c4fce7fd62d13390011aeff2fab194cdb39b4eab1",
+  "bytes": 4170,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2641,6 +2947,12 @@
    "emphasis": "neutral",
    "limitN": 12,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,
@@ -2676,8 +2988,8 @@
   }
  },
  "open-nothing": {
-  "sha256": "c78da97bc079c1ea5191e34be6c5e50326ba4ac69b32268f08bdee332ca9bf0c",
-  "bytes": 4046,
+  "sha256": "a09e1c33c4f5b3b8b3c6be5dcd3e3d9c5c1178a21d5ff9707d5d79175d31ccc0",
+  "bytes": 4131,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2687,6 +2999,12 @@
    "emphasis": "neutral",
    "limitN": 16,
    "noAdj": false,
+   "balance": "main",
+   "balM": "auto",
+   "balS": "auto",
+   "balA": "auto",
+   "balSeed": 0,
+   "noRep": false,
    "gradSeed": 0,
    "blendFall": 2,
    "blendVivid": false,

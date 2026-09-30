@@ -4870,6 +4870,124 @@ html.sfsheetsd .mstoast {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
+/* Random's Balance (v283): the bar of roles, each a button in its markers' colours, and the family sheet */
+#sfRoot #sfCtl .sfbalbar {
+  display: flex;
+  gap: 2px;
+  margin-top: 12px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+#sfRoot #sfCtl .sfbalseg {
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#sfRoot #sfCtl .sfbalseg {
+  display: flex;
+  align-items: center;
+}
+#sfRoot #sfCtl .sfbalsp {
+  white-space: pre;
+}
+/* (a name too long for its part gives way; the share always shows) */
+#sfRoot #sfCtl .sfbalsn {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#sfRoot #sfCtl .sfbalsn:empty {
+  display: none;
+}
+#sfRoot #sfCtl .sfbalsp {
+  flex: none;
+}
+#sfRoot .sfbalopt:disabled {
+  opacity: 0.5;
+}
+#sfRoot #sfCtl .sfbalseg:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -4px;
+}
+#sfRoot #sfCtl .sfbalrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+#sfRoot #sfCtl .sfbalrow .sfghost {
+  margin: 0;
+  flex: none;
+}
+#sfRoot .sfbalopts {
+  display: flex;
+  flex-direction: column;
+}
+#sfRoot .sfbalopt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 6px 4px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+#sfRoot .sfbalopt[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.07);
+}
+#sfRoot .sfbalopt[aria-pressed='true'] .sfbaltt::after {
+  content: ' \2713';
+}
+#sfRoot .sfbalnm {
+  flex: 0 0 34%;
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+}
+#sfRoot .sfbalopt[data-k='auto'] .sfbalnm {
+  flex: none;
+}
+#sfRoot .sfbalsub {
+  font-weight: 400;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+#sfRoot .sfbalopt[data-k='auto'] .sfbalsub {
+  margin-left: 8px;
+}
+#sfRoot .sfbalsw {
+  flex: 1 1 auto;
+  height: 22px;
+  border-radius: 6px;
+}
+#sfRoot .sfbaln {
+  flex: 0 0 28px;
+  text-align: right;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+#sfRoot .sfmkcount.sfoff {
+  opacity: 0.55;
+}
 #presetWrap.bottom {
   margin: 26px 2px 0;
   padding-top: 18px;
@@ -7145,7 +7263,7 @@ button.wrm {
 <div class="wrap">
  <div class="head"><div class="title">Marker Studio</div><div class="set">Ohuhu + Copic · your collection</div></div>
  <div class="modes"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></div><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a paint-by-marker colouring guide, built from the markers you own.</div></div><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon" aria-hidden="true">🎨</span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon" aria-hidden="true">🌈</span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon" aria-hidden="true">📚</span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v282</div></div></div>
+<button class="homecard" id="homeLibCard"><span class="hcicon" aria-hidden="true">📚</span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v283</div></div></div>
  <div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl">Harmony</span>
   <div class="segs wide" id="harm"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div>
  <div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl">Colours</span>
@@ -7220,7 +7338,7 @@ button.wrm {
 
 <div class="overlay" id="matchOverlay" role="dialog" aria-modal="true" aria-labelledby="mtTitle"><div class="mcard"><div class="mhead"><div class="mtitle" id="mtTitle">Match a colour</div><button id="matchClose" class="mclose" aria-label="Close">✕</button></div><div class="msub">Find the closest markers you own to any colour.</div><div class="msrc" role="tablist" aria-label="Colour source"><button role="tab" data-src="photo" class="on" aria-selected="true">Photo</button><button role="tab" data-src="camera" id="matchCamBtn" aria-selected="false" style="display:none">Camera</button><button role="tab" data-src="hex" aria-selected="false" aria-label="Hex code">Hex</button><button role="tab" data-src="screen" id="matchEye" aria-selected="false" style="display:none">Screen</button></div><div class="mpane" data-pane="photo"><button id="matchPhotoBtn" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10.5" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg><b>Choose a photo</b><span>Then tap or drag on it to sample a colour</span></button><input type="file" id="matchFile" class="fileinput" accept="image/*"><div id="matchPhotoWrap" class="mstage" style="display:none"><canvas id="matchCanvas"></canvas><div id="matchRing" class="mring" style="display:none"></div></div><div class="mhint" id="mPhotoHint" style="display:none">Tap or drag on the photo to sample. <button class="sflink" id="matchPhotoChange">Change photo</button></div><div class="paperrow" id="matchPaperRow" style="display:none"><button id="matchPaper" class="paperbtn" aria-pressed="false" title="Correct the photo’s lighting from a white part of the page">Tap the white paper</button><button id="matchLight" class="lightchip" style="display:none" aria-label="Lighting corrected: remove the correction">Lighting corrected <span aria-hidden="true">✕</span></button></div><div class="papernote" id="matchPaperNote" role="status"></div></div><div class="mpane" data-pane="camera" style="display:none"><button id="matchCamOff" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><b>Start camera</b><span>Point the ring at a colour to match it live</span></button><div id="matchCamWrap" style="display:none"><div id="matchVideoBox" class="mstage"><video id="matchVideo" playsinline autoplay muted></video><div id="matchReticle" class="mring" style="left:50%;top:50%"></div><div class="mbadge" id="matchLive"><i></i>LIVE</div><div class="mcamctl"><button id="matchTorch" class="mpill" style="display:none">Light</button><button id="matchFreeze" class="mpill primary">Freeze</button></div></div><div class="mhint">Drag the ring onto a colour · pinch to zoom · <button class="sflink" id="matchCamStop">Stop camera</button></div></div><div class="mhint" id="matchCamTip">For the truest match, take a photo and tap the white paper.</div></div><div class="mpane" data-pane="hex" style="display:none"><div class="mhexrow"><label class="mpick empty" title="Open colour picker" aria-label="Open colour picker"><input type="color" id="matchPicker" value="#7c5cff"></label><input type="text" id="matchHex" placeholder="#RRGGBB" maxlength="7" autocomplete="off" spellcheck="false" aria-label="Hex colour code"></div></div><div class="mpane" data-pane="screen" style="display:none"><button id="matchEyeGo" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5M17 7l-9.5 9.5L5 19l2.5-2.5"/><path d="M13 6l5 5"/></svg><b>Pick from the screen</b><span>Click anywhere on your screen to sample it</span></button></div><div id="matchResult" aria-live="polite"></div></div></div>
 
-<div class="overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="ocard dcard hlpcard"><div class="mhead"><div class="mtitle" id="helpTitle">Help</div><button id="helpClose" class="mclose" aria-label="Close">✕</button></div><button id="helpHiw" class="btn-soft hlphiw" data-help="hiw"><span>How it works</span><span class="hlphiwsub">3 quick steps</span></button><details class="hlpsec" id="helpPhoto"><summary>Photographing a page</summary><div class="hlpbody"><ul><li>Lay the page flat on a table. Smooth out any curl.</li><li>Use even light: daylight near a window, or a bright room. Keep your shadow and your hand off the page, and avoid shiny glare.</li><li>Hold the phone above the page and get all of it in the frame. A bit of table around it is fine.</li><li>Taken at an angle? The app finds the page and straightens it. If it isn’t sure, drag the corners, then tap <b>Straighten</b>.</li><li>Clear, dark lines work best. If sections come out wrong, <b>← Edit sections</b> lets you merge, split or add them.</li><li>Scans and screenshots work too.</li></ul></div></details><details class="hlpsec" id="helpGloss"><summary>Glossary</summary><div class="hlpbody"><dl class="hlpgl"><dt>Section</dt><dd>One area of the picture, closed in by lines, that you colour with one marker. Its marker code is printed on it.</dd><dt>Background / excluded</dt><dd>Parts that stay white. The background is the paper around the drawing. Excluded sections are ones you’ve switched off in the sections editor; tap one there to bring it back.</dd><dt>Colour pattern</dt><dd>How markers are spread over the page, in <b>Pattern</b>:<ul><li><b>Gradient</b>: colours flow across the page along a path (serpentine, vertical, diagonal or radial).</li><li><b>Random</b>: markers scattered over the sections.</li><li><b>Blend</b>: tap to drop colour anchors; colours blend between them.</li><li><b>Photo</b>: colours taken from a photo you lay over the page.</li><li><b>Manual</b>: you pick every section’s marker.</li></ul></dd><dt>Zone</dt><dd>A part of the picture with its own pattern and colours, like a flower against the background around it. In <b>Pattern</b>, tap <b>＋ Zone</b>, then tap or drag across sections to add them. The chips at the top of <b>Pattern</b> and <b>Colours</b> choose which zone those tabs change; <b>Main</b> is the rest of the picture. With shading on, each zone can be shaded or left flat, with its own roundness, highlights and shadows (<b>Shading</b>, under its chips); the light is the whole picture’s.</dd><dt>Pin</dt><dd>Keeps a section’s marker when you shuffle or change the pattern. Tap a section, then <b>Pin</b>.</dd><dt>Blend companions</dt><dd>A lighter and a darker marker for each colour, listed in the printed key, for blending.</dd><dt>Shading</dt><dd>Adds light and shadow with lighter and darker markers you own. Drag the sun to move the light, or, with the Photo pattern, take the light from your photo (<b>Light from</b>).</dd><dt>Highlight / Base / Shadow (H/B/S)</dt><dd>The tones of a shaded section. <b>B</b> is its main marker. <b>H</b> is a lighter one on the side facing the light (or a warmer one, or the paper left white: <b>Shading › Highlights</b>), <b>S</b> a darker one on the far side (or a cooler or grey one laid over the base: <b>Shading › Shadows</b>). “2nd coat” means going over the base again.</dd><dt>Values</dt><dd>The button with three grey bars under the picture. It shows your guide in greys, so you can see where it’s light and dark without the colours. It only changes the view.</dd><dt>Focus mode</dt><dd>In <b>Colour along</b>. It zooms to one section at a time, colour by colour. Tap <b>✓ Done</b> (or the section) to move on.</dd><dt>Reveal</dt><dd>In <b>Share</b>. Plays your page filling with colour, to share as a picture or a clip.</dd></dl></div></details><details class="hlpsec" id="helpKeys"><summary>Keyboard and screen readers</summary><div class="hlpbody"><ul><li>Picking a single section on the picture needs touch or a mouse: <b>Change colour</b>, <b>Pin</b>, <b>Paint</b> and ticking off one section.</li><li>By keyboard, use <b>Colour along</b>’s list instead: open a marker, then <b>Mark all done</b> or <b>Find next</b>. <b>Focus mode</b> and everything else work by keyboard too.</li><li>In <b>Markers</b>, press <b>Shift+F10</b> on a marker to open its details.</li><li>A zone’s sections can be chosen by keyboard: in the zone’s editor, Tab to <b>Choose sections with the keys</b>. The arrow keys then move a ring from section to section, and Space adds the ringed one to the zone or takes it out.</li></ul></div></details><details class="hlpsec" id="helpData"><summary>Your data</summary><div class="hlpbody"><ul><li>Your markers, palettes, guides and photos stay on this device. Nothing is uploaded.</li><li>There’s no account, no ads and no tracking. The app works offline.</li><li>On iPhone, Safari can clear a website’s data if you don’t open it for a while. Adding Marker Studio to your Home Screen (Share → Add to Home Screen) keeps it safer.</li><li>Back up now and then: <b>Library → Back up</b> saves one file with everything. <b>Restore</b> brings it back on any phone.</li><li>A guide missing from your Library may still be stored on this device. <b>Find lost guides</b> looks for any and can add them back.</li></ul><div class="hlplost"><button type="button" id="helpLost" class="btn-soft">Find lost guides</button><div id="helpLostRes" class="hlplostres" role="status"></div></div></div></details><details class="hlpsec" id="helpAbout"><summary>About</summary><div class="hlpbody"><p class="hlpapp"><b>Marker Studio</b> <span id="helpVer" class="hlpver"></span></p><p>Turns a photo of a colouring page into a marker-by-number guide, using the Ohuhu and Copic markers you own.</p><div class="hlpwn"><p class="hlpwnt">What’s new in <span id="helpWnVer"></span></p><ul id="helpWnList"></ul></div><p>Nothing you add leaves this device. There are no accounts, ads or analytics.</p><p>Ohuhu and Copic are trademarks of their owners; colours on screen are approximate — compare with your own swatches. <b>Markers › Print a swatch chart</b> makes a page to colour in.</p><p>Fonts: Fraunces and Hanken Grotesk, under the SIL Open Font License.</p><p>© 2026 SpicyChipmunk. All rights reserved.</p><a id="helpFeedback" class="btn-soft hlpfb" target="_blank" rel="noopener" hidden>Send feedback</a></div></details></div></div>
+<div class="overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="ocard dcard hlpcard"><div class="mhead"><div class="mtitle" id="helpTitle">Help</div><button id="helpClose" class="mclose" aria-label="Close">✕</button></div><button id="helpHiw" class="btn-soft hlphiw" data-help="hiw"><span>How it works</span><span class="hlphiwsub">3 quick steps</span></button><details class="hlpsec" id="helpPhoto"><summary>Photographing a page</summary><div class="hlpbody"><ul><li>Lay the page flat on a table. Smooth out any curl.</li><li>Use even light: daylight near a window, or a bright room. Keep your shadow and your hand off the page, and avoid shiny glare.</li><li>Hold the phone above the page and get all of it in the frame. A bit of table around it is fine.</li><li>Taken at an angle? The app finds the page and straightens it. If it isn’t sure, drag the corners, then tap <b>Straighten</b>.</li><li>Clear, dark lines work best. If sections come out wrong, <b>← Edit sections</b> lets you merge, split or add them.</li><li>Scans and screenshots work too.</li></ul></div></details><details class="hlpsec" id="helpGloss"><summary>Glossary</summary><div class="hlpbody"><dl class="hlpgl"><dt>Section</dt><dd>One area of the picture, closed in by lines, that you colour with one marker. Its marker code is printed on it.</dd><dt>Background / excluded</dt><dd>Parts that stay white. The background is the paper around the drawing. Excluded sections are ones you’ve switched off in the sections editor; tap one there to bring it back.</dd><dt>Colour pattern</dt><dd>How markers are spread over the page, in <b>Pattern</b>:<ul><li><b>Gradient</b>: colours flow across the page along a path (serpentine, vertical, diagonal or radial).</li><li><b>Random</b>: markers scattered over the sections. <b>Main colour</b> gives one colour about 60% of the picture, a second 30% and an accent 10% (tap the bar to choose them); <b>Mixed</b> treats every marker alike, and <b>No repeats</b> gives each section its own.</li><li><b>Blend</b>: tap to drop colour anchors; colours blend between them.</li><li><b>Photo</b>: colours taken from a photo you lay over the page.</li><li><b>Manual</b>: you pick every section’s marker.</li></ul></dd><dt>Zone</dt><dd>A part of the picture with its own pattern and colours, like a flower against the background around it. In <b>Pattern</b>, tap <b>＋ Zone</b>, then tap or drag across sections to add them. The chips at the top of <b>Pattern</b> and <b>Colours</b> choose which zone those tabs change; <b>Main</b> is the rest of the picture. With shading on, each zone can be shaded or left flat, with its own roundness, highlights and shadows (<b>Shading</b>, under its chips); the light is the whole picture’s.</dd><dt>Pin</dt><dd>Keeps a section’s marker when you shuffle or change the pattern. Tap a section, then <b>Pin</b>.</dd><dt>Blend companions</dt><dd>A lighter and a darker marker for each colour, listed in the printed key, for blending.</dd><dt>Shading</dt><dd>Adds light and shadow with lighter and darker markers you own. Drag the sun to move the light, or, with the Photo pattern, take the light from your photo (<b>Light from</b>).</dd><dt>Highlight / Base / Shadow (H/B/S)</dt><dd>The tones of a shaded section. <b>B</b> is its main marker. <b>H</b> is a lighter one on the side facing the light (or a warmer one, or the paper left white: <b>Shading › Highlights</b>), <b>S</b> a darker one on the far side (or a cooler or grey one laid over the base: <b>Shading › Shadows</b>). “2nd coat” means going over the base again.</dd><dt>Values</dt><dd>The button with three grey bars under the picture. It shows your guide in greys, so you can see where it’s light and dark without the colours. It only changes the view.</dd><dt>Focus mode</dt><dd>In <b>Colour along</b>. It zooms to one section at a time, colour by colour. Tap <b>✓ Done</b> (or the section) to move on.</dd><dt>Reveal</dt><dd>In <b>Share</b>. Plays your page filling with colour, to share as a picture or a clip.</dd></dl></div></details><details class="hlpsec" id="helpKeys"><summary>Keyboard and screen readers</summary><div class="hlpbody"><ul><li>Picking a single section on the picture needs touch or a mouse: <b>Change colour</b>, <b>Pin</b>, <b>Paint</b> and ticking off one section.</li><li>By keyboard, use <b>Colour along</b>’s list instead: open a marker, then <b>Mark all done</b> or <b>Find next</b>. <b>Focus mode</b> and everything else work by keyboard too.</li><li>In <b>Markers</b>, press <b>Shift+F10</b> on a marker to open its details.</li><li>A zone’s sections can be chosen by keyboard: in the zone’s editor, Tab to <b>Choose sections with the keys</b>. The arrow keys then move a ring from section to section, and Space adds the ringed one to the zone or takes it out.</li></ul></div></details><details class="hlpsec" id="helpData"><summary>Your data</summary><div class="hlpbody"><ul><li>Your markers, palettes, guides and photos stay on this device. Nothing is uploaded.</li><li>There’s no account, no ads and no tracking. The app works offline.</li><li>On iPhone, Safari can clear a website’s data if you don’t open it for a while. Adding Marker Studio to your Home Screen (Share → Add to Home Screen) keeps it safer.</li><li>Back up now and then: <b>Library → Back up</b> saves one file with everything. <b>Restore</b> brings it back on any phone.</li><li>A guide missing from your Library may still be stored on this device. <b>Find lost guides</b> looks for any and can add them back.</li></ul><div class="hlplost"><button type="button" id="helpLost" class="btn-soft">Find lost guides</button><div id="helpLostRes" class="hlplostres" role="status"></div></div></div></details><details class="hlpsec" id="helpAbout"><summary>About</summary><div class="hlpbody"><p class="hlpapp"><b>Marker Studio</b> <span id="helpVer" class="hlpver"></span></p><p>Turns a photo of a colouring page into a marker-by-number guide, using the Ohuhu and Copic markers you own.</p><div class="hlpwn"><p class="hlpwnt">What’s new in <span id="helpWnVer"></span></p><ul id="helpWnList"></ul></div><p>Nothing you add leaves this device. There are no accounts, ads or analytics.</p><p>Ohuhu and Copic are trademarks of their owners; colours on screen are approximate — compare with your own swatches. <b>Markers › Print a swatch chart</b> makes a page to colour in.</p><p>Fonts: Fraunces and Hanken Grotesk, under the SIL Open Font License.</p><p>© 2026 SpicyChipmunk. All rights reserved.</p><a id="helpFeedback" class="btn-soft hlpfb" target="_blank" rel="noopener" hidden>Send feedback</a></div></details></div></div>
 <div class="overlay" id="hiwOverlay" role="dialog" aria-modal="true" aria-labelledby="hiwTitle"><div class="ocard dcard hiwcard"><div class="mhead"><div class="mtitle" id="hiwTitle">How it works</div><button id="hiwClose" class="mclose" aria-label="Close">✕</button></div><div class="hiwtrack" id="hiwTrack"><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH1"><div class="hiwart" data-art="1"></div><div class="hiwstep">Step 1 of 3</div><h3 id="hiwH1">Photograph a colouring page</h3><p>Choose a photo of a line-art page, or try the sample.</p><ul class="hiwtips"><li>Lay the page flat, in even light.</li><li>Get the whole page in the frame.</li><li>Taken at an angle? The app straightens it.</li></ul></section><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH2" aria-hidden="true"><div class="hiwart" data-art="2"></div><div class="hiwstep">Step 2 of 3</div><h3 id="hiwH2">Sections and colours</h3><p>The app finds the sections — the areas you’ll colour — and picks a marker for each, from the markers you own.</p><ul class="hiwtips"><li>Tap a section to change its colour or pin it.</li><li>Try patterns and shading in the Pattern and Shading tabs.</li></ul></section><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH3" aria-hidden="true"><div class="hiwart" data-art="3"></div><div class="hiwstep">Step 3 of 3</div><h3 id="hiwH3">Colour along</h3><p>Tap Colour along and tick sections off as you colour them.</p><ul class="hiwtips"><li>Focus mode zooms to one section at a time and walks you through.</li><li>Finished? Reveal &amp; share shows your page filling with colour.</li></ul></section></div><div class="hlpsr" id="hiwLive" aria-live="polite"></div><div class="hiwnav"><button id="hiwBack" class="hiwback" style="visibility:hidden">Back</button><div class="hiwdots" id="hiwDots" role="group" aria-label="Steps"><button class="hiwdot on" data-i="0" aria-label="Step 1: Photograph a colouring page" aria-current="step"></button><button class="hiwdot" data-i="1" aria-label="Step 2: Sections and colours"></button><button class="hiwdot" data-i="2" aria-label="Step 3: Colour along"></button></div><button data-first id="hiwNext" class="btn-primary hiwnext">Next</button></div></div></div>
 <script>
 const COLORS=[{"code":"120","name":"Black","hex":"#2b2c2b","old":"120","fam":"Neutral / Black","brand":"Ohuhu"},{"code":"B015","name":"Celadon Blue","hex":"#167aa8","old":"B090","fam":"Blue","brand":"Ohuhu"},{"code":"B02","name":"Light Minty Blue","hex":"#c8e8eb","old":"BG4","fam":"Blue","brand":"Ohuhu"},{"code":"B03","name":"Frost","hex":"#c9e1e8","old":"B030","fam":"Blue","brand":"Ohuhu"},{"code":"B05","name":"Robin Egg Blue","hex":"#b5dde9","old":"B050","fam":"Blue","brand":"Ohuhu"},{"code":"B06","name":"Light Cerulean","hex":"#94d5e8","old":"B110","fam":"Blue","brand":"Ohuhu"},{"code":"B08","name":"Cotton Candy Blue","hex":"#88cfdf","old":"PB7","fam":"Blue","brand":"Ohuhu"},{"code":"B09","name":"Tahitian Blue","hex":"#5fbdd8","old":"B070","fam":"Blue","brand":"Ohuhu"},{"code":"B111","name":"Pool Blue","hex":"#1fa3d9","old":"PB8","fam":"Blue","brand":"Ohuhu"},{"code":"B112","name":"Process Blue","hex":"#1e97c8","old":"B080","fam":"Blue","brand":"Ohuhu"},{"code":"B114","name":"Cerulean Blue","hex":"#1d7b9f","old":"B64","fam":"Blue","brand":"Ohuhu"},{"code":"B115","name":"Classic Blue","hex":"#14629d","old":"PB6","fam":"Blue","brand":"Ohuhu"},{"code":"B21","name":"Porcelain Blue","hex":"#e5f2f2","old":"MG020","fam":"Blue","brand":"Ohuhu"},{"code":"B27","name":"Fog Blue","hex":"#c7d8e4","old":"MG030","fam":"Blue","brand":"Ohuhu"},{"code":"B28","name":"Smoke Blue","hex":"#b0d3e4","old":"B250","fam":"Blue","brand":"Ohuhu"},{"code":"B310","name":"Blue Dusk","hex":"#b1c8d1","old":"BGⅡ03","fam":"Blue","brand":"Ohuhu"},{"code":"B311","name":"Stone Blue","hex":"#96bcc9","old":"MG060","fam":"Blue","brand":"Ohuhu"},{"code":"B315","name":"Deep Cerulean","hex":"#508094","old":"PB11","fam":"Blue","brand":"Ohuhu"},{"code":"B411","name":"Rich Slate Blue","hex":"#7b99a8","old":"BGⅡ05","fam":"Blue","brand":"Ohuhu"},{"code":"B412","name":"Gunmetal Blue","hex":"#628391","old":"MG100","fam":"Blue","brand":"Ohuhu"},{"code":"B415","name":"Stormy Night","hex":"#4c5c66","old":"BGⅡ09","fam":"Blue","brand":"Ohuhu"},{"code":"BG011","name":"Teal","hex":"#1db2b7","old":"G500","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG04","name":"Sea Spray","hex":"#bce1e4","old":"G322","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG05","name":"Light Sea Blue","hex":"#aadbde","old":"BG68","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG09","name":"Aquamarine","hex":"#8ed0cf","old":"G326","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG114","name":"Faded Teal","hex":"#5fbcc3","old":"PB9","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG19","name":"Sea Blue","hex":"#92d1d2","old":"G324","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG21","name":"Mint Whisp","hex":"#ebf4ed","old":"G320","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG211","name":"Spearmint","hex":"#7dc7ac","old":"G360","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG212","name":"Bright Pine Green","hex":"#35b392","old":"G4","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG215","name":"Dark Pine Green","hex":"#24917a","old":"BG8","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG24","name":"Sea Glass Blue","hex":"#c9e4d1","old":"G420","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG310","name":"Seafoam Green","hex":"#b2ddd5","old":"G340","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG311","name":"Turquoise","hex":"#4fbca9","old":"PB10","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG314","name":"Peacock Green","hex":"#22918a","old":"BG6","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG315","name":"Castleton Green","hex":"#33867c","old":"BG7","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BGY00","name":"Cashmere Grey","hex":"#d9dfdf","old":"BG050","fam":"Blue-Green-Yellow","brand":"Ohuhu"},{"code":"BGY02","name":"Pigeon Grey","hex":"#bbc4c8","old":"BG9","fam":"Blue-Green-Yellow","brand":"Ohuhu"},{"code":"BGY13","name":"Seagull Grey","hex":"#a2a9ac","old":"GG060","fam":"Blue-Green-Yellow","brand":"Ohuhu"},{"code":"BGY15","name":"Blue Steel Grey","hex":"#95a1a5","old":"GG5","fam":"Blue-Green-Yellow","brand":"Ohuhu"},{"code":"BGY18","name":"Graphite Grey","hex":"#727b7d","old":"GG9","fam":"Blue-Green-Yellow","brand":"Ohuhu"},{"code":"BGY24","name":"Storm Grey","hex":"#74838b","old":"CGⅡ07","fam":"Blue-Green-Yellow","brand":"Ohuhu"},{"code":"BGY25","name":"Cracked Pepper","hex":"#6c777e","old":"CGⅡ08","fam":"Blue-Green-Yellow","brand":"Ohuhu"},{"code":"BGY35","name":"Iron Grey","hex":"#666c75","old":"CGⅡ09","fam":"Blue-Green-Yellow","brand":"Ohuhu"},{"code":"BGY38","name":"Charcoal Grey","hex":"#52555a","old":"NG09","fam":"Blue-Green-Yellow","brand":"Ohuhu"},{"code":"BV013","name":"French Ultramarine","hex":"#425eaa","old":"B380","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV015","name":"Deep Ultramarine","hex":"#4b56a4","old":"B440","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV05","name":"Cornflower","hex":"#a9c7e9","old":"B340","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV08","name":"Havelock Blue","hex":"#88aad7","old":"B350","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV115","name":"Shadow Blue","hex":"#737496","old":"V450","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV15","name":"Dusty Periwinkle","hex":"#c4c8dc","old":"V340","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV210","name":"Blueberry","hex":"#5761a8","old":"V390","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV26","name":"Pale Blue Violet","hex":"#b9bade","old":"R25","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV28","name":"Bluebonnet","hex":"#7082c1","old":"V370","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV29","name":"Iris","hex":"#6675aa","old":"R13","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV31","name":"Cloud Blue","hex":"#e5eaee","old":"BG3","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV310","name":"Brilliant Blue","hex":"#578ac3","old":"PB2","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV311","name":"Royal Blue","hex":"#206ab4","old":"B180","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV312","name":"Deep Royal Blue","hex":"#2168b3","old":"B190","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV314","name":"Lapis Lazuli","hex":"#4c72a7","old":"PB3","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV315","name":"Cobalt Blue","hex":"#396b98","old":"PB4","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV32","name":"Pale Sky Blue","hex":"#deecf3","old":"B220","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV35","name":"Arctic Blue","hex":"#bcdbed","old":"B120","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV38","name":"Sky Blue","hex":"#92bae0","old":"PB1","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV414","name":"Denim Blue","hex":"#7198bb","old":"B270","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV415","name":"Antwerp Blue","hex":"#4687ab","old":"B290","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV48","name":"Distressed Denim","hex":"#a0bbd3","old":"B260","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV514","name":"Vintage Navy","hex":"#546e9b","old":"PB5","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV58","name":"Crystal Blue","hex":"#8fc8ea","old":"B140","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"CG01","name":"Cloud Grey","hex":"#eeefee","old":"CG020","fam":"Cool Grey","brand":"Ohuhu"},{"code":"CG02","name":"Light Grey","hex":"#e8ebea","old":"CG030","fam":"Cool Grey","brand":"Ohuhu"},{"code":"CG17","name":"Cool Grey","hex":"#a3a8ae","old":"CG5","fam":"Cool Grey","brand":"Ohuhu"},{"code":"CG18","name":"Icy Grey","hex":"#9ea7af","old":"CGⅡ04","fam":"Cool Grey","brand":"Ohuhu"},{"code":"CG24","name":"Grey","hex":"#bdc1c0","old":"CG050","fam":"Cool Grey","brand":"Ohuhu"},{"code":"CG25","name":"Deep Grey","hex":"#a9acac","old":"NG03","fam":"Cool Grey","brand":"Ohuhu"},{"code":"CG28","name":"Web Grey","hex":"#7e8488","old":"CG070","fam":"Cool Grey","brand":"Ohuhu"},{"code":"E011","name":"Pale Camo Green","hex":"#aeaa97","old":"E434","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E05","name":"Pale Moss","hex":"#e5e8d1","old":"G220","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E06","name":"Bog Mist Green","hex":"#dcd8c2","old":"E432","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E14","name":"Khaki Beige","hex":"#dcd3c1","old":"YG040","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E17","name":"Sage Grey","hex":"#dbceaa","old":"Y250","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E19","name":"Dried Sage","hex":"#d0c6ab","old":"YG080","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E211","name":"Light Elm Wood","hex":"#d5ba8a","old":"E440","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E212","name":"Dusty Olive","hex":"#c0ad79","old":"Y7","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E22","name":"Lime Juice","hex":"#f2e8c8","old":"GY173","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E26","name":"Pale Celery","hex":"#ead9b1","old":"Y230","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E311","name":"Sandbar Brown","hex":"#bda486","old":"E300","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E313","name":"Swamp Mud","hex":"#907b5f","old":"E450","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E314","name":"Military Olive","hex":"#7a6657","old":"E460","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E413","name":"Dark Brown","hex":"#9e7f6a","old":"E310","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E415","name":"Cedar brown","hex":"#906e59","old":"BR1","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E44","name":"Soft Sand","hex":"#f6daba","old":"E160","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E46","name":"Coral Sand","hex":"#edbe97","old":"E220","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E511","name":"Chocolate Mocha","hex":"#996e62","old":"Y12","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E515","name":"Black Brown","hex":"#635453","old":"Y13","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E58","name":"Fawn Brown","hex":"#c99e84","old":"E170","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E610","name":"Light Mahogany","hex":"#c17466","old":"E060","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E614","name":"Maple Syrup","hex":"#906256","old":"E130","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E69","name":"Russet brown","hex":"#b77a67","old":"E120","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E713","name":"Red Bean","hex":"#9a5f5f","old":"R284","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E85","name":"Cherry Taupe","hex":"#e9c5c3","old":"E050","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E914","name":"Bark Brown","hex":"#826560","old":"E430","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E92","name":"Ash Rose","hex":"#e4d4cc","old":"E380","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E97","name":"Deep Rose Grey","hex":"#c3a79c","old":"E400","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"FY00","name":"Fluorescent Yellow","hex":"#eae853","old":"FY010","fam":"Fluorescent","brand":"Ohuhu"},{"code":"FY01","name":"Fluorescent Orange","hex":"#f2913f","old":"FY020","fam":"Fluorescent","brand":"Ohuhu"},{"code":"FY02","name":"Fluorescent Red","hex":"#ec6a67","old":"FY030","fam":"Fluorescent","brand":"Ohuhu"},{"code":"FY04","name":"Fluorescent Violet","hex":"#7e82be","old":"FY050","fam":"Fluorescent","brand":"Ohuhu"},{"code":"G012","name":"Mineral Green","hex":"#a2c5b9","old":"G330","fam":"Green","brand":"Ohuhu"},{"code":"G013","name":"Muted Turquoise","hex":"#82b4b3","old":"BG5","fam":"Green","brand":"Ohuhu"},{"code":"G112","name":"Pale Cobalt Green","hex":"#96bdad","old":"G9","fam":"Green","brand":"Ohuhu"},{"code":"G113","name":"Dusty Jade Green","hex":"#72a897","old":"G6","fam":"Green","brand":"Ohuhu"},{"code":"G114","name":"Aged Pine Green","hex":"#66998a","old":"G5","fam":"Green","brand":"Ohuhu"},{"code":"G210","name":"Sea Green","hex":"#81bb9b","old":"G490","fam":"Green","brand":"Ohuhu"},{"code":"G24","name":"Celadon","hex":"#c7d6c5","old":"G410","fam":"Green","brand":"Ohuhu"},{"code":"G310","name":"Shamrock Green","hex":"#6ab178","old":"G2","fam":"Green","brand":"Ohuhu"},{"code":"G311","name":"Jade Green","hex":"#61bb85","old":"G3","fam":"Green","brand":"Ohuhu"},{"code":"G312","name":"Emerald Green","hex":"#299a73","old":"G1","fam":"Green","brand":"Ohuhu"},{"code":"G313","name":"Green","hex":"#2b8761","old":"G390","fam":"Green","brand":"Ohuhu"},{"code":"G315","name":"Dark Emerald","hex":"#237f6c","old":"BG1","fam":"Green","brand":"Ohuhu"},{"code":"G316","name":"Deep Jade Green","hex":"#307365","old":"BG2","fam":"Green","brand":"Ohuhu"},{"code":"G34","name":"Pale Green","hex":"#d3e9cd","old":"G120","fam":"Green","brand":"Ohuhu"},{"code":"G36","name":"Glass Green","hex":"#96cc9d","old":"G8","fam":"Green","brand":"Ohuhu"},{"code":"G41","name":"Peppermint","hex":"#dcedd2","old":"G110","fam":"Green","brand":"Ohuhu"},{"code":"G410","name":"Grass Green","hex":"#96bd6b","old":"GY2","fam":"Green","brand":"Ohuhu"},{"code":"G43","name":"Vintage Pale Green","hex":"#dfebd1","old":"GY172","fam":"Green","brand":"Ohuhu"},{"code":"G44","name":"Sea Glass Green","hex":"#c3e1bc","old":"G440","fam":"Green","brand":"Ohuhu"},{"code":"G47","name":"Spring Green","hex":"#acd496","old":"G140","fam":"Green","brand":"Ohuhu"},{"code":"G49","name":"Sour Apple","hex":"#b2d192","old":"GY1","fam":"Green","brand":"Ohuhu"},{"code":"GG03","name":"Silver Cloud","hex":"#d7e0dd","old":"GG1","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG05","name":"Evergreen Fog","hex":"#9cafaa","old":"GG3","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG07","name":"Steel Grey","hex":"#898c8c","old":"GG110","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG10","name":"Soft Cool Grey","hex":"#d6d8d8","old":"CG2","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG11","name":"Fog Grey","hex":"#bdc0c3","old":"BG060","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG12","name":"Pastel Icy Grey","hex":"#b1bdc3","old":"BG070","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG15","name":"Dark Neutral Grey","hex":"#60666a","old":"NG07","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG16","name":"Dark Anchor Grey","hex":"#686e73","old":"NG06","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG24","name":"Wispy Grey","hex":"#d2d7cf","old":"GG020","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG25","name":"Pilgrim Haze","hex":"#bbc7c1","old":"GG040","fam":"Green Grey","brand":"Ohuhu"},{"code":"R012","name":"Fruit Punch","hex":"#e36157","old":"R070","fam":"Red","brand":"Ohuhu"},{"code":"R013","name":"Tomato","hex":"#dd6c5a","old":"Y5","fam":"Red","brand":"Ohuhu"},{"code":"R014","name":"Deep Vermilion","hex":"#c8554e","old":"R2","fam":"Red","brand":"Ohuhu"},{"code":"R015","name":"Crimson","hex":"#b2484f","old":"R3","fam":"Red","brand":"Ohuhu"},{"code":"R016","name":"Chili Red","hex":"#b03f39","old":"R180","fam":"Red","brand":"Ohuhu"},{"code":"R112","name":"Reddish Pink","hex":"#e66d73","old":"R150","fam":"Red","brand":"Ohuhu"},{"code":"R15","name":"Lychee Juice","hex":"#f8c6c2","old":"R110","fam":"Red","brand":"Ohuhu"},{"code":"R16","name":"Light Salmon","hex":"#f8caca","old":"R21","fam":"Red","brand":"Ohuhu"},{"code":"R210","name":"Deep Blush","hex":"#de859b","old":"R1","fam":"Red","brand":"Ohuhu"},{"code":"R211","name":"Ruby","hex":"#b4516c","old":"R230","fam":"Red","brand":"Ohuhu"},{"code":"R212","name":"Mulberry","hex":"#bd5071","old":"R170","fam":"Red","brand":"Ohuhu"},{"code":"R213","name":"Pomegranate","hex":"#bb5164","old":"R6","fam":"Red","brand":"Ohuhu"},{"code":"R215","name":"Morello Cherry","hex":"#984f56","old":"R8","fam":"Red","brand":"Ohuhu"},{"code":"R22","name":"Ballet Pink","hex":"#fce6ea","old":"RV260","fam":"Red","brand":"Ohuhu"},{"code":"R23","name":"Sakura","hex":"#fadbe2","old":"RV270","fam":"Red","brand":"Ohuhu"},{"code":"R25","name":"Tender Pink","hex":"#f5b1c4","old":"RV300","fam":"Red","brand":"Ohuhu"},{"code":"R26","name":"Valentine Pink","hex":"#eca7bb","old":"R190","fam":"Red","brand":"Ohuhu"},{"code":"R27","name":"Pink Satin","hex":"#e493ac","old":"R120","fam":"Red","brand":"Ohuhu"},{"code":"R28","name":"Pink Carnation","hex":"#ed9db6","old":"R9","fam":"Red","brand":"Ohuhu"},{"code":"R310","name":"Purplish Pink","hex":"#cf7297","old":"RV330","fam":"Red","brand":"Ohuhu"},{"code":"R312","name":"Magenta","hex":"#be5675","old":"RV350","fam":"Red","brand":"Ohuhu"},{"code":"R38","name":"Rose Pink","hex":"#e590ae","old":"R23","fam":"Red","brand":"Ohuhu"},{"code":"R410","name":"Raspberry","hex":"#d86877","old":"R160","fam":"Red","brand":"Ohuhu"},{"code":"R412","name":"Cerise","hex":"#ce506a","old":"R4","fam":"Red","brand":"Ohuhu"},{"code":"R413","name":"Amaranth","hex":"#c3546f","old":"R5","fam":"Red","brand":"Ohuhu"},{"code":"R46","name":"Old Rose","hex":"#dd8d92","old":"R12","fam":"Red","brand":"Ohuhu"},{"code":"R48","name":"Cherry Rose","hex":"#df7384","old":"R200","fam":"Red","brand":"Ohuhu"},{"code":"R50","name":"Orchid Wisp","hex":"#f8ebef","old":"R242","fam":"Red","brand":"Ohuhu"},{"code":"R513","name":"Deep Wine","hex":"#955561","old":"R290","fam":"Red","brand":"Ohuhu"},{"code":"R514","name":"Prune Juice","hex":"#915264","old":"R7","fam":"Red","brand":"Ohuhu"},{"code":"R54","name":"Lavender Fog","hex":"#e4cad5","old":"R250","fam":"Red","brand":"Ohuhu"},{"code":"R56","name":"Puce","hex":"#d6b4bf","old":"R270","fam":"Red","brand":"Ohuhu"},{"code":"R57","name":"Rose Dust","hex":"#c68b9f","old":"R280","fam":"Red","brand":"Ohuhu"},{"code":"R59","name":"Wine Berry","hex":"#9c576a","old":"R240","fam":"Red","brand":"Ohuhu"},{"code":"R612","name":"Raisin","hex":"#825e69","old":"R340","fam":"Red","brand":"Ohuhu"},{"code":"R615","name":"Black Grape","hex":"#6c5c64","old":"R350","fam":"Red","brand":"Ohuhu"},{"code":"R69","name":"Dark Mauve","hex":"#a0777b","old":"R282","fam":"Red","brand":"Ohuhu"},{"code":"RV01","name":"Water Lily","hex":"#fdf4f9","old":"RV010","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV04","name":"Light Orchid","hex":"#f4c6dd","old":"RV030","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV05","name":"Pink Pearl","hex":"#f6c1d7","old":"RV280","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV08","name":"Pastel Pink","hex":"#ed9bc0","old":"R10","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV09","name":"Disco Pink","hex":"#ee86b3","old":"RV070","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV111","name":"Hot Pink","hex":"#e6549a","old":"RP6","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV17","name":"Pink","hex":"#f3acc0","old":"R22","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV18","name":"Bubblegum","hex":"#f19bb9","old":"R14","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV19","name":"Dahlia Pink","hex":"#ee91b9","old":"R15","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV212","name":"Rich Raspberry","hex":"#e13187","old":"RP1","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV23","name":"Pink Wisp","hex":"#f8dfeb","old":"RV130","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV25","name":"Rosy Lilac","hex":"#ecbbd4","old":"RV180","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV28","name":"Hibiscus Pink","hex":"#d58dae","old":"RV200","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV29","name":"Plum Pink","hex":"#d378a3","old":"RV320","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV310","name":"Fuchsia","hex":"#d55e9d","old":"RV100","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV311","name":"Pansy","hex":"#c64994","old":"P2","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV314","name":"Grape Juice","hex":"#9d4574","old":"P1","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV316","name":"Grape Jelly","hex":"#7e447e","old":"R16","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV33","name":"Thistle","hex":"#efd4e7","old":"RV160","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV34","name":"Faded Lilac","hex":"#efd4e7","old":"V020","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV35","name":"Bright Lilac","hex":"#e6c9df","old":"V150","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV39","name":"Bright Fuchsia","hex":"#e176aa","old":"RV080","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV514","name":"Violet Merlot","hex":"#96637e","old":"RV240","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV515","name":"Ripe Mulberry","hex":"#8b5277","old":"RV250","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV57","name":"Dark Lilac","hex":"#d8aed0","old":"V160","fam":"Red-Violet","brand":"Ohuhu"},{"code":"V010","name":"Faded Violet","hex":"#997bb5","old":"P4","fam":"Violet","brand":"Ohuhu"},{"code":"V013","name":"violet","hex":"#8a5c97","old":"V210","fam":"Violet","brand":"Ohuhu"},{"code":"V015","name":"Deep Violet","hex":"#8a7194","old":"V080","fam":"Violet","brand":"Ohuhu"},{"code":"V08","name":"Light Violet","hex":"#ae8fc0","old":"V050","fam":"Violet","brand":"Ohuhu"},{"code":"V112","name":"Vivid Violet","hex":"#ab6fad","old":"V070","fam":"Violet","brand":"Ohuhu"},{"code":"V13","name":"Greyed Lavender","hex":"#e1d7e8","old":"R11","fam":"Violet","brand":"Ohuhu"},{"code":"V14","name":"Pale Purple","hex":"#d4bad9","old":"V030","fam":"Violet","brand":"Ohuhu"},{"code":"V18","name":"Bright Lavender","hex":"#dbb5d5","old":"P3","fam":"Violet","brand":"Ohuhu"},{"code":"V216","name":"Morning Glory","hex":"#60509f","old":"R17","fam":"Violet","brand":"Ohuhu"},{"code":"V22","name":"Lavender Wisp","hex":"#e1d4e9","old":"V230","fam":"Violet","brand":"Ohuhu"},{"code":"V29","name":"Dull Violet","hex":"#9889b7","old":"V060","fam":"Violet","brand":"Ohuhu"},{"code":"V32","name":"Icy Periwinkle","hex":"#e2e8f4","old":"V322","fam":"Violet","brand":"Ohuhu"},{"code":"V34","name":"Periwinkle","hex":"#deddef","old":"V330","fam":"Violet","brand":"Ohuhu"},{"code":"V38","name":"Deep Periwinkle","hex":"#b2b2d9","old":"R24","fam":"Violet","brand":"Ohuhu"},{"code":"V412","name":"Lobelia","hex":"#a291c2","old":"V270","fam":"Violet","brand":"Ohuhu"},{"code":"V414","name":"Electric Indigo","hex":"#6d64a5","old":"V320","fam":"Violet","brand":"Ohuhu"},{"code":"V416","name":"Deep Purple","hex":"#4e4389","old":"P5","fam":"Violet","brand":"Ohuhu"},{"code":"V46","name":"Lavender","hex":"#b4a9d3","old":"V250","fam":"Violet","brand":"Ohuhu"},{"code":"WG01","name":"Lite Lavender","hex":"#e0d8dd","old":"RG110","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG04","name":"Icy Lavender","hex":"#dbd4d7","old":"RG120","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG06","name":"Star Dust","hex":"#b4aab0","old":"RG150","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG08","name":"Heathered Grape","hex":"#92888e","old":"RG080","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG10","name":"Porcelain","hex":"#f6f7f5","old":"CGⅡ00","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG26","name":"Silver Grey","hex":"#bfb6b4","old":"WG3","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG27","name":"Antique Silver","hex":"#aba5a2","old":"WG4","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG37","name":"Dark Charcoal","hex":"#646163","old":"WG09","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG38","name":"Caviar","hex":"#555656","old":"WG130","fam":"Warm Grey","brand":"Ohuhu"},{"code":"Y00","name":"Lemon Mist","hex":"#fcfcef","old":"Y010","fam":"Yellow","brand":"Ohuhu"},{"code":"Y02","name":"Lemon Chiffon","hex":"#f7f0c0","old":"Y030","fam":"Yellow","brand":"Ohuhu"},{"code":"Y03","name":"Pastel Yellow","hex":"#f7f4c9","old":"G030","fam":"Yellow","brand":"Ohuhu"},{"code":"Y06","name":"Butter","hex":"#f7eb92","old":"Y040","fam":"Yellow","brand":"Ohuhu"},{"code":"Y07","name":"Banana Cream","hex":"#f0dc89","old":"GY6","fam":"Yellow","brand":"Ohuhu"},{"code":"Y09","name":"Summer Lemon","hex":"#edd571","old":"Y050","fam":"Yellow","brand":"Ohuhu"},{"code":"Y111","name":"Mustard","hex":"#f0b52e","old":"Y2","fam":"Yellow","brand":"Ohuhu"},{"code":"Y14","name":"Pale Lemon Yellow","hex":"#f2f2a3","old":"G020","fam":"Yellow","brand":"Ohuhu"},{"code":"Y17","name":"Bright Lemon Yellow","hex":"#f4e668","old":"Y080","fam":"Yellow","brand":"Ohuhu"},{"code":"Y19","name":"Canary","hex":"#f5d532","old":"Y070","fam":"Yellow","brand":"Ohuhu"},{"code":"Y213","name":"Dark Marigold","hex":"#e39442","old":"YR2","fam":"Yellow","brand":"Ohuhu"},{"code":"Y215","name":"Toffee","hex":"#d48a45","old":"Y180","fam":"Yellow","brand":"Ohuhu"},{"code":"Y216","name":"Caramel","hex":"#ca9349","old":"YR1","fam":"Yellow","brand":"Ohuhu"},{"code":"Y26","name":"Light Gold","hex":"#f0cb6e","old":"Y3","fam":"Yellow","brand":"Ohuhu"},{"code":"Y27","name":"Sunflower","hex":"#eec25e","old":"Y1","fam":"Yellow","brand":"Ohuhu"},{"code":"Y28","name":"Corn Yellow","hex":"#e3be54","old":"Y6","fam":"Yellow","brand":"Ohuhu"},{"code":"Y29","name":"Melon Yellow","hex":"#eda63c","old":"YR33","fam":"Yellow","brand":"Ohuhu"},{"code":"Y311","name":"Termite Beige","hex":"#d9b56e","old":"Y270","fam":"Yellow","brand":"Ohuhu"},{"code":"Y315","name":"Olive Yellow","hex":"#c1944b","old":"Y8","fam":"Yellow","brand":"Ohuhu"},{"code":"Y34","name":"Eggnog yellow","hex":"#fcf4df","old":"Y121","fam":"Yellow","brand":"Ohuhu"},{"code":"Y39","name":"Straw","hex":"#ebc786","old":"Y260","fam":"Yellow","brand":"Ohuhu"},{"code":"Y410","name":"Goldenrod","hex":"#ecb56d","old":"YR260","fam":"Yellow","brand":"Ohuhu"},{"code":"Y412","name":"Apple Cider","hex":"#e6af83","old":"E490","fam":"Yellow","brand":"Ohuhu"},{"code":"Y413","name":"Fawn","hex":"#d8a77b","old":"E240","fam":"Yellow","brand":"Ohuhu"},{"code":"Y415","name":"Sand Storm","hex":"#ca965f","old":"Y9","fam":"Yellow","brand":"Ohuhu"},{"code":"Y416","name":"Golden Brown","hex":"#b0794b","old":"Y210","fam":"Yellow","brand":"Ohuhu"},{"code":"Y42","name":"Warm Ivory","hex":"#fae6cc","old":"Y110","fam":"Yellow","brand":"Ohuhu"},{"code":"Y45","name":"Cream","hex":"#f2cba1","old":"YR240","fam":"Yellow","brand":"Ohuhu"},{"code":"Y46","name":"Peach Yogurt","hex":"#f2bc82","old":"YR250","fam":"Yellow","brand":"Ohuhu"},{"code":"Y49","name":"Autumn Leaf","hex":"#ecb668","old":"Y140","fam":"Yellow","brand":"Ohuhu"},{"code":"Y515","name":"Light Walnut","hex":"#b98969","old":"E370","fam":"Yellow","brand":"Ohuhu"},{"code":"Y55","name":"Golden Champagne","hex":"#fbe7c4","old":"Y120","fam":"Yellow","brand":"Ohuhu"},{"code":"Y59","name":"Marigold Yellow","hex":"#e9bf7f","old":"Y130","fam":"Yellow","brand":"Ohuhu"},{"code":"Y611","name":"Dark Sand","hex":"#d1ac82","old":"Y11","fam":"Yellow","brand":"Ohuhu"},{"code":"Y62","name":"Sandy Beige","hex":"#f8eadb","old":"E280","fam":"Yellow","brand":"Ohuhu"},{"code":"Y69","name":"Milk Tea","hex":"#e5caab","old":"E210","fam":"Yellow","brand":"Ohuhu"},{"code":"YG012","name":"Yellow Green","hex":"#d1d376","old":"GY4","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG015","name":"Dark Olive","hex":"#8f8c52","old":"GY42","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG06","name":"Sugarcane","hex":"#e1e6a9","old":"GY7","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG07","name":"Honeydew Melon","hex":"#dee091","old":"G050","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG111","name":"Celery","hex":"#e7de8e","old":"G060","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG112","name":"Lemon Lime","hex":"#e6da6f","old":"G070","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG113","name":"Pear Green","hex":"#d8cc50","old":"G080","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG211","name":"Edamame","hex":"#b3bc54","old":"GY5","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG212","name":"Guacamole","hex":"#a29650","old":"GY8","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG215","name":"Thatch Green","hex":"#8f8869","old":"G300","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG29","name":"Apple Green","hex":"#bcc77c","old":"G260","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG312","name":"Artichoke Green","hex":"#aebf87","old":"G270","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG36","name":"Beige Green","hex":"#becaa7","old":"G240","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG413","name":"Fern Green","hex":"#7ca16e","old":"G470","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG414","name":"Dark Fern Green","hex":"#6d8c68","old":"GY43","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG415","name":"Cascade Green","hex":"#5f7566","old":"G7","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG510","name":"Bud Green","hex":"#b1c763","old":"GY3","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG610","name":"Bright Lime","hex":"#9ecc5a","old":"G170","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG611","name":"Mantis Green","hex":"#93c05c","old":"G190","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG66","name":"Fresh Green","hex":"#d5e7af","old":"G130","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YGY02","name":"Abalone Grey","hex":"#e8e2da","old":"RG030","fam":"Yellow-Green-Yellow","brand":"Ohuhu"},{"code":"YGY05","name":"Dovetail Grey","hex":"#c2b6b4","old":"RG050","fam":"Yellow-Green-Yellow","brand":"Ohuhu"},{"code":"YGY11","name":"Collingwood Grey","hex":"#dad1c4","old":"WG01","fam":"Yellow-Green-Yellow","brand":"Ohuhu"},{"code":"YGY13","name":"Oyster Grey","hex":"#dddbce","old":"WG050","fam":"Yellow-Green-Yellow","brand":"Ohuhu"},{"code":"YGY17","name":"Platinum Grey","hex":"#c5b9af","old":"WG070","fam":"Yellow-Green-Yellow","brand":"Ohuhu"},{"code":"YGY18","name":"Stone Grey","hex":"#968c85","old":"WG090","fam":"Yellow-Green-Yellow","brand":"Ohuhu"},{"code":"YR00","name":"Barely Blush","hex":"#fceedf","old":"E010","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR015","name":"Burnt Orange","hex":"#dc834a","old":"YR172","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR03","name":"Pastel Blush","hex":"#fdebdb","old":"YR220","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR04","name":"Pastel Peach","hex":"#fae8d6","old":"R18","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR06","name":"Raw Cashew","hex":"#f9dbc2","old":"E090","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR07","name":"Salmon Orange","hex":"#f9c19f","old":"YR4","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR11","name":"Peachy Blush","hex":"#fde2d3","old":"YR110","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR111","name":"Persimmon","hex":"#f08f43","old":"Y10","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR112","name":"Orange","hex":"#f0873d","old":"YR3","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR17","name":"Sunset Orange","hex":"#f6bb8a","old":"Y4","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR19","name":"Marigold Orange","hex":"#f6b35d","old":"YR170","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR213","name":"Squash Orange","hex":"#e67d56","old":"YR180","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR215","name":"Aged Cherry Wood","hex":"#bb6151","old":"E080","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR312","name":"Light Earth Brown","hex":"#d19271","old":"E110","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR313","name":"Potato Brown","hex":"#bd7d59","old":"BR2","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR314","name":"Sandalwood","hex":"#ae7054","old":"E260","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR33","name":"Rose Cream","hex":"#fae1d3","old":"R19","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR34","name":"Peach Cream","hex":"#f9cfc0","old":"R20","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR39","name":"Cinnamon","hex":"#e7a688","old":"BR3","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR43","name":"Pale Cherry Pink","hex":"#fde2d7","old":"R080","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR45","name":"Rosewater","hex":"#f5cfc1","old":"E030","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR47","name":"Dusty Peach","hex":"#f7cdbf","old":"R29","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR511","name":"Pale Coral","hex":"#f2a183","old":"YR090","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR513","name":"Papaya","hex":"#ee7d56","old":"YR190","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR515","name":"Burnt Sienna","hex":"#cc795a","old":"YR5","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR52","name":"Cameo Rose","hex":"#fbe6de","old":"YR030","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR55","name":"Pink Lemonade","hex":"#f3ccc1","old":"E470","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR57","name":"Tropical Peach","hex":"#f7bca8","old":"BR208","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR58","name":"Pink Sand","hex":"#f9c4b7","old":"R050","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR59","name":"Cantaloupe","hex":"#f6b79e","old":"YR070","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"E111","name":"Pewter Green","hex":"#bdad96","old":"YG100","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"YR56","name":"Light Apricot Pink","hex":"#f7d1c3","old":"R090","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"0","name":"Colorless Blender","hex":"#ffffff","old":"","fam":"Neutral / Black","brand":"Copic"},{"code":"100","name":"Black","hex":"#1e1d22","old":"","fam":"Neutral / Black","brand":"Copic"},{"code":"110","name":"Special Black","hex":"#201b1d","old":"","fam":"Neutral / Black","brand":"Copic"},{"code":"B00","name":"Frost Blue","hex":"#c4fafe","old":"","fam":"Blue","brand":"Copic"},{"code":"B000","name":"Pale Porcelain Blue","hex":"#defefe","old":"","fam":"Blue","brand":"Copic"},{"code":"B0000","name":"Pale Celestine","hex":"#eefefe","old":"","fam":"Blue","brand":"Copic"},{"code":"B01","name":"Mint Blue","hex":"#a5f0fc","old":"","fam":"Blue","brand":"Copic"},{"code":"B02","name":"Robin's Egg Blue","hex":"#82d4fd","old":"","fam":"Blue","brand":"Copic"},{"code":"B04","name":"Tahitian Blue","hex":"#43b3f3","old":"","fam":"Blue","brand":"Copic"},{"code":"B05","name":"Process Blue","hex":"#3196ea","old":"","fam":"Blue","brand":"Copic"},{"code":"B06","name":"Peacock Blue","hex":"#1f7ed7","old":"","fam":"Blue","brand":"Copic"},{"code":"B12","name":"Ice Blue","hex":"#9edafd","old":"","fam":"Blue","brand":"Copic"},{"code":"B14","name":"Light Blue","hex":"#56a1dc","old":"","fam":"Blue","brand":"Copic"},{"code":"B16","name":"Cyanine Blue","hex":"#2c87e2","old":"","fam":"Blue","brand":"Copic"},{"code":"B18","name":"Lapis Lazuli","hex":"#2055c9","old":"","fam":"Blue","brand":"Copic"},{"code":"B21","name":"Baby Blue","hex":"#badefd","old":"","fam":"Blue","brand":"Copic"},{"code":"B23","name":"Phthalo Blue","hex":"#749de7","old":"","fam":"Blue","brand":"Copic"},{"code":"B24","name":"Sky","hex":"#6da6f9","old":"","fam":"Blue","brand":"Copic"},{"code":"B26","name":"Cobalt Blue","hex":"#386cce","old":"","fam":"Blue","brand":"Copic"},{"code":"B28","name":"Royal Blue","hex":"#1a51d9","old":"","fam":"Blue","brand":"Copic"},{"code":"B29","name":"Ultramarine","hex":"#1643d6","old":"","fam":"Blue","brand":"Copic"},{"code":"B32","name":"Pale Blue","hex":"#aad4fe","old":"","fam":"Blue","brand":"Copic"},{"code":"B34","name":"Manganese Blue","hex":"#6687bf","old":"","fam":"Blue","brand":"Copic"},{"code":"B37","name":"Antwerp Blue","hex":"#225292","old":"","fam":"Blue","brand":"Copic"},{"code":"B39","name":"Prussian Blue","hex":"#1e397b","old":"","fam":"Blue","brand":"Copic"},{"code":"B41","name":"Powder Blue","hex":"#c6e2fb","old":"","fam":"Blue","brand":"Copic"},{"code":"B45","name":"Smoky Blue","hex":"#759bd3","old":"","fam":"Blue","brand":"Copic"},{"code":"B52","name":"Soft Greenish Blue","hex":"#98c6dd","old":"","fam":"Blue","brand":"Copic"},{"code":"B60","name":"Pale Blue Gray","hex":"#efedfd","old":"","fam":"Blue","brand":"Copic"},{"code":"B63","name":"Light Hydrangea","hex":"#babff6","old":"","fam":"Blue","brand":"Copic"},{"code":"B66","name":"Clematis","hex":"#5b67cf","old":"","fam":"Blue","brand":"Copic"},{"code":"B69","name":"Stratospheric Blue","hex":"#2336c2","old":"","fam":"Blue","brand":"Copic"},{"code":"B79","name":"Iris","hex":"#1d27a2","old":"","fam":"Blue","brand":"Copic"},{"code":"B91","name":"Pale Grayish Blue","hex":"#bed1e6","old":"","fam":"Blue","brand":"Copic"},{"code":"B93","name":"Light Crockery Blue","hex":"#9dbbdc","old":"","fam":"Blue","brand":"Copic"},{"code":"B95","name":"Light Grayish Cobalt","hex":"#80a2ce","old":"","fam":"Blue","brand":"Copic"},{"code":"B97","name":"Night Blue","hex":"#456795","old":"","fam":"Blue","brand":"Copic"},{"code":"B99","name":"Agate","hex":"#344668","old":"","fam":"Blue","brand":"Copic"},{"code":"BG000","name":"Pale Aqua","hex":"#d8fef7","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG0000","name":"Snow Green","hex":"#ecfef8","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG01","name":"Aqua Blue","hex":"#91f2f8","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG02","name":"New Blue","hex":"#72daef","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG05","name":"Holiday Blue","hex":"#3baac0","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG07","name":"Petroleum Blue","hex":"#218d9d","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG09","name":"Blue Green","hex":"#1d8088","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG10","name":"Cool Shadow","hex":"#defdf2","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG11","name":"Moon White","hex":"#d2fcf0","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG13","name":"Mint Green","hex":"#70d6c1","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG15","name":"Aqua","hex":"#39ac8f","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG18","name":"Teal Blue","hex":"#41847b","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG23","name":"Coral Sea","hex":"#89e2c5","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG32","name":"Aqua Mint","hex":"#95e8cd","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG34","name":"Horizon Green","hex":"#8ae1b8","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG45","name":"Nile Blue","hex":"#68cbc3","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG49","name":"Duck Blue","hex":"#0c8174","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG53","name":"Ice Mint","hex":"#8ad7db","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG57","name":"Jasper","hex":"#59acaf","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG70","name":"Ocean Mist","hex":"#e9efef","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG72","name":"Ice Ocean","hex":"#9bc2c4","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG75","name":"Abyss Green","hex":"#4c777a","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG78","name":"Bronze","hex":"#3c6b6e","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG90","name":"Gray Sky","hex":"#dfe2d2","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG93","name":"Green Gray","hex":"#a6aa88","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG96","name":"Bush","hex":"#636d50","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG99","name":"Flagstone Blue","hex":"#626242","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BV00","name":"Mauve Shadow","hex":"#dfc4e9","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV000","name":"Iridescent Mauve","hex":"#e9d2f0","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV0000","name":"Pale Thistle","hex":"#eee8f2","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV01","name":"Viola","hex":"#b8afe5","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV02","name":"Prune","hex":"#a199e2","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV04","name":"Blue Berry","hex":"#4f5aa8","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV08","name":"Blue Violet","hex":"#433470","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV11","name":"Soft Violet","hex":"#b6a4d3","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV13","name":"Hydrangea Blue","hex":"#7c82d3","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV17","name":"Deep Reddish Blue","hex":"#4b458b","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV20","name":"Dull Lavender","hex":"#b8bbd4","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV23","name":"Grayish Lavender","hex":"#868397","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV25","name":"Grayish Violet","hex":"#676476","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV29","name":"Slate","hex":"#22212d","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV31","name":"Pale Lavender","hex":"#cecae7","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV34","name":"Bluebell","hex":"#8487b5","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"C-0","name":"Cool Gray No.0","hex":"#f2f6fb","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-00","name":"Cool Gray No.00","hex":"#fbfcfe","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-1","name":"Cool Gray No.1","hex":"#e4ebf3","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-10","name":"Cool Gray No.10","hex":"#25222c","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-2","name":"Cool Gray No.2","hex":"#d4dfe7","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-3","name":"Cool Gray No.3","hex":"#b6c1cd","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-4","name":"Cool Gray No.4","hex":"#99a4b1","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-5","name":"Cool Gray No.5","hex":"#828d98","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-6","name":"Cool Gray No.6","hex":"#656e7a","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-7","name":"Cool Gray No.7","hex":"#4c555f","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-8","name":"Cool Gray No.8","hex":"#363c44","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-9","name":"Cool Gray No.9","hex":"#2e2c37","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"E00","name":"Cotton Pearl","hex":"#fee8ca","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E000","name":"Pale Fruit Pink","hex":"#fef3df","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E0000","name":"Floral White","hex":"#fdf8ef","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E01","name":"Pink Flamingo","hex":"#fedbbc","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E02","name":"Fruit Pink","hex":"#fec59f","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E04","name":"Lipstick Rose","hex":"#a37072","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E07","name":"Light Mahogany","hex":"#933e3a","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E08","name":"Brown","hex":"#a8482a","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E09","name":"Burnt Sienna","hex":"#954021","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E11","name":"Barley Beige","hex":"#e1bc9e","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E13","name":"Desert Sand","hex":"#d39b71","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E15","name":"Earthenware","hex":"#ae6d43","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E17","name":"Reddish Brass","hex":"#994f34","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E18","name":"Copper","hex":"#672d1f","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E19","name":"Redwood","hex":"#843419","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E21","name":"Soft Sun","hex":"#fed4a3","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E23","name":"Hazelnut","hex":"#bf7b54","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E25","name":"Caribe Cocoa","hex":"#a76850","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E27","name":"Milk Chocolate","hex":"#92543d","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E29","name":"Burnt Umber","hex":"#783222","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E30","name":"Bisque","hex":"#fee9c0","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E31","name":"Brick Beige","hex":"#f0cc99","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E33","name":"Sand","hex":"#e29b6a","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E34","name":"Toast","hex":"#df9e6c","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E35","name":"Chamois","hex":"#cc8b52","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E37","name":"Sepia","hex":"#89501e","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E39","name":"Leather","hex":"#955116","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E40","name":"Brick White","hex":"#f3e8d8","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E41","name":"Pearl White","hex":"#f9e3be","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E42","name":"Sand White","hex":"#ecd1ad","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E43","name":"Dull Ivory","hex":"#c2a178","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E44","name":"Clay","hex":"#936f4d","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E47","name":"Dark Brown","hex":"#734b37","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E49","name":"Dark Bark","hex":"#3d281e","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E50","name":"Egg Shell","hex":"#fef2cf","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E51","name":"Milky White","hex":"#feebbe","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E53","name":"Raw Silk","hex":"#f9c692","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E55","name":"Light Camel","hex":"#d2a56b","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E57","name":"Light Walnut","hex":"#7e5430","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E59","name":"Walnut","hex":"#5e3f22","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E70","name":"Ash Rose","hex":"#ddc6bf","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E71","name":"Champagne","hex":"#b3928c","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E74","name":"Cocoa Brown","hex":"#906d67","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E77","name":"Maroon","hex":"#66413b","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E79","name":"Cashew","hex":"#4c2f29","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E81","name":"Ivory","hex":"#e8e0b9","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E84","name":"Khaki","hex":"#b19b61","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E87","name":"Fig","hex":"#68562b","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E89","name":"Pecan","hex":"#4c3c1e","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E93","name":"Tea Rose","hex":"#febda4","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E95","name":"Tea Orange","hex":"#fec196","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E97","name":"Deep Orange","hex":"#fc9462","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E99","name":"Baked Clay","hex":"#a76226","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"FB","name":"Fluorescent Blue","hex":"#4480f9","old":"","fam":"Fluorescent","brand":"Copic"},{"code":"FBG","name":"Fluorescent Blue Green","hex":"#6ccaea","old":"","fam":"Fluorescent","brand":"Copic"},{"code":"FG","name":"Fluorescent Green","hex":"#60bb49","old":"","fam":"Fluorescent","brand":"Copic"},{"code":"FRV","name":"Fluorescent Pink","hex":"#fe8ed4","old":"","fam":"Fluorescent","brand":"Copic"},{"code":"FV","name":"Fluorescent Violet","hex":"#734be0","old":"","fam":"Fluorescent","brand":"Copic"},{"code":"FY","name":"Fluorescent Yellow","hex":"#fee27f","old":"","fam":"Fluorescent","brand":"Copic"},{"code":"FYG","name":"Fluorescent Yellow Green","hex":"#f2fe84","old":"","fam":"Fluorescent","brand":"Copic"},{"code":"FYR","name":"Fluorescent Orange","hex":"#fec378","old":"","fam":"Fluorescent","brand":"Copic"},{"code":"G00","name":"Jade Green","hex":"#cbfae1","old":"","fam":"Green","brand":"Copic"},{"code":"G000","name":"Pale Green","hex":"#e3feed","old":"","fam":"Green","brand":"Copic"},{"code":"G0000","name":"Crystal Opal","hex":"#f0fef8","old":"","fam":"Green","brand":"Copic"},{"code":"G02","name":"Spectrum Green","hex":"#85dd90","old":"","fam":"Green","brand":"Copic"},{"code":"G03","name":"Meadow Green","hex":"#73d47c","old":"","fam":"Green","brand":"Copic"},{"code":"G05","name":"Emerald Green","hex":"#41ac4d","old":"","fam":"Green","brand":"Copic"},{"code":"G07","name":"Nile Green","hex":"#3f9439","old":"","fam":"Green","brand":"Copic"},{"code":"G09","name":"Veronese Green","hex":"#3ba54e","old":"","fam":"Green","brand":"Copic"},{"code":"G12","name":"Sea Green","hex":"#c0e2aa","old":"","fam":"Green","brand":"Copic"},{"code":"G14","name":"Apple Green","hex":"#6cc157","old":"","fam":"Green","brand":"Copic"},{"code":"G16","name":"Malachite","hex":"#298f57","old":"","fam":"Green","brand":"Copic"},{"code":"G17","name":"Forest Green","hex":"#379352","old":"","fam":"Green","brand":"Copic"},{"code":"G19","name":"Bright Parrot Green","hex":"#268d47","old":"","fam":"Green","brand":"Copic"},{"code":"G20","name":"Wax White","hex":"#f5fbc4","old":"","fam":"Green","brand":"Copic"},{"code":"G21","name":"Lime Green","hex":"#b4d192","old":"","fam":"Green","brand":"Copic"},{"code":"G24","name":"Willow","hex":"#98bd79","old":"","fam":"Green","brand":"Copic"},{"code":"G28","name":"Ocean Green","hex":"#2f673d","old":"","fam":"Green","brand":"Copic"},{"code":"G29","name":"Pine Tree Green","hex":"#235938","old":"","fam":"Green","brand":"Copic"},{"code":"G40","name":"Dim Green","hex":"#e3f8c2","old":"","fam":"Green","brand":"Copic"},{"code":"G43","name":"Pistachio","hex":"#abcc79","old":"","fam":"Green","brand":"Copic"},{"code":"G46","name":"Mistletoe","hex":"#5b8855","old":"","fam":"Green","brand":"Copic"},{"code":"G82","name":"Spring Dim Green","hex":"#a9c476","old":"","fam":"Green","brand":"Copic"},{"code":"G85","name":"Verdigris","hex":"#7b8256","old":"","fam":"Green","brand":"Copic"},{"code":"G94","name":"Grayish Olive","hex":"#819760","old":"","fam":"Green","brand":"Copic"},{"code":"G99","name":"Olive","hex":"#575f24","old":"","fam":"Green","brand":"Copic"},{"code":"N-0","name":"Neutral Gray No.0","hex":"#eaedee","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-1","name":"Neutral Gray No.1","hex":"#dedede","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-10","name":"Neutral Gray No.10","hex":"#1b1c1d","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-2","name":"Neutral Gray No.2","hex":"#b1b5bb","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-3","name":"Neutral Gray No.3","hex":"#9b9fa6","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-4","name":"Neutral Gray No.4","hex":"#7d8289","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-5","name":"Neutral Gray No.5","hex":"#65686b","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-6","name":"Neutral Gray No.6","hex":"#484b52","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-7","name":"Neutral Gray No.7","hex":"#2c3136","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-8","name":"Neutral Gray No.8","hex":"#2b2c30","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-9","name":"Neutral Gray No.9","hex":"#232524","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"R00","name":"Pinkish White","hex":"#fbe2d2","old":"","fam":"Red","brand":"Copic"},{"code":"R000","name":"Cherry White","hex":"#fef7e9","old":"","fam":"Red","brand":"Copic"},{"code":"R0000","name":"Pink Beryl","hex":"#fdfbf2","old":"","fam":"Red","brand":"Copic"},{"code":"R01","name":"Pinkish Vanilla","hex":"#fee0c8","old":"","fam":"Red","brand":"Copic"},{"code":"R02","name":"Rose Salmon","hex":"#feba92","old":"","fam":"Red","brand":"Copic"},{"code":"R05","name":"Salmon Red","hex":"#f74929","old":"","fam":"Red","brand":"Copic"},{"code":"R08","name":"Vermilion","hex":"#bc3828","old":"","fam":"Red","brand":"Copic"},{"code":"R11","name":"Pale Cherry Pink","hex":"#fed2be","old":"","fam":"Red","brand":"Copic"},{"code":"R12","name":"Light Tea Rose","hex":"#fecba6","old":"","fam":"Red","brand":"Copic"},{"code":"R14","name":"Light Rouge","hex":"#fe6a5e","old":"","fam":"Red","brand":"Copic"},{"code":"R17","name":"Lipstick Orange","hex":"#cc423a","old":"","fam":"Red","brand":"Copic"},{"code":"R20","name":"Blush","hex":"#fec9b9","old":"","fam":"Red","brand":"Copic"},{"code":"R21","name":"Sardonyx","hex":"#febaa8","old":"","fam":"Red","brand":"Copic"},{"code":"R22","name":"Light Prawn","hex":"#fe857b","old":"","fam":"Red","brand":"Copic"},{"code":"R24","name":"Prawn","hex":"#dd4a48","old":"","fam":"Red","brand":"Copic"},{"code":"R27","name":"Cadmium Red","hex":"#a3131a","old":"","fam":"Red","brand":"Copic"},{"code":"R29","name":"Lipstick Red","hex":"#9c0917","old":"","fam":"Red","brand":"Copic"},{"code":"R30","name":"Pale Yellowish Pink","hex":"#fedbc4","old":"","fam":"Red","brand":"Copic"},{"code":"R32","name":"Peach","hex":"#fe9f97","old":"","fam":"Red","brand":"Copic"},{"code":"R35","name":"Coral","hex":"#fd4d5f","old":"","fam":"Red","brand":"Copic"},{"code":"R37","name":"Carmine","hex":"#b0253e","old":"","fam":"Red","brand":"Copic"},{"code":"R39","name":"Garnet","hex":"#a32342","old":"","fam":"Red","brand":"Copic"},{"code":"R43","name":"Bougainvillaea","hex":"#fd7185","old":"","fam":"Red","brand":"Copic"},{"code":"R46","name":"Strong Red","hex":"#df2c4c","old":"","fam":"Red","brand":"Copic"},{"code":"R56","name":"Currant","hex":"#b05264","old":"","fam":"Red","brand":"Copic"},{"code":"R59","name":"Cardinal","hex":"#871b2b","old":"","fam":"Red","brand":"Copic"},{"code":"R81","name":"Rose Pink","hex":"#fbc2d7","old":"","fam":"Red","brand":"Copic"},{"code":"R83","name":"Rose Mist","hex":"#f095b2","old":"","fam":"Red","brand":"Copic"},{"code":"R85","name":"Rose Red","hex":"#e16c8c","old":"","fam":"Red","brand":"Copic"},{"code":"R89","name":"Dark Red","hex":"#7c1623","old":"","fam":"Red","brand":"Copic"},{"code":"RV00","name":"Water Lily","hex":"#fee4e7","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV000","name":"Pale Purple","hex":"#feeff3","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV0000","name":"Evening Primrose","hex":"#fcf4f5","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV02","name":"Sugared Almond Pink","hex":"#fec8e2","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV04","name":"Shock Pink","hex":"#fd50a5","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV06","name":"Cerise","hex":"#fd3ec9","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV09","name":"Fuchsia","hex":"#b7286d","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV10","name":"Pale Pink","hex":"#fdd7e1","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV11","name":"Pink","hex":"#dfb0bb","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV13","name":"Tender Pink","hex":"#fe83ac","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV14","name":"Begonia Pink","hex":"#fc3f71","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV17","name":"Deep Magenta","hex":"#c82a76","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV19","name":"Red Violet","hex":"#891c48","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV21","name":"Light Pink","hex":"#febbc2","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV23","name":"Pure Pink","hex":"#fea0bd","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV25","name":"Dog Rose Flower","hex":"#bf41b7","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV29","name":"Crimson","hex":"#9d112b","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV32","name":"Shadow Pink","hex":"#fbb4bf","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV34","name":"Dark Pink","hex":"#f286ad","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV42","name":"Salmon Pink","hex":"#feb9a8","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV52","name":"Cotton Candy","hex":"#dbb8d5","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV55","name":"Hollyhock","hex":"#cc78ab","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV63","name":"Begonia","hex":"#cd9cc1","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV66","name":"Raspberry","hex":"#8c4477","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV69","name":"Peony","hex":"#550e2a","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV91","name":"Grayish Cherry","hex":"#f4e1ec","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV93","name":"Smoky Purple","hex":"#deb5c6","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV95","name":"Baby Blossoms","hex":"#bd8da2","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV99","name":"Argyle Purple","hex":"#391a26","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"T-0","name":"Toner Gray No.0","hex":"#e3e4e2","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-1","name":"Toner Gray No.1","hex":"#cfcfcd","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-10","name":"Toner Gray No.10","hex":"#232124","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-2","name":"Toner Gray No.2","hex":"#b9b9b6","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-3","name":"Toner Gray No.3","hex":"#a1a2a0","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-4","name":"Toner Gray No.4","hex":"#80817e","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-5","name":"Toner Gray No.5","hex":"#6a6f69","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-6","name":"Toner Gray No.6","hex":"#505754","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-7","name":"Toner Gray No.7","hex":"#39413e","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-8","name":"Toner Gray No.8","hex":"#2c3532","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-9","name":"Toner Gray No.9","hex":"#2a2c2e","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"V000","name":"Pale Heath","hex":"#fee3f6","old":"","fam":"Violet","brand":"Copic"},{"code":"V0000","name":"Rose Quartz","hex":"#fef4fb","old":"","fam":"Violet","brand":"Copic"},{"code":"V01","name":"Heath","hex":"#f4acdf","old":"","fam":"Violet","brand":"Copic"},{"code":"V04","name":"Lilac","hex":"#e670f5","old":"","fam":"Violet","brand":"Copic"},{"code":"V05","name":"Azalea","hex":"#de6ebd","old":"","fam":"Violet","brand":"Copic"},{"code":"V06","name":"Lavender","hex":"#b44ea2","old":"","fam":"Violet","brand":"Copic"},{"code":"V09","name":"Violet","hex":"#401a76","old":"","fam":"Violet","brand":"Copic"},{"code":"V12","name":"Pale Lilac","hex":"#eaa8e3","old":"","fam":"Violet","brand":"Copic"},{"code":"V15","name":"Mallow","hex":"#b979c4","old":"","fam":"Violet","brand":"Copic"},{"code":"V17","name":"Amethyst","hex":"#543976","old":"","fam":"Violet","brand":"Copic"},{"code":"V20","name":"Wisteria","hex":"#d9d4e0","old":"","fam":"Violet","brand":"Copic"},{"code":"V22","name":"Ash Lavender","hex":"#b8b2c6","old":"","fam":"Violet","brand":"Copic"},{"code":"V25","name":"Pale Blackberry","hex":"#8c8197","old":"","fam":"Violet","brand":"Copic"},{"code":"V28","name":"Eggplant","hex":"#605e68","old":"","fam":"Violet","brand":"Copic"},{"code":"V91","name":"Pale Grape","hex":"#e3d0db","old":"","fam":"Violet","brand":"Copic"},{"code":"V93","name":"Early Grape","hex":"#d3bfcc","old":"","fam":"Violet","brand":"Copic"},{"code":"V95","name":"Light Grape","hex":"#af8fa2","old":"","fam":"Violet","brand":"Copic"},{"code":"V99","name":"Aubergine","hex":"#4a3745","old":"","fam":"Violet","brand":"Copic"},{"code":"W-0","name":"Warm Gray No.0","hex":"#efeae1","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-00","name":"Warm Gray No.00","hex":"#f1f0eb","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-1","name":"Warm Gray No.1","hex":"#e3ddd3","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-10","name":"Warm Gray No.10","hex":"#332f29","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-2","name":"Warm Gray No.2","hex":"#d3cabe","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-3","name":"Warm Gray No.3","hex":"#bfb4a5","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-4","name":"Warm Gray No.4","hex":"#aa9f91","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-5","name":"Warm Gray No.5","hex":"#908274","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-6","name":"Warm Gray No.6","hex":"#796d5f","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-7","name":"Warm Gray No.7","hex":"#4d4539","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-8","name":"Warm Gray No.8","hex":"#443d34","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-9","name":"Warm Gray No.9","hex":"#363129","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"Y00","name":"Barium Yellow","hex":"#fffeaf","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y000","name":"Pale Lemon","hex":"#fefed8","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y0000","name":"Yellow Fluorite","hex":"#fefee1","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y02","name":"Canary Yellow","hex":"#fefa65","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y04","name":"Acacia","hex":"#fefd5b","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y06","name":"Yellow","hex":"#fffe38","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y08","name":"Acid Yellow","hex":"#fede31","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y11","name":"Pale Yellow","hex":"#feed84","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y13","name":"Lemon Yellow","hex":"#fee667","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y15","name":"Cadmium Yellow","hex":"#fcce33","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y17","name":"Golden Yellow","hex":"#feaa23","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y18","name":"Lightning Yellow","hex":"#fec116","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y19","name":"Napoli Yellow","hex":"#feb10a","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y21","name":"Buttercup Yellow","hex":"#faca6e","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y23","name":"Yellowish Beige","hex":"#fbcd7e","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y26","name":"Mustard","hex":"#bd891c","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y28","name":"Lionet Gold","hex":"#bfa264","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y32","name":"Cashmere","hex":"#fed995","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y35","name":"Maize","hex":"#febd49","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y38","name":"Honey","hex":"#fe9c1f","old":"","fam":"Yellow","brand":"Copic"},{"code":"YG00","name":"Mimosa Yellow","hex":"#e0e37d","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG0000","name":"Lily White","hex":"#f2f2c0","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG01","name":"Green Bice","hex":"#cde75f","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG03","name":"Yellow Green","hex":"#a5c354","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG05","name":"Salad","hex":"#9eeb4b","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG06","name":"Yellowish Green","hex":"#97ea5b","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG07","name":"Acid Green","hex":"#6ec53d","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG09","name":"Lettuce Green","hex":"#4ab139","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG11","name":"Mignonette","hex":"#d7faa6","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG13","name":"Chartreuse","hex":"#b1d453","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG17","name":"Grass Green","hex":"#72a13b","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG21","name":"Anise","hex":"#fcfc7a","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG23","name":"New Leaf","hex":"#bdd74f","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG25","name":"Celadon Green","hex":"#9fd042","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG41","name":"Pale Cobalt Green","hex":"#bef5ac","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG45","name":"Cobalt Green","hex":"#77a96d","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG61","name":"Pale Moss","hex":"#c1d29e","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG63","name":"Pea Green","hex":"#99b16f","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG67","name":"Moss","hex":"#4e7033","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG91","name":"Putty","hex":"#ded0a1","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG93","name":"Grayish Yellow","hex":"#b8b770","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG95","name":"Pale Olive","hex":"#a29835","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG97","name":"Spanish Olive","hex":"#6d6a1f","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG99","name":"Marine Green","hex":"#4f4d1a","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YR00","name":"Powder Pink","hex":"#fed7a7","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR000","name":"Silk","hex":"#fee5cb","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR0000","name":"Pale Chiffon","hex":"#f8ecde","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR01","name":"Peach Puff","hex":"#fed09c","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR02","name":"Light Orange","hex":"#fea462","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR04","name":"Chrome Orange","hex":"#fea132","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR07","name":"Cadmium Orange","hex":"#fe7327","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR09","name":"Chinese Orange","hex":"#c1492c","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR12","name":"Loquat","hex":"#feb358","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR14","name":"Caramel","hex":"#fd9938","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR15","name":"Pumpkin Yellow","hex":"#fea435","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR16","name":"Apricot","hex":"#fe9323","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR18","name":"Sanguine","hex":"#cc5322","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR20","name":"Yellowish Shade","hex":"#fee3a5","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR21","name":"Cream","hex":"#fed16e","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR23","name":"Yellow Ochre","hex":"#eca739","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR24","name":"Pale Sepia","hex":"#f09f28","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR27","name":"Tuscan Orange","hex":"#ac6214","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR30","name":"Macadamia Nut","hex":"#fefbdf","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR31","name":"Light Reddish Yellow","hex":"#fedd7d","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR61","name":"Spring Orange","hex":"#fec194","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR65","name":"Atoll","hex":"#feaa67","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR68","name":"Orange","hex":"#fd6e20","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR82","name":"Mellow Peach","hex":"#fed3a3","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"B04","name":"Pale Cyan","hex":"#bedfe9","old":"B040","fam":"Blue","brand":"Ohuhu"},{"code":"BV18","name":"Hydrangea Blue","hex":"#adaed2","old":"V350","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV39","name":"Pale Cerulean Blue","hex":"#6b96cc","old":"B170","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV45","name":"Pale Hyacinth","hex":"#a1c4e5","old":"B150","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV515","name":"Navy","hex":"#4c688d","old":"B300","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"E47","name":"Camel","hex":"#e0b892","old":"YR209","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E49","name":"Honey Brown","hex":"#dbae93","old":"Y145","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E513","name":"Taupe Brown","hex":"#827167","old":"YR95","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E514","name":"Dark Chocolate","hex":"#7a665e","old":"YR92","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E59","name":"Chestnut","hex":"#af7b65","old":"YR9","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E612","name":"Brick Brown","hex":"#a6796a","old":"YR10","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E615","name":"Cherry Cola","hex":"#7f5449","old":"YR91","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E66","name":"Light Fawn","hex":"#cda692","old":"YR148","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E711","name":"Old Mahogany","hex":"#ad7f74","old":"R27","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E75","name":"Light Rose Taupe","hex":"#e7b8ae","old":"R26","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E81","name":"Spanish Pink","hex":"#f6ddd8","old":"R30","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E814","name":"Caput Mortuum","hex":"#826965","old":"R28","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"G48","name":"Lettuce","hex":"#8ec581","old":"G150","fam":"Green","brand":"Ohuhu"},{"code":"R12","name":"Pale Coral Pink","hex":"#fad9d2","old":"R100","fam":"Red","brand":"Ohuhu"},{"code":"R14","name":"Sheer Peach","hex":"#f8c4bd","old":"YR050","fam":"Red","brand":"Ohuhu"},{"code":"RV02","name":"Pale Pink Rose","hex":"#fcecf3","old":"RV120","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV07","name":"Light Disco Pink","hex":"#efa9c9","old":"RV050","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV32","name":"Lilac Blush","hex":"#f8e4f1","old":"V140","fam":"Red-Violet","brand":"Ohuhu"},{"code":"V016","name":"Eggplant","hex":"#765a82","old":"V090","fam":"Violet","brand":"Ohuhu"},{"code":"Y110","name":"Honeybee Yellow","hex":"#f4c248","old":"Y090","fam":"Yellow","brand":"Ohuhu"},{"code":"Y210","name":"Pumpkin Yellow","hex":"#e8a046","old":"YR34","fam":"Yellow","brand":"Ohuhu"},{"code":"Y212","name":"Golden Yellow","hex":"#dfa045","old":"Y150","fam":"Yellow","brand":"Ohuhu"},{"code":"Y43","name":"Warm Beige","hex":"#f7e5c6","old":"YR212","fam":"Yellow","brand":"Ohuhu"},{"code":"Y48","name":"Light Apricot","hex":"#ecbb7b","old":"YR6","fam":"Yellow","brand":"Ohuhu"},{"code":"Y56","name":"Milkshake","hex":"#f8d395","old":"YR230","fam":"Yellow","brand":"Ohuhu"},{"code":"YG35","name":"Fog Green","hex":"#c4d1af","old":"G230","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YR01","name":"Milk White","hex":"#fbf0e2","old":"E330","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR02","name":"Peach Silk","hex":"#fceddd","old":"WG0.5","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR05","name":"Cotton Pearl","hex":"#fbe4d5","old":"E020","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR09","name":"Sandstone","hex":"#f4a770","old":"YR7","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR214","name":"Terracotta","hex":"#e1886e","old":"E070","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR25","name":"Powder Orange","hex":"#f6b799","old":"YR205","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR29","name":"Grapefruit","hex":"#f29873","old":"YR8","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR37","name":"Roasted Cashew","hex":"#f1b88e","old":"YR20","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR38","name":"Burnt Ochre","hex":"#e6ab82","old":"YR107","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR54","name":"Pink Frost","hex":"#fbddd2","old":"R030","fam":"Yellow-Red / Orange","brand":"Ohuhu"}];
@@ -15493,6 +15611,16 @@ let emphasis = 'neutral'; // written by: 05-style-fields, 30-palette-assign, 50-
 // written by: 05-style-fields, 30-palette-assign, 46-photo, 50-controls, 99-close (test)
 let limitN = 16;
 let noAdj = false; // written by: 05-style-fields, 50-controls, 99-close (test)
+// Random's Balance (v283, 31-balance): 'main' (one main colour, a second and an accent, about 60/30/10 of the
+// picture) or 'mixed' (every marker alike, as Random always was); balM, balS, balA: each role's colour family
+// (BAL_FAM) or 'auto'; balSeed: which pairing Auto chose (Other pairings rolls it); noRep: Mixed's No repeats.
+// Written by: 05-style-fields, 30-palette-assign, 52-controls-plan-wire, 99-close (test)
+let balance = 'main';
+let balM = 'auto';
+let balS = 'auto';
+let balA = 'auto';
+let balSeed = 0;
+let noRep = false;
 let gradSeed = 0; // written by: 05-style-fields, 30-palette-assign, 50-controls, 99-close (test)
 // Radial's centre ({ x, y } as parts of the picture's width and height), or null: the middle of what the flow runs
 // over (the zone's own, or the picture). v282. Written by: 05-style-fields, 30-palette-assign, 99-close (test)
@@ -15634,6 +15762,21 @@ function styleHarmony(v, d) {
 function shadeFlatList() {
   return Object.keys(shadeFlat).map(Number);
 }
+// Balance's colour families (their names and hues: BAL_FAM, 31-balance), or Auto
+const BAL_CHOICES = [
+  'auto',
+  'pink',
+  'red',
+  'orange',
+  'yellow',
+  'ygreen',
+  'green',
+  'teal',
+  'blue',
+  'violet',
+  'brown',
+  'grey',
+];
 const STYLE_FIELDS = [
   {
     key: 'family',
@@ -15657,6 +15800,22 @@ const STYLE_FIELDS = [
   { key: 'emphasis', in: 'style', def: 'neutral', check: styleOne(MOOD_KEYS), undo: true },
   { key: 'limitN', in: 'style', def: 16, check: styleWhole(2, 999), undo: true },
   { key: 'noAdj', in: 'style', def: false, check: styleBool, undo: true },
+  // Random's Balance (v283): a guide saved before it that uses Random opens as Mixed, as it looked; any other opens on
+  // Main colour, what Random starts with when chosen now
+  {
+    key: 'balance',
+    in: 'style',
+    def: 'main',
+    check: function (v, d, src) {
+      return v === 'main' || v === 'mixed' ? v : src && src.family === 'random' ? 'mixed' : d;
+    },
+    undo: true,
+  },
+  { key: 'balM', in: 'style', def: 'auto', check: styleOne(BAL_CHOICES), undo: true },
+  { key: 'balS', in: 'style', def: 'auto', check: styleOne(BAL_CHOICES), undo: true },
+  { key: 'balA', in: 'style', def: 'auto', check: styleOne(BAL_CHOICES), undo: true },
+  { key: 'balSeed', in: 'style', def: 0, check: styleNum(0, 1), undo: true },
+  { key: 'noRep', in: 'style', def: false, check: styleBool, undo: true },
   { key: 'gradSeed', in: 'style', def: 0, check: styleNum(0, 1), undo: true },
   { key: 'blendFall', in: 'style', def: 2, check: styleNum(0.6, 4), undo: true },
   // Blend's Mix. Before it there was only a "Keep colours vivid" tick box, saved as blendVivid: a guide saved then
@@ -15864,6 +16023,42 @@ const STYLE_VAR = {
   },
   set noAdj(v) {
     noAdj = v;
+  },
+  get balance() {
+    return balance;
+  },
+  set balance(v) {
+    balance = v;
+  },
+  get balM() {
+    return balM;
+  },
+  set balM(v) {
+    balM = v;
+  },
+  get balS() {
+    return balS;
+  },
+  set balS(v) {
+    balS = v;
+  },
+  get balA() {
+    return balA;
+  },
+  set balA(v) {
+    balA = v;
+  },
+  get balSeed() {
+    return balSeed;
+  },
+  set balSeed(v) {
+    balSeed = v;
+  },
+  get noRep() {
+    return noRep;
+  },
+  set noRep(v) {
+    noRep = v;
   },
   get gradSeed() {
     return gradSeed;
@@ -19595,6 +19790,29 @@ const MOOD_WORDS = {
   earthy: ['earthy', 'nearest to earthy'],
 };
 function poolMsg() {
+  // (Random's Main colour and No repeats choose their own markers: 31-balance)
+  if (family === 'random' && balance === 'main') {
+    const p = balPlan();
+    if (p.ok)
+      return (
+        'Using ' +
+        p.used +
+        ' of ' +
+        (p.seeded ? 'the palette\u2019s' : coll.length + (isDemo() ? ' catalogue' : '')) +
+        ' markers, shared out by Main colour (Pattern tab)'
+      );
+  }
+  if (family === 'random' && balance === 'mixed' && noRep) {
+    const k = noRepPool(zoneList(), true).length;
+    return (
+      'Using ' +
+      k +
+      ' of ' +
+      coll.length +
+      ' markers: one per section' +
+      (k < zoneList().length ? ' as far as they go' : '')
+    );
+  }
   const N = zoneList().length,
     grad = gradFamily(),
     need = grad ? Math.min(limitN, N) : limitN,
@@ -19689,7 +19907,7 @@ function assignOne(cl) {
     note('No ' + palette + ' markers in your collection \u2014 pick another palette.');
     return false;
   }
-  if (family === 'random') buildRandom(cl, pool);
+  if (family === 'random') buildRandomBal(cl, pool);
   else if (family === 'blend') {
     if (anchors.length === 0) seedAnchors();
     blendAssign(cl, pool);
@@ -19982,6 +20200,15 @@ function surprise() {
   // (drawn after the palette, so the palette a given run of random numbers makes is as it was before there were Looks)
   var looks = ['auto', 'auto', 'auto', 'smooth', 'ltd'];
   look = looks[(Math.random() * looks.length) | 0];
+  // about one in three: Random with a main colour, its roles the generated palette's own colours (v283; drawn last, for
+  // the same reason)
+  if (Math.random() < 1 / 3) {
+    family = 'random';
+    balance = 'main';
+    balM = balS = balA = 'auto';
+    balSeed = Math.random();
+    noRep = false;
+  }
   surpriseNote = true;
   planWhy = '\u2728 Surprise';
   reassign();
@@ -20005,6 +20232,1147 @@ function backToReview() {
   if (sfView) sfView.style.paddingTop = sfView.style.paddingBottom = '';
   renderControls();
   render();
+}
+/* ---- Random's Balance (v283) ----
+    Random lays its markers one of two ways (Pattern › Random › Balance):
+    Mixed ('mixed'): as Random always has, a random marker of the pool for each section (buildRandom); with No
+      repeats (noRep) every marker is used once before any is used twice, repeats as far apart as they can be
+      (buildNoRep), from as many markers as there are sections.
+    Main colour ('main'): three roles, each a colour family of the markers you can use: a main colour over about
+      60% of the picture, a second over 30% and an accent over 10% (by area, so big sections count for more). The
+      marker count is shared about half, a third and one or two accents, each role's markers spread from light to
+      dark (and nearer the middle with shading on, so there are lighter and darker companions for its tones). The
+      accents go on middling sections spread over the picture, never the biggest nor slivers too small to colour.
+    Colour families go by how a marker looks (BAL_FAM: its hue as the eye sees it; browns and beiges, and greys, by
+    their own), not by its code. A role's family with too few markers borrows the nearest in hue from next to it;
+    one role that can't be filled leaves two (70/30); a picture with no family of three markers is laid Mixed.
+    Auto picks the roles: the main colour a family of the Temperature's (any, once a role is chosen by hand), the
+    accent the one most across the colour wheel from it with bright markers (by lightness with the Pastel mood), the
+    second one next to the main one (or browns with a warm one). balSeed (Other pairings) picks among the good
+    choices. From a saved or generated palette the roles are its own families, biggest first.
+    Pinned sections keep their marker, and count towards its role's share. Keep touching sections clearly different
+    holds within each role, among its markers. */
+const BAL_FAM = {
+  pink: { n: 'Pinks', w: 'pink', h: 350 },
+  red: { n: 'Reds', w: 'red', h: 18 },
+  orange: { n: 'Oranges', w: 'orange', h: 53 },
+  yellow: { n: 'Yellows', w: 'yellow', h: 89 },
+  ygreen: { n: 'Yellow-greens', w: 'yellow-green', h: 121 },
+  green: { n: 'Greens', w: 'green', h: 150 },
+  teal: { n: 'Teals', w: 'teal', h: 192 },
+  blue: { n: 'Blues', w: 'blue', h: 250 },
+  violet: { n: 'Violets', w: 'violet', h: 305 },
+  brown: { n: 'Browns', w: 'brown', h: 50 },
+  grey: { n: 'Greys', w: 'grey', h: -1 },
+};
+// the order they're offered in (round the colour wheel, then browns and greys); the hue (Oklab's, balHue) each
+// family starts at
+const BAL_ORDER = [
+    'pink',
+    'red',
+    'orange',
+    'yellow',
+    'ygreen',
+    'green',
+    'teal',
+    'blue',
+    'violet',
+    'brown',
+    'grey',
+  ],
+  BAL_BINS = [
+    [3, 'red'],
+    [38, 'orange'],
+    [68, 'yellow'],
+    [113, 'ygreen'],
+    [130, 'green'],
+    [170, 'teal'],
+    [215, 'blue'],
+    [282, 'violet'],
+    [330, 'pink'],
+  ],
+  BAL_COOL = { ygreen: 1, green: 1, teal: 1, blue: 1, violet: 1 },
+  // the least of each role's markers (main, second, accent)
+  BAL_MIN = { m: 3, s: 2, a: 1 },
+  BAL_ROLE = { m: 'Main colour', s: 'Second colour', a: 'Accent' };
+// a marker's hue as Oklab has it: the families go by it, as it keeps blues and violets apart where CIELAB's hue
+// runs saturated blues (Copic B29, 298° in CIELAB) in among the violets (V09, 310°); in Oklab they're 264° and 296°
+const _balHue = new WeakMap();
+function balHue(m) {
+  let h = _balHue.get(m);
+  if (h !== undefined) return h;
+  const c = hexRgb(m.hex).map(function (v) {
+      v /= 255;
+      return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    }),
+    l = Math.cbrt(0.4122214708 * c[0] + 0.5363325363 * c[1] + 0.0514459929 * c[2]),
+    q = Math.cbrt(0.2119034982 * c[0] + 0.6806995451 * c[1] + 0.1073969566 * c[2]),
+    s = Math.cbrt(0.0883024619 * c[0] + 0.2817188376 * c[1] + 0.6299787005 * c[2]),
+    A = 1.9779984951 * l - 2.428592205 * q + 0.4505937099 * s,
+    B = 0.0259040371 * l + 0.7827717662 * q - 0.808675766 * s;
+  h = ((Math.atan2(B, A) * 180) / Math.PI + 360) % 360;
+  _balHue.set(m, h);
+  return h;
+}
+const _balFam = new WeakMap();
+// a marker's colour family, by how it looks
+function balFamOf(m) {
+  let f = _balFam.get(m);
+  if (f) return f;
+  // (browns and beiges by CIELAB's lightness and chroma, dull warm ones; the rest by their Oklab hue)
+  const x = mLch(m),
+    L = x[0],
+    C = x[1],
+    h = x[2],
+    oh = balHue(m);
+  if (thinGreyM(m)) f = 'grey';
+  else if (h >= 15 && h < 100 && ((L < 72 && C < 52) || (L < 95 && C < 30 && h >= 40))) f = 'brown';
+  else {
+    f = 'pink';
+    for (let i = 0; i < BAL_BINS.length; i++) if (oh >= BAL_BINS[i][0]) f = BAL_BINS[i][1];
+    if (oh < BAL_BINS[0][0]) f = 'pink';
+  }
+  _balFam.set(m, f);
+  return f;
+}
+// how far apart two families are round the colour wheel (greys are near everything)
+function balDist(a, b) {
+  if (a === 'grey' || b === 'grey') return 60;
+  return hueDiff(BAL_FAM[a].h, BAL_FAM[b].h);
+}
+function balWarm(k) {
+  return !BAL_COOL[k] && k !== 'grey';
+}
+// the markers Balance chooses from: a saved or generated palette's (with nearby ones when Expand is on), else every
+// marker you can use (your filters); the Temperature only steers Auto, so an accent can be the other temperature
+function balBase() {
+  if (paletteSource === 'saved' || paletteSource === 'generate') {
+    const s = poolSource(limitN, true);
+    if (s.seeded) return { items: s.items, seeded: true };
+  }
+  return { items: poolFor('all'), seeded: false };
+}
+function balGroups(items) {
+  const g = {};
+  items.forEach(function (m) {
+    const f = balFamOf(m);
+    (g[f] = g[f] || []).push(m);
+  });
+  return g;
+}
+// pick one of `list` ([key, weight]) with rnd, heavier ones likelier; null for an empty list
+function balWeighted(list, rnd) {
+  let t = 0;
+  list.forEach(function (x) {
+    t += x[1];
+  });
+  if (!(t > 0)) return list.length ? list[0][0] : null;
+  let r = rnd() * t;
+  for (let i = 0; i < list.length; i++) {
+    r -= list[i][1];
+    if (r <= 0) return list[i][0];
+  }
+  return list[list.length - 1][0];
+}
+// a role's markers from family k: its own, and (with fewer than min) the nearest in hue from next to it, never
+// ones another role has (used). { list, borrowed: { family: count } }, or null when even that is too few
+function balTake(k, min, groups, used) {
+  const own = (groups[k] || []).filter(function (m) {
+      return !used[m.mkey];
+    }),
+    borrowed = {};
+  if (own.length >= min || k === 'grey') return own.length >= min ? { list: own, borrowed: borrowed } : null;
+  const h = BAL_FAM[k].h,
+    near = [];
+  for (const f in groups) {
+    if (f === k || f === 'grey') continue;
+    groups[f].forEach(function (m) {
+      if (used[m.mkey]) return;
+      const x = mLch(m),
+        d = hueDiff(balHue(m), h);
+      // (browns borrow dull warm ones; the rest the nearest in hue, within half a family either side)
+      if (k === 'brown' ? x[1] < 60 && d < 40 : f !== 'brown' && d < 48) near.push([d, m, f]);
+    });
+  }
+  near.sort(function (a, b) {
+    return a[0] - b[0];
+  });
+  const list = own.slice();
+  for (let i = 0; i < near.length && list.length < min; i++) {
+    list.push(near[i][1]);
+    borrowed[near[i][2]] = (borrowed[near[i][2]] || 0) + 1;
+  }
+  return list.length >= min ? { list: list, borrowed: borrowed } : null;
+}
+// how many markers each role gets from the marker count n (roles: which of m, s, a there are)
+function balCounts(n, roles) {
+  const c = { m: 0, s: 0, a: 0 };
+  if (roles.a) c.a = n >= 10 ? 2 : 1;
+  if (roles.s) c.s = Math.max(BAL_MIN.s, Math.round((n - c.a) * (roles.a ? 0.38 : 0.3)));
+  c.m = Math.max(BAL_MIN.m, n - c.a - c.s);
+  return c;
+}
+// k markers of a role, spread from light to dark: the Mood's first (widened to the nearest when too few), nearer the
+// middle with shading on; an accent's the brightest (with the Pastel mood, the ones whose lightness stands out most
+// from the main colour's)
+function balPick(list, k, accent, mainL) {
+  let l = moodPick(list, emphasis, k, mLch).items;
+  if (accent) {
+    l = l.slice().sort(function (a, b) {
+      return emphasis === 'pastel'
+        ? Math.abs(mLch(b)[0] - mainL) - Math.abs(mLch(a)[0] - mainL)
+        : mLch(b)[1] - mLch(a)[1];
+    });
+    l = l.slice(0, Math.max(k, Math.min(l.length, k * 3)));
+  } else if (shadeMode !== 'off') {
+    const mid = l.filter(function (m) {
+      const L = mLch(m)[0];
+      return L >= 30 && L <= 85;
+    });
+    if (mid.length >= k) l = mid;
+  }
+  return evenPick(
+    l.slice().sort(function (a, b) {
+      return mLch(a)[0] - mLch(b)[0];
+    }),
+    k,
+  );
+}
+/* The roles for the live settings: { ok, roles: { m, s, a } each { k, list (the markers it may use), markers (the
+   ones it uses), borrowed, share } or null, used (markers in all), want (the count asked), seeded, min (each role's
+   least), small (too few sections for an accent), tempMiss (no family of the Temperature's could be the main colour),
+   crossTemp, groups, why }. ok false (why says) when there's no family for a main colour. */
+function balPlan() {
+  const base = balBase(),
+    // (a palette is used whole, so its colours need fewer markers of their own: the rest join them)
+    MIN = base.seeded ? { m: 2, s: 1, a: 1 } : BAL_MIN,
+    groups = balGroups(base.items),
+    rnd = seededRandom((balSeed || 0) * 0.999 + 0.0005),
+    hand = {
+      m: balM !== 'auto' ? balM : null,
+      s: balS !== 'auto' ? balS : null,
+      a: balA !== 'auto' ? balA : null,
+    },
+    anyHand = !!(hand.m || hand.s || hand.a),
+    size = function (k) {
+      return groups[k] ? groups[k].length : 0;
+    },
+    fams = BAL_ORDER.filter(function (k) {
+      return size(k) > 0;
+    }),
+    // (a zone of fewer than 10 sections has no room for an accent of its own)
+    small = !!comps && zoneList().length < 10,
+    want = limitN,
+    taken = {},
+    _via = {},
+    // can family k fill a role of `min` markers (borrowing if it must)?
+    viable = function (k, min) {
+      const key = k + min;
+      if (!(key in _via)) _via[key] = !!balTake(k, min, groups, {});
+      return _via[key];
+    };
+  // (a family chosen for two roles, as a zone copied from another can have: the later one goes back to Auto)
+  ['m', 'a', 's'].forEach(function (r) {
+    if (hand[r] && (taken[hand[r]] || (r === 'a' && hand[r] === 'grey'))) hand[r] = null;
+    if (hand[r]) taken[hand[r]] = 1;
+  });
+  // the main colour: a family of the Temperature's (any, when none of those can be), those with three of their own
+  // likelier than those that borrow; from a palette its biggest colour
+  let m = hand.m,
+    tempMiss = false;
+  if (!m) {
+    const temp = !base.seeded && !anyHand && (palette === 'cool' || palette === 'warm') ? palette : null,
+      cands = function (t) {
+        let c = fams.filter(function (k) {
+          return (
+            k !== 'grey' &&
+            !taken[k] &&
+            viable(k, MIN.m) &&
+            (!t || (t === 'cool' ? !!BAL_COOL[k] : balWarm(k)))
+          );
+        });
+        if (base.seeded) {
+          const top = Math.max.apply(null, c.map(size).concat([0]));
+          c = c.filter(function (k) {
+            return size(k) === top;
+          });
+        }
+        return c.map(function (k) {
+          return [k, base.seeded ? 1 : Math.sqrt(size(k)) * (size(k) >= MIN.m ? 3 : 1)];
+        });
+      };
+    let c = cands(temp);
+    if (!c.length && temp) {
+      c = cands(null);
+      tempMiss = c.length > 0;
+    }
+    m = balWeighted(c, rnd);
+  }
+  if (!m)
+    return { ok: false, why: 'none', want: want, seeded: base.seeded, roles: {}, groups: groups, min: MIN };
+  // the accent: across the colour wheel from the main colour (at least 120° if any is, else 100°; any colour at all
+  // for greys), with bright markers
+  let a = hand.a;
+  if (!a && !small) {
+    const bright = function (k) {
+        return groups[k].filter(function (x) {
+          return emphasis === 'pastel' || mLch(x)[1] >= 35;
+        }).length;
+      },
+      opts = function (far) {
+        return fams
+          .filter(function (k) {
+            return (
+              k !== 'grey' &&
+              k !== 'brown' &&
+              k !== m &&
+              !taken[k] &&
+              (m === 'grey' || balDist(k, m) >= far) &&
+              bright(k) > 0
+            );
+          })
+          .map(function (k) {
+            const d = m === 'grey' ? 40 : balDist(k, m) - far + 20;
+            return [k, d * d * Math.sqrt(bright(k))];
+          });
+      },
+      far = opts(120);
+    a = balWeighted(far.length ? far : opts(100), rnd);
+  }
+  if (small) a = null;
+  // the second: next to the main colour (browns with a warm one; any with greys), else any left
+  let s = hand.s;
+  if (!s) {
+    const cands = fams
+      .filter(function (k) {
+        return k !== 'grey' && k !== m && k !== a && !taken[k] && viable(k, MIN.s);
+      })
+      .map(function (k) {
+        const d = balDist(k, m);
+        return [
+          k,
+          (base.seeded ? size(k) : 1) *
+            (m === 'grey'
+              ? Math.sqrt(size(k))
+              : k === 'brown'
+                ? balWarm(m)
+                  ? 3
+                  : 0.1
+                : d <= 40
+                  ? 6
+                  : d <= 75
+                    ? 4
+                    : d < 110
+                      ? 0.15
+                      : 0.02),
+        ];
+      });
+    s = balWeighted(cands, rnd);
+  }
+  // each role's markers, the main colour's first
+  const used = {},
+    roles = { m: null, s: null, a: null },
+    mt = balTake(m, MIN.m, groups, used);
+  if (!mt)
+    return {
+      ok: false,
+      why: 'thin',
+      fam: m,
+      want: want,
+      seeded: base.seeded,
+      roles: {},
+      groups: groups,
+      min: MIN,
+    };
+  const has = { a: false, s: false },
+    tk = { m: mt };
+  mt.list.forEach(function (x) {
+    used[x.mkey] = 1;
+  });
+  if (a) {
+    const t = balTake(a, MIN.a, groups, used);
+    if (t) {
+      tk.a = t;
+      has.a = true;
+      t.list.forEach(function (x) {
+        used[x.mkey] = 1;
+      });
+    }
+  }
+  if (s) {
+    const t = balTake(s, MIN.s, groups, used);
+    if (t) {
+      tk.s = t;
+      has.s = true;
+    }
+  }
+  const n = Math.max(want, MIN.m + (has.s ? MIN.s : 0) + (has.a ? MIN.a : 0)),
+    cnt = balCounts(n, has),
+    two = !(has.s && has.a),
+    share = two ? { m: 0.7, s: has.s ? 0.3 : 0, a: has.a ? 0.3 : 0 } : { m: 0.6, s: 0.3, a: 0.1 };
+  // (a palette's markers are all used: those of other colours join the role nearest them in hue)
+  if (base.seeded) {
+    const inR = {};
+    ['m', 's', 'a'].forEach(function (r) {
+      if (tk[r])
+        tk[r].list.forEach(function (x) {
+          inR[x.mkey] = 1;
+        });
+    });
+    base.items.forEach(function (x) {
+      if (inR[x.mkey]) return;
+      const f = balFamOf(x);
+      let best = 'm',
+        bd = Infinity;
+      ['m', 's', 'a'].forEach(function (r) {
+        if (!tk[r]) return;
+        const d = balDist(f, { m: m, s: s, a: a }[r]) + (r === 'a' ? 30 : 0);
+        if (d < bd) {
+          bd = d;
+          best = r;
+        }
+      });
+      tk[best].list.push(x);
+    });
+    ['m', 's', 'a'].forEach(function (r) {
+      if (tk[r]) cnt[r] = tk[r].list.length;
+    });
+  }
+  const mMark = balPick(mt.list, cnt.m, false, 0),
+    mainL = mMark.length
+      ? mMark.reduce(function (t, x) {
+          return t + mLch(x)[0];
+        }, 0) / mMark.length
+      : 50;
+  roles.m = { k: m, list: mt.list, markers: mMark, borrowed: mt.borrowed, share: share.m };
+  if (has.s)
+    roles.s = {
+      k: s,
+      list: tk.s.list,
+      markers: balPick(tk.s.list, cnt.s, false, mainL),
+      borrowed: tk.s.borrowed,
+      share: share.s,
+    };
+  if (has.a)
+    roles.a = {
+      k: a,
+      list: tk.a.list,
+      markers: balPick(tk.a.list, cnt.a, true, mainL),
+      borrowed: tk.a.borrowed,
+      share: share.a,
+    };
+  const all = [];
+  ['m', 's', 'a'].forEach(function (r) {
+    if (roles[r])
+      roles[r].markers.forEach(function (x) {
+        all.push(x);
+      });
+  });
+  return {
+    ok: true,
+    roles: roles,
+    markers: all,
+    used: all.length,
+    want: want,
+    seeded: base.seeded,
+    min: MIN,
+    small: small,
+    tempMiss: tempMiss,
+    viable: viable,
+    // (an Auto accent of the other temperature than the one asked for)
+    crossTemp:
+      !!roles.a &&
+      !hand.a &&
+      !base.seeded &&
+      !anyHand &&
+      (palette === 'cool' ? balWarm(roles.a.k) : palette === 'warm' ? !!BAL_COOL[roles.a.k] : false),
+    groups: groups,
+  };
+}
+// lay the sections cl by the plan p (Main colour); pinned sections keep their markers
+function buildBalance(cl, p) {
+  const order = cl.slice(),
+    assign = {},
+    area = function (l) {
+      return comps[l].area || 0;
+    },
+    bk = {},
+    roleOf = {},
+    want = { m: 0, s: 0, a: 0 },
+    got = { m: 0, s: 0, a: 0 },
+    role = {};
+  coll.forEach(function (m) {
+    bk[m.mkey] = m;
+  });
+  ['m', 's', 'a'].forEach(function (r) {
+    if (p.roles[r])
+      p.roles[r].markers.forEach(function (m) {
+        roleOf[m.mkey] = r;
+      });
+  });
+  // pinned sections first: their marker's role takes their area (a pin in none of the roles is left out)
+  let total = 0;
+  const free = [];
+  order.forEach(function (l) {
+    const pin = locks[l] !== undefined ? bk[locks[l]] : null;
+    if (pin) {
+      assign[l] = pin;
+      let r = roleOf[pin.mkey];
+      if (!r) {
+        const f = balFamOf(pin);
+        ['m', 's', 'a'].forEach(function (q) {
+          if (!r && p.roles[q] && p.roles[q].k === f) r = q;
+        });
+      }
+      if (r) {
+        got[r] += area(l);
+        total += area(l);
+      }
+    } else {
+      free.push(l);
+      total += area(l);
+    }
+  });
+  // (a zone of fewer than 10 sections has no accent: balPlan leaves it out)
+  const acc = !!p.roles.a && order.length >= 10;
+  let sh = { m: p.roles.m.share, s: p.roles.s ? p.roles.s.share : 0, a: acc ? p.roles.a.share : 0 };
+  const st = sh.m + sh.s + sh.a;
+  ['m', 's', 'a'].forEach(function (r) {
+    want[r] = (total * sh[r]) / st;
+  });
+  // the accents: middling sections (not the biggest tenth, nor slivers too small to colour), spread out: each as far
+  // from those chosen as it can be, give or take (one of the four furthest)
+  if (acc) {
+    const sizes = free.map(area).sort(function (a, b) {
+        return a - b;
+      }),
+      floor = Math.min(W * H * 0.0003, (W * H * 0.3) / Math.max(1, free.length)),
+      hi = sizes[Math.floor(sizes.length * 0.9)] || Infinity,
+      pick = function (lo) {
+        return free.filter(function (l) {
+          return area(l) >= lo && area(l) <= hi;
+        });
+      };
+    let cand = pick(Math.max(sizes[Math.floor(sizes.length * 0.3)] || 0, floor));
+    if (!cand.length) cand = pick(0);
+    // (each candidate's distance to the nearest accent so far, brought up to date as each is chosen)
+    const near = new Float64Array(cand.length).fill(Infinity),
+      out = new Uint8Array(cand.length),
+      top = [0, 0, 0, 0],
+      topD = [0, 0, 0, 0];
+    let left = cand.length,
+      first = true;
+    while (got.a < want.a && left) {
+      let i;
+      if (first) {
+        i = Math.floor(Math.random() * cand.length);
+        first = false;
+      } else {
+        let k = 0;
+        for (let j = 0; j < cand.length; j++) {
+          if (out[j]) continue;
+          const d = near[j];
+          if (k < 4) {
+            top[k] = j;
+            topD[k] = d;
+            k++;
+          } else {
+            let w = 0;
+            for (let q = 1; q < 4; q++) if (topD[q] < topD[w]) w = q;
+            if (d > topD[w]) {
+              top[w] = j;
+              topD[w] = d;
+            }
+          }
+        }
+        i = top[Math.floor(Math.random() * k)];
+      }
+      const l = cand[i];
+      out[i] = 1;
+      left--;
+      role[l] = 'a';
+      got.a += area(l);
+      for (let j = 0; j < cand.length; j++)
+        if (!out[j]) {
+          const q = cand[j],
+            d = Math.hypot(comps[q].cx - comps[l].cx, comps[q].cy - comps[l].cy);
+          if (d < near[j]) near[j] = d;
+        }
+    }
+  }
+  // the main colour and the second, biggest sections first, each to whichever is furthest short of its share
+  const rest = free
+    .filter(function (l) {
+      return !role[l];
+    })
+    .sort(function (a, b) {
+      return area(b) - area(a);
+    });
+  rest.forEach(function (l) {
+    const r =
+      !p.roles.s || (want.s <= 0 ? true : got.m / Math.max(1, want.m) <= got.s / Math.max(1, want.s))
+        ? 'm'
+        : 's';
+    role[l] = r;
+    got[r] += area(l);
+  });
+  // the markers within each role: not a neighbour's (nor, with Keep touching sections clearly different, one that
+  // looks like it), the least used first; when none of the role's will do, one of another role's that will (so a role
+  // of two markers doesn't put the same one side by side)
+  const a = adj || (adj = buildAdj()),
+    uses = {},
+    alike = balAlike(),
+    all = p.markers,
+    shuffled = free.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1)),
+      t = shuffled[i];
+    shuffled[i] = shuffled[j];
+    shuffled[j] = t;
+  }
+  shuffled.forEach(function (l) {
+    const list = p.roles[role[l]].markers,
+      nbs = [];
+    if (a && a[l])
+      a[l].forEach(function (q) {
+        if (assign[q]) nbs.push(assign[q]);
+      });
+    const notSame = function (m) {
+        return !nbs.some(function (x) {
+          return x.mkey === m.mkey;
+        });
+      },
+      clear = function (m) {
+        return !nbs.some(function (x) {
+          return alike(m, x);
+        });
+      };
+    // (Keep touching sections clearly different is kept even when it takes another role's marker: a family's own
+    // markers often look alike side by side)
+    let ok = noAdj ? list.filter(clear) : [];
+    if (!ok.length && noAdj) ok = all.filter(clear);
+    if (!ok.length) ok = list.filter(notSame);
+    if (!ok.length) ok = all.filter(notSame);
+    if (!ok.length) ok = list;
+    let lo = Infinity;
+    ok.forEach(function (m) {
+      lo = Math.min(lo, uses[m.mkey] || 0);
+    });
+    const least = ok.filter(function (m) {
+      return (uses[m.mkey] || 0) <= lo + 1;
+    });
+    const m = least[Math.floor(Math.random() * least.length)];
+    assign[l] = m;
+    uses[m.mkey] = (uses[m.mkey] || 0) + 1;
+  });
+  assignData = { assign: assign, order: order, N: order.length, base: Object.assign({}, assign) };
+  applyLocks();
+}
+// do two markers look alike (CIEDE2000 under ADJ_DE, as Keep touching sections clearly different has it)? Worked out
+// once per pair while a pattern is laid
+function balAlike() {
+  const memo = new Map();
+  return function (m, x) {
+    if (m.mkey === x.mkey) return true;
+    const k = m.mkey < x.mkey ? m.mkey + '\u0000' + x.mkey : x.mkey + '\u0000' + m.mkey;
+    let v = memo.get(k);
+    if (v === undefined) {
+      v = !!(m.lab && x.lab && de2000(m.lab, x.lab) < ADJ_DE);
+      memo.set(k, v);
+    }
+    return v;
+  };
+}
+// Mixed's No repeats: the markers for as many sections as there are (as few as you can use, if fewer)
+// (peek: for what the controls say, which mustn't make a generated palette: seedPool)
+function noRepPool(cl, peek) {
+  const src = poolSource(cl.length, peek);
+  return src.seeded ? src.items : thinPool(src.items, cl.length);
+}
+// every marker once before any twice; a repeat goes where its marker is furthest from where it's used already.
+// Touching sections never share a marker while any other would do: the least used that's clear of the neighbours
+// (with Keep touching sections clearly different, clear of look-alikes too), then the least used that isn't a
+// neighbour's, then the next least used, before a neighbour's own
+function buildNoRep(cl, pool) {
+  const order = cl.slice(),
+    assign = {},
+    bk = {},
+    uses = {},
+    at = {},
+    alike = balAlike(),
+    a = adj || (adj = buildAdj());
+  coll.forEach(function (m) {
+    bk[m.mkey] = m;
+  });
+  const put = function (l, m) {
+    assign[l] = m;
+    uses[m.mkey] = (uses[m.mkey] || 0) + 1;
+    (at[m.mkey] = at[m.mkey] || []).push(l);
+  };
+  const free = [];
+  order.forEach(function (l) {
+    const pin = locks[l] !== undefined ? bk[locks[l]] : null;
+    if (pin) put(l, pin);
+    else free.push(l);
+  });
+  for (let i = free.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1)),
+      t = free[i];
+    free[i] = free[j];
+    free[j] = t;
+  }
+  // the markers by how often they're used so far (lists kept as they change: no scan of the pool per section)
+  const byUse = [
+    pool.filter(function (m) {
+      return !uses[m.mkey];
+    }),
+  ];
+  pool.forEach(function (m) {
+    const u = uses[m.mkey] || 0;
+    if (u) (byUse[u] = byUse[u] || []).push(m);
+  });
+  let low = 0;
+  const lowUp = function () {
+    while (low < byUse.length && !(byUse[low] && byUse[low].length)) low++;
+  };
+  free.forEach(function (l) {
+    lowUp();
+    const nbs = [];
+    if (a && a[l])
+      a[l].forEach(function (q) {
+        if (assign[q]) nbs.push(assign[q]);
+      });
+    const notSame = function (m) {
+        return !nbs.some(function (x) {
+          return x.mkey === m.mkey;
+        });
+      },
+      clear = function (m) {
+        return !nbs.some(function (x) {
+          return alike(m, x);
+        });
+      };
+    // (a few of the least used that fit, looked at from a random place in the list: enough to choose among without
+    // testing hundreds of markers against the neighbours for every section)
+    const some = function (g, ok, k) {
+      const out = [],
+        n = g.length,
+        s0 = Math.floor(Math.random() * n);
+      for (let i = 0; i < n && out.length < k; i++) {
+        const m = g[(s0 + i) % n];
+        if (ok(m)) out.push(m);
+      }
+      return out;
+    };
+    let cand = null,
+      u = low;
+    const K = low > 0 ? 24 : 8;
+    for (let tries = 0; tries < 3 && !cand; tries++, u++) {
+      const g = byUse[u];
+      if (!g || !g.length) continue;
+      const c = noAdj
+        ? some(
+            g,
+            function (m) {
+              return notSame(m) && clear(m);
+            },
+            K,
+          )
+        : [];
+      const ns = c.length ? c : some(g, notSame, K);
+      if (ns.length) cand = ns;
+    }
+    if (!cand) cand = byUse[low] || pool;
+    if (low > 0 && cand.length > 1) {
+      // (a repeat: of those, the ones whose other sections are furthest away)
+      const far = cand
+        .map(function (m) {
+          let d = Infinity;
+          (at[m.mkey] || []).forEach(function (q) {
+            d = Math.min(d, Math.hypot(comps[l].cx - comps[q].cx, comps[l].cy - comps[q].cy));
+          });
+          return [d, m];
+        })
+        .sort(function (x, y) {
+          return y[0] - x[0];
+        });
+      cand = far.slice(0, Math.max(1, Math.ceil(far.length / 4))).map(function (x) {
+        return x[1];
+      });
+    }
+    const m = cand[Math.floor(Math.random() * cand.length)],
+      was = uses[m.mkey] || 0,
+      g = byUse[was];
+    g.splice(g.indexOf(m), 1);
+    (byUse[was + 1] = byUse[was + 1] || []).push(m);
+    put(l, m);
+  });
+  assignData = { assign: assign, order: order, N: order.length, base: Object.assign({}, assign) };
+  applyLocks();
+}
+// Random over the sections cl, by its Balance
+function buildRandomBal(cl, pool) {
+  if (balance === 'main') {
+    const p = balPlan();
+    if (p.ok) {
+      buildBalance(cl, p);
+      lastPoolN = p.used;
+      return;
+    }
+  } else if (noRep) {
+    const np = noRepPool(cl);
+    if (np.length) {
+      buildNoRep(cl, np);
+      lastPoolN = np.length;
+      return;
+    }
+  }
+  buildRandom(cl, pool);
+}
+
+/* ---- Balance on the screen: Pattern › Random ----
+    Balance (Mixed | Main colour) under the pattern's row. With Main colour, a bar in three parts, each a role in its
+    markers' colours and about as wide as its share ("Blues · 60%"); a tap on one opens a sheet of your colour
+    families (as strips of your markers, with how many) and Auto, to choose that role's. ↻ Other pairings rolls the
+    roles left on Auto. A line under it says what's used ("6 blues, 4 greens and 2 oranges of yours"). With Mixed,
+    No repeats sits under Keep touching sections clearly different. */
+function balPct(r, p) {
+  return Math.round((p.roles[r] ? p.roles[r].share : 0) * 100);
+}
+// a role's colours as a strip, light to dark (the label sits over the light end)
+function balLight(list) {
+  return list.slice().sort(function (a, b) {
+    return mLch(b)[0] - mLch(a)[0];
+  });
+}
+function balStrip(list) {
+  const s = balLight(list);
+  if (s.length === 1) return s[0].hex + ',' + s[0].hex;
+  return s
+    .map(function (m) {
+      return m.hex;
+    })
+    .join(',');
+}
+function balWord(k, n) {
+  return n + ' ' + BAL_FAM[k].w + (n === 1 ? '' : 's');
+}
+// "6 blues, 4 greens and 2 oranges of yours", a borrowed marker by its own colour ("1 red, with 1 pink and 1 orange");
+// a palette's by role, as its other colours join them ("The palette's 8 markers: violets the main colour, …")
+function balNote(p) {
+  const rs = ['m', 's', 'a'].filter(function (r) {
+      return !!p.roles[r];
+    }),
+    join = function (parts) {
+      return parts.length > 2
+        ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1]
+        : parts.join(' and ');
+    };
+  let t;
+  if (p.seeded)
+    t =
+      'The palette’s ' +
+      p.used +
+      ' markers: ' +
+      join(
+        rs.map(function (r) {
+          return BAL_FAM[p.roles[r].k].w + 's ' + { m: 'the main colour', s: 'second', a: 'the accent' }[r];
+        }),
+      ) +
+      ', with its other colours alongside.';
+  else
+    t =
+      join(
+        rs.map(function (r) {
+          const x = p.roles[r],
+            by = {};
+          x.markers.forEach(function (m) {
+            const f = balFamOf(m);
+            by[f] = (by[f] || 0) + 1;
+          });
+          const own = by[x.k] || 0,
+            other = Object.keys(by)
+              .filter(function (f) {
+                return f !== x.k;
+              })
+              .map(function (f) {
+                return balWord(f, by[f]);
+              });
+          return (own ? balWord(x.k, own) : BAL_FAM[x.k].n) + (other.length ? ', with ' + join(other) : '');
+        }),
+      ) + (isDemo() ? ' from the catalogue.' : ' of yours.');
+  const nSec = zoneList().length;
+  if (!p.seeded && p.used < p.want && nSec >= p.want)
+    t += ' That’s all there are of these colours, so ' + p.used + ' markers, not ' + p.want + '.';
+  if (!p.seeded && p.used > p.want) t += ' Main colour needs at least ' + p.used + ' markers.';
+  if (p.small) t += ' Too few sections for an accent of their own.';
+  else if (!p.roles.a && !p.roles.s) t += ' No other colour to go with it, so it’s all the main colour.';
+  else if (!p.roles.a) t += ' No colour across the wheel for an accent, so two colours.';
+  else if (!p.roles.s) t += ' No colour to go second, so the main colour and an accent.';
+  if (p.tempMiss)
+    t += ' No ' + palette + ' colour has markers enough to be the main one, so it can be any colour.';
+  if (p.crossTemp) t += ' The accent is ' + (palette === 'cool' ? 'warm' : 'cool') + ', to stand out.';
+  return t;
+}
+function balHTML() {
+  let h =
+    '<div class="sfsublbl">Balance</div><div id="sfBal" role="group" aria-label="Balance" class="sfc-segs">' +
+    ctlSeg('mixed', 'Mixed', balance === 'mixed') +
+    ctlSeg('main', 'Main colour', balance === 'main') +
+    '</div>';
+  if (balance === 'main') {
+    const p = balPlan(),
+      byHand = balM !== 'auto' || balS !== 'auto' || balA !== 'auto';
+    if (!p.ok)
+      h +=
+        '<div class="sfc-note sfc-mt8">' +
+        (p.why === 'thin'
+          ? esc(BAL_FAM[p.fam].n) + ': too few markers, even with the colours next to them'
+          : 'No colour has markers enough to be the main one') +
+        ', so it’s laid Mixed for now.' +
+        (byHand ? ' <button type="button" id="sfBalAuto" class="sflink">Back to Auto</button>' : '') +
+        '</div>';
+    else {
+      h += '<div id="sfBalBar" class="sfbalbar">';
+      ['m', 's', 'a'].forEach(function (r) {
+        const x = p.roles[r];
+        if (!x) return;
+        const pc = balPct(r, p),
+          nm = BAL_FAM[x.k].n,
+          auto = { m: balM, s: balS, a: balA }[r] === 'auto';
+        h +=
+          '<button type="button" id="sfBal' +
+          r.toUpperCase() +
+          '" class="sfbalseg" data-r="' +
+          r +
+          '" style="flex:' +
+          pc +
+          ' 1 0;background:linear-gradient(90deg,' +
+          balStrip(x.markers) +
+          ');color:' +
+          // (the label's over the light end of the strip)
+          txt(balLight(x.markers)[0].hex) +
+          '" aria-label="' +
+          esc(
+            BAL_ROLE[r] +
+              ': ' +
+              nm +
+              (auto ? ', chosen for you' : '') +
+              ', about ' +
+              pc +
+              '% of the picture. Change',
+          ) +
+          '"><span aria-hidden="true" class="sfbalsn">' +
+          (pc > 12 ? esc(nm) : '') +
+          '</span><span aria-hidden="true" class="sfbalsp">' +
+          (pc > 12 ? ' \u00b7 ' : '') +
+          pc +
+          '%</span></button>';
+      });
+      const handAll = ['m', 's', 'a'].every(function (r) {
+        return !p.roles[r] || { m: balM, s: balS, a: balA }[r] !== 'auto';
+      });
+      h +=
+        '</div><div class="sfbalrow"><span class="sfc-note">Tap a colour to change it</span><button type="button" id="sfBalPair" class="sfghost"' +
+        (handAll ? ' disabled' : '') +
+        '><span aria-hidden="true">↻</span> Other pairings</button></div><div id="sfBalNote" class="sfc-note sfc-mt6">' +
+        esc(balNote(p)) +
+        '</div>';
+    }
+  }
+  h +=
+    '<label class="sfchk sfc-check sfc-inline sfc-mt10"><input type="checkbox" id="sfNoAdj"' +
+    (noAdj ? ' checked' : '') +
+    '> Keep touching sections clearly different</label>';
+  if (balance === 'mixed') {
+    h +=
+      '<label class="sfchk sfc-check sfc-inline sfc-mt8"><input type="checkbox" id="sfNoRep"' +
+      (noRep ? ' checked' : '') +
+      '> No repeats: every section a different marker</label>';
+    if (noRep) {
+      const n = zoneList().length,
+        k = noRepPool(zoneList(), true).length,
+        per = k ? Math.round(n / k) : 0;
+      h +=
+        '<div id="sfNoRepNote" class="sfc-note sfc-mt6">' +
+        (k >= n
+          ? 'Every section has its own marker: ' + n + '.'
+          : n +
+            ' sections, ' +
+            k +
+            ' markers: ' +
+            (per >= 2 ? 'each used about ' + per + ' times' : n - k + ' used twice') +
+            ', every one before any again, kept apart.') +
+        (k >= n * 0.8 ? ' Slow to colour: nearly every section is a new marker.' : '') +
+        '</div>';
+    }
+  }
+  return h;
+}
+// the sheet a part of the bar opens: Auto, then each colour family there is (a strip of the markers and how many);
+// one that can't fill the role even borrowing from next to it is shown, greyed
+function balChoose(r) {
+  const p = balPlan();
+  if (!p.ok) return;
+  const cur = { m: balM, s: balS, a: balA }[r],
+    groups = p.groups,
+    min = p.min[r],
+    usedBy = {},
+    otherHand = ['m', 's', 'a'].some(function (q) {
+      return q !== r && { m: balM, s: balS, a: balA }[q] !== 'auto';
+    });
+  ['m', 's', 'a'].forEach(function (q) {
+    if (q !== r && p.roles[q]) usedBy[p.roles[q].k] = q;
+  });
+  let b =
+    '<div class="sfbalopts" role="group" aria-label="' +
+    esc(BAL_ROLE[r]) +
+    '"><button type="button" class="sfbalopt" data-k="auto" aria-pressed="' +
+    (cur === 'auto') +
+    '"><span class="sfbalnm"><span class="sfbaltt">Auto</span></span><span class="sfbalsub">' +
+    (r === 'm'
+      ? p.seeded
+        ? 'the palette’s biggest colour'
+        : palette !== 'all' && !otherHand
+          ? 'a ' + palette + ' colour, as Temperature says'
+          : 'chosen for you'
+      : r === 'a'
+        ? 'across the colour wheel, bright'
+        : 'next to the main colour') +
+    '</span></button>';
+  BAL_ORDER.forEach(function (k) {
+    const list = groups[k];
+    if (!list || !list.length || (r === 'a' && k === 'grey')) return;
+    const n = list.length,
+      can = !!usedBy[k] || p.viable(k, min),
+      sub = !can
+        ? 'too few, even with the colours next to them'
+        : usedBy[k]
+          ? 'now the ' + BAL_ROLE[usedBy[k]].toLowerCase() + ': they swap'
+          : n < min
+            ? 'only ' + n + ': borrows from the colours next to it'
+            : '';
+    b +=
+      '<button type="button" class="sfbalopt" data-k="' +
+      k +
+      '" aria-pressed="' +
+      (cur === k) +
+      '"' +
+      (can ? '' : ' disabled') +
+      '><span class="sfbalnm"><span class="sfbaltt">' +
+      BAL_FAM[k].n +
+      '</span>' +
+      (sub ? '<span class="sfbalsub">' + sub + '</span>' : '') +
+      '</span><span class="sfbalsw" aria-hidden="true" style="background:linear-gradient(90deg,' +
+      balStrip(list.slice(0, 40)) +
+      ')"></span><span class="sfbaln">' +
+      n +
+      '</span></button>';
+  });
+  b += '</div>';
+  const el = openSheet({ title: BAL_ROLE[r] + ' · about ' + balPct(r, p) + '%', body: b, fit: true });
+  el.classList.add('sfbalsh');
+  const on = el.querySelector('.sfbalopt[aria-pressed="true"]');
+  if (on)
+    try {
+      on.focus({ preventScroll: true });
+    } catch (_) {}
+  el.addEventListener('click', function (e) {
+    const o = e.target.closest('.sfbalopt');
+    if (!o || o.disabled) return;
+    const k = o.dataset.k;
+    closeSheet(true);
+    if (k === cur) return;
+    // (a family another role has: they swap, that role taking this one's colour)
+    const q = usedBy[k],
+      prev = p.roles[r] ? p.roles[r].k : 'auto';
+    if (q) balSet(q, prev === 'grey' && q === 'a' ? 'auto' : prev);
+    balSet(r, k);
+    reassign();
+    ctlRefocus('#sfBal' + r.toUpperCase());
+  });
+}
+// a plan's families, to tell one pairing from another
+function balKeys(p) {
+  return p.ok
+    ? ['m', 's', 'a']
+        .map(function (r) {
+          return p.roles[r] ? p.roles[r].k : '-';
+        })
+        .join('/')
+    : '';
+}
+function balSet(r, v) {
+  if (r === 'm') balM = v;
+  else if (r === 's') balS = v;
+  else balA = v;
+}
+// wire Balance's controls (ctlPlanWire)
+function balWire() {
+  const g = document.getElementById('sfBal');
+  if (g)
+    g.addEventListener('click', function (e) {
+      const b = e.target.closest('button');
+      if (!b || b.dataset.v === balance) return;
+      balance = b.dataset.v;
+      reassign();
+      ctlRefocus('#sfBal [data-v="' + balance + '"]');
+    });
+  const bar = document.getElementById('sfBalBar');
+  if (bar)
+    bar.addEventListener('click', function (e) {
+      const b = e.target.closest('.sfbalseg');
+      if (b) balChoose(b.dataset.r);
+    });
+  const pr = document.getElementById('sfBalPair');
+  if (pr)
+    pr.addEventListener('click', function () {
+      // (a pairing other than the one there is; none to be had says so, and changes nothing)
+      const was = balKeys(balPlan()),
+        s0 = balSeed;
+      let found = false;
+      for (let i = 0; i < 16 && !found; i++) {
+        balSeed = (((s0 || 0) % 1) + 0.13 + Math.random() * 0.74) % 1;
+        found = balKeys(balPlan()) !== was;
+      }
+      if (!found) {
+        balSeed = s0;
+        toast('No other pairing of these colours to be had.', 2200);
+        return;
+      }
+      reassign();
+      ctlRefocus('#sfBalPair');
+    });
+  const ba = document.getElementById('sfBalAuto');
+  if (ba)
+    ba.addEventListener('click', function () {
+      balM = balS = balA = 'auto';
+      reassign();
+      ctlRefocus('#sfBal [data-v="main"]');
+    });
+  const nr = document.getElementById('sfNoRep');
+  if (nr)
+    nr.addEventListener('change', function (e) {
+      noRep = e.target.checked;
+      reassign();
+      ctlRefocus('#sfNoRep');
+    });
+}
+// what Surprise's note says of Random's roles: "blues, with greens and an orange accent"
+function surpriseRoles() {
+  const p = balPlan();
+  if (!p.ok) return '';
+  const w = function (r) {
+    return BAL_FAM[p.roles[r].k].w;
+  };
+  return (
+    w('m') +
+    's' +
+    (p.roles.s ? ', with ' + w('s') + 's' : '') +
+    (p.roles.a
+      ? (p.roles.s ? ' and ' : ', with ') + 'a' + (/^[aeiou]/.test(w('a')) ? 'n ' : ' ') + w('a') + ' accent'
+      : '')
+  );
 }
 /* ---- zones: parts of the picture with their own pattern and colours ----
     A zone is a set of sections with its own Pattern and Colours settings (ZONE_KEYS: the pattern, its flow and look,
@@ -20034,6 +21402,12 @@ const ZONE_KEYS = [
   'emphasis',
   'limitN',
   'noAdj',
+  'balance',
+  'balM',
+  'balS',
+  'balA',
+  'balSeed',
+  'noRep',
   'gradSeed',
   'radC',
   'blendFall',
@@ -25752,12 +27126,15 @@ function ctlPlan() {
   const _snote = surpriseNote
     ? HARM[genHarmony] +
       ' palette \u00b7 ' +
-      gradShape.charAt(0).toUpperCase() +
-      gradShape.slice(1) +
-      (dir < 0 ? ' (reversed)' : '') +
+      (family === 'random'
+        ? 'Random, main colour ' + surpriseRoles()
+        : gradShape.charAt(0).toUpperCase() +
+          gradShape.slice(1) +
+          (dir < 0 ? ' (reversed)' : '') +
+          ' \u00b7 ' +
+          LOOK_LABEL[look] +
+          ' look') +
       ' \u00b7 ' +
-      LOOK_LABEL[look] +
-      ' look \u00b7 ' +
       MOODS[emphasis].label +
       ' mood \u00b7 ' +
       (lastPoolN || limitN) +
@@ -25830,17 +27207,23 @@ function ctlPlanColours() {
   if (family !== 'manual') {
     var _srcSeed = paletteSource === 'saved' || paletteSource === 'generate',
       _psz = sliderMax(),
-      _cnt = Math.min(limitN, _psz);
+      _cnt = Math.min(limitN, _psz),
+      // (Random's No repeats: as many as there are sections, so the count has nothing to say)
+      _nr = family === 'random' && balance === 'mixed' && noRep;
     _mkH +=
-      '<label class="sfmkcount">Markers in this ' +
+      '<label class="sfmkcount' +
+      (_nr ? ' sfoff' : '') +
+      '">Markers in this ' +
       (zones.length ? 'zone' : 'guide') +
       ' <b id="sfMkNlbl">' +
-      (_cnt >= _psz ? 'all (' + _psz + ')' : _cnt) +
+      (_nr ? 'one per section' : _cnt >= _psz ? 'all (' + _psz + ')' : _cnt) +
       '</b><input type="range" id="sfMkCount" min="2" max="' +
       _psz +
       '" value="' +
       _cnt +
-      '"></label>';
+      '"' +
+      (_nr ? ' disabled' : '') +
+      '></label>';
     if (_srcSeed) {
       _expH +=
         '<label class="sfchk sfc-check sfc-inline sfc-mt8"><input type="checkbox" id="sfExpand"' +
@@ -25942,14 +27325,28 @@ function ctlPlanColours() {
     _iShow = family !== 'manual' && family !== 'photo',
     // a saved palette is used as it is: its Mood is greyed out (the line under it says so)
     _mOff = _iShow && paletteSource === 'saved' && curSeedLen() > 0;
+  // (Random's Main colour with a colour chosen by hand: the colours are chosen, so Temperature has nothing to steer)
+  var _tOff =
+    _tShow &&
+    family === 'random' &&
+    balance === 'main' &&
+    paletteSource === 'owned' &&
+    (balM !== 'auto' || balS !== 'auto' || balA !== 'auto');
   if (_tShow) html += '<div class="sflean">Within your filters, lean toward\u2026</div>';
   if (_tShow)
     html +=
-      '<div class="sfsublbl">Temperature</div><div id="sfPal" role="group" aria-label="Temperature" class="sfc-segs">' +
-      ctlSeg('cool', 'Cool', palette === 'cool') +
-      ctlSeg('warm', 'Warm', palette === 'warm') +
-      ctlSeg('all', 'Any', palette === 'all') +
-      '</div>';
+      '<div class="sfsublbl' +
+      (_tOff ? ' sfoff' : '') +
+      '">Temperature</div><div id="sfPal" role="group" aria-label="Temperature" class="sfc-segs' +
+      (_tOff ? ' sfoff' : '') +
+      '">' +
+      ctlSeg('cool', 'Cool', palette === 'cool', _tOff) +
+      ctlSeg('warm', 'Warm', palette === 'warm', _tOff) +
+      ctlSeg('all', 'Any', palette === 'all', _tOff) +
+      '</div>' +
+      (_tOff
+        ? '<div class="sfc-note sfc-mt6">Main colour sets this: its colours are chosen (Pattern).</div>'
+        : '');
   if (_iShow)
     html +=
       '<div class="sfsublbl' +
@@ -26060,10 +27457,8 @@ function ctlPlanPattern() {
     const _ln = lookNote();
     if (_ln) html += '<div id="sfLookNote" class="sfc-note sfc-mt6">' + _ln + '</div>';
   } else if (family === 'random') {
-    html +=
-      '<label class="sfchk sfc-check sfc-inline sfc-mt10"><input type="checkbox" id="sfNoAdj"' +
-      (noAdj ? ' checked' : '') +
-      '> Keep touching sections clearly different</label>';
+    // (Balance, its bar, Keep touching sections clearly different and No repeats: 31-balance)
+    html += balHTML();
   } else if (family === 'blend') {
     html +=
       infoLine(
@@ -26421,6 +27816,16 @@ function ctlWirePatternFamily() {
           pickPhotoRef();
           return;
         }
+        // (Random's first main colour is anyone's guess, not the same pairing on every guide: 31-balance)
+        if (
+          family === 'random' &&
+          balance === 'main' &&
+          !balSeed &&
+          balM === 'auto' &&
+          balS === 'auto' &&
+          balA === 'auto'
+        )
+          balSeed = Math.random() * 0.998 + 0.001;
         if (family !== 'photo') photoAlign = false;
         else if (!_phBumped) {
           _phBumped = true;
@@ -26680,6 +28085,7 @@ function ctlWirePatternOptions() {
     });
   var _br = document.getElementById('sfBrush');
   if (_br) _br.addEventListener('click', openBrushPop);
+  balWire();
   var _na = document.getElementById('sfNoAdj');
   if (_na)
     _na.addEventListener('change', function (e) {
@@ -29183,7 +30589,11 @@ function picScroll() {
   }
   d = Math.round(d * 100) / 100;
   const s = geo.full ? Math.round(((geo.full - d) / geo.full) * 1e5) / 1e5 : 1;
-  if (d === picD && s === picS) return;
+  if (d === picD && s === picS) {
+    // (the page scrolled but the picture kept its size: an open sheet still follows the picture's foot)
+    if (sheetO) placeSheet();
+    return;
+  }
   picD = d;
   picS = s;
   picEl.style.transform = d ? 'translateY(' + d + 'px) scale(' + s + ')' : '';
@@ -29734,6 +31144,11 @@ function openSheet(o) {
   sheetO = { el: el, o: o, opener: op, y0: y0, y1: window.scrollY };
   document.documentElement.classList.add('sfsheeton');
   placeSheet();
+  // (and again a frame later: Safari can settle the scroll that pinned the picture, and the page's overflow, after
+  // this frame, leaving a gap of a few pixels between the picture and the sheet)
+  requestAnimationFrame(function () {
+    if (sheetO && sheetO.el === el) placeSheet();
+  });
   touchRule();
   el.addEventListener('keydown', sheetTab);
   const f =
@@ -33807,6 +35222,12 @@ function planLabel1(p, q) {
   if (a.dir !== b.dir) return 'Direction: ' + (b.dir < 0 ? 'Reversed' : 'Forward');
   if (a.look !== b.look) return 'Look: ' + (LOOK_LABEL[b.look] || b.look);
   if (a.noAdj !== b.noAdj) return 'Touching sections different ' + onoff(b.noAdj);
+  if (a.balance !== b.balance) return 'Balance: ' + (b.balance === 'main' ? 'Main colour' : 'Mixed');
+  if (a.balM !== b.balM) return 'Main colour: ' + (BAL_FAM[b.balM] ? BAL_FAM[b.balM].n : 'Auto');
+  if (a.balS !== b.balS) return 'Second colour: ' + (BAL_FAM[b.balS] ? BAL_FAM[b.balS].n : 'Auto');
+  if (a.balA !== b.balA) return 'Accent: ' + (BAL_FAM[b.balA] ? BAL_FAM[b.balA].n : 'Auto');
+  if (a.balSeed !== b.balSeed) return 'Other pairings';
+  if (a.noRep !== b.noRep) return 'No repeats ' + onoff(b.noRep);
   if (a.blendFall !== b.blendFall) return 'Spread changed';
   if (a.blendMix !== b.blendMix) return 'Mix: ' + (BLEND_MIX_LABEL[b.blendMix] || b.blendMix);
   if (a.anchors.length !== b.anchors.length)
@@ -37842,6 +39263,11 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     generatePalette: generatePalette,
     activePool: activePool,
     thinGreyM: thinGreyM,
+    balPlan: balPlan,
+    balFamOf: balFamOf,
+    buildNoRep: buildNoRep,
+    buildBalance: buildBalance,
+    noRepPool: noRepPool,
     poolMsg: poolMsg,
     lookNote: lookNote,
     // the Gradient's parts (30-palette-assign), for the unit tests
@@ -38011,6 +39437,42 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       },
       set noAdj(v) {
         noAdj = v;
+      },
+      get balance() {
+        return balance;
+      },
+      set balance(v) {
+        balance = v;
+      },
+      get balM() {
+        return balM;
+      },
+      set balM(v) {
+        balM = v;
+      },
+      get balS() {
+        return balS;
+      },
+      set balS(v) {
+        balS = v;
+      },
+      get balA() {
+        return balA;
+      },
+      set balA(v) {
+        balA = v;
+      },
+      get balSeed() {
+        return balSeed;
+      },
+      set balSeed(v) {
+        balSeed = v;
+      },
+      get noRep() {
+        return noRep;
+      },
+      set noRep(v) {
+        noRep = v;
       },
       get gradSeed() {
         return gradSeed;
@@ -40915,6 +42377,7 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'Random has a Balance: Main colour lays one colour over about 60% of the picture, a second over 30% and an accent over 10% (tap the bar to choose them). Mixed is Random as before, now with No repeats. Surprise can pick it too.',
   'Test strip (Share › Print › Pages): a page of boxes to try each marker, and its highlight, base and shadow, on your own paper. Radial gradients have a ⊕ to drag where the rings start, and a zone’s sections can be chosen with the keyboard.',
   'Shading per zone: in Shading, the chips choose a zone to shade or leave flat, with its own roundness, highlights and shadows. The light stays one for the whole picture.',
   'Zones: give part of your picture its own pattern and colours. In Pattern, tap ＋ Zone, then tap or drag across sections. Colour along can go zone by zone.',
