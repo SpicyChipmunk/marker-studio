@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="text-scale" content="scale">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0b0e">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Marker Studio">
+<meta name="application-name" content="Marker Studio">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Marker Studio</title>
+<link rel="preload" href="src/assets/fonts/hanken-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="src/assets/fonts/fraunces-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@@include(css/01-base.css)
+@@include(css/02-picker.css)
+@@include(css/03-overlays.css)
+@@include(css/04-guide.css)
+@@include(css/04-frame.css)
+@@include(css/04-along.css)
+@@include(css/05-focus.css)
+@@include(css/06-guide-extra.css)
+@@include(css/07-home-onboarding.css)
+@@include(css/08-dialogs-match.css)
+@@include(css/09-safety.css)
+@@include(css/09-shopping.css)
+@@include(css/10-swatch.css)</style></head><body>
+@@include(html/app.html)
+@@include(html/dialogs.html)
+<script>
+const COLORS=@@json(data/markers.json);
+@@include(js/safety.js)
+@@include(js/brands.js)
+@@include(js/names.js)
+@@include(js/core.js)
+@@include(js/layers.js)
+@@include(js/colour.js)
+@@include(js/state.js)
+@@include(js/picker.js)
+@@include(js/library.js)
+@@include(js/finder.js)
+@@include(js/export-card.js)
+@@include(js/chrome.js)
+@@include(js/events.js)
+@@include(js/guide-bridge.js)
+window.SF=(function(){ /* guide module (window.SF): the js/guide files below share this one function scope */
+@@include(js/guide/00-state.js)
+@@include(js/guide/05-style-fields.js)
+@@include(js/guide/10-segment.js)
+@@include(js/guide/20-image-input.js)
+@@include(js/guide/22-straighten.js)
+@@include(js/guide/30-palette-assign.js)
+@@include(js/guide/34-zones.js)
+@@include(js/guide/40-render.js)
+@@include(js/guide/45-shading.js)
+@@include(js/guide/46-photo.js)
+@@include(js/guide/50-controls.js)
+@@include(js/guide/51-controls-plan.js)
+@@include(js/guide/52-controls-plan-wire.js)
+@@include(js/guide/53-controls-stages.js)
+@@include(js/guide/60-persist.js)
+@@include(js/guide/65-edit.js)
+@@include(js/guide/70-view.js)
+@@include(js/guide/72-frame.js)
+@@include(js/guide/75-focus.js)
+@@include(js/guide/80-input.js)
+@@include(js/guide/81-paint.js)
+@@include(js/guide/82-colour-mode.js)
+@@include(js/guide/83-along.js)
+@@include(js/guide/84-popovers.js)
+@@include(js/guide/85-zones-ui.js)
+@@include(js/guide/86-reveal-share.js)
+@@include(js/guide/87-undo.js)
+@@include(js/guide/88-coverage-blend.js)
+@@include(js/guide/90-export.js)
+@@include(js/guide/95-mount.js)
+@@include(js/guide/97-open.js)
+@@include(js/guide/99-close.js)
+})(); /* end of the guide module */
+@@include(js/shopping.js)
+@@include(js/swatch.js)
+</script>
+<!-- start-up, Match and Help each in a script of their own, so an error in one can't stop the others -->
+<script>@@include(js/boot.js)</script>
+<script>@@include(js/match.js)</script>
+<script>@@include(js/help.js)</script><script>@@include(js/sw-register.js)</script></body></html>

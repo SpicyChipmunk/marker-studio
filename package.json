@@ -1,0 +1,32 @@
+{
+  "name": "marker-studio",
+  "version": "0.1.0",
+  "description": "A phone-first PWA that turns line-art photos into marker-by-number colouring guides, matched to the markers you own (Ohuhu, Copic).",
+  "type": "module",
+  "license": "UNLICENSED",
+  "private": true,
+  "author": "SpicyChipmunk",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --watch",
+    "test": "node --test test/*.test.mjs",
+    "e2e": "node --test e2e/*.test.mjs",
+    "test:all": "npm test && npm run e2e",
+    "fingerprint": "node scripts/fingerprint.mjs --all",
+    "format": "prettier --write \"src/js/**/*.js\" \"src/css/**/*.css\"",
+    "format:check": "prettier --check \"src/js/**/*.js\" \"src/css/**/*.css\"",
+    "lint": "node scripts/lint.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@fontsource-variable/fraunces": "5.3.0",
+    "@fontsource-variable/hanken-grotesk": "5.3.0",
+    "esbuild": "0.28.2",
+    "eslint": "9.39.5",
+    "globals": "17.12.0",
+    "playwright": "^1.56.0",
+    "prettier": "3.9.9"
+  }
+}

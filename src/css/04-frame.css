@@ -1,0 +1,719 @@
+/* The guide screen's frame (Release 3, docs/GUIDE-LAYOUT.md): the header row, the pinned picture and its tool row,
+   the bar, sheets and one-time hints. One column by default; side by side on landscape screens 640px and wider and
+   on any screen 900px and wider (the same query as sideBySide() in js/guide/72-frame.js). */
+/* the page ends at the guide card, so the sticky bar sits on the bottom at the end of a short tab */
+.wrap.sfmode.sfworkon {
+  padding-bottom: 0;
+}
+#sfRoot #sfWork {
+  margin-top: 12px;
+  padding: 10px 12px 0;
+}
+/* the controls are redrawn whole (a stage, a tab, crop mode): Chrome's scroll anchoring would nudge the page when they
+   change, which Safari never does, so the page behaves the same in both */
+#sfRoot #sfCtl {
+  overflow-anchor: none;
+}
+/* #5 header row */
+#sfRoot .sfhrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 52px;
+  padding: 0 0 8px;
+}
+#sfRoot .sfgname {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+/* the name row is one height whether it shows the name or the rename field */
+#sfRoot .sfgt {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  height: 38px;
+}
+#sfRoot .sfgt strong {
+  min-width: 0;
+  font-weight: 600;
+  font-size: var(--t-lg);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#sfRoot .sfibtn {
+  flex: none;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 36px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--sub);
+  font: inherit;
+  font-size: var(--t-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+#sfRoot .sfibtn::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+#sfRoot .sfibtn:hover {
+  color: var(--ink);
+}
+/* the status line: what it says now (.sfgsv) over its longest states laid out unseen (.sfgsg), so it keeps one height;
+   it may wrap under the Save pill at large text sizes but is never cut */
+#sfRoot .sfgst {
+  display: grid;
+  min-width: 0;
+}
+#sfRoot .sfgst > * {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: flex-start;
+  gap: 2px 8px;
+  min-width: 0;
+}
+#sfRoot .sfgst > .sfgsg {
+  visibility: hidden;
+}
+#sfRoot .sfsavest {
+  min-width: 0;
+  font-size: var(--t-sm);
+  line-height: 1.3;
+  color: var(--sub);
+  overflow-wrap: anywhere;
+}
+#sfRoot .sfsavest.ok {
+  color: var(--ok);
+}
+#sfRoot .sfsavest.warn {
+  color: var(--warn);
+}
+#sfRoot .sfsave {
+  flex: none;
+  position: relative;
+  min-height: 24px;
+  white-space: nowrap;
+  padding: 1px 12px;
+  border: 1px solid rgba(124, 92, 255, 0.6);
+  border-radius: var(--r-pill);
+  background: rgba(124, 92, 255, 0.14);
+  color: #d9cfff;
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+/* (the pill looks 24px tall; its tap area is 44px) */
+#sfRoot .sfsave::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
+}
+#sfRoot .sfsave:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+#sfRoot .sfrename {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  height: 38px;
+  box-sizing: border-box;
+  padding-left: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+#sfRoot .sfrename input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  font-size: var(--t-lg);
+  outline: none;
+}
+#sfRoot .sfrename:focus-within {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+#sfRoot .sfhrow .sfsurprise {
+  flex: none;
+  width: auto;
+  height: 40px;
+  margin: 0;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  border-radius: var(--r-md);
+  border-color: rgba(124, 92, 255, 0.55);
+}
+#sfRoot .sfhrow .sfsurprise span {
+  color: inherit;
+  font-weight: 600;
+}
+#sfRoot .sfhrow .sfsurprise.sfic .sfsl {
+  display: none;
+}
+#sfRoot .sfmore {
+  flex: none;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--r-md);
+  background: #18181d;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+/* Surprise and ⋯ look 40px; their tap areas are 44px */
+#sfRoot .sfhrow .sfsurprise::after,
+#sfRoot .sfmore::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+}
+/* #3 the pinned picture: in-flow at full height, stuck at a negative top; the wrapper (#sfPic) is scaled from its top */
+#sfRoot #sfView {
+  position: -webkit-sticky;
+  position: sticky;
+  top: calc(env(safe-area-inset-top, 0px) - var(--picShift, 0px));
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  margin: 0 -12px;
+  background: #0c1110;
+  overflow: hidden;
+  box-shadow: 0 12px 20px -14px rgba(0, 0, 0, 0.9);
+}
+#sfRoot .sfpicbox {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+#sfRoot .sfpic {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  transform-origin: 50% 0;
+}
+#sfRoot .sfpic #sfCanvas {
+  margin: 0;
+}
+/* full screen, focus mode and Reveal: the frame's boxes step aside and #sfView lays the picture out itself */
+#sfRoot.sffull .sfpicbox,
+#sfRoot.sffull .sfpic,
+#sfRoot.sffoc .sfpicbox,
+#sfRoot.sffoc .sfpic,
+#sfRoot.sfrev .sfpicbox,
+#sfRoot.sfrev .sfpic {
+  display: contents;
+}
+#sfRoot.sffull #sfView,
+#sfRoot.sffoc #sfView,
+#sfRoot.sfrev #sfView {
+  margin: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+#sfRoot.sffull #sfView {
+  align-items: center;
+}
+/* #4 the tool row */
+#sfRoot .sftools {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 40px;
+  padding: 0 8px;
+  background: #0c1110;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+#sfRoot .sftools .sfz {
+  flex: none;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #e8eef0;
+  font-size: var(--t-md) !important;
+  line-height: 1;
+  white-space: nowrap;
+}
+#sfRoot .sftools .sfz::after {
+  content: '';
+  position: absolute;
+  inset: -6px 0;
+}
+#sfRoot .sftools .sfz svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+#sfRoot .sftools .sfz[aria-pressed='true'] {
+  background: rgba(95, 184, 159, 0.16);
+  border-color: var(--ok);
+  color: #dff5ee;
+}
+#sfRoot .sftools .sfzundo {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  font-size: var(--t-sm) !important;
+  font-weight: 600;
+}
+#sfRoot .sftools .sfzundo span[aria-hidden] {
+  font-size: var(--t-md);
+}
+#sfRoot .sftools.sfzc2 .sfzul {
+  display: none;
+}
+/* the status's parts go whole when the row is tight (planFit): never an ellipsis mid-number */
+#sfRoot .sfstat {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 4px;
+  font-size: var(--t-sm);
+  color: var(--sub);
+  white-space: nowrap;
+  overflow: hidden;
+}
+#sfRoot .sftools.sfzc1 .sfsp2,
+#sfRoot .sftools.sfzc3 .sfsp1 {
+  display: none;
+}
+#sfRoot .sfstat b {
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+#sfRoot .sfprog {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+}
+#sfRoot .sfprog i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--ok);
+  transition: width 0.25s;
+}
+#sfRoot .sfalong .sfprog {
+  display: block;
+}
+#sfRoot.sffull .sftools {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: auto;
+  padding: 8px calc(10px + env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px))
+    calc(10px + env(safe-area-inset-left, 0px));
+  background: rgba(8, 11, 10, 0.93);
+}
+#sfRoot.sffoc #sfZoomCtl {
+  height: auto;
+  gap: 6px;
+}
+#sfRoot.sffoc #sfZoomCtl #sfPlanUndo,
+#sfRoot.sffoc #sfZoomCtl .sfstat,
+#sfRoot.sffoc #sfZoomCtl #sfCodes,
+#sfRoot.sffoc #sfZoomCtl #sfPhPeek,
+#sfRoot.sffoc #sfZoomCtl .sfprog {
+  display: none !important;
+}
+/* #6 the bar: two buttons on one row */
+/* (its -1px foot covers the card's bottom border, so at the end of the page it sits on the screen's bottom edge) */
+#sfRoot .sfbar {
+  position: -webkit-sticky;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: stretch;
+  margin: 16px -12px -1px;
+  padding: 8px 12px max(8px, env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(0deg, #121215 calc(100% - 8px), rgba(18, 18, 21, 0));
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+}
+#sfRoot .sfbar button {
+  height: 44px;
+  min-height: 44px;
+  white-space: nowrap;
+}
+#sfRoot .sfbar .sfghost {
+  flex: none;
+  padding: 0 14px;
+  color: var(--ink);
+  font-size: var(--t-md);
+}
+#sfRoot .sfbar .sfcolorcta,
+#sfRoot .sfbar .sfprimary {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: max-content;
+  padding: 0 14px;
+  font-size: var(--t-md);
+}
+/* each tab (and the controls of the other stages) fills the room between the pinned block and the bar */
+#sfRoot .sftab {
+  padding: 2px 0 6px;
+  min-height: var(--tabMin, 0px);
+}
+#sfRoot .sfpane {
+  min-height: var(--paneMin, 0px);
+}
+#sfRoot .sftabsen {
+  height: 0;
+}
+/* #8 one-time hints: full the first time, then a one-line ⓘ (the guide's, and Markers' above the grid) */
+#sfRoot .sfinfo,
+.mkhint .sfinfo {
+  border-radius: 0;
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--sub);
+  font: inherit;
+  font-size: var(--t-sm);
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+#sfRoot .sfinfo .sfi,
+.mkhint .sfinfo .sfi {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--ink);
+  font:
+    italic 600 var(--t-xs)/1 Georgia,
+    serif;
+}
+#sfRoot .sfinfo.open,
+.mkhint .sfinfo.open {
+  color: #d8d5dd;
+}
+#sfRoot .sfinfo {
+  min-height: 0;
+  align-items: flex-start;
+  margin-top: 8px;
+  padding: 0;
+}
+#sfRoot .sfinfo.sfonce {
+  cursor: default;
+  margin: 12px 0 0;
+}
+/* the ⓘ line is a button: 44px tall to tap, its one line centred in that (open, it grows with its text) */
+#sfRoot button.sfinfo {
+  min-height: 44px;
+  margin-top: 0;
+  align-items: center;
+}
+#sfRoot button.sfinfo.open {
+  align-items: flex-start;
+  padding: 12px 0;
+}
+/* sheets */
+/* (the body keeps no overflow of its own meanwhile: with overflow-x:hidden it would become the scroller the pinned
+   picture sticks to, and the picture would jump up) */
+html.sfsheeton {
+  overflow: hidden;
+}
+html.sfsheeton body {
+  overflow: visible;
+}
+#sfRoot .sfsheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+  background: #15151a;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -18px 40px -10px rgba(0, 0, 0, 0.7);
+  outline: none;
+  animation: sfsheetup 0.18s ease-out;
+}
+#sfRoot .sfsheet.sfshside {
+  border-top: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px 0 0 0;
+  padding-top: env(safe-area-inset-top, 0px);
+  box-shadow: -18px 0 40px -10px rgba(0, 0, 0, 0.7);
+}
+@keyframes sfsheetup {
+  from {
+    transform: translateY(24px);
+    opacity: 0.4;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #sfRoot .sfsheet {
+    animation: none;
+  }
+}
+#sfRoot .sfshhd {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 8px;
+}
+#sfRoot .sfshhd h3 {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--t-lg);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#sfRoot .sfshhd input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-lg);
+}
+#sfRoot .sfshbody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px 14px 10px;
+}
+#sfRoot .sfshft {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px max(12px, env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+}
+#sfRoot .sfshft button {
+  flex: 1 1 0;
+  height: 44px;
+  min-width: 0;
+  color: var(--ink);
+  font-size: var(--t-md);
+}
+#sfRoot .sfmenu {
+  display: flex;
+  flex-direction: column;
+}
+#sfRoot .sfmh {
+  padding: 8px 4px 2px;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sub);
+}
+#sfRoot .sfmitem {
+  border-radius: 0;
+  padding: 8px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-md);
+  text-align: left;
+  cursor: pointer;
+}
+#sfRoot .sfmitem:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+/* nothing to act on (Reset progress with nothing ticked): greyed, and a tap does nothing */
+#sfRoot .sfmitem[aria-disabled='true'] {
+  color: var(--sub);
+  opacity: 0.55;
+  cursor: default;
+}
+#sfRoot .sfmitem[aria-disabled='true']:active {
+  background: none;
+}
+/* a question asked in a sheet (Reset progress): a line of text over Cancel and the action */
+#sfRoot .sfshtext {
+  margin: 4px 0 6px;
+  color: var(--sub);
+  font-size: var(--t-md);
+  line-height: 1.45;
+}
+/* #1 side by side: the picture fills the left column; the header, tabs, controls and bar are on the right */
+@media (min-width: 900px), (orientation: landscape) and (min-width: 640px) {
+  .wrap.sfmode {
+    max-width: 1120px;
+  }
+  #sfRoot #sfWork {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 1.05fr);
+    column-gap: 14px;
+    align-items: start;
+    padding: 10px 10px 0;
+  }
+  #sfRoot #sfHead {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+  #sfRoot #sfView {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    margin: 0;
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    border-radius: var(--r-md);
+  }
+  #sfRoot #sfCtl {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+  }
+  #sfRoot .sftabs {
+    top: env(safe-area-inset-top, 0px);
+  }
+  /* the bar's background runs from the picture column's edge to the card's, so the list never shows beside it */
+  #sfRoot #sfWork > .sfbar {
+    grid-column: 2;
+    grid-row: 3;
+    margin: 16px -10px -1px -14px;
+    padding-left: 14px;
+    border-radius: 0 0 var(--r-lg) 0;
+  }
+}
+/* tools stacked beside the picture when its column has room, else the usual row under it */
+#sfRoot:not(.sffull):not(.sffoc):not(.sfrev) .sftoolsv #sfView {
+  flex-direction: row;
+}
+#sfRoot:not(.sffull):not(.sffoc):not(.sfrev) .sftoolsv .sfpicbox {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#sfRoot:not(.sffull):not(.sffoc):not(.sfrev) .sftoolsv .sfpic {
+  align-items: center;
+}
+#sfRoot:not(.sffull):not(.sffoc):not(.sfrev) .sftoolsv .sftools {
+  flex-direction: column;
+  align-items: center;
+  height: auto;
+  width: auto;
+  min-width: 52px;
+  max-width: 84px;
+  padding: 8px 6px;
+  gap: 8px;
+  border-top: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+}
+#sfRoot:not(.sffull):not(.sffoc):not(.sfrev) .sftoolsv .sftools .sfzundo {
+  width: 40px;
+  padding: 0;
+}
+#sfRoot:not(.sffull):not(.sffoc):not(.sfrev) .sftoolsv .sftools .sfzul {
+  display: none;
+}
+#sfRoot:not(.sffull):not(.sffoc):not(.sfrev) .sftoolsv .sfstat {
+  order: 9;
+  flex: none;
+  margin-top: auto;
+  padding: 0;
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  font-size: var(--t-xs);
+  line-height: 1.3;
+  overflow: hidden;
+}
+/* one part only in the narrow column, its number over its words */
+#sfRoot:not(.sffull):not(.sffoc):not(.sfrev) .sftoolsv .sfstat .sfsp2 {
+  display: none;
+}
+#sfRoot:not(.sffull):not(.sffoc):not(.sfrev) .sftoolsv .sfstat .sfsp1 > b:first-child {
+  display: block;
+}
+#sfRoot:not(.sffull):not(.sffoc):not(.sfrev) .sftoolsv .sfprog {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: auto;
+  width: 3px;
+  height: auto;
+}
+#sfRoot:not(.sffull):not(.sffoc):not(.sfrev) .sftoolsv .sfprog i {
+  width: 100% !important;
+  height: var(--prog, 0%);
+}
+/* ◐ Values: the picture in greys (its canvas only: the sun, tips and outlines keep their colours) */
+#sfRoot.sfvals #sfCanvas {
+  filter: grayscale(1);
+}

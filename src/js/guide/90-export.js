@@ -1,0 +1,1996 @@
+function buildExportCanvas(outline) {
+  const assign = assignData.assign,
+    map = {};
+  assignData.order.forEach(function (l) {
+    const m = assign[l],
+      k = m.mkey;
+    if (!map[k]) map[k] = { m: m, n: 0 };
+    map[k].n++;
+  });
+  const uniq = Object.keys(map)
+      .map(function (k) {
+        return map[k];
+      })
+      .sort(function (a, b) {
+        return b.n - a.n;
+      }),
+    one = brandLine(
+      uniq.map(function (u) {
+        return u.m.brand;
+      }),
+    );
+  const cols = 3,
+    per = Math.ceil(uniq.length / cols),
+    rh = Math.max(28, W / 40),
+    legTop = Math.max(74, W / 14),
+    legH = per * rh + legTop + 16,
+    colw = (W - 40) / cols;
+  const ex = document.createElement('canvas');
+  ex.width = W;
+  ex.height = H + legH;
+  const g = ex.getContext('2d');
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, ex.width, ex.height);
+  const im = g.createImageData(W, H),
+    d = im.data,
+    n = W * H,
+    tx = texAmt > 0,
+    sh = outline ? null : shadePrep(false),
+    sc = [0, 0, 0],
+    bc = {};
+  if (tx && !edgeDist) buildTexFields();
+  for (let p = 0, j = 0; p < n; p++, j += 4) {
+    const l = labels[p];
+    if (l === -1) {
+      d[j] = LINE[0];
+      d[j + 1] = LINE[1];
+      d[j + 2] = LINE[2];
+    } else if (assign[l] && !outline) {
+      const c = shadeRGB(sh, p, l, bc[l] || (bc[l] = hexRgb(assign[l].hex)), sc);
+      if (tx) {
+        const e = edgeDist[p],
+          ef = e >= 9 ? 1 : e * 0.1111,
+          mul = (1 - texAmt * 0.3 * (1 - ef)) * (1 + texAmt * 0.1 * ((texField[p] - 128) * 0.0078125));
+        d[j] = c[0] * mul;
+        d[j + 1] = c[1] * mul;
+        d[j + 2] = c[2] * mul;
+      } else {
+        d[j] = c[0];
+        d[j + 1] = c[1];
+        d[j + 2] = c[2];
+      }
+    } else {
+      d[j] = PAPER[0];
+      d[j + 1] = PAPER[1];
+      d[j + 2] = PAPER[2];
+    }
+    d[j + 3] = 255;
+  }
+  g.putImageData(im, 0, 0);
+  for (const l in assign) {
+    const m = assign[l],
+      dark = darkText(m.hex);
+    drawCode(g, l, m, {
+      bt: guideMixed(),
+      base: 10,
+      min: 9,
+      w: 700,
+      swk: 0.3,
+      stroke: outline || dark ? '#fff' : '#000',
+      fill: outline || dark ? '#111' : '#fff',
+    });
+  }
+  g.textAlign = 'left';
+  g.textBaseline = 'middle';
+  g.fillStyle = '#111';
+  g.font = '700 ' + Math.max(20, W / 40) + 'px sans-serif';
+  {
+    const suf = ' \u00b7 ' + uniq.length + ' markers';
+    g.fillText(
+      pdfTrunc(g, curName || 'Colour guide', Math.max(40, W - 40 - g.measureText(suf).width)) + suf,
+      20,
+      H + Math.max(28, W / 34),
+    );
+  }
+  g.font = '600 ' + Math.max(13, W / 70) + 'px sans-serif';
+  g.fillStyle = '#777';
+  g.fillText(one || brandKey(), 20, H + Math.max(28, W / 34) + Math.max(18, W / 46));
+  g.fillStyle = '#111';
+  const fs2 = Math.max(14, W / 58),
+    sw = Math.max(16, W / 50);
+  g.font = '500 ' + fs2 + 'px sans-serif';
+  for (let k = 0; k < uniq.length; k++) {
+    const mk = uniq[k].m,
+      cc = k % cols,
+      rr = (k / cols) | 0,
+      x = 20 + cc * colw,
+      y = H + legTop + rr * rh + rh / 2,
+      rgb = hexRgb(mk.hex);
+    g.fillStyle = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+    g.fillRect(x, y - sw / 2, sw, sw);
+    g.strokeStyle = '#bbb';
+    g.strokeRect(x, y - sw / 2, sw, sw);
+    g.fillStyle = '#111';
+    g.fillText(
+      trunc(
+        g,
+        (one ? '' : bTag(mk.brand) + '  ') + mk.code + (mk.name ? '   ' + mk.name : ''),
+        colw - sw - 16,
+      ),
+      x + sw + 8,
+      y,
+    );
+  }
+  return ex;
+}
+async function _flate(u8) {
+  const cs = new CompressionStream('deflate');
+  const w = cs.writable.getWriter();
+  w.write(u8);
+  w.close();
+  const ab = await new Response(cs.readable).arrayBuffer();
+  return new Uint8Array(ab);
+}
+function _rgbOf(cv) {
+  const g = cv.getContext('2d'),
+    d = g.getImageData(0, 0, cv.width, cv.height).data,
+    n = cv.width * cv.height,
+    o = new Uint8Array(n * 3);
+  for (let i = 0, j = 0; i < n; i++) {
+    o[j++] = d[i * 4];
+    o[j++] = d[i * 4 + 1];
+    o[j++] = d[i * 4 + 2];
+  }
+  return o;
+}
+// one page per canvas; a page may also be a function that draws its canvas when its turn comes (so a long PDF
+// holds one page in memory at a time)
+async function canvasesToPDF(cvs, PW, PH) {
+  PW = PW || 612;
+  PH = PH || 792;
+  const M = 0,
+    enc = new TextEncoder(),
+    chunks = [];
+  let len = 0;
+  const push = (b) => {
+    const u = typeof b === 'string' ? enc.encode(b) : b;
+    chunks.push(u);
+    len += u.length;
+  };
+  const off = [],
+    so = () => off.push(len);
+  push('%PDF-1.4\n%\u00e2\u00e3\u00cf\u00d3\n');
+  const nP = cvs.length,
+    imgNo = (i) => 3 + i * 3,
+    cNo = (i) => 4 + i * 3,
+    pNo = (i) => 5 + i * 3;
+  so();
+  push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+  const kids = cvs.map((_, i) => pNo(i) + ' 0 R').join(' ');
+  so();
+  push('2 0 obj\n<< /Type /Pages /Kids [' + kids + '] /Count ' + nP + ' >>\nendobj\n');
+  for (let i = 0; i < nP; i++) {
+    const cv = typeof cvs[i] === 'function' ? cvs[i]() : cvs[i],
+      w = cv.width,
+      h = cv.height,
+      comp = await _flate(_rgbOf(cv));
+    freeCanvas(cv);
+    so();
+    push(
+      imgNo(i) +
+        ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' +
+        w +
+        ' /Height ' +
+        h +
+        ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length ' +
+        comp.length +
+        ' >>\nstream\n',
+    );
+    push(comp);
+    push('\nendstream\nendobj\n');
+    const aw = PW - 2 * M,
+      ah = PH - 2 * M,
+      a = w / h;
+    let dw = aw,
+      dh = dw / a;
+    if (dh > ah) {
+      dh = ah;
+      dw = dh * a;
+    }
+    const tx = (PW - dw) / 2,
+      ty = (PH - dh) / 2,
+      cs2 =
+        'q ' +
+        dw.toFixed(2) +
+        ' 0 0 ' +
+        dh.toFixed(2) +
+        ' ' +
+        tx.toFixed(2) +
+        ' ' +
+        ty.toFixed(2) +
+        ' cm /Im' +
+        i +
+        ' Do Q\n',
+      csb = enc.encode(cs2);
+    so();
+    push(cNo(i) + ' 0 obj\n<< /Length ' + csb.length + ' >>\nstream\n');
+    push(csb);
+    push('endstream\nendobj\n');
+    so();
+    push(
+      pNo(i) +
+        ' 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' +
+        PW +
+        ' ' +
+        PH +
+        '] /Resources << /XObject << /Im' +
+        i +
+        ' ' +
+        imgNo(i) +
+        ' 0 R >> >> /Contents ' +
+        cNo(i) +
+        ' 0 R >>\nendobj\n',
+    );
+  }
+  const xo = len,
+    nObj = off.length + 1;
+  push('xref\n0 ' + nObj + '\n0000000000 65535 f \n');
+  for (const o of off) push(String(o).padStart(10, '0') + ' 00000 n \n');
+  push('trailer\n<< /Size ' + nObj + ' /Root 1 0 R >>\nstartxref\n' + xo + '\n%%EOF');
+  const out = new Uint8Array(len);
+  let p = 0;
+  for (const c of chunks) {
+    out.set(c, p);
+    p += c.length;
+  }
+  return out;
+}
+const PAPERS = { letter: [612, 792], a4: [595.28, 841.89], a5: [419.53, 595.28], half: [396, 612] },
+  PDPI = 200;
+// Print options (Share › Print…), remembered on this phone. Alcohol markers are see-through, so bold black codes show
+// under pale colours: the colouring page gets small light-grey labels unless "Darker labels" is ticked, or numbers
+// (one per marker, listed in the key), or none at all. "Key + reference" leaves out the colouring page for people
+// colouring their original book page. The paper defaults to Letter where Letter is the everyday size, else A4.
+let pdfLabels = 'codes',
+  pdfDark = false,
+  pdfWhat = 'page',
+  pdfS = 1;
+const LETTER_LANDS = ['US', 'CA', 'MX', 'PH', 'CL', 'CO', 'VE', 'PR'];
+function paperDefault() {
+  let ls = [];
+  try {
+    ls = [].concat(navigator.languages || [], navigator.language || []);
+  } catch (_) {}
+  try {
+    ls.push(Intl.DateTimeFormat().resolvedOptions().locale);
+  } catch (_) {}
+  for (let i = 0; i < ls.length; i++) {
+    const r = /^[a-z]{2,3}(?:-[a-z]{4})?-([a-z]{2})(?:-|$)/i.exec(String(ls[i] || ''));
+    if (r) return LETTER_LANDS.indexOf(r[1].toUpperCase()) >= 0 ? 'letter' : 'a4';
+  }
+  return 'a4';
+}
+try {
+  const p = localStorage.getItem('ms-paper'),
+    l = localStorage.getItem('ms-pdf-labels');
+  paper = Object.prototype.hasOwnProperty.call(PAPERS, p) ? p : paperDefault();
+  if (l === 'numbers' || l === 'none') pdfLabels = l;
+  pdfDark = localStorage.getItem('ms-pdf-dark') === '1';
+  pdfWhat = localStorage.getItem('ms-pdf-what') === 'ref' ? 'ref' : 'page';
+} catch (_) {
+  paper = paperDefault();
+}
+const PRINT_OPTS = [
+  [
+    'pwhat',
+    'Pages',
+    'What to print',
+    [
+      ['page', 'Page + key'],
+      ['ref', 'Key + reference'],
+      ['strip', 'Test strip'],
+    ],
+  ],
+  [
+    'plabels',
+    'Labels',
+    'Labels on the colouring page',
+    [
+      ['codes', 'Codes'],
+      ['numbers', 'Numbers'],
+      ['none', 'None'],
+    ],
+  ],
+  [
+    'paper',
+    'Paper',
+    'Paper size',
+    [
+      ['letter', 'Letter'],
+      ['a4', 'A4'],
+      ['a5', 'A5'],
+      ['half', 'Half Letter'],
+    ],
+  ],
+];
+function printOptVal(k) {
+  return k === 'pwhat' ? pdfWhat : k === 'plabels' ? pdfLabels : paper;
+}
+// The Print sheet (Share › Print…), laid out like the swatch chart's: each option over its row of choices and the
+// checkboxes, then a one-line summary that follows the choices over Cancel / Download PDF ("Save PDF" where the
+// browser can share files, as on the swatch chart: swGoLabel() in swatch.js)
+function openPrint() {
+  if (!assignData) return;
+  let b = '<div class="swopts">';
+  PRINT_OPTS.forEach(function (o) {
+    b +=
+      '<div class="swrow"><span class="swlbl" aria-hidden="true">' +
+      o[1] +
+      '</span><div class="segs wide' +
+      (o[0] === 'paper' ? ' sfpaper' : '') +
+      '" role="group" aria-label="' +
+      o[2] +
+      '" style="grid-template-columns:repeat(' +
+      o[3].length +
+      ',auto)">';
+    o[3].forEach(function (v) {
+      const on = printOptVal(o[0]) === v[0];
+      b +=
+        '<button type="button" class="' +
+        (on ? 'on' : '') +
+        '" data-' +
+        o[0] +
+        '="' +
+        v[0] +
+        '" aria-pressed="' +
+        on +
+        '">' +
+        v[1] +
+        '</button>';
+    });
+    b += '</div></div>';
+  });
+  b +=
+    '</div><div class="sfprchk"><label class="sfchk"><input type="checkbox" id="sfPdfDark"' +
+    (pdfDark ? ' checked' : '') +
+    '> Darker labels</label>' +
+    (shadeUse().on
+      ? '<div class="sfshhint" id="sfPrShNote">' + printShNote() + '</div>'
+      : '<label class="sfchk"><input type="checkbox" id="sfPdfBlend"' +
+        (pdfBlend ? ' checked' : '') +
+        '> Include blend companions (a lighter and darker shade for each colour)</label>') +
+    '</div>';
+  const el = openSheet({
+    title: 'Print',
+    body: b,
+    foot:
+      '<div id="sfPrSum" class="swsum" role="status" aria-live="polite"></div><button type="button" class="sfghost" data-pr="cancel">Cancel</button><button type="button" id="sfPDF" class="sfprimary">' +
+      swGoLabel() +
+      '</button>',
+  });
+  el.classList.add('sfprsh');
+  el.addEventListener('click', function (e) {
+    const x = e.target.closest('[data-pwhat],[data-plabels],[data-paper]');
+    if (x) {
+      const k = x.dataset.pwhat ? 'pwhat' : x.dataset.plabels ? 'plabels' : 'paper';
+      printOptSet(k, x.dataset[k]);
+      return;
+    }
+    if (e.target.closest('[data-pr="cancel"]')) closeSheet();
+    else if (e.target.closest('#sfPDF')) exportPDF();
+  });
+  el.addEventListener('change', function (e) {
+    if (e.target.id === 'sfPdfDark') printOptSet('dark', e.target.checked);
+    else if (e.target.id === 'sfPdfBlend') {
+      pdfBlend = e.target.checked;
+      try {
+        localStorage.setItem('ms-pdf-blend', pdfBlend ? '1' : '0');
+      } catch (_) {}
+      printOptsSync();
+    }
+  });
+  printOptsSync();
+}
+// "2 pages · Letter · Numbers"
+function printSummary() {
+  const n = assignData ? buildPDFPages(true) : 0,
+    pp = PRINT_OPTS[2][3].filter(function (o) {
+      return o[0] === paper;
+    })[0];
+  return (
+    '<b>' +
+    n +
+    ' page' +
+    (n === 1 ? '' : 's') +
+    '</b> · ' +
+    (pp ? pp[1] : paper) +
+    ' · ' +
+    (pdfWhat === 'ref'
+      ? 'Key + reference'
+      : pdfWhat === 'strip'
+        ? 'Test strip'
+        : { codes: 'Codes', numbers: 'Numbers', none: 'No labels' }[pdfLabels])
+  );
+}
+// (the test strip has no picture: its rows are the tones to try)
+function printShNote() {
+  return pdfWhat === 'strip'
+    ? 'Shading is on, so each colour’s row has a box for its tones, as the guide lays them.'
+    : 'Shading is on, so the PDF shows where each tone goes and the key lists each colour’s tones.';
+}
+function printOptsSync() {
+  const sc = document.getElementById('sfSheet');
+  if (!sc || !sc.classList.contains('sfprsh')) return;
+  sc.querySelectorAll('[data-pwhat],[data-plabels],[data-paper]').forEach(function (x) {
+    const k = x.dataset.pwhat ? 'pwhat' : x.dataset.plabels ? 'plabels' : 'paper',
+      on = printOptVal(k) === x.dataset[k];
+    x.classList.toggle('on', on);
+    x.setAttribute('aria-pressed', on ? 'true' : 'false');
+    if (k === 'plabels') x.disabled = pdfWhat !== 'page';
+  });
+  const dk = document.getElementById('sfPdfDark');
+  if (dk) {
+    dk.disabled = pdfWhat !== 'page' || pdfLabels === 'none';
+    dk.parentNode.classList.toggle('off', dk.disabled);
+  }
+  const shn = document.getElementById('sfPrShNote');
+  if (shn) shn.textContent = printShNote();
+  const sm = document.getElementById('sfPrSum');
+  if (sm) {
+    sm.classList.remove('empty');
+    sm.innerHTML = printSummary();
+  }
+}
+function printOptSet(k, v) {
+  let key, val;
+  if (k === 'pwhat') {
+    // (the test strip is printed once in a while, so it isn't stored: the app opens next time on the choice before it)
+    pdfWhat = v === 'ref' || v === 'strip' ? v : 'page';
+    if (pdfWhat !== 'strip') {
+      key = 'ms-pdf-what';
+      val = pdfWhat;
+    }
+  } else if (k === 'plabels') {
+    pdfLabels = v === 'numbers' || v === 'none' ? v : 'codes';
+    key = 'ms-pdf-labels';
+    val = pdfLabels;
+  } else if (k === 'dark') {
+    pdfDark = !!v;
+    key = 'ms-pdf-dark';
+    val = pdfDark ? '1' : '0';
+  } else {
+    if (Object.prototype.hasOwnProperty.call(PAPERS, v)) paper = v;
+    key = 'ms-paper';
+    val = paper;
+  }
+  if (key)
+    try {
+      localStorage.setItem(key, val);
+    } catch (_) {}
+  printOptsSync();
+}
+// PDF layout is measured in points at the size of a Letter or A4 page; on the pocket sizes (A5, Half Letter)
+// everything is drawn a little smaller (pdfS) with narrower margins, so the key still fits its columns
+function PX(pt) {
+  return Math.round(((pt * pdfS) / 72) * PDPI);
+}
+// (a dry run, which only counts the pages, lays them out on 1×1 canvases)
+let _pdfDry = false;
+function pdfPage() {
+  const P = PAPERS[paper] || PAPERS.letter,
+    c = document.createElement('canvas'),
+    w = Math.round((P[0] / 72) * PDPI),
+    h = Math.round((P[1] / 72) * PDPI);
+  c.width = _pdfDry ? 1 : w;
+  c.height = _pdfDry ? 1 : h;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, c.width, c.height);
+  g.textBaseline = 'alphabetic';
+  return { c: c, g: g, w: w, h: h, m: PX(pdfS < 1 ? 30 : 36) };
+}
+function pdfArt(coloured, sh, lines) {
+  const a = document.createElement('canvas');
+  a.width = W;
+  a.height = H;
+  const g = a.getContext('2d'),
+    im = g.createImageData(W, H),
+    d = im.data,
+    asg = assignData.assign,
+    K = comps.length,
+    C = new Uint8Array(K * 3).fill(255),
+    V = sh ? sh.V : null,
+    ti = sh ? sh.ti : null,
+    mix = sh ? sh.mix : null;
+  if (coloured)
+    for (const l in asg) {
+      const c = hexRgb(asg[l].hex);
+      C[l * 3] = c[0];
+      C[l * 3 + 1] = c[1];
+      C[l * 3 + 2] = c[2];
+    }
+  for (let q = 0, j = 0, n = W * H; q < n; q++, j += 4) {
+    const l = labels[q];
+    if (l === -1) {
+      d[j] = LINE[0];
+      d[j + 1] = LINE[1];
+      d[j + 2] = LINE[2];
+    } else if (l < 0) {
+      d[j] = d[j + 1] = d[j + 2] = 255;
+    } else if (coloured && V && V[q] && ti[l]) {
+      const k = ti[l] * 768 + V[q] * 3;
+      d[j] = mix[k];
+      d[j + 1] = mix[k + 1];
+      d[j + 2] = mix[k + 2];
+    } else {
+      const k = l * 3;
+      d[j] = C[k];
+      d[j + 1] = C[k + 1];
+      d[j + 2] = C[k + 2];
+    }
+    d[j + 3] = 255;
+  }
+  if (!coloured && sh && lines)
+    shadeLinesDraw(sh, null, { buf: d, t: lines.t, dash: lines.dash, ink: [150, 150, 150] });
+  g.putImageData(im, 0, 0);
+  return a;
+}
+// ---- zones on the key's picture, when colours' tones differ by zone (the key's "in Bell" lines): each zone that has
+// such a line outlined in its own colour, with its name, so the lines can be followed on paper (Main is the rest)
+const PDF_ZCOL = ['#d4145a', '#1f6fd1', '#128a43', '#b86b00', '#7b3fc4', '#0f8a8a', '#c2410c', '#4b5563'];
+function pdfZoneCol(id) {
+  const i = zoneIds().indexOf(id);
+  return i > 0 ? PDF_ZCOL[(i - 1) % PDF_ZCOL.length] : '#666';
+}
+// a square max filter of radius r over a W x H mask (two running passes)
+function pdfDilate(M, r) {
+  const T = new Uint8Array(W * H),
+    O = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) {
+    const ro = y * W;
+    let c = 0;
+    for (let x = -r; x < W; x++) {
+      if (x + r < W) c += M[ro + x + r];
+      if (x - r - 1 >= 0) c -= M[ro + x - r - 1];
+      if (x >= 0) T[ro + x] = c > 0 ? 1 : 0;
+    }
+  }
+  for (let x = 0; x < W; x++) {
+    let c = 0;
+    for (let y = -r; y < H; y++) {
+      if (y + r < H) c += T[(y + r) * W + x];
+      if (y - r - 1 >= 0) c -= T[(y - r - 1) * W + x];
+      if (y >= 0) O[y * W + x] = c > 0 ? 1 : 0;
+    }
+  }
+  return O;
+}
+function pdfZoneOverlay(g, x0, y0, f, ids) {
+  const n = W * H,
+    a = document.createElement('canvas');
+  a.width = W;
+  a.height = H;
+  const ga = a.getContext('2d'),
+    im = ga.createImageData(W, H),
+    d = im.data,
+    // (across the lines between a zone's own sections, and about 2 page px thick on the picture as printed)
+    r1 = Math.max(2, Math.round(Math.max(W, H) / 160)),
+    t = Math.max(1, Math.ceil(1.6 / f.k)),
+    names = [];
+  ids.forEach(function (id) {
+    const M = new Uint8Array(n);
+    for (let q = 0; q < n; q++) {
+      const l = labels[q];
+      if (l > 0 && zoneOf(l) === id) M[q] = 1;
+    }
+    // closed over the lines inside it, then its edge
+    const D = pdfDilate(M, r1),
+      inv = new Uint8Array(n);
+    for (let q = 0; q < n; q++) inv[q] = D[q] ? 0 : 1;
+    const E = pdfDilate(inv, r1);
+    for (let q = 0; q < n; q++) E[q] = E[q] ? 0 : 1;
+    // (holes in it, where lines meet more thickly than that, filled: only its outer edge is drawn)
+    const out0 = new Uint8Array(n),
+      st = [];
+    for (let x = 0; x < W; x++) st.push(x, (H - 1) * W + x);
+    for (let y = 0; y < H; y++) st.push(y * W, y * W + W - 1);
+    while (st.length) {
+      const q = st.pop();
+      if (out0[q] || E[q]) continue;
+      out0[q] = 1;
+      const x = q % W;
+      if (x > 0) st.push(q - 1);
+      if (x < W - 1) st.push(q + 1);
+      if (q >= W) st.push(q - W);
+      if (q < n - W) st.push(q + W);
+    }
+    for (let q = 0; q < n; q++) {
+      E[q] = out0[q] ? 0 : 1;
+      inv[q] = out0[q];
+    }
+    const out = pdfDilate(inv, t),
+      c = hexRgb(pdfZoneCol(id));
+    for (let q = 0, j = 0; q < n; q++, j += 4)
+      if (E[q] && out[q]) {
+        d[j] = c[0];
+        d[j + 1] = c[1];
+        d[j + 2] = c[2];
+        d[j + 3] = 255;
+      }
+    // its name on its biggest section
+    let best = -1,
+      ba = 0;
+    zoneSecs(id).forEach(function (l) {
+      if (comps[l] && comps[l].area > ba) {
+        ba = comps[l].area;
+        best = l;
+      }
+    });
+    if (best > 0) names.push({ id: id, p: labelPos(best) });
+  });
+  ga.putImageData(im, 0, 0);
+  g.imageSmoothingEnabled = true;
+  g.drawImage(a, x0, y0, f.w, f.h);
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.font = '700 ' + PX(8) + 'px ' + LFONT;
+  g.lineJoin = 'round';
+  names.forEach(function (o) {
+    const s = zoneName(o.id),
+      hw = g.measureText(s).width / 2 + PX(2),
+      // (kept on the picture)
+      tx = Math.max(x0 + hw, Math.min(x0 + f.w - hw, x0 + o.p.x * f.k)),
+      ty = Math.max(y0 + PX(6), Math.min(y0 + f.h - PX(6), y0 + o.p.y * f.k));
+    g.lineWidth = PX(3);
+    g.strokeStyle = '#fff';
+    g.strokeText(s, tx, ty);
+    g.fillStyle = pdfZoneCol(o.id);
+    g.fillText(s, tx, ty);
+  });
+  g.textAlign = 'left';
+  g.textBaseline = 'alphabetic';
+}
+function pdfFit(bw, bh) {
+  const k = Math.min(bw / W, bh / H);
+  return { k: k, w: W * k, h: H * k };
+}
+function pdfTrunc(g, t, max) {
+  if (g.measureText(t).width <= max) return t;
+  while (t.length > 1 && g.measureText(t + '…').width > max) t = t.slice(0, -1);
+  return t + '…';
+}
+// join parts with " · " into at most n lines no wider than max (the last one cut short if need be)
+function pdfLines(g, parts, max, n) {
+  const out = [];
+  let cur = '';
+  parts.forEach(function (p) {
+    const t = cur ? cur + ' · ' + p : p;
+    if (cur && g.measureText(t).width > max && out.length < n - 1) {
+      out.push(cur);
+      cur = p;
+    } else cur = t;
+  });
+  if (cur) out.push(cur);
+  return out.map(function (t) {
+    return pdfTrunc(g, t, max);
+  });
+}
+function pdfSwatch(g, x, y, sz, hex, owned) {
+  g.fillStyle = hex;
+  g.fillRect(x, y, sz, sz);
+  g.lineWidth = PX(0.6);
+  if (owned === false) {
+    g.setLineDash([PX(1.6), PX(1.2)]);
+    g.strokeStyle = '#c98a1c';
+  } else g.strokeStyle = 'rgba(0,0,0,.28)';
+  g.strokeRect(x, y, sz, sz);
+  g.setLineDash([]);
+}
+// one row per marker: its sections (secs), and with shading its tones (tones: toneRows, the first for the row, the
+// others, when zones shade it differently, as lines under it)
+function pdfKeyRows() {
+  const map = {};
+  assignData.order.forEach(function (l) {
+    const m = assignData.assign[l];
+    if (!map[m.mkey]) map[m.mkey] = { m: m, n: 0, secs: [] };
+    map[m.mkey].n++;
+    map[m.mkey].secs.push(l);
+  });
+  const rows = Object.keys(map).map(function (k) {
+    const e = map[k],
+      ix = keyIdx(k);
+    e.fam = ix != null && COLORS[ix] ? COLORS[ix].fam : 'Other';
+    e.L = e.m.lab && e.m.lab.length ? e.m.lab[0] : hexToLab(e.m.hex)[0];
+    return e;
+  });
+  const fo = (f) => {
+    const i = FAM_ORDER.indexOf(f);
+    return i < 0 ? 99 : i;
+  };
+  rows.sort(function (a, b) {
+    return fo(a.fam) - fo(b.fam) || a.fam.localeCompare(b.fam) || b.L - a.L;
+  });
+  return rows;
+}
+// a number label on the colouring page, sized the way drawCode sizes codes; returns the box it covers
+function pdfNumLabel(g, l, t, o) {
+  const c = comps[l],
+    p = labelPos(l);
+  let fs = Math.max(o.base, Math.min(Math.sqrt(c.area) * 0.5, o.max));
+  g.font = o.w + ' ' + fs + 'px ' + LFONT;
+  let tw = g.measureText(t).width;
+  const sc = Math.min(1, (p.aw * 0.94) / tw, (p.r * 2.4) / fs);
+  if (sc < 1) {
+    fs = Math.max(o.min, Math.floor(fs * sc * 2) / 2);
+    g.font = o.w + ' ' + fs + 'px ' + LFONT;
+    tw = g.measureText(t).width;
+  }
+  const lw = Math.max(1, fs * o.swk);
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.lineJoin = 'round';
+  g.lineWidth = lw;
+  g.strokeStyle = o.stroke;
+  g.fillStyle = o.fill;
+  g.strokeText(t, p.x, p.y);
+  g.fillText(t, p.x, p.y);
+  return [p.x - tw / 2 - lw - 2, p.y - fs * 0.9 - lw - 2, p.x + tw / 2 + lw + 2, p.y + fs * 0.75 + lw + 2];
+}
+// the PDF's pages as canvases; dry: just how many there will be (for the Print sheet's summary), from the same
+// layout without drawing the pictures
+function buildPDFPages(dry) {
+  _pdfDry = !!dry;
+  try {
+    if (pdfWhat === 'strip') return testStripPages(!!dry);
+    return _buildPDF(!!dry);
+  } finally {
+    _pdfDry = false;
+  }
+}
+function _buildPDF(dry) {
+  // (shading that leaves every section flat has nothing to show: no tone marks, how-to or tone columns)
+  const sh = shadeUse().on ? shadePrep(false) : null,
+    withShade = !!sh,
+    withBlend = !!pdfBlend || withShade,
+    asg = assignData.assign,
+    rows = pdfKeyRows(),
+    nm = curName || 'Colour guide',
+    pages = [];
+  pdfS = paper === 'a5' || paper === 'half' ? 0.84 : 1;
+  // every brand printed (the key's markers and their lighter, darker and to-buy ones): one brand is named once in the
+  // headers and the letters left out; mixed brands keep a letter on each code, with the letter key
+  const _bs = {};
+  // (with shading, each marker's tones in each zone that shades it: toneRows)
+  // (a colour's tones in zone order, Main's first; zOut: the zones with a key line of their own, outlined on the
+  // key's picture)
+  const zOrd = zoneIds(),
+    zFirst = function (x) {
+      for (let i = 0; i < zOrd.length; i++) if (x.z[zOrd[i]]) return i;
+      return 99;
+    },
+    zOut = {};
+  if (withShade)
+    rows.forEach(function (r) {
+      r.tones = toneRows(r.secs).sort(function (a, b) {
+        return zFirst(a) - zFirst(b);
+      });
+      if (r.tones.length > 1)
+        r.tones.forEach(function (x) {
+          for (const id in x.z) if (+id) zOut[id] = 1;
+        });
+    });
+  const zIds = zOrd.filter(function (id) {
+    return zOut[id];
+  });
+  rows.forEach(function (r) {
+    _bs[r.m.brand] = 1;
+    if (withShade) {
+      r.tones.forEach(function (x) {
+        const t = x.t;
+        [t.light, t.dark, t.wantLight, t.wantDark].forEach(function (c) {
+          if (c) _bs[c.brand] = 1;
+        });
+      });
+    } else if (withBlend) {
+      const c = blendCompanions(r.m);
+      if (c.light) _bs[c.light.brand] = 1;
+      if (c.dark) _bs[c.dark.brand] = 1;
+    }
+  });
+  const oneB = Object.keys(_bs).length === 1 ? Object.keys(_bs)[0] : '',
+    tagOf = function (c) {
+      return oneB ? '' : bTag(c.brand) + ' ';
+    },
+    nMk = rows.length + ' ' + (oneB ? oneB + ' ' : '') + 'marker' + (rows.length === 1 ? '' : 's');
+  const ref = pdfWhat === 'ref',
+    lab = ref ? 'none' : pdfLabels,
+    nums = lab === 'numbers',
+    num = {};
+  rows.forEach(function (r, i) {
+    num[r.m.mkey] = i + 1;
+  });
+  const P0 = PAPERS[paper] || PAPERS.letter,
+    m = PX(pdfS < 1 ? 30 : 36),
+    bw = Math.round((P0[0] / 72) * PDPI) - 2 * m;
+  // ---- page 1: the colouring page (left out for "Key + reference")
+  if (!ref && dry) pages.push(null);
+  else if (!ref) {
+    const p1 = pdfPage(),
+      g1 = p1.g;
+    pages.push(p1);
+    g1.fillStyle = '#111';
+    g1.font = '700 ' + PX(15) + 'px ' + LFONT;
+    g1.fillText(pdfTrunc(g1, nm, bw), m, m + PX(12));
+    g1.fillStyle = '#777';
+    g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
+    const sub = pdfLines(
+      g1,
+      [assignData.N + ' sections', nMk].concat(
+        withShade ? ['shading: H highlight', 'B base', 'S shadow, see the key'] : [],
+        nums ? 'numbers: see the colour key on page 2' : 'colour key on page 2',
+        lab === 'codes' && !oneB && guideMixed() ? brandKey().replace(/\s{2,}/g, '  ') : [],
+      ),
+      bw,
+      2,
+    );
+    sub.forEach(function (t, i) {
+      g1.fillText(t, m, m + PX(26) + i * PX(11));
+    });
+    const top = m + PX(36) + (sub.length - 1) * PX(11),
+      bot = p1.h - m - PX(14),
+      f1 = pdfFit(bw, bot - top),
+      ox = m + (bw - f1.w) / 2;
+    g1.imageSmoothingEnabled = true;
+    g1.imageSmoothingQuality = 'high';
+    g1.drawImage(
+      pdfArt(false, sh, {
+        t: Math.max(1, Math.round(PX(0.8) / f1.k)),
+        dash: Math.max(3, Math.round(PX(4) / f1.k)),
+      }),
+      ox,
+      top,
+      f1.w,
+      f1.h,
+    );
+    // labels: small and light grey by default so they don't show through pale marker ink; outlines stay dark
+    const LS = pdfDark
+        ? { base: 8, min: 6, max: 15, w: 700, swk: 0.28, fill: '#111' }
+        : { base: 6.5, min: 5, max: 10, w: 600, swk: 0.22, fill: '#a0a0a0' },
+      lo = {
+        base: PX(LS.base) / f1.k,
+        min: PX(LS.min) / f1.k,
+        max: PX(LS.max) / f1.k,
+        w: LS.w,
+        swk: LS.swk,
+        stroke: '#fff',
+        fill: LS.fill,
+        bt: guideMixed(),
+        // the brand tags as light as the codes (outlined ones white inside)
+        tag: pdfDark ? null : { dark: LS.fill, pale: '#fff' },
+      };
+    g1.save();
+    g1.setTransform(f1.k, 0, 0, f1.k, ox, top);
+    const lbox = [];
+    if (lab !== 'none')
+      for (const l in asg) {
+        if (nums) lbox.push(pdfNumLabel(g1, l, String(num[asg[l].mkey] || ''), lo));
+        else {
+          drawCode(g1, l, asg[l], lo);
+          lbox.push(_lastBox);
+        }
+      }
+    if (withShade) {
+      const zr = PX(5.2) / f1.k;
+      g1.textAlign = 'center';
+      g1.textBaseline = 'middle';
+      g1.font = '700 ' + PX(6.5) / f1.k + 'px ' + LFONT;
+      const blocked = function (x, y) {
+        for (let i = 0; i < lbox.length; i++) {
+          const b = lbox[i],
+            cx = Math.max(b[0], Math.min(x, b[2])),
+            cy = Math.max(b[1], Math.min(y, b[3]));
+          if (Math.hypot(x - cx, y - cy) < zr * 1.25) return true;
+        }
+        return false;
+      };
+      const inZone = function (z, x, y) {
+        for (let a = 0; a < 8; a++) {
+          const t = (a * Math.PI) / 4,
+            px = Math.round(x + Math.cos(t) * zr * 1.1),
+            py = Math.round(y + Math.sin(t) * zr * 1.1);
+          if (px < 0 || py < 0 || px >= W || py >= H) return false;
+          const q = py * W + px;
+          if (labels[q] !== z.l || !sh.V[q] || shadeZone(sh.tone[z.l], (sh.V[q] - 1) / 254) !== z.zone)
+            return false;
+        }
+        return true;
+      };
+      shadeZoneLabelsAll(sh, zr * 1.3).forEach(function (z) {
+        if (blocked(z.x, z.y)) {
+          let ok = false;
+          for (let rr = zr * 2.2; rr <= Math.max(zr * 2.2, z.r * 1.6) && !ok; rr += zr * 1.1)
+            for (let a = 0; a < 12 && !ok; a++) {
+              const t = (a * Math.PI) / 6,
+                x = z.x + Math.cos(t) * rr,
+                y = z.y + Math.sin(t) * rr;
+              if (!blocked(x, y) && inZone(z, x, y)) {
+                z.x = x;
+                z.y = y;
+                ok = true;
+              }
+            }
+          if (!ok) return;
+        }
+        g1.beginPath();
+        g1.arc(z.x, z.y, zr, 0, 6.283);
+        g1.fillStyle = '#fff';
+        g1.fill();
+        g1.lineWidth = PX(0.6) / f1.k;
+        g1.strokeStyle = '#9a9a9a';
+        g1.stroke();
+        g1.fillStyle = '#555';
+        g1.fillText(String(z.tone), z.x, z.y + zr * 0.06);
+      });
+      g1.textAlign = 'left';
+      g1.textBaseline = 'alphabetic';
+      if (shadeUse().sun) {
+        const sr = PX(6) / f1.k,
+          sx = Math.max(sr * 2, Math.min(W - sr * 2, shadeSun.x * W)),
+          sy = Math.max(sr * 2, Math.min(H - sr * 2, shadeSun.y * H));
+        g1.lineCap = 'round';
+        g1.strokeStyle = '#fff';
+        g1.lineWidth = PX(3.2) / f1.k;
+        for (let a = 0; a < 8; a++) {
+          const t = (a * Math.PI) / 4;
+          g1.beginPath();
+          g1.moveTo(sx + Math.cos(t) * sr * 1.45, sy + Math.sin(t) * sr * 1.45);
+          g1.lineTo(sx + Math.cos(t) * sr * 2, sy + Math.sin(t) * sr * 2);
+          g1.stroke();
+        }
+        g1.beginPath();
+        g1.arc(sx, sy, sr + PX(1.2) / f1.k, 0, 6.283);
+        g1.fillStyle = '#fff';
+        g1.fill();
+        g1.strokeStyle = '#666';
+        g1.lineWidth = PX(1) / f1.k;
+        for (let a = 0; a < 8; a++) {
+          const t = (a * Math.PI) / 4;
+          g1.beginPath();
+          g1.moveTo(sx + Math.cos(t) * sr * 1.45, sy + Math.sin(t) * sr * 1.45);
+          g1.lineTo(sx + Math.cos(t) * sr * 2, sy + Math.sin(t) * sr * 2);
+          g1.stroke();
+        }
+        g1.beginPath();
+        g1.arc(sx, sy, sr, 0, 6.283);
+        g1.fillStyle = '#fff';
+        g1.fill();
+        g1.stroke();
+      }
+    }
+    g1.restore();
+  }
+  // ---- next: reference preview + colour key table (bigger preview for "Key + reference")
+  let pg = pdfPage(),
+    g = pg.g;
+  pages.push(pg);
+  g.fillStyle = '#111';
+  g.font = '700 ' + PX(15) + 'px ' + LFONT;
+  g.fillText(pdfTrunc(g, ref ? nm : 'Colour key', bw), m, m + PX(12));
+  g.fillStyle = '#777';
+  g.font = '500 ' + PX(8.5) + 'px ' + LFONT;
+  g.fillText(
+    pdfTrunc(
+      g,
+      (ref ? 'Colour key' : nm) +
+        ' · ' +
+        nMk +
+        ' · ' +
+        assignData.N +
+        ' sections' +
+        (assignData.paper
+          ? ' (' + Object.keys(assignData.paper).length + ' unlabelled ones stay white)'
+          : '') +
+        (oneB ? '' : ' · ' + brandKey().replace(/\s{2,}/g, '  ')),
+      bw,
+    ),
+    m,
+    m + PX(26),
+  );
+  const cols = withBlend ? 1 : 2,
+    gap = PX(20),
+    cw = (bw - gap * (cols - 1)) / cols;
+  let rowH = PX(19);
+  const famH = PX(20),
+    hdrH = PX(16),
+    sw = PX(11),
+    pageBot0 = pg.h - m - PX(18);
+  let pvTop = m + PX(38);
+  if (withShade) {
+    g.fillStyle = '#444';
+    g.font = '500 ' + PX(8) + 'px ' + LFONT;
+    // (tones that differ by zone: where the zones are)
+    const words = (
+      shadeHowto() +
+      (zIds.length
+        ? ' Where a colour’s tones differ by zone, the key has a line for each: the zones are outlined below, and Main is the rest.'
+        : '')
+    ).split(' ');
+    let line = '',
+      ly = m + PX(40);
+    words.forEach(function (w) {
+      const t = line ? line + ' ' + w : w;
+      if (line && g.measureText(t).width > bw) {
+        g.fillText(line, m, ly);
+        ly += PX(11);
+        line = w;
+      } else line = t;
+    });
+    if (line) {
+      g.fillText(line, m, ly);
+      ly += PX(11);
+    }
+    pvTop = ly + PX(4);
+  }
+  const _want = {};
+  if (withShade)
+    rows.forEach(function (r) {
+      r.tones.forEach(function (x) {
+        const t = x.t;
+        if (t.wantLight) _want[t.wantLight.mkey] = t.wantLight;
+        if (t.wantDark) _want[t.wantDark.mkey] = t.wantDark;
+      });
+    });
+  else if (withBlend)
+    rows.forEach(function (r) {
+      const c = blendCompanions(r.m);
+      if (c.light && !c.lightOwned) _want[c.light.mkey] = c.light;
+      if (c.dark && !c.darkOwned) _want[c.dark.mkey] = c.dark;
+    });
+  g.font = '600 ' + PX(8.5) + 'px ' + LFONT;
+  const _chipW = Object.keys(_want).map(function (k) {
+    const mm = _want[k];
+    return Math.min(
+      bw,
+      PX(14) + g.measureText(tagOf(mm) + mm.code + (mm.name ? ' ' + mm.name : '')).width + PX(14),
+    );
+  });
+  // dry run: how many pages does the key need if the table starts at `start`?
+  function simPages(start) {
+    let pages = 1,
+      col = 0,
+      colTop = start,
+      y = colTop + hdrH,
+      bot = pageBot0,
+      last = null;
+    const need = function (h) {
+      if (y + h <= bot) return;
+      if (col < cols - 1) {
+        col++;
+        y = colTop + hdrH;
+      } else {
+        pages++;
+        col = 0;
+        colTop = m + PX(24);
+        y = colTop + hdrH;
+      }
+    };
+    rows.forEach(function (r) {
+      if (r.fam !== last) {
+        need(famH + rowH);
+        y += famH;
+        last = r.fam;
+      }
+      need(rowH);
+      y += rowH;
+      // (a line for each zone that shades it differently)
+      for (let i = 0; withShade && r.tones.length > 1 && i < r.tones.length; i++) {
+        need(rowH);
+        y += rowH;
+      }
+    });
+    if (_chipW.length) {
+      col = 0;
+      y += PX(14);
+      need(PX(40), true);
+      y += PX(18);
+      let x = 0;
+      _chipW.forEach(function (w) {
+        if (x + w > bw) {
+          x = 0;
+          y += PX(16);
+        }
+        need(PX(16));
+        x += w;
+      });
+      y += PX(16);
+      need(0);
+    }
+    return pages;
+  }
+  // biggest preview that still lets the whole key fit on this page; otherwise a modest one
+  // (then a smaller preview, then slightly tighter rows, before letting the key run onto another sheet)
+  const avail = pg.h - 2 * m,
+    hiF = ref ? 0.8 : 0.5,
+    loH = Math.max(PX(60), ref ? Math.round(avail * 0.62) : 0);
+  let pvH = 0;
+  [PX(19), PX(16.5)].some(function (rh) {
+    rowH = rh;
+    for (let h = Math.round(avail * hiF); h >= loH; h -= PX(10)) {
+      const fz = pdfFit(bw, h);
+      if (simPages(pvTop + fz.h + PX(18)) === 1) {
+        pvH = h;
+        return true;
+      }
+    }
+    return false;
+  });
+  if (!pvH) {
+    rowH = PX(19);
+    pvH = ref ? Math.round(avail * 0.62) : PX(190);
+  }
+  // "Key + reference" with a tall picture: the reference fills the left column, the key starts in the right one
+  const side = ref && cols === 2 && pdfFit(cw, pageBot0 - pvTop).k > pdfFit(bw, pvH).k;
+  if (side) rowH = PX(19);
+  const f2 = side ? pdfFit(cw, pageBot0 - pvTop) : pdfFit(bw, pvH),
+    pvx = m + ((side ? cw : bw) - f2.w) / 2,
+    pvy = pvTop;
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  if (!dry) g.drawImage(pdfArt(true, sh), pvx, pvy, f2.w, f2.h);
+  if (!dry && zIds.length) pdfZoneOverlay(g, pvx, pvy, f2, zIds);
+  g.strokeStyle = 'rgba(0,0,0,.15)';
+  g.lineWidth = PX(0.6);
+  g.strokeRect(pvx, pvy, f2.w, f2.h);
+  // columns: [number] swatch, brand, code, name, sections, then (with blends or shading) the lighter and darker
+  // marker, each as wide as its longest entry so the name keeps what's left, even on a small page
+  const nw = nums ? PX(20) : 0,
+    X = { sw: nw, tag: nw + PX(16), code: nw + PX(28), name: nw + PX(80), cnt: cw };
+  // (t: the tones of a row or of one of its lines; none: a marker whose sections are all flat)
+  const cellsOf = function (mm, t) {
+    if (withShade) {
+      if (!t) return [{ t: '— flat, no tones' }, null];
+      return [
+        t.light
+          ? { c: t.light, o: true }
+          : t.paper
+            ? { t: '— leave the paper white' }
+            : shadeMode === 'full'
+              ? { t: '— base is the lightest' }
+              : null,
+        t.dark
+          ? { c: t.dark, o: true }
+          : t.noShadow
+            ? { t: 'no shadow (already darkest)' }
+            : { coat: mm, S: t.S },
+      ];
+    }
+    const c = blendCompanions(mm);
+    return [
+      c.light ? { c: c.light, o: c.lightOwned } : { dash: 1 },
+      c.dark ? { c: c.dark, o: c.darkOwned } : { dash: 1 },
+    ];
+  };
+  const buyW = function () {
+    g.font = '600 ' + PX(7) + 'px ' + LFONT;
+    return PX(3) + g.measureText('buy').width;
+  };
+  const cellW = function (e) {
+    if (!e) return 0;
+    if (e.t) {
+      g.font = '500 ' + PX(8) + 'px ' + LFONT;
+      return g.measureText(e.t).width;
+    }
+    if (e.dash) {
+      g.font = '500 ' + PX(8.5) + 'px ' + LFONT;
+      return g.measureText('—').width;
+    }
+    g.font = '700 ' + PX(8.5) + 'px ' + LFONT;
+    return (
+      PX(14) +
+      g.measureText(e.coat ? '2nd coat of ' + tagOf(e.coat) + e.coat.code : tagOf(e.c) + e.c.code).width +
+      (e.c && !e.o ? buyW() : 0)
+    );
+  };
+  const hdrLt = withShade ? 'H  HIGHLIGHT' : 'LIGHTER',
+    hdrDk = withShade ? 'S  SHADOW' : 'DARKER';
+  if (withBlend) {
+    g.font = '700 ' + PX(7) + 'px ' + LFONT;
+    let wl = g.measureText(hdrLt).width,
+      wd = g.measureText(hdrDk).width;
+    rows.forEach(function (r) {
+      // (tones that differ by zone: none on the colour's own line, a line for each zone under it)
+      const tl = r.tones || [];
+      r.cells = tl.length > 1 ? [null, null] : cellsOf(r.m, tl.length ? tl[0].t : null);
+      r.subs =
+        tl.length > 1
+          ? tl.map(function (x) {
+              return { x: x, cells: cellsOf(r.m, x.t) };
+            })
+          : [];
+      [r.cells]
+        .concat(
+          r.subs.map(function (q) {
+            return q.cells;
+          }),
+        )
+        .forEach(function (c) {
+          wl = Math.max(wl, cellW(c[0]));
+          wd = Math.max(wd, cellW(c[1]));
+        });
+    });
+    const cl = function (v, a, b) {
+        return Math.max(a, Math.min(b, v));
+      },
+      ltW = cl(wl + PX(12), PX(50), PX(112)),
+      dkW = cl(wd + PX(4), PX(50), PX(110));
+    X.dk = cw - dkW;
+    X.lt = X.dk - ltW;
+    X.cnt = X.lt - PX(18);
+    X.ltW = ltW - PX(8);
+    X.dkW = dkW;
+  }
+  let colTop = side ? pvTop : pvy + f2.h + PX(18),
+    y = colTop,
+    col = side ? 1 : 0,
+    pageBot = pageBot0;
+  const colX = () => m + col * (cw + gap);
+  function header() {
+    const x = colX();
+    g.fillStyle = '#8a8a8a';
+    g.font = '700 ' + PX(7) + 'px ' + LFONT;
+    g.textAlign = 'left';
+    if (nums) {
+      g.textAlign = 'right';
+      g.fillText('NO.', x + nw - PX(6), y + PX(10));
+      g.textAlign = 'left';
+    }
+    g.fillText(withShade ? 'B  MARKER' : 'MARKER', x + X.code - (withShade ? PX(9) : 0), y + PX(10));
+    g.textAlign = 'right';
+    g.fillText('SECTIONS', x + X.cnt, y + PX(10));
+    g.textAlign = 'left';
+    if (withBlend) {
+      if (!withShade || shadeMode === 'full') g.fillText(hdrLt, x + X.lt, y + PX(10));
+      g.fillText(hdrDk, x + X.dk, y + PX(10));
+    }
+    g.strokeStyle = '#ddd';
+    g.lineWidth = PX(0.5);
+    g.beginPath();
+    g.moveTo(x, y + hdrH - PX(2));
+    g.lineTo(x + cw, y + hdrH - PX(2));
+    g.stroke();
+    y += hdrH;
+  }
+  function newPage(noHdr) {
+    pg = pdfPage();
+    g = pg.g;
+    pages.push(pg);
+    g.fillStyle = '#111';
+    g.font = '700 ' + PX(12) + 'px ' + LFONT;
+    g.fillText('Colour key (continued)', m, m + PX(10));
+    colTop = m + PX(24);
+    y = colTop;
+    col = 0;
+    pageBot = pg.h - m - PX(18);
+    if (!noHdr) header();
+  }
+  function need(h, noHdr) {
+    if (y + h <= pageBot) return false;
+    if (col < cols - 1) {
+      col++;
+      y = colTop;
+      header();
+    } else newPage(noHdr);
+    return true;
+  }
+  header();
+  // one lighter/darker cell, cut to its column
+  function cell(e, x, w) {
+    if (!e) return;
+    const ty = y + PX(12.5);
+    if (e.t) {
+      g.fillStyle = '#999';
+      g.font = '500 ' + PX(8) + 'px ' + LFONT;
+      g.fillText(pdfTrunc(g, e.t, w), x, ty);
+      return;
+    }
+    if (e.dash) {
+      g.fillStyle = '#aaa';
+      g.font = '500 ' + PX(8.5) + 'px ' + LFONT;
+      g.fillText('—', x, ty);
+      return;
+    }
+    pdfSwatch(g, x, y + PX(4), PX(10), e.coat ? 'rgb(' + e.S.join(',') + ')' : e.c.hex, e.coat ? true : e.o);
+    if (e.coat) {
+      g.fillStyle = '#111';
+      g.font = '700 ' + PX(8.5) + 'px ' + LFONT;
+      g.fillText(pdfTrunc(g, '2nd coat of ' + tagOf(e.coat) + e.coat.code, w - PX(14)), x + PX(14), ty);
+      return;
+    }
+    const bu = e.o ? 0 : buyW();
+    g.fillStyle = '#111';
+    g.font = '700 ' + PX(8.5) + 'px ' + LFONT;
+    const s = pdfTrunc(g, tagOf(e.c) + e.c.code, w - PX(14) - bu),
+      tw = g.measureText(s).width;
+    g.fillText(s, x + PX(14), ty);
+    if (!e.o) {
+      g.fillStyle = '#b7791f';
+      g.font = '600 ' + PX(7) + 'px ' + LFONT;
+      g.fillText('buy', x + PX(17) + tw, ty);
+    }
+  }
+  const want = {};
+  let lastFam = null;
+  rows.forEach(function (r) {
+    if (r.fam !== lastFam) {
+      need(famH + rowH);
+      const x = colX();
+      g.fillStyle = '#555';
+      g.font = '700 ' + PX(8) + 'px ' + LFONT;
+      g.fillText(pdfTrunc(g, r.fam.toUpperCase(), cw), x, y + PX(14));
+      y += famH;
+      lastFam = r.fam;
+    }
+    need(rowH);
+    const x = colX(),
+      mm = r.m;
+    if (nums) {
+      g.fillStyle = '#111';
+      g.font = '700 ' + PX(9.5) + 'px ' + LFONT;
+      g.textAlign = 'right';
+      g.fillText(String(num[mm.mkey]), x + nw - PX(6), y + PX(12.5));
+      g.textAlign = 'left';
+    }
+    pdfSwatch(g, x + X.sw, y + PX(3.5), sw, mm.hex, true);
+    if (!oneB) {
+      g.fillStyle = '#888';
+      g.font = '700 ' + PX(7) + 'px ' + LFONT;
+      g.fillText(bTag(mm.brand), x + X.tag, y + PX(12.5));
+    }
+    g.fillStyle = '#111';
+    g.font = '700 ' + PX(9.5) + 'px ' + LFONT;
+    g.fillText(pdfTrunc(g, mm.code, X.name - X.code - PX(4)), x + X.code, y + PX(12.5));
+    const nmW = X.cnt - X.name - PX(30);
+    if (nmW > PX(16)) {
+      g.fillStyle = '#333';
+      g.font = '400 ' + PX(9) + 'px ' + LFONT;
+      g.fillText(pdfTrunc(g, mm.name || '', nmW), x + X.name, y + PX(12.5));
+    }
+    g.fillStyle = '#777';
+    g.font = '500 ' + PX(8.5) + 'px ' + LFONT;
+    g.textAlign = 'right';
+    g.fillText(String(r.n), x + X.cnt, y + PX(12.5));
+    g.textAlign = 'left';
+    if (withBlend) {
+      cell(r.cells[0], x + X.lt, X.ltW);
+      cell(r.cells[1], x + X.dk, X.dkW);
+    }
+    if (withShade) {
+      r.tones.forEach(function (q) {
+        const t = q.t;
+        if (t.wantLight) want[t.wantLight.mkey] = t.wantLight;
+        if (t.wantDark) want[t.wantDark.mkey] = t.wantDark;
+      });
+    } else if (withBlend) {
+      const c = blendCompanions(mm);
+      if (c.light && !c.lightOwned) want[c.light.mkey] = c.light;
+      if (c.dark && !c.darkOwned) want[c.dark.mkey] = c.dark;
+    }
+    // tones that differ by zone: a line under it for each zone, "in Main", "in Bell", with its highlight and shadow
+    (r.subs || []).forEach(function (q) {
+      y += rowH;
+      if (need(rowH)) {
+        // (a line that starts a column or a page says whose it is)
+        g.fillStyle = '#111';
+        g.font = '700 ' + PX(9.5) + 'px ' + LFONT;
+        g.fillText(pdfTrunc(g, mm.code, X.name - X.code - PX(4)), colX() + X.code, y + PX(12.5));
+      }
+      const xs = colX(),
+        ids = zoneIds().filter(function (id) {
+          return q.x.z[id];
+        });
+      // (one zone: in its colour on the key's picture)
+      g.fillStyle = ids.length === 1 ? pdfZoneCol(ids[0]) : '#666';
+      g.font = 'italic 600 ' + PX(8.5) + 'px ' + LFONT;
+      g.fillText(
+        pdfTrunc(
+          g,
+          'in ' +
+            ids
+              .map(function (id) {
+                return zoneName(id);
+              })
+              .join(', '),
+          X.lt - X.name - PX(8),
+        ),
+        xs + X.name,
+        y + PX(12.5),
+      );
+      cell(q.cells[0], xs + X.lt, X.ltW);
+      cell(q.cells[1], xs + X.dk, X.dkW);
+    });
+    g.strokeStyle = '#f0f0f0';
+    g.lineWidth = PX(0.4);
+    g.beginPath();
+    g.moveTo(colX(), y + rowH);
+    g.lineTo(colX() + cw, y + rowH);
+    g.stroke();
+    y += rowH;
+  });
+  // ---- shopping list for missing blend shades
+  const wk = Object.keys(want);
+  if (withBlend && wk.length) {
+    col = 0;
+    y += PX(14);
+    need(PX(40), true);
+    const x0 = m;
+    g.fillStyle = '#111';
+    g.font = '700 ' + PX(10) + 'px ' + LFONT;
+    g.fillText(
+      pdfTrunc(
+        g,
+        (withShade ? 'For richer shading, add ' : 'To complete every blend, add ') +
+          wk.length +
+          ' marker' +
+          (wk.length === 1 ? '' : 's') +
+          ':',
+        bw,
+      ),
+      x0,
+      y + PX(10),
+    );
+    y += PX(18);
+    let x = x0;
+    wk.forEach(function (k) {
+      const mm = want[k];
+      g.font = '600 ' + PX(8.5) + 'px ' + LFONT;
+      const t = pdfTrunc(g, tagOf(mm) + mm.code + (mm.name ? ' ' + mm.name : ''), bw - PX(28)),
+        w = PX(14) + g.measureText(t).width + PX(14);
+      if (x + w > m + bw) {
+        x = x0;
+        y += PX(16);
+      }
+      if (need(PX(16), true)) x = x0;
+      pdfSwatch(g, x, y, PX(10), mm.hex, false);
+      g.fillStyle = '#111';
+      g.fillText(t, x + PX(14), y + PX(8.5));
+      x += w;
+    });
+  }
+  // ---- footers
+  if (dry) return pages.length;
+  pages.forEach(function (P, i) {
+    const gg = P.g,
+      fy = P.h - P.m + PX(6),
+      mk = 'Made with Marker Studio',
+      pn = '  ·  ' + (i + 1) + ' / ' + pages.length;
+    gg.fillStyle = '#9a9a9a';
+    gg.font = '500 ' + PX(7.5) + 'px ' + LFONT;
+    gg.textAlign = 'left';
+    gg.fillText(mk, P.m, fy);
+    gg.textAlign = 'right';
+    gg.fillText(
+      pdfTrunc(
+        gg,
+        nm,
+        Math.min(PX(260), P.w - 2 * P.m - gg.measureText(mk).width - gg.measureText(pn).width - PX(16)),
+      ) + pn,
+      P.w - P.m,
+      fy,
+    );
+    gg.textAlign = 'left';
+  });
+  return pages.map(function (P) {
+    return P.c;
+  });
+}
+// Hand a finished file over (handOver in core.js: the share sheet on a phone, a download on a computer, a toast with
+// a Share button when building it took so long that the tap no longer counts). `say` reports the outcome: savedMsg
+// once downloaded, null once shared or the share sheet was closed; by default in the guide's status line.
+function shareOrSave(blob, fname, title, what, savedMsg, say) {
+  say =
+    say ||
+    function (m) {
+      note(m == null ? metaText() : m);
+    };
+  handOver(blob, fname, { title: title, what: what }).then(function (r) {
+    say(
+      r === 'download'
+        ? savedMsg
+        : r === false
+          ? 'Couldn\u2019t save the ' + what + ' on this device.'
+          : null,
+    );
+  });
+}
+// the PDF writer, paper sizes (shared with Print, remembered as ms-paper) and share-or-save, for the Markers
+// screen's swatch chart (SF.pdfKit)
+const pdfKit = {
+  toPDF: canvasesToPDF,
+  PAPERS: PAPERS,
+  PAPER_OPTS: PRINT_OPTS[2][3],
+  DPI: PDPI,
+  FONT: LFONT,
+  paper: function () {
+    return paper;
+  },
+  setPaper: function (v) {
+    printOptSet('paper', v);
+  },
+  share: shareOrSave,
+};
+async function exportPDF() {
+  if (!assignData) return;
+  note('Preparing PDF…');
+  var _b = document.getElementById('sfPDF'),
+    _o = _b ? _b.textContent : '';
+  if (_b) {
+    _b.textContent = 'Preparing…';
+    _b.disabled = true;
+  }
+  try {
+    const P = PAPERS[paper] || PAPERS.letter,
+      bytes = await canvasesToPDF(buildPDFPages(), P[0], P[1]);
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const fname =
+      ((curName || 'colour-guide')
+        .replace(/[^a-z0-9]+/gi, '-')
+        .replace(/^-+|-+$/g, '')
+        .toLowerCase()
+        .slice(0, 80) || 'colour-guide') +
+      (pdfWhat === 'strip' ? '-test-strip' : '') +
+      '.pdf';
+    shareOrSave(blob, fname, curName || 'Colour guide', 'PDF', 'PDF downloaded.');
+  } catch (e) {
+    const sm = sheetOpen() && document.getElementById('sfPrSum');
+    if (sm) {
+      sm.classList.add('empty');
+      sm.textContent = 'Could not build the PDF. Try again.';
+    } else note('Could not build the PDF.');
+  }
+  if (_b) {
+    _b.textContent = _o;
+    _b.disabled = false;
+  }
+}
+function checkComplete() {
+  if (celebrated || sfmode !== 'color' || !assignData) return;
+  const ord = assignData.order;
+  let d = 0;
+  for (let i = 0; i < ord.length; i++) if (colored[ord[i]]) d++;
+  if (ord.length && d >= ord.length) {
+    celebrated = true;
+    celebrate();
+  }
+}
+// Finished: in focus mode Reveal & share is in its bottom bar and a toast says so; in the list the "Page complete!"
+// banner (with its Reveal & share) is brought into view just under the pinned block instead, with no toast over the
+// open row
+function celebrate() {
+  try {
+    if (navigator.vibrate) navigator.vibrate([12, 40, 12]);
+  } catch (_) {}
+  const rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (focus || sfmode !== 'color')
+    note('\u2728 Finished \u2014 every section coloured! Tap Reveal &amp; share to show it off.');
+  else requestAnimationFrame(doneInView);
+  if (!rm) confettiBurst();
+}
+// (said after the tick that finished it, which the list announces first)
+function doneInView() {
+  const dn = document.getElementById('sfDone');
+  if (!dn || dn.offsetParent === null || focus) return;
+  // (the open row's second check would scroll back to it: 83-along.js)
+  _revStop();
+  sayLive('Finished \u2014 every section coloured! Reveal and share is at the top of the list.');
+  const r = dn.getBoundingClientRect(),
+    bar = barEl(),
+    top =
+      safeTop() +
+      (geo.side ? 0 : parseFloat(document.documentElement.style.getPropertyValue('--pinH')) || 0) +
+      6,
+    bot = (bar ? bar.getBoundingClientRect().top : window.innerHeight) - 6;
+  dn.classList.remove('flash');
+  void dn.offsetWidth;
+  dn.classList.add('flash');
+  if (r.top >= top && r.bottom <= bot) return;
+  const y = Math.max(0, Math.round(window.scrollY + r.top - top));
+  try {
+    window.scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' });
+  } catch (_) {
+    window.scrollTo(0, y);
+  }
+}
+function confettiBurst() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1),
+    W0 = window.innerWidth,
+    H0 = window.innerHeight,
+    cv = document.createElement('canvas');
+  cv.width = W0 * dpr;
+  cv.height = H0 * dpr;
+  cv.className = 'sfconfetti';
+  document.body.appendChild(cv);
+  const g = cv.getContext('2d');
+  g.scale(dpr, dpr);
+  const pal = [];
+  if (assignData) {
+    const seen = {};
+    for (const l in assignData.assign) {
+      const hx = assignData.assign[l].hex;
+      if (!seen[hx]) {
+        seen[hx] = 1;
+        pal.push(hx);
+      }
+    }
+  }
+  if (!pal.length) {
+    pal.push('#7c5cff', '#b45cff', '#ffd84a', '#3f7d4e', '#ff5c8a');
+  }
+  const N = 150,
+    ps = [];
+  for (let i = 0; i < N; i++)
+    ps.push({
+      x: W0 * (0.15 + 0.7 * Math.random()),
+      y: H0 * 0.5 + (Math.random() * 30 - 15),
+      vx: (Math.random() - 0.5) * 11,
+      vy: -9 - Math.random() * 10,
+      gr: 0.3 + Math.random() * 0.12,
+      r: 4 + Math.random() * 5,
+      rot: Math.random() * 6.28,
+      vr: (Math.random() - 0.5) * 0.45,
+      c: pal[(Math.random() * pal.length) | 0],
+      sq: Math.random() < 0.55,
+    });
+  const start = performance.now();
+  let last = start;
+  (function frame(t) {
+    const dt = Math.min(2.2, (t - last) / 16.67) || 1;
+    last = t;
+    g.clearRect(0, 0, W0, H0);
+    let alive = false;
+    for (const p of ps) {
+      p.vy += p.gr * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= 0.995;
+      p.rot += p.vr * dt;
+      if (p.y < H0 + 24) alive = true;
+      g.save();
+      g.translate(p.x, p.y);
+      g.rotate(p.rot);
+      g.fillStyle = p.c;
+      if (p.sq) g.fillRect(-p.r, -p.r * 0.6, p.r * 2, p.r * 1.2);
+      else {
+        g.beginPath();
+        g.arc(0, 0, p.r, 0, 6.283);
+        g.fill();
+      }
+      g.restore();
+    }
+    if (alive && t - start < 2800) requestAnimationFrame(frame);
+    else cv.remove();
+  })(start);
+}
+function exportImage() {
+  if (!assignData || exportImage.busy) return;
+  exportImage.busy = 1;
+  note('Preparing image\u2026');
+  const _b = document.getElementById('sfExport'),
+    _o = _b ? _b.textContent : '';
+  if (_b) {
+    _b.textContent = 'Preparing\u2026';
+    _b.disabled = true;
+  }
+  setTimeout(function () {
+    buildExportCanvas().toBlob(function (blob) {
+      exportImage.busy = 0;
+      if (_b) {
+        _b.textContent = _o;
+        _b.disabled = false;
+      }
+      if (!blob) {
+        note('Could not export the image.');
+        return;
+      }
+      shareOrSave(blob, 'colour-guide.png', curName || 'Colour guide', 'image', 'Image downloaded.');
+    }, 'image/png');
+  }, 30);
+}
+// ---- Test strip (v282): Share › Print › Pages › Test strip. A page of boxes to try this guide's markers on the
+// paper you'll colour on, since paper changes a marker's colour a lot and the app only predicts a layered tone or a
+// glaze: one row per line of the key, numbered as the key is (7a, 7b where zones shade a marker differently). Each
+// row: a box for the base once and twice (once per marker), and with shading a long box in thirds for its highlight,
+// base and shadow as the guide lays them (with blend companions: lighter, the colour, darker; only markers you own).
+// Under each box a thin bar printed in the screen's colour, a little apart so ink doesn't creep into it. The swatch
+// chart's corner marks (the bottom-right one hollow) and a fixed millimetre layout, so a photo of it could be read
+// back later. dry: just how many pages.
+function testStripPages(dry) {
+  const sh = shadeUse().on ? shadePrep(false) : null,
+    withShade = !!sh,
+    withBlend = !withShade && !!pdfBlend,
+    ramp = withShade || withBlend,
+    rows = pdfKeyRows(),
+    nm = curName || 'Colour guide';
+  pdfS = paper === 'a5' || paper === 'half' ? 0.84 : 1;
+  const zOrd = zoneIds(),
+    zFirst = function (x) {
+      for (let i = 0; i < zOrd.length; i++) if (x.z[zOrd[i]]) return i;
+      return 99;
+    },
+    rec = [];
+  rows.forEach(function (r, i) {
+    const no = String(i + 1);
+    if (withShade) {
+      const tr = toneRows(r.secs).sort(function (a, b) {
+        return zFirst(a) - zFirst(b);
+      });
+      if (!tr.length) {
+        rec.push({ m: r.m, no: no, coats: true, flat: true });
+        return;
+      }
+      tr.forEach(function (x, j) {
+        const t = x.t;
+        rec.push({
+          m: r.m,
+          no: tr.length > 1 ? no + String.fromCharCode(97 + j) : no,
+          coats: j === 0,
+          zones:
+            tr.length > 1
+              ? zOrd.filter(function (id) {
+                  return x.z[id];
+                })
+              : null,
+          L: t.light ? { c: t.light } : t.paper ? { paper: true } : null,
+          S: t.dark ? { c: t.dark, glaze: t.glaze } : t.noShadow ? null : { coat: true },
+          gL: t.L,
+          gB: t.B,
+          gS: t.S,
+        });
+      });
+    } else if (withBlend) {
+      const c = blendCompanions(r.m);
+      rec.push({
+        m: r.m,
+        no: no,
+        coats: true,
+        L: c.light && c.lightOwned ? { c: c.light } : null,
+        S: c.dark && c.darkOwned ? { c: c.dark } : null,
+        gL: c.light && c.lightOwned ? hexRgb(c.light.hex) : null,
+        gB: hexRgb(r.m.hex),
+        gS: c.dark && c.darkOwned ? hexRgb(c.dark.hex) : null,
+      });
+    } else rec.push({ m: r.m, no: no, coats: true });
+  });
+  // (brand letters only when the strip mixes brands)
+  const bs = {};
+  rec.forEach(function (x) {
+    bs[x.m.brand] = 1;
+    [x.L, x.S].forEach(function (e) {
+      if (e && e.c) bs[e.c.brand] = 1;
+    });
+  });
+  const oneB = Object.keys(bs).length === 1,
+    tag = function (c) {
+      return oneB ? c.code : bTag(c.brand) + ' ' + c.code;
+    };
+  // the page in millimetres
+  const P0 = PAPERS[paper] || PAPERS.letter,
+    pw = (P0[0] / 72) * 25.4,
+    ph = (P0[1] / 72) * 25.4,
+    small = pw < 160,
+    mg = small ? 9 : 12,
+    R = 4,
+    cols = ramp ? (small ? 1 : 2) : small ? 2 : 3,
+    gap = 6,
+    cw = (pw - 2 * mg - gap * (cols - 1)) / cols,
+    box = small ? 12 : 13,
+    rowH = box + 8,
+    bot = ph - mg - R - 3,
+    K0 = Math.round((P0[0] / 72) * PDPI) / pw;
+  const how = withShade
+    ? 'Colour it on the paper you’ll colour the page on, and let it dry before you compare. Long box: H over all of it (nothing where it says paper or none), B over the right two thirds, S over the last third while wet, then soften the edges (S “over B”: once B is dry). Left box: B once, then again on its right half. The bars are the colours on screen, roughly.'
+    : withBlend
+      ? 'Colour it on the paper you’ll colour the page on, and let it dry before you compare. Long box: the lighter marker on the left, the colour in the middle, the darker on the right, blended while wet. Left box: once, then again on its right half. The bars are the colours on screen, roughly.'
+      : 'Colour it on the paper you’ll colour the page on, and let it dry before you compare: each box once, then again on its right half. The bar under it is the colour on screen, roughly.';
+  // the how-to, wrapped word by word to the page's width (measured as it will be drawn), and the room it takes
+  const mg0 = document.createElement('canvas').getContext('2d'),
+    lines = [];
+  mg0.font = '500 ' + ((7 * PDPI) / 72).toFixed(1) + 'px ' + LFONT;
+  let ln = '';
+  how.split(' ').forEach(function (w) {
+    const t = ln ? ln + ' ' + w : w;
+    if (ln && mg0.measureText(t).width > (pw - 2 * mg) * K0) {
+      lines.push(ln);
+      ln = w;
+    } else ln = t;
+  });
+  if (ln) lines.push(ln);
+  const top = mg + R + 4.5 + lines.length * 3.3 + 8,
+    perCol = Math.max(1, Math.floor((bot - top) / rowH));
+  // where each row goes: a marker's rows (7a, 7b) kept in one column when they fit in one
+  const at = [];
+  let pc = 0,
+    pr = 0;
+  rec.forEach(function (x, i) {
+    if (x.coats) {
+      let n = 1;
+      while (i + n < rec.length && !rec[i + n].coats) n++;
+      if (pr && pr + n > perCol && n <= perCol) {
+        pc++;
+        pr = 0;
+      }
+    }
+    if (pr >= perCol) {
+      pc++;
+      pr = 0;
+    }
+    at.push({ p: Math.floor(pc / cols), c: pc % cols, r: pr });
+    pr++;
+  });
+  const np = Math.max(1, at.length ? at[at.length - 1].p + 1 : 1);
+  if (dry) return np;
+  const out = [];
+  for (let pi = 0; pi < np; pi++) {
+    const pg = pdfPage(),
+      g = pg.g,
+      K = pg.w / pw,
+      M = function (v) {
+        return v * K;
+      },
+      F = function (w, pt) {
+        g.font = w + ' ' + ((pt * PDPI) / 72).toFixed(1) + 'px ' + LFONT;
+      },
+      rgb = function (c) {
+        return 'rgb(' + c.map(Math.round).join(',') + ')';
+      };
+    out.push(pg.c);
+    // corner marks, as the swatch chart's
+    [
+      [mg, mg],
+      [pw - mg - R, mg],
+      [mg, ph - mg - R],
+      [pw - mg - R, ph - mg - R],
+    ].forEach(function (p, j) {
+      g.fillStyle = '#000';
+      g.fillRect(M(p[0]), M(p[1]), M(R), M(R));
+      if (j === 3) {
+        g.fillStyle = '#fff';
+        g.fillRect(M(p[0] + 1), M(p[1] + 1), M(R - 2), M(R - 2));
+      }
+    });
+    g.fillStyle = '#111';
+    F('700', 10.5);
+    g.fillText(pdfTrunc(g, 'Test strip · ' + nm, M(pw - 2 * mg - 2 * R - 6)), M(mg + R + 3), M(mg + R - 0.3));
+    g.fillStyle = '#555';
+    F('500', 7);
+    lines.forEach(function (t, i) {
+      g.fillText(t, M(mg), M(mg + R + 4.5 + i * 3.3));
+    });
+    g.fillStyle = '#333';
+    F('500', 7.5);
+    g.fillText('Paper: ______________________     Date: ____________', M(mg), M(top - 4.5));
+    g.fillStyle = '#888';
+    F('500', 7);
+    g.fillText('Made with Marker Studio', M(mg + R + 3), M(ph - mg - 0.5));
+    g.textAlign = 'right';
+    g.fillText('Page ' + (pi + 1) + ' of ' + np, M(pw - mg - R - 3), M(ph - mg - 0.5));
+    g.textAlign = 'left';
+    rec.forEach(function (x, k) {
+      if (at[k].p !== pi) return;
+      const c = at[k].c,
+        X0 = mg + c * (cw + gap),
+        Y0 = top + at[k].r * rowH,
+        lw = ramp ? 19 : 0,
+        cb = ramp ? box : Math.min(cw - 26, 26),
+        bx = X0 + lw;
+      // the label: its number in the key, the marker, and the zone(s) whose tones these are
+      const lx = ramp ? X0 : bx + cb + 2,
+        lwid = ramp ? lw - 1.5 : cw - cb - 3;
+      g.fillStyle = '#8a8a8a';
+      F('700', 6.5);
+      g.fillText(x.no, M(lx), M(Y0 + 2.6));
+      g.fillStyle = '#111';
+      F('700', 8.5);
+      g.fillText(pdfTrunc(g, tag(x.m), M(lwid)), M(lx), M(Y0 + 6.3));
+      g.fillStyle = '#555';
+      F('400', 6);
+      g.fillText(pdfTrunc(g, x.m.name || '', M(lwid)), M(lx), M(Y0 + 9.1));
+      if (x.zones) {
+        g.fillStyle = x.zones.length === 1 ? pdfZoneCol(x.zones[0]) : '#666';
+        F('italic 700', 6);
+        g.fillText(
+          pdfTrunc(
+            g,
+            'in ' +
+              x.zones
+                .map(function (id) {
+                  return zoneName(id);
+                })
+                .join(', '),
+            M(lwid),
+          ),
+          M(lx),
+          M(Y0 + 11.9),
+        );
+      }
+      if (x.flat && ramp) {
+        g.fillStyle = '#999';
+        F('500', 6.5);
+        g.fillText('flat, no tones', M(bx + cb + 3), M(Y0 + 6.3));
+      }
+      // the base once and twice (once per marker)
+      if (x.coats) {
+        const b = hexRgb(x.m.hex),
+          b2 = b.map(function (v) {
+            return v * (0.52 + (0.48 * v) / 255);
+          });
+        g.strokeStyle = '#4a4a4a';
+        g.lineWidth = M(0.25);
+        g.strokeRect(M(bx), M(Y0), M(cb), M(box));
+        g.strokeStyle = '#b0b0b0';
+        g.lineWidth = M(0.15);
+        g.setLineDash([M(0.6), M(0.6)]);
+        g.beginPath();
+        g.moveTo(M(bx + cb / 2), M(Y0));
+        g.lineTo(M(bx + cb / 2), M(Y0 + box));
+        g.stroke();
+        g.setLineDash([]);
+        g.fillStyle = rgb(b);
+        g.fillRect(M(bx), M(Y0 + box + 1.5), M(cb / 2), M(1.6));
+        g.fillStyle = rgb(b2);
+        g.fillRect(M(bx + cb / 2), M(Y0 + box + 1.5), M(cb / 2), M(1.6));
+        g.fillStyle = '#777';
+        F('500', 5.5);
+        g.fillText('×1', M(bx + 0.6), M(Y0 + 2.2));
+        g.fillText('×2', M(bx + cb / 2 + 0.6), M(Y0 + 2.2));
+      }
+      if (!ramp || x.flat) return;
+      // the tones in thirds: what the guide lays, left to right
+      const rx = bx + cb + 3,
+        rw = Math.min(60, X0 + cw - rx);
+      g.strokeStyle = '#4a4a4a';
+      g.lineWidth = M(0.25);
+      g.strokeRect(M(rx), M(Y0), M(rw), M(box));
+      g.strokeStyle = '#c8c8c8';
+      g.lineWidth = M(0.15);
+      [1, 2].forEach(function (i) {
+        g.beginPath();
+        g.moveTo(M(rx + (rw * i) / 3), M(Y0));
+        g.lineTo(M(rx + (rw * i) / 3), M(Y0 + 1.6));
+        g.moveTo(M(rx + (rw * i) / 3), M(Y0 + box - 1.6));
+        g.lineTo(M(rx + (rw * i) / 3), M(Y0 + box));
+        g.stroke();
+      });
+      const lab = function (e, role) {
+        if (!e) return withShade ? role + ': none' : '—';
+        if (e.paper) return 'H: paper';
+        if (e.coat) return 'S: B again';
+        return (withShade ? role + ' ' : '') + tag(e.c);
+      };
+      g.fillStyle = '#333';
+      F('600', 6.3);
+      g.fillText(pdfTrunc(g, lab(x.L, 'H'), M(rw / 3 - 1)), M(rx + 0.8), M(Y0 + 2.6));
+      g.textAlign = 'center';
+      g.fillText(pdfTrunc(g, (withShade ? 'B ' : '') + tag(x.m), M(rw / 3 - 1)), M(rx + rw / 2), M(Y0 + 2.6));
+      g.textAlign = 'right';
+      g.fillText(pdfTrunc(g, lab(x.S, 'S'), M(rw / 3 - 1)), M(rx + rw - 0.8), M(Y0 + 2.6));
+      // (a glaze says so on a line of its own, so a long code isn't cut short)
+      if (x.S && x.S.glaze) {
+        F('600', 5.8);
+        g.fillText('over B', M(rx + rw - 0.8), M(Y0 + 5.2));
+      }
+      g.textAlign = 'left';
+      // the colours on screen under it, as the tones would run
+      const gL = x.gL || x.gB,
+        gS = x.gS || x.gB,
+        gr = g.createLinearGradient(M(rx), 0, M(rx + rw), 0);
+      gr.addColorStop(0, rgb(gL));
+      gr.addColorStop(0.2, rgb(gL));
+      gr.addColorStop(0.5, rgb(x.gB));
+      gr.addColorStop(0.8, rgb(gS));
+      gr.addColorStop(1, rgb(gS));
+      g.fillStyle = gr;
+      g.fillRect(M(rx), M(Y0 + box + 1.5), M(rw), M(1.6));
+    });
+  }
+  return out;
+}

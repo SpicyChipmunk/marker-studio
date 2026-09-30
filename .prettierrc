@@ -1,0 +1,13 @@
+{
+  "singleQuote": true,
+  "quoteProps": "preserve",
+  "printWidth": 110,
+  "endOfLine": "lf",
+  "embeddedLanguageFormatting": "off",
+  "overrides": [
+    {
+      "files": ["*.html", "*.md"],
+      "options": { "requirePragma": true }
+    }
+  ]
+}

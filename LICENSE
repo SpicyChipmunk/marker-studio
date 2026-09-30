@@ -1,0 +1,29 @@
+Marker Studio
+Copyright (c) 2026 SpicyChipmunk. All rights reserved.
+
+This repository's source code, artwork (including the sample line art) and
+other content are the property of the copyright holder. They are published so
+they can be read, and for no other purpose. No licence is granted, by
+implication or otherwise, to copy, modify, host, publish, distribute,
+sublicense or sell any part of them, or to make works based on them, except
+where the copyright holder has given written permission. Viewing and forking
+this repository on GitHub is allowed only to the extent GitHub's Terms of
+Service require.
+
+You may use the Marker Studio app that the copyright holder hosts (for example
+at https://spicychipmunk.github.io/marker-studio/) for your own colouring.
+
+Third-party material keeps its own licence:
+- The fonts in src/assets/fonts (Fraunces and Hanken Grotesk) are under the
+  SIL Open Font License 1.1; see the OFL-*.txt files beside them.
+- "Ohuhu" and "Copic" are trademarks of their respective owners. This project
+  is not affiliated with or endorsed by them.
+
+THE APP AND THIS CONTENT ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
+EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY ARISING FROM, OUT OF OR IN CONNECTION WITH THE APP OR THIS CONTENT.
+
+For permission to use any of it in other ways, contact the copyright holder
+through https://github.com/SpicyChipmunk.

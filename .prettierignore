@@ -1,0 +1,15 @@
+# Prettier is only meant for src/js/**/*.js and src/css/**/*.css (see docs/CODE-TOOLS.md).
+# Everything below stays off limits, even for a stray `prettier --write .`.
+
+# The shipped single file, generated or hand-kept files, and non-code
+index.html
+service-worker.js
+*.html
+*.md
+*.json
+*.webmanifest
+node_modules/
+e2e/.artifacts/
+src/data/
+src/html/
+src/assets/
