@@ -1321,7 +1321,7 @@ Four reviewers went over v288 (code, a hands-on bug hunt, a hands-on UX walkthro
 - Palette: a "Saved palettes (N) ›" link at the top; Custom and Photo on a row of their own.
 
 **Safety and navigation**
-- Back (Android's, or the browser's) closes what's open first, one each: a dialog or the Library, a sheet, Focus mode, Reveal, full screen, then Colour along; then it leaves as before.
+- Back (Android's, or Chrome's and Firefox's) closes what's open first, one each: a dialog or the Library, a sheet, Focus mode, Reveal, full screen, then Colour along; then it leaves as before.
 - Home › New colouring guide with section edits not built goes to the Guide screen and asks first (Build again, Discard edits, Cancel).
 - Restore's "Replace my markers / Keep mine" has Cancel, and Escape is Cancel too: nothing is restored. A restore that replaces the open guide with the backup's newer copy says so.
 
@@ -1335,3 +1335,10 @@ Four reviewers went over v288 (code, a hands-on bug hunt, a hands-on UX walkthro
 - WebKit on GitHub: tests that turn a photo into a guide are left out there (it takes minutes on GitHub's WebKit, about 2 s in WebKit itself), and the toast tests start with the one-time screen-stays-on note told (Safari grants the wake lock). Failure screenshots are now kept (the upload skipped the hidden `e2e/.artifacts` folder).
 - `docs/GUIDE-LAYOUT.md` (#3, #10, the tip queue, the Library, Back), `docs/DEVICE-TEST.md` 3g, `docs/REVIEW-v288.md`.
 - Cache bumped to `marker-studio-v289`.
+
+# Changes — v290 (from v289's run on GitHub)
+
+- Back closing what's open is left out in Safari's engine (iPhone, iPad, Safari on a Mac): an iPhone or iPad has no Back button, and WebKit can crash reloading a page twice once the page has made a history entry of its own (GitHub's WebKit tests found it; a three-line page reproduces it). There Back stays the browser's, as before v289. Android, Chrome and Firefox keep it.
+- A Library tile's name on Safari's engine could run to a fourth line, cut off: the spacer that keeps the first line clear of ⋯ was laid out as a line of its own in a clamped box. The name now keeps to three lines as a plain block.
+- The Chromium job's time limit on GitHub is 45 minutes (the browser tests now take about 26; v289's run was stopped at 25 with every test so far passing).
+- Cache bumped to `marker-studio-v290`.

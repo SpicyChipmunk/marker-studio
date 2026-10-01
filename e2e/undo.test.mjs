@@ -231,7 +231,9 @@ test('Library delete: Undo brings the guide back, and it opens with its progress
   await saveGuide(page); await idle(page);
   const id = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
   await openLibrary(page);
-  await libItem(page, row(id), 'sdel'); await idle(page);
+  // (no wait for the page to settle here: the Undo lasts 6 s, and on a slow machine drawing the Library's pictures can
+  // take that long)
+  await libItem(page, row(id), 'sdel'); await page.waitForSelector(row(id), { state: 'detached', timeout: 3000 }).catch(() => {});
   assert.equal(await page.locator(row(id)).count(), 0, 'gone from the list at once');
   assert.equal(await page.evaluate((id) => state.saved.some((s) => s.id === id), id), false);
   assert.ok(await hasPayload(page, id), 'its stored picture is kept for now');

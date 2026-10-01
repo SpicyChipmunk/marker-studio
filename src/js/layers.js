@@ -85,6 +85,10 @@ document.addEventListener(
 // layer marked back closes as its Escape would. (A question that won't go gets its entry back; the welcome has none.)
 (function () {
   if (typeof history === 'undefined' || !history.pushState || typeof MutationObserver === 'undefined') return;
+  // (not in Safari's engine — an iPhone or iPad has no Back button, and WebKit can crash reloading a page twice when
+  // its entry was made with pushState: there Back stays the browser's, as before v289)
+  const ua = navigator.userAgent || '';
+  if (/AppleWebKit/.test(ua) && !/Chrome\/|Chromium\/|Edg\/|Android/.test(ua)) return;
   // depth: the entry the page is on (its msLayer, 0 for the app's own); base: entries under it that belong to no layer
   // (left from before a reload); pending: a go() of the app's own on its way
   const at = function () {

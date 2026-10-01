@@ -154,9 +154,13 @@
   width: 36px;
   height: 1.2em;
 }
+/* (v289) three lines at most as a plain block, not a line clamp: Safari's engine lays the float that keeps the first
+   line clear of ⋯ (.snfl) out as a line of its own inside a clamped box */
 #savedList .stile .sname {
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  max-height: calc(3 * 1.3em);
 }
 #savedList .stile .sname-in {
   font-size: var(--t-md);

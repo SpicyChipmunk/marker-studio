@@ -285,7 +285,7 @@ test('Palette: a Saved palettes link at the top opens the Library with palettes 
   assert.deepEqual(errors, []);
 });
 
-test('Back closes what is open first: the Library, a sheet, Focus mode, then Colour along; then it would leave', async () => {
+test('Back closes what is open first: the Library, a sheet, Focus mode, then Colour along; then it would leave', notOnWebKit(WK.back), async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   const back = async () => { await page.goBack({ waitUntil: 'commit' }).catch(() => {}); await page.waitForTimeout(150); await idle(page); };
@@ -410,7 +410,7 @@ test('Change colour by keyboard: one Tab stop per row or group, the arrow keys w
   assert.deepEqual(errors, []);
 });
 
-test('Back after a reload with something open, and after closing things in the app, still closes one thing at a time', async () => {
+test('Back after a reload with something open, and after closing things in the app, still closes one thing at a time', notOnWebKit(WK.back), async () => {
   const { page, errors } = await openApp();
   await answerAsks(page);
   await sampleGuide(page); await saveGuide(page); await idle(page);

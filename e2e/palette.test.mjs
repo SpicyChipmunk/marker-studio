@@ -268,6 +268,8 @@ test('a palette whose colours are close says so in one line; a clean one says no
     for (let r = 0; r < 3; r++) {
       await page.click('#draw'); await idle(page, 1300);
       assert.ok(await palMin(page) >= 10, `${h} ${n}: clearly different colours`);
+      // (the line follows the new palette once the draw has played: Safari's engine can be slower than the idle wait)
+      await page.waitForFunction(() => getComputedStyle(document.getElementById('palClose')).display === 'none', null, { timeout: 4000 }).catch(() => {});
       assert.equal(await page.isVisible('#palClose'), false, `${h} ${n}: no line`);
     }
   }

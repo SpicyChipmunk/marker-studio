@@ -182,7 +182,9 @@ test('Share: Show it off, Print…, Plan & keep; the Print sheet opens under the
   assert.equal(await page.textContent('#sfPrint'), 'Print…');
   assert.equal(await page.locator(`${pane('share')} #sfPDF, ${pane('share')} [data-paper]`).count(), 0, 'the print options live in the sheet');
   await page.click('#sfPrint'); await page.waitForSelector('#sfSheet.sfprsh'); await idle(page);
-  // under the picture, pinned at its floor size
+  // under the picture, pinned at its floor size (waiting for the sheet to arrive: GitHub's WebKit can leave its slide
+  // a moment behind the idle wait)
+  await page.waitForFunction(() => Math.abs(document.getElementById('sfSheet').getBoundingClientRect().top - document.getElementById('sfView').getBoundingClientRect().bottom) <= 1, null, { timeout: 5000 }).catch(() => {});
   const sheet = await rect(page, '#sfSheet'), view = await rect(page, '#sfView'), cv = await rect(page, '#sfCanvas');
   assert.ok(Math.abs(sheet.top - view.bottom) <= 1, `the sheet starts under the picture block (${sheet.top} vs ${view.bottom})`);
   assert.equal(Math.round(cv.height), 380, 'the picture at its floor size');

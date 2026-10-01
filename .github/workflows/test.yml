@@ -8,7 +8,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    # (v289: about 26 minutes of browser tests now; room to grow)
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
