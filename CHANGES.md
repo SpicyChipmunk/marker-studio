@@ -1349,3 +1349,9 @@ Four reviewers went over v288 (code, a hands-on bug hunt, a hands-on UX walkthro
 - Home's Continue card test waits for the card's next marker after a rename (it comes once the picture is read; GitHub's WebKit was slower).
 - Cache bumped to `marker-studio-v291`.
 
+# Changes — v292 (a way to try Back on an iPad; faster CI)
+
+- `?back=1` at the end of the app's address turns on v289's Back (closing what's open first) in Safari's engine too, to try it on a real iPad: open the Library, reload twice, and use Safari's back swipe. Without it, Safari keeps the browser's Back as in v290.
+- GitHub runs the Chromium tests in 2 parts side by side (unit tests in part 1), so results come in about half the time, and WebKit part 1 starts with a speed check: how fast GitHub's WebKit runs plain JavaScript, to see why turning a photo into sections takes minutes there.
+- Cache bumped to `marker-studio-v292`.
+

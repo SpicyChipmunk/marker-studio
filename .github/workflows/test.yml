@@ -6,10 +6,16 @@ on:
 # Playwright version installs (npx playwright install --with-deps) are built for 24.04. Move on when Playwright is
 # upgraded to a version that lists Ubuntu 26.
 jobs:
+  # Unit tests, then the browser tests on Chromium in 2 parts side by side (by file, as node --test --test-shard splits
+  # them), so the results come in about half the time. The unit tests run in part 1 only.
   test:
+    name: tests on Chromium, part ${{ matrix.part }} of 2
     runs-on: ubuntu-24.04
-    # (v289: about 26 minutes of browser tests now; room to grow)
-    timeout-minutes: 45
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -19,6 +25,7 @@ jobs:
       - run: npm ci
       # Each test step also records its results, and the Summary steps put any failures on the run's summary page.
       - name: Unit tests (includes "index.html is built from src/")
+        if: matrix.part == 1
         run: >-
           mkdir -p e2e/.artifacts &&
           node --test --test-reporter=spec --test-reporter-destination=stdout
@@ -27,24 +34,25 @@ jobs:
         env:
           E2E_REPORT: e2e/.artifacts/unit-results.jsonl
       - name: Summary (unit tests)
-        if: always()
+        if: always() && matrix.part == 1
         run: node e2e/ci-summary.mjs e2e/.artifacts/unit-results.jsonl "Unit tests" all test
       - run: npx playwright install --with-deps chromium
-      - name: Browser tests
+      - name: Browser tests (Chromium, part ${{ matrix.part }} of 2)
         run: >-
-          node --test --test-reporter=spec --test-reporter-destination=stdout
+          mkdir -p e2e/.artifacts &&
+          node --test --test-shard=${{ matrix.part }}/2 --test-reporter=spec --test-reporter-destination=stdout
           --test-reporter=./e2e/ci-report.mjs --test-reporter-destination=stdout
           e2e/*.test.mjs
         env:
           E2E_REPORT: e2e/.artifacts/chromium-results.jsonl
       - name: Summary (browser tests)
         if: always()
-        run: node e2e/ci-summary.mjs e2e/.artifacts/chromium-results.jsonl "Browser tests (Chromium)"
+        run: node e2e/ci-summary.mjs e2e/.artifacts/chromium-results.jsonl "Browser tests (Chromium), part ${{ matrix.part }} of 2" ${{ matrix.part }}/2
       - name: Keep screenshots and PDFs from a failed run
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-artifacts
+          name: e2e-artifacts-chromium-${{ matrix.part }}
           path: e2e/.artifacts
           # (the folder's name starts with a dot, and upload-artifact leaves hidden files out unless told)
           include-hidden-files: true
@@ -71,6 +79,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps webkit
+      # (a diagnostic, part 1 only: how fast this WebKit runs plain JavaScript; about 180 ms with its JIT on a laptop)
+      - name: WebKit speed check
+        if: matrix.part == 1
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node e2e/ci-speed-check.mjs
       - name: Browser tests (WebKit, part ${{ matrix.part }} of 6)
         id: tests
         # failed tests don't fail this step: the retry below decides (and so does running out of time, which is why
