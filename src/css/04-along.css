@@ -21,6 +21,15 @@
   text-decoration: underline;
   margin-left: 6px;
 }
+/* what was coloured, and when (v284) */
+#sfRoot .sfpgsum {
+  margin-top: 4px;
+  font-weight: 500;
+  font-size: var(--t-sm);
+}
+#sfRoot .sfpgsum:empty {
+  display: none;
+}
 /* brought into view when the page is finished (90-export.js celebrate) */
 #sfRoot .sfpgdone.flash {
   animation: pgflash 1.6s ease;
@@ -78,7 +87,7 @@
 }
 #sfRoot .sfah:focus-visible,
 #sfRoot .sfdonegrp:focus-visible {
-  outline: 2px solid var(--sel);
+  outline: 2px solid var(--focus);
   outline-offset: -2px;
 }
 #sfRoot .sfah .sw {
@@ -115,7 +124,7 @@
 #sfRoot .sfatones {
   grid-column: 2 / -1;
   margin: -10px 0 8px;
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   color: var(--sub);
   white-space: nowrap;
   overflow: hidden;
@@ -160,7 +169,7 @@
 }
 #sfRoot .sfarow .brole {
   margin-top: -3px;
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   color: var(--sub);
   white-space: nowrap;
 }

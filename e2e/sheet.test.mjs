@@ -326,7 +326,8 @@ test('on a tablet in portrait sheets are as wide as the guide card, centred over
     const s = await rect(page, '#sfSheet'), c = await rect(page, '#sfWork');
     if (w === 390) assert.ok(s.left <= 0.5 && s.right >= w - 0.5, 'phone: the whole width');
     else {
-      assert.ok(s.width <= c.width + 36 + 1 && s.width < w - 100, `${w}: the sheet (${s.width}) keeps to the card (${c.width})`);
+      // (v285: the card is up to 92% of a tablet's width in portrait)
+      assert.ok(s.width <= c.width + 36 + 1 && s.width <= w * 0.92 + 1, `${w}: the sheet (${s.width}) keeps to the card (${c.width})`);
       assert.ok(Math.abs((s.left + s.right) / 2 - (c.left + c.right) / 2) <= 1, 'centred over the card');
     }
     if (w === 820) await shot(page, 'g1-10-menu');

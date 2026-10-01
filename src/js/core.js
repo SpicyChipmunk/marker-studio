@@ -73,7 +73,7 @@ function toastBottom() {
 // doesn't end in a click leaves it for the next tap.
 function errCard(anchor, msg) {
   if (!anchor || !anchor.parentNode || !anchor.isConnected || !anchor.getClientRects().length) {
-    toast('\u26a0\ufe0f ' + msg, 8000);
+    toast(ic('triangle-alert', 'icw') + ' ' + msg, 8000);
     return null;
   }
   let c = anchor.nextElementSibling;
@@ -84,9 +84,13 @@ function errCard(anchor, msg) {
     anchor.parentNode.insertBefore(c, anchor.nextSibling);
   }
   c.innerHTML =
-    '<span>\u26a0\ufe0f ' +
+    '<span>' +
+    ic('triangle-alert', 'icw') +
+    ' ' +
     msg +
-    '</span><button type="button" class="mserrx" aria-label="Dismiss">\u2715</button>';
+    '</span><button type="button" class="mserrx" aria-label="Dismiss">' +
+    ic('x') +
+    '</button>';
   c.querySelector('.mserrx').addEventListener('click', function () {
     c.remove();
   });
@@ -120,6 +124,32 @@ function clearErrs(scope) {
     c.remove();
   });
 }
+// How a guide shows how far along it is, the same on Home's Continue card and in Colour along (v288): what's coloured
+// in its marker's colour, the rest pale over the paper (PROG_PALE of the colour); with a marker's row open (or in Focus
+// mode), what's coloured is softened (PROG_SOFT) so the sections still to do stand out.
+const PROG_PAPER = [247, 244, 238],
+  PROG_PALE = 0.25,
+  PROG_SOFT = 0.5;
+function progMix(rgb, k) {
+  return [
+    Math.round(rgb[0] * k + PROG_PAPER[0] * (1 - k)),
+    Math.round(rgb[1] * k + PROG_PAPER[1] * (1 - k)),
+    Math.round(rgb[2] * k + PROG_PAPER[2] * (1 - k)),
+  ];
+}
+// a line icon from the sprite (html/icons.html: Lucide's, and the tool row's own Codes and Values), sized to the text
+// beside it; hidden from screen readers (the button or text it's in says what it does)
+function ic(n, cls) {
+  return (
+    '<svg class="ic' +
+    (cls ? ' ' + cls : '') +
+    '" aria-hidden="true" focusable="false"><use href="#i-' +
+    n +
+    '"/></svg>'
+  );
+}
+// A toast stays while the pointer is over it or a button in it has the keyboard's focus (v284: an Undo can be read
+// and reached), and goes a moment after that ends
 function toast(m, ms) {
   let t = document.getElementById('msToast');
   if (!t) {
@@ -129,9 +159,40 @@ function toast(m, ms) {
     t.setAttribute('role', 'status');
     t.setAttribute('aria-live', 'polite');
     document.body.appendChild(t);
+    const hold = function () {
+        if (t.classList.contains('on')) clearTimeout(toast._t);
+      },
+      go = function () {
+        if (!t.classList.contains('on') || t.matches(':hover') || t.contains(document.activeElement)) return;
+        clearTimeout(toast._t);
+        toast._t = setTimeout(function () {
+          t.classList.remove('on');
+        }, 2500);
+      };
+    t.addEventListener('pointerenter', hold);
+    t.addEventListener('focusin', hold);
+    t.addEventListener('pointerleave', go);
+    t.addEventListener('focusout', function () {
+      setTimeout(go, 0);
+    });
   }
   t.innerHTML = m;
-  t.style.bottom = toastBottom();
+  // (v288: on the guide's Share tab the buttons are at the bottom, so a toast sits just under the pinned picture)
+  // (the Share panel itself showing: the Plan, not Colour along or Edit sections after it)
+  const sh = document.querySelector('#sfCtl .sftab[data-tab="share"]');
+  if (
+    sh &&
+    sh.offsetParent !== null &&
+    !document.documentElement.classList.contains('sfsheeton') &&
+    !document.querySelector('#sfRoot.sfrev,#sfRoot.sffoc,#sfRoot.sffull')
+  ) {
+    const pin = parseFloat(document.documentElement.style.getPropertyValue('--pinH')) || 0;
+    t.style.top = Math.round(pin + 10) + 'px';
+    t.style.bottom = 'auto';
+  } else {
+    t.style.top = '';
+    t.style.bottom = toastBottom();
+  }
   t.classList.add('on');
   toast._at = Date.now();
   clearTimeout(toast._t);
@@ -140,18 +201,32 @@ function toast(m, ms) {
   }, ms || 3200);
 }
 function toastAction(m, label, fn, ms) {
-  toast(m + ' <button class="sflink" id="toastAct">' + label + '</button>', ms || 5000);
-  const b = document.getElementById('toastAct');
-  if (b)
-    b.addEventListener(
-      'click',
-      function () {
-        const t = document.getElementById('msToast');
-        if (t) t.classList.remove('on');
-        fn();
-      },
-      { once: true },
-    );
+  toastActions(m, [{ label: label, fn: fn }], ms);
+}
+// a toast with a button or more ([{ label, fn }]); the first is #toastAct. Long enough to read and reach: 8 s
+function toastActions(m, acts, ms) {
+  toast(
+    m +
+      acts
+        .map(function (a, i) {
+          return ' <button class="sflink" id="toastAct' + (i ? i + 1 : '') + '">' + a.label + '</button>';
+        })
+        .join(''),
+    ms || 8000,
+  );
+  acts.forEach(function (a, i) {
+    const b = document.getElementById('toastAct' + (i ? i + 1 : ''));
+    if (b)
+      b.addEventListener(
+        'click',
+        function () {
+          const t = document.getElementById('msToast');
+          if (t) t.classList.remove('on');
+          a.fn();
+        },
+        { once: true },
+      );
+  });
 }
 // A file for the person to keep. On a phone or tablet it goes to the share sheet (on an iPhone: Save to Files, iCloud
 // Drive, AirDrop or Mail); on a computer, or where files can't be shared, it downloads. Phones only allow sharing

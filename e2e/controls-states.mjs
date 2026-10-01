@@ -161,7 +161,7 @@ async function makePhoto(o) {
 }`;
 
 // every one-time hint already seen on this device (the ⓘ lines instead of the full text)
-const ALL_HINTS = JSON.stringify(['tap', 'blend', 'photo', 'paint', 'manual', 'shade', 'along']);
+const ALL_HINTS = JSON.stringify(['tap', 'blend', 'photo', 'paint', 'manual', 'shade', 'along', 'tools']);
 
 export const SESSIONS = [
   {

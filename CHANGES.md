@@ -1066,3 +1066,226 @@ Two independent reviews of v279's Zones (one on saving, section edits and Undo; 
   - The Random "keep touching sections different" test covers Main colour too.
   - The style tests and golden now include the six new settings. With them taken out, only the three Random states changed (Random now starts on Main colour); the other 50 are as before.
 - Cache bumped to `marker-studio-v283`.
+
+# Changes — v284 (usability: Plan, Colour along and Print)
+
+From a usability review (four reviewers on phone and iPad), a pressure test of its 26 recommendations against the code, and a check of how the changes interact. Saving on a guide's first change, the Resume card, the iPad layout and a full icon set are for v285.
+
+**What you've coloured stays put**
+- **Sections with ink on the paper keep their markers** through any change to the plan: Shuffle, Surprise, a pattern, a marker count, a palette. That's ticked sections and part-done ones (a tone ticked). They're pinned only while the plan is laid, so nothing is saved as a pin, there's no pin ring and no "Section pinned" step. Undo leaves them as they are too. Before, they were recoloured and stayed ticked, so the guide no longer matched the paper.
+- **Their shading keeps too:** a coloured section keeps the Shadows and Highlights it was coloured with when those change (the whole section's, so its tones still match). Saved with the guide where they differ.
+- **A line under the tabs says so** when a change would have recoloured them: "Kept 8 coloured sections as they are · Recolour them too ✕", and those sections flash outlined on the picture. Once per visit to the plan, and again when more are kept; it stays until it's used, closed or undone, following any change made meanwhile. (Not a toast: a toast sits where Shuffle and Pin colours are, and a tap meant for them could have recoloured the sections.) **Recolour them too** lays them again, unticked, as one Undo step that puts the ticks back.
+- **A part-coloured guide opens in Colour along** (from Home or the Library); new and finished ones open in the plan. Home's cards say how far each is coloured.
+- Choosing a saved palette no longer asks "This will re-map the current guide"; it's one Undo step.
+
+**Balance (Pattern › Random)**, fixed (v283 mislabelled parts and showed fixed figures)
+- **The bar shows what's painted:** each part as wide as the area in its markers, its figure to the nearest 5. In v283 a part labelled 10% could cover half the picture.
+- **The cause:** where a part's own markers were all on neighbouring sections, the least-used marker of any part was taken, and that was always an accent's. Now every section is laid biggest first, to whichever of the main colour and the second is further short, and a part borrows from the other of those two, then (only on a section no bigger than an accent) an accent's.
+- **A palette's other colours** join a part only within 60° of hue of its own markers; one further from them all is an accent, and an accent of two colours or more is "Accents", with 15% of the picture instead of 10%.
+- **One marker can lead a palette's main colour** (a 2-colour palette lays 70/30); a note says touching sections will merge, with **Add shades** (turns on Expand with nearby markers).
+- When a part misses what was asked by 8 points or more, a note says why (the sections' sizes, or too few markers to keep touching sections apart).
+- Tested on six pages (both of Ben's, the sample, a mandala and two made-up ones) with several collections and palettes, 576 layouts: the gap between asked and painted averaged 13.5 points before and 3.8 now; colours far from their part's hue on the main or second colour: in 119 layouts before, none now.
+
+**Colour along and Focus**
+- **The Codes button works in Colour along** (it did nothing there): off, every section shows in its colour and the done ones keep a ✓. **A finished page** shows the picture in its colours, and the banner says what was coloured and when ("166 sections · 16 markers · started 12 Sep, finished today"; the dates are saved from v284; a page coloured before then gives none).
+- **"Done colouring" is "← Plan"** ("Back to the plan"), like the plan's "← Edit sections".
+- **Find next** goes to the section's label point (always inside it), zooms to fit it (as focus mode does, always in a little), outlines it, and says "Next section to colour: 3 of 9 left".
+- **Focus mode:** a picture that fits sits in the middle of the space between the bars (before, a big section near the top left a black band above the picture); one that doesn't fit fills it, the section off-centre near an edge. With shading, the highlight, base and shadow are chips on a line of their own, the step being coloured lit; the tips are on the line under them, no longer cut off with "…".
+- **Codes on the picture** are never under 6 screen pixels at the zoom they're seen at (their sizes went by the photo's own pixels, so on a phone many came to 2–4 pixels). A section too small for one shows a dot until you zoom in (in focus mode, its code always). They redraw in steps as you zoom.
+- The first time Colour along keeps the screen on, a toast says so.
+- **Save image** has "Codes on the saved image" to tick off.
+
+**Print**
+- **Labels on the colouring page never overlap.** Placed biggest section first: a code shrinks to the least size, then the marker's key number is tried (the key then has its numbers column), and a section with room for neither gets a dot and a place in a close-up. On Ben's pages about 45 of 216 sections go to close-ups with Codes, about 30 with Numbers; before, they printed on top of each other.
+- **Close-ups:** up to 3 pages after the colouring page, each a part of the picture magnified (1.75–3×) with its labels, its own small sections labelled first and every label inside its edge. Each is lettered A, B… with a light dashed box on the colouring page, the letter in a corner of the box clear of the labels. The Print sheet says how many sections are on how many close-up pages, and that Numbers would fit more of them on the colouring page. Any that still have only a dot (a very busy picture) are counted there and under the last close-up: "14 more small sections have only a dot on page 1: see them in the app, or print with Numbers."
+- **The key** has a box to tick for each marker and an ORDER column (1st, 2nd … lightest first, as Colour along goes, so it can't be taken for the numbers beside it); it keeps its colour-family order and numbers. Its code column is as wide as the longest code, so names keep more room.
+- **A tall picture's reference** sits beside the key in Page + key too, when the key fits that column (it was a sliver across the top).
+
+**Plan and the rest**
+- Edit sections: each slider says what turning it up does ("Higher: small specks left out of the guide"). After **Keep as is** on a page the finder wasn't sure of, "Page kept as photographed · Straighten" stays offered. (Prompting whenever the finder rejects an outline was tried and dropped: on the test pages it fired for clean digital line art, and not for Ben's photos.)
+- **The tool row fits at 375px** in its busiest case (Photo, zoomed in, Undo showing): a last step narrows its buttons. Its buttons' tap areas also cover the 4px between them.
+- **Toasts:** one with a button lasts 8 s and stays while it's pointed at or has the keyboard's focus. The first Save says "Saves itself from now on ✓" in the header instead of a toast over the tabs.
+- **Words:** Blend's Mix is Muted · Vivid · Like paint (Soft is Mood's); Filters' shortcuts say Warm only / Cool only (Temperature only leans).
+- **Markers:** a search in Owned or Unowned says how many more are in All, with Show ("R23 isn't in your collection"); a ✕ clears it. Unowned markers in All show their true colour with a dashed edge. A link at the top jumps to the sets, swatch chart and backup. Tick/Untick all shown are spaced from the grid at full contrast.
+- **Match:** a result's rating is muted text after four dots filled by closeness, not a bold word that looked like a Close button.
+- **Palette:** the card shows the name the Library saves it under, the scheme under it; Photo before a photo has its own empty card; a line under Harmony says what each does; Library and Save image are in a ⋯ menu beside Save; Reset is Clear.
+- **Library:** delete is a bin, not a ✕ like Close.
+- **Screen readers:** an h1 (the app's name), the main menu as navigation, the main landmark, each screen's name as a heading, dialog and sheet titles as h2s, the guide's group labels as h3s.
+- **Look:** sheet titles are set as dialog titles are (the serif, one size); one focus-ring colour (white over the picture); the two 12px text sizes have one name; "Within your filters, lean toward…" is no longer in capitals.
+- **Fixed before release** (from a fresh review of v284): Blend's anchors and Spread, a light-to-dark Gradient turning to the light, and the Photo pattern's photo kept coloured sections too, as every other change does; Recolour them too can't lose ticks with no Undo step; Undo after Clear ticks, or after editing sections, keeps the kept shading and the dates; the finish date follows a page ticked complete again; the palette's "Using…" toast no longer covers the kept-sections line; a finished page shows at fit; Photo's waiting pattern is kept per zone; the Find next outline goes with the next tap; the Print page's labels are measured by their ink, not a box twice its height; the line under the title can't run into the picture. Focus mode's header fits a 320 px screen at a big text size, and Filters' Warm only / Cool only stay on one line there.
+- Help's What's new; device checklist 3d; GUIDE-LAYOUT: the sheet/dialog rule and Balance's bar.
+- **Tests:** `e2e/held.test.mjs` (5), `e2e/finish-and-codes.test.mjs` (5), `e2e/v284-polish.test.mjs` (4); Balance (`test/balance.test.mjs` +2, `e2e/balance.test.mjs` +1), print (+1, and its checks follow the close-ups and their letters), Markers, Match and Palette (+11); the style golden re-recorded (only the Random states changed).
+- Cache bumped to `marker-studio-v284`.
+
+# Changes — v285 (Home, saving, iPad and icons)
+
+Every decision was pressure-tested twice (each on its own, then together) and the layouts were chosen from screenshots of working prototypes on an 11" iPad, a 13" iPad and a phone, with a page-shaped picture as well as the tall sample.
+
+**Saving**
+- **A guide from your photo goes into the Library by itself once it's built** ("Saves itself from now on ✓", then "Saved in your Library ✓"); no Save to press. A guide saved as built, with nothing coloured, isn't counted by the backup reminder until it changes.
+- **The sample joins the Library only once you change it** (a tick, a pattern, a rename…): until then the header says **Sample**, with a line under the tabs ("This sample isn't in your Library yet. Change anything to keep it.", ✕ to close), and nothing is kept, not even for Resume. Looking around (codes, zoom, tabs, Colour along, the menu) isn't a change. It's kept as "Sample jellyfish", the next as "Sample jellyfish 2", and so on.
+- **A guide deleted in the Library while it's open stays out** (nothing saved, not even to the autosave slot) and the header says "Removed from your Library" with **Put back**, which puts it back as the same entry, with any changes made meanwhile.
+- **A first save that fails** (storage full) says so once, offers Share › Guide file, keeps the guide for Resume, and gives the header a **Save** to try again; the next change tries again too.
+
+**Home**
+- **The Continue card:** the newest guide part-way coloured, drawn as you've coloured it (the rest of the plan pale), how far ("72 of 216 coloured"), and the marker to pick up next. **Continue** opens Colour along at that marker (one part-way done, else the next lightest), its row open.
+- **New colouring guide** and the three cards sit beside the Continue card on an iPad and under it on a phone; New colouring guide is the second choice there (outlined). **Your guides** are the others: a grid of pictures on an iPad (three, four on a wide screen), a sideways strip on a phone, each drawn from its sections. The intro line shows only before there are any guides.
+- Home's cards have line icons on soft tiles in marker colours.
+
+**iPad**
+- **Portrait** stays one column on every iPad (the 13" was side by side, with a small picture and the bottom third empty) and uses the screen's width (up to 900px, not the phone's 600px column). The picture starts at 60% of the height and shrinks to 50% as you scroll; Colour along's is 60%.
+- **Landscape:** the picture fits the screen below where it starts as the page opens (before, it was sized to the whole screen but started under the app's header, so its foot and the tool row were off the bottom), and its column is as wide as the picture and its tools need (at most 60%, the controls keeping 340–560px), centred. A very tall picture comes out a little smaller, but whole. (Landscape phones, under 600px tall, keep the picture the screen's height.)
+- **Tabs** are as tall as the tallest one when that's less than the screen: on an iPad in landscape the page no longer scrolls 260px into empty space under a short tab, and switching tabs still moves nothing.
+
+**Icons**
+- Line icons (Lucide, credited with Feather in `src/assets/icons/LICENSE-Lucide-Feather.txt`) replace the emoji and the symbols on buttons: Surprise and Reveal's sparkles, ⋯, ✕, Undo, rename, zones' ＋, Shuffle, Other pairings, Blends, Focus mode, the sun, the radial centre, Random and Match, warnings, Done's chevron, Turn left/right. The tool row's own Codes and Values are redrawn to match. ✓ and the arrows in words ("← Plan") stay as text. One sprite in the page (`src/html/icons.html`), drawn with `ic()`.
+
+**Colouring**
+- **Shading on part-coloured sections:** the highlight stays once anything in a section is coloured; the shadow stays once its shadow tone is coloured or the section is ticked (the shadow always comes last). Until then a section's shadow follows the Shadows setting. Guides saved by v284 keep their sections' shading as saved.
+- **Blend › Mix** has a line saying what the chosen mix does ("Colours mix as layers of ink do: blue and yellow make green.").
+- **Straighten:** a photo from a camera (it says what lens took it) that the page finder left as it was now gets "Page kept as photographed · Straighten" (not for a page already square to the camera, or one that fills the photo); Straighten starts with the corners where the finder guessed them. Digital art and scans carry no lens, so it stays quiet for them as before. (A proper rebuild of the finder waits for about 30 real page photos to tune it on.)
+
+**Found by the pre-release review (each reproduced first; tests in `e2e/v285-review.test.mjs`)**
+- Home's two columns never showed on an iPad: an older rule kept Home to the phone's 440px column. It now uses the width as designed.
+- Narrow landscape phones (640–667px wide, an iPhone SE/8) cut off the right of the controls column; the two columns now give way so both fit.
+- A name half-typed when the guide saved itself for the first time was saved, and Escape didn't take it back. The automatic save now leaves a name being typed alone.
+- Put back could lose the guide's stored picture and progress if the Library's delayed delete landed while it was being written; Put back now cancels that delete first.
+- Home redrew the Continue card's picture after every save while you coloured (and kept each one): it's drawn only while Home shows, one per guide. It now follows a Library rename too, and never adds "next …" twice.
+- The marker sets' caret turned back into a ▸ after the first tap; the sun hint read "Drag the on the picture" to a screen reader; the warning icon on a palette swatch had no words for one.
+- Continue could leave a flag on, so a later reload of a guide jumped to a marker; it now applies to the one open it was for.
+- For a guide coloured zone by zone the card could name a marker Colour along doesn't open at; it doesn't name one there.
+- A sample whose build stopped short (every marker dry, say) never counted as changed afterwards, so its colouring wasn't kept.
+- Whether the sample has changed is worked out at most every 400ms for the status line (it builds the whole guide), afresh for every save.
+- The header now makes room for "Not saved — use Share › Guide file" when the browser blocks storage; Save stays in place (saying Saving…) while it tries again; a failed page finder no longer offers Straighten; sheets' buttons keep a button's size on a wide iPad sheet.
+
+**Tests and docs**
+- `saveGuide(page)` and `letterGuide(page)` helpers (a Letter-shaped line-art page drawn for the tests, `e2e/fixtures/letter-page.png`); the Save-button tests rewritten for the new model; new tests for the sample, Put back, failed first saves, the Continue card, Home with no guides, the iPad layouts and the shading hold.
+- GUIDE-LAYOUT: the side-by-side query, iPad picture sizes, tab heights, the status line. Device checklist 3e. Help's What's new.
+- Cache bumped to `marker-studio-v285`.
+- Full run: 184 unit tests and 581 browser tests pass (one palette test made steady: the small test collection could draw the saved palette again).
+
+# Changes — v286 (a fresh-eyes bug review of v285)
+
+Three independent reviewers went over v285 after it was finished: one on saving and data safety, one on the guide screen's logic, one using the app in a browser at phone and iPad sizes. Each fix below was reproduced first and has a browser test in `e2e/v285-review2.test.mjs`.
+
+**Saving**
+- **Changes in the last moment before a reload or closing the tab were lost** (about the last 1.5 s: ticks, a pattern change), because the browser drops a database write started as the page goes. They're now kept in the browser's small storage at once and put into the guide at the next start, unless another tab saved it since. A phone switching apps saves straight away too.
+- A guide's section edits left for Resume by an earlier visit were deleted when the same guide was opened another way (from Home or the Library) and changed; they're now kept as "… (section edits)" first, as when a new guide takes Resume's place.
+- A guide deleted from the Library while open, with section edits not built, came back through Resume when the page was hidden. It stays out.
+- With storage blocked, opening something else after changing a guide just failed again and again. It now asks: Cancel (then Share › Guide file keeps it) or Open anyway.
+- Discard edits on section edits brought back by Resume now leaves the Library guide untouched and drops the copy kept for Resume; discarded edits of a guide not in the Library aren't offered for Resume again.
+- A guide that failed to open removed itself from the Library if it had been imported earlier in the same visit; only a guide just imported, that never opened, is taken out again.
+- Another tab's save went unseen while this tab waited to save nothing; it now reloads it.
+- A guide whose stored copy is missing says so, not "the file isn't a Marker Studio guide".
+
+**Home and Library**
+- Continue opened Colour along with the marker's row scrolled away again by the change of stage; the row is now on screen, clear of the picture and the bar.
+- The Continue card doesn't name a next marker that's dry or not owned (the guide shows its stand-in there), and a screen reader hears the next marker.
+- The Library said "All guides are in a backup" when none had been made (guides saved as built aren't counted as at risk); it says "Not backed up yet".
+
+**Guide screen**
+- Reveal: a section's tip left open went with it, so the first Escape closed the hidden tip; switching tabs or opening Reveal now closes the tip. The keyboard goes into Reveal's bar and back to Reveal & share when it closes.
+- Adjust photo's ▸ is a line icon now, and it and Add a set you own say whether they're open.
+- A renamed zone's chip has its new name for a screen reader too.
+- Singular wording: "1 marker", "1 anchor", "Editing Main: 1 section", "The R23 section ticked".
+
+**Welcome**
+- On a landscape phone the marker sets were a list scrolling inside another scrolling area, showing only a sliver; it's one scrolling area now.
+
+**Noted, not changed**
+- Section edits not built yet are kept when the page is hidden (a phone switching apps), but not when the page is reloaded within a moment of making them.
+- With larger text, some buttons and chips keep their size while the text around them grows.
+
+**Tests and docs**
+- Cache bumped to `marker-studio-v286`.
+- Full run: 184 unit tests and 592 browser tests pass.
+
+# Changes — v287 (a second fresh-eyes review: bugs fixed, the next version mapped)
+
+Five independent reviewers went over v286: saving and data (code), the guide's logic (code), a stress test in a browser, a hands-on UX walkthrough at iPad and phone sizes, and words, consistency and accessibility. Each fix below was reproduced first and has a browser test in `e2e/v287-review.test.mjs` (all 11 fail on v286). What's left for decisions is in `docs/REVIEW-v287.md`.
+
+**Saving**
+- v286's "kept as the page goes" had problems of its own: it could keep a colour only being tried in the picker (and a later start would save it), it changed the Library row at once (so this tab, or another one open on the guide, took it for another tab's save: a false "merged" message, or the other tab reloading the old copy and later saving over the kept changes), and when it couldn't be put into the guide the row still showed the changes. Now nothing is kept aside while the picker is trying a colour, the row is left alone, and it's updated only once the kept changes are in the guide (with a new time, so another tab open on it reloads it). A save that lands meanwhile makes them unneeded, and they're dropped.
+- A new guide from a photo was lost if the page was reloaded or closed within about 2 seconds of Build; it now goes into the Library straight away.
+
+**Guide screen**
+- Zooming in Edit sections (or into Crop or Straighten) repainted the plan's colours over the sections 160 ms later; so did coming back from Markers or Palette after a Reveal earlier in the visit (which also redrew and moved the keyboard each time the guide was left).
+- A Temperature none of your markers have (a warm-only collection, then Cool) showed the old choice while using the new one, was saved, and later stopped Build guide with nowhere to change it. It now stays as it was and says "None of your markers are cool — choose another Temperature"; a build after the collection changed falls back to Any.
+- Reveal: the page behind it is inert, so Tab can't reach (and change) the controls hidden under it; a recording stopped by Close or Replay can't come back late, and its capture stream ends.
+- Focus mode: ticks there now stamp when the page was started (it was stamped on leaving, so a page started and finished in one go read "today"); leaving after moving on opens the marker it was on, on screen, not the one it started from (left at once, the row stays as it was).
+- Everywhere and Fill in Change colour no longer recolour a section with some of its tones coloured (any ink on the paper keeps its marker, as everywhere else since v284).
+- A picture wider than about 3:1 was stretched on a phone (a 4:1 picture drawn 36% too tall); it keeps its shape, in the middle of the frame.
+- 320×568 with large text: the tool row ran 30 px under the bottom bar; the picture's least size gives way there (down to 100 px).
+- The zone tip's "Edit this zone" from Shading or Share switches tab before taking you to the zone, so the keyboard lands on its chip.
+- Print › PDF shows "Preparing…" while it draws.
+
+**Words**
+- Every marker dry: "Every marker you own is marked dry — un-mark some in Markers", not "No markers in your collection".
+- Sections of an imported guide whose marker the app doesn't know: it says how many stay white. A guide file with no markers at all is refused.
+- Singulars: "1 marker", "1 section" on printed pages and the saved image, "Only 1 marker close enough", "The one marker you own", "1 colour" in the selection bar, shading's "with a second coat".
+- "None of your markers match the filters", "towards", "make one in Palette, or use Share › Save as palette", "Min section size" (as the slider says), "Enhance (under Adjust photo)", "section edits" (not "manual edits"), "Press and hold", "blend companions", "JPEG or PNG" and "couldn't be opened as a picture", "Couldn't find the drawing — use Crop to choose it", "Couldn't load the sample. Try again" (it showed nowhere before), "›" in Help's paths, "+ Zone" and "Focus mode" in What's new, the unreadable-data note's "Download the original" (it was "Save a copy", like the guide's), and the restore question says what OK and Cancel do.
+- On the start card, only the brands you have ("120 markers from your collection (Ohuhu)").
+
+**Accessibility**
+- The Blend plan's colour groups were divs: closed, with no way to open them by keyboard or screen reader. They're buttons that say whether they're open, with line-icon chevrons and a full-size tap.
+- Names for the Saved palette and Harmony dropdowns, the Palette and Markers choice rows (Harmony, Colours, Show), the selection's Clear, Auto crop, each palette band's lock ("Lock R46"), and Delete in the Library; "← Edit sections" says its own words; dialogs read their question; the ink choice is pressed buttons like every other row; Adjust photo's caret is a line icon with its state; the finished page's Reveal & share has a full-size tap.
+
+**Tests and docs**
+- `e2e/v287-review.test.mjs` (11 tests); tests updated for the new wording.
+- `docs/REVIEW-v287.md`: the review, what was fixed, and the next version mapped.
+- Cache bumped to `marker-studio-v287`.
+- Full run: 184 unit tests and 603 browser tests pass.
+
+# Changes — v288 (the next version from the v287 review)
+
+The decisions in `docs/REVIEW-v287.md`, pressure-tested before building. New browser tests in `e2e/v288.test.mjs`; tests that described the old behaviour were updated.
+
+**Colour along looks like your paper**
+- What you've coloured (ticked, or any tone) shows in its marker's colour and the rest pale, as on Home's Continue card (one shared tint). With a row open, its sections still to do are full colour and outlined, coloured ones softened, the rest very pale. Codes off still shows the whole plan (with a row open, the rest softened rather than gone). Focus mode matches, with the current section in full colour and its ring.
+- Find next and Focus mode zoom only as far as a section needs (about 44px across, keeping as much of the page as possible), with a bold two-tone outline that shows on any colour and pulses once on arrival.
+- "N markers on this page ›" opens a list (Done closes it) of the page's markers, lightest first, with how many sections each, stand-ins ("for R46 (dry)"), To buy and the shading markers; tapping one lights up its sections.
+- A finished page's bar offers ← Plan and Reveal & share; Reveal has one ✕ (top left).
+- Focus mode's header is "Section 1 of 11" (the bar shows the page's progress).
+
+**Plan**
+- Change colour starts with Closest (three lighter and three darker markers you own) and In this guide; Recently used follows with only markers not already shown. The first time, a line under the tabs says the section is pinned, with Unpin. Help explains Pin and Kept.
+- Balance names its parts Main, Second and Accent, with the family in the sheet's title.
+- The tool row on an iPad has words (Codes, Greyscale, Full screen); on a phone a one-time line names them. Values is now Greyscale.
+- Temperature's and Mood's buttons are one style; toasts on the Share tab sit under the tool row, clear of its buttons; "Tap a section…" shows only on Colours and Pattern.
+
+**Edit sections**
+- A heading ("Check the sections") and one line; the tools above the sliders; lighter tints; "Leave out" for excluding. Back from the Plan with nothing changed, the bar says ← Plan (no rebuild); once something is edited, Build again, with a line about coloured sections kept. Merge's first section is outlined.
+
+**Home, Library and Markers**
+- New colouring guide opens the photo picker straight from Home once you have guides (the first time, the Guide screen's card); Home stays until a photo is chosen. A palette chosen for the next guide shows under the button.
+- The Library is a full-screen grid of pictures (two columns on a phone): each guide as coloured so far, palettes as their markers; ⋯ on each renames or deletes (with Undo). Home's "All guides (N) ›" opens it; from Palette, palettes come first. Back up & restore lives in the Library, with the markers-and-palettes text there too.
+- Markers' Untick all shown and Back up & restore are in a ⋯ menu.
+- Progress reads the same everywhere: "5 of 122 coloured", "finished", "not started".
+- On an iPad every screen has the same width.
+- Use in a guide asks: recolour the open guide (keeping what you've coloured) or start a new guide with the palette.
+- The palette's glow stays on the Palette screen.
+
+**Questions in the app's own dialog**
+- Detect the sections again, rebuilding after a rotate or crop, restoring ("Replace my markers" / "Keep mine") and a backup opened as a guide no longer use the browser's OK / Cancel.
+
+**Print**
+- Each Pages and Labels choice has a small drawing of the printed sheet.
+
+**Words**
+- "Couldn't" throughout; "marker-by-number"; Reset progress asks "Reset progress?" ("This clears what you've coloured on N sections"); Random says "left to draw" and "put it back" instead of "pool".
+
+**Accessibility**
+- A palette band and its lock are two sibling buttons (not a button inside a button); Match's sources are pressed buttons; Focus mode's Greyscale, zoom and Fit are reachable by Tab.
+
+**Found by two fresh-eyes reviews of the new code (a code read and a hands-on bug hunt in a browser), fixed before release**
+- Focus mode: the picture took no taps once its tool row was made reachable by keyboard; Tab now goes top bar, picture, Greyscale, −, +, Fit, bottom bar.
+- "New guide with it" no longer changes the open guide's palette (the palette waits for the new guide; deleted meanwhile, it's let go), and it opens the photo picker within the tap (iOS).
+- ← Plan › Discard works for section edits brought back by Resume; a double tap can't cancel a question it just opened or untick every marker at once.
+- On a wide screen the tools stack beside the picture again; Find next measures the room in the frame, not around the picture; the In this guide strip never widens the sheet.
+- The markers list has Done; its shading markers aren't buttons that light nothing up. Toasts stay put in Colour along after the Share tab. Renamed Library tiles keep their picture; pictures draw one at a time and free their memory; a tap beside an open ⋯ menu only closes it.
+
+**Tests and docs**
+- `e2e/v288.test.mjs` (7 tests); tests updated for the new bar, rows, dialogs, wording and Library.
+- `docs/GUIDE-LAYOUT.md` (#2, #4, #6, #10, the tip queue and the Library), `docs/DEVICE-TEST.md` 3f.
+- Cache bumped to `marker-studio-v288`.
+- Full run: 184 unit tests and 611 browser tests pass.

@@ -77,7 +77,7 @@ test('Shadows › Grey: a grey from a grey family, matched to the colour\'s warm
   // Colour along's shadow step says it goes over the base
   const l = await page.evaluate(() => { const t = __mstest; for (const l in t.assignData.assign) if (t.shadeTones(t.assignData.assign[l]).glaze && t.shadeReq(+l) & 4) return +l; return -1; });
   assert.ok(l > 0);
-  assert.match((await page.evaluate((l) => __mstest.stepText(l, 4), l)).sub, /over the base/);
+  assert.match((await page.evaluate((l) => __mstest.stepText(l, 4), l)).sub, /over the dry base/);
   assert.deepEqual(errors, []);
 });
 

@@ -3,7 +3,7 @@
 // Done group zone by zone; Undo labels and an empty zone.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, saveGuide, answerAsks, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -48,7 +48,7 @@ test('sections found again twice before Build guide: the zones land where once p
     await makeZone(page, await bigSecs(page, 4, 'top'), 'Bell');
     await page.click('#sfBack2'); await idle(page);
     await flipAndDetect(page, times);
-    await page.click('#sfBuild'); await idle(page);
+    await buildGo(page); await idle(page);
     const placed = await zoneSecsAll(page);
     assert.equal(placed.length, 1); assert.ok(placed[0].length, 'the zone kept sections');
     runs.push(placed);
@@ -60,7 +60,7 @@ test('sections found again twice before Build guide: the zones land where once p
 
 test('Undo in Edit sections after sections were found again brings back the zones as they were', async () => {
   const { page, errors } = await openApp();
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await sampleGuide(page); await idle(page);
   await makeZone(page, await bigSecs(page, 4, 'top'), 'Bell');
   const orig = await zoneSecsAll(page);
@@ -69,30 +69,30 @@ test('Undo in Edit sections after sections were found again brings back the zone
   await flipAndDetect(page, 0);
   await page.click('#sfAdjToggle'); await idle(page);
   await page.click('#sfEnh'); await idle(page, 2000);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.notDeepEqual(await zoneSecsAll(page), orig, 'the zone is on the new sections');
   await page.click('#sfBack2'); await idle(page);
   await page.click('#sfPlanUndo'); await idle(page, 2000);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.deepEqual(await zoneSecsAll(page), orig);
   assert.deepEqual(errors, []);
 });
 
 test('turning the picture clears the zones and says so; Undo in Edit sections brings them back', async () => {
   const { page, errors } = await openApp();
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await sampleGuide(page); await idle(page);
   await makeZone(page, await bigSecs(page, 4, 'top'), 'Bell');
   const orig = await zoneSecsAll(page);
   await page.click('#sfBack2'); await idle(page);
   await page.click('#sfAdjToggle'); await idle(page);
   await page.click('#sfRotR'); await idle(page, 3000);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.match(await page.textContent('#msToast'), /zones were cleared: turning, straightening or cropping/);
   assert.equal((await zoneSecsAll(page)).length, 0);
   await page.click('#sfBack2'); await idle(page);
   await page.click('#sfPlanUndo'); await idle(page, 3000);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.deepEqual(await zoneSecsAll(page), orig);
   assert.deepEqual(await page.evaluate(() => __mstest.zones.map((z) => z.name)), ['Bell']);
   assert.deepEqual(errors, []);
@@ -106,12 +106,12 @@ test('section edits kept while the page is hidden, after sections were found aga
   await flipAndDetect(page, 1);
   const saved = await page.evaluate(() => { const d = __mstest.currentDesignObj(false, true); window.__d = Object.assign({}, d.payload, { name: d.name, W: d.W, H: d.H }); return d.payload.zones[0].secs; });
   // where Build guide puts them
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.deepEqual(saved, (await zoneSecsAll(page))[0]);
   // and opened again (Resume), then built: the same
   await page.evaluate(() => __mstest.openDesignObj(window.__d, null, true));
   await page.waitForFunction(() => __mstest.labels && __mstest.zones.length); await idle(page);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.deepEqual((await zoneSecsAll(page))[0], saved);
   assert.deepEqual(errors, []);
 });
@@ -130,7 +130,7 @@ test('Build guide with no section edits leaves a white section of Main in Main',
   });
   await page.click('#sfZoneDone'); await idle(page);
   await page.click('#sfBack2'); await idle(page);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.equal(await page.evaluate((l) => __mstest.zoneOf(l), r.l), 0);
   assert.deepEqual(errors, []);
 });
@@ -159,7 +159,7 @@ test('the markers you can use: after reopening, a filter change lays every zone 
   await makeZone(page, await bigSecs(page, 6, 'top'), 'Bell');
   await page.click('#sfShape [data-v="radial"]').catch(() => {});
   await page.click('#sfFam [data-v="gradient"]'); await idle(page);
-  await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent));
+  await saveGuide(page);
   const id = await page.evaluate(() => __mstest.curId);
   await page.reload(); await idle(page);
   await page.evaluate((id) => loadGuide({ id }), id);

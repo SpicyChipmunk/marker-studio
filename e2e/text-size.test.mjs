@@ -4,7 +4,7 @@
 // the text (controls up to 1.3x, reading text up to 1.6x) without sideways scrolling or text cut off at the edge.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, sampleGuide, idle, openAtScale, menuItem, openMenu, sectionPoint, longPress, scrollTop } from './helpers.mjs';
+import { setup, teardown, sampleGuide, idle, openAtScale, menuItem, openMenu, sectionPoint, longPress, scrollTop, saveGuide } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -27,17 +27,21 @@ const texts = (page) => page.evaluate(() => {
     // the text's own box, cut to its nearest clipping ancestor; `cut` = that ancestor hides part of it without an
     // ellipsis (scrolling boxes don't count: the rest is a scroll away)
     const rg = document.createRange(); rg.selectNodeContents(n); const t = rg.getBoundingClientRect();
-    let left = t.left, right = t.right, cut = false, ell = false;
+    let left = t.left, right = t.right, cut = false, ell = false, first = true;
+    // (past the nearest clipping ancestor, only sideways scrollers further up count: v288's In this guide strip, whose
+    // tiles clip their own codes and scroll sideways together)
     for (let a = el; a && a !== document.body; a = a.parentElement) {
       const cs = getComputedStyle(a);
-      if (cs.textOverflow === 'ellipsis') ell = true;
+      if (first && cs.textOverflow === 'ellipsis') ell = true;
       const clipX = /hidden|clip/.test(cs.overflowX), clipY = /hidden|clip/.test(cs.overflowY);
       const b = a.getBoundingClientRect();
       const scrollX = /auto|scroll/.test(cs.overflowX);
+      if (!first) { if (scrollX) { left = Math.max(left, b.left); right = Math.min(right, b.right); break; } continue; }
       if (!clipX && !clipY && !scrollX) continue;
       if (clipX || scrollX) { left = Math.max(left, b.left); right = Math.min(right, b.right); }
       if (!ell && ((clipX && (t.right > b.right + 1 || t.left < b.left - 1)) || (clipY && (t.bottom > b.bottom + 1 || t.top < b.top - 1)))) cut = true;
-      break;
+      if (scrollX) break;
+      first = false;
     }
     out.push({ text: n.nodeValue.trim().slice(0, 40), cls: el.tagName + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).join('.') : ''), size: parseFloat(getComputedStyle(el).fontSize), left, right, cut });
   }
@@ -88,7 +92,7 @@ async function walkScreens(page) {
   await page.click('.sftabbtn[data-t="share"]'); await idle(page); await checkScreen(page, 'guide: Share');
   await page.click('#sfPrint'); await idle(page); await checkScreen(page, 'guide: the Print sheet');
   await page.keyboard.press('Escape'); await idle(page);
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   await page.evaluate(() => document.getElementById('msToast')?.classList.remove('on'));
   await page.click('.sftabbtn[data-t="pattern"]'); await idle(page);
   await checkScreen(page, 'guide: Pattern');
@@ -140,7 +144,7 @@ test('at the default text size the app keeps its designed pixel sizes, with noth
   assert.equal(await px(page, '#mHome'), 14);
   assert.equal(await px(page, '.sftabbtn'), 13);
   assert.equal(await px(page, '.sfcolorcta'), 14);
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   assert.equal(await px(page, '#sfSaveSt'), 12, 'save status line: raised from 11px');
   await page.evaluate(() => document.getElementById('mHome').click()); await idle(page);
   assert.equal(await px(page, '.homesub'), 13);
@@ -266,7 +270,8 @@ test('Share: ✨ Reveal & share and Save image are each one line at every text s
     await page.click('.sftabbtn[data-t="share"]'); await idle(page);
     await page.$eval('#sfReveal', (e) => e.scrollIntoView({ block: 'center' })); await idle(page);
     for (const id of ['sfReveal', 'sfExport', 'sfPlan', 'sfAsPal']) {
-      const one = await page.$eval('#' + id, (b) => { const rg = document.createRange(); rg.selectNodeContents(b); const lines = new Set([...rg.getClientRects()].map((q) => Math.round(q.top))); return lines.size; });
+      // (the words' lines: an icon before them sits a little lower in the same line)
+      const one = await page.$eval('#' + id, (b) => { const lines = new Set(); b.childNodes.forEach((n) => { if (n.nodeType !== 3 || !n.textContent.trim()) return; const rg = document.createRange(); rg.selectNodeContents(n); [...rg.getClientRects()].forEach((q) => lines.add(Math.round(q.top))); }); return lines.size; });
       assert.equal(one, 1, `@${sc} ${w}px: #${id} is on one line`);
     }
     const a = await rect(page, '#sfReveal'), b = await rect(page, '#sfExport');

@@ -3,7 +3,7 @@
 // built yet are said, asked about and kept; and a rebuilt guide never saves a scrambled copy.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK, saveGuide, answerAsks, askAnswer, asked, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -22,12 +22,12 @@ test('undo in the sections editor after building keeps colouring progress', asyn
   // an edit before building, so there is something to undo later
   await page.click('#sfBack2'); await idle(page);
   await page.evaluate(() => { const t = __mstest, o = t.assignData.order; t.mergeCellsSnap(o[0], o[1]); t.render(); });
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   await page.click('#sfColor'); await colourSome(page, 4);
   assert.equal(await done(page), 4);
   await page.click('#sfDoneBtn'); await page.click('#sfBack2'); await idle(page);
   await page.evaluate(() => __mstest.doUndoSeg());
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.ok(await done(page) >= 3, 'progress kept after undo + rebuild');
   assert.deepEqual(errors, []);
 });
@@ -36,11 +36,11 @@ test('undo in the sections editor after building keeps colouring progress', asyn
 test('re-detecting the sections drops pins and flat sections that pointed at old section numbers', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.evaluate(() => { const t = __mstest, o = t.assignData.order; t.locks[o[3]] = t.assignData.assign[o[3]].mkey; t.shadeFlat[o[1]] = 1; });
   await page.click('#sfBack2'); await idle(page);
   await page.click('#sfAdjToggle'); await page.click('#sfRotR'); await idle(page, 1200);
-  await page.click('#sfBuild'); await page.waitForFunction(() => __mstest.assignData && __mstest.assignData.N > 0); await idle(page);
+  await buildGo(page); await page.waitForFunction(() => __mstest.assignData && __mstest.assignData.N > 0); await idle(page);
   const r = await page.evaluate(() => ({ locks: Object.keys(__mstest.locks).length, flat: Object.keys(__mstest.shadeFlat).length, done: __mstest.colored.reduce((a, b) => a + b, 0) }));
   assert.deepEqual(r, { locks: 0, flat: 0, done: 0 });
   assert.deepEqual(errors, []);
@@ -53,11 +53,11 @@ async function tickSome(page, n) { await page.evaluate((n) => { const t = __mste
 
 test('rebuilding the sections under an open guide never saves a scrambled copy of it', async () => {
   const { page, errors } = await openApp();
-  await sampleGuide(page); await tickSome(page, 4); await page.click('#sfSave'); await idle(page);
+  await sampleGuide(page); await tickSome(page, 4); await saveGuide(page); await idle(page);
   const id = await savedId(page), before = await saved(page, id);
   // make a change, go back to the sections, turn the picture, then open something else
   await page.evaluate(() => { __mstest.colored[__mstest.assignData.order[5]] = 1; __mstest.guideDirty = true; });
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfBack2'); await idle(page);
   await page.click('#sfAdjToggle'); await page.click('#sfRotR'); await idle(page, 1200);
   await page.evaluate(() => SF.loadSample()); await idle(page, 1500);
@@ -73,10 +73,10 @@ test('undoing an accidental re-detect keeps progress and pins when the guide is 
   const { page, errors } = await openApp();
   await sampleGuide(page); await tickSome(page, 6);
   const pin = await page.evaluate(() => { const t = __mstest, l = t.assignData.order[8]; t.locks[l] = t.assignData.assign[l].mkey; return l; });
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfBack2'); await page.click('#sfAdjToggle'); await page.click('#sfEnh'); await idle(page);
   await page.click('#sfPlanUndo'); await idle(page);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   const r = await page.evaluate((pin) => ({ done: __mstest.colored.reduce((a, b) => a + b, 0), pin: !!__mstest.locks[pin] }), pin);
   assert.deepEqual(r, { done: 6, pin: true });
   assert.deepEqual(errors, []);
@@ -87,9 +87,9 @@ test('Manual colours are not carried onto different shapes after re-detecting', 
   await sampleGuide(page);
   await page.click('.sftabbtn[data-t="pattern"]'); await page.click('#sfFam [data-v="manual"]'); await idle(page);
   const before = await page.evaluate(() => { const t = __mstest, a = {}; for (const l in t.assignData.assign) a[l] = t.assignData.assign[l].mkey; return a; });
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfBack2'); await page.click('#sfAdjToggle'); await page.click('#sfRotR'); await idle(page, 1200);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   const same = await page.evaluate((b) => { const t = __mstest; let n = 0, k = 0; for (const l in t.assignData.assign) { k++; if (b[l] === t.assignData.assign[l].mkey) n++; } return n / k; }, before);
   assert.ok(same < 0.9, `only ${(same * 100).toFixed(0)}% keep the old marker by number`);
   assert.deepEqual(errors, []);
@@ -97,7 +97,7 @@ test('Manual colours are not carried onto different shapes after re-detecting', 
 
 // ---- From the fourth review (data safety) ----
 // Save (a new guide into the Library), done once the header says so
-const saveNew = async (page) => { await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent)); };
+const saveNew = (page) => saveGuide(page);
 
 const AUTO = 2300; // idle(page, AUTO): until auto-save (1.5 s after the last change) has run
 const stored = (page, id) => page.evaluate((id) => IDB.get('guide-' + id).then((p) => p && { prog: (p.prog || []).length, assign: p.assign, tones: p.tones || {}, ref: p.ref || null, base: p.base || null, style: p.style }), id);
@@ -114,18 +114,19 @@ test('turning a built guide asks first, and Undo brings back its ticks, pins and
   const pin = await page.evaluate(() => { const t = __mstest, l = t.assignData.order[30]; t.locks[l] = t.assignData.assign[l].mkey; t.guideDirty = true; t.renderGuide(); return l; });
   await idle(page, AUTO);
   const a0 = await assignMap(page);
-  const asked = []; page.on('dialog', (d) => { asked.push(d.message()); d.accept(); });
+  await answerAsks(page, true);
   await page.click('#sfBack2'); await page.click('#sfAdjToggle'); await page.click('#sfRotR'); await idle(page);
-  assert.equal(asked.length, 1); assert.match(asked[0], /clears your colouring progress/);
+  let q = await asked(page);
+  assert.equal(q.length, 1); assert.match(q[0], /clears your colouring progress/);
   await page.click('#sfRotL'); await idle(page);
-  assert.equal(asked.length, 1, 'asked once: nothing left to lose the second time');
-  await page.click('#sfBuild'); await idle(page);
+  assert.equal((await asked(page)).length, 1, 'asked once: nothing left to lose the second time');
+  await buildGo(page); await idle(page);
   assert.equal(await doneN(page), 0, 'the new sections start uncoloured');
   // ← Edit sections → Undo (once per turn: each is its own step): the picture, the sections and everything on them come back
   await page.click('#sfBack2'); await idle(page);
   await page.click('#sfPlanUndo'); await idle(page);
   await page.click('#sfPlanUndo'); await idle(page);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.equal(await doneN(page), 20);
   assert.ok(await page.evaluate((l) => !!__mstest.locks[l], pin), 'pin back');
   assert.deepEqual(await assignMap(page), a0, 'the same colours');
@@ -141,7 +142,7 @@ test('Random: back to the sections and Build again keeps every marker, the ticks
   await tickN(page, 5); await idle(page, AUTO);
   const a0 = await assignMap(page), p0 = await page.evaluate(() => __mstest.planCount), ts0 = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').ts);
   assert.ok(p0 >= 1);
-  await page.click('#sfBack2'); await idle(page); await page.click('#sfBuild'); await idle(page);
+  await page.click('#sfBack2'); await idle(page); await buildGo(page); await idle(page);
   assert.deepEqual(await assignMap(page), a0, 'no section rolled again');
   assert.equal(await doneN(page), 5);
   assert.equal(await page.evaluate(() => __mstest.planCount), p0, 'the undo steps are kept');
@@ -150,7 +151,7 @@ test('Random: back to the sections and Build again keeps every marker, the ticks
   // a section brought in gets a marker of its own; the others keep theirs
   await page.click('#sfBack2'); await idle(page);
   const l = await page.evaluate(() => { const t = __mstest; for (let l = 1; l < t.comps.length; l++) if (!t.counted(l) && t.comps[l] && !t.comps[l].merged && t.comps[l].area > 50) { t.secState[l] = 1; return l; } return 0; });
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   const a1 = await assignMap(page);
   assert.ok(!l || a1[l], 'the new section has a marker');
   for (const k in a0) assert.equal(a1[k], a0[k]);
@@ -172,18 +173,21 @@ const hide = (page) => page.evaluate(() => { Object.defineProperty(document, 'vi
 
 test('section edits of a Library guide left in the Resume slot are kept as a copy when a new guide takes the slot', notOnWebKit(WK.photo), async () => {
   const { page, errors } = await openApp();
-  await sampleGuide(page); await page.click('#sfSave');
+  await sampleGuide(page); await saveGuide(page);
   await page.waitForFunction(() => state.saved.some((s) => s.type === 'guide'));
   const id = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id), name = await page.evaluate(() => __mstest.curName);
   const n0 = await page.evaluate(() => __mstest.assignData.N);
   const l = await excludeOne(page);
   await hide(page);
   await page.waitForFunction(() => { const m = JSON.parse(localStorage.getItem('ms-guide-auto') || 'null'); return m && m.edits === 1; });
-  // the tab is gone (reload); another new guide takes the slot
+  // the tab is gone (reload): Home offers to resume them; then another guide's section edits take the slot
   await page.reload(); await idle(page);
-  await page.evaluate(() => { setMode('sections'); SF.loadSample(); }); await page.waitForFunction(() => __mstest.assignData);
-  await page.evaluate(() => { const t = __mstest; t.assignData.order.slice(0, 2).forEach((l) => { t.colored[l] = 1; }); t.guideDirty = true; t.renderGuide(); });
-  await page.waitForFunction(() => { const m = JSON.parse(localStorage.getItem('ms-guide-auto') || 'null'); return m && !m.edits && m.savedId == null; }, null, { timeout: AUTO + 3000 });
+  await page.click('#mHome'); await idle(page);
+  assert.ok(await page.isVisible('#sfResume'), 'kept for Resume meanwhile');
+  await page.evaluate(() => { setMode('sections'); SF.loadSample(); }); await page.waitForFunction(() => __mstest.assignData); await idle(page);
+  await excludeOne(page);
+  await hide(page);
+  await page.waitForFunction(() => { const m = JSON.parse(localStorage.getItem('ms-guide-auto') || 'null'); return m && m.edits === 1 && m.savedId == null; }, null, { timeout: AUTO + 3000 });
   const gs = await page.evaluate(() => state.saved.filter((s) => s.type === 'guide').map((s) => ({ id: s.id, name: s.name })));
   assert.equal(gs.length, 2, 'the guide and a copy with its section edits');
   const copy = gs.find((g) => g.id !== id);
@@ -193,7 +197,8 @@ test('section edits of a Library guide left in the Resume slot are kept as a cop
   assert.equal(pl.edits, 1);
   assert.equal(pl.secStates[l], 2, 'with the edit');
   assert.equal(Object.keys((await page.evaluate((id) => IDB.get('guide-' + id), id)).assign).length, n0, 'the guide itself is as built');
-  // the copy opens in Edit sections, ready to build
+  // the copy opens in Edit sections, ready to build (in a new tab: this one would ask about the sample's edits first)
+  await page.reload(); await idle(page);
   await page.evaluate((id) => loadGuide({ id }), copy.id);
   await page.waitForFunction((id) => __mstest.curId === id && __mstest.assignData, copy.id, { timeout: 10000 });
   assert.equal(await page.evaluate(() => __mstest.sfmode), 'review');
@@ -239,8 +244,10 @@ for (const trim of [0, 100]) {
     assert.equal(await page.evaluate(() => __mstest.assignData.N), n0);
     await tickN(page, 0);
     assert.equal(await page.evaluate(() => __mstest.bgTrim), trim, 'its own trim');
+    // (v284: part-way coloured, it opens in Colour along)
+    if ((await page.evaluate(() => __mstest.sfmode)) === 'color') { await page.click('#sfDoneBtn'); await idle(page); }
     await page.click('#sfBack2'); await idle(page);
-    await page.click('#sfBuild'); await idle(page);
+    await buildGo(page); await idle(page);
     assert.equal(await page.evaluate(() => __mstest.assignData.N), n0, 'the same sections');
     assert.equal(await doneN(page), 3, 'and ticks');
     assert.deepEqual(errors, []);
@@ -254,22 +261,23 @@ test('Enhance and Sensitivity on a guide with progress ask first; No puts the co
   const adjust = async () => { await page.click('#sfBack2'); await idle(page); if (!(await page.$('#sfEnh'))) await page.click('#sfAdjToggle'); await idle(page); };
   await adjust();
   const enh0 = await page.evaluate(() => __mstest.enhance);
-  const asked = []; let answer = false; page.on('dialog', (d) => { asked.push(d.message()); if (answer) d.accept(); else d.dismiss(); });
+  await answerAsks(page, false);
   await setInput(page, '#sfEnh', !enh0); await idle(page);
-  assert.equal(asked.length, 1); assert.match(asked[0], /clears your colouring progress/);
+  let q = await asked(page);
+  assert.equal(q.length, 1); assert.match(q[0], /clears your colouring progress/);
   assert.equal(await page.evaluate(() => __mstest.enhance), enh0, 'Enhance is back as it was');
   assert.equal(await page.$eval('#sfEnh', (e) => e.checked), enh0);
   await setInput(page, '#sfSens', 2); await idle(page);
-  assert.equal(asked.length, 2, 'Sensitivity asks too');
-  await page.click('#sfBuild'); await idle(page);
+  assert.equal((await asked(page)).length, 2, 'Sensitivity asks too');
+  await buildGo(page); await idle(page);
   assert.equal(await doneN(page), 5, 'nothing was cleared');
   // Yes: re-detected, and Undo brings it all back
-  answer = true; await adjust();
+  await askAnswer(page, true); await adjust();
   await setInput(page, '#sfSens', 2); await idle(page);
   await setInput(page, '#sfSens', 3); await idle(page);
-  assert.equal(asked.length, 3, 'asked once for a run of changes');
+  assert.equal((await asked(page)).length, 3, 'asked once for a run of changes');
   await page.click('#sfPlanUndo'); await idle(page);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.equal(await doneN(page), 5);
   assert.deepEqual(errors, []);
 });
@@ -278,9 +286,9 @@ test('section edits not built: the status says so, and opening something else as
   const { page, errors } = await openApp();
   await sampleGuide(page); await saveNew(page);
   const id = await savedId(page), n0 = await page.evaluate(() => __mstest.assignData.N);
-  assert.match(await status(page), /Saved in your Library/);
+  assert.match(await status(page), /Saved in your Library|Saves itself from now on/);
   await excludeOneChecked(page);
-  assert.match(await status(page), /Section edits not saved — Build guide to keep them/);
+  assert.match(await status(page), /Section edits not saved — Build again to keep them/);
   // Cancel: nothing opens
   await page.evaluate(() => SF.loadSample()); await page.waitForSelector('#sfEdAsk');
   await page.click('#sfEdAsk [data-a="stay"]'); await idle(page);
@@ -319,7 +327,7 @@ test('section edits not built are kept when the page is hidden, and Resume bring
   assert.equal(await page.evaluate(() => __mstest.secEdPending()), true);
   await idle(page, AUTO);
   assert.equal(Object.keys((await storedR5(page, id)).assign).length, n0, 'the Library keeps the guide as built until it is built again');
-  await page.click('#sfBuild'); await idle(page); await idle(page, AUTO);
+  await buildGo(page); await idle(page); await idle(page, AUTO);
   const s = await storedR5(page, id);
   assert.equal(Object.keys(s.assign).length, n0 - 1, 'built and saved');
   assert.equal(s.prog, 4, 'with the ticks');
@@ -338,7 +346,7 @@ for (const fam of ['gradient', 'random']) {
     await idle(page, AUTO);
     await page.click('#sfBack2'); await idle(page);
     await page.evaluate(([l, p]) => { __mstest.secState[l] = 2; __mstest.secState[p] = 2; __mstest.render(); }, [l, pin]);
-    await page.click('#sfBuild'); await idle(page); await idle(page, AUTO);
+    await buildGo(page); await idle(page); await idle(page, AUTO);
     assert.ok(!(await page.evaluate((l) => __mstest.assignData.assign[l], l)), 'left out');
     const s = await storedR5(page, id);
     assert.ok(s.out && s.out[l] && s.out[pin], 'kept with the guide');
@@ -346,7 +354,7 @@ for (const fam of ['gradient', 'random']) {
     await openSaved(page, id);
     await page.click('#sfBack2'); await idle(page);
     await page.evaluate(([l, p]) => { __mstest.secState[l] = 1; __mstest.secState[p] = 1; __mstest.render(); }, [l, pin]);
-    await page.click('#sfBuild'); await idle(page);
+    await buildGo(page); await idle(page);
     assert.deepEqual(await page.evaluate(([l, p]) => [__mstest.assignData.assign[l].mkey, __mstest.assignData.assign[p].mkey], [l, pin]), mk, 'the same markers');
     assert.equal(await page.evaluate((p) => __mstest.locks[p], pin), mk[1], 'the pin');
     assert.deepEqual(await page.evaluate(([l, p]) => [__mstest.colored[l], __mstest.colored[p]], [l, pin]), [1, 1], 'the ticks');

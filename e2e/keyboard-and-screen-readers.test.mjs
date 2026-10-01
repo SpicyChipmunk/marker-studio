@@ -3,7 +3,7 @@
 // arrows read out). Escape one layer at a time is in escape-stack-guide and escape-stack-shell.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, welcome, sectionPoint, idle, scrollTop } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, welcome, sectionPoint, idle, scrollTop, answerAsks } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -124,7 +124,7 @@ test('tabs: arrow keys move between them, one tab stop, panels labelled by their
     const seg = await page.$$eval(`#sfPanel-${t} [role="group"] .sfedit`, (b) => b.map((x) => [x.classList.contains('on'), x.getAttribute('aria-pressed')]));
     assert.ok(seg.length >= 3 && seg.every(([on, p]) => p === String(on)), `${t}: ${JSON.stringify(seg)}`);
   }
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfBack2'); await idle(page);
   await page.click('#sfEmMerge');
   assert.deepEqual(await page.$$eval('#sfEdit button', (b) => b.map((x) => x.getAttribute('aria-pressed'))), ['false', 'true', 'false', 'false']);

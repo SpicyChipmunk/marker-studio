@@ -93,7 +93,7 @@ test('unreadable data: the note says what was lost; everything lost offers Resto
 
 test('marker keys the app does not know are not counted: Home and the grid agree', async () => {
   const { page, errors } = await openApp({ storage: onboardedV265({ [KEY]: appState({ owned: ['Ohuhu|R014', 'Ohuhu|GONE1', 'Copic|NOPE'] }) }) });
-  assert.equal(await page.textContent('.homecard[data-go="collection"] .hcsub'), '1 markers');
+  assert.equal(await page.textContent('.homecard[data-go="collection"] .hcsub'), '1 marker');
   await page.click('#mCollection'); await page.waitForSelector('#results .cell');
   assert.equal(await page.locator('#results .cell').count(), 1);
   assert.deepEqual((await stored(page)).owned, ['Ohuhu|R014'], 'dropped from the saved state too');

@@ -157,8 +157,51 @@ function zsh(id) {
   const z = zoneById(id);
   return z && z.sh ? z.sh : zshMain();
 }
+// A section with ink on the paper (ticked, or some of its tones coloured: inkOn) keeps the Highlights it was coloured
+// with, so a change to them leaves its tones' markers as they are; its Shadows are kept once its shadow is on the paper
+// too (that tone ticked, or the section ticked: the shadow always comes last), and until then follow the setting
+// (v285; v284 kept both from the first tone). heldSh[l] = { hilite, shadow, free }: free, the shadow follows the setting
+// (shadow is then only what it was when noted); legacy, a section saved by v284 keeps both as saved. Noted the first time
+// its shading is looked up while it's coloured (heldSweep notes them all on the way back to the plan), dropped once it
+// isn't. A record is replaced, never changed in place (Undo keeps references to them). Recolour them too (87-undo)
+// lets them go. Saved with the guide where they differ.
+let heldSh = {};
+const _zshHeld = new WeakMap();
+function inkOn(l) {
+  return !!colored && (!!colored[l] || !!(tonePart && tonePart._c === colored && tonePart[l]));
+}
+// the shadow is on the paper: the section ticked, or its shadow tone (bit 4) done
+function shadowOn(l) {
+  return !!colored && (!!colored[l] || !!(tonePart && tonePart._c === colored && tonePart[l] & 4));
+}
 function zshOf(l) {
-  return zones.length ? zsh(zoneOf(l)) : zshMain();
+  const z = zones.length ? zsh(zoneOf(l)) : zshMain();
+  if (!colored) return z;
+  let h = heldSh[l];
+  if (!inkOn(l)) {
+    if (h) delete heldSh[l];
+    return z;
+  }
+  const so = shadowOn(l);
+  if (!h) {
+    heldSh[l] = { shadow: z.shadow, hilite: z.hilite, free: !so };
+    return z;
+  }
+  if (!h.legacy && !!h.free === so)
+    h = heldSh[l] = { shadow: so ? z.shadow : h.shadow, hilite: h.hilite, free: !so };
+  const sh = h.free ? z.shadow : h.shadow;
+  if (sh === z.shadow && h.hilite === z.hilite) return z;
+  // (one object per zone's shading and what's held, as the tones' caches go by its identity)
+  let m = _zshHeld.get(z);
+  if (!m) _zshHeld.set(z, (m = {}));
+  const k = sh + '|' + h.hilite;
+  return m[k] || (m[k] = Object.assign({}, z, { shadow: sh, hilite: h.hilite }));
+}
+function heldSweep() {
+  if (assignData && colored)
+    assignData.order.forEach(function (l) {
+      zshOf(l);
+    });
 }
 // a zone's shading as a plain copy (for a new zone, Undo and saving)
 function zshCopy(o) {

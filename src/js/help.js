@@ -5,11 +5,17 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'Colour along looks like your paper: what you’ve coloured in its colours, the rest pale. Find next and Focus mode zoom only as far as a section needs, with a bold outline; a list shows the markers to take out of the box; Change colour offers the closest markers first.',
+  'Edit sections says what it’s for and goes back to the Plan when nothing changed. On an iPad the tool row has words (Codes, Greyscale, Full screen) and every screen is one width. Questions use the app’s own buttons, and the Print sheet shows each choice.',
+  'Home has a Continue card: your newest part-coloured guide as you’ve coloured it, opening Colour along at the marker to pick up. Guides from your photos keep themselves in the Library once built; the sample once you change it.',
+  'On an iPad the guide uses the screen: a bigger picture in portrait, and in landscape the picture fits beside the controls with nothing off the bottom. New line icons throughout.',
+  'What you’ve coloured stays put: ticked sections keep their markers when you change the plan, and a part-coloured guide reopens in Colour along. Turn codes off to see your picture as it is; a finished page shows what you coloured and when.',
+  'Printing: labels never overlap (tiny sections get magnified close-ups), and the key has boxes to tick and the order to colour in. Balance’s bar shows what’s really painted.',
   'Random has a Balance: Main colour lays one colour over about 60% of the picture, a second over 30% and an accent over 10% (tap the bar to choose them). Mixed is Random as before, now with No repeats. Surprise can pick it too.',
-  'Test strip (Share › Print › Pages): a page of boxes to try each marker, and its highlight, base and shadow, on your own paper. Radial gradients have a ⊕ to drag where the rings start, and a zone’s sections can be chosen with the keyboard.',
+  'Test strip (Share › Print › Pages): a page of boxes to try each marker, and its highlight, base and shadow, on your own paper. Radial gradients have a centre mark to drag where the rings start, and a zone’s sections can be chosen with the keyboard.',
   'Shading per zone: in Shading, the chips choose a zone to shade or leave flat, with its own roundness, highlights and shadows. The light stays one for the whole picture.',
-  'Zones: give part of your picture its own pattern and colours. In Pattern, tap ＋ Zone, then tap or drag across sections. Colour along can go zone by zone.',
-  'Values (the three grey bars under the picture) shows your guide in greys, to judge its light and dark. Colour along lists markers lightest first, and Find next goes through a marker the way focus mode does.',
+  'Zones: give part of your picture its own pattern and colours. In Pattern, tap the + Zone button, then tap or drag across sections. Colour along can go zone by zone.',
+  'Values (the three grey bars under the picture) shows your guide in greys, to judge its light and dark. Colour along lists markers lightest first, and Find next goes through a marker the way Focus mode does.',
   'Shading has Highlights (warmer, or the paper left white) and Shadows (cooler, or grey). A Gradient that goes right round the colour wheel lets you choose its start colour. The sample now keeps all 166 of its sections.',
   'The Photo pattern picks its markers more carefully, grades its matches in Match’s words, and suggests how many markers you need.',
   'Gradients and palettes choose markers by how they look: no stray greys and no two colours you can’t tell apart. Gradients have a new Look, and Mood replaces Intensity.',
@@ -400,7 +406,9 @@ const WHATS_NEW = [
         card.innerHTML =
           '<div class="wnhead"><h2 id="wnTitle">What’s new in ' +
           esc(v) +
-          '</h2><button id="wnClose" class="wnx" aria-label="Dismiss what’s new">✕</button></div><ul>' +
+          '</h2><button id="wnClose" class="wnx" aria-label="Dismiss what’s new">' +
+          ic('x') +
+          '</button></div><ul>' +
           wnItems() +
           '</ul>';
         const after = D.getElementById('backupNudge') || D.querySelector('#homeView .homegrid');

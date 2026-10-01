@@ -10,14 +10,16 @@ function metaText() {
       coll.length +
       ' markers). <button class="sflink" data-gomk="1">Add markers</button> to match what you own.'
     );
+  // (only the brands you have: "120 Ohuhu", not "120 Ohuhu, 0 Copic", v287)
+  const br =
+    (ny && nc ? ': ' + ny + ' Ohuhu, ' + nc + ' Copic' : nc ? ' (Copic)' : ny ? ' (Ohuhu)' : '') + '. ';
   return (
     '<b>' +
     coll.length +
-    '</b> markers from your collection: ' +
-    ny +
-    ' Ohuhu, ' +
-    nc +
-    ' Copic. Choose a page photo to detect its colourable sections.'
+    (coll.length === 1 ? '</b> marker' : '</b> markers') +
+    ' from your collection' +
+    br +
+    'Choose a page photo to detect its colourable sections.'
   );
 }
 // The Resume card offers the new guide kept in the autosave slot. Dismiss only hides it for this visit (the slot
@@ -90,7 +92,7 @@ function maybeShowResume() {
           });
         })
         .catch(function () {
-          note('Could not resume.');
+          note('Couldn’t resume.');
         });
     });
   var no = document.getElementById('sfResumeNo');
@@ -164,6 +166,12 @@ function thumbFor(id) {
 function hasGuide() {
   return !!assignData;
 }
+// the open guide, for the shell's questions (Palette's Use in a guide, v288): its name, how many sections have ink on
+// the paper, and whether every one is ticked
+function guideBrief() {
+  if (!assignData) return null;
+  return { name: curName || 'this guide', inked: progressCount(), done: pageDone(), n: assignData.N };
+}
 function showHome() {
   closeSheet();
   var w = document.getElementById('sfWork');
@@ -184,21 +192,19 @@ function enterWork() {
 }
 function mount() {
   root.innerHTML =
-    '<div class="sfcard" id="sfStart"><button id="sfHelpQ0" class="hlpq" data-help="sheet" aria-label="Help"><span aria-hidden="true">?</span></button><h2>New colouring guide</h2><div class="sftag">Turn a line-art photo into a paint-by-marker guide built from the markers you own \u2014 complete with shading companions and a To buy list for shades you still need.</div><div id="sfPalNote"></div><div class="sfmeta" id="sfMeta"></div>' +
+    '<div class="sfcard" id="sfStart"><button id="sfHelpQ0" class="hlpq" data-help="sheet" aria-label="Help"><span aria-hidden="true">?</span></button><h2>New colouring guide</h2><div class="sftag">Turn a line-art photo into a marker-by-number guide built from the markers you own \u2014 complete with blend companions and a To buy list for shades you still need.</div><div id="sfPalNote"></div><div class="sfmeta" id="sfMeta"></div>' +
     '<div class="sfstrow"><button id="sfPick" class="btn-primary sfstpick">Choose a photo</button><button id="sfSample" class="sfstbtn">Try the sample</button><button id="sfLib" class="sfstbtn">Library</button><button id="sfImport" class="sfstbtn">Import a guide</button></div></div>' +
     '<div class="sfcard" id="sfWork" style="display:none"><div id="sfHead" class="sfhead"></div><div id="sfView"><div id="sfPicBox" class="sfpicbox"><div id="sfPic" class="sfpic"><canvas id="sfCanvas" role="img" aria-label="Colouring page"></canvas></div></div>' +
     toolsHTML() +
-    '<button id="sfFullX" class="sfz sffullx" aria-label="Close full screen">\u2715</button></div>' +
+    '<button id="sfFullX" class="sfz sffullx" aria-label="Close full screen">' +
+    ic('x') +
+    '</button></div>' +
     '<div id="sfCtl"></div></div>' +
     '<div id="sfLive" class="sfsr" aria-live="polite"></div><input type="file" id="sfFile" class="fileinput" accept="image/*"><input type="file" id="sfImpFile" class="fileinput" accept="application/json,.json">';
   metaEl = document.getElementById('sfMeta');
   root.addEventListener('click', function (e) {
     if (e.target.closest('[data-gomk]') && api.goMarkers) api.goMarkers();
-    if (e.target.closest('[data-clearpal]')) {
-      paletteSource = 'owned';
-      savedPalId = null;
-      palNote();
-    }
+    if (e.target.closest('[data-clearpal]')) clearPal();
   });
   workEl = document.getElementById('sfWork');
   sfView = document.getElementById('sfView');
@@ -212,6 +218,7 @@ function mount() {
   metaEl.innerHTML = metaText();
   renderControls();
   document.getElementById('sfPick').addEventListener('click', function () {
+    _pickCb = null;
     fileEl.click();
   });
   var _smp = document.getElementById('sfSample');
@@ -220,7 +227,10 @@ function mount() {
     if (api.openLibrary) api.openLibrary();
   });
   fileEl.addEventListener('change', function (e) {
-    const f = e.target.files && e.target.files[0];
+    const f = e.target.files && e.target.files[0],
+      cb = _pickCb;
+    _pickCb = null;
+    if (f && cb) cb();
     if (f) loadImage(f);
     e.target.value = '';
   });
@@ -431,7 +441,10 @@ function mount() {
           renderGuide();
       });
     });
-  window.addEventListener('pagehide', flushAutosave);
+  window.addEventListener('pagehide', function () {
+    flushAutosave();
+    saveOnLeave();
+  });
   [sfView, picBox].forEach(function (el) {
     el.addEventListener('scroll', function () {
       if (el.scrollTop || el.scrollLeft) {
@@ -547,7 +560,8 @@ function leave() {
   exitFull();
   hideTip();
   if (focus) exitFocus();
-  if (revealF != null || document.getElementById('sfRevealBar')) endReveal();
+  // (Reveal open, or its animation running: its bar stays in the page, hidden, after it closes)
+  if (revealF != null || root.classList.contains('sfrev')) endReveal();
   closeSheet();
   relWake();
   workOn(false);

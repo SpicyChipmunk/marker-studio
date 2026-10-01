@@ -3,7 +3,7 @@
 // zone has its own (a new zone's rings start in its own middle), and it is saved with the guide.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle, scrollTop } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, scrollTop, saveGuide } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -23,7 +23,7 @@ test('the ⊕ shows with Radial on the Pattern tab only; a drag moves the rings�
   assert.equal(await page.$('#sfRadNote'), null);
   await page.click('#sfShape [data-v="radial"]'); await idle(page);
   assert.equal(await vis(page), true);
-  assert.match(await page.textContent('#sfRadNote'), /Centre: in the middle · drag the ⊕centre mark on the picture to move it/);
+  assert.match(await page.textContent('#sfRadNote'), /Centre: in the middle · drag the centre mark on the picture to move it/);
   assert.equal(await page.$('#sfRadReset'), null);
   assert.equal(await radC(page), null);
   // it sits in the middle of the picture
@@ -112,7 +112,7 @@ test('each zone has its own centre (a new one starts in its middle), hidden whil
   const d = await page.evaluate(() => __mstest.currentDesignObj());
   assert.deepEqual(d.payload.style.radC, mainC);
   assert.deepEqual(d.payload.zones[0].style.radC, zC);
-  await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent));
+  await saveGuide(page);
   const id = await page.evaluate(() => __mstest.curId);
   await page.reload(); await idle(page);
   await page.evaluate((id) => loadGuide({ id }), id);

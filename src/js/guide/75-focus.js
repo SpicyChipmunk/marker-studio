@@ -137,12 +137,8 @@ function focusGeo() {
   return { t: t, b: b, cx: vw / 2, cy: t + ah / 2, aw: vw, ah: ah };
 }
 function focusZoomFor(l) {
-  var g = focusGeo(),
-    DW = cv.offsetWidth || 1,
-    DH = cv.offsetHeight || 1,
-    bw = Math.max(2, ((focusBox.x1[l] - focusBox.x0[l] + 1) / W) * DW),
-    bh = Math.max(2, ((focusBox.y1[l] - focusBox.y0[l] + 1) / H) * DH);
-  return Math.max(1, Math.min(4, Math.min((g.aw * 0.3) / bw, (g.ah * 0.3) / bh)));
+  var g = focusGeo();
+  return fitZoom(focusBox, l, g.aw, g.ah);
 }
 var _ftT = 0;
 function animXform(anim) {
@@ -167,6 +163,7 @@ function frameFocus(anim) {
   zoom = z;
   panX = g.cx - cv.offsetLeft - px * z;
   panY = g.cy - cv.offsetTop - py * z;
+  clampPan();
   animXform(anim);
 }
 function goFocus(pos, anim, noHist) {
@@ -210,6 +207,8 @@ function focusDone() {
     return;
   }
   stepSet(l, bits, true);
+  // (the page's start date, and its finish, as a tick anywhere else sets them, v287)
+  progStamp();
   popAt(l);
   if (navigator.vibrate)
     try {
@@ -268,6 +267,7 @@ function focusAllOfColour() {
       tp()[q] = 0;
     }
   });
+  progStamp();
   focusSheet = false;
   var nx = nextUndone(focusPos);
   if (nx < 0) finishFocus();
@@ -286,6 +286,7 @@ function focusParts() {
   return [
     document.querySelector('.sffocbar'),
     document.getElementById('sfFocSheet'),
+    cv && cv.getAttribute('tabindex') != null ? cv : null,
     document.getElementById('sfZoomCtl'),
     document.getElementById('sfFocBot'),
   ].filter(function (x) {
@@ -298,8 +299,17 @@ function focusModal(on) {
   });
   _fInert = [];
   if (!on || !sfView || !ctlEl) return;
-  var keep = [sfView, ctlEl];
+  // (the tool row too: its Greyscale, zoom and Fit are Focus mode's, v288)
+  var keep = [sfView, ctlEl, document.getElementById('sfZoomCtl')].filter(Boolean);
   keep.forEach(function (k) {
+    // (one inside another kept part, as the tool row is inside the picture's view: nothing within that part is made
+    // inert, so the picture still takes taps)
+    if (
+      keep.some(function (x) {
+        return x !== k && x.contains(k);
+      })
+    )
+      return;
     for (var n = k; n && n !== document.body && n.parentElement; n = n.parentElement) {
       [].forEach.call(n.parentElement.children, function (c) {
         if (
@@ -321,26 +331,21 @@ function focusModal(on) {
 }
 function focusTab(e) {
   var f = [];
+  const SEL = 'button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])';
   focusParts().forEach(function (p) {
-    [].forEach.call(
-      p.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])'),
-      function (x) {
-        if (!x.disabled && x.getClientRects().length) f.push(x);
-      },
-    );
+    if (p.matches(SEL) && p.getClientRects().length) f.push(p);
+    [].forEach.call(p.querySelectorAll(SEL), function (x) {
+      // (not an icon's <use href>: an SVG part, never focused)
+      if (!x.disabled && !(x instanceof SVGElement) && x.getClientRects().length) f.push(x);
+    });
   });
   if (!f.length) return;
+  // (every Tab is taken here, in this order: the top bar, an open sheet, the picture, the tool row's Greyscale, −, +
+  // and Fit, then the bottom bar; the page's own order puts the tool row first, v288)
   var i = f.indexOf(document.activeElement);
-  if (i < 0) {
-    e.preventDefault();
-    (e.shiftKey ? f[f.length - 1] : f[0]).focus();
-  } else if (e.shiftKey && i === 0) {
-    e.preventDefault();
-    f[f.length - 1].focus();
-  } else if (!e.shiftKey && i === f.length - 1) {
-    e.preventDefault();
-    f[0].focus();
-  }
+  e.preventDefault();
+  if (i < 0) (e.shiftKey ? f[f.length - 1] : f[0]).focus();
+  else f[(i + (e.shiftKey ? f.length - 1 : 1)) % f.length].focus();
 }
 function focusIn() {
   var b =
@@ -352,8 +357,33 @@ function focusIn() {
       b.focus({ preventScroll: true });
     } catch (_) {}
 }
+// a section's tones as chips (H, B, S: its highlight, base and shadow markers, each with its colour); in step mode
+// (Shading's one tone at a time) the step being coloured is lit (v284: they were a line of text, cut short with the
+// tip on a phone)
+function toneChips(m, t, bits, step) {
+  var c = function (bit, hex, tx) {
+      return (
+        '<span class="sffocchip' +
+        (step && bits & bit ? ' on' : '') +
+        '"><i style="background:' +
+        esc(hex) +
+        '"></i>' +
+        esc(tx) +
+        '</span>'
+      );
+    },
+    h = '';
+  if (t.light) h += c(1, t.light.hex, 'H ' + mcode(t.light));
+  else if (t.paper) h += c(1, 'rgb(' + t.L.join(',') + ')', 'H paper');
+  h += c(2, m.hex, 'B ' + mcode(m));
+  if (!t.noShadow)
+    h += t.dark ? c(4, t.dark.hex, 'S ' + mcode(t.dark)) : c(4, 'rgb(' + t.S.join(',') + ')', 'S 2nd coat');
+  return h;
+}
 function renderFocusUI() {
   var nm = document.getElementById('sfFocName'),
+    tipEl = document.getElementById('sfFocTip'),
+    chipEl = document.getElementById('sfFocChips'),
     sub = document.getElementById('sfFocSub'),
     sw = document.getElementById('sfFocSw'),
     bot = document.getElementById('sfFocBot'),
@@ -369,13 +399,25 @@ function renderFocusUI() {
   });
   var pct = N ? Math.round((dn / N) * 100) : 0;
   if (bar) bar.style.width = pct + '%';
+  // (the tip line keeps its room all the way through a shaded guide, so the picture below it never jumps)
+  const shOn = !focusFin && shadeUse().on;
+  if (tipEl) {
+    tipEl.textContent = '';
+    tipEl.classList.toggle('on', shOn);
+  }
+  if (chipEl) {
+    chipEl.innerHTML = '';
+    chipEl.classList.toggle('on', shOn);
+  }
   var l = focusCur();
   if (focusFin || l < 0) {
     sw.style.background = 'var(--ok)';
     nm.textContent = N && dn >= N ? 'Page complete' : 'All caught up';
-    sub.textContent = dn + ' of ' + N + ' sections coloured';
+    sub.textContent = N && dn >= N ? finishLine() : dn + ' of ' + N + ' sections coloured';
     bot.innerHTML =
-      '<button id="sfFBack" aria-label="Back">← Back</button><button id="sfFReveal" class="fdone"><span aria-hidden="true">✨</span> Reveal &amp; share</button>';
+      '<button id="sfFBack" aria-label="Back">← Back</button><button id="sfFReveal" class="fdone">' +
+      ic('sparkles') +
+      ' Reveal &amp; share</button>';
   } else {
     var a = assignData.assign[l],
       bk = {};
@@ -411,23 +453,29 @@ function renderFocusUI() {
       var gg = shadeGeom();
       tip =
         gg && gg.ar[l] > W * H * 0.04
-          ? ' · big area: work in patches'
+          ? 'big area: work in patches'
           : bits & 4 && (sAt <= 1 || toneSteps)
-            ? ' · soften the shadow\u2019s edge while wet'
+            ? 'soften the shadow\u2019s edge while wet'
             : '';
-      if (bits === 4 && tt.coat) tip = ' · first coat dry? then go over the shadow again';
+      if (bits === 4 && tt.coat) tip = 'first coat dry? then go over the shadow again';
     }
-    // (the tones' letters and › are for the eye; screen readers hear "base R16, shadow R28")
-    if (st) sub.textContent = st.sub + ' \u00b7 section ' + sAt + ' of ' + sTot + tip;
-    else
-      sub.innerHTML =
-        (tt
-          ? '<span aria-hidden="true">' +
-            esc(toneTrio(a, false, tt)) +
-            ' · </span><span class="sfsr">' +
-            esc(toneSay(a, tt)) +
-            '. </span>'
-          : '') + esc('Section ' + sAt + ' of ' + sTot + (tt ? '' : ' · ' + pct + '% of page') + tip);
+    // a shaded section: its tones as chips (the step lit, in step mode), and on the line under the bar where it's
+    // up to and what to do (the chips are for the eye; screen readers hear "base R16, shadow R28")
+    // a shaded section: its tones as chips on a line of their own (the step lit, in step mode), and what to do on the
+    // line under them (the chips are for the eye; screen readers hear "base R16, shadow R28")
+    sub.innerHTML =
+      esc('Section ' + sAt + ' of ' + sTot) +
+      (tt ? '<span class="sfsr">. ' + esc((st ? st.name + ', ' : '') + toneSay(a, tt)) + '.</span>' : '');
+    if (chipEl) chipEl.innerHTML = tt ? toneChips(a, tt, bits, !!st) : '';
+    if (tipEl && tt)
+      tipEl.textContent = [st ? st.sub : '', tip]
+        .filter(function (x) {
+          return !!x;
+        })
+        .join(' \u00b7 ')
+        .replace(/^./, function (c) {
+          return c.toUpperCase();
+        });
     var isDone = stepDone(l, bits);
     bot.innerHTML =
       '<button id="sfFBack" aria-label="Back"' +
@@ -435,7 +483,7 @@ function renderFocusUI() {
       '>←</button><button id="sfFDone" class="fdone' +
       (isDone ? ' undo' : '') +
       '">' +
-      (isDone ? '<span aria-hidden="true">↺</span> Undo' : '<span aria-hidden="true">✓</span> Done') +
+      (isDone ? ic('undo-2') + ' Undo' : '<span aria-hidden="true">✓</span> Done') +
       '</button><button id="sfFSkip">Skip <span aria-hidden="true">→</span></button>';
   }
   var q = function (id, fn) {

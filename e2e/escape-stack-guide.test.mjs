@@ -5,7 +5,7 @@
 // so each test says what the app did then: every Escape closes one thing, the top one, and focus lands where it did.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle, sectionPoint, scrollTop, openMenu, menuItem } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, sectionPoint, scrollTop, openMenu, menuItem, saveGuide } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -144,14 +144,14 @@ test('Reveal: a dialog over it closes alone, then Escape ends Reveal', async () 
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   await page.click('.sftabbtn[data-t="share"]');
-  await page.click('#sfReveal'); await page.waitForSelector('#revDone', { timeout: 15000 });
+  await page.click('#sfReveal'); await page.waitForSelector('#sfRevX', { timeout: 15000 });
   assert.deepEqual(await layers(page), open({ reveal: true }));
-  await page.focus('#revDone');
+  await page.focus('#sfRevX');
   await page.evaluate(() => openLibrary()); await idle(page);
   assert.deepEqual(await layers(page), open({ reveal: true, dialogs: ['savedOverlay'] }));
   await esc(page);
   assert.deepEqual(await layers(page), open({ reveal: true }));
-  assert.equal(await active(page), 'revDone');
+  assert.equal(await active(page), 'sfRevX');
   await esc(page);
   assert.deepEqual(await layers(page), NONE);
   assert.deepEqual(errors, []);
@@ -205,7 +205,7 @@ test('Colour along: Reset progress’s question closes with Escape and clears no
   await page.click('#sfColor'); await idle(page);
   await tickN(page, 3);
   await menuItem(page, 'Reset progress'); await page.waitForSelector('#sfSheet.sfasksh');
-  assert.match(await page.textContent('#sfSheetT'), /Clear all 3 ticks\?/);
+  assert.match(await page.textContent('#sfSheetT'), /Reset progress\?/);
   assert.deepEqual(await layers(page), open({ sheet: 'ask' }));
   await esc(page);
   assert.deepEqual(await layers(page), NONE);
@@ -255,7 +255,7 @@ test('focus mode: Escape from a form field in it (the tone-steps box) does nothi
 test('Section edits question: Escape is Cancel (nothing opens), focus goes back, and it leaves no Escape behind', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
-  await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent));
+  await saveGuide(page);
   const id = await page.evaluate(() => __mstest.curId);
   await page.click('#sfBack2'); await idle(page); await scrollTop(page);
   const [, , l] = await bigSections(page, 3);

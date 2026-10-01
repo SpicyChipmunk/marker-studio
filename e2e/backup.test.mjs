@@ -3,7 +3,7 @@
 // open guide's last changes.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, openAtScale, idle, sampleGuide } from './helpers.mjs';
+import { setup, teardown, openApp, openAtScale, idle, sampleGuide, saveGuide } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -130,7 +130,7 @@ test('the backup reminder appears for a markers-only collection that was never, 
 
 // ---- From the fourth review (data safety) ----
 // Save (a new guide into the Library), done once the header says so
-const saveNew = async (page) => { await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent)); };
+const saveNew = (page) => saveGuide(page);
 const tickN = (page, n, from = 0) => page.evaluate(([n, from]) => { const t = __mstest; t.assignData.order.slice(from, from + n).forEach((l) => { t.colored[l] = 1; }); t.guideDirty = true; t.renderGuide(); }, [n, from]);
 
 test('Back up saves the last changes first', async () => {

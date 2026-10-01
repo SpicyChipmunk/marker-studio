@@ -3,7 +3,7 @@
 // overlays that stay on the scaled picture, and full screen, focus mode and Reveal after the picture has shrunk.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, openMenu, shot, scrollTop, ENGINE, notOnWebKit, WK, until } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, openMenu, shot, scrollTop, ENGINE, notOnWebKit, WK, until, letterGuide, answerAsks } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -31,9 +31,12 @@ test('picture size: 55% shrinking with the scroll to 45% (40% under 780px tall);
     const { page, errors, ctx } = await openApp({ width: w, height: h });
     await sampleGuide(page); await idle(page);
     const cap = await page.evaluate(() => Math.floor(innerHeight - document.querySelector('#sfWork>.sfbar').offsetHeight - 40 - (document.getElementById('sfHead').getBoundingClientRect().bottom + scrollY)));
-    const full = Math.max(floor, Math.min(full55, cap));
+    let full = Math.max(floor, Math.min(full55, cap));
     if (h === 667) assert.ok(full < full55, 'capped on the short screen: ' + full);
-    assert.equal(await picH(page), full, `${w}×${h}: full size at the top`);
+    // (within a pixel: the app measures the header's foot and the rows' heights with their fractions)
+    const full0 = await picH(page);
+    assert.ok(Math.abs(full0 - full) <= 1, `${w}×${h}: full size at the top (${full0}, ${full})`);
+    full = full0;
     assert.deepEqual(await page.evaluate(() => [__mstest.geo.full, __mstest.geo.comp]), [full, floor]);
     const top0 = await page.evaluate(() => document.getElementById('sfView').getBoundingClientRect().top + scrollY);
     // in step with the scroll: 30px past the block's top takes 30px off, with the picture's top kept at the screen top
@@ -61,7 +64,7 @@ test('picture size: 55% shrinking with the scroll to 45% (40% under 780px tall);
 test('a picture whose width holds it under the floor does not shrink', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfBack2'); await page.click('#sfAdjToggle'); await page.click('#sfRotR'); await idle(page, 1500);
   const g = await page.evaluate(() => __mstest.geo);
   assert.ok(g.full < 380 && g.full === g.comp && !g.shrink, 'a wide picture: ' + JSON.stringify(g));
@@ -94,7 +97,7 @@ test('switching tabs never moves anything: not pinned, pinned at the threshold, 
     assert.equal(await picH(page), 380, `${t}: same picture size`);
     assert.ok(Math.abs((await rect(page, '.sftabs')).top - tabs0.top) <= 0.5, `${t}: tabs where they were`);
     // (under the one-time "tap a section" hint, which sits under the tabs on the first visit)
-    const pane = await rect(page, `.sftab[data-tab="${t}"]`), hint = await rect(page, '.sfinfo.sfonce');
+    const pane = await rect(page, `.sftab[data-tab="${t}"]`), hint = await rect(page, '.sfinfo.sfonce'); // (v288: hidden on Shading and Share, its room kept)
     assert.ok(Math.abs(pane.top - (hint ? hint.bottom : tabs0.bottom)) <= 2, `${t}: opens at its top`);
   }
   // scrolled into a long tab: the next one opens at its top with the tabs still pinned
@@ -118,7 +121,7 @@ test('the page ends at the guide card: no gap under the bar at the end of any ta
     }
     await page.click('#sfColor'); await idle(page); await scrollAt(page, 1e6); await idle(page);
     assert.ok(Math.abs(await barGap(page)) <= 2, `${w}×${h} Colour along: ${await barGap(page)}px`);
-    page.on('dialog', (d) => d.accept());
+    await answerAsks(page);
     await page.click('#sfDoneBtn'); await page.click('#sfBack2'); await idle(page); await scrollAt(page, 1e6); await idle(page);
     assert.ok(Math.abs(await barGap(page)) <= 2, `${w}×${h} Edit sections: ${await barGap(page)}px`);
     assert.deepEqual(errors, []);
@@ -161,7 +164,7 @@ test('drag to scroll: pan-y at zoom 1; none when zoomed, painting, a sheet is op
     await page.click('#sfZrst');
   }
   // Edit sections: the tools that draw
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfBack2'); await idle(page);
   for (const [m, want] of [['toggle', 'pan-y'], ['merge', 'pan-y'], ['split', 'none'], ['add', 'none'], ['toggle', 'pan-y']]) {
     await page.click(`#sfEdit [data-m="${m}"]`);
@@ -178,7 +181,9 @@ test('side by side (landscape phones and wide screens): the picture fills its co
     await scrollAt(page, 400); await idle(page);
     const c = await rect(page, '#sfCanvas'), hd = await rect(page, '#sfHead'), ctl = await rect(page, '#sfCtl');
     assert.ok(c.right <= hd.left && c.right <= ctl.left, `${w}×${h}: the header and controls are to the right of the picture`);
-    assert.ok(Math.abs(c.height - (h - 16)) <= 2, `${w}×${h}: fills the column's height (${c.height})`);
+    // (landscape phones: the screen's height; 600px tall and more, v285: what's left below the header at rest)
+    if (h < 600) assert.ok(Math.abs(c.height - (h - 16)) <= 2, `${w}×${h}: fills the column's height (${c.height})`);
+    else assert.ok(c.height >= h * 0.7 - 14 && c.height <= h - 14, `${w}×${h}: fits below the header (${c.height})`);
     assert.ok(c.top >= 7 && c.bottom <= h - 7, `${w}×${h}: whole picture in view while scrolled`);
     assert.ok(await page.evaluate(() => document.getElementById('sfWork').classList.contains('sftoolsv')), 'tools stacked beside it');
     const btns = await page.$$eval('#sfZoomCtl .sfz', (b) => b.filter((x) => x.offsetParent).map((x) => x.getBoundingClientRect().toJSON()));
@@ -366,7 +371,7 @@ test('a change of stage starts at its top: the header at the top when it fits, e
     const bar = await rect(page, '#sfWork>.sfbar'), tools = await rect(page, '#sfZoomCtl'), row = await rect(page, '#sfAlist .sfarow'), hd = await rect(page, '#sfHead');
     assert.ok(Math.abs(hd.top) <= 1, `${w}×${h}: the header at the top (${hd.top})`);
     assert.ok(row.top >= tools.bottom - 0.5 && row.bottom <= bar.top + 0.5, `${w}×${h}: the first row shows (${row.top}–${row.bottom}, bar ${bar.top})`);
-    // Done colouring from far down the list: Plan opens at its top, with its tabs
+    // ← Plan from far down the list: Plan opens at its top, with its tabs
     await scrollAt(page, 5000); await tapAt(page, '#sfDoneBtn'); await idle(page);
     const t = await rect(page, '.sftabs');
     assert.ok(Math.abs((await rect(page, '#sfHead')).top) <= 1 && t.bottom <= (await rect(page, '#sfWork>.sfbar')).top, 'Plan: header and tabs on the screen');
@@ -376,8 +381,11 @@ test('a change of stage starts at its top: the header at the top when it fits, e
     assert.ok(info.top >= pb - 0.5, 'the instructions are under the pinned block');
     await tapAt(page, '#sfDoneBtn'); await idle(page);
     // Build guide from the bottom of Edit sections: the header shows, not the middle of the Colours tab
-    page.on('dialog', (d) => d.accept());
-    await page.click('#sfBack2'); await idle(page); await scrollAt(page, 5000);
+    await answerAsks(page);
+    await page.click('#sfBack2'); await idle(page);
+    // (v288: with nothing edited the bar goes back to the Plan; an edit brings Build again)
+    await page.evaluate(() => { const t = __mstest, l = t.assignData.order[3]; t.secState[l] = 2; t.guideDirty = true; t.render(); }); await idle(page);
+    await scrollAt(page, 5000);
     await tapAt(page, '#sfBuild'); await page.waitForSelector('#sfColor'); await idle(page);
     assert.ok(Math.abs((await rect(page, '#sfHead')).top) <= 1, 'Build guide lands on the header');
     assert.deepEqual(errors, []);
@@ -475,10 +483,12 @@ test('every change of stage starts at the whole picture; Find next still zooms',
   await page.click('#sfColor'); await idle(page);
   assert.deepEqual(await zoomState(page), WHOLE, 'Colour along starts whole');
   // Find next zooms by itself
-  await page.click('#sfAlist .sfarow .sfah'); await idle(page);
-  await page.click('#sfFindNext'); await idle(page);
+  // (v288: as far as the section needs, so the row of the marker with the smallest section)
+  const ri = await page.evaluate(() => { const t = __mstest, ks = [...document.querySelectorAll('#sfAlist .sfarow')].map((r) => r.dataset.k); let best = 0, bs = 1e9; t.alongList().forEach((e) => { const i = ks.indexOf(e.key); e.secs.forEach((l) => { if (i >= 0 && t.comps[l].area < bs) { bs = t.comps[l].area; best = i; } }); }); return best; });
+  await page.locator('#sfAlist .sfarow .sfah').nth(ri).click(); await idle(page);
+  for (let i = 0; i < 40 && (await zoomState(page))[0] <= 1; i++) { await page.click('#sfFindNext'); await idle(page); }
   assert.ok((await zoomState(page))[0] > 1, 'Find next zooms');
-  // Colour along → Plan (Done colouring)
+  // Colour along → Plan (← Plan)
   await page.click('#sfDoneBtn'); await idle(page);
   assert.equal(await page.evaluate(() => __mstest.sfmode), 'guide');
   assert.deepEqual(await zoomState(page), WHOLE, 'Plan starts whole');
@@ -487,10 +497,74 @@ test('every change of stage starts at the whole picture; Find next still zooms',
   await page.click('#sfBack2'); await idle(page);
   assert.equal(await page.evaluate(() => __mstest.sfmode), 'review');
   assert.deepEqual(await zoomState(page), WHOLE, 'Edit sections starts whole');
-  // Edit sections → Plan (Build guide)
+  // Edit sections → Plan (v288: ← Plan, nothing edited)
   await zoomIn();
-  await page.click('#sfBuild');
+  await page.click('#sfToPlan');
   await page.waitForFunction(() => __mstest.sfmode === 'guide'); await idle(page);
-  assert.deepEqual(await zoomState(page), WHOLE, 'Build guide starts whole');
+  assert.deepEqual(await zoomState(page), WHOLE, 'the Plan starts whole');
   assert.deepEqual(errors, []);
+});
+
+// ---- From v285 (iPad) ----
+const geom = (page) => page.evaluate(() => {
+  const v = document.getElementById('sfCanvas').getBoundingClientRect(), t = document.getElementById('sfZoomCtl').getBoundingClientRect(), c = document.getElementById('sfCtl').getBoundingClientRect(), w = document.getElementById('sfWork');
+  return { side: getComputedStyle(w).display === 'grid', picW: v.width, picH: v.height, picL: v.left, toolsBottom: t.bottom, toolsRight: t.right, ctlL: c.left, ctlW: c.width, maxScroll: document.documentElement.scrollHeight - innerHeight, vh: innerHeight, vw: innerWidth };
+});
+
+test('v285 iPad portrait: one column on the 11" and the 13", using the width; the picture 60% to start, 50% scrolled', async () => {
+  for (const [w, h] of [[834, 1194], [1024, 1366]]) {
+    const { page, errors, ctx } = await openApp({ width: w, height: h });
+    await sampleGuide(page); await letterGuide(page);
+    await page.evaluate(() => scrollTo(0, 0)); await idle(page);
+    let g = await geom(page);
+    assert.equal(g.side, false, `${w}×${h}: one column`);
+    assert.ok(g.ctlW > 600, `${w}×${h}: the controls use the width (${g.ctlW})`);
+    assert.ok(Math.abs(g.picH - h * 0.6) < 3 || g.picW > g.ctlW - 4, `${w}×${h}: 60% (${g.picH})`);
+    await page.evaluate(() => scrollTo(0, 2000)); await idle(page);
+    g = await geom(page);
+    // (50%, or less shrunk where the page ends first: the tabs are only as tall as the tallest, so a big screen
+    // doesn't scroll into empty space just to shrink the picture)
+    const end = await page.evaluate(() => Math.abs(scrollY - (document.documentElement.scrollHeight - innerHeight)) <= 1);
+    assert.ok(Math.abs(g.picH - h * 0.5) < 3 || (end && g.picH > h * 0.5 && g.picH < h * 0.6), `${w}×${h}: 50% scrolled, or as far as the page goes (${g.picH})`);
+    // Colour along: 60%
+    await page.evaluate(() => scrollTo(0, 0)); await page.click('#sfColor'); await idle(page);
+    assert.ok(Math.abs((await geom(page)).picH - h * 0.6) < 3, 'Colour along 60%');
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
+});
+
+test('v285 iPad landscape: the picture and its tools fully on screen as the guide opens, its column fitted to it; tabs as tall as the tallest', async () => {
+  for (const [w, h] of [[1194, 834], [1366, 1024]]) {
+    const { page, errors, ctx } = await openApp({ width: w, height: h });
+    await sampleGuide(page); await letterGuide(page);
+    await page.evaluate(() => scrollTo(0, 0)); await idle(page);
+    const g = await geom(page);
+    assert.equal(g.side, true, `${w}×${h}: side by side`);
+    assert.ok(g.toolsBottom <= h + 1, `${w}×${h}: tools on screen (${g.toolsBottom})`);
+    assert.ok(g.picL + g.picW <= g.ctlL, 'picture left of the controls');
+    assert.ok(g.ctlL - (g.picL + g.picW) < 120, `the picture's column fits it (gap ${g.ctlL - (g.picL + g.picW)})`);
+    assert.ok(g.ctlW >= 340 && g.ctlW <= 561, `controls ${g.ctlW}`);
+    // every tab: nothing to scroll into but the room the page needs, and switching moves nothing
+    const heights = [];
+    for (const t of ['colours', 'pattern', 'shading', 'share']) {
+      await page.evaluate((t) => document.querySelector(`.sftabbtn[data-t="${t}"]`).click(), t); await idle(page);
+      heights.push(await page.evaluate(() => document.documentElement.scrollHeight));
+    }
+    assert.ok(heights.every((x) => x === heights[0]), 'the same page height on every tab: ' + heights);
+    assert.ok(heights[0] - h <= 40, `${w}×${h}: no long scroll into empty space (${heights[0] - h}px)`);
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
+});
+
+test('v285: the side-by-side rule is the same in the CSS and the script', async () => {
+  for (const [w, h] of [[390, 844], [844, 390], [834, 1194], [1024, 1366], [1180, 820], [1194, 834], [1099, 1300], [1100, 1300], [1440, 900]]) {
+    const { page, errors, ctx } = await openApp({ width: w, height: h });
+    await sampleGuide(page); await idle(page);
+    const r = await page.evaluate(() => ({ css: getComputedStyle(document.getElementById('sfWork')).display === 'grid', js: __mstest.sideBySide() }));
+    assert.equal(r.css, r.js, `${w}×${h}`);
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
 });

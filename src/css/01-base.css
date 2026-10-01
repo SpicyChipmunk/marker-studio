@@ -30,6 +30,9 @@
   --warn-rgb: 255, 180, 84;
   --warn: rgb(var(--warn-rgb));
   --sel: #ffd84a;
+  /* the keyboard's focus ring: one colour everywhere (v284), white over the picture */
+  --focus: var(--ink);
+  --focus-pic: #fff;
 }
 * {
   box-sizing: border-box;
@@ -49,7 +52,7 @@ select,
 input,
 textarea,
 .head {
-  --t-xs: calc(12 * var(--tpx));
+  /* (one 12-step name since v284: --t-xs was the same size, held there by the 12px least) */
   --t-sm: calc(12 * var(--tpx));
   --t-base: calc(13 * var(--tpx));
   --t-md: calc(14 * var(--tpx));
@@ -101,7 +104,12 @@ body {
   pointer-events: none;
   background: radial-gradient(120% 80% at 50% -8%, var(--amb), transparent 60%);
   opacity: 0.62;
-  transition: background 0.8s ease;
+  transition:
+    background 0.8s ease,
+    opacity 0.4s ease;
+}
+html.noamb .ambient {
+  opacity: 0;
 }
 .grain {
   position: fixed;
@@ -112,6 +120,20 @@ body {
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+/* line icons (ic() in core.js, the sprite in html/icons.html): as big as the text beside them, in its colour */
+.ic {
+  display: inline-block;
+  flex: none;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.24em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
 .wrap {
   position: relative;
   z-index: 1;
@@ -121,6 +143,22 @@ body {
   padding: calc(30px + env(safe-area-inset-top, 0px)) calc(18px + env(safe-area-inset-right, 0px))
     calc(80px + env(safe-area-inset-bottom, 0px)) calc(18px + env(safe-area-inset-left, 0px));
 }
+/* v288: one width for the header and menu on every screen, per orientation (an iPad's Markers and Palette as wide as
+   Home and the guide). The guide side by side keeps its wide page, with the header and menu at this width. */
+@media (min-width: 700px) {
+  :root {
+    --wrapW: min(92vw, 1040px);
+    --wrapHW: calc(var(--wrapW) - 36px);
+  }
+  .wrap {
+    max-width: var(--wrapW);
+  }
+}
+@media (min-width: 700px) and (orientation: portrait) and (max-width: 1099px) {
+  :root {
+    --wrapW: min(92vw, 900px);
+  }
+}
 .head {
   display: flex;
   flex-wrap: wrap;
@@ -128,6 +166,11 @@ body {
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 16px;
+}
+/* headings (v284) carry the look their class gives them, nothing of the browser's own */
+:where(h1, h2, h3) {
+  margin: 0;
+  font: inherit;
 }
 .title {
   font-family: 'Fraunces', Georgia, serif;

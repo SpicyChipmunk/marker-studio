@@ -4,7 +4,7 @@
 // uses press and hold; Manual keeps opening the picker; Fill unpinned sections.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK, saveGuide } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -85,7 +85,7 @@ test('Change colour: pick, Done pins it through Shuffle and every pattern; Cance
       codes: tiles.every((b) => b.querySelector('.sfswt').textContent.toUpperCase() === b.dataset.code && b.hasAttribute('aria-pressed')),
       groups: [...pop.querySelectorAll('.sfswg:not(.sfswrec)')].map((g) => g.querySelector('.sfswh').textContent),
       roles: [...pop.querySelectorAll('.sfswg')].every((g) => g.getAttribute('role') === 'group' && g.getAttribute('aria-labelledby')),
-      order: FAM_ORDER, recent: !!pop.querySelector('.sfswrec'), n: new Set(tiles.map((b) => b.dataset.k)).size, coll: sfCollection().length,
+      order: FAM_ORDER, recent: [...pop.querySelectorAll('.sfswrec .sfswh')].some((h) => h.textContent === 'Recently used'), short: [...pop.querySelectorAll('.sfswrec .sfswh')].map((h) => h.textContent), n: new Set(tiles.map((b) => b.dataset.k)).size, coll: sfCollection().length,
       confirmBg: getComputedStyle(document.getElementById('sfPopConfirm')).backgroundColor, cancelBg: getComputedStyle(document.getElementById('sfPopCancel')).backgroundColor,
       light: [...pop.querySelectorAll('.sfswg:not(.sfswrec)')].every((g) => { const L = [...g.querySelectorAll('.sfsw')].map((b) => __mstest.assignData && sfCollection().find((m) => m.mkey === b.dataset.k).lab[0]); return L.every((v, i) => i === 0 || v <= L[i - 1] + 1e-9); }),
       w: pop.getBoundingClientRect().width, inline: pop.querySelector('#sfPopSw').style.maxHeight };
@@ -98,6 +98,7 @@ test('Change colour: pick, Done pins it through Shuffle and every pattern; Cance
   assert.ok(idx.every((v, i) => v >= 0 && (i === 0 || v > idx[i - 1])), 'groups follow the family order: ' + lay.groups.join(', '));
   assert.ok(lay.light, 'each group runs light to dark');
   assert.equal(lay.recent, false, 'nothing recently used yet');
+  assert.deepEqual(lay.short, ['Closest', 'In this guide'], 'v288: the shortcuts first');
   assert.equal(lay.n, lay.coll, 'every marker in the collection');
   assert.equal(lay.confirmBg, 'rgb(111, 78, 245)', 'Done is the primary button');
   assert.equal(await page.textContent('#sfPopConfirm'), 'Done');
@@ -125,10 +126,13 @@ test('Change colour: pick, Done pins it through Shuffle and every pattern; Cance
   for (const v of ['random', 'blend', 'manual', 'gradient']) { await pattern(page, v); assert.equal(await mk(page, l), k1, 'kept in ' + v); }
   await page.click('#sfSurprise'); await idle(page);
   assert.equal(await mk(page, l), k1, 'kept through Surprise');
-  // the next picker starts with it under "Recently used", which survives a reload
+  // the next picker starts with the shortcut rows; k1 is remembered as recently used (which survives a reload), and as
+  // it's this section's marker now it shows in In this guide, so Recently used doesn't repeat it (v288)
   await tap(page, l); await page.click('.sftip [data-a="change"]');
-  assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#sfPopSw .sfswrec .sfsw')].map((b) => b.dataset.k)), [k1]);
-  assert.equal(await page.evaluate(() => document.querySelector('#sfPopSw .sfswg').classList.contains('sfswrec')), true, 'recent row first');
+  const rows = await page.evaluate(() => [...document.querySelectorAll('#sfPopSw .sfswrec')].map((g) => [g.querySelector('.sfswh').textContent, [...g.querySelectorAll('.sfsw')].map((b) => b.dataset.k)]));
+  assert.ok(rows.some(([h, ks]) => h === 'In this guide' && ks.includes(k1)), JSON.stringify(rows));
+  assert.ok(!rows.some(([h]) => h === 'Recently used'), 'nothing recent that isn’t shown above');
+  assert.equal(await page.evaluate(() => document.querySelector('#sfPopSw .sfswg').classList.contains('sfswrec')), true, 'shortcut rows first');
   // filtering hides the recent row and empty groups
   const code = await page.evaluate(() => document.querySelector('#sfPopSw .sfswg:not(.sfswrec) .sfsw').dataset.code);
   await page.fill('#sfPopFilter', code.slice(0, 2).toLowerCase()); await idle(page);
@@ -197,7 +201,7 @@ test('a changed colour and a pin come back when the guide is saved and opened ag
   const k1 = await otherKey(page, orig); await pickTile(page, k1); await page.click('#sfPopConfirm'); await idle(page);
   await tap(page, l2); await page.click('.sftip [data-a="pin"]'); const k2 = await mk(page, l2);
   const cx = await page.evaluate((ls) => ls.map((l) => [__mstest.comps[l].cx, __mstest.comps[l].cy]), [l, l2]);
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   await page.reload();
   await page.click('#mHome');
   await page.click('#sfRecent [data-gid]');
@@ -308,7 +312,7 @@ async function tapSection(page, l) { const p = await sectionPoint(page, l); awai
 test('while a marker picker is open: no Undo in the tool row, no auto-save of the preview; Done is announced', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   const id = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id), savedAssign = () => page.evaluate((id) => IDB.get('guide-' + id).then((p) => JSON.stringify(p.assign)), id);
   await page.click('.sftabbtn[data-t="pattern"]'); await page.click('#sfVary'); await idle(page, 2500);
   assert.equal(await page.isVisible('#sfPlanUndo'), true);

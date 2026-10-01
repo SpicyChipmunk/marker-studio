@@ -403,7 +403,7 @@ function holdSaves() {
   addEventListener('keydown', go, true);
 }
 // Something the person would miss (see parseState's lost, or the whole text unreadable) leaves a note for Home
-// (LOAD_NOTE), kept until it is dealt with there (OK, Save a copy or a restore). What it holds is what boot.js's
+// (LOAD_NOTE), kept until it is dealt with there (OK, Download the original or a restore). What it holds is what boot.js's
 // lossWords reads: {all:true} when nothing could be read, else {markers, palettes, guides} as counted by parseState
 // (-1: that whole list was unreadable; palettes and guides are -1 together, as they share the Library's list)
 function lossOf(p) {

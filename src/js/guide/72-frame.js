@@ -16,7 +16,9 @@ let picBox = null,
   _sat = -1,
   renaming = false,
   _hdB = 0;
-const SIDEQ = '(min-width:900px),(orientation:landscape) and (min-width:640px)';
+// (v285: a portrait screen stays one column below 1100px, so the 13" iPad in portrait is too; the same query is in
+// 04-frame.css)
+const SIDEQ = '(orientation:landscape) and (min-width:640px),(min-width:1100px)';
 // side by side: the picture on the left, the header, tabs, controls and bar on the right
 function sideBySide() {
   try {
@@ -76,9 +78,24 @@ function frameSize() {
   workOn(!!workEl && workEl.style.display !== 'none');
   let full, cw;
   if (side) {
-    const avail = Math.max(160, vh - 16),
-      colW = sfView.clientWidth;
+    // (v285) the picture fits the screen below where it starts as the page opens, so nothing of it, or of the tools
+    // beside or under it, is off the bottom; and its column is as wide as the picture and tools need (at most 60%,
+    // the controls keeping 340px), the two centred
+    // (on a landscape phone, under 600px tall, the header would leave the picture too little: there it fills the
+    // screen's height, whole once the page is scrolled to it, as before)
+    let pt = 0;
+    for (let n = sfView; n; n = n.offsetParent) pt += n.offsetTop;
+    const avail = Math.max(160, vh >= 600 ? vh - Math.min(pt, vh * 0.3) - 12 : vh - 16),
+      ww = workEl.clientWidth - 34,
+      // (a narrow landscape phone, 640–690px, can't give 280 + 340: the controls give up to 40px first, then the
+      // picture's column, so nothing is cut off at the right)
+      cm = Math.max(300, Math.min(340, ww - 280)),
+      pc = Math.round(Math.max(Math.min(280, ww - cm), Math.min(avail / ar + 64, ww * 0.6, ww - cm)));
+    workEl.style.gridTemplateColumns = pc + 'px minmax(' + cm + 'px, 560px)';
+    const colW = sfView.clientWidth;
     workEl.classList.add('sftoolsv');
+    // (measured as the stack it would be: icons only, without the words a row 700px wide had, v288)
+    if (tools) tools.classList.remove('sftw', 'sfzcw');
     const tw = tools ? tools.offsetWidth : 52;
     // tools stacked beside the picture when the column leaves 52px at its side, otherwise in a row under it
     if (colW - avail / ar >= Math.max(52, tw)) {
@@ -93,24 +110,44 @@ function frameSize() {
     geo = { full: full, comp: full, side: true, shrink: false };
   } else {
     workEl.classList.remove('sftoolsv');
+    workEl.style.gridTemplateColumns = '';
     const vw = picBox.clientWidth || sfView.clientWidth,
       small = vh < 780,
-      along = sfmode === 'color';
-    full = Math.max(120, Math.min(Math.round(vw * ar), Math.round(vh * (along && small ? 0.45 : 0.55))));
-    const comp = along ? full : Math.min(full, Math.round(vh * (small ? 0.4 : 0.45)));
+      along = sfmode === 'color',
+      // (v285: a big portrait screen, an iPad, gives the picture more: 60% to start, 50% at the least, and 60% in
+      // Colour along)
+      big = !small && (window.innerWidth || 0) >= 700;
+    full = Math.max(
+      120,
+      Math.min(Math.round(vw * ar), Math.round(vh * (along && small ? 0.45 : big ? 0.6 : 0.55))),
+    );
+    let comp = along ? full : Math.min(full, Math.round(vh * (small ? 0.4 : big ? 0.5 : 0.45)));
     // on short screens (or with larger text) the start size is capped so the tool row ends above the bar at the top of
     // the page; never below the floor
     if (!along && headEl) {
       const bar = barEl(),
         top = (_hdB = headFoot()),
-        cap = Math.floor(vh - (bar ? bar.offsetHeight : 60) - (tools ? tools.offsetHeight : 40) - top);
+        // (heights as laid out, fractions and all: an icon's line can make the tool row a fraction taller)
+        cap = Math.floor(
+          vh -
+            (bar ? Math.ceil(bar.getBoundingClientRect().height) : 60) -
+            (tools ? Math.ceil(tools.getBoundingClientRect().height) : 40) -
+            top,
+        );
+      // (a very short screen with large text, 320×568 at 1.5×: the floor gives way too, down to 100px, so the tool row
+      // never runs under the bar, v287)
+      if (cap < comp) comp = Math.max(cap, Math.min(comp, 100));
       full = Math.max(comp, Math.min(full, cap));
     }
     cw = Math.min(vw, full / ar);
     geo = { full: full, comp: comp, side: false, shrink: false };
     geo.shrink = geo.full > geo.comp;
   }
-  cvSize(Math.round(cw), full);
+  // (a picture wider than the frame's least height allows, about 3:1 on a phone: drawn at its own shape in the middle
+  // of the frame, not stretched to it, v287)
+  const ch = Math.min(full, Math.max(1, Math.round(cw * ar)));
+  cvSize(Math.round(cw), ch);
+  picBox.classList.toggle('sfshort', ch < full - 1);
   picBox.style.height = full + 'px';
   sfView.style.setProperty('--picShift', geo.full - geo.comp + 'px');
   document.documentElement.style.setProperty(
@@ -144,7 +181,10 @@ function cvSize(w, h) {
 function headFoot() {
   let y = headEl.offsetHeight;
   for (let n = headEl; n; n = n.offsetParent) y += n.offsetTop;
-  return y;
+  // (offsets are whole pixels; when the laid-out foot is within a pixel of them — no transform under way — use its
+  // fractions, so a cap from it can't leave the tool row a fraction under the bar; otherwise allow the pixel)
+  const f = headEl.getBoundingClientRect().bottom + (window.scrollY || 0);
+  return Math.abs(f - y) < 1 ? f : y + 1;
 }
 // the shrink itself: d is how far the pinned block has gone past the top, at most full − floor
 function picScroll() {
@@ -289,14 +329,33 @@ function paneMin() {
       safeTop() + (geo.side ? 0 : parseFloat(document.documentElement.style.getPropertyValue('--pinH')) || 0);
   const bh = bar ? bar.offsetHeight + (parseFloat(getComputedStyle(bar).marginTop) || 0) : 0;
   workEl.style.setProperty('--paneMin', Math.max(0, Math.ceil(ih - top - bh)) + 'px');
-  workEl.style.setProperty(
-    '--tabMin',
-    Math.max(0, Math.ceil(ih - top - (tabs ? tabs.offsetHeight : 0) - bh)) + 'px',
-  );
+  let tm = Math.max(0, Math.ceil(ih - top - (tabs ? tabs.offsetHeight : 0) - bh));
+  // (v285) every tab as tall as the tallest one, when that's less than the room: the page then never scrolls into
+  // the empty space under a short tab, and switching tabs still moves nothing
+  const tall = tabsTallest();
+  if (tall && tall < tm) tm = tall;
+  workEl.style.setProperty('--tabMin', tm + 'px');
+}
+// the tallest Plan tab's own height (each laid out in turn, without its minimum), or 0 outside the Plan
+function tabsTallest() {
+  const ps = ctlEl ? ctlEl.querySelectorAll('.sftab') : [];
+  if (ps.length < 2) return 0;
+  let t = 0;
+  workEl.classList.add('sftabmeas');
+  ps.forEach(function (p) {
+    const was = p.style.display;
+    p.style.display = '';
+    t = Math.max(t, Math.ceil(p.getBoundingClientRect().height));
+    p.style.display = was;
+  });
+  workEl.classList.remove('sftabmeas');
+  return t;
 }
 // Switching tabs never moves anything: when the tabs are pinned, the new tab opens at its top with them still pinned
 function switchTab(t) {
   if (!ctlEl) return;
+  // (a section's tip belongs to the tab it was opened from)
+  hideTip();
   const tabs = ctlEl.querySelector('.sftabs'),
     sen = ctlEl.querySelector('.sftabsen');
   let th = null;
@@ -307,6 +366,7 @@ function switchTab(t) {
     if (nat <= top + 0.5) th = window.scrollY + (nat - top);
   }
   gTab = t;
+  ctlEl.setAttribute('data-tab', t);
   // leaving the Pattern tab finishes lining up the photo, and closes the zone editor (whose place it takes)
   if (t !== 'pattern') {
     photoEndAlign();
@@ -353,6 +413,7 @@ function fitPairs() {
     r.classList.remove('sfmeas');
     r.classList.toggle('sfstack', wide);
   });
+  balFit(ctlEl);
   // Mood's six choices: one row where every label fits, else two rows of three
   const six = ctlEl.querySelector('.sfsix');
   if (six && six.offsetParent !== null) {
@@ -418,23 +479,31 @@ function renderHead() {
     h +=
       '<div class="sfrename"><input type="text" id="sfGName" aria-label="Guide name" placeholder="Guide name" maxlength="120" autocomplete="off" value="' +
       esc(val) +
-      '"><button type="button" id="sfNameRoll" class="sfibtn" title="Suggest another name" aria-label="Suggest another name">⚄</button></div>';
+      '"><button type="button" id="sfNameRoll" class="sfibtn" title="Suggest another name" aria-label="Suggest another name">' +
+      ic('dice-5') +
+      '</button></div>';
   else
     h +=
       '<div class="sfgt"><strong id="sfGTitle" tabindex="-1">' +
       esc(nm) +
-      '</strong><button type="button" id="sfRename" class="sfibtn" title="Rename" aria-label="Rename the guide"><span aria-hidden="true">✎</span></button></div>';
+      '</strong><button type="button" id="sfRename" class="sfibtn" title="Rename" aria-label="Rename the guide">' +
+      ic('pencil') +
+      '</button></div>';
   // the status line keeps one height whatever it says (Safari has no scroll anchoring: a header that grew or shrank
   // would move everything under it): the longest states are laid out, unseen, in the same place
   h +=
     '<div class="sfgst"><div class="sfgsv"><span id="sfSaveSt" class="sfsavest"></span><button type="button" id="sfSave" class="sfsave" style="display:none">Save</button></div>' +
-    HEADGHOST +
+    headGhost() +
     '</div></div>';
   if (plan)
     h +=
-      '<button type="button" id="sfSurprise" class="sfsurprise" title="New colours and style" aria-label="Surprise: new colours and style"><span aria-hidden="true">✨</span><span class="sfsl" aria-hidden="true"> Surprise</span></button>';
+      '<button type="button" id="sfSurprise" class="sfsurprise" title="New colours and style" aria-label="Surprise: new colours and style">' +
+      ic('sparkles') +
+      '<span class="sfsl" aria-hidden="true"> Surprise</span></button>';
   h +=
-    '<button type="button" id="sfMore" class="sfmore" aria-label="More" aria-haspopup="dialog">⋯</button></div>';
+    '<button type="button" id="sfMore" class="sfmore" aria-label="More" aria-haspopup="dialog">' +
+    ic('ellipsis') +
+    '</button></div>';
   headEl.innerHTML = h;
   saveStatus();
   fitHead();
@@ -467,8 +536,21 @@ function focusOpened() {
     t.focus({ preventScroll: true });
   } catch (_) {}
 }
-const HEADGHOST =
-  '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Saved in your Library ✓</span></div><div class="sfgsg" aria-hidden="true"><span class="sfsavest">Not saved yet</span><button type="button" class="sfsave" tabindex="-1">Save</button></div><div class="sfgsg" aria-hidden="true"><span class="sfsavest">Not saved — storage is full</span></div>';
+// (the longest states the status line can show for this guide: Save after a failed first save, and Put back after it
+// was deleted while open, only then, so the header doesn't make room for them on every guide)
+function headGhost() {
+  return (
+    '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Saved in your Library ✓</span></div><div class="sfgsg" aria-hidden="true"><span class="sfsavest">Not saved — storage is full</span>' +
+    (_saveErr && !libEntry() ? '<button type="button" class="sfsave" tabindex="-1">Save</button>' : '') +
+    '</div>' +
+    (_removed
+      ? '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Removed from your Library</span><button type="button" class="sfsave" tabindex="-1">Put back</button></div>'
+      : '') +
+    (storeBlocked() && !libEntry()
+      ? '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Not saved — use Share › Guide file</span></div>'
+      : '')
+  );
+}
 // ✨ Surprise drops its word before the name gets squeezed below about 140px (large text sizes) or the status line
 // would wrap, and while renaming: so the header is as tall renaming as not
 function fitHead() {
@@ -567,35 +649,38 @@ function headBlur() {
 }
 
 /* ---- #4 the tool row under the picture ---- */
+// (the tool row's icons, from the sprite: Codes and Greyscale (once Values) are this app's own, the rest Lucide's)
 const TIC = {
-  codes:
-    '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="2.5" y="5" width="15" height="10" rx="2.5"/><path d="M6 12.2V7.8M6 7.8l2.2 4.4M8.2 7.8v4.4M11.5 10h3" stroke-linecap="round"/></svg>',
-  values:
-    '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="4" width="5" height="12" rx="1" fill="currentColor" fill-opacity=".95"/><rect x="7.5" y="4" width="5" height="12" fill="currentColor" fill-opacity=".55"/><rect x="12.5" y="4" width="5" height="12" rx="1" fill="currentColor" fill-opacity=".2"/><rect x="2.5" y="4" width="15" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>',
-  minus:
-    '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-  plus: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12M10 4v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-  fit: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 8V4h4M16 8V4h-4M4 12v4h4M16 12v4h-4"/></svg>',
-  full: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 7V3h4M17 7V3h-4M3 13v4h4M17 13v4h-4"/><rect x="7" y="7" width="6" height="6" rx="1"/></svg>',
+  codes: ic('codes'),
+  values: ic('values'),
+  minus: ic('minus'),
+  plus: ic('plus'),
+  fit: ic('shrink'),
+  full: ic('fullscreen'),
 };
 function toolsHTML() {
   return (
     '<div id="sfZoomCtl" class="sftools" role="toolbar" aria-label="Picture"><div class="sfprog" aria-hidden="true"><i id="sfToolProg"></i></div>' +
-    '<button type="button" id="sfPlanUndo" class="sfz sfzundo" style="display:none" aria-label="Undo"><span aria-hidden="true">↶</span><span class="sfzul">Undo</span></button><span id="sfStat" class="sfstat"></span>' +
-    '<button type="button" id="sfPhPeek" class="sfz" style="display:none" aria-pressed="false" aria-label="Show the photo on top" title="Photo"><span aria-hidden="true">◐</span></button>' +
-    '<button type="button" id="sfCodes" class="sfz" aria-pressed="true" aria-label="Marker codes" title="Marker codes">' +
+    '<button type="button" id="sfPlanUndo" class="sfz sfzundo" style="display:none" aria-label="Undo">' +
+    ic('undo-2') +
+    '<span class="sfzul">Undo</span></button><span id="sfStat" class="sfstat"></span>' +
+    '<button type="button" id="sfPhPeek" class="sfz" style="display:none" aria-pressed="false" aria-label="Show the photo on top" title="Photo">' +
+    ic('image') +
+    '</button>' +
+    // (v288: Codes, Greyscale and Full screen have their word beside the icon where the row has room, sftw)
+    '<button type="button" id="sfCodes" class="sfz sfzhw" aria-pressed="true" aria-label="Codes: marker codes on the picture" title="Marker codes">' +
     TIC.codes +
-    '</button><button type="button" id="sfVals" class="sfz" aria-pressed="false" aria-label="Values: the picture in greys, to judge its light and dark" title="Values (light and dark)">' +
+    '<span class="sfzw" aria-hidden="true">Codes</span></button><button type="button" id="sfVals" class="sfz sfzhw" aria-pressed="false" aria-label="Greyscale: the picture in greys, to judge its light and dark" title="Greyscale (light and dark)">' +
     TIC.values +
-    '</button><button type="button" id="sfZout" class="sfz" aria-label="Zoom out">' +
+    '<span class="sfzw" aria-hidden="true">Greyscale</span></button><button type="button" id="sfZout" class="sfz" aria-label="Zoom out">' +
     TIC.minus +
     '</button><button type="button" id="sfZin" class="sfz" aria-label="Zoom in">' +
     TIC.plus +
     '</button><button type="button" id="sfZrst" class="sfz" aria-label="Fit the picture" style="display:none">' +
     TIC.fit +
-    '</button><button type="button" id="sfFull" class="sfz sfzfull" aria-label="Full screen" title="Full screen">' +
+    '</button><button type="button" id="sfFull" class="sfz sfzfull sfzhw" aria-label="Full screen" title="Full screen">' +
     TIC.full +
-    '</button></div>'
+    '<span class="sfzw" aria-hidden="true">Full screen</span></button></div>'
   );
 }
 // the status (sections and markers, or how much is done) and the buttons that come and go. The status is in parts
@@ -618,7 +703,7 @@ function renderTools() {
       if (colored[l]) d++;
     });
     pct = assignData.N ? Math.round((d / assignData.N) * 100) : 0;
-    t = part('<b>' + d + '</b> of <b>' + assignData.N + '</b>', 'done');
+    t = part('<b>' + d + '</b> of <b>' + assignData.N + '</b>', 'coloured');
   } else if (sfmode === 'guide' && guide) {
     const mk = {};
     for (const l in assignData.assign) mk[assignData.assign[l].mkey] = 1;
@@ -638,7 +723,7 @@ function renderTools() {
     cb.style.display = onGuide ? '' : 'none';
     cb.setAttribute('aria-pressed', hideLabels ? 'false' : 'true');
   }
-  // Values: greys over the guide only (the sections editor's colours are a map, not the guide)
+  // Greyscale: greys over the guide only (the sections editor's colours are a map, not the guide)
   const vb = document.getElementById('sfVals');
   if (vb) {
     vb.style.display = onGuide ? '' : 'none';
@@ -665,12 +750,17 @@ function fitBar() {
   const bar = barEl();
   if (!bar || bar.offsetParent === null) return;
   const sh = bar.querySelectorAll('[data-short]');
+  // (data-ic: an icon before the words)
+  const put = function (b, t) {
+    if (b.dataset.ic) b.innerHTML = ic(b.dataset.ic) + ' ' + esc(t);
+    else b.textContent = t;
+  };
   sh.forEach(function (b) {
-    b.textContent = b.dataset.long;
+    put(b, b.dataset.long);
   });
   if (bar.scrollWidth > bar.clientWidth + 1)
     sh.forEach(function (b) {
-      b.textContent = b.dataset.short;
+      put(b, b.dataset.short);
     });
 }
 
@@ -700,9 +790,9 @@ function openSheet(o) {
   el.setAttribute('aria-modal', 'true');
   el.setAttribute('aria-labelledby', 'sfSheetT');
   el.innerHTML =
-    '<div class="sfshhd"><h3 id="sfSheetT">' +
+    '<div class="sfshhd"><h2 id="sfSheetT">' +
     esc(o.title || '') +
-    '</h3>' +
+    '</h2>' +
     (o.field || '') +
     '</div><div class="sfshbody">' +
     (o.body || '') +
@@ -768,6 +858,8 @@ function closeSheet(quiet) {
       } catch (_) {}
   }
   if (!quiet && S.o.onClose) S.o.onClose();
+  // (cleanup: what the sheet changed on the picture is put back however it closes, v288)
+  if (S.o.cleanup) S.o.cleanup();
 }
 function sheetOpen() {
   return !!sheetO;
@@ -897,6 +989,7 @@ function menuDo(m) {
   closeSheet();
   const imp = document.getElementById('sfImpFile');
   if (m === 'pick') {
+    _pickCb = null;
     if (fileEl) fileEl.click();
   } else if (m === 'sample') loadSample();
   else if (m === 'lib') {
@@ -970,7 +1063,8 @@ function frameInit() {
     vb.addEventListener('click', function () {
       valuesOn = !valuesOn;
       renderTools();
-      if (typeof sayLive === 'function') sayLive(valuesOn ? 'Values on: the picture in greys' : 'Values off');
+      if (typeof sayLive === 'function')
+        sayLive(valuesOn ? 'Greyscale on: the picture in greys' : 'Greyscale off');
     });
   root.addEventListener('click', function (e) {
     const b = e.target.closest('[data-info]');

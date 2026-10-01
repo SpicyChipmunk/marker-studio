@@ -340,7 +340,7 @@ async function swDownload() {
       },
     );
   } catch (e) {
-    toast('Could not make the swatch chart. Try again, or choose fewer markers.', 6000);
+    toast('Couldn’t make the swatch chart. Try again, or choose fewer markers.', 6000);
   }
   swBusy = false;
   go.textContent = lbl;

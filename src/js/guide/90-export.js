@@ -1,4 +1,5 @@
-function buildExportCanvas(outline) {
+// (noCodes: the picture as it is, for Save image with Codes on the saved image unticked)
+function buildExportCanvas(outline, noCodes) {
   const assign = assignData.assign,
     map = {};
   assignData.order.forEach(function (l) {
@@ -67,7 +68,7 @@ function buildExportCanvas(outline) {
     d[j + 3] = 255;
   }
   g.putImageData(im, 0, 0);
-  for (const l in assign) {
+  for (const l in noCodes ? {} : assign) {
     const m = assign[l],
       dark = darkText(m.hex);
     drawCode(g, l, m, {
@@ -85,7 +86,7 @@ function buildExportCanvas(outline) {
   g.fillStyle = '#111';
   g.font = '700 ' + Math.max(20, W / 40) + 'px sans-serif';
   {
-    const suf = ' \u00b7 ' + uniq.length + ' markers';
+    const suf = ' \u00b7 ' + nWord(uniq.length, 'marker');
     g.fillText(
       pdfTrunc(g, curName || 'Colour guide', Math.max(40, W - 40 - g.measureText(suf).width)) + suf,
       20,
@@ -313,6 +314,66 @@ const PRINT_OPTS = [
     ],
   ],
 ];
+// (v288) a small drawing of each Pages and Labels choice: what the printed sheet looks like
+const PRINT_PV = (function () {
+  const pg = function (inner) {
+      return (
+        '<svg viewBox="0 0 30 38" width="30" height="38" aria-hidden="true" focusable="false"><rect x="1" y="1" width="28" height="36" rx="2" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".7"/>' +
+        inner +
+        '</svg>'
+      );
+    },
+    key = function (y, n) {
+      let r = '';
+      for (let i = 0; i < n; i++)
+        r +=
+          '<rect x="5" y="' +
+          (y + i * 4) +
+          '" width="3" height="2.4" fill="currentColor"/><rect x="10" y="' +
+          (y + i * 4 + 0.6) +
+          '" width="' +
+          (12 - (i % 2) * 4) +
+          '" height="1.2" fill="currentColor" opacity=".55"/>';
+      return r;
+    },
+    shape =
+      '<path d="M6 19 C5 11 11 6 16 7 C23 8 25 14 23 19 C21 24 9 25 6 19Z" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M15 7.2 C13 12 14 18 17 23.6" fill="none" stroke="currentColor" stroke-width="1.1"/>',
+    lab = function (t) {
+      return (
+        '<svg viewBox="0 0 30 26" width="34" height="29" aria-hidden="true" focusable="false"><path d="M3 14 C2 5 10 1 16 2 C25 3 28 10 26 16 C24 23 7 25 3 14Z" fill="none" stroke="currentColor" stroke-width="1.4"/>' +
+        (t
+          ? '<text x="15" y="16.5" text-anchor="middle" font-size="' +
+            (t.length > 1 ? 8 : 9.5) +
+            '" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" opacity=".8">' +
+            t +
+            '</text>'
+          : '') +
+        '</svg>'
+      );
+    };
+  return {
+    page: pg(shape + key(27, 2)),
+    ref: pg(
+      key(5, 4) + '<rect x="6" y="23" width="18" height="10" rx="1" fill="currentColor" opacity=".35"/>',
+    ),
+    strip: pg(
+      [6, 13, 20, 27]
+        .map(function (y) {
+          return (
+            '<rect x="5" y="' +
+            y +
+            '" width="20" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="1"/><rect x="5" y="' +
+            y +
+            '" width="7" height="4" rx="1" fill="currentColor" opacity=".5"/>'
+          );
+        })
+        .join(''),
+    ),
+    codes: lab('Y11'),
+    numbers: lab('3'),
+    none: lab(''),
+  };
+})();
 function printOptVal(k) {
   return k === 'pwhat' ? pdfWhat : k === 'plabels' ? pdfLabels : paper;
 }
@@ -332,7 +393,7 @@ function openPrint() {
       o[2] +
       '" style="grid-template-columns:repeat(' +
       o[3].length +
-      ',auto)">';
+      (o[0] === 'paper' ? ',auto)">' : ',minmax(0,1fr))">');
     o[3].forEach(function (v) {
       const on = printOptVal(o[0]) === v[0];
       b +=
@@ -345,6 +406,7 @@ function openPrint() {
         '" aria-pressed="' +
         on +
         '">' +
+        (PRINT_PV[v[0]] && o[0] !== 'paper' ? '<span class="sfprpv">' + PRINT_PV[v[0]] + '</span>' : '') +
         v[1] +
         '</button>';
     });
@@ -409,8 +471,35 @@ function printSummary() {
       ? 'Key + reference'
       : pdfWhat === 'strip'
         ? 'Test strip'
-        : { codes: 'Codes', numbers: 'Numbers', none: 'No labels' }[pdfLabels])
+        : { codes: 'Codes', numbers: 'Numbers', none: 'No labels' }[pdfLabels]) +
+    // (sections too small to label, in close-ups: with Codes, Numbers would fit more on the page itself)
+    (pdfWhat === 'page' && (_pdfCloseN || _pdfLeft) ? '<br>' + printCloseNote() : '')
   );
+}
+// what the close-ups hold, for the Print sheet: how many small sections on how many pages, and any too small even there
+function printCloseNote() {
+  const pl = function (n, one, more) {
+    return n + ' ' + (n === 1 ? one : more);
+  };
+  let t = _pdfCloseN
+    ? pl(_pdfCloseN, 'small section is', 'small sections are') +
+      ' on ' +
+      pl(_pdfCloseP, 'close-up page.', 'close-up pages.') +
+      (pdfLabels === 'codes'
+        ? _pdfCloseN === 1
+          ? ' Numbers might fit it on the colouring page.'
+          : ' Numbers would fit more of them on the colouring page.'
+        : '')
+    : '';
+  if (_pdfLeft)
+    t +=
+      (t ? ' ' : '') +
+      (t ? pl(_pdfLeft, 'more has', 'more have') : pl(_pdfLeft, 'small section has', 'small sections have')) +
+      ' only a dot on the colouring page: see ' +
+      (_pdfLeft === 1 ? 'it' : 'them') +
+      ' in the app' +
+      (pdfLabels === 'codes' ? ', or print with Numbers.' : '.');
+  return t;
 }
 // (the test strip has no picture: its rows are the tones to try)
 function printShNote() {
@@ -710,31 +799,305 @@ function pdfKeyRows() {
   rows.sort(function (a, b) {
     return fo(a.fam) - fo(b.fam) || a.fam.localeCompare(b.fam) || b.L - a.L;
   });
+  // (each marker's place in colouring order, lightest first as Colour along goes: the key's ORDER column, v284)
+  rows
+    .slice()
+    .sort(function (a, b) {
+      return _lum(b.m.hex) - _lum(a.m.hex) || b.n - a.n;
+    })
+    .forEach(function (r, i) {
+      r.ord = i + 1;
+    });
   return rows;
 }
-// a number label on the colouring page, sized the way drawCode sizes codes; returns the box it covers
-function pdfNumLabel(g, l, t, o) {
+// ---- the colouring page's labels, placed so none covers another (v284) ----
+// how many sections the last PDF built put in close-ups (the Print sheet's summary says so)
+let _pdfCloseN = 0,
+  // (on how many pages, and how many small sections none of them could label)
+  _pdfCloseP = 0,
+  _pdfLeft = 0,
+  // (how many close-ups, lettered A, B …: for the tests)
+  _pdfCloseL = 0,
+  _pdfCU = [],
+  // (and the colouring page's placing, for the tests)
+  _pdfP1 = null;
+// a number label's size and box at size s (picture pixels), or as big as its section allows when s is null
+function pdfNumLay(g, l, t, o, s) {
   const c = comps[l],
     p = labelPos(l);
-  let fs = Math.max(o.base, Math.min(Math.sqrt(c.area) * 0.5, o.max));
+  let fs = s != null ? s : Math.max(o.base, Math.min(Math.sqrt(c.area) * 0.5, o.max));
   g.font = o.w + ' ' + fs + 'px ' + LFONT;
   let tw = g.measureText(t).width;
-  const sc = Math.min(1, (p.aw * 0.94) / tw, (p.r * 2.4) / fs);
-  if (sc < 1) {
-    fs = Math.max(o.min, Math.floor(fs * sc * 2) / 2);
-    g.font = o.w + ' ' + fs + 'px ' + LFONT;
-    tw = g.measureText(t).width;
+  if (s == null) {
+    const sc = Math.min(1, (p.aw * 0.94) / tw, (p.r * 2.4) / fs);
+    if (sc < 1) {
+      fs = Math.max(o.min, Math.floor(fs * sc * 2) / 2);
+      g.font = o.w + ' ' + fs + 'px ' + LFONT;
+      tw = g.measureText(t).width;
+    }
   }
   const lw = Math.max(1, fs * o.swk);
+  return {
+    kind: 'num',
+    t: t,
+    fs: fs,
+    // (the box the ink takes: capitals and digits reach about 0.42 of the size either side of the middle)
+    box: [p.x - tw / 2 - lw - 1, p.y - fs * 0.42 - lw - 1, p.x + tw / 2 + lw + 1, p.y + fs * 0.42 + lw + 1],
+  };
+}
+function pdfNumPut(g, l, lay, o) {
+  const p = labelPos(l),
+    lw = Math.max(1, lay.fs * o.swk);
+  g.font = o.w + ' ' + lay.fs + 'px ' + LFONT;
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.lineJoin = 'round';
   g.lineWidth = lw;
   g.strokeStyle = o.stroke;
   g.fillStyle = o.fill;
-  g.strokeText(t, p.x, p.y);
-  g.fillText(t, p.x, p.y);
-  return [p.x - tw / 2 - lw - 2, p.y - fs * 0.9 - lw - 2, p.x + tw / 2 + lw + 2, p.y + fs * 0.75 + lw + 2];
+  g.strokeText(lay.t, p.x, p.y);
+  g.fillText(lay.t, p.x, p.y);
+}
+// a code's size and box at size s, or as big as its section allows when s is null
+function pdfCodeLay(g, l, m, o, s) {
+  const oo = s == null ? o : Object.assign({}, o, { base: s, max: s, min: s }),
+    L = codeLayout(g, l, m, oo),
+    h = L.fs * 0.42 + L.lw + 1;
+  // (the ink's box, as for a number: codeLayout's own is the screen's, with room for its line above and below)
+  return { kind: 'code', fs: L.fs, box: [L.box[0] + 1, L.y - h, L.box[2] - 1, L.y + h], o: oo };
+}
+// Place the labels of sections ids (biggest first; opt.first's before the rest): each as big as its section allows,
+// else smaller (to the least size), else (with Codes) its key number, else none. opt.bnd: a box every label must keep
+// inside (a close-up's). { lays: { l: layout }, dropped, boxes, usedNum }. The boxes placed are kept in a grid of
+// cells, so each label is checked only against those near it.
+function pdfPlace(g, ids, o, lab, numOf, opt) {
+  opt = opt || {};
+  const asg = assignData.assign,
+    boxes = [],
+    lays = {},
+    dropped = [],
+    first = {},
+    bnd = opt.bnd,
+    CS = Math.max(8, o.base * 4),
+    grid = new Map(),
+    cells = function (b, fn) {
+      for (let gy = Math.floor(b[1] / CS); gy <= Math.floor(b[3] / CS); gy++)
+        for (let gx = Math.floor(b[0] / CS); gx <= Math.floor(b[2] / CS); gx++) fn(gx + ',' + gy);
+    },
+    add = function (b) {
+      boxes.push(b);
+      cells(b, function (k) {
+        let a = grid.get(k);
+        if (!a) grid.set(k, (a = []));
+        a.push(b);
+      });
+    },
+    free = function (b) {
+      if (bnd && (b[0] < bnd[0] || b[1] < bnd[1] || b[2] > bnd[2] || b[3] > bnd[3])) return false;
+      let ok = true;
+      cells(b, function (k) {
+        const a = grid.get(k);
+        if (!ok || !a) return;
+        for (let i = 0; i < a.length; i++) {
+          const q = a[i];
+          if (b[0] < q[2] && q[0] < b[2] && b[1] < q[3] && q[1] < b[3]) {
+            ok = false;
+            return;
+          }
+        }
+      });
+      return ok;
+    },
+    sizes = function (s0) {
+      const out = [s0];
+      for (let s = s0 * 0.85; s > o.min; s *= 0.85) out.push(s);
+      if (out[out.length - 1] > o.min) out.push(o.min);
+      return out;
+    };
+  (opt.first || []).forEach(function (l) {
+    first[l] = 1;
+  });
+  let usedNum = false;
+  ids
+    .filter(function (l) {
+      return !!asg[l];
+    })
+    .sort(function (a, b) {
+      return (first[b] || 0) - (first[a] || 0) || comps[b].area - comps[a].area;
+    })
+    .forEach(function (l) {
+      const mm = asg[l],
+        tries = [];
+      if (lab === 'codes') {
+        const L0 = pdfCodeLay(g, l, mm, o, null);
+        sizes(L0.fs).forEach(function (s) {
+          tries.push(function () {
+            return pdfCodeLay(g, l, mm, o, s);
+          });
+        });
+      }
+      const t = numOf(mm),
+        N0 = pdfNumLay(g, l, t, o, null);
+      sizes(N0.fs).forEach(function (s) {
+        tries.push(function () {
+          return pdfNumLay(g, l, t, o, s);
+        });
+      });
+      for (let i = 0; i < tries.length; i++) {
+        const L = tries[i]();
+        if (free(L.box)) {
+          lays[l] = L;
+          add(L.box);
+          if (L.kind === 'num' && lab === 'codes') usedNum = true;
+          return;
+        }
+      }
+      dropped.push(l);
+    });
+  // (the dots of those left out count as taken, for the shading's marks and the close-ups' letters)
+  dropped.forEach(function (l) {
+    const p = labelPos(l),
+      r = o.min * 0.4;
+    add([p.x - r, p.y - r, p.x + r, p.y + r]);
+  });
+  return { lays: lays, dropped: dropped, boxes: boxes, usedNum: usedNum, free: free, add: add };
+}
+// draw what pdfPlace placed, and a small dot (radius dr) in each section left out (dotOk: only those it allows)
+function pdfPlaceDraw(g, asg, pl, o, numOf, dr, dotOk) {
+  for (const l in pl.lays) {
+    const L = pl.lays[l];
+    if (L.kind === 'code') drawCode(g, +l, asg[l], L.o);
+    else pdfNumPut(g, +l, L, o);
+  }
+  g.fillStyle = o.fill;
+  pl.dropped.forEach(function (l) {
+    if (dotOk && !dotOk(l)) return;
+    const p = labelPos(l);
+    g.beginPath();
+    g.arc(p.x, p.y, dr, 0, 6.283);
+    g.fill();
+  });
+  g.textAlign = 'left';
+  g.textBaseline = 'alphabetic';
+}
+// 1st, 2nd, 3rd … (the key's colouring order, unlike its numbers: v284 review)
+function pdfOrd(n) {
+  const t = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th';
+  return n + t;
+}
+// A, B, … Z, then AA, AB …
+function pdfLetter(i) {
+  return (i >= 26 ? String.fromCharCode(64 + Math.floor(i / 26)) : '') + String.fromCharCode(65 + (i % 26));
+}
+// a close-up's cell on its page (bw: the page's width inside its margins): two across, as many rows as fit
+function pdfCell(bw) {
+  const P = PAPERS[paper] || PAPERS.letter,
+    gap = PX(16),
+    w = (bw - gap) / 2,
+    h = Math.round(w * 0.66),
+    ph = Math.round((P[1] / 72) * PDPI) - 2 * PX(pdfS < 1 ? 30 : 36) - PX(40) - PX(18),
+    rows = Math.max(1, Math.floor((ph + gap) / (h + gap + PX(14))));
+  return { w: w, h: h, gap: gap, per: rows * 2 };
+}
+// the sections ids grouped into close-ups, near ones together: each a part of the picture that, magnified to k
+// page pixels per picture pixel, fits a cell (with room round them). [{ ids, crop: [x0, y0, x1, y1] }]
+function pdfClusters(ids, cell, k) {
+  const B = secBoxes(),
+    maxW = (cell.w / k) * 0.75,
+    maxH = (cell.h / k) * 0.75,
+    out = [];
+  ids
+    .slice()
+    .sort(function (a, b) {
+      return B.y0[a] - B.y0[b] || B.x0[a] - B.x0[b];
+    })
+    .forEach(function (l) {
+      const b = [B.x0[l], B.y0[l], B.x1[l] + 1, B.y1[l] + 1];
+      let best = null,
+        bg = Infinity;
+      out.forEach(function (c) {
+        const u = [
+          Math.min(c.box[0], b[0]),
+          Math.min(c.box[1], b[1]),
+          Math.max(c.box[2], b[2]),
+          Math.max(c.box[3], b[3]),
+        ];
+        if (u[2] - u[0] > maxW || u[3] - u[1] > maxH) return;
+        const grow = (u[2] - u[0]) * (u[3] - u[1]) - (c.box[2] - c.box[0]) * (c.box[3] - c.box[1]);
+        if (grow < bg) {
+          bg = grow;
+          best = { c: c, u: u };
+        }
+      });
+      if (best) {
+        best.c.box = best.u;
+        best.c.ids.push(l);
+      } else out.push({ ids: [l], box: b });
+    });
+  // each crop: its box with room round it, in the cell's shape, inside the picture
+  out.forEach(function (c) {
+    const bw = c.box[2] - c.box[0],
+      bh = c.box[3] - c.box[1],
+      cxm = (c.box[0] + c.box[2]) / 2,
+      cym = (c.box[1] + c.box[3]) / 2,
+      a = cell.w / cell.h;
+    let w = Math.max(bw / 0.75, maxW * 0.5),
+      h = Math.max(bh / 0.75, maxH * 0.5);
+    if (w / h < a) w = h * a;
+    else h = w / a;
+    w = Math.min(w, W);
+    h = Math.min(h, H);
+    const x0 = Math.max(0, Math.min(W - w, cxm - w / 2)),
+      y0 = Math.max(0, Math.min(H - h, cym - h / 2));
+    c.crop = [x0, y0, x0 + w, y0 + h];
+  });
+  return out;
+}
+// a close-up's place on the colouring page: a dashed box with its letter (drawn in picture pixels, k to the page),
+// the letter as light as the labels (ink: their colour) so it doesn't show through pale marker. The letter goes in
+// the first corner of the box with nothing placed there (pl: page 1's placing, which then keeps it clear), white
+// round its strokes as the labels are; v284 review: a white tab under it used to rub out labels.
+function pdfCloseMark(g, cr, letter, k, ink, pl) {
+  g.save();
+  g.setLineDash([PX(2) / k, PX(2) / k]);
+  g.strokeStyle = '#b0b0b0';
+  g.lineWidth = PX(0.5) / k;
+  g.strokeRect(cr[0], cr[1], cr[2] - cr[0], cr[3] - cr[1]);
+  g.setLineDash([]);
+  g.font = '700 ' + PX(7.5) / k + 'px ' + LFONT;
+  const tw = g.measureText(letter).width,
+    pd = PX(1.5) / k,
+    bw = tw + pd * 2,
+    bh = PX(9) / k,
+    at = [
+      [cr[0], cr[1]],
+      [cr[2] - bw, cr[1]],
+      [cr[0], cr[3] - bh],
+      [cr[2] - bw, cr[3] - bh],
+      [cr[0], cr[1] - bh],
+      [cr[0], cr[3]],
+    ]
+      .map(function (q) {
+        return [q[0], q[1], q[0] + bw, q[1] + bh];
+      })
+      .filter(function (b) {
+        return b[0] >= 0 && b[1] >= 0 && b[2] <= W && b[3] <= H;
+      });
+  const box = (pl &&
+    at.find(function (b) {
+      return pl.free(b);
+    })) ||
+    at[0] || [cr[0], cr[1], cr[0] + bw, cr[1] + bh];
+  if (pl) pl.add(box);
+  g.textAlign = 'left';
+  g.textBaseline = 'top';
+  g.lineJoin = 'round';
+  g.lineWidth = PX(1.6) / k;
+  g.strokeStyle = '#fff';
+  g.strokeText(letter, box[0] + pd, box[1] + PX(1) / k);
+  g.fillStyle = ink;
+  g.fillText(letter, box[0] + pd, box[1] + PX(1) / k);
+  g.restore();
 }
 // the PDF's pages as canvases; dry: just how many there will be (for the Print sheet's summary), from the same
 // layout without drawing the pictures
@@ -812,54 +1175,20 @@ function _buildPDF(dry) {
   const P0 = PAPERS[paper] || PAPERS.letter,
     m = PX(pdfS < 1 ? 30 : 36),
     bw = Math.round((P0[0] / 72) * PDPI) - 2 * m;
-  // ---- page 1: the colouring page (left out for "Key + reference")
-  if (!ref && dry) pages.push(null);
-  else if (!ref) {
-    const p1 = pdfPage(),
-      g1 = p1.g;
-    pages.push(p1);
-    g1.fillStyle = '#111';
-    g1.font = '700 ' + PX(15) + 'px ' + LFONT;
-    g1.fillText(pdfTrunc(g1, nm, bw), m, m + PX(12));
-    g1.fillStyle = '#777';
-    g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
-    const sub = pdfLines(
-      g1,
-      [assignData.N + ' sections', nMk].concat(
-        withShade ? ['shading: H highlight', 'B base', 'S shadow, see the key'] : [],
-        nums ? 'numbers: see the colour key on page 2' : 'colour key on page 2',
-        lab === 'codes' && !oneB && guideMixed() ? brandKey().replace(/\s{2,}/g, '  ') : [],
-      ),
-      bw,
-      2,
-    );
-    sub.forEach(function (t, i) {
-      g1.fillText(t, m, m + PX(26) + i * PX(11));
-    });
-    const top = m + PX(36) + (sub.length - 1) * PX(11),
-      bot = p1.h - m - PX(14),
-      f1 = pdfFit(bw, bot - top),
-      ox = m + (bw - f1.w) / 2;
-    g1.imageSmoothingEnabled = true;
-    g1.imageSmoothingQuality = 'high';
-    g1.drawImage(
-      pdfArt(false, sh, {
-        t: Math.max(1, Math.round(PX(0.8) / f1.k)),
-        dash: Math.max(3, Math.round(PX(4) / f1.k)),
-      }),
-      ox,
-      top,
-      f1.w,
-      f1.h,
-    );
-    // labels: small and light grey by default so they don't show through pale marker ink; outlines stay dark
-    const LS = pdfDark
-        ? { base: 8, min: 6, max: 15, w: 700, swk: 0.28, fill: '#111' }
-        : { base: 6.5, min: 5, max: 10, w: 600, swk: 0.22, fill: '#a0a0a0' },
-      lo = {
-        base: PX(LS.base) / f1.k,
-        min: PX(LS.min) / f1.k,
-        max: PX(LS.max) / f1.k,
+  // ---- page 1: the colouring page (left out for "Key + reference"). Its labels are placed biggest section first,
+  // never over one already placed: a code shrinks as far as the least size, then (with Codes) the marker's key
+  // number is tried, and a section with room for neither gets a dot and a place in a close-up (pages after this one,
+  // each close-up a part of the picture magnified with its labels, lettered A, B… here and there). v284: before,
+  // labels in small sections printed on top of each other. A dry run works it all out too, for the page count.
+  // labels: small and light grey by default so they don't show through pale marker ink; outlines stay dark
+  const LS = pdfDark
+      ? { base: 8, min: 6, max: 15, w: 700, swk: 0.28, fill: '#111' }
+      : { base: 6.5, min: 5, max: 10, w: 600, swk: 0.22, fill: '#a0a0a0' },
+    loAt = function (k) {
+      return {
+        base: PX(LS.base) / k,
+        min: PX(LS.min) / k,
+        max: PX(LS.max) / k,
         w: LS.w,
         swk: LS.swk,
         stroke: '#fff',
@@ -868,107 +1197,288 @@ function _buildPDF(dry) {
         // the brand tags as light as the codes (outlined ones white inside)
         tag: pdfDark ? null : { dark: LS.fill, pale: '#fff' },
       };
-    g1.save();
-    g1.setTransform(f1.k, 0, 0, f1.k, ox, top);
-    const lbox = [];
-    if (lab !== 'none')
-      for (const l in asg) {
-        if (nums) lbox.push(pdfNumLabel(g1, l, String(num[asg[l].mkey] || ''), lo));
-        else {
-          drawCode(g1, l, asg[l], lo);
-          lbox.push(_lastBox);
-        }
-      }
-    if (withShade) {
-      const zr = PX(5.2) / f1.k;
-      g1.textAlign = 'center';
-      g1.textBaseline = 'middle';
-      g1.font = '700 ' + PX(6.5) / f1.k + 'px ' + LFONT;
-      const blocked = function (x, y) {
-        for (let i = 0; i < lbox.length; i++) {
-          const b = lbox[i],
-            cx = Math.max(b[0], Math.min(x, b[2])),
-            cy = Math.max(b[1], Math.min(y, b[3]));
-          if (Math.hypot(x - cx, y - cy) < zr * 1.25) return true;
-        }
-        return false;
+    };
+  let keyNums = nums,
+    closeups = [],
+    closeP = 0;
+  // (the sections with no room on page 1, and those of them a close-up labels)
+  const small = {},
+    shown = {};
+  if (!ref) {
+    const p1 = pdfPage(),
+      g1 = p1.g;
+    pages.push(dry ? null : p1);
+    g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
+    // (the picture's place, from the longest the lines under the title can be)
+    // (long: the longest they can be, for the estimate; v284 review: the real lines could be longer than it)
+    const subParts = function (cl, keyPg, long) {
+        return [nWord(assignData.N, 'section'), nMk].concat(
+          withShade ? ['shading: H highlight', 'B base', 'S shadow, see the key'] : [],
+          cl
+            ? (cl === 1 ? 'A: a close-up' : 'A–' + pdfLetter(cl - 1) + ': close-ups') +
+                (keyPg > 3 ? ' on pages 2–' + (keyPg - 1) : ' on page 2')
+            : [],
+          nums || keyNums || long
+            ? 'numbers: see the colour key on page ' + keyPg
+            : 'colour key on page ' + keyPg,
+          lab === 'codes' && !oneB && guideMixed() ? brandKey().replace(/\s{2,}/g, '  ') : [],
+        );
+      },
+      sub0 = pdfLines(g1, subParts(54, 5, true), bw, 2),
+      top = m + PX(36) + (sub0.length - 1) * PX(11),
+      bot = p1.h - m - PX(14),
+      f1 = pdfFit(bw, bot - top),
+      ox = m + (bw - f1.w) / 2,
+      lo = loAt(f1.k),
+      numOf = function (mm) {
+        return String(num[mm.mkey] || '');
       };
-      const inZone = function (z, x, y) {
-        for (let a = 0; a < 8; a++) {
-          const t = (a * Math.PI) / 4,
-            px = Math.round(x + Math.cos(t) * zr * 1.1),
-            py = Math.round(y + Math.sin(t) * zr * 1.1);
-          if (px < 0 || py < 0 || px >= W || py >= H) return false;
-          const q = py * W + px;
-          if (labels[q] !== z.l || !sh.V[q] || shadeZone(sh.tone[z.l], (sh.V[q] - 1) / 254) !== z.zone)
-            return false;
-        }
-        return true;
-      };
-      shadeZoneLabelsAll(sh, zr * 1.3).forEach(function (z) {
-        if (blocked(z.x, z.y)) {
-          let ok = false;
-          for (let rr = zr * 2.2; rr <= Math.max(zr * 2.2, z.r * 1.6) && !ok; rr += zr * 1.1)
-            for (let a = 0; a < 12 && !ok; a++) {
-              const t = (a * Math.PI) / 6,
-                x = z.x + Math.cos(t) * rr,
-                y = z.y + Math.sin(t) * rr;
-              if (!blocked(x, y) && inZone(z, x, y)) {
-                z.x = x;
-                z.y = y;
-                ok = true;
-              }
-            }
-          if (!ok) return;
-        }
-        g1.beginPath();
-        g1.arc(z.x, z.y, zr, 0, 6.283);
-        g1.fillStyle = '#fff';
-        g1.fill();
-        g1.lineWidth = PX(0.6) / f1.k;
-        g1.strokeStyle = '#9a9a9a';
-        g1.stroke();
-        g1.fillStyle = '#555';
-        g1.fillText(String(z.tone), z.x, z.y + zr * 0.06);
+    let pl = { lays: {}, dropped: [], boxes: [] };
+    if (lab !== 'none') {
+      pl = pdfPlace(g1, Object.keys(asg).map(Number), lo, lab, numOf);
+      _pdfP1 = pl;
+      if (pl.usedNum) keyNums = true;
+      pl.dropped.forEach(function (l) {
+        small[l] = 1;
       });
-      g1.textAlign = 'left';
-      g1.textBaseline = 'alphabetic';
-      if (shadeUse().sun) {
-        const sr = PX(6) / f1.k,
-          sx = Math.max(sr * 2, Math.min(W - sr * 2, shadeSun.x * W)),
-          sy = Math.max(sr * 2, Math.min(H - sr * 2, shadeSun.y * H));
-        g1.lineCap = 'round';
-        g1.strokeStyle = '#fff';
-        g1.lineWidth = PX(3.2) / f1.k;
-        for (let a = 0; a < 8; a++) {
-          const t = (a * Math.PI) / 4;
-          g1.beginPath();
-          g1.moveTo(sx + Math.cos(t) * sr * 1.45, sy + Math.sin(t) * sr * 1.45);
-          g1.lineTo(sx + Math.cos(t) * sr * 2, sy + Math.sin(t) * sr * 2);
-          g1.stroke();
+      // close-ups for the sections left with a dot: as few as will hold them (a page's worth if it can be), 3 to
+      // 1.75 times as big as here
+      // At most 3 pages of them (more would bury the key): any sections past those, or too small to label even in
+      // their close-up, are counted, and the close-ups and the Print sheet say so (v284 review: they were left out
+      // without a word).
+      if (pl.dropped.length) {
+        const cell = pdfCell(bw);
+        for (let mag = 3; mag >= 1.75; mag -= 0.25) {
+          closeups = pdfClusters(pl.dropped, cell, f1.k * mag);
+          if (closeups.length <= cell.per) break;
         }
-        g1.beginPath();
-        g1.arc(sx, sy, sr + PX(1.2) / f1.k, 0, 6.283);
-        g1.fillStyle = '#fff';
-        g1.fill();
-        g1.strokeStyle = '#666';
-        g1.lineWidth = PX(1) / f1.k;
-        for (let a = 0; a < 8; a++) {
-          const t = (a * Math.PI) / 4;
-          g1.beginPath();
-          g1.moveTo(sx + Math.cos(t) * sr * 1.45, sy + Math.sin(t) * sr * 1.45);
-          g1.lineTo(sx + Math.cos(t) * sr * 2, sy + Math.sin(t) * sr * 2);
-          g1.stroke();
-        }
-        g1.beginPath();
-        g1.arc(sx, sy, sr, 0, 6.283);
-        g1.fillStyle = '#fff';
-        g1.fill();
-        g1.stroke();
+        closeups = closeups.slice(0, cell.per * 3);
+        closeP = Math.ceil(closeups.length / cell.per);
+        // each close-up's labels: its own sections placed first, every label kept inside it
+        closeups.forEach(function (c) {
+          const cr = c.crop;
+          c.k = Math.min(cell.w / (cr[2] - cr[0]), cell.h / (cr[3] - cr[1]));
+          c.lo = loAt(c.k);
+          c.pl = pdfPlace(
+            g1,
+            Object.keys(asg)
+              .map(Number)
+              .filter(function (l) {
+                const q = labelPos(l);
+                return q.x >= cr[0] && q.x <= cr[2] && q.y >= cr[1] && q.y <= cr[3];
+              }),
+            c.lo,
+            lab,
+            numOf,
+            { first: c.ids, bnd: cr },
+          );
+          if (c.pl.usedNum) keyNums = true;
+          for (const l in c.pl.lays) if (small[l]) shown[l] = 1;
+        });
       }
     }
-    g1.restore();
+    if (!dry) {
+      g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
+      const keyPg = 2 + closeP,
+        sub = pdfLines(g1, subParts(closeups.length, keyPg), bw, 2);
+      g1.fillStyle = '#111';
+      g1.font = '700 ' + PX(15) + 'px ' + LFONT;
+      g1.fillText(pdfTrunc(g1, nm, bw), m, m + PX(12));
+      g1.fillStyle = '#777';
+      g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
+      sub.forEach(function (t, i) {
+        g1.fillText(t, m, m + PX(26) + i * PX(11));
+      });
+      g1.imageSmoothingEnabled = true;
+      g1.imageSmoothingQuality = 'high';
+      const art1 = pdfArt(false, sh, {
+        t: Math.max(1, Math.round(PX(0.8) / f1.k)),
+        dash: Math.max(3, Math.round(PX(4) / f1.k)),
+      });
+      g1.drawImage(art1, ox, top, f1.w, f1.h);
+      g1.save();
+      g1.setTransform(f1.k, 0, 0, f1.k, ox, top);
+      pdfPlaceDraw(g1, asg, pl, lo, numOf, PX(1.2) / f1.k);
+      const lbox = pl.boxes;
+      // where each close-up is, lettered
+      closeups.forEach(function (c, i) {
+        pdfCloseMark(g1, c.crop, pdfLetter(i), f1.k, LS.fill, pl);
+      });
+      if (withShade) {
+        const zr = PX(5.2) / f1.k;
+        g1.textAlign = 'center';
+        g1.textBaseline = 'middle';
+        g1.font = '700 ' + PX(6.5) / f1.k + 'px ' + LFONT;
+        const blocked = function (x, y) {
+          for (let i = 0; i < lbox.length; i++) {
+            const b = lbox[i],
+              cx = Math.max(b[0], Math.min(x, b[2])),
+              cy = Math.max(b[1], Math.min(y, b[3]));
+            if (Math.hypot(x - cx, y - cy) < zr * 1.25) return true;
+          }
+          return false;
+        };
+        const inZone = function (z, x, y) {
+          for (let a = 0; a < 8; a++) {
+            const t = (a * Math.PI) / 4,
+              px = Math.round(x + Math.cos(t) * zr * 1.1),
+              py = Math.round(y + Math.sin(t) * zr * 1.1);
+            if (px < 0 || py < 0 || px >= W || py >= H) return false;
+            const q = py * W + px;
+            if (labels[q] !== z.l || !sh.V[q] || shadeZone(sh.tone[z.l], (sh.V[q] - 1) / 254) !== z.zone)
+              return false;
+          }
+          return true;
+        };
+        shadeZoneLabelsAll(sh, zr * 1.3).forEach(function (z) {
+          if (blocked(z.x, z.y)) {
+            let ok = false;
+            for (let rr = zr * 2.2; rr <= Math.max(zr * 2.2, z.r * 1.6) && !ok; rr += zr * 1.1)
+              for (let a = 0; a < 12 && !ok; a++) {
+                const t = (a * Math.PI) / 6,
+                  x = z.x + Math.cos(t) * rr,
+                  y = z.y + Math.sin(t) * rr;
+                if (!blocked(x, y) && inZone(z, x, y)) {
+                  z.x = x;
+                  z.y = y;
+                  ok = true;
+                }
+              }
+            if (!ok) return;
+          }
+          g1.beginPath();
+          g1.arc(z.x, z.y, zr, 0, 6.283);
+          g1.fillStyle = '#fff';
+          g1.fill();
+          g1.lineWidth = PX(0.6) / f1.k;
+          g1.strokeStyle = '#9a9a9a';
+          g1.stroke();
+          g1.fillStyle = '#555';
+          g1.fillText(String(z.tone), z.x, z.y + zr * 0.06);
+        });
+        g1.textAlign = 'left';
+        g1.textBaseline = 'alphabetic';
+        if (shadeUse().sun) {
+          const sr = PX(6) / f1.k,
+            sx = Math.max(sr * 2, Math.min(W - sr * 2, shadeSun.x * W)),
+            sy = Math.max(sr * 2, Math.min(H - sr * 2, shadeSun.y * H));
+          g1.lineCap = 'round';
+          g1.strokeStyle = '#fff';
+          g1.lineWidth = PX(3.2) / f1.k;
+          for (let a = 0; a < 8; a++) {
+            const t = (a * Math.PI) / 4;
+            g1.beginPath();
+            g1.moveTo(sx + Math.cos(t) * sr * 1.45, sy + Math.sin(t) * sr * 1.45);
+            g1.lineTo(sx + Math.cos(t) * sr * 2, sy + Math.sin(t) * sr * 2);
+            g1.stroke();
+          }
+          g1.beginPath();
+          g1.arc(sx, sy, sr + PX(1.2) / f1.k, 0, 6.283);
+          g1.fillStyle = '#fff';
+          g1.fill();
+          g1.strokeStyle = '#666';
+          g1.lineWidth = PX(1) / f1.k;
+          for (let a = 0; a < 8; a++) {
+            const t = (a * Math.PI) / 4;
+            g1.beginPath();
+            g1.moveTo(sx + Math.cos(t) * sr * 1.45, sy + Math.sin(t) * sr * 1.45);
+            g1.lineTo(sx + Math.cos(t) * sr * 2, sy + Math.sin(t) * sr * 2);
+            g1.stroke();
+          }
+          g1.beginPath();
+          g1.arc(sx, sy, sr, 0, 6.283);
+          g1.fillStyle = '#fff';
+          g1.fill();
+          g1.stroke();
+        }
+      }
+      g1.restore();
+      // ---- the close-ups: each its part of the picture, magnified, with its labels
+      if (closeups.length) {
+        const cell = pdfCell(bw);
+        let cp = null,
+          // (the foot of the last row drawn)
+          lastBot = 0;
+        closeups.forEach(function (c, i) {
+          if (i % cell.per === 0) {
+            cp = pdfPage();
+            pages.push(cp);
+            const gc = cp.g;
+            gc.fillStyle = '#111';
+            gc.font = '700 ' + PX(15) + 'px ' + LFONT;
+            gc.fillText('Close-ups', m, m + PX(12));
+            gc.fillStyle = '#777';
+            gc.font = '500 ' + PX(8.5) + 'px ' + LFONT;
+            gc.fillText(
+              pdfTrunc(
+                gc,
+                'Sections too small to label on page 1, magnified. A dot there marks each one.',
+                bw,
+              ),
+              m,
+              m + PX(26),
+            );
+          }
+          const gc = cp.g,
+            j = i % cell.per,
+            cx = m + (j % 2) * (cell.w + cell.gap),
+            cy = m + PX(40) + Math.floor(j / 2) * (cell.h + cell.gap + PX(14)),
+            cr = c.crop,
+            kc = c.k,
+            dw = (cr[2] - cr[0]) * kc,
+            dh = (cr[3] - cr[1]) * kc;
+          gc.fillStyle = '#111';
+          gc.font = '700 ' + PX(10) + 'px ' + LFONT;
+          gc.fillText(pdfLetter(i), cx, cy + PX(10));
+          const iy = cy + PX(14);
+          lastBot = Math.max(j ? lastBot : 0, iy + cell.h);
+          gc.save();
+          gc.beginPath();
+          gc.rect(cx, iy, dw, dh);
+          gc.clip();
+          gc.imageSmoothingEnabled = true;
+          gc.imageSmoothingQuality = 'high';
+          gc.drawImage(art1, cr[0], cr[1], cr[2] - cr[0], cr[3] - cr[1], cx, iy, dw, dh);
+          gc.setTransform(kc, 0, 0, kc, cx - cr[0] * kc, iy - cr[1] * kc);
+          // (a dot only for a small section still without a label: one labelled on page 1 needs none here)
+          pdfPlaceDraw(gc, asg, c.pl, c.lo, numOf, PX(1.2) / kc, function (l) {
+            return small[l] && !shown[l];
+          });
+          gc.restore();
+          gc.strokeStyle = '#bbb';
+          gc.lineWidth = PX(0.6);
+          gc.strokeRect(cx, iy, dw, dh);
+        });
+        // (under the last of them: how many small sections no close-up could label)
+        const left = pl.dropped.length - Object.keys(shown).length;
+        if (left) {
+          const gc = cp.g;
+          gc.fillStyle = '#777';
+          gc.font = '500 ' + PX(8.5) + 'px ' + LFONT;
+          gc.fillText(
+            pdfTrunc(
+              gc,
+              left +
+                (Object.keys(shown).length ? ' more' : '') +
+                (left === 1 ? ' small section has' : ' small sections have') +
+                ' only a dot on page 1: see ' +
+                (left === 1 ? 'it' : 'them') +
+                ' in the app' +
+                (lab === 'codes' ? ', or print with Numbers.' : '.'),
+              bw,
+            ),
+            m,
+            Math.min(lastBot + PX(16), cp.h - m - PX(4)),
+          );
+        }
+      }
+    } else for (let i = 0; i < closeP; i++) pages.push(null);
   }
+  _pdfCloseN = Object.keys(shown).length;
+  _pdfCloseP = closeP;
+  _pdfCloseL = closeups.length;
+  _pdfCU = closeups;
+  _pdfLeft = Object.keys(small).length - _pdfCloseN;
   // ---- next: reference preview + colour key table (bigger preview for "Key + reference")
   let pg = pdfPage(),
     g = pg.g;
@@ -985,8 +1495,7 @@ function _buildPDF(dry) {
         ' · ' +
         nMk +
         ' · ' +
-        assignData.N +
-        ' sections' +
+        nWord(assignData.N, 'section') +
         (assignData.paper
           ? ' (' + Object.keys(assignData.paper).length + ' unlabelled ones stay white)'
           : '') +
@@ -1128,8 +1637,18 @@ function _buildPDF(dry) {
     rowH = PX(19);
     pvH = ref ? Math.round(avail * 0.62) : PX(190);
   }
-  // "Key + reference" with a tall picture: the reference fills the left column, the key starts in the right one
-  const side = ref && cols === 2 && pdfFit(cw, pageBot0 - pvTop).k > pdfFit(bw, pvH).k;
+  // a tall picture: the reference fills the left column and the key starts in the right one. "Key + reference" always;
+  // "Page + key" too when the whole key fits that column (v284: a tall picture's reference was a sliver across the top)
+  let famN = 0,
+    famL = null;
+  rows.forEach(function (r) {
+    if (r.fam !== famL) famN++;
+    famL = r.fam;
+  });
+  const side =
+    cols === 2 &&
+    pdfFit(cw, pageBot0 - pvTop).k > pdfFit(bw, pvH).k &&
+    (ref || hdrH + famN * famH + rows.length * PX(19) <= pageBot0 - pvTop);
   if (side) rowH = PX(19);
   const f2 = side ? pdfFit(cw, pageBot0 - pvTop) : pdfFit(bw, pvH),
     pvx = m + ((side ? cw : bw) - f2.w) / 2,
@@ -1143,8 +1662,24 @@ function _buildPDF(dry) {
   g.strokeRect(pvx, pvy, f2.w, f2.h);
   // columns: [number] swatch, brand, code, name, sections, then (with blends or shading) the lighter and darker
   // marker, each as wide as its longest entry so the name keeps what's left, even on a small page
-  const nw = nums ? PX(20) : 0,
-    X = { sw: nw, tag: nw + PX(16), code: nw + PX(28), name: nw + PX(80), cnt: cw };
+  // [☐ to tick off] [order] [number] swatch …: the box and the order come first (v284)
+  const nw = keyNums ? PX(20) : 0,
+    lead = PX(36),
+    X = {
+      box: 0,
+      ord: PX(32),
+      sw: lead + nw,
+      tag: lead + nw + PX(16),
+      code: lead + nw + PX(28),
+      name: lead + nw + PX(80),
+      cnt: cw,
+    };
+  // (the code column as wide as the longest code, so the names keep the rest: v284 review)
+  g.font = '700 ' + PX(9.5) + 'px ' + LFONT;
+  const codeW = rows.reduce(function (w, r) {
+    return Math.max(w, g.measureText(r.m.code).width);
+  }, 0);
+  X.name = X.code + Math.min(PX(60), Math.max(PX(30), codeW + PX(8)));
   // (t: the tones of a row or of one of its lines; none: a marker whose sections are all flat)
   const cellsOf = function (mm, t) {
     if (withShade) {
@@ -1238,10 +1773,12 @@ function _buildPDF(dry) {
     const x = colX();
     g.fillStyle = '#8a8a8a';
     g.font = '700 ' + PX(7) + 'px ' + LFONT;
+    g.textAlign = 'right';
+    g.fillText('ORDER', x + X.ord, y + PX(10));
     g.textAlign = 'left';
-    if (nums) {
+    if (keyNums) {
       g.textAlign = 'right';
-      g.fillText('NO.', x + nw - PX(6), y + PX(10));
+      g.fillText('NO.', x + lead + nw - PX(6), y + PX(10));
       g.textAlign = 'left';
     }
     g.fillText(withShade ? 'B  MARKER' : 'MARKER', x + X.code - (withShade ? PX(9) : 0), y + PX(10));
@@ -1333,11 +1870,20 @@ function _buildPDF(dry) {
     need(rowH);
     const x = colX(),
       mm = r.m;
-    if (nums) {
+    // a box to tick, and where it comes in colouring order
+    g.strokeStyle = '#9a9a9a';
+    g.lineWidth = PX(0.7);
+    g.strokeRect(x + PX(1), y + PX(4.5), PX(9), PX(9));
+    g.fillStyle = '#8a8a8a';
+    g.font = '600 ' + PX(8) + 'px ' + LFONT;
+    g.textAlign = 'right';
+    g.fillText(pdfOrd(r.ord), x + X.ord, y + PX(12.5));
+    g.textAlign = 'left';
+    if (keyNums) {
       g.fillStyle = '#111';
       g.font = '700 ' + PX(9.5) + 'px ' + LFONT;
       g.textAlign = 'right';
-      g.fillText(String(num[mm.mkey]), x + nw - PX(6), y + PX(12.5));
+      g.fillText(String(num[mm.mkey]), x + lead + nw - PX(6), y + PX(12.5));
       g.textAlign = 'left';
     }
     pdfSwatch(g, x + X.sw, y + PX(3.5), sw, mm.hex, true);
@@ -1527,6 +2073,10 @@ async function exportPDF() {
     _b.textContent = 'Preparing…';
     _b.disabled = true;
   }
+  // (a moment for "Preparing…" to show: the pages are drawn in one go, v287)
+  await new Promise(function (r) {
+    setTimeout(r, 30);
+  });
   try {
     const P = PAPERS[paper] || PAPERS.letter,
       bytes = await canvasesToPDF(buildPDFPages(), P[0], P[1]);
@@ -1544,15 +2094,65 @@ async function exportPDF() {
     const sm = sheetOpen() && document.getElementById('sfPrSum');
     if (sm) {
       sm.classList.add('empty');
-      sm.textContent = 'Could not build the PDF. Try again.';
-    } else note('Could not build the PDF.');
+      sm.textContent = 'Couldn’t build the PDF. Try again.';
+    } else note('Couldn’t build the PDF.');
   }
   if (_b) {
     _b.textContent = _o;
     _b.disabled = false;
   }
 }
+// when colouring started and finished: the first tick's time, and the time the last section was ticked (unticking one
+// takes the finish away)
+function progStamp() {
+  if (!assignData || !colored || progAt.u) return;
+  const now = Date.now();
+  if (!progAt.s && progressCount()) progAt.s = now;
+  if (pageDone()) {
+    if (!progAt.e) progAt.e = now;
+  } else progAt.e = 0;
+}
+// "166 sections · 24 markers · started 12 Sep, finished today", for the page finished
+function finishLine() {
+  const ord = assignData.order,
+    mk = {};
+  ord.forEach(function (l) {
+    mk[assignData.assign[l].mkey] = 1;
+  });
+  const nm = Object.keys(mk).length,
+    day = function (ms) {
+      const d = new Date(ms),
+        t = new Date(),
+        y = new Date(t.getFullYear(), t.getMonth(), t.getDate() - 1);
+      if (d.toDateString() === t.toDateString()) return 'today';
+      if (d.toDateString() === y.toDateString()) return 'yesterday';
+      return d.toLocaleDateString(
+        'en-GB',
+        d.getFullYear() === t.getFullYear()
+          ? { day: 'numeric', month: 'short' }
+          : { day: 'numeric', month: 'short', year: 'numeric' },
+      );
+    };
+  let t =
+    ord.length +
+    ' section' +
+    (ord.length === 1 ? '' : 's') +
+    ' \u00b7 ' +
+    nm +
+    ' marker' +
+    (nm === 1 ? '' : 's');
+  if (progAt.s && progAt.e) {
+    const a = day(progAt.s),
+      b = day(progAt.e);
+    t +=
+      a === b
+        ? ' \u00b7 coloured ' + (/^\d/.test(b) ? 'on ' : '') + b
+        : ' \u00b7 started ' + a + ', finished ' + b;
+  }
+  return t;
+}
 function checkComplete() {
+  progStamp();
   if (celebrated || sfmode !== 'color' || !assignData) return;
   const ord = assignData.order;
   let d = 0;
@@ -1569,9 +2169,21 @@ function celebrate() {
   try {
     if (navigator.vibrate) navigator.vibrate([12, 40, 12]);
   } catch (_) {}
+  // (the whole page, in its colours: the marker row that was open closes, and a zoom from Find next goes back)
+  if (!focus && sfmode === 'color') {
+    hlKey = null;
+    hlZone = null;
+    if (_fnOl) {
+      _fnOl = false;
+      outlineSecs(null);
+    }
+    resetZoom();
+    renderGuide();
+    renderAlong();
+  }
   const rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (focus || sfmode !== 'color')
-    note('\u2728 Finished \u2014 every section coloured! Tap Reveal &amp; share to show it off.');
+    note(ic('sparkles') + ' Finished \u2014 every section coloured! Tap Reveal &amp; share to show it off.');
   else requestAnimationFrame(doneInView);
   if (!rm) confettiBurst();
 }
@@ -1581,7 +2193,7 @@ function doneInView() {
   if (!dn || dn.offsetParent === null || focus) return;
   // (the open row's second check would scroll back to it: 83-along.js)
   _revStop();
-  sayLive('Finished \u2014 every section coloured! Reveal and share is at the top of the list.');
+  sayLive('Finished \u2014 every section coloured! Reveal and share is in the bar at the bottom.');
   const r = dn.getBoundingClientRect(),
     bar = barEl(),
     top =
@@ -1681,14 +2293,14 @@ function exportImage() {
     _b.disabled = true;
   }
   setTimeout(function () {
-    buildExportCanvas().toBlob(function (blob) {
+    buildExportCanvas(false, !exCodes).toBlob(function (blob) {
       exportImage.busy = 0;
       if (_b) {
         _b.textContent = _o;
         _b.disabled = false;
       }
       if (!blob) {
-        note('Could not export the image.');
+        note('Couldn’t export the image.');
         return;
       }
       shareOrSave(blob, 'colour-guide.png', curName || 'Colour guide', 'image', 'Image downloaded.');

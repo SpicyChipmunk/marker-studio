@@ -4,7 +4,7 @@
 // areas of small controls, and disabled buttons that look disabled.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, openAtScale, idle, openMenu, welcome, sampleGuide } from './helpers.mjs';
+import { setup, teardown, openApp, openAtScale, idle, openMenu, welcome, sampleGuide, saveGuide, answerAsks } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -21,7 +21,8 @@ const init = () => { Object.defineProperty(Navigator.prototype, 'standalone', { 
 
 // kinds of button that aren't actions or choices: tab bars, cards and list rows (bigger), small icons and pills
 const TAB = '.modes button,.sftabbtn';
-const BIG = '.homecard,.sopen,.mdrop,.hlphiw,.sfRecCard,.sfah,.sfinfo,.focmk';
+// (v288: a palette band's own button fills the band; the Print sheet's choices with a drawing over the word)
+const BIG = '.homecard,.sopen,.mdrop,.hlphiw,.sfRecCard,.sfah,.sfinfo,.focmk,.bhit,.sfprsh .segs button:has(.sfprpv)';
 const CHOICE = '.segs button,.chip,.msrc button,.wcbrands button,#sfRoot .sfedit';
 // a link inside a sentence; the guide's tool-row icons and Save pill, whose tap areas stop at the picture's edge,
 // and ✎, whose lower edge the Save pill under it shares
@@ -86,7 +87,7 @@ async function walk(page, big) {
   await page.click('#mCollection'); await idle(page);
   const mk = await check(page, 'Markers', big);
   if (!big) {
-    for (const id of ['#mkDrawBtn', '#mkMatchBtn', '#toPalette', '#presetHdr', '#backupBtn', '#swatchBtn']) assert.equal(h(mk, id), 44, id);
+    for (const id of ['#mkDrawBtn', '#mkMatchBtn', '#toPalette', '#presetHdr', '#mkMore', '#swatchBtn']) assert.equal(h(mk, id), 44, id);
     assert.deepEqual([...new Set(mk.filter((x) => /ownView|segs/.test(x.b) || x.kind === 'choice').map((x) => x.h))], [40], 'Owned / Unowned / All / To buy: 40px');
   }
   await page.click('#ownView [data-v="wish"]'); await check(page, 'Markers: To buy', big);
@@ -94,7 +95,8 @@ async function walk(page, big) {
   await page.click('#ownView [data-v="owned"]'); await idle(page);
   await page.click('#presetHdr'); await check(page, 'Markers: Add a set you own', big); await page.click('#presetHdr');
   await page.click('#filterBar'); await check(page, 'Markers: filters', big); await page.click('#filterBar');
-  await page.click('#backupBtn'); await check(page, 'Back up & restore', big); await close(page);
+  await page.click('#mkMore'); await check(page, 'Markers: ⋯ menu', big); await page.click('#mkMore');
+  await page.evaluate(() => openBackup()); await page.waitForSelector('#backupOverlay.on'); await check(page, 'Back up & restore', big); await close(page);
   await page.click('#swatchBtn'); await page.waitForSelector('#swOverlay.on'); await check(page, 'swatch chart', big); await close(page);
   await page.click('#mkMatchBtn'); await check(page, 'Match: Photo', big);
   await page.click('#matchOverlay .msrc [data-src="hex"]'); await page.fill('#matchHex', '#3a7bd5'); await check(page, 'Match: Hex code', big); await close(page);
@@ -104,10 +106,15 @@ async function walk(page, big) {
   await check(page, 'Palette', big);
   await page.click('#draw'); await idle(page);
   const pal = await check(page, 'Palette after Generate', big);
-  if (!big) for (const id of ['#draw', '#undo', '#reset', '#saveBtn', '#savedBtn', '#exportBtn', '#useInGuide']) assert.equal(h(pal, id), 44, id);
+  if (!big) for (const id of ['#draw', '#undo', '#reset', '#saveBtn', '#libMore', '#useInGuide']) assert.equal(h(pal, id), 44, id);
+  // Library and Save image, in the ⋯ menu beside Save
+  await page.click('#libMore');
+  const more = await check(page, 'Palette: the ⋯ menu', big);
+  if (!big) for (const id of ['#savedBtn', '#exportBtn']) assert.equal(h(more, id), 44, id);
+  await page.keyboard.press('Escape');
   await page.click('#harm [data-h="photo"]'); await check(page, 'Palette: Photo', big);
   await page.click('#harm [data-h="complementary"]');
-  await page.click('#saveBtn'); await idle(page); await page.click('#savedBtn'); await check(page, 'Library', big); await close(page);
+  await page.click('#saveBtn'); await idle(page); await page.click('#libMore'); await page.click('#savedBtn'); await check(page, 'Library', big); await close(page);
 }
 
 test('one button height: 44px actions, 40px choices, 44px tap areas, on every screen at 390×844', async () => {
@@ -162,7 +169,7 @@ test('buttons in the guide are 40px (choices) or 44px (actions), never the app\'
   await page.click('#sfBrush'); await page.waitForSelector('#sfSheet.sfpicksh');
   assert.deepEqual(await hs('#sfSheet .sfshft button'), ['sfPopCancel:44', 'sfPopConfirm:44'], 'sheet footers match the bar');
   await page.click('#sfPopCancel'); await page.click('#sfPaint');
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfBack2'); await idle(page); await page.click('#sfAdjToggle'); await idle(page);
   assert.deepEqual(await hs('#sfRotL,#sfRotR,#sfCrop,#sfAutoCrop'), ['sfRotL:44', 'sfRotR:44', 'sfCrop:44', 'sfAutoCrop:44']);
   assert.deepEqual(await hs('#sfEdit button'), ['sfEmToggle:40', 'sfEmMerge:40', 'sfEmSplit:40', 'sfEmAdd:40']);
@@ -203,6 +210,9 @@ const rect = (page, sel) => page.evaluate((s) => { const e = document.querySelec
 test('tap areas: the header\'s Save pill and the ⓘ lines (guide and Markers) are 44px tall to tap', async () => {
   const { page, errors } = await openApp({ storage: { 'ms-seen-hints': '["along","tap","mk-grid","markers"]' } });
   await sampleGuide(page); await idle(page);
+  // (v285: the pill shows as Put back, after the open guide was deleted in the Library, or Save after a failed save)
+  await saveGuide(page);
+  await page.evaluate(() => { const g = state.saved.find((s) => s.type === 'guide'); sfDeleteDesign(g.id); SF.libChanged(g.id, false); }); await idle(page);
   const sv = await page.evaluate(() => { const b = document.getElementById('sfSave'), r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after'); return { h: r.height, tap: parseFloat(a.height), w: r.width }; });
   assert.ok(sv.h < 44 && sv.tap >= 44, `Save looks ${sv.h}px, taps ${sv.tap}px`);
   // the tap area is centred on the pill: a tap 20px above its middle still saves
@@ -222,12 +232,13 @@ test('tap areas: the header\'s Save pill and the ⓘ lines (guide and Markers) a
 // ---- From the fifth review (outside the guide screen) ----
 const onboardedV265 = (extra = {}) => ({ 'ms-onboarded': '1', 'ms-setup-tip': '1', 'ms-last-ver': 'v265', ...extra });
 
-test('disabled buttons look disabled; Reset only when there is something to reset; choices announced', async () => {
+test('disabled buttons look disabled; Clear only when there is something to clear; choices announced', async () => {
   const { page, errors } = await openApp({ storage: onboardedV265({ [KEY]: appState() }) });
   await page.click('#mPalette'); await idle(page);
   const look = (sel) => page.evaluate((s) => { const e = document.querySelector(s), c = getComputedStyle(e); return { dis: e.disabled, op: +c.opacity, cur: c.cursor }; }, sel);
   assert.deepEqual(await look('#saveBtn'), { dis: true, op: 0.4, cur: 'not-allowed' });
-  assert.equal((await look('#reset')).dis, true, 'nothing to reset');
+  assert.equal((await look('#reset')).dis, true, 'nothing to clear');
+  assert.equal(await page.textContent('#reset'), 'Clear');
   assert.equal((await look('#reset')).op, 0.4);
   await page.click('#draw'); await idle(page);
   assert.equal((await look('#saveBtn')).op, 1);

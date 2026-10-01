@@ -3,7 +3,7 @@
 // per Done, no PNG re-encode on autosave, one-section zone markers) give the same answers as the slow ones.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -76,7 +76,7 @@ test('a big phone photo is kept at working size, Done repaints one section, auto
   const size = await page.evaluate(() => ({ src: __mstest.srcSize, W: __mstest.W, H: __mstest.H }));
   assert.ok(Math.max(...size.src) <= 2400, `photo kept at working size, got ${size.src}`);
   assert.equal(size.W, 2400); assert.equal(size.H, 1800);
-  await page.click('#sfBuild');
+  await buildGo(page);
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData), null, { timeout: 60000 });
   await page.click('#sfColor'); await idle(page);
   await page.click('#sfFocus'); await idle(page, 2200); // let the first autosave happen
@@ -87,8 +87,9 @@ test('a big phone photo is kept at working size, Done repaints one section, auto
     const before = __mstest.colored.reduce((a, b) => a + b, 0);
     t0 = performance.now(); document.getElementById('sfFDone').click(); const done = performance.now() - t0;
     await window.__idle.wait(2200, 20000); // until the auto-save (1.5 s after the change) has run
-    const saved = await IDB.get('guide-autosave');
-    return { full, done, png, before, savedProg: saved && saved.payload.prog.length };
+    // (v285: built, it's in the Library, so its changes save into its entry)
+    const saved = await IDB.get('guide-' + __mstest.curId);
+    return { full, done, png, before, savedProg: saved && saved.prog.length };
   });
   assert.ok(t.done < t.full * 0.5, `Done took ${t.done.toFixed(0)} ms vs ${t.full.toFixed(0)} ms for a full redraw`);
   assert.equal(t.png, 0, 'autosave reused the saved section map');
@@ -207,7 +208,7 @@ test('a 48-megapixel photo loads, is scaled to working size, and builds', notOnW
   const sz = await page.evaluate(() => ({ src: __mstest.srcSize, W: __mstest.W, H: __mstest.H }));
   assert.ok(Math.max(...sz.src) <= 2400, 'kept at working size: ' + sz.src);
   assert.equal(Math.max(sz.W, sz.H), 2400);
-  await page.click('#sfBuild'); await page.waitForFunction(() => __mstest.assignData && __mstest.assignData.N > 20, null, { timeout: 90000 });
+  await buildGo(page); await page.waitForFunction(() => __mstest.assignData && __mstest.assignData.N > 20, null, { timeout: 90000 });
   assert.ok(Date.now() - t0 < 60000, 'done in under a minute on the test machine');
   assert.deepEqual(errors, []);
 });

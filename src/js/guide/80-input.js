@@ -28,7 +28,24 @@ function findNext() {
     }
   }
   _fnLast = l;
-  centerOn(comps[l].cx, comps[l].cy, Math.max(zoom, 2.5));
+  // (to its label's point, which is always inside it, zoomed only as far as it needs, as focus mode does: v288, the
+  // outline's pulse shows the tap did something; a screen reader hears it)
+  const d = viewDims(),
+    p = labelPos(l),
+    left = path.filter(function (q) {
+      return !colored[q];
+    }).length;
+  // (the room is the picture's frame, not the picture: a tall narrow page has room on either side of it)
+  const hst = picHost();
+  centerOn(
+    p.x,
+    p.y,
+    fitZoom(secBoxes(), l, (hst && hst.clientWidth) || d.vw, (hst && hst.clientHeight) || d.dh, true),
+  );
+  _fnOl = true;
+  _fnKey = hlKey;
+  outlineSecs([l], true);
+  sayLive('Next section to colour: ' + left + ' of ' + n + ' left.');
 }
 function jumpToNext() {
   if (!hlKey || !assignData || zoom <= 1) return;

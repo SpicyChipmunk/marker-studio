@@ -68,7 +68,7 @@ On a guide, open **Style** and set **Shading** to **Light & shadow**.
 - [ ] Match a colour → Hex code: typing letters that aren't a colour says "Enter 6 hex digits".
 - [ ] Before adding markers, Palette works and a line at the top says it's using every marker.
 - [ ] Welcome: the Copic tab jumps to the Copic sets; the button says "Add 24 markers" (etc.).
-- [ ] Guide: "← Edit sections", "Download PDF" after Letter/A4, "Save image", "Done colouring"; colour-along rows say "0 of 9 done".
+- [ ] Guide: "← Edit sections", "Download PDF" after Letter/A4, "Save image", "← Plan"; colour-along rows say "0 of 9 done".
 
 ## 2j. Release 2 (3 min)
 
@@ -77,6 +77,52 @@ On a guide, open **Style** and set **Shading** to **Light & shadow**.
 - [ ] The picker shows codes under each swatch, grouped by colour, with **Recently used** at the top the next time.
 - [ ] **Blend:** a tap still adds an anchor; press and hold a section shows Change colour / Pin. **Manual:** a tap opens the picker.
 - [ ] **Style → Pin colours:** taps pin and unpin sections directly.
+
+## 3f. Colour along as your paper, the Library grid, v288 (12 min)
+
+On your iPad (both ways round) and your phone, with one of your own photographed pages part-way coloured.
+
+- [ ] **Colour along:** what you've coloured shows in its colours, the rest pale, like your paper; open a row: its sections still to do are full colour and outlined. Codes off shows the whole plan. Focus mode looks the same way.
+- [ ] **Find next / Focus mode on a tiny section:** it zooms only until the section is easy to tap, with a bold outline that shows on a light marker and a dark one; a big section just pans.
+- [ ] **Markers on this page:** "N markers on this page ›" lists them lightest first; tapping one lights up its sections.
+- [ ] **Change colour:** Closest and In this guide at the top; the first time, a Pinned line under the tabs with Unpin. On an iPhone SE-size screen the whole sheet fits.
+- [ ] **Edit sections:** back from the Plan with nothing changed, the bar says ← Plan; change something and it says Build again.
+- [ ] **iPad tool row:** Codes, Greyscale and Full screen have their words; at the largest text size nothing is cut. On the phone, a one-time line names them (after the first guide).
+- [ ] **One width:** on the iPad, Home, Guide, Markers and Palette have the same width menu, both ways round.
+- [ ] **Home:** with guides made, New colouring guide opens the photo picker straight away; cancel it and Home stays as it was.
+- [ ] **Library:** a grid of pictures, each guide as coloured so far; ⋯ renames and deletes (Undo puts it back); scrolling 30+ guides stays smooth. Markers' ⋯ › Back up & restore opens it at the backup buttons.
+- [ ] **Questions:** re-detect, rotate or crop after building, restore ("Replace my markers" / "Keep mine") and Use in a guide ("Recolour" / "New guide with it") use the app's own buttons.
+- [ ] **Print:** each Pages and Labels choice has a small picture of the printed sheet.
+
+## 3e. Home, saving, iPad and icons, v285 (12 min)
+
+On your iPad (both ways round) and your phone, with one of your own photographed pages.
+
+- [ ] **Saving:** choose a photo and build it: it's in the Library without pressing anything ("Saves itself from now on ✓", then "Saved in your Library ✓"). The sample says **Sample** with a line under the tabs; look around (codes, zoom, tabs, Colour along) and it stays out of the Library; change anything (or rename it) and it's kept as "Sample jellyfish" (the next one "Sample jellyfish 2").
+- [ ] **Put back:** delete the open guide in the Library and wait for its Undo to go: the header says "Removed from your Library" with **Put back**; tick a section: still not in the Library; **Put back**: it's back, with the tick.
+- [ ] **Home:** with a guide part-way coloured, the Continue card shows it as coloured so far (the rest pale), how far, and the marker to pick up next; **Continue** opens Colour along at that marker. New colouring guide and the three cards sit beside it on the iPad, under it on the phone; Your guides is a grid on the iPad and a sideways strip on the phone.
+- [ ] **iPad portrait:** the guide uses the screen's width; the picture is bigger and shrinks as you scroll to the controls; Colour along's picture is bigger too.
+- [ ] **iPad landscape:** the picture and its tools are fully on screen as the guide opens, with nothing to scroll on the Colours tab; switching tabs moves nothing; turn the iPad round mid-colouring and it re-lays out cleanly.
+- [ ] **Icons:** line icons everywhere (Surprise's sparkles, ⋯, close ✕, the tool row, Home's tiles in marker colours); at the largest text size they grow with their words and nothing is cut.
+- [ ] **Shading hold:** with Light & shadow, colour one section's base tone only, go back to the plan and change Shadows: its highlight stays, its shadow follows; colour its shadow tone and change Shadows again: it keeps it.
+- [ ] **Straighten:** a photo straight from your phone that wasn't straightened says "Page kept as photographed · Straighten"; Straighten starts with its corners where the app guessed them.
+- [ ] **Blend › Mix:** each choice has a line saying what it does.
+- [ ] **Closing straight away (v286):** tick two sections and close the tab or swipe the app away at once; open it again: both ticks are there (on the Continue card and in the guide).
+
+## 3d. Usability release, v284 (10 min)
+
+On one of your own photographed pages; tick a few sections first where it says.
+
+- [ ] **Coloured sections keep their markers:** in Colour along, tick 5–10 sections (and colour one tone of a shaded one). Go **← Plan** and tap **Shuffle**: the ticked ones keep their markers, the rest change, a line under the tabs says "Kept 8 coloured sections as they are · Recolour them too", and they flash outlined. Close it (✕) and Shuffle again: not said again. **Undo**: the ticked ones still keep theirs. Change **Shading › Shadows**: the ticked ones keep their tones.
+- [ ] **Recolour them too:** after a change, tap it on that line: those sections get new markers and are unticked. One **Undo** puts the ticks and markers back.
+- [ ] **Balance:** Pattern › Random › Main colour with a saved palette of 4–5 colours (two of one family, the rest scattered): the bar's figures are what's painted (to the nearest 5); a colour far from the others is in **Accents**. A 2-colour palette lays 70/30 and says one marker leads the main colour, with **Add shades**.
+- [ ] **Codes button in Colour along:** off shows every section in its colour, ✓ on the ones you've done; on again, done ones go pale. Finish a page (Mark all done on each row): the whole picture shows in colour, and the banner says "166 sections · 16 markers · coloured today".
+- [ ] **Reopen** a part-coloured guide from Home or the Library: it opens in Colour along; its Home card says "12% coloured".
+- [ ] **Focus mode** with shading: the highlight, base and shadow are chips under the name, the step you're on lit (Colours › Step through each tone); the tip line under them isn't cut off. The picture sits in the middle when it all fits, with no black band above it.
+- [ ] **Find next** zooms to fit the section, outlines it, and a screen reader hears "Next section to colour: 3 of 9 left".
+- [ ] **Codes on the picture** in sections that nearly hold one are readable at normal zoom; zoom in and they redraw a moment later, still readable.
+- [ ] **Print** (Share › Print…, Codes): no two labels on the colouring page overlap; small sections have a dot and a lettered dashed box; the box's letter sits in a corner clear of the labels; the close-up pages show them magnified with their codes, none cut by a close-up's edge. The key has a box to tick and an ORDER column (1st, 2nd …). Try Numbers: fewer close-ups.
+- [ ] **The rest:** "← Plan" in Colour along; Save on a new guide says "Saves itself from now on ✓" in the header (no toast); a toast with Undo stays while your finger rests on Undo; Blend's Mix says Muted; Filters say Warm only / Cool only; Keep as is when straightening leaves "Page kept as photographed · Straighten"; the tool row fits on your phone in Photo zoomed in; Library's delete is a bin; Markers search says when more are in All; Palette's card shows the name it saves under.
 
 ## 3c. Random's Balance, v283 (5 min)
 
@@ -194,7 +240,7 @@ Use one of your own photos over one of your own drawings, with your whole collec
 - [ ] **Palette › From photo** on one of your photos: no two colours look the same; the size you asked for; Tap the white paper re-picks the colours.
 - [ ] **Photo pattern** with a photo of one of your coloured pages: "Lighting corrected from the paper" shows; areas you left white stay white; turning it off and Undo work.
 - [ ] **Random** with "Keep touching sections clearly different": no two touching sections look alike.
-- [ ] **Blend › Mix:** Soft, Vivid and Like paint each redraw; blue and yellow anchors meet in green with Like paint.
+- [ ] **Blend › Mix:** Muted, Vivid and Like paint each redraw; blue and yellow anchors meet in green with Like paint.
 - [ ] **Brand tags:** with Ohuhu and Copic in your collection, every code has a small tag (Ohuhu dark, Copic pale grey); readable on your phone at normal zoom; the PDF shows grey tags.
 - [ ] **Colour along:** each marker's lighter and darker companions really are lighter and darker.
 
@@ -264,7 +310,7 @@ Nothing should look or work differently. A quick pass:
 
 Use the sample guide on your phone, then again on the iPad.
 
-- [ ] **Header:** the name with ✎, "Saved in your Library ✓" (or "Not saved yet" with Save for a new guide), ✨ Surprise and ⋯. ⋯ opens a sheet: New, Save a copy, Help.
+- [ ] **Header:** the name with ✎, "Saved in your Library ✓" (or "Sample" for the sample until it's changed), ✨ Surprise and ⋯. ⋯ opens a sheet: New, Save a copy, Help.
 - [ ] **Picture:** it starts big and shrinks smoothly as you scroll into the tabs, stopping at a size it never goes below. It doesn't judder or jump while scrolling, including a fast flick.
 - [ ] **Switching tabs** (Colours, Pattern, Shading, Share) never moves the picture or the tabs. The app reopens on the last tab you used.
 - [ ] **Bottom bar:** it always sits on the bottom edge, including at the end of Share. It's one row of two buttons, and nothing hides under the home indicator.

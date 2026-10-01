@@ -7,15 +7,27 @@ if (_rbk)
 var _hn = document.getElementById('homeNew');
 if (_hn)
   _hn.addEventListener('click', function () {
-    setMode('sections');
-    if (window.SF) {
-      if (SF.showHome && !SF.hasGuide()) SF.showHome();
-      if (SF.pickPhoto) SF.pickPhoto();
+    // (v288) with guides already made (or one open), straight to the photo picker; Home stays until a photo is chosen. The first
+    // time, the Guide screen's card (choose a photo or try the sample, what a guide is).
+    var some = state.saved.some(function (s) {
+      return s.type === 'guide';
+    });
+    if ((some || (window.SF && SF.hasGuide && SF.hasGuide())) && window.SF && SF.pickPhotoHome) {
+      SF.pickPhotoHome(function () {
+        setMode('sections');
+      });
+      return;
     }
+    setMode('sections');
+    if (window.SF && SF.showHome && !SF.hasGuide()) SF.showHome();
   });
 var _hv = document.getElementById('homeView');
 if (_hv)
   _hv.addEventListener('click', function (e) {
+    if (e.target.closest('#homePalNote [data-clearpal]')) {
+      if (window.SF && SF.clearPal) SF.clearPal();
+      return;
+    }
     var c = e.target.closest('.homecard');
     if (!c) return;
     if (c.id === 'homeLibCard') {
@@ -59,6 +71,7 @@ SF.setCollection(sfCollection());
 SF.configure({
   renderFilters: sfRenderFilters,
   saveDesign: sfSaveDesign,
+  saveDesignNow: sfSaveDesignNow,
   loadDesign: sfLoadDesign,
   listDesigns: sfListDesigns,
   deleteDesign: sfDeleteDesign,
@@ -236,7 +249,7 @@ document.addEventListener('keydown', function (e) {
     wf = $('wcFile'),
     we = $('wcErr');
   const wcErr = function (m) {
-    we.innerHTML = m ? '<span>\u26a0\ufe0f ' + m + '</span>' : '';
+    we.innerHTML = m ? '<span>' + ic('triangle-alert', 'icw') + ' ' + m + '</span>' : '';
     we.className = m ? 'mserr' : '';
     we.style.display = m ? '' : 'none';
   };
@@ -317,7 +330,20 @@ function importPicked(f, btn) {
       typeof d === 'object' &&
       (d.type === 'ms-backup' || d.type === 'ms-guides' || Array.isArray(d) || Array.isArray(d.owned))
     ) {
-      if (confirm('This is a Marker Studio backup, not a single guide. Restore it?')) restoreAny(f, btn.id);
+      // (asked in the app's own dialog, v288)
+      (window.SF && SF.askBox
+        ? SF.askBox(
+            'This is a backup',
+            'This file is a Marker Studio backup, not a single guide. Restore it?',
+            '<button type="button" class="btn-primary" data-a="go">Restore it</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+            true,
+          )
+        : Promise.resolve(
+            confirm('This is a Marker Studio backup, not a single guide. Restore it?') ? 'go' : 'stay',
+          )
+      ).then(function (a) {
+        if (a === 'go') restoreAny(f, btn.id);
+      });
       return;
     }
     if (
@@ -598,10 +624,10 @@ function loadNoteHTML(n, k) {
         it +
         ' back</button>' +
         (rs ? '<button id="lnRestore" data-ln="restore">Restore a backup</button>' : '') +
-        '<button id="lnSave" data-ln="save">Save a copy</button>'
+        '<button id="lnSave" data-ln="save">Download the original</button>'
       : rs
-        ? '<button class="nb1" id="lnRestore" data-ln="restore">Restore a backup</button><button id="lnSave" data-ln="save">Save a copy</button>'
-        : '<button class="nb1" id="lnSave" data-ln="save">Save a copy</button>') +
+        ? '<button class="nb1" id="lnRestore" data-ln="restore">Restore a backup</button><button id="lnSave" data-ln="save">Download the original</button>'
+        : '<button class="nb1" id="lnSave" data-ln="save">Download the original</button>') +
     '<button id="lnOk" data-ln="ok">OK</button></div>' +
     (rs
       ? '<input type="file" id="lnFile" class="fileinput" accept=".json,.txt,application/json,text/plain">'
@@ -654,7 +680,7 @@ function renderHomeNotes() {
   const el = $('loadNote'),
     ll = $('lostNote');
   if (!el || !ll) return;
-  // the note is dealt with (OK, Save a copy, a restore): the copy goes and what could be read is saved
+  // the note is dealt with (OK, Download the original, a restore): the copy goes and what could be read is saved
   function gone() {
     try {
       localStorage.removeItem(LOAD_NOTE);

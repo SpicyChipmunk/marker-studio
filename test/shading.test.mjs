@@ -198,7 +198,7 @@ test('a cooler or grey shadow is laid over the base once it’s dry: focus mode 
   const st = JSON.parse(JSON.stringify(core.focusOrd.map((l, i) => [l, core.focusStep[i]]))).filter((s) => s[0] <= 2);
   assert.deepEqual(st.map((s) => s[1]), [2, 2, 4, 4], 'step by step too');
   // the words: the shadow over the base once it's dry
-  assert.match(core.stepText(1, 4).sub, /over the base once it’s dry/);
+  assert.match(core.stepText(1, 4).sub, /over the dry base, away from the light/);
   assert.match(core.shadeHowto(), /dry/);
   core.toneSteps = false; core.styleVars.shadeShadow = 'same'; core.shadeMode = 'off';
 });

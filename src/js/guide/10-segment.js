@@ -326,7 +326,7 @@ function segQuality() {
       ok: false,
       code: 'faint',
       msg: 'Barely any outlines were detected \u2014 the image may be blank, faint, or low-contrast.',
-      tip: 'Use line art with dark outlines on a light background, or turn on Enhance.',
+      tip: 'Use line art with dark outlines on a light background, or turn on Enhance (under Adjust photo).',
     };
   if (N < 2)
     return {
@@ -347,7 +347,7 @@ function segQuality() {
       ok: false,
       code: 'noisy',
       msg: 'Found a lot of tiny fragments \u2014 usually a photo or textured image rather than clean line art.',
-      tip: 'Use line art with solid outlines, or raise the minimum section size.',
+      tip: 'Use line art with solid outlines, or raise Min section size in Edit sections.',
     };
   return { ok: true };
 }
@@ -436,6 +436,8 @@ function labelCells() {
   }
   secState = new Uint8Array(comps.length);
   colored = new Uint8Array(comps.length);
+  heldSh = {};
+  progAt = { s: 0, e: 0 };
   celebrated = false;
   rgbOut = new Uint8ClampedArray(n * 4);
   imgData = new ImageData(rgbOut, W, H);
@@ -493,14 +495,22 @@ function render() {
       cnt++;
     }
   }
+  const lite = new Array(comps.length);
   for (let p = 0, j = 0; p < n; p++, j += 4) {
     const l = labels[p];
     let col;
     if (l === -1) col = LINE;
     else if (l === mergeSel) col = HILITE;
     else {
-      if (cn[l]) col = secColor[l];
-      else if (comps[l].bg) col = TEAL;
+      // (v288: paler tints, still one per section, so a gap that let two shapes run together shows, without looking
+      // like a colour plan)
+      if (cn[l]) {
+        col = lite[l];
+        if (!col) {
+          const c0 = secColor[l];
+          col = lite[l] = [(c0[0] + 357) / 2.4, (c0[1] + 357) / 2.4, (c0[2] + 357) / 2.4];
+        }
+      } else if (comps[l].bg) col = TEAL;
       else col = MAG;
     }
     rgbOut[j] = col[0];
@@ -515,6 +525,8 @@ function render() {
     const bb = document.getElementById('sfBuild');
     if (bb && bb.textContent.indexOf('Building') < 0) bb.disabled = cnt < 2;
   }
-  // an edit may have made (or undone) section edits still to be built: the line under the name says so
+  // an edit may have made (or undone) section edits still to be built: the line under the name says so, and the bar
   saveStatus();
+  edBarSync();
+  outlineMerge();
 }

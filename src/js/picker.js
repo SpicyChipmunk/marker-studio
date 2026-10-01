@@ -906,14 +906,14 @@ function closeNote() {
 function buildBands(n) {
   bands.innerHTML = '';
   for (let k = 0; k < n; k++) {
+    // (v288: the band's tap and its lock are two sibling buttons, not a button inside a button; the band is their
+    // positioned frame, .bhit filling it under the lock)
     const b = document.createElement('div');
     b.className = 'band';
-    b.setAttribute('role', 'button');
-    b.tabIndex = 0;
     b.innerHTML =
-      '<span class="bt" aria-hidden="true"></span><span class="blk" role="button" tabindex="0" aria-label="Lock this colour">' +
+      '<button type="button" class="bhit"></button><span class="bt" aria-hidden="true"></span><button type="button" class="blk" aria-label="Lock this colour">' +
       LOCKSVG +
-      '</span><span class="bcode"></span>';
+      '</button><span class="bcode" aria-hidden="true"></span>';
     bands.appendChild(b);
   }
 }
@@ -938,9 +938,13 @@ function showPalette(pal, animate) {
     b.classList.toggle('locked', state.locked.includes(pal[k]));
     {
       const _lk = b.querySelector('.blk');
-      if (_lk) _lk.setAttribute('aria-pressed', state.locked.includes(pal[k]) ? 'true' : 'false');
+      if (_lk) {
+        _lk.setAttribute('aria-pressed', state.locked.includes(pal[k]) ? 'true' : 'false');
+        // (which colour it locks, v287)
+        _lk.setAttribute('aria-label', 'Lock ' + c.code);
+      }
     }
-    b.setAttribute(
+    b.querySelector('.bhit').setAttribute(
       'aria-label',
       c.brand + ' ' + c.code + ' ' + c.name + (state.harmony === 'photo' ? ', next nearest' : ', re-roll'),
     );
@@ -954,10 +958,17 @@ function showPalette(pal, animate) {
   });
   if (animate) pulse();
   const base = COLORS[pal[0]];
-  palReadout(HARM[state.harmony], base.brand + ' · ' + base.name + ' base', pal);
+  palReadout(shownPaletteName(pal), palSub(pal), pal);
   if (animate) retrigger(readout, 'pop');
   setAmb(base.hex);
   closeNote();
+}
+// the line under a palette's name: its scheme, and the marker it was built from (a photo's is just "From photo")
+function palSub(pal) {
+  const base = COLORS[pal[0]];
+  return state.harmony === 'photo'
+    ? HARM.photo
+    : HARM[state.harmony] + ' \u00b7 ' + base.brand + ' ' + base.name + ' base';
 }
 // a palette's name, its line, and its codes under them (each code kept whole; brand letters as on the bands, when
 // the palette or your collection mixes brands)

@@ -1,7 +1,7 @@
 // Two tabs sharing storage: palettes, deleted guides, the same Library guide, and the Resume slot.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, saveGuide, libItem } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -30,8 +30,8 @@ test('two tabs: a palette saved in one is kept when the other changes screen, an
   await b.page.click('#mPalette'); await idle(b.page);
   assert.ok(await b.page.evaluate((KEY) => JSON.parse(localStorage.getItem(KEY)).saved.some((s) => s.id === 42), KEY), 'merged by id, not written over');
   // a delete in A reaches B's open Library
-  await b.page.click('#savedBtn'); await idle(b.page);
-  await a.page.click('#savedBtn'); await a.page.click(`#savedList .srow[data-id="${id}"] .sdel`); await idle(a.page);
+  await b.page.click('#libMore'); await b.page.click('#savedBtn'); await idle(b.page);
+  await a.page.click('#libMore'); await a.page.click('#savedBtn'); await libItem(a.page, `#savedList .srow[data-id="${id}"]`, 'sdel'); await idle(a.page);
   await b.page.waitForFunction((id) => !document.querySelector(`#savedList .srow[data-id="${id}"]`), id, { timeout: 3000 });
   await b.page.keyboard.press('Escape'); await b.page.click('#mCollection'); await idle(b.page);
   assert.equal(await b.page.evaluate(([KEY, id]) => JSON.parse(localStorage.getItem(KEY)).saved.some((s) => s.id === id), [KEY, id]), false, 'not written back');
@@ -41,19 +41,19 @@ test('two tabs: a palette saved in one is kept when the other changes screen, an
 
 test('two tabs: a guide deleted in one tab stops the other saving into it', async () => {
   const a = await openApp();
-  await sampleGuide(a.page); await a.page.click('#sfSave'); await idle(a.page);
+  await sampleGuide(a.page); await saveGuide(a.page); await idle(a.page);
   const id = await a.page.evaluate(() => __mstest.curId);
   const b = await a.ctx.newPage(); const errs = []; b.on('pageerror', (e) => errs.push(e.message));
   await b.goto(a.page.url()); await idle(b);
   await b.evaluate(() => { savedOverlay.classList.add('on'); renderSaved(); });
-  await b.click(`#savedList .srow[data-id="${id}"] .sdel`); await idle(b);
-  await a.page.waitForFunction(() => /Not saved/.test(document.getElementById('sfSaveSt').textContent), null, { timeout: 3000 });
+  await libItem(b, `#savedList .srow[data-id="${id}"]`, 'sdel'); await idle(b);
+  await a.page.waitForFunction(() => /Removed from your Library/.test(document.getElementById('sfSaveSt').textContent), null, { timeout: 3000 });
   assert.equal(await a.page.evaluate((id) => state.saved.some((s) => s.id === id), id), false);
   // a third tab starting during the Undo time leaves the guide's picture alone, so Undo still brings it all back
   const c = await a.ctx.newPage(); await c.goto(a.page.url()); await idle(c, 2000); // until its start-up tidy (1.5 s in) has run
   await b.click('#toastAct'); await idle(b);
   assert.ok(await b.evaluate((id) => IDB.get('guide-' + id).then((p) => !!p), id), 'the stored guide is still there');
-  await a.page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent), null, { timeout: 3000 });
+  await a.page.waitForFunction(() => /Saved in your Library|Saves itself from now on/.test(document.getElementById('sfSaveSt').textContent), null, { timeout: 3000 });
   assert.deepEqual([...a.errors, ...errs], []);
 });
 
@@ -68,7 +68,7 @@ const toastText = (page) => page.evaluate(() => { const t = document.getElementB
 
 test('two tabs with the same Library guide: neither loses the other’s ticks (shown there, merged when both changed)', async () => {
   const { ctx, page: a, errors } = await openApp();
-  await sampleGuide(a); await a.click('#sfSave'); await idle(a);
+  await sampleGuide(a); await saveGuide(a); await idle(a);
   const id = await savedId(a);
   const b = await ctx.newPage(); b.on('pageerror', (e) => errors.push(e.message));
   await b.goto(a.url()); await idle(b);
@@ -91,22 +91,21 @@ test('two tabs with the same Library guide: neither loses the other’s ticks (s
   assert.deepEqual(errors, []);
 });
 
-test('two tabs with new guides share the Resume slot: neither guide is lost, none is kept twice', async () => {
+test('two tabs each colouring a new guide: each goes into the Library once, and each saves into its own', async () => {
   const { ctx, page: a, errors } = await openApp();
   await sampleGuide(a); await tickN(a, 3); await idle(a, AUTO);
   const b = await ctx.newPage(); b.on('pageerror', (e) => errors.push(e.message));
   await b.goto(a.url()); await idle(b);
   await b.evaluate(() => { setMode('sections'); SF.loadSample(); }); await b.waitForFunction(() => __mstest.assignData);
   await tickN(b, 2, 10); await idle(b, AUTO);
-  // A's guide went into the Library to make room; A goes on saving into that entry
   await tickN(a, 1, 20); await idle(a, AUTO);
-  const gs = await guides(a);
-  assert.equal(gs.length, 1, 'A’s guide is in the Library once');
-  assert.equal(await a.evaluate(() => __mstest.curId), gs[0].id, 'and A saves into it');
-  assert.equal((await stored(a, gs[0].id)).prog, 4);
-  assert.equal(await a.evaluate(() => IDB.get('guide-autosave').then((d) => (d.payload.prog || []).length)), 2, 'the slot keeps B’s guide');
+  const ia = await a.evaluate(() => __mstest.curId), ib = await b.evaluate(() => __mstest.curId);
+  assert.ok(ia && ib && ia !== ib, 'each in an entry of its own');
+  assert.equal((await stored(a, ia)).prog, 4);
+  assert.equal((await stored(a, ib)).prog, 2);
   await tickN(b, 1, 30); await idle(b, AUTO);
-  assert.equal((await guides(b)).length, 1, 'still one in the Library');
-  assert.equal(await b.evaluate(() => IDB.get('guide-autosave').then((d) => (d.payload.prog || []).length)), 3);
+  assert.equal((await guides(b)).length, 2, 'two in the Library, none twice');
+  assert.equal((await stored(b, ib)).prog, 3);
+  assert.equal(await a.evaluate(() => localStorage.getItem('ms-guide-auto')), null, 'nothing left in the Resume slot');
   assert.deepEqual(errors, []);
 });

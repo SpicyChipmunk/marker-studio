@@ -52,7 +52,7 @@ test('brand letters: hidden in an Ohuhu-only Owned view, shown in All and Unowne
   // Palette and Random with only Ohuhu markers: no letters
   await page.click('#mPalette'); await page.click('#draw'); await idle(page);
   assert.deepEqual((await letters(page, '#bands .band .bt')).filter(Boolean), []);
-  assert.match(await page.getAttribute('#bands .band', 'aria-label'), /^Ohuhu /);
+  assert.match(await page.getAttribute('#bands .band .bhit', 'aria-label'), /^Ohuhu /);
   assert.deepEqual(errors, []);
 });
 
@@ -62,9 +62,11 @@ test('exports: one brand is named once in the headers (no letters); mixed brands
   assert.deepEqual(await page.evaluate(() => [...new Set(Object.values(__mstest.assignData.assign).map((m) => m.brand))]), ['Ohuhu']);
   let t = await pdfTexts(page);
   assert.ok(t.some((e) => e.p === 0 && /\d+ Ohuhu markers/.test(e.t)), 'page 1 says the brand: ' + t.filter((e) => e.p === 0).map((e) => e.t).slice(0, 4));
-  assert.ok(t.some((e) => e.p === 1 && /· \d+ Ohuhu markers ·/.test(e.t)), 'and the key page');
+  // (the key's page: after any close-ups of small sections, v284)
+  const kp = (t) => t.find((e) => e.t === 'Colour key')?.p ?? 1;
+  assert.ok(t.some((e) => e.p === kp(t) && /· \d+ Ohuhu markers ·/.test(e.t)), 'and the key page');
   assert.ok(!t.some((e) => /= Copic|= Ohuhu/.test(e.t)), 'no letter key');
-  assert.ok(!t.some((e) => e.p > 0 && /^[OC]$/.test(e.t)), 'no letter column');
+  assert.ok(!t.some((e) => e.p >= kp(t) && /^[OC]$/.test(e.t)), 'no letter column');
   if (SHOTS) { await mkdir(SHOTS, { recursive: true }); const png = await page.evaluate(() => window.__pdf0); await writeFile(SHOTS + '/c-pdf-page1.png', Buffer.from(png.split(',')[1], 'base64')); }
   // the saved image and the share card
   let img = await canvasTexts(page, 'buildExportCanvas');
@@ -76,8 +78,8 @@ test('exports: one brand is named once in the headers (no letters); mixed brands
   await idle(page);
   assert.equal(await page.evaluate(() => new Set(Object.values(__mstest.assignData.assign).map((m) => m.brand)).size), 2, 'the guide mixes brands now');
   t = await pdfTexts(page);
-  assert.ok(t.some((e) => e.p === 1 && /C = Copic {2}O = Ohuhu/.test(e.t)), 'the key page has the letter key');
-  assert.ok(t.some((e) => e.p > 0 && e.t === 'C') && t.some((e) => e.p > 0 && e.t === 'O'), 'and a letter on each row');
+  assert.ok(t.some((e) => e.p === kp(t) && /C = Copic {2}O = Ohuhu/.test(e.t)), 'the key page has the letter key');
+  assert.ok(t.some((e) => e.p >= kp(t) && e.t === 'C') && t.some((e) => e.p >= kp(t) && e.t === 'O'), 'and a letter on each row');
   assert.ok(!t.some((e) => /Ohuhu markers|Copic markers/.test(e.t)));
   img = await canvasTexts(page, 'buildExportCanvas');
   assert.ok(img.some((s) => /C = Copic/.test(s)) && img.some((s) => /^[OC] {2}/.test(s)));
@@ -177,7 +179,9 @@ test('letters, both brands owned: on every list (Owned, Palette, Match, the guid
   const t = await pdfTextsOnly(page);
   assert.ok(t.some((e) => e.p === 0 && /\d+ Ohuhu markers/.test(e.t)), 'page 1 says the brand');
   assert.ok(!t.some((e) => /= Copic|= Ohuhu/.test(e.t)), 'no letter key');
-  assert.ok(!t.some((e) => /^[OC]$/.test(e.t)), 'no letters, on the picture or the key');
+  // (the close-ups' letters aside: C and O are the 3rd and 15th, on page 1 and over their close-up)
+  const nCl = await page.evaluate(() => __mstest.pdfCloseL), close = (x) => x.charCodeAt(0) - 64 <= nCl;
+  for (const x of ['O', 'C']) assert.ok(t.filter((e) => e.t === x).length <= (close(x) ? 2 : 0), 'no letters, on the picture or the key: ' + x);
   const img = await canvasTexts(page, 'buildExportCanvas');
   assert.ok(img.includes('Ohuhu markers') && !img.includes('O') && !img.some((s) => /^O {2}/.test(s)));
   const card = await canvasTexts(page, 'buildShareCard');

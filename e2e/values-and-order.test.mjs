@@ -2,7 +2,7 @@
 // path as focus mode, and the Sections screen asking for a rebuild only when the kept sections change.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle, scrollTop } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, scrollTop, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -27,7 +27,7 @@ test('Values shows the picture in greys, in the guide and Colour along; not in t
   const r = await vals(page);
   assert.equal(r.shown, false); assert.equal(r.filter, 'none');
   // and back on the guide it's still on (until turned off)
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.deepEqual(await vals(page), { shown: true, pressed: 'true', filter: 'grayscale(1)' });
   await page.click('#sfVals'); await idle(page);
   assert.deepEqual(await vals(page), { shown: true, pressed: 'false', filter: 'none' });

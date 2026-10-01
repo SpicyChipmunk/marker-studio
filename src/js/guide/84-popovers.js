@@ -109,9 +109,53 @@ function openSwatchPop(o) {
     fams = Object.keys(groups).sort(function (a, b) {
       return fo(a) - fo(b) || (a < b ? -1 : a > b ? 1 : 0);
     }),
-    rec = recentMk()
+    // (v288) shortcuts above the families: Closest (the nearest you own, 3 lighter and 3 darker around the current
+    // one), In this guide (the markers already on the page, lightest first), then Recently used (only ones not
+    // already shown above)
+    near = (function () {
+      var c = cur && bk[cur];
+      if (!c || !c.lab) return [];
+      var d = function (m) {
+          var a = m.lab,
+            b = c.lab;
+          return (
+            (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2])
+          );
+        },
+        others = pool
+          .filter(function (m) {
+            return m.mkey !== cur && m.lab;
+          })
+          .sort(function (a, b) {
+            return d(a) - d(b);
+          }),
+        hi = others.filter(function (m) {
+          return m.lab[0] >= c.lab[0];
+        }),
+        lo = others.filter(function (m) {
+          return m.lab[0] < c.lab[0];
+        }),
+        h = hi.slice(0, 3),
+        l = lo.slice(0, 3);
+      if (h.length < 3) l = lo.slice(0, 6 - h.length);
+      if (l.length < 3) h = hi.slice(0, 6 - l.length);
+      return h.concat(l).sort(light);
+    })(),
+    inGuide = (assignData && o.guideRow !== false ? pageMarkerKeys() : [])
       .filter(function (k) {
         return bk[k];
+      })
+      .map(function (k) {
+        return bk[k];
+      })
+      .sort(light),
+    shown = near.concat(inGuide).reduce(function (o, m) {
+      o[m.mkey] = 1;
+      return o;
+    }, {}),
+    rec = recentMk()
+      .filter(function (k) {
+        return bk[k] && !shown[k];
       })
       .map(function (k) {
         return bk[k];
@@ -152,7 +196,9 @@ function openSwatchPop(o) {
         : '') +
       (o.opts || '') +
       '<div id="sfPopSw">' +
-      (rec.length ? grp('Recently used', rec, 'sfswrec') : '') +
+      (near.length ? grp('Closest', near, 'sfswrec sfswrow') : '') +
+      (inGuide.length > 1 ? grp('In this guide', inGuide, 'sfswrec sfswrow') : '') +
+      (rec.length ? grp('Recently used', rec, 'sfswrec sfswrow') : '') +
       fams
         .map(function (f) {
           return grp(f, groups[f].slice().sort(light));
@@ -166,7 +212,7 @@ function openSwatchPop(o) {
     el;
   if (so) {
     el = sheetO.el;
-    el.querySelector('.sfshhd').innerHTML = '<h3 id="sfSheetT">' + esc(o.title) + '</h3>' + field;
+    el.querySelector('.sfshhd').innerHTML = '<h2 id="sfSheetT">' + esc(o.title) + '</h2>' + field;
     el.querySelector('.sfshbody').innerHTML = body;
     el.querySelector('.sfshft').innerHTML = foot;
   } else {
@@ -381,13 +427,87 @@ function openAnchorPop(idx) {
 let olEl = null,
   olSet = null,
   olKey = '';
-function outlineSecs(ls) {
+// once: one pulse as it arrives, then steady (Find next, v288); otherwise it pulses while the picker is open
+let olOnce = false,
+  olMerge = -1;
+function outlineSecs(ls, once) {
+  olRow = false;
   olSet = ls && ls.length ? ls.slice() : null;
   olKey = '';
+  olOnce = !!once;
+  olMerge = -1;
+  positionOutline();
+  if (olEl && olSet) {
+    olEl.classList.remove('sfolonce');
+    if (olOnce) {
+      void olEl.offsetWidth;
+      olEl.classList.add('sfolonce');
+    }
+  }
+}
+// Colour along (v288): with a row open, its sections still to do are outlined too, lighter and steady (a light marker's
+// full colour barely shows against the pale rest). Find next's own outline comes first while its section is still to
+// do. Set at each drawing of the picture.
+let olRow = false;
+function rowOutline() {
+  const fn =
+    _fnOl &&
+    hlKey === _fnKey &&
+    olSet &&
+    !olRow &&
+    olSet.every(function (l) {
+      return !colored[l];
+    });
+  if (sfmode === 'color' && !focus && hlKey && assignData && !fn && !root.classList.contains('sfrev')) {
+    const rest = assignData.order.filter(function (l) {
+      return hlMatch(l) && !colored[l];
+    });
+    _fnOl = false;
+    olSet = rest.length ? rest : null;
+    olRow = !!olSet;
+    olOnce = false;
+    olMerge = -1;
+  } else if (olRow) {
+    olSet = null;
+    olRow = false;
+    positionOutline();
+  }
+}
+// (Colour along's Find next outlines the section it found too, until it's ticked or another colour is opened: _fnOl,
+// for the colour it was found in, _fnKey)
+let _fnOl = false,
+  _fnKey = null;
+// Edit sections' Merge (v288): the first section picked is outlined too, as on pale tints a yellow fill alone is faint
+function outlineMerge() {
+  const want = sfmode === 'review' && mergeSel > 0 ? mergeSel : -1;
+  if (want === olMerge && (want < 0 || olSet)) return;
+  if (want < 0 && olMerge < 0) return;
+  outlineSecs(want > 0 ? [want] : null);
+  olMerge = want;
   positionOutline();
 }
 function positionOutline() {
-  const on = !!(olSet && cv && sfView && labels && sfmode === 'guide' && !root.classList.contains('sfrev'));
+  if (olMerge > 0 && sfmode !== 'review') {
+    olSet = null;
+    olMerge = -1;
+  }
+  const on = !!(
+    olSet &&
+    cv &&
+    sfView &&
+    labels &&
+    (sfmode === 'guide' ||
+      (sfmode === 'review' && olMerge > 0) ||
+      (sfmode === 'color' && olRow && !focus) ||
+      (sfmode === 'color' &&
+        _fnOl &&
+        !focus &&
+        hlKey === _fnKey &&
+        olSet.every(function (l) {
+          return hlMatch(l) && !colored[l];
+        }))) &&
+    !root.classList.contains('sfrev')
+  );
   if (!on) {
     if (olEl) {
       olEl.style.display = 'none';
@@ -423,10 +543,11 @@ function positionOutline() {
     olEl.style.display = 'none';
     return;
   }
-  // line widths in screen pixels: 3 yellow inside 1.5 dark; the canvas holds s of its pixels per picture pixel
+  // line widths in screen pixels (v288): 3.5 white inside 2.5 dark, so it shows on any colour, light or dark; the canvas
+  // holds s of its pixels per picture pixel
   const dpr = Math.min(3, window.devicePixelRatio || 1),
     s = Math.min(1, Math.round(k * dpr * 8) / 8 || 0.125),
-    pad = Math.ceil(5 / k) + 2;
+    pad = Math.ceil(7 / k) + 2;
   x0 = Math.max(0, x0 - pad);
   y0 = Math.max(0, y0 - pad);
   x1 = Math.min(W - 1, x1 + pad);
@@ -476,9 +597,11 @@ function positionOutline() {
     olEl.height = oh;
     const g = olEl.getContext('2d');
     g.clearRect(0, 0, ow, oh);
-    g.drawImage(ring(Math.max(1.5, 4.5 * px), 'rgba(0,0,0,.7)'), 0, 0);
-    g.drawImage(ring(Math.max(1, 3 * px), '#ffd84a'), 0, 0);
+    g.drawImage(ring(Math.max(2, 6 * px), 'rgba(0,0,0,.8)'), 0, 0);
+    g.drawImage(ring(Math.max(1.2, 3.5 * px), '#fff'), 0, 0);
     olEl.dataset.secs = olSet.join(' ');
+    // (many at once, Everywhere or a row's: lighter and steady)
+    olEl.classList.toggle('sfolmany', olRow || olSet.length > 1);
   }
   const st = olEl.style;
   st.display = '';
@@ -507,12 +630,13 @@ function openSectionPop(l, opt) {
     _same = assignData.order.filter(function (x) {
       return x !== l && A[x] && A[x].mkey === _om.mkey;
     }),
+    // (any ink on the paper keeps its marker, a tone part-way done too: v284's rule, inkOn)
     _kept = _same.filter(function (x) {
-      return !!(colored && colored[x]);
+      return inkOn(x);
     }),
     _to = [l].concat(
       _same.filter(function (x) {
-        return !(colored && colored[x]);
+        return !inkOn(x);
       }),
     ),
     _sv = {},
@@ -633,6 +757,15 @@ function openSectionPop(l, opt) {
         );
       }
       normalizeTones();
+      // (the first time ever: a line under the tabs says the section is pinned now, v288)
+      if (ch) {
+        var pinned = [];
+        for (var y in _sv) {
+          var ay = assignData.assign[y];
+          if (ay && ay.mkey !== _sv[y].m.mkey && locks[y] !== undefined) pinned.push(+y);
+        }
+        pinNoteFirst(pinned);
+      }
       renderGuide();
       renderControls();
     },
@@ -698,7 +831,7 @@ function openFillPop() {
       });
       if (bk[k]) {
         assignData.order.forEach(function (l) {
-          if (locks[l] === undefined && !(colored && colored[l]) && _inZ(l)) assignData.assign[l] = bk[k];
+          if (locks[l] === undefined && !inkOn(l) && _inZ(l)) assignData.assign[l] = bk[k];
         });
         renderGuide();
       }
@@ -720,5 +853,148 @@ function openFillPop() {
     onClose: function () {
       renderGuide();
     },
+  });
+}
+
+// The markers on this page (v288, from the Colours tab): one row per marker the guide uses, in every zone, lightest
+// first as Colour along goes, with how many sections; a stand-in for a dry marker says so; one not in your collection
+// is marked To buy. With shading, the lighter and darker markers it needs are listed too. A tap on a row shows its
+// sections on the picture (the rest faded), as the sheet belongs to the picture; closing puts the picture back.
+function pageMarkerKeys() {
+  if (!assignData) return [];
+  const seen = {};
+  for (const l in assignData.assign) seen[assignData.assign[l].mkey] = 1;
+  return Object.keys(seen);
+}
+function markerListRows() {
+  const by = {},
+    tone = {},
+    A = assignData.assign;
+  for (const l in A) {
+    const m = A[l],
+      e = by[m.mkey] || (by[m.mkey] = { m: m, n: 0, for: {} });
+    e.n++;
+    const o = _origKeys[l];
+    if (o && o.k && o.k !== m.mkey) e.for[o.k] = 1;
+    const t = shadeOn() ? shadeSec(+l) : null;
+    if (t) {
+      [
+        ['light', 'highlight'],
+        ['dark', 'shadow'],
+      ].forEach(function (p) {
+        const x = t[p[0]];
+        if (!x || !x.mkey) return;
+        const te = tone[x.mkey] || (tone[x.mkey] = { m: x, n: 0, as: {} });
+        te.n++;
+        te.as[p[1]] = 1;
+      });
+    }
+  }
+  const lum = function (e) {
+      return _lum(e.m.hex);
+    },
+    base = Object.keys(by)
+      .map(function (k) {
+        return by[k];
+      })
+      .sort(function (a, b) {
+        return lum(b) - lum(a) || b.n - a.n;
+      }),
+    tones = Object.keys(tone)
+      .filter(function (k) {
+        return !by[k];
+      })
+      .map(function (k) {
+        return tone[k];
+      })
+      .sort(function (a, b) {
+        return lum(b) - lum(a) || b.n - a.n;
+      });
+  return { base: base, tones: tones };
+}
+function markerListSheet() {
+  if (!assignData) return;
+  const r = markerListRows(),
+    owned = function (m) {
+      try {
+        const i = keyIdx(m.mkey);
+        return i == null || !state.owned.size || isOwned(i);
+      } catch (_) {
+        return true;
+      }
+    },
+    row = function (e, sub) {
+      const m = e.m,
+        notes = [];
+      Object.keys(e.for || {}).forEach(function (k) {
+        const i = keyIdx(k);
+        notes.push('for ' + (i != null && COLORS[i] ? COLORS[i].code : k) + ' (dry)');
+      });
+      if (!owned(m)) notes.push('To buy');
+      if (sub) notes.push(sub);
+      // (a shading marker isn't any section's own: listed, not a button that would light nothing up)
+      return (
+        (sub
+          ? '<div class="sfmlrow sfmlplain"'
+          : '<button type="button" class="sfmlrow" data-k="' + esc(m.mkey) + '" aria-pressed="false"') +
+        '><span class="sw" style="background:' +
+        esc(m.hex) +
+        '"></span><span class="nm">' +
+        (brandsMixed() ? '<b class="btag" aria-hidden="true">' + esc(bTag(m.brand)) + '</b> ' : '') +
+        '<b>' +
+        esc(m.code) +
+        '</b> ' +
+        esc(m.name || '') +
+        (notes.length ? '<small>' + esc(notes.join(' \u00b7 ')) + '</small>' : '') +
+        '</span><span class="cnt">' +
+        nWord(e.n, 'section') +
+        '</span>' +
+        (sub ? '</div>' : '</button>')
+      );
+    };
+  const body =
+    '<div class="sfmllist">' +
+    r.base
+      .map(function (e) {
+        return row(e);
+      })
+      .join('') +
+    (r.tones.length
+      ? '<div class="sfmlgrp">For shading</div>' +
+        r.tones
+          .map(function (e) {
+            return row(e, Object.keys(e.as).join(' and '));
+          })
+          .join('')
+      : '') +
+    '</div>';
+  const was = { k: hlKey, z: hlZone };
+  const el = openSheet({
+    title: nWord(r.base.length, 'marker') + ' on this page',
+    body: body,
+    // (a way out by touch, as every sheet has)
+    foot: '<button type="button" class="sfprimary" data-ml="done">Done</button>',
+    fit: true,
+    cleanup: function () {
+      hlKey = was.k;
+      hlZone = was.z;
+      renderGuide();
+    },
+  });
+  el.addEventListener('click', function (e) {
+    if (e.target.closest('[data-ml="done"]')) {
+      closeSheet();
+      return;
+    }
+    const b = e.target.closest('button.sfmlrow');
+    if (!b) return;
+    const k = b.dataset.k,
+      on = b.getAttribute('aria-pressed') !== 'true';
+    el.querySelectorAll('button.sfmlrow').forEach(function (x) {
+      x.setAttribute('aria-pressed', x === b && on ? 'true' : 'false');
+    });
+    hlKey = on && pageMarkerKeys().indexOf(k) >= 0 ? k : null;
+    hlZone = null;
+    renderGuide();
   });
 }

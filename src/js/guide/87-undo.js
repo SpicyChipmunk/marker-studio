@@ -13,6 +13,9 @@ const PLANMAX = 30;
 // Part-done tones a change of marker cleared (Change colour, Everywhere, Paint, Unpin, Fill): noted as they go
 // (toneDrop), kept with the plan step that change makes, and put back by its Undo (unless the section was ticked since)
 let _toneLost = {};
+// Ticks (and part-done tones, and the shading kept with them) Recolour them too took away: kept with its step and
+// put back by its Undo
+let _tickLost = {};
 function toneDrop(l) {
   const P = tp();
   if (!P[l]) return;
@@ -216,41 +219,279 @@ function planCommit(why, quiet) {
   if (planDrag || popCtx || sfmode !== 'guide' || !assignData || !labels) return;
   const cur = planSnap();
   if (!cur) return;
-  const lost = _toneLost;
+  const lost = _toneLost,
+    tl = _tickLost,
+    hr = _heldRun;
   _toneLost = {};
+  _tickLost = {};
+  _heldRun = null;
   if (!planLast) {
     planLast = cur;
     return;
   }
-  if (planSame(planLast, cur)) return;
+  // (Recolour them too that gave its sections the markers they had still took ticks away: a step, to put them back)
+  if (planSame(planLast, cur) && !Object.keys(tl).length) return;
   const prev = planLast;
   prev.label = w || planLabel(prev, cur);
   if (Object.keys(lost).length) prev.tones = lost;
+  if (Object.keys(tl).length) prev.ticks = tl;
   prev.filtStep = prev.filt !== cur.filt;
   planStack.push(prev);
   if (planStack.length > PLANMAX) planStack.shift();
   planLast = cur;
   planBtn();
   if (quiet) return;
+  // coloured sections kept their markers where the change would have recoloured them: say so, with Recolour them too
+  // (once per visit to the plan, and again when more are kept)
+  let held = null,
+    would = false;
+  if (hr && hr.secs.length) {
+    const hs = {};
+    hr.secs.forEach(function (l) {
+      hs[l] = 1;
+    });
+    would = cur.s.o.some(function (l) {
+      return !hs[l] && prev.s.a[l] !== cur.s.a[l];
+    });
+    if (would && hr.secs.length > _heldTold) {
+      held = hr;
+      _heldTold = hr.secs.length;
+    }
+  }
+  // (said on a line under the tabs, not in a toast: a toast sits where Shuffle and Pin colours are, and a tap meant
+  // for them could recolour the sections by mistake; the kept sections flash on the picture. A line still showing
+  // follows each later change: this one's sections, quietly, or gone when it kept none)
+  if (held) heldNoteShow(held);
+  else if (_heldNote) {
+    if (would) heldNoteSet(hr);
+    else heldNoteClear();
+  }
   const ub = document.getElementById('sfPlanUndo');
-  if (
-    /^\u2728 Surprise/.test(prev.label) ||
-    !ub ||
-    ub.style.display === 'none' ||
-    !ub.getClientRects().length
-  )
+  if (/^Surprise\b/.test(prev.label) || !ub || ub.style.display === 'none' || !ub.getClientRects().length) {
     toastAction(esc(prev.label), 'Undo', planUndo);
+    return;
+  }
   // (a change that has just said what it did in its own words, like a picker's Done, keeps them: said in this same
   // task, or less than 100 ms ago. Timing alone let a slow redraw in between, on a busy phone, replace a picker's
   // "B03 → Y315 …, 1 section" with the vaguer "Section colour changed")
-  else if (!sayLive.now && !(Date.now() - (sayLive.at || 0) < 100)) sayLive(prev.label);
+  if (!sayLive.now && !(Date.now() - (sayLive.at || 0) < 100))
+    sayLive(prev.label + (held ? '. ' + heldNoteText(held) + '.' : ''));
+}
+// The line under the Plan's tabs saying which coloured sections a change kept, with Recolour them too and ✕: shown
+// until it's used, closed, or the plan is left (_heldNote)
+let _heldNote = null;
+function heldNoteText(h) {
+  const n = h.secs.length;
+  return 'Kept ' + n + ' coloured section' + (n === 1 ? '' : 's') + ' as they are';
+}
+function heldNoteHTML() {
+  const h = _heldNote;
+  if (!h) return '';
+  return (
+    '<div id="sfHeldNote" class="sfheldnote" role="status"><span>' +
+    esc(heldNoteText(h)) +
+    '</span><button type="button" id="sfHeldGo" class="sflink">' +
+    (h.secs.length === 1 ? 'Recolour it too' : 'Recolour them too') +
+    '</button><button type="button" id="sfHeldX" class="sfheldx" aria-label="Close">' +
+    ic('x') +
+    '</button></div>'
+  );
+}
+function heldNoteShow(h) {
+  _heldNote = h;
+  const tabs = ctlEl && ctlEl.querySelector('.sftabs');
+  if (tabs) {
+    const old = document.getElementById('sfHeldNote');
+    if (old) old.remove();
+    tabs.insertAdjacentHTML('afterend', heldNoteHTML());
+    heldNoteWire();
+  }
+  // (which ones: outlined on the picture for a moment)
+  const s = h.secs.slice();
+  outlineSecs(s);
+  setTimeout(function () {
+    if (olSet && olSet.length === s.length && olSet[0] === s[0]) outlineSecs(null);
+  }, 1800);
+}
+// (the line showing, brought up to date without a flash)
+function heldNoteSet(h) {
+  _heldNote = h;
+  const el = document.getElementById('sfHeldNote');
+  if (!el) return;
+  el.querySelector('span').textContent = heldNoteText(h);
+  document.getElementById('sfHeldGo').textContent =
+    h.secs.length === 1 ? 'Recolour it too' : 'Recolour them too';
+}
+function heldNoteClear() {
+  _heldNote = null;
+  const el = document.getElementById('sfHeldNote');
+  if (el) el.remove();
+}
+// Change colour pins the section (v288): the first time, a line under the tabs says so, with Unpin. One line at a time
+// under the tabs: not beside the kept-sections line or the sample's (the tip queue's rule).
+let _pinNote = null;
+function pinNoteHTML() {
+  const p = _pinNote;
+  if (!p || _heldNote) return '';
+  const one = p.secs.length === 1;
+  return (
+    '<div id="sfPinNote" class="sfheldnote" role="status"><span>Pinned \u2014 changes to the plan leave ' +
+    (one ? 'it as it is.' : 'them as they are.') +
+    '</span><button type="button" id="sfPinUn" class="sflink">' +
+    (one ? 'Unpin' : 'Unpin them') +
+    '</button><button type="button" id="sfPinX" class="sfheldx" aria-label="Close">' +
+    ic('x') +
+    '</button></div>'
+  );
+}
+function pinNoteWire() {
+  const un = document.getElementById('sfPinUn'),
+    x = document.getElementById('sfPinX');
+  if (un)
+    un.addEventListener('click', function () {
+      const p = _pinNote;
+      pinNoteClear();
+      if (!p || !assignData) return;
+      p.secs.forEach(function (l) {
+        delete locks[l];
+      });
+      renderGuide();
+      planCommit(p.secs.length === 1 ? 'Unpinned' : 'Unpinned ' + p.secs.length + ' sections');
+      sayLive(p.secs.length === 1 ? 'Unpinned' : 'Unpinned ' + p.secs.length + ' sections');
+      ctlRefocus('#sfTab-' + gTab);
+    });
+  if (x)
+    x.addEventListener('click', function () {
+      pinNoteClear();
+      ctlRefocus('#sfTab-' + gTab);
+    });
+}
+function pinNoteClear() {
+  _pinNote = null;
+  const el = document.getElementById('sfPinNote');
+  if (el) el.remove();
+}
+// the first Change colour ever (stored with the hints): the line, announced
+function pinNoteFirst(secs) {
+  if (!secs.length || hintSeen('pinline')) return;
+  markHint('pinline');
+  _pinNote = { secs: secs.slice() };
+  // (after what the picker has just said, not instead of it)
+  sayLive(
+    (sayLive.last && Date.now() - (sayLive.at || 0) < 1500
+      ? sayLive.last.replace(/[.!?]?$/, '.') + ' '
+      : '') +
+      'Pinned: changes to the plan leave ' +
+      (secs.length === 1 ? 'it as it is.' : 'them as they are.'),
+  );
+}
+// The sample, as it was built: a line under the tabs says it isn't in the Library yet (v285), until it's changed (then
+// it is) or closed. (Not beside the kept-sections line: a sample with coloured sections was changed, so is kept.)
+function sampleNoteHTML() {
+  if (!curSample || _sampleNoteX || _heldNote || _pinNote || libEntry() || sampleTouched()) return '';
+  return (
+    '<div id="sfSampleNote" class="sfheldnote sfsamplenote" role="note"><span>This sample isn\u2019t in your Library yet. Change anything to keep it.</span><button type="button" id="sfSampleX" class="sfheldx" aria-label="Close">' +
+    ic('x') +
+    '</button></div>'
+  );
+}
+function sampleNoteWire() {
+  const x = document.getElementById('sfSampleX');
+  if (x)
+    x.addEventListener('click', function () {
+      _sampleNoteX = true;
+      const n = document.getElementById('sfSampleNote');
+      if (n) n.remove();
+      ctlRefocus('#sfTab-' + gTab);
+    });
+}
+// The tool row's names (v288): where the row is icons only (a phone, or the side-by-side strip), a one-time line under
+// the tabs names Codes, Greyscale and Full screen. The tip queue: one line at a time, and it waits for a visit when
+// nothing else is said first (the kept-sections, pinned or sample line, or the first-time "Tap a section" hint).
+let _toolTip = 0; // 1: shown in this visit (stays until closed or reload), -1: closed
+function toolsIconOnly() {
+  return (window.innerWidth || 0) < 700 || !!(workEl && workEl.classList.contains('sftoolsv'));
+}
+function toolTipHTML() {
+  if (_toolTip < 0 || sfmode !== 'guide' || _heldNote || _pinNote || sampleNoteHTML()) return '';
+  if (!_toolTip) {
+    if (hintSeen('tools') || !hintSeen('tap') || _hNow.tap || !toolsIconOnly()) return '';
+    if (_smpLoad || (curSample && !_sampleNoteX && !libEntry() && !sampleTouched())) return '';
+    markHint('tools');
+    _toolTip = 1;
+  }
+  const one = function (k, w) {
+    return '<span class="sftti">' + TIC[k] + w + '</span>';
+  };
+  return (
+    '<div id="sfToolTip" class="sfheldnote sfsamplenote sftooltip" role="note"><span>' +
+    (workEl && workEl.classList.contains('sftoolsv') ? 'Beside' : 'Under') +
+    ' the picture: ' +
+    one('codes', 'Codes') +
+    ' shows the marker codes, ' +
+    one('values', 'Greyscale') +
+    ' the picture in greys, ' +
+    one('full', 'Full screen') +
+    '.</span><button type="button" id="sfToolTipX" class="sfheldx" aria-label="Close">' +
+    ic('x') +
+    '</button></div>'
+  );
+}
+function toolTipWire() {
+  const x = document.getElementById('sfToolTipX');
+  if (x)
+    x.addEventListener('click', function () {
+      _toolTip = -1;
+      const n = document.getElementById('sfToolTip');
+      if (n) n.remove();
+      ctlRefocus('#sfTab-' + gTab);
+    });
+}
+function heldNoteWire() {
+  const go = document.getElementById('sfHeldGo'),
+    x = document.getElementById('sfHeldX');
+  if (go)
+    go.addEventListener('click', function () {
+      const h = _heldNote;
+      heldNoteClear();
+      if (h) heldRecolour(h);
+    });
+  if (x)
+    x.addEventListener('click', function () {
+      heldNoteClear();
+      ctlRefocus('#sfTab-' + gTab);
+    });
 }
 // the plan as it stands becomes the starting point (after something that isn't a step of its own)
 function planSync() {
   planLast = assignData && labels ? planSnap() : null;
   _toneLost = {};
+  _tickLost = {};
+}
+// Recolour them too: the coloured sections a change kept (hr, _heldRun's) laid again with the rest, unticked, their
+// part-done tones and kept shading let go; one Undo step, which puts the ticks back too
+function heldRecolour(hr) {
+  if (sfmode !== 'guide' || !assignData || !colored) return;
+  const P = tp(),
+    lost = {};
+  hr.secs.forEach(function (l) {
+    if (!inkOn(l) || locks[l] !== undefined) return;
+    lost[l] = { c: colored[l], t: P[l], h: heldSh[l] || null };
+    colored[l] = 0;
+    P[l] = 0;
+    delete heldSh[l];
+  });
+  const n = Object.keys(lost).length;
+  if (!n) return;
+  _tickLost = lost;
+  planWhy = 'Recoloured ' + n + ' coloured section' + (n === 1 ? '' : 's');
+  reassign(zones.length ? hr.run : null);
+  updateProgress();
 }
 function planReset() {
+  _heldTold = 0;
+  heldNoteClear();
+  pinNoteClear();
   planStack = [];
   planDrag = false;
   planWhy = null;
@@ -259,6 +500,9 @@ function planReset() {
 }
 function planRestore(e, noFilt) {
   const s = e.s;
+  // (Undo: a line about kept sections spoke of the change undone)
+  heldNoteClear();
+  pinNoteClear();
   if (!noFilt && e.filtStep && e.filt && e.filt !== planFilt()) {
     try {
       const f = JSON.parse(e.filt);
@@ -282,6 +526,12 @@ function planRestore(e, noFilt) {
     }
     return m || (k ? catMarker(k) : null);
   };
+  // (sections with ink on the paper keep the markers they have now: holdOn, 30-palette-assign)
+  const keep = {};
+  if (assignData && colored)
+    assignData.order.forEach(function (l) {
+      if (assignData.assign[l] && inkOn(l)) keep[l] = assignData.assign[l];
+    });
   const assign = {},
     base = {};
   s.o.forEach(function (l) {
@@ -291,10 +541,22 @@ function planRestore(e, noFilt) {
       base[l] = (s.b[l] && res(s.b[l])) || m;
     }
   });
+  for (const l in keep) if (assign[l]) assign[l] = keep[l];
   const order = s.o.filter(function (l) {
     return !!assign[l];
   });
   assignData = { assign: assign, order: order, N: order.length, base: base };
+  // (Recolour them too's ticks, tones and kept shading, back)
+  if (e.ticks && colored) {
+    const P = tp();
+    for (const l in e.ticks) {
+      const t = e.ticks[l];
+      if (!assign[l]) continue;
+      colored[l] = t.c;
+      P[l] = t.t;
+      if (t.h) heldSh[l] = t.h;
+    }
+  }
   if (s.p && s.p.length) {
     const pp = {};
     s.p.forEach(function (l) {
@@ -341,6 +603,7 @@ function planRestore(e, noFilt) {
     } catch (_) {}
   hideTip();
   normalizeTones();
+  if (e.ticks) updateProgress();
   renderGuide();
   renderControls();
   positionPhoto();
@@ -395,17 +658,26 @@ function toolUndo() {
   } else planUndo();
 }
 // on a narrow row the status's second part goes first ("· 16 markers"), then the word "Undo" (the icon stays), then
-// the rest of the status; parts go whole, never cut mid-number. Side by side the status is one part (CSS).
+// the rest of the status, then the buttons narrow a little; parts go whole, never cut mid-number. Side by side the
+// status is one part (CSS).
+// v288: in a row 700px wide or more (an iPad's one column), Codes, Greyscale and Full screen show their word too
+// (sftw); when tight, after the status's second part the words go first (sfzcw), then as before.
 function planFit() {
   const z = document.getElementById('sfZoomCtl');
   if (!z) return;
-  z.classList.remove('sfzc1', 'sfzc2', 'sfzc3');
+  z.classList.remove('sfzc1', 'sfzcw', 'sfzc2', 'sfzc3', 'sfzc4', 'sftw');
   if (z.offsetParent === null || (workEl && workEl.classList.contains('sftoolsv'))) return;
+  if (
+    (window.innerWidth || 0) >= 700 &&
+    !root.classList.contains('sffoc') &&
+    !root.classList.contains('sffull')
+  )
+    z.classList.add('sftw');
   const st = document.getElementById('sfStat'),
     over = function () {
       return z.scrollWidth > z.clientWidth + 1 || (!!st && st.scrollWidth > st.clientWidth + 1);
     };
-  ['sfzc1', 'sfzc2', 'sfzc3'].forEach(function (c) {
+  ['sfzc1', 'sfzcw', 'sfzc2', 'sfzc3', 'sfzc4'].forEach(function (c) {
     if (over()) z.classList.add(c);
   });
 }

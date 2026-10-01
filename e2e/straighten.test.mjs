@@ -3,7 +3,7 @@
 // Undo and Adjust corners work, the lens's focal length is read from the photo, and the page's shape comes out right.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle, scrollTop, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, idle, scrollTop, notOnWebKit, WK, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -98,7 +98,9 @@ test('a corner outside the photo opens the corner handles with a reason; Keep as
   assert.equal(await page.textContent('#sfPgNo'), 'Keep as is');
   await page.click('#sfPgNo'); await sections(page);
   const r = await info(page);
-  assert.equal(r.line, ''); assert.deepEqual(r.src, [ph.W, ph.H]);
+  // (v284: a line offers Straighten again)
+  assert.equal(r.line, 'Page kept as photographed · Straighten'); assert.deepEqual(r.src, [ph.W, ph.H]);
+  assert.equal(r.q, null);
   assert.deepEqual(errors, []);
 });
 
@@ -157,7 +159,7 @@ test('Photo colour pattern: a coloured version photographed at an angle is strai
   await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd');
   const scan = await photo(page, { scan: 1, bleed: 1 });
   await pick(page, scan); await sections(page);
-  await page.click('#sfBuild'); await page.waitForFunction(() => __mstest.assignData, null, { timeout: 60000 }); await idle(page);
+  await buildGo(page); await page.waitForFunction(() => __mstest.assignData, null, { timeout: 60000 }); await idle(page);
   await page.click('.sftabbtn[data-t="pattern"]');
   for (const [o, turn] of [[{ bleed: 1, tilt: 22, roll: 6, size: 0.6 }, 0], [{ bleed: 1, tilt: 18, roll: 94, size: 0.6, W: 1600, H: 1200 }, 1]]) {
     const ph = await photo(page, o);

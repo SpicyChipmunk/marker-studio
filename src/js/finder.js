@@ -27,7 +27,7 @@ function showCustom() {
       bt.textContent = mixed && idx != null ? bTag(COLORS[idx].brand) : '';
       bt.style.display = bt.textContent ? '' : 'none';
     }
-    b.setAttribute(
+    b.querySelector('.bhit').setAttribute(
       'aria-label',
       idx == null
         ? 'Empty slot ' + (k + 1) + ', choose a marker'
@@ -58,15 +58,26 @@ function showCustom() {
       if (!own)
         b.insertAdjacentHTML(
           'beforeend',
-          '<span class="uwarn" title="' + why.charAt(0).toUpperCase() + why.slice(1) + '">\u26a0</span>',
+          '<span class="uwarn" title="' +
+            why.charAt(0).toUpperCase() +
+            why.slice(1) +
+            '">' +
+            ic('triangle-alert') +
+            '<span class="sfsr">(warning)</span></span>',
         );
     }
   });
   const filled = state.customPal.filter((x) => x != null);
   const miss = filled.filter((i) => !customOk(i)).length;
+  // named like any palette once it has a marker (the name it will be saved under), "Custom palette" while it's empty
   palReadout(
-    'Custom palette',
-    filled.length + ' of ' + state.customPal.length + ' chosen' + (miss ? ' · ' + miss + ' not in play' : ''),
+    filled.length ? shownPaletteName(filled) : 'Custom palette',
+    (filled.length ? 'Custom \u00b7 ' : '') +
+      filled.length +
+      ' of ' +
+      state.customPal.length +
+      ' chosen' +
+      (miss ? ' · ' + miss + ' not in play' : ''),
     filled,
   );
   setAmb(filled.length ? COLORS[filled[0]].hex : null);
@@ -92,7 +103,8 @@ function cellHtml(i, rank) {
   const own = isOwned(i);
   const old = c.old && c.old !== c.code ? ' · old ' + c.old : '';
   const rk = rank ? '<span class="rankb">' + rank + '</span>' : '';
-  const cls = 'cell' + (col && !own && state.collView !== 'unowned' ? ' notown' : '');
+  const cls =
+    'cell' + (col && !own && state.collView !== 'unowned' ? ' notown' : '') + (col && own ? ' own' : '');
   const check = col && own ? '<span class="owncheck">\u2713</span>' : '';
   const act = col ? (own ? 'remove' : 'add') : 'copy';
   return (
@@ -194,14 +206,70 @@ function matchHead(n, unit) {
   if (l) l.textContent = f ? 'Matches' : 'Showing ' + w;
   matchn.textContent = f ? '(' + w + ')' : '';
 }
+// Markers' search looks in the view you're on (Owned, Unowned). When it also matches markers outside that view, a
+// line under the results says how many, with Show to switch to All (the search stays); when the view has none of
+// them, the empty state says so instead of "No markers match"
+function searchOutside() {
+  if (
+    state.mode !== 'collection' ||
+    !searchStr ||
+    (state.collView !== 'owned' && state.collView !== 'unowned')
+  )
+    return [];
+  const own = state.collView === 'owned',
+    out = [];
+  for (let i = 0; i < COLORS.length; i++) if (avail(i) && isOwned(i) !== own) out.push(i);
+  return out;
+}
+function moreInAllHTML(n, none) {
+  return (
+    '<div class="moreall">' +
+    n +
+    (none ? '' : ' more') +
+    ' in All \u00b7 <button type="button" class="moreshow" aria-label="Show ' +
+    (n === 1 ? 'it' : 'them') +
+    ' in All">Show</button></div>'
+  );
+}
+// the empty state when only other views have the search's markers: "R22 isn't in your collection"
+function searchElsewhereHTML(more) {
+  // a search for a code ("r22") names it, even when it also finds longer ones (R220); else the search as typed
+  const typed = (searchInput.value || '').trim(),
+    q = '\u201c' + esc(typed) + '\u201d',
+    exact = more.find((i) => COLORS[i].code.toLowerCase() === searchStr),
+    one = exact != null ? esc(COLORS[exact].code) : more.length === 1 ? esc(COLORS[more[0]].code) : '';
+  return (
+    '<div class="empty">' +
+    (state.collView === 'owned'
+      ? one
+        ? one + ' isn\u2019t in your collection.'
+        : 'None of the markers matching ' + q + ' are in your collection.'
+      : one
+        ? one + ' is already in your collection.'
+        : 'Every marker matching ' + q + ' is already in your collection.') +
+    '</div>' +
+    moreInAllHTML(more.length, true)
+  );
+}
 function renderResults() {
   mkHintRender();
+  qClearSync();
+  const more = searchOutside();
+  renderGrid(more);
+  if (more.length && results.firstElementChild && !results.querySelector('.moreall'))
+    results.insertAdjacentHTML('beforeend', moreInAllHTML(more.length, !results.querySelector('.cell')));
+}
+function renderGrid(more) {
   const m = finderMatches();
   cellBt = brandsMixedIn(m);
   ownAllBtn.disabled = !m.length;
   ownNoneBtn.disabled = !m.length;
   matchHead(m.length, 'marker');
   toPalette.disabled = !m.length;
+  if (!m.length && more.length && state.owned.size) {
+    results.innerHTML = searchElsewhereHTML(more);
+    return;
+  }
   if (!m.length) {
     results.innerHTML =
       state.mode === 'collection' && !state.owned.size && state.collView !== 'all'
@@ -285,6 +353,60 @@ function renderResults() {
   }
   results.innerHTML = html;
 }
+// the search's ✕: shown while there's text; clears it and keeps the keyboard in the field
+const qClear = document.createElement('button');
+qClear.type = 'button';
+qClear.id = 'qClear';
+qClear.className = 'qclear';
+qClear.setAttribute('aria-label', 'Clear search');
+qClear.innerHTML = ic('x');
+searchInput.insertAdjacentElement('afterend', qClear);
+function qClearSync() {
+  qClear.style.display = searchInput.value ? '' : 'none';
+}
+qClearSync();
+searchInput.addEventListener('input', qClearSync);
+qClear.addEventListener('click', () => {
+  searchInput.value = '';
+  searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+  searchInput.focus();
+});
+results.addEventListener('click', (e) => {
+  if (!e.target.closest('.moreshow')) return;
+  state.collView = 'all';
+  save();
+  fullRender();
+  const a = ownView.querySelector('[data-v="all"]');
+  if (a) a.focus({ preventScroll: true });
+});
+// Markers' tools (Add a set you own, Back up & restore, Print a swatch chart) stay under the grid, where Home's backup
+// card points; a link near the top goes down to them. It scrolls them into view and leaves the sets list closed (open,
+// it is about 1,500px tall and would push the other two out of sight); focus goes to the first of them.
+const mkJump = document.createElement('button');
+mkJump.type = 'button';
+mkJump.id = 'mkJump';
+mkJump.className = 'mkjump';
+mkJump.style.display = 'none';
+ownHint.insertAdjacentElement('afterend', mkJump);
+function mkJumpSync(col) {
+  mkJump.style.display = col ? '' : 'none';
+  if (!col) return;
+  // with an empty collection the sets are at the top already (chrome.js), so the link names the other two
+  const t = state.owned.size ? 'Sets & swatch chart' : 'Swatch chart';
+  if (mkJump.dataset.t !== t) {
+    mkJump.dataset.t = t;
+    mkJump.innerHTML = esc(t) + '<span aria-hidden="true">\u2193</span>';
+  }
+}
+mkJump.addEventListener('click', () => {
+  const pw = $('presetWrap'),
+    bottom = pw && pw.classList.contains('bottom') && pw.style.display !== 'none',
+    to = bottom ? pw : $('backupWrap');
+  if (!to) return;
+  to.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+  const f = bottom ? $('presetHdr') : $('swatchBtn');
+  if (f) f.focus({ preventScroll: true });
+});
 let copyT = null;
 function flashCopy(msg) {
   copyBtn.textContent = msg;

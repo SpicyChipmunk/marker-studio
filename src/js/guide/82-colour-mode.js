@@ -5,6 +5,13 @@ function reqWake() {
         .request('screen')
         .then(function (w) {
           wakeLock = w;
+          // (the first time, say so: people put their phone down between sections)
+          let told = true;
+          try {
+            told = !!localStorage.getItem('ms-wake-told');
+            localStorage.setItem('ms-wake-told', '1');
+          } catch (_) {}
+          if (!told && sfmode === 'color') toast('Your screen stays on while you colour along.', 3600);
           if (w && w.addEventListener)
             w.addEventListener('release', function () {
               wakeLock = null;
@@ -37,7 +44,7 @@ function markActive(done) {
     const m = assignData.assign[l];
     if (m.mkey === k && hlMatch(l)) {
       code = m.code;
-      if (!done && (colored[l] || _P[l])) was[l] = [colored[l], _P[l]];
+      if (!done && (colored[l] || _P[l])) was[l] = [colored[l], _P[l], heldSh[l] || null];
       colored[l] = done ? 1 : 0;
       _P[l] = 0;
     }
@@ -54,6 +61,8 @@ function markActive(done) {
         if (!assignData.assign[l] || colored[l]) continue;
         colored[l] = was[l][0];
         P[l] = was[l][1];
+        // (with the shading they were coloured with: 34-zones)
+        if (was[l][2]) heldSh[l] = was[l][2];
       }
       guideDirty = true;
       normalizeTones();
@@ -76,9 +85,13 @@ function askResetProgress() {
   const n = progressCount();
   if (!n) return;
   const el = openSheet({
-    title: n === 1 ? 'Clear 1 tick?' : 'Clear all ' + n + ' ticks?',
-    body: '<p class="sfshtext">This clears your colouring progress on this guide.</p>',
-    foot: '<button type="button" class="sfghost" data-rp="cancel">Cancel</button><button type="button" id="sfResetGo" class="sfprimary" data-rp="go">Clear</button>',
+    title: 'Reset progress?',
+    body:
+      '<p class="sfshtext">This clears what you\u2019ve coloured on ' +
+      n +
+      (n === 1 ? ' section' : ' sections') +
+      '.</p>',
+    foot: '<button type="button" class="sfghost" data-rp="cancel">Cancel</button><button type="button" id="sfResetGo" class="sfprimary" data-rp="go">Reset</button>',
     fit: true,
   });
   el.classList.add('sfasksh');
@@ -94,6 +107,8 @@ function resetProgress() {
   const pc = colored,
     pt = tonePart && tonePart._c === colored ? tonePart : null,
     pcel = celebrated,
+    pat = progAt,
+    phs = Object.assign({}, heldSh),
     g = loadGen,
     K = comps.length;
   let any = false;
@@ -101,6 +116,7 @@ function resetProgress() {
   guideDirty = true;
   colored = new Uint8Array(comps.length);
   celebrated = false;
+  progAt = { s: 0, e: 0 };
   hlKey = null;
   hlZone = null;
   renderGuide();
@@ -118,6 +134,9 @@ function resetProgress() {
       colored = pc;
       tonePart = pt;
       celebrated = pcel;
+      progAt = pat;
+      for (const l in phs) if (!heldSh[l]) heldSh[l] = phs[l];
+      progStamp();
       guideDirty = true;
       normalizeTones();
       renderGuide();
@@ -192,6 +211,7 @@ function renderFocusMarkers() {
 // Colour along: markers already finished are gathered in a collapsed "Done (n)" group at the bottom of the list
 function enterColor() {
   zoneEditEnd(true);
+  heldNoteClear();
   if (!assignData) return;
   if (popOpen()) closeSwatchPop();
   hideTip();
@@ -216,7 +236,14 @@ function enterColor() {
 }
 function exitColor() {
   if (focus) focusModal(false);
+  if (_fnOl) {
+    _fnOl = false;
+    outlineSecs(null);
+  }
   sfmode = 'guide';
+  // (coloured sections keep their shading from here on: heldSh; the plan's toast about them may say so again)
+  heldSweep();
+  _heldTold = 0;
   hlKey = null;
   hlZone = null;
   focus = false;
@@ -229,9 +256,14 @@ function exitColor() {
   renderGuide();
 }
 // leaving focus mode opens the list's row that was open before it again (focus mode moves the highlight meanwhile)
-let _focK = null;
+let _focK = null,
+  _focAt = -1;
 function enterFocus() {
   if (sfmode !== 'color' || !assignData) return;
+  if (_fnOl) {
+    _fnOl = false;
+    outlineSecs(null);
+  }
   exitFull();
   var pref = hlKey,
     prefZ = hlZone;
@@ -267,6 +299,7 @@ function enterFocus() {
   fitFocus();
   if (start < 0) finishFocus();
   else goFocus(start, false);
+  _focAt = focusPos;
   // modal for the keyboard (75-focus.js); a toast from the list would sit over its buttons
   hideToast();
   focusModal(true);
@@ -280,7 +313,8 @@ function fitFocus() {
   sizeCanvas();
 }
 function exitFocus() {
-  const ae = document.activeElement,
+  const _fl = focusCur(),
+    ae = document.activeElement,
     back =
       !ae ||
       ae === document.body ||
@@ -291,7 +325,15 @@ function exitFocus() {
   focus = false;
   focusFin = false;
   focusSheet = false;
-  const _fk = _focK && alongEntry(_focK) ? _focK : null;
+  // (the row of the marker Focus mode was on once it has moved on from where it started, so you carry on where you
+  // were; left at once, or finished, the row it started from, v287)
+  let _fk = _focK && alongEntry(_focK) ? _focK : null;
+  if (_fl >= 0 && focusPos !== _focAt) {
+    const _l = _fl,
+      _m = _l >= 0 && assignData && assignData.assign[_l];
+    const _k = _m ? alongKey(_m.mkey, zoneOf(_l)) : null;
+    if (_k && alongEntry(_k)) _fk = _k;
+  }
   alongSet(_fk);
   _focK = null;
   if (_fk && alDone.indexOf(_fk) >= 0) alDoneOpen = true;
@@ -305,6 +347,12 @@ function exitFocus() {
   renderControls();
   renderGuide();
   backScroll();
+  if (_fk)
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        alongReveal(true);
+      });
+    });
   if (back) {
     const b = document.getElementById('sfFocus');
     if (b)

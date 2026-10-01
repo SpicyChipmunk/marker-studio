@@ -43,6 +43,20 @@
           ? 'var(--warn)'
           : 'var(--sub)';
   }
+  // a row's rating reads as a label, not a button: four small dots, filled by closeness (Near-exact all four, Loose
+  // none), in the word's colour, before the word in muted text. The dots are decoration: the row's label says the word
+  function meter(d) {
+    var on = MATCH_STEPS.length;
+    for (var k = 0; k < MATCH_STEPS.length; k++)
+      if (d < MATCH_STEPS[k][0]) {
+        on = k;
+        break;
+      }
+    on = MATCH_STEPS.length - on;
+    var h = '<span class="mqdots" aria-hidden="true" style="color:' + wcol(d) + '">';
+    for (var j = 0; j < MATCH_STEPS.length; j++) h += '<i' + (j < on ? ' class="on"' : '') + '></i>';
+    return h + '</span>';
+  }
   var lastHex = null,
     mpick = picker ? picker.closest('.mpick') : null;
   // a new colour clears the hex field's complaint and the greyed-out result; the picker swatch stays empty until there's a colour
@@ -81,9 +95,8 @@
       esc(c.code) +
       '</b>' +
       esc(c.name || '') +
-      '</span><span class="mq" style="color:' +
-      wcol(o.d) +
-      '">' +
+      '</span><span class="mq">' +
+      meter(o.d) +
       word(o.d) +
       '</span>' +
       (buy ? '<span class="mbrk"></span>' + wishBtnHTML(mkey(o.i), 'from Match a colour', true) : '') +
@@ -180,7 +193,8 @@
     ov.querySelectorAll('.msrc [data-src]').forEach(function (b) {
       var on = b.dataset.src === k;
       b.classList.toggle('on', on);
-      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      // (v288: pressed buttons, one on at a time; not half a tabs pattern)
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
     ov.querySelectorAll('.mpane').forEach(function (p) {
       p.style.display = p.dataset.pane === k ? '' : 'none';

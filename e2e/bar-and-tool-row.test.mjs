@@ -2,7 +2,7 @@
 // the largest text size), the tool row's contents and wording, and its place under the picture and above the bar.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, toolStatus, openAtScale, scrollTop, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, toolStatus, openAtScale, scrollTop, notOnWebKit, WK, answerAsks } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -46,15 +46,15 @@ test('tool row: Undo when there is something to undo, the stage status, ◐ in P
   assert.equal((await vis(['sfPlanUndo'])).length, 0);
   // Colour along: "n of N done" and the progress line; no Undo
   await page.click('#sfColor'); await idle(page); await scrollAt(page, 0);
-  assert.equal(await toolStatus(page), `0 of ${N} done`);
+  assert.equal(await toolStatus(page), `0 of ${N} coloured`);
   const [l] = await bigSections(page, 1), p = await sectionPoint(page, l);
   await page.mouse.click(p.x, p.y); await idle(page);
-  assert.equal(await toolStatus(page), `1 of ${N} done`);
+  assert.equal(await toolStatus(page), `1 of ${N} coloured`);
   const prog = await page.evaluate(() => { const i = document.getElementById('sfToolProg'); return [getComputedStyle(i.parentElement).display, i.style.width]; });
   assert.deepEqual(prog, ['block', Math.round(100 / N) + '%'], 'a thin progress line along the row');
   assert.deepEqual(await vis(ALL), ['sfStat', 'sfCodes', 'sfZout', 'sfZin', 'sfFull'], 'Colour along');
   // Edit sections: "N sections", no codes; the section-edit undo is here too
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfDoneBtn'); await page.click('#sfBack2'); await idle(page); await scrollAt(page, 0);
   assert.match(await toolStatus(page), /^\d+ sections$/);
   assert.deepEqual(await vis(ALL), ['sfStat', 'sfZout', 'sfZin', 'sfFull'], 'Edit sections');
@@ -72,12 +72,12 @@ test('tool row: Undo when there is something to undo, the stage status, ◐ in P
 test('the bar keeps two 44px buttons on one row at the largest text size, shortening labels only when it must (and ✨ drops its word)', async () => {
   const row = (page, a, b) => page.evaluate(([a, b]) => { const x = document.getElementById(a).getBoundingClientRect(), y = document.getElementById(b).getBoundingClientRect(), bar = document.querySelector('.sfbar'); return { same: Math.abs(x.top - y.top) < 1, h: [Math.round(x.height), Math.round(y.height)], fits: bar.scrollWidth <= bar.clientWidth + 1, inside: x.left >= 0 && y.right <= innerWidth }; }, [a, b]);
   const all = [];
-  for (const [w, back, done, foc] of [[360, '← Edit sections', 'Done colouring', '⛶ Focus mode'], [320, '← Sections', 'Done', '⛶ Focus']]) {
+  for (const [w, back, done, foc] of [[360, '← Edit sections', '← Plan', 'Focus mode'], [320, '← Sections', '← Plan', 'Focus mode']]) {
     const { page, errors, ctx } = await openAtScale(2, { width: w, height: 740 });
     await sampleGuide(page); await idle(page);
     assert.deepEqual(await row(page, 'sfBack2', 'sfColor'), { same: true, h: [44, 44], fits: true, inside: true }, `${w}px Plan`);
     assert.equal(await page.textContent('#sfBack2'), back);
-    assert.equal(await page.getAttribute('#sfBack2', 'aria-label'), 'Back to editing sections');
+    assert.equal(await page.getAttribute('#sfBack2', 'aria-label'), 'Back to Edit sections');
     // the header: ✨ Surprise drops its word before the name gets squeezed under about 140px (and keeps its label)
     const hdr = () => page.evaluate(() => ({ ic: document.getElementById('sfSurprise').classList.contains('sfic'), name: document.querySelector('.sfgname').getBoundingClientRect().width, label: document.getElementById('sfSurprise').getAttribute('aria-label') }));
     let hd = await hdr();
@@ -92,7 +92,7 @@ test('the bar keeps two 44px buttons on one row at the largest text size, shorte
     }
     await page.click('#sfColor'); await idle(page);
     assert.deepEqual(await row(page, 'sfDoneBtn', 'sfFocus'), { same: true, h: [44, 44], fits: true, inside: true }, `${w}px Colour along`);
-    assert.deepEqual([await page.textContent('#sfDoneBtn'), await page.textContent('#sfFocus')], [done, foc]);
+    assert.deepEqual([(await page.textContent('#sfDoneBtn')).trim(), (await page.textContent('#sfFocus')).trim()], [done, foc]);
     all.push(...errors); await ctx.close();
   }
   // at the default size: the full labels (✨ Surprise with its word), 8px padding
@@ -199,10 +199,12 @@ test('the bar sits on the bottom edge at the end of the page; Crop keeps the pag
   await sampleGuide(page); await idle(page);
   await scrollAt(page, 99999);
   assert.ok(Math.abs(await page.evaluate(() => innerHeight - document.querySelector('#sfWork>.sfbar').getBoundingClientRect().bottom)) <= 0.5, 'flush at the end');
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfBack2'); await idle(page); await page.click('#sfAdjToggle'); await idle(page);
+  // (v288: Adjust photo is under the tools and sliders, below the screen here: pressed from where the page is, as a
+  // keyboard does, so the click itself doesn't scroll)
   const y0 = await scrollAt(page, 200);
-  await page.click('#sfCrop'); await idle(page);
+  await page.$eval('#sfCrop', (b) => b.click()); await idle(page);
   assert.ok(Math.abs(await page.evaluate(() => scrollY) - y0) <= 2, 'Crop keeps the scroll');
   assert.equal(await page.isVisible('#sfZin'), true, 'zoom buttons stay');
   await page.click('#sfCropCancel'); await idle(page);

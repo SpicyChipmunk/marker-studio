@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
-import { setup, teardown, openApp, idle, sampleGuide, openAtScale } from './helpers.mjs';
+import { setup, teardown, openApp, idle, sampleGuide, openAtScale, saveGuide, letterGuide, libItem } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -23,9 +23,9 @@ test('Home names the app once, and the header names the brands you own', async (
 // ---- From the third full review (v259) ----
 test('Home shows a guide renamed in the Library', async () => {
   const { page, errors } = await openApp();
-  await sampleGuide(page); await page.click('#sfSave'); await idle(page);
+  await sampleGuide(page); await saveGuide(page); await idle(page);
   await page.click('#mHome'); await page.click('#homeLibCard'); await idle(page);
-  await page.click('#savedList .sren'); await page.fill('#savedList .sname-in', 'Renamed here'); await page.keyboard.press('Enter');
+  await libItem(page, '#savedList', 'sren'); await page.fill('#savedList .sname-in', 'Renamed here'); await page.keyboard.press('Enter');
   await page.evaluate(() => savedOverlay.classList.remove('on')); await idle(page);
   assert.match(await page.textContent('#homeView'), /Renamed here/);
   assert.deepEqual(errors, []);
@@ -185,4 +185,54 @@ test('Home cards: with no backup due, Add to Home Screen comes first as before',
   assert.equal(await b.page.evaluate(() => !!backupDue()), false);
   assert.deepEqual(await cards(b.page), { install: true, backup: false, news: false });
   assert.deepEqual([...errors, ...b.errors], []);
+});
+
+// ---- From v285 ----
+const hrect = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); return e ? e.getBoundingClientRect().toJSON() : null; }, sel);
+
+test('v285: the Continue card is the newest guide part-way coloured — its picture, how far, the marker to pick up — and opens Colour along at that marker', async () => {
+  const { page, errors } = await openApp({ width: 834, height: 1194 });
+  await sampleGuide(page); await saveGuide(page);
+  await letterGuide(page); await page.waitForFunction(() => __mstest.inLibrary); await idle(page);
+  await page.click('#mHome'); await idle(page);
+  assert.equal(await page.isVisible('#homeCont'), false, 'nothing started: no Continue card');
+  assert.equal(await page.isVisible('#homeView .homehead'), false, 'and no intro line once there are guides');
+  assert.equal(await page.locator('#sfRecent .sfRecCard').count(), 2);
+  // colour a few sections of the Letter page
+  await page.click('#mSections'); await idle(page);
+  await page.click('#sfColor'); await idle(page);
+  const n = await page.evaluate(() => { const t = __mstest, o = t.assignData.order; o.slice(0, 7).forEach((l) => { t.colored[l] = 1; }); t.guideDirty = true; t.updateProgress(); t.renderGuide(); return o.length; });
+  await page.evaluate(() => __mstest.flushSave()); await idle(page);
+  await page.click('#sfDoneBtn'); await idle(page);
+  await page.click('#mHome'); await idle(page);
+  await page.waitForSelector('#homeCont img'); await page.waitForFunction(() => /next/.test(document.querySelector('#homeCont .hcmeta').textContent));
+  assert.match(await page.textContent('#homeCont .hcmeta'), new RegExp(`^7 of ${n} coloured · next .+`));
+  assert.match(await page.getAttribute('#homeCont .hccard', 'aria-label'), new RegExp(`^Continue colouring .+: 7 of ${n} sections coloured, next .+$`));
+  assert.equal(await page.evaluate(() => document.getElementById('homeNew').classList.contains('homenew2')), true, 'New colouring guide is the second choice beside it');
+  assert.deepEqual(await page.$$eval('#sfRecent .sfRecName', (l) => l.map((x) => x.textContent)), ['Sample jellyfish'], 'Your guides: the others');
+  // iPad portrait: the Continue card on the left, the rest beside it
+  const c = await hrect(page, '#homeCont'), nb = await hrect(page, '#homeNew');
+  assert.ok(c.right <= nb.left + 1 && Math.abs(c.top - nb.top) < 4, 'side by side: ' + JSON.stringify([c, nb]));
+  // the marker to pick up: the one part-way done, lightest first
+  const want = await page.evaluate(() => document.querySelector('#homeCont .hcmeta b').textContent);
+  await page.click('#homeCont .hccard');
+  await page.waitForFunction(() => __mstest.sfmode === 'color' && __mstest.hlKey); await idle(page);
+  assert.equal(await page.evaluate(() => __mstest.hlKey.split('|')[1]), want, 'Colour along opens at that marker');
+  assert.ok(await page.isVisible('.sfarow.open'), 'its row open');
+  // a phone: the Continue card above New colouring guide
+  await page.click('#mHome'); await page.setViewportSize({ width: 390, height: 844 }); await idle(page);
+  assert.ok((await hrect(page, '#homeCont')).bottom <= (await hrect(page, '#homeNew')).top + 1);
+  assert.deepEqual(errors, []);
+});
+
+test('v285: with no guides, Home is the intro line, New colouring guide and the three cards', async () => {
+  const { page, errors } = await openApp({ width: 834, height: 1194, storage: onboardedV265({ [KEY]: appState() }) });
+  await idle(page);
+  assert.equal(await page.isVisible('#homeView .homehead'), true);
+  assert.equal(await page.isVisible('#homeCont'), false);
+  assert.equal(await page.isVisible('#sfRecent'), false);
+  assert.equal(await page.evaluate(() => document.getElementById('homeNew').classList.contains('homenew2')), false, 'New colouring guide is the main button');
+  const g = await hrect(page, '.homegrid'), w = await page.evaluate(() => innerWidth);
+  assert.ok(g.width <= 441 && Math.abs(g.left + g.width / 2 - w / 2) < 2, 'one centred column');
+  assert.deepEqual(errors, []);
 });

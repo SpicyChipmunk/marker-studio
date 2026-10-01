@@ -5,7 +5,7 @@
 // earlier version of the code.)
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, notOnWebKit, WK, saveGuide } from './helpers.mjs';
 import { SESSIONS, CTL_INIT, click, slide, choose } from './controls-states.mjs';
 
 before(setup);
@@ -118,7 +118,7 @@ test('a guide whose saved palette was deleted reopens saying so, and keeps it un
   await click(page, '#sfSrc [data-v="saved"]');
   await idle(page);
   assert.equal(await page.evaluate(() => __mstest.styleVars.savedPalId), 882002);
-  await page.click('#sfSave');
+  await saveGuide(page);
   await idle(page);
   const guide = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
   const used = () => page.evaluate(() => __mstest.assignData.order.map((l) => __mstest.assignData.assign[l].mkey).join());

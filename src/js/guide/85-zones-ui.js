@@ -95,7 +95,7 @@ function zoneChipsHTML() {
       ) +
       '">' +
       esc(nm) +
-      (on && id ? '<span class="sfzpen" aria-hidden="true">✎</span>' : '') +
+      (on && id ? '<span class="sfzpen" aria-hidden="true">' + ic('pencil') + '</span>' : '') +
       '</button>'
     );
   };
@@ -104,7 +104,9 @@ function zoneChipsHTML() {
     zoneIds().map(chip).join('') +
     '<button type="button" class="sfzchip sfzadd" data-z="new" aria-label="Add a zone"' +
     (zones.length >= ZONE_MAX ? ' disabled' : '') +
-    '><span aria-hidden="true">＋</span></button></div>' +
+    '>' +
+    ic('plus') +
+    '</button></div>' +
     zoneEmptyNote()
   );
 }
@@ -122,7 +124,11 @@ function zoneEmptyNote() {
 }
 // the Pattern tab's first line without zones: its label and ＋ Zone
 function zoneAddHTML() {
-  return '<div class="sfglbl sfpatlbl sfzlbl"><span>Colour pattern</span><button type="button" id="sfZoneAdd" class="sfzfirst" aria-label="Add a zone: give part of the picture its own pattern and colours"><span aria-hidden="true">＋</span> Zone</button></div>';
+  return (
+    '<div class="sfglbl sfpatlbl sfzlbl"><span role="heading" aria-level="3">Colour pattern</span><button type="button" id="sfZoneAdd" class="sfzfirst" aria-label="Add a zone: give part of the picture its own pattern and colours">' +
+    ic('plus') +
+    ' Zone</button></div>'
+  );
 }
 // the zone editor, in the Pattern tab's place: the name with Done beside it, so Done is in sight without scrolling,
 // then how many sections, how to add them, and Delete zone last
@@ -240,11 +246,18 @@ function zoneNameCommit() {
   if (v === z.name) return;
   z.name = v;
   guideDirty = true;
-  ctlEl.querySelectorAll('.sfzchip.on').forEach(function (b) {
-    b.firstChild.textContent = v;
-  });
   const cnt = document.getElementById('sfZoneN'),
     n = zoneSecs(zoneCur).length;
+  ctlEl.querySelectorAll('.sfzchip.on').forEach(function (b) {
+    b.firstChild.textContent = v;
+    // (its name for a screen reader too)
+    const al = b.getAttribute('aria-label');
+    if (al)
+      b.setAttribute(
+        'aria-label',
+        v + ', ' + n + ' section' + (n === 1 ? '' : 's') + al.replace(/^.*?, \d+ sections?/, ''),
+      );
+  });
   if (cnt) cnt.innerHTML = zoneCountText(n);
   // (a zone with no sections yet isn't a change to the guide, nor its name: Done drops it if it stays empty)
   zoneKbSync();
@@ -268,7 +281,10 @@ function zoneSwitch(id) {
   renderGuide();
   positionPhoto();
   zoneFlash(id);
-  sayLive('Editing ' + (id ? 'zone ' + zoneName(id) : 'Main') + ': ' + zoneSecs(id).length + ' sections');
+  const _zn = zoneSecs(id).length;
+  sayLive(
+    'Editing ' + (id ? 'zone ' + zoneName(id) : 'Main') + ': ' + _zn + ' section' + (_zn === 1 ? '' : 's'),
+  );
   const b = zoneChipEl(id);
   if (b)
     try {

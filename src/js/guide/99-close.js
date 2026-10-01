@@ -157,12 +157,23 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     flushSave: function () {
       return doAutosave();
     },
+    // (put the open guide in the Library now, as Save did: the tests' saveGuide)
+    saveNow: function () {
+      saveGuide();
+      return _firstP || Promise.resolve();
+    },
+    get inLibrary() {
+      return !!libEntry();
+    },
     get saveErr() {
       return _saveErr;
     },
     mergeCellsSnap: function (a, b) {
       snapshotSeg();
-      return mergeCells(a, b);
+      const r = mergeCells(a, b);
+      // (as a merge with the tool does: an edit to build)
+      hasEdits = true;
+      return r;
     },
     doUndoSeg: doUndo,
     stepSet: stepSet,
@@ -324,6 +335,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get paintKey() {
       return paintKey;
     },
+    sideBySide: sideBySide,
     get geo() {
       return geo;
     },
@@ -331,6 +343,68 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       return picS;
     },
     sheetOpen: sheetOpen,
+    checkComplete: checkComplete,
+    get pdfCloseN() {
+      return _pdfCloseN;
+    },
+    // (set a Print option as its button would: pwhat, plabels, paper; blend: the lighter and darker columns)
+    pdfOpt: function (k, v) {
+      if (k === 'blend') pdfBlend = !!v;
+      else printOptSet(k, v);
+    },
+    // (how many kept sections the line under the tabs has told of on this visit)
+    get heldTold() {
+      return _heldTold;
+    },
+    set heldTold(v) {
+      _heldTold = v;
+    },
+    get pdfCloseP() {
+      return _pdfCloseP;
+    },
+    // (each close-up: its crop, its own sections, and what its placing labelled and left with a dot)
+    get pdfCU() {
+      return _pdfCU.map(function (c) {
+        return {
+          crop: c.crop,
+          kc: c.k,
+          target: c.ids,
+          lays: c.pl ? Object.keys(c.pl.lays).map(Number) : [],
+          boxes: c.pl
+            ? Object.values(c.pl.lays).map(function (x) {
+                return x.box;
+              })
+            : [],
+          dropped: c.pl ? c.pl.dropped : [],
+        };
+      });
+    },
+    get pdfCloseL() {
+      return _pdfCloseL;
+    },
+    get pdfLeft() {
+      return _pdfLeft;
+    },
+    get pdfP1() {
+      return _pdfP1;
+    },
+    renderControls: renderControls,
+    get pgHint() {
+      return pgHint;
+    },
+    set pgHint(v) {
+      pgHint = v;
+    },
+    updateProgress: updateProgress,
+    get labMin() {
+      return _labMin;
+    },
+    get progAt() {
+      return progAt;
+    },
+    get exCodes() {
+      return exCodes;
+    },
     get hideLabels() {
       return hideLabels;
     },
@@ -361,8 +435,11 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     balFamOf: balFamOf,
     buildNoRep: buildNoRep,
     buildBalance: buildBalance,
+    balMeasure: balMeasure,
+    balName: balName,
     noRepPool: noRepPool,
     poolMsg: poolMsg,
+    balShort: balShort,
     lookNote: lookNote,
     // the Gradient's parts (30-palette-assign), for the unit tests
     grad: {
@@ -391,6 +468,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       random: buildRandom,
       companion: _findComp,
       companions: blendCompanions,
+      lch: mLch,
     },
     get coll() {
       return coll;
@@ -467,6 +545,16 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       return hlZone;
     },
     hlPath: hlPath,
+    // a section's size on screen now, in CSS px (the zoom rule's test: at least ~44px, or as far as it may go)
+    secOnScreen: function (l) {
+      const b = secBoxes(),
+        DW = (cv && cv.offsetWidth) || 1,
+        DH = (cv && cv.offsetHeight) || 1;
+      return {
+        w: ((b.x1[l] - b.x0[l] + 1) / W) * DW * zoom * picK(),
+        h: ((b.y1[l] - b.y0[l] + 1) / H) * DH * zoom * picK(),
+      };
+    },
     get fnLast() {
       return _fnLast;
     },
@@ -749,9 +837,16 @@ return {
   enter,
   leave,
   openDesign,
+  continueGuide,
   importFile: importFromHome,
+  askBox: askBox,
+  guideBrief: guideBrief,
   loadSample: sampleFromAnywhere,
   pickPhoto: pickPhoto,
+  pickPhotoHome: pickPhotoHome,
+  palNote: palNote,
+  clearPal: clearPal,
+  setNextPal: setNextPal,
   reassign,
   setSavedSource,
   showHome,

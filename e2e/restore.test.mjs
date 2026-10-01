@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFile, writeFile, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { setup, teardown, openApp, welcome, sampleGuide, idle, sectionPoint, scrollTop } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, sampleGuide, idle, sectionPoint, scrollTop, saveGuide, answerAsks, askAnswer, asked, openBackupDialog, libItem } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -16,15 +16,14 @@ test('collection backup downloads and restores into a fresh install', async () =
   const a = await openApp();
   await welcome(a.page, 'look');
   const owned = await a.page.evaluate(() => [...state.owned].sort());
-  await a.page.click('#mCollection');
-  await a.page.click('#backupBtn');
+  await openBackupDialog(a.page);
   const [dl] = await Promise.all([a.page.waitForEvent('download'), a.page.click('#backupDownload')]);
   const file = await dl.path();
   JSON.parse(await readFile(file, 'utf8'));
 
   // the welcome's Restore a backup opens the file picker straight away
   const b = await openApp();
-  b.page.on('dialog', (d) => d.accept());
+  await answerAsks(b.page);
   const [fc] = await Promise.all([b.page.waitForEvent('filechooser'), b.page.click('#wcRestore')]);
   await fc.setFiles(file); await idle(b.page);
   assert.equal(await b.page.isVisible('#welcome'), false);
@@ -35,14 +34,14 @@ test('collection backup downloads and restores into a fresh install', async () =
 test('guides backup restores guides with their dates; a deleted guide comes back from it', async () => {
   const a = await openApp();
   await sampleGuide(a.page);
-  await a.page.click('#sfSave'); await idle(a.page);
+  await saveGuide(a.page); await idle(a.page);
   await a.page.click('#mHome'); await a.page.click('#homeLibCard');
   const [dl] = await Promise.all([a.page.waitForEvent('download'), a.page.click('#guidesBackup')]);
   const file = await dl.path();
   const ts = await a.page.evaluate(() => state.saved.filter((s) => s.type === 'guide').map((s) => s.ts));
 
   // one tap deletes (with Undo in a toast)
-  await a.page.click('#savedList .sdel'); await idle(a.page);
+  await libItem(a.page, '#savedList', 'sdel'); await idle(a.page);
   assert.equal(await a.page.locator('#savedList .srow').count(), 0);
   assert.equal(await a.page.evaluate(() => state.saved.filter((s) => s.type === 'guide').length), 0);
 
@@ -61,8 +60,9 @@ const colourSome = async (page, n) => {
 
 test('restoring an older backup never overwrites a newer guide', async () => {
   const { page, errors } = await openApp();
+  await answerAsks(page);
   await sampleGuide(page);
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   await page.click('#mHome'); await page.click('#homeLibCard');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#guidesBackup')]);
   const file = await dl.path();
@@ -85,7 +85,7 @@ test('restoring an older backup never overwrites a newer guide', async () => {
 test('one backup file restores markers, palettes and guides into a fresh install', async () => {
   const a = await openApp();
   await sampleGuide(a.page);
-  await a.page.click('#sfSave'); await idle(a.page);
+  await saveGuide(a.page); await idle(a.page);
   await a.page.evaluate(() => { state.saved.push({ id: 424242, type: 'palette', name: 'Test palette', keys: ['Ohuhu|R16', 'Ohuhu|B02'], ts: Date.now() }); save(); });
   const want = await a.page.evaluate(() => ({ owned: [...state.owned].sort(), pals: state.saved.filter((s) => s.type !== 'guide').map((s) => s.name), guides: state.saved.filter((s) => s.type === 'guide').map((s) => s.name) }));
   await a.page.click('#mHome'); await a.page.click('#homeLibCard');
@@ -95,7 +95,7 @@ test('one backup file restores markers, palettes and guides into a fresh install
   assert.equal(d.type, 'ms-backup'); assert.equal(d.guides.length, 1); assert.ok(d.owned.length > 50);
 
   const b = await openApp();
-  b.page.on('dialog', (x) => x.accept());
+  await answerAsks(b.page);
   const [fc] = await Promise.all([b.page.waitForEvent('filechooser'), b.page.click('#wcRestore')]);
   await fc.setFiles(file); await idle(b.page, 1500);
   const got = await b.page.evaluate(() => ({ owned: [...state.owned].sort(), pals: state.saved.filter((s) => s.type !== 'guide').map((s) => s.name), guides: state.saved.filter((s) => s.type === 'guide').map((s) => s.name) }));
@@ -106,7 +106,7 @@ test('one backup file restores markers, palettes and guides into a fresh install
 test('older backup files still restore (guides-only and collection-only)', async () => {
   const a = await openApp();
   await sampleGuide(a.page);
-  await a.page.click('#sfSave'); await idle(a.page);
+  await saveGuide(a.page); await idle(a.page);
   // build the two old formats from what's saved
   const old = await a.page.evaluate(async () => {
     const g = state.saved.find((s) => s.type === 'guide'), pl = await IDB.get('guide-' + g.id);
@@ -115,7 +115,7 @@ test('older backup files still restore (guides-only and collection-only)', async
   const dir = await mkdtemp(join(tmpdir(), 'ms-')), gf = join(dir, 'guides.json'), cf = join(dir, 'coll.json');
   await writeFile(gf, JSON.stringify(old.guides)); await writeFile(cf, JSON.stringify(old.coll));
   const b = await openApp();
-  b.page.on('dialog', (x) => x.accept());
+  await answerAsks(b.page);
   await welcome(b.page, 'look');
   await b.page.click('#homeLibCard');
   let [fc] = await Promise.all([b.page.waitForEvent('filechooser'), b.page.click('#guidesRestore')]);
@@ -131,14 +131,14 @@ test('older backup files still restore (guides-only and collection-only)', async
 // ---- From the second full review ----
 test('restoring someone else’s newer backup does not mark this device’s guides as backed up', async () => {
   const b = await openApp();
-  await sampleGuide(b.page); await b.page.click('#sfSave'); await idle(b.page);
+  await sampleGuide(b.page); await saveGuide(b.page); await idle(b.page);
   const a = await openApp();
-  await sampleGuide(a.page); await a.page.click('#sfSave'); await idle(a.page);
+  await sampleGuide(a.page); await saveGuide(a.page); await idle(a.page);
   await a.page.click('#mHome'); await a.page.click('#homeLibCard');
   const [dl] = await Promise.all([a.page.waitForEvent('download'), a.page.click('#guidesBackup')]);
   const file = await dl.path();
   await b.page.click('#mHome'); await b.page.click('#homeLibCard');
-  b.page.on('dialog', (d) => d.accept());
+  await answerAsks(b.page);
   const [fc] = await Promise.all([b.page.waitForEvent('filechooser'), b.page.click('#guidesRestore')]);
   await fc.setFiles(file); await idle(b.page, 1500);
   const r = await b.page.evaluate(() => ({ risk: guidesAtRisk(), n: state.saved.filter((s) => s.type === 'guide').length }));
@@ -149,7 +149,7 @@ test('restoring someone else’s newer backup does not mark this device’s guid
 
 // ---- From the fourth review (data safety) ----
 // Save (a new guide into the Library), done once the header says so
-const saveNew = async (page) => { await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent)); };
+const saveNew = (page) => saveGuide(page);
 
 const AUTO = 2300; // idle(page, AUTO): until auto-save (1.5 s after the last change) has run
 const savedId = (page) => page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
@@ -187,11 +187,11 @@ const pal = (keys, id, name) => ({ id, type: 'palette', name: name || 'Pal ' + i
 test('restore: no question on an empty device, plurals right, and no backup reminder straight after', async () => {
   const { page, errors } = await openApp({ storage: { 'ms-last-ver': 'v263' } });
   await page.click('#wcSkip'); await page.click('#wcLook');
-  const asked = []; page.on('dialog', (d) => { asked.push(d.message()); d.accept(); });
+  await answerAsks(page, true);
   const file = JSON.stringify({ v: 3, type: 'ms-backup', ts: Date.now() - 864e5, owned: ['Ohuhu|R014'], saved: [pal(['Ohuhu|R014'], 9, 'Nine')], guides: [] });
   await page.click('#homeLibCard');
   await page.setInputFiles('#guidesFile', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(file) }); await idle(page);
-  assert.deepEqual(asked, [], 'nothing here to replace: no question');
+  assert.deepEqual(await asked(page), [], 'nothing here to replace: no question');
   assert.equal(await page.evaluate(() => state.owned.size), 1);
   assert.match(await toastText(page), /Restored — 1 marker\./);
   await page.keyboard.press('Escape'); await page.click('#mHome'); await idle(page);
@@ -200,8 +200,9 @@ test('restore: no question on an empty device, plurals right, and no backup remi
   await page.evaluate(() => { state.owned.add('Ohuhu|Y111'); save(); });
   await page.click('#homeLibCard');
   await page.setInputFiles('#guidesFile', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(file) }); await idle(page);
-  assert.equal(asked.length, 1);
-  assert.equal(asked[0], 'Replace your 2 markers with the backup’s 1 marker? Palettes and guides in the file are added to yours.');
+  const q = await asked(page);
+  assert.equal(q.length, 1);
+  assert.equal(q[0], 'The backup has 1 marker; you have 2 markers. Either way, the backup’s palettes and guides are added.');
   assert.deepEqual(errors, []);
 });
 
@@ -292,7 +293,8 @@ test('restore skips unreadable guides and counts duplicates apart; a single guid
   // a single guide file (no id) restored twice
   const one = await page.evaluate(() => gatherGuides().then((a) => { const g = a[0]; delete g.id; g.name = 'Shared guide'; return [g]; }));
   assert.deepEqual(await restore(one), { ok: 0, copies: 0, dup: 1, bad: 0 }, 'the same as the guide already here');
-  await page.evaluate(() => { const g = state.saved.find((s) => s.type === 'guide'); sfDeleteDesign(g.id); });
+  // (deleted as the Library does it, so the open guide knows: v285 would otherwise put it in the Library again)
+  await page.evaluate(() => { const g = state.saved.find((s) => s.type === 'guide'); sfDeleteDesign(g.id); SF.libChanged(g.id, false); });
   assert.deepEqual(await restore(one), { ok: 1, copies: 0, dup: 0, bad: 0 });
   assert.deepEqual(await restore(one), { ok: 0, copies: 0, dup: 1, bad: 0 });
   assert.equal((await guidesR5(page)).length, 1);
@@ -312,8 +314,9 @@ const storedState = (page) => page.evaluate((KEY) => JSON.parse(localStorage.get
 
 test('restore with storage full: the dialog, the Welcome and pasted text say it failed and change nothing', async () => {
   let { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState() }) });
-  await page.click('#mCollection'); await page.click('#backupBtn');
+  await openBackupDialog(page);
   await fillStorage(page);
+  await answerAsks(page, false);
   await page.setInputFiles('#backupFile', jsonFile(BACKUP)); await idle(page);
   assert.match(await page.textContent('#backupOverlay .mserr'), /storage is full, so nothing was changed/);
   assert.equal(await page.evaluate(() => state.owned.size), OWN.length, 'the markers are as they were');
@@ -321,9 +324,9 @@ test('restore with storage full: the dialog, the Welcome and pasted text say it 
   assert.doesNotMatch(await toastText(page), /Restored/);
   assert.equal(await page.evaluate(() => localStorage.getItem('ms-backup-sig')), null, 'not recorded as backed up');
   // pasted text (the error card is put away first)
-  await page.click('#backupOverlay .mserrx'); await page.click('#backupShow');
+  await page.click('#backupOverlay .mserrx'); if (!(await page.isVisible('#backupText'))) await page.click('#backupShow'); // (open already from the Library's line, v288)
   await page.fill('#backupText', JSON.stringify({ v: 2, owned: ['Ohuhu|B08'], saved: [] }));
-  page.once('dialog', (d) => d.accept());
+  await answerAsks(page, true);
   await page.click('#backupRestore');
   await page.waitForFunction(() => /Couldn’t restore — this browser’s storage is full/.test(document.getElementById('backupCap').textContent));
   assert.equal(await page.evaluate(() => state.owned.size), OWN.length);
@@ -342,10 +345,10 @@ test('restore with storage full: the dialog, the Welcome and pasted text say it 
 
 test('a backup with no markers leaves yours alone, asks nothing, and adds its palettes', async () => {
   const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState() }) });
-  const asked = []; page.on('dialog', (d) => { asked.push(d.message()); d.accept(); });
-  await page.click('#mCollection'); await page.click('#backupBtn');
+  await answerAsks(page, true);
+  await openBackupDialog(page);
   await page.setInputFiles('#backupFile', jsonFile({ ...BACKUP, owned: [] })); await idle(page);
-  assert.deepEqual(asked, [], 'no "Replace your 8 markers with the backup’s 0 markers?"');
+  assert.deepEqual(await asked(page), [], 'no "Replace your 8 markers with the backup’s 0 markers?"');
   assert.equal(await page.evaluate(() => state.owned.size), OWN.length);
   assert.equal((await storedState(page)).saved.length, 1, 'the palette is added and saved');
   assert.match(await page.textContent('#backupCap'), /Kept your markers; 1 palette added\./);
@@ -408,9 +411,9 @@ const palettes = (page) => page.evaluate(() => state.saved.filter((s) => s.type 
 test('restore: palettes are merged (local ones kept, new ones added, a shared id keeps the local one); no question with the same markers', async () => {
   const local = [palAt(['Ohuhu|R014'], 101, 'Local only'), palAt(['Ohuhu|Y111'], 202, 'Mine')];
   const { page, errors } = await openApp({ storage: onboardedV264({ [KEY]: appState({ saved: local }) }) });
-  const asked = []; page.on('dialog', (d) => { asked.push(d.message()); d.accept(); });
+  await answerAsks(page, true);
   await restore(page, backup(OWN, [palAt(['Ohuhu|B08', 'Ohuhu|G36'], 202, 'Theirs'), palAt(['Ohuhu|RV08'], 303, 'Backup only')]));
-  assert.deepEqual(asked, [], 'same markers: nothing to ask');
+  assert.deepEqual(await asked(page), [], 'same markers: nothing to ask');
   assert.deepEqual(await palettes(page), ['101:Local only', '202:Mine', '303:Backup only']);
   assert.deepEqual(await page.evaluate(() => state.saved.find((s) => s.id === 202).keys), ['Ohuhu|Y111'], 'the local copy of a shared id is kept as it was');
   assert.match(await toastText(page), /Restored — 8 markers\. 1 palette added\./);
@@ -424,39 +427,38 @@ test('restore: palettes are merged (local ones kept, new ones added, a shared id
 
 test('restore: the question is only about markers, with the right plurals; Cancel keeps them but still adds palettes', async () => {
   const { page, errors } = await openApp({ storage: onboardedV264({ [KEY]: appState({ saved: [palAt(['Ohuhu|R014'], 101, 'Local only')] }) }) });
-  const asked = []; let answer = false;
-  page.on('dialog', (d) => { asked.push(d.message()); if (answer) d.accept(); else d.dismiss(); });
+  await answerAsks(page, false);
   await restore(page, backup(['Ohuhu|R014', 'Ohuhu|B08', 'Copic|E09'], [palAt(['Ohuhu|B08'], 404, 'From file')], { wish: [{ k: 'Ohuhu|G43', why: 'x', ts: 1 }] }));
-  assert.deepEqual(asked, ['Replace your 8 markers with the backup’s 3 markers? Palettes and guides in the file are added to yours.']);
+  assert.deepEqual(await asked(page), ['The backup has 3 markers; you have 8 markers. Either way, the backup’s palettes and guides are added.']);
   assert.equal(await page.evaluate(() => state.owned.size), 8, 'Cancel keeps the markers');
   assert.deepEqual(await page.evaluate(() => state.wish), [], 'and the To buy list that goes with them');
   assert.deepEqual(await palettes(page), ['101:Local only', '404:From file'], 'the palettes are added anyway');
   assert.match(await toastText(page), /Kept your markers; 1 palette added\./);
   // OK: the backup's markers (and its To buy list); the local palette is still there
-  answer = true;
+  await askAnswer(page, true);
   await restore(page, backup(['Ohuhu|R014'], [palAt(['Ohuhu|B08'], 404, 'From file')], { wish: [{ k: 'Ohuhu|G43', why: 'x', ts: 1 }] }));
-  assert.equal(asked[1], 'Replace your 8 markers with the backup’s 1 marker? Palettes and guides in the file are added to yours.');
+  assert.equal((await asked(page))[1], 'The backup has 1 marker; you have 8 markers. Either way, the backup’s palettes and guides are added.');
   assert.deepEqual(await page.evaluate(() => [...state.owned]), ['Ohuhu|R014']);
   assert.deepEqual(await page.evaluate(() => state.wish.map((w) => w.k)), ['Ohuhu|G43']);
   assert.deepEqual(await palettes(page), ['101:Local only', '404:From file']);
   // one marker here now: singular
   await restore(page, backup(['Ohuhu|R014', 'Ohuhu|B08'], []));
-  assert.equal(asked[2], 'Replace your 1 marker with the backup’s 2 markers? Palettes and guides in the file are added to yours.');
+  assert.equal((await asked(page))[2], 'The backup has 2 markers; you have 1 marker. Either way, the backup’s palettes and guides are added.');
   assert.deepEqual(await palettes(page), ['101:Local only', '404:From file'], 'a backup without palettes removes none');
   // pasted text (Markers › Back up & restore) merges the same way
   await page.keyboard.press('Escape');
   await page.evaluate((t) => { document.getElementById('backupText').value = t; document.getElementById('backupRestore').click(); }, JSON.stringify({ v: 2, owned: ['Ohuhu|R014', 'Ohuhu|B08'], saved: [palAt(['Ohuhu|G36'], 505, 'Pasted')] }));
   await idle(page);
-  assert.equal(asked.length, 3, 'same markers: no question');
+  assert.equal((await asked(page)).length, 3, 'same markers: no question');
   assert.deepEqual(await palettes(page), ['101:Local only', '404:From file', '505:Pasted']);
   assert.deepEqual(errors, []);
 });
 
 test('restore: no question on a device without markers (even with palettes); a file holding everything counts as backed up', async () => {
   const { page, errors } = await openApp({ storage: onboardedV264({ [KEY]: appState({ owned: [], saved: [palAt(['Ohuhu|R014'], 101, 'Kept')] }) }) });
-  const asked = []; page.on('dialog', (d) => { asked.push(d.message()); d.accept(); });
+  await answerAsks(page, true);
   await restore(page, backup(['Ohuhu|R014', 'Ohuhu|B08'], [palAt(['Ohuhu|R014'], 101, 'Kept'), palAt(['Ohuhu|B08'], 606, 'New')]));
-  assert.deepEqual(asked, []);
+  assert.deepEqual(await asked(page), []);
   assert.equal(await page.evaluate(() => state.owned.size), 2);
   assert.deepEqual(await palettes(page), ['101:Kept', '606:New']);
   // everything here is in the file: marked as restored, no reminder, and the reminder's fingerprint matches

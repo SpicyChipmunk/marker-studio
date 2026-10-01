@@ -35,6 +35,8 @@ function chrome() {
     _sec = state.mode === 'sections';
   document.querySelector('.wrap').classList.toggle('homemode', _home);
   document.querySelector('.wrap').classList.toggle('sfmode', _sec);
+  // (v288: the palette's glow belongs to Palette, and Random's draw; elsewhere the plain background)
+  document.documentElement.classList.toggle('noamb', state.mode !== 'palette' && state.mode !== 'random');
   mSections.classList.toggle('on', _sec);
   if (mHome) mHome.classList.toggle('on', _home);
   var _hv = document.getElementById('homeView');
@@ -48,7 +50,7 @@ function chrome() {
         const n = state.owned.size;
         hc.classList.toggle('attn', !n);
         const sb = hc.querySelector('.hcsub');
-        if (sb) sb.textContent = n ? n + ' markers' : 'Set up your markers';
+        if (sb) sb.textContent = n ? n + (n === 1 ? ' marker' : ' markers') : 'Set up your markers';
       }
     }
     if (window.SF) SF.leave();
@@ -130,7 +132,10 @@ function chrome() {
               '</s> <span class="seednote">' +
               why +
               ', not used</span>'
-            : COLORS[si].brand + ' ' + COLORS[si].code) + ' <span class="sx">✕</span>'
+            : COLORS[si].brand + ' ' + COLORS[si].code) +
+          ' <span class="sx">' +
+          ic('x') +
+          '</span>'
         : 'Random base';
   }
   findWrap.style.display = browse ? '' : 'none';
@@ -174,6 +179,7 @@ function chrome() {
   gapWrap.style.display = col && state.collView === 'unowned' ? 'flex' : 'none';
   gapSort.value = state.gapSort;
   ownHint.style.display = col ? '' : 'none';
+  mkJumpSync(col);
   if (col)
     ownHint.textContent =
       state.collView === 'unowned'
@@ -193,12 +199,29 @@ function chrome() {
   filterBar.setAttribute('aria-expanded', state.filtersOpen && !pooled ? 'true' : 'false');
   filterSum.textContent = filterSummary();
   poolBar.style.display = pooled ? 'flex' : 'none';
-  if (pooled) poolN.textContent = state.pool.length;
+  if (pooled) {
+    poolN.textContent = state.pool.length;
+    var _pwd = document.getElementById('poolW');
+    if (_pwd) _pwd.textContent = state.pool.length === 1 ? 'colour' : 'colours';
+  }
   libRow.style.display = pal || rnd ? 'flex' : 'none';
   var _ug = document.getElementById('useGuideWrap');
   if (_ug) _ug.style.display = pal && currentPaletteIdxs().length ? '' : 'none';
   saveBtn.disabled = (pal && !currentPaletteIdxs().length) || (rnd && !state.drawn.length);
   exportBtn.disabled = (rnd && !state.drawn.length) || (pal && !currentPaletteIdxs().length);
+  // Photo before a photo is chosen: nothing to save or clear yet, so no Save, Save image or Clear (and no ⋯ left on
+  // its own: the Library is on Home); the card says what to do
+  const noPhoto = pal && photoEmpty();
+  if (noPhoto) {
+    libRow.style.display = 'none';
+    secondaryRow.style.display = 'none';
+  }
+  {
+    const gt = phint.querySelector('.ghtext');
+    if (gt)
+      gt.textContent = noPhoto ? 'Tap to choose a photo and pull its colours' : 'Tap to generate a palette';
+  }
+  harmDescSync(pal);
   {
     const R = HARM_RANGE[state.harmony] || [2, 6];
     [...segs.children].forEach((b) => {
@@ -213,13 +236,9 @@ function chrome() {
   }
   closeNote();
   [...harm.children].forEach((b) => segOn(b, b.dataset.h === state.harmony));
-  // Reset only when there's something to reset
+  // Clear only when there's something to clear
   if (rnd || pal) {
-    const has = pal
-      ? state.harmony === 'custom'
-        ? state.customPal.filter((x) => x != null).length
-        : state.palettes.length
-      : state.drawn.length;
+    const has = clearable();
     if (!has && resetBtn.dataset.arm === '1') disarm();
     resetBtn.disabled = !has;
   }
@@ -240,10 +259,10 @@ function chrome() {
   if (rnd) {
     const { t, u, left } = counts();
     fill.style.width = (t ? (u / t) * 100 : 0) + '%';
-    statusEl.innerHTML = '<b>' + u + '</b> drawn, <b>' + left + '</b> left in your pool';
+    statusEl.innerHTML = '<b>' + u + '</b> drawn, <b>' + left + '</b> left to draw';
     const bad = pooled
       ? left === 0
-        ? 'Pool complete'
+        ? 'All drawn'
         : null
       : !af
         ? 'Turn on a family'
@@ -254,7 +273,7 @@ function chrome() {
             : !ab
               ? 'Turn on a brand'
               : left === 0
-                ? 'Pool complete'
+                ? 'All drawn'
                 : null;
     drawBtn.disabled = !!bad || rolling;
     drawBtn.textContent = bad || 'Draw a marker';
@@ -410,7 +429,7 @@ function chrome() {
             '<div class="cell" data-i="' +
             i +
             '" role="button" tabindex="0" aria-label="' +
-            esc(c.brand + ' ' + c.code + ' ' + c.name + ', return to pool') +
+            esc(c.brand + ' ' + c.code + ' ' + c.name + ', put it back') +
             '" title="' +
             c.brand +
             ' ' +
@@ -464,7 +483,7 @@ function chrome() {
             );
           })
           .join('')
-      : '<div class="empty">Nothing left in your pool.</div>';
+      : '<div class="empty">Nothing left to draw.</div>';
   }
   {
     const _eo = $('emptyOwned'),
@@ -484,6 +503,10 @@ function syncModeA11y() {
   [mHome, mSections, mCollection, mPalette].forEach((b) => {
     if (b) b.setAttribute('aria-current', b.classList.contains('on') ? 'page' : 'false');
   });
+  // (the screen's name as a heading, for a screen reader's list of them: v284)
+  const h = document.getElementById('screenH'),
+    on = [mHome, mSections, mCollection, mPalette].find((b) => b && b.classList.contains('on'));
+  if (h && on && h.textContent !== on.textContent) h.textContent = on.textContent;
 }
 // the header names the brands you actually own (both only when you own both)
 function headBrands() {
@@ -638,7 +661,7 @@ function doReRollBand(k) {
       b.classList.add('bin');
     }
     const base = COLORS[pal[0]];
-    palReadout(HARM[state.harmony], base.brand + ' · ' + base.name + ' base', pal);
+    palReadout(shownPaletteName(pal), palSub(pal), pal);
     setAmb(base.hex);
     closeNote();
     buzz(24);
@@ -794,10 +817,7 @@ function setHarmony(h) {
       showCustom();
     } else if (h === 'photo') {
       if (_photoImg) applyPhotoPalette();
-      else {
-        bands.innerHTML = '';
-        phint.style.display = '';
-      }
+      else clearPalette();
     } else regenReplace();
   }
   chrome();
@@ -810,4 +830,46 @@ function handoff(target) {
   state.mode = target;
   save();
   fullRender();
+}
+
+// Palette › Photo before a photo is chosen: the card is empty and waits for one
+function photoEmpty() {
+  return state.mode === 'palette' && state.harmony === 'photo' && !_photoImg;
+}
+// what Clear would empty: the palettes (Custom: its chosen markers; Photo with no photo: nothing shown, so nothing),
+// or Random's drawn markers
+function clearable() {
+  if (state.mode === 'palette')
+    return state.harmony === 'custom'
+      ? state.customPal.filter((x) => x != null).length
+      : photoEmpty()
+        ? 0
+        : state.palettes.length;
+  return state.drawn.length;
+}
+// Palette: a line under the Harmony choices saying what the chosen one does, in plain words
+const HARM_DESC = {
+  complementary: 'Colours from opposite sides of the wheel',
+  analogous: 'Neighbours on the wheel',
+  triadic: 'Three colours evenly spaced round the wheel',
+  split: 'One colour and the two either side of its opposite',
+  tetradic: 'Two pairs of opposites',
+  mono: 'One colour, light to dark',
+  custom: 'Markers you choose: tap a slot to pick one',
+  photo: 'A photo\u2019s main colours, matched to markers',
+};
+const harmDesc = document.createElement('div');
+harmDesc.id = 'harmDesc';
+harmDesc.className = 'harmdesc';
+{
+  // the choices and the line under them share the column right of the "Harmony" label
+  const col = document.createElement('div');
+  col.className = 'harmcol';
+  harm.parentNode.insertBefore(col, harm);
+  col.appendChild(harm);
+  col.appendChild(harmDesc);
+}
+function harmDescSync(pal) {
+  const t = pal ? HARM_DESC[state.harmony] || '' : '';
+  if (harmDesc.textContent !== t) harmDesc.textContent = t;
 }

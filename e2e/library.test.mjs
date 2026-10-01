@@ -3,7 +3,7 @@
 // their colours, the list uses the dialog's full height, delete by keyboard, and the Library picture.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, sampleGuide, idle, guideName, scrollTop } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, sampleGuide, idle, guideName, scrollTop, saveGuide, libItem } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -18,7 +18,7 @@ function addPalette(page, name, idxs = [11, 120, 280], ts = Date.now()) {
   return page.evaluate(({ name, idxs, ts }) => { const id = Date.now() + Math.floor(Math.random() * 1e6); state.saved.unshift({ id, type: 'palette', name, keys: idxs.map(mkey), ts }); save(); return id; }, { name, idxs, ts });
 }
 async function savedGuide(page) {
-  await sampleGuide(page); await page.click('#sfSave'); await idle(page);
+  await sampleGuide(page); await saveGuide(page); await idle(page);
   return page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
 }
 const row = (page, id) => `#savedList .srow[data-id="${id}"]`;
@@ -58,7 +58,7 @@ test('the pencil renames in place: Enter keeps, Escape cancels, leaving the fiel
   assert.equal(await page.getAttribute(row(page, id) + ' .sren', 'aria-label'), 'Rename ' + first);
 
   // pencil -> a focused input holding the name
-  await page.click(row(page, id) + ' .sren');
+  await libItem(page, row(page, id), 'sren');
   const inp = row(page, id) + ' .sname-in';
   assert.ok(await page.evaluate((s) => document.activeElement === document.querySelector(s), inp), 'the input is focused');
   assert.equal(await page.inputValue(inp), first);
@@ -72,31 +72,31 @@ test('the pencil renames in place: Enter keeps, Escape cancels, leaving the fiel
   assert.equal(await page.evaluate(() => state.mode), 'home', 'nothing was loaded');
   assert.equal(await page.textContent(row(page, id) + ' .sname'), 'Harbour Lights');
   assert.match(await page.textContent('#sfRecent'), /Harbour Lights/);
-  assert.ok(await page.evaluate(() => document.activeElement.classList.contains('sren')), 'focus goes back to the pencil');
+  assert.ok(await page.evaluate(() => document.activeElement.classList.contains('smore')), 'focus goes back to its ⋯ (v288)');
 
   // Escape cancels and leaves the Library open
-  await page.click(row(page, id) + ' .sren'); await page.fill(inp, 'Not this');
+  await libItem(page, row(page, id), 'sren'); await page.fill(inp, 'Not this');
   await page.keyboard.press('Escape'); await idle(page);
   assert.ok(await libOpen(page), 'Escape only cancels the rename');
   assert.equal(await nameOf(page, id), 'Harbour Lights');
   assert.equal(await page.textContent(row(page, id) + ' .sname'), 'Harbour Lights');
 
   // leaving the field saves
-  await page.click(row(page, id) + ' .sren'); await page.fill(inp, 'Tidal Glow');
+  await libItem(page, row(page, id), 'sren'); await page.fill(inp, 'Tidal Glow');
   await page.click('#libTitle'); await idle(page);
   assert.equal(await nameOf(page, id), 'Tidal Glow');
   assert.equal(await page.locator('#savedList .sname-in').count(), 0);
   assert.equal(await page.locator('#savedList .srow').count(), 1, 'the blur and the redraw save once, no duplicate row');
 
   // an empty name keeps the old one
-  await page.click(row(page, id) + ' .sren'); await page.fill(inp, '   ');
+  await libItem(page, row(page, id), 'sren'); await page.fill(inp, '   ');
   await page.keyboard.press('Enter'); await idle(page);
   assert.equal(await nameOf(page, id), 'Tidal Glow');
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('ohuhu-hb320-picker-v3')).saved[0].name), 'Tidal Glow', 'the rename is stored');
   assert.deepEqual(errors, []);
 });
 
-test('a long name shows in full on at most two lines at 390 px', async () => {
+test('a long name shows in full on at most three lines on a 390 px tile (v288)', async () => {
   const { page, errors } = await openApp({ width: 390, height: 844 });
   await welcome(page, 'look');
   const long = 'Smoldering Garnet and Midnight Velvet Tryst!';
@@ -105,8 +105,8 @@ test('a long name shows in full on at most two lines at 390 px', async () => {
   await openLibrary(page);
   const m = await page.evaluate((s) => { const n = document.querySelector(s); const r = n.getBoundingClientRect(), lh = parseFloat(getComputedStyle(n).lineHeight); return { w: r.width, lines: Math.round(n.scrollHeight / lh), clipped: n.scrollHeight > n.clientHeight + 1, text: n.textContent }; }, row(page, id) + ' .sname');
   assert.equal(m.text, long);
-  assert.ok(m.w >= 150, 'the name box is at least 150 px wide: ' + m.w);
-  assert.ok(m.lines <= 2, 'two lines at most: ' + m.lines);
+  assert.ok(m.w >= 140, 'the name box is at least 140 px wide: ' + m.w);
+  assert.ok(m.lines <= 3, 'three lines at most: ' + m.lines);
   assert.ok(!m.clipped, 'nothing is cut off');
   assert.deepEqual(errors, []);
 });
@@ -129,14 +129,12 @@ test('a guide with about 40% of its sections ticked shows how much is coloured',
   const { page, errors } = await openApp();
   await sampleGuide(page);
   const { N, d } = await page.evaluate(() => { const t = __mstest, N = t.assignData.N; let d = 1; while (Math.floor((d * 100) / N) < 40) d++; t.assignData.order.slice(0, d).forEach((l) => { t.colored[l] = 1; }); t.guideDirty = true; return { N, d }; });
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   const g = await page.evaluate(() => state.saved.find((s) => s.type === 'guide'));
   assert.equal(g.done, d); assert.equal(g.n, N);
   await openLibrary(page);
   const meta = await page.textContent(`#savedList .srow[data-id="${g.id}"] .smeta`);
-  const pct = Math.floor((d * 100) / N);
-  assert.match(meta, new RegExp(`^Guide · ${g.keys.length} markers? · ${pct}% coloured · `));
-  if (N >= 20) assert.equal(pct, 40);
+  assert.match(meta, new RegExp(`^Guide · ${g.keys.length} markers? · ${d} of ${N} sections coloured · `));
   // untouched guide: no percentage
   await page.evaluate((id) => { state.saved.find((s) => s.id === id).done = 0; renderSaved(); }, g.id);
   assert.doesNotMatch(await page.textContent(`#savedList .srow[data-id="${g.id}"] .smeta`), /coloured/);
@@ -147,12 +145,12 @@ test('a guide saved without a coloured count gets one when the Library opens', a
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await page.evaluate(() => { const t = __mstest; t.assignData.order.slice(0, 3).forEach((l) => { t.colored[l] = 1; }); t.guideDirty = true; });
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   const id = await page.evaluate(() => { const g = state.saved.find((s) => s.type === 'guide'); delete g.done; save(); return g.id; });
   await page.reload(); await idle(page);
   assert.equal(await page.evaluate((id) => 'done' in state.saved.find((s) => s.id === id), id), false);
   await openLibrary(page);
-  await page.waitForFunction((id) => /% coloured/.test(document.querySelector(`#savedList .srow[data-id="${id}"] .smeta`).textContent), id, { timeout: 5000 });
+  await page.waitForFunction((id) => /sections coloured/.test(document.querySelector(`#savedList .srow[data-id="${id}"] .smeta`).textContent), id, { timeout: 5000 });
   assert.equal(await page.evaluate((id) => state.saved.find((s) => s.id === id).done, id), 3);
   assert.equal(await page.evaluate((id) => JSON.parse(localStorage.getItem('ohuhu-hb320-picker-v3')).saved.find((s) => s.id === id).done, id), 3, 'and it is stored');
   assert.deepEqual(errors, []);
@@ -178,16 +176,25 @@ test('new palettes are named from their colours, never twice the same; old names
   assert.deepEqual(errors, []);
 });
 
-test('with 20 items the list fills the dialog and the last row clears its bottom edge', async () => {
+// v288: the Library fills the screen and scrolls as one page (the heading pinned): tiles first, Import and Back up after
+test('with 20 items the Library is a grid filling the screen, scrolling as one page with its heading pinned; Back up after the last tile', async () => {
   const { page, errors } = await openApp({ width: 390, height: 844 });
   await welcome(page, 'look');
   await page.evaluate(() => { for (let i = 0; i < 20; i++) state.saved.push({ id: 1000 + i, type: 'palette', name: 'Palette number ' + i, keys: [mkey(i), mkey(i + 40), mkey(i + 90)], ts: Date.now() - i * 1000 }); save(); });
   await openLibrary(page);
-  const m = await page.evaluate(() => { const l = document.getElementById('savedList'); l.scrollTop = l.scrollHeight; const lr = l.getBoundingClientRect(), rows = l.querySelectorAll('.srow'), last = rows[rows.length - 1].getBoundingClientRect(); return { h: lr.height, vh: innerHeight, gap: lr.bottom - last.bottom, rows: rows.length, scrolls: l.scrollHeight > l.clientHeight }; });
+  const m = await page.evaluate(() => {
+    const c = document.querySelector('#savedOverlay .dcard'), cr = c.getBoundingClientRect(), rows = [...document.querySelectorAll('#savedList .srow')];
+    const cols = new Set(rows.map((r) => Math.round(r.getBoundingClientRect().left))).size;
+    c.scrollTop = c.scrollHeight;
+    const last = rows[rows.length - 1].getBoundingClientRect(), bk = document.getElementById('guidesBackup').getBoundingClientRect(), hd = document.getElementById('libTitle').getBoundingClientRect();
+    return { w: cr.width, h: cr.height, vw: innerWidth, vh: innerHeight, rows: rows.length, cols, scrolls: c.scrollHeight > c.clientHeight, after: bk.top > last.bottom, head: hd.top, bkIn: bk.bottom <= innerHeight };
+  });
   assert.equal(m.rows, 20);
-  assert.ok(m.scrolls, 'the list scrolls');
-  assert.ok(m.h >= m.vh * 0.5, `the list is at least half the screen: ${m.h} of ${m.vh}`);
-  assert.ok(m.gap >= 12, 'room under the last row: ' + m.gap);
+  assert.equal(m.cols, 2, 'two columns on a phone');
+  assert.ok(m.w >= m.vw - 1 && m.h >= m.vh - 1, 'the whole screen');
+  assert.ok(m.scrolls, 'it scrolls');
+  assert.ok(m.after && m.bkIn, 'Back up after the last tile, reached at the end');
+  assert.ok(m.head >= 0 && m.head <= 40, 'the heading stays at the top: ' + m.head);
   assert.deepEqual(errors, []);
 });
 
@@ -211,7 +218,7 @@ test('renaming the open guide in the Library survives its next auto-save', async
   const { page, errors } = await openApp();
   const id = await savedGuide(page);
   await openLibrary(page);
-  await page.click(row(page, id) + ' .sren'); await page.fill(row(page, id) + ' .sname-in', 'Renamed While Open');
+  await libItem(page, row(page, id), 'sren'); await page.fill(row(page, id) + ' .sname-in', 'Renamed While Open');
   await page.keyboard.press('Enter'); await idle(page);
   await page.click('#savedClose'); await page.click('#mSections'); await idle(page);
   assert.equal(await guideName(page), 'Renamed While Open');
@@ -222,7 +229,7 @@ test('renaming the open guide in the Library survives its next auto-save', async
   assert.deepEqual(errors, []);
 });
 
-test('delete is one tap with Undo, and the ✕ never opens the item', async () => {
+test('delete is one tap with Undo, and the bin never opens the item', async () => {
   const { page, errors } = await openApp();
   await welcome(page, 'look');
   const keep = await addPalette(page, 'Keep me');
@@ -230,6 +237,14 @@ test('delete is one tap with Undo, and the ✕ never opens the item', async () =
   await openLibrary(page);
   const del = row(page, id) + ' .sdel';
   assert.equal(await page.getAttribute(del, 'aria-label'), 'Delete Delete me');
+  // (v288) in the tile's ⋯ menu: a bin and the word, not the ✕ every dialog's Close uses, a full 44px to tap
+  assert.equal(await page.getAttribute(row(page, id) + ' .smore', 'aria-label'), 'More: Delete me');
+  await page.click(row(page, id) + ' .smore');
+  assert.equal(await page.getAttribute(row(page, id) + ' .smore', 'aria-expanded'), 'true');
+  assert.equal((await page.textContent(del)).trim(), 'Delete');
+  assert.equal(await page.locator(del + ' svg').count(), 1, 'an inline bin icon');
+  const box = await page.locator(del).boundingBox();
+  assert.ok(box.width >= 44 && box.height >= 44, 'tap target ' + box.width + '×' + box.height);
   await page.click(del); await idle(page);
   assert.ok(await libOpen(page), 'the Library stays open');
   assert.equal(await page.evaluate(() => state.mode), 'home', 'nothing was loaded');
@@ -244,7 +259,7 @@ test('delete is one tap with Undo, and the ✕ never opens the item', async () =
 
 // ---- From the fourth review (data safety) ----
 // Save (a new guide into the Library), done once the header says so
-const saveNew = async (page) => { await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent)); };
+const saveNew = (page) => saveGuide(page);
 const guides = (page) => page.evaluate(() => state.saved.filter((s) => s.type === 'guide').map((s) => ({ id: s.id, name: s.name, thumb: s.thumb, W: s.W, H: s.H })));
 
 test('the Library picture is not replaced by the sections editor’s tints', async () => {
@@ -267,19 +282,26 @@ const OWN = ['Ohuhu|R014', 'Ohuhu|Y111', 'Ohuhu|B08', 'Ohuhu|G36', 'Ohuhu|BV310'
 const appState = (extra = {}) => JSON.stringify({ mode: 'home', ownedSeedV: 2, copicAdd1: 1, libAdj1: 1, setFix1: 1, owned: OWN, saved: [], ...extra });
 const pal = (keys, id, name) => ({ id, type: 'palette', name: name || 'Pal ' + id, keys, ts: id });
 
+// (v288) by keyboard: ⋯ opens its menu at Rename, Down to Delete
+async function kbDel(page, id) {
+  await page.focus(`#savedList .srow[data-id="${id}"] .smore`); await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(() => document.activeElement.className), 'sren', 'the menu opens at its first item');
+  await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter'); await idle(page);
+}
 test('Library delete by keyboard: focus moves to the next row, Tab reaches Undo, Undo puts focus back', async () => {
   const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState({ saved: [pal(['Ohuhu|R014'], 3, 'Three'), pal(['Ohuhu|Y111'], 2, 'Two'), pal(['Ohuhu|B08'], 1, 'One')] }) }) });
   await page.click('#homeLibCard'); await page.waitForSelector('#savedOverlay.on');
-  await page.focus('#savedList .srow[data-id="3"] .sdel'); await page.keyboard.press('Enter'); await idle(page);
-  assert.equal(await page.evaluate(() => document.activeElement.closest('.srow') && document.activeElement.closest('.srow').dataset.id), '2', 'on the next row’s ✕');
+  await kbDel(page, 3);
+  assert.equal(await page.evaluate(() => document.activeElement.closest('.srow') && document.activeElement.closest('.srow').dataset.id), '2', 'on the next tile’s ⋯');
+  assert.equal(await page.evaluate(() => document.activeElement.className), 'smore');
   // Tab from the dialog's last control goes to the toast's Undo
-  await page.focus('#guidesRestore'); await page.keyboard.press('Tab');
+  await page.focus('#libBkText'); await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => document.activeElement.id), 'toastAct');
   await page.keyboard.press('Enter'); await idle(page);
   assert.equal(await page.evaluate(() => state.saved.some((s) => s.id === 3)), true);
   assert.equal(await page.evaluate(() => document.activeElement.closest('.srow') && document.activeElement.closest('.srow').dataset.id), '3', 'back on the restored row');
   // deleting the last row lands on the one before; the last of all on the list
-  for (const id of [1, 2, 3]) { await page.focus(`#savedList .srow[data-id="${id}"] .sdel`); await page.keyboard.press('Enter'); await idle(page); }
+  for (const id of [1, 2, 3]) await kbDel(page, id);
   assert.equal(await page.evaluate(() => document.activeElement.id), 'savedList');
   assert.deepEqual(errors, []);
 });

@@ -4,7 +4,7 @@
 // progress) offer Undo in a toast too.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, sampleGuide, sectionPoint, idle, menuItem, toolStatus, scrollTop, pause } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, sampleGuide, sectionPoint, idle, menuItem, toolStatus, scrollTop, pause, saveGuide, libItem } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -167,7 +167,7 @@ test('several changes undo one at a time, newest first; Ctrl+Z works but not whi
 test('the Undo steps are cleared when another guide or picture opens', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   const id = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
   await tab(page, 'pattern'); await page.click('#sfVary'); await idle(page);
   assert.equal(await plan(page), 1);
@@ -201,7 +201,7 @@ test('Own all shown and Un-own all shown can be undone', async () => {
   assert.deepEqual(await page.evaluate(() => [...state.owned].sort()), own0);
   // un-own: two taps, then Undo
   await page.click('#ownView [data-v="owned"]'); await idle(page);
-  await page.click('#ownNone'); await page.click('#ownNone'); await idle(page);
+  await page.click('#mkMore'); await page.click('#ownNone'); await page.waitForTimeout(450); await page.click('#ownNone'); await idle(page); // (v288: a second tap within 400 ms is a double tap's)
   assert.equal(await page.evaluate(() => state.owned.size), 0);
   assert.match(await toastText(page), /Removed \d+ markers from your collection/);
   await page.click('#toastAct'); await idle(page);
@@ -228,10 +228,10 @@ test('Library delete: Undo brings the guide back, and it opens with its progress
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await page.evaluate(() => { const o = __mstest.assignData.order; [0, 1, 2].forEach((i) => { __mstest.colored[o[i]] = 1; }); __mstest.guideDirty = true; });
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   const id = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
   await openLibrary(page);
-  await page.click(row(id) + ' .sdel'); await idle(page);
+  await libItem(page, row(id), 'sdel'); await idle(page);
   assert.equal(await page.locator(row(id)).count(), 0, 'gone from the list at once');
   assert.equal(await page.evaluate((id) => state.saved.some((s) => s.id === id), id), false);
   assert.ok(await hasPayload(page, id), 'its stored picture is kept for now');
@@ -251,10 +251,10 @@ test('Library delete: Undo brings the guide back, and it opens with its progress
 test('Library delete without Undo: the stored guide goes after the Undo window, or at the next start', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   const id = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
   await openLibrary(page);
-  await page.click(row(id) + ' .sdel'); await idle(page);
+  await libItem(page, row(id), 'sdel'); await idle(page);
   assert.ok(await hasPayload(page, id));
   await idle(page, 6200); // until the 6 s Undo window has run out
   assert.equal(await hasPayload(page, id), false, 'removed once the Undo window is over');
@@ -262,11 +262,11 @@ test('Library delete without Undo: the stored guide goes after the Undo window, 
   await page.click('#savedClose');
   await page.evaluate(() => { const o = __mstest.assignData.order; __mstest.colored[o[0]] = 1; __mstest.guideDirty = true; });
   await page.click('#mSections'); await idle(page);
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   const id2 = await page.evaluate(() => { const g = state.saved.filter((s) => s.type === 'guide'); return g.length ? g[0].id : null; });
   assert.ok(id2 != null, 'saved again as a new Library guide');
   await openLibrary(page);
-  await page.click(row(id2) + ' .sdel'); await idle(page);
+  await libItem(page, row(id2), 'sdel'); await idle(page);
   assert.ok(await hasPayload(page, id2));
   await page.reload(); await idle(page, 2500);
   assert.equal(await page.evaluate((id) => state.saved.some((s) => s.id === id), id2), false);
@@ -284,13 +284,13 @@ test('Reset progress in colour along can be undone', async () => {
   const d0 = await done();
   assert.equal(d0.length, 3);
   await menuItem(page, 'Reset progress'); await idle(page);
-  assert.equal(await page.textContent('#sfSheetT'), 'Clear all 3 ticks?', 'it asks first');
+  assert.equal(await page.textContent('#sfSheetT'), 'Reset progress?', 'it asks first');
   await page.click('#sfResetGo'); await idle(page);
   assert.deepEqual(await done(), []);
   assert.match(await toastText(page), /Progress reset/);
   await page.click('#toastAct'); await idle(page);
   assert.deepEqual(await done(), d0, 'the ticks are back');
-  assert.match(await toolStatus(page), /^3 of \d+ done$/);
+  assert.match(await toolStatus(page), /^3 of \d+ coloured$/);
   assert.equal(await vsFull(page), 0);
   assert.deepEqual(errors, []);
 });
@@ -418,8 +418,8 @@ test('Plan: pattern, shading and colour changes make no toast (↶ Undo says wha
   // Surprise: its toast says what it chose, with Undo
   const st = await page.evaluate(() => JSON.stringify(__mstest.currentDesignObj().payload.style));
   await page.click('#sfSurprise'); await idle(page);
-  assert.match(await toastOnText(page), /^✨ Surprise: .+ markers Undo$/);
-  assert.match(await undoLabel(page), /^Undo: ✨ Surprise: /);
+  assert.match(await toastOnText(page), /^Surprise: .+ markers Undo$/);
+  assert.match(await undoLabel(page), /^Undo: Surprise: /);
   await scrollTop(page);
   await page.click('#sfPlanUndo'); await idle(page);
   assert.equal(await page.evaluate(() => JSON.stringify(__mstest.currentDesignObj().payload.style)), st, '↶ Undo takes Surprise back');

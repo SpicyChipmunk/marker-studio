@@ -5,7 +5,7 @@
 // test/gradient.test.mjs.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, notOnWebKit, WK, saveGuide, answerAsks } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -80,7 +80,7 @@ test('Look: three choices under Direction (Gradient only); each redraws the pict
   assert.equal(JSON.stringify(await assignMap(page)), pics.smooth);
   // saved and opened again
   await click(page, '#sfLook [data-v="ltd"]'); await idle(page);
-  await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent));
+  await saveGuide(page);
   const id = await page.evaluate(() => __mstest.curId), was = await assignMap(page);
   await page.reload(); await idle(page);
   await page.evaluate((id) => loadGuide({ id }), id);
@@ -171,7 +171,7 @@ test('Mood with a saved palette is greyed out (used as it is); with Generate pal
   assert.equal(await page.isEnabled('#sfMood [data-v="pastel"]'), true);
   assert.match(await poolLine(page), /^Using (all )?\d+ .*generated markers/);
   // a saved palette
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.evaluate(() => { const id = 777001; state.saved.unshift({ id, type: 'palette', name: 'P', keys: [...state.owned].slice(0, 6), ts: id }); save(); SF.setSavedSource(id); });
   await click(page, '#sfSrc [data-v="saved"]'); await idle(page);
   assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#sfMood button')].map((b) => b.disabled)), [true, true, true, true, true, true]);
@@ -238,7 +238,7 @@ test('loop or ramp: your markers loop (Shuffle turns the start); a narrow genera
   await click(page, '#sfDir [data-d="-1"]'); await idle(page);
   assert.notDeepEqual(await keys(page), r0);
   // a saved palette of one hue: Shuffle is greyed out, and says why
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.evaluate(() => {
     const reds = __mstest.coll.filter((m) => { const x = lchOf(m.lab); return x[1] >= 12 && x[2] > 15 && x[2] < 45; }).slice(0, 7);
     state.saved.unshift({ id: 777005, type: 'palette', name: 'Reds', keys: reds.map((m) => m.mkey), ts: 777005 });

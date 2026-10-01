@@ -50,7 +50,7 @@ function alongHintSeen() {
 // Colour along's controls (focus mode has its own, in renderControls): the ⓘ line, the list and the bar
 function alongControls() {
   ctlEl.innerHTML =
-    '<div class="sfpane sfalongp"><div id="sfDone" class="sfpgdone" style="display:none">Page complete! <button type="button" id="sfDoneRev" class="sflink">Reveal &amp; share</button></div>' +
+    '<div class="sfpane sfalongp"><div id="sfDone" class="sfpgdone" style="display:none">Page complete!<div id="sfDoneSum" class="sfpgsum"></div></div>' +
     alongHint() +
     (zones.length
       ? '<div id="sfAlOrder" class="sfc-segs sfalorder" role="group" aria-label="Colour along goes through">' +
@@ -58,14 +58,19 @@ function alongControls() {
         ctlSeg('zones', 'Zone by zone', alongZones()) +
         '</div>'
       : '') +
-    '<div id="sfAlist" class="sfalist"></div></div><div class="sfbar"><button id="sfDoneBtn" class="sfghost" aria-label="Done colouring" data-long="Done colouring" data-short="Done">Done colouring</button><button id="sfFocus" class="sfprimary" aria-label="Focus mode" data-long="⛶ Focus mode" data-short="⛶ Focus">⛶ Focus mode</button></div>';
+    '<div id="sfAlist" class="sfalist"></div></div><div class="sfbar"><button id="sfDoneBtn" class="sfghost" aria-label="Back to the plan" data-long="← Plan" data-short="← Plan">← Plan</button><button id="sfFocus" class="sfprimary" aria-label="Focus mode" data-ic="focus" data-long="Focus mode" data-short="Focus">' +
+    ic('focus') +
+    // (v288: a finished page's bar offers Reveal & share instead, updateProgress)
+    ' Focus mode</button><button id="sfAlongRev" class="sfprimary" style="display:none" data-ic="sparkles" data-long="Reveal &amp; share" data-short="Reveal">' +
+    ic('sparkles') +
+    ' Reveal &amp; share</button></div>';
   const q = function (id, fn) {
     const el = document.getElementById(id);
     if (el) el.addEventListener('click', fn);
   };
   q('sfDoneBtn', exitColor);
   q('sfFocus', enterFocus);
-  q('sfDoneRev', revealFromColour);
+  q('sfAlongRev', revealFromColour);
   q('sfAlist', alongClick);
   q('sfAlOrder', function (e) {
     const b = e.target.closest('button');
@@ -141,6 +146,38 @@ function alongSet(key) {
     hlKey = key;
     hlZone = null;
   }
+}
+// Home's Continue (v285): the row to pick up, as Colour along goes (lightest first): a marker part-way done (some of
+// its sections ticked, or tones coloured), else the first not finished; opened, with its row in view
+function alongResume() {
+  if (sfmode !== 'color' || !assignData || !colored) return;
+  const P = tonePart && tonePart._c === colored ? tonePart : null,
+    L = alongList(),
+    nx =
+      L.find(function (e) {
+        return (
+          e.d < e.n &&
+          (e.d > 0 ||
+            (!!P &&
+              e.secs.some(function (l) {
+                return !colored[l] && P[l];
+              })))
+        );
+      }) ||
+      L.find(function (e) {
+        return e.d < e.n;
+      });
+  if (!nx) return;
+  alongSet(nx.key);
+  renderControls();
+  renderGuide();
+  // (once the change of stage has put the page at its top, the next frame: then the row is brought on screen, clear
+  // of the pinned picture and the bar)
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      alongReveal(true);
+    });
+  });
 }
 // is section l one of the open row's? (its marker, and zone by zone its zone)
 function hlMatch(l) {
@@ -256,7 +293,9 @@ function alongRow(e, inDone) {
       (bo ? ' on' : '') +
       '" aria-expanded="' +
       bo +
-      '"><span aria-hidden="true">◐</span> Blends</button></div>' +
+      '">' +
+      ic('blend') +
+      ' Blends</button></div>' +
       (bo ? blendStrip(m) : '');
   return r + '</div>';
 }
@@ -311,9 +350,9 @@ function renderAlong() {
     h +=
       '<button type="button" id="sfDoneGrp" class="sfdonegrp" aria-expanded="' +
       alDoneOpen +
-      '"><span aria-hidden="true">' +
-      (alDoneOpen ? '▾' : '▸') +
-      '</span> Done (' +
+      '">' +
+      ic(alDoneOpen ? 'chevron-down' : 'chevron-right') +
+      ' Done (' +
       grp.length +
       ')</button>' +
       (alDoneOpen
@@ -364,7 +403,13 @@ function alongClick(e) {
     if (!all && (e.detail > 1 || t - _maT < MA_DOUBLE)) return;
     _maT = t;
     markActive(all);
-    sayLive(all ? 'All ' + en.n + ' ' + en.m.code + ' sections ticked' : 'Ticks cleared for ' + en.m.code);
+    sayLive(
+      all
+        ? en.n === 1
+          ? 'The ' + en.m.code + ' section ticked'
+          : 'All ' + en.n + ' ' + en.m.code + ' sections ticked'
+        : 'Ticks cleared for ' + en.m.code,
+    );
     alongReveal();
   } else if (b.id === 'sfFindNext') findNext();
   else if (b.id === 'sfBlends') {

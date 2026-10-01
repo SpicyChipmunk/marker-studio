@@ -35,12 +35,15 @@ function ctlWirePatternFamily() {
     _fam.addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (b) {
+        const was = family;
         family = b.dataset.v;
+        if (family !== 'photo') delete photoWait[pwKey()];
         if (family === 'blend' || family === 'manual') lockMode = false;
         if (family !== 'manual') setPaint(false);
         hideTip();
         closeSwatchPop(false);
         if (family === 'photo' && !photoRef) {
+          if (was !== 'photo') photoWait[pwKey()] = was;
           renderControls();
           pickPhotoRef();
           return;
@@ -130,13 +133,21 @@ function ctlWirePatternFamily() {
 // Temperature, where the colours come from, the harmony or saved palette, Mood, how many markers, the nearby
 // markers and the filters
 function ctlWireColours() {
+  var _ml = document.getElementById('sfMkList');
+  if (_ml) _ml.addEventListener('click', markerListSheet);
   var _pal = document.getElementById('sfPal');
   if (_pal)
     _pal.addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (b) {
+        // (no markers of that temperature: the note says so, and the choice stays as it was, so Build guide never
+        // meets a temperature it can't use, v287)
+        var was = palette;
         palette = b.dataset.v;
-        reassign();
+        if (reassign() === false) {
+          palette = was;
+          renderControls();
+        }
       }
     });
   var _src = document.getElementById('sfSrc');
@@ -144,13 +155,17 @@ function ctlWireColours() {
     _src.addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (b) {
+        var wasSrc = paletteSource;
         paletteSource = b.dataset.v;
         if (paletteSource === 'saved' && savedPalId == null) {
           var pl = api.listPalettes ? api.listPalettes() : [];
           if (pl.length) savedPalId = pl[0].id;
         }
         if (paletteSource === 'generate' && !genPal.length) generatePalette();
-        reassign();
+        if (reassign() === false) {
+          paletteSource = wasSrc;
+          renderControls();
+        }
       }
     });
   var _hm = document.getElementById('sfHarm');
@@ -365,6 +380,11 @@ function ctlWireShare() {
     });
   var _ex = document.getElementById('sfExport');
   if (_ex) _ex.addEventListener('click', exportImage);
+  var _exc = document.getElementById('sfExCodes');
+  if (_exc)
+    _exc.addEventListener('change', function (e) {
+      exCodes = e.target.checked;
+    });
   var _prt = document.getElementById('sfPrint');
   if (_prt) _prt.addEventListener('click', openPrint);
   var _sg = document.getElementById('sfShareGuide');

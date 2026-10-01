@@ -88,7 +88,27 @@ const IDB = (function () {
       });
     });
   }
+  // (reads wait while changes kept as the page went away are put into their guide at start: sfLeaveApply)
+  let gate = null;
   function get(k) {
+    return gate
+      ? gate.then(function () {
+          return getNow(k);
+        })
+      : getNow(k);
+  }
+  function hold(p) {
+    const g = Promise.resolve(p).then(
+      function () {
+        if (gate === g) gate = null;
+      },
+      function () {
+        if (gate === g) gate = null;
+      },
+    );
+    gate = g;
+  }
+  function getNow(k) {
     return run(function (d) {
       return new Promise(function (res, rej) {
         var t = d.transaction('g', 'readonly'),
@@ -135,7 +155,7 @@ const IDB = (function () {
       });
     });
   }
-  return { put: put, get: get, del: del, keys: keys };
+  return { put: put, get: get, getNow: getNow, hold: hold, del: del, keys: keys };
 })();
 function askPersist() {
   try {
@@ -165,7 +185,7 @@ function lastGuideBackup() {
 function guidesAtRisk() {
   const gs = state.saved.filter((s) => s.type === 'guide'),
     bk = lastGuideBackup();
-  return gs.filter((g) => (g.ts || 0) > (+g.bk || bk)).length;
+  return gs.filter((g) => !g.fresh && (g.ts || 0) > (+g.bk || bk)).length;
 }
 // markers and palettes have no change times of their own, so a backup keeps a fingerprint of them: a different one now means they changed since
 function dataSig() {
@@ -205,8 +225,10 @@ function firstUse() {
 // The reminder is for anyone with something to lose (markers, palettes or guides) that changed since the last backup,
 // when that backup is over two weeks old, or there's never been one and the work is a few days old (or two guides).
 function backupDue() {
-  const gs = state.saved.filter((s) => s.type === 'guide').length,
-    pals = state.saved.length - gs,
+  const all = state.saved.filter((s) => s.type === 'guide').length,
+    // (guides saved as built with nothing coloured don't count: trying a photo isn't work to lose, v285)
+    gs = state.saved.filter((s) => s.type === 'guide' && !s.fresh).length,
+    pals = state.saved.length - all,
     mk = state.owned.size;
   if (!mk && !state.saved.length) return null;
   const bk = lastGuideBackup(),
@@ -255,12 +277,50 @@ function renderBackupNudge() {
         ' only stored on this device.') +
     ' One file holds your markers, palettes and guides, to restore on a new phone or after clearing the browser.</span></div><div class="nrow"><button class="nb1" id="bkGo" data-bk="go">Back up now</button><button data-bk="later">Later</button></div>';
 }
+// a guide's row in the Library from what is saved (d: as for sfSaveDesign)
+function guideMeta(d, id) {
+  const _ex = state.saved.find((s) => s.id === id),
+    _pl = d.payload || null,
+    _secs =
+      +d.n ||
+      (_pl && _pl.assign && typeof _pl.assign === 'object' ? Object.keys(_pl.assign).length : 0) ||
+      (d.keys ? d.keys.length : 0);
+  const meta = {
+    id: id,
+    type: 'guide',
+    name:
+      d.name ||
+      evoName(
+        (d.keys || []).map(function (k) {
+          var _i = keyIdx(k);
+          return _i != null ? COLORS[_i].hex : null;
+        }),
+        Date.now(),
+      ),
+    ts: d.keepTs && +d.ts ? +d.ts : Date.now(),
+    keys: (d.keys || []).slice(0, COLORS.length),
+    W: d.W,
+    H: d.H,
+    n: _secs,
+    thumb: d.thumb || (_ex && _ex.thumb) || '',
+  };
+  if (_pl && Array.isArray(_pl.prog)) meta.done = Math.min(_pl.prog.length, _secs || _pl.prog.length);
+  // (sections part-way coloured, for Home's Continue card; and a guide saved as built with nothing coloured, which
+  // the backup reminder leaves out until it changes: v285)
+  if (_pl && _pl.tones && typeof _pl.tones === 'object') {
+    const _tn = Object.keys(_pl.tones).length;
+    if (_tn) meta.tn = _tn;
+  }
+  if (d.fresh) meta.fresh = 1;
+  return meta;
+}
 // d.mustExist: only update an entry still in the Library (an auto-save never brings back a guide deleted meanwhile);
 // d.quiet: the caller tells the user about a failure (no storage-full toast from here)
 function sfSaveDesign(d) {
   const id = d.id || Date.now(),
     had = state.saved.some((s) => s.id === id);
   if (d.mustExist && !had) return Promise.resolve(null);
+  if (d.id && !had) libUnpend(id);
   return (
     had
       ? IDB.get('guide-' + id).catch(function () {
@@ -270,32 +330,7 @@ function sfSaveDesign(d) {
   )
     .then(function (prevPl) {
       return IDB.put('guide-' + id, d.payload || {}).then(function () {
-        const _ex = state.saved.find((s) => s.id === id),
-          _pl = d.payload || null,
-          _secs =
-            +d.n ||
-            (_pl && _pl.assign && typeof _pl.assign === 'object' ? Object.keys(_pl.assign).length : 0) ||
-            (d.keys ? d.keys.length : 0);
-        const meta = {
-          id: id,
-          type: 'guide',
-          name:
-            d.name ||
-            evoName(
-              (d.keys || []).map(function (k) {
-                var _i = keyIdx(k);
-                return _i != null ? COLORS[_i].hex : null;
-              }),
-              Date.now(),
-            ),
-          ts: d.keepTs && +d.ts ? +d.ts : Date.now(),
-          keys: (d.keys || []).slice(0, COLORS.length),
-          W: d.W,
-          H: d.H,
-          n: _secs,
-          thumb: d.thumb || (_ex && _ex.thumb) || '',
-        };
-        if (_pl && Array.isArray(_pl.prog)) meta.done = Math.min(_pl.prog.length, _secs || _pl.prog.length);
+        const meta = guideMeta(d, id);
         const ix = state.saved.findIndex((s) => s.id === id),
           prev = ix >= 0 ? state.saved[ix] : null;
         if (ix < 0 && d.mustExist) return null;
@@ -318,6 +353,7 @@ function sfSaveDesign(d) {
           return null;
         }
         askPersist();
+        leaveDrop(id);
         return id;
       });
     })
@@ -325,6 +361,126 @@ function sfSaveDesign(d) {
       return null;
     });
 }
+// The page is going away (a reload, the tab closed) or hidden (a phone may stop it) with changes to a Library guide not
+// yet stored: the browser drops a database write begun then, so they're kept in localStorage at once (v286), without
+// the guide's big pictures (the section map, a photo: each kept as a fingerprint of the stored one). Its Library row
+// is left as it is (v287): at the next start sfLeaveApply puts them into the stored guide and only then updates the
+// row, if nothing saved the guide since (the row as it was then: base) and the pictures are still the ones stored.
+// A save of the guide that lands meanwhile makes them unneeded. Only for a guide already in the Library.
+const LEAVE_KEY = 'ms-guide-leave';
+function leaveDrop(id) {
+  try {
+    const j = JSON.parse(localStorage.getItem(LEAVE_KEY) || 'null');
+    if (j && (id == null || j.id === id)) localStorage.removeItem(LEAVE_KEY);
+  } catch (_) {}
+}
+function leaveHash(s) {
+  let h = 0,
+    g = 7;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    h = (h * 31 + c) | 0;
+    g = (g * 131 + c) | 0;
+  }
+  return s.length + ':' + h + ':' + g;
+}
+// strings over 4,000 characters become { __big: fingerprint }
+function leaveSlim(v) {
+  if (typeof v === 'string') return v.length > 4000 ? { __big: leaveHash(v) } : v;
+  if (!v || typeof v !== 'object') return v;
+  if (Array.isArray(v)) return v.map(leaveSlim);
+  const o = {};
+  for (const k in v) if (Object.prototype.hasOwnProperty.call(v, k)) o[k] = leaveSlim(v[k]);
+  return o;
+}
+// the slim copy filled back from the stored guide; null when a big picture there isn't the one it was made on
+function leaveFill(v, old) {
+  if (v && typeof v === 'object' && !Array.isArray(v) && typeof v.__big === 'string')
+    return typeof old === 'string' && leaveHash(old) === v.__big ? old : undefined;
+  if (!v || typeof v !== 'object') return v;
+  if (Array.isArray(v)) {
+    const a = [];
+    for (let i = 0; i < v.length; i++) {
+      const x = leaveFill(v[i], old && old[i]);
+      if (x === undefined && v[i] !== undefined) return undefined;
+      a.push(x);
+    }
+    return a;
+  }
+  const o = {};
+  for (const k in v) {
+    if (!Object.prototype.hasOwnProperty.call(v, k)) continue;
+    const x = leaveFill(v[k], old && typeof old === 'object' ? old[k] : undefined);
+    if (x === undefined && v[k] !== undefined) return undefined;
+    o[k] = x;
+  }
+  return o;
+}
+function sfSaveDesignNow(d) {
+  const e = state.saved.find((s) => s.id === d.id && s.type === 'guide');
+  if (!e) return false;
+  try {
+    localStorage.setItem(
+      LEAVE_KEY,
+      JSON.stringify({
+        id: d.id,
+        base: +e.ts || 0,
+        name: d.name,
+        W: d.W,
+        H: d.H,
+        keys: d.keys,
+        n: d.n,
+        pl: leaveSlim(d.payload || {}),
+      }),
+    );
+    return true;
+  } catch (_) {
+    leaveDrop(d.id);
+    return false;
+  }
+}
+// at start: changes kept as the page went away go into their guide (reads of the store wait meanwhile). Not when the
+// row has changed since (another tab saved it), or the stored guide's pictures aren't the ones they were made on.
+function sfLeaveApply() {
+  let j = null;
+  try {
+    j = JSON.parse(localStorage.getItem(LEAVE_KEY) || 'null');
+  } catch (_) {}
+  if (!j) return;
+  const done = function () {
+    try {
+      localStorage.removeItem(LEAVE_KEY);
+    } catch (_) {}
+  };
+  const e = state.saved.find((s) => s.id === j.id && s.type === 'guide');
+  if (!e || +e.ts !== +j.base || !j.pl || typeof j.pl !== 'object') {
+    done();
+    return;
+  }
+  IDB.hold(
+    IDB.getNow('guide-' + j.id)
+      .then(function (old) {
+        const pl = old && leaveFill(j.pl, old);
+        if (!pl || typeof pl.lmap !== 'string') return;
+        return IDB.put('guide-' + j.id, pl).then(function () {
+          // the row follows (new time: another tab open on it reloads it)
+          const ix = state.saved.findIndex((s) => s.id === j.id && s.type === 'guide');
+          if (ix < 0) return;
+          const was = state.saved[ix];
+          state.saved[ix] = guideMeta(
+            { name: was.name || j.name, W: j.W, H: j.H, keys: j.keys, n: j.n, payload: pl, thumb: was.thumb },
+            j.id,
+          );
+          save(true);
+          if (typeof renderRecent === 'function') renderRecent();
+          if (typeof renderSaved === 'function') renderSaved();
+        });
+      })
+      .catch(function () {})
+      .then(done),
+  );
+}
+sfLeaveApply();
 function sfLoadDesign(id) {
   const meta = state.saved.find((s) => s.id === id && s.type === 'guide');
   if (!meta) return Promise.resolve(null);
@@ -598,7 +754,46 @@ function markRestored(fts) {
 }
 const RESTORE_FULL =
   'Couldn\u2019t restore \u2014 this browser\u2019s storage is full, so nothing was changed. Delete a few guides from the Library, then try again.';
-function applyCollectionBackup(o, fts) {
+// whether a backup's markers would replace yours, asked first in the app's own dialog (v288): resolves true (replace)
+// or false (keep yours). Nothing to ask when they're the same, when the backup has none (yours are kept) or you have
+// none (theirs come in).
+function askReplaceMarkers(o) {
+  const arr = Array.isArray(o) ? o : o && Array.isArray(o.owned) ? o.owned : null;
+  if (!arr) return Promise.resolve(false);
+  const own = new Set(arr.map(knownMkey).filter(Boolean));
+  const same = own.size === state.owned.size && [...own].every((k) => state.owned.has(k));
+  if (same || !own.size) return Promise.resolve(!own.size ? false : true);
+  if (!state.owned.size) return Promise.resolve(true);
+  const ask =
+    window.SF && SF.askBox
+      ? SF.askBox(
+          'Replace your markers?',
+          'The backup has ' +
+            nWord(own.size, 'marker') +
+            '; you have ' +
+            nWord(state.owned.size, 'marker') +
+            '. Either way, the backup\u2019s palettes and guides are added.',
+          '<button type="button" class="btn-primary" data-a="replace">Replace my markers</button><button type="button" data-a="keep">Keep mine</button>',
+          true,
+        )
+      : Promise.resolve(
+          confirm(
+            'Replace your ' +
+              nWord(state.owned.size, 'marker') +
+              ' with the backup\u2019s ' +
+              nWord(own.size, 'marker') +
+              '?\n\nOK replaces them; Cancel keeps yours. Either way, the backup\u2019s palettes and guides are added.',
+          )
+            ? 'replace'
+            : 'keep',
+        );
+  // (Escape or the backdrop: keep yours, as Cancel did)
+  return ask.then(function (a) {
+    return a === 'replace';
+  });
+}
+// replace: the answer from askReplaceMarkers
+function applyCollectionBackup(o, fts, replace) {
   const arr = Array.isArray(o) ? o : o && Array.isArray(o.owned) ? o.owned : null;
   if (!arr) return null;
   const own = new Set(arr.map(knownMkey).filter(Boolean));
@@ -626,18 +821,7 @@ function applyCollectionBackup(o, fts) {
       return { failed: true };
     };
   const same = own.size === state.owned.size && [...own].every((k) => state.owned.has(k));
-  if (
-    !same &&
-    (!own.size ||
-      (state.owned.size &&
-        !confirm(
-          'Replace your ' +
-            nWord(state.owned.size, 'marker') +
-            ' with the backup\u2019s ' +
-            nWord(own.size, 'marker') +
-            '? Palettes and guides in the file are added to yours.',
-        )))
-  ) {
+  if (!same && (!own.size || (state.owned.size && !replace))) {
     const n = mergeBackupPals(pals);
     if (n) {
       if (!save(true)) return back();
@@ -778,7 +962,20 @@ function restoreAny(file, btnId, done) {
       bad();
       return;
     }
-    var col = collection ? applyCollectionBackup(d, fts) : null,
+    (collection ? askReplaceMarkers(d) : Promise.resolve(false)).then(function (rep) {
+      restoreGo(d, fts, guides, collection, rep, bid, label, cap, done);
+    });
+  };
+  fr.onerror = function () {
+    if (cap) cap.textContent = 'Couldn’t read that file.';
+    if (done) done(null, 'read');
+  };
+  fr.readAsText(file);
+}
+// restoreAny once the question about markers (if any) is answered
+function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done) {
+  {
+    var col = collection ? applyCollectionBackup(d, fts, rep) : null,
       any = !!(col && (col.mk || col.pals));
     if (col && col.failed) {
       _btnFlash(bid, label, label, 10);
@@ -843,12 +1040,7 @@ function restoreAny(file, btnId, done) {
       }
       toast(msg, copies || x.bad ? 7000 : 3500);
     });
-  };
-  fr.onerror = function () {
-    if (cap) cap.textContent = 'Could not read that file.';
-    if (done) done(null, 'read');
-  };
-  fr.readAsText(file);
+  }
 }
 function _newGuideId() {
   let id = Date.now();
@@ -1141,7 +1333,7 @@ function sfRenderFilters(el) {
     clr('tone', 'toneAll') +
     '</span></div><div class="fams" id="sf_tones"></div><div class="fam-head"><span class="lbl">Saturation</span><span class="quick">' +
     clr('sat', 'satAll') +
-    '</span></div><div class="fams" id="sf_sats"></div><div class="fam-head"><span class="lbl">Families</span><span class="quick"><button data-q="famWarm">Warm</button><button data-q="famCool">Cool</button>' +
+    '</span></div><div class="fams" id="sf_sats"></div><div class="fam-head"><span class="lbl">Families</span><span class="quick"><button data-q="famWarm">Warm only</button><button data-q="famCool">Cool only</button>' +
     clr('fam', 'all') +
     '</span></div><div class="fams" id="sf_fams"></div>';
   chipBrands(el.querySelector('#sf_brands'), po);

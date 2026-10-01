@@ -146,7 +146,8 @@
 #sfRoot .sftab {
   padding: 2px 0 6px;
 }
-#sfRoot .sfpalnote {
+#sfRoot .sfpalnote,
+.homepalnote .sfpalnote {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -156,11 +157,13 @@
   background: rgba(124, 92, 255, 0.12);
   border: 1px solid rgba(124, 92, 255, 0.4);
 }
-#sfRoot .sfpalnote .sstrip {
+#sfRoot .sfpalnote .sstrip,
+.homepalnote .sfpalnote .sstrip {
   width: 70px;
   height: 30px;
 }
-#sfRoot .sfpntx {
+#sfRoot .sfpntx,
+.homepalnote .sfpntx {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -169,20 +172,20 @@
   font-size: var(--t-sm);
   color: var(--sub);
 }
-#sfRoot .sfpntx b {
+#sfRoot .sfpntx b,
+.homepalnote .sfpntx b {
   color: var(--ink);
   font-size: var(--t-base);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* (a sentence, so not in capitals as the group labels are: v284) */
 #sfRoot .sflean {
   margin-top: 16px;
-  font-size: var(--t-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: var(--t-md);
   color: var(--sub);
-  font-weight: 700;
+  font-weight: 600;
 }
 #sfRoot .sfsublbl {
   font-size: var(--t-sm);
@@ -191,8 +194,67 @@
 }
 #sfRoot .sfpoolct {
   font-size: var(--t-sm);
-  color: #b9a8ff;
+  color: var(--sub);
   margin-top: 8px;
+}
+/* v288: the markers on this page, a list */
+#sfRoot .sfmklist {
+  margin-top: 10px;
+  width: 100%;
+  justify-content: space-between;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#sfRoot .sfmlgrp {
+  margin: 12px 0 4px;
+  font-size: var(--t-sm);
+  color: var(--sub);
+  font-weight: 600;
+}
+#sfRoot .sfmlrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+#sfRoot .sfmlrow.sfmlplain {
+  cursor: default;
+}
+#sfRoot .sfmlrow[aria-pressed='true'] {
+  border-color: var(--ok);
+  background: rgba(95, 184, 159, 0.12);
+}
+#sfRoot .sfmlrow .sw {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+#sfRoot .sfmlrow .nm {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#sfRoot .sfmlrow .nm small {
+  display: block;
+  color: var(--sub);
+  font-size: var(--t-xs);
+}
+#sfRoot .sfmlrow .cnt {
+  flex: none;
+  color: var(--sub);
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
 }
 #sfRoot .sfsurprise {
   position: relative;
@@ -224,7 +286,7 @@
   margin-top: 12px;
 }
 #sfRoot .sfglbl {
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--sub);
@@ -443,6 +505,38 @@
   min-width: 0;
   white-space: nowrap;
 }
+/* (v288) the Pages and Labels choices with a small drawing of the printed sheet over the word */
+#sfRoot .sfprsh .segs button:has(.sfprpv) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: auto;
+  min-height: 44px;
+  padding: 7px 6px 6px;
+  line-height: 1.15;
+}
+#sfRoot .sfprpv {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  color: var(--sub);
+}
+#sfRoot .sfprsh .segs button.on .sfprpv {
+  color: var(--ink);
+}
+/* (a short screen: smaller drawings, so the sheet's choices still fit) */
+@media (max-height: 640px) {
+  #sfRoot .sfprpv {
+    height: 24px;
+  }
+  #sfRoot .sfprpv svg {
+    height: 24px;
+    width: auto;
+  }
+}
 #sfRoot .sfprchk {
   margin: 14px 0 12px;
 }
@@ -546,6 +640,12 @@
   width: 100%;
   margin-top: 6px;
 }
+/* what turning a slider up does (v284) */
+#sfRoot .sfrnghint {
+  margin-top: 2px;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
 
 /* guide controls (from 50-controls.js inline styles) */
 /* What were inline styles in the controls' markup (js/guide/51-controls-plan.js and 53-controls-stages.js). The
@@ -617,6 +717,16 @@
 #sfRoot #sfCtl .sfc-segs.sfsix.sfsix3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
+}
+/* v288: Temperature's three choices the same even width as Mood's */
+#sfRoot #sfCtl #sfPal.sfc-segs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+#sfRoot #sfCtl #sfPal.sfc-segs .sfedit {
+  min-width: 0;
+  white-space: nowrap;
 }
 /* choices that don't apply here (Mood with a saved palette) */
 #sfRoot #sfCtl .sfsublbl.sfoff,

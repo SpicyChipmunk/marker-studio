@@ -3,7 +3,7 @@
 // failure says nothing over the new guide, and a guide that can't be saved stops the switch.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, welcome, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, welcome, notOnWebKit, WK, saveGuide, answerAsks, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -46,7 +46,7 @@ async function tickSome(page, n) { await page.evaluate((n) => { const t = __mste
 
 test('reopening the open guide from the Library while cropping reloads it cleanly', async () => {
   const { page, errors } = await openApp();
-  await sampleGuide(page); await page.click('#sfSave'); await idle(page);
+  await sampleGuide(page); await saveGuide(page); await idle(page);
   const id = await savedId(page);
   await page.click('#sfBack2'); await page.click('#sfAdjToggle'); await page.click('#sfCrop'); await idle(page);
   await page.evaluate((id) => SF.openDesign(id), id); await page.waitForFunction(() => __mstest.assignData && !__mstest.cropMode, null, { timeout: 10000 }); await idle(page);
@@ -69,7 +69,7 @@ test('crop mode does not leak into the next picture', async () => {
 
 test('a picture left unbuilt does not wipe the progress of a guide opened afterwards', notOnWebKit(WK.photo), async () => {
   const { page, errors } = await openApp();
-  await sampleGuide(page); await tickSome(page, 6); await page.click('#sfSave'); await idle(page);
+  await sampleGuide(page); await tickSome(page, 6); await saveGuide(page); await idle(page);
   const id = await savedId(page);
   // a new photo goes to the sections editor; leave it unbuilt and open the saved guide
   const b64 = await page.evaluate(async () => { const c = document.createElement('canvas'); c.width = 500; c.height = 700; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 500, 700); g.strokeStyle = '#111'; g.lineWidth = 6; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(100 + i * 60, 200 + (i % 2) * 200, 70, 0, 6.283); g.stroke(); } return c.toDataURL('image/png').split(',')[1]; });
@@ -77,14 +77,17 @@ test('a picture left unbuilt does not wipe the progress of a guide opened afterw
   await fc.setFiles({ name: 'p.png', mimeType: 'image/png', buffer: Buffer.from(b64, 'base64') });
   await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 20000 }); await idle(page);
   await page.evaluate((id) => SF.openDesign(id), id); await page.waitForFunction(() => __mstest.assignData && __mstest.curId, null, { timeout: 10000 }); await idle(page);
-  await page.click('#sfBack2'); await idle(page); await page.click('#sfBuild'); await idle(page);
+  // (v284: part-way coloured, it opens in Colour along: back to the plan, then to its sections)
+  assert.equal(await page.evaluate(() => __mstest.sfmode), 'color');
+  await page.click('#sfDoneBtn'); await idle(page);
+  await page.click('#sfBack2'); await idle(page); await buildGo(page); await idle(page);
   assert.equal(await page.evaluate(() => __mstest.colored.reduce((a, b) => a + b, 0)), 6);
   assert.deepEqual(errors, []);
 });
 
 // ---- From the fourth review (data safety) ----
 // Save (a new guide into the Library), done once the header says so
-const saveNew = async (page) => { await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent)); };
+const saveNew = (page) => saveGuide(page);
 
 const AUTO = 2300; // idle(page, AUTO): until auto-save (1.5 s after the last change) has run
 const stored = (page, id) => page.evaluate((id) => IDB.get('guide-' + id).then((p) => p && { prog: (p.prog || []).length, assign: p.assign, tones: p.tones || {}, ref: p.ref || null, base: p.base || null, style: p.style }), id);
@@ -115,7 +118,7 @@ test('a guide opens with its own settings, not those of the guide before', async
   await sampleGuide(page);
   const plain = await page.evaluate(() => { const d = __mstest.currentDesignObj(); delete d.payload.style.expand; delete d.payload.style.savedPalId; return Object.assign({}, d.payload, { name: 'Plain', W: d.W, H: d.H }); });
   const pid = await page.evaluate(() => { const id = Date.now(); state.saved.unshift({ id, type: 'palette', name: 'P', keys: [...state.owned].slice(0, 6), ts: id }); save(); return id; });
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.evaluate((pid) => SF.setSavedSource(pid), pid);
   assert.equal(await page.evaluate(() => __mstest.currentDesignObj().payload.style.savedPalId), pid);
   await page.evaluate((d) => __mstest.openDesignObj(d, null), plain); await page.waitForFunction(() => __mstest.curName === 'Plain'); await idle(page);
@@ -133,7 +136,7 @@ test('a photo that fails after something else opened says nothing over the new g
   await page.waitForFunction(() => !!window.__release);
   await page.evaluate(() => SF.loadSample()); await page.waitForFunction(() => __mstest.assignData); await idle(page);
   await release(page); await idle(page);
-  assert.doesNotMatch(await page.textContent('#sfMeta'), /did not decode/);
+  assert.doesNotMatch(await page.textContent('#sfMeta'), /couldn’t be opened as a picture/);
   assert.equal(await page.locator('#sfRoot .errcard').count(), 0);
   assert.deepEqual(errors, []);
 });

@@ -165,46 +165,47 @@ function cropHit(P) {
 }
 function autoCrop() {
   if (!labels || !srcImg) return;
-  if (!okGeom()) return;
-  const rowInk = new Int32Array(H),
-    colInk = new Int32Array(W);
-  for (let y = 0; y < H; y++) {
-    const ro = y * W;
-    for (let x = 0; x < W; x++)
-      if (labels[ro + x] === -1) {
-        rowInk[y]++;
-        colInk[x]++;
-      }
-  }
-  const rowThr = Math.max(1, W * 0.012),
-    colThr = Math.max(1, H * 0.012);
-  let y0 = 0;
-  while (y0 < H && rowInk[y0] < rowThr) y0++;
-  let y1 = H - 1;
-  while (y1 > y0 && rowInk[y1] < rowThr) y1--;
-  let x0 = 0;
-  while (x0 < W && colInk[x0] < colThr) x0++;
-  let x1 = W - 1;
-  while (x1 > x0 && colInk[x1] < colThr) x1--;
-  if (x1 - x0 < W * 0.2 || y1 - y0 < H * 0.2) {
-    geoCancel();
-    note('Could not auto-detect the artwork \u2014 try cropping manually.');
-    return;
-  }
-  const padX = W * 0.03,
-    padY = H * 0.03;
-  x0 = Math.max(0, x0 - padX);
-  x1 = Math.min(W - 1, x1 + padX);
-  y0 = Math.max(0, y0 - padY);
-  y1 = Math.min(H - 1, y1 + padY);
-  const cr = cropRect || { x: 0, y: 0, w: 1, h: 1 };
-  cropRect = {
-    x: cr.x + (x0 / W) * cr.w,
-    y: cr.y + (y0 / H) * cr.h,
-    w: ((x1 - x0) / W) * cr.w,
-    h: ((y1 - y0) / H) * cr.h,
-  };
-  reprocessImg();
+  okGeom(function () {
+    const rowInk = new Int32Array(H),
+      colInk = new Int32Array(W);
+    for (let y = 0; y < H; y++) {
+      const ro = y * W;
+      for (let x = 0; x < W; x++)
+        if (labels[ro + x] === -1) {
+          rowInk[y]++;
+          colInk[x]++;
+        }
+    }
+    const rowThr = Math.max(1, W * 0.012),
+      colThr = Math.max(1, H * 0.012);
+    let y0 = 0;
+    while (y0 < H && rowInk[y0] < rowThr) y0++;
+    let y1 = H - 1;
+    while (y1 > y0 && rowInk[y1] < rowThr) y1--;
+    let x0 = 0;
+    while (x0 < W && colInk[x0] < colThr) x0++;
+    let x1 = W - 1;
+    while (x1 > x0 && colInk[x1] < colThr) x1--;
+    if (x1 - x0 < W * 0.2 || y1 - y0 < H * 0.2) {
+      geoCancel();
+      note('Couldn\u2019t find the drawing \u2014 use Crop to choose it.');
+      return;
+    }
+    const padX = W * 0.03,
+      padY = H * 0.03;
+    x0 = Math.max(0, x0 - padX);
+    x1 = Math.min(W - 1, x1 + padX);
+    y0 = Math.max(0, y0 - padY);
+    y1 = Math.min(H - 1, y1 + padY);
+    const cr = cropRect || { x: 0, y: 0, w: 1, h: 1 };
+    cropRect = {
+      x: cr.x + (x0 / W) * cr.w,
+      y: cr.y + (y0 / H) * cr.h,
+      w: ((x1 - x0) / W) * cr.w,
+      h: ((y1 - y0) / H) * cr.h,
+    };
+    reprocessImg();
+  });
 }
 function enterCrop() {
   if (!srcImg) return;
@@ -238,18 +239,19 @@ function applyCrop() {
     cancelCrop();
     return;
   }
-  if (!okGeom()) return;
-  cropRect = {
-    x: cropPx.x / cropFullW,
-    y: cropPx.y / cropFullH,
-    w: cropPx.w / cropFullW,
-    h: cropPx.h / cropFullH,
-  };
-  cropMode = false;
-  cropFull = null;
-  const z = document.getElementById('sfZoomCtl');
-  if (z) z.style.display = '';
-  reprocessImg();
+  okGeom(function () {
+    cropRect = {
+      x: cropPx.x / cropFullW,
+      y: cropPx.y / cropFullH,
+      w: cropPx.w / cropFullW,
+      h: cropPx.h / cropFullH,
+    };
+    cropMode = false;
+    cropFull = null;
+    const z = document.getElementById('sfZoomCtl');
+    if (z) z.style.display = '';
+    reprocessImg();
+  });
 }
 function cancelCrop() {
   cropMode = false;
@@ -314,31 +316,47 @@ function processSrc() {
 }
 // Sensitivity and Enhance: the sections are found again. On a guide with progress or section edits that asks first,
 // as turning the picture does (once: the Undo step kept covers the changes that follow); No puts the control back.
+// (v288: asked in the app's own dialog; while it's open, further changes to the slider wait for the answer, which then
+// goes with the setting as it is by then)
+let _reAsk = false;
+function geomWords(p, what) {
+  return p
+    ? 'This redraws the sections and clears your colouring progress (ticks, part-done tones, pins and flat sections)' +
+        (hasEdits ? ' and your section edits' : '') +
+        '. Undo in Edit sections brings it all back.'
+    : what + ' clears your section edits. Undo brings them back.';
+}
 function resegment() {
-  if (!gray) return;
+  if (!gray || _reAsk) return;
   const top = undoStack[undoStack.length - 1],
     p = !!assignData && hasProgress();
-  if (
-    assignData &&
-    (hasEdits || p) &&
-    !(top && top.reseg && !top.sealed) &&
-    !confirm(
-      p
-        ? 'This redraws the sections and clears your colouring progress (ticks, part-done tones, pins and flat sections)' +
-            (hasEdits ? ' and your section edits' : '') +
-            '. Undo in Edit sections brings it all back. Continue?'
-        : 'Detecting the sections again clears your section edits. Undo brings them back. Continue?',
-    )
-  ) {
-    const f = _reFrom;
-    _reFrom = null;
-    if (f) {
-      adaptC = f.c;
-      enhance = f.e;
-    }
-    renderControls();
+  if (assignData && (hasEdits || p) && !(top && top.reseg && !top.sealed)) {
+    _reAsk = true;
+    askBox(
+      'Detect the sections again?',
+      geomWords(p, 'Detecting the sections again'),
+      '<button type="button" class="btn-primary" data-a="go">Detect again</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+      true,
+    ).then(function (a) {
+      _reAsk = false;
+      if (a === 'go') {
+        reseg();
+        return;
+      }
+      const f = _reFrom;
+      _reFrom = null;
+      if (f) {
+        adaptC = f.c;
+        enhance = f.e;
+      }
+      renderControls();
+    });
     return false;
   }
+  reseg();
+  return true;
+}
+function reseg() {
   _reFrom = null;
   keepSnap(false);
   segment();
@@ -396,6 +414,9 @@ function keepSnap(geo) {
     col: colored.slice(),
     keep: {
       tones: tonePart && tonePart._c === colored ? tonePart.slice() : null,
+      // (v284: when colouring started and finished, and the shading coloured sections keep)
+      progAt: Object.assign({}, progAt),
+      held: Object.assign({}, heldSh),
       locks: Object.assign({}, locks),
       flat: Object.assign({}, shadeFlat),
       fresh: _segFresh,
@@ -435,24 +456,33 @@ function hasProgress() {
   for (let l = 1; l < colored.length; l++) if (colored[l] || (P && P[l])) return true;
   return false;
 }
-// asked before the picture is turned, tilted, cropped or straightened; on yes the way back is kept for Undo
-let _geoSnap = null;
-function okGeom() {
-  const p = hasProgress();
+// asked before the picture is turned, tilted, cropped or straightened; on yes the way back is kept for Undo, then go()
+// runs (at once when there's nothing to ask). v288: the app's own dialog, not the browser's.
+let _geoSnap = null,
+  _geoAsk = false;
+function geomAsks() {
+  return hasEdits || hasProgress();
+}
+function okGeom(go) {
   _geoSnap = null;
-  if (
-    (hasEdits || p) &&
-    !confirm(
-      p
-        ? 'This redraws the sections and clears your colouring progress (ticks, part-done tones, pins and flat sections)' +
-            (hasEdits ? ' and your section edits' : '') +
-            '. Undo in Edit sections brings it all back. Continue?'
-        : 'Rotating or cropping rebuilds the sections and clears your manual edits. Undo brings them back. Continue?',
-    )
-  )
-    return false;
-  _geoSnap = keepSnap(true);
-  return true;
+  if (!geomAsks()) {
+    _geoSnap = keepSnap(true);
+    go();
+    return;
+  }
+  if (_geoAsk) return;
+  _geoAsk = true;
+  askBox(
+    'Rebuild the sections?',
+    geomWords(hasProgress(), 'Rotating or cropping'),
+    '<button type="button" class="btn-primary" data-a="go">Rebuild</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+    true,
+  ).then(function (a) {
+    _geoAsk = false;
+    if (a !== 'go') return;
+    _geoSnap = keepSnap(true);
+    go();
+  });
 }
 // okGeom said yes but nothing changed after all: its Undo step goes again
 function geoCancel() {
@@ -501,13 +531,14 @@ function _loadSample() {
   var si = sampleIdx % SAMPLES.length,
     nm = SAMPLE_NAMES[si];
   sampleIdx++;
+  _smpLoad = true;
   note('Loading sample\u2026');
   const gen = ++loadGen;
   var img = new Image();
   img.onload = function () {
     try {
       if (!img.width || !img.height) {
-        note('Sample failed to load.');
+        note('Couldn\u2019t load the sample. Try again.');
         return;
       }
       if (gen !== loadGen) return;
@@ -518,20 +549,26 @@ function _loadSample() {
       sfmode = 'review';
       resetZoom();
       enterWork();
-      curName = 'Sample ' + nm.charAt(0).toUpperCase() + nm.slice(1);
       var _rs = document.getElementById('sfResume');
       if (_rs) _rs.style.display = 'none';
       renderControls();
       render();
       note(metaText());
-      // the sample is already clean line art: go straight to the finished guide (\u2190 Sections still opens the editor)
+      // the sample is already clean line art: go straight to the finished guide (\u2190 Sections still opens the editor).
+      // It joins the Library only once it's changed (v285: sampleBuilt, 60-persist)
       buildGuide();
+      // (only once it's built: a build that stopped short, every marker dry say, leaves a picture like any other)
+      if (assignData) sampleBuilt('Sample ' + nm);
+      renderHead();
+      renderControls();
+      saveStatus();
     } catch (err) {
-      note('Could not process sample: ' + ((err && err.message) || err));
+      note('Couldn\u2019t open the sample. Try again.');
     }
   };
   img.onerror = function () {
-    if (gen === loadGen) note('Sample failed to decode.');
+    _smpLoad = false;
+    if (gen === loadGen) note('Couldn\u2019t open the sample. Try again.');
   };
   var _sv = SAMPLES[si];
   img.src = _sv.slice(0, 5) === 'data:' ? _sv : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(_sv);
@@ -562,6 +599,9 @@ function fitSource(img) {
   }
 }
 function _loadImage(file) {
+  _smpLoad = false;
+  // (the open guide saved by now, stashDirty: a palette held for the next guide becomes this one's)
+  takeNextPal();
   note('Reading photo\u2026');
   const gen = ++loadGen;
   let url = null;
@@ -604,7 +644,7 @@ function _loadImage(file) {
           // a photographed page is found and flattened first (or its corners offered for checking); a scan goes straight on
           pgBegin(f35);
         } catch (err) {
-          note('Could not process that photo: ' + ((err && err.message) || err));
+          note('Couldn’t process that photo: ' + ((err && err.message) || err));
         }
       });
     };
@@ -614,7 +654,7 @@ function _loadImage(file) {
         url = null;
       }
       if (gen !== loadGen) return;
-      note('That file did not decode as an image \u2014 try a JPG or PNG.');
+      note('That file couldn\u2019t be opened as a picture \u2014 try a JPEG or PNG.');
     };
     img.src = src;
   };
@@ -624,7 +664,7 @@ function _loadImage(file) {
       if (gen === loadGen) go(fr.result);
     };
     fr.onerror = function () {
-      if (gen === loadGen) note('Could not read that file.');
+      if (gen === loadGen) note('Couldn’t read that file.');
     };
     fr.readAsDataURL(file);
   }

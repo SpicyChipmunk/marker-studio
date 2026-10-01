@@ -16,6 +16,9 @@ at https://spicychipmunk.github.io/marker-studio/) for your own colouring.
 Third-party material keeps its own licence:
 - The fonts in src/assets/fonts (Fraunces and Hanken Grotesk) are under the
   SIL Open Font License 1.1; see the OFL-*.txt files beside them.
+- Four line icons (the Library's bin and pen, download and print) come from
+  Lucide (ISC License) and Feather (MIT License); see
+  src/assets/icons/LICENSE-Lucide-Feather.txt.
 - "Ohuhu" and "Copic" are trademarks of their respective owners. This project
   is not affiliated with or endorsed by them.
 

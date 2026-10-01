@@ -15,6 +15,8 @@ function revFrame() {
   }
 }
 function startRevRec() {
+  stopRevRec();
+  revRec = null;
   revBlob = null;
   revChunks = [];
   revMime = '';
@@ -41,11 +43,20 @@ function startRevRec() {
       }
     }
     if (!revMime) return false;
-    revRec = new MediaRecorder(stream, { mimeType: revMime, videoBitsPerSecond: 8000000 });
-    revRec.ondataavailable = function (e) {
-      if (e.data && e.data.size) revChunks.push(e.data);
+    // (a recorder stopped by Close or Replay can still send its last data and stop late: only the current one counts,
+    // and its capture stream ends with it)
+    var rec = new MediaRecorder(stream, { mimeType: revMime, videoBitsPerSecond: 8000000 });
+    revRec = rec;
+    rec.ondataavailable = function (e) {
+      if (rec === revRec && e.data && e.data.size) revChunks.push(e.data);
     };
-    revRec.onstop = function () {
+    rec.onstop = function () {
+      try {
+        stream.getTracks().forEach(function (t) {
+          t.stop();
+        });
+      } catch (_) {}
+      if (rec !== revRec) return;
       try {
         revBlob = new Blob(revChunks, { type: revMime });
       } catch (e) {
@@ -89,7 +100,8 @@ function showRevealBar(mode) {
     b.innerHTML =
       '<button id="revShare" class="rvmain">Share</button>' +
       clip +
-      '<button id="revReplay">Replay</button><button id="revDone">Close</button>';
+      // (v288: one way to close, the ✕ at the top left, as in Focus mode; Escape too)
+      '<button id="revReplay">Replay</button>';
     var _s = document.getElementById('revShare');
     if (_s) _s.addEventListener('click', shareCard);
     var _c = document.getElementById('revClip');
@@ -99,8 +111,11 @@ function showRevealBar(mode) {
       _r.addEventListener('click', function () {
         playRevealAnim();
       });
-    var _d = document.getElementById('revDone');
-    if (_d) _d.addEventListener('click', endReveal);
+    // (the keyboard comes into the bar: its buttons are all there is on screen)
+    if (_s && !b.contains(document.activeElement))
+      try {
+        _s.focus({ preventScroll: true });
+      } catch (_) {}
   }
   revFitBar();
 }
@@ -122,7 +137,7 @@ function revCloseEl() {
     x.id = 'sfRevX';
     x.className = 'sfrevx';
     x.setAttribute('aria-label', 'Close');
-    x.textContent = '\u2715';
+    x.innerHTML = ic('x');
     x.addEventListener('click', endReveal);
     document.body.appendChild(x);
   }
@@ -176,8 +191,41 @@ function playRevealAnim() {
   }
   revRAF = requestAnimationFrame(step);
 }
+// the button that opened Reveal, where the keyboard goes back to when it closes
+var _revOp = null,
+  _revInert = [];
+// (v287) while Reveal is open the page behind it is inert: Tab stays on its picture, bar and ✕ (as in Focus mode)
+function revModal(on) {
+  _revInert.forEach(function (el) {
+    el.inert = false;
+  });
+  _revInert = [];
+  if (!on || !sfView) return;
+  var keep = [sfView, revBarEl(), document.getElementById('sfRevX')].filter(Boolean);
+  keep.forEach(function (k) {
+    for (var n = k; n && n !== document.body && n.parentElement; n = n.parentElement) {
+      [].forEach.call(n.parentElement.children, function (c) {
+        if (
+          c.inert ||
+          keep.some(function (x) {
+            return c === x || c.contains(x);
+          }) ||
+          /^(SCRIPT|STYLE|LINK)$/.test(c.tagName) ||
+          c.classList.contains('overlay') ||
+          c.id === 'msToast' ||
+          c.id === 'sfLive'
+        )
+          return;
+        c.inert = true;
+        _revInert.push(c);
+      });
+    }
+  });
+}
 function startReveal() {
   if (!assignData) return;
+  _revOp = document.activeElement;
+  hideTip();
   exitFull();
   closeSwatchPop(false);
   closeSheet();
@@ -186,6 +234,8 @@ function startReveal() {
   resetZoom();
   var rt = document.getElementById('sfRoot');
   if (rt) rt.classList.add('sfrev');
+  revCloseEl();
+  revModal(true);
   requestAnimationFrame(function () {
     playRevealAnim();
   });
@@ -196,13 +246,25 @@ function endReveal() {
   revealF = null;
   revOrder = null;
   stopRevRec();
+  revRec = null;
   revBlob = null;
   revChunks = [];
   var rt = document.getElementById('sfRoot');
   if (rt) rt.classList.remove('sfrev');
+  revModal(false);
   hideRevealBar();
-  renderGuide();
+  // (from leave(), the guide going off screen: nothing to draw or focus there)
+  if (sfmode === 'guide' || sfmode === 'color') renderGuide();
   backScroll();
+  var op =
+    _revOp && _revOp.isConnected && _revOp.offsetParent !== null
+      ? _revOp
+      : document.getElementById('sfReveal');
+  _revOp = null;
+  if (op && op !== document.body && root.style.display !== 'none')
+    try {
+      op.focus({ preventScroll: true });
+    } catch (_) {}
 }
 function distinctMk() {
   var seen = {},
@@ -316,7 +378,7 @@ function shareCard() {
   if (!card) return;
   card.toBlob(function (blob) {
     if (!blob) {
-      note('Could not make the image.');
+      note('Couldn’t make the image.');
       return;
     }
     shareOrSave(blob, 'marker-studio-card.png', curName || 'My colouring', 'image', 'Image downloaded.');

@@ -270,3 +270,27 @@ test('Match › Photo: Tap the white paper corrects the lighting; a bad spot say
   assert.equal(await page.isVisible('#matchLight'), false);
   assert.deepEqual(errors, []);
 });
+
+// ---- v284: a row's rating reads as a label, not a Close button ----
+test('Match: each row’s rating is a muted, regular-weight word after a dot meter filled by closeness', async () => {
+  const { page, errors } = await openApp();
+  await openMatch(page);
+  await page.evaluate(() => window.msMatchHex('#005ab4')); await idle(page);
+  const rows = await page.$$eval('#matchResult .mrow', (l) => l.map((r) => {
+    const q = r.querySelector('.mq'), cs = getComputedStyle(q), dots = q.querySelector('.mqdots');
+    return { word: q.textContent, weight: +cs.fontWeight, colour: cs.color, hidden: dots && dots.getAttribute('aria-hidden'), dots: dots ? dots.children.length : 0, on: dots ? dots.querySelectorAll('.on').length : -1, label: r.getAttribute('aria-label') };
+  }));
+  assert.ok(rows.length > 1, 'some rows');
+  const filled = { 'Near-exact': 4, 'Very close': 3, Close: 2, Rough: 1, Loose: 0 };
+  const sub = await page.evaluate(() => { const s = document.createElement('span'); s.style.color = 'var(--sub)'; document.body.appendChild(s); const c = getComputedStyle(s).color; s.remove(); return c; });
+  for (const r of rows) {
+    assert.ok(r.word in filled, 'the same words: ' + r.word);
+    assert.equal(r.weight, 400, 'regular weight');
+    assert.equal(r.colour, sub, 'muted, like the marker’s name');
+    assert.equal(r.dots, 4);
+    assert.equal(r.on, filled[r.word], r.word + ' fills ' + filled[r.word] + ' dots');
+    assert.equal(r.hidden, 'true', 'the dots are decoration');
+    assert.ok(r.label.includes(', ' + r.word + ', copy'), 'the row still says the word: ' + r.label);
+  }
+  assert.deepEqual(errors, []);
+});

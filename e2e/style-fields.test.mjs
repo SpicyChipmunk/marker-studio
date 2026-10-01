@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { setup, teardown, openApp, sampleGuide, idle, ROOT, ENGINE, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, ROOT, ENGINE, notOnWebKit, WK, saveGuide, answerAsks } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -99,7 +99,7 @@ const choose = (page, id, v) => page.evaluate(([id, v]) => {
 const seed = (page, n) => page.evaluate((n) => window.__seed(n), n);
 
 // Save (a new guide into the Library), then reopen it after a reload, the way the Library does
-const saveNew = async (page) => { await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent)); };
+const saveNew = (page) => saveGuide(page);
 const openSaved = async (page, id) => { await page.evaluate((id) => loadGuide({ id }), id); await page.waitForFunction((id) => __mstest.curId === id && __mstest.assignData, id, { timeout: 10000 }); await idle(page); };
 
 // a two-colour picture to use as the Photo pattern's photo
@@ -172,7 +172,7 @@ async function captureAll() {
     await step(page, 'gradient', () => click(page, '#sfFam [data-v="gradient"]'));
     await step(page, 'pins', () => page.evaluate(() => { const t = __mstest, o = t.assignData.order; t.locks[o[3]] = t.assignData.assign[o[3]].mkey; t.locks[o[8]] = t.assignData.assign[o[8]].mkey; t.guideDirty = true; t.renderGuide(); }));
     await step(page, 'surprise', async () => { await seed(page, 16); await click(page, '#sfSurprise'); });
-    page.on('dialog', (d) => d.accept());
+    await answerAsks(page);
     await step(page, 'savedPalette', () => page.evaluate(() => { const id = 777001; state.saved.unshift({ id, type: 'palette', name: 'P', keys: [...state.owned].slice(0, 6), ts: id }); save(); SF.setSavedSource(id); }));
     await step(page, 'savedPalette-render', () => click(page, '#sfSrc [data-v="saved"]'));
     // section edits not built yet: saved only as the "edits" copy

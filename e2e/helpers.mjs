@@ -89,6 +89,23 @@ export async function sampleGuide(page) {
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
 }
 
+// a guide built from a Letter-shaped page (e2e/fixtures/letter-page.png: line art drawn for the tests), for layouts that the
+// tall sample would hide
+export async function letterGuide(page) {
+  const buf = await readFile(join(ROOT, 'e2e', 'fixtures', 'letter-page.png'));
+  const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.evaluate(() => SF.pickPhoto())]);
+  await fc.setFiles({ name: 'letter-page.png', mimeType: 'image/png', buffer: buf });
+  await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 60000 }); await idle(page);
+  await page.click('#sfBuild');
+  await page.waitForFunction(() => __mstest.assignData && __mstest.sfmode === 'guide', null, { timeout: 60000 }); await idle(page);
+}
+// put the open guide in the Library (what Save did before guides saved themselves) and wait until it's there
+export async function saveGuide(page) {
+  await page.evaluate(() => __mstest.saveNow());
+  await page.waitForFunction(() => __mstest.inLibrary);
+  await idle(page);
+}
+
 // Screen position of a section's label point (measured after the next frames: the picture's scroll-linked size
 // catches up with a scroll one frame later).
 export function sectionPoint(page, l) {
@@ -295,4 +312,63 @@ export async function openAtScale(scale, opts = {}) {
     await app.page.reload(); await idle(app.page);
   }
   return app;
+}
+
+// v288: the questions that were the browser's OK/Cancel (re-detect, rebuild the sections, replace your markers, a
+// backup opened as a guide) are the app's own dialog (marked data-confirm). answerAsks answers both kinds, now and
+// after reloads: yes clicks the primary button (or accepts), no clicks Cancel / Keep mine (or dismisses). What was
+// asked collects in window.__asked (the dialog's question) and in the returned array (the browser's messages).
+export async function answerAsks(page, yes = true) {
+  const fn = (y) => {
+    window.__askYes = y;
+    window.__asked = window.__asked || [];
+    if (window.__askObs) return;
+    const go = () => {
+      document.querySelectorAll('[data-confirm]').forEach((o) => {
+        if (o.__ans) return;
+        o.__ans = 1;
+        const q = o.querySelector('.dsub');
+        window.__asked.push(q ? q.textContent : '');
+        setTimeout(() => {
+          const b = window.__askYes ? o.querySelector('.btn-primary') : o.querySelector('[data-a="stay"],[data-a="keep"]');
+          if (b) b.click();
+        }, 0);
+      });
+    };
+    window.__askObs = new MutationObserver(go);
+    const start = () => window.__askObs.observe(document.documentElement, { childList: true, subtree: true });
+    if (document.documentElement) start(); else document.addEventListener('readystatechange', start, { once: true });
+  };
+  await page.addInitScript(fn, yes);
+  await page.evaluate(fn, yes);
+  page.__askYes = yes;
+  if (!page.__askNative) {
+    page.__askNative = [];
+    page.on('dialog', (d) => { page.__askNative.push(d.message()); if (page.__askYes) d.accept(); else d.dismiss(); });
+  }
+  return page.__askNative;
+}
+// change the answer answerAsks gives from now on
+export const askAnswer = (page, yes) => { page.__askYes = yes; return page.evaluate((y) => { window.__askYes = y; }, yes); };
+export const asked = (page) => page.evaluate(() => window.__asked || []);
+
+// v288: Back up & restore lives in the Library; its markers-and-palettes text opens the backup dialog over it
+export async function openBackupDialog(page) {
+  await page.evaluate(() => openLibrary()); await page.waitForSelector('#savedOverlay.on');
+  await page.click('#libBkText'); await page.waitForSelector('#backupOverlay.on');
+}
+
+// v288: a Library tile's Rename and Delete are in its ⋯ menu
+export async function libItem(page, rowSel, cls) {
+  await page.click(rowSel + ' .smore');
+  await page.click(rowSel + ' .' + cls);
+}
+
+// v288: Edit sections' bar has Build (a new picture, or something edited: "Build again") or, with nothing edited, ← Plan
+// back to the guide as built; either way to the guide
+export async function buildGo(page) {
+  // (the bar follows edits made straight through the test seam once the sections are drawn again)
+  await page.evaluate(() => { if (window.__mstest && __mstest.sfmode === 'review' && __mstest.render) __mstest.render(); });
+  if (await page.isVisible('#sfBuild')) await page.click('#sfBuild');
+  else await page.click('#sfToPlan');
 }

@@ -18,6 +18,13 @@ let photoChecking = false,
   _phBumped = false;
 // a reopened guide's photo still decoding ({url, xf, op, paper}): saved as it was until it decodes or is replaced
 let _phPend = null;
+// Photo chosen before its photo is picked (the picker open, or closed without one): the pattern it was, still laid
+// and saved as the guide's until a photo comes (assignOne, the family's save), so a guide never keeps a Photo label
+// over another pattern's colours (v284). One for each zone, by its id (pwKey)
+let photoWait = {};
+function pwKey() {
+  return String(zoneBuilding != null ? zoneBuilding : zoneCur);
+}
 // PH_CAP: "close enough to some colour in the photo", by eye (CIEDE2000). 23 reaches as far as the plain L*a*b*
 // distance of 40 it replaced: on a 451-marker collection the same share of photo-colour / marker pairs falls within it
 const PH_MAX = 1000,
@@ -245,6 +252,7 @@ function photoViewUrl(ref) {
   return ref.view;
 }
 function photoReset() {
+  photoWait = {};
   photoRef = null;
   photoXf = null;
   _phPend = null;
@@ -846,7 +854,7 @@ function photoRecolour(quick) {
       })
     : [0];
   if (
-    zoneRun(ids, function (cl) {
+    holdRun(ids, function (cl) {
       return buildPhoto(cl, quick);
     })
   ) {
@@ -1029,7 +1037,7 @@ function loadPhotoRef(file) {
     url = URL.createObjectURL(file);
   } catch (e) {}
   if (!url) {
-    note('Could not read that photo.');
+    note('Couldn’t read that photo.');
     return;
   }
   const here = function () {
@@ -1053,7 +1061,7 @@ function loadPhotoRef(file) {
       if (!here()) return;
       const ref = photoFromImage(pgRefFlat(img, f35) || img);
       if (!ref) {
-        note('Could not read that photo.');
+        note('Couldn’t read that photo.');
         return;
       }
       ref.flat = !!ref.flatSrc;
@@ -1062,13 +1070,14 @@ function loadPhotoRef(file) {
   };
   img.onerror = function () {
     URL.revokeObjectURL(url);
-    if (here()) note('That file did not open as a picture — try a JPG or PNG.');
+    if (here()) note('That file couldn’t be opened as a picture — try a JPEG or PNG.');
   };
   img.src = url;
 }
 function setPhotoRef(ref, noAuto) {
   if (!ref.raw) ref = photoLitNew(ref);
   photoRef = ref;
+  photoWait = {};
   _phPend = null;
   photoFit('fill');
   photoAlign = true;

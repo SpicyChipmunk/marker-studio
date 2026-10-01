@@ -3,7 +3,7 @@
 // flat are. One marker can have other companions in another zone: Colour along and the printed key show each.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK, saveGuide, answerAsks, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -251,7 +251,7 @@ test('zones’ shading is saved with the guide and opens as it was; a zone saved
   const d = await page.evaluate(() => __mstest.currentDesignObj());
   assert.deepEqual(d.payload.zones[0].shade, { on: true, round: 0.8, hi: 0.5, lo: 0.5, shadow: 'cool', hilite: 'same' });
   assert.equal(d.payload.style.shade.main, false);
-  await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent));
+  await saveGuide(page);
   const id = await page.evaluate(() => __mstest.curId);
   await page.reload(); await idle(page);
   await page.evaluate((id) => loadGuide({ id }), id);
@@ -269,7 +269,7 @@ test('zones’ shading is saved with the guide and opens as it was; a zone saved
 test('a change waiting to be saved goes into its guide with its zones when another picture opens', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
-  await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent));
+  await saveGuide(page);
   const id = await page.evaluate(() => __mstest.curId);
   await makeZone(page, await bigSecs(page, 3, 'top'), 'Bell');
   // the sample again at once (the autosave hasn't run yet)
@@ -319,7 +319,7 @@ test('Light from is one light for the whole picture, whichever zone is chosen; s
   // no sun handle with the light from the photo
   assert.equal(await page.evaluate(() => { const s = document.getElementById('sfSun'); return !!s && s.style.display !== 'none'; }), false);
   // saved and opened again: once the photo is back, that section is still done
-  await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent));
+  await saveGuide(page);
   const id = await page.evaluate(() => __mstest.curId);
   await page.reload(); await idle(page);
   await page.evaluate((id) => loadGuide({ id }), id);
@@ -330,7 +330,7 @@ test('Light from is one light for the whole picture, whichever zone is chosen; s
 
 test('Main flat, the picture turned (the zones cleared), then Undo in Edit sections: the zones and Main flat are back', async () => {
   const { page, errors } = await openApp();
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await sampleGuide(page); await idle(page);
   await shadingOn(page);
   await makeZone(page, await bigSecs(page, 4, 'top'), 'Bell');
@@ -340,11 +340,11 @@ test('Main flat, the picture turned (the zones cleared), then Undo in Edit secti
   await page.click('#sfBack2'); await idle(page);
   await page.click('#sfAdjToggle'); await idle(page);
   await page.click('#sfRotR'); await idle(page, 3000);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.deepEqual(await page.evaluate(() => [__mstest.zones.length, __mstest.styleVars.shadeMain]), [0, true]);
   await page.click('#sfBack2'); await idle(page);
   await page.click('#sfPlanUndo'); await idle(page, 3000);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.deepEqual(await page.evaluate(() => [__mstest.zones.map((z) => z.name), __mstest.styleVars.shadeMain]), [['Bell'], false]);
   assert.deepEqual(errors, []);
 });

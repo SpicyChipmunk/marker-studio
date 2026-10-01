@@ -1,5 +1,7 @@
 function updateProgress() {
   if (!assignData) return;
+  // (the dates follow the ticks however they changed: a section brought in, tones asked for again)
+  progStamp();
   let done = 0;
   assignData.order.forEach(function (l) {
     if (colored[l]) done++;
@@ -9,8 +11,18 @@ function updateProgress() {
   const bar = document.getElementById('sfProgBar');
   if (bar) bar.style.width = pct + '%';
   renderTools();
-  const dn = document.getElementById('sfDone');
-  if (dn) dn.style.display = N > 0 && done >= N ? '' : 'none';
+  const dn = document.getElementById('sfDone'),
+    fin = N > 0 && done >= N;
+  if (dn) dn.style.display = fin ? '' : 'none';
+  // (the bar: Focus mode while there's colouring to do, Reveal & share once the page is finished)
+  const fb = document.getElementById('sfFocus'),
+    rb = document.getElementById('sfAlongRev');
+  if (fb && rb) {
+    fb.style.display = fin ? 'none' : '';
+    rb.style.display = fin ? '' : 'none';
+  }
+  const ds = document.getElementById('sfDoneSum');
+  if (ds && N > 0 && done >= N) ds.textContent = finishLine();
   renderAlong();
 }
 function famVal(code) {
@@ -283,19 +295,24 @@ function renderBlendPlan() {
       var closed = !planOpen[nm],
         ct = groups[nm].length;
       return (
-        '<div class="plangrp' +
+        // (a button that says whether it's open, for the keyboard and screen readers, v287)
+        '<button type="button" class="plangrp' +
         (closed ? ' closed' : '') +
         '" data-g="' +
-        nm.replace(/"/g, '&quot;') +
-        '"><span class="pgcaret">' +
-        (closed ? '\u25b8' : '\u25be') +
+        esc(nm) +
+        '" aria-expanded="' +
+        !closed +
+        '"><span class="pgcaret" aria-hidden="true">' +
+        ic(closed ? 'chevron-right' : 'chevron-down') +
         '</span><span class="pgdot" style="background:' +
         gh[nm] +
         '"></span><span class="pgname">' +
-        nm +
+        esc(nm) +
         '</span><span class="pgn">' +
         ct +
-        '</span></div>' +
+        '<span class="sfsr"> ' +
+        (ct === 1 ? 'colour' : 'colours') +
+        '</span></span></button>' +
         (closed ? '' : groups[nm].join(''))
       );
     })
@@ -309,6 +326,13 @@ function renderBlendPlan() {
       var nm = g.getAttribute('data-g');
       planOpen[nm] = !planOpen[nm];
       renderBlendPlan();
+      [].some.call(host.querySelectorAll('.plangrp'), function (b) {
+        if (b.getAttribute('data-g') !== nm) return false;
+        try {
+          b.focus({ preventScroll: true });
+        } catch (_) {}
+        return true;
+      });
     });
   }
   var wk = Object.keys(want);

@@ -3,7 +3,7 @@
 // The engine itself is covered by test/balance.test.mjs.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, saveGuide } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -23,6 +23,12 @@ const shares = (page) => page.evaluate(() => {
   return r;
 });
 const undoLabel = (page) => page.getAttribute('#sfPlanUndo', 'aria-label');
+// what the bar should say: each role's measured share (f, whole percent), to the nearest 5 (pc), and its name (n)
+const measured = (page) => page.evaluate(() => {
+  const t = __mstest, p = t.balPlan(), ms = t.balMeasure(p), o = { f: {}, pc: {}, n: {}, sliver: {} };
+  ['m', 's', 'a'].forEach((r) => { if (!p.roles[r]) return; o.f[r] = Math.round(ms.f[r] * 100); o.pc[r] = Math.round(ms.f[r] * 20) * 5; o.n[r] = t.balShort(r); o.sliver[r] = ms.f[r] > 0 && ms.f[r] < 0.025; });
+  return o;
+});
 
 test('Random starts on Main colour: a bar of three roles about 60/30/10 of the picture, a line of what it uses, and the picture laid that way', async () => {
   const { page, errors } = await openApp();
@@ -30,13 +36,17 @@ test('Random starts on Main colour: a bar of three roles about 60/30/10 of the p
   await random(page);
   assert.equal(await page.getAttribute('#sfBal [data-v="main"]', 'aria-pressed'), 'true');
   assert.equal(await undoLabel(page), 'Undo: Pattern: Random');
-  const segs = await page.$$eval('#sfBalBar .sfbalseg', (b) => b.map((x) => ({ r: x.dataset.r, t: x.textContent, w: x.getBoundingClientRect().width, lab: x.getAttribute('aria-label') })));
+  const segs = await page.$$eval('#sfBalBar .sfbalseg', (b) => b.map((x) => ({ r: x.dataset.r, t: x.innerText.replace(/\n/g, ""), w: x.getBoundingClientRect().width, lab: x.getAttribute('aria-label') })));
   assert.deepEqual(segs.map((s) => s.r), ['m', 's', 'a']);
-  assert.match(segs[0].t, /^[A-Z][a-z-]+ · 60%$/);
-  assert.match(segs[1].t, /^[A-Z][a-z-]+ · 30%$/);
-  assert.equal(segs[2].t, '10%');
-  assert.ok(segs[0].w > segs[1].w * 1.6 && segs[1].w > segs[2].w * 1.5, 'widths follow the shares');
-  assert.match(segs[0].lab, /^Main colour: [A-Z][a-z-]+, chosen for you, about 60% of the picture\. Change$/);
+  // (v284: what's painted, to the nearest 5, within 5 of 60/30/10)
+  const want = await measured(page);
+  assert.equal(segs[0].t, want.n.m + ' · ' + want.pc.m + '%');
+  assert.equal(segs[1].t, want.n.s + ' · ' + want.pc.s + '%');
+  // (a name shows only where it fits whole)
+  assert.ok([want.pc.a + '%', want.n.a + ' · ' + want.pc.a + '%'].includes(segs[2].t), segs[2].t);
+  assert.ok(Math.abs(want.f.m - 60) <= 5 && Math.abs(want.f.s - 30) <= 5 && Math.abs(want.f.a - 10) <= 5, JSON.stringify(want.f));
+  assert.ok(segs[0].w > segs[1].w * 1.5 && segs[1].w > segs[2].w * 1.4, 'widths follow the shares');
+  assert.equal(segs[0].lab, 'Main colour: ' + (await page.evaluate(() => __mstest.balName('m', __mstest.balPlan()).toLowerCase())) + ', chosen for you, about ' + want.pc.m + '% of the picture. Change');
   assert.match(await page.textContent('#sfBalNote'), /^\d+ [a-z-]+s?(?:, with [^,]*)?, \d+ [a-z-]+s?(?:, with [^,]*)? and \d+ [a-z-]+s?(?:, with .*)? (?:of yours|from the catalogue)\./);
   const r = await shares(page);
   assert.ok(Math.abs(r.m - 60) <= 4 && Math.abs(r.s - 30) <= 4 && Math.abs(r.a - 10) <= 4 && r.x === 0, JSON.stringify(r));
@@ -52,7 +62,7 @@ test('a part of the bar opens its colour families (Auto first); choosing one lay
   await random(page);
   const before = await plan(page);
   await page.click('#sfBalM'); await page.waitForSelector('#sfSheet.sfbalsh'); await idle(page);
-  assert.equal(await page.textContent('#sfSheetT'), 'Main colour · about 60%');
+  assert.equal(await page.textContent('#sfSheetT'), 'Main colour: ' + (await page.evaluate(() => __mstest.balName('m', __mstest.balPlan()).toLowerCase())) + ' · about ' + (await measured(page)).pc.m + '%');
   const opts = await page.$$eval('#sfSheet .sfbalopt', (b) => b.map((x) => [x.dataset.k, x.getAttribute('aria-pressed')]));
   assert.deepEqual(opts[0], ['auto', 'true']);
   assert.ok(opts.length >= 8, 'the families there are');
@@ -65,7 +75,7 @@ test('a part of the bar opens its colour families (Auto first); choosing one lay
   assert.equal((await plan(page)).keys.split('/')[0], pick);
   assert.match(await undoLabel(page), new RegExp('^Undo: Main colour: '));
   assert.equal(await page.evaluate(() => document.activeElement.id), 'sfBalM');
-  assert.match(await page.getAttribute('#sfBalM', 'aria-label'), /^Main colour: [A-Z][a-z-]+, about 60%/);
+  assert.match(await page.getAttribute('#sfBalM', 'aria-label'), new RegExp('^Main colour: [a-z][a-z -]+, about ' + (await measured(page)).pc.m + '%'));
   // Temperature: the colours are chosen, so it greys out and says why
   await page.click('.sftabbtn[data-t="colours"]'); await idle(page);
   assert.equal(await page.isDisabled('#sfPal [data-v="cool"]'), true);
@@ -150,7 +160,7 @@ test('saved with the guide and opened as it was; a Random guide saved before Bal
   const d = await page.evaluate(() => __mstest.currentDesignObj());
   assert.equal(d.payload.style.balance, 'main');
   assert.equal(d.payload.style.balM, 'blue');
-  await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent));
+  await saveGuide(page);
   const id = await page.evaluate(() => __mstest.curId);
   const asg = await page.evaluate(() => JSON.stringify(__mstest.assignData.order.slice().sort((a, b) => a - b).map((l) => l + ':' + __mstest.assignData.assign[l].mkey)));
   await page.reload(); await idle(page);
@@ -189,7 +199,7 @@ test('the bar by keyboard: each part a button that opens its sheet; Surprise som
   await sampleGuide(page); await idle(page);
   await random(page);
   await page.focus('#sfBalS'); await page.keyboard.press('Enter'); await page.waitForSelector('#sfSheet.sfbalsh'); await idle(page);
-  assert.equal(await page.textContent('#sfSheetT'), 'Second colour · about 30%');
+  assert.equal(await page.textContent('#sfSheetT'), 'Second colour: ' + (await page.evaluate(() => __mstest.balName('s', __mstest.balPlan()).toLowerCase())) + ' · about ' + (await measured(page)).pc.s + '%');
   await page.keyboard.press('Escape'); await page.waitForSelector('#sfSheet', { state: 'detached' });
   assert.equal(await page.evaluate(() => document.activeElement.id), 'sfBalS');
   // Surprise: Random with a main colour about one time in three
@@ -201,5 +211,51 @@ test('the bar by keyboard: each part a button that opens its sheet; Surprise som
   assert.ok(got, 'Random in 30 goes');
   assert.match(got, /Surprise: .+ palette · Random, main colour [a-z-]+s/);
   assert.equal(await page.evaluate(() => __mstest.styleVars.balance), 'main');
+  assert.deepEqual(errors, []);
+});
+
+test('v284, a saved palette: a colour far from the others is an accent, the bar follows what Shuffle paints; a main colour of one marker says so, and Add shades turns Expand on', async () => {
+  const { page, errors } = await openApp();
+  await sampleGuide(page); await idle(page);
+  await random(page);
+  await page.evaluate(() => {
+    const t = __mstest, by = {};
+    t.coll.forEach((m) => { const f = t.balFamOf(m); (by[f] = by[f] || []).push(m.mkey); });
+    state.saved.unshift({ id: 884001, type: 'palette', name: 'Five', keys: [by.blue[0], by.blue[Math.floor(by.blue.length / 2)], by.teal[0], by.orange[0], by.pink[0]], ts: 884001 });
+    state.saved.unshift({ id: 884002, type: 'palette', name: 'Two', keys: [by.blue[0], by.orange[0]], ts: 884002 });
+    save();
+    Object.assign(t.styleVars, { paletteSource: 'saved', savedPalId: 884001, expand: false });
+    t.reassign();
+  });
+  await idle(page);
+  const bar = () => page.$$eval('#sfBalBar .sfbalseg', (b) => b.map((x) => ({ t: x.innerText.replace(/\n/g, ""), cut: [...x.querySelectorAll('span')].some((s) => s.offsetParent && s.scrollWidth > s.clientWidth + 1) })));
+  const check = async () => {
+    const w = await measured(page), t = await bar(), rs = Object.keys(w.pc);
+    rs.forEach((r, i) => {
+      const pct = (w.sliver[r] ? '<5' : w.pc[r]) + '%';
+      assert.ok(t[i].t === pct || t[i].t === w.n[r] + ' · ' + pct, t[i].t + ' vs ' + w.n[r] + ' ' + pct);
+      assert.ok(!t[i].cut, 'nothing cut short: ' + t[i].t);
+    });
+    assert.equal(t[0].t.split(' · ')[0], w.n.m, 'the main colour named');
+    return w;
+  };
+  const w = await check();
+  assert.ok(w.f.a <= 25, 'the accent a pop of colour: ' + JSON.stringify(w.f));
+  // (a share 8 points or more off what was asked says why)
+  const miss = await page.evaluate(() => __mstest.balMeasure(__mstest.balPlan()).miss);
+  assert.equal(!!(await page.$('#sfBalMiss')), miss >= 0.08, 'miss ' + miss);
+  assert.match(await page.textContent('#sfBalNote'), /^The palette’s 5 markers: blues the main colour, /);
+  await page.click('#sfShuffle'); await idle(page);
+  await check();
+  // two colours: one marker for the main colour
+  await page.evaluate(() => { __mstest.styleVars.savedPalId = 884002; __mstest.reassign(); });
+  await idle(page);
+  assert.match(await page.textContent('#sfBalOne'), /^One [a-z-]+ marker for the main colour, so touching [a-z-]+ sections will merge\. Add shades$/);
+  await check();
+  await page.click('#sfBalShades'); await idle(page);
+  assert.equal(await page.evaluate(() => __mstest.styleVars.expand), true);
+  assert.ok(await page.evaluate(() => __mstest.styleVars.limitN) >= 6);
+  assert.equal(await page.$('#sfBalShades'), null);
+  assert.match(await undoLabel(page), /^Undo: /);
   assert.deepEqual(errors, []);
 });

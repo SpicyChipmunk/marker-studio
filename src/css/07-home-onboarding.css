@@ -341,6 +341,14 @@ button.sfSeeAll {
 .wcsets .presetbrand {
   margin-top: 10px;
 }
+/* a landscape phone: one scrolling area, not the list scrolling inside another that hides it below its fold */
+@media (max-height: 500px) {
+  .wcsets {
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+}
 @media (max-height: 720px) {
   .wctitle {
     font-size: var(--t-xl);
@@ -405,7 +413,7 @@ button.sfSeeAll {
   font-weight: 600;
 }
 :focus-visible {
-  outline: 2px solid #b9a8ff;
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 .band:focus-visible,
@@ -525,7 +533,7 @@ button.sfSeeAll {
 }
 .resumecard .rsq,
 .resumecard .rswhen {
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   color: var(--sub);
 }
 .resumecard .rsnm {
@@ -547,4 +555,237 @@ button.sfSeeAll {
   padding: 0 16px;
   border-radius: var(--r-md);
   font-size: var(--t-base);
+}
+/* ---- Home, v285: the Continue card beside (iPad) or above (phone) New colouring guide and the cards; Your guides as a
+   grid (iPad) or a sideways strip (phone). Before there are any guides it is the one column it always was. ---- */
+.hometop,
+.homeside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.homecont {
+  min-width: 0;
+}
+.hccard {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+  color: var(--ink);
+  font: inherit;
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  cursor: pointer;
+}
+.hccard:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.hcpic {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  min-height: 150px;
+  background: #f6f3ec;
+}
+.hcpic img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+.hcph {
+  width: 100%;
+  height: 100%;
+}
+.hcbody {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px 14px;
+}
+.hceb {
+  font-size: var(--t-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sub);
+  font-weight: 700;
+}
+.hcname {
+  font-weight: 600;
+  font-size: var(--t-lg);
+  overflow-wrap: anywhere;
+}
+.hcbar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.hcbar i {
+  display: block;
+  height: 100%;
+  background: #3fb27f;
+}
+.hcmeta {
+  color: var(--sub);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+.hcmeta b {
+  color: var(--ink);
+}
+.hcdot {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  vertical-align: -0.12em;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.hcgo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 4px;
+  border-radius: var(--r-md);
+  font-weight: 600;
+}
+/* (beside the Continue card, New colouring guide is the second choice: outlined) */
+.homenew.homenew2 {
+  background: transparent;
+  border: 1.5px solid rgba(124, 92, 255, 0.7);
+  color: #cbbcff;
+  box-shadow: none;
+}
+/* (the cards' icons on a soft tile in their marker colour) */
+.homecard .hcicon {
+  display: inline-flex;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--t-2xl);
+}
+.homecard .hct1 {
+  background: rgba(224, 104, 90, 0.15);
+}
+.homecard .hct2 {
+  background: rgba(30, 163, 216, 0.15);
+}
+.homecard .hct3 {
+  background: rgba(180, 187, 84, 0.15);
+}
+/* Your guides: cards with their picture over the name; a sideways strip on a phone */
+.sfRecList {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 42%;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+}
+#sfRecent .sfRecCard {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+.sfRecPic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  background: #f6f3ec;
+  overflow: hidden;
+}
+#sfRecent .sfRecThumb {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  background: none;
+}
+#sfRecent .sfRecMeta {
+  padding: 8px 10px 10px;
+  min-width: 0;
+}
+#sfRecent .sfRecName {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+@media (min-width: 700px) {
+  .wrap.homemode {
+    max-width: var(--wrapW);
+  }
+  /* (#homeView: over the phone's 440px in 08-dialogs-match.css, which comes later) */
+  #homeView .homehub {
+    max-width: 1000px;
+  }
+  .hometop {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: start;
+  }
+  .hometop.nocont {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+  .hometop:not(.nocont) .homegrid {
+    grid-template-columns: 1fr;
+  }
+  .hometop:not(.nocont) .homecard {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 14px;
+    padding: 12px 14px;
+    min-height: 0;
+    text-align: left;
+  }
+  .hccard {
+    flex-direction: column;
+  }
+  .hcpic {
+    width: auto;
+    height: clamp(220px, 46vh, 520px);
+  }
+  .sfRecList {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: visible;
+  }
+  .sfRecList .sfRecCard:nth-child(n + 4) {
+    display: none;
+  }
+}
+@media (min-width: 1000px) {
+  .sfRecList {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .sfRecList .sfRecCard:nth-child(4) {
+    display: flex;
+  }
 }

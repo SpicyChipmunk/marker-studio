@@ -3,7 +3,7 @@
 // nothing left over from the guide stages.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle, scrollTop, toolStatus, sectionPoint } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, scrollTop, toolStatus, sectionPoint, answerAsks, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -14,7 +14,7 @@ const count = (page) => page.evaluate(() => __mstest.countedList ? __mstest.coun
 const sig = (page) => page.evaluate(() => __mstest.labelsSig());
 async function editor(page) {
   await sampleGuide(page);
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfBack2'); await idle(page);
   await scrollTop(page);
 }
@@ -65,7 +65,7 @@ test('include / exclude and the size slider change what the guide colours', asyn
   await tool(page, 'toggle'); await idle(page);
   const q = await scr(page, B.x, B.y); await page.mouse.click(q.x, q.y); await idle(page);
   assert.equal(await count(page), n0 - 1, 'tapped section excluded');
-  await page.click('#sfBuild'); await page.waitForFunction(() => __mstest.assignData && __mstest.assignData.N > 0); await idle(page);
+  await buildGo(page); await page.waitForFunction(() => __mstest.assignData && __mstest.assignData.N > 0); await idle(page);
   assert.equal(await page.evaluate((l) => __mstest.assignData.assign[l], B.l), undefined, 'excluded section gets no marker');
   await page.click('#sfBack2'); await idle(page);
   await page.click('#sfPlanUndo'); await idle(page);
@@ -90,7 +90,7 @@ test('crop and rotate rebuild the picture at the new shape', async () => {
   const d2 = await page.evaluate(() => [__mstest.W, __mstest.H]);
   assert.ok(d2[0] < d1[0] * 0.7 && d2[1] < d1[1] * 0.8, `cropped: ${d1} -> ${d2}`);
   assert.ok(await count(page) > 5, 'sections found in the crop');
-  await page.click('#sfBuild'); await page.waitForFunction(() => __mstest.assignData && __mstest.assignData.N > 0);
+  await buildGo(page); await page.waitForFunction(() => __mstest.assignData && __mstest.assignData.N > 0);
   assert.deepEqual(errors, []);
 });
 
@@ -128,7 +128,7 @@ const rect = (page, sel) => page.evaluate((s) => { const e = document.querySelec
 test('Edit sections: the section count only in the tool row; the two sliders line up', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfBack2'); await idle(page);
   assert.equal(await page.isVisible('#sfCount'), false);
   assert.match(await toolStatus(page), /^\d+ sections$/);
@@ -141,7 +141,7 @@ test('Edit sections: the section count only in the tool row; the two sliders lin
 test('turn then crop: each is its own Undo step', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfBack2'); await page.click('#sfAdjToggle'); await page.click('#sfRotR'); await idle(page);
   const w1 = await page.evaluate(() => __mstest.W);
   await page.click('#sfAutoCrop'); await idle(page);

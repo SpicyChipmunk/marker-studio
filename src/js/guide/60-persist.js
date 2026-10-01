@@ -54,6 +54,7 @@ function currentDesignObj(share, edits) {
     keys = [],
     prog = [],
     tones = {},
+    held = {},
     out = {},
     P = tonePart && tonePart._c === colored ? tonePart : null,
     here = function (l) {
@@ -70,6 +71,16 @@ function currentDesignObj(share, edits) {
     if (locks[l] !== undefined && b && b.mkey !== m.mkey) bas[l] = b.mkey;
     if (colored[l]) prog.push(l);
     if (P && P[l]) tones[l] = P[l];
+    // (the shading a coloured section keeps, where it's not its zone's: 34-zones)
+    const h = heldSh[l];
+    // ([shadow, hilite], and from v285 a third: 1 when the shadow still follows the setting, 0 when it's kept. Older
+    // copies read the first two, so they keep the shadow of the moment: a v284 section saved as two keeps both)
+    if (h && (colored[l] || (P && P[l]))) {
+      const z = zones.length ? zsh(zoneOf(l)) : zshMain(),
+        sh = h.free ? z.shadow : h.shadow;
+      if (sh !== z.shadow || h.hilite !== z.hilite)
+        held[l] = h.legacy ? [h.shadow, h.hilite] : [sh, h.hilite, h.free ? 1 : 0];
+    }
   });
   for (const l in _lostKeys)
     if (abl[l] === undefined && here(+l) && !(assignData.paper && assignData.paper[l])) abl[l] = _lostKeys[l];
@@ -129,6 +140,8 @@ function currentDesignObj(share, edits) {
         anchors: zones.length ? zoneRec(0).an : anchors,
         prog: prog,
         tones: tones,
+        held: Object.keys(held).length ? held : undefined,
+        dates: progAt.s ? { s: progAt.s, e: progAt.e || undefined } : undefined,
         out: Object.keys(out).length ? out : undefined,
         edits: edits ? 1 : undefined,
         base: Object.keys(bas).length ? bas : undefined,
@@ -150,7 +163,7 @@ function shareGuideFile() {
   try {
     blob = new Blob([JSON.stringify(d)], { type: 'application/json' });
   } catch (e) {
-    note('Could not export the guide file.');
+    note('Couldn’t export the guide file.');
     return;
   }
   handOver(
@@ -167,7 +180,7 @@ function shareGuideFile() {
   ).then(function (r) {
     if (r === 'download')
       note('Guide file downloaded \u2014 keep it as a backup or move it to another device.');
-    else if (r === false) note('Could not export the guide file.');
+    else if (r === false) note('Couldn’t export the guide file.');
   });
 }
 function sampleFromAnywhere() {
@@ -176,6 +189,16 @@ function sampleFromAnywhere() {
 }
 function pickPhoto() {
   if (!document.getElementById('sfPick')) mount();
+  _pickCb = null;
+  if (fileEl) fileEl.click();
+}
+// Home's New colouring guide (v288): the picker opens straight from Home, which stays as it is until a photo is
+// chosen (cancel: nothing happens); then onPick (the switch to the Guide screen) and the photo is read. The picker is
+// opened in the tap itself, nothing asked or awaited first (iOS opens it only from the tap).
+let _pickCb = null;
+function pickPhotoHome(onPick) {
+  if (!document.getElementById('sfPick')) mount();
+  _pickCb = onPick || null;
   if (fileEl) fileEl.click();
 }
 // Before something else opens: a guide in the Library saves its last changes into its entry; a new guide with
@@ -203,7 +226,10 @@ function stashDirty() {
       return false;
     });
   }
-  if (!guideDirty) return Promise.resolve(true);
+  if (!guideDirty || _removed || _openEmpty || (curSample && !sampleTouched(true)))
+    return Promise.resolve(true);
+  if (storeBlocked()) return askLeaveBlocked();
+  if (curSample && curName === _sampleNm) curName = sampleSaveName();
   try {
     d = currentDesignObj();
     if (!d) return Promise.resolve(true);
@@ -239,12 +265,13 @@ function stashDirty() {
     if (!id) return fail();
     if (gen === _gTok) {
       curId = id;
+      curSample = false;
       _libBase = { id: id, sig: libSig(d) };
       libNote();
     }
     slotClear(gen);
     if (api.refreshSaved) api.refreshSaved();
-    toast('Saved “' + esc(nm) + '” to your Library so you don’t lose it.', 4200);
+    // (guides keep themselves in the Library from v285: no toast for it)
     return true;
   }, fail);
 }
@@ -288,33 +315,80 @@ function minChanges(was) {
 }
 // Build guide, Discard edits, or Cancel (stay): a dialog over whatever screen asked
 function askEdits() {
+  return askBox(
+    'Section edits not saved',
+    'Build the guide with your section edits, or discard them?',
+    '<button type="button" class="btn-primary" data-a="build">Build again</button><button type="button" data-a="discard">Discard edits</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+  );
+}
+// storage blocked: a guide not kept anywhere goes when something else opens, so that's asked first (v285)
+function askLeaveBlocked() {
+  return askBox(
+    'This guide isn’t saved',
+    'This browser isn’t letting Marker Studio save, so the guide goes when you open something else. To keep it, Cancel and use Share › Guide file.',
+    '<button type="button" class="sfghost" data-a="stay">Cancel</button><button type="button" data-a="go">Open anyway</button>',
+  ).then(function (a) {
+    if (a !== 'go') return false;
+    guideDirty = false;
+    return true;
+  });
+}
+// a dialog over whatever screen asked: resolves to the data-a of the button pressed ('stay' for the backdrop, Escape).
+// yesNo: a question that was the browser's OK/Cancel before v288 (marked for the tests' answerAsks)
+// now(answer), when given, runs inside the tap itself, before the promise resolves: for an answer that must open the
+// photo picker (iOS opens it only from the tap)
+function askBox(title, text, btns, yesNo, now) {
   return new Promise(function (res) {
     const o = document.createElement('div'),
       op = document.activeElement;
     o.className = 'overlay on';
     o.id = 'sfEdAsk';
+    if (yesNo) o.setAttribute('data-confirm', '1');
     o.setAttribute('role', 'dialog');
     o.setAttribute('aria-modal', 'true');
     o.setAttribute('aria-labelledby', 'sfEdAskT');
+    // (the question is read with the title, not only the button that has the keyboard, v287)
+    o.setAttribute('aria-describedby', 'sfEdAskD');
     o.innerHTML =
-      '<div class="ocard dcard"><div class="mhead"><div class="mtitle" id="sfEdAskT">Section edits not saved</div></div><div class="dsub">Build the guide with your section edits, or discard them?</div><div class="sfedaskbtns"><button type="button" class="btn-primary" data-a="build">Build guide</button><button type="button" data-a="discard">Discard edits</button><button type="button" class="sfghost" data-a="stay">Cancel</button></div></div>';
+      '<div class="ocard dcard"><div class="mhead"><h2 class="mtitle" id="sfEdAskT">' +
+      esc(title) +
+      '</h2></div><div class="dsub" id="sfEdAskD">' +
+      esc(text) +
+      '</div><div class="sfedaskbtns">' +
+      btns +
+      '</div></div>';
     const end = function (a) {
       o.remove();
       try {
         if (op && op.isConnected && op !== document.body) op.focus({ preventScroll: true });
       } catch (_) {}
+      if (now) now(a);
       res(a);
     };
     // a tap on the backdrop is Cancel, and so is Escape (layers.js closes the top dialog as a tap on its backdrop)
+    // (not a backdrop tap within 400 ms of opening: the rest of the double tap that opened it)
+    const t0 = Date.now();
     o.addEventListener('click', function (e) {
       const b = e.target.closest('[data-a]');
       if (b) end(b.dataset.a);
-      else if (e.target === o) end('stay');
+      else if (e.target === o && (Date.now() - t0 > 400 || e.detail === 0)) end('stay');
     });
     document.body.appendChild(o);
     try {
-      o.querySelector('[data-a="build"]').focus();
+      o.querySelector('.btn-primary, [data-a]').focus();
     } catch (_) {}
+  });
+}
+// section edits brought back by Resume, let go: nothing of the open (edited) guide is saved, and the copy in the slot
+// goes; the Library keeps the guide as it was built (_edDisc: no longer pending)
+function edDropResumed() {
+  _edDisc = true;
+  clearTimeout(autoT);
+  autoT = null;
+  guideDirty = false;
+  slotOp(function () {
+    const m = slotNote();
+    if (m && m.edits) clearAutosave();
   });
 }
 // the answer: built (then saved like any change), discarded (the guide as built stays what is kept, and a copy of the
@@ -333,26 +407,65 @@ function edDecide() {
     if (a === 'discard') {
       _edDisc = true;
       const id = curId;
-      if (id != null && libEntry())
-        slotOp(function () {
-          const m = slotNote();
-          if (m && m.edits && m.savedId === id) clearAutosave();
-        });
+      // (edits brought back by Resume: what's open is the edited guide, so nothing of it is saved; the Library keeps
+      // the guide as it was built, and the copy in the slot goes)
+      if (_edResumed) {
+        edDropResumed();
+        return true;
+      }
+      // (the edits kept for Resume go too: this guide's in the Library, or this visit's own)
+      const tok = _gTok;
+      slotOp(function () {
+        const m = slotNote();
+        if (m && m.edits && ((id != null && m.savedId === id) || slotMine(tok, m))) clearAutosave();
+      });
       return stashDirty();
     }
     return false;
   });
 }
+// The page is going away (a reload, the tab closed) or hidden (a phone may stop it): changes to a Library guide that
+// would save in a moment, or are saving now, are kept aside at once (v286: the usual save reads the old copy first,
+// and a database write begun as a page goes is dropped), sfSaveDesignNow. A guide another tab saved meanwhile is left
+// to the usual save, which merges the two.
+function saveOnLeave() {
+  if (!assignData || !api.saveDesignNow || !(guideDirty || autoT || _libBusy)) return;
+  // (not a colour only being tried in the picker: it isn't kept until Done, holdSave)
+  if (pickPending()) return;
+  const e = libEntry();
+  if (!e || libOther()) return;
+  let d = null;
+  try {
+    d = currentDesignObj();
+  } catch (_) {}
+  if (!d) return;
+  // (the usual save carries on as well, if the page lives on: this copy is then unneeded)
+  api.saveDesignNow({
+    id: curId,
+    name: libName(e),
+    W: d.W,
+    H: d.H,
+    keys: d.keys,
+    n: d.n,
+    payload: d.payload,
+  });
+}
 // the page is hidden with section edits not built: they go to the autosave slot, and Resume brings them back to build
 function keepEdits() {
-  if (!secEdPending() || !api.saveDesign) return;
+  // (not for a guide deleted from the Library while open: it stays out)
+  if (!secEdPending() || !api.saveDesign || _removed) return;
   try {
     const d = currentDesignObj(false, true);
     if (d) slotSave(d, true);
   } catch (_) {}
 }
 document.addEventListener('visibilitychange', function () {
-  if (document.visibilityState === 'hidden') keepEdits();
+  if (document.visibilityState !== 'hidden') return;
+  keepEdits();
+  // (an app switch on a phone: the save waiting to happen goes now, while the page still runs; and as a phone may
+  // stop the page before it's done, what it saves is kept aside too, saveOnLeave)
+  flushAutosave();
+  saveOnLeave();
 });
 window.addEventListener('pagehide', keepEdits);
 function importFromHome(file) {
@@ -365,7 +478,7 @@ function importFromHome(file) {
 }
 // A section map's pixels (null when it can't be read), and how many different sections it has (counting stops past cap)
 const MAXSECS = 100000,
-  TOO_COMPLEX = 'Could not open that guide — it has too many sections (the file is too complex).';
+  TOO_COMPLEX = 'Couldn’t open that guide — it has too many sections (the file is too complex).';
 function lmapRead(img) {
   try {
     const w = img.naturalWidth || img.width,
@@ -439,7 +552,7 @@ function importGuideFile(file) {
     try {
       d = JSON.parse(fr.result);
     } catch (e) {
-      note('Could not read that guide file.');
+      note('Couldn’t read that guide file.');
       return;
     }
     if (
@@ -447,7 +560,11 @@ function importGuideFile(file) {
       !d.payload ||
       typeof d.payload !== 'object' ||
       typeof d.payload.lmap !== 'string' ||
-      !/^data:image\/png;base64,[A-Za-z0-9+/=]{16,}$/.test(d.payload.lmap)
+      !/^data:image\/png;base64,[A-Za-z0-9+/=]{16,}$/.test(d.payload.lmap) ||
+      // (a guide with no markers for its sections would open as nothing at all, v287)
+      !d.payload.assign ||
+      typeof d.payload.assign !== 'object' ||
+      !Object.keys(d.payload.assign).length
     ) {
       note('That is not a valid guide file.');
       return;
@@ -457,10 +574,10 @@ function importGuideFile(file) {
       if (!c.ok) {
         note(
           c.why === 'size'
-            ? 'Could not import that guide \u2014 its picture is the wrong size.'
+            ? 'Couldn’t import that guide \u2014 its picture is the wrong size.'
             : c.why === 'complex'
-              ? 'Could not import that guide \u2014 it has too many sections (the file is too complex).'
-              : 'Could not import that guide \u2014 its picture didn\u2019t decode.',
+              ? 'Couldn’t import that guide \u2014 it has too many sections (the file is too complex).'
+              : 'Couldn’t import that guide \u2014 its picture didn\u2019t decode.',
         );
         return;
       }
@@ -490,15 +607,15 @@ function importGuideFile(file) {
             _justImported = id;
             if (api.refreshSaved) api.refreshSaved();
             openDesign(id);
-          } else note(saveFailWords('Could not import (storage may be full).'));
+          } else note(saveFailWords('Couldn’t import (storage may be full).'));
         })
         .catch(function () {
-          note('Could not import that guide.');
+          note('Couldn’t import that guide.');
         });
     });
   };
   fr.onerror = function () {
-    note('Could not read that file.');
+    note('Couldn’t read that file.');
   };
   fr.readAsText(file);
 }
@@ -522,10 +639,80 @@ let _libBase = null,
 let _origKeys = {},
   _lostKeys = {},
   _openEmpty = false;
+// v285: a guide goes into the Library by itself once it's built (doAutosave → firstSave). The sample (curSample) only
+// once it's changed: _sampleBase is what it was as built, _sampleNm its name then. _removed: deleted in the Library
+// while open; it stays out (nothing saved, not even to the autosave slot) unless Put back. _sampleNoteX: the line
+// under the tabs about the sample was closed.
+let curSample = false,
+  _sampleBase = null,
+  _sampleNm = '',
+  _removed = false,
+  _sampleNoteX = false,
+  // (a sample being loaded and built: not yet curSample, but its line under the tabs is coming, so no tip before it)
+  _smpLoad = false;
+// the sample as built is noted (after build): changing anything from here keeps it
+function sampleBuilt(nm) {
+  _smpLoad = false;
+  curSample = true;
+  _sampleNm = nm;
+  curName = nm;
+  _sampleNoteX = false;
+  _sampleT = null;
+  try {
+    _sampleBase = libSig(currentDesignObj());
+  } catch (_) {
+    _sampleBase = null;
+  }
+}
+// (the comparison builds the whole guide, and the status line asks on every redraw: an answer is kept for 400ms, and
+// the save itself, 1.5s after the last change, always asks afresh)
+let _sampleT = null;
+function sampleTouched(fresh) {
+  if (!curSample) return true;
+  if (curName && curName !== _sampleNm) return true;
+  if (!_sampleBase || !assignData) return false;
+  const now = Date.now();
+  if (!fresh && _sampleT && now - _sampleT.t < 400) return _sampleT.v;
+  let v = false;
+  try {
+    const d = currentDesignObj();
+    v = !!d && libSig(d) !== _sampleBase;
+  } catch (_) {}
+  _sampleT = { t: now, v: v };
+  return v;
+}
+// "Sample jellyfish", or "Sample jellyfish 2", 3 … when the Library has one already
+function sampleSaveName() {
+  const used = usedGuideNames();
+  if (!used.has(_sampleNm.toLowerCase())) return _sampleNm;
+  for (let i = 2; i < 999; i++)
+    if (!used.has((_sampleNm + ' ' + i).toLowerCase())) return _sampleNm + ' ' + i;
+  return _sampleNm;
+}
+function storeBlocked() {
+  return typeof STORE_BLOCKED !== 'undefined' && !!STORE_BLOCKED;
+}
+// the open guide should go into the Library by itself now: built, not there yet, not deleted from it while open, not a
+// sample left as it was, nothing to build first, not one that opened with nothing to show
+function canAuto() {
+  return (
+    !!assignData &&
+    !libEntry() &&
+    !_removed &&
+    sfmode !== 'review' &&
+    !_openEmpty &&
+    !secEdPending() &&
+    !storeBlocked() &&
+    sampleTouched(true)
+  );
+}
 // a different guide or picture is being put in place (from resetForNewPicture): what is known about saving the old one ends
 function saveReset() {
   _gTok++;
   _libBase = null;
+  curSample = false;
+  _sampleBase = null;
+  _removed = false;
   _libTs = null;
   _mergeSaid = false;
   _saveErr = false;
@@ -705,6 +892,12 @@ function doAutosave(q) {
   if (!assignData) return Promise.resolve(true);
   if (!libEntry()) slotAdopt();
   if (libEntry()) return libAutosave(q);
+  if (canAuto()) return firstSave(true);
+  // (deleted while open, or the sample as it was: nothing is kept)
+  if (_removed || (curSample && !sampleTouched())) {
+    saveStatus();
+    return Promise.resolve(true);
+  }
   try {
     const d = currentDesignObj();
     if (d) slotSave(d);
@@ -844,6 +1037,8 @@ function libAutosave(q) {
   if (!need) {
     if (!fresh) _libBase = { id: id, sig: sig };
     saveStatus();
+    // (another tab saved it while this one waited to save nothing: show theirs, libChanged)
+    if (libOther()) libChanged(id, 'changed');
     return Promise.resolve(true);
   }
   guideDirty = false;
@@ -875,9 +1070,16 @@ function libAutosave(q) {
           _saveErr = false;
           if (wasErr) sayLive('Saved in your Library');
         }
+        // its copy in the slot goes; section edits left there by an earlier visit (not this one's: built or
+        // discarded by now) are kept first, as "… (section edits)"
         slotOp(function () {
-          const m = JSON.parse(localStorage.getItem('ms-guide-auto') || 'null');
-          if (m && m.savedId === id) clearAutosave();
+          const m = slotNote();
+          if (!m || m.savedId !== id) return;
+          if (m.edits === 1 && !slotMine(gen, m))
+            return keepSlot(m).then(function (ok) {
+              if (ok) clearAutosave();
+            });
+          clearAutosave();
         });
         if (api.savedChanged) api.savedChanged(id);
         saveStatus();
@@ -1047,14 +1249,20 @@ function libMerge() {
 // the status line under the guide's name (#5): where the open guide is kept; a guide not in the Library has Save
 // next to it once it's built (screen readers hear the moments that matter via sayLive). In Edit sections, edits not
 // built yet are not kept, and it says so (pe: secEdPending(), worked out once by the caller).
+// (_savedNew: when Save first put this guide in the Library; for a few seconds the line says it saves itself now)
+let _savedNew = 0;
 function saveStText(pe) {
   if (pe === undefined) pe = secEdPending();
-  if (pe) return 'Section edits not saved \u2014 Build guide to keep them';
+  if (pe) return 'Section edits not saved \u2014 Build again to keep them';
   if (!assignData) return labels && sfmode === 'review' ? 'Not saved yet' : '';
   const e = libEntry();
-  if (!e) return 'Not saved yet';
+  if (!e && _removed) return 'Removed from your Library';
+  if (!e && storeBlocked()) return 'Not saved \u2014 use Share \u203a Guide file';
   if (_saveErr) return 'Not saved \u2014 storage is full';
-  return guideDirty || _libBusy ? 'Saving\u2026' : 'Saved in your Library \u2713';
+  if (!e && curSample && !sampleTouched()) return 'Sample';
+  if (!e) return sfmode === 'review' || _openEmpty ? 'Not saved yet' : 'Saving\u2026';
+  if (guideDirty || _libBusy) return 'Saving\u2026';
+  return Date.now() - _savedNew < 6000 ? 'Saves itself from now on \u2713' : 'Saved in your Library \u2713';
 }
 function saveStatus() {
   const pe = secEdPending(),
@@ -1064,11 +1272,22 @@ function saveStatus() {
   if (el) {
     if (el.textContent !== t) el.textContent = t;
     el.style.display = t ? '' : 'none';
-    el.classList.toggle('warn', pe || _saveErr || (curId != null && !e && !!assignData));
+    el.classList.toggle('warn', pe || _saveErr || _removed || (!e && storeBlocked() && !!assignData));
     el.classList.toggle('ok', !pe && !!e && !_saveErr && !guideDirty && !_libBusy);
   }
-  const b = document.getElementById('sfSave');
-  if (b) b.style.display = assignData && !e && sfmode !== 'review' && !pgMode && !cropMode ? '' : 'none';
+  // the button: Put back (deleted while open), or Save to try again after a save that failed
+  const b = document.getElementById('sfSave'),
+    want = assignData && !e && sfmode !== 'review' && !pgMode && !cropMode && (_removed || _saveErr);
+  if (b) {
+    // (not while it says something for a moment: Saving…, or Save failed)
+    if (!_firstBusy && !b.disabled) b.textContent = _removed ? 'Put back' : 'Save';
+    b.style.display = want ? '' : 'none';
+  }
+  // the sample's line under the tabs goes once it's kept
+  if (!curSample || e) {
+    const sn = document.getElementById('sfSampleNote');
+    if (sn) sn.remove();
+  }
 }
 // the Library deleted (back: or, with Undo, put back) a guide, or a backup replaced it (back: 'replaced'): if it is the
 // open one, stop or go on saving into it, or open what was restored in its place. back 'changed': another tab saved
@@ -1115,11 +1334,14 @@ function libChanged(id, back) {
     autoT = null;
     _delDirty = guideDirty;
     guideDirty = false;
+    _removed = true;
   } else {
+    _removed = false;
     if (_delDirty) guideDirty = true;
     _delDirty = false;
     if (guideDirty) scheduleAutosave();
   }
+  if (typeof renderHead === 'function') renderHead();
   saveStatus();
 }
 function saveAsPalette() {
@@ -1136,7 +1358,7 @@ function saveAsPalette() {
   if (!keys.length) return;
   var _pid = api.savePalette(keys, curName ? curName + ' palette' : null);
   if (!_pid) {
-    note('Could not save palette \u2014 storage may be full.');
+    note('Couldn’t save palette \u2014 storage may be full.');
     return;
   }
   if (api.refreshSaved) api.refreshSaved();
@@ -1187,7 +1409,7 @@ function btnBusy(t) {
     b.disabled = true;
   } else {
     b.disabled = false;
-    b.textContent = 'Save';
+    b.textContent = _removed ? 'Put back' : 'Save';
   }
 }
 // a save that failed: when the browser blocks storage altogether (the shell's STORE_BLOCKED) that is what's said instead
@@ -1196,35 +1418,45 @@ function saveFailWords(m) {
     ? 'This browser isn’t letting Marker Studio save — use Share › Guide file to keep this guide.'
     : m;
 }
-// Save (next to the name): a new guide goes into the Library, and from then on it saves itself. For one already
-// there (⋯ → Save a copy) a copy is made instead
+// A new guide goes into the Library (v285: by itself once built, auto; or by the header's button: Put back after it was
+// deleted while open, or Save to try again after a save that failed), and from then on it saves itself. The button
+// on a guide already there (⋯ → Save a copy) makes a copy instead. Returns a promise of "stored".
 function saveGuide() {
-  if (!assignData || !api.saveDesign || _firstBusy) return;
-  const _gn = document.getElementById('sfGName');
+  return firstSave(false);
+}
+function firstSave(auto) {
+  if (!assignData || !api.saveDesign) return Promise.resolve(false);
+  if (_firstBusy) return _firstP || Promise.resolve(false);
+  // (the button's save takes a name being typed; an automatic one leaves it to Enter or Escape)
+  const _gn = !auto && document.getElementById('sfGName');
   if (_gn && _gn.value.trim()) curName = _gn.value.trim();
   if (libEntry()) {
+    if (auto) return libAutosave();
     saveCopy();
-    return;
+    return Promise.resolve(true);
   }
+  // (the sample keeps its name, numbered when the Library has one: "Sample jellyfish 2")
+  if (curSample && curName === _sampleNm) curName = sampleSaveName();
   const d = currentDesignObj();
-  if (!d) return;
+  if (!d) return Promise.resolve(false);
   const gen = _gTok,
-    nm = d.name || 'Colour guide';
+    nm = d.name || 'Colour guide',
+    back = _removed && curId != null ? curId : null,
+    wasErr = _saveErr,
+    pl = d.payload || {},
+    started = (Array.isArray(pl.prog) && pl.prog.length) || (pl.tones && Object.keys(pl.tones).length);
   // nothing would be kept (a save might even seem to work, into storage the browser throws away)
-  if (typeof STORE_BLOCKED !== 'undefined' && STORE_BLOCKED) {
-    note(saveFailWords(''));
-    btnBusy('Save failed');
-    setTimeout(function () {
-      if (!_firstBusy) btnBusy(null);
-    }, 1600);
-    return;
+  if (storeBlocked()) {
+    if (!auto) note(saveFailWords(''));
+    saveStatus();
+    return Promise.resolve(false);
   }
   _firstBusy = true;
-  btnBusy('Saving…');
-  note('Saving…');
+  if (!auto) btnBusy(back != null ? 'Putting back…' : 'Saving…');
   // stashDirty waits for this first save; the guide counts as saved (not dirty) only once it is stored
   _firstP = Promise.resolve(
     api.saveDesign({
+      id: back != null ? back : undefined,
       name: d.name,
       W: d.W,
       H: d.H,
@@ -1232,6 +1464,9 @@ function saveGuide() {
       n: d.n,
       payload: d.payload,
       thumb: makeThumb(),
+      quiet: auto,
+      // (saved as built, nothing coloured: the backup reminder leaves it out until it changes)
+      fresh: auto && !curSample && !started,
     }),
   )
     .catch(function () {
@@ -1247,34 +1482,68 @@ function saveGuide() {
           slotClear(gen);
         } else
           toast(
-            'Couldn\u2019t save \u201c' +
-              esc(nm) +
-              '\u201d \u2014 this browser\u2019s storage may be full. Free up space (back up, then delete a few guides in the Library), then save it again.',
+            saveFailWords(
+              'Couldn\u2019t save \u201c' +
+                esc(nm) +
+                '\u201d \u2014 this browser\u2019s storage may be full. Free up space (back up, then delete a few guides in the Library), then open it again.',
+            ),
             8000,
           );
-        return;
+        return !!id;
       }
       if (id) {
         curId = id;
+        curSample = false;
+        _removed = false;
         _libBase = { id: id, sig: libSig(d) };
         libNote();
         _saveErr = false;
         guideDirty = false;
         slotClear(gen);
         if (api.refreshSaved) api.refreshSaved();
-        note('Saved to your Library. From now on, changes save by themselves.');
-        sayLive('Saved in your Library. Changes now save automatically.');
+        // (said once, in the header's status line rather than a toast over the tabs: v284)
+        _savedNew = Date.now();
+        setTimeout(saveStatus, 6100);
+        sayLive(
+          back != null
+            ? 'Put back in your Library.'
+            : 'Saved in your Library. Changes now save automatically.',
+        );
         btnBusy(null);
+        renderHead();
         saveStatus();
         scheduleAutosave();
-      } else {
-        note(saveFailWords('Could not save (storage may be full).'));
+        return true;
+      }
+      // storage full: said once per run of failures; the guide stays open, goes to the autosave slot, and the next
+      // change (or Save) tries again
+      _saveErr = true;
+      if (!wasErr) renderHead();
+      if (auto) btnBusy(null);
+      else {
+        // (the button says so for a moment, then is Save again)
         btnBusy('Save failed');
         setTimeout(function () {
           if (!_firstBusy) btnBusy(null);
         }, 1600);
       }
+      if (!wasErr || !auto)
+        toast(
+          saveFailWords(
+            'Couldn\u2019t save \u201c' +
+              esc(nm) +
+              '\u201d \u2014 this browser\u2019s storage is full. It stays open here: free up space (back up, then delete a few guides in the Library), or keep it with Share \u203a Guide file.',
+          ),
+          8000,
+        );
+      try {
+        slotSave(d);
+      } catch (_) {}
+      saveStatus();
+      return false;
     });
+  saveStatus();
+  return _firstP;
 }
 // Save a copy: the open guide (its changes so far already in its entry) as a new Library entry named "<name> (copy)";
 // the copy is what stays open, the original keeps everything up to now

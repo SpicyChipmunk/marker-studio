@@ -1,6 +1,7 @@
 /* The guide screen's frame (Release 3, docs/GUIDE-LAYOUT.md): the header row, the pinned picture and its tool row,
    the bar, sheets and one-time hints. One column by default; side by side on landscape screens 640px and wider and
-   on any screen 900px and wider (the same query as sideBySide() in js/guide/72-frame.js). */
+   on any screen 1100px and wider (the same query as sideBySide() in js/guide/72-frame.js; v285: 900px before, which
+   put the 13" iPad in portrait side by side with a small picture). */
 /* the page ends at the guide card, so the sticky bar sits on the bottom at the end of a short tab */
 .wrap.sfmode.sfworkon {
   padding-bottom: 0;
@@ -236,6 +237,9 @@
 #sfRoot .sfpic #sfCanvas {
   margin: 0;
 }
+#sfRoot .sfpicbox.sfshort .sfpic {
+  align-items: center;
+}
 /* full screen, focus mode and Reveal: the frame's boxes step aside and #sfView lays the picture out itself */
 #sfRoot.sffull .sfpicbox,
 #sfRoot.sffull .sfpic,
@@ -284,10 +288,11 @@
   line-height: 1;
   white-space: nowrap;
 }
+/* (the hit area reaches 2px sideways too, over the gaps between the buttons: v284) */
 #sfRoot .sftools .sfz::after {
   content: '';
   position: absolute;
-  inset: -6px 0;
+  inset: -6px -2px;
 }
 #sfRoot .sftools .sfz svg {
   display: block;
@@ -313,6 +318,33 @@
 }
 #sfRoot .sftools.sfzc2 .sfzul {
   display: none;
+}
+/* v288: words beside Codes, Greyscale and Full screen where the row has room (planFit) */
+#sfRoot .sftools .sfzw {
+  display: none;
+}
+#sfRoot .sftools.sftw:not(.sfzcw) .sfzhw {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+}
+#sfRoot .sftools.sftw:not(.sfzcw) .sfzhw .sfzw {
+  display: inline;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* the last step on the narrowest rows (Photo, zoomed in, with Undo, at 375px): the buttons a little narrower */
+#sfRoot .sftools.sfzc4 {
+  gap: 2px;
+}
+#sfRoot .sftools.sfzc4 .sfz {
+  width: 34px;
+}
+#sfRoot .sftools.sfzc4 .sfz::after {
+  inset: -6px -1px;
 }
 /* the status's parts go whole when the row is tight (planFit): never an ellipsis mid-number */
 #sfRoot .sfstat {
@@ -414,6 +446,16 @@
   padding: 2px 0 6px;
   min-height: var(--tabMin, 0px);
 }
+/* (while each tab's own height is measured: tabsTallest) */
+#sfRoot .sftabmeas .sftab {
+  min-height: 0;
+}
+/* v285: a big portrait screen (an iPad) uses its width for the guide, one column */
+@media (min-width: 700px) and (orientation: portrait) and (max-width: 1099px) {
+  .wrap.sfmode {
+    max-width: var(--wrapW);
+  }
+}
 #sfRoot .sfpane {
   min-height: var(--paneMin, 0px);
 }
@@ -447,7 +489,7 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: var(--ink);
   font:
-    italic 600 var(--t-xs)/1 Georgia,
+    italic 600 var(--t-sm)/1 Georgia,
     serif;
 }
 #sfRoot .sfinfo.open,
@@ -525,19 +567,23 @@ html.sfsheeton body {
   gap: 10px;
   padding: 14px 14px 8px;
 }
-#sfRoot .sfshhd h3 {
+/* (a sheet's title as a dialog's: the app's serif, one size: v284. A sheet belongs to the picture, which stays in
+   use under it; anything else is a dialog: docs/GUIDE-LAYOUT.md) */
+#sfRoot .sfshhd h2 {
   flex: 0 1 auto;
   min-width: 0;
   margin: 0;
-  font-size: var(--t-lg);
-  font-weight: 700;
+  font-family: Fraunces, Georgia, serif;
+  font-size: var(--t-xl);
+  font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* (the field takes the room the title leaves, at least 96px: the title is cut only when there's no room at all) */
 #sfRoot .sfshhd input {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: 96px;
   height: 36px;
   padding: 0 10px;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -557,6 +603,7 @@ html.sfsheeton body {
 #sfRoot .sfshft {
   flex: none;
   display: flex;
+  justify-content: flex-end;
   gap: 8px;
   padding: 10px 14px max(12px, env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line);
@@ -565,6 +612,8 @@ html.sfsheeton body {
   flex: 1 1 0;
   height: 44px;
   min-width: 0;
+  /* (a sheet as wide as an iPad's card keeps its buttons a button's size, at the right) */
+  max-width: 280px;
   color: var(--ink);
   font-size: var(--t-md);
 }
@@ -574,7 +623,7 @@ html.sfsheeton body {
 }
 #sfRoot .sfmh {
   padding: 8px 4px 2px;
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -612,13 +661,23 @@ html.sfsheeton body {
   line-height: 1.45;
 }
 /* #1 side by side: the picture fills the left column; the header, tabs, controls and bar are on the right */
-@media (min-width: 900px), (orientation: landscape) and (min-width: 640px) {
+@media (orientation: landscape) and (min-width: 640px), (min-width: 1100px) {
+  /* (v285: the picture's column is as wide as it needs, set by frameSize, so the guide can use a big screen) */
   .wrap.sfmode {
-    max-width: 1120px;
+    max-width: 1600px;
+  }
+  /* (v288: the header and menu as wide as on the other screens) */
+  .wrap.sfmode > .head,
+  .wrap.sfmode > .modes {
+    max-width: var(--wrapHW, none);
+    margin-left: auto;
+    margin-right: auto;
   }
   #sfRoot #sfWork {
     display: grid;
+    /* (frameSize sets the columns: the picture's as wide as it needs) */
     grid-template-columns: minmax(0, 1fr) minmax(300px, 1.05fr);
+    justify-content: center;
     column-gap: 14px;
     align-items: start;
     padding: 10px 10px 0;
@@ -690,7 +749,7 @@ html.sfsheeton body {
   max-width: 100%;
   white-space: normal;
   text-align: center;
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   line-height: 1.3;
   overflow: hidden;
 }

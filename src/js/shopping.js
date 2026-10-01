@@ -365,7 +365,9 @@ function renderWish() {
               esc(o.w.k) +
               '" aria-label="' +
               esc('Remove ' + c.brand + ' ' + c.code + ' from your To buy list') +
-              '">✕</button></div>'
+              '">' +
+              ic('x') +
+              '</button></div>'
             );
           })
           .join('');
@@ -496,7 +498,7 @@ function mkWishFill(i) {
   if (ik) {
     ik.style.display = own ? '' : 'none';
     ik.innerHTML = own
-      ? '<div class="mkinkrow"><span class="mkinkl" id="mkInkL">Ink</span><div class="segs" role="radiogroup" aria-labelledby="mkInkL">' +
+      ? '<div class="mkinkrow"><span class="mkinkl" id="mkInkL">Ink</span><div class="segs" role="group" aria-labelledby="mkInkL">' +
         [
           ['', 'OK'],
           ['low', 'Running low'],
@@ -505,11 +507,12 @@ function mkWishFill(i) {
           .map(function (p) {
             const on = ink === p[0];
             return (
-              '<button type="button" role="radio" data-ink="' +
+              // (pressed buttons, as every other one-of-these row in the app, v287)
+              '<button type="button" data-ink="' +
               p[0] +
               '" class="' +
               (on ? 'on' : '') +
-              '" aria-checked="' +
+              '" aria-pressed="' +
               on +
               '">' +
               p[1] +

@@ -111,18 +111,48 @@ test('demo mode and dry markers: photo palette, custom slots and seed use the ma
   assert.deepEqual(errors, []);
 });
 
-test('Use in a guide → Cancel saves nothing; OK saves the palette', async () => {
+// v288: with a guide open it asks (in the app's dialog): recolour it, or a new guide with this palette; Recolour saves
+// the palette and the guide uses it at once; the guide's Undo goes back. With no guide open, nothing is asked.
+test('Use in a guide asks: Recolour saves the palette and the guide uses it; the guide’s Undo goes back; New guide opens the picker', async () => {
   const { page, errors } = await openApp();
+  const dialogs = [];
+  page.on('dialog', (d) => { dialogs.push(d.message()); d.dismiss(); });
   await sampleGuide(page);
+  const src0 = await page.evaluate(() => __mstest.styleVars.paletteSource);
   await page.click('#mPalette'); await page.click('#draw'); await idle(page);
-  const n0 = await page.evaluate(() => state.saved.length);
-  page.once('dialog', (d) => d.dismiss());
-  await page.click('#useInGuide'); await idle(page);
-  assert.equal(await page.evaluate(() => state.saved.length), n0, 'Cancel: nothing added');
-  assert.equal(await page.evaluate((KEY) => JSON.parse(localStorage.getItem(KEY)).saved.length, KEY), n0);
-  page.once('dialog', (d) => d.accept());
+  await page.click('#useInGuide');
+  await page.waitForSelector('#sfEdAsk [data-a="recolour"]');
+  assert.match(await page.textContent('#sfEdAsk .dsub'), /^Recolour “.+” with it, or start a new guide with it\?$/);
+  assert.deepEqual(await page.$$eval('#sfEdAsk button[data-a]', (b) => b.map((x) => x.textContent)), [await page.textContent('#sfEdAsk [data-a="recolour"]'), 'New guide with it', 'Cancel']);
+  // Cancel: nothing saved, nothing changed
+  await page.click('#sfEdAsk [data-a="stay"]'); await idle(page);
+  assert.equal(await page.evaluate(() => state.saved.filter((s) => s.type === 'palette').length), 0, 'Cancel saves nothing');
+  await page.click('#useInGuide'); await page.click('#sfEdAsk [data-a="recolour"]');
+  await page.waitForFunction(() => state.saved.some((s) => s.type === 'palette'));
+  assert.equal(await page.evaluate(() => state.saved.filter((s) => s.type === 'palette').length), 1, 'saved');
+  await page.waitForFunction(() => __mstest.styleVars.paletteSource === 'saved'); await idle(page);
+  assert.deepEqual(dialogs, []);
+  await page.click('#sfPlanUndo'); await idle(page);
+  assert.equal(await page.evaluate(() => __mstest.styleVars.paletteSource), src0);
+  // New guide with it: the photo picker opens, with the palette kept as the guide's choice
+  await page.click('#mPalette'); await page.click('#draw'); await idle(page);
+  await page.click('#useInGuide');
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('#sfEdAsk [data-a="new"]')]);
+  assert.ok(chooser, 'picker opened');
+  assert.equal(await page.evaluate(() => __mstest.styleVars.paletteSource), src0, 'the open guide is left as it was until a photo is chosen');
+  assert.match(await page.textContent('#sfPalNote'), /for your next new guide|choose a photo/);
+  assert.deepEqual(errors, []);
+});
+
+test('Use in a guide with no guide open asks nothing', async () => {
+  const { page, errors } = await openApp();
+  await welcome(page, 'look');
+  const dialogs = [];
+  page.on('dialog', (d) => { dialogs.push(d.message()); d.dismiss(); });
+  await page.click('#mPalette'); await page.click('#draw'); await idle(page);
   await page.click('#useInGuide'); await page.waitForFunction(() => state.saved.some((s) => s.type === 'palette'));
-  assert.equal(await page.evaluate(() => state.saved.filter((s) => s.type === 'palette').length), 1, 'OK: saved');
+  assert.equal(await page.locator('#sfEdAsk').count(), 0);
+  assert.deepEqual(dialogs, []);
   assert.deepEqual(errors, []);
 });
 
@@ -380,5 +410,143 @@ test('From photo: Tap the white paper takes the palette from the photo with its 
   assert.equal(await page.isVisible('#photoLight'), false);
   assert.equal(await page.evaluate(() => _photoFix), null);
   assert.deepEqual(await photoPal(page), p0, 'the same photo, uncorrected');
+  assert.deepEqual(errors, []);
+});
+
+// ---- v284: the Palette card's name, Photo before a photo, what each harmony does, the ⋯ menu and Clear ----
+const v284 = () => onboarded({ [KEY]: appState() });
+
+test('Palette: the card’s title is the name the Library saves it under, with the scheme under it', async () => {
+  const { page, errors } = await openApp({ storage: v284() });
+  await page.click('#mPalette'); await page.click('#draw'); await idle(page, 1200);
+  const title = (await page.textContent('#readout .name')).trim();
+  assert.notEqual(title, 'Complementary', 'not the scheme');
+  assert.match(await page.textContent('#readout .fam'), /^Complementary · Ohuhu .+ base$/);
+  await page.click('#saveBtn'); await idle(page, 1500);
+  assert.equal(await page.evaluate(() => state.saved[0].name), title, 'saved under the name shown');
+  assert.equal((await page.textContent('#readout .name')).trim(), title, 'and the card still says it');
+  // after a reload too (a new name would skip the one now in the Library)
+  await page.reload(); await idle(page);
+  assert.equal((await page.textContent('#readout .name')).trim(), title);
+  // saved again: a second entry needs its own name, which the card then shows
+  await page.click('#saveBtn'); await idle(page, 1500);
+  const names = await page.evaluate(() => state.saved.map((s) => s.name));
+  assert.equal(names.length, 2); assert.notEqual(names[0], names[1]);
+  assert.equal((await page.textContent('#readout .name')).trim(), names[0]);
+  // a new palette gets a new name; Custom is named once it has a marker
+  // (the test collection is small: a draw can come up with the saved palette again, which rightly shows its Library
+  // name, so draw until it's another)
+  const sameAsSaved = () => page.evaluate(() => state.saved.some((s) => s.keys.join(',') === currentPaletteIdxs().map(mkey).join(',')));
+  for (let i = 0; i < 8; i++) { await page.click('#draw'); await idle(page, 1200); if (!(await sameAsSaved())) break; }
+  assert.equal(await sameAsSaved(), false, 'a different palette drawn');
+  assert.ok(!names.includes((await page.textContent('#readout .name')).trim()));
+  await page.click('#harm [data-h="custom"]'); await idle(page);
+  assert.equal((await page.textContent('#readout .name')).trim(), 'Custom palette');
+  await page.click('#bands .band'); await page.waitForSelector('#seedOverlay.on'); await page.click('#seedGrid .cell'); await idle(page);
+  assert.notEqual((await page.textContent('#readout .name')).trim(), 'Custom palette');
+  assert.match(await page.textContent('#readout .fam'), /^Custom · 1 of 4 chosen/);
+  assert.deepEqual(errors, []);
+});
+
+test('Palette › Photo before a photo: its own empty card, no Save, Save image or Clear; a tap on the card chooses one', async () => {
+  const { page, errors } = await openApp({ storage: v284() });
+  await page.click('#mPalette'); await page.click('#draw'); await idle(page, 1200);
+  // from Custom, which used to leave "Custom palette · 0 of 4 chosen" on the card
+  await page.click('#harm [data-h="custom"]'); await page.click('#harm [data-h="photo"]'); await idle(page);
+  assert.equal((await page.textContent('#readout')).trim(), '', 'no leftover title');
+  assert.ok(await page.isVisible('#phint'));
+  assert.equal(await page.textContent('#phint .ghtext'), 'Tap to choose a photo and pull its colours');
+  for (const sel of ['#saveBtn', '#exportBtn', '#libMore', '#reset', '#useInGuide']) assert.equal(await page.isVisible(sel), false, sel + ' hidden');
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('#palette')]);
+  assert.ok(chooser, 'the card’s tap opens the photo chooser');
+  await choosePhoto(page, '#baafa0');
+  assert.ok(await page.isVisible('#saveBtn') && !(await page.isDisabled('#saveBtn')), 'Save once there are colours');
+  assert.ok(await page.isVisible('#libMore'));
+  assert.ok(await page.isVisible('#reset'));
+  assert.match(await page.textContent('#readout .fam'), /^From photo$/);
+  assert.equal(await page.textContent('#phint .ghtext'), 'Tap to generate a palette', 'other schemes keep their wording');
+  assert.deepEqual(errors, []);
+});
+
+test('Palette: a line under the Harmony choices says what the chosen one does', async () => {
+  const { page, errors } = await openApp({ storage: v284() });
+  await page.click('#mPalette'); await idle(page);
+  const want = {
+    complementary: 'Colours from opposite sides of the wheel',
+    analogous: 'Neighbours on the wheel',
+    triadic: 'Three colours evenly spaced round the wheel',
+    split: 'One colour and the two either side of its opposite',
+    tetradic: 'Two pairs of opposites',
+    mono: 'One colour, light to dark',
+    custom: 'Markers you choose: tap a slot to pick one',
+    photo: 'A photo’s main colours, matched to markers',
+  };
+  assert.deepEqual((await page.$$eval('#harm button', (b) => b.map((x) => x.dataset.h))).sort(), Object.keys(want).sort(), 'every harmony has a line');
+  for (const [h, t] of Object.entries(want)) {
+    await page.click(`#harm [data-h="${h}"]`); await idle(page);
+    assert.equal(await page.textContent('#harmDesc'), t, h);
+  }
+  const d = await page.locator('#harmDesc').boundingBox(), c = await page.locator('#harm').boundingBox();
+  assert.ok(d.y >= c.y + c.height && Math.abs(d.x - c.x) < 8, 'under the choices, lined up with them');
+  await page.click('#mCollection');
+  assert.equal(await page.isVisible('#harmDesc'), false);
+  assert.deepEqual(errors, []);
+});
+
+test('Palette: Library and Save image are in a ⋯ menu beside Save, by tap or keyboard; Reset is now Clear', async () => {
+  const { page, errors } = await openApp({ storage: v284() });
+  await page.click('#mPalette'); await page.click('#draw'); await idle(page, 1200);
+  const shown = () => page.$$eval('#libRow > button, #libRow > .libmore > button', (b) => b.filter((x) => x.checkVisibility()).map((x) => x.id));
+  assert.deepEqual(await shown(), ['saveBtn', 'libMore'], 'Save and ⋯ only');
+  assert.equal(await page.isVisible('#savedBtn'), false);
+  assert.equal(await page.isVisible('#draw'), true, 'Generate stays the main action');
+  assert.equal(await page.isVisible('#useInGuide'), true, 'and Use in a guide as it was');
+  // tap: opens, a tap elsewhere closes
+  await page.click('#libMore');
+  assert.equal(await page.getAttribute('#libMore', 'aria-expanded'), 'true');
+  assert.deepEqual(await page.$$eval('#libMenu [role="menuitem"]', (b) => b.map((x) => x.textContent)), ['Library', 'Save image']);
+  const menu = await page.locator('#libMenu').boundingBox();
+  assert.ok(menu.x >= 0 && menu.x + menu.width <= 390, 'on screen');
+  await page.click('#harmWrap .szlbl');
+  assert.equal(await page.isVisible('#libMenu'), false);
+  assert.equal(await page.getAttribute('#libMore', 'aria-expanded'), 'false');
+  // keyboard: Enter opens on the first item, arrows move, Escape closes back on ⋯
+  await page.focus('#libMore'); await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'savedBtn');
+  await page.keyboard.press('ArrowDown');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'exportBtn');
+  await page.keyboard.press('ArrowDown');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'savedBtn', 'round again');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.isVisible('#libMenu'), false);
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'libMore');
+  // an item: the menu closes and does it
+  await page.click('#libMore'); await page.click('#savedBtn'); await page.waitForSelector('#savedOverlay.on');
+  assert.equal(await page.isVisible('#libMenu'), false);
+  await page.keyboard.press('Escape'); await idle(page);
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'libMore', 'focus back on ⋯');
+  await page.click('#libMore'); await page.click('#exportBtn'); await page.waitForSelector('#imgOverlay.on');
+  await page.keyboard.press('Escape'); await idle(page);
+  // Clear: what it does is empty the palette, on a second tap
+  assert.equal(await page.textContent('#reset'), 'Clear');
+  await page.click('#reset');
+  assert.equal(await page.textContent('#reset'), 'Confirm?');
+  await page.click('#reset'); await idle(page);
+  assert.equal(await page.evaluate(() => state.palettes.length), 0);
+  assert.equal(await page.textContent('#reset'), 'Clear');
+  assert.equal(await page.isDisabled('#reset'), true);
+  assert.deepEqual(errors, []);
+});
+
+test('Palette at 320 wide and 1.6x text: the harmony line, Save and ⋯, and the menu fit', async () => {
+  const { page, errors } = await openAtScale(1.6, { width: 320, height: 700, storage: v284() });
+  await page.click('#mPalette'); await page.click('#draw'); await idle(page, 1200);
+  await page.click('#harm [data-h="split"]'); await idle(page);
+  await page.click('#libMore');
+  const m = await page.evaluate(() => {
+    const r = (id) => document.getElementById(id).getBoundingClientRect(), d = document.getElementById('harmDesc');
+    return { sw: document.documentElement.scrollWidth <= innerWidth, desc: r('harmDesc').right <= innerWidth && d.scrollWidth <= d.clientWidth + 1, row: r('libMore').right <= innerWidth && r('saveBtn').right < r('libMore').left, menu: r('libMenu').left >= 0 && r('libMenu').right <= innerWidth, items: [...document.querySelectorAll('#libMenu button')].every((b) => b.scrollWidth <= b.clientWidth + 1) };
+  });
+  assert.deepEqual(m, { sw: true, desc: true, row: true, menu: true, items: true });
   assert.deepEqual(errors, []);
 });

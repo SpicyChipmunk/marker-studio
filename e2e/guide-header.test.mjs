@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { setup, teardown, openApp, sampleGuide, idle, openMenu, menuItem, ROOT, rename, sectionPoint, scrollTop, openAtScale, guideName, notOnWebKit, WK, until } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, openMenu, menuItem, ROOT, rename, sectionPoint, scrollTop, openAtScale, guideName, notOnWebKit, WK, until, saveGuide, answerAsks, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -18,31 +18,32 @@ test('header row: name ✎ over where it is saved, ✨ Surprise in Plan only, an
   await sampleGuide(page);
   let h = await head(page);
   assert.equal(h.name, await page.evaluate(() => __mstest.curName));
-  assert.deepEqual([h.status, h.save, h.surprise, h.more], ['Not saved yet', true, true, true], 'Plan, not in the Library');
+  assert.deepEqual([h.status, h.save, h.surprise, h.more], ['Sample', false, true, true], 'Plan: the sample, not in the Library yet (no Save: v285)');
   // Reset progress is only in Colour along's ⋯ menu (see the menu's test below), never a button in Plan
   assert.equal(await page.evaluate(() => [...document.querySelectorAll('#sfRoot button')].some((b) => /Reset progress/.test(b.textContent))), false, 'no Reset progress in Plan');
   const hr = await rect(page, '#sfHead'), cv = await rect(page, '#sfCanvas');
   assert.ok(hr.bottom <= cv.top + 1, 'the header row sits above the picture');
-  // Colour along: no Surprise; Save stays until the guide is in the Library
+  // Colour along: no Surprise
   await page.click('#sfColor'); await idle(page);
   h = await head(page);
-  assert.deepEqual([h.surprise, h.save, h.more], [false, true, true], 'Colour along');
+  assert.deepEqual([h.surprise, h.save, h.more], [false, false, true], 'Colour along');
   await page.click('#sfDoneBtn'); await idle(page);
   // Edit sections: no Surprise, no Save (the guide is built from here)
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfBack2'); await idle(page);
   h = await head(page);
-  assert.deepEqual([h.surprise, h.save, h.status], [false, false, 'Not saved yet'], 'Edit sections');
-  await page.click('#sfBuild'); await page.waitForFunction(() => __mstest.assignData && document.getElementById('sfColor')); await idle(page);
-  // Save next to the name: into the Library, then the status says so and Save goes
-  await page.click('#sfSave'); await idle(page);
+  assert.deepEqual([h.surprise, h.save, h.status], [false, false, 'Sample'], 'Edit sections');
+  // (v288: nothing edited, so the bar goes back to the Plan)
+  await page.click('#sfToPlan'); await page.waitForFunction(() => __mstest.assignData && document.getElementById('sfColor')); await idle(page);
+  // a change: into the Library by itself, and the status says so
+  await page.click('.sftabbtn[data-t="pattern"]'); await page.click('#sfFam [data-v="random"]'); await idle(page, 2300);
   h = await head(page);
-  assert.deepEqual([h.status, h.save], ['Saved in your Library ✓', false]);
+  assert.match(h.status, /^(Saved in your Library|Saves itself from now on) ✓$/); assert.equal(h.save, false);
   assert.equal(await page.evaluate(() => state.saved.filter((s) => s.type === 'guide').length), 1);
   assert.deepEqual(errors, []);
 });
 
-test('a new photo is "New guide" in Edit sections, with no Save until it is built', notOnWebKit(WK.photo), async () => {
+test('a new photo is "New guide" in Edit sections, and goes into the Library by itself once built', notOnWebKit(WK.photo), async () => {
   const { page, errors } = await openApp();
   await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#wcPhoto')]);
@@ -50,9 +51,12 @@ test('a new photo is "New guide" in Edit sections, with no Save until it is buil
   await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 60000 }); await idle(page);
   const h = await head(page);
   assert.deepEqual([h.name, h.status, h.save, h.surprise, h.more], ['New guide', 'Not saved yet', false, false, true]);
-  await page.click('#sfBuild'); await page.waitForFunction(() => __mstest.assignData && document.getElementById('sfColor')); await idle(page);
-  assert.equal((await head(page)).save, true, 'Save once built');
-  assert.notEqual((await head(page)).name, 'New guide', 'and a name');
+  await buildGo(page); await page.waitForFunction(() => __mstest.assignData && document.getElementById('sfColor')); await idle(page);
+  assert.notEqual((await head(page)).name, 'New guide', 'a name once built');
+  // (v285: built, it goes into the Library by itself, with no Save to press)
+  await page.waitForFunction(() => state.saved.some((s) => s.type === 'guide')); await idle(page);
+  assert.equal((await head(page)).save, false);
+  assert.match((await head(page)).status, /^(Saved in your Library|Saves itself from now on) ✓$/);
   assert.deepEqual(errors, []);
 });
 
@@ -95,7 +99,7 @@ test('⋯ opens a menu sheet: New, This guide (Save a copy once saved; Reset pro
   await page.keyboard.press('Escape'); await idle(page);
   assert.equal(await page.locator('#sfSheet').count(), 0, 'Escape closes it');
   assert.equal(await page.evaluate(() => document.activeElement.id), 'sfMore', 'focus back on ⋯');
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page);
   await openMenu(page);
   assert.deepEqual(await menuLabels(page), ['Choose a photo', 'Try the sample', 'Open from Library', 'Import a guide', 'Save a copy', 'Help']);
   await page.click('#sfSheet [data-m="close"]'); await idle(page);
@@ -124,10 +128,10 @@ const savedId = (page) => page.evaluate(() => state.saved.find((s) => s.type ===
 
 test('renaming a guide is kept when you open another guide and come back', async () => {
   const { page, errors } = await openApp();
-  await sampleGuide(page); await page.click('#sfSave'); await idle(page);
+  await sampleGuide(page); await saveGuide(page);
   const a = await savedId(page);
   await page.evaluate(() => SF.loadSample()); await page.waitForFunction(() => __mstest.assignData && !__mstest.curId, null, { timeout: 10000 }); await idle(page);
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page);
   const b = await page.evaluate(() => __mstest.curId);
   await page.evaluate((a) => SF.openDesign(a), a); await page.waitForFunction((a) => __mstest.curId === a, a); await idle(page);
   await rename(page, 'My renamed guide');
@@ -155,8 +159,8 @@ test('the header keeps its height: Surprise, renaming and saving move nothing un
     await page.click('#sfRename'); await idle(page);
     assert.equal(await hh(), h0, `@${sc}: renaming`);
     assert.equal(await page.evaluate(() => document.getElementById('sfSurprise').classList.contains('sfic')), true, '✨ alone while renaming');
-    await page.keyboard.press('Escape'); await page.click('#sfSave'); await idle(page);
-    assert.match(await page.textContent('#sfSaveSt'), /Saved in your Library/);
+    await page.keyboard.press('Escape'); await saveGuide(page);
+    assert.match(await page.textContent('#sfSaveSt'), /Saved in your Library|Saves itself from now on/);
     assert.equal(await hh(), h0, `@${sc}: saved`);
     assert.deepEqual(errors, []);
     await ctx.close();

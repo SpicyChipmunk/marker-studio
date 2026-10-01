@@ -51,10 +51,19 @@ function openDesignObj(d, id, resumed, quiet, col) {
     root.style.display = '';
     if (!document.getElementById('sfPick')) mount();
   }
-  const gen = ++loadGen;
+  _smpLoad = false;
+  const gen = ++loadGen,
+    // (from Home's Continue: taken here, so no other open finds it left on)
+    cont = _contNext;
+  _contNext = false;
   hideTip();
   if (!d || typeof d.lmap !== 'string' || !/^data:image\/png;base64,/.test(d.lmap)) {
-    note('Could not load that guide \u2014 the file isn\u2019t a Marker Studio guide.');
+    // (from the Library, id: its stored copy is missing or unreadable; otherwise a file that isn't a guide)
+    note(
+      id != null && !d
+        ? 'Couldn’t open that guide \u2014 its stored copy is missing from this browser. A backup or guide file can bring it back.'
+        : 'Couldn’t load that guide \u2014 the file isn\u2019t a Marker Studio guide.',
+    );
     return;
   }
   note('Opening guide\u2026');
@@ -63,13 +72,13 @@ function openDesignObj(d, id, resumed, quiet, col) {
     if (gen !== loadGen) return;
     try {
       if (!(img.width > 0 && img.height > 0 && img.width <= MAXSIDE * 2 && img.height <= MAXSIDE * 2)) {
-        note('Could not load that guide \u2014 its picture is the wrong size.');
+        note('Couldn’t load that guide \u2014 its picture is the wrong size.');
         return;
       }
       // a section map with a different section on nearly every pixel would take all the memory there is: turned away first
       const _lm = lmapRead(img);
       if (!_lm) {
-        note('Could not load that guide \u2014 its picture didn\u2019t decode.');
+        note('Couldn’t load that guide \u2014 its picture didn\u2019t decode.');
         return;
       }
       if (lmapCount(_lm, MAXSECS) > MAXSECS) {
@@ -161,6 +170,18 @@ function openDesignObj(d, id, resumed, quiet, col) {
       }
       secState = new Uint8Array(comps.length);
       colored = new Uint8Array(comps.length);
+      heldSh = {};
+      progAt = {
+        s: d.dates && d.dates.s > 0 ? +d.dates.s : 0,
+        e: d.dates && d.dates.e > 0 ? +d.dates.e : 0,
+        // (u: coloured before the dates were kept, v284: when it was started isn't known, so none are given)
+        u:
+          !d.dates &&
+          ((Array.isArray(d.prog) && d.prog.length) ||
+            (d.tones && typeof d.tones === 'object' && Object.keys(d.tones).length))
+            ? 1
+            : 0,
+      };
       celebrated = false;
       if (d.secStates) {
         for (const k in d.secStates) {
@@ -350,6 +371,22 @@ function openDesignObj(d, id, resumed, quiet, col) {
           if (nl && nl < P.length) P[nl] = b & 7;
         }
       }
+      // (v284) the Shadows and Highlights coloured sections were coloured with, where they differ from their zone's
+      if (d.held && typeof d.held === 'object')
+        for (const ol in d.held) {
+          const nl = map[ol],
+            h = d.held[ol];
+          if (
+            nl &&
+            Array.isArray(h) &&
+            ['same', 'cool', 'grey'].includes(h[0]) &&
+            ['same', 'warm', 'paper'].includes(h[1])
+          )
+            heldSh[nl] =
+              h.length > 2
+                ? { shadow: h[0], hilite: h[1], free: !!h[2] }
+                : { shadow: h[0], hilite: h[1], legacy: true };
+        }
       locks = {};
       if (d.locks && typeof d.locks === 'object')
         for (const ol in d.locks) {
@@ -380,12 +417,21 @@ function openDesignObj(d, id, resumed, quiet, col) {
       if (resumed) guideDirty = true;
       const nd = Object.keys(dryK).length,
         ng = Object.keys(goneK).length,
+        // (sections whose marker the app doesn't know, from a file made elsewhere: kept as they are, left white)
+        nlost = Object.keys(_lostKeys).length,
+        lostTxt = nlost
+          ? nWord(nlost, 'section') +
+            (nlost === 1 ? ' uses a marker' : ' use markers') +
+            ' this app doesn\u2019t know, so ' +
+            (nlost === 1 ? 'it stays' : 'they stay') +
+            ' white.'
+          : '',
         pl = function (k, w) {
           return k + ' marker' + (k > 1 ? 's' : '') + ' ' + w;
         };
       note(
         _edResumed
-          ? 'Your section edits are back \u2014 Build guide to keep them.'
+          ? 'Your section edits are back \u2014 Build again to keep them.'
           : _openEmpty
             ? 'None of this guide\u2019s markers could be shown, so it won\u2019t be saved over. Check your collection, then open it again.'
             : nd || ng
@@ -397,29 +443,49 @@ function openDesignObj(d, id, resumed, quiet, col) {
                   .join(' and ') +
                 ' \u2014 sections still to colour show the closest you own. The guide keeps ' +
                 (nd + ng > 1 ? 'them' : 'it') +
-                ' until you change those sections.'
-              : metaText(),
+                ' until you change those sections.' +
+                (lostTxt ? ' ' + lostTxt : '')
+              : lostTxt || metaText(),
       );
-      // reloaded in place while colouring along (col): it stays in Colour along
-      if (col && !_edResumed) enterColor();
+      // reloaded in place while colouring along (col): it stays in Colour along; from Home's Continue, at the marker
+      // to pick up (_contNext)
+      if (col && !_edResumed) {
+        enterColor();
+        if (cont) alongResume();
+      }
+      if (id === _justImported) _justImported = null;
     } catch (err) {
       curId = null;
       guideDirty = false;
       assignData = null;
-      if (id != null && id === _justImported && api.deleteDesign) {
+      // (only a guide just imported, that never opened, is taken out again)
+      const imp = id != null && id === _justImported;
+      _justImported = null;
+      if (imp && api.deleteDesign) {
         api.deleteDesign(id);
         if (api.refreshSaved) api.refreshSaved();
       }
-      note('Could not open that guide: ' + ((err && err.message) || err));
+      note('Couldn’t open that guide: ' + ((err && err.message) || err));
     }
   };
   img.onerror = function () {
-    if (gen === loadGen) note('Could not decode that guide.');
+    if (gen === loadGen) note('Couldn’t decode that guide.');
   };
   img.src = d.lmap;
 }
-function openDesign(id) {
+// Home's Continue: open the guide (in Colour along, as a part-coloured one does) at the marker to pick up
+let _contNext = false;
+function continueGuide(id) {
+  if (assignData && id != null && id === curId && !pgMode && !cropMode && !guideStale() && !secEdPending()) {
+    if (sfmode !== 'color') enterColor();
+    alongResume();
+    return;
+  }
+  openDesign(id, true);
+}
+function openDesign(id, cont) {
   ++loadGen;
+  _contNext = false;
   if (
     assignData &&
     labels &&
@@ -443,10 +509,16 @@ function openDesign(id) {
     Promise.resolve(api.loadDesign ? api.loadDesign(id) : null)
       .then(function (d) {
         if (g !== loadGen) return;
-        openDesignObj(d, id);
+        // a guide part-way coloured opens in Colour along, where it was left; one not started, or finished, in the
+        // plan (v284)
+        const nAll = d && d.assign && typeof d.assign === 'object' ? Object.keys(d.assign).length : 0,
+          nDone = d && Array.isArray(d.prog) ? d.prog.length : 0,
+          part = d && d.tones && typeof d.tones === 'object' ? Object.keys(d.tones).length : 0;
+        _contNext = !!cont;
+        openDesignObj(d, id, false, false, (nDone > 0 || part > 0) && nDone < nAll);
       })
       .catch(function (err) {
-        note('Could not open that guide: ' + ((err && err.message) || err));
+        note('Couldn’t open that guide: ' + ((err && err.message) || err));
       });
   });
 }

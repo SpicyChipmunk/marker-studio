@@ -616,10 +616,31 @@ function buildGradient(cl) {
 // round if their light side no longer faces the light. (Not a guide that was opened, taken back by Undo or kept
 // from before its sections were built again: those keep their markers.)
 function gradFollowLight() {
+  // (its own holdRun mustn't lose what the change that called it held: reassign's, for the kept-sections line)
+  const h0 = _heldRun;
+  try {
+    _gradFollowLight();
+  } finally {
+    _heldRun = heldMerge(h0, _heldRun);
+  }
+}
+function heldMerge(a, b) {
+  if (!a || a === b) return b;
+  if (!b) return a;
+  const u = function (x, y) {
+    return x.concat(
+      y.filter(function (v) {
+        return x.indexOf(v) < 0;
+      }),
+    );
+  };
+  return { secs: u(a.secs, b.secs), run: u(a.run, b.run) };
+}
+function _gradFollowLight() {
   if (!assignData || sfmode !== 'guide') return;
   if (!zones.length) {
     if (!assignData.lit || family !== 'gradient') return;
-    if (gradLightSign() !== assignData.lit) assignNow();
+    if (gradLightSign() !== assignData.lit) holdRun(zoneAll(), assignOne);
     return;
   }
   // with zones: each gradient zone whose bands no longer face the light
@@ -631,7 +652,7 @@ function gradFollowLight() {
       if (family === 'gradient' && gradLightSign() !== lits[id]) ids.push(id);
     });
   });
-  if (ids.length) zoneRun(ids, assignOne);
+  if (ids.length) holdRun(ids, assignOne);
 }
 /* Which sections touch (share a border), for Random's "Keep touching sections clearly different": { l: Set of the
    sections l touches }. Lines differ a lot in thickness (a thick felt-tip outline can be 20 px or more across), so
@@ -912,7 +933,14 @@ function blendAssign(cl, pool) {
             away what it absorbs, so blue and yellow make green, and the middle is darker than a plain average.
    blendMixer(anchors, how) gives the mix as a function of the weights (the anchors' own sums are worked out once). */
 const BLEND_MIXES = ['soft', 'vivid', 'paint'],
-  BLEND_MIX_LABEL = { soft: 'Soft', vivid: 'Vivid', paint: 'Like paint' };
+  // (the soft mix is "Muted" from v284: Mood has a Soft of its own)
+  BLEND_MIX_LABEL = { soft: 'Muted', vivid: 'Vivid', paint: 'Like paint' },
+  // (the line under Mix: how colours meet between the anchors, v285)
+  BLEND_MIX_DESC = {
+    soft: 'The middle greys a little.',
+    vivid: 'Colours stay strong: red and blue meet in purple.',
+    paint: 'Colours mix as layers of ink do: blue and yellow make green.',
+  };
 function blendMixer(ax, how) {
   const n = ax.length;
   if (how === 'paint') {
@@ -1351,7 +1379,11 @@ function assignNow() {
 function assignOne(cl) {
   const pool = activePool();
   if (!pool.length) {
-    note('No ' + palette + ' markers in your collection \u2014 pick another palette.');
+    note(
+      palette === 'all'
+        ? 'No markers to use \u2014 check Filters in Colours.'
+        : 'None of your markers are ' + palette + ' \u2014 choose another Temperature.',
+    );
     return false;
   }
   if (family === 'random') buildRandomBal(cl, pool);
@@ -1360,13 +1392,24 @@ function assignOne(cl) {
     blendAssign(cl, pool);
   } else if (family === 'manual') buildManual(cl, pool);
   else if (family === 'photo') {
-    if (!(photoRef && photoXf && buildPhoto(cl))) buildGradient(cl);
+    if (photoRef && photoXf && buildPhoto(cl)) return true;
+    // (Photo chosen, its photo not picked yet: the pattern before it is laid, and saved, until one is: photoWait)
+    const pw = photoWait[pwKey()];
+    if (pw && pw !== 'photo' && !photoRef) {
+      family = pw;
+      try {
+        return assignOne(cl);
+      } finally {
+        family = 'photo';
+      }
+    }
+    buildGradient(cl);
   } else buildGradient(cl);
   return true;
 }
 // Blend again from its anchors (a drag, the Spread slider, an anchor's colour): the zone being edited only
 function blendNow() {
-  zoneRun([zoneCur], function (cl) {
+  holdRun([zoneCur], function (cl) {
     blendAssign(cl, activePool());
   });
 }
@@ -1396,13 +1439,24 @@ function buildGuide() {
   if (!labels) return;
   const cl = countedList();
   if (cl.length < 2) {
-    note('Not enough sections \u2014 lower the min size, then Build guide.');
+    note('Not enough sections \u2014 lower Min section size, then Build guide.');
     return;
   }
   if (!coll.length) {
-    note('No markers in your collection.');
+    // (markers owned but every one marked dry: coll leaves those out)
+    let anyOwned = false;
+    try {
+      anyOwned = state.owned.size > 0;
+    } catch (_) {}
+    note(
+      anyOwned
+        ? 'Every marker you own is marked dry \u2014 un-mark some in Markers, then Build guide.'
+        : 'No markers in your collection \u2014 add the ones you own in Markers, then Build guide.',
+    );
     return;
   }
+  // (a Temperature none of your markers have now, after the collection or filters changed: all of them instead)
+  if (palette !== 'all' && !activePool().length) palette = 'all';
   const _had = !!assignData,
     _pc = colored,
     prev = _had && !_segFresh ? assignData : null,
@@ -1488,6 +1542,12 @@ function buildGuide() {
   } else planReset();
   markBuilt();
   saveStatus();
+  // (a new guide from your photo goes into the Library straight away, not after the usual pause: a page closed or
+  // reloaded just after Build lost it, v287)
+  if (canAuto())
+    setTimeout(function () {
+      if (autoT && canAuto() && !_firstBusy) flushAutosave();
+    }, 60);
 }
 // the sections the guide had keep their markers (or stay white), the rest keep what the pattern just gave them
 function keepMarkers(prev, cl) {
@@ -1549,6 +1609,42 @@ function zoneMarkersSig() {
 function zoneSigSync() {
   _zSig = zoneMarkersSig();
 }
+/* Sections with ink on the paper (ticked, or some of their tones coloured) keep their markers through any change to
+   the plan (v284): while a pattern is laid they're pinned for the moment (not saved, no pin ring, no "Section pinned"
+   step), in the zones being laid, and Undo leaves them as they are too (planRestore). Their shading keeps too (heldSh,
+   34-zones). When a change would have recoloured them a line under the tabs says so, with Recolour them too
+   (heldRecolour), once per visit to the plan (and again when more are kept). _heldRun: those kept by the last
+   laying out, for that line. */
+let _holdOff = false,
+  _heldRun = null,
+  _heldTold = 0;
+function holdOn(run) {
+  _heldRun = null;
+  if (_holdOff || !assignData || !colored) return null;
+  const was = locks,
+    tmp = Object.assign({}, locks),
+    kept = [];
+  assignData.order.forEach(function (l) {
+    const m = assignData.assign[l];
+    if (!m || tmp[l] !== undefined || !inkOn(l) || (zones.length && run.indexOf(zoneOf(l)) < 0)) return;
+    tmp[l] = m.mkey;
+    kept.push(l);
+  });
+  if (!kept.length) return null;
+  locks = tmp;
+  _heldRun = { secs: kept, run: run.slice() };
+  return was;
+}
+// lay the zones ids with fn, sections with ink on the paper held (holdOn): every re-laying of the plan goes through
+// here (reassign; the sun moved under a light-to-dark Gradient; Blend's anchors; the Photo pattern's photo)
+function holdRun(ids, fn) {
+  const was = holdOn(ids);
+  try {
+    return zoneRun(ids, fn);
+  } finally {
+    if (was) locks = was;
+  }
+}
 function reassign(ids, moved) {
   if (!labels || sfmode !== 'guide') return;
   if (!Array.isArray(ids)) ids = null;
@@ -1558,9 +1654,9 @@ function reassign(ids, moved) {
     all = _zSig !== sig,
     run = !zones.length || all ? zoneAll() : ids || [zoneCur],
     stay = moved && !all ? zoneStayRandom(run, moved) : null,
-    ok = zoneRun(run, assignOne);
+    ok = holdRun(run, assignOne);
   // (with zones, the others were laid even if one couldn't be: no markers for it, which a note has said)
-  if (!ok && !zones.length) return;
+  if (!ok && !zones.length) return false;
   if (ok) _zSig = sig;
   if (stay) zoneStayPut(stay);
   // (a stand-in for a dry marker is kept on in the sections that weren't laid again)
@@ -1575,46 +1671,90 @@ function reassign(ids, moved) {
   renderControls();
   if (tipL >= 0) showTip(tipL, tipBtns, true);
   planCommit();
+  return true;
 }
+// (no "are you sure": the change is one Undo step, and coloured sections keep their markers)
 function setSavedSource(id) {
-  var prog = !!assignData;
-  if (prog) {
-    if (!confirm('This will re-map the current guide to this palette. Continue?')) return false;
-  }
   paletteSource = 'saved';
   savedPalId = id;
   palNote();
   return true;
 }
+// the saved palette a new guide will use: on the Guide screen's card and (v288) under Home's New colouring guide
+// A palette chosen for the next new guide while another is open (v288: Use in a guide › New guide with it) is held
+// here, apart from the open guide's plan, and becomes the new guide's when its photo is read (_loadImage).
+let _nextPal = null;
+function setNextPal(id) {
+  if (!assignData) return setSavedSource(id);
+  _nextPal = id;
+  palNote();
+  return true;
+}
+function takeNextPal() {
+  if (_nextPal == null) return;
+  // (only if it's still in the Library: deleted meanwhile, the new guide keeps the plan's own source)
+  const id = _nextPal,
+    there =
+      api.listPalettes &&
+      api.listPalettes().some(function (x) {
+        return x.id === id;
+      });
+  _nextPal = null;
+  if (!there) return;
+  paletteSource = 'saved';
+  savedPalId = id;
+}
+// the ✕ on the note: the next guide's palette stops (the open guide's own plan is left alone)
+function clearPal() {
+  if (_nextPal != null) _nextPal = null;
+  else if (!assignData) {
+    paletteSource = 'owned';
+    savedPalId = null;
+  }
+  palNote();
+}
 function palNote() {
-  var el = document.getElementById('sfPalNote');
-  if (!el) return;
-  var pl = null;
-  if (paletteSource === 'saved' && savedPalId != null && api.listPalettes) {
+  var el = document.getElementById('sfPalNote'),
+    hm = document.getElementById('homePalNote');
+  if (!el && !hm) return;
+  var pl = null,
+    pid = _nextPal != null ? _nextPal : paletteSource === 'saved' && !assignData ? savedPalId : null;
+  if (pid != null && api.listPalettes) {
     pl =
       api.listPalettes().filter(function (x) {
-        return x.id === savedPalId;
+        return x.id === pid;
       })[0] || null;
   }
   if (!pl) {
-    el.innerHTML = '';
+    if (el) el.innerHTML = '';
+    if (hm) hm.innerHTML = '';
     return;
   }
   var sw = (pl.keys || [])
-    .slice(0, 10)
-    .map(function (k) {
-      var i = keyIdx(k);
-      return '<span style="background:' + (i != null ? COLORS[i].hex : '#555') + '"></span>';
-    })
-    .join('');
-  el.innerHTML =
-    '<div class="sfpalnote"><div class="sstrip">' +
-    sw +
-    '</div><div class="sfpntx"><b>Using \u201c' +
-    esc(pl.name || 'Palette') +
-    '\u201d</b><span>' +
-    (pl.keys ? pl.keys.length : 0) +
-    ' markers \u00b7 choose a photo or try the sample</span></div><button class="mclose" data-clearpal="1" aria-label="Stop using this palette">\u2715</button></div>';
+      .slice(0, 10)
+      .map(function (k) {
+        var i = keyIdx(k);
+        return '<span style="background:' + (i != null ? COLORS[i].hex : '#555') + '"></span>';
+      })
+      .join(''),
+    n = pl.keys ? pl.keys.length : 0,
+    one = function (line) {
+      return (
+        '<div class="sfpalnote"><div class="sstrip">' +
+        sw +
+        '</div><div class="sfpntx"><b>Using \u201c' +
+        esc(pl.name || 'Palette') +
+        '\u201d</b><span>' +
+        n +
+        ' markers \u00b7 ' +
+        line +
+        '</span></div><button class="mclose" data-clearpal="1" aria-label="Stop using this palette">' +
+        ic('x') +
+        '</button></div>'
+      );
+    };
+  if (el) el.innerHTML = one('choose a photo or try the sample');
+  if (hm) hm.innerHTML = one('for your next new guide');
 }
 function surprise() {
   if (sfmode !== 'guide' || !labels) return;
@@ -1657,11 +1797,12 @@ function surprise() {
     noRep = false;
   }
   surpriseNote = true;
-  planWhy = '\u2728 Surprise';
+  planWhy = 'Surprise';
   reassign();
 }
 function backToReview() {
   zoneEditEnd(true);
+  heldNoteClear();
   if (assignData && guideDirty) {
     clearTimeout(autoT);
     doAutosave();

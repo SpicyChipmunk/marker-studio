@@ -6,7 +6,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { setup, teardown, openApp, sampleGuide, welcome, idle, shot, ROOT, ARTIFACTS, menuItem, notOnWebKit, WK, pause } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, welcome, idle, shot, ROOT, ARTIFACTS, menuItem, notOnWebKit, WK, pause, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -113,7 +113,7 @@ test('How it works also shows the first time a photo is chosen, over the section
   await page.click('#hiwClose'); await idle(page);
   assert.equal(await on(page, 'hiwOverlay'), false, '✕ closes');
   assert.ok(await page.isVisible('#sfMore'), '⋯ (with Help) in the sections editor');
-  await page.click('#sfBuild'); await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData)); await idle(page, 1200);
+  await buildGo(page); await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData)); await idle(page, 1200);
   assert.equal(await on(page, 'hiwOverlay'), false, 'once only');
   assert.deepEqual(errors, []);
 });
@@ -140,7 +140,7 @@ test('the help sheet: from the guide and Home, glossary, your data, About with t
   // glossary
   await page.click('#helpGloss > summary'); await idle(page);
   const terms = await page.evaluate(() => [...document.querySelectorAll('#helpGloss dt')].map((d) => d.textContent));
-  assert.deepEqual(terms, ['Section', 'Background / excluded', 'Colour pattern', 'Zone', 'Pin', 'Blend companions', 'Shading', 'Highlight / Base / Shadow (H/B/S)', 'Values', 'Focus mode', 'Reveal']);
+  assert.deepEqual(terms, ['Section', 'Background / excluded', 'Colour pattern', 'Zone', 'Pin', 'Kept', 'Blend companions', 'Shading', 'Highlight / Base / Shadow (H/B/S)', 'Greyscale', 'Focus mode', 'Reveal']);
   const pattern = await page.textContent('#helpGloss dd:nth-of-type(3)');
   for (const p of ['Gradient', 'Random', 'Blend', 'Photo', 'Manual']) assert.ok(pattern.includes(p), p);
   assert.ok(await page.isVisible('#helpGloss dt >> text=Focus mode'));
@@ -216,7 +216,7 @@ test('What’s new: shown after an update, not on a fresh install, and stays dis
     assert.equal((await page.textContent('#wnTitle')).trim(), `What’s new in ${ver}`);
     const n = await page.evaluate(() => document.querySelectorAll('#whatsNew li').length);
     assert.ok(n >= 1 && n <= 4, `${n} bullets`);
-    assert.match(await page.textContent('#whatsNew'), /Shading per zone/);
+    assert.match(await page.textContent('#whatsNew'), /Colour along looks like your paper/);
     assert.equal(await page.getAttribute('#wnClose', 'aria-label'), 'Dismiss what’s new');
     await shot(page, 'help-whatsnew');
     await page.reload(); await idle(page);

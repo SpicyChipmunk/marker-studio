@@ -28,11 +28,15 @@ function ctlPlan() {
   surpriseNote = false;
   if (!isPlanTab(gTab)) gTab = 'colours';
   // what ✨ Surprise chose goes in its toast (with Undo) and the Undo button's label, not above the picture
-  if (_snote)
-    planWhy = '\u2728 Surprise' + (zones.length ? ' (' + zoneName(zoneCur) + ')' : '') + ': ' + _snote;
+  if (_snote) planWhy = 'Surprise' + (zones.length ? ' (' + zoneName(zoneCur) + ')' : '') + ': ' + _snote;
   ctlEl.innerHTML =
     ctlPlanHead() + ctlPlanColours() + ctlPlanPattern() + ctlPlanShading() + ctlPlanShare() + ctlPlanBar();
   ctlPlanWire();
+  ctlEl.setAttribute('data-tab', gTab);
+  heldNoteWire();
+  pinNoteWire();
+  sampleNoteWire();
+  toolTipWire();
 }
 // a Plan panel's attributes: shown only while its tab is chosen
 function ctlTabAttrs(t) {
@@ -72,6 +76,10 @@ function ctlPlanHead() {
       );
     }).join('') +
     '</div>' +
+    heldNoteHTML() +
+    pinNoteHTML() +
+    sampleNoteHTML() +
+    toolTipHTML() +
     (family !== 'manual' && !paintOn && !zoneEditOn()
       ? infoLine(
           'tap',
@@ -122,8 +130,8 @@ function ctlPlanColours() {
         if (lastPoolN > 0 && lastPoolN < limitN)
           _expH +=
             '<div class="sfc-warn">Only ' +
-            lastPoolN +
-            ' markers close enough \u2014 lean toward hues or lower the count.</div>';
+            nWord(lastPoolN, 'marker') +
+            ' close enough \u2014 lean towards hues or lower the count.</div>';
       }
     }
   }
@@ -138,7 +146,8 @@ function ctlPlanColours() {
   if (family !== 'manual' && paletteSource === 'saved') {
     const pals = api.listPalettes ? api.listPalettes() : [];
     if (!pals.length) {
-      html += '<div class="sfc-note sfc-mt6">No saved palettes yet \u2014 design one in Palette mode.</div>';
+      html +=
+        '<div class="sfc-note sfc-mt6">No saved palettes yet \u2014 make one in Palette, or use Share \u203a Save as palette.</div>';
     } else {
       // a guide whose palette has since been deleted (or never had one) says so, and uses your markers until you
       // choose; showing the first palette as chosen would quietly switch the guide to it at its next change
@@ -146,7 +155,7 @@ function ctlPlanColours() {
         return pp.id === savedPalId;
       });
       html +=
-        '<select id="sfPalPick" class="sfc-select">' +
+        '<select id="sfPalPick" class="sfc-select" aria-label="Saved palette">' +
         (found
           ? ''
           : '<option value="" selected disabled>' +
@@ -171,7 +180,7 @@ function ctlPlanColours() {
     }
   } else if (family !== 'manual' && paletteSource === 'generate') {
     html +=
-      '<select id="sfHarm" class="sfc-select">' +
+      '<select id="sfHarm" class="sfc-select" aria-label="Harmony">' +
       GEN_HARMS.map(function (h) {
         return (
           '<option value="' + h + '"' + (genHarmony === h ? ' selected' : '') + '>' + HARM[h] + '</option>'
@@ -189,9 +198,11 @@ function ctlPlanColours() {
             _tot +
             ' catalogue markers \u00b7 <button class="sflink" data-gomk="1">add yours</button>'
           : _pass === 0
-            ? 'Your filters exclude all owned \u2014 using all ' + _tot
+            ? 'None of your markers match the filters \u2014 using all ' + _tot
             : _pass >= _tot
-              ? 'All ' + _tot + ' markers you own'
+              ? _tot === 1
+                ? 'The one marker you own'
+                : 'All ' + _tot + ' markers you own'
               : _pass + ' of ' + _tot + ' owned match your filters';
       html += '<div class="sfc-note sfc-mt6">' + _msg + '</div>';
     }
@@ -217,7 +228,7 @@ function ctlPlanColours() {
     balance === 'main' &&
     paletteSource === 'owned' &&
     (balM !== 'auto' || balS !== 'auto' || balA !== 'auto');
-  if (_tShow) html += '<div class="sflean">Within your filters, lean toward\u2026</div>';
+  if (_tShow) html += '<div class="sflean">Within your filters, lean towards\u2026</div>';
   if (_tShow)
     html +=
       '<div class="sfsublbl' +
@@ -244,6 +255,16 @@ function ctlPlanColours() {
       }).join('') +
       '</div>';
   if (_tShow || _iShow) html += '<div class="sfpoolct">' + poolMsg() + '</div>';
+  // (v288) the markers to get out of the box: every marker on the page, all zones, opens a list
+  if (assignData) {
+    const nm = pageMarkerKeys().length;
+    html +=
+      '<button type="button" id="sfMkList" class="sfghost sfmklist" aria-haspopup="dialog">' +
+      nWord(nm, 'marker') +
+      ' on this page ' +
+      ic('chevron-right') +
+      '</button>';
+  }
   return html + '</div>';
 }
 // Gradient: which colour a loop right round the colour wheel starts with (hidden for an open ramp). The strip above
@@ -316,12 +337,14 @@ function ctlPlanPattern() {
       ctlSeg('diagonal', 'Diagonal', gradShape === 'diagonal') +
       ctlSeg('radial', 'Radial', gradShape === 'radial') +
       '</div>' +
-      // (Radial: where its rings start, the ⊕ on the picture)
+      // (Radial: where its rings start, the centre mark on the picture)
       (gradShape === 'radial'
         ? '<div id="sfRadNote" class="sfc-note sfc-mt6">Centre: ' +
           (radC
             ? '<b>moved</b> <button type="button" id="sfRadReset" class="sflink">Back to the middle</button>'
-            : '<b>in the middle</b> · drag the <span aria-hidden="true">⊕</span><span class="sfsr">centre mark</span> on the picture to move it') +
+            : '<b>in the middle</b> · drag the ' +
+              ic('crosshair') +
+              '<span class="sfsr">centre mark</span> on the picture to move it') +
           '</div>'
         : '') +
       '<div class="sfsublbl">Direction</div><div id="sfDir" role="group" aria-label="Direction" class="sffit"><button class="sfedit' +
@@ -353,7 +376,8 @@ function ctlPlanPattern() {
       ) +
       '<div class="sfc-anchors"><button id="sfResetA" class="sfghost">Reset anchors</button><span class="sfc-note">' +
       anchors.length +
-      ' anchors</span></div>';
+      (anchors.length === 1 ? ' anchor' : ' anchors') +
+      '</span></div>';
     html +=
       '<div class="sfc-mt10"><label class="sfc-slider">Spread<input type="range" id="sfSpread" min="0.6" max="4" step="0.2" value="' +
       blendFall +
@@ -361,6 +385,9 @@ function ctlPlanPattern() {
       BLEND_MIXES.map(function (k) {
         return ctlSeg(k, BLEND_MIX_LABEL[k], blendMix === k);
       }).join('') +
+      // (what the chosen one does, in a line: v285)
+      '</div><div id="sfMixHint" class="sfc-note sfc-mt6">' +
+      (BLEND_MIX_DESC[blendMix] || '') +
       '</div>';
   } else if (family === 'photo') {
     if (!photoRef)
@@ -467,7 +494,9 @@ function ctlPlanPattern() {
             _shId +
             '" class="sfghost"' +
             (_shOff ? ' disabled aria-describedby="sfShWhy"' : '') +
-            '><span aria-hidden="true">↻</span> Shuffle</button>'
+            '>' +
+            ic('shuffle') +
+            ' Shuffle</button>'
           : '') +
         (_pin
           ? '<button id="sfLock" class="sfedit' +
@@ -498,7 +527,7 @@ function ctlPlanPattern() {
 function ctlPlanShading() {
   let html = '<div class="sftab" data-tab="shading"' + ctlTabAttrs('shading') + '>';
   html +=
-    '<div class="sfgrp sfshade"><div class="sfglbl">Shading</div><div id="sfShade" class="sfshsegs sffit" role="group" aria-label="Shading">' +
+    '<div class="sfgrp sfshade"><h3 class="sfglbl">Shading</h3><div id="sfShade" class="sfshsegs sffit" role="group" aria-label="Shading">' +
     ctlSeg('off', 'Off', shadeMode === 'off') +
     ctlSeg('shadow', 'Shadows', shadeMode === 'shadow') +
     ctlSeg('full', 'Light &amp; shadow', shadeMode === 'full') +
@@ -526,7 +555,7 @@ function ctlPlanShading() {
     if (photoLightOK()) {
       html +=
         '<div class="sfsublbl">Light from</div><div id="sfShLight" role="group" aria-label="Light from" class="sfc-segs">' +
-        ctlSeg('sun', 'The sun ☀', !_fp) +
+        ctlSeg('sun', 'The sun ' + ic('sun'), !_fp) +
         ctlSeg('photo', 'The photo', _fp) +
         '</div>';
       const _out = _fp ? shadeOutside() : 0;
@@ -546,7 +575,7 @@ function ctlPlanShading() {
         (_fp
           ? 'The light and dark come from your photo: where it’s lighter than a section’s colour you get H, darker gets S, and even areas stay flat.'
           : shadeUse().sun
-            ? 'Drag the <span aria-hidden="true">☀</span> on the picture to move the light.'
+            ? 'Drag the ' + ic('sun') + '<span class="sfsr">sun</span> on the picture to move the light.'
             : '') +
         ' Tap a section to see its markers.',
     );
@@ -647,10 +676,16 @@ function ctlPlanShare() {
     '<div class="sftab" data-tab="share"' +
     ctlTabAttrs('share') +
     '>' +
-    '<div class="sfgrp"><div class="sfglbl">Show it off</div><div class="sfrow2"><button id="sfReveal" class="sfreveal"><span aria-hidden="true">✨</span> Reveal &amp; share</button><button id="sfExport" class="sfghost">Save image</button></div></div><div class="sfgrp"><div class="sfglbl">Print</div><button id="sfPrint" class="sfghost sffull" aria-haspopup="dialog">Print…</button></div><div class="sfgrp"><div class="sfglbl">Plan &amp; keep</div><div class="sfrow2"><button id="sfPlan" class="sfghost"><span aria-hidden="true">◐</span> Blend plan</button><button id="sfAsPal" class="sfghost">Save as palette</button></div><button id="sfShareGuide" class="sfghost sffull">Guide file</button></div></div>'
+    '<div class="sfgrp"><h3 class="sfglbl">Show it off</h3><div class="sfrow2"><button id="sfReveal" class="sfreveal">' +
+    ic('sparkles') +
+    ' Reveal &amp; share</button><button id="sfExport" class="sfghost">Save image</button></div><label class="sfchk sfc-check sfc-inline sfc-mt8"><input type="checkbox" id="sfExCodes"' +
+    (exCodes ? ' checked' : '') +
+    '> Codes on the saved image</label></div><div class="sfgrp"><h3 class="sfglbl">Print</h3><button id="sfPrint" class="sfghost sffull" aria-haspopup="dialog">Print…</button></div><div class="sfgrp"><h3 class="sfglbl">Plan &amp; keep</h3><div class="sfrow2"><button id="sfPlan" class="sfghost">' +
+    ic('blend') +
+    ' Blend plan</button><button id="sfAsPal" class="sfghost">Save as palette</button></div><button id="sfShareGuide" class="sfghost sffull">Guide file</button></div></div>'
   );
 }
 // the bottom bar (moved below the whole guide card by dockBar)
 function ctlPlanBar() {
-  return '<div class="sfbar"><button id="sfBack2" class="sfghost" aria-label="Back to editing sections" data-long="\u2190 Edit sections" data-short="\u2190 Sections">\u2190 Edit sections</button><button id="sfColor" class="sfcolorcta">Colour along</button></div>';
+  return '<div class="sfbar"><button id="sfBack2" class="sfghost" aria-label="Back to Edit sections" data-long="\u2190 Edit sections" data-short="\u2190 Sections">\u2190 Edit sections</button><button id="sfColor" class="sfcolorcta">Colour along</button></div>';
 }

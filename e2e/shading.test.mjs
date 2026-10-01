@@ -3,7 +3,7 @@
 // photo in a Photo guide; tones while colouring along. All saved with the guide.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, shot, scrollTop, notOnWebKit, WK, until } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, shot, scrollTop, notOnWebKit, WK, until, saveGuide } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -76,7 +76,7 @@ test('shading settings save with the guide and come back when it is opened', asy
   await turnOn(page, 'full');
   await sunTo(page, 0.9, 0.9);
   const sun = await page.evaluate(() => __mstest.shadeSun);
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   await page.reload();
   await page.click('#mHome');
   await page.click('#sfRecent [data-gid]');
@@ -120,9 +120,12 @@ test('colour along with shading: tones in the list, one tap per section in focus
   await page.click('#sfColor'); await idle(page);
   assert.ok(await page.locator('#sfAlist .sfatones').count() > 0, 'each colour lists its tones');
   await page.click('#sfFocus'); await idle(page);
-  const cur = () => page.evaluate(() => { const t = __mstest; return { pos: t.focusPos, l: t.focusOrd[t.focusPos], bits: t.focusStep[t.focusPos], name: document.getElementById('sfFocName').textContent, sub: document.getElementById('sfFocSub').textContent }; });
+  const cur = () => page.evaluate(() => { const t = __mstest; return { pos: t.focusPos, l: t.focusOrd[t.focusPos], bits: t.focusStep[t.focusPos], name: document.getElementById('sfFocName').textContent, sub: document.getElementById('sfFocSub').textContent, chips: [...document.querySelectorAll('#sfFocChips .sffocchip')].map((c) => ({ t: c.textContent, on: c.classList.contains('on') })) }; });
   const a = await cur();
-  assert.match(a.sub, /B .+›.+S /, 'the bar lists the section\'s tones');
+  // (v284: the tones as chips on a line of their own, none lit when the section is coloured in one go)
+  assert.ok(a.chips.some((c) => /^B /.test(c.t)) && a.chips.some((c) => /^S /.test(c.t)), 'the bar lists the section\'s tones');
+  assert.ok(a.chips.every((c) => !c.on));
+  assert.match(a.sub, /^Section \d+ of \d+\. .*base /, 'and says them for screen readers');
   await page.click('#sfFDone'); await idle(page);
   const b = await cur();
   assert.notEqual(b.l, a.l, 'one tap finishes the section and moves on');
@@ -136,17 +139,20 @@ test('colour along with shading: tones in the list, one tap per section in focus
   const c = await cur();
   assert.equal(c.l, b.l, 'stays on the same section');
   assert.match(c.name, /^(Highlight|Base|Shadow) · /, 'names a single tone');
+  assert.equal(c.chips.filter((x) => x.on).length, 1, 'its chip lit');
+  assert.equal(c.chips.find((x) => x.on).t[0], c.name[0]);
   await page.click('#sfFDone'); await idle(page);
   const d = await cur();
   assert.equal(d.l, c.l, 'next tone of the same section');
   assert.ok(d.bits > c.bits);
   assert.equal(await page.evaluate((l) => __mstest.colored[l], c.l), 0, 'not done until its last tone');
   // partial tones survive saving and reopening
-  await page.click('#sfExitFoc'); await page.click('#sfSave'); await idle(page);
+  await page.click('#sfExitFoc'); await saveGuide(page); await idle(page);
   const part = await page.evaluate((l) => __mstest.tonePart[l], c.l);
   assert.ok(part > 0);
   await page.evaluate(() => localStorage.setItem('ms-tone-steps', '0'));
-  await page.reload(); await page.click('#mHome'); await page.click('#sfRecent [data-gid]');
+  // (v285: part-coloured, it's Home's Continue card)
+  await page.reload(); await page.click('#mHome'); await page.click('#homeCont .hccard');
   await page.waitForFunction(() => __mstest.assignData); await idle(page);
   assert.equal(await page.evaluate((l) => __mstest.tonePart[l], c.l), part, 'part-done tones kept');
   assert.equal(await page.evaluate((l) => __mstest.colored[l], a.l), 1, 'finished section kept');
@@ -210,7 +216,7 @@ test('sections can be left flat, and that is saved with the guide', async () => 
   assert.match(await page.textContent('#sfShFlat'), /· 1/);
   await page.click('#sfShFlat'); // done choosing
   await page.evaluate(() => { __mstest.shadeHi = 0.8; __mstest.shadeLo = 0.3; });
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   const id = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
   await page.evaluate(() => SF.loadSample()); await idle(page, 1200);
   await page.evaluate((id) => SF.openDesign(id), id); await idle(page, 1500);
@@ -253,8 +259,8 @@ test('changing shading counts as an unsaved change', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   // (saved once the header says so: in GitHub's WebKit a late frame can hold the save up past the page going idle)
-  await page.click('#sfSave'); await idle(page);
-  await until(page, () => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent), null, 'saved', 10000);
+  await saveGuide(page); await idle(page);
+  await until(page, () => /Saved in your Library|Saves itself from now on/.test(document.getElementById('sfSaveSt').textContent), null, 'saved', 10000);
   assert.equal(await page.evaluate(() => __mstest.guideDirty), false);
   // (the Library guide then saves itself 1.5 s later, which clears it again: so it's caught as it happens, not after
   // the page has gone idle, which on a slow machine can be after the auto-save)
@@ -302,7 +308,7 @@ test('reopening a guide lit from its photo draws the photo light (no sun) once t
   await fc.setFiles({ name: 'r.png', mimeType: 'image/png', buffer: Buffer.from(b64, 'base64') });
   await page.waitForFunction(() => !!__mstest.photoRef); await idle(page);
   await page.click('#sfPhAlign'); await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   const id = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
   await page.evaluate(() => SF.loadSample()); await idle(page, 1200);
   await page.evaluate((id) => SF.openDesign(id), id);
@@ -346,7 +352,7 @@ test('the sun sits on the picture after full screen opens and closes (measured o
 
 // ---- From the fourth review (data safety) ----
 // Save (a new guide into the Library), done once the header says so
-const saveNew = async (page) => { await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent)); };
+const saveNew = (page) => saveGuide(page);
 
 const AUTO = 2300; // idle(page, AUTO): until auto-save (1.5 s after the last change) has run
 const savedId = (page) => page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
@@ -375,6 +381,9 @@ test('switching shading off keeps part-done tones: Undo (or shading back on) mak
   await page.reload(); await idle(page);
   await openSaved(page, id);
   assert.equal(await page.evaluate((l) => __mstest.colored[l], l), 1);
+  // (v284: part-way coloured, it opens in Colour along)
+  assert.equal(await page.evaluate(() => __mstest.sfmode), 'color');
+  await page.click('#sfDoneBtn'); await idle(page);
   await tab(page, 'shading'); await page.click('#sfShade [data-v="full"]'); await idle(page);
   assert.deepEqual(await page.evaluate((l) => [__mstest.colored[l], __mstest.tonePart[l]], l), [0, 2]);
   assert.deepEqual(errors, []);

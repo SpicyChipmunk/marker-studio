@@ -62,7 +62,7 @@ test('the saved style: its exact text, nesting and order', () => {
       '"genPal":["Ohuhu|R16","' + k0 + '","Ohuhu|B06"]}',
   );
   // the section settings are saved beside the style, in this place among the rest
-  assert.deepEqual(Object.keys(d.payload), ['lmap', 'ref', 'paper', 'assign', 'style', 'anchors', 'prog', 'tones', 'out',
+  assert.deepEqual(Object.keys(d.payload), ['lmap', 'ref', 'paper', 'assign', 'style', 'anchors', 'prog', 'tones', 'held', 'dates', 'out',
     'edits', 'base', 'locks', 'minPos', 'minSize', 'bgTrim', 'addAutoClose', 'secStates']);
   // (the smallest section: minSize on the slider's scale since v277, minPos on the old one for older copies)
   assert.deepEqual([d.payload.minSize, d.payload.minPos, d.payload.bgTrim, d.payload.addAutoClose], [12, 3, 64, true]);

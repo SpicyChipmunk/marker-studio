@@ -4,7 +4,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { setup, teardown, openApp, sampleGuide, idle, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, notOnWebKit, WK, saveGuide } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -21,7 +21,7 @@ const rows = (page, sel) => page.$$eval(sel, (b) => [...new Set(b.filter((x) => 
 const pinTabs = (page) => page.evaluate(() => new Promise((r) => { const t = document.querySelector('.sftabs'), s = document.querySelector('.sftabsen'), cs = getComputedStyle(t); scrollTo(0, Math.round(scrollY + s.getBoundingClientRect().top + parseFloat(cs.marginTop) - parseFloat(cs.top))); requestAnimationFrame(() => requestAnimationFrame(r)); }));
 // save the guide, reload, and open it again from Home (localStorage, and so what has been seen, is kept)
 async function reopen(page) {
-  if (await page.isVisible('#sfSave')) { await page.click('#sfSave'); await idle(page); }
+  if (!(await page.evaluate(() => __mstest.inLibrary))) await saveGuide(page);
   await page.reload(); await page.waitForFunction(() => !!window.__mstest);
   await page.click('#mHome'); await page.click('#sfRecent [data-gid]');
   await page.waitForFunction(() => !!__mstest.assignData); await idle(page);
@@ -58,7 +58,7 @@ test('Pattern: the chooser on one row, that pattern\'s options, then Shuffle and
   assert.equal((await rows(page, '#sfShape button')).length, 1);
   assert.ok(await page.isVisible('#sfDir'));
   const sh = await rect(page, '#sfVary'), pin = await rect(page, '#sfLock');
-  assert.equal(await page.textContent('#sfVary'), '↻ Shuffle');
+  assert.equal((await page.textContent('#sfVary')).trim(), 'Shuffle');
   assert.match(await page.textContent('#sfLock'), /^Pin colours · 0$/);
   assert.ok(Math.abs(sh.top - pin.top) < 1 && sh.right <= pin.left, 'Shuffle and Pin side by side');
   const last = await page.evaluate((s) => document.querySelector(s).lastElementChild.contains(document.getElementById('sfLock')), pane('pattern'));
@@ -178,7 +178,7 @@ test('Share: Show it off, Print…, Plan & keep; the Print sheet opens under the
   await tab(page, 'share');
   assert.deepEqual(await page.$$eval(`${pane('share')} .sfglbl`, (e) => e.map((x) => x.textContent)), ['Show it off', 'Print', 'Plan & keep']);
   assert.deepEqual(await ids(page, `${pane('share')} button`), ['sfReveal', 'sfExport', 'sfPrint', 'sfPlan', 'sfAsPal', 'sfShareGuide']);
-  assert.equal(await page.textContent('#sfReveal'), '✨ Reveal & share');
+  assert.equal((await page.textContent('#sfReveal')).trim(), 'Reveal & share');
   assert.equal(await page.textContent('#sfPrint'), 'Print…');
   assert.equal(await page.locator(`${pane('share')} #sfPDF, ${pane('share')} [data-paper]`).count(), 0, 'the print options live in the sheet');
   await page.click('#sfPrint'); await page.waitForSelector('#sfSheet.sfprsh'); await idle(page);
@@ -194,12 +194,14 @@ test('Share: Show it off, Print…, Plan & keep; the Print sheet opens under the
   // the summary follows the choices, and its page count matches the PDF's
   const sum = () => page.textContent('#sfPrSum');
   const count = async () => { const n = await page.evaluate(() => __mstest.buildPDFPages().length); const m = /^(\d+) pages?/.exec(await sum()); return [+m[1], n]; };
-  assert.equal(await sum(), '2 pages · Letter · Codes');
+  // (v284: with any close-ups of small sections, how many and on how many pages)
+  const CL = '(\\d+ small sections? (is|are) on \\d+ close-up pages?\\.( Numbers would fit more of (it|them) on the colouring page\\.)?)?$';
+  assert.match(await sum(), new RegExp('^\\d+ pages · Letter · Codes' + CL));
   let [said, real] = await count(); assert.equal(said, real, 'Letter, codes');
   await page.click('[data-plabels="numbers"]');
-  assert.equal(await sum(), '2 pages · Letter · Numbers');
+  assert.match(await sum(), new RegExp('^\\d+ pages · Letter · Numbers' + CL));
   await page.click('[data-paper="a4"]');
-  assert.equal(await sum(), '2 pages · A4 · Numbers');
+  assert.match(await sum(), new RegExp('^\\d+ pages · A4 · Numbers' + CL));
   await page.check('#sfPdfBlend');
   [said, real] = await count(); assert.equal(said, real, 'A4 with blend companions');
   await page.click('[data-paper="a5"]');
@@ -239,7 +241,8 @@ test('each tab stays within about one and a half screens of room at 390×844, wi
       const m = await page.evaluate((s) => ({ h: document.querySelector(s).scrollHeight, room: parseFloat(getComputedStyle(document.getElementById('sfWork')).getPropertyValue('--tabMin')), pic: Math.round(document.getElementById('sfCanvas').getBoundingClientRect().height), info: document.querySelectorAll(s + ' button.sfinfo:not(.open)').length }), pane(tb));
       assert.equal(m.pic, 380, `${tb}: the picture at its floor size`);
       out[pass + ' ' + tb] = `${m.h}px (${(m.h / m.room).toFixed(2)} × the ${m.room}px under the pinned tabs)`;
-      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info, `${tb}: ${out[pass + ' ' + tb]}`);
+      // (v288: Colours has the "N markers on this page ›" button too, 44px and its margin)
+      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
     }
   }
   t.diagnostic(JSON.stringify(out));

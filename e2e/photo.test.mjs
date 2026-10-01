@@ -3,7 +3,7 @@
 // photo and its placement are saved with the guide (also when it loads late, or the guide switched pattern).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, idle, scrollTop, sampleGuide, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, idle, scrollTop, sampleGuide, notOnWebKit, WK, saveGuide } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -79,7 +79,8 @@ test('dragging the photo moves where the colours land; pins stay', notOnWebKit(W
 });
 
 test('lining up on a wide screen: the photo is grabbed beside the drawing too; colours come after; leaving the Pattern tab finishes lining up', notOnWebKit(WK.photo), async () => {
-  const { page, errors } = await openApp({ width: 1024, height: 768 });
+  // (v285: an iPad in portrait; side by side, the picture's column is now fitted to the drawing and its tools)
+  const { page, errors } = await openApp({ width: 834, height: 1194 });
   await photoGuide(page);
   await scrollTop(page);
   assert.equal(await page.evaluate(() => __mstest.photoAlign), true, 'lining up after choosing the photo');
@@ -89,7 +90,7 @@ test('lining up on a wide screen: the photo is grabbed beside the drawing too; c
     const x = c.left - v.left > 40 ? (v.left + c.left) / 2 : v.right - c.right > 40 ? (c.right + v.right) / 2 : null;
     return x == null ? null : { x, y: c.top + c.height * 0.3, h: c.height };
   });
-  assert.ok(p, 'the drawing is narrower than the picture area at 1024 × 768');
+  assert.ok(p, 'the drawing is narrower than the picture area at 834 × 1194');
   // (the photo is blue above red: moved down, the sections just under the old split turn blue)
   const keys = () => page.evaluate(() => Object.values(__mstest.assignData.assign).map((m) => m.mkey).join());
   const y0 = await page.evaluate(() => __mstest.photoXf.cy), before = await keys();
@@ -120,7 +121,7 @@ test('marker count caps the markers; the photo and its placement are saved and r
   assert.ok((await sides(page)).ok / (await sides(page)).n > 0.95, 'even with 2 markers: one blue, one red');
   await page.evaluate(() => { __mstest.limitN = 24; __mstest.photoRecolour(); });
   await page.click('#sfPhAlign'); // done lining up
-  await page.click('#sfSave'); await idle(page);
+  await saveGuide(page); await idle(page);
   const before = await page.evaluate(() => ({ xf: __mstest.photoXf, keys: JSON.stringify(Object.entries(__mstest.assignData.assign).map(([l, m]) => m.mkey)) }));
   const id = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
   // open something else, then the saved guide again
@@ -191,7 +192,7 @@ test('white areas of the photo are left white (and can be coloured instead)', no
   const px = await page.evaluate(() => { const t = __mstest, l = +Object.keys(t.assignData.paper)[0], p = t.labelPos(l), c = document.getElementById('sfCanvas'); const d = c.getContext('2d').getImageData(Math.floor(p.x), Math.floor(p.y), 1, 1).data; return [d[0], d[1], d[2]]; });
   assert.ok(px.every((v) => v > 225), 'white section drawn as paper: ' + px);
   // save and reopen keeps them white
-  await page.click('#sfPhAlign'); await page.click('#sfSave'); await idle(page);
+  await page.click('#sfPhAlign'); await saveGuide(page); await idle(page);
   const id = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
   await page.evaluate(() => SF.loadSample()); await idle(page, 1200);
   await page.evaluate((id) => SF.openDesign(id), id); await idle(page, 1500);
@@ -244,7 +245,7 @@ test('a photo of a page in dim, warm light is corrected from its paper; it can b
   assert.deepEqual(await whites(), on);
   // saved with the guide, as it is, and read the same when reopened (off too)
   await page.click('#sfPhLight'); await idle(page);
-  await page.click('#sfPhAlign'); await page.click('#sfSave'); await idle(page);
+  await page.click('#sfPhAlign'); await saveGuide(page); await idle(page);
   const id = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
   await page.evaluate(() => SF.loadSample()); await idle(page, 1200);
   await page.evaluate((id) => SF.openDesign(id), id); await idle(page, 1500);
@@ -406,7 +407,7 @@ test('automatic lining-up turns away stripes and very sparse drawings', notOnWeb
 
 // ---- From the fourth review (data safety) ----
 // Save (a new guide into the Library), done once the header says so
-const saveNew = async (page) => { await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent)); };
+const saveNew = (page) => saveGuide(page);
 
 const AUTO = 2300; // idle(page, AUTO): until auto-save (1.5 s after the last change) has run
 const savedId = (page) => page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);

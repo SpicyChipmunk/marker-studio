@@ -5,13 +5,40 @@ function shortDate() {
     return '';
   }
 }
+// The name on the Palette card is the one the Library keeps: a palette in the Library (the same markers, in order)
+// shows its name there; any other is named once for its markers and keeps that name while they stay, so saving
+// doesn't rename it (paletteName skips names already in the Library, the palette's own included once it's saved)
+var _palShown = { k: '', name: '' };
+function shownPaletteName(idxs) {
+  const keys = idxs.map(mkey),
+    k = keys.join(','),
+    inLib = state.saved.find(
+      (s) =>
+        s.type === 'palette' && s.name && s.keys && s.keys.length === keys.length && s.keys.join(',') === k,
+    );
+  if (inLib) return inLib.name;
+  if (_palShown.k !== k) _palShown = { k: k, name: paletteName(idxs) };
+  return _palShown.name;
+}
+// the name to save a new Library entry under: the one shown, unless the Library has it already (this palette saved
+// before, or another item renamed to it), then a fresh one, which the card shows from then on
+function nameForSave(idxs) {
+  let nm = shownPaletteName(idxs);
+  if (usedSavedNames().has(nm.toLowerCase())) {
+    nm = paletteName(idxs);
+    _palShown = { k: idxs.map(mkey).join(','), name: nm };
+    const el = state.mode === 'palette' && readout.querySelector('.name');
+    if (el) el.textContent = nm;
+  }
+  return nm;
+}
 function doSave() {
   const idxs = currentPaletteIdxs();
   if (!idxs.length) return;
   const entry = {
     id: Date.now(),
     type: 'palette',
-    name: paletteName(idxs),
+    name: nameForSave(idxs),
     keys: idxs.map(mkey),
     ts: Date.now(),
   };
@@ -61,65 +88,309 @@ function relDate(ts) {
   }
 }
 var _thumbTried = {};
+// ---- Home (v285): the Continue card (the newest guide part-way coloured: its picture as coloured so far, the rest of
+// the plan pale, how far, and the marker to pick up next; it opens Colour along at that marker) and Your guides (the
+// others, a grid on an iPad, a sideways strip on a phone), each picture drawn from the guide's sections and cached.
+// The intro line shows only before there are any guides. ----
+var _homeArt = {};
+// a guide's picture from its stored sections: mode 'plan' every section in its marker; 'prog' those coloured (ticked,
+// or some tones) in theirs and the rest pale. Resolves to a data: URL, or '' when it can't be drawn.
+function homeArt(g, mode, maxW) {
+  var key = g.id + '|' + (g.ts || 0) + '|' + mode + '|' + maxW;
+  if (_homeArt[key]) return _homeArt[key];
+  // (one picture kept per guide and kind: an older one of this guide goes)
+  var pre = g.id + '|',
+    suf = '|' + mode + '|' + maxW;
+  Object.keys(_homeArt).forEach(function (k) {
+    if (k.indexOf(pre) === 0 && k.slice(-suf.length) === suf) delete _homeArt[k];
+  });
+  // (and no more than 60 kept in all, the oldest going first: a Library of many guides scrolled through)
+  var ks = Object.keys(_homeArt);
+  for (var q = 0; q < ks.length - 59; q++) delete _homeArt[ks[q]];
+  var p = IDB.get('guide-' + g.id)
+    .then(function (pl) {
+      if (!pl || typeof pl.lmap !== 'string' || pl.lmap.slice(0, 11) !== 'data:image/') return '';
+      return new Promise(function (res) {
+        var im = new Image();
+        im.onload = function () {
+          try {
+            var W = im.width,
+              H = im.height,
+              k = Math.min(1, maxW / W, maxW / H),
+              w = Math.max(1, Math.round(W * k)),
+              h = Math.max(1, Math.round(H * k)),
+              c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
+            var gx = c.getContext('2d');
+            // (nearest pixel: each one keeps a section's number)
+            gx.imageSmoothingEnabled = false;
+            gx.drawImage(im, 0, 0, w, h);
+            var id = gx.getImageData(0, 0, w, h),
+              px = id.data,
+              sa = pl.assign && typeof pl.assign === 'object' ? pl.assign : {},
+              done = {},
+              cache = {},
+              paper = PROG_PAPER;
+            (Array.isArray(pl.prog) ? pl.prog : []).forEach(function (l) {
+              done[l] = 1;
+            });
+            if (pl.tones && typeof pl.tones === 'object')
+              for (var t in pl.tones) if (pl.tones[t]) done[t] = 1;
+            for (var j = 0; j < px.length; j += 4) {
+              var v = px[j] | (px[j + 1] << 8) | (px[j + 2] << 16),
+                col;
+              if (v === 0) col = [34, 36, 38];
+              else {
+                var l = v - 1,
+                  on = mode === 'plan' || !!done[l],
+                  ck = l + (on ? '+' : '-');
+                col = cache[ck];
+                if (!col) {
+                  var ki = typeof sa[l] === 'string' ? keyIdx(sa[l]) : null,
+                    hx = ki != null && COLORS[ki] ? COLORS[ki].hex : null;
+                  if (!hx) col = paper;
+                  else {
+                    var rgb = [1, 3, 5].map(function (q) {
+                      return parseInt(hx.slice(q, q + 2), 16);
+                    });
+                    col = on ? rgb : progMix(rgb, PROG_PALE);
+                  }
+                  cache[ck] = col;
+                }
+              }
+              px[j] = col[0];
+              px[j + 1] = col[1];
+              px[j + 2] = col[2];
+              px[j + 3] = 255;
+            }
+            gx.putImageData(id, 0, 0);
+            var u = c.toDataURL('image/jpeg', 0.86);
+            // (the canvas let go at once: Safari limits the memory all canvases may hold)
+            freeCanvas(c);
+            res(u);
+          } catch (e) {
+            res('');
+          }
+        };
+        im.onerror = function () {
+          res('');
+        };
+        im.src = pl.lmap;
+      });
+    })
+    .catch(function () {
+      return '';
+    });
+  _homeArt[key] = p;
+  return p;
+}
+// the marker to pick up next in a guide (as Colour along goes: lightest first): one part-way done, else the first
+// not finished. { hex, code, name } or null
+function homeNext(pl) {
+  // (zone by zone, Colour along goes zone first: the card doesn't name a marker it might not open at)
+  try {
+    if (pl && Array.isArray(pl.zones) && pl.zones.length && localStorage.getItem('ms-along-zones') === '1')
+      return null;
+  } catch (_) {}
+  var sa = pl && pl.assign && typeof pl.assign === 'object' ? pl.assign : {},
+    done = {},
+    part = {},
+    by = {};
+  (Array.isArray(pl && pl.prog) ? pl.prog : []).forEach(function (l) {
+    done[l] = 1;
+  });
+  if (pl && pl.tones && typeof pl.tones === 'object') for (var t in pl.tones) if (pl.tones[t]) part[t] = 1;
+  for (var l in sa) {
+    var k = sa[l];
+    if (typeof k !== 'string') continue;
+    var e = by[k] || (by[k] = { k: k, n: 0, d: 0, p: 0 });
+    e.n++;
+    if (done[l]) e.d++;
+    else if (part[l]) e.p++;
+  }
+  var lum = function (hx) {
+      return hx
+        ? 0.299 * parseInt(hx.slice(1, 3), 16) +
+            0.587 * parseInt(hx.slice(3, 5), 16) +
+            0.114 * parseInt(hx.slice(5, 7), 16)
+        : 0;
+    },
+    list = Object.keys(by)
+      .map(function (k) {
+        var e = by[k],
+          i = keyIdx(k);
+        e.c = i != null ? COLORS[i] : null;
+        return e;
+      })
+      .filter(function (e) {
+        return e.c && e.d < e.n;
+      })
+      .sort(function (a, b) {
+        return lum(b.c.hex) - lum(a.c.hex) || b.n - a.n;
+      }),
+    pick =
+      list.find(function (e) {
+        return e.d > 0 || e.p > 0;
+      }) || list[0];
+  if (!pick) return null;
+  // (a marker dry or no longer owned shows as the closest one owned where there's still colouring to do: the card
+  // doesn't name one Colour along won't open at)
+  var pi = keyIdx(pick.k);
+  try {
+    if (state.owned.size && (pi == null || !isOwned(pi) || isDry(pi))) return null;
+  } catch (_) {}
+  return { hex: pick.c.hex, code: pick.c.code, name: pick.c.name || '' };
+}
+function homeName(g) {
+  var nm =
+    g.name && !/^(Guide|Colour guide)$/.test(g.name)
+      ? g.name
+      : evoName(
+          (g.keys || []).map(function (k) {
+            var _i = keyIdx(k);
+            return _i != null && COLORS[_i] ? COLORS[_i].hex : null;
+          }),
+        ) || 'Colour guide';
+  return nm || 'Guide';
+}
+// started (a tick, or some tones) and not finished: what the Continue card offers
+function homeStarted(g) {
+  return (+g.done > 0 || +g.tn > 0) && !(+g.n > 0 && +g.done >= +g.n);
+}
 function renderRecent() {
   var _ls = document.getElementById('homeLibSub');
   if (_ls) {
     var _n = state.saved.length;
     _ls.textContent = _n ? _n + ' saved' : 'Nothing yet';
   }
-  var el = document.getElementById('sfRecent');
+  // (only while Home shows: a save while colouring would otherwise redraw the Continue card's picture on every tick;
+  // showing Home draws it, chrome.js)
+  var _hv = document.getElementById('homeView');
+  if (_hv && _hv.style.display === 'none') return;
+  if (window.SF && SF.palNote) SF.palNote();
+  var el = document.getElementById('sfRecent'),
+    cel = document.getElementById('homeCont'),
+    top = cel && cel.parentElement,
+    head = document.querySelector('#homeView .homehead');
   if (!el) return;
-  var gs = state.saved
-    .filter(function (s) {
-      return s.type === 'guide';
-    })
-    .sort(function (a, b) {
-      return (b.ts || 0) - (a.ts || 0);
-    })
-    .slice(0, 4);
+  var all = state.saved
+      .filter(function (s) {
+        return s.type === 'guide';
+      })
+      .sort(function (a, b) {
+        return (b.ts || 0) - (a.ts || 0);
+      }),
+    cont = all.find(homeStarted) || null,
+    gs = all
+      .filter(function (g) {
+        return g !== cont;
+      })
+      .slice(0, 4);
+  if (head) head.style.display = all.length ? 'none' : '';
+  // the Continue card
+  if (cel) {
+    if (!cont) {
+      cel.style.display = 'none';
+      cel.innerHTML = '';
+      cel.removeAttribute('data-cid');
+    } else if (
+      cel.getAttribute('data-cid') !== String(cont.id) ||
+      cel.getAttribute('data-ts') !== String(cont.ts) ||
+      cel.getAttribute('data-nm') !== homeName(cont)
+    ) {
+      var nm = esc(homeName(cont)),
+        n = +cont.n || 0,
+        d = +cont.done || 0,
+        pc = n ? Math.max(1, Math.min(100, Math.round((d * 100) / n))) : 0;
+      cel.setAttribute('data-cid', String(cont.id));
+      cel.setAttribute('data-ts', String(cont.ts));
+      cel.setAttribute('data-nm', homeName(cont));
+      cel.innerHTML =
+        '<button type="button" class="hccard" data-gid="' +
+        esc(cont.id) +
+        '" data-cont="1" aria-label="Continue colouring ' +
+        nm +
+        ': ' +
+        progressText(d, n, true) +
+        '"><span class="hcpic"><span class="hcph"></span></span><span class="hcbody"><span class="hceb" aria-hidden="true">Continue colouring</span><span class="hcname" aria-hidden="true">' +
+        nm +
+        '</span><span class="hcbar" aria-hidden="true"><i style="width:' +
+        pc +
+        '%"></i></span><span class="hcmeta" aria-hidden="true">' +
+        progressText(d, n) +
+        '</span><span class="btn-primary hcgo" aria-hidden="true">Continue</span></span></button>';
+      cel.style.display = '';
+      var gid = cont.id,
+        gts = String(cont.ts),
+        same = function () {
+          return cel.getAttribute('data-cid') === String(gid) && cel.getAttribute('data-ts') === gts;
+        };
+      homeArt(cont, 'prog', 560).then(function (u) {
+        var ph = same() && cel.querySelector('.hcph');
+        if (u && ph) ph.outerHTML = '<img alt="" src="' + u + '">';
+      });
+      IDB.get('guide-' + gid)
+        .then(function (pl) {
+          var nx = pl ? homeNext(pl) : null,
+            m = same() && cel.querySelector('.hcmeta');
+          if (nx && m && !m.querySelector('.hcdot')) {
+            var cb = cel.querySelector('.hccard');
+            if (cb)
+              cb.setAttribute(
+                'aria-label',
+                cb.getAttribute('aria-label') + ', next ' + nx.code + (nx.name ? ' ' + nx.name : ''),
+              );
+            m.innerHTML +=
+              ' · next <span class="hcdot" style="background:' +
+              esc(nx.hex) +
+              '"></span> <b>' +
+              esc(nx.code) +
+              '</b> ' +
+              esc(nx.name);
+          }
+        })
+        .catch(function () {});
+    }
+    if (top) top.classList.toggle('nocont', !cont);
+  }
+  var nb = document.getElementById('homeNew');
+  // (beside the Continue card, a new guide is the second choice)
+  if (nb) nb.classList.toggle('homenew2', !!cont);
   if (!gs.length) {
     el.style.display = 'none';
     el.innerHTML = '';
-    return;
-  }
-  var html =
-    '<div class="sfRecentHead"><span>Pick up where you left off</span><button class="homelink sfSeeAll" data-lib="1">See all <span aria-hidden="true">\u2192</span></button></div>';
-  gs.forEach(function (g) {
-    var nm =
-      g.name && !/^(Guide|Colour guide)$/.test(g.name)
-        ? g.name
-        : evoName(
-            (g.keys || []).map(function (k) {
-              var _i = keyIdx(k);
-              return _i != null && COLORS[_i] ? COLORS[_i].hex : null;
-            }),
-          ) || 'Colour guide';
-    nm = esc(nm || 'Guide');
-    var vis;
-    if (safeThumb(g.thumb)) {
-      vis = '<img class="sfRecThumb" src="' + esc(safeThumb(g.thumb)) + '" alt="">';
-    } else {
-      var sw = '';
-      (g.keys || []).slice(0, 8).forEach(function (k) {
-        var i = keyIdx(k);
-        sw += '<span style="background:' + (i != null && COLORS[i] ? COLORS[i].hex : '#555') + '"></span>';
+  } else {
+    var html =
+      '<div class="sfRecentHead"><h2 class="sfrech">Your guides</h2><button class="homelink sfSeeAll" data-lib="1">All guides (' +
+      all.length +
+      ') <span aria-hidden="true">›</span></button></div><div class="sfRecList">';
+    gs.forEach(function (g) {
+      html +=
+        '<button class="sfRecCard" data-gid="' +
+        esc(g.id) +
+        '"><span class="sfRecPic">' +
+        (safeThumb(g.thumb) ? '<img class="sfRecThumb" src="' + esc(safeThumb(g.thumb)) + '" alt="">' : '') +
+        '</span><span class="sfRecMeta"><span class="sfRecName">' +
+        esc(homeName(g)) +
+        '</span><span class="sfRecDate">' +
+        relDate(g.ts) +
+        // (how far it's coloured, as the Library says: v284)
+        ' · ' +
+        progressText(g.done, g.n) +
+        '</span></span></button>';
+    });
+    el.innerHTML = html + '</div>';
+    el.style.display = '';
+    // (each card's picture drawn from its sections: sharper than the Library's small thumbnail)
+    gs.forEach(function (g) {
+      homeArt(g, 'plan', 320).then(function (u) {
+        var c = u && el.querySelector('.sfRecCard[data-gid="' + g.id + '"] .sfRecPic');
+        if (c) c.innerHTML = '<img class="sfRecThumb" alt="" src="' + u + '">';
       });
-      vis = '<div class="sfRecThumb sfRecStrip">' + sw + '</div>';
-    }
-    html +=
-      '<button class="sfRecCard" data-gid="' +
-      esc(g.id) +
-      '">' +
-      vis +
-      '<div class="sfRecMeta"><span class="sfRecName">' +
-      nm +
-      '</span><span class="sfRecDate">' +
-      relDate(g.ts) +
-      '</span></div></button>';
-  });
-  el.innerHTML = html;
-  el.style.display = '';
-  el.onclick = function (e) {
+    });
+  }
+  var go = function (e) {
     if (e.target.closest('[data-lib]')) {
       openLibrary();
       return;
@@ -128,9 +399,12 @@ function renderRecent() {
     if (!c) return;
     var id = +c.getAttribute('data-gid');
     setMode('sections');
-    if (window.SF && SF.openDesign) SF.openDesign(id);
+    if (c.hasAttribute('data-cont') && window.SF && SF.continueGuide) SF.continueGuide(id);
+    else if (window.SF && SF.openDesign) SF.openDesign(id);
   };
-  gs.forEach(function (g) {
+  el.onclick = go;
+  if (cel) cel.onclick = go;
+  all.slice(0, 5).forEach(function (g) {
     if (safeThumb(g.thumb)) return;
     if (_thumbTried[g.id]) return;
     _thumbTried[g.id] = 1;
@@ -139,17 +413,6 @@ function renderRecent() {
         if (!t) return;
         g.thumb = t;
         if (!save(true)) g.thumb = '';
-        var card = el.querySelector('[data-gid="' + g.id + '"]');
-        if (card) {
-          var oldv = card.querySelector('.sfRecThumb');
-          if (oldv) {
-            var img = document.createElement('img');
-            img.className = 'sfRecThumb';
-            img.src = t;
-            img.alt = '';
-            oldv.replaceWith(img);
-          }
-        }
       });
   });
 }
@@ -163,17 +426,23 @@ function renderLibStat() {
     el.textContent = '';
     return;
   }
+  // (guides saved as built, nothing coloured, aren't counted as at risk, v285, but they aren't in a backup either)
+  const out = state.saved.filter((s) => s.type === 'guide' && s.fresh && (s.ts || 0) > (+s.bk || bk)).length;
   el.textContent = bk
     ? 'Last backup: ' +
       relDate(bk) +
-      (risk ? ' \u00b7 ' + risk + ' not in a backup' : ' \u00b7 all backed up')
+      (risk ? ' \u00b7 ' + risk + ' not in a backup' : out ? '' : ' \u00b7 all backed up')
     : risk
       ? 'Not backed up yet (' + nWord(risk, 'guide') + ')'
-      : 'All guides are in a backup';
+      : out
+        ? 'Not backed up yet'
+        : 'All guides are in a backup';
   el.classList.toggle('warn', !!risk);
 }
 // the Library overlay: from Home's Library card, the Recent strip's Library link, the Library button and the guide's ⋯ menu
-function openLibrary() {
+var _libPalFirst = false;
+function openLibrary(palFirst) {
+  _libPalFirst = palFirst === true;
   renderSaved();
   hideToast();
   openDialog(savedOverlay);
@@ -208,6 +477,17 @@ function renderSaved() {
     list.sort(function (a, b) {
       return (b.ts || 0) - (a.ts || 0);
     });
+  // (opened from Palette's ⋯: palettes and draws first, then guides, each in the chosen order)
+  if (_libPalFirst)
+    list = list
+      .filter(function (x) {
+        return x.type !== 'guide';
+      })
+      .concat(
+        list.filter(function (x) {
+          return x.type === 'guide';
+        }),
+      );
   savedList.innerHTML = list.length
     ? list
         .map(function (s) {
@@ -217,31 +497,36 @@ function renderSaved() {
     : q
       ? '<div class="empty">No matches.</div>'
       : '<div class="empty">No saved palettes or guides yet.</div>';
+  libArtWatch();
   libBackfill();
 }
-var LIB_PEN =
-  '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
-// how much of a guide is coloured: nothing shown until something is, 100 only when every section is, otherwise 1-99
-function libPct(s) {
-  var n = +s.n,
-    d = s.done;
-  if (!n || !(d > 0)) return 0;
-  if (d === n) return 100;
-  return Math.max(1, Math.min(99, Math.floor((d * 100) / n)));
+// the delete control: a bin, not a ✕ (a ✕ is a dialog's Close), and rename's pen: from the icon sprite (Lucide)
+var LIB_PEN = ic('pencil'),
+  LIB_BIN = ic('trash-2');
+// how far along a guide is, in one wording everywhere (v288): "5 of 122 coloured" ("5 of 122 sections coloured" where
+// there's room: long), "finished", "not started"
+function progressText(d, n, long) {
+  d = +d || 0;
+  n = +n || 0;
+  if (!(d > 0)) return 'not started';
+  if (n && d >= n) return 'finished';
+  return d + ' of ' + n + (long ? ' sections coloured' : ' coloured');
 }
-// the line under a name, e.g. Guide · 16 markers · 40% coloured · Sep 27 (each part kept on one line)
+// the line under a name, e.g. Guide · 16 markers · 5 of 122 sections coloured · Sep 27 (each part kept on one line)
 function libMeta(s) {
   var t = s.type === 'draw' ? 'Draw' : s.type === 'guide' ? 'Guide' : 'Palette',
     cnt = s.keys ? s.keys.length : 0,
-    p = s.type === 'guide' ? libPct(s) : 0;
-  return [t, cnt ? cnt + ' marker' + (cnt === 1 ? '' : 's') : '', p ? p + '% coloured' : '', evoWhen(s.ts)]
+    p = s.type === 'guide' && +s.done > 0 ? progressText(s.done, s.n, true) : '';
+  return [t, cnt ? cnt + ' marker' + (cnt === 1 ? '' : 's') : '', p, evoWhen(s.ts)]
     .filter(Boolean)
     .map(function (x) {
       return '<span>' + esc(x) + '</span>';
     })
     .join(' \u00b7 ');
 }
-// a Library row: the whole row opens the item; the pencil renames it in place (ed: the name is an input), the ✕ deletes it (with Undo)
+// A Library tile (v288: a grid of pictures): the picture and name open the item; ⋯ has Rename (the name becomes an
+// input in place: ed) and Delete (with Undo). A guide shows its page as you've coloured it (drawn when the tile comes
+// into view, libArt), a palette or draw its markers as bands.
 function libRowHTML(s, ed) {
   var nm = esc(s.name || ''),
     shown = nm || (s.type === 'draw' ? 'Draw' : s.type === 'guide' ? 'Guide' : 'Palette');
@@ -253,9 +538,13 @@ function libRowHTML(s, ed) {
     })
     .join('');
   var vis =
-    s.type === 'guide' && safeThumb(s.thumb)
-      ? '<img class="sthumb" alt="" src="' + esc(safeThumb(s.thumb)) + '">'
-      : '<span class="sstrip">' + strip + '</span>';
+    s.type === 'guide'
+      ? '<span class="spic">' +
+        (safeThumb(s.thumb)
+          ? '<img class="sthumb" alt="" src="' + esc(safeThumb(s.thumb)) + '">'
+          : '<img class="sthumb" alt="" hidden>') +
+        '</span>'
+      : '<span class="spic"><span class="sstrip">' + strip + '</span></span>';
   var inner =
     vis +
     '<span class="scol">' +
@@ -268,7 +557,8 @@ function libRowHTML(s, ed) {
     libMeta(s) +
     '</span></span>';
   return (
-    '<div class="srow' +
+    '<div class="srow stile s' +
+    esc(s.type || 'palette') +
     (ed ? ' editing' : '') +
     '" data-id="' +
     esc(s.id) +
@@ -277,15 +567,102 @@ function libRowHTML(s, ed) {
       ? '<div class="sopen">' + inner + '</div>'
       : '<button type="button" class="sopen">' +
         inner +
-        '</button><button type="button" class="sren" title="Rename" aria-label="Rename ' +
+        '</button><button type="button" class="smore" aria-haspopup="menu" aria-expanded="false" aria-label="More: ' +
+        shown +
+        '">' +
+        ic('ellipsis') +
+        '</button><div class="smenu libmenu" role="menu" aria-label="' +
+        shown +
+        '" hidden><button type="button" class="sren" role="menuitem" tabindex="-1" aria-label="Rename ' +
         shown +
         '">' +
         LIB_PEN +
-        '</button>') +
-    '<button type="button" class="sdel" title="Delete" aria-label="Delete ' +
-    (nm || 'item') +
-    '">\u2715</button></div>'
+        '<span>Rename</span></button><button type="button" class="sdel" role="menuitem" tabindex="-1" aria-label="Delete ' +
+        shown +
+        '">' +
+        LIB_BIN +
+        '<span>Delete</span></button></div>') +
+    '</div>'
   );
+}
+// a tile's ⋯ menu: one open at a time; an item closes it (focus back on ⋯ first, so what the item does next decides)
+function tileMenuClose(back) {
+  var m = savedList.querySelector('.smenu:not([hidden])');
+  if (!m) return false;
+  var mb = m.parentNode.querySelector('.smore'),
+    had = m.contains(document.activeElement);
+  m.hidden = true;
+  if (mb) mb.setAttribute('aria-expanded', 'false');
+  if (mb && (back || had)) mb.focus({ preventScroll: true });
+  return true;
+}
+function tileMenuOpen(mb, focusFirst) {
+  var m = mb.parentNode.querySelector('.smenu');
+  if (!m) return;
+  var was = !m.hidden;
+  tileMenuClose(false);
+  if (was) return;
+  m.hidden = false;
+  mb.setAttribute('aria-expanded', 'true');
+  m.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  if (focusFirst) {
+    var f = m.querySelector('button');
+    if (f) f.focus({ preventScroll: true });
+  }
+}
+// The pictures: drawn as each tile comes into view (one guide at a time from its stored sections), as you've coloured
+// it (or its plan, not started); the stored thumbnail shows until then.
+var _libIO = null,
+  _libArtQ = Promise.resolve('');
+function libArt(row) {
+  var id = row && +row.dataset.id,
+    s =
+      row &&
+      state.saved.find(function (x) {
+        return x.id === id;
+      }),
+    im = row && row.querySelector('img.sthumb');
+  if (!s || s.type !== 'guide' || !im) return;
+  var w = Math.min(
+      480,
+      Math.round(((row.clientWidth || 160) * Math.min(2, window.devicePixelRatio || 1)) / 40) * 40 || 320,
+    ),
+    ts = String(s.ts || 0);
+  // (one at a time: each reads and redraws a whole stored page)
+  _libArtQ = _libArtQ
+    .then(function () {
+      return im.isConnected ? homeArt(s, +s.done > 0 ? 'prog' : 'plan', w) : '';
+    })
+    .catch(function () {
+      return '';
+    });
+  _libArtQ.then(function (u) {
+    if (!u || !im.isConnected || im.dataset.ts === ts + '|' + w) return;
+    im.dataset.ts = ts + '|' + w;
+    im.src = u;
+    im.hidden = false;
+  });
+}
+function libArtWatch() {
+  if (_libIO) _libIO.disconnect();
+  var rows = savedList.querySelectorAll('.stile.sguide');
+  if (typeof IntersectionObserver === 'undefined') {
+    rows.forEach(libArt);
+    return;
+  }
+  _libIO = new IntersectionObserver(
+    function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        _libIO.unobserve(e.target);
+        libArt(e.target);
+      });
+    },
+    { root: savedList.closest('.dcard'), rootMargin: '200px 0px' },
+  );
+  rows.forEach(function (r) {
+    _libIO.observe(r);
+  });
 }
 // Deleting: the row goes at once and a toast offers Undo for 6 seconds. A guide's stored picture and progress (its
 // 'guide-<id>' record) are only removed when that time is up or the next delete comes; the ids still waiting are kept
@@ -345,6 +722,14 @@ function libPurge(id) {
     })
     .catch(function () {});
 }
+// a guide being put back (the guide's Put back, v285): its stored record mustn't be tidied away behind the save
+function libUnpend(id) {
+  if (libPend && libPend.entry.id === id) {
+    clearTimeout(libPend.t);
+    libPend = null;
+  }
+  libPendDrop(id);
+}
 function libFinish() {
   const p = libPend;
   if (!p) return;
@@ -352,7 +737,7 @@ function libFinish() {
   clearTimeout(p.t);
   if (p.entry.type === 'guide') libPurge(p.entry.id);
 }
-// Focus moves to the next row's ✕ (the one before when it was the last; the list when it's empty), and back to the
+// Focus moves to the next row's bin (the one before when it was the last; the list when it's empty), and back to the
 // row on Undo, so the keyboard never drops to the top of the page.
 function libDelete(id) {
   const i = state.saved.findIndex((s) => s.id === id);
@@ -402,7 +787,7 @@ function libDelete(id) {
       chrome();
       if (entry.type === 'guide' && window.SF && SF.libChanged) SF.libChanged(entry.id, true);
       if (savedOverlay.classList.contains('on')) {
-        const b = savedList.querySelector('.srow[data-id="' + entry.id + '"] .sdel');
+        const b = savedList.querySelector('.srow[data-id="' + entry.id + '"] .smore');
         if (b) b.focus({ preventScroll: true });
       }
     },
@@ -413,7 +798,7 @@ function libFocus(at) {
   if (!savedOverlay.classList.contains('on')) return;
   const rows = savedList.querySelectorAll('.srow'),
     r = rows[Math.min(Math.max(at, 0), rows.length - 1)],
-    b = r && r.querySelector('.sdel');
+    b = r && r.querySelector('.smore');
   (b || savedList).focus({ preventScroll: true });
 }
 setTimeout(function tidy() {
@@ -439,6 +824,7 @@ function libStartRename(id) {
   if (!s || !row) return;
   _libEd = { id: id };
   row.outerHTML = libRowHTML(s, true);
+  libArt(savedList.querySelector('.srow[data-id="' + id + '"]'));
   var inp = savedList.querySelector('.srow[data-id="' + id + '"] .sname-in');
   if (inp) {
     inp.focus();
@@ -474,10 +860,13 @@ function libEndRename(take, refocus) {
   }
   if (row && s) {
     if (changed && (libSort === 'name' || (libQuery || '').trim())) renderSaved();
-    else row.outerHTML = libRowHTML(s, false);
+    else {
+      row.outerHTML = libRowHTML(s, false);
+      libArt(savedList.querySelector('.srow[data-id="' + ed.id + '"]'));
+    }
   }
   if (refocus) {
-    var b = savedList.querySelector('.srow[data-id="' + ed.id + '"] .sren');
+    var b = savedList.querySelector('.srow[data-id="' + ed.id + '"] .smore');
     if (b) b.focus();
   }
 }
@@ -498,7 +887,11 @@ function libRowChanged(id) {
     t = safeThumb(s.thumb);
   if (m) m.innerHTML = libMeta(s);
   if (nm && s.name) nm.textContent = s.name;
-  if (im && t) im.src = t;
+  if (im && t && !im.dataset.ts) {
+    im.src = t;
+    im.hidden = false;
+  }
+  libArt(row);
 }
 // guides saved before the Library showed progress get their coloured count from the stored guide, one at a time
 var _doneTried = {},

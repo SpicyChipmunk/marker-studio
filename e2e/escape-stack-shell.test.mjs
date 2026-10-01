@@ -5,7 +5,7 @@
 // brought into one place (src/js/layers.js), so each test says what the app did then.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle, pause } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, pause, libItem } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -17,6 +17,12 @@ const appState = (extra = {}) => JSON.stringify({ mode: 'home', ownedSeedV: 2, c
 const pal = (keys, id, name) => ({ id, type: 'palette', name: name || 'Pal ' + id, keys, ts: id });
 const at = (mode, extra = {}) => ({ storage: onboarded({ [KEY]: appState({ mode, ...extra }) }) });
 
+// (v288) by keyboard: Markers' ⋯ › Back up & restore opens the Library; its text line opens the backup dialog over it
+async function openBackupKb(page) {
+  await page.focus('#mkMore'); await page.keyboard.press('Enter');
+  await page.focus('#backupBtn'); await page.keyboard.press('Enter'); await page.waitForSelector('#savedOverlay.on');
+  await page.focus('#libBkText'); await page.keyboard.press('Enter'); await page.waitForSelector('#backupOverlay.on');
+}
 const dialogs = (page) => page.evaluate(() => [...document.querySelectorAll('.overlay.on')].map((o) => o.id));
 const esc = async (page) => { await page.keyboard.press('Escape'); await idle(page); };
 const active = (page) => page.evaluate(() => { const a = document.activeElement; return a ? (a.id || (a.dataset && a.dataset.i != null ? 'cell:' + a.dataset.i : '') || a.className || a.tagName) : null; });
@@ -28,14 +34,16 @@ const ALONE = [
   ['home', '#homeLibCard', 'Enter', 'savedOverlay'],
   ['home', '#homeHelp', 'Enter', 'helpOverlay'],
   ['home', '#homeHiw', 'Enter', 'hiwOverlay'],
-  ['collection', '#backupBtn', 'Enter', 'backupOverlay'],
+  // (v288) Back up & restore, in Markers' ⋯: chosen there, the Library opens at its backup buttons; focus back on ⋯
+  ['collection', '#mkMore', () => { document.getElementById('mkMore').click(); document.getElementById('backupBtn').click(); }, 'savedOverlay'],
   ['collection', '#mkMatchBtn', 'Enter', 'matchOverlay'],
   ['collection', '#swatchBtn', 'Enter', 'swOverlay'],
   ['collection', '#results .cell', 'Shift+F10', 'mkOverlay'],
   ['palette', '#seedBtn', 'Enter', 'seedOverlay'],
-  ['palette', '#savedBtn', 'Enter', 'savedOverlay'],
+  // Library and Save image are in the ⋯ menu: chosen there, the menu closes and focus comes back to ⋯
+  ['palette', '#libMore', () => { document.getElementById('libMore').click(); document.getElementById('savedBtn').click(); }, 'savedOverlay'],
   // the swatch card itself takes a palette to draw: shown straight away here, as the button shows it
-  ['palette', '#exportBtn', () => showOverlay('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'x.png'), 'imgOverlay'],
+  ['palette', '#libMore', () => showOverlay('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'x.png'), 'imgOverlay'],
 ];
 for (const [mode, sel, key, id] of ALONE) {
   test(`${id} alone (from ${sel} in ${mode}): focus moves in, one Escape closes it and focus goes back`, async () => {
@@ -102,11 +110,14 @@ test('two dialogs: How it works over Help closes first (focus back on its button
 
 test('Escape in a dialog’s text field closes the dialog (search, hex code, backup text)', async () => {
   const { page, errors } = await openApp(at('collection'));
-  await page.focus('#backupBtn'); await page.keyboard.press('Enter'); await page.waitForSelector('#backupOverlay.on');
-  await page.click('#backupShow'); await page.focus('#backupText');
+  await openBackupKb(page);
+  await page.focus('#backupText');
+  await esc(page);
+  assert.deepEqual(await dialogs(page), ['savedOverlay'], 'the backup dialog closes, over the Library');
+  assert.equal(await active(page), 'libBkText');
   await esc(page);
   assert.deepEqual(await dialogs(page), []);
-  assert.equal(await active(page), 'backupBtn');
+  assert.equal(await active(page), 'mkMore');
   await page.focus('#mkMatchBtn'); await page.keyboard.press('Enter'); await page.waitForSelector('#matchOverlay.on');
   await page.click('.msrc [data-src="hex"]'); await page.fill('#matchHex', '#ff0000');
   await esc(page);
@@ -118,17 +129,17 @@ test('Escape in a dialog’s text field closes the dialog (search, hex code, bac
   assert.deepEqual(errors, []);
 });
 
-test('the Library’s rename field: Escape cancels the rename only (focus on its ✎); the next Escape closes the Library', async () => {
+test('the Library’s rename field: Escape cancels the rename only (focus on its ⋯); the next Escape closes the Library', async () => {
   const { page, errors } = await openApp(at('home', { saved: [pal(['Ohuhu|R014'], 2, 'Two'), pal(['Ohuhu|B08'], 1, 'One')] }));
   await page.focus('#homeLibCard'); await page.keyboard.press('Enter'); await page.waitForSelector('#savedOverlay.on');
-  await page.click('#savedList .srow[data-id="2"] .sren');
+  await libItem(page, '#savedList .srow[data-id="2"]', 'sren');
   assert.ok(await page.evaluate(() => document.activeElement.classList.contains('sname-in')));
   await page.keyboard.type('New name');
   await esc(page);
   assert.deepEqual(await dialogs(page), ['savedOverlay'], 'the Library stays');
   assert.equal(await page.evaluate(() => state.saved.find((s) => s.id === 2).name), 'Two', 'name as it was');
   assert.equal(await page.locator('#savedList .sname-in').count(), 0);
-  assert.equal(await page.evaluate(() => document.activeElement.classList.contains('sren') && document.activeElement.closest('.srow').dataset.id), '2');
+  assert.equal(await page.evaluate(() => document.activeElement.classList.contains('smore') && document.activeElement.closest('.srow').dataset.id), '2', 'on its ⋯ (v288)');
   await esc(page);
   assert.deepEqual(await dialogs(page), []);
   assert.equal(await active(page), 'homeLibCard');
@@ -151,8 +162,8 @@ test('the welcome: Escape leaves it open', async () => {
 
 test('Tab stays in the top dialog and reaches a toast’s Undo after the last control', async () => {
   const { page, errors } = await openApp(at('collection'));
-  await page.focus('#backupBtn'); await page.keyboard.press('Enter'); await page.waitForSelector('#backupOverlay.on'); await idle(page);
-  const first = 'backupClose', last = 'backupShow';
+  await openBackupKb(page); await idle(page);
+  const first = 'backupClose', last = 'backupRestore';
   assert.equal(await active(page), first, 'with a keyboard, the first control has focus');
   await page.focus('#' + last); await page.keyboard.press('Tab');
   assert.equal(await active(page), first, 'Tab from the last wraps to the first');
@@ -175,7 +186,7 @@ test('Tab stays in the top dialog and reaches a toast’s Undo after the last co
   assert.equal(await active(page), last, 'and from Undo back to the last control');
   // two dialogs: Tab stays in the top one
   await page.evaluate(() => { document.getElementById('msToast').classList.remove('on'); openHelpSheet(); document.getElementById('helpHiw').click(); }); await idle(page);
-  assert.deepEqual(await dialogs(page), ['backupOverlay', 'helpOverlay', 'hiwOverlay']);
+  assert.deepEqual(await dialogs(page), ['savedOverlay', 'backupOverlay', 'helpOverlay', 'hiwOverlay']);
   for (let i = 0; i < 8; i++) {
     await page.keyboard.press(i % 3 === 2 ? 'Shift+Tab' : 'Tab');
     assert.ok(await inside(page, 'hiwOverlay'), 'in How it works: ' + await active(page));
@@ -215,7 +226,7 @@ test('focus after closing: a redrawn marker is found again by its number; with t
   await esc(page);
   assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.modes button.on')), true, 'on the open mode tab: ' + await active(page));
   // focus moved outside the dialog before it closed: left there
-  await page.focus('#backupBtn'); await page.keyboard.press('Enter'); await page.waitForSelector('#backupOverlay.on'); await idle(page);
+  await page.focus('#mkMore'); await page.keyboard.press('Enter'); await page.evaluate(() => { document.getElementById('mkMenu').hidden = true; openBackup(); }); await page.waitForSelector('#backupOverlay.on'); await idle(page);
   await page.evaluate(() => document.getElementById('mkMatchBtn').focus());
   await esc(page);
   assert.deepEqual(await dialogs(page), []);

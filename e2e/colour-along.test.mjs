@@ -60,7 +60,7 @@ test('the list starts right under the pinned block: an ⓘ line, then one 48px r
   assert.deepEqual([...new Set(rs.map((r) => r.h))], [48], 'every closed row is one 48px line');
   assert.ok(rs.every((r) => r.exp === 'false' && !r.open && /^0 of \d+ done$/.test(r.cnt)));
   assert.equal(await page.locator('#sfAlist .sfarow .sfah .nm b').first().textContent(), await page.evaluate(() => { const k = document.querySelector('#sfAlist .sfarow').dataset.k; return k.split('|').pop(); }), 'code first in the row');
-  assert.equal(await toolStatus(page), `0 of ${N} done`, 'progress lives in the tool row');
+  assert.equal(await toolStatus(page), `0 of ${N} coloured`, 'progress lives in the tool row');
   assert.ok(await page.evaluate(() => { const n = document.querySelector('#sfAlist .sfah .nm'); return getComputedStyle(n).textOverflow === 'ellipsis' && getComputedStyle(n).whiteSpace === 'nowrap'; }), 'the name is cut short with an ellipsis');
   assert.deepEqual(errors, []);
 });
@@ -88,7 +88,7 @@ test('a row opens in place, one at a time: Mark all done ↔ Clear ticks, Find n
   let rs = await rows(page);
   assert.equal(rs[0].open, true); assert.equal(rs[0].exp, 'true');
   assert.equal(await hl(page), r0.k, 'the open row is the marker highlighted on the picture');
-  assert.deepEqual(await page.$$eval('#sfAlist .sfarow.open .sfacts button', (bs) => bs.map((b) => b.id + ':' + b.textContent)), ['sfMarkAll:✓ Mark all done', 'sfFindNext:Find next', 'sfBlends:◐ Blends']);
+  assert.deepEqual(await page.$$eval('#sfAlist .sfarow.open .sfacts button', (bs) => bs.map((b) => b.id + ':' + b.textContent.trim())), ['sfMarkAll:✓ Mark all done', 'sfFindNext:Find next', 'sfBlends:Blends']);
   // another row: the first one closes
   await clickRow(page, 1);
   rs = await rows(page);
@@ -97,7 +97,7 @@ test('a row opens in place, one at a time: Mark all done ↔ Clear ticks, Find n
   const k = rs[1].k, n = (await secsOf(page, k)).length;
   // Mark all done: the tool row and the row count; the row stays open and in place, and the button becomes Clear ticks
   await page.click('#sfMarkAll'); await idle(page);
-  assert.equal(await toolStatus(page), `${n} of ${N} done`);
+  assert.equal(await toolStatus(page), `${n} of ${N} coloured`);
   assert.equal(await page.$eval('#sfToolProg', (e) => e.style.width), Math.round((n / N) * 100) + '%', 'the progress line moves');
   rs = await rows(page);
   assert.equal(rs[1].k, k, 'stays in place'); assert.ok(rs[1].open && rs[1].full, 'open and dimmed');
@@ -108,7 +108,7 @@ test('a row opens in place, one at a time: Mark all done ↔ Clear ticks, Find n
   // (a second tap within 400 ms of Mark all done is the rest of a double tap, not Clear ticks; see "Clear ticks can be undone…" below)
   await pause(page, 400, 'a tap after the double-tap window is a Clear ticks');
   await page.click('#sfMarkAll'); await idle(page);
-  assert.equal(await toolStatus(page), `0 of ${N} done`);
+  assert.equal(await toolStatus(page), `0 of ${N} coloured`);
   assert.equal(await page.textContent('#sfMarkAll'), '✓ Mark all done');
   assert.match(await page.textContent('#msToast'), /Ticks cleared for .+Undo/, 'Clear ticks offers Undo');
   // a tick on the picture keeps the row open and updates its count
@@ -116,17 +116,24 @@ test('a row opens in place, one at a time: Mark all done ↔ Clear ticks, Find n
   await scrollTop(page);
   let p = await sectionPoint(page, secs[0]); await page.mouse.click(p.x, p.y); await idle(page);
   assert.equal(await page.evaluate((l) => __mstest.colored[l], secs[0]), 1);
-  assert.equal(await toolStatus(page), `1 of ${N} done`);
+  assert.equal(await toolStatus(page), `1 of ${N} coloured`);
   rs = await rows(page);
   assert.ok(rs[1].open, 'stays open across progress updates'); assert.equal(rs[1].cnt, `1 of ${n} done`);
-  // Find next zooms in on a section still to do
+  // Find next zooms in on a section still to do: to fit it (v284: as focus mode does, 1× to 4×), its label's point in
+  // view, and says how many are left
   await page.click('#sfFindNext'); await idle(page);
   const f = await page.evaluate((secs) => {
     const t = __mstest, c = document.getElementById('sfCanvas').getBoundingClientRect(), v = document.querySelector('.sfpicbox').getBoundingClientRect();
-    const l = secs.find((l) => !t.colored[l]), q = t.comps[l], x = c.left + (q.cx / t.W) * c.width, y = c.top + (q.cy / t.H) * c.height;
-    return { zoom: t.zoom, inside: x > v.left && x < v.right && y > v.top && y < v.bottom, done: t.colored[l] };
+    const l = t.fnLast, q = t.labelPos(l), x = c.left + (q.x / t.W) * c.width, y = c.top + (q.y / t.H) * c.height;
+    return { zoom: t.zoom, inside: x > v.left && x < v.right && y > v.top && y < v.bottom, done: t.colored[l], ofRow: secs.includes(l), sz: t.secOnScreen(l), v: [v.width, v.height] };
   }, secs);
-  assert.ok(f.zoom >= 2.5, 'zoomed in'); assert.ok(f.inside, 'on the next section still to do'); assert.equal(f.done, 0);
+  // (v288: only as far as it needs: about 44px across, unless that would fill the view or pass 4×)
+  assert.ok(f.zoom >= 1 && f.zoom <= 4, 'zoomed to fit: ' + f.zoom);
+  assert.ok(Math.min(f.sz.w, f.sz.h) >= 43 || f.zoom === 4 || Math.max(f.sz.w / f.v[0], f.sz.h / f.v[1]) >= 0.75, 'big enough to see: ' + JSON.stringify(f));
+  if (f.zoom > 1.05) assert.ok(Math.min(f.sz.w, f.sz.h) <= 46 || Math.max(f.sz.w / f.v[0], f.sz.h / f.v[1]) >= 0.75, 'no further than it needs: ' + JSON.stringify(f)); assert.ok(f.inside, 'on the next section still to do'); assert.equal(f.done, 0); assert.ok(f.ofRow, 'of the open marker');
+  await page.waitForFunction(() => /^Next section to colour: \d+ of \d+ left\.$/.test(document.getElementById('sfLive').textContent));
+  // (and outlined, which ticking it takes away)
+  assert.ok(await page.evaluate(() => { const o = document.querySelector('.sfoutline'); return !!o && o.style.display !== 'none'; }), 'the section found is outlined');
   await page.click('#sfZrst'); await idle(page);
   // Blends: the lighter and darker companions under the row
   await page.click('#sfBlends'); await idle(page);
@@ -185,7 +192,8 @@ test('finished markers stay in place while colouring; entering again gathers the
   rs = await rows(page);
   assert.deepEqual(rs.map((r) => r.k), before.map((r) => r.k).filter((k, j) => j !== 0 && j !== 2), 'the done ones are out of the list');
   const g = page.locator('#sfDoneGrp');
-  assert.equal((await g.textContent()).replace(/\s+/g, ' ').trim(), '▸ Done (2)');
+  assert.equal((await g.textContent()).replace(/\s+/g, ' ').trim(), 'Done (2)');
+  assert.equal(await g.locator('use').getAttribute('href'), '#i-chevron-right', 'closed: ›');
   assert.equal(await g.getAttribute('aria-expanded'), 'false', 'collapsed');
   assert.ok(await page.evaluate(() => { const g = document.getElementById('sfDoneGrp'); return !g.nextElementSibling && g.previousElementSibling.classList.contains('sfarow'); }), 'at the bottom');
   await g.click(); await idle(page);
@@ -195,13 +203,14 @@ test('finished markers stay in place while colouring; entering again gathers the
   // clearing a done marker's ticks puts it back in the list, open and in view
   await page.locator(`#sfAlist .sfarow[data-k="${before[2].k}"] .sfah`).click(); await idle(page);
   await page.click('#sfMarkAll'); await idle(page);
-  assert.equal((await g.textContent()).replace(/\s+/g, ' ').trim(), '▾ Done (1)', 'the count follows');
+  assert.equal((await g.textContent()).replace(/\s+/g, ' ').trim(), 'Done (1)', 'the count follows');
+  assert.equal(await g.locator('use').getAttribute('href'), '#i-chevron-down', 'open: ⌄');
   assert.equal(await hl(page), before[2].k);
   assertInView(await openBox(page), 'back in the list');
   // Reset progress (⋯, then Clear in the sheet that asks) empties the group
   await menuItem(page, 'Reset progress'); await page.click('#sfResetGo'); await idle(page);
   assert.equal(await page.locator('#sfDoneGrp').count(), 0);
-  assert.match(await toolStatus(page), /^0 of \d+ done$/);
+  assert.match(await toolStatus(page), /^0 of \d+ coloured$/);
   assert.deepEqual(errors, []);
 });
 
@@ -220,7 +229,7 @@ test('keyboard and screen readers: rows are buttons with aria-expanded, the acti
   await page.keyboard.press('Enter'); await idle(page);
   assert.equal(await page.evaluate(() => document.activeElement.id), 'sfMarkAll', 'focus kept after the list redraws');
   assert.equal(await page.textContent('#sfMarkAll'), 'Clear ticks');
-  assert.match(await page.textContent('#sfLive'), /^All \d+ .+ sections ticked$/);
+  assert.match(await page.textContent('#sfLive'), /^(All \d+ .+ sections|The .+ section) ticked$/);
   await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Enter'); await idle(page);
   assert.equal(await first.getAttribute('aria-expanded'), 'false', 'Enter on the open row closes it');
   assert.equal(await page.textContent('#sfLive'), 'Showing all colours');
@@ -250,8 +259,9 @@ test('focus mode is still entered from the bar and comes back to the list', asyn
   await page.click('#sfExitFoc'); await idle(page);
   assert.ok(!(await page.evaluate(() => document.getElementById('sfRoot').classList.contains('sffoc'))));
   assert.ok(await page.isVisible('#sfAlist'), 'the list is back');
-  assert.match(await toolStatus(page), /^1 of \d+ done$/);
-  assert.equal(await page.textContent('#sfDoneBtn'), 'Done colouring');
+  assert.match(await toolStatus(page), /^1 of \d+ coloured$/);
+  assert.equal(await page.textContent('#sfDoneBtn'), '← Plan');
+  assert.equal(await page.getAttribute('#sfDoneBtn', 'aria-label'), 'Back to the plan');
   assert.deepEqual(errors, []);
 });
 
@@ -356,13 +366,13 @@ test('finishing the page in Colour along brings "Page complete!" and its Reveal 
     const dn = await rect(page, '#sfDone'), bar = await rect(page, '#sfWork>.sfbar'), top = await pinH(page);
     assert.ok(dn && dn.height > 0, 'the banner shows');
     assert.ok(dn.top >= top - 1 && dn.bottom <= bar.top + 1, `${w}×${h}: the banner is on the screen under the pinned block (${dn.top}–${dn.bottom}, pinned ${top}, bar ${bar.top})`);
-    const rv = await rect(page, '#sfDoneRev');
-    assert.equal(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.id, [rv.x + rv.width / 2, rv.y + rv.height / 2]), 'sfDoneRev', 'Reveal & share can be tapped');
+    const rv = await rect(page, '#sfAlongRev');
+    assert.equal(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.id, [rv.x + rv.width / 2, rv.y + rv.height / 2]), 'sfAlongRev', 'Reveal & share can be tapped');
     assert.equal(await toastOn(page), false, 'no toast over the list');
     assert.match(await page.textContent('#sfLive'), /Finished/, 'screen readers hear it');
     if (w === 390) await shot(page, 'g1-1-after');
     // in focus mode the toast stays: Reveal & share is in its own bottom bar
-    await page.click('#sfDoneRev'); await page.waitForSelector('#sfRoot.sfrev');
+    await page.click('#sfAlongRev'); await page.waitForSelector('#sfRoot.sfrev');
     assert.ok(await page.evaluate(() => document.getElementById('sfRoot').classList.contains('sfrev')), 'Reveal starts');
     assert.deepEqual(errors, []);
     await ctx.close();
@@ -402,9 +412,9 @@ test('Reset progress asks in the guide’s sheet: Cancel keeps the ticks, Clear 
   await openMenu(page);
   assert.equal(await page.getAttribute('#sfResetP', 'aria-disabled'), null);
   await page.click('#sfResetP'); await idle(page);
-  assert.equal(await page.textContent('#sfSheetT'), `Clear all ${n} ticks?`);
-  assert.equal((await page.textContent('#sfSheet .sfshbody')).trim(), 'This clears your colouring progress on this guide.');
-  assert.deepEqual(await page.$$eval('#sfSheet .sfshft button', (b) => b.map((x) => x.textContent + (x.classList.contains('sfprimary') ? '*' : ''))), ['Cancel', 'Clear*']);
+  assert.equal(await page.textContent('#sfSheetT'), 'Reset progress?');
+  assert.equal((await page.textContent('#sfSheet .sfshbody')).trim(), `This clears what you’ve coloured on ${n} sections.`);
+  assert.deepEqual(await page.$$eval('#sfSheet .sfshft button', (b) => b.map((x) => x.textContent + (x.classList.contains('sfprimary') ? '*' : ''))), ['Cancel', 'Reset*']);
   assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.textContent), 'Cancel', 'focus in the sheet');
   await snap(page, 'a-reset-sheet');
   await page.click('#sfSheet [data-rp="cancel"]'); await idle(page);

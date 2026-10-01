@@ -2,7 +2,7 @@
 // with too many sections, or a backup instead of a guide is turned away before anything is added.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, idle, sampleGuide } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, idle, sampleGuide, saveGuide, answerAsks, asked } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -53,16 +53,15 @@ test('Library › Import a guide: a wrong file is said once, compactly; a backup
   assert.equal(await page.locator('.mserr').count(), 1, 'said once');
   assert.ok((await page.locator('.mserr').boundingBox()).height < 90, 'compact');
   assert.ok(await page.isVisible('#savedOverlay'), 'the Library stays open');
-  let msg = '';
-  page.once('dialog', (d) => { msg = d.message(); d.dismiss(); });
+  await answerAsks(page, false);
   await page.setInputFiles('#homeImpFile', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ v: 3, type: 'ms-backup', owned: [], saved: [], guides: [] })) }); await idle(page);
-  assert.match(msg, /This is a Marker Studio backup.*Restore it\?/);
+  assert.match((await asked(page))[0] || '', /This file is a Marker Studio backup.*Restore it\?/);
   assert.deepEqual(errors, []);
 });
 
 // ---- From the fifth review (data safety) ----
 // Save (a new guide into the Library), done once the header says so
-const saveNew = async (page) => { await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent)); };
+const saveNew = (page) => saveGuide(page);
 const savedId = (page) => page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
 const guidesR5 = (page) => page.evaluate(() => state.saved.filter((s) => s.type === 'guide').map((s) => ({ id: s.id, name: s.name, thumb: s.thumb })));
 

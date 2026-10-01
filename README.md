@@ -272,4 +272,5 @@ path (marker reassignment plus UI wiring) is covered by the browser tests
 ## Licence
 
 All rights reserved: the code is published to be read, not reused. See
-[LICENSE](LICENSE). The fonts keep their SIL Open Font License.
+[LICENSE](LICENSE). The fonts keep their SIL Open Font License, and the few
+Lucide and Feather icons their ISC and MIT licences.

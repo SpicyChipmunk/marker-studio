@@ -130,6 +130,8 @@ function doUndo() {
         const P = tp();
         P.set(u.keep.tones.subarray(0, Math.min(u.keep.tones.length, P.length)));
       }
+      if (u.keep.progAt) progAt = Object.assign({}, u.keep.progAt);
+      if (u.keep.held) heldSh = Object.assign({}, u.keep.held);
     } else keepProgress(u.col);
     if (u.keep) {
       locks = u.keep.locks;
@@ -381,7 +383,7 @@ function setEditMode(m) {
                 ? 'Add: draw a loop to enclose a new section \u2014 the ends join automatically.'
                 : 'Add: draw across a region to a line or the page edge to slice off a section.') +
               ' Pinch to zoom; two fingers move around.'
-            : 'Include / exclude: tap a coloured section to exclude it (turns magenta), or a teal area to include it.';
+            : 'Leave out: tap a section to leave it out of the guide (it turns magenta), or a magenta or teal area to bring it back.';
   if (cv) cv.style.touchAction = m === 'split' || m === 'add' ? 'none' : '';
   var _ac = document.getElementById('sfAutoCloseWrap');
   if (_ac) _ac.style.display = m === 'add' ? 'flex' : 'none';

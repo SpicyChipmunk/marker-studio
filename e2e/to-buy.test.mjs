@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { setup, teardown, openApp, welcome, sampleGuide, idle, shot, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, sampleGuide, idle, shot, notOnWebKit, WK, saveGuide, answerAsks } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -192,7 +192,7 @@ test('the list and ink are in the backup, and come back on restore', async () =>
   assert.equal(await page.evaluate(() => state.ink['Ohuhu|B08']), 'dry');
   // different markers, and you choose the backup's: its list and ink replace these
   await page.evaluate(() => { state.owned.add('Ohuhu|R22'); state.wish = [{ k: 'Ohuhu|G43', why: 'x', ts: 1 }]; state.ink = { 'Ohuhu|R16': 'low' }; save(); });
-  page.once('dialog', (d) => d.accept());
+  await answerAsks(page, true);
   const [fc2] = await Promise.all([page.waitForEvent('filechooser'), page.click('#guidesRestore')]);
   await fc2.setFiles(file); await idle(page);
   assert.deepEqual((await wish(page)).map((w) => w.k), ['Ohuhu|R15', 'Copic|E09']);
@@ -265,7 +265,7 @@ test('the photo pattern’s “Closer with” markers can go on the list', notOn
 
 // ---- From the fourth review (data safety) ----
 // Save (a new guide into the Library), done once the header says so
-const saveNew = async (page) => { await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent)); };
+const saveNew = (page) => saveGuide(page);
 
 const AUTO = 2300; // idle(page, AUTO): until auto-save (1.5 s after the last change) has run
 const savedId = (page) => page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);

@@ -11,11 +11,16 @@ const state = (page) => page.evaluate(() => {
   const t = __mstest, l = t.focusOrd[t.focusPos];
   return { pos: t.focusPos, l, mk: t.hlKey, zoom: t.zoom, fin: t.focusFin, done: [...t.colored].reduce((a, b) => a + b, 0) };
 });
-// is the current section centred in the space between the two bars?
+// is the current section centred in the space between the two bars? (v284: or as near as the picture allows: off
+// centre only where the picture's edge is at the edge of that space, so there's no blank beside it)
 async function centred(page) {
   const s = await state(page), p = await sectionPoint(page, s.l);
-  const g = await page.evaluate(() => ({ w: innerWidth, top: document.querySelector('.sffocbar').offsetHeight, bot: innerHeight - document.querySelector('.sffocbot').offsetHeight }));
-  return Math.abs(p.x - g.w / 2) < 40 && Math.abs(p.y - (g.top + g.bot) / 2) < 40;
+  const g = await page.evaluate(() => { const c = document.getElementById('sfCanvas').getBoundingClientRect(); return { w: innerWidth, top: document.querySelector('.sffocbar').offsetHeight, bot: innerHeight - document.querySelector('.sffocbot').offsetHeight, c: { l: c.left, r: c.right, t: c.top, b: c.bottom } }; });
+  // (or all the picture fits that way, and it's in the middle)
+  const fitX = g.c.r - g.c.l <= g.w + 1 && Math.abs((g.c.l + g.c.r) / 2 - g.w / 2) < 2, fitY = g.c.b - g.c.t <= g.bot - g.top + 1 && Math.abs((g.c.t + g.c.b) / 2 - (g.top + g.bot) / 2) < 2;
+  const inX = fitX || Math.abs(p.x - g.w / 2) < 40 || (g.c.l <= 1 && p.x < g.w / 2) || (g.c.r >= g.w - 1 && p.x > g.w / 2);
+  const inY = fitY || Math.abs(p.y - (g.top + g.bot) / 2) < 40 || (g.c.t <= g.top + 1 && p.y < (g.top + g.bot) / 2) || (g.c.b >= g.bot - 1 && p.y > (g.top + g.bot) / 2);
+  return inX && inY && p.x > 0 && p.x < g.w && p.y > g.top && p.y < g.bot;
 }
 async function enterFocus(page) {
   await page.click('#sfColor');
@@ -85,6 +90,8 @@ test('panning is free and the re-centre button brings the section back', async (
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await enterFocus(page);
+  // (v284: a picture that fits in view stays in the middle: zoomed in, there's somewhere to pan to)
+  await page.click('#sfZin'); await page.click('#sfZin'); await idle(page);
   const p0 = await page.evaluate(() => [__mstest.panX, __mstest.panY]);
   await page.mouse.move(200, 430); await page.mouse.down(); await page.mouse.move(210, 438, { steps: 3 }); await page.mouse.up();
   const p1 = await page.evaluate(() => [__mstest.panX, __mstest.panY]);

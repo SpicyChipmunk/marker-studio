@@ -799,7 +799,8 @@ function pgBegin(f35) {
   pgF35 = f35 || 0;
   pgQ = null;
   pgShape = null;
-  let found = { tier: 'none' };
+  pgHint = null;
+  let found = { tier: 'none', why: 'read' };
   try {
     found = pgFind(pgOrig);
   } catch (e) {}
@@ -826,6 +827,10 @@ function pgBegin(f35) {
     pgOpen(found.q, found.why, 'first');
     return;
   }
+  // (v285) a photo from a camera (it says what lens took it) that the finder left as it was: Straighten is offered on
+  // a line of its own, as after Keep as is. Not for a page already square to the camera, one that fills the photo,
+  // or a picture too small or unreadable to look at; digital art and scans carry no lens, so stay quiet as before.
+  if (pgF35 > 0 && ['square', 'fills', 'small', 'read'].indexOf(found.why) < 0) pgHint = 'kept';
   pgProceed(null);
 }
 // build the sections from srcImg as it is now
@@ -872,10 +877,11 @@ function pgApply(q, auto, flat) {
 }
 function pgUndo() {
   if (!pgOrig || !pgQ) return;
-  if (!okGeom()) return;
-  srcImg = pgOrig;
-  pgQ = null;
-  pgProceed('Back to the photo as taken.');
+  okGeom(function () {
+    srcImg = pgOrig;
+    pgQ = null;
+    pgProceed('Back to the photo as taken.');
+  });
 }
 // open the corner editor. how: 'reveal' (showing what's about to happen), 'first' (unsure, fresh photo), 'adjust'
 function pgOpen(q, why, how) {
@@ -1085,6 +1091,7 @@ function pgControls() {
     if (pgEd.how === 'first') {
       srcImg = pgOrig;
       pgQ = null;
+      pgHint = 'kept';
       pgProceed(null);
     } else pgCancelAdjust();
   });
@@ -1108,20 +1115,22 @@ function pgCancelAdjust() {
 // Adjust photo -> Straighten page / Adjust corners
 function pgAdjust() {
   if (!pgOrig || !labels) return;
-  if (!okGeom()) return;
-  let q = pgQ,
-    why = 'adjust';
-  if (!q) {
-    let f = { tier: 'none' };
-    try {
-      f = pgFind(pgOrig);
-    } catch (e) {}
-    if (f.q && f.tier !== 'none') {
-      q = f.q;
-      why = f.tier === 'sure' ? 'adjust' : f.why;
-    } else why = 'none';
-  }
-  pgOpen(q, why, 'adjust');
+  okGeom(function () {
+    let q = pgQ,
+      why = 'adjust';
+    if (!q) {
+      let f = { tier: 'none' };
+      try {
+        f = pgFind(pgOrig);
+      } catch (e) {}
+      // (the finder's best guess at the corners, when it has one worth starting from: v285)
+      if (f.q && (f.tier !== 'none' || ['plain', 'fills', 'square'].indexOf(f.why) >= 0)) {
+        q = f.q;
+        why = f.tier === 'sure' ? 'adjust' : f.tier === 'unsure' ? f.why : 'none';
+      } else why = 'none';
+    }
+    pgOpen(q, why, 'adjust');
+  });
 }
 
 // a coloured version photographed at an angle (Photo colour pattern): flatten its page first, so lining it up

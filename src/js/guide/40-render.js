@@ -342,9 +342,10 @@ function showTip(l, btns, quiet) {
       else if (b.dataset.a === 'zone') {
         // to the zone this section is in (85-zones-ui): on the tab that's open if it has the chips (Pattern, Colours,
         // Shading with shading on), else on Pattern
-        zoneSwitch(+b.dataset.z);
+        // (the tab first, so the zone's chip is there to take the keyboard, v287)
         if (gTab !== 'pattern' && gTab !== 'colours' && !(gTab === 'shading' && shadeMode !== 'off'))
           planTab('pattern');
+        zoneSwitch(+b.dataset.z);
       } else {
         togglePin(l);
         showTip(l, true, true);
@@ -435,6 +436,7 @@ function sayLive(t) {
   const el = document.getElementById('sfLive');
   if (!el) return;
   sayLive.at = Date.now();
+  sayLive.last = t;
   // said during the task that's running now (planCommit, called later in the same task, leaves it be however long
   // redrawing in between took)
   sayLive.now = true;
@@ -478,16 +480,24 @@ function stepFaint(l) {
   const b = stepBits(focusPos);
   return b === 1 || b === 4;
 }
-function secLabel(l, m, dim, draw) {
+// (tick: a section done shows a ✓: green on its pale colour, or with the codes off over its own colour, outlined)
+function secLabel(l, m, tick, draw) {
   const c = comps[l],
     p = labelPos(l);
-  if (dim && colored[l]) {
+  if (tick && colored[l]) {
     const fs = Math.floor(Math.max(7, Math.min(p.r * 1.7, Math.sqrt(c.area) * 0.5, 30)) * 2) / 2;
     if (draw) {
       ctx.font = '700 ' + fs + 'px ' + LFONT;
-      ctx.fillStyle = '#3f7d4e';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      if (hideLabels) {
+        const dk = darkText(m.hex);
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = Math.max(2, fs * 0.22);
+        ctx.strokeStyle = dk ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.55)';
+        ctx.strokeText('✓', p.x, p.y);
+        ctx.fillStyle = dk ? '#141414' : '#fff';
+      } else ctx.fillStyle = '#3f7d4e';
       ctx.fillText('✓', p.x, p.y);
     }
     return [p.x - fs * 0.7 - 2, p.y - fs * 0.8 - 2, p.x + fs * 0.7 + 2, p.y + fs * 0.8 + 2];
@@ -501,8 +511,30 @@ function secLabel(l, m, dim, draw) {
       stroke: dark ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.55)',
       fill: dark ? '#141414' : '#fff',
     };
-  let fs, b;
-  if (draw) {
+  let fs,
+    b,
+    dot = false;
+  // a code that would come out under LAB_MIN_CSS on the screen, as zoomed now, is a dot until zoomed in (not in focus
+  // mode, which zooms to its section by itself: labMinFor). A pinned one keeps its pin's mark round the dot.
+  if (!(focus && sfmode === 'color')) {
+    const L0 = codeLayout(ctx, l, m, o);
+    if (L0.fs < _labMin) {
+      const r = _labMin / 4;
+      if (draw) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, 6.283);
+        ctx.fillStyle = o.fill;
+        ctx.fill();
+        ctx.lineWidth = r * 0.5;
+        ctx.strokeStyle = o.stroke;
+        ctx.stroke();
+      }
+      dot = true;
+      fs = r * 2.2;
+      b = [p.x - r * 1.5 - 1, p.y - r * 1.5 - 1, p.x + r * 1.5 + 1, p.y + r * 1.5 + 1];
+    }
+  }
+  if (!dot && draw) {
     const fa = stepFaint(l);
     if (fa) {
       ctx.save();
@@ -511,7 +543,7 @@ function secLabel(l, m, dim, draw) {
     fs = drawCode(ctx, l, m, o);
     if (fa) ctx.restore();
     b = _lastBox.slice();
-  } else {
+  } else if (!dot) {
     const L = codeLayout(ctx, l, m, o);
     fs = L.fs;
     b = L.box.slice();
@@ -642,6 +674,42 @@ function paintPixels(PX, sh, x0, y0, x1, y1, one) {
     }
   }
 }
+/* How small a code on the picture may be (v284). A code shrinks to fit its section; one that would come out under
+   LAB_MIN_CSS pixels on the screen, at the zoom it's seen at, is drawn as a dot, and as a code once zoomed in enough
+   (secLabel): before, sizes went by the picture's own pixels alone, so on a phone showing a big photo many codes came
+   to two to four pixels, unreadable smudges. Worked out in steps of √2 of zoom (labBucket), so zooming redraws the
+   codes only now and then (at the end of a zoom: applyXform); focus mode keeps the unzoomed size, so its steps don't
+   redraw every code. _labMin: that size, in the picture's pixels, for the draw under way. */
+const LAB_MIN_CSS = 6;
+let _labMin = 5,
+  _labB = 0,
+  _labT = 0;
+function labBucket() {
+  const z = focus && sfmode === 'color' ? 1 : zoom || 1;
+  return Math.pow(2, Math.round(Math.log2(Math.max(1, z)) * 2) / 2);
+}
+function labMinFor(b) {
+  const s0 = cv && cv.offsetWidth ? cv.offsetWidth / W : 1;
+  return Math.max(5, Math.round((LAB_MIN_CSS / (s0 * b)) * 2) / 2);
+}
+// after a zoom: the codes drawn again once it settles, if it crossed a step
+// (only where the plan is drawn: not over Edit sections, Crop or Straighten, which draw the sections themselves)
+function labOn() {
+  return (sfmode === 'guide' || sfmode === 'color') && !cropMode && !pgMode;
+}
+function labZoomed() {
+  if (!assignData || !labOn() || labBucket() === _labB) return;
+  clearTimeout(_labT);
+  _labT = setTimeout(function () {
+    if (labOn() && labBucket() !== _labB) renderGuide();
+  }, 160);
+}
+// every section of the guide ticked
+function pageDone() {
+  if (!assignData || !colored || !assignData.order.length) return false;
+  for (let i = 0; i < assignData.order.length; i++) if (!colored[assignData.order[i]]) return false;
+  return true;
+}
 function renderGuide() {
   if (!assignData) return;
   _mixKey = null;
@@ -651,11 +719,19 @@ function renderGuide() {
     if (tipL >= 0) hideTip();
   }
   if (!labelPts) buildLabelPts();
+  // Colour along (v288): what you've coloured (ticked, or some of its tones) in its colour, as on your paper, the rest
+  // pale with its code (progMix, the same as Home's Continue card); with a marker's row open, its sections still to do
+  // in full colour and what's coloured softened; Focus mode the same, with the section it's on in full colour. With
+  // the codes off (the tool row's Codes) every section shows in its colour, those done keeping their ✓; the page
+  // finished, or focus mode's last view, the picture as it is, no codes (v284)
+  _labB = labBucket();
+  _labMin = labMinFor(_labB);
   const assign = assignData.assign,
     n = W * H,
     K = comps.length,
-    finView = sfmode === 'color' && focus && focusFin,
-    dim = sfmode === 'color' && !finView;
+    finView = sfmode === 'color' && ((focus && focusFin) || pageDone()),
+    ticksOnly = sfmode === 'color' && hideLabels && !finView,
+    dim = sfmode === 'color' && !finView && !hideLabels;
   const fade = {};
   if (zoneEditOn()) {
     // the zone editor: the zone's own sections in their colours, the rest faded
@@ -669,12 +745,23 @@ function renderGuide() {
       if (!(_phErr[l] >= PH_ROUGH)) fade[l] = 1;
     }
   }
-  const colArr = new Array(K);
+  const colArr = new Array(K),
+    full = new Uint8Array(K);
   const fcur = focusCur();
   for (const l in assign) {
     const b = hexRgb(assign[l].hex);
+    if (dim) {
+      const ink = inkOn(+l),
+        on = fcur > 0 ? +l === fcur : hlKey ? !fade[l] && !colored[l] : ink;
+      colArr[l] = on ? b : progMix(b, ink ? (fcur > 0 || hlKey ? PROG_SOFT : 1) : PROG_PALE);
+      if (on) full[l] = 1;
+      continue;
+    }
+    // (Colour along with the codes off and a row open: the rest softened, not gone, so the plan still shows, v288)
     colArr[l] = fade[l]
-      ? [(b[0] * 0.12 + 224) | 0, (b[1] * 0.12 + 224) | 0, (b[2] * 0.12 + 224) | 0]
+      ? ticksOnly && hlKey
+        ? progMix(b, PROG_SOFT)
+        : [(b[0] * 0.12 + 224) | 0, (b[1] * 0.12 + 224) | 0, (b[2] * 0.12 + 224) | 0]
       : dim && colored[l]
         ? [(b[0] * 0.28 + 183) | 0, (b[1] * 0.28 + 183) | 0, (b[2] * 0.28 + 183) | 0]
         : fcur > 0 && +l !== fcur
@@ -687,7 +774,8 @@ function renderGuide() {
     shV = sh ? sh.V : null,
     shC = [0, 0, 0],
     shOK = {};
-  if (sh) for (const l in assign) shOK[l] = !fade[l] && !(dim && colored[l]) && !(fcur > 0 && +l !== fcur);
+  // (shading on what's in full colour: in Colour along that's what you've coloured too, as on your paper)
+  if (sh) for (const l in assign) shOK[l] = dim ? !!full[l] : !fade[l] && !(fcur > 0 && +l !== fcur);
   if (dragPreview) {
     _rg = null;
     const f = sh ? sh.step : previewStep(),
@@ -751,7 +839,15 @@ function renderGuide() {
   for (const l in assign) {
     const shown = revealF == null || (revOrder && revOrder[l] <= revealF),
       lk = (lkA[l] =
-        !labOn || fade[l] || (fcur > 0 && +l !== fcur && !colored[l]) ? 0 : dim && colored[l] ? 1 : 2);
+        !labOn || fade[l] || (fcur > 0 && +l !== fcur && !colored[l])
+          ? 0
+          : ticksOnly
+            ? colored[l]
+              ? 1
+              : 0
+            : dim && colored[l]
+              ? 1
+              : 2);
     skey[l] =
       (shown ? colArr[l].join(',') : 'p') +
       '|' +
@@ -784,6 +880,7 @@ function renderGuide() {
     family,
     brandsMixed(),
     _fontGen,
+    _labMin,
     cv.width,
     cv.height,
   ];
@@ -814,7 +911,7 @@ function renderGuide() {
   }
   if (inc) {
     if (dirty.length || ring !== _rg.ring)
-      renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, dim, fcur, ring);
+      renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, dim || ticksOnly, fcur, ring);
   } else {
     const PX = pixTables(colArr, sh, shOK, tex);
     paintPixels(PX, sh, 0, 0, W - 1, H - 1, -2);
@@ -831,7 +928,7 @@ function renderGuide() {
     if (labOn)
       for (const l in assign) {
         if (!lkA[l]) continue;
-        const b = secLabel(+l, assign[l], dim, true);
+        const b = secLabel(+l, assign[l], dim || ticksOnly, true);
         lb[l] = b;
         rgGridAdd(G, +l, b);
       }
@@ -874,10 +971,11 @@ function renderGuide() {
   positionZones();
   positionPhoto();
   if (tipL >= 0) positionTip();
+  rowOutline();
   if (olSet) positionOutline();
   if (!pickPending()) scheduleAutosave();
 }
-function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, dim, fcur, ring) {
+function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tick, fcur, ring) {
   const assign = assignData.assign,
     B = secBoxes(),
     PX = pixTables(colArr, sh, shOK, tex),
@@ -904,7 +1002,7 @@ function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, dim
     addR(lb[l]);
     lb[l] = null;
     if (assign[l] && lkA[l]) {
-      const b = secLabel(l, assign[l], dim, false);
+      const b = secLabel(l, assign[l], tick, false);
       lb[l] = b;
       addR(b);
       rgGridAdd(_rg.G, l, b);
@@ -969,7 +1067,7 @@ function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, dim
     });
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    for (let k = 0; k < ids.length; k++) secLabel(ids[k], assign[ids[k]], dim, true);
+    for (let k = 0; k < ids.length; k++) secLabel(ids[k], assign[ids[k]], tick, true);
   }
   _rg.skey = skey;
   _rg.ring = ring;
@@ -978,8 +1076,8 @@ function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, dim
 function drawFocusRing(l, bits, sh) {
   if (!focusBox) return null;
   var k = ((cv.offsetWidth || W) / W) * focusZ,
-    r = Math.max(1.5, 3 / k),
-    r2 = r + Math.max(1, 2 / k),
+    r = Math.max(1.5, 3.5 / k),
+    r2 = r + Math.max(1, 2.5 / k),
     pad = Math.ceil(r2) + 2,
     x0 = Math.max(0, focusBox.x0[l] - pad),
     y0 = Math.max(0, focusBox.y0[l] - pad),
@@ -1019,7 +1117,8 @@ function drawFocusRing(l, bits, sh) {
     oc.drawImage(m, 0, 0);
     return o;
   };
-  ctx.drawImage(ringOf(r2, 'rgba(0,0,0,.6)'), x0, y0);
-  ctx.drawImage(ringOf(r, '#ffd84a'), x0, y0);
+  // (v288: the same two-tone line as Find next's, white inside dark, so it shows on any colour)
+  ctx.drawImage(ringOf(r2, 'rgba(0,0,0,.8)'), x0, y0);
+  ctx.drawImage(ringOf(r, '#fff'), x0, y0);
   return [x0, y0, x0 + w, y0 + h];
 }

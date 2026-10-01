@@ -3,7 +3,7 @@
 // happened, error cards stay until the tap that dismisses them is over, and unexpected errors get a calm message.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle, sampleGuide, welcome, scrollTop, pause, sectionPoint, ENGINE } from './helpers.mjs';
+import { setup, teardown, openApp, idle, sampleGuide, welcome, scrollTop, pause, sectionPoint, ENGINE, openBackupDialog } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -171,7 +171,7 @@ test('the toast is centred on its own width, up to the whole width of a phone, n
 
 test('an error card stays while the finger is down, so the tap that dismisses it can’t land on the backdrop', async () => {
   const { page, errors } = await openApp({ storage: onboardedV265({ [KEY]: appState4() }) });
-  await page.click('#mCollection'); await page.click('#backupBtn'); await page.waitForSelector('#backupOverlay.on');
+  await openBackupDialog(page);
   await page.setInputFiles('#backupFile', file({ hello: 1 }));
   await page.waitForSelector('#backupOverlay .mserr');
   // near the bottom of the dialog: once the card goes the dialog is shorter, and this point is the backdrop

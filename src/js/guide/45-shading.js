@@ -1095,7 +1095,12 @@ function shadeNoteHTML() {
       (fellH.length === 1 ? 'its' : 'their') +
       ' highlight is the same colour. ';
   if (coats.length)
-    s += coats.length + ' of ' + n + ' colours shade with a 2nd coat (no darker match in your markers). ';
+    s +=
+      coats.length +
+      ' of ' +
+      n +
+      (n === 1 ? ' colour shades' : coats.length === 1 ? ' colours shades' : ' colours shade') +
+      ' with a second coat (no darker match in your markers). ';
   if (noLight.length)
     s +=
       (noLight.length === 1 ? noLight[0] + ' has' : noLight.length + ' colours have') +
@@ -1105,7 +1110,11 @@ function shadeNoteHTML() {
   const head = w.length
     ? w.length + ' marker' + (w.length === 1 ? '' : 's') + ' would make the shading richer'
     : coats.length
-      ? coats.length + ' of ' + n + ' colours shade with a 2nd coat'
+      ? coats.length +
+        ' of ' +
+        n +
+        (n === 1 ? ' colour shades' : coats.length === 1 ? ' colours shades' : ' colours shade') +
+        ' with a second coat'
       : noLight.length
         ? (noLight.length === 1 ? noLight[0] + ' has' : noLight.length + ' colours have') +
           ' no lighter marker'
@@ -1800,9 +1809,7 @@ function stepText(l, bits) {
       ? {
           hex: t.dark.hex,
           name: 'Shadow \u00b7 ' + nm(t.dark),
-          sub: t.glaze
-            ? 'over the base once it\u2019s dry, on the side away from the light'
-            : 'the side away from the light',
+          sub: t.glaze ? 'over the dry base, away from the light' : 'the side away from the light',
         }
       : {
           hex: 'rgb(' + t.S.join(',') + ')',

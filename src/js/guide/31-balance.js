@@ -59,7 +59,21 @@ const BAL_ORDER = [
   BAL_COOL = { ygreen: 1, green: 1, teal: 1, blue: 1, violet: 1 },
   // the least of each role's markers (main, second, accent)
   BAL_MIN = { m: 3, s: 2, a: 1 },
-  BAL_ROLE = { m: 'Main colour', s: 'Second colour', a: 'Accent' };
+  BAL_ROLE = { m: 'Main colour', s: 'Second colour', a: 'Accent' },
+  // (a palette's marker of another colour joins a role only this close in hue to the role's own markers: past it, a
+  // blue-violet would be one of the pinks; one further from them all is an accent)
+  BAL_JOIN = 60;
+// the circular mean of the markers' hues (h when there are none)
+function balCentre(list, h) {
+  let X = 0,
+    Y = 0;
+  list.forEach(function (q) {
+    const r = (balHue(q) * Math.PI) / 180;
+    X += Math.cos(r);
+    Y += Math.sin(r);
+  });
+  return list.length ? ((Math.atan2(Y, X) * 180) / Math.PI + 360) % 360 : h;
+}
 // a marker's hue as Oklab has it: the families go by it, as it keeps blues and violets apart where CIELAB's hue
 // runs saturated blues (Copic B29, 298° in CIELAB) in among the violets (V09, 310°); in Oklab they're 264° and 296°
 const _balHue = new WeakMap();
@@ -209,8 +223,9 @@ function balPick(list, k, accent, mainL) {
    crossTemp, groups, why }. ok false (why says) when there's no family for a main colour. */
 function balPlan() {
   const base = balBase(),
-    // (a palette is used whole, so its colours need fewer markers of their own: the rest join them)
-    MIN = base.seeded ? { m: 2, s: 1, a: 1 } : BAL_MIN,
+    // (a palette is used whole, so its colours need fewer markers of their own: the rest join them; one marker can
+    // be the main colour, touching sections sharing it, as a note says)
+    MIN = base.seeded ? { m: 1, s: 1, a: 1 } : BAL_MIN,
     groups = balGroups(base.items),
     rnd = seededRandom((balSeed || 0) * 0.999 + 0.0005),
     hand = {
@@ -373,36 +388,65 @@ function balPlan() {
   }
   const n = Math.max(want, MIN.m + (has.s ? MIN.s : 0) + (has.a ? MIN.a : 0)),
     cnt = balCounts(n, has),
-    two = !(has.s && has.a),
-    share = two ? { m: 0.7, s: has.s ? 0.3 : 0, a: has.a ? 0.3 : 0 } : { m: 0.6, s: 0.3, a: 0.1 };
-  // (a palette's markers are all used: those of other colours join the role nearest them in hue)
+    accFams = {};
+  if (has.a) accFams[a] = 1;
+  // (a palette's markers are all used: one of another colour joins the role whose own markers it's nearest in hue,
+  // within BAL_JOIN, greys the main colour; one further from them all is an accent, the accent being a colour or
+  // more; a zone too small for an accent has it join the nearest)
   if (base.seeded) {
-    const inR = {};
+    const inR = {},
+      cen = {},
+      fam = { m: m, s: s, a: a };
     ['m', 's', 'a'].forEach(function (r) {
-      if (tk[r])
-        tk[r].list.forEach(function (x) {
-          inR[x.mkey] = 1;
-        });
+      if (!tk[r]) return;
+      tk[r].list.forEach(function (x) {
+        inR[x.mkey] = 1;
+      });
+      cen[r] =
+        fam[r] === 'grey'
+          ? -1
+          : balCentre(
+              tk[r].list.filter(function (q) {
+                return balFamOf(q) === fam[r];
+              }),
+              BAL_FAM[fam[r]].h,
+            );
     });
     base.items.forEach(function (x) {
       if (inR[x.mkey]) return;
-      const f = balFamOf(x);
+      const grey = balFamOf(x) === 'grey';
       let best = 'm',
         bd = Infinity;
       ['m', 's', 'a'].forEach(function (r) {
         if (!tk[r]) return;
-        const d = balDist(f, { m: m, s: s, a: a }[r]) + (r === 'a' ? 30 : 0);
+        const d = grey ? (r === 'm' ? 0 : 1) : cen[r] < 0 ? Infinity : hueDiff(balHue(x), cen[r]);
         if (d < bd) {
           bd = d;
           best = r;
         }
       });
-      tk[best].list.push(x);
+      if (!grey && bd > BAL_JOIN && !small) {
+        if (!tk.a) {
+          tk.a = { list: [], borrowed: {} };
+          has.a = true;
+          a = balFamOf(x);
+        }
+        tk.a.list.push(x);
+        accFams[balFamOf(x)] = 1;
+      } else tk[best].list.push(x);
     });
     ['m', 's', 'a'].forEach(function (r) {
       if (tk[r]) cnt[r] = tk[r].list.length;
     });
   }
+  // (an accent of two colours or more has a little more room, so each shows more than once or twice)
+  const many = Object.keys(accFams).length > 1,
+    two = !(has.s && has.a),
+    share = two
+      ? { m: 0.7, s: has.s ? 0.3 : 0, a: has.a ? 0.3 : 0 }
+      : many
+        ? { m: (0.6 * 0.85) / 0.9, s: (0.3 * 0.85) / 0.9, a: 0.15 }
+        : { m: 0.6, s: 0.3, a: 0.1 };
   const mMark = balPick(mt.list, cnt.m, false, 0),
     mainL = mMark.length
       ? mMark.reduce(function (t, x) {
@@ -425,6 +469,10 @@ function balPlan() {
       markers: balPick(tk.a.list, cnt.a, true, mainL),
       borrowed: tk.a.borrowed,
       share: share.a,
+      // (its colours, round the wheel: more than one makes it "Accents")
+      fams: BAL_ORDER.filter(function (k) {
+        return !!accFams[k];
+      }),
     };
   const all = [];
   ['m', 's', 'a'].forEach(function (r) {
@@ -454,7 +502,42 @@ function balPlan() {
     groups: groups,
   };
 }
-// lay the sections cl by the plan p (Main colour); pinned sections keep their markers
+// what each role would have had by the sections' sizes alone, and what it has painted, the last time each zone was laid
+// (for the note when the shares miss: the sizes, or too few markers to keep touching sections apart)
+let balStat = {};
+function balZoneKey() {
+  return String(zoneBuilding != null ? zoneBuilding : zoneCur);
+}
+// a marker's role in plan p: one of its markers, else one of its colours (greys the main colour's); null for neither
+function balRoleOf(p, m) {
+  let r = null;
+  ['m', 's', 'a'].forEach(function (q) {
+    if (
+      !r &&
+      p.roles[q] &&
+      p.roles[q].markers.some(function (x) {
+        return x.mkey === m.mkey;
+      })
+    )
+      r = q;
+  });
+  if (r) return r;
+  const f = balFamOf(m);
+  ['m', 's', 'a'].forEach(function (q) {
+    const x = p.roles[q];
+    if (!r && x && (x.k === f || (x.fams && x.fams.indexOf(f) >= 0))) r = q;
+  });
+  return r;
+}
+/* lay the sections cl by the plan p (Main colour); pinned sections keep their markers, and count towards their
+   colour's role (a pin in none of the roles is left out).
+   The accents first: middling sections (never the biggest tenth nor one bigger than the accent's whole share, nor
+   slivers too small to colour), spread out: each as far from those chosen as it can be, give or take (one of the four
+   furthest). Then every section, biggest first, takes a marker: an accent section the accent's, the rest whichever
+   of the main colour and the second is further short of its share. Each role's share is counted by the marker
+   actually painted, so when a role's own markers won't do (all a neighbour's, or with Keep touching sections clearly
+   different all like one), the other of the main colour and the second gives one, then an accent's (only on a
+   section no bigger than an accent), and only then a neighbour's own; the least used first. */
 function buildBalance(cl, p) {
   const order = cl.slice(),
     assign = {},
@@ -465,7 +548,8 @@ function buildBalance(cl, p) {
     roleOf = {},
     want = { m: 0, s: 0, a: 0 },
     got = { m: 0, s: 0, a: 0 },
-    role = {};
+    plan = { m: 0, s: 0, a: 0 },
+    accSec = {};
   coll.forEach(function (m) {
     bk[m.mkey] = m;
   });
@@ -475,22 +559,18 @@ function buildBalance(cl, p) {
         roleOf[m.mkey] = r;
       });
   });
-  // pinned sections first: their marker's role takes their area (a pin in none of the roles is left out)
-  let total = 0;
+  let total = 0,
+    big = 0;
   const free = [];
   order.forEach(function (l) {
     const pin = locks[l] !== undefined ? bk[locks[l]] : null;
+    big = Math.max(big, area(l));
     if (pin) {
       assign[l] = pin;
-      let r = roleOf[pin.mkey];
-      if (!r) {
-        const f = balFamOf(pin);
-        ['m', 's', 'a'].forEach(function (q) {
-          if (!r && p.roles[q] && p.roles[q].k === f) r = q;
-        });
-      }
+      const r = roleOf[pin.mkey] || balRoleOf(p, pin);
       if (r) {
         got[r] += area(l);
+        plan[r] += area(l);
         total += area(l);
       }
     } else {
@@ -499,25 +579,25 @@ function buildBalance(cl, p) {
     }
   });
   // (a zone of fewer than 10 sections has no accent: balPlan leaves it out)
-  const acc = !!p.roles.a && order.length >= 10;
-  let sh = { m: p.roles.m.share, s: p.roles.s ? p.roles.s.share : 0, a: acc ? p.roles.a.share : 0 };
-  const st = sh.m + sh.s + sh.a;
+  const acc = !!p.roles.a && order.length >= 10,
+    sh = { m: p.roles.m.share, s: p.roles.s ? p.roles.s.share : 0, a: acc ? p.roles.a.share : 0 },
+    st = sh.m + sh.s + sh.a;
   ['m', 's', 'a'].forEach(function (r) {
     want[r] = (total * sh[r]) / st;
   });
-  // the accents: middling sections (not the biggest tenth, nor slivers too small to colour), spread out: each as far
-  // from those chosen as it can be, give or take (one of the four furthest)
+  let accHi = 0;
   if (acc) {
     const sizes = free.map(area).sort(function (a, b) {
         return a - b;
       }),
-      floor = Math.min(W * H * 0.0003, (W * H * 0.3) / Math.max(1, free.length)),
-      hi = sizes[Math.floor(sizes.length * 0.9)] || Infinity,
-      pick = function (lo) {
-        return free.filter(function (l) {
-          return area(l) >= lo && area(l) <= hi;
-        });
-      };
+      floor = Math.min(W * H * 0.0003, (W * H * 0.3) / Math.max(1, free.length));
+    // (not the biggest tenth: with ten sections, the nine smaller)
+    accHi = Math.min(sizes[Math.max(0, Math.ceil(sizes.length * 0.9) - 1)] || Infinity, want.a);
+    const pick = function (lo) {
+      return free.filter(function (l) {
+        return area(l) >= lo && area(l) <= accHi;
+      });
+    };
     let cand = pick(Math.max(sizes[Math.floor(sizes.length * 0.3)] || 0, floor));
     if (!cand.length) cand = pick(0);
     // (each candidate's distance to the nearest accent so far, brought up to date as each is chosen)
@@ -526,8 +606,9 @@ function buildBalance(cl, p) {
       top = [0, 0, 0, 0],
       topD = [0, 0, 0, 0];
     let left = cand.length,
-      first = true;
-    while (got.a < want.a && left) {
+      first = true,
+      ga = got.a;
+    while (ga < want.a && left) {
       let i;
       if (first) {
         i = Math.floor(Math.random() * cand.length);
@@ -555,8 +636,10 @@ function buildBalance(cl, p) {
       const l = cand[i];
       out[i] = 1;
       left--;
-      role[l] = 'a';
-      got.a += area(l);
+      // (one that would take the accent past its share by more than half its own size is passed over)
+      if (ga > 0 && ga + area(l) - want.a > area(l) / 2) continue;
+      accSec[l] = 1;
+      ga += area(l);
       for (let j = 0; j < cand.length; j++)
         if (!out[j]) {
           const q = cand[j],
@@ -565,39 +648,14 @@ function buildBalance(cl, p) {
         }
     }
   }
-  // the main colour and the second, biggest sections first, each to whichever is furthest short of its share
-  const rest = free
-    .filter(function (l) {
-      return !role[l];
-    })
-    .sort(function (a, b) {
-      return area(b) - area(a);
-    });
-  rest.forEach(function (l) {
-    const r =
-      !p.roles.s || (want.s <= 0 ? true : got.m / Math.max(1, want.m) <= got.s / Math.max(1, want.s))
-        ? 'm'
-        : 's';
-    role[l] = r;
-    got[r] += area(l);
-  });
-  // the markers within each role: not a neighbour's (nor, with Keep touching sections clearly different, one that
-  // looks like it), the least used first; when none of the role's will do, one of another role's that will (so a role
-  // of two markers doesn't put the same one side by side)
   const a = adj || (adj = buildAdj()),
     uses = {},
     alike = balAlike(),
-    all = p.markers,
-    shuffled = free.slice();
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1)),
-      t = shuffled[i];
-    shuffled[i] = shuffled[j];
-    shuffled[j] = t;
-  }
-  shuffled.forEach(function (l) {
-    const list = p.roles[role[l]].markers,
-      nbs = [];
+    seq = free.slice().sort(function (x, y) {
+      return area(y) - area(x);
+    });
+  seq.forEach(function (l) {
+    const nbs = [];
     if (a && a[l])
       a[l].forEach(function (q) {
         if (assign[q]) nbs.push(assign[q]);
@@ -611,25 +669,52 @@ function buildBalance(cl, p) {
         return !nbs.some(function (x) {
           return alike(m, x);
         });
-      };
-    // (Keep touching sections clearly different is kept even when it takes another role's marker: a family's own
-    // markers often look alike side by side)
-    let ok = noAdj ? list.filter(clear) : [];
-    if (!ok.length && noAdj) ok = all.filter(clear);
-    if (!ok.length) ok = list.filter(notSame);
-    if (!ok.length) ok = all.filter(notSame);
-    if (!ok.length) ok = list;
-    let lo = Infinity;
-    ok.forEach(function (m) {
-      lo = Math.min(lo, uses[m.mkey] || 0);
-    });
-    const least = ok.filter(function (m) {
-      return (uses[m.mkey] || 0) <= lo + 1;
-    });
-    const m = least[Math.floor(Math.random() * least.length)];
+      },
+      ms = ['m', 's']
+        .filter(function (r) {
+          return !!p.roles[r] && want[r] > 0;
+        })
+        .sort(function (x, y) {
+          return want[y] - got[y] - (want[x] - got[x]);
+        });
+    if (!ms.length) ms.push('m');
+    // (the main colour and an accent, no second, in a zone too small for an accent section: the accent's markers too)
+    if (!p.roles.s && !acc && p.roles.a) ms.push('a');
+    const prefs = accSec[l] && got.a < want.a ? ['a'].concat(ms) : ms;
+    plan[prefs[0]] += area(l);
+    let m = null;
+    const tryR = function (test) {
+      for (let i = 0; i < prefs.length && !m; i++) {
+        const ok = p.roles[prefs[i]].markers.filter(test);
+        if (!ok.length) continue;
+        let lo = Infinity;
+        ok.forEach(function (x) {
+          lo = Math.min(lo, uses[x.mkey] || 0);
+        });
+        const least = ok.filter(function (x) {
+          return (uses[x.mkey] || 0) <= lo + 1;
+        });
+        m = least[Math.floor(Math.random() * least.length)];
+      }
+    };
+    if (noAdj)
+      tryR(function (x) {
+        return notSame(x) && clear(x);
+      });
+    if (!m) tryR(notSame);
+    if (!m && acc && prefs[0] !== 'a' && area(l) <= accHi) {
+      prefs.push('a');
+      tryR(notSame);
+    }
+    if (!m)
+      tryR(function () {
+        return true;
+      });
     assign[l] = m;
     uses[m.mkey] = (uses[m.mkey] || 0) + 1;
+    got[roleOf[m.mkey]] += area(l);
   });
+  balStat[balZoneKey()] = { plan: plan, total: total, big: big, all: order.length };
   assignData = { assign: assign, order: order, N: order.length, base: Object.assign({}, assign) };
   applyLocks();
 }
@@ -801,8 +886,70 @@ function buildRandomBal(cl, pool) {
     families (as strips of your markers, with how many) and Auto, to choose that role's. ↻ Other pairings rolls the
     roles left on Auto. A line under it says what's used ("6 blues, 4 greens and 2 oranges of yours"). With Mixed,
     No repeats sits under Keep touching sections clearly different. */
-function balPct(r, p) {
-  return Math.round((p.roles[r] ? p.roles[r].share : 0) * 100);
+/* What the guide has painted in each role now, over the zone's sections, by area: { f: { m, s, a } (fractions of
+   the sections counted), aim: { m, s, a } (the shares asked, as laid: no accent in a zone under 10 sections), other
+   (sections pinned or kept in another colour: not counted), miss (how far the worst role is from its aim) }; null
+   before there's an assignment. */
+function balMeasure(p) {
+  const A = assignData && assignData.assign,
+    cl = zoneList();
+  if (!A || !cl.length || !comps) return null;
+  const g = { m: 0, s: 0, a: 0 },
+    aim = { m: 0, s: 0, a: 0 };
+  let t = 0,
+    other = 0;
+  cl.forEach(function (l) {
+    const m = A[l];
+    if (!m) return;
+    const r = balRoleOf(p, m),
+      ar = comps[l].area || 0;
+    if (r) {
+      g[r] += ar;
+      t += ar;
+    } else other++;
+  });
+  if (!(t > 0)) return null;
+  const acc = !!p.roles.a && cl.length >= 10;
+  let st = 0;
+  ['m', 's', 'a'].forEach(function (r) {
+    aim[r] = p.roles[r] && (r !== 'a' || acc) ? p.roles[r].share : 0;
+    st += aim[r];
+  });
+  let miss = 0;
+  ['m', 's', 'a'].forEach(function (r) {
+    g[r] /= t;
+    aim[r] /= st || 1;
+    if (p.roles[r]) miss = Math.max(miss, Math.abs(g[r] - aim[r]));
+  });
+  return { f: g, aim: aim, other: other, miss: miss, total: t };
+}
+// a role's share for the screen: measured (to the nearest 5) when there's an assignment, else the one asked
+function balPct(r, p, ms) {
+  if (!ms) return Math.round((p.roles[r] ? p.roles[r].share : 0) * 100);
+  const f = ms.f[r];
+  return f > 0 && f < 0.025 ? 1 : Math.round(f * 20) * 5;
+}
+// "15%", or "<5%" for a sliver
+function balPctTxt(pc) {
+  return (pc === 1 ? '<5' : pc) + '%';
+}
+// a role's word on the bar (v288): its role (Main, Second, Accent), as a family's name ("Browns") didn't always match
+// the colours you saw; the family is in its label for screen readers, and in its sheet's title
+const BAL_SHORT = { m: 'Main', s: 'Second', a: 'Accent' };
+function balShort(r) {
+  return BAL_SHORT[r];
+}
+// a role's colour family's name ("Blues"), "Accents" for an accent of more than one colour
+function balName(r, p) {
+  const x = p.roles[r];
+  return r === 'a' && x.fams && x.fams.length > 1 ? 'Accents' : BAL_FAM[x.k].n;
+}
+// the families' words, joined: "oranges and pinks"
+function balFamsWords(fams) {
+  const w = fams.map(function (k) {
+    return BAL_FAM[k].w + 's';
+  });
+  return w.length > 2 ? w.slice(0, -1).join(', ') + ' and ' + w[w.length - 1] : w.join(' and ');
 }
 // a role's colours as a strip, light to dark (the label sits over the light end)
 function balLight(list) {
@@ -836,15 +983,23 @@ function balNote(p) {
   let t;
   if (p.seeded)
     t =
-      'The palette’s ' +
-      p.used +
-      ' markers: ' +
-      join(
-        rs.map(function (r) {
-          return BAL_FAM[p.roles[r].k].w + 's ' + { m: 'the main colour', s: 'second', a: 'the accent' }[r];
-        }),
-      ) +
-      ', with its other colours alongside.';
+      (rs.length === 1
+        ? 'All ' + BAL_FAM[p.roles.m.k].w + 's: no other colour to go with it'
+        : 'The palette’s ' +
+          p.used +
+          ' marker' +
+          (p.used === 1 ? '' : 's') +
+          ': ' +
+          join(
+            rs.map(function (r) {
+              const x = p.roles[r];
+              // (with no second colour, the accent's part is the rest: a third of the picture, not a touch)
+              if (r === 'a' && !p.roles.s)
+                return balFamsWords(x.fams && x.fams.length ? x.fams : [x.k]) + ' the rest';
+              if (r === 'a' && x.fams && x.fams.length > 1) return balFamsWords(x.fams) + ' as accents';
+              return BAL_FAM[x.k].w + 's ' + { m: 'the main colour', s: 'second', a: 'the accent' }[r];
+            }),
+          )) + '.';
   else
     t =
       join(
@@ -871,12 +1026,67 @@ function balNote(p) {
     t += ' That’s all there are of these colours, so ' + p.used + ' markers, not ' + p.want + '.';
   if (!p.seeded && p.used > p.want) t += ' Main colour needs at least ' + p.used + ' markers.';
   if (p.small) t += ' Too few sections for an accent of their own.';
-  else if (!p.roles.a && !p.roles.s) t += ' No other colour to go with it, so it’s all the main colour.';
-  else if (!p.roles.a) t += ' No colour across the wheel for an accent, so two colours.';
-  else if (!p.roles.s) t += ' No colour to go second, so the main colour and an accent.';
+  else if (!p.roles.a && !p.roles.s) {
+    if (!p.seeded) t += ' No other colour to go with it, so it’s all the main colour.';
+  } else if (!p.roles.a) t += ' No colour across the wheel for an accent, so two colours.';
+  else if (!p.roles.s && !p.seeded)
+    t +=
+      ' No colour to go second, so the main colour and ' +
+      (p.roles.a.fams && p.roles.a.fams.length > 1 ? 'accents.' : 'an accent.');
   if (p.tempMiss)
     t += ' No ' + palette + ' colour has markers enough to be the main one, so it can be any colour.';
   if (p.crossTemp) t += ' The accent is ' + (palette === 'cool' ? 'warm' : 'cool') + ', to stand out.';
+  return t;
+}
+// what the bar's figures can't say: one marker for the main colour (with Add shades, which turns Expand on); shares
+// that miss what was asked by 8 points or more, and why; sections in other colours not counted
+function balMore(p, ms) {
+  let t = '';
+  const main = p.roles.m;
+  if (p.seeded && main.markers.length === 1)
+    t +=
+      '<div id="sfBalOne" class="sfc-note sfc-mt6">One ' +
+      esc(BAL_FAM[main.k].w) +
+      ' marker for the main colour, so touching ' +
+      esc(BAL_FAM[main.k].w) +
+      ' sections will merge.' +
+      (expand ? '' : ' <button type="button" id="sfBalShades" class="sflink">Add shades</button>') +
+      '</div>';
+  if (ms && ms.miss >= 0.08) {
+    const st = balStat[String(zoneCur)],
+      aimTxt = ['m', 's', 'a']
+        .filter(function (r) {
+          return ms.aim[r] > 0;
+        })
+        .map(function (r) {
+          return Math.round(ms.aim[r] * 100);
+        })
+        .join('/');
+    let why = '';
+    if (st && st.all === zoneList().length && st.total > 0) {
+      let pm = 0;
+      ['m', 's', 'a'].forEach(function (r) {
+        if (ms.aim[r] > 0) pm = Math.max(pm, Math.abs(st.plan[r] / st.total - ms.aim[r]));
+      });
+      why =
+        pm >= 0.08
+          ? 'Its sections’ sizes don’t allow ' +
+            aimTxt +
+            ' exactly: the biggest covers ' +
+            Math.round((st.big / st.total) * 100) +
+            '% of the picture.'
+          : 'Too few markers to keep touching sections apart in each colour, so some take another colour’s.';
+    }
+    if (why) t += '<div id="sfBalMiss" class="sfc-note sfc-mt6">' + esc(why) + '</div>';
+  }
+  if (ms && ms.other)
+    t +=
+      '<div class="sfc-note sfc-mt6">' +
+      ms.other +
+      (ms.other === 1
+        ? ' pinned or coloured section in another colour isn’t'
+        : ' pinned or coloured sections in other colours aren’t') +
+      ' counted.</div>';
   return t;
 }
 function balHTML() {
@@ -894,16 +1104,19 @@ function balHTML() {
         (p.why === 'thin'
           ? esc(BAL_FAM[p.fam].n) + ': too few markers, even with the colours next to them'
           : 'No colour has markers enough to be the main one') +
-        ', so it’s laid Mixed for now.' +
+        ', so it’s Mixed for now.' +
         (byHand ? ' <button type="button" id="sfBalAuto" class="sflink">Back to Auto</button>' : '') +
         '</div>';
     else {
+      const ms = balMeasure(p);
       h += '<div id="sfBalBar" class="sfbalbar">';
       ['m', 's', 'a'].forEach(function (r) {
         const x = p.roles[r];
         if (!x) return;
-        const pc = balPct(r, p),
-          nm = BAL_FAM[x.k].n,
+        const pc = balPct(r, p, ms),
+          // (as wide as it's painted; its figure to the nearest 5)
+          wd = ms ? +(ms.f[r] * 100).toFixed(2) : pc,
+          nm = balName(r, p).toLowerCase(),
           auto = { m: balM, s: balS, a: balA }[r] === 'auto';
         h +=
           '<button type="button" id="sfBal' +
@@ -911,7 +1124,7 @@ function balHTML() {
           '" class="sfbalseg" data-r="' +
           r +
           '" style="flex:' +
-          pc +
+          wd +
           ' 1 0;background:linear-gradient(90deg,' +
           balStrip(x.markers) +
           ');color:' +
@@ -923,16 +1136,15 @@ function balHTML() {
               ': ' +
               nm +
               (auto ? ', chosen for you' : '') +
-              ', about ' +
-              pc +
+              (pc === 1 ? ', under 5' : ', about ' + pc) +
               '% of the picture. Change',
           ) +
+          // (the name goes when it doesn't fit whole: balFit)
           '"><span aria-hidden="true" class="sfbalsn">' +
-          (pc > 12 ? esc(nm) : '') +
-          '</span><span aria-hidden="true" class="sfbalsp">' +
-          (pc > 12 ? ' \u00b7 ' : '') +
-          pc +
-          '%</span></button>';
+          esc(balShort(r)) +
+          '</span><span aria-hidden="true" class="sfbaldot"> \u00b7 </span><span aria-hidden="true" class="sfbalsp">' +
+          balPctTxt(pc) +
+          '</span></button>';
       });
       const handAll = ['m', 's', 'a'].every(function (r) {
         return !p.roles[r] || { m: balM, s: balS, a: balA }[r] !== 'auto';
@@ -940,9 +1152,12 @@ function balHTML() {
       h +=
         '</div><div class="sfbalrow"><span class="sfc-note">Tap a colour to change it</span><button type="button" id="sfBalPair" class="sfghost"' +
         (handAll ? ' disabled' : '') +
-        '><span aria-hidden="true">↻</span> Other pairings</button></div><div id="sfBalNote" class="sfc-note sfc-mt6">' +
+        '>' +
+        ic('refresh-cw') +
+        ' Other pairings</button></div><div id="sfBalNote" class="sfc-note sfc-mt6">' +
         esc(balNote(p)) +
-        '</div>';
+        '</div>' +
+        balMore(p, ms);
     }
   }
   h +=
@@ -1035,7 +1250,16 @@ function balChoose(r) {
       '</span></button>';
   });
   b += '</div>';
-  const el = openSheet({ title: BAL_ROLE[r] + ' · about ' + balPct(r, p) + '%', body: b, fit: true });
+  const pc = balPct(r, p, balMeasure(p)),
+    el = openSheet({
+      title:
+        BAL_ROLE[r] +
+        ': ' +
+        balName(r, p).toLowerCase() +
+        (pc === 1 ? ' · under 5%' : ' · about ' + pc + '%'),
+      body: b,
+      fit: true,
+    });
   el.classList.add('sfbalsh');
   const on = el.querySelector('.sfbalopt[aria-pressed="true"]');
   if (on)
@@ -1071,6 +1295,16 @@ function balSet(r, v) {
   if (r === 'm') balM = v;
   else if (r === 's') balS = v;
   else balA = v;
+}
+// the bar's parts show their colour's name only where it fits whole (else just the share); fitPairs calls it
+function balFit(root) {
+  const bar = root && root.querySelector('#sfBalBar');
+  if (!bar || bar.offsetParent === null) return;
+  bar.querySelectorAll('.sfbalseg').forEach(function (b) {
+    b.classList.remove('sfbalnn');
+    const sn = b.querySelector('.sfbalsn');
+    if (sn && labelTooWide(sn)) b.classList.add('sfbalnn');
+  });
 }
 // wire Balance's controls (ctlPlanWire)
 function balWire() {
@@ -1115,6 +1349,15 @@ function balWire() {
       reassign();
       ctlRefocus('#sfBal [data-v="main"]');
     });
+  // (Add shades: Expand with nearby markers, three for each of the palette's, as far as your markers go)
+  const sh = document.getElementById('sfBalShades');
+  if (sh)
+    sh.addEventListener('click', function () {
+      expand = true;
+      limitN = Math.max(limitN, Math.min(Math.max(2, poolFor(palette).length), curSeedLen() * 3));
+      reassign();
+      ctlRefocus('#sfExpand');
+    });
   const nr = document.getElementById('sfNoRep');
   if (nr)
     nr.addEventListener('change', function (e) {
@@ -1135,7 +1378,14 @@ function surpriseRoles() {
     's' +
     (p.roles.s ? ', with ' + w('s') + 's' : '') +
     (p.roles.a
-      ? (p.roles.s ? ' and ' : ', with ') + 'a' + (/^[aeiou]/.test(w('a')) ? 'n ' : ' ') + w('a') + ' accent'
+      ? (p.roles.s ? ' and ' : ', with ') +
+        (p.roles.a.fams && p.roles.a.fams.length > 1
+          ? p.roles.a.fams
+              .map(function (k) {
+                return BAL_FAM[k].w;
+              })
+              .join(' and ') + ' accents'
+          : 'a' + (/^[aeiou]/.test(w('a')) ? 'n ' : ' ') + w('a') + ' accent')
       : '')
   );
 }

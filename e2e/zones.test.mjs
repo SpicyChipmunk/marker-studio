@@ -5,7 +5,7 @@
 // zone.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK, saveGuide, answerAsks, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -79,7 +79,7 @@ test('＋ Zone: the editor, taps add and take out sections (one Undo step each),
   assert.equal(z.edit, false);
   assert.equal(await page.evaluate(() => document.getElementById('sfPicBox').style.touchAction), 'pan-y', 'the page scrolls under a finger again');
   const chips = await page.$$eval('#sfPanel-pattern .sfzchip', (bs) => bs.map((b) => [b.dataset.z, b.textContent, b.getAttribute('aria-pressed')]));
-  assert.deepEqual(chips, [['0', 'Main', 'false'], [String(z.cur), 'Zone 1✎', 'true'], ['new', '＋', null]]);
+  assert.deepEqual(chips, [['0', 'Main', 'false'], [String(z.cur), 'Zone 1', 'true'], ['new', '', null]]);
   assert.ok(await page.isVisible('#sfFam'), 'the Pattern tab again, now for the zone');
   assert.ok(await page.$('#sfPanel-colours .sfzrow'), 'Colours has the chips too');
   assert.equal(await page.$('#sfPanel-shading .sfzrow'), null, 'Shading is off here, so no chips there (with it on, each zone has its own shading: zones-shading.test.mjs)');
@@ -228,7 +228,7 @@ test('zones are saved with the guide and open again as they were (Main\'s settin
   assert.equal(d.payload.zones[0].style.family, 'random');
   assert.equal(d.payload.zones[0].secs.length, 3);
   // saved in the Library, reopened after a reload
-  await page.click('#sfSave'); await page.waitForFunction(() => /Saved in your Library/.test(document.getElementById('sfSaveSt').textContent));
+  await saveGuide(page);
   const id = await page.evaluate(() => __mstest.curId);
   await page.reload(); await idle(page);
   await page.evaluate((id) => loadGuide({ id }), id);
@@ -288,12 +288,12 @@ test('Edit sections: a zone keeps its sections through leaving one out and bring
   await page.click('#sfBack2'); await idle(page);
   // leave one out, build, then bring it back, build
   await page.evaluate((l) => { __mstest.secState[l] = 2; }, secs[1]);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.equal(await page.evaluate((l) => !!__mstest.assignData.assign[l], secs[1]), false);
   assert.deepEqual(await page.evaluate(() => __mstest.zoneSecs(__mstest.zones[0].id)).then((a) => a.sort()), [secs[0], secs[2]].sort());
   await page.click('#sfBack2'); await idle(page);
   await page.evaluate((l) => { __mstest.secState[l] = 0; }, secs[1]);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   assert.equal(await page.evaluate((l) => __mstest.zoneOf(l), secs[1]), zid, 'back in its zone');
   assert.deepEqual(errors, []);
 });
@@ -350,7 +350,8 @@ test('with zones, Pattern, Colours and Shading fit in about one and a half scree
     const m = await page.evaluate((s) => { const h = (e) => (e ? e.getBoundingClientRect().height + parseFloat(getComputedStyle(e).marginTop) + parseFloat(getComputedStyle(e).marginBottom) : 0), r = document.querySelector(s + ' .sfzrow'); return { h: document.querySelector(s).scrollHeight, chips: h(r), shade: h(document.querySelector(s + ' .sfzshade')), room: parseFloat(getComputedStyle(document.getElementById('sfWork')).getPropertyValue('--tabMin')), info: document.querySelectorAll(s + ' button.sfinfo:not(.open)').length }; }, `.sftab[data-tab="${tb}"]`);
     assert.ok(m.chips > 0 && m.chips <= 64, `${tb}: the chips take one row (${m.chips}px)`);
     assert.ok(tb !== 'shading' || (m.shade > 0 && m.shade <= 40), `shading: "Shade Bell" is one line (${m.shade}px)`);
-    assert.ok(m.h - m.chips - m.shade <= m.room * 1.5 + 2 + 16 * m.info, `${tb}: ${m.h}px (${m.chips}px of chips, ${m.shade}px of Shade Bell) against ${m.room}px of room`);
+    // (v288: Colours has the "N markers on this page ›" button too, 44px and its margin)
+    assert.ok(m.h - m.chips - m.shade <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 : 0), `${tb}: ${m.h}px (${m.chips}px of chips, ${m.shade}px of Shade Bell) against ${m.room}px of room`);
   }
   assert.deepEqual(errors, []);
 });
@@ -363,10 +364,10 @@ test('sections found again (Enhance in Edit sections): each joins the zone most 
   // where the zone's sections are (their middles), to find them again after the sections are found afresh
   const pts = await page.evaluate((secs) => secs.map((l) => { const p = __mstest.labelPos(l); return [Math.round(p.x), Math.round(p.y)]; }), secs);
   await page.click('#sfBack2'); await idle(page);
-  page.on('dialog', (d) => d.accept());
+  await answerAsks(page);
   await page.click('#sfAdjToggle'); await idle(page);
   await page.click('#sfEnh'); await idle(page, 2000);
-  await page.click('#sfBuild'); await idle(page);
+  await buildGo(page); await idle(page);
   const r = await page.evaluate((pts) => { const t = __mstest; return pts.map(([x, y]) => { const l = t.labels[y * t.W + x]; return l > 0 ? t.zoneOf(l) : -1; }); }, pts);
   const zid = (await Z(page)).list[0] && (await Z(page)).list[0].id;
   assert.ok(zid, 'the zone is still there');

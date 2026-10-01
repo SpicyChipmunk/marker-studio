@@ -2,17 +2,21 @@
 // keep nothing and offer no Undo; blocked storage shows one clear banner.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, welcome, idle } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, welcome, idle, libItem } from './helpers.mjs';
 
 before(setup);
 after(teardown);
 
-test('when storage is full, Save says so and the guide stays unsaved', async () => {
+test('when storage is full, a new guide’s first save says so, Save tries again and says so too, and the guide stays unsaved', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await page.evaluate(() => { IDB.put = () => Promise.reject(new DOMException('full', 'QuotaExceededError')); });
-  await page.click('#sfSave'); await idle(page);
-  assert.match(await page.textContent('#sfSave'), /Save failed/);
+  // (v285: a change to the sample is its first save)
+  await page.click('.sftabbtn[data-t="pattern"]'); await page.click('#sfFam [data-v="random"]');
+  await page.evaluate(() => __mstest.flushSave()); await idle(page);
+  assert.equal(await page.textContent('#sfSaveSt'), 'Not saved — storage is full');
+  await page.click('#sfSave');
+  await page.waitForFunction(() => /Save failed/.test(document.getElementById('sfSave').textContent));
   assert.equal(await page.evaluate(() => state.saved.filter((s) => s.type === 'guide').length), 0, 'nothing half-saved in the Library');
   assert.equal(await page.evaluate(() => __mstest.guideDirty), true, 'still marked unsaved');
   assert.deepEqual(errors, []);
@@ -95,7 +99,7 @@ test('Use in a guide and a Library rename with storage full: nothing changes and
   assert.match(await toastText(page), /storage is full/, 'the message is still showing');
   assert.equal(await page.evaluate(() => state.saved.length), 1, 'the palette is not in the Library in memory only');
   // rename
-  await page.click('#savedBtn'); await page.click('#savedList .srow[data-id="5"] .sren');
+  await page.click('#libMore'); await page.click('#savedBtn'); await libItem(page, '#savedList .srow[data-id="5"]', 'sren');
   await page.fill('#savedList .sname-in', 'New name'); await page.press('#savedList .sname-in', 'Enter'); await idle(page);
   assert.equal(await page.evaluate(() => state.saved[0].name), 'Old name', 'the old name is back');
   assert.equal(await page.textContent('#savedList .srow[data-id="5"] .sname'), 'Old name');
@@ -104,11 +108,13 @@ test('Use in a guide and a Library rename with storage full: nothing changes and
 });
 
 // ---- From the fifth review (data safety) ----
-test('with storage blocked, Save says to keep the guide as a guide file', async () => {
+test('with storage blocked, the guide’s header says to keep it as a guide file', async () => {
   const { page, errors } = await openApp({ init: () => { Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw new DOMException('blocked', 'SecurityError'); } }); } });
   await sampleGuide(page);
-  await page.click('#sfSave'); await idle(page);
-  assert.match(await page.evaluate(() => document.body.innerText), /isn’t letting Marker Studio save — use Share › Guide file to keep this guide/);
+  await page.click('.sftabbtn[data-t="pattern"]'); await page.click('#sfFam [data-v="random"]');
+  await page.evaluate(() => __mstest.flushSave()); await idle(page);
+  assert.equal(await page.textContent('#sfSaveSt'), 'Not saved — use Share › Guide file');
+  assert.match(await page.evaluate(() => document.body.innerText), /isn’t letting Marker Studio save/);
   assert.doesNotMatch(await page.evaluate(() => document.body.innerText), /storage may be full/);
   assert.deepEqual(errors, []);
 });

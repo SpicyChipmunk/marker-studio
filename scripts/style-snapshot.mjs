@@ -599,9 +599,11 @@ const SCENARIOS = {
     await T.snap('seed', { shot: true, expect: ['#seedGrid'] });
     await esc(T);
     await T.click('#saveBtn');
+    await T.click('#libMore');
     await T.click('#savedBtn');
     await T.snap('library', { shot: true, expect: ['#savedOverlay .dcard > .drow'] });
     await esc(T);
+    await T.click('#libMore');
     await T.click('#exportBtn');
     await T.do((p) => p.waitForSelector('#imgOverlay.on'), 'export card');
     await T.snap('export card', { shot: true });

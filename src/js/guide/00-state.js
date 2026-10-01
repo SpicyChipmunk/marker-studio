@@ -36,6 +36,10 @@ let hasEdits = false; // written by: 20-image-input, 22-straighten, 65-edit, 80-
 // ---- straightening a photo of a page ----
 let pgOrig = null; // written by: 20-image-input, 22-straighten, 97-open
 let pgQ = null; // written by: 22-straighten, 65-edit
+// (v284) Edit sections offers Straighten on a line of its own after Keep as is ('kept'); otherwise (null) it stays
+// quiet, as v258 decided for scans and screenshots. (Prompting when the finder rejects an outline was tried: on the
+// test pages it fired for clean digital line art, and not for Ben's photos, which it reads as plain paper)
+let pgHint = null; // written by: 22-straighten
 let pgF35 = 0; // written by: 22-straighten
 let pgShape = null; // written by: 22-straighten, 65-edit
 let pgMode = false; // written by: 22-straighten
@@ -195,10 +199,15 @@ let lockMode = false; // written by: 20-image-input, 30-palette-assign, 50-contr
 
 // ---- colouring along and Focus ----
 let celebrated = false; // written by: 10-segment, 30-palette-assign, 82-colour-mode, 90-export, 97-open
+// when the first section was ticked and when the page was finished (ms; 0: not yet), saved with the guide (v284)
+let progAt = { s: 0, e: 0 }; // written by: 10-segment, 82-colour-mode, 90-export, 97-open
+// Share › Save image with the codes on it (this session's choice)
+let exCodes = true; // written by: 52-controls-plan-wire
 let blendOpen = {}; // written by: 20-image-input, 82-colour-mode, 83-along
 let wakeLock = null; // written by: 82-colour-mode
 let hideLabels = false; // written by: 72-frame
-// Values: the picture shown in greys, to judge its light and dark (a view only: not saved, not in exports)
+// Greyscale (Values before v288): the picture shown in greys, to judge its light and dark (a view only: not saved, not
+// in exports)
 let valuesOn = false; // written by: 72-frame
 let focus = false; // written by: 20-image-input, 30-palette-assign, 82-colour-mode, 95-mount, 97-open
 let focusStep = []; // written by: 75-focus

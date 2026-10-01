@@ -144,13 +144,13 @@ test('lost guides: one card with the unreadable-data note when that is about gui
   await page.waitForSelector('#lnAdd');
   assert.equal(await shown(page, 'lostNote'), false, 'one card, not two');
   assert.equal((await page.textContent('#loadNote .ntxt')).trim(), '2 guides couldn’t be read — found 2 on this device. Add them back to your Library. A copy of the original was kept.');
-  assert.deepEqual(await page.$$eval('#loadNote .nrow button', (l) => l.map((b) => b.textContent)), ['Add them back', 'Save a copy', 'OK']);
+  assert.deepEqual(await page.$$eval('#loadNote .nrow button', (l) => l.map((b) => b.textContent)), ['Add them back', 'Download the original', 'OK']);
   await snap(page, 'lost-combined');
   await page.click('#lnAdd');
   await page.waitForFunction(() => !document.getElementById('lnAdd'));
   assert.equal(await toastText(page), 'Added 2 guides back to your Library');
   assert.equal((await page.textContent('#loadNote .ntxt')).trim(), '2 guides couldn’t be read and were left out. A copy of the original was kept.', 'the note stays, as it was');
-  assert.deepEqual(await page.$$eval('#loadNote .nrow button', (l) => l.map((b) => b.textContent)), ['Save a copy', 'OK']);
+  assert.deepEqual(await page.$$eval('#loadNote .nrow button', (l) => l.map((b) => b.textContent)), ['Download the original', 'OK']);
   assert.equal(await shown(page, 'lostNote'), false);
   assert.deepEqual(errors, []);
 
@@ -167,7 +167,7 @@ test('lost guides: one card with the unreadable-data note when that is about gui
   assert.equal(await shown(b.page, 'loadNote'), false);
   assert.deepEqual(b.errors, []);
 
-  // Save a copy deals with the note; the lost guides are then offered in their own card
+  // Download the original deals with the note; the lost guides are then offered in their own card
   const c = await openApp({ storage: onboarded({ [KEY]: appState({ saved: bad }) }) });
   await seed(c.page, { ['guide-' + ORPHAN]: payload() });
   await c.page.waitForSelector('#lnAdd');

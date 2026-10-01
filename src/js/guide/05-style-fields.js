@@ -84,6 +84,9 @@ const STYLE_FIELDS = [
     def: 'gradient',
     check: styleOne(['gradient', 'random', 'blend', 'manual', 'photo']),
     undo: true,
+    // (Photo with its photo not picked yet is saved as the pattern still laid: photoWait, 46-photo)
+    save: famSaved,
+    snap: famSaved,
   },
   { key: 'palette', in: 'style', def: 'all', check: styleOne(['all', 'cool', 'warm']), undo: true },
   {
@@ -532,6 +535,10 @@ function styleOpen(src, where) {
 }
 // the settings an Undo step keeps, added to its snapshot s (the shading's in s.shade); styleRestore puts
 // them back
+function famSaved() {
+  const pw = family === 'photo' && !photoRef ? photoWait[pwKey()] : null;
+  return pw || family;
+}
 function styleSnap(s) {
   STYLE_FIELDS.forEach(function (f) {
     if (!f.undo) return;

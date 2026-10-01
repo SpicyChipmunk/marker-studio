@@ -4,7 +4,7 @@
 // (the lookups, the mixes, the adjacency on made-up pictures) are unit-tested in test/colour-engines.test.mjs.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle, until, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, until, notOnWebKit, WK, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -108,7 +108,7 @@ test('Random on a drawing with thick lines: every touching pair is found, and ke
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#wcPhoto')]);
   await fc.setFiles({ name: 'boxes.png', mimeType: 'image/png', buffer: Buffer.from(b64, 'base64') });
   await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 60000 }); await idle(page);
-  await page.click('#sfBuild');
+  await buildGo(page);
   await until(page, () => __mstest.assignData && document.getElementById('sfColor'), null, 'the guide');
   await idle(page);
   const n = await page.evaluate(() => __mstest.assignData.order.length);
@@ -140,15 +140,15 @@ test('Random on a drawing with thick lines: every touching pair is found, and ke
   assert.deepEqual(errors, []);
 });
 
-test('Blend’s Mix: Soft, Vivid and Like paint each colour the picture their own way; the choice is saved, is one Undo step, and an older guide’s “Keep colours vivid” opens as Vivid', async () => {
+test('Blend’s Mix: Muted, Vivid and Like paint each colour the picture their own way; the choice is saved, is one Undo step, and an older guide’s “Keep colours vivid” opens as Vivid', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await tab(page, 'pattern');
   await click(page, '#sfFam [data-v="blend"]'); await idle(page);
   const pressed = () => page.evaluate(() => [...document.querySelectorAll('#sfMix button')].filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent));
-  assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#sfMix button')].map((b) => [b.dataset.v, b.textContent])), [['soft', 'Soft'], ['vivid', 'Vivid'], ['paint', 'Like paint']]);
+  assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#sfMix button')].map((b) => [b.dataset.v, b.textContent])), [['soft', 'Muted'], ['vivid', 'Vivid'], ['paint', 'Like paint']]);
   assert.equal(await page.evaluate(() => document.getElementById('sfMix').getAttribute('aria-label')), 'Mix');
-  assert.deepEqual(await pressed(), ['Soft']);
+  assert.deepEqual(await pressed(), ['Muted']);
   // four anchors in the corners: red, blue, yellow and green, so the mixes differ
   await page.evaluate(() => {
     const t = __mstest, W = t.W, H = t.H, want = [[55, 70, 45], [45, 20, -60], [88, -5, 80], [55, -55, 35]];
@@ -182,7 +182,7 @@ test('Blend’s Mix: Soft, Vivid and Like paint each colour the picture their ow
   await until(page, () => __mstest.curName === 'Painted' && __mstest.assignData, null, 'reopened'); await idle(page);
   assert.equal(await page.evaluate(() => __mstest.styleVars.blendMix), 'paint');
   // a guide saved before Mix: only blendVivid, ticked, opens as Vivid (unticked, Soft), and colours the same way
-  for (const [vivid, want, label] of [[true, 'vivid', 'Vivid'], [false, 'soft', 'Soft']]) {
+  for (const [vivid, want, label] of [[true, 'vivid', 'Vivid'], [false, 'soft', 'Muted']]) {
     await page.evaluate((vivid) => {
       const d = __mstest.currentDesignObj(), p = d.payload;
       delete p.style.blendMix;

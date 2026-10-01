@@ -182,6 +182,87 @@ test('saved palettes: every one of the palette’s markers is used, each in the 
   assert.equal(p.roles.m.k, 'blue', 'the palette’s biggest colour');
 });
 
+// a marker's hue as Oklab has it (as balHue), and how far apart two hues are
+function okH(m) {
+  const c = [1, 3, 5].map((i) => parseInt(m.hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+  const l = Math.cbrt(0.4122214708 * c[0] + 0.5363325363 * c[1] + 0.0514459929 * c[2]), q = Math.cbrt(0.2119034982 * c[0] + 0.6806995451 * c[1] + 0.1073969566 * c[2]), s = Math.cbrt(0.0883024619 * c[0] + 0.2817188376 * c[1] + 0.6299787005 * c[2]);
+  return ((Math.atan2(0.0259040371 * l + 0.7827717662 * q - 0.808675766 * s, 1.9779984951 * l - 2.428592205 * q + 0.4505937099 * s) * 180) / Math.PI + 360) % 360;
+}
+const hd = (a, b) => { const x = Math.abs(a - b) % 360; return Math.min(x, 360 - x); };
+const circMean = (hs) => { let X = 0, Y = 0; hs.forEach((h) => { X += Math.cos((h * Math.PI) / 180); Y += Math.sin((h * Math.PI) / 180); }); return ((Math.atan2(Y, X) * 180) / Math.PI + 360) % 360; };
+function withPalette(core, E, sv, keys) {
+  E(`state.saved = state.saved.filter((x) => x.id !== 778); state.saved.push({ type: 'palette', id: 778, name: 'Test', keys: ${JSON.stringify(keys)} })`);
+  E(`SF.configure({ listPalettes: () => state.saved.filter((x) => x.type === 'palette'), markerInfo: () => null })`);
+  Object.assign(sv, { paletteSource: 'saved', savedPalId: 778, expand: false, limitN: 16 });
+}
+
+test('v284: a palette colour far from every role is an accent ("Accents", about 15%); main and second hold only markers within 60° of their own; the painted shares are within 5 of those asked, as the bar measures them', () => {
+  const { core, sv, E } = appWith(['Honolulu 320 (complete set)']);
+  const by = {};
+  core.coll.forEach((m) => { const f = core.balFamOf(m); (by[f] = by[f] || []).push(m); });
+  const mid = (f, i) => by[f].slice().sort((a, b) => Math.abs(core.colour.lch(a)[0] - 60) - Math.abs(core.colour.lch(b)[0] - 60))[i];
+  // blues the main colour, teals second, an orange accent; a pink far from them all, a yellow near the orange
+  const pink = by.pink.slice().sort((a, b) => hd(okH(b), 53) - hd(okH(a), 53))[0];
+  const keys = [mid('blue', 0), mid('blue', 1), mid('blue', 2), mid('teal', 0), mid('teal', 1), mid('orange', 0), pink, mid('yellow', 0)].map((m) => m.mkey);
+  withPalette(core, E, sv, keys);
+  const cl = grid(core, 15, 14);
+  for (const seed of [0.2, 0.6]) {
+    sv.balSeed = seed;
+    const p = core.balPlan();
+    assert.ok(p.ok && p.seeded);
+    assert.deepEqual([p.roles.m.k, p.roles.s.k], ['blue', 'teal']);
+    assert.ok(p.roles.a.fams.length >= 2 && p.roles.a.fams.includes('pink'), 'the far pink is an accent: ' + p.roles.a.fams);
+    assert.equal(core.balName('a', p), 'Accents');
+    assert.equal(p.roles.a.share, 0.15);
+    // (every palette marker used, none in two roles)
+    const all = [...p.roles.m.markers, ...p.roles.s.markers, ...p.roles.a.markers].map((m) => m.mkey);
+    assert.deepEqual(all.slice().sort(), keys.slice().sort());
+    for (const r of ['m', 's']) {
+      const own = p.roles[r].markers.filter((m) => core.balFamOf(m) === p.roles[r].k), c = circMean(own.map(okH));
+      p.roles[r].markers.forEach((m) => assert.ok(hd(okH(m), c) <= 60, `${m.code} is within 60° of the ${p.roles[r].k}`));
+    }
+    for (const noAdj of [false, true]) {
+      sv.noAdj = noAdj;
+      core.buildBalance(cl, p);
+      const ms = core.balMeasure(p), r = shares(core, p);
+      assert.ok(ms.miss <= 0.05, 'within 5 points: ' + JSON.stringify(ms.f));
+      assert.ok(Math.abs(ms.f.m * 100 - r.m) <= 1 && Math.abs(ms.f.a * 100 - r.a) <= 1, 'the bar measures what’s painted');
+      assert.equal(ms.other, 0);
+    }
+  }
+  sv.noAdj = false;
+});
+
+test('v284: one marker can be a palette’s main colour (a 2-colour palette is 70/30); a palette of one colour is all it, measured 100%; with ten sections the accent is never the biggest nor over its share', () => {
+  const { core, sv, E } = appWith(['Honolulu 120']);
+  const by = {};
+  core.coll.forEach((m) => { const f = core.balFamOf(m); (by[f] = by[f] || []).push(m); });
+  withPalette(core, E, sv, [by.blue[0].mkey, by.orange[0].mkey]);
+  let p = core.balPlan();
+  assert.ok(p.ok, 'no longer laid Mixed');
+  assert.equal(p.roles.m.markers.length, 1);
+  assert.ok(p.roles.a && !p.roles.s);
+  assert.equal(p.roles.m.share, 0.7);
+  withPalette(core, E, sv, by.blue.slice(0, 5).map((m) => m.mkey));
+  p = core.balPlan();
+  assert.ok(p.ok && !p.roles.s && !p.roles.a);
+  const cl = grid(core, 15, 14);
+  core.buildBalance(cl, p);
+  assert.equal(core.balMeasure(p).f.m, 1);
+  // ten sections, one of them nearly half the picture
+  sv.paletteSource = 'owned';
+  const cl10 = grid(core, 5, 2);
+  core.comps[cl10[0]].area = 4000;
+  for (let i = 0; i < 20; i++) {
+    const q = core.balPlan();
+    core.buildBalance(cl10, q);
+    const acc = new Set(q.roles.a.markers.map((m) => m.mkey)), a = core.assignData;
+    const tot = cl10.reduce((t, l) => t + core.comps[l].area, 0);
+    assert.notEqual(acc.has(a.assign[cl10[0]].mkey) ? 'accent' : '', 'accent', 'never the biggest');
+    cl10.forEach((l) => { if (acc.has(a.assign[l].mkey)) assert.ok(core.comps[l].area <= tot * 0.1 + 1, 'no accent section over the accent’s share'); });
+  }
+});
+
 test('Mixed’s No repeats: one marker per section while there are enough; with fewer, each used once before any twice', () => {
   const { core } = appWith(['Honolulu 120']);
   const cl = grid(core, 10, 8);

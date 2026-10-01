@@ -82,6 +82,7 @@ function sizeCanvas() {
 }
 function applyXform() {
   if (cv) cv.style.transform = 'translate(' + panX + 'px,' + panY + 'px) scale(' + zoom + ')';
+  labZoomed();
   fitBtn();
   touchRule();
   if (sunEl || radEl) positionSun();
@@ -94,12 +95,14 @@ function clampPan() {
   const d = viewDims(),
     sw = d.vw * zoom,
     sh = d.dh * zoom;
+  // focus mode: the picture fills the space between its bars wherever it's big enough to (so a section near an edge
+  // sits off-centre rather than beside blank space), and where it isn't, it sits in the middle of it, all of it seen
   if (focus && !focusFin && sfmode === 'color' && sfView) {
     const g = focusGeo(),
       ol = cv.offsetLeft,
       ot = cv.offsetTop;
-    panX = Math.min(g.cx - ol, Math.max(g.cx - ol - sw, panX));
-    panY = Math.min(g.cy - ot, Math.max(g.cy - ot - sh, panY));
+    panX = sw >= g.aw ? Math.min(-ol, Math.max(g.aw - ol - sw, panX)) : g.cx - ol - sw / 2;
+    panY = sh >= g.ah ? Math.min(g.t - ot, Math.max(g.t + g.ah - ot - sh, panY)) : g.cy - ot - sh / 2;
     return;
   }
   if (zoom <= 1) {
@@ -130,6 +133,34 @@ function resetZoom() {
   panX = 0;
   panY = 0;
   applyXform();
+}
+// how far in to zoom for section l (box: its extent in picture pixels), focus mode and Find next alike (v288): only as
+// far as it takes for the section to be about 44px across (easy to see and tap), and no further than keeps about a
+// quarter of the page in view (2×) so its neighbours say where you are, unless the section needs more to reach 44px
+// (then up to FIT_MAX). keep: zoomed in already, stay so while the section is 44px or more there.
+const FIT_MAX = 4,
+  FIT_PX = 44,
+  FIT_CTX = 2;
+function fitZoom(box, l, aw, ah, keep) {
+  const DW = (cv && cv.offsetWidth) || 1,
+    DH = (cv && cv.offsetHeight) || 1,
+    bw = Math.max(1, ((box.x1[l] - box.x0[l] + 1) / W) * DW),
+    bh = Math.max(1, ((box.y1[l] - box.y0[l] + 1) / H) * DH),
+    // (44px on the screen: the frame may be drawn smaller as the page scrolls, picK)
+    need = FIT_PX / picK() / Math.min(bw, bh),
+    // (never so far in that the section is wider or taller than most of the view)
+    most = Math.min((aw * 0.8) / bw, (ah * 0.8) / bh);
+  let z = need <= FIT_CTX ? need : Math.min(FIT_MAX, need);
+  z = Math.max(1, Math.min(z, Math.max(1, most)));
+  if (
+    keep &&
+    zoom > z &&
+    zoom <= FIT_MAX &&
+    Math.min(bw, bh) * zoom * picK() >= FIT_PX &&
+    Math.max(bw / aw, bh / ah) * zoom <= 0.8
+  )
+    z = zoom;
+  return z;
 }
 function centerOn(px, py, z) {
   const d = viewDims();

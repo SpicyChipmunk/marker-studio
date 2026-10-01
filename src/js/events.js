@@ -31,16 +31,12 @@ function disarm() {
     armT = null;
   }
   resetBtn.dataset.arm = '0';
-  resetBtn.textContent = 'Reset';
+  resetBtn.textContent = 'Clear';
 }
+// Clear (it was Reset: what it does is empty the palettes, or Random's drawn markers), on a second tap
+resetBtn.textContent = 'Clear';
 resetBtn.addEventListener('click', () => {
-  const has =
-    state.mode === 'palette'
-      ? state.harmony === 'custom'
-        ? state.customPal.filter((x) => x != null).length
-        : state.palettes.length
-      : state.drawn.length;
-  if (!has) return;
+  if (!clearable()) return;
   if (resetBtn.dataset.arm === '1') {
     disarm();
     if (state.mode === 'palette') {
@@ -90,7 +86,10 @@ palette.addEventListener('click', (e) => {
       if (state.harmony === 'photo') swapPhotoBand(k);
       else doReRollBand(k);
     }
-  } else if (!drawBtn.disabled && state.harmony !== 'photo') doGenerate();
+  } else if (state.harmony === 'photo') {
+    // no photo yet: the empty card's tap chooses one, as it says
+    if (!_photoImg) $('photoPick').click();
+  } else if (!drawBtn.disabled) doGenerate();
 });
 pile.addEventListener('click', (e) => {
   const cell = e.target.closest('.cell');
@@ -606,12 +605,58 @@ if (_uig)
         })
       );
     })[0];
+    // (v288) with a guide open, asked first: recolour it, or a new guide with this palette (a finished guide only the
+    // second: its coloured sections keep their markers, so recolouring would change nothing)
+    var g = window.SF && SF.guideBrief ? SF.guideBrief() : null;
+    if (g && SF.askBox) {
+      var nm = esc(g.name),
+        btns =
+          (g.done
+            ? ''
+            : '<button type="button" class="btn-primary" data-a="recolour">Recolour \u201c' +
+              nm +
+              '\u201d</button>') +
+          '<button type="button"' +
+          (g.done ? ' class="btn-primary"' : '') +
+          ' data-a="new">New guide with it</button><button type="button" class="sfghost" data-a="stay">Cancel</button>';
+      SF.askBox(
+        'Use this palette',
+        g.done
+          ? '\u201c' +
+              g.name +
+              '\u201d is finished: its coloured sections keep their markers, so recolouring it would change nothing. Start a new guide with this palette?'
+          : g.inked
+            ? 'Recolour \u201c' +
+              g.name +
+              '\u201d (it keeps the ' +
+              g.inked +
+              ' section' +
+              (g.inked === 1 ? '' : 's') +
+              ' you\u2019ve coloured), or start a new guide with it?'
+            : 'Recolour \u201c' + g.name + '\u201d with it, or start a new guide with it?',
+        btns,
+        false,
+        // (a new guide opens the photo picker within the tap: iOS opens it only from one)
+        function (a) {
+          if (a === 'new') useInGuideGo(idxs, keys, ex, true);
+        },
+      ).then(function (a) {
+        if (a === 'recolour') useInGuideGo(idxs, keys, ex, false);
+      });
+      return;
+    }
+    useInGuideGo(idxs, keys, ex, false);
+  });
+// Palette's Use in a guide, once it's decided: the palette saved (if it isn't), then the open guide recoloured with
+// it, or (fresh) the photo picker for a new guide that will use it
+function useInGuideGo(idxs, keys, ex, fresh) {
+  {
     var id,
       entry = null;
     if (ex) {
       id = ex.id;
     } else {
-      entry = { id: Date.now(), type: 'palette', name: paletteName(idxs), keys: keys, ts: Date.now() };
+      entry = { id: Date.now(), type: 'palette', name: nameForSave(idxs), keys: keys, ts: Date.now() };
       state.saved.push(entry);
       id = entry.id;
       // kept first: with storage full nothing changes and the message stays on this screen
@@ -623,7 +668,9 @@ if (_uig)
         return;
     }
     // the guide may ask first (it re-colours an open guide): on a no, the new palette leaves the Library again
-    if (window.SF && SF.setSavedSource && SF.setSavedSource(id) === false) {
+    // (a new guide: the palette is held for it, the open guide left as it is; recolour: the open guide's plan)
+    if (window.SF && fresh && SF.setNextPal) SF.setNextPal(id);
+    else if (window.SF && SF.setSavedSource && SF.setSavedSource(id) === false) {
       if (entry) {
         state.saved.splice(state.saved.indexOf(entry), 1);
         forgetSaved(entry.id);
@@ -632,10 +679,92 @@ if (_uig)
       return;
     }
     setMode('sections');
+    if (fresh) {
+      if (window.SF && SF.pickPhoto) SF.pickPhoto();
+      return;
+    }
     if (window.SF && SF.reassign) SF.reassign();
-    if (window.SF && SF.hasGuide && SF.hasGuide()) toast('Recoloured the guide with this palette.');
-  });
-savedBtn.addEventListener('click', openLibrary);
+    // (unless the guide has just said, under its tabs, that sections you've coloured were kept)
+    if (window.SF && SF.hasGuide && SF.hasGuide() && !document.getElementById('sfHeldNote'))
+      toast('Recoloured the guide with this palette.');
+  }
+}
+savedBtn.addEventListener('click', () => openLibrary(true));
+// Palette and Random: Save is the row's one button; the less-used Library and Save image sit in a ⋯ menu beside it
+// (the same buttons, moved in, so everything that opens or tests them still finds them by id)
+const libMore = document.createElement('button'),
+  libMenu = document.createElement('div'),
+  libMoreWrap = document.createElement('div');
+libMoreWrap.className = 'libmore';
+libMore.type = 'button';
+libMore.id = 'libMore';
+libMore.setAttribute('aria-label', 'More: Library, Save image');
+libMore.setAttribute('aria-haspopup', 'menu');
+libMore.setAttribute('aria-expanded', 'false');
+libMore.setAttribute('aria-controls', 'libMenu');
+libMore.innerHTML = ic('ellipsis');
+libMenu.id = 'libMenu';
+libMenu.className = 'libmenu';
+libMenu.setAttribute('role', 'menu');
+libMenu.setAttribute('aria-label', 'More');
+libMenu.hidden = true;
+[savedBtn, exportBtn].forEach((b) => {
+  b.setAttribute('role', 'menuitem');
+  b.tabIndex = -1;
+  libMenu.appendChild(b);
+});
+libMoreWrap.append(libMore, libMenu);
+libRow.appendChild(libMoreWrap);
+const libItems = () =>
+  [...libMenu.querySelectorAll('button')].filter((b) => b.style.display !== 'none' && !b.disabled);
+function libMenuOpen(on, focusFirst) {
+  libMenu.hidden = !on;
+  libMore.setAttribute('aria-expanded', on ? 'true' : 'false');
+  if (!on) return;
+  const it = libItems();
+  if (focusFirst && it[0]) it[0].focus({ preventScroll: true });
+  libMenu.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+}
+libMore.addEventListener('click', () => libMenuOpen(libMenu.hidden, true));
+// an item: the menu closes and focus goes back to ⋯ before the item acts, so the dialog it opens returns focus there
+libMenu.addEventListener(
+  'click',
+  (e) => {
+    if (!e.target.closest('button')) return;
+    libMenuOpen(false);
+    libMore.focus({ preventScroll: true });
+  },
+  true,
+);
+libMenu.addEventListener('keydown', (e) => {
+  const it = libItems(),
+    k = it.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (it.length) it[(k + (e.key === 'ArrowDown' ? 1 : it.length - 1)) % it.length].focus();
+  } else if (e.key === 'Home' || e.key === 'End') {
+    e.preventDefault();
+    if (it.length) it[e.key === 'Home' ? 0 : it.length - 1].focus();
+  } else if (e.key === 'Tab') libMenuOpen(false);
+});
+// a tap anywhere else closes it
+document.addEventListener(
+  'pointerdown',
+  (e) => {
+    if (!libMenu.hidden && !libMoreWrap.contains(e.target)) libMenuOpen(false);
+  },
+  true,
+);
+addLayer({
+  name: 'Palette: the ⋯ menu',
+  order: 6,
+  isOpen: () => !libMenu.hidden,
+  close: () => {
+    const back = libMenu.contains(document.activeElement);
+    libMenuOpen(false);
+    if (back) libMore.focus({ preventScroll: true });
+  },
+});
 savedClose.addEventListener('click', () => closeDialog(savedOverlay));
 var _pC = document.getElementById('sfPlanClose');
 if (_pC)
@@ -663,17 +792,31 @@ savedOverlay.addEventListener('click', (e) => {
   if (e.target === savedOverlay) closeDialog(savedOverlay);
 });
 savedList.addEventListener('click', (e) => {
+  // (a tap anywhere else in the list while a tile's ⋯ menu is open only closes the menu)
+  if (savedList.querySelector('.smenu:not([hidden])') && !e.target.closest('.smenu,.smore')) {
+    tileMenuClose(false);
+    return;
+  }
   const row = e.target.closest('.srow');
   if (!row || row.classList.contains('editing')) return;
-  const id = +row.dataset.id;
+  const id = +row.dataset.id,
+    mb = e.target.closest('.smore');
+  if (mb) {
+    tileMenuOpen(mb, e.detail === 0);
+    return;
+  }
   if (e.target.closest('.sren')) {
+    tileMenuClose(true);
     libStartRename(id);
     return;
   }
   if (e.target.closest('.sdel')) {
+    tileMenuClose(true);
     libDelete(id);
     return;
   }
+  if (e.target.closest('.smenu')) return;
+  tileMenuClose(false);
   const entry = state.saved.find((s) => s.id === id);
   if (entry) {
     if (entry.type === 'draw') loadDraw(entry);
@@ -695,6 +838,35 @@ if (_lo)
   });
 // Enter keeps a new name, Escape drops it (and only that: layers.js leaves an Escape in this field to it, so the Library
 // stays open), leaving the field keeps it
+// a tile's ⋯ menu by keyboard: arrows move between Rename and Delete, Tab leaves it closed
+savedList.addEventListener('keydown', (e) => {
+  const m = e.target.closest && e.target.closest('.smenu');
+  if (!m) return;
+  const it = [...m.querySelectorAll('button')],
+    k = it.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    it[(k + (e.key === 'ArrowDown' ? 1 : it.length - 1)) % it.length].focus();
+  } else if (e.key === 'Home' || e.key === 'End') {
+    e.preventDefault();
+    it[e.key === 'Home' ? 0 : it.length - 1].focus();
+  } else if (e.key === 'Tab') tileMenuClose(false);
+});
+document.addEventListener(
+  'pointerdown',
+  (e) => {
+    const m = savedList.querySelector('.smenu:not([hidden])');
+    if (m && !savedList.contains(e.target)) tileMenuClose(false);
+  },
+  true,
+);
+addLayer({
+  name: 'Library: a tile’s ⋯ menu',
+  // (over the Library's own dialog: Escape closes the menu first)
+  order: 110,
+  isOpen: () => topDialog() === savedOverlay && !!savedList.querySelector('.smenu:not([hidden])'),
+  close: () => tileMenuClose(true),
+});
 savedList.addEventListener('keydown', (e) => {
   if (!e.target.closest || !e.target.closest('.sname-in')) return;
   if (e.key === 'Enter') {
@@ -1073,7 +1245,7 @@ function presetListHTML() {
       body.style.display = open ? 'none' : 'block';
       hdr.setAttribute('aria-expanded', open ? 'false' : 'true');
       var car = hdr.querySelector('.presetcar');
-      if (car) car.textContent = open ? '\u25b8' : '\u25be';
+      if (car) car.innerHTML = ic(open ? 'chevron-right' : 'chevron-down');
     });
   function upd() {
     var n = list ? list.querySelectorAll('input:checked').length : 0;
@@ -1150,9 +1322,12 @@ function unownDisarm() {
   ownNoneBtn.dataset.arm = '0';
   ownNoneBtn.textContent = 'Untick all shown';
 }
+let unownAt = 0;
 ownNoneBtn.addEventListener('click', () => {
   const m = finderMatches();
   if (!m.length) return;
+  // (the second tap of a double tap isn't the confirming one: as Clear ticks, 400 ms)
+  if (ownNoneBtn.dataset.arm === '1' && Date.now() - unownAt < 400) return;
   if (ownNoneBtn.dataset.arm === '1') {
     unownDisarm();
     const rem = m.map((i) => mkey(i)).filter((k) => state.owned.has(k));
@@ -1172,9 +1347,101 @@ ownNoneBtn.addEventListener('click', () => {
     return;
   }
   ownNoneBtn.dataset.arm = '1';
+  unownAt = Date.now();
   ownNoneBtn.textContent = 'Untick ' + m.length + '? Tap again';
   unownT = setTimeout(unownDisarm, 3000);
 });
+// Markers' ⋯ (v288): the rarer and riskier actions out of the way: Untick all shown (asks with a second tap, then
+// Undo) and Back up & restore, which lives in the Library (the item opens it there). The same buttons, moved in.
+const mkMore = document.createElement('button'),
+  mkMenu = document.createElement('div'),
+  mkMoreWrap = document.createElement('div');
+mkMoreWrap.className = 'libmore mkmore';
+mkMore.type = 'button';
+mkMore.id = 'mkMore';
+mkMore.setAttribute('aria-label', 'More: Untick all shown, Back up & restore');
+mkMore.setAttribute('aria-haspopup', 'menu');
+mkMore.setAttribute('aria-expanded', 'false');
+mkMore.setAttribute('aria-controls', 'mkMenu');
+mkMore.innerHTML = ic('ellipsis');
+mkMenu.id = 'mkMenu';
+mkMenu.className = 'libmenu';
+mkMenu.setAttribute('role', 'menu');
+mkMenu.setAttribute('aria-label', 'More');
+mkMenu.hidden = true;
+backupBtn.innerHTML = 'Back up &amp; restore <span class="mkmsub">(in the Library)</span>';
+[ownNoneBtn, backupBtn].forEach((b) => {
+  b.setAttribute('role', 'menuitem');
+  b.tabIndex = -1;
+  mkMenu.appendChild(b);
+});
+mkMoreWrap.append(mkMore, mkMenu);
+$('ownStateWrap').appendChild(mkMoreWrap);
+const mkItems = () =>
+  [...mkMenu.querySelectorAll('button')].filter((b) => b.style.display !== 'none' && !b.disabled);
+function mkMenuOpen(on, focusFirst) {
+  mkMenu.hidden = !on;
+  mkMore.setAttribute('aria-expanded', on ? 'true' : 'false');
+  if (!on) {
+    if (ownNoneBtn.dataset.arm === '1') unownDisarm();
+    return;
+  }
+  const it = mkItems();
+  if (focusFirst && it[0]) it[0].focus({ preventScroll: true });
+  mkMenu.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+}
+mkMore.addEventListener('click', () => mkMenuOpen(mkMenu.hidden, true));
+// an item closes the menu (focus back to ⋯ first), except Untick's first tap, which asks in place for the second
+mkMenu.addEventListener(
+  'click',
+  (e) => {
+    const b = e.target.closest('button');
+    if (!b || (b === ownNoneBtn && ownNoneBtn.dataset.arm !== '1')) return;
+    mkMenu.hidden = true;
+    mkMore.setAttribute('aria-expanded', 'false');
+    mkMore.focus({ preventScroll: true });
+  },
+  true,
+);
+mkMenu.addEventListener('keydown', (e) => {
+  const it = mkItems(),
+    k = it.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (it.length) it[(k + (e.key === 'ArrowDown' ? 1 : it.length - 1)) % it.length].focus();
+  } else if (e.key === 'Home' || e.key === 'End') {
+    e.preventDefault();
+    if (it.length) it[e.key === 'Home' ? 0 : it.length - 1].focus();
+  } else if (e.key === 'Tab') mkMenuOpen(false);
+});
+document.addEventListener(
+  'pointerdown',
+  (e) => {
+    if (!mkMenu.hidden && !mkMoreWrap.contains(e.target)) mkMenuOpen(false);
+  },
+  true,
+);
+addLayer({
+  name: 'Markers: the ⋯ menu',
+  order: 6,
+  isOpen: () => !mkMenu.hidden,
+  close: () => {
+    const back = mkMenu.contains(document.activeElement);
+    mkMenuOpen(false);
+    if (back) mkMore.focus({ preventScroll: true });
+  },
+});
+// Back up & restore is in the Library: it opens there, at its backup buttons
+// (after the dialog has noted what opened it, ⋯, for focus to go back to, and put its own first focus)
+function libBackupGo() {
+  openLibrary();
+  setTimeout(() => {
+    const b = $('guidesBackup');
+    if (!b || !savedOverlay.classList.contains('on')) return;
+    b.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    b.focus({ preventScroll: true });
+  }, 40);
+}
 function openSetsPanel() {
   const b = $('presetBody'),
     h = $('presetHdr');
@@ -1214,14 +1481,21 @@ function openBackup() {
       _bs.textContent = open ? 'Markers & palettes as text (copy / paste)' : 'Hide text';
     });
 }
-backupBtn.addEventListener('click', openBackup);
+backupBtn.addEventListener('click', libBackupGo);
+// (the Library's line under Back up / Restore: the markers and palettes as text, to copy or paste)
+$('libBkText').addEventListener('click', () => {
+  openBackup();
+  const w = $('backupTextWrap'),
+    bs = $('backupShow');
+  if (w && w.style.display === 'none' && bs) bs.click();
+});
 backupClose.addEventListener('click', () => closeDialog(backupOverlay));
 backupOverlay.addEventListener('click', (e) => {
   if (e.target === backupOverlay) closeDialog(backupOverlay);
 });
 backupCopy.addEventListener('click', async () => {
   const ok = await copyText(backupText.value);
-  backupCap.textContent = ok ? 'Copied to clipboard.' : 'Could not copy — select the text and copy manually.';
+  backupCap.textContent = ok ? 'Copied to clipboard.' : 'Couldn’t copy — select the text and copy manually.';
 });
 backupDownload.addEventListener('click', () => {
   backupAll('backupDownload');
@@ -1239,20 +1513,30 @@ backupRestore.addEventListener('click', () => {
     const o = JSON.parse(backupText.value.trim());
     const arr = Array.isArray(o) ? o : o && Array.isArray(o.owned) ? o.owned : null;
     if (!arr) throw 0;
-    const r = applyCollectionBackup(o);
-    if (!r) throw 0;
-    if (r.failed) {
-      backupCap.textContent = RESTORE_FULL;
-      return;
-    }
-    const said = restoredWords(r);
-    if (!r.mk) {
-      if (said) toast(said);
-      return;
-    }
-    closeDialog(backupOverlay);
-    toast(said);
+    askReplaceMarkers(o).then(function (rep) {
+      let r = null;
+      try {
+        r = applyCollectionBackup(o, undefined, rep);
+      } catch (_) {
+        r = null;
+      }
+      if (!r) {
+        backupCap.textContent = 'That doesn\u2019t look like a valid backup. Paste the full text you copied.';
+        return;
+      }
+      if (r.failed) {
+        backupCap.textContent = RESTORE_FULL;
+        return;
+      }
+      const said = restoredWords(r);
+      if (!r.mk) {
+        if (said) toast(said);
+        return;
+      }
+      closeDialog(backupOverlay);
+      toast(said);
+    });
   } catch (e) {
-    backupCap.textContent = 'That does not look like a valid backup. Paste the full text you copied.';
+    backupCap.textContent = 'That doesn\u2019t look like a valid backup. Paste the full text you copied.';
   }
 });
