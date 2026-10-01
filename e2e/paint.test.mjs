@@ -67,7 +67,7 @@ test('Change colour → Everywhere replaces the marker in every section that use
   // no toast: ↶ Undo says it, and a screen reader hears it
   assert.equal(await page.evaluate(() => { const t = document.getElementById('msToast'); return !!(t && t.classList.contains('on')); }), false);
   assert.equal(await page.getAttribute('#sfPlanUndo', 'aria-label'), `Undo: Replaced ${oc} with ${nc} in ${same.length} sections`);
-  assert.match(await page.textContent('#sfLive'), new RegExp(`^${oc} → ${nc} .*, ${same.length} sections\\.?( Pinned: changes to the plan leave them as they are\\.)?$`), 'the picker says what it did (then, the first time, that they are pinned)');
+  assert.match(await page.textContent('#sfLive'), new RegExp(`^${oc} → ${nc} .*, ${same.length} sections\\.?( (Pinned: changes|Changes) to the plan leave them as they are\\.)?$`), 'the picker says what it did (then, the first time, that they are pinned)');
   assert.equal(await mkN(), m0, 'markers used: one out, one in');
   assert.equal(await vsFull(page), 0, 'redraw matches a full redraw');
   // Recently used remembers the new marker

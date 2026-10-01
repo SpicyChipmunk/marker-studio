@@ -273,7 +273,7 @@ function swDraw(pg, pi, np, g, info) {
   return c;
 }
 function swTitle(what) {
-  return what === 'owned' ? 'My markers' : what === 'wish' ? 'To buy' : 'All ' + what + ' markers';
+  return what === 'owned' ? 'My collection' : what === 'wish' ? 'To buy' : 'All ' + what + ' markers';
 }
 // build the PDF a page at a time and hand it to the share sheet, or download it
 async function swDownload() {

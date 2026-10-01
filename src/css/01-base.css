@@ -248,6 +248,20 @@ html.noamb .ambient {
   border-radius: var(--r-md);
   padding: 3px;
 }
+/* (v289) Harmony: Custom and Photo, which aren't harmonies, on a row of their own */
+.segs .segbrk {
+  flex-basis: 100%;
+  height: 0;
+}
+.palsaved {
+  display: flex;
+  justify-content: flex-end;
+  margin: -12px 2px 0;
+}
+.palsaved .homelink {
+  min-height: 44px;
+  padding: 0 4px;
+}
 .segs button {
   position: relative;
   min-height: 40px;

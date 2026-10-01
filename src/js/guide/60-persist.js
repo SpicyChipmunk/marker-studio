@@ -233,7 +233,7 @@ function stashDirty() {
   try {
     d = currentDesignObj();
     if (!d) return Promise.resolve(true);
-    nm = d.name || 'Colour guide';
+    nm = d.name || 'Colouring guide';
   } catch (e) {
     return Promise.resolve(true);
   }
@@ -314,11 +314,14 @@ function minChanges(was) {
   return false;
 }
 // Build guide, Discard edits, or Cancel (stay): a dialog over whatever screen asked
-function askEdits() {
+// (now: as askBox's, for an answer that opens the photo picker within the tap)
+function askEdits(now) {
   return askBox(
     'Section edits not saved',
     'Build the guide with your section edits, or discard them?',
     '<button type="button" class="btn-primary" data-a="build">Build again</button><button type="button" data-a="discard">Discard edits</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+    false,
+    now,
   );
 }
 // storage blocked: a guide not kept anywhere goes when something else opens, so that's asked first (v285)
@@ -566,7 +569,7 @@ function importGuideFile(file) {
       typeof d.payload.assign !== 'object' ||
       !Object.keys(d.payload.assign).length
     ) {
-      note('That is not a valid guide file.');
+      note('That file isn\u2019t a Marker Studio guide.');
       return;
     }
     note('Importing\u2026');
@@ -577,7 +580,7 @@ function importGuideFile(file) {
             ? 'Couldn’t import that guide \u2014 its picture is the wrong size.'
             : c.why === 'complex'
               ? 'Couldn’t import that guide \u2014 it has too many sections (the file is too complex).'
-              : 'Couldn’t import that guide \u2014 its picture didn\u2019t decode.',
+              : 'Couldn’t import that guide \u2014 its picture couldn\u2019t be read.',
         );
         return;
       }
@@ -790,7 +793,7 @@ function keepSlot(m) {
   return IDB.get('guide-autosave').then(
     function (d) {
       if (!d || !d.payload) return true;
-      const nm0 = typeof d.name === 'string' && d.name ? d.name : 'Colour guide',
+      const nm0 = typeof d.name === 'string' && d.name ? d.name : 'Colouring guide',
         nm = eds ? nm0.slice(0, 104) + ' (section edits)' : nm0;
       return Promise.resolve(
         api.saveDesign({
@@ -956,7 +959,7 @@ function libEntry() {
   return null;
 }
 function libName(e) {
-  return curName && curName.trim() ? curName.trim().slice(0, 120) : (e && e.name) || 'Colour guide';
+  return curName && curName.trim() ? curName.trim().slice(0, 120) : (e && e.name) || 'Colouring guide';
 }
 // what a save would store, minus the name (compared on its own, so a rename in the Library doesn't count as a change)
 function libSig(d) {
@@ -1253,10 +1256,11 @@ function libMerge() {
 let _savedNew = 0;
 function saveStText(pe) {
   if (pe === undefined) pe = secEdPending();
+  // (deleted from the Library while open: that first, edits or not, v289)
+  if (assignData && !libEntry() && _removed) return 'Removed from your Library';
   if (pe) return 'Section edits not saved \u2014 Build again to keep them';
   if (!assignData) return labels && sfmode === 'review' ? 'Not saved yet' : '';
   const e = libEntry();
-  if (!e && _removed) return 'Removed from your Library';
   if (!e && storeBlocked()) return 'Not saved \u2014 use Share \u203a Guide file';
   if (_saveErr) return 'Not saved \u2014 storage is full';
   if (!e && curSample && !sampleTouched()) return 'Sample';
@@ -1279,7 +1283,7 @@ function saveStatus() {
   const b = document.getElementById('sfSave'),
     want = assignData && !e && sfmode !== 'review' && !pgMode && !cropMode && (_removed || _saveErr);
   if (b) {
-    // (not while it says something for a moment: Saving…, or Save failed)
+    // (not while it says something for a moment: Saving…, or Couldn’t save)
     if (!_firstBusy && !b.disabled) b.textContent = _removed ? 'Put back' : 'Save';
     b.style.display = want ? '' : 'none';
   }
@@ -1325,6 +1329,8 @@ function libChanged(id, back) {
     clearTimeout(autoT);
     autoT = null;
     guideDirty = false;
+    _removed = false;
+    _delDirty = false;
     _libBase = null;
     reloadOpen(id);
     return;
@@ -1440,7 +1446,7 @@ function firstSave(auto) {
   const d = currentDesignObj();
   if (!d) return Promise.resolve(false);
   const gen = _gTok,
-    nm = d.name || 'Colour guide',
+    nm = d.name || 'Colouring guide',
     back = _removed && curId != null ? curId : null,
     wasErr = _saveErr,
     pl = d.payload || {},
@@ -1522,7 +1528,7 @@ function firstSave(auto) {
       if (auto) btnBusy(null);
       else {
         // (the button says so for a moment, then is Save again)
-        btnBusy('Save failed');
+        btnBusy('Couldn\u2019t save');
         setTimeout(function () {
           if (!_firstBusy) btnBusy(null);
         }, 1600);

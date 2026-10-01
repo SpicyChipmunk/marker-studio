@@ -332,7 +332,7 @@ function segQuality() {
     return {
       ok: false,
       code: 'few',
-      msg: "Couldn't find distinct sections to colour.",
+      msg: 'Couldn\u2019t find distinct sections to colour.',
       tip: 'This works best with solid outlines separating white areas.',
     };
   if (inkFrac > 0.55)

@@ -14,7 +14,7 @@ const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebK
 const OWN = ['Ohuhu|R014', 'Ohuhu|Y111', 'Ohuhu|B08', 'Ohuhu|G36', 'Ohuhu|BV310', 'Ohuhu|YR313', 'Ohuhu|RV08', 'Ohuhu|BG311'];
 // markers, a shopping list, a backup that's due, What's new and the Add to Home Screen card
 const storage = () => ({
-  'ms-onboarded': '1', 'ms-setup-tip': '1', 'ms-last-ver': 'v200', 'ms-first-use': String(Date.now() - 5 * 864e5),
+  'ms-onboarded': '1', 'ms-setup-tip': '1', 'ms-last-ver': 'v200', 'ms-first-use': String(Date.now() - 15 * 864e5),
   [KEY]: JSON.stringify({ mode: 'home', ownedSeedV: 2, copicAdd1: 1, libAdj1: 1, setFix1: 1, owned: OWN, saved: [], wish: [{ k: 'Ohuhu|R16', why: 'blend for R14', ts: 1 }] }),
 });
 const init = () => { Object.defineProperty(Navigator.prototype, 'standalone', { configurable: true, get: () => false }); window.__MS_HELP_AUTO = true; };

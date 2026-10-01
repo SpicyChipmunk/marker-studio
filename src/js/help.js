@@ -5,6 +5,7 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'Back (on Android, or the browser’s) closes what’s open first: a sheet, the Library, Focus mode, Colour along. On a phone the Plan’s tabs show on the first screen, and Focus mode keeps its buttons off the picture. Colour along says “coloured”, the Library uses Home’s words, and Palette has a Saved palettes link.',
   'Colour along looks like your paper: what you’ve coloured in its colours, the rest pale. Find next and Focus mode zoom only as far as a section needs, with a bold outline; a list shows the markers to take out of the box; Change colour offers the closest markers first.',
   'Edit sections says what it’s for and goes back to the Plan when nothing changed. On an iPad the tool row has words (Codes, Greyscale, Full screen) and every screen is one width. Questions use the app’s own buttons, and the Print sheet shows each choice.',
   'Home has a Continue card: your newest part-coloured guide as you’ve coloured it, opening Colour along at the marker to pick up. Guides from your photos keep themselves in the Library once built; the sample once you change it.',

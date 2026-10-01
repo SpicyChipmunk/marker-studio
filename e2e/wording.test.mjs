@@ -38,7 +38,7 @@ test('one word per idea', async () => {
   await page.evaluate(() => { navigator.canShare = window.__cs; navigator.share = window.__sh; shareFirst = window.__sf; });
   await page.click('.sftabbtn[data-t="colours"]'); await page.click('#sfColor'); await idle(page);
   assert.equal(await page.textContent('#sfDoneBtn'), '← Plan');
-  assert.match(await page.textContent('#sfAlist .sfarow .cnt'), /^0 of \d+ done$/);
+  assert.match(await page.textContent('#sfAlist .sfarow .cnt'), /^0 of \d+ coloured$/);
   assert.equal(await page.textContent('#exportBtn'), 'Save image');
   assert.deepEqual(errors, []);
 });

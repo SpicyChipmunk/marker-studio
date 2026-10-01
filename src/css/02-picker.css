@@ -1231,24 +1231,24 @@ button:focus-visible {
 #ownStateWrap {
   margin-top: 22px;
 }
-/* (v288) Markers' ⋯ at the end of the Tick all shown row, its menu opening upwards-right as Palette's does */
-#ownStateWrap .mkmore {
+/* (v289) Markers' ⋯ beside Copy codes in the grid's heading, its menu opening down at the right */
+.pile-head .mkmore {
   flex: none;
   position: relative;
-  margin-left: auto;
 }
-#ownStateWrap #mkMore {
+.pile-head #mkMore {
   flex: none;
-  width: 56px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border-radius: var(--r-md);
   font-size: var(--t-xl);
   line-height: 1;
 }
-#ownStateWrap .libmenu {
+#mkMenu {
   min-width: 230px;
 }
-#ownStateWrap .libmenu button {
+#mkMenu button {
   flex: none;
   width: 100%;
   text-align: left;
@@ -1261,17 +1261,17 @@ button:focus-visible {
   color: var(--ink);
   font-size: var(--t-base);
 }
-#ownStateWrap .libmenu button:hover:not(:disabled) {
+#mkMenu button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.07);
 }
-#ownStateWrap .libmenu #ownNone[data-arm='1'] {
+#mkMenu #ownNone[data-arm='1'] {
   color: #ff6b63;
 }
 .mkmsub {
   color: var(--sub);
   font-weight: 500;
 }
-#ownStateWrap #ownNone:not([data-arm='1']):not(:disabled) {
+#mkMenu #ownNone:not([data-arm='1']):not(:disabled) {
   color: var(--ink);
   border-color: rgba(255, 255, 255, 0.18);
   opacity: 1;

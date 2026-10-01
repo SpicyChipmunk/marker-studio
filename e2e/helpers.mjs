@@ -330,7 +330,7 @@ export async function answerAsks(page, yes = true) {
         const q = o.querySelector('.dsub');
         window.__asked.push(q ? q.textContent : '');
         setTimeout(() => {
-          const b = window.__askYes ? o.querySelector('.btn-primary') : o.querySelector('[data-a="stay"],[data-a="keep"]');
+          const b = window.__askYes ? o.querySelector('.btn-primary') : o.querySelector('[data-a="keep"]') || o.querySelector('[data-a="stay"]');
           if (b) b.click();
         }, 0);
       });

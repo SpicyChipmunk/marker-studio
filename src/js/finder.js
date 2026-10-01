@@ -321,7 +321,7 @@ function renderGrid(more) {
     matchHead(order.length, 'ramp gap');
     if (!order.length) {
       results.innerHTML =
-        '<div class="empty">No tonal gaps to bridge in this scope — your ramps are already smooth. Try widening the filters or owning more of a family first.</div>';
+        '<div class="empty">No gaps between light and dark here — each family already runs smoothly. Try widening the filters or owning more of a family first.</div>';
       return;
     }
     results.innerHTML =

@@ -115,7 +115,7 @@ test('the download is a PDF with the pages the sheet promised, on the chosen pap
   assert.equal(info.head, '%PDF-');
   assert.equal(info.pages, 3); assert.equal(info.count, 3);
   assert.deepEqual([info.w, info.h], [612, 792], 'Letter');
-  assert.match(d.name, /^swatch-chart-my-markers-\d{4}-\d{2}-\d{2}\.pdf$/);
+  assert.match(d.name, /^swatch-chart-my-collection-\d{4}-\d{2}-\d{2}\.pdf$/);
   await saveArtifact('swatch-chart-letter.pdf', d.bytes);
   await page.waitForFunction(() => /downloaded/.test(document.getElementById('msToast')?.textContent || ''));
   // a large set on A4, quickly
@@ -193,6 +193,6 @@ test('on a phone the chart goes to the share sheet, with a Share button when the
   await page.click('#toastAct'); await idle(page);
   const shared = await page.evaluate(() => window.__shared);
   assert.equal(shared.length, 2);
-  assert.match(shared[1], /^swatch-chart-my-markers-.*\.pdf application\/pdf$/);
+  assert.match(shared[1], /^swatch-chart-my-collection-.*\.pdf application\/pdf$/);
   assert.deepEqual(errors, []);
 });

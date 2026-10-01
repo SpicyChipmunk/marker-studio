@@ -80,7 +80,8 @@ function ctlPlanHead() {
     pinNoteHTML() +
     sampleNoteHTML() +
     toolTipHTML() +
-    (family !== 'manual' && !paintOn && !zoneEditOn()
+    // (one line at a time under the tabs: not beside the kept-sections or pinned line, v289)
+    (tapLineUp()
       ? infoLine(
           'tap',
           '',

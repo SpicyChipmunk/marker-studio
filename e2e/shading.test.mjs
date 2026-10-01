@@ -37,7 +37,7 @@ async function sunTo(page, fx, fy) {
 test('shading is off by default and turning it off again restores the flat guide', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  await page.click('.sftabbtn[data-t="shading"]');
+  await page.click('.sftabbtn[data-t="shading"]'); await idle(page);
   assert.equal(await page.getAttribute('#sfShade button.on', 'data-v'), 'off');
   assert.ok(!(await page.isVisible('#sfSun')), 'no sun while off');
   const flat = await pixels(page);

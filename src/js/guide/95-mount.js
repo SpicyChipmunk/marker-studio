@@ -49,7 +49,7 @@ function maybeShowResume() {
             var _i = keyIdx(k);
             return _i != null && COLORS[_i] ? COLORS[_i].hex : null;
           }),
-        ) || 'Colour guide';
+        ) || 'Colouring guide';
   nm = esc(nm || 'Guide');
   var _t = new Date(meta.ts || Date.now()),
     _tm = _t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
@@ -170,7 +170,13 @@ function hasGuide() {
 // the paper, and whether every one is ticked
 function guideBrief() {
   if (!assignData) return null;
-  return { name: curName || 'this guide', inked: progressCount(), done: pageDone(), n: assignData.N };
+  return {
+    id: curId,
+    name: curName || 'this guide',
+    inked: progressCount(),
+    done: pageDone(),
+    n: assignData.N,
+  };
 }
 function showHome() {
   closeSheet();
@@ -332,6 +338,7 @@ function mount() {
   // them has Escape first, and the name field keeps its own (it cancels the rename).
   addLayer({
     name: 'marker picker',
+    back: true,
     order: 60,
     isOpen: popOpen,
     close: function () {
@@ -342,6 +349,7 @@ function mount() {
   });
   addLayer({
     name: 'sheet',
+    back: true,
     order: 50,
     isOpen: sheetOpen,
     close: function () {
@@ -376,6 +384,7 @@ function mount() {
   };
   addLayer({
     name: 'focus sheet',
+    back: true,
     order: 30,
     isOpen: function () {
       return focus && sfmode === 'color' && focusSheet;
@@ -388,6 +397,7 @@ function mount() {
   });
   addLayer({
     name: 'focus mode',
+    back: true,
     order: 20,
     isOpen: function () {
       return focus && sfmode === 'color';
@@ -399,6 +409,7 @@ function mount() {
   });
   addLayer({
     name: 'Reveal',
+    back: true,
     order: 12,
     isOpen: function () {
       return root.classList.contains('sfrev');
@@ -407,8 +418,22 @@ function mount() {
       endReveal();
     },
   });
+  // (Back only, v289: Escape doesn't leave Colour along)
+  addLayer({
+    name: 'Colour along',
+    order: 4,
+    back: true,
+    escape: false,
+    isOpen: function () {
+      return sfmode === 'color' && !!root && root.style.display !== 'none' && !!root.offsetParent;
+    },
+    close: function () {
+      exitColor();
+    },
+  });
   addLayer({
     name: 'full screen',
+    back: true,
     order: 10,
     isOpen: function () {
       return root.classList.contains('sffull');
@@ -562,7 +587,16 @@ function leave() {
   if (focus) exitFocus();
   // (Reveal open, or its animation running: its bar stays in the page, hidden, after it closes)
   if (revealF != null || root.classList.contains('sfrev')) endReveal();
+  // (a colour only being tried in Change colour isn't kept by going elsewhere: as Cancel, as a reload, v289)
+  if (popCtx) {
+    const pc = popCtx;
+    pc._cancel = true;
+    if (pc.onCancel) pc.onCancel();
+    closeSwatchPop();
+  }
   closeSheet();
+  // (a save waiting its moment is made now: Home, which may be next, then shows the guide as it is, v289)
+  if (autoT && !pickPending()) doAutosave(true);
   relWake();
   workOn(false);
   document.documentElement.style.setProperty('--pinH', '0px');

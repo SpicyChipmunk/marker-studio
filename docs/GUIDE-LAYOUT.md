@@ -47,6 +47,7 @@ The stages are **Edit sections → Plan → Colour along**. "Plan" is the built 
   - A picture whose width limits it to less than the floor doesn't shrink at all.
 - **Colour along:** a fixed **55%**, or **45%** on screens under 780px tall. It never shrinks: the list scrolls underneath it.
 - **iPad portrait (700px wide or more, v285):** 60% to start, 50% at the least, and 60% in Colour along.
+- **A phone's Plan (v289):** the picture starts smaller where it must, so the tabs and their first row (about 4.75rem) are on the first screen too, but never below the floor. Only a tall picture is affected; a wide one is short enough already. The room is measured at the top of the page (`_ctlGap`), so a scrolled page can't make the start size flip back and forth.
 - **How the shrink works:** the in-flow height stays at the full size, and the pinned block uses a negative sticky `top` of −(full − floor).
   - One wrapper holds the canvas and every picture overlay: sun, zones, anchor dots, photo overlay, outlines, tip anchor. That wrapper gets `translateY(d) scale((full−d)/full)` with its origin at top centre, where d is how far the block has scrolled past the top (clamped to full − floor).
   - Nothing below it moves, so the scroll position never jumps. Safari has no scroll anchoring, so this matters.
@@ -163,9 +164,9 @@ The stages are **Edit sections → Plan → Colour along**. "Plan" is the built 
 ## #10 Colour along
 
 - **The list starts straight away.** The instructions are an ⓘ line (#8). There's no name box, Reset progress is in ⋯, and progress is in the tool row.
-- **Closed rows** are one 48px line: swatch, code and name (ellipsis), and "3 of 9 done" or "All 9 done ✓". Shading's highlight → base → shadow line stays under each row when shading is on.
+- **Closed rows** are one 48px line: swatch, code and name (ellipsis), and "3 of 9 coloured" or "All 9 coloured ✓" (v289). Shading's highlight → base → shadow line stays under each row when shading is on.
 - **Tapping a row opens it in place,** one at a time. The open row holds:
-  - **✓ Mark all done** (`#sfMarkAll`), which becomes **Clear ticks** once every section is done;
+  - **✓ Mark all coloured** (`#sfMarkAll`), which becomes **Clear** once every section is coloured (v289 words);
   - **Find next** (`#sfFindNext`);
   - **◐ Blends**, which shows the lighter and darker companions underneath.
 - **Closing:** tapping the open row again closes it and shows all colours. This replaces Show all, Clear and the "Now colouring" panel.
@@ -174,19 +175,29 @@ The stages are **Edit sections → Plan → Colour along**. "Plan" is the built 
 - **The drawing (v288, "as your paper"):** sections coloured (ticked, or any tone) in their marker, the rest pale (one tint shared with Home's Continue card, `PROG_PALE`). With a row open, its sections still to do are full colour and outlined, coloured ones softened (`PROG_SOFT`), the rest pale. Codes off shows the whole plan. Focus mode matches: done softened, the current section full with its ring, the rest pale.
 - **Find next and Focus mode zoom only as far as needed:** if the section is on screen and at least ~44px, just pan; otherwise the least zoom that makes it ~44px, no further than 4× and never filling more than most of the view (fitZoom). One pulse of the outline on arrival.
 - **The markers on this page:** "N markers on this page ›" in Colours opens a sheet listing them lightest first (swatch, code, name, sections), stand-ins "for X (dry)", To buy flagged, a For shading group; tapping one highlights its sections.
-- **Focus mode** header: "Section N of M" (the bar shows the page's progress).
+- **Focus mode** header: "Section N of M" (the bar shows the page's progress). A finished page says "Page finished"; only skipped sections left, "Only skipped sections left" (v289).
+- **Focus mode's tools on a phone (v289):** Greyscale, −, + and Fit sit in a slim strip of their own above the bottom bar, off the picture; `focusGeo` leaves the picture the room above it. On an iPad they stay in the corner.
+- **Back (v289):** the browser's or Android's Back closes Focus mode, then Colour along (to the Plan), before it leaves; see Back below.
 
 ## Tip queue (v288)
 
-- One line at a time under the tabs, and at most one new tip per visit, in this order: the kept-sections line, the pinned line, the sample's line, the first-time "Tap a section" hint, then the tool names on a phone. All are remembered in `ms-seen-hints`; a tip that waits shows on a later visit.
+- One line at a time under the tabs, and at most one new tip per visit, in this order: the kept-sections line, the pinned line, the first-time "Tap a section" hint, the sample's line, then the tool names on a phone. All are remembered in `ms-seen-hints`; a tip that waits shows on a later visit.
+- **v289:** the first-time "Tap a section" line stays on the tab it opened on and goes at the first change of tab (`_tapTab`); the sample's line takes its place there and then.
+- **Change colour by keyboard (v289):** each row (Closest, In this guide, Recently used) and each family group is one Tab stop (roving tabindex: the tile focused last, else the chosen marker, else the first shown); ← → move along it, ↑ ↓ to the line above or below, Home and End to its ends. A sideways row with more past its edge fades there (`sffade`) until it's scrolled to its end.
 
 ## Library (v288)
 
 - **A full-screen dialog** (`#savedOverlay`), its content at the screens' one width (`--wrapW`), the whole page scrolling with the heading pinned; ✕ closes it and focus goes back to what opened it.
 - **A grid of tiles:** two columns on a phone, as many ~176px columns as fit from 600px. A guide's tile is its page as coloured so far (homeArt 'prog'; its plan when not started), drawn when the tile comes into view (IntersectionObserver), at most 60 pictures cached; the stored thumbnail shows until then. Palettes and draws are their markers as bands.
-- **Each tile:** the picture, name (three lines at most) and its line ("Guide · 16 markers · 5 of 122 sections coloured · Oct 1") open the item; **⋯** over the picture's corner opens Rename (in place) and Delete (at once, with Undo). Focus after a delete goes to the next tile's ⋯.
+- **Each tile:** the picture, name (three lines at most) and its line open the item. The line uses Home's words (v289): "Guide · 16 markers · 5 of 122 coloured · yesterday", "not started", the date after a week; an item without a name doesn't repeat its kind. **⋯** sits on the name's row at its right (v289; a spacer floated on the name's first line keeps the lines under it full width; its place comes from the tile's width, a container query); it opens Rename (in place) and Delete (at once, with Undo). Focus after a delete goes to the next tile's ⋯.
+- **The line under the title (v289)** says what a tap does to what's there: palettes, guides, both, or that saved things are kept here.
 - **Below the tiles:** Import a guide, then Back up / Restore and "Markers & palettes as text", which opens Back up & restore. Markers' ⋯ › Back up & restore opens the Library here.
-- **Opened from** Home's Library card, Home's "All guides (N) ›", the guide's ⋯, and Palette's ⋯ (palettes first there).
+- **Opened from** Home's Library card, Home's "All guides (N) ›", the guide's ⋯, Palette's ⋯ and Palette's "Saved palettes (N) ›" link (palettes first from Palette). On an iPad, once Your guides shows with its All guides link, Home has no Library card (v289).
+
+## Back (v289)
+
+- The browser's or Android's Back closes what's open first, one each: a dialog (the Library and every question; not the welcome), the marker picker, a sheet, Focus mode's Colours sheet, Focus mode, Reveal, full screen, then Colour along (back to the Plan, which Escape doesn't do). With nothing open it leaves the app as before.
+- How (`layers.js`): each layer marked `back` that's open is a history entry of the page's own (`pushState`). A MutationObserver keeps the count in step however things open and close; one closed in the app takes its entry back (`history.go`). Back takes an entry and closes the top layer as its Escape would; one that won't close (a question) gets its entry back. `scrollRestoration` is manual, so taking an entry back never moves the page.
 
 ## How the decisions fit together
 

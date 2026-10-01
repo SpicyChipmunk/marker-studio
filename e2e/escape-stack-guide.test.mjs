@@ -51,7 +51,7 @@ test('the ⋯ menu alone: Escape closes it and focus goes back to ⋯; a second 
   assert.deepEqual(errors, []);
 });
 
-test('the tip alone (by mouse): Escape hides it; the picker from it: Escape undoes the pick, closes it, and focus goes to ⋯', async () => {
+test('the tip alone (by mouse): Escape hides it; the picker from it: Escape undoes the pick, closes it, and focus goes to the open tab', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   const [l] = await bigSections(page, 1), m0 = await mk(page, l);
@@ -67,7 +67,8 @@ test('the tip alone (by mouse): Escape hides it; the picker from it: Escape undo
   await esc(page);
   assert.deepEqual(await layers(page), NONE, 'the picker closed, and with the mouse the tip does not come back');
   assert.equal(await mk(page, l), m0, 'Escape is Cancel: the pick is undone');
-  assert.equal(await active(page), 'sfMore');
+  // (v289: the open tab, on screen under the picture, not ⋯ scrolled away at the top)
+  assert.equal(await active(page), 'sfTab-colours');
   assert.deepEqual(errors, []);
 });
 

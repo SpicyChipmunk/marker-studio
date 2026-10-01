@@ -1,6 +1,6 @@
 // The guide's controls (js/guide/50-53): every state of the broad set in e2e/controls-states.mjs renders without an
 // error and wires each of its controls every time it is drawn, and the few controls no other test uses (the saved
-// palette picker, Tilt, Sensitivity, Autoclose loops, focus mode's colour list) do what they say.
+// palette picker, Tilt, Sensitivity, Join the ends of a loop, focus mode's colour list) do what they say.
 // (scripts/controls-compare.mjs uses the same states to compare the controls' markup, wiring and styles with an
 // earlier version of the code.)
 import { test, before, after } from 'node:test';
@@ -148,7 +148,7 @@ test('a guide whose saved palette was deleted reopens saying so, and keeps it un
   assert.deepEqual(errors, []);
 });
 
-test('Edit sections: Tilt and Sensitivity show their values, Autoclose loops changes the Add hint', async () => {
+test('Edit sections: Tilt and Sensitivity show their values, Join the ends of a loop changes the Add hint', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await idle(page);
@@ -174,7 +174,7 @@ test('Edit sections: Tilt and Sensitivity show their values, Autoclose loops cha
   assert.equal(await page.textContent('#sfSensVal'), '7');
   await click(page, '#sfEmAdd');
   await idle(page);
-  assert.equal(await page.isVisible('#sfAutoCloseWrap'), true, 'Autoclose loops is offered with Add');
+  assert.equal(await page.isVisible('#sfAutoCloseWrap'), true, 'Join the ends of a loop is offered with Add');
   const h1 = await page.textContent('#sfHint');
   await click(page, '#sfAutoClose');
   await idle(page);

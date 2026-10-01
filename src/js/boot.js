@@ -9,6 +9,14 @@ if (_hn)
   _hn.addEventListener('click', function () {
     // (v288) with guides already made (or one open), straight to the photo picker; Home stays until a photo is chosen. The first
     // time, the Guide screen's card (choose a photo or try the sample, what a guide is).
+    // (v289) section edits not built: the Guide screen first, with its question (Build again, Discard edits, Cancel),
+    // rather than after a photo is chosen, when Cancel would throw the photo away. Discard edits then opens the photo
+    // picker within its tap (iOS opens it only from a tap); Build again builds, and New colouring guide is there after.
+    if (window.SF && SF.secEdPending && SF.secEdPending() && SF.edToPlan) {
+      setMode('sections');
+      SF.edToPlan(true);
+      return;
+    }
     var some = state.saved.some(function (s) {
       return s.type === 'guide';
     });

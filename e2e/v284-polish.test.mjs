@@ -4,7 +4,7 @@
 // the guide saves itself from then on.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, notOnWebKit, WK } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -28,7 +28,7 @@ test('one h1, a Main nav, a main landmark, the screen named as an h2; dialog and
   assert.deepEqual(errors, []);
 });
 
-test('Edit sections: each slider says what turning it up does; Straighten is offered on a line of its own after Keep as is', async () => {
+test('Edit sections: each slider says what turning it up does; Straighten is offered on a line of its own after Keep as is', notOnWebKit(WK.photo), async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   // a photo of circles (no page in it to straighten: the finder stays quiet)

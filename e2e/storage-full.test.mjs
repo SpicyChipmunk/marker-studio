@@ -16,7 +16,7 @@ test('when storage is full, a new guide’s first save says so, Save tries again
   await page.evaluate(() => __mstest.flushSave()); await idle(page);
   assert.equal(await page.textContent('#sfSaveSt'), 'Not saved — storage is full');
   await page.click('#sfSave');
-  await page.waitForFunction(() => /Save failed/.test(document.getElementById('sfSave').textContent));
+  await page.waitForFunction(() => /Couldn.t save/.test(document.getElementById('sfSave').textContent));
   assert.equal(await page.evaluate(() => state.saved.filter((s) => s.type === 'guide').length), 0, 'nothing half-saved in the Library');
   assert.equal(await page.evaluate(() => __mstest.guideDirty), true, 'still marked unsaved');
   assert.deepEqual(errors, []);

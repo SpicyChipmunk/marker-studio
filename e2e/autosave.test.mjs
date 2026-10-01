@@ -5,7 +5,7 @@
 // slot) unless Put back; a full storage says so once, offers Save to try again, and keeps the guide for Resume.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, openMenu, saveCopy, rename, guideName, scrollTop, toolStatus, saveGuide, letterGuide, answerAsks, libItem } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, openMenu, saveCopy, rename, guideName, scrollTop, toolStatus, saveGuide, letterGuide, answerAsks, libItem, notOnWebKit, WK } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -30,7 +30,7 @@ async function tick(page, ls) {
 // a change the way the app makes one (ticked in code, then drawn, which schedules the save)
 const tickInCode = (page, i) => page.evaluate((i) => { const t = __mstest; t.colored[t.assignData.order[i]] = 1; t.guideDirty = true; t.renderGuide(); }, i);
 
-test('a guide from your photo goes into the Library once built; then a pattern change, ticks and a rename save themselves into the same entry', async () => {
+test('a guide from your photo goes into the Library once built; then a pattern change, ticks and a rename save themselves into the same entry', notOnWebKit(WK.photo), async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await letterGuide(page);
@@ -73,7 +73,7 @@ test('a guide from your photo goes into the Library once built; then a pattern c
   // after a reload, the Library shows the progress and the guide opens as it was left
   await page.reload(); await idle(page);
   await openLibrary(page);
-  assert.match(await page.textContent(row(g.id) + ' .smeta'), new RegExp(`3 of ${g.n} sections coloured`));
+  assert.match(await page.textContent(row(g.id) + ' .smeta'), new RegExp(`3 of ${g.n} coloured`));
   assert.match(await page.textContent(row(g.id) + ' .sname'), /Autosaved Garden/);
   await page.click(row(g.id) + ' .sname');
   await page.waitForFunction((id) => __mstest.curId === id && __mstest.assignData, g.id); await idle(page);
@@ -98,7 +98,14 @@ test('the sample joins the Library only once it is changed: "Sample", a line und
   assert.equal(await status(page), 'Sample');
   assert.equal(await guideName(page), 'Sample jellyfish');
   assert.equal(await saveShown(page), false);
+  // (v289) one line at a time: the first-time "Tap a section" first, the sample's line at the next tab
+  assert.equal(await page.isVisible('.sfinfo[data-hint="tap"]'), true);
+  assert.equal(await page.locator('#sfSampleNote').count(), 0, 'Tap a section first');
+  await page.click('.sftabbtn[data-t="pattern"]');
+  assert.equal(await page.locator('.sfinfo[data-hint="tap"]').count(), 0);
   assert.match(await page.textContent('#sfSampleNote'), /^This sample isn’t in your Library yet\. Change anything to keep it\./);
+  await page.click('.sftabbtn[data-t="colours"]');
+  assert.equal(await page.locator('.sfinfo[data-hint="tap"]').count(), 0, 'gone for good');
   assert.equal((await guides(page)).length, 0, 'not in the Library');
   assert.equal(await page.evaluate(() => localStorage.getItem('ms-guide-auto')), null, 'nor kept for Resume');
   // looking around: codes, zoom, tabs, Colour along and back, the menu
@@ -159,11 +166,11 @@ test('the Library row shows progress as the open guide saves itself', async () =
   await saveGuide(page);
   const [g] = await guides(page);
   await openLibrary(page);
-  assert.doesNotMatch(await page.textContent(row(g.id) + ' .smeta'), /coloured/);
+  assert.match(await page.textContent(row(g.id) + ' .smeta'), /not started/);
   // while the Library is showing, the open guide gets ticks and saves itself
   const d = await page.evaluate(() => { const t = __mstest, N = t.assignData.N; let d = 1; while (Math.floor((d * 100) / N) < 30) d++; t.assignData.order.slice(0, d).forEach((l) => { t.colored[l] = 1; }); t.guideDirty = true; t.renderGuide(); return d; });
   await flushSave(page);
-  assert.match(await page.textContent(row(g.id) + ' .smeta'), new RegExp(`${d} of ${g.n} sections coloured`));
+  assert.match(await page.textContent(row(g.id) + ' .smeta'), new RegExp(`${d} of ${g.n} coloured`));
   assert.deepEqual(errors, []);
 });
 

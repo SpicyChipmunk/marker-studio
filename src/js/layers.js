@@ -26,7 +26,8 @@
 const ESC_FIELDS = '#sfGName, .sname-in, #sfZoneName';
 const _layers = [];
 // o: {name, order (higher is nearer the top), isOpen(), close(e): false leaves this Escape to the layers under it,
-// stop (default true): the Escape stops there (preventDefault, stopPropagation)}
+// stop (default true): the Escape stops there (preventDefault, stopPropagation), back: the browser's (or Android's)
+// Back closes it too (below), escape: false for one only Back closes (Colour along)}
 function addLayer(o) {
   _layers.push(o);
   _layers.sort(function (a, b) {
@@ -56,6 +57,7 @@ addLayer({
     topDialog().dispatchEvent(new MouseEvent('click', { bubbles: true }));
   },
   stop: false,
+  back: true,
 });
 // The one Escape handler. It listens in the capture phase, so it comes before any control's own keys and before focus
 // mode's (which leave an Escape already taken alone); a rename field's Escape goes on to the field.
@@ -67,7 +69,7 @@ document.addEventListener(
     if (t && t.closest && t.closest(ESC_FIELDS)) return;
     for (let i = 0; i < _layers.length; i++) {
       const L = _layers[i];
-      if (!L.isOpen() || L.close(e) === false) continue;
+      if (L.escape === false || !L.isOpen() || L.close(e) === false) continue;
       if (L.stop !== false) {
         e.stopPropagation();
         e.preventDefault();
@@ -77,6 +79,85 @@ document.addEventListener(
   },
   true,
 );
+// Back (v289): the browser's or Android's Back closes what's open first — a dialog, a sheet, the Library, Focus mode,
+// Reveal, full screen, Colour along — one each, then leaves the app as before. Each one open is a history entry of the
+// page's own (pushState), made and taken back as things open and close, however they do; Back takes one, and the top
+// layer marked back closes as its Escape would. (A question that won't go gets its entry back; the welcome has none.)
+(function () {
+  if (typeof history === 'undefined' || !history.pushState || typeof MutationObserver === 'undefined') return;
+  // depth: the entry the page is on (its msLayer, 0 for the app's own); base: entries under it that belong to no layer
+  // (left from before a reload); pending: a go() of the app's own on its way
+  const at = function () {
+    return (history.state && +history.state.msLayer) || 0;
+  };
+  let base = at(),
+    depth = base,
+    pending = false,
+    raf = 0;
+  const count = function () {
+    let n = 0;
+    _layers.forEach(function (L) {
+      if (!L.back || !L.isOpen()) return;
+      // (the welcome has no close, so no entry)
+      n += L.name === 'dialog' ? document.querySelectorAll('.overlay.on:not(#welcome)').length : 1;
+    });
+    return n;
+  };
+  const sync = function () {
+    raf = 0;
+    if (pending) return;
+    const n = base + count();
+    if (n > depth)
+      while (depth < n) {
+        depth++;
+        history.pushState({ msLayer: depth }, '');
+      }
+    else if (n < depth) {
+      pending = true;
+      history.go(n - depth);
+    }
+  };
+  const later = function () {
+    if (!raf) raf = requestAnimationFrame(sync);
+  };
+  window.__histSync = sync;
+  // (the page keeps its own scroll: taking an entry back mustn't put the page where it was when the entry was made)
+  try {
+    history.scrollRestoration = 'manual';
+  } catch (e) {}
+  // the entry Back landed on says how many layers to close (a browser can skip entries it thinks weren't asked for)
+  window.addEventListener('popstate', function () {
+    const nd = at();
+    if (nd < base) base = nd;
+    if (pending) {
+      pending = false;
+      depth = nd;
+      later();
+      return;
+    }
+    let k = depth - nd;
+    depth = nd;
+    const ev = {
+      target: document.body,
+      key: 'Escape',
+      preventDefault: function () {},
+      stopPropagation: function () {},
+    };
+    while (k-- > 0) {
+      const L = _layers.find(function (x) {
+        return x.back && x.isOpen();
+      });
+      if (!L || L.close(ev) === false) break;
+    }
+    later();
+  });
+  new MutationObserver(later).observe(document.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['class', 'hidden', 'style'],
+  });
+})();
 (function () {
   const FOC =
     'button:not([disabled]),[href],input:not([type=hidden]),select,textarea,[tabindex]:not([tabindex="-1"])';

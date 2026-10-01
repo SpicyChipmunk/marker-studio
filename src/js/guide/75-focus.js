@@ -130,7 +130,9 @@ function focusGeo() {
   var bar = document.querySelector('.sffocbar'),
     bot = document.querySelector('.sffocbot'),
     t = bar ? bar.offsetHeight : 0,
-    b = bot ? bot.offsetHeight : 0,
+    zs = (window.innerWidth || 0) < 700 ? document.getElementById('sfZoomCtl') : null,
+    // (a phone: the tool strip above the bottom bar is the picture's too, v289)
+    b = (bot ? bot.offsetHeight : 0) + (zs ? zs.offsetHeight : 0),
     vw = sfView.clientWidth,
     vh = sfView.clientHeight,
     ah = Math.max(40, vh - t - b);
@@ -399,6 +401,12 @@ function renderFocusUI() {
   });
   var pct = N ? Math.round((dn / N) * 100) : 0;
   if (bar) bar.style.width = pct + '%';
+  // (the page's progress for a screen reader too, v289)
+  const fp = document.getElementById('sfFocProg');
+  if (fp) {
+    fp.setAttribute('aria-valuenow', String(pct));
+    fp.setAttribute('aria-valuetext', progressText(dn, N));
+  }
   // (the tip line keeps its room all the way through a shaded guide, so the picture below it never jumps)
   const shOn = !focusFin && shadeUse().on;
   if (tipEl) {
@@ -412,7 +420,7 @@ function renderFocusUI() {
   var l = focusCur();
   if (focusFin || l < 0) {
     sw.style.background = 'var(--ok)';
-    nm.textContent = N && dn >= N ? 'Page complete' : 'All caught up';
+    nm.textContent = N && dn >= N ? 'Page finished' : 'Only skipped sections left';
     sub.textContent = N && dn >= N ? finishLine() : dn + ' of ' + N + ' sections coloured';
     bot.innerHTML =
       '<button id="sfFBack" aria-label="Back">← Back</button><button id="sfFReveal" class="fdone">' +

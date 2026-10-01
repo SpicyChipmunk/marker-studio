@@ -11,11 +11,11 @@ const state = (page) => page.evaluate(() => {
   const t = __mstest, l = t.focusOrd[t.focusPos];
   return { pos: t.focusPos, l, mk: t.hlKey, zoom: t.zoom, fin: t.focusFin, done: [...t.colored].reduce((a, b) => a + b, 0) };
 });
-// is the current section centred in the space between the two bars? (v284: or as near as the picture allows: off
+// is the current section centred in the space between the two bars (on a phone, above the tool strip, v289)? (v284: or as near as the picture allows: off
 // centre only where the picture's edge is at the edge of that space, so there's no blank beside it)
 async function centred(page) {
   const s = await state(page), p = await sectionPoint(page, s.l);
-  const g = await page.evaluate(() => { const c = document.getElementById('sfCanvas').getBoundingClientRect(); return { w: innerWidth, top: document.querySelector('.sffocbar').offsetHeight, bot: innerHeight - document.querySelector('.sffocbot').offsetHeight, c: { l: c.left, r: c.right, t: c.top, b: c.bottom } }; });
+  const g = await page.evaluate(() => { const c = document.getElementById('sfCanvas').getBoundingClientRect(); return { w: innerWidth, top: document.querySelector('.sffocbar').offsetHeight, bot: innerHeight - document.querySelector('.sffocbot').offsetHeight - (innerWidth < 700 ? document.getElementById('sfZoomCtl').offsetHeight : 0), c: { l: c.left, r: c.right, t: c.top, b: c.bottom } }; });
   // (or all the picture fits that way, and it's in the middle)
   const fitX = g.c.r - g.c.l <= g.w + 1 && Math.abs((g.c.l + g.c.r) / 2 - g.w / 2) < 2, fitY = g.c.b - g.c.t <= g.bot - g.top + 1 && Math.abs((g.c.t + g.c.b) / 2 - (g.top + g.bot) / 2) < 2;
   const inX = fitX || Math.abs(p.x - g.w / 2) < 40 || (g.c.l <= 1 && p.x < g.w / 2) || (g.c.r >= g.w - 1 && p.x > g.w / 2);
@@ -118,7 +118,7 @@ test('colour list jumps and marks a whole marker; finishing shows the whole pict
   await idle(page);
   const s = await state(page);
   assert.ok(s.fin); assert.equal(s.zoom, 1);
-  assert.match(await page.textContent('#sfFocName'), /Page complete/);
+  assert.match(await page.textContent('#sfFocName'), /Page finished/);
   await shot(page, 'focus-finished');
   const last = s.pos;
   await page.click('#sfFBack'); await idle(page);

@@ -244,9 +244,9 @@ test('Mood: filters your markers for every pattern, widening to the nearest when
   assert.ok(src.widened > 0 && src.items.length === 210);
   assert.match(core.poolMsg(), /^Pastel: \d+ of your markers are light; the rest are the next lightest$/);
   sv.emphasis = 'neutral';
-  assert.equal(core.poolMsg(), 'Using 210 of 320 markers: one per section');
+  assert.equal(core.poolMsg(), 'From your 320 markers: one per section');
   sv.limitN = 16;
-  assert.equal(core.poolMsg(), 'Using 16 of 320 markers');
+  assert.equal(core.poolMsg(), 'From your 320 markers');
   // Random picks the marker count from the Mood's markers
   Object.assign(sv, { family: 'random', emphasis: 'vivid', limitN: 12 });
   const pool = core.activePool();

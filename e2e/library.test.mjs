@@ -111,17 +111,20 @@ test('a long name shows in full on at most three lines on a 390 px tile (v288)',
   assert.deepEqual(errors, []);
 });
 
-test('the line under a name: type, markers, date; no type badge', async () => {
+test('the line under a name: type, markers, when (Home’s words: yesterday, then the date); no type badge', async () => {
   const { page, errors } = await openApp();
   await welcome(page, 'look');
-  const ts = new Date(new Date().getFullYear(), 8, 27, 12).getTime();
+  const ts = Date.now() - 20 * 86400000;
   const pid = await addPalette(page, 'Meta palette', [11, 120, 280, 300, 12], ts);
   const did = await page.evaluate((ts) => { const id = 777001; state.saved.unshift({ id, type: 'draw', name: 'Draw · Sep 27', keys: [mkey(11)], ts, st: {} }); save(); return id; }, ts);
   await openLibrary(page);
   const when = await page.evaluate((ts) => evoWhen(ts), ts);
   assert.equal(await page.textContent(row(page, pid) + ' .smeta'), 'Palette · 5 markers · ' + when);
-  assert.equal(await page.textContent(row(page, did) + ' .smeta'), 'Draw · 1 marker · ' + when);
+  assert.equal(await page.textContent(row(page, did) + ' .smeta'), 'Random draw · 1 marker · ' + when);
   assert.equal(await page.locator('#savedList .sbadge').count(), 0);
+  // (v289) within the week, as Home says it
+  await page.evaluate((id) => { state.saved.find((s) => s.id === id).ts = Date.now() - 86400000 - 3600000; renderSaved(); }, pid);
+  assert.equal(await page.textContent(row(page, pid) + ' .smeta'), 'Palette · 5 markers · yesterday');
   assert.deepEqual(errors, []);
 });
 
@@ -134,10 +137,10 @@ test('a guide with about 40% of its sections ticked shows how much is coloured',
   assert.equal(g.done, d); assert.equal(g.n, N);
   await openLibrary(page);
   const meta = await page.textContent(`#savedList .srow[data-id="${g.id}"] .smeta`);
-  assert.match(meta, new RegExp(`^Guide · ${g.keys.length} markers? · ${d} of ${N} sections coloured · `));
-  // untouched guide: no percentage
+  assert.match(meta, new RegExp(`^Guide · ${g.keys.length} markers? · ${d} of ${N} coloured · today$`));
+  // untouched guide: "not started", as on Home (v289)
   await page.evaluate((id) => { state.saved.find((s) => s.id === id).done = 0; renderSaved(); }, g.id);
-  assert.doesNotMatch(await page.textContent(`#savedList .srow[data-id="${g.id}"] .smeta`), /coloured/);
+  assert.match(await page.textContent(`#savedList .srow[data-id="${g.id}"] .smeta`), /^Guide · \d+ markers? · not started · today$/);
   assert.deepEqual(errors, []);
 });
 
@@ -150,7 +153,7 @@ test('a guide saved without a coloured count gets one when the Library opens', a
   await page.reload(); await idle(page);
   assert.equal(await page.evaluate((id) => 'done' in state.saved.find((s) => s.id === id), id), false);
   await openLibrary(page);
-  await page.waitForFunction((id) => /sections coloured/.test(document.querySelector(`#savedList .srow[data-id="${id}"] .smeta`).textContent), id, { timeout: 5000 });
+  await page.waitForFunction((id) => / of \d+ coloured/.test(document.querySelector(`#savedList .srow[data-id="${id}"] .smeta`).textContent), id, { timeout: 5000 });
   assert.equal(await page.evaluate((id) => state.saved.find((s) => s.id === id).done, id), 3);
   assert.equal(await page.evaluate((id) => JSON.parse(localStorage.getItem('ohuhu-hb320-picker-v3')).saved.find((s) => s.id === id).done, id), 3, 'and it is stored');
   assert.deepEqual(errors, []);

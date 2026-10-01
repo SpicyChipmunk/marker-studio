@@ -15,7 +15,7 @@ function findNext() {
       return !colored[l];
     })
   ) {
-    note('Every section of this colour is done.');
+    note('Every section of this marker is coloured.');
     return;
   }
   const from = path.indexOf(_fnLast);
@@ -494,8 +494,8 @@ function onUp(e) {
             _hn.textContent = _ec
               ? 'Section added. Draw another, or switch tools.'
               : addAutoClose
-                ? "That loop didn't enclose anything \u2014 return near where you started."
-                : "That stroke didn't divide anything \u2014 run it to a line or the page edge.";
+                ? 'That loop didn\u2019t enclose anything \u2014 return near where you started.'
+                : 'That stroke didn\u2019t divide anything \u2014 run it to a line or the page edge.';
         }
       } else if (drawStartL > 0) splitAt(drawStartL, strokePts);
     }

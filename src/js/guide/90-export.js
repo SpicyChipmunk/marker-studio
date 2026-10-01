@@ -88,7 +88,7 @@ function buildExportCanvas(outline, noCodes) {
   {
     const suf = ' \u00b7 ' + nWord(uniq.length, 'marker');
     g.fillText(
-      pdfTrunc(g, curName || 'Colour guide', Math.max(40, W - 40 - g.measureText(suf).width)) + suf,
+      pdfTrunc(g, curName || 'Colouring guide', Math.max(40, W - 40 - g.measureText(suf).width)) + suf,
       20,
       H + Math.max(28, W / 34),
     );
@@ -473,14 +473,30 @@ function printSummary() {
         ? 'Test strip'
         : { codes: 'Codes', numbers: 'Numbers', none: 'No labels' }[pdfLabels]) +
     // (sections too small to label, in close-ups: with Codes, Numbers would fit more on the page itself)
-    (pdfWhat === 'page' && (_pdfCloseN || _pdfLeft) ? '<br>' + printCloseNote() : '')
+    // (v289: the short form on a small phone, so the Paper choices start on the sheet's first screen)
+    (pdfWhat === 'page' && (_pdfCloseN || _pdfLeft)
+      ? '<br>' + printCloseNote((window.innerHeight || 0) < 700)
+      : '')
   );
 }
 // what the close-ups hold, for the Print sheet: how many small sections on how many pages, and any too small even there
-function printCloseNote() {
+// (short: the counts only — "19 small sections on 2 close-up pages; 3 only as a dot")
+function printCloseNote(short) {
   const pl = function (n, one, more) {
     return n + ' ' + (n === 1 ? one : more);
   };
+  if (short)
+    return (
+      (_pdfCloseN
+        ? pl(_pdfCloseN, 'small section', 'small sections') +
+          ' on ' +
+          pl(_pdfCloseP, 'close-up page', 'close-up pages')
+        : '') +
+      (_pdfLeft
+        ? (_pdfCloseN ? '; ' + _pdfLeft : pl(_pdfLeft, 'small section', 'small sections')) + ' only as a dot'
+        : '') +
+      '.'
+    );
   let t = _pdfCloseN
     ? pl(_pdfCloseN, 'small section is', 'small sections are') +
       ' on ' +
@@ -1117,7 +1133,7 @@ function _buildPDF(dry) {
     withBlend = !!pdfBlend || withShade,
     asg = assignData.assign,
     rows = pdfKeyRows(),
-    nm = curName || 'Colour guide',
+    nm = curName || 'Colouring guide',
     pages = [];
   pdfS = paper === 'a5' || paper === 'half' ? 0.84 : 1;
   // every brand printed (the key's markers and their lighter, darker and to-buy ones): one brand is named once in the
@@ -2089,7 +2105,7 @@ async function exportPDF() {
         .slice(0, 80) || 'colour-guide') +
       (pdfWhat === 'strip' ? '-test-strip' : '') +
       '.pdf';
-    shareOrSave(blob, fname, curName || 'Colour guide', 'PDF', 'PDF downloaded.');
+    shareOrSave(blob, fname, curName || 'Colouring guide', 'PDF', 'PDF downloaded.');
   } catch (e) {
     const sm = sheetOpen() && document.getElementById('sfPrSum');
     if (sm) {
@@ -2303,7 +2319,7 @@ function exportImage() {
         note('Couldn’t export the image.');
         return;
       }
-      shareOrSave(blob, 'colour-guide.png', curName || 'Colour guide', 'image', 'Image downloaded.');
+      shareOrSave(blob, 'colour-guide.png', curName || 'Colouring guide', 'image', 'Image downloaded.');
     }, 'image/png');
   }, 30);
 }
@@ -2321,7 +2337,7 @@ function testStripPages(dry) {
     withBlend = !withShade && !!pdfBlend,
     ramp = withShade || withBlend,
     rows = pdfKeyRows(),
-    nm = curName || 'Colour guide';
+    nm = curName || 'Colouring guide';
   pdfS = paper === 'a5' || paper === 'half' ? 0.84 : 1;
   const zOrd = zoneIds(),
     zFirst = function (x) {

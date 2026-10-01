@@ -282,7 +282,7 @@ function planCommit(why, quiet) {
 let _heldNote = null;
 function heldNoteText(h) {
   const n = h.secs.length;
-  return 'Kept ' + n + ' coloured section' + (n === 1 ? '' : 's') + ' as they are';
+  return n === 1 ? 'Kept 1 coloured section as it is' : 'Kept ' + n + ' coloured sections as they are';
 }
 function heldNoteHTML() {
   const h = _heldNote;
@@ -376,19 +376,24 @@ function pinNoteFirst(secs) {
   if (!secs.length || hintSeen('pinline')) return;
   markHint('pinline');
   _pinNote = { secs: secs.slice() };
-  // (after what the picker has just said, not instead of it)
+  // (after what the picker has just said, not instead of it; when that already ends "pinned", not twice, v289)
+  const prev = sayLive.last && Date.now() - (sayLive.at || 0) < 1500 ? sayLive.last : '',
+    tail = 'changes to the plan leave ' + (secs.length === 1 ? 'it as it is.' : 'them as they are.'),
+    own = 'Pinned: ' + tail;
   sayLive(
-    (sayLive.last && Date.now() - (sayLive.at || 0) < 1500
-      ? sayLive.last.replace(/[.!?]?$/, '.') + ' '
-      : '') +
-      'Pinned: changes to the plan leave ' +
-      (secs.length === 1 ? 'it as it is.' : 'them as they are.'),
+    !prev
+      ? own
+      : prev.replace(/[.!?]?$/, '.') +
+          ' ' +
+          (/pinned\.?$/.test(prev) ? tail.charAt(0).toUpperCase() + tail.slice(1) : own),
   );
 }
 // The sample, as it was built: a line under the tabs says it isn't in the Library yet (v285), until it's changed (then
 // it is) or closed. (Not beside the kept-sections line: a sample with coloured sections was changed, so is kept.)
+// (v289: not while the first-time "Tap a section" line is up — it goes at the next tab, and this line comes then)
 function sampleNoteHTML() {
-  if (!curSample || _sampleNoteX || _heldNote || _pinNote || libEntry() || sampleTouched()) return '';
+  if (!curSample || _sampleNoteX || _heldNote || _pinNote || libEntry() || sampleTouched() || tapLineUp())
+    return '';
   return (
     '<div id="sfSampleNote" class="sfheldnote sfsamplenote" role="note"><span>This sample isn\u2019t in your Library yet. Change anything to keep it.</span><button type="button" id="sfSampleX" class="sfheldx" aria-label="Close">' +
     ic('x') +
@@ -404,6 +409,15 @@ function sampleNoteWire() {
       if (n) n.remove();
       ctlRefocus('#sfTab-' + gTab);
     });
+}
+// The first-time "Tap a section…" line under the tabs: the first visit to the Plan, on the tab it opened on (v289: it
+// goes when you change tab, so the sample's line can have its turn)
+let _tapTab = null; // the tab it showed on; false once it has gone
+function tapLineUp() {
+  if (family === 'manual' || paintOn || zoneEditOn() || _heldNote || _pinNote) return false;
+  if (_tapTab === false || (hintSeen('tap') && !_hNow.tap)) return false;
+  if (_tapTab == null) _tapTab = gTab;
+  return gTab === _tapTab;
 }
 // The tool row's names (v288): where the row is icons only (a phone, or the side-by-side strip), a one-time line under
 // the tabs names Codes, Greyscale and Full screen. The tip queue: one line at a time, and it waits for a visit when
@@ -430,9 +444,9 @@ function toolTipHTML() {
     one('codes', 'Codes') +
     ' shows the marker codes, ' +
     one('values', 'Greyscale') +
-    ' the picture in greys, ' +
+    ' the picture in greys, and ' +
     one('full', 'Full screen') +
-    '.</span><button type="button" id="sfToolTipX" class="sfheldx" aria-label="Close">' +
+    ' fills the screen.</span><button type="button" id="sfToolTipX" class="sfheldx" aria-label="Close">' +
     ic('x') +
     '</button></div>'
   );

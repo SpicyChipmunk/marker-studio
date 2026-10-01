@@ -455,7 +455,7 @@ function wishBought(k) {
       copyText(wishText()).then(function (ok) {
         const b = document.getElementById('wishCopy');
         if (b) {
-          b.textContent = ok ? 'Copied ✓' : 'Copy failed';
+          b.textContent = ok ? 'Copied ✓' : 'Couldn\u2019t copy';
           setTimeout(function () {
             const x = document.getElementById('wishCopy');
             if (x) x.textContent = 'Copy list';

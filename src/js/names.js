@@ -86,7 +86,7 @@ var EVO_MOOD = {
   deep: [
     'Midnight',
     'Velvet',
-    'Smoldering',
+    'Smouldering',
     'Candlelit',
     'Inky',
     'Sultry',
@@ -312,7 +312,7 @@ function evoName(hexes, seedExtra, avoid) {
     var o = _evoHSL(hexes[i]);
     if (o) px.push(o);
   }
-  if (!px.length) return 'Colour guide';
+  if (!px.length) return 'Colouring guide';
   var n = px.length,
     sumC = 0,
     sumL = 0,
@@ -527,7 +527,7 @@ function evoName(hexes, seedExtra, avoid) {
     if (av && av.has && av.has(name.toLowerCase())) continue;
     return name;
   }
-  return best || 'Colour guide';
+  return best || 'Colouring guide';
 }
 function usedGuideNames(extra) {
   const u = new Set(state.saved.filter((s) => s.type === 'guide').map((s) => (s.name || '').toLowerCase()));
@@ -547,7 +547,7 @@ function copyName(name, used) {
     String(name || '')
       .replace(/\s*\(copy(?: \d+)?\)\s*$/i, '')
       .trim()
-      .slice(0, 106) || 'Colour guide';
+      .slice(0, 106) || 'Colouring guide';
   used = used || usedSavedNames();
   for (var i = 1; i < 1000; i++) {
     var n = base + (i === 1 ? ' (copy)' : ' (copy ' + i + ')');
@@ -563,7 +563,7 @@ function paletteName(idxs) {
       })
       .filter(Boolean),
     nm = evoName(hx, 0, usedSavedNames());
-  return nm === 'Colour guide' ? 'Palette' : nm;
+  return nm === 'Colouring guide' ? 'Palette' : nm;
 }
 function evoWhen(ts) {
   if (!ts) return '';

@@ -238,6 +238,22 @@ function openSwatchPop(o) {
   planBtn();
   var sw = el.querySelector('#sfPopSw'),
     first = sw && (sw.querySelector('.sfsw.on') || sw.querySelector('.sfsw'));
+  // (v289) a sideways row with more past its edge fades there, until it's scrolled to its end (and again as the
+  // sheet changes width: swFadeAll on resize)
+  if (sw)
+    sw.querySelectorAll('.sfswrow .sfswl').forEach(function (r) {
+      swFade(r);
+      r.addEventListener(
+        'scroll',
+        function () {
+          swFade(r);
+        },
+        { passive: true },
+      );
+      requestAnimationFrame(function () {
+        swFade(r);
+      });
+    });
   // without recent picks to show first, start at the chosen marker's family
   if (sw && first && first.classList.contains('on') && !sw.querySelector('.sfswrec')) {
     var g = first.closest('.sfswg'),
@@ -248,6 +264,13 @@ function openSwatchPop(o) {
       0,
       tb - gt > sw.clientHeight ? first.offsetTop - (hd ? hd.offsetHeight : 0) - 6 : gt,
     );
+  }
+  // (v289) by keyboard: one Tab stop per row or group (the chosen marker, else its first), the arrow keys within it
+  if (sw) {
+    swRove(sw, first);
+    sw.addEventListener('keydown', function (e) {
+      swArrow(e, sw);
+    });
   }
   var ae = document.activeElement;
   if (first && (!ae || ae === document.body || el.contains(ae) || !ae.isConnected))
@@ -292,6 +315,7 @@ function openSwatchPop(o) {
       });
       var none = sw.querySelector('.sfswnone');
       if (none) none.hidden = any;
+      swRove(sw);
     });
   var cf = el.querySelector('#sfPopConfirm');
   if (cf)
@@ -313,6 +337,92 @@ function openSwatchPop(o) {
       guideDirty = true;
       if (popCtx === o && o.onExtra) o.onExtra();
     });
+}
+function swFade(r) {
+  r.classList.toggle('sffade', r.scrollWidth - r.clientWidth - r.scrollLeft > 2);
+}
+function swFadeAll() {
+  document.querySelectorAll('#sfPopSw .sfswrow .sfswl').forEach(swFade);
+}
+window.addEventListener('resize', function () {
+  requestAnimationFrame(swFadeAll);
+});
+// Change colour by keyboard (v289): each row or group of markers is one Tab stop (roving tabindex): the one focused
+// last, else the chosen marker, else the first shown; keep: a tile that keeps it
+function swRove(sw, keep) {
+  sw.querySelectorAll('.sfswl').forEach(function (l) {
+    const items = [].filter.call(l.querySelectorAll('.sfsw'), function (b) {
+      return !b.hidden;
+    });
+    const cur =
+      items.find(function (b) {
+        return b === keep || b === document.activeElement;
+      }) ||
+      items.find(function (b) {
+        return b.getAttribute('tabindex') === '0';
+      }) ||
+      items.find(function (b) {
+        return b.classList.contains('on');
+      }) ||
+      items[0];
+    l.querySelectorAll('.sfsw').forEach(function (b) {
+      b.tabIndex = b === cur ? 0 : -1;
+    });
+  });
+}
+// the arrow keys within a row or group: ← → along it, ↑ ↓ to the tile above or below in a group of several lines
+// (along a single row as ← →), Home and End to its ends
+function swArrow(e, sw) {
+  const t = e.target;
+  if (!t || !t.classList || !t.classList.contains('sfsw') || e.altKey || e.ctrlKey || e.metaKey) return;
+  const k = e.key;
+  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].indexOf(k) < 0) return;
+  const l = t.closest('.sfswl'),
+    items = [].filter.call(l.querySelectorAll('.sfsw'), function (b) {
+      return !b.hidden;
+    }),
+    i = items.indexOf(t);
+  if (i < 0) return;
+  let j = i;
+  if (k === 'Home') j = 0;
+  else if (k === 'End') j = items.length - 1;
+  else if (k === 'ArrowLeft') j = Math.max(0, i - 1);
+  else if (k === 'ArrowRight') j = Math.min(items.length - 1, i + 1);
+  else {
+    const down = k === 'ArrowDown',
+      y = t.offsetTop,
+      x = t.offsetLeft;
+    // the line above or below: the nearest tile on it; a single row (no such line): the next one along
+    let line = null;
+    items.forEach(function (b) {
+      const by = b.offsetTop;
+      if (down ? by > y + 1 && (line == null || by < line) : by < y - 1 && (line == null || by > line))
+        line = by;
+    });
+    if (line == null) {
+      if (items.every((b) => Math.abs(b.offsetTop - y) <= 1))
+        j = down ? Math.min(items.length - 1, i + 1) : Math.max(0, i - 1);
+    } else {
+      let bd = 1e9;
+      items.forEach(function (b, n) {
+        if (Math.abs(b.offsetTop - line) > 1) return;
+        const d = Math.abs(b.offsetLeft - x);
+        if (d < bd) {
+          bd = d;
+          j = n;
+        }
+      });
+    }
+  }
+  e.preventDefault();
+  if (j === i) return;
+  t.tabIndex = -1;
+  items[j].tabIndex = 0;
+  items[j].focus({ preventScroll: true });
+  try {
+    items[j].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  } catch (_) {}
+  void sw;
 }
 // End the picker: keep or undo its pick (whichever its buttons decided), then record the plan step. keep: leave the
 // sheet open for the picker that follows straight away (and record the step without a toast over the sheet: ↶ Undo
@@ -363,7 +473,7 @@ function pickTap(l) {
     return;
   }
   const m = assignData.assign[l];
-  sayLive((had ? 'Kept. ' : '') + 'Now changing the section with ' + m.code + ' ' + (m.name || ''));
+  sayLive((had ? 'Done. ' : '') + 'Now changing the section with ' + m.code + ' ' + (m.name || ''));
 }
 // press and hold (or right-click) a section in Blend: its tip, or the open picker moves to it
 function holdSec(l) {
@@ -597,8 +707,15 @@ function positionOutline() {
     olEl.height = oh;
     const g = olEl.getContext('2d');
     g.clearRect(0, 0, ow, oh);
-    g.drawImage(ring(Math.max(2, 6 * px), 'rgba(0,0,0,.8)'), 0, 0);
-    g.drawImage(ring(Math.max(1.2, 3.5 * px), '#fff'), 0, 0);
+    // (the working canvases let go at once: Safari limits the memory all canvases hold, and a row's outline is drawn
+    // again at each tick, v289)
+    const r1 = ring(Math.max(2, 6 * px), 'rgba(0,0,0,.8)'),
+      r2 = ring(Math.max(1.2, 3.5 * px), '#fff');
+    g.drawImage(r1, 0, 0);
+    g.drawImage(r2, 0, 0);
+    freeCanvas(r1);
+    freeCanvas(r2);
+    freeCanvas(m);
     olEl.dataset.secs = olSet.join(' ');
     // (many at once, Everywhere or a row's: lighter and steady)
     olEl.classList.toggle('sfolmany', olRow || olSet.length > 1);
@@ -768,6 +885,11 @@ function openSectionPop(l, opt) {
       }
       renderGuide();
       renderControls();
+      // (the controls drawn again: the keyboard's focus, if it was there, goes to the pinned line's Unpin or the tab,
+      // on screen under the picture, v289)
+      const ae = document.activeElement;
+      if (!ae || ae === document.body || !ae.isConnected)
+        ctlRefocus(document.getElementById('sfPinUn') ? '#sfPinUn' : '#sfTab-' + gTab);
     },
   };
   openSwatchPop(o);
@@ -970,7 +1092,11 @@ function markerListSheet() {
     '</div>';
   const was = { k: hlKey, z: hlZone };
   const el = openSheet({
-    title: nWord(r.base.length, 'marker') + ' on this page',
+    // (v289: the markers For shading counted too, as more)
+    title:
+      nWord(r.base.length, 'marker') +
+      ' on this page' +
+      (r.tones.length ? ', ' + r.tones.length + ' more for shading' : ''),
     body: body,
     // (a way out by touch, as every sheet has)
     foot: '<button type="button" class="sfprimary" data-ml="done">Done</button>',

@@ -70,8 +70,9 @@ test('Markers: tick wording, "Showing" or "Matches", and the keyboard way to det
   assert.equal(await page.textContent('#ownNone'), 'Untick all shown');
   await page.click('#ownNone');
   assert.equal(await page.isVisible('#mkMenu'), true, 'the first tap asks in the menu, which stays open');
-  assert.match(await page.textContent('#ownNone'), /^Untick \d+\? Tap again$/);
-  const head = async () => (await page.textContent('#findResults .pile-head')).replace(/Copy codes/, '').trim();
+  assert.match(await page.textContent('#ownNone'), /^Untick \d+ markers?\? Tap again$/);
+  // (the heading's words: without Copy codes and the ⋯ menu beside it, v289)
+  const head = async () => page.$eval('#findResults .pile-head', (h) => { const c = h.cloneNode(true); c.querySelectorAll('.copybtn, .mkmore').forEach((e) => e.remove()); return c.textContent.trim(); });
   assert.match(await head(), /^Showing \d+ markers$/);
   await page.fill('#q', 'blue'); await idle(page);
   assert.match(await head(), /^Matches\s*\(\d+ markers\)$/);
@@ -223,6 +224,8 @@ test('Markers: a link near the top goes down to Sets & swatch chart; the bulk bu
   assert.ok(await page.evaluate(() => document.getElementById('presetWrap').getBoundingClientRect().top > 3000), 'the tools are far down');
   await page.click('#mkJump'); await idle(page);
   const inView = (sel) => page.$eval(sel, (e) => { const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; });
+  // (the scroll is smooth: Safari's engine can still be on its way when the page is otherwise idle)
+  await page.waitForFunction(() => { const r = document.getElementById('swatchBtn').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }, null, { timeout: 5000 }).catch(() => {});
   for (const sel of ['#presetHdr', '#swatchBtn']) assert.ok(await inView(sel), sel + ' in view');
   assert.equal(await page.isVisible('#presetBody'), false, 'the sets list stays closed, so the other two stay in view');
   assert.equal(await page.evaluate(() => document.activeElement.id), 'presetHdr', 'focus on the first of them');
@@ -238,6 +241,7 @@ test('Markers: a link near the top goes down to Sets & swatch chart; the bulk bu
   await page.evaluate(() => { state.owned.clear(); save(); }); await page.click('#mCollection'); await idle(page);
   assert.equal((await page.textContent('#mkJump')).trim(), 'Swatch chart↓');
   await page.click('#mkJump'); await idle(page);
+  await page.waitForFunction(() => { const r = document.getElementById('swatchBtn').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }, null, { timeout: 5000 }).catch(() => {});
   assert.ok(await inView('#swatchBtn'));
   assert.deepEqual(errors, []);
 });

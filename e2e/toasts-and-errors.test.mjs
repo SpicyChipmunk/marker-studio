@@ -101,12 +101,13 @@ async function tapAt(page, sel) { const r = await rect(page, sel); await page.mo
 const toastOn = (page) => page.evaluate(() => { const t = document.getElementById('msToast'); return !!(t && t.classList.contains('on')); });
 
 test('toasts end with their stage, and give way to full screen, focus mode and Reveal', async () => {
-  const { page, errors } = await openApp();
+  // (the one-time "Your screen stays on" toast told already: Safari keeps the screen on, headless Chromium doesn't)
+  const { page, errors } = await openApp({ storage: { 'ms-wake-told': '1' } });
   await sampleGuide(page); await idle(page);
   // (✨ Surprise: Plan's one step with a toast, since it says what it chose)
   const shuffle = async () => { await scrollTop(page); await page.click('#sfSurprise'); await idle(page); assert.equal(await toastOn(page), true); };
   await shuffle(); await tapAt(page, '#sfColor'); await idle(page);
-  assert.equal(await toastOn(page), false, 'Colour along');
+  assert.equal(await toastOn(page), false, 'Colour along: ' + await page.evaluate(() => document.getElementById('msToast')?.textContent));
   await page.click('#sfDoneBtn'); await idle(page);
   await shuffle(); await page.click('#sfFull'); await idle(page);
   assert.equal(await toastOn(page), false, 'full screen');

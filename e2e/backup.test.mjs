@@ -97,16 +97,16 @@ test('share after the tap expired: a toast offers Share; cancelling the sheet is
 
 test('the backup reminder appears for a markers-only collection that was never, or long ago, backed up', async () => {
   const now = Date.now();
-  // never backed up, and the collection is 4 days old
-  const a = await openApp({ storage: collection({ 'ms-first-use': String(now - 4 * DAY) }) });
+  // never backed up, and the collection is 15 days old (v289: the usual 14 days, from the first day too)
+  const a = await openApp({ storage: collection({ 'ms-first-use': String(now - 15 * DAY) }) });
   await a.page.waitForSelector('#backupNudge', { state: 'visible' });
   assert.match(await a.page.textContent('#backupNudge'), /Your 3 markers are only stored on this device/);
   // Later snoozes it, as before
   await a.page.click('#backupNudge [data-bk="later"]');
   assert.equal(await a.page.isVisible('#backupNudge'), false);
 
-  // never backed up, but only a day old: not yet
-  const b = await openApp({ storage: collection({ 'ms-first-use': String(now - 1 * DAY) }) });
+  // never backed up, but only 10 days old: not yet
+  const b = await openApp({ storage: collection({ 'ms-first-use': String(now - 10 * DAY) }) });
   await idle(b.page);
   assert.equal(await b.page.isVisible('#backupNudge'), false);
 
@@ -151,14 +151,14 @@ const appState = (extra = {}) => JSON.stringify({ mode: 'home', ownedSeedV: 2, c
 
 test('backup from the Home reminder: Preparing on the button, a failure shown there with the right place to go', async () => {
   const now = Date.now();
-  const { page, errors } = await openApp({ storage: onboardedV263({ [KEY]: appState(), 'ms-first-use': String(now - 5 * 864e5) }) });
+  const { page, errors } = await openApp({ storage: onboardedV263({ [KEY]: appState(), 'ms-first-use': String(now - 15 * 864e5) }) });
   await page.waitForSelector('#backupNudge', { state: 'visible' });
   await page.evaluate(() => { window.__bk = []; const g = gatherGuides; window.gatherGuides = function () { window.__bk.push(document.getElementById('bkGo').textContent + '|' + document.getElementById('bkGo').disabled); return g(); }; URL.createObjectURL = () => { throw new Error('blocked'); }; });
   await page.click('#bkGo'); await page.waitForSelector('#backupNudge .mserr');
   assert.deepEqual(await page.evaluate(() => window.__bk), ['Preparing…|true']);
   const card = await page.textContent('#backupNudge .mserr');
   assert.match(card, /couldn’t be saved/);
-  assert.match(card, /Markers › Back up & restore/, 'not "below"');
+  assert.match(card, /Library › Markers & palettes as text/, 'not "below" (v289: it lives in the Library)');
   assert.equal(await page.textContent('#bkGo'), 'Back up now');
   assert.deepEqual(errors, []);
 });
@@ -187,7 +187,7 @@ const toastText = (page) => page.evaluate(() => { const t = document.getElementB
 const shown = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); return !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden'; }, sel);
 
 test('Home › Back up now: a toast says it was made, and focus moves to what takes the card’s place', async () => {
-  const { page, errors } = await openApp({ storage: onboardedV265({ [KEY]: appState(), 'ms-first-use': String(Date.now() - 6 * 864e5) }) });
+  const { page, errors } = await openApp({ storage: onboardedV265({ [KEY]: appState(), 'ms-first-use': String(Date.now() - 15 * 864e5) }) });
   await page.waitForSelector('#bkGo');
   await page.focus('#bkGo');
   await Promise.all([page.waitForEvent('download'), page.keyboard.press('Enter')]); await idle(page);

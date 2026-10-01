@@ -251,7 +251,7 @@ function homeName(g) {
             var _i = keyIdx(k);
             return _i != null && COLORS[_i] ? COLORS[_i].hex : null;
           }),
-        ) || 'Colour guide';
+        ) || 'Colouring guide';
   return nm || 'Guide';
 }
 // started (a tick, or some tones) and not finished: what the Continue card offers
@@ -357,6 +357,9 @@ function renderRecent() {
   var nb = document.getElementById('homeNew');
   // (beside the Continue card, a new guide is the second choice)
   if (nb) nb.classList.toggle('homenew2', !!cont);
+  // (v289: on an iPad, once Your guides shows with its All guides link, the Library card would be a third way there)
+  var hub = document.querySelector('#homeView .homehub');
+  if (hub) hub.classList.toggle('hasall', !!gs.length);
   if (!gs.length) {
     el.style.display = 'none';
     el.innerHTML = '';
@@ -447,9 +450,27 @@ function openLibrary(palFirst) {
   hideToast();
   openDialog(savedOverlay);
 }
+// the line under the Library's title says what a tap does to what's there (v289)
+function libSubText() {
+  var g = 0,
+    p = 0;
+  state.saved.forEach(function (s) {
+    if (s.type === 'guide') g++;
+    else p++;
+  });
+  return g && p
+    ? 'Tap a palette to load it, or a guide to open it.'
+    : g
+      ? 'Tap a guide to open it.'
+      : p
+        ? 'Tap a palette to load it.'
+        : 'Palettes and guides you save are kept here.';
+}
 function renderSaved() {
   if (_libEd) libEndRename(true, false);
   renderLibStat();
+  var _sub = $('libSub');
+  if (_sub) _sub.textContent = libSubText();
   var list = state.saved.slice();
   var q = (libQuery || '').trim().toLowerCase();
   if (q)
@@ -512,12 +533,16 @@ function progressText(d, n, long) {
   if (n && d >= n) return 'finished';
   return d + ' of ' + n + (long ? ' sections coloured' : ' coloured');
 }
-// the line under a name, e.g. Guide · 16 markers · 5 of 122 sections coloured · Sep 27 (each part kept on one line)
+// the line under a name, e.g. Guide · 16 markers · 5 of 122 coloured · yesterday (each part kept on one line; v289:
+// Home's words for how far and when — "not started", "today", "3 days ago", then the date)
 function libMeta(s) {
-  var t = s.type === 'draw' ? 'Draw' : s.type === 'guide' ? 'Guide' : 'Palette',
+  var t = s.type === 'draw' ? 'Random draw' : s.type === 'guide' ? 'Guide' : 'Palette',
     cnt = s.keys ? s.keys.length : 0,
-    p = s.type === 'guide' && +s.done > 0 ? progressText(s.done, s.n, true) : '';
-  return [t, cnt ? cnt + ' marker' + (cnt === 1 ? '' : 's') : '', p, evoWhen(s.ts)]
+    p = s.type === 'guide' ? progressText(s.done, s.n) : '',
+    age = s.ts ? Date.now() - s.ts : -1,
+    when = age >= 0 && age < 7 * 86400000 ? relDate(s.ts) : evoWhen(s.ts);
+  // (an item without a name shows its kind as the name: not twice)
+  return [s.name ? t : '', cnt ? cnt + ' marker' + (cnt === 1 ? '' : 's') : '', p, when]
     .filter(Boolean)
     .map(function (x) {
       return '<span>' + esc(x) + '</span>';
@@ -529,7 +554,7 @@ function libMeta(s) {
 // into view, libArt), a palette or draw its markers as bands.
 function libRowHTML(s, ed) {
   var nm = esc(s.name || ''),
-    shown = nm || (s.type === 'draw' ? 'Draw' : s.type === 'guide' ? 'Guide' : 'Palette');
+    shown = nm || (s.type === 'draw' ? 'Random draw' : s.type === 'guide' ? 'Guide' : 'Palette');
   var strip = (s.keys || [])
     .slice(0, 12)
     .map(function (k) {
@@ -552,7 +577,8 @@ function libRowHTML(s, ed) {
       ? '<input class="sname-in" type="text" maxlength="120" autocomplete="off" aria-label="Name" value="' +
         nm +
         '">'
-      : '<span class="sname">' + shown + '</span>') +
+      : // (a spacer floated at the end of its first line, where ⋯ sits; the lines under it use the tile's width, v289)
+        '<span class="sname"><span class="snfl" aria-hidden="true"></span>' + shown + '</span>') +
     '<span class="smeta">' +
     libMeta(s) +
     '</span></span>';
@@ -771,7 +797,9 @@ function libDelete(id) {
   libFocus(at);
   toastAction(
     'Deleted \u201c' +
-      esc(entry.name || (entry.type === 'guide' ? 'Guide' : entry.type === 'draw' ? 'Draw' : 'Palette')) +
+      esc(
+        entry.name || (entry.type === 'guide' ? 'Guide' : entry.type === 'draw' ? 'Random draw' : 'Palette'),
+      ) +
       '\u201d',
     'Undo',
     function () {
@@ -951,7 +979,7 @@ function doSaveDraw() {
   const entry = {
     id: Date.now(),
     type: 'draw',
-    name: ('Draw \u00b7 ' + shortDate()).trim(),
+    name: ('Random draw \u00b7 ' + shortDate()).trim(),
     keys: state.drawn.map(mkey),
     ts: Date.now(),
     st: st,

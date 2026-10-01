@@ -147,7 +147,7 @@ test('screen readers: glyphs are not read out, and a tone line says base and sha
   assert.match(t.sr, /base \S+, shadow/);
   const k = await page.$eval('#sfAlist .sfarow', (r) => r.dataset.k);
   await page.click(`#sfAlist .sfarow[data-k="${k}"] .sfah`); await idle(page);
-  assert.equal(await page.getByRole('button', { name: 'Mark all done', exact: true }).count(), 1, 'Mark all done');
+  assert.equal(await page.getByRole('button', { name: 'Mark all coloured', exact: true }).count(), 1, 'Mark all done');
   // focus mode's buttons and its tone line
   await page.click('#sfFocus'); await idle(page);
   assert.equal(await page.getByRole('button', { name: 'Done', exact: true }).count(), 1, 'Done');

@@ -3,7 +3,7 @@ function ctlFocus() {
   ctlEl.innerHTML =
     '<div class="sffocbar"><div class="sffocrow"><button id="sfExitFoc" class="sfz" aria-label="Exit focus mode">' +
     ic('x') +
-    '</button><span id="sfFocSw" class="sffocsw"></span><div class="sffocname"><b id="sfFocName"></b><span id="sfFocSub"></span></div><button id="sfFocCols" class="sffoccols" aria-expanded="false">Colours</button></div><div id="sfFocChips" class="sffocchips" aria-hidden="true"></div><div id="sfFocTip" class="sffoctip"></div><div class="sffocprog"><div id="sfProgBar"></div></div></div>' +
+    '</button><span id="sfFocSw" class="sffocsw"></span><div class="sffocname"><b id="sfFocName"></b><span id="sfFocSub"></span></div><button id="sfFocCols" class="sffoccols" aria-expanded="false">Colours</button></div><div id="sfFocChips" class="sffocchips" aria-hidden="true"></div><div id="sfFocTip" class="sffoctip"></div><div class="sffocprog" id="sfFocProg" role="progressbar" aria-label="Page" aria-valuemin="0" aria-valuemax="100"><div id="sfProgBar"></div></div></div>' +
     '<div id="sfFocSheet" class="sffocsheet" style="display:none"><button id="sfFocAll" class="fsall"></button>' +
     (shadeUse().on
       ? '<label class="sfchk fsteps"><input type="checkbox" id="sfToneSteps"' +
@@ -75,7 +75,7 @@ function ctlCrop() {
 // as it is, nothing rebuilt); once something is edited, ← Plan (which asks: Build again, Discard, Cancel) and Build
 // again, with a line that the colouring is kept when there is some
 function edBarHTML() {
-  return '<div class="sfbar sfedbar"><button id="sfToPlan" class="sfghost" style="display:none">\u2190 Plan</button><button id="sfBuild" class="sfprimary">Build guide \u2192</button></div>';
+  return '<div class="sfbar sfedbar"><button id="sfToPlan" class="sfghost" style="display:none" aria-label="Back to the Plan">\u2190 Plan</button><button id="sfBuild" class="sfprimary" aria-label="Build guide">Build guide \u2192</button></div>';
 }
 function edBarSync() {
   const tp = document.getElementById('sfToPlan'),
@@ -90,6 +90,8 @@ function edBarSync() {
   bb.style.display = built && !ed ? 'none' : '';
   if (bb.textContent.indexOf('Building') < 0)
     bb.textContent = built ? 'Build again \u2192' : 'Build guide \u2192';
+  // (the arrow isn't read out)
+  bb.setAttribute('aria-label', built ? 'Build again' : 'Build guide');
   const kl = document.getElementById('sfKeepLine');
   if (kl) {
     const show = ed && hasProgress();
@@ -99,20 +101,37 @@ function edBarSync() {
   }
 }
 // back to the plan from Edit sections: as it is when nothing was edited; otherwise asked first
-function edToPlan() {
+// newGuide (Home's New colouring guide, v289): Discard edits also opens the photo picker, within the tap (iOS)
+function edToPlan(newGuide) {
   if (!secEdPending()) {
     edGoPlan();
     return;
   }
-  askEdits().then(function (a) {
+  askEdits(
+    newGuide
+      ? function (a) {
+          if (a === 'discard') pickPhoto();
+        }
+      : null,
+  ).then(function (a) {
     if (a === 'build') {
       const b = document.getElementById('sfBuild');
       if (b) b.click();
     } else if (a === 'discard') {
       // (edits brought back by Resume: the guide as built is opened again from the Library)
+      // (straight from the Library: not through openDesign, whose shortcut for the open guide would keep the edited
+      // map on screen, nor stashDirty, which could save it, v289)
       if (_edResumed && curId != null) {
         edDropResumed();
-        openDesign(curId);
+        const id = curId,
+          g = ++loadGen;
+        Promise.resolve(api.loadDesign ? api.loadDesign(id) : null)
+          .then(function (d) {
+            if (g === loadGen) openDesignObj(d, id);
+          })
+          .catch(function () {
+            note('Couldn\u2019t open the guide as built \u2014 Build again keeps the edits.');
+          });
       } else if (discardEdits()) edGoPlan();
       else note('Some edits couldn\u2019t be undone \u2014 Build again keeps them, or use Undo.');
     }
@@ -136,7 +155,8 @@ function discardEdits() {
     applyBg();
     hasEdits = false;
   }
-  return !secEdPending();
+  // (a section map still not the built one, merges or splits beyond what Undo keeps, isn't discarded: v289)
+  return !secEdPending() && !guideStale();
 }
 // Edit sections: Adjust photo (turn, straighten, crop, enhance, tilt), the warning when the sections look wrong, the
 // section sliders, the edit tools and the key, and Build guide
@@ -193,7 +213,7 @@ function ctlSections() {
         segWarn.tip +
         '</span></div>'
       : '') +
-    '<div id="sfEdit" role="group" aria-label="Edit tool" class="sfc-segs sfc-mt8"><button type="button" id="sfEmToggle" data-m="toggle" class="sfedit">Leave out</button><button type="button" id="sfEmMerge" data-m="merge" class="sfedit">Merge</button><button type="button" id="sfEmSplit" data-m="split" class="sfedit">Split</button><button type="button" id="sfEmAdd" data-m="add" class="sfedit">Add</button></div><label id="sfAutoCloseWrap" class="sfc-autoclose" style="display:none"><input type="checkbox" id="sfAutoClose"> Autoclose loops</label><div id="sfHint" class="sfc-note sfc-mt8"></div><div class="sfc-key"><span><span class="sfc-sw sfc-sw-sec"></span>section</span><span><span class="sfc-sw sfc-sw-bg"></span>background</span><span><span class="sfc-sw sfc-sw-ex"></span>left out</span></div>' +
+    '<div id="sfEdit" role="group" aria-label="Edit tool" class="sfc-segs sfc-mt8"><button type="button" id="sfEmToggle" data-m="toggle" class="sfedit">Leave out</button><button type="button" id="sfEmMerge" data-m="merge" class="sfedit">Merge</button><button type="button" id="sfEmSplit" data-m="split" class="sfedit">Split</button><button type="button" id="sfEmAdd" data-m="add" class="sfedit">Add</button></div><label id="sfAutoCloseWrap" class="sfc-autoclose" style="display:none"><input type="checkbox" id="sfAutoClose"> Join the ends of a loop for me</label><div id="sfHint" class="sfc-note sfc-mt8"></div><div class="sfc-key"><span><span class="sfc-sw sfc-sw-sec"></span>section</span><span><span class="sfc-sw sfc-sw-bg"></span>background</span><span><span class="sfc-sw sfc-sw-ex"></span>left out</span></div>' +
     '<label class="sfrng sfc-mt12">Min section size<input type="range" id="sfMin" min="0" max="100" value="' +
     mv +
     '" aria-describedby="sfMinHint"></label><div id="sfMinHint" class="sfrnghint">Higher: small specks left out of the guide</div><span id="sfCount" hidden>0 sections</span><label class="sfrng">Background trim<input type="range" id="sfBg" min="0" max="100" value="' +
@@ -253,6 +273,7 @@ function ctlSections() {
           if (b.isConnected) {
             b.disabled = false;
             b.textContent = 'Build guide \u2192';
+            b.setAttribute('aria-label', 'Build guide');
             edBarSync();
           }
         }

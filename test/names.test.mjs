@@ -84,7 +84,7 @@ test('copyName: "(copy)", then numbered, never a name already in the Library, an
   assert.equal(app.copyName('Rose Tango'), 'Rose Tango (copy 2)', 'any item, any case, counts as taken');
   assert.equal(app.copyName('Rose Tango (copy 2)', new Set(['rose tango', 'rose tango (copy)', 'rose tango (copy 2)'])), 'Rose Tango (copy 3)');
   assert.equal(app.copyName('Moss', new Set()), 'Moss (copy)');
-  assert.equal(app.copyName('', new Set()), 'Colour guide (copy)');
+  assert.equal(app.copyName('', new Set()), 'Colouring guide (copy)');
   assert.ok(app.copyName('x'.repeat(200), new Set()).length <= 120, 'fits the name limit');
   app.__eval('state.saved = []');
 });

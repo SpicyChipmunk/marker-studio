@@ -35,6 +35,8 @@ test('Reveal starts zoomed out and without planning marks', async () => {
   await page.click('.sftabbtn[data-t="pattern"]'); await page.click('#sfFam [data-v="blend"]'); await idle(page);
   await page.click('#sfZin'); await page.click('#sfZin'); await idle(page);
   await page.click('.sftabbtn[data-t="share"]'); await page.click('#sfReveal'); await page.waitForSelector('#sfRevX', { timeout: REV_WAIT });
+  // (the ✕ comes a frame before the first frame of the reveal is drawn: Safari's engine can be measured in between)
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r)))));
   const r = await page.evaluate(() => { const c = document.getElementById('sfCanvas'), g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height).data; let white = 0; for (let i = 0; i < d.length; i += 4) if (d[i] === 255 && d[i + 1] === 255 && d[i + 2] === 255) white++; return { zoom: __mstest.zoom, white }; });
   assert.equal(r.zoom, 1);
   assert.ok(r.white < 50, `no white anchor rings (${r.white})`);

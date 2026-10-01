@@ -470,3 +470,31 @@ test('restore: no question on a device without markers (even with palettes); a f
   assert.notEqual(await page.evaluate(() => localStorage.getItem('ms-backup-sig')), await page.evaluate(() => dataSig()));
   assert.deepEqual(errors, []);
 });
+
+// v289
+test('restore: Cancel on Replace your markers (and Escape) restores nothing; a newer copy of the open guide says it replaced it', async () => {
+  const { page, errors } = await openApp({ storage: onboardedV264({ [KEY]: appState({ saved: [palAt(['Ohuhu|R014'], 101, 'Local only')] }) }) });
+  const before = await page.evaluate(() => [[...state.owned].length, state.saved.length]);
+  for (const how of ['cancel', 'escape']) {
+    await restore(page, backup(['Ohuhu|R014', 'Ohuhu|B08', 'Copic|E09'], [palAt(['Ohuhu|B08'], 404, 'From file')]));
+    await page.waitForSelector('#sfEdAsk [data-a="stay"]');
+    if (how === 'cancel') await page.click('#sfEdAsk [data-a="stay"]'); else await page.keyboard.press('Escape');
+    await idle(page);
+    assert.deepEqual(await page.evaluate(() => [[...state.owned].length, state.saved.length]), before, how + ': nothing restored');
+    assert.equal(await toastText(page), 'Nothing restored.');
+  }
+  assert.deepEqual(errors, []);
+});
+
+test('restore: when the backup’s copy of the open guide is newer, the summary says the open guide was replaced', async () => {
+  const { page, errors } = await openApp();
+  await sampleGuide(page); await saveGuide(page); await idle(page);
+  const g = await page.evaluate(async () => { const s = state.saved.find((x) => x.type === 'guide'), p = await IDB.get('guide-' + s.id); return { id: s.id, name: s.name, W: s.W, H: s.H, keys: s.keys, n: s.n, payload: p }; });
+  const pl = JSON.parse(JSON.stringify(g.payload)); pl.name = (pl.name || '') + ' ';
+  const buf = Buffer.from(JSON.stringify({ v: 3, type: 'ms-backup', ts: Date.now() + 60000, owned: await page.evaluate(() => [...state.owned]), saved: [], guides: [{ ...g, payload: pl, ts: Date.now() + 60000 }] }));
+  await page.evaluate(() => openLibrary());
+  await page.setInputFiles('#guidesFile', { name: 'b.json', mimeType: 'application/json', buffer: buf }); await idle(page);
+  await page.waitForFunction(() => /restored/.test(document.getElementById('msToast').textContent));
+  assert.match(await toastText(page), new RegExp('1 guide restored\\. “' + g.name + '” was replaced by the backup’s newer copy\\.'));
+  assert.deepEqual(errors, []);
+});

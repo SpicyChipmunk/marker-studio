@@ -917,6 +917,25 @@ function buildBands(n) {
     bands.appendChild(b);
   }
 }
+// a band's own button says what a tap does: another like it, the next nearest (Photo), or nothing while locked (v289)
+function bandLabel(b, idx) {
+  const c = COLORS[idx],
+    h = b && b.querySelector('.bhit');
+  if (!c || !h) return;
+  h.setAttribute(
+    'aria-label',
+    c.brand +
+      ' ' +
+      c.code +
+      ' ' +
+      c.name +
+      (state.locked.includes(idx)
+        ? ', locked'
+        : state.harmony === 'photo'
+          ? ', tap for the next nearest'
+          : ', tap for another like it'),
+  );
+}
 function showPalette(pal, animate) {
   phint.style.display = 'none';
   buildBands(pal.length);
@@ -934,7 +953,9 @@ function showPalette(pal, animate) {
       _bt.style.display = mixed ? '' : 'none';
     }
     b.title =
-      state.harmony === 'photo' ? 'Tap for the next-nearest owned marker' : 'Tap to re-roll · lock to keep';
+      state.harmony === 'photo'
+        ? 'Tap for the next-nearest owned marker'
+        : 'Tap for another like it · lock to keep';
     b.classList.toggle('locked', state.locked.includes(pal[k]));
     {
       const _lk = b.querySelector('.blk');
@@ -944,10 +965,7 @@ function showPalette(pal, animate) {
         _lk.setAttribute('aria-label', 'Lock ' + c.code);
       }
     }
-    b.querySelector('.bhit').setAttribute(
-      'aria-label',
-      c.brand + ' ' + c.code + ' ' + c.name + (state.harmony === 'photo' ? ', next nearest' : ', re-roll'),
-    );
+    bandLabel(b, pal[k]);
     const cd = b.querySelector('.bcode');
     cd.textContent = c.code;
     cd.style.color = txt(c.hex);

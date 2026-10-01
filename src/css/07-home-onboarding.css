@@ -451,6 +451,20 @@ button.sfSeeAll {
   background: rgba(240, 170, 60, 0.22);
   border-color: rgba(240, 170, 60, 0.55);
 }
+/* (v289) the backup reminder: one short line and its two buttons, a slim card */
+#backupNudge {
+  padding: 10px 12px;
+  gap: 8px;
+}
+#backupNudge .ntxt {
+  font-size: var(--t-sm);
+  line-height: 1.4;
+}
+@media (min-width: 700px) {
+  #homeView .homehub.hasall #homeLibCard {
+    display: none;
+  }
+}
 .libstat {
   font-size: var(--t-sm);
   color: var(--sub);

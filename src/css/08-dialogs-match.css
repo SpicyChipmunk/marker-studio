@@ -104,6 +104,7 @@
 }
 #savedList .stile {
   position: relative;
+  container-type: inline-size;
   flex-direction: column;
   align-items: stretch;
   gap: 0;
@@ -148,6 +149,11 @@
 #savedList .stile .scol {
   padding: 0 2px;
 }
+#savedList .stile .snfl {
+  float: right;
+  width: 36px;
+  height: 1.2em;
+}
 #savedList .stile .sname {
   -webkit-line-clamp: 3;
   line-clamp: 3;
@@ -155,11 +161,13 @@
 #savedList .stile .sname-in {
   font-size: var(--t-md);
 }
-/* ⋯ over the picture's corner (a 44px target), its menu under it */
+/* (v289) ⋯ on the name's row, at its right, rather than over the picture (a 44px target), its menu under it. The
+   picture is 4:5 across the tile less its 8px padding, so its foot is 100cqw of the tile (a container) */
 #savedList .stile .smore {
+  --picFoot: calc(8px + (100cqw - 16px) * 1.25);
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: calc(var(--picFoot) - 3px);
+  right: 2px;
   z-index: 2;
   width: 44px;
   height: 44px;
@@ -168,15 +176,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 0;
   border-radius: 12px;
-  background: rgba(12, 12, 16, 0.66);
-  color: #fff;
+  background: transparent;
+  color: var(--sub);
   cursor: pointer;
+}
+#savedList .stile .smore:hover,
+#savedList .stile .smore[aria-expanded='true'] {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--ink);
 }
 #savedList .stile .smenu {
   position: absolute;
-  top: 58px;
+  top: calc(8px + (100cqw - 16px) * 1.25 + 44px);
   right: 8px;
   z-index: 5;
   min-width: 150px;
@@ -787,6 +800,18 @@ img.paperpick {
   border-radius: var(--r-md);
   font-size: var(--t-base);
   line-height: 1.2;
+}
+/* (v289) Markers' Random and Match a colour: tools, not your collection, so two small buttons rather than the top's
+   two big ones */
+#mkDraw.mkrow {
+  display: flex;
+  flex-wrap: wrap;
+}
+#mkDraw .mkbtn {
+  flex: none;
+  padding: 4px 14px;
+  background: transparent;
+  font-size: var(--t-sm);
 }
 .ordsel {
   height: 40px;

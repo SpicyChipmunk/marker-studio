@@ -608,6 +608,12 @@ html.sfsheeton body {
   padding: 10px 14px max(12px, env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line);
 }
+/* (a sheet's one button, the markers list's Done, across a phone's width rather than half of it, v289) */
+@media (max-width: 699px) {
+  #sfRoot .sfshft button:only-child {
+    max-width: none;
+  }
+}
 #sfRoot .sfshft button {
   flex: 1 1 0;
   height: 44px;

@@ -161,7 +161,9 @@ test('short screens and larger text: at the top of the page the tool row ends ab
     const tools = await rect(page, '#sfZoomCtl'), bar = await rect(page, '#sfWork>.sfbar'), g = await page.evaluate(() => __mstest.geo);
     assert.ok(tools.bottom <= bar.top + 0.5, `${w}×${h} @${sc}: tools end at ${tools.bottom}, the bar starts at ${bar.top}`);
     assert.ok(g.full >= g.comp, 'never below the floor');
-    if (w === 390) assert.equal(g.full, 464, 'the 55% start where it fits');
+    // (v289: the tabs on the first screen too, the picture under 55% where they need the room)
+    if (g.full > g.comp) assert.ok((await rect(page, '.sftabs')).bottom <= bar.top + 0.5, `${w}×${h} @${sc}: the tabs above the bar`);
+    if (w === 390 && sc === 1) assert.ok(g.full > 380 && g.full <= 464, 'between the floor and 55%: ' + g.full);
     // the bar's buttons are all on the screen and can be tapped
     for (const id of ['sfBack2', 'sfColor']) { const r = await rect(page, '#' + id); assert.equal(await page.evaluate(([x, y]) => document.elementFromPoint(x, y).closest('button')?.id, [r.x + r.width / 2, r.y + r.height / 2]), id); }
     assert.deepEqual(errors, []);

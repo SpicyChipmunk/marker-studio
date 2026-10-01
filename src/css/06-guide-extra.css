@@ -1027,6 +1027,10 @@
   overscroll-behavior-x: contain;
   scrollbar-width: none;
 }
+#sfRoot .sfswrow .sfswl.sffade {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+}
 #sfRoot .sfswrow .sfswl .sfsw {
   flex: 0 0 max(46px, calc(40 * min(var(--tpx0), 1.3px) + 6px));
 }

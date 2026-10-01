@@ -144,8 +144,11 @@ function chrome() {
   ownWrap.style.display = col ? 'flex' : 'none';
   var _md = document.getElementById('mkDraw');
   if (_md) _md.style.display = col ? '' : 'none';
+  // (Tick all shown; ⋯ is in the heading, v289)
   var _os = document.getElementById('ownStateWrap');
-  if (_os) _os.style.display = col ? 'flex' : 'none';
+  if (_os) _os.style.display = col && state.collView !== 'owned' ? 'flex' : 'none';
+  var _mm = document.querySelector('.mkmore');
+  if (_mm) _mm.style.display = col ? '' : 'none';
   if (ownAllBtn) ownAllBtn.style.display = col && state.collView !== 'owned' ? '' : 'none';
   if (ownNoneBtn) ownNoneBtn.style.display = col && state.collView !== 'unowned' ? '' : 'none';
   var _bw = document.getElementById('backupWrap');
@@ -205,6 +208,16 @@ function chrome() {
     if (_pwd) _pwd.textContent = state.pool.length === 1 ? 'colour' : 'colours';
   }
   libRow.style.display = pal || rnd ? 'flex' : 'none';
+  // (v289) the saved palettes and draws, a link at the top of Palette (they were only in ⋯ › Library)
+  {
+    const _ps = document.getElementById('palSavedWrap'),
+      _np = state.saved.filter((s) => s.type !== 'guide').length;
+    if (_ps) {
+      _ps.style.display = pal && _np ? '' : 'none';
+      const _pb = _ps.firstElementChild;
+      if (_pb) _pb.firstChild.textContent = 'Saved palettes (' + _np + ') ';
+    }
+  }
   var _ug = document.getElementById('useGuideWrap');
   if (_ug) _ug.style.display = pal && currentPaletteIdxs().length ? '' : 'none';
   saveBtn.disabled = (pal && !currentPaletteIdxs().length) || (rnd && !state.drawn.length);
@@ -235,7 +248,7 @@ function chrome() {
     segs.style.setProperty('--segcols', shown > 7 ? Math.ceil(shown / 2) : shown);
   }
   closeNote();
-  [...harm.children].forEach((b) => segOn(b, b.dataset.h === state.harmony));
+  harm.querySelectorAll('button').forEach((b) => segOn(b, b.dataset.h === state.harmony));
   // Clear only when there's something to clear
   if (rnd || pal) {
     const has = clearable();
@@ -276,6 +289,7 @@ function chrome() {
                 ? 'All drawn'
                 : null;
     drawBtn.disabled = !!bad || rolling;
+    drawFocusBack();
     drawBtn.textContent = bad || 'Draw a marker';
     undoBtn.disabled = state.drawn.length === 0;
     swapBtn.disabled = state.drawn.length === 0 || left === 0 || rolling;
@@ -298,6 +312,7 @@ function chrome() {
                 ? 'Only ' + avail + ' marker' + (avail === 1 ? '' : 's') + ' to choose from'
                 : null;
     drawBtn.disabled = !!bad;
+    drawFocusBack();
     drawBtn.textContent = bad || 'Generate palette';
     undoBtn.disabled = state.harmony === 'custom' || state.palettes.length === 0;
   }
@@ -569,6 +584,7 @@ function doDraw() {
     return;
   }
   rolling = true;
+  rollFocus();
   drawBtn.disabled = true;
   code.style.display = 'none';
   hint.style.display = 'none';
@@ -617,6 +633,7 @@ function doReDraw() {
     return;
   }
   rolling = true;
+  rollFocus();
   drawBtn.disabled = true;
   swapBtn.disabled = true;
   undoBtn.disabled = true;
@@ -653,7 +670,7 @@ function doReRollBand(k) {
     b.style.background = c.hex;
     cd.textContent = c.code;
     cd.style.color = txt(c.hex);
-    b.setAttribute('aria-label', c.brand + ' ' + c.code + ' ' + c.name + ', re-roll');
+    bandLabel(b, pick);
     if (!reduce) {
       b.style.animationDelay = '0ms';
       b.classList.remove('bin');
@@ -671,6 +688,7 @@ function doReRollBand(k) {
     return;
   }
   rolling = true;
+  rollFocus();
   drawBtn.disabled = true;
   let i = 0;
   const delays = [40, 46, 54, 66, 84, 110, 150];
@@ -687,6 +705,17 @@ function doReRollBand(k) {
   };
   setTimeout(tick, delays[0]);
 }
+// The Draw / Generate button is disabled while it rolls, which drops a keyboard's focus to the page: noted here
+// and given back once it's enabled again (v289)
+function rollFocus() {
+  if (document.activeElement === drawBtn) drawBtn._ret = 1;
+}
+function drawFocusBack() {
+  if (drawBtn.disabled || !drawBtn._ret) return;
+  drawBtn._ret = 0;
+  const a = document.activeElement;
+  if (!a || a === document.body) drawBtn.focus({ preventScroll: true });
+}
 function toggleLock(k) {
   const pal = state.palettes[state.palettes.length - 1];
   if (!pal || k >= pal.length) return;
@@ -699,6 +728,7 @@ function toggleLock(k) {
     b.classList.toggle('locked', state.locked.includes(idx));
     const lk = b.querySelector('.blk');
     if (lk) lk.setAttribute('aria-pressed', state.locked.includes(idx) ? 'true' : 'false');
+    bandLabel(b, idx);
   }
 }
 function doGenerate() {
@@ -729,6 +759,7 @@ function doGenerate() {
     return;
   }
   rolling = true;
+  rollFocus();
   drawBtn.disabled = true;
   phint.style.display = 'none';
   buildBands(pal.length);

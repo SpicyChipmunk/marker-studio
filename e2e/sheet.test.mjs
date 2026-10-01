@@ -50,7 +50,8 @@ for (const [w, h, avail] of [[390, 844, 420], [375, 667, 356]]) {
     // (waiting for the sheet to arrive, not for its slide to end: GitHub's WebKit can leave a transition unfinished)
     await until(page, ([w, h]) => { const s = document.getElementById('sfSheet').getBoundingClientRect(); return Math.abs(s.bottom - h) < 1 && s.left === 0 && s.width === w; }, [w, h], 'the sheet in place', 15000).catch(() => {});
     const g = await page.evaluate(() => ({ s: __mstest.picScale, geo: __mstest.geo, y: scrollY, lock: getComputedStyle(document.documentElement).overflow }));
-    assert.ok(g.geo.shrink && Math.abs(g.s - g.geo.comp / g.geo.full) < 0.003, `picture at its floor size (${g.s} vs ${g.geo.comp / g.geo.full})`);
+    // (v289: on a short phone the Plan's picture may start at its floor already, so that the tabs show)
+    assert.ok(Math.abs(g.s - g.geo.comp / g.geo.full) < 0.003, `picture at its floor size (${g.s} vs ${g.geo.comp / g.geo.full})`);
     const sh = await rect(page, '#sfSheet'), cv = await rect(page, '#sfCanvas'), v = await rect(page, '#sfView');
     assert.ok(sh.top >= v.bottom - 0.5 && sh.top >= cv.bottom - 0.5, `the sheet starts under the picture (${sh.top} vs ${v.bottom})`);
     assert.ok(Math.abs(sh.bottom - h) < 1 && sh.left === 0 && sh.width === w, 'to the bottom of the screen, across it');
@@ -85,7 +86,7 @@ test('the tip keeps its size outside the shrunk picture, never covers its sectio
   // shrink the picture to its floor
   const top0 = await page.evaluate(() => document.getElementById('sfView').getBoundingClientRect().top + scrollY);
   await page.evaluate((y) => new Promise((r) => { scrollTo(0, y); requestAnimationFrame(() => requestAnimationFrame(r)); }), Math.round(top0) + 120);
-  assert.ok(await page.evaluate(() => __mstest.picScale) < 0.83, 'picture shrunk');
+  assert.ok(await page.evaluate(() => __mstest.picScale < 1 && Math.abs(__mstest.picScale - __mstest.geo.comp / __mstest.geo.full) < 0.003), 'picture shrunk');
   const ls = await shownSecs(page, 40), tried = [];
   // sections from the top, middle and bottom of the picture, big and small
   const pick = await page.evaluate((ls) => { const t = __mstest, f = (l) => t.labelPos(l).y / t.H; return [ls.find((l) => f(l) < 0.25), ls.find((l) => f(l) > 0.4 && f(l) < 0.6), ls.find((l) => f(l) > 0.75), ls[ls.length - 1]].filter((l) => l != null); }, ls);

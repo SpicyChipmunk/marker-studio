@@ -223,7 +223,7 @@ function firstUse() {
   return t;
 }
 // The reminder is for anyone with something to lose (markers, palettes or guides) that changed since the last backup,
-// when that backup is over two weeks old, or there's never been one and the work is a few days old (or two guides).
+// when that backup is over two weeks old, or there's never been one and the work is over two weeks old (v289).
 function backupDue() {
   const all = state.saved.filter((s) => s.type === 'guide').length,
     // (guides saved as built with nothing coloured don't count: trying a photo isn't work to lose, v285)
@@ -241,7 +241,8 @@ function backupDue() {
   } catch (e) {}
   const other = !!(mk || pals) && (!bk || sig !== dataSig());
   if (!risk && !other) return null;
-  if (bk ? now - bk <= 14 * 864e5 : now - first < 3 * 864e5 && gs < 2) return null;
+  // (v289: 14 days from the first day too, however many guides: not a large card beside Continue on day one)
+  if (now - (bk || first) <= 14 * 864e5) return null;
   return { bk: bk, risk: risk, gs: gs, pals: pals, mk: mk };
 }
 // Home shows at most one card under its tiles, the first that is due of: this reminder, Add to Home Screen (it also
@@ -275,7 +276,7 @@ function renderBackupNudge() {
         list +
         (what.length === 1 && /^1 /.test(list) ? ' is' : ' are') +
         ' only stored on this device.') +
-    ' One file holds your markers, palettes and guides, to restore on a new phone or after clearing the browser.</span></div><div class="nrow"><button class="nb1" id="bkGo" data-bk="go">Back up now</button><button data-bk="later">Later</button></div>';
+    '</span></div><div class="nrow"><button class="nb1" id="bkGo" data-bk="go">Back up now</button><button data-bk="later">Later</button></div>';
 }
 // a guide's row in the Library from what is saved (d: as for sfSaveDesign)
 function guideMeta(d, id) {
@@ -572,7 +573,7 @@ function gatherGuides() {
         function (d) {
           if (d && d.payload && typeof d.payload.lmap === 'string')
             a.push({
-              name: typeof d.name === 'string' && d.name ? d.name : 'Colour guide',
+              name: typeof d.name === 'string' && d.name ? d.name : 'Colouring guide',
               W: d.W,
               H: d.H,
               keys: Array.isArray(d.keys) ? d.keys : [],
@@ -679,7 +680,11 @@ function backupAll(btnId) {
         errCard(
           _b && _b.parentNode,
           'The backup couldn\u2019t be saved on this device. Try again, or copy your markers and palettes as text ' +
-            (bid === 'backupDownload' ? 'below.' : 'in <b>Markers \u203a Back up &amp; restore</b>.'),
+            (bid === 'backupDownload'
+              ? 'below.'
+              : bid === 'guidesBackup'
+                ? 'below (<b>Markers &amp; palettes as text</b>).'
+                : 'in <b>Library \u203a Markers &amp; palettes as text</b>.'),
         );
         var cap = $('backupCap');
         if (cap) cap.textContent = 'Download was blocked here — try from the installed app.';
@@ -755,8 +760,8 @@ function markRestored(fts) {
 const RESTORE_FULL =
   'Couldn\u2019t restore \u2014 this browser\u2019s storage is full, so nothing was changed. Delete a few guides from the Library, then try again.';
 // whether a backup's markers would replace yours, asked first in the app's own dialog (v288): resolves true (replace)
-// or false (keep yours). Nothing to ask when they're the same, when the backup has none (yours are kept) or you have
-// none (theirs come in).
+// or false (keep yours), or null for Cancel (v289: Escape and the backdrop too), when nothing is restored. Nothing to
+// ask when they're the same, when the backup has none (yours are kept) or you have none (theirs come in).
 function askReplaceMarkers(o) {
   const arr = Array.isArray(o) ? o : o && Array.isArray(o.owned) ? o.owned : null;
   if (!arr) return Promise.resolve(false);
@@ -773,7 +778,7 @@ function askReplaceMarkers(o) {
             '; you have ' +
             nWord(state.owned.size, 'marker') +
             '. Either way, the backup\u2019s palettes and guides are added.',
-          '<button type="button" class="btn-primary" data-a="replace">Replace my markers</button><button type="button" data-a="keep">Keep mine</button>',
+          '<button type="button" class="btn-primary" data-a="replace">Replace my markers</button><button type="button" data-a="keep">Keep mine</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
           true,
         )
       : Promise.resolve(
@@ -787,9 +792,9 @@ function askReplaceMarkers(o) {
             ? 'replace'
             : 'keep',
         );
-  // (Escape or the backdrop: keep yours, as Cancel did)
+  // (Cancel, Escape or the backdrop: nothing restored)
   return ask.then(function (a) {
-    return a === 'replace';
+    return a === 'replace' ? true : a === 'keep' ? false : null;
   });
 }
 // replace: the answer from askReplaceMarkers
@@ -963,6 +968,13 @@ function restoreAny(file, btnId, done) {
       return;
     }
     (collection ? askReplaceMarkers(d) : Promise.resolve(false)).then(function (rep) {
+      if (rep === null) {
+        _btnFlash(bid, label, label, 10);
+        if (cap) cap.textContent = 'Nothing restored.';
+        if (done) done(null);
+        else toast('Nothing restored.');
+        return;
+      }
       restoreGo(d, fts, guides, collection, rep, bid, label, cap, done);
     });
   };
@@ -1024,6 +1036,7 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done) {
         done(any || ok || x.dup || x.bad || x.full ? got(ok, x) : null);
         return;
       }
+      if (x.openRep) msg += ' \u201c' + x.openRep + '\u201d was replaced by the backup\u2019s newer copy.';
       msg += copies
         ? ' ' +
           copies +
@@ -1060,7 +1073,9 @@ function _newGuideId() {
 // added or replaced, how many of those were added as "(from backup)" copies, and those already here, those unreadable
 // and those that couldn't be saved (storage full).
 function restoreGuideList(guides, _fts, done) {
-  var i = 0,
+  var open = window.SF && SF.guideBrief ? SF.guideBrief() : null,
+    openRep = '',
+    i = 0,
     ok = 0,
     copies = 0,
     dup = 0,
@@ -1092,7 +1107,7 @@ function restoreGuideList(guides, _fts, done) {
       }
       renderSaved();
       renderRecent();
-      if (done) done(ok, copies, { dup: dup, bad: bad, full: full });
+      if (done) done(ok, copies, { dup: dup, bad: bad, full: full, openRep: openRep });
       return;
     }
     var g = guides[i++];
@@ -1149,14 +1164,12 @@ function restoreGuideList(guides, _fts, done) {
           next();
           return;
         }
-        var replace = false,
-          copy = false;
+        var copy = false;
         if (_ex && (+_ex.ts || 0) > (+g.ts || 0)) {
           _gid = _newGuideId();
           _nm = _cn;
           copy = true;
         } else if (!_gid) _gid = _newGuideId();
-        else replace = !!_ex;
         Promise.resolve(
           sfSaveDesign({
             id: _gid,
@@ -1187,11 +1200,15 @@ function restoreGuideList(guides, _fts, done) {
             }
             ok++;
             if (copy) copies++;
+            // (the guide open on the Guide screen, replaced by the backup's newer copy: said in the summary, v289)
+            else if (_ex && open && open.id === id) openRep = _ex.name || open.name;
             const m = state.saved.find(function (x) {
               return x.id === id;
             });
             if (m) m.bk = m.ts || 1;
-            if (replace && window.SF && SF.libChanged) SF.libChanged(id, 'replaced');
+            // (also a guide deleted while open, restored with the same id: the open copy becomes the restored one, v289;
+            // libChanged leaves any other guide alone)
+            if (window.SF && SF.libChanged) SF.libChanged(id, 'replaced');
             next();
           });
       });

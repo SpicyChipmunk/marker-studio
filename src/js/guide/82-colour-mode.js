@@ -29,7 +29,7 @@ function relWake() {
     wakeLock = null;
   }
 }
-// ✓ Mark all done / Clear ticks for the open marker (the highlighted one). Clearing says so with an Undo that puts
+// ✓ Mark all coloured / Clear for the open marker (the highlighted one). Clearing says so with an Undo that puts
 // the ticks (and tones part-way done) back, keeping any ticked since
 function markActive(done) {
   if (!hlKey || !assignData) return;
@@ -54,7 +54,7 @@ function markActive(done) {
   updateProgress();
   renderFocusMarkers();
   if (!done && Object.keys(was).length)
-    toastAction('Ticks cleared for ' + esc(code), 'Undo', function () {
+    toastAction('Cleared ' + esc(code), 'Undo', function () {
       if (g !== loadGen || !assignData || comps.length !== K) return;
       const P = tp();
       for (const l in was) {

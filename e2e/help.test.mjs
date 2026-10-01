@@ -140,7 +140,7 @@ test('the help sheet: from the guide and Home, glossary, your data, About with t
   // glossary
   await page.click('#helpGloss > summary'); await idle(page);
   const terms = await page.evaluate(() => [...document.querySelectorAll('#helpGloss dt')].map((d) => d.textContent));
-  assert.deepEqual(terms, ['Section', 'Background / excluded', 'Colour pattern', 'Zone', 'Pin', 'Kept', 'Blend companions', 'Shading', 'Highlight / Base / Shadow (H/B/S)', 'Greyscale', 'Focus mode', 'Reveal']);
+  assert.deepEqual(terms, ['Section', 'Background / left out', 'Colour pattern', 'Zone', 'Pin', 'Kept', 'Blend companions', 'Shading', 'Highlight / Base / Shadow (H/B/S)', 'Greyscale', 'Focus mode', 'Reveal']);
   const pattern = await page.textContent('#helpGloss dd:nth-of-type(3)');
   for (const p of ['Gradient', 'Random', 'Blend', 'Photo', 'Manual']) assert.ok(pattern.includes(p), p);
   assert.ok(await page.isVisible('#helpGloss dt >> text=Focus mode'));
@@ -315,7 +315,7 @@ test('Help › Keyboard and screen readers: what needs touch or a mouse, what wo
   await page.click('#helpKeys > summary'); await page.waitForSelector('#helpKeys .hlpbody', { state: 'visible' });
   const t = await page.textContent('#helpKeys .hlpbody');
   assert.match(t, /needs touch or a mouse: Change colour, Pin, Paint and ticking off one section/);
-  assert.match(t, /By keyboard, use Colour along’s list instead: open a marker, then Mark all done or Find next\. Focus mode and everything else work by keyboard too\./);
+  assert.match(t, /By keyboard, use Colour along’s list instead: open a marker, then Mark all coloured or Find next\. Focus mode and everything else work by keyboard too\./);
   assert.match(t, /In Markers, press Shift\+F10 on a marker to open its details\./);
   await snap(page, 'help-keyboard');
   assert.deepEqual(errors, []);

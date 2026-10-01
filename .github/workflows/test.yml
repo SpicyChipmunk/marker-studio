@@ -45,6 +45,8 @@ jobs:
         with:
           name: e2e-artifacts
           path: e2e/.artifacts
+          # (the folder's name starts with a dot, and upload-artifact leaves hidden files out unless told)
+          include-hidden-files: true
   # The same browser tests on WebKit, Safari's engine, to catch iPhone-only problems early.
   # Informational: a failure here shows up in the run but doesn't fail the build.
   # GitHub's WebKit now and then misses a frame or a scroll event when the machine is busy, so here the tests run one
@@ -102,3 +104,5 @@ jobs:
         with:
           name: e2e-artifacts-webkit-${{ matrix.part }}
           path: e2e/.artifacts
+          # (the folder's name starts with a dot, and upload-artifact leaves hidden files out unless told)
+          include-hidden-files: true

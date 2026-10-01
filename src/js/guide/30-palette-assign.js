@@ -1255,7 +1255,8 @@ function thinPool(pool, N) {
   });
   return out.concat(evenPick((nG === 1 && mid.length ? mid : gr).slice().sort(byLightFirst), nG));
 }
-// The line under the Colours tab's choices: how many markers the guide uses, of how many, or (most useful first) that
+// The line under the Colours tab's choices: where the guide's markers come from (v289: no count of its own — the
+// slider says how many you asked for and the button under it how many are on the page), or (most useful first) that
 // the Mood had to take in markers outside it, or that the Gradient needs greys.
 const MOOD_WORDS = {
   vivid: ['bright', 'next brightest'],
@@ -1265,28 +1266,18 @@ const MOOD_WORDS = {
   earthy: ['earthy', 'nearest to earthy'],
 };
 function poolMsg() {
+  const yours = isDemo()
+    ? 'the ' + coll.length + ' catalogue markers'
+    : 'your ' + nWord(coll.length, 'marker');
   // (Random's Main colour and No repeats choose their own markers: 31-balance)
   if (family === 'random' && balance === 'main') {
     const p = balPlan();
     if (p.ok)
-      return (
-        'Using ' +
-        p.used +
-        ' of ' +
-        (p.seeded ? 'the palette\u2019s' : coll.length + (isDemo() ? ' catalogue' : '')) +
-        ' markers, shared out by Main colour (Pattern tab)'
-      );
+      return 'From ' + (p.seeded ? 'the palette' : yours) + ', shared out by Main colour (Pattern tab)';
   }
   if (family === 'random' && balance === 'mixed' && noRep) {
     const k = noRepPool(zoneList(), true).length;
-    return (
-      'Using ' +
-      k +
-      ' of ' +
-      coll.length +
-      ' markers: one per section' +
-      (k < zoneList().length ? ' as far as they go' : '')
-    );
+    return 'From ' + yours + ': one per section' + (k < zoneList().length ? ' as far as they go' : '');
   }
   const N = zoneList().length,
     grad = gradFamily(),
@@ -1299,20 +1290,17 @@ function poolMsg() {
     const saved = paletteSource === 'saved';
     if (n > src.seed)
       return (
-        'Using ' +
-        used +
-        ' markers: the palette\u2019s ' +
+        'From the palette\u2019s ' +
         src.seed +
-        (grad && used < n ? ' and nearby ones' : ' and ' + (n - src.seed) + ' nearby') +
+        ' markers and ' +
+        (grad && used < n ? 'nearby ones' : n - src.seed + ' nearby') +
         one
       );
     if (saved)
       return used >= n
-        ? 'Using all ' + n + ' of the saved palette\u2019s markers, as it is'
-        : 'Using ' + used + ' of the saved palette\u2019s ' + n + ' markers' + one;
-    return used >= n
-      ? 'Using all ' + n + ' generated markers'
-      : 'Using ' + used + ' of the ' + n + ' generated markers' + one;
+        ? 'All ' + n + ' of the saved palette\u2019s markers, as it is'
+        : 'From the saved palette\u2019s ' + n + ' markers' + one;
+    return used >= n ? 'All ' + n + ' generated markers' : 'From the ' + n + ' generated markers' + one;
   }
   const w = MOOD_WORDS[emphasis];
   if (src.widened && w) {
@@ -1329,7 +1317,7 @@ function poolMsg() {
       w[1]
     );
   }
-  const head = 'Using ' + used + ' of ' + coll.length + (isDemo() ? ' catalogue' : '') + ' markers';
+  const head = 'From ' + yours;
   if (grad) {
     const col = src.items.filter(notGreyM).length;
     if (used > col)
@@ -1450,7 +1438,7 @@ function buildGuide() {
     } catch (_) {}
     note(
       anyOwned
-        ? 'Every marker you own is marked dry \u2014 un-mark some in Markers, then Build guide.'
+        ? 'Every marker you own is marked dry \u2014 mark some as not dry in Markers, then Build guide.'
         : 'No markers in your collection \u2014 add the ones you own in Markers, then Build guide.',
     );
     return;
@@ -1681,6 +1669,21 @@ function setSavedSource(id) {
   return true;
 }
 // the saved palette a new guide will use: on the Guide screen's card and (v288) under Home's New colouring guide
+// Palette's Use in a guide › Recolour: the open guide's plan takes the palette and is laid again, from its Plan (from
+// Colour along it goes back to the Plan first; from Edit sections only with nothing edited: 'edits' otherwise)
+function recolourWith(id) {
+  if (!assignData) return setSavedSource(id);
+  if (sfmode === 'review') {
+    if (secEdPending()) return 'edits';
+    edGoPlan();
+  } else if (sfmode === 'color') {
+    if (focus) exitFocus();
+    exitColor();
+  }
+  if (sfmode !== 'guide') return false;
+  setSavedSource(id);
+  return reassign() !== false;
+}
 // A palette chosen for the next new guide while another is open (v288: Use in a guide › New guide with it) is held
 // here, apart from the open guide's plan, and becomes the new guide's when its photo is read (_loadImage).
 let _nextPal = null;

@@ -1,7 +1,7 @@
 /* ---- #10 Colour along: the marker list (docs/GUIDE-LAYOUT.md) ----
     One 48px row per marker: swatch, code and name, "3 of 9 done" (with shading on, its highlight › base › shadow line
     under it). Tapping a row opens it in place, one at a time: the open row is the marker highlighted on the picture
-    (hlKey), and holds ✓ Mark all done (Clear ticks once every section is done, with Undo), Find next (while any is
+    (hlKey), and holds ✓ Mark all coloured (Clear once every section is coloured, with Undo), Find next (while any is
     left) and ◐ Blends. Tapping it again closes it and shows all colours. The open row is always scrolled fully into
     view between the pinned picture and the bar, also when a press and hold on the picture found it. Markers finished while colouring stay where they
     are, dimmed; entering Colour along again gathers them in a collapsed "Done (n)" group at the bottom. */
@@ -9,7 +9,7 @@ let alDone = [],
   alDoneOpen = false,
   _maT = -1e9,
   _revT = 0;
-// a second tap on ✓ Mark all done within this many ms (by when the taps happened, not when they were handled: a slow
+// a second tap on ✓ Mark all coloured within this many ms (by when the taps happened, not when they were handled: a slow
 // redraw after the first tap must not stretch the window) is the second half of a double tap, not Clear ticks
 const MA_DOUBLE = 600;
 // How colour along works. The first time (until a marker's row is first opened): its first line, and More for the
@@ -17,7 +17,7 @@ const MA_DOUBLE = 600;
 // and counts as seen. After that, the ⓘ line.
 const AL_1 = 'Tap a marker to see its sections, then tap each section on the picture as you colour it.',
   AL_2 =
-    'Use <b><span aria-hidden="true">✓</span> Mark all done</b> for a whole marker. Press and hold a section to find its marker here.';
+    'Use <b><span aria-hidden="true">✓</span> Mark all coloured</b> for a whole marker. Press and hold a section to find its marker here.';
 let _alMore = false;
 function alongTips() {
   const u = shadeUse();
@@ -50,7 +50,7 @@ function alongHintSeen() {
 // Colour along's controls (focus mode has its own, in renderControls): the ⓘ line, the list and the bar
 function alongControls() {
   ctlEl.innerHTML =
-    '<div class="sfpane sfalongp"><div id="sfDone" class="sfpgdone" style="display:none">Page complete!<div id="sfDoneSum" class="sfpgsum"></div></div>' +
+    '<div class="sfpane sfalongp"><div id="sfDone" class="sfpgdone" style="display:none">Page finished!<div id="sfDoneSum" class="sfpgsum"></div></div>' +
     alongHint() +
     (zones.length
       ? '<div id="sfAlOrder" class="sfc-segs sfalorder" role="group" aria-label="Colour along goes through">' +
@@ -244,7 +244,7 @@ function alongRow(e, inDone) {
     esc(m.name || '') +
     (inDone && e.z != null ? ' <span class="sfazt">· ' + esc(zoneName(e.z)) + '</span>' : '') +
     '</span><span class="cnt">' +
-    (full ? 'All ' + e.n + ' done <span aria-hidden="true">✓</span>' : e.d + ' of ' + e.n + ' done') +
+    (full ? 'All ' + e.n + ' coloured <span aria-hidden="true">✓</span>' : e.d + ' of ' + e.n + ' coloured') +
     '</span>' +
     // (its tones: none when none of its sections is shaded; each zone's where they differ)
     // (several options: on as many lines as they take, rather than cut off at the row's edge)
@@ -286,7 +286,7 @@ function alongRow(e, inDone) {
       '<div class="sfacts" role="group" aria-label="' +
       esc(m.code) +
       '"><button type="button" id="sfMarkAll" class="sfedit">' +
-      (full ? 'Clear ticks' : '<span aria-hidden="true">✓</span> Mark all done') +
+      (full ? 'Clear' : '<span aria-hidden="true">✓</span> Mark all coloured') +
       '</button>' +
       (full ? '' : '<button type="button" id="sfFindNext" class="sfedit">Find next</button>') +
       '<button type="button" id="sfBlends" class="sfedit' +
@@ -340,7 +340,7 @@ function renderAlong() {
           '<div class="sfazh"><b>' +
           esc(zoneName(e.z)) +
           '</b><span>' +
-          (t.d >= t.n ? 'all ' + t.n + ' done' : t.d + ' of ' + t.n + ' done') +
+          (t.d >= t.n ? 'all ' + t.n + ' coloured' : t.d + ' of ' + t.n + ' coloured') +
           '</span></div>';
       }
       return hd + alongRow(e);
@@ -406,9 +406,9 @@ function alongClick(e) {
     sayLive(
       all
         ? en.n === 1
-          ? 'The ' + en.m.code + ' section ticked'
-          : 'All ' + en.n + ' ' + en.m.code + ' sections ticked'
-        : 'Ticks cleared for ' + en.m.code,
+          ? 'The ' + en.m.code + ' section coloured'
+          : 'All ' + en.n + ' ' + en.m.code + ' sections coloured'
+        : 'Cleared ' + en.m.code,
     );
     alongReveal();
   } else if (b.id === 'sfFindNext') findNext();
@@ -433,7 +433,7 @@ function alongOpen(k, found) {
   jumpToNext();
   alongReveal();
   const en = alongEntry(k);
-  if (en) sayLive((found ? 'Found ' : '') + alongName(en.m) + ', ' + en.d + ' of ' + en.n + ' done');
+  if (en) sayLive((found ? 'Found ' : '') + alongName(en.m) + ', ' + en.d + ' of ' + en.n + ' coloured');
 }
 // scroll so the open row is fully in view between the pinned picture (and its tool row) and the bar. The scroll is
 // smooth, and the pinned picture changes size as the page scrolls (and Safari stops a smooth scroll when anything else

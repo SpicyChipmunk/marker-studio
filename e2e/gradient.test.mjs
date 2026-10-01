@@ -169,40 +169,40 @@ test('Mood with a saved palette is greyed out (used as it is); with Generate pal
   assert.equal(calls[0][2], 'neutral');
   assert.equal(calls[calls.length - 1][2], 'vivid', 'a new palette for the Mood');
   assert.equal(await page.isEnabled('#sfMood [data-v="pastel"]'), true);
-  assert.match(await poolLine(page), /^Using (all )?\d+ .*generated markers/);
+  assert.match(await poolLine(page), /^(All|From the) \d+ generated markers/);
   // a saved palette
   await answerAsks(page);
   await page.evaluate(() => { const id = 777001; state.saved.unshift({ id, type: 'palette', name: 'P', keys: [...state.owned].slice(0, 6), ts: id }); save(); SF.setSavedSource(id); });
   await click(page, '#sfSrc [data-v="saved"]'); await idle(page);
   assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#sfMood button')].map((b) => b.disabled)), [true, true, true, true, true, true]);
-  assert.equal(await poolLine(page), 'Using all 6 of the saved palette’s markers, as it is');
+  assert.equal(await poolLine(page), 'All 6 of the saved palette’s markers, as it is');
   const was = await keys(page);
   await page.evaluate(() => { __mstest.styleVars.emphasis = 'pastel'; SF.reassign(); }); await idle(page);
   assert.deepEqual(await keys(page), was, 'a saved palette’s markers whatever the Mood');
   assert.deepEqual(errors, []);
 });
 
-test('which markers: never more than sections, no greys while there are coloured ones, and the line says how many', async () => {
+test('which markers: never more than sections, no greys while there are coloured ones, and the line says where they come from', async () => {
   const { page, errors } = await openApp();
   await sample320(page);
   await tab(page, 'colours');
   const n = await page.evaluate(() => __mstest.countedList().length);
-  assert.equal(await poolLine(page), 'Using 16 of 320 markers');
+  assert.equal(await poolLine(page), 'From your 320 markers');
   await page.evaluate(() => { __mstest.styleVars.limitN = 999; SF.reassign(); }); await idle(page);
   const k = await keys(page);
   assert.equal(k.length, n);
   assert.equal(new Set(k).size, n, 'one marker per section');
-  assert.equal(await poolLine(page), `Using ${n} of 320 markers: one per section`);
+  assert.equal(await poolLine(page), 'From your 320 markers: one per section');
   const greys = await page.evaluate(() => { const a = __mstest.assignData; return a.order.filter((l) => Math.hypot(a.assign[l].lab[1], a.assign[l].lab[2]) < 12).length; });
   assert.equal(greys, 0);
   // Random and Blend: the marker count's worth
   await tab(page, 'pattern'); await click(page, '#sfFam [data-v="blend"]'); await idle(page);
   await page.evaluate(() => { __mstest.styleVars.limitN = 20; SF.reassign(); }); await idle(page);
   await tab(page, 'colours');
-  assert.equal(await poolLine(page), 'Using 20 of 320 markers');
+  assert.equal(await poolLine(page), 'From your 320 markers');
   // demo mode: the catalogue
   await page.evaluate(() => { state.owned.clear(); save(); __mstest.coll = sfCollection(); SF.reassign(); }); await idle(page);
-  assert.match(await poolLine(page), /^Using 20 of \d+ catalogue markers$/);
+  assert.match(await poolLine(page), /^From the \d+ catalogue markers$/);
   assert.deepEqual(errors, []);
 });
 

@@ -2,7 +2,7 @@
 // Random's words without "pool"; Reset progress with one verb.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, letterGuide, idle, welcome, ROOT } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, letterGuide, idle, welcome, ROOT, notOnWebKit, WK } from './helpers.mjs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -11,14 +11,14 @@ after(teardown);
 
 const seen = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('ms-seen-hints') || '[]'));
 
-test('phone: once the first-time hints are seen, a one-time line names Codes, Greyscale and Full screen; not beside the sample’s line; ✕ closes it', async () => {
+test('phone: once the first-time hints are seen, a one-time line names Codes, Greyscale and Full screen; not beside the sample’s line; ✕ closes it', notOnWebKit(WK.photo), async () => {
   const { page, errors } = await openApp({ storage: { 'ms-seen-hints': '["tap","along"]' } });
   await sampleGuide(page);
   assert.equal(await page.isVisible('#sfSampleNote'), true);
   assert.equal(await page.locator('#sfToolTip').count(), 0, 'one line at a time: the sample’s first');
   await letterGuide(page);
   assert.equal(await page.isVisible('#sfToolTip'), true);
-  assert.equal((await page.textContent('#sfToolTip > span')).trim(), 'Under the picture: Codes shows the marker codes, Greyscale the picture in greys, Full screen.');
+  assert.equal((await page.textContent('#sfToolTip > span')).trim(), 'Under the picture: Codes shows the marker codes, Greyscale the picture in greys, and Full screen fills the screen.');
   assert.ok((await seen(page)).includes('tools'));
   // it stays through the visit (other tabs and back), then ✕ closes it
   await page.click('#sfTab-pattern'); await page.click('#sfTab-colours'); await idle(page);
@@ -31,7 +31,7 @@ test('phone: once the first-time hints are seen, a one-time line names Codes, Gr
   assert.deepEqual(errors, []);
 });
 
-test('a guide’s first visit says "Tap a section" first; and where the row has its words (iPad) there’s no tool line', async () => {
+test('a guide’s first visit says "Tap a section" first; and where the row has its words (iPad) there’s no tool line', notOnWebKit(WK.photo), async () => {
   {
     const { page, errors } = await openApp();
     await sampleGuide(page); await letterGuide(page);
@@ -61,7 +61,7 @@ test('Random says what is left to draw, and a drawn marker is put back (no "pool
   assert.deepEqual(errors, []);
 });
 
-test('Home’s New colouring guide: the first time, the Guide screen’s card; with guides made, the picker straight from Home, which stays until a photo is chosen', async () => {
+test('Home’s New colouring guide: the first time, the Guide screen’s card; with guides made, the picker straight from Home, which stays until a photo is chosen', notOnWebKit(WK.photo), async () => {
   const { page, errors } = await openApp();
   await welcome(page, 'look');
   await page.click('#mHome'); await idle(page);

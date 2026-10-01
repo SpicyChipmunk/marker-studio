@@ -530,7 +530,7 @@ test('Palette: Library and Save image are in a ⋯ menu beside Save, by tap or k
   // Clear: what it does is empty the palette, on a second tap
   assert.equal(await page.textContent('#reset'), 'Clear');
   await page.click('#reset');
-  assert.equal(await page.textContent('#reset'), 'Confirm?');
+  assert.equal(await page.textContent('#reset'), 'Clear all? Tap again');
   await page.click('#reset'); await idle(page);
   assert.equal(await page.evaluate(() => state.palettes.length), 0);
   assert.equal(await page.textContent('#reset'), 'Clear');

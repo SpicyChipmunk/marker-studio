@@ -362,7 +362,7 @@ function reseg() {
   segment();
   hasEdits = false;
   if (sfmode === 'review') render();
-  note('Re-detected \u2014 tap Undo to go back.');
+  note('Sections detected again \u2014 tap Undo to go back.');
   return true;
 }
 // the detection settings before a change to them (put back if the person says No above)
@@ -543,6 +543,8 @@ function _loadSample() {
       }
       if (gen !== loadGen) return;
       resetForNewPicture();
+      // (a palette held for the next new guide is this one's, the sample too, v289)
+      takeNextPal();
       pgOrig = null;
       srcImg = img;
       processSrc();
@@ -600,8 +602,6 @@ function fitSource(img) {
 }
 function _loadImage(file) {
   _smpLoad = false;
-  // (the open guide saved by now, stashDirty: a palette held for the next guide becomes this one's)
-  takeNextPal();
   note('Reading photo\u2026');
   const gen = ++loadGen;
   let url = null;
@@ -637,6 +637,8 @@ function _loadImage(file) {
         try {
           note('Detecting sections\u2026');
           resetForNewPicture();
+          // (once the photo has opened: one that won't leaves the open guide's palette alone, v289)
+          takeNextPal();
           srcImg = fitSource(img);
           enterWork();
           var _rs = document.getElementById('sfResume');

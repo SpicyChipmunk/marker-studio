@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
-import { setup, teardown, openApp, idle, sampleGuide, openAtScale, saveGuide, letterGuide, libItem } from './helpers.mjs';
+import { setup, teardown, openApp, idle, sampleGuide, openAtScale, saveGuide, letterGuide, libItem, notOnWebKit, WK } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -101,7 +101,7 @@ const pal = (id, name) => ({ id, type: 'palette', name, keys: ['Ohuhu|R014'], ts
 test('Home: one card at a time under the tiles, in order; putting one away shows the next', async () => {
   const storage = onboardedNoVer({
     [KEY]: appState3({ saved: [pal(7, 'P'), { id: 'x', type: 'guide' }] }), // one Library entry can't be read
-    'ms-first-use': String(Date.now() - 5 * DAY), // the backup reminder is due
+    'ms-first-use': String(Date.now() - 15 * DAY), // the backup reminder is due
     'ms-last-ver': 'v200', // What's new is due
     'ms-guide-auto': JSON.stringify({ dirty: true, name: 'Owl', keys: ['Ohuhu|R014'], ts: Date.now() }), // Resume
   });
@@ -141,7 +141,7 @@ test('Home: one card at a time under the tiles, in order; putting one away shows
 const toastText = (page) => page.evaluate(() => { const t = document.getElementById('msToast'); return t && t.classList.contains('on') ? t.textContent : ''; });
 
 test('Home cards: Back up comes first when it is due, then Add to Home Screen, then What’s new', async () => {
-  const storage = onboardedNoVer({ [KEY]: appState3(), 'ms-first-use': String(Date.now() - 5 * DAY), 'ms-last-ver': 'v200' });
+  const storage = onboardedNoVer({ [KEY]: appState3(), 'ms-first-use': String(Date.now() - 15 * DAY), 'ms-last-ver': 'v200' });
   const { page, errors } = await openApp({ userAgent: IPHONE, init: safariTab, storage });
   await idle(page);
   assert.deepEqual(await cards(page), { install: false, backup: true, news: false }, 'the backup reminder first');
@@ -160,7 +160,7 @@ test('Home cards: Back up comes first when it is due, then Add to Home Screen, t
 });
 
 test('Home cards: after backing up, the install card takes its turn', async () => {
-  const storage = onboardedNoVer({ [KEY]: appState3(), 'ms-first-use': String(Date.now() - 5 * DAY) });
+  const storage = onboardedNoVer({ [KEY]: appState3(), 'ms-first-use': String(Date.now() - 15 * DAY) });
   const { page, errors } = await openApp({ userAgent: IPHONE, init: safariTab, storage });
   await idle(page);
   assert.deepEqual(await cards(page), { install: false, backup: true, news: false });
@@ -190,7 +190,7 @@ test('Home cards: with no backup due, Add to Home Screen comes first as before',
 // ---- From v285 ----
 const hrect = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); return e ? e.getBoundingClientRect().toJSON() : null; }, sel);
 
-test('v285: the Continue card is the newest guide part-way coloured — its picture, how far, the marker to pick up — and opens Colour along at that marker', async () => {
+test('v285: the Continue card is the newest guide part-way coloured — its picture, how far, the marker to pick up — and opens Colour along at that marker', notOnWebKit(WK.photo), async () => {
   const { page, errors } = await openApp({ width: 834, height: 1194 });
   await sampleGuide(page); await saveGuide(page);
   await letterGuide(page); await page.waitForFunction(() => __mstest.inLibrary); await idle(page);

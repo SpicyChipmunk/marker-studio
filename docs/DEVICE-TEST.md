@@ -78,6 +78,23 @@ On a guide, open **Style** and set **Shading** to **Light & shadow**.
 - [ ] **Blend:** a tap still adds an anchor; press and hold a section shows Change colour / Pin. **Manual:** a tap opens the picker.
 - [ ] **Style → Pin colours:** taps pin and unpin sections directly.
 
+## 3g. The v288 review's decisions, v289 (12 min)
+
+On your phone (and an iPhone SE-size screen if you have one) and your iPad, with one of your own photographed pages.
+
+- [ ] **Back (Android, or the browser's Back):** open the Library, a sheet (⋯), Focus mode: each Back closes one; from Colour along, Back goes to the Plan; with nothing open, Back leaves as before. Closing things with their own buttons, then Back, doesn't leave a Back that does nothing.
+- [ ] **Phone Plan:** with a tall picture, the tabs and their first row are on the first screen; scrolling still shrinks the picture to the same size as before.
+- [ ] **Focus mode on the phone:** Greyscale, −, + and Fit are in a strip above the bottom bar, never over the picture.
+- [ ] **Sample, first view:** only "Tap a section…" under the tabs; change tab and the sample's line appears instead.
+- [ ] **Words:** Colour along says Mark all coloured, Clear, "All 9 coloured", Page finished; the Colours line says where markers come from ("From your 120 markers").
+- [ ] **Markers:** ⋯ is beside Copy codes and its menu covers nothing; Random and Match a colour are small.
+- [ ] **Library:** ⋯ on the name's row; lines read "not started", "yesterday"; the line under the title fits what's there.
+- [ ] **iPad Home:** with guides, no Library card (All guides goes there); no backup card in the first two weeks.
+- [ ] **Palette:** "Saved palettes ›" at the top opens the Library with palettes first; Custom and Photo on their own row; "Start from".
+- [ ] **New colouring guide with section edits not built:** the Guide screen asks first (Build again / Discard edits / Cancel); afterwards New colouring guide opens the picker.
+- [ ] **Restore** with different markers: Cancel (or Escape) restores nothing; restoring a backup with a newer copy of the open guide says so.
+- [ ] **Change colour:** the In this guide and Closest rows fade at their edge when there's more; the markers list's title counts the shading markers; Print's summary is short on a small phone. With a keyboard (iPad), Tab goes row to row and the arrows move within one.
+
 ## 3f. Colour along as your paper, the Library grid, v288 (12 min)
 
 On your iPad (both ways round) and your phone, with one of your own photographed pages part-way coloured.

@@ -1289,3 +1289,49 @@ The decisions in `docs/REVIEW-v287.md`, pressure-tested before building. New bro
 - `docs/GUIDE-LAYOUT.md` (#2, #4, #6, #10, the tip queue and the Library), `docs/DEVICE-TEST.md` 3f.
 - Cache bumped to `marker-studio-v288`.
 - Full run: 184 unit tests and 611 browser tests pass.
+
+# Changes — v289 (a fresh-eyes review of v288, and its decisions)
+
+Four reviewers went over v288 (code, a hands-on bug hunt, a hands-on UX walkthrough on iPad and phone sizes, and words and accessibility); `docs/REVIEW-v288.md` has what they found. The clear bugs were reproduced and fixed, and the decisions were built as recommended. New browser tests in `e2e/v289.test.mjs`; tests that described the old behaviour were updated.
+
+**Bugs fixed**
+- Edit sections › ← Plan › Discard on section edits brought back by Resume kept the edited map on screen, and the next autosave could save it over the guide as built. Discard with more edits than Undo keeps no longer reports success with merges left in the map.
+- "New guide with it", then a photo that won't open, switched the open guide to the new palette. The palette is taken only once the photo has opened (the sample takes it too).
+- Palette › Use in a guide › Recolour from Colour along or Edit sections said "Recoloured" and changed nothing. It goes back to the Plan first; with section edits not built it says to build or discard them first.
+- Change colour open while an iPad turned from landscape to portrait (or a window narrowed) collapsed to one row or lost its Done.
+- A backup restored over a guide deleted while open left the open guide showing unsaved ticks as "Saved"; it becomes the restored guide.
+- Generate palette and Draw a marker dropped the keyboard's focus. Going Home straight after colouring showed no Continue card for a moment (the guide now saves as you leave it). A colour only being tried in Change colour was kept as a pin by going to another screen.
+- Focus mode: taps on the picture did nothing after its tool row was made reachable by keyboard (v288's inert bug).
+- "Removed from your Library" shows over "Section edits not saved" when the open guide was deleted mid-edit. Narrow phones with large text cut "Colours" and "Shading" in the tab row. Codes are redrawn at the right size when the picture changes size between stages.
+
+**Small phones and large text**
+- A phone's Plan starts a tall picture smaller where it must, so the tabs and their first row are on the first screen (never below the size it shrinks to as you scroll).
+- Focus mode on a phone keeps Greyscale, −, + and Fit in a strip above the bottom bar, off the picture.
+
+**One thing, one count, one word**
+- The Colours line says where the markers come from ("From your 120 markers"); the slider says how many you asked for and the button how many are on the page.
+- On the sample's first view, "Tap a section…" comes first; the sample's line follows at the next tab.
+- Colour along: "Mark all coloured", "Clear", "All 9 coloured", "Page finished", "Only skipped sections left".
+- "Colouring guide" as a default name; "Random draw"; "Use this palette in a guide?" with "Recolour this guide"; "Done. Now changing…"; "Join the ends of a loop for me"; "Start the palette from" and "Start from"; "Sections detected again"; "mark some as not dry"; "Couldn't read that guide."
+
+**Screens**
+- Markers: ⋯ beside "Showing 120 markers · Copy codes" (its menu covers nothing); Random and Match a colour are small buttons.
+- Library: a line under the title that fits what's there; ⋯ on the name's row, not over the picture; Home's words for progress and when ("not started", "yesterday", then the date).
+- iPad Home: once Your guides shows with All guides, no Library card; the backup reminder comes after the usual 14 days (not on day one with two guides) and is one short line.
+- Palette: a "Saved palettes (N) ›" link at the top; Custom and Photo on a row of their own.
+
+**Safety and navigation**
+- Back (Android's, or the browser's) closes what's open first, one each: a dialog or the Library, a sheet, Focus mode, Reveal, full screen, then Colour along; then it leaves as before.
+- Home › New colouring guide with section edits not built goes to the Guide screen and asks first (Build again, Discard edits, Cancel).
+- Restore's "Replace my markers / Keep mine" has Cancel, and Escape is Cancel too: nothing is restored. A restore that replaces the open guide with the backup's newer copy says so.
+
+**Sheets and the keyboard**
+- Change colour's Closest and In this guide rows fade at their edge while there's more; the markers list's title counts the shading markers ("16 markers on this page, 3 more for shading"); Print's summary is short on a small phone.
+- Change colour by keyboard: one Tab stop per row or group, the arrow keys within it (Help says so).
+- Accessibility and words from the review: Focus mode's page progress for screen readers, ← Plan and Build's names, a palette band says what a tap does (and "locked"), the row outline frees its canvases, one pattern for tap-twice ("Untick 120 markers? Tap again"), "Couldn't copy", "Couldn't save", "That file isn't a Marker Studio guide", "My collection" on the swatch chart.
+
+**Tests, CI and docs**
+- `e2e/v289.test.mjs`; tests updated for the new words, sizes and layouts.
+- WebKit on GitHub: tests that turn a photo into a guide are left out there (it takes minutes on GitHub's WebKit, about 2 s in WebKit itself), and the toast tests start with the one-time screen-stays-on note told (Safari grants the wake lock). Failure screenshots are now kept (the upload skipped the hidden `e2e/.artifacts` folder).
+- `docs/GUIDE-LAYOUT.md` (#3, #10, the tip queue, the Library, Back), `docs/DEVICE-TEST.md` 3g, `docs/REVIEW-v288.md`.
+- Cache bumped to `marker-studio-v289`.

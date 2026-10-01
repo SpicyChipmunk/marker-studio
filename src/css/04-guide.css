@@ -139,6 +139,13 @@
   white-space: nowrap;
   padding: 0 4px;
 }
+/* (a narrow phone with large text: each tab as wide as its word needs, the rest shared out, so "Colours" and
+   "Shading" aren't cut while "Share" has room to spare, v289) */
+@media (max-width: 400px) {
+  #sfRoot .sftabbtn {
+    flex: 1 1 auto;
+  }
+}
 #sfRoot .sftabbtn.on {
   background: var(--ink);
   color: #151318;
@@ -799,7 +806,7 @@
   font-size: var(--t-sm);
   line-height: 1.4;
 }
-/* Autoclose loops (setEditMode shows and hides it through its inline display) */
+/* Join the ends of a loop (Autoclose) (setEditMode shows and hides it through its inline display) */
 #sfRoot #sfCtl .sfc-autoclose {
   align-items: center;
   gap: 6px;

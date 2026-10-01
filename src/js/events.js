@@ -51,7 +51,7 @@ resetBtn.addEventListener('click', () => {
     return;
   }
   resetBtn.dataset.arm = '1';
-  resetBtn.textContent = 'Confirm?';
+  resetBtn.textContent = 'Clear all? Tap again';
   armT = setTimeout(disarm, 3000);
 });
 drawBtn.addEventListener('click', action);
@@ -124,7 +124,7 @@ results.addEventListener('click', async (e) => {
   } else {
     const c = COLORS[i];
     const ok = await copyText(c.code);
-    flashCopy(ok ? 'Copied ' + c.code : 'Copy failed');
+    flashCopy(ok ? 'Copied ' + c.code : 'Couldn\u2019t copy');
   }
 });
 // Tick or untick one marker. The swatch stays where it is (dimmed when unticked) until the list is next redrawn
@@ -279,7 +279,12 @@ $('mkOwn').addEventListener('change', (e) => {
 $('mkCopy').addEventListener('click', async () => {
   if (mkOpenIdx == null) return;
   const ok = await copyText(COLORS[mkOpenIdx].code);
-  toast(ok ? 'Copied ' + esc(COLORS[mkOpenIdx].code) : 'Copy failed', 2200);
+  toast(
+    ok
+      ? 'Copied ' + esc(COLORS[mkOpenIdx].code)
+      : 'Couldn\u2019t copy \u2014 select the code and copy it yourself.',
+    ok ? 2200 : 5000,
+  );
 });
 $('mkSimilar').addEventListener('click', () => {
   if (mkOpenIdx == null) return;
@@ -297,7 +302,7 @@ copyBtn.addEventListener('click', async () => {
   const ok = await copyText(
     m.map((i) => (_bs.size > 1 ? COLORS[i].brand + ' ' : '') + COLORS[i].code).join(', '),
   );
-  flashCopy(ok ? 'Copied ' + m.length : 'Copy failed');
+  flashCopy(ok ? 'Copied ' + m.length : 'Couldn\u2019t copy');
 });
 searchInput.addEventListener('input', () => {
   searchStr = (searchInput.value || '').trim().toLowerCase();
@@ -549,7 +554,7 @@ function openPicker(t) {
   pickTarget = t;
   seedSearch.value = '';
   renderSeedGrid();
-  pickTitle.textContent = t.type === 'seed' ? 'Seed the palette' : 'Choose a marker';
+  pickTitle.textContent = t.type === 'seed' ? 'Start the palette from' : 'Choose a marker';
   pickCap.textContent =
     t.type === 'seed'
       ? 'Pick a marker to build the harmony around it.'
@@ -609,18 +614,15 @@ if (_uig)
     // second: its coloured sections keep their markers, so recolouring would change nothing)
     var g = window.SF && SF.guideBrief ? SF.guideBrief() : null;
     if (g && SF.askBox) {
-      var nm = esc(g.name),
-        btns =
-          (g.done
-            ? ''
-            : '<button type="button" class="btn-primary" data-a="recolour">Recolour \u201c' +
-              nm +
-              '\u201d</button>') +
-          '<button type="button"' +
-          (g.done ? ' class="btn-primary"' : '') +
-          ' data-a="new">New guide with it</button><button type="button" class="sfghost" data-a="stay">Cancel</button>';
+      var btns =
+        (g.done
+          ? ''
+          : '<button type="button" class="btn-primary" data-a="recolour">Recolour this guide</button>') +
+        '<button type="button"' +
+        (g.done ? ' class="btn-primary"' : '') +
+        ' data-a="new">New guide with it</button><button type="button" class="sfghost" data-a="stay">Cancel</button>';
       SF.askBox(
-        'Use this palette',
+        'Use this palette in a guide?',
         g.done
           ? '\u201c' +
               g.name +
@@ -667,29 +669,31 @@ function useInGuideGo(idxs, keys, ex, fresh) {
       )
         return;
     }
-    // the guide may ask first (it re-colours an open guide): on a no, the new palette leaves the Library again
-    // (a new guide: the palette is held for it, the open guide left as it is; recolour: the open guide's plan)
-    if (window.SF && fresh && SF.setNextPal) SF.setNextPal(id);
-    else if (window.SF && SF.setSavedSource && SF.setSavedSource(id) === false) {
-      if (entry) {
-        state.saved.splice(state.saved.indexOf(entry), 1);
-        forgetSaved(entry.id);
-        save(true);
-      }
-      return;
-    }
-    setMode('sections');
+    // a new guide: the palette is held for it, the open guide left as it is
     if (fresh) {
+      if (window.SF && SF.setNextPal) SF.setNextPal(id);
+      setMode('sections');
       if (window.SF && SF.pickPhoto) SF.pickPhoto();
       return;
     }
-    if (window.SF && SF.reassign) SF.reassign();
+    // recolour: the open guide goes to its Plan first (from Colour along or Edit sections, v289) and is laid again with
+    // it; section edits not yet built wait for Build again or Discard (the palette stays in the Library)
+    const r = window.SF && SF.recolourWith ? SF.recolourWith(id) : true;
+    setMode('sections');
+    if (r === 'edits') {
+      toast(
+        'Build again or discard your section edits first, then Use in a guide. The palette is in your Library.',
+        7000,
+      );
+      return;
+    }
     // (unless the guide has just said, under its tabs, that sections you've coloured were kept)
-    if (window.SF && SF.hasGuide && SF.hasGuide() && !document.getElementById('sfHeldNote'))
+    if (r !== false && window.SF && SF.hasGuide && SF.hasGuide() && !document.getElementById('sfHeldNote'))
       toast('Recoloured the guide with this palette.');
   }
 }
 savedBtn.addEventListener('click', () => openLibrary(true));
+$('palSaved').addEventListener('click', () => openLibrary(true));
 // Palette and Random: Save is the row's one button; the less-used Library and Save image sit in a ⋯ menu beside it
 // (the same buttons, moved in, so everything that opens or tests them still finds them by id)
 const libMore = document.createElement('button'),
@@ -1303,7 +1307,8 @@ function presetListHTML() {
           );
       } else {
         rst.dataset.arm = '1';
-        rst.textContent = 'Tap again to clear all';
+        rst.textContent =
+          'Clear all ' + state.owned.size + (state.owned.size === 1 ? ' marker' : ' markers') + '? Tap again';
         setTimeout(function () {
           if (rst) {
             rst.dataset.arm = '';
@@ -1348,7 +1353,7 @@ ownNoneBtn.addEventListener('click', () => {
   }
   ownNoneBtn.dataset.arm = '1';
   unownAt = Date.now();
-  ownNoneBtn.textContent = 'Untick ' + m.length + '? Tap again';
+  ownNoneBtn.textContent = 'Untick ' + m.length + (m.length === 1 ? ' marker' : ' markers') + '? Tap again';
   unownT = setTimeout(unownDisarm, 3000);
 });
 // Markers' ⋯ (v288): the rarer and riskier actions out of the way: Untick all shown (asks with a second tap, then
@@ -1376,7 +1381,9 @@ backupBtn.innerHTML = 'Back up &amp; restore <span class="mkmsub">(in the Librar
   mkMenu.appendChild(b);
 });
 mkMoreWrap.append(mkMore, mkMenu);
-$('ownStateWrap').appendChild(mkMoreWrap);
+// (v289: beside "Showing 120 markers · Copy codes", where its menu covers nothing it acts on; shown on Markers only)
+mkMoreWrap.style.display = 'none';
+copyBtn.after(mkMoreWrap);
 const mkItems = () =>
   [...mkMenu.querySelectorAll('button')].filter((b) => b.style.display !== 'none' && !b.disabled);
 function mkMenuOpen(on, focusFirst) {
@@ -1396,7 +1403,8 @@ mkMenu.addEventListener(
   'click',
   (e) => {
     const b = e.target.closest('button');
-    if (!b || (b === ownNoneBtn && ownNoneBtn.dataset.arm !== '1')) return;
+    // (Untick's first tap asks in place; a second within 400 ms is a double tap's, ignored there too, so it stays open)
+    if (!b || (b === ownNoneBtn && (ownNoneBtn.dataset.arm !== '1' || Date.now() - unownAt < 400))) return;
     mkMenu.hidden = true;
     mkMore.setAttribute('aria-expanded', 'false');
     mkMore.focus({ preventScroll: true });
@@ -1514,6 +1522,10 @@ backupRestore.addEventListener('click', () => {
     const arr = Array.isArray(o) ? o : o && Array.isArray(o.owned) ? o.owned : null;
     if (!arr) throw 0;
     askReplaceMarkers(o).then(function (rep) {
+      if (rep === null) {
+        backupCap.textContent = 'Nothing restored.';
+        return;
+      }
       let r = null;
       try {
         r = applyCollectionBackup(o, undefined, rep);

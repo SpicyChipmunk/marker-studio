@@ -1,7 +1,7 @@
 // Colour along (Release 3, docs/GUIDE-LAYOUT.md #10): the marker list starts straight under the pinned picture, one
-// 48px row per marker; tapping a row opens it in place (Mark all done ↔ Clear ticks, Find next, ◐ Blends) and
+// 48px row per marker; tapping a row opens it in place (Mark all coloured ↔ Clear, Find next, ◐ Blends) and
 // highlights the marker; the open row is always scrolled fully into view between the picture and the bar; markers
-// finished earlier are gathered in a "Done (n)" group when Colour along is entered again. Also: Clear ticks and
+// finished earlier are gathered in a "Done (n)" group when Colour along is entered again. Also: Clear and
 // Reset progress, press and hold on a section, the first-time instructions, finishing the page, and the wake lock.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -58,7 +58,7 @@ test('the list starts right under the pinned block: an ⓘ line, then one 48px r
   const rs = await rows(page), N = await page.evaluate(() => __mstest.assignData.N);
   assert.ok(rs.length > 5);
   assert.deepEqual([...new Set(rs.map((r) => r.h))], [48], 'every closed row is one 48px line');
-  assert.ok(rs.every((r) => r.exp === 'false' && !r.open && /^0 of \d+ done$/.test(r.cnt)));
+  assert.ok(rs.every((r) => r.exp === 'false' && !r.open && /^0 of \d+ coloured$/.test(r.cnt)));
   assert.equal(await page.locator('#sfAlist .sfarow .sfah .nm b').first().textContent(), await page.evaluate(() => { const k = document.querySelector('#sfAlist .sfarow').dataset.k; return k.split('|').pop(); }), 'code first in the row');
   assert.equal(await toolStatus(page), `0 of ${N} coloured`, 'progress lives in the tool row');
   assert.ok(await page.evaluate(() => { const n = document.querySelector('#sfAlist .sfah .nm'); return getComputedStyle(n).textOverflow === 'ellipsis' && getComputedStyle(n).whiteSpace === 'nowrap'; }), 'the name is cut short with an ellipsis');
@@ -75,11 +75,11 @@ test('after the first time the instructions are one ⓘ line that opens in place
   assert.ok((await i.boundingBox()).height >= 44, 'a 44px tap height');
   await i.click();
   assert.equal(await i.getAttribute('aria-expanded'), 'true');
-  assert.match(await i.textContent(), /Mark all done/);
+  assert.match(await i.textContent(), /Mark all coloured/);
   assert.deepEqual(errors, []);
 });
 
-test('a row opens in place, one at a time: Mark all done ↔ Clear ticks, Find next, Blends; tapping it again closes it', async () => {
+test('a row opens in place, one at a time: Mark all coloured ↔ Clear, Find next, Blends; tapping it again closes it', async () => {
   const { page, errors } = await open();
   await along(page);
   const N = await page.evaluate(() => __mstest.assignData.N);
@@ -88,7 +88,7 @@ test('a row opens in place, one at a time: Mark all done ↔ Clear ticks, Find n
   let rs = await rows(page);
   assert.equal(rs[0].open, true); assert.equal(rs[0].exp, 'true');
   assert.equal(await hl(page), r0.k, 'the open row is the marker highlighted on the picture');
-  assert.deepEqual(await page.$$eval('#sfAlist .sfarow.open .sfacts button', (bs) => bs.map((b) => b.id + ':' + b.textContent.trim())), ['sfMarkAll:✓ Mark all done', 'sfFindNext:Find next', 'sfBlends:Blends']);
+  assert.deepEqual(await page.$$eval('#sfAlist .sfarow.open .sfacts button', (bs) => bs.map((b) => b.id + ':' + b.textContent.trim())), ['sfMarkAll:✓ Mark all coloured', 'sfFindNext:Find next', 'sfBlends:Blends']);
   // another row: the first one closes
   await clickRow(page, 1);
   rs = await rows(page);
@@ -101,16 +101,16 @@ test('a row opens in place, one at a time: Mark all done ↔ Clear ticks, Find n
   assert.equal(await page.$eval('#sfToolProg', (e) => e.style.width), Math.round((n / N) * 100) + '%', 'the progress line moves');
   rs = await rows(page);
   assert.equal(rs[1].k, k, 'stays in place'); assert.ok(rs[1].open && rs[1].full, 'open and dimmed');
-  assert.equal(rs[1].cnt, `All ${n} done ✓`);
-  assert.equal(await page.textContent('#sfMarkAll'), 'Clear ticks');
+  assert.equal(rs[1].cnt, `All ${n} coloured ✓`);
+  assert.equal(await page.textContent('#sfMarkAll'), 'Clear');
   assert.equal(await hl(page), k, 'still highlighted');
   assert.equal(await page.locator('#sfFindNext').count(), 0, 'no Find next on a finished marker');
   // (a second tap within 400 ms of Mark all done is the rest of a double tap, not Clear ticks; see "Clear ticks can be undone…" below)
   await pause(page, 400, 'a tap after the double-tap window is a Clear ticks');
   await page.click('#sfMarkAll'); await idle(page);
   assert.equal(await toolStatus(page), `0 of ${N} coloured`);
-  assert.equal(await page.textContent('#sfMarkAll'), '✓ Mark all done');
-  assert.match(await page.textContent('#msToast'), /Ticks cleared for .+Undo/, 'Clear ticks offers Undo');
+  assert.equal(await page.textContent('#sfMarkAll'), '✓ Mark all coloured');
+  assert.match(await page.textContent('#msToast'), /Cleared .+Undo/, 'Clear ticks offers Undo');
   // a tick on the picture keeps the row open and updates its count
   const secs = await secsOf(page, k);
   await scrollTop(page);
@@ -118,7 +118,7 @@ test('a row opens in place, one at a time: Mark all done ↔ Clear ticks, Find n
   assert.equal(await page.evaluate((l) => __mstest.colored[l], secs[0]), 1);
   assert.equal(await toolStatus(page), `1 of ${N} coloured`);
   rs = await rows(page);
-  assert.ok(rs[1].open, 'stays open across progress updates'); assert.equal(rs[1].cnt, `1 of ${n} done`);
+  assert.ok(rs[1].open, 'stays open across progress updates'); assert.equal(rs[1].cnt, `1 of ${n} coloured`);
   // Find next zooms in on a section still to do: to fit it (v284: as focus mode does, 1× to 4×), its label's point in
   // view, and says how many are left
   await page.click('#sfFindNext'); await idle(page);
@@ -173,7 +173,7 @@ test('the open row scrolls fully into view: a row near the bottom, and a press a
   assert.equal(await page.evaluate((l) => __mstest.colored[l], l), 0, 'a press and hold does not tick it');
   assert.equal(await page.getAttribute(`#sfAlist .sfarow[data-k="${k}"] .sfah`, 'aria-expanded'), 'true');
   assertInView(await openBox(page), 'found by press and hold');
-  assert.match(await page.textContent('#sfLive'), /^Found .+, 0 of \d+ done$/, 'announced');
+  assert.match(await page.textContent('#sfLive'), /^Found .+, 0 of \d+ coloured$/, 'announced');
   assert.deepEqual(errors, []);
 });
 
@@ -221,15 +221,15 @@ test('keyboard and screen readers: rows are buttons with aria-expanded, the acti
   await first.focus(); await page.keyboard.press('Enter'); await idle(page);
   assert.equal(await first.getAttribute('aria-expanded'), 'true');
   assert.ok(await page.evaluate(() => document.activeElement.matches('#sfAlist .sfarow.open .sfah')), 'focus stays on the row');
-  assert.match(await page.textContent('#sfLive'), /, 0 of \d+ done$/);
+  assert.match(await page.textContent('#sfLive'), /, 0 of \d+ coloured$/);
   const order = [];
   for (let j = 0; j < 3; j++) { await page.keyboard.press('Tab'); order.push(await page.evaluate(() => document.activeElement.id)); }
   assert.deepEqual(order, ['sfMarkAll', 'sfFindNext', 'sfBlends']);
   await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Enter'); await idle(page);
   assert.equal(await page.evaluate(() => document.activeElement.id), 'sfMarkAll', 'focus kept after the list redraws');
-  assert.equal(await page.textContent('#sfMarkAll'), 'Clear ticks');
-  assert.match(await page.textContent('#sfLive'), /^(All \d+ .+ sections|The .+ section) ticked$/);
+  assert.equal(await page.textContent('#sfMarkAll'), 'Clear');
+  assert.match(await page.textContent('#sfLive'), /^(All \d+ .+ sections|The .+ section) coloured$/);
   await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Enter'); await idle(page);
   assert.equal(await first.getAttribute('aria-expanded'), 'false', 'Enter on the open row closes it');
   assert.equal(await page.textContent('#sfLive'), 'Showing all colours');
@@ -353,9 +353,10 @@ const rect = (page, sel) => page.evaluate((s) => { const e = document.querySelec
 const pinH = (page) => page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pinH')) || 0);
 const toastOn = (page) => page.evaluate(() => { const t = document.getElementById('msToast'); return !!(t && t.classList.contains('on')); });
 
-test('finishing the page in Colour along brings "Page complete!" and its Reveal & share into view, with no toast over the open row', async () => {
+test('finishing the page in Colour along brings "Page finished!" and its Reveal & share into view, with no toast over the open row', async () => {
   for (const [w, h] of [[390, 844], [375, 667]]) {
-    const { page, errors, ctx } = await openApp({ width: w, height: h });
+    // (the one-time "Your screen stays on" toast told already: Safari keeps the screen on, headless Chromium doesn't)
+    const { page, errors, ctx } = await openApp({ width: w, height: h, storage: { 'ms-wake-told': '1' } });
     await sampleGuide(page); await idle(page);
     await page.click('#sfColor'); await idle(page);
     // every marker but the last done at once; the last from its open row, far down the list
@@ -368,7 +369,7 @@ test('finishing the page in Colour along brings "Page complete!" and its Reveal 
     assert.ok(dn.top >= top - 1 && dn.bottom <= bar.top + 1, `${w}×${h}: the banner is on the screen under the pinned block (${dn.top}–${dn.bottom}, pinned ${top}, bar ${bar.top})`);
     const rv = await rect(page, '#sfAlongRev');
     assert.equal(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.id, [rv.x + rv.width / 2, rv.y + rv.height / 2]), 'sfAlongRev', 'Reveal & share can be tapped');
-    assert.equal(await toastOn(page), false, 'no toast over the list');
+    assert.equal(await toastOn(page), false, 'no toast over the list: ' + await page.evaluate(() => document.getElementById('msToast')?.textContent));
     assert.match(await page.textContent('#sfLive'), /Finished/, 'screen readers hear it');
     if (w === 390) await shot(page, 'g1-1-after');
     // in focus mode the toast stays: Reveal & share is in its own bottom bar
@@ -451,7 +452,7 @@ test('Colour along, the first time: two lines and More; opening a marker folds t
   assert.equal(await seen(), false, 'not seen yet');
   await snap(page, 'a-along-first');
   await page.click('#sfAlMore'); await idle(page);
-  assert.equal((await page.textContent(h + ' .sfit')).trim(), 'Tap a marker to see its sections, then tap each section on the picture as you colour it. Use ✓ Mark all done for a whole marker. Press and hold a section to find its marker here.');
+  assert.equal((await page.textContent(h + ' .sfit')).trim(), 'Tap a marker to see its sections, then tap each section on the picture as you colour it. Use ✓ Mark all coloured for a whole marker. Press and hold a section to find its marker here.');
   assert.equal(await page.locator('#sfAlMore').count(), 0);
   // the first row opened: the ⓘ line, closed, and seen
   await page.click('#sfAlist .sfarow .sfah'); await idle(page);
@@ -462,7 +463,7 @@ test('Colour along, the first time: two lines and More; opening a marker folds t
   assert.equal(await seen(), true);
   // it opens in place with all of it
   await i.click();
-  assert.match(await i.textContent(), /Tap a marker to see its sections, then tap each section on the picture as you colour it\. Use ✓ Mark all done for a whole marker\./);
+  assert.match(await i.textContent(), /Tap a marker to see its sections, then tap each section on the picture as you colour it\. Use ✓ Mark all coloured for a whole marker\./);
   await i.click();
   // later visits: the ⓘ line
   await page.click('#sfDoneBtn'); await idle(page);

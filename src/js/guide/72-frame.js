@@ -67,13 +67,24 @@ function workOn(on) {
   if (w) w.classList.toggle('sfworkon', !!on);
 }
 // the picture's sizes: full and floor heights, the pinned block's offset, --pinH, and the controls' min-height
+let _ctlGap = 12, // (see frameSize)
+  _labRaf = 0;
 function frameSize() {
   if (!cv || !sfView || !picBox || !cv.width || !cv.height || !workEl || workEl.offsetParent === null) return;
   const side = sideBySide(),
     ar = cv.height / cv.width,
     tools = document.getElementById('sfZoomCtl'),
     vh = baseVH();
+  // (turned from side by side to one column with a sheet open, an iPad rotated: the picture is pinned at its floor size
+  // again so the sheet has its room, as when it opened, v289)
+  const wasSide = workEl.classList.contains('sfside');
   workEl.classList.toggle('sfside', side);
+  if (wasSide && !side && sheetO)
+    requestAnimationFrame(function () {
+      if (!sheetO) return;
+      if (sheetO.o.pin !== false) pinPicture();
+      placeSheet();
+    });
   workEl.classList.toggle('sfalong', sfmode === 'color');
   workOn(!!workEl && workEl.style.display !== 'none');
   let full, cw;
@@ -137,7 +148,32 @@ function frameSize() {
       // (a very short screen with large text, 320×568 at 1.5×: the floor gives way too, down to 100px, so the tool row
       // never runs under the bar, v287)
       if (cap < comp) comp = Math.max(cap, Math.min(comp, 100));
-      full = Math.max(comp, Math.min(full, cap));
+      // (Edit sections: its heading and tool buttons on the first screen too, where the floor allows, v289)
+      let capR = cap;
+      const edt = sfmode === 'review' && ctlEl ? ctlEl.querySelector('#sfEdit') : null;
+      if (edt && edt.offsetParent)
+        capR -= Math.ceil(edt.getBoundingClientRect().bottom - ctlEl.getBoundingClientRect().top) + 8;
+      full = Math.max(comp, Math.min(full, capR));
+      // (v289) a phone's Plan: the tabs and their first row on the first screen too, where the floor allows: the
+      // picture starts smaller (a tall one; a wide one is short enough already)
+      const tabsEl = !big && sfmode === 'guide' && ctlEl ? ctlEl.querySelector('.sftabs') : null,
+        sen = tabsEl && ctlEl.querySelector('.sftabsen');
+      if (sen && tabsEl.offsetParent && tools) {
+        const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16,
+          cr = ctlEl.getBoundingClientRect(),
+          // (the gap between the tool row and the controls as laid out at the top of the page: scrolled, the tool row
+          // is pinned and the gap is the scroll's)
+          gap =
+            window.scrollY > 0.5
+              ? _ctlGap
+              : (_ctlGap = Math.ceil(cr.top - tools.getBoundingClientRect().bottom)),
+          need =
+            gap +
+            Math.ceil(sen.getBoundingClientRect().top - cr.top) +
+            tabsEl.offsetHeight +
+            Math.round(4.75 * rem);
+        full = Math.max(comp, Math.min(full, cap - need));
+      }
     }
     cw = Math.min(vw, full / ar);
     geo = { full: full, comp: comp, side: false, shrink: false };
@@ -147,6 +183,14 @@ function frameSize() {
   // of the frame, not stretched to it, v287)
   const ch = Math.min(full, Math.max(1, Math.round(cw * ar)));
   cvSize(Math.round(cw), ch);
+  // (the picture drawn at another size than its codes were sized for, from Edit sections' first screen to the Plan:
+  // drawn again, so codes stay 6 screen pixels at the least, v289)
+  // (checked again in the frame: renderGuide's own size pass comes here before it sets _labMin, one redraw at most)
+  if (assignData && sfmode !== 'review' && _labMin && labMinFor(_labB) !== _labMin && !_labRaf)
+    _labRaf = requestAnimationFrame(function () {
+      _labRaf = 0;
+      if (assignData && sfmode !== 'review' && labMinFor(_labB) !== _labMin) renderGuide();
+    });
   picBox.classList.toggle('sfshort', ch < full - 1);
   picBox.style.height = full + 'px';
   sfView.style.setProperty('--picShift', geo.full - geo.comp + 'px');
@@ -384,6 +428,18 @@ function switchTab(t) {
   ctlEl.querySelectorAll('.sftab').forEach(function (pn) {
     pn.style.display = pn.dataset.tab === gTab ? '' : 'none';
   });
+  // (the first-time "Tap a section" line goes at the first change of tab, and the sample's line takes its place, v289)
+  const tapL = _tapTab && t !== _tapTab ? ctlEl.querySelector('.sfinfo[data-hint="tap"]') : null;
+  if (_tapTab && t !== _tapTab) _tapTab = false;
+  if (tapL) {
+    const sn = sampleNoteHTML();
+    if (sn) {
+      tapL.insertAdjacentHTML('beforebegin', sn);
+      sampleNoteWire();
+    }
+    tapL.remove();
+    paneMin();
+  }
   if (th != null) window.scrollTo(0, Math.round(th));
   picScroll();
   fitPairs();
@@ -850,6 +906,10 @@ function closeSheet(quiet) {
       showTip(S.o.tipSec, true, true);
       t = tipEl && tipEl.querySelector('[data-a="change"]');
     }
+    // (nothing to go back to, the tip gone: the pinned line's Unpin, else the open tab, on screen under the picture,
+    // rather than ⋯ scrolled away at the top, v289)
+    if (!ok(t)) t = document.getElementById('sfPinUn');
+    if (!ok(t) && sfmode === 'guide') t = document.getElementById('sfTab-' + gTab);
     if (!ok(t)) t = document.getElementById('sfMore');
     if (!ok(t)) t = cv;
     if (t)

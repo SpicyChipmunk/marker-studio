@@ -78,7 +78,7 @@ function openDesignObj(d, id, resumed, quiet, col) {
       // a section map with a different section on nearly every pixel would take all the memory there is: turned away first
       const _lm = lmapRead(img);
       if (!_lm) {
-        note('Couldn’t load that guide \u2014 its picture didn\u2019t decode.');
+        note('Couldn’t load that guide \u2014 its picture couldn\u2019t be read.');
         return;
       }
       if (lmapCount(_lm, MAXSECS) > MAXSECS) {
@@ -469,7 +469,7 @@ function openDesignObj(d, id, resumed, quiet, col) {
     }
   };
   img.onerror = function () {
-    if (gen === loadGen) note('Couldn’t decode that guide.');
+    if (gen === loadGen) note('Couldn’t read that guide.');
   };
   img.src = d.lmap;
 }

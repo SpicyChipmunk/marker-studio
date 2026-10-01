@@ -33,15 +33,19 @@ test('picture size: 55% shrinking with the scroll to 45% (40% under 780px tall);
     const cap = await page.evaluate(() => Math.floor(innerHeight - document.querySelector('#sfWork>.sfbar').offsetHeight - 40 - (document.getElementById('sfHead').getBoundingClientRect().bottom + scrollY)));
     let full = Math.max(floor, Math.min(full55, cap));
     if (h === 667) assert.ok(full < full55, 'capped on the short screen: ' + full);
-    // (within a pixel: the app measures the header's foot and the rows' heights with their fractions)
-    const full0 = await picH(page);
-    assert.ok(Math.abs(full0 - full) <= 1, `${w}×${h}: full size at the top (${full0}, ${full})`);
+    // (within a pixel: the app measures the header's foot and the rows' heights with their fractions; v289: smaller
+    // still where that lets the tabs and their first row show, down to the floor)
+    const full0 = await picH(page), tabsB = (await rect(page, '.sftabs')).bottom, barT = (await rect(page, '#sfWork>.sfbar')).top;
+    assert.ok(full0 <= full + 1 && full0 >= floor, `${w}×${h}: full size at the top (${full0}, ${full})`);
+    if (full0 < full - 1) assert.ok(full0 === floor || Math.abs(tabsB + 76 - barT) <= 2, `the tabs and a row above the bar: ${tabsB}, ${barT}`);
+    else assert.ok(tabsB + 76 <= barT + 1, 'room for the tabs and a row');
+    assert.ok(tabsB <= barT, 'the tabs on the first screen');
     full = full0;
     assert.deepEqual(await page.evaluate(() => [__mstest.geo.full, __mstest.geo.comp]), [full, floor]);
     const top0 = await page.evaluate(() => document.getElementById('sfView').getBoundingClientRect().top + scrollY);
     // in step with the scroll: 30px past the block's top takes 30px off, with the picture's top kept at the screen top
     await scrollAt(page, Math.round(top0) + 30);
-    assert.ok(Math.abs((await picH(page)) - (full - 30)) <= 1, `${w}×${h}: 30px scrolled, ${await picH(page)}`);
+    assert.ok(Math.abs((await picH(page)) - Math.max(floor, full - 30)) <= 1, `${w}×${h}: 30px scrolled, ${await picH(page)}`);
     assert.ok(Math.abs((await rect(page, '#sfCanvas')).top) <= 1, 'the picture stays at the top of the screen');
     // never below the floor, however far the page goes
     for (const y of [top0 + (full - floor), top0 + (full - floor) + 60, 5000]) { await scrollAt(page, Math.round(y)); assert.equal(await picH(page), floor, `${w}×${h} at ${Math.round(y)}: floor`); }
@@ -96,8 +100,9 @@ test('switching tabs never moves anything: not pinned, pinned at the threshold, 
     assert.equal(await page.evaluate(() => scrollY), th, `${t}: same scroll`);
     assert.equal(await picH(page), 380, `${t}: same picture size`);
     assert.ok(Math.abs((await rect(page, '.sftabs')).top - tabs0.top) <= 0.5, `${t}: tabs where they were`);
-    // (under the one-time "tap a section" hint, which sits under the tabs on the first visit)
-    const pane = await rect(page, `.sftab[data-tab="${t}"]`), hint = await rect(page, '.sfinfo.sfonce'); // (v288: hidden on Shading and Share, its room kept)
+    // (under the line under the tabs: the sample's, which takes the place of the first visit's "tap a section" hint at
+    // the first change of tab, v289)
+    const pane = await rect(page, `.sftab[data-tab="${t}"]`), hint = (await rect(page, '#sfSampleNote')) || (await rect(page, '.sfinfo.sfonce'));
     assert.ok(Math.abs(pane.top - (hint ? hint.bottom : tabs0.bottom)) <= 2, `${t}: opens at its top`);
   }
   // scrolled into a long tab: the next one opens at its top with the tabs still pinned
@@ -221,7 +226,7 @@ test('overlays stay on the shrunk picture: the sun, the tip over a tapped sectio
     const off = await page.evaluate(() => { const s = document.getElementById('sfSun').getBoundingClientRect(), c = document.getElementById('sfCanvas').getBoundingClientRect(); return [s.left + s.width / 2 - (c.left + 0.5 * c.width), s.top + s.height / 2 - (c.top + 0.45 * c.height)]; });
     assert.ok(Math.hypot(off[0], off[1]) < 1.5, `sun on its point with the picture ${d}px shrunk: ${off}`);
   }
-  assert.ok(await page.evaluate(() => __mstest.picScale) < 0.83, 'measured shrunk');
+  assert.ok(await page.evaluate(() => __mstest.picScale < 1 && Math.abs(__mstest.picScale - __mstest.geo.comp / __mstest.geo.full) < 0.01), 'measured shrunk');
   // the tip sits by the tapped section, above or below it
   await page.click('#sfShade [data-v="off"]'); await idle(page);
   await scrollAt(page, Math.round(top0) + 84);
@@ -310,9 +315,11 @@ test('the sample becomes a guide with a name, tabs and a pinned picture that shr
     const r = await page.evaluate(() => { const c = document.getElementById('sfCanvas').getBoundingClientRect(); return [Math.round(c.height), Math.round(c.top)]; });
     sizes.push(r[0]); tops.push(r[1]);
   }
-  assert.equal(sizes[0], 464, 'full size at the top (55% of 844)');
+  // (v289: under 55% where the tabs and their first row need the room)
+  const full = await page.evaluate(() => __mstest.geo.full);
+  assert.ok(full > 380 && full <= 464 && sizes[0] === full, `full size at the top (at most 55% of 844): ${sizes[0]}`);
   assert.equal(sizes[3], 380, 'floor size once scrolled (45% of 844)');
-  assert.deepEqual([sizes[2], sizes[4], sizes[5]], [380, 380, 464], 'the same size for the same place, both ways');
+  assert.deepEqual([sizes[2], sizes[4], sizes[5]], [380, 380, full], 'the same size for the same place, both ways');
   assert.ok(tops[3] >= -1 && tops[3] <= 1, 'picture stays pinned at the top');
   await shot(page, 'guide');
   assert.deepEqual(errors, []);
@@ -511,7 +518,7 @@ const geom = (page) => page.evaluate(() => {
   return { side: getComputedStyle(w).display === 'grid', picW: v.width, picH: v.height, picL: v.left, toolsBottom: t.bottom, toolsRight: t.right, ctlL: c.left, ctlW: c.width, maxScroll: document.documentElement.scrollHeight - innerHeight, vh: innerHeight, vw: innerWidth };
 });
 
-test('v285 iPad portrait: one column on the 11" and the 13", using the width; the picture 60% to start, 50% scrolled', async () => {
+test('v285 iPad portrait: one column on the 11" and the 13", using the width; the picture 60% to start, 50% scrolled', notOnWebKit(WK.photo), async () => {
   for (const [w, h] of [[834, 1194], [1024, 1366]]) {
     const { page, errors, ctx } = await openApp({ width: w, height: h });
     await sampleGuide(page); await letterGuide(page);
@@ -534,7 +541,7 @@ test('v285 iPad portrait: one column on the 11" and the 13", using the width; th
   }
 });
 
-test('v285 iPad landscape: the picture and its tools fully on screen as the guide opens, its column fitted to it; tabs as tall as the tallest', async () => {
+test('v285 iPad landscape: the picture and its tools fully on screen as the guide opens, its column fitted to it; tabs as tall as the tallest', notOnWebKit(WK.photo), async () => {
   for (const [w, h] of [[1194, 834], [1366, 1024]]) {
     const { page, errors, ctx } = await openApp({ width: w, height: h });
     await sampleGuide(page); await letterGuide(page);
@@ -545,7 +552,9 @@ test('v285 iPad landscape: the picture and its tools fully on screen as the guid
     assert.ok(g.picL + g.picW <= g.ctlL, 'picture left of the controls');
     assert.ok(g.ctlL - (g.picL + g.picW) < 120, `the picture's column fits it (gap ${g.ctlL - (g.picL + g.picW)})`);
     assert.ok(g.ctlW >= 340 && g.ctlW <= 561, `controls ${g.ctlW}`);
-    // every tab: nothing to scroll into but the room the page needs, and switching moves nothing
+    // every tab: nothing to scroll into but the room the page needs, and switching moves nothing (once the first
+    // visit's "tap a section" line has gone, at the first change of tab, v289)
+    await page.evaluate(() => document.querySelector('.sftabbtn[data-t="pattern"]').click()); await idle(page);
     const heights = [];
     for (const t of ['colours', 'pattern', 'shading', 'share']) {
       await page.evaluate((t) => document.querySelector(`.sftabbtn[data-t="${t}"]`).click(), t); await idle(page);

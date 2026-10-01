@@ -6,7 +6,7 @@
 // Blend plan groups and the ink choice for the keyboard and screen readers.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, openAtScale, sampleGuide, idle, saveGuide, sectionPoint, scrollTop, welcome, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, openAtScale, sampleGuide, idle, saveGuide, sectionPoint, scrollTop, welcome, buildGo, notOnWebKit, WK } from './helpers.mjs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ROOT } from './helpers.mjs';
@@ -55,7 +55,7 @@ test('a colour only tried in the picker is never kept aside as the page is hidde
   assert.deepEqual(errors, []);
 });
 
-test('a new guide from a photo is in the Library straight after Build (a reload a moment later keeps it)', async () => {
+test('a new guide from a photo is in the Library straight after Build (a reload a moment later keeps it)', notOnWebKit(WK.photo), async () => {
   const { page, errors } = await openApp();
   await welcome(page, 'look'); await idle(page);
   await pickPhoto(page, await readFile(join(ROOT, 'e2e', 'fixtures', 'letter-page.png')), 'letter-page.png');
@@ -115,7 +115,7 @@ test('Focus mode: ticks stamp when colouring started; leaving opens the marker i
   assert.deepEqual(errors, []);
 });
 
-test('a very wide picture keeps its shape on a phone', async () => {
+test('a very wide picture keeps its shape on a phone', notOnWebKit(WK.photo), async () => {
   const { page, errors } = await openApp({ width: 390, height: 844 });
   await welcome(page, 'look'); await idle(page);
   const b64 = await page.evaluate(() => { const c = document.createElement('canvas'); c.width = 3200; c.height = 800; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 3200, 800); g.strokeStyle = '#000'; g.lineWidth = 14; for (let i = 0; i < 8; i++) { g.beginPath(); g.arc(200 + i * 400, 400, 300, 0, Math.PI * 2); g.stroke(); } g.strokeRect(7, 7, 3186, 786); return c.toDataURL('image/png').split(',')[1]; });
@@ -155,7 +155,7 @@ test('a guide file whose sections have no markers is refused', async () => {
   const n0 = await page.evaluate(() => state.saved.length);
   await page.evaluate((txt) => SF.importFile(new File([txt], 'empty.json', { type: 'application/json' })), file);
   await idle(page, 1500);
-  assert.match(await page.textContent('#sfMeta'), /not a valid guide file/);
+  assert.match(await page.textContent('#sfMeta'), /isn’t a Marker Studio guide/);
   assert.equal(await page.evaluate(() => state.saved.length), n0);
   assert.deepEqual(errors, []);
 });
