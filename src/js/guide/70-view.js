@@ -82,6 +82,7 @@ function sizeCanvas() {
 }
 function applyXform() {
   if (cv) cv.style.transform = 'translate(' + panX + 'px,' + panY + 'px) scale(' + zoom + ')';
+  labHiSync();
   labZoomed();
   fitBtn();
   touchRule();

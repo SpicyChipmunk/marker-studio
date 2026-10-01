@@ -6,6 +6,7 @@
 // Usage: node e2e/ci-retry.mjs <record> <retry record> [<part>/<parts>] ; exits 1 when anything still fails.
 import { readFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { partFiles } from './ci-parts.mjs';
 
 const [file, out, part] = process.argv.slice(2);
 // no record at all: the tests never started (an earlier step failed, which the run already shows)
@@ -15,7 +16,8 @@ if (!existsSync(file)) {
 }
 const recs = existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean) : [];
 let expected = readdirSync('e2e').filter((f) => f.endsWith('.test.mjs')).sort().map((f) => 'e2e/' + f);
-if (part) { const [i, n] = part.split('/').map(Number); expected = expected.filter((_, k) => k % n === i - 1); }
+// (a part's files as e2e/ci-parts.mjs shares them out, for the browser in E2E_BROWSER)
+if (part) { const [i, n] = part.split('/').map(Number); expected = partFiles(process.env.E2E_BROWSER || 'chromium', i, n); }
 const seen = new Set(recs.map((r) => r.file));
 
 // what to run again: failed tests by name; whole files with no results or a failure outside any test

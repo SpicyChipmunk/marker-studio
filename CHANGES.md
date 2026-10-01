@@ -1355,3 +1355,10 @@ Four reviewers went over v288 (code, a hands-on bug hunt, a hands-on UX walkthro
 - GitHub runs the Chromium tests in 2 parts side by side (unit tests in part 1), so results come in about half the time, and WebKit part 1 starts with a speed check: how fast GitHub's WebKit runs plain JavaScript, to see why turning a photo into sections takes minutes there.
 - Cache bumped to `marker-studio-v292`.
 
+# Changes — v293 (sharp codes when zoomed in; Back in Safari too)
+
+- Zoomed in, the codes were blurry: the picture's canvas has one pixel per pixel of the page, and zooming only magnified them. Zoomed in, the codes are now drawn on a canvas of their own over the picture, with as many pixels as the screen shows (up to about 12 million, under Safari's limit), lined up with the picture through pan and zoom. Not in focus mode, nor over Edit sections, Crop or Straighten. `e2e/v293.test.mjs`.
+- Back closing what's open first is on in Safari as well (left out from v290): tried on an iPad with `?back=1`, reloading twice and Safari's back swipe were fine. Only under test automation in Safari's engine is it left out, where Playwright's WebKit crashes reloading a page twice once the page has made a history entry of its own.
+- A toast test waits for the sheet to move beside the picture after the window widens (GitHub's WebKit was a moment behind).
+- Cache bumped to `marker-studio-v293`.
+

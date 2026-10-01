@@ -692,6 +692,55 @@ function labMinFor(b) {
   const s0 = cv && cv.offsetWidth ? cv.offsetWidth / W : 1;
   return Math.max(5, Math.round((LAB_MIN_CSS / (s0 * b)) * 2) / 2);
 }
+// Zoomed in, the codes are drawn on a canvas of their own over the picture (#sfLabHi), with more pixels than the
+// picture's (its scale k), so they stay sharp: the picture's canvas has one pixel per pixel of the page, and zoomed it
+// is only magnified (v293: the codes were "extremely blurry" once the dots became codes). Not in focus mode (it zooms
+// its section by itself and draws no codes for the rest), nor over Edit sections, Crop or Straighten.
+let labHi = null,
+  _labHiRO = null;
+function labHiK() {
+  if (!labOn() || (focus && sfmode === 'color') || (zoom || 1) <= 1.01 || !cv || !cv.offsetWidth || !W || !H)
+    return 0;
+  const s0 = cv.offsetWidth / W,
+    dpr = window.devicePixelRatio || 1,
+    // (a step's codes stay sharp up to the next step; at most about 12 million pixels, under Safari's canvas limit)
+    k = labBucket() * Math.SQRT2 * s0 * dpr;
+  return Math.max(1, Math.min(k, Math.sqrt(12e6 / (W * H))));
+}
+function labHiEl() {
+  if (labHi && labHi.isConnected) return labHi;
+  if (!cv || !cv.parentNode) return null;
+  labHi = document.createElement('canvas');
+  labHi.id = 'sfLabHi';
+  labHi.setAttribute('aria-hidden', 'true');
+  cv.parentNode.insertBefore(labHi, cv.nextSibling);
+  if (typeof ResizeObserver !== 'undefined') {
+    if (_labHiRO) _labHiRO.disconnect();
+    _labHiRO = new ResizeObserver(labHiSync);
+    _labHiRO.observe(cv);
+  }
+  return labHi;
+}
+// the codes' canvas over the picture's: the same place, size and zoom
+function labHiSync() {
+  if (!labHi || labHi.style.display === 'none' || !cv) return;
+  if (!labHiK()) {
+    labHiOff();
+    return;
+  }
+  const st = labHi.style;
+  st.left = cv.offsetLeft + 'px';
+  st.top = cv.offsetTop + 'px';
+  st.width = cv.style.width;
+  st.height = cv.style.height;
+  st.transform = cv.style.transform;
+  st.transition = cv.style.transition ? cv.style.transition : '';
+}
+function labHiOff() {
+  if (!labHi) return;
+  labHi.style.display = 'none';
+  labHi.width = labHi.height = 0;
+}
 // after a zoom: the codes drawn again once it settles, if it crossed a step
 // (only where the plan is drawn: not over Edit sections, Crop or Straighten, which draw the sections themselves)
 function labOn() {
@@ -714,6 +763,7 @@ function renderGuide() {
   if (!assignData) return;
   _mixKey = null;
   sizeCanvas();
+  if (labHi && !labHiK()) labHiOff();
   if (sfmode !== 'guide') {
     if (popOpen()) closeSwatchPop(false);
     if (tipL >= 0) hideTip();
@@ -884,6 +934,8 @@ function renderGuide() {
     cv.width,
     cv.height,
   ];
+  // (zoomed in, the codes are on their own sharper canvas: drawn whole each time)
+  const hiK = labOn ? labHiK() : 0;
   const ring =
     fcur > 0 && focusBox
       ? fcur + '|' + stepBits(focusPos) + '|' + (((cv.offsetWidth || W) / W) * focusZ).toFixed(4)
@@ -891,6 +943,8 @@ function renderGuide() {
   let inc = !!(
     _rg &&
     !anch &&
+    !hiK &&
+    !_rg.hiK &&
     _rg.gk.length === gk.length &&
     gk.every(function (v, i) {
       return v === _rg.gk[i];
@@ -925,13 +979,36 @@ function renderGuide() {
     ctx.textBaseline = 'middle';
     const lb = new Array(K),
       G = { nx: Math.ceil(W / RG_GRID), ny: Math.ceil(H / RG_GRID), c: [] };
-    if (labOn)
-      for (const l in assign) {
-        if (!lkA[l]) continue;
-        const b = secLabel(+l, assign[l], dim || ticksOnly, true);
-        lb[l] = b;
-        rgGridAdd(G, +l, b);
+    // (zoomed in: on the codes' own canvas, at its scale, the picture's coordinates as they are)
+    const hc = hiK ? labHiEl() : null,
+      main = ctx;
+    if (hc) {
+      const w = Math.round(W * hiK),
+        h = Math.round(H * hiK);
+      hc.style.display = '';
+      if (hc.width !== w || hc.height !== h) {
+        hc.width = w;
+        hc.height = h;
       }
+      ctx = hc.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      ctx.setTransform(w / W, 0, 0, h / H, 0, 0);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      labHiSync();
+    } else labHiOff();
+    try {
+      if (labOn)
+        for (const l in assign) {
+          if (!lkA[l]) continue;
+          const b = secLabel(+l, assign[l], dim || ticksOnly, true);
+          lb[l] = b;
+          rgGridAdd(G, +l, b);
+        }
+    } finally {
+      ctx = main;
+    }
     if (anch) {
       const bk = {};
       coll.forEach(function (m) {
@@ -965,7 +1042,7 @@ function renderGuide() {
       }
     }
     const rr = fcur > 0 ? drawFocusRing(fcur, stepBits(focusPos), sh) : null;
-    _rg = { gk: gk, skey: skey, lb: lb, G: G, ring: ring, ringRect: rr };
+    _rg = { gk: gk, skey: skey, lb: lb, G: G, ring: ring, ringRect: rr, hiK: hiK };
   }
   positionSun();
   positionZones();

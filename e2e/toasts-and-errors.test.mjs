@@ -217,6 +217,8 @@ test('a toast never sits over an open sheet: one showing goes when the sheet ope
   assert.ok(t.bottom <= s.top + 0.5, `the toast (${t.top}–${t.bottom}) ends above the sheet (${s.top})`);
   // side by side: over the picture's column, not the sheet's
   await page.setViewportSize({ width: 1024, height: 700 }); await idle(page);
+  // (the sheet moves beside the picture once the page has its new width: on a slow machine a moment after the idle wait)
+  await page.waitForFunction(() => document.getElementById('sfSheet').getBoundingClientRect().left > 0, null, { timeout: 5000 }).catch(() => {});
   await page.evaluate(() => toast('Something else'));
   await idle(page);
   const t2 = await rect(page, '#msToast'), s2 = await rect(page, '#sfSheet');

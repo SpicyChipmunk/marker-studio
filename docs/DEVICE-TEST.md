@@ -82,7 +82,7 @@ On a guide, open **Style** and set **Shading** to **Light & shadow**.
 
 On your phone (and an iPhone SE-size screen if you have one) and your iPad, with one of your own photographed pages.
 
-- [ ] **Back (Android, or Chrome on a computer; not Safari, where Back stays the browser's):** open the Library, a sheet (⋯), Focus mode: each Back closes one; from Colour along, Back goes to the Plan; with nothing open, Back leaves as before. Closing things with their own buttons, then Back, doesn't leave a Back that does nothing.
+- [ ] **Back (Android's, Safari's back swipe, or a computer's browser):** open the Library, a sheet (⋯), Focus mode: each Back closes one; from Colour along, Back goes to the Plan; with nothing open, Back leaves as before. Closing things with their own buttons, then Back, doesn't leave a Back that does nothing.
 - [ ] **Phone Plan:** with a tall picture, the tabs and their first row are on the first screen; scrolling still shrinks the picture to the same size as before.
 - [ ] **Focus mode on the phone:** Greyscale, −, + and Fit are in a strip above the bottom bar, never over the picture.
 - [ ] **Sample, first view:** only "Tap a section…" under the tabs; change tab and the sample's line appears instead.

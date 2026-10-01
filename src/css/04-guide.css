@@ -108,6 +108,19 @@
     width 0.18s ease,
     height 0.18s ease;
 }
+/* (v293) the codes' own canvas when zoomed in, over the picture's (40-render.js labHi) */
+#sfRoot #sfLabHi {
+  position: absolute;
+  margin: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+  transition:
+    width 0.18s ease,
+    height 0.18s ease;
+}
+#sfRoot.sfvals #sfLabHi {
+  filter: grayscale(1);
+}
 #sfRoot .sfexp {
   height: 44px;
 }

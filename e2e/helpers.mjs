@@ -26,7 +26,7 @@ export const WK = {
   touch: 'touch can’t be made up in desktop WebKit (no Touch objects)',
   storage: 'this WebKit build has no navigator.storage',
   speed: 'GitHub’s WebKit is several times slower',
-  back: 'Back closes things only where there is a Back button (not in Safari’s engine: WebKit can crash reloading a page twice after pushState)',
+  back: 'Back is left to the browser under test automation in Safari’s engine (Playwright’s WebKit crashes reloading a page twice after pushState; Safari itself doesn’t)',
 };
 export const notOnWebKit = (why) => ({ skip: ENGINE === 'webkit' && 'not on WebKit in CI: ' + why });
 

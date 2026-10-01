@@ -4,8 +4,9 @@
 // ran again: a test that failed and then passed is flaky (listed, as a warning), one that failed again is a failure.
 // On GitHub the Markdown goes on the run's summary page ($GITHUB_STEP_SUMMARY); elsewhere it's printed.
 // Test files with no results at all are listed: they were still running when the run was stopped (a test there hung,
-// or the run ran out of time). With a part (as in `node --test --test-shard=2/3`), only that part's files are expected.
+// or the run ran out of time). With a part (2/3: e2e/ci-parts.mjs's files for it), only that part's files are expected.
 import { readFileSync, existsSync, appendFileSync, readdirSync } from 'node:fs';
+import { partFiles } from './ci-parts.mjs';
 
 const [file, title = 'Browser tests', part, dir = 'e2e'] = process.argv.slice(2);
 // no record at all: the tests never started (an earlier step failed), which the run already shows
@@ -27,9 +28,9 @@ if (again.length) {
   recs = [...recs.filter((r) => !re.has(k(r)) && !(r.name === r.file && r.ev === 'fail' && reFiles.has(r.file))), ...again];
 }
 
-// the files this part runs: node sorts the test files and gives part i every file whose index % parts == i - 1
+// the files this part runs, as e2e/ci-parts.mjs shares them out (for the browser in E2E_BROWSER)
 let expected = readdirSync(dir).filter((f) => f.endsWith('.test.mjs')).sort().map((f) => dir + '/' + f);
-if (part && part !== 'all') { const [i, n] = part.split('/').map(Number); expected = expected.filter((_, k) => k % n === i - 1); }
+if (part && part !== 'all') { const [i, n] = part.split('/').map(Number); expected = partFiles(process.env.E2E_BROWSER || 'chromium', i, n, dir); }
 const seen = new Set(recs.map((r) => r.file));
 const missing = expected.filter((f) => !seen.has(f));
 

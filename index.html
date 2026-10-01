@@ -1919,6 +1919,19 @@ button:focus-visible {
     width 0.18s ease,
     height 0.18s ease;
 }
+/* (v293) the codes' own canvas when zoomed in, over the picture's (40-render.js labHi) */
+#sfRoot #sfLabHi {
+  position: absolute;
+  margin: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+  transition:
+    width 0.18s ease,
+    height 0.18s ease;
+}
+#sfRoot.sfvals #sfLabHi {
+  filter: grayscale(1);
+}
 #sfRoot .sfexp {
   height: 44px;
 }
@@ -8455,7 +8468,7 @@ button.wrm {
 <div class="wrap" role="main">
  <div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div>
  <nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v292</div></div></div>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v293</div></div></div>
  <div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div>
  <div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -9991,11 +10004,12 @@ document.addEventListener(
 // layer marked back closes as its Escape would. (A question that won't go gets its entry back; the welcome has none.)
 (function () {
   if (typeof history === 'undefined' || !history.pushState || typeof MutationObserver === 'undefined') return;
-  // (not in Safari's engine — an iPhone or iPad has no Back button, and GitHub's WebKit crashed reloading a page twice
-  // when its entry was made with pushState: there Back stays the browser's, as before v289. ?back=1 in the address
-  // turns it on there too, to try it on a real iPad: v292)
+  // (v293: on in Safari too — tried on an iPad, reloading twice and the back swipe were fine. Not under test automation
+  // in Safari's engine, though: Playwright's WebKit crashes reloading a page twice once its entry was made with
+  // pushState. ?back=1 in the address turns it on there too.)
   const ua = navigator.userAgent || '';
   if (
+    navigator.webdriver &&
     /AppleWebKit/.test(ua) &&
     !/Chrome\/|Chromium\/|Edg\/|Android/.test(ua) &&
     !/[?&]back=1\b/.test(location.search)
@@ -25981,6 +25995,55 @@ function labMinFor(b) {
   const s0 = cv && cv.offsetWidth ? cv.offsetWidth / W : 1;
   return Math.max(5, Math.round((LAB_MIN_CSS / (s0 * b)) * 2) / 2);
 }
+// Zoomed in, the codes are drawn on a canvas of their own over the picture (#sfLabHi), with more pixels than the
+// picture's (its scale k), so they stay sharp: the picture's canvas has one pixel per pixel of the page, and zoomed it
+// is only magnified (v293: the codes were "extremely blurry" once the dots became codes). Not in focus mode (it zooms
+// its section by itself and draws no codes for the rest), nor over Edit sections, Crop or Straighten.
+let labHi = null,
+  _labHiRO = null;
+function labHiK() {
+  if (!labOn() || (focus && sfmode === 'color') || (zoom || 1) <= 1.01 || !cv || !cv.offsetWidth || !W || !H)
+    return 0;
+  const s0 = cv.offsetWidth / W,
+    dpr = window.devicePixelRatio || 1,
+    // (a step's codes stay sharp up to the next step; at most about 12 million pixels, under Safari's canvas limit)
+    k = labBucket() * Math.SQRT2 * s0 * dpr;
+  return Math.max(1, Math.min(k, Math.sqrt(12e6 / (W * H))));
+}
+function labHiEl() {
+  if (labHi && labHi.isConnected) return labHi;
+  if (!cv || !cv.parentNode) return null;
+  labHi = document.createElement('canvas');
+  labHi.id = 'sfLabHi';
+  labHi.setAttribute('aria-hidden', 'true');
+  cv.parentNode.insertBefore(labHi, cv.nextSibling);
+  if (typeof ResizeObserver !== 'undefined') {
+    if (_labHiRO) _labHiRO.disconnect();
+    _labHiRO = new ResizeObserver(labHiSync);
+    _labHiRO.observe(cv);
+  }
+  return labHi;
+}
+// the codes' canvas over the picture's: the same place, size and zoom
+function labHiSync() {
+  if (!labHi || labHi.style.display === 'none' || !cv) return;
+  if (!labHiK()) {
+    labHiOff();
+    return;
+  }
+  const st = labHi.style;
+  st.left = cv.offsetLeft + 'px';
+  st.top = cv.offsetTop + 'px';
+  st.width = cv.style.width;
+  st.height = cv.style.height;
+  st.transform = cv.style.transform;
+  st.transition = cv.style.transition ? cv.style.transition : '';
+}
+function labHiOff() {
+  if (!labHi) return;
+  labHi.style.display = 'none';
+  labHi.width = labHi.height = 0;
+}
 // after a zoom: the codes drawn again once it settles, if it crossed a step
 // (only where the plan is drawn: not over Edit sections, Crop or Straighten, which draw the sections themselves)
 function labOn() {
@@ -26003,6 +26066,7 @@ function renderGuide() {
   if (!assignData) return;
   _mixKey = null;
   sizeCanvas();
+  if (labHi && !labHiK()) labHiOff();
   if (sfmode !== 'guide') {
     if (popOpen()) closeSwatchPop(false);
     if (tipL >= 0) hideTip();
@@ -26173,6 +26237,8 @@ function renderGuide() {
     cv.width,
     cv.height,
   ];
+  // (zoomed in, the codes are on their own sharper canvas: drawn whole each time)
+  const hiK = labOn ? labHiK() : 0;
   const ring =
     fcur > 0 && focusBox
       ? fcur + '|' + stepBits(focusPos) + '|' + (((cv.offsetWidth || W) / W) * focusZ).toFixed(4)
@@ -26180,6 +26246,8 @@ function renderGuide() {
   let inc = !!(
     _rg &&
     !anch &&
+    !hiK &&
+    !_rg.hiK &&
     _rg.gk.length === gk.length &&
     gk.every(function (v, i) {
       return v === _rg.gk[i];
@@ -26214,13 +26282,36 @@ function renderGuide() {
     ctx.textBaseline = 'middle';
     const lb = new Array(K),
       G = { nx: Math.ceil(W / RG_GRID), ny: Math.ceil(H / RG_GRID), c: [] };
-    if (labOn)
-      for (const l in assign) {
-        if (!lkA[l]) continue;
-        const b = secLabel(+l, assign[l], dim || ticksOnly, true);
-        lb[l] = b;
-        rgGridAdd(G, +l, b);
+    // (zoomed in: on the codes' own canvas, at its scale, the picture's coordinates as they are)
+    const hc = hiK ? labHiEl() : null,
+      main = ctx;
+    if (hc) {
+      const w = Math.round(W * hiK),
+        h = Math.round(H * hiK);
+      hc.style.display = '';
+      if (hc.width !== w || hc.height !== h) {
+        hc.width = w;
+        hc.height = h;
       }
+      ctx = hc.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      ctx.setTransform(w / W, 0, 0, h / H, 0, 0);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      labHiSync();
+    } else labHiOff();
+    try {
+      if (labOn)
+        for (const l in assign) {
+          if (!lkA[l]) continue;
+          const b = secLabel(+l, assign[l], dim || ticksOnly, true);
+          lb[l] = b;
+          rgGridAdd(G, +l, b);
+        }
+    } finally {
+      ctx = main;
+    }
     if (anch) {
       const bk = {};
       coll.forEach(function (m) {
@@ -26254,7 +26345,7 @@ function renderGuide() {
       }
     }
     const rr = fcur > 0 ? drawFocusRing(fcur, stepBits(focusPos), sh) : null;
-    _rg = { gk: gk, skey: skey, lb: lb, G: G, ring: ring, ringRect: rr };
+    _rg = { gk: gk, skey: skey, lb: lb, G: G, ring: ring, ringRect: rr, hiK: hiK };
   }
   positionSun();
   positionZones();
@@ -33989,6 +34080,7 @@ function sizeCanvas() {
 }
 function applyXform() {
   if (cv) cv.style.transform = 'translate(' + panX + 'px,' + panY + 'px) scale(' + zoom + ')';
+  labHiSync();
   labZoomed();
   fitBtn();
   touchRule();
@@ -48036,7 +48128,8 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
-  'Back (on Android, or in Chrome and Firefox) closes what’s open first: a sheet, the Library, Focus mode, Colour along. On a phone the Plan’s tabs show on the first screen, and Focus mode keeps its buttons off the picture. Colour along says “coloured”, the Library uses Home’s words, and Palette has a Saved palettes link.',
+  'Zoomed in, the marker codes on the picture stay sharp. In Safari, the back swipe closes what’s open first (a sheet, the Library, Focus mode, Colour along) before it leaves the app.',
+  'Back (on Android, or in a computer’s browser) closes what’s open first: a sheet, the Library, Focus mode, Colour along. On a phone the Plan’s tabs show on the first screen, and Focus mode keeps its buttons off the picture. Colour along says “coloured”, the Library uses Home’s words, and Palette has a Saved palettes link.',
   'Colour along looks like your paper: what you’ve coloured in its colours, the rest pale. Find next and Focus mode zoom only as far as a section needs, with a bold outline; a list shows the markers to take out of the box; Change colour offers the closest markers first.',
   'Edit sections says what it’s for and goes back to the Plan when nothing changed. On an iPad the tool row has words (Codes, Greyscale, Full screen) and every screen is one width. Questions use the app’s own buttons, and the Print sheet shows each choice.',
   'Home has a Continue card: your newest part-coloured guide as you’ve coloured it, opening Colour along at the marker to pick up. Guides from your photos keep themselves in the Library once built; the sample once you change it.',

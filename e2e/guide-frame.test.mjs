@@ -279,6 +279,8 @@ test('full screen, focus mode and Reveal keep their own layouts after the pictur
   await scrollAt(page, 2000); await idle(page);
   const y0 = await page.evaluate(() => scrollY);
   await tapAt(page, '#sfFull'); await idle(page);
+  // (the picture eases to its full-screen size: GitHub's WebKit can still be on its way, run 36933545500, 493 px)
+  await until(page, () => document.getElementById('sfCanvas').getBoundingClientRect().height > 600, null, 'full screen grown', 15000).catch(() => {});
   const f = await rect(page, '#sfCanvas');
   assert.ok(f.height > 600, 'full screen is big: ' + f.height);
   assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('sfView')).position), 'fixed');

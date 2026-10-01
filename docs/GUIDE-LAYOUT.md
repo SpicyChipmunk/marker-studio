@@ -198,7 +198,7 @@ The stages are **Edit sections → Plan → Colour along**. "Plan" is the built 
 
 - Android's Back, or Chrome's and Firefox's, closes what's open first, one each: a dialog (the Library and every question; not the welcome), the marker picker, a sheet, Focus mode's Colours sheet, Focus mode, Reveal, full screen, then Colour along (back to the Plan, which Escape doesn't do). With nothing open it leaves the app as before.
 - How (`layers.js`): each layer marked `back` that's open is a history entry of the page's own (`pushState`). A MutationObserver keeps the count in step however things open and close; one closed in the app takes its entry back (`history.go`). Back takes an entry and closes the top layer as its Escape would; one that won't close (a question) gets its entry back. `scrollRestoration` is manual, so taking an entry back never moves the page.
-- Not in Safari's engine (iPhone, iPad, Safari on a Mac): there's no Back button on an iPhone or iPad, and WebKit can crash reloading a page twice once the page has pushed an entry (found by the WebKit tests). There Back stays the browser's, as before.
+- In Safari too, from v293 (v290–v292 left it out there): tried on an iPad, reloading twice and the back swipe were fine. Only under test automation in Safari's engine is it left out (`navigator.webdriver`): Playwright's WebKit crashes reloading a page twice once the page has pushed an entry. `?back=1` turns it on there anyway.
 
 ## How the decisions fit together
 

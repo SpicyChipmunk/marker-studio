@@ -85,11 +85,12 @@ document.addEventListener(
 // layer marked back closes as its Escape would. (A question that won't go gets its entry back; the welcome has none.)
 (function () {
   if (typeof history === 'undefined' || !history.pushState || typeof MutationObserver === 'undefined') return;
-  // (not in Safari's engine — an iPhone or iPad has no Back button, and GitHub's WebKit crashed reloading a page twice
-  // when its entry was made with pushState: there Back stays the browser's, as before v289. ?back=1 in the address
-  // turns it on there too, to try it on a real iPad: v292)
+  // (v293: on in Safari too — tried on an iPad, reloading twice and the back swipe were fine. Not under test automation
+  // in Safari's engine, though: Playwright's WebKit crashes reloading a page twice once its entry was made with
+  // pushState. ?back=1 in the address turns it on there too.)
   const ua = navigator.userAgent || '';
   if (
+    navigator.webdriver &&
     /AppleWebKit/.test(ua) &&
     !/Chrome\/|Chromium\/|Edg\/|Android/.test(ua) &&
     !/[?&]back=1\b/.test(location.search)
