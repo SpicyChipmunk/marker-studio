@@ -79,6 +79,8 @@ test('Home’s Continue card follows a Library rename, and leaves its picture al
   await page.waitForFunction(() => /· next/.test(document.querySelector('#homeCont .hcmeta').textContent));
   await page.evaluate(() => { const g = state.saved.find((s) => s.type === 'guide'); g.name = 'Blue sea'; renderRecent(); });
   assert.equal(await page.textContent('#homeCont .hcname'), 'Blue sea');
+  // (the card is drawn again: its next marker comes once its picture is read, later on a slow machine)
+  await page.waitForFunction(() => /· next/.test(document.querySelector('#homeCont .hcmeta').textContent));
   assert.equal((await page.textContent('#homeCont .hcmeta')).match(/· next/g).length, 1, 'the next marker said once');
   // back in the guide, a save doesn't redraw Home's card meanwhile
   await page.click('#mSections'); await idle(page);

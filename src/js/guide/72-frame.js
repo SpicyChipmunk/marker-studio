@@ -68,6 +68,7 @@ function workOn(on) {
 }
 // the picture's sizes: full and floor heights, the pinned block's offset, --pinH, and the controls' min-height
 let _ctlGap = 12, // (see frameSize)
+  _planNeed = 0,
   _labRaf = 0;
 function frameSize() {
   if (!cv || !sfView || !picBox || !cv.width || !cv.height || !workEl || workEl.offsetParent === null) return;
@@ -156,23 +157,27 @@ function frameSize() {
       full = Math.max(comp, Math.min(full, capR));
       // (v289) a phone's Plan: the tabs and their first row on the first screen too, where the floor allows: the
       // picture starts smaller (a tall one; a wide one is short enough already)
-      const tabsEl = !big && sfmode === 'guide' && ctlEl ? ctlEl.querySelector('.sftabs') : null,
-        sen = tabsEl && ctlEl.querySelector('.sftabsen');
-      if (sen && tabsEl.offsetParent && tools) {
-        const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16,
-          cr = ctlEl.getBoundingClientRect(),
-          // (the gap between the tool row and the controls as laid out at the top of the page: scrolled, the tool row
-          // is pinned and the gap is the scroll's)
-          gap =
-            window.scrollY > 0.5
-              ? _ctlGap
-              : (_ctlGap = Math.ceil(cr.top - tools.getBoundingClientRect().bottom)),
-          need =
+      // (the controls may not be laid out yet as the Plan opens, straight after Build: then the room they needed last
+      // time, or about what they need, so the picture doesn't start big and shrink a moment later)
+      if (!big && sfmode === 'guide') {
+        const tabsEl = ctlEl ? ctlEl.querySelector('.sftabs') : null,
+          sen = tabsEl && ctlEl.querySelector('.sftabsen'),
+          rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+        if (sen && tabsEl.offsetParent && tools) {
+          const cr = ctlEl.getBoundingClientRect(),
+            // (the gap between the tool row and the controls as laid out at the top of the page: scrolled, the tool
+            // row is pinned and the gap is the scroll's)
+            gap =
+              window.scrollY > 0.5
+                ? _ctlGap
+                : (_ctlGap = Math.ceil(cr.top - tools.getBoundingClientRect().bottom));
+          _planNeed =
             gap +
             Math.ceil(sen.getBoundingClientRect().top - cr.top) +
             tabsEl.offsetHeight +
             Math.round(4.75 * rem);
-        full = Math.max(comp, Math.min(full, cap - need));
+        }
+        full = Math.max(comp, Math.min(full, cap - (_planNeed || _ctlGap + Math.round(8 * rem))));
       }
     }
     cw = Math.min(vw, full / ar);

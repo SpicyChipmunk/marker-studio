@@ -1342,3 +1342,10 @@ Four reviewers went over v288 (code, a hands-on bug hunt, a hands-on UX walkthro
 - A Library tile's name on Safari's engine could run to a fourth line, cut off: the spacer that keeps the first line clear of ⋯ was laid out as a line of its own in a clamped box. The name now keeps to three lines as a plain block.
 - The Chromium job's time limit on GitHub is 45 minutes (the browser tests now take about 26; v289's run was stopped at 25 with every test so far passing).
 - Cache bumped to `marker-studio-v290`.
+
+# Changes — v291 (from v290's run on GitHub)
+
+- On a phone, as the Plan opened straight after Build, the picture first took its full size and then, a moment later once the tabs were laid out, shrank to leave the tabs room (v289). A tap in between could miss its section (two Chromium tests caught it on GitHub's busier machine). The Plan now starts at the size the tabs need, from the room they took last time or about what they need.
+- Home's Continue card test waits for the card's next marker after a rename (it comes once the picture is read; GitHub's WebKit was slower).
+- Cache bumped to `marker-studio-v291`.
+

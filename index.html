@@ -8455,7 +8455,7 @@ button.wrm {
 <div class="wrap" role="main">
  <div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div>
  <nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v290</div></div></div>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v291</div></div></div>
  <div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div>
  <div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -34141,6 +34141,7 @@ function workOn(on) {
 }
 // the picture's sizes: full and floor heights, the pinned block's offset, --pinH, and the controls' min-height
 let _ctlGap = 12, // (see frameSize)
+  _planNeed = 0,
   _labRaf = 0;
 function frameSize() {
   if (!cv || !sfView || !picBox || !cv.width || !cv.height || !workEl || workEl.offsetParent === null) return;
@@ -34229,23 +34230,27 @@ function frameSize() {
       full = Math.max(comp, Math.min(full, capR));
       // (v289) a phone's Plan: the tabs and their first row on the first screen too, where the floor allows: the
       // picture starts smaller (a tall one; a wide one is short enough already)
-      const tabsEl = !big && sfmode === 'guide' && ctlEl ? ctlEl.querySelector('.sftabs') : null,
-        sen = tabsEl && ctlEl.querySelector('.sftabsen');
-      if (sen && tabsEl.offsetParent && tools) {
-        const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16,
-          cr = ctlEl.getBoundingClientRect(),
-          // (the gap between the tool row and the controls as laid out at the top of the page: scrolled, the tool row
-          // is pinned and the gap is the scroll's)
-          gap =
-            window.scrollY > 0.5
-              ? _ctlGap
-              : (_ctlGap = Math.ceil(cr.top - tools.getBoundingClientRect().bottom)),
-          need =
+      // (the controls may not be laid out yet as the Plan opens, straight after Build: then the room they needed last
+      // time, or about what they need, so the picture doesn't start big and shrink a moment later)
+      if (!big && sfmode === 'guide') {
+        const tabsEl = ctlEl ? ctlEl.querySelector('.sftabs') : null,
+          sen = tabsEl && ctlEl.querySelector('.sftabsen'),
+          rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+        if (sen && tabsEl.offsetParent && tools) {
+          const cr = ctlEl.getBoundingClientRect(),
+            // (the gap between the tool row and the controls as laid out at the top of the page: scrolled, the tool
+            // row is pinned and the gap is the scroll's)
+            gap =
+              window.scrollY > 0.5
+                ? _ctlGap
+                : (_ctlGap = Math.ceil(cr.top - tools.getBoundingClientRect().bottom));
+          _planNeed =
             gap +
             Math.ceil(sen.getBoundingClientRect().top - cr.top) +
             tabsEl.offsetHeight +
             Math.round(4.75 * rem);
-        full = Math.max(comp, Math.min(full, cap - need));
+        }
+        full = Math.max(comp, Math.min(full, cap - (_planNeed || _ctlGap + Math.round(8 * rem))));
       }
     }
     cw = Math.min(vw, full / ar);
