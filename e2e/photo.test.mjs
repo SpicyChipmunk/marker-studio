@@ -3,7 +3,7 @@
 // photo and its placement are saved with the guide (also when it loads late, or the guide switched pattern).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, idle, scrollTop, sampleGuide, notOnWebKit, WK, saveGuide } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, idle, scrollTop, sampleGuide, saveGuide } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -40,7 +40,7 @@ const sides = (page) => page.evaluate(() => {
   return { ok, n };
 });
 
-test('sections take the photo colour under them, matched to your markers', notOnWebKit(WK.photo), async () => {
+test('sections take the photo colour under them, matched to your markers', async () => {
   const { page, errors } = await openApp();
   await photoGuide(page);
   const s = await sides(page);
@@ -55,7 +55,7 @@ test('sections take the photo colour under them, matched to your markers', notOn
   assert.deepEqual(errors, []);
 });
 
-test('dragging the photo moves where the colours land; pins stay', notOnWebKit(WK.photo), async () => {
+test('dragging the photo moves where the colours land; pins stay', async () => {
   const { page, errors } = await openApp();
   await photoGuide(page);
   // pin one section at the very top
@@ -78,7 +78,7 @@ test('dragging the photo moves where the colours land; pins stay', notOnWebKit(W
   assert.deepEqual(errors, []);
 });
 
-test('lining up on a wide screen: the photo is grabbed beside the drawing too; colours come after; leaving the Pattern tab finishes lining up', notOnWebKit(WK.photo), async () => {
+test('lining up on a wide screen: the photo is grabbed beside the drawing too; colours come after; leaving the Pattern tab finishes lining up', async () => {
   // (v285: an iPad in portrait; side by side, the picture's column is now fitted to the drawing and its tools)
   const { page, errors } = await openApp({ width: 834, height: 1194 });
   await photoGuide(page);
@@ -112,7 +112,7 @@ test('lining up on a wide screen: the photo is grabbed beside the drawing too; c
   assert.deepEqual(errors, []);
 });
 
-test('marker count caps the markers; the photo and its placement are saved and reopen', notOnWebKit(WK.photo), async () => {
+test('marker count caps the markers; the photo and its placement are saved and reopen', async () => {
   const { page, errors } = await openApp();
   await photoGuide(page);
   await page.evaluate(() => { __mstest.limitN = 2; __mstest.photoRecolour(); });
@@ -139,7 +139,7 @@ test('marker count caps the markers; the photo and its placement are saved and r
   assert.deepEqual(errors, []);
 });
 
-test('the marker choice covers the photo best, not just the closest one by one', notOnWebKit(WK.photo), async () => {
+test('the marker choice covers the photo best, not just the closest one by one', async () => {
   const { page, errors } = await openApp();
   await welcome(page, 'look');
   const r = await page.evaluate(() => {
@@ -176,7 +176,7 @@ async function guideWithPhoto(page, setIndex, draw) {
   await page.waitForFunction(() => !!__mstest.photoRef); await idle(page);
 }
 
-test('white areas of the photo are left white (and can be coloured instead)', notOnWebKit(WK.photo), async () => {
+test('white areas of the photo are left white (and can be coloured instead)', async () => {
   const { page, errors } = await openApp();
   await guideWithPhoto(page, 6, "g.fillStyle='#fdfdfb';g.fillRect(0,0,600,400);g.fillStyle='#d0282c';g.fillRect(0,400,600,400);");
   const r = await page.evaluate(() => {
@@ -212,7 +212,7 @@ test('white areas of the photo are left white (and can be coloured instead)', no
 // camera noise is seeded, so every run photographs the same page (unseeded, a section on the edge of "white" could
 // fall either side after the photo was saved as a JPEG and reopened)
 const warmPage = "const px=(r,g,b,x,y,w,h)=>{g0.fillStyle='rgb('+r+','+g+','+b+')';g0.fillRect(x,y,w,h);};const g0=g;px(182,170,152,0,0,600,800);px(128,42,36,0,400,300,400);px(186,172,98,300,400,300,400);const d=g.getImageData(0,0,600,800);let sd=12345;const rnd=()=>(sd=(sd*16807)%2147483647)/2147483647;for(let i=0;i<d.data.length;i+=4){const n=(rnd()-0.5)*10;d.data[i]+=n;d.data[i+1]+=n;d.data[i+2]+=n;}g.putImageData(d,0,0);";
-test('a photo of a page in dim, warm light is corrected from its paper; it can be switched off, undone and is saved; a sunset is left alone', notOnWebKit(WK.photo), async () => {
+test('a photo of a page in dim, warm light is corrected from its paper; it can be switched off, undone and is saved; a sunset is left alone', async () => {
   const { page, errors } = await openApp();
   await guideWithPhoto(page, 6, warmPage);
   const lit = () => page.evaluate(() => { const r = __mstest.photoRef; return r.lit && { on: r.lit.on, from: r.lit.from, gain: r.lit.fix.gain.map((g) => +g.toFixed(4)), changed: r.data !== r.raw }; });
@@ -265,7 +265,7 @@ test('a photo of a page in dim, warm light is corrected from its paper; it can b
   assert.deepEqual(errors, []);
 });
 
-test('rough matches are counted, can be shown, and markers you could buy are suggested', notOnWebKit(WK.photo), async () => {
+test('rough matches are counted, can be shown, and markers you could buy are suggested', async () => {
   const { page, errors } = await openApp();
   // Honolulu 24 and a photo in colours it can't match well
   await guideWithPhoto(page, 1, "const gr=g.createLinearGradient(0,0,600,800);gr.addColorStop(0,'#0bd6c8');gr.addColorStop(0.5,'#8a2be2');gr.addColorStop(1,'#39ff14');g.fillStyle=gr;g.fillRect(0,0,600,800);");
@@ -285,7 +285,7 @@ test('rough matches are counted, can be shown, and markers you could buy are sug
   assert.deepEqual(errors, []);
 });
 
-test('the Photo button under the picture compares; Photo sits before Manual', notOnWebKit(WK.photo), async () => {
+test('the Photo button under the picture compares; Photo sits before Manual', async () => {
   const { page, errors } = await openApp();
   await photoGuide(page);
   const order = await page.evaluate(() => [...document.querySelectorAll('#sfFam button')].map((b) => b.dataset.v));
@@ -307,7 +307,7 @@ test('the Photo button under the picture compares; Photo sits before Manual', no
 // the sections big enough to read in these "photos" of the guide, shrunk to 0.7 and through JPEG: 137 px and up (the
 // smallest section before v277; the jellyfish's 23 smaller ones are a few pixels across by then, mostly line)
 const READABLE = 137;
-test('a coloured version of the page lines itself up (turned, shrunk, off-centre); an unrelated photo does not', notOnWebKit(WK.photo), async () => {
+test('a coloured version of the page lines itself up (turned, shrunk, off-centre); an unrelated photo does not', async () => {
   const { page, errors } = await openApp();
   await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
@@ -354,7 +354,7 @@ test('a coloured version of the page lines itself up (turned, shrunk, off-centre
   assert.deepEqual(errors, []);
 });
 
-test('a coloured version of the page photographed in warm, dim light lines up and is corrected from its own paper', notOnWebKit(WK.photo), async () => {
+test('a coloured version of the page photographed in warm, dim light lines up and is corrected from its own paper', async () => {
   const { page, errors } = await openApp();
   await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
@@ -391,7 +391,7 @@ test('a coloured version of the page photographed in warm, dim light lines up an
 });
 
 // ---- From the second full review ----
-test('automatic lining-up turns away stripes and very sparse drawings', notOnWebKit(WK.photo), async () => {
+test('automatic lining-up turns away stripes and very sparse drawings', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   const r = await page.evaluate(async () => {
@@ -416,7 +416,7 @@ const tab = (page, t) => page.click(`.sftabbtn[data-t="${t}"]`);
 // reopen a Library guide the way the Library does
 const openSaved = async (page, id) => { await page.evaluate((id) => loadGuide({ id }), id); await page.waitForFunction((id) => __mstest.curId === id && __mstest.assignData, id, { timeout: 10000 }); await idle(page); };
 
-test('a guide that switched away from Photo keeps its photo when reopened (a shared file leaves it out)', notOnWebKit(WK.photo), async () => {
+test('a guide that switched away from Photo keeps its photo when reopened (a shared file leaves it out)', async () => {
   const { page, errors } = await openApp();
   await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
@@ -444,7 +444,7 @@ const release = (page) => page.evaluate(() => { const r = window.__release; wind
 // a small coloured picture as a PNG file (for the Photo pattern)
 const photoFile = (page) => page.evaluate(() => { const c = document.createElement('canvas'); c.width = 64; c.height = 48; const g = c.getContext('2d'); for (let i = 0; i < 4; i++) { g.fillStyle = ['#c33', '#3a6', '#36c', '#dc3'][i]; g.fillRect((i % 2) * 32, (i >> 1) * 24, 32, 24); } return c.toDataURL('image/png').split(',')[1]; }).then((b) => ({ name: 'photo.png', mimeType: 'image/png', buffer: Buffer.from(b, 'base64') }));
 
-test('a Photo pattern photo that finishes loading after another guide opened is dropped, not put on that guide', notOnWebKit(WK.photo), async () => {
+test('a Photo pattern photo that finishes loading after another guide opened is dropped, not put on that guide', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await saveNew(page);
   const idA = await savedId(page), f = await photoFile(page);
@@ -464,7 +464,7 @@ test('a Photo pattern photo that finishes loading after another guide opened is 
   assert.deepEqual(errors, []);
 });
 
-test('a reopened Photo pattern guide keeps its photo when a change is saved before the photo decodes', notOnWebKit(WK.photo), async () => {
+test('a reopened Photo pattern guide keeps its photo when a change is saved before the photo decodes', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await saveNew(page);
   const id = await savedId(page);

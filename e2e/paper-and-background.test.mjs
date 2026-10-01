@@ -2,7 +2,7 @@
 // are background, and a drawn frame isn't taken for the page's edge.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, idle } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -29,7 +29,7 @@ async function fromPage(o) {
   return { page, errors, r };
 }
 
-test('grainy paper: the grain is not read as ink, so the page has just its drawn sections and no warning', notOnWebKit(WK.photo), async () => {
+test('grainy paper: the grain is not read as ink, so the page has just its drawn sections and no warning', async () => {
   for (const grain of [40, 70]) {
     const { r, errors } = await fromPage({ grain });
     // (21 since v277's smaller smallest section, 10 px: the 21st is a sliver of about 40 px where two circles cross,
@@ -40,7 +40,7 @@ test('grainy paper: the grain is not read as ink, so the page has just its drawn
   }
 });
 
-test('a photo showing the table around the page: the blank margin and the table are background', notOnWebKit(WK.photo), async () => {
+test('a photo showing the table around the page: the blank margin and the table are background', async () => {
   const { r, errors } = await fromPage({ table: 1, grain: 40 });
   assert.equal(r.n, 21, `${r.n} sections`);
   assert.ok(r.biggest < 0.05, 'the margin is not a section');
@@ -48,7 +48,7 @@ test('a photo showing the table around the page: the blank margin and the table 
   assert.deepEqual(errors, []);
 });
 
-test('a drawn frame on plain paper is not mistaken for the page edge: the area inside it stays a section', notOnWebKit(WK.photo), async () => {
+test('a drawn frame on plain paper is not mistaken for the page edge: the area inside it stays a section', async () => {
   const { r, errors } = await fromPage({ frame: 1 });
   assert.ok(r.biggest > 0.3, 'the big area inside the frame is still a section');
   assert.deepEqual(errors, []);

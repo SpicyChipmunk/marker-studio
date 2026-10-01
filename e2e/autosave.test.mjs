@@ -5,7 +5,7 @@
 // slot) unless Put back; a full storage says so once, offers Save to try again, and keeps the guide for Resume.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, openMenu, saveCopy, rename, guideName, scrollTop, toolStatus, saveGuide, letterGuide, answerAsks, libItem, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, openMenu, saveCopy, rename, guideName, scrollTop, toolStatus, saveGuide, letterGuide, answerAsks, libItem } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -30,7 +30,7 @@ async function tick(page, ls) {
 // a change the way the app makes one (ticked in code, then drawn, which schedules the save)
 const tickInCode = (page, i) => page.evaluate((i) => { const t = __mstest; t.colored[t.assignData.order[i]] = 1; t.guideDirty = true; t.renderGuide(); }, i);
 
-test('a guide from your photo goes into the Library once built; then a pattern change, ticks and a rename save themselves into the same entry', notOnWebKit(WK.photo), async () => {
+test('a guide from your photo goes into the Library once built; then a pattern change, ticks and a rename save themselves into the same entry', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await letterGuide(page);

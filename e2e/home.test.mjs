@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
-import { setup, teardown, openApp, idle, sampleGuide, openAtScale, saveGuide, letterGuide, libItem, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, idle, sampleGuide, openAtScale, saveGuide, letterGuide, libItem } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -190,7 +190,7 @@ test('Home cards: with no backup due, Add to Home Screen comes first as before',
 // ---- From v285 ----
 const hrect = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); return e ? e.getBoundingClientRect().toJSON() : null; }, sel);
 
-test('v285: the Continue card is the newest guide part-way coloured — its picture, how far, the marker to pick up — and opens Colour along at that marker', notOnWebKit(WK.photo), async () => {
+test('v285: the Continue card is the newest guide part-way coloured — its picture, how far, the marker to pick up — and opens Colour along at that marker', async () => {
   const { page, errors } = await openApp({ width: 834, height: 1194 });
   await sampleGuide(page); await saveGuide(page);
   await letterGuide(page); await page.waitForFunction(() => __mstest.inLibrary); await idle(page);

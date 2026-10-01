@@ -3,7 +3,7 @@
 // flat are. One marker can have other companions in another zone: Colour along and the printed key show each.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK, saveGuide, answerAsks, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, saveGuide, answerAsks, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -281,7 +281,7 @@ test('a change waiting to be saved goes into its guide with its zones when anoth
   assert.deepEqual(errors, []);
 });
 
-test('Light from is one light for the whole picture, whichever zone is chosen; sections the photo doesn’t cover stay flat', notOnWebKit(WK.photo), async () => {
+test('Light from is one light for the whole picture, whichever zone is chosen; sections the photo doesn’t cover stay flat', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   await shadingOn(page);

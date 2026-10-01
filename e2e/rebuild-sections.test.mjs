@@ -3,7 +3,7 @@
 // built yet are said, asked about and kept; and a rebuilt guide never saves a scrambled copy.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK, saveGuide, answerAsks, askAnswer, asked, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, saveGuide, answerAsks, askAnswer, asked, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -171,7 +171,7 @@ async function excludeOne(page) {
 }
 const hide = (page) => page.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); document.dispatchEvent(new Event('visibilitychange')); delete document.visibilityState; });
 
-test('section edits of a Library guide left in the Resume slot are kept as a copy when a new guide takes the slot', notOnWebKit(WK.photo), async () => {
+test('section edits of a Library guide left in the Resume slot are kept as a copy when a new guide takes the slot', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await saveGuide(page);
   await page.waitForFunction(() => state.saved.some((s) => s.type === 'guide'));
@@ -282,7 +282,7 @@ test('Enhance and Sensitivity on a guide with progress ask first; No puts the co
   assert.deepEqual(errors, []);
 });
 
-test('section edits not built: the status says so, and opening something else asks (Build keeps them, Discard doesn’t)', notOnWebKit(WK.photo), async () => {
+test('section edits not built: the status says so, and opening something else asks (Build keeps them, Discard doesn’t)', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await saveNew(page);
   const id = await savedId(page), n0 = await page.evaluate(() => __mstest.assignData.N);

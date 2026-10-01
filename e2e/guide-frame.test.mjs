@@ -520,7 +520,7 @@ const geom = (page) => page.evaluate(() => {
   return { side: getComputedStyle(w).display === 'grid', picW: v.width, picH: v.height, picL: v.left, toolsBottom: t.bottom, toolsRight: t.right, ctlL: c.left, ctlW: c.width, maxScroll: document.documentElement.scrollHeight - innerHeight, vh: innerHeight, vw: innerWidth };
 });
 
-test('v285 iPad portrait: one column on the 11" and the 13", using the width; the picture 60% to start, 50% scrolled', notOnWebKit(WK.photo), async () => {
+test('v285 iPad portrait: one column on the 11" and the 13", using the width; the picture 60% to start, 50% scrolled', async () => {
   for (const [w, h] of [[834, 1194], [1024, 1366]]) {
     const { page, errors, ctx } = await openApp({ width: w, height: h });
     await sampleGuide(page); await letterGuide(page);
@@ -543,7 +543,7 @@ test('v285 iPad portrait: one column on the 11" and the 13", using the width; th
   }
 });
 
-test('v285 iPad landscape: the picture and its tools fully on screen as the guide opens, its column fitted to it; tabs as tall as the tallest', notOnWebKit(WK.photo), async () => {
+test('v285 iPad landscape: the picture and its tools fully on screen as the guide opens, its column fitted to it; tabs as tall as the tallest', async () => {
   for (const [w, h] of [[1194, 834], [1366, 1024]]) {
     const { page, errors, ctx } = await openApp({ width: w, height: h });
     await sampleGuide(page); await letterGuide(page);

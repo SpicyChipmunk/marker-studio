@@ -151,7 +151,7 @@ test('Generate palette and Draw a marker by keyboard: the focus stays on the but
   assert.deepEqual(errors, []);
 });
 
-test('phone: a new photo’s Edit sections shows its tools above the bar on the first screen', notOnWebKit(WK.photo), async () => {
+test('phone: a new photo’s Edit sections shows its tools above the bar on the first screen', async () => {
   const { page, errors } = await openApp({ width: 390, height: 844 });
   await sampleGuide(page);
   const buf = await readFile(join(ROOT, 'e2e', 'fixtures', 'letter-page.png'));

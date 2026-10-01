@@ -3,7 +3,7 @@
 // photo in a Photo guide; tones while colouring along. All saved with the guide.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, shot, scrollTop, notOnWebKit, WK, until, saveGuide } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, shot, scrollTop, until, saveGuide } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -225,7 +225,7 @@ test('sections can be left flat, and that is saved with the guide', async () => 
   assert.deepEqual(errors, []);
 });
 
-test('in a Photo guide the light comes from the photo (no sun), and can be switched back to the sun', notOnWebKit(WK.photo), async () => {
+test('in a Photo guide the light comes from the photo (no sun), and can be switched back to the sun', async () => {
   const { page, errors } = await openApp();
   await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
@@ -298,7 +298,7 @@ const tapSection = async (page, l) => {
 const bigShaded = (page) => page.evaluate(() => { const t = __mstest, g = t.shadeGeom(); let best = 0, ba = 0; for (const l in t.assignData.assign) { if (!t.shadeable(+l, g)) continue; const a = t.comps[l].area; if (a > ba) { ba = a; best = +l; } } return best; });
 const pngB64 = (page, draw, w = 600, h = 800) => page.evaluate(async ([draw, w, h]) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); new Function('g', 'w', 'h', draw)(g, w, h); const blob = await new Promise((r) => c.toBlob(r, 'image/png')); return await new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result.split(',')[1]); f.readAsDataURL(blob); }); }, [draw, w, h]);
 
-test('reopening a guide lit from its photo draws the photo light (no sun) once the photo loads', notOnWebKit(WK.photo), async () => {
+test('reopening a guide lit from its photo draws the photo light (no sun) once the photo loads', async () => {
   const { page, errors } = await openApp();
   await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));

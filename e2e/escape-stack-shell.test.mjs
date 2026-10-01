@@ -21,6 +21,9 @@ const at = (mode, extra = {}) => ({ storage: onboarded({ [KEY]: appState({ mode,
 async function openBackupKb(page) {
   await page.focus('#mkMore'); await page.keyboard.press('Enter');
   await page.focus('#backupBtn'); await page.keyboard.press('Enter'); await page.waitForSelector('#savedOverlay.on');
+  // (the Library then puts the keyboard on its Back up button, a moment later: wait for that, or an Enter meant for the
+  // text link can land on Back up instead — GitHub run 36936732088)
+  await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'guidesBackup', null, { timeout: 5000 }).catch(() => {});
   await page.focus('#libBkText'); await page.keyboard.press('Enter'); await page.waitForSelector('#backupOverlay.on');
 }
 const dialogs = (page) => page.evaluate(() => [...document.querySelectorAll('.overlay.on')].map((o) => o.id));

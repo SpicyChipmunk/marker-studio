@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { setup, teardown, openApp, welcome, sampleGuide, idle, shot, notOnWebKit, WK, saveGuide, answerAsks } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, sampleGuide, idle, shot, saveGuide, answerAsks } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -244,7 +244,7 @@ const photoOf = (page, draw) => page.evaluate(async (draw) => {
   return await new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result.split(',')[1]); f.readAsDataURL(blob); });
 }, draw);
 
-test('the photo pattern’s “Closer with” markers can go on the list', notOnWebKit(WK.photo), async () => {
+test('the photo pattern’s “Closer with” markers can go on the list', async () => {
   const { page, errors } = await openApp();
   // Honolulu 24 and a photo in colours it can't match well
   await page.check('#wcSets input[data-i="0"]'); await page.click('#wcAdd'); await page.click('#wcSample');

@@ -4,7 +4,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { mkdir } from 'node:fs/promises';
-import { setup, teardown, openApp, welcome, idle, until, shot, ROOT, ENGINE, openAtScale, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, idle, until, shot, ROOT, ENGINE, openAtScale } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -17,7 +17,7 @@ async function openMatch(page) {
 }
 const best = (page) => page.evaluate(() => { const b = document.querySelector('#matchResult .mbname'); return b ? b.textContent.trim() : ''; });
 
-test('opens on Photo; tapping a photo gives a best match from your markers', notOnWebKit(WK.photo), async () => {
+test('opens on Photo; tapping a photo gives a best match from your markers', async () => {
   const { page, errors } = await openApp();
   await openMatch(page);
   assert.equal(await page.getAttribute('.msrc button.on', 'data-src'), 'photo');
@@ -190,7 +190,7 @@ const loadPhoto = async (page, paper) => {
   await until(page, () => document.getElementById('matchCanvas').width === 240, null, 'the photo drawn'); await idle(page);
 };
 
-test('Match › Photo: a photo after a tall one is drawn as sharp as it was on its own', notOnWebKit(WK.photo), async () => {
+test('Match › Photo: a photo after a tall one is drawn as sharp as it was on its own', async () => {
   const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState({ mode: 'collection' }) }) });
   await page.click('#mkMatchBtn'); await page.waitForSelector('#matchOverlay.on');
   const file = (w, h) => page.evaluate(([w, h]) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.fillStyle = '#3a7bd5'; g.fillRect(0, 0, w, h); return c.toDataURL('image/png').split(',')[1]; }, [w, h]).then((b) => ({ name: 'p.png', mimeType: 'image/png', buffer: Buffer.from(b, 'base64') }));
@@ -208,7 +208,7 @@ test('Match › Photo: a photo after a tall one is drawn as sharp as it was on i
   assert.deepEqual(errors, []);
 });
 
-test('Match › Photo: Tap the white paper corrects the lighting; a bad spot says so; ✕ and a new photo take it away; Escape leaves the mode', notOnWebKit(WK.photo), async () => {
+test('Match › Photo: Tap the white paper corrects the lighting; a bad spot says so; ✕ and a new photo take it away; Escape leaves the mode', async () => {
   const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState({ mode: 'collection' }) }) });
   await page.click('#mkMatchBtn'); await page.waitForSelector('#matchOverlay.on');
   assert.equal(await page.isVisible('#matchPaper'), false, 'no paper button before a photo');

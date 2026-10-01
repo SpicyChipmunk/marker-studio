@@ -37,7 +37,7 @@ const grades = (page) => page.evaluate(() => {
   return out;
 });
 
-test('graded by eye in Match’s words: the summary, a tapped section’s tip, and “Closer with” markers clearly closer', notOnWebKit(WK.photo), async () => {
+test('graded by eye in Match’s words: the summary, a tapped section’s tip, and “Closer with” markers clearly closer', async () => {
   const { page, errors } = await openApp();
   // Honolulu 24 and a photo in colours it can't match well
   await photoGuide(page, 1, "const gr=g.createLinearGradient(0,0,600,800);gr.addColorStop(0,'#0bd6c8');gr.addColorStop(0.5,'#8a2be2');gr.addColorStop(1,'#39ff14');g.fillStyle=gr;g.fillRect(0,0,600,800);");
@@ -69,7 +69,7 @@ test('graded by eye in Match’s words: the summary, a tapped section’s tip, a
   assert.deepEqual(errors, []);
 });
 
-test('a photo of the page coloured with 8 clearly different markers: “About 8 markers”, Use 8 gives back those 8, Undo goes back', notOnWebKit(WK.photo), async () => {
+test('a photo of the page coloured with 8 clearly different markers: “About 8 markers”, Use 8 gives back those 8, Undo goes back', notOnWebKit(WK.scale), async () => {
   const { page, errors } = await openApp();
   await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));

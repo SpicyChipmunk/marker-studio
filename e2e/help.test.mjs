@@ -6,7 +6,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { setup, teardown, openApp, sampleGuide, welcome, idle, shot, ROOT, ARTIFACTS, menuItem, notOnWebKit, WK, pause, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, welcome, idle, shot, ROOT, ARTIFACTS, menuItem, pause, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -102,7 +102,7 @@ test('How it works: a pause while a card glides into view keeps the dots on the 
   assert.deepEqual(errors, []);
 });
 
-test('How it works also shows the first time a photo is chosen, over the sections editor, and the ⋯ is there too', notOnWebKit(WK.photo), async () => {
+test('How it works also shows the first time a photo is chosen, over the sections editor, and the ⋯ is there too', async () => {
   const { page, errors } = await openApp();
   await autoHelp(page);
   await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');

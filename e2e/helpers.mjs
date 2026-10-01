@@ -21,11 +21,11 @@ export const ENGINE = process.env.E2E_BROWSER || 'chromium';
 // (WebKitGTK's MiniBrowser) first. Tests that fail there only now and then (a frame or a scroll event arriving late)
 // aren't listed: the WebKit job runs one file at a time and retries a failed test once (e2e/ci-retry.mjs).
 export const WK = {
-  photo: 'turning a picture into sections or colours takes minutes in GitHub’s WebKit (about 2 s in WebKit itself)',
   font: 'text measures differently with the fonts GitHub’s WebKit has (the layout is right in WebKit itself)',
   touch: 'touch can’t be made up in desktop WebKit (no Touch objects)',
   storage: 'this WebKit build has no navigator.storage',
   speed: 'GitHub’s WebKit is several times slower',
+  scale: 'Safari’s engine smooths a scaled picture differently, so a section of a made-up page painted exactly in a marker’s colour can come out between two markers (a 9th marker for one section)',
   back: 'Back is left to the browser under test automation in Safari’s engine (Playwright’s WebKit crashes reloading a page twice after pushState; Safari itself doesn’t)',
 };
 export const notOnWebKit = (why) => ({ skip: ENGINE === 'webkit' && 'not on WebKit in CI: ' + why });
@@ -68,7 +68,9 @@ export async function openApp({ width = 390, height = 844, storage = null, userA
     if (st && !sessionStorage.getItem('__seeded')) { for (const [k, v] of Object.entries(st)) localStorage.setItem(k, v); sessionStorage.setItem('__seeded', '1'); }
   }, storage);
   // keep tests offline: fonts and anything else off-origin are dropped
-  await ctx.route((u) => !u.href.startsWith(server.url), (r) => r.abort());
+  // (blob: and data: addresses are the page's own: Playwright's WebKit sends blob: ones through this too, and stopping
+  // them kept every photo from opening there — the photo tests were left out on WebKit for it until v294)
+  await ctx.route((u) => !u.href.startsWith(server.url) && !/^(blob|data):/.test(u.href), (r) => r.abort());
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));

@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { setup, teardown, openApp, sampleGuide, idle, ROOT, ENGINE, notOnWebKit, WK, saveGuide, answerAsks } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, ROOT, ENGINE, saveGuide, answerAsks } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -309,7 +309,7 @@ test('every field: a value that isn’t the default is kept through save, reload
   assert.deepEqual(errors, []);
 });
 
-test('the Photo pattern’s photo, see-through and white areas are kept through save, reload and reopening', notOnWebKit(WK.photo), async () => {
+test('the Photo pattern’s photo, see-through and white areas are kept through save, reload and reopening', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await pickPhoto(page);
@@ -325,7 +325,7 @@ test('the Photo pattern’s photo, see-through and white areas are kept through 
   assert.deepEqual(errors, []);
 });
 
-test('the Photo pattern’s settings from a file: kept in range, or today’s default', notOnWebKit(WK.photo), async () => {
+test('the Photo pattern’s settings from a file: kept in range, or today’s default', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await pickPhoto(page);
@@ -432,7 +432,7 @@ test('Undo: each style control’s change is one step, and Undo puts every setti
   assert.deepEqual(errors, []);
 });
 
-test('Undo: the photo’s see-through, white areas and placement are steps too', notOnWebKit(WK.photo), async () => {
+test('Undo: the photo’s see-through, white areas and placement are steps too', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await pickPhoto(page);

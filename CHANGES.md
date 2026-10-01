@@ -1362,3 +1362,10 @@ Four reviewers went over v288 (code, a hands-on bug hunt, a hands-on UX walkthro
 - A toast test waits for the sheet to move beside the picture after the window widens (GitHub's WebKit was a moment behind).
 - Cache bumped to `marker-studio-v293`.
 
+# Tests and CI (after v293)
+
+- The photo tests run on WebKit again (60 of them, left out since v287): they weren't slow there. The tests keep themselves offline by stopping every request away from the app, and Playwright's WebKit sends the page's own `blob:` addresses through that too, so no photo ever opened ("That file couldn't be opened as a picture") and the tests waited for a Build that never came. `blob:` and `data:` addresses now go through; a photo builds in under a second there. One test stays left out on WebKit, with its reason: a made-up page painted exactly in 8 markers' colours comes out with a 9th marker for one section, as Safari's engine smooths a scaled picture differently.
+- WebKit part 1 also times one photo from opening to Build (`e2e/ci-photo-timing.mjs`), next to the speed check (which found GitHub's WebKit draws only about 9 frames a second, at full JavaScript speed).
+- The test files are shared out among the CI parts by how long they take (`e2e/ci-parts.mjs`, `e2e/ci-durations.json`): WebKit's six parts now finish within a few minutes of each other.
+- Escape-stack's keyboard way into the backup dialog waits for the Library to put focus on Back up first (a race on GitHub).
+

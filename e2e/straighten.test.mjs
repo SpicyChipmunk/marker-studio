@@ -3,7 +3,7 @@
 // Undo and Adjust corners work, the lens's focal length is read from the photo, and the page's shape comes out right.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle, scrollTop, notOnWebKit, WK, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, idle, scrollTop, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -45,7 +45,7 @@ async function fresh() { const a = await openApp(); await a.page.check('#wcSets 
 const sections = (page) => page.waitForSelector('#sfBuild', { state: 'visible', timeout: 40000 });
 const info = (page) => page.evaluate(() => { const t = __mstest; return { W: t.W, H: t.H, line: document.querySelector('.sfpgline') ? document.querySelector('.sfpgline').textContent : '', q: t.pgQ, src: t.srcSize }; });
 
-test('a page photographed at an angle is found and flattened to its true shape', notOnWebKit(WK.photo), async () => {
+test('a page photographed at an angle is found and flattened to its true shape', async () => {
   for (const o of [{ tilt: 25, roll: 8, size: 0.6 }, { tilt: 20, yaw: 12, bleed: 1, bg: 'dark', size: 0.65 }]) {
     const { page, errors } = await fresh();
     const ph = await photo(page, o);
@@ -74,7 +74,7 @@ test('a page photographed at an angle is found and flattened to its true shape',
   }
 });
 
-test('scans, a page square to the camera and a white page on a white table are left alone', notOnWebKit(WK.photo), async () => {
+test('scans, a page square to the camera and a white page on a white table are left alone', async () => {
   for (const o of [{ scan: 1 }, { scan: 1, border: 1 }, { tilt: 0, size: 0.97 }, { tilt: 20, bg: 'white', size: 0.6 }]) {
     const { page, errors } = await fresh();
     const ph = await photo(page, o);
@@ -89,7 +89,7 @@ test('scans, a page square to the camera and a white page on a white table are l
   }
 });
 
-test('a corner outside the photo opens the corner handles with a reason; Keep as is carries on unchanged', notOnWebKit(WK.photo), async () => {
+test('a corner outside the photo opens the corner handles with a reason; Keep as is carries on unchanged', async () => {
   const { page, errors } = await fresh();
   const ph = await photo(page, { tilt: 15, size: 0.9, dx: 0.2 });
   await pick(page, ph);
@@ -104,7 +104,7 @@ test('a corner outside the photo opens the corner handles with a reason; Keep as
   assert.deepEqual(errors, []);
 });
 
-test('the corner editor: drag a corner, straighten, undo, adjust again', notOnWebKit(WK.photo), async () => {
+test('the corner editor: drag a corner, straighten, undo, adjust again', async () => {
   const { page, errors } = await fresh();
   const ph = await photo(page, { tilt: 15, size: 0.9, dx: 0.2 });
   await pick(page, ph); await page.waitForSelector('#sfPgGo', { timeout: 20000 });
@@ -133,7 +133,7 @@ test('the corner editor: drag a corner, straighten, undo, adjust again', notOnWe
   assert.deepEqual(errors, []);
 });
 
-test('the lens is read from the photo, and with it the page’s shape is measured, not guessed', notOnWebKit(WK.photo), async () => {
+test('the lens is read from the photo, and with it the page’s shape is measured, not guessed', async () => {
   const { page, errors } = await openApp();
   const r = await page.evaluate(() => {
     const t = __mstest;
@@ -154,7 +154,7 @@ test('the lens is read from the photo, and with it the page’s shape is measure
   assert.deepEqual(errors, []);
 });
 
-test('Photo colour pattern: a coloured version photographed at an angle is straightened, turned and lined up by itself', notOnWebKit(WK.photo), async () => {
+test('Photo colour pattern: a coloured version photographed at an angle is straightened, turned and lined up by itself', async () => {
   const { page, errors } = await openApp();
   await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd');
   const scan = await photo(page, { scan: 1, bleed: 1 });
@@ -176,7 +176,7 @@ test('Photo colour pattern: a coloured version photographed at an angle is strai
   assert.deepEqual(errors, []);
 });
 
-test('Adjust corners, then Cancel, leaves the straightened page and its section edits exactly as they were', notOnWebKit(WK.photo), async () => {
+test('Adjust corners, then Cancel, leaves the straightened page and its section edits exactly as they were', async () => {
   const { page, errors } = await fresh();
   const ph = await photo(page, { tilt: 25, roll: 8, size: 0.6 });
   await pick(page, ph); await sections(page); await idle(page);

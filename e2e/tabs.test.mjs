@@ -48,7 +48,7 @@ test('Colours · Pattern · Shading · Share, one pane each: Colours the first t
   assert.deepEqual(errors, []);
 });
 
-test('Pattern: the chooser on one row, that pattern\'s options, then Shuffle and Pin side by side', notOnWebKit(WK.photo), async () => {
+test('Pattern: the chooser on one row, that pattern\'s options, then Shuffle and Pin side by side', async () => {
   const { page, errors } = await app();
   await sampleGuide(page);
   await tab(page, 'pattern');

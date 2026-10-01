@@ -3,7 +3,7 @@
 // per Done, no PNG re-encode on autosave, one-section zone markers) give the same answers as the slow ones.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -57,7 +57,7 @@ test('partial redraws match a full redraw (colour along, focus mode, shading, to
   assert.deepEqual(errors, []);
 });
 
-test('a big phone photo is kept at working size, Done repaints one section, autosave skips re-encoding', notOnWebKit(WK.photo), async () => {
+test('a big phone photo is kept at working size, Done repaints one section, autosave skips re-encoding', async () => {
   const { page, errors } = await openApp();
   // a 4000 x 3000 "photo" of line art
   const b64 = await page.evaluate(async () => {
@@ -189,7 +189,7 @@ test('H/S markers follow the shading mode and marker changes, not just the light
   assert.deepEqual(errors, []);
 });
 
-test('a 48-megapixel photo loads, is scaled to working size, and builds', notOnWebKit(WK.photo), async () => {
+test('a 48-megapixel photo loads, is scaled to working size, and builds', async () => {
   const { page, errors } = await openApp();
   const b64 = await page.evaluate(async () => {
     const W = 8000, H = 6000, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');

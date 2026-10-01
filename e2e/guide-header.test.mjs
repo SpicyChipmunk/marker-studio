@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { setup, teardown, openApp, sampleGuide, idle, openMenu, menuItem, ROOT, rename, sectionPoint, scrollTop, openAtScale, guideName, notOnWebKit, WK, until, saveGuide, answerAsks, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, openMenu, menuItem, ROOT, rename, sectionPoint, scrollTop, openAtScale, guideName, until, saveGuide, answerAsks, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -43,7 +43,7 @@ test('header row: name ✎ over where it is saved, ✨ Surprise in Plan only, an
   assert.deepEqual(errors, []);
 });
 
-test('a new photo is "New guide" in Edit sections, and goes into the Library by itself once built', notOnWebKit(WK.photo), async () => {
+test('a new photo is "New guide" in Edit sections, and goes into the Library by itself once built', async () => {
   const { page, errors } = await openApp();
   await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#wcPhoto')]);

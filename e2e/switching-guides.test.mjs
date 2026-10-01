@@ -3,7 +3,7 @@
 // failure says nothing over the new guide, and a guide that can't be saved stops the switch.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, welcome, notOnWebKit, WK, saveGuide, answerAsks, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, welcome, saveGuide, answerAsks, buildGo } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -67,7 +67,7 @@ test('crop mode does not leak into the next picture', async () => {
   assert.deepEqual(errors, []);
 });
 
-test('a picture left unbuilt does not wipe the progress of a guide opened afterwards', notOnWebKit(WK.photo), async () => {
+test('a picture left unbuilt does not wipe the progress of a guide opened afterwards', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await tickSome(page, 6); await saveGuide(page); await idle(page);
   const id = await savedId(page);

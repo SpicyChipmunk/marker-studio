@@ -5,7 +5,7 @@
 // earlier version of the code.)
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle, notOnWebKit, WK, saveGuide } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, saveGuide } from './helpers.mjs';
 import { SESSIONS, CTL_INIT, click, slide, choose } from './controls-states.mjs';
 
 before(setup);
@@ -39,7 +39,7 @@ const WIRED = {
   sfEmSplit: ['click'], sfEmAdd: ['click'], sfAutoClose: ['change'], sfBuild: ['click'],
 };
 
-test('every state of the controls renders without an error, and each drawing of them wires every control in it', notOnWebKit(WK.photo), async () => {
+test('every state of the controls renders without an error, and each drawing of them wires every control in it', async () => {
   let states = 0,
     drawn = 0,
     checked = 0;

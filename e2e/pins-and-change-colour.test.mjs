@@ -4,7 +4,7 @@
 // uses press and hold; Manual keeps opening the picker; Fill unpinned sections.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, notOnWebKit, WK, saveGuide } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, saveGuide } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -279,7 +279,7 @@ test('Manual: a tap still opens the picker, with Unpin (allow fill) on a pinned 
   assert.deepEqual(errors, []);
 });
 
-test('Photo: a pinned section is not left white, and its tip has the buttons', notOnWebKit(WK.photo), async () => {
+test('Photo: a pinned section is not left white, and its tip has the buttons', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   const [l, l2] = await bigSections(page, 2), orig = await mk(page, l);

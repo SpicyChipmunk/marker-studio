@@ -356,7 +356,7 @@ test('with zones, Pattern, Colours and Shading fit in about one and a half scree
   assert.deepEqual(errors, []);
 });
 
-test('sections found again (Enhance in Edit sections): each joins the zone most of its pixels were in', notOnWebKit(WK.photo), async () => {
+test('sections found again (Enhance in Edit sections): each joins the zone most of its pixels were in', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   const secs = await bigSecs(page, 4, 'top');
@@ -375,7 +375,7 @@ test('sections found again (Enhance in Edit sections): each joins the zone most 
   assert.deepEqual(errors, []);
 });
 
-test('a zone with the Photo pattern takes its colours from the one photo; Main keeps its pattern; the photo is kept in a shared guide file', notOnWebKit(WK.photo), async () => {
+test('a zone with the Photo pattern takes its colours from the one photo; Main keeps its pattern; the photo is kept in a shared guide file', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   await makeZone(page, await bigSecs(page, 6, 'bottom'), 'Foot');

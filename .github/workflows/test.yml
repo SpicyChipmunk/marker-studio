@@ -87,6 +87,14 @@ jobs:
         continue-on-error: true
         timeout-minutes: 5
         run: node e2e/ci-speed-check.mjs
+      # (a diagnostic, part 1 only: how long one made-up photo takes to become a guide here, step by step)
+      - name: Photo timing
+        if: matrix.part == 1
+        continue-on-error: true
+        timeout-minutes: 6
+        run: node e2e/ci-photo-timing.mjs
+        env:
+          E2E_BROWSER: webkit
       - name: Browser tests (WebKit, part ${{ matrix.part }} of 6)
         id: tests
         # failed tests don't fail this step: the retry below decides (and so does running out of time, which is why
