@@ -51,7 +51,8 @@ test('Colours · Pattern · Shading · Share, one pane each: Colours the first t
 test('Pattern: the chooser on one row, that pattern\'s options, then Shuffle and Pin side by side', async () => {
   const { page, errors } = await app();
   await sampleGuide(page);
-  await tab(page, 'pattern');
+  // (settled first: under load, the row of Shuffle and Pin was once measured mid-layout)
+  await tab(page, 'pattern'); await idle(page);
   assert.deepEqual(await ids(page, '#sfFam button'), ['gradient', 'random', 'blend', 'photo', 'manual']);
   assert.equal((await rows(page, '#sfFam button')).length, 1, 'the chooser fits on one row at 390 wide');
   // Gradient: flow (one row) and direction, then ↻ Shuffle and Pin colours on one row, Shuffle first
@@ -179,7 +180,7 @@ test('Share: Show it off, Print…, Plan & keep; the Print sheet opens under the
   assert.deepEqual(await page.$$eval(`${pane('share')} .sfglbl`, (e) => e.map((x) => x.textContent)), ['Show it off', 'Print', 'Plan & keep']);
   assert.deepEqual(await ids(page, `${pane('share')} button`), ['sfReveal', 'sfExport', 'sfPrint', 'sfPlan', 'sfAsPal', 'sfShareGuide']);
   assert.equal((await page.textContent('#sfReveal')).trim(), 'Reveal & share');
-  assert.equal(await page.textContent('#sfPrint'), 'Print…');
+  assert.equal((await page.textContent('#sfPrint')).trim(), 'Print…');
   assert.equal(await page.locator(`${pane('share')} #sfPDF, ${pane('share')} [data-paper]`).count(), 0, 'the print options live in the sheet');
   await page.click('#sfPrint'); await page.waitForSelector('#sfSheet.sfprsh'); await idle(page);
   // under the picture, pinned at its floor size (waiting for the sheet to arrive: GitHub's WebKit can leave its slide

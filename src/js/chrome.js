@@ -35,6 +35,13 @@ function chrome() {
     _sec = state.mode === 'sections';
   document.querySelector('.wrap').classList.toggle('homemode', _home);
   document.querySelector('.wrap').classList.toggle('sfmode', _sec);
+  // (Palette: its settings beside the palette on a wide screen, 02-picker.css, v300)
+  document.querySelector('.wrap').classList.toggle('palmode', state.mode === 'palette');
+  palFiltersPlace();
+  // (Markers: the search and the view on one row, the tools and the line about the view on the next, on a wide screen)
+  document.querySelector('.wrap').classList.toggle('mkmode', state.mode === 'collection');
+  // (the Guide tab's start card: the sample's picture until there's a guide, also after one is deleted or put back)
+  if (window.SF && SF.startPic) SF.startPic();
   // (v288: the palette's glow belongs to Palette, and Random's draw; elsewhere the plain background)
   document.documentElement.classList.toggle('noamb', state.mode !== 'palette' && state.mode !== 'random');
   mSections.classList.toggle('on', _sec);
@@ -161,8 +168,10 @@ function chrome() {
     const _top = !state.owned.size,
       _bw = $('backupWrap'),
       _md = $('mkDraw');
-    if (_top && _md && _pw.nextElementSibling !== _md) {
-      _md.parentNode.insertBefore(_pw, _md);
+    // (before the row Random is in, v300: its wrapper on an iPad, a box of its own there)
+    const _mr = _md && (_md.closest('.mkh2') || _md);
+    if (_top && _mr && _pw.nextElementSibling !== _mr) {
+      _mr.parentNode.insertBefore(_pw, _mr);
       _pw.classList.remove('bottom');
     } else if (!_top && _bw && _pw.nextElementSibling !== _bw) {
       _bw.parentNode.insertBefore(_pw, _bw);
@@ -250,6 +259,9 @@ function chrome() {
     });
     const shown = [...segs.children].filter((b) => !b.disabled).length;
     segs.style.setProperty('--segcols', shown > 7 ? Math.ceil(shown / 2) : shown);
+    // (beside the palette on an iPad held sideways, the column takes 9 on one row: Triadic's 3–10 had made a 4×2 block,
+    // v300)
+    segs.style.setProperty('--segcolsw', shown > 9 ? Math.ceil(shown / 2) : shown);
   }
   closeNote();
   harm.querySelectorAll('button').forEach((b) => segOn(b, b.dataset.h === state.harmony));
@@ -936,3 +948,26 @@ function harmDescSync(pal) {
   const t = pal ? HARM_DESC[state.harmony] || '' : '';
   if (harmDesc.textContent !== t) harmDesc.textContent = t;
 }
+
+// (v300) Palette held sideways on an iPad: Filters with the other settings, in the column beside the palette (it had
+// been under both, below the first screen); everywhere else, and in Markers and Random, where it always was, under
+// the palette. The same query as the two columns' (02-picker.css)
+const PAL_SIDEQ = '(min-width: 1000px) and (orientation: landscape)';
+function palFiltersPlace() {
+  const fb = document.getElementById('filterBar'),
+    fl = document.getElementById('filters'),
+    set = document.querySelector('.palset'),
+    tw = document.getElementById('trackWrap');
+  if (!fb || !fl || !set || !tw) return;
+  let side = false;
+  try {
+    side = state.mode === 'palette' && matchMedia(PAL_SIDEQ).matches;
+  } catch (_) {}
+  if (side && fb.parentNode !== set) set.append(fb, fl);
+  else if (!side && fb.parentNode === set) tw.after(fb, fl);
+}
+try {
+  const _pq = matchMedia(PAL_SIDEQ);
+  if (_pq.addEventListener) _pq.addEventListener('change', palFiltersPlace);
+  else if (_pq.addListener) _pq.addListener(palFiltersPlace);
+} catch (_) {}

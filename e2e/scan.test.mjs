@@ -48,7 +48,7 @@ test('typed codes and a pasted list collect in a list to check; Add puts the new
   await idle(page);
   assert.deepEqual(await list(page), ['E49', 'E19', 'R014 (mine)', 'B015']);
   assert.match(await stat(page), /2 added to the list/);
-  assert.equal(await page.textContent('#scCount'), '4 markers · 3 new');
+  assert.equal((await page.textContent('#scCount')).replace(/\u00a0/g, ' '), '4 markers · 3 new');
   assert.equal(await page.textContent('#scAdd'), 'Add 3 to my collection');
   // nothing in it is a code: said so
   await type(page, 'hello');
@@ -106,13 +106,13 @@ test('asks when it cannot be sure, in the list (sweeping on loses no question); 
   await type(page, 'B04');
   assert.match(await stat(page), /B04: .*\?/);
   assert.equal(await page.locator('#scList .scask').count(), 1);
-  assert.equal(await page.textContent('#scCount'), '1 to choose');
+  assert.equal((await page.textContent('#scCount')).replace(/\u00a0/g, ' '), '1 to choose');
   assert.equal(await page.isDisabled('#scAdd'), true);
   // reading on doesn't lose it, and the same question isn't asked twice
   await type(page, 'B015');
   await type(page, 'B04');
   assert.equal(await page.locator('#scList .scask').count(), 1);
-  assert.equal(await page.textContent('#scCount'), '1 marker · 1 to choose');
+  assert.equal((await page.textContent('#scCount')).replace(/\u00a0/g, ' '), '1 marker · 1 to choose');
   await page.click('#scList .scask .scchoose:has-text("Copic")'); await idle(page);
   assert.deepEqual(await list(page), ['B04', 'B015']);
   assert.match(await page.textContent('#scList .scrow'), /Copic/);

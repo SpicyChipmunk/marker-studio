@@ -160,7 +160,8 @@
 }
 .palette.gridmode {
   height: auto;
-  min-height: 200px;
+  /* (as tall as its tiles: 200px had left 70px empty under two rows of them, v300) */
+  min-height: 0;
 }
 .bands.grid {
   display: grid;
@@ -174,9 +175,19 @@
 .bands.grid .band {
   height: 60px;
   border-radius: var(--r-sm);
-  padding: 0;
-  align-items: center;
+  /* (v300: the code at the foot, clear of the lock at the top: centred, the lock covered it) */
+  padding: 0 0 7px;
+  align-items: flex-end;
   justify-content: center;
+}
+.bands.grid .band .blk {
+  top: 3px;
+  right: 3px;
+  width: 26px;
+  height: 26px;
+}
+.bands.grid .band .blk::before {
+  inset: -9px;
 }
 .bands.grid .band .bcode {
   font-size: var(--t-base);
@@ -338,8 +349,11 @@ button.sfSeeAll {
   max-height: 46vh;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  padding: 2px 6px 8px;
+  padding: 2px 6px 26px;
   background: var(--glass);
+  /* (v300: the list fades at its foot, so it reads as going on; scrolled to the end, only its padding is faded) */
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 26px), transparent);
+  mask-image: linear-gradient(#000 calc(100% - 26px), transparent);
 }
 .wcsets .presetbrand {
   margin-top: 10px;
@@ -350,6 +364,9 @@ button.sfSeeAll {
     min-height: 0;
     max-height: none;
     overflow: visible;
+    padding-bottom: 8px;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 }
 @media (max-height: 720px) {
@@ -611,10 +628,17 @@ button.sfSeeAll {
   min-height: 150px;
   background: #f6f3ec;
 }
+.hcpic {
+  position: relative;
+}
+/* (the whole page, fitted: Safari doesn't size a picture to a box whose height comes from the layout, and cut the page's
+   top and bottom off, v300) */
 .hcpic img {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
+  position: absolute;
+  inset: 10px;
+  width: calc(100% - 20px);
+  height: calc(100% - 20px);
+  object-fit: contain;
 }
 .hcph {
   width: 100%;
@@ -669,6 +693,8 @@ button.sfSeeAll {
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
 .hcgo {
+  /* (the app's main buttons' size, as the Guide tab's Choose a photo and Generate are, v300) */
+  font-size: var(--t-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -676,6 +702,52 @@ button.sfSeeAll {
   margin-top: 4px;
   border-radius: var(--r-md);
   font-weight: 600;
+}
+/* Home's start card (v300): on an iPad, in the Continue card's place while no guide is in progress. A phone keeps New
+   colouring guide and the cards in one column */
+.hcstart {
+  cursor: default;
+}
+.hcstart:hover {
+  border-color: var(--line);
+}
+.hcstart .hcname {
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  font-size: var(--t-xl);
+  line-height: 1.25;
+}
+.hcstart .hcnw {
+  white-space: nowrap;
+}
+.hcstart .hcalt {
+  align-self: center;
+  margin-top: 2px;
+  min-height: 44px;
+}
+/* (the picture: the sample page, then its guide — a button for the sample) */
+button.hcpic {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+button.hcpic:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -4px;
+}
+/* (until there's a guide of one's own; then just the words, and Your guides comes up) */
+.hcstart.compact .hcname {
+  font-size: var(--t-lg);
+}
+@media (max-width: 699.98px) {
+  #homeView .homehub.hasstart #homeCont {
+    display: none !important;
+  }
 }
 /* (beside the Continue card, New colouring guide is the second choice: outlined) */
 .homenew.homenew2 {
@@ -731,11 +803,14 @@ button.sfSeeAll {
   background: #f6f3ec;
   overflow: hidden;
 }
+#sfRecent .sfRecPic {
+  position: relative;
+}
 #sfRecent .sfRecThumb {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
+  position: absolute;
+  inset: 8px;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
   border: 0;
   border-radius: 0;
   object-fit: contain;
@@ -755,25 +830,30 @@ button.sfSeeAll {
     max-width: var(--wrapW);
   }
   /* (#homeView: over the phone's 440px in 08-dialogs-match.css, which comes later) */
+  /* (v300: its edges on the menu's, as the guide's card and Markers are; and no empty note taking a gap at the top
+     of the right-hand column, which put it 16px below the start card) */
   #homeView .homehub {
-    max-width: 1000px;
+    max-width: none;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .homeside > .homepalnote:empty {
+    display: none;
   }
   .hometop {
     display: grid;
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     align-items: start;
   }
-  .hometop.nocont {
-    display: flex;
-    align-items: stretch;
-    width: 100%;
-    max-width: 440px;
-    margin: 0 auto;
+  /* (v300) with no guide in progress, the start card in the Continue card's place: the same two columns */
+  #homeView .homehub.hasstart .homehead,
+  #homeView .homehub.hasstart #homeNew {
+    display: none;
   }
-  .hometop:not(.nocont) .homegrid {
+  .hometop .homegrid {
     grid-template-columns: 1fr;
   }
-  .hometop:not(.nocont) .homecard {
+  .hometop .homecard {
     flex-direction: row;
     justify-content: flex-start;
     gap: 14px;
@@ -787,6 +867,10 @@ button.sfSeeAll {
   .hcpic {
     width: auto;
     height: clamp(220px, 46vh, 520px);
+  }
+  /* (shorter: Your guides comes into view under it) */
+  .hcstart .hcpic {
+    height: clamp(180px, 34vh, 400px);
   }
   .sfRecList {
     grid-auto-flow: row;
@@ -805,4 +889,38 @@ button.sfSeeAll {
   .sfRecList .sfRecCard:nth-child(4) {
     display: flex;
   }
+}
+/* the sample page and its guide, side by side (Home's start card and the Guide tab's, v300) */
+.hcba {
+  position: absolute;
+  inset: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.hcpic .hcba img,
+.hcba img {
+  position: static;
+  inset: auto;
+  width: auto;
+  height: 100%;
+  min-width: 0;
+  /* (two, the arrow and its gaps in the width) */
+  max-width: calc(50% - 10px - 14 * var(--tpx));
+  object-fit: contain;
+  mix-blend-mode: normal;
+}
+/* (the page's white paper as the card's paper) */
+.hcpic .hcba img.hcbal,
+.hcba img.hcbal {
+  mix-blend-mode: multiply;
+}
+.hcbaar {
+  flex: none;
+  width: calc(28 * var(--tpx));
+  text-align: center;
+  color: #8a8070;
+  font-size: calc(26 * var(--tpx));
+  font-weight: 700;
 }

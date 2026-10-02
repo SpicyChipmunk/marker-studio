@@ -258,6 +258,31 @@ function homeName(g) {
 function homeStarted(g) {
   return (+g.done > 0 || +g.tn > 0) && !(+g.n > 0 && +g.done >= +g.n);
 }
+// the start card's buttons: a photo (the picker straight away, in the tap, as New colouring guide once there are
+// guides), or the sample
+function homeStart(what) {
+  if (!window.SF) return;
+  if (what === 'sample') {
+    setMode('sections');
+    if (SF.loadSample) SF.loadSample();
+    return;
+  }
+  // (section edits not built: the Guide screen and its question first, as New colouring guide does)
+  if (SF.secEdPending && SF.secEdPending() && SF.edToPlan) {
+    setMode('sections');
+    SF.edToPlan(true);
+    return;
+  }
+  if (SF.pickPhotoHome)
+    SF.pickPhotoHome(function () {
+      setMode('sections');
+    });
+}
+// New colouring guide as it shows: on an iPad with no guide in progress, the start card's Choose a photo (v300)
+function homeStartBtn() {
+  var b = document.querySelector('#homeCont [data-start="photo"]');
+  return b && b.getClientRects().length ? b : document.getElementById('homeNew');
+}
 function renderRecent() {
   var _ls = document.getElementById('homeLibSub');
   if (_ls) {
@@ -266,6 +291,12 @@ function renderRecent() {
   }
   // (only while Home shows: a save while colouring would otherwise redraw the Continue card's picture on every tick;
   // showing Home draws it, chrome.js)
+  if (window.SF && SF.startPic)
+    SF.startPic(
+      !state.saved.some(function (s) {
+        return s.type === 'guide';
+      }),
+    );
   var _hv = document.getElementById('homeView');
   if (_hv && _hv.style.display === 'none') return;
   if (window.SF && SF.palNote) SF.palNote();
@@ -291,9 +322,37 @@ function renderRecent() {
   // the Continue card
   if (cel) {
     if (!cont) {
-      cel.style.display = 'none';
-      cel.innerHTML = '';
-      cel.removeAttribute('data-cid');
+      // (v300) no guide in progress: a card for starting one in its place, so Home is the same two columns on an iPad
+      // in every state (the CSS shows it only where there's room for them; a phone keeps New colouring guide)
+      // (until there's a guide of one's own, the sample page and its guide, tapped for the sample; then just the words)
+      var nc = !all.length && !!(window.SF && SF.sampleBA),
+        cid = nc ? 'start' : 'start-c';
+      if (cel.getAttribute('data-cid') !== cid) {
+        var ba = nc ? SF.sampleBA() : '';
+        cel.setAttribute('data-cid', cid);
+        cel.removeAttribute('data-ts');
+        cel.removeAttribute('data-nm');
+        cel.innerHTML =
+          '<div class="hccard hcstart' +
+          (ba ? '' : ' compact') +
+          '">' +
+          (ba
+            ? // (a big target for the sample; screen readers and the keyboard have "or try the sample")
+              '<button type="button" class="hcpic" data-start="sample" tabindex="-1" aria-hidden="true">' +
+              ba +
+              '</button>'
+            : '') +
+          '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a photo of a colouring page into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a photo</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button></div></div>';
+      }
+      var own = cel.querySelector('.hcown'),
+        nOwn = state.owned.size;
+      if (own)
+        own.textContent =
+          (nOwn
+            ? 'Built from the ' + nOwn + ' marker' + (nOwn === 1 ? '' : 's') + ' you own. '
+            : 'Built from the markers you own: add yours in Markers. ') +
+          'Lay the page flat in even light, and get all of it in the frame.';
+      cel.style.display = '';
     } else if (
       cel.getAttribute('data-cid') !== String(cont.id) ||
       cel.getAttribute('data-ts') !== String(cont.ts) ||
@@ -354,6 +413,8 @@ function renderRecent() {
     }
     if (top) top.classList.toggle('nocont', !cont);
   }
+  var hub0 = document.querySelector('#homeView .homehub');
+  if (hub0) hub0.classList.toggle('hasstart', !cont);
   var nb = document.getElementById('homeNew');
   // (beside the Continue card, a new guide is the second choice)
   if (nb) nb.classList.toggle('homenew2', !!cont);
@@ -377,10 +438,10 @@ function renderRecent() {
         '</span><span class="sfRecMeta"><span class="sfRecName">' +
         esc(homeName(g)) +
         '</span><span class="sfRecDate">' +
-        relDate(g.ts) +
-        // (how far it's coloured, as the Library says: v284)
-        ' · ' +
+        // (how far it's coloured, then when, in the Library's order: v284, v300)
         progressText(g.done, g.n) +
+        ' · ' +
+        relDate(g.ts) +
         '</span></span></button>';
     });
     el.innerHTML = html + '</div>';
@@ -396,6 +457,11 @@ function renderRecent() {
   var go = function (e) {
     if (e.target.closest('[data-lib]')) {
       openLibrary();
+      return;
+    }
+    var st = e.target.closest('[data-start]');
+    if (st) {
+      homeStart(st.getAttribute('data-start'));
       return;
     }
     var c = e.target.closest('[data-gid]');

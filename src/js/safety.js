@@ -230,7 +230,8 @@ function homeCardNext(card) {
       .find(function (x) {
         return x && x !== card && x.style.display !== 'none' && x.getClientRects().length;
       }),
-    t = (next && next.querySelector('button')) || document.getElementById('homeNew');
+    // (on an iPad with no guide in progress, New colouring guide is the start card's Choose a photo, v300)
+    t = (next && next.querySelector('button')) || homeStartBtn();
   if (t) t.focus({ preventScroll: true });
 }
 // Ask the browser to keep this site's storage for good once there's something to lose: straight after the tap that

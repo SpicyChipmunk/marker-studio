@@ -697,7 +697,7 @@ function renderHomeNotes() {
       vis(fid && $(fid)) ||
       vis(el.querySelector('button')) ||
       vis(ll.querySelector('button')) ||
-      $('homeNew');
+      homeStartBtn();
     if (t) t.focus({ preventScroll: true });
   }
 }

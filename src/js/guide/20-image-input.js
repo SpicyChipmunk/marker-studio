@@ -534,7 +534,19 @@ function debImg() {
 }
 var SAMPLES = ['@@dataurl(assets/sample-jellyfish.png)'],
   SAMPLE_NAMES = ['jellyfish'],
-  sampleIdx = 0;
+  sampleIdx = 0,
+  // (v300) the sample page coloured from its guide, codes on it: the start cards' picture of what the app makes
+  SAMPLE_DONE = '@@dataurl(assets/sample-coloured.webp)';
+// the start cards' before and after (the page, then its guide), until there's a guide of one's own
+function sampleBA() {
+  return (
+    '<span class="hcba"><img class="hcbal" alt="" src="' +
+    SAMPLES[0] +
+    '"><span class="hcbaar" aria-hidden="true">\u2192</span><img alt="" src="' +
+    SAMPLE_DONE +
+    '"></span>'
+  );
+}
 function loadSample() {
   stashDirty().then(function (ok) {
     if (ok) _loadSample();

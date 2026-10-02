@@ -608,7 +608,7 @@
   transform: translateY(-50%);
 }
 /* the start card's buttons: a set 44px keeps them the same, one line each */
-#sfRoot #sfStart button:not(.hlpq) {
+#sfRoot #sfStart button:not(.hlpq):not(.sfstpic) {
   height: 44px;
   padding-top: 0;
   padding-bottom: 0;
@@ -633,6 +633,89 @@
   color: inherit;
   cursor: pointer;
   font: inherit;
+}
+/* (v300) the start card: the sample page and its guide beside the words (above them on a phone) until there's a guide
+   of one's own, then just the words. A serif heading, Choose a photo the whole width, the rest on a row under it */
+#sfRoot #sfStart {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0;
+  overflow: hidden;
+}
+#sfRoot #sfStart .sfstbody {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 18px 18px 20px;
+}
+#sfRoot #sfStart .sfstbody > div:empty {
+  display: none;
+}
+#sfRoot #sfStart .sfstbody .hlpq {
+  top: 10px;
+  right: 10px;
+}
+#sfRoot #sfStart h2 {
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  font-size: var(--t-xl);
+  line-height: 1.25;
+}
+#sfRoot #sfStart .sftag {
+  max-width: 560px;
+}
+#sfRoot #sfStart .sfstrow {
+  margin-top: 8px;
+}
+#sfRoot #sfStart button.sfstpick {
+  flex: 1 1 100%;
+  font-size: var(--t-md);
+}
+#sfRoot #sfStart button.sfstbtn {
+  /* (even widths on a row: as wide as the widest label needs, each) */
+  flex: 1 1 0;
+  min-width: max-content;
+  white-space: nowrap;
+  /* (the same size as Choose a photo: they'd been the page's larger size, bigger than it) */
+  font-size: var(--t-md);
+  font-weight: 600;
+  border-radius: var(--r-md);
+}
+#sfRoot .sfstpic {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 220px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #f6f3ec;
+  cursor: pointer;
+}
+#sfRoot .sfstpic:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -4px;
+}
+#sfRoot #sfStart.compact .sfstpic {
+  display: none;
+}
+@media (min-width: 700px) {
+  #sfRoot #sfStart:not(.compact) {
+    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  }
+  #sfRoot #sfStart .sfstpic {
+    height: auto;
+    /* (a phone held sideways, 700px wide and more, is short: the buttons stay on the first screen) */
+    min-height: clamp(200px, 46vh, 340px);
+  }
+  #sfRoot #sfStart .sfstbody {
+    justify-content: center;
+    padding: 24px 26px 26px;
+  }
 }
 #sfRoot .sfcropb {
   display: flex;
@@ -747,6 +830,18 @@
 #sfRoot #sfCtl #sfPal.sfc-segs .sfedit {
   min-width: 0;
   white-space: nowrap;
+}
+/* v300: Edit sections' tools (Leave out, Merge, Split, Add) the same even row */
+#sfRoot #sfCtl #sfEdit.sfc-segs {
+  gap: 4px;
+}
+/* (even widths, as wide as the widest word needs: at a large text size on a narrow phone they go onto two rows
+   rather than run over) */
+#sfRoot #sfCtl #sfEdit.sfc-segs .sfedit {
+  flex: 1 1 0;
+  min-width: max-content;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 /* choices that don't apply here (Mood with a saved palette) */
 #sfRoot #sfCtl .sfsublbl.sfoff,
@@ -926,7 +1021,7 @@
 #sfRoot #sfCtl .sfzfirst::after {
   content: '';
   position: absolute;
-  inset: -9px -4px;
+  inset: -10px -4px;
 }
 #sfRoot #sfCtl .sfzrow {
   display: flex;

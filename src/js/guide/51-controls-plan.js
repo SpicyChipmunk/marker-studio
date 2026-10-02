@@ -237,9 +237,10 @@ function ctlPlanColours() {
       '">Temperature</div><div id="sfPal" role="group" aria-label="Temperature" class="sfc-segs' +
       (_tOff ? ' sfoff' : '') +
       '">' +
+      // (Any first, as in Mood under it, v300)
+      ctlSeg('all', 'Any', palette === 'all', _tOff) +
       ctlSeg('cool', 'Cool', palette === 'cool', _tOff) +
       ctlSeg('warm', 'Warm', palette === 'warm', _tOff) +
-      ctlSeg('all', 'Any', palette === 'all', _tOff) +
       '</div>' +
       (_tOff
         ? '<div class="sfc-note sfc-mt6">Main colour sets this: its colours are chosen (Pattern).</div>'
@@ -679,11 +680,19 @@ function ctlPlanShare() {
     '>' +
     '<div class="sfgrp"><h3 class="sfglbl">Show it off</h3><div class="sfrow2"><button id="sfReveal" class="sfreveal">' +
     ic('sparkles') +
-    ' Reveal &amp; share</button><button id="sfExport" class="sfghost">Save image</button></div><label class="sfchk sfc-check sfc-inline sfc-mt8"><input type="checkbox" id="sfExCodes"' +
+    ' Reveal &amp; share</button><button id="sfExport" class="sfghost">' +
+    ic('image') +
+    ' Save image</button></div><label class="sfchk sfc-check sfc-inline sfc-mt8"><input type="checkbox" id="sfExCodes"' +
     (exCodes ? ' checked' : '') +
-    '> Codes on the saved image</label></div><div class="sfgrp"><h3 class="sfglbl">Print</h3><button id="sfPrint" class="sfghost sffull" aria-haspopup="dialog">Print…</button></div><div class="sfgrp"><h3 class="sfglbl">Plan &amp; keep</h3><div class="sfrow2"><button id="sfPlan" class="sfghost">' +
+    '> Codes on the saved image</label></div><div class="sfgrp"><h3 class="sfglbl">Print</h3><button id="sfPrint" class="sfghost sffull" aria-haspopup="dialog">' +
+    ic('printer') +
+    ' Print…</button></div><div class="sfgrp"><h3 class="sfglbl">Plan &amp; keep</h3><div class="sfrow2"><button id="sfPlan" class="sfghost">' +
     ic('blend') +
-    ' Blend plan</button><button id="sfAsPal" class="sfghost">Save as palette</button></div><button id="sfShareGuide" class="sfghost sffull">Guide file</button></div></div>'
+    ' Blend plan</button><button id="sfAsPal" class="sfghost">' +
+    ic('palette') +
+    ' Save as palette</button></div><button id="sfShareGuide" class="sfghost sffull">' +
+    ic('file-down') +
+    ' Guide file</button></div></div>'
   );
 }
 // the bottom bar (moved below the whole guide card by dockBar)

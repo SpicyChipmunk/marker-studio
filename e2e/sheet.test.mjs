@@ -260,10 +260,11 @@ test('side by side (844×390): the sheet covers the controls column, beside the 
   await changeColour(page, l);
   // (GitHub's WebKit can still be sliding it in when idle: once it measured 7 px down)
   await page.waitForFunction(() => Math.abs(document.getElementById('sfSheet').getBoundingClientRect().top) < 0.5, null, { timeout: 3000 }).catch(() => {});
-  const sh = await rect(page, '#sfSheet'), v = await rect(page, '#sfView'), cv = await rect(page, '#sfCanvas'), ctl = await rect(page, '#sfCtl');
+  const sh = await rect(page, '#sfSheet'), v = await rect(page, '#sfView'), cv = await rect(page, '#sfCanvas'), ctl = await rect(page, '#sfCtl'), wk = await rect(page, '#sfWork');
   assert.ok(await page.evaluate(() => document.getElementById('sfSheet').classList.contains('sfshside')));
   assert.ok(sh.left >= v.right - 0.5 && sh.left >= cv.right - 0.5, 'beside the picture, not over it');
-  assert.ok(sh.left <= ctl.left + 0.5 && Math.abs(sh.right - 844) < 1 && sh.top === 0 && Math.abs(sh.height - 390) < 1, 'over the whole controls column: ' + JSON.stringify([sh, ctl]));
+  // (v300: to the guide card's right edge, which is the menu's, as on an iPad; it had run to the screen's)
+  assert.ok(sh.left <= ctl.left + 0.5 && Math.abs(sh.right - wk.right) < 1.5 && sh.top === 0 && Math.abs(sh.height - 390) < 1, 'over the whole controls column: ' + JSON.stringify([sh, ctl, wk]));
   // a tap on the picture moves it here too
   const [l2] = await shownSecs(page, 1, [l]); await click(page, l2);
   assert.deepEqual(await outlined(page), [l2]);
@@ -338,9 +339,10 @@ test('on a tablet in portrait sheets are as wide as the guide card, centred over
     // the picker too, with its Cancel and Done
     const [l] = await bigSections(page, 1);
     await openChangeColour(page, l);
-    const p = await rect(page, '#sfSheet'), cn = await rect(page, '#sfPopCancel');
+    const p = await rect(page, '#sfSheet'), cn = await rect(page, '#sfPopCancel'), dn = await rect(page, '#sfPopConfirm');
     assert.ok(p.left >= c.left - 19 && p.right <= c.right + 19, 'the picker keeps to the card');
-    assert.ok(cn.width < (w === 390 ? 200 : 300), `Cancel is ${cn.width}px wide`);
+    // (v300: Cancel and Done share the sheet's width, on an iPad too: they had been 280px each at the right)
+    assert.ok(Math.abs(cn.width - dn.width) < 3 && cn.width > p.width / 2 - 40, `Cancel is ${cn.width}px wide, Done ${dn.width}`);
     if (w === 820) await shot(page, 'g1-10-picker');
     assert.deepEqual(errors, []);
     await ctx.close();

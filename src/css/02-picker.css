@@ -282,6 +282,12 @@
     opacity 0.2s ease,
     background 0.2s ease;
 }
+/* (v300: on a touch screen there's no hover to bring it up: clearer to start with, on pale colours too) */
+@media (hover: none) {
+  .blk {
+    opacity: 0.75;
+  }
+}
 .blk::before {
   content: '';
   position: absolute;
@@ -629,7 +635,8 @@ button.sopen:hover {
   container-type: inline-size;
 }
 .readout.rpal > div:first-child {
-  flex: 0 1 auto;
+  /* (the name first: it had wrapped beside a long list of codes with room to spare, v300; the codes take more lines) */
+  flex: 0 0 auto;
   min-width: 0;
   overflow-wrap: break-word;
 }
@@ -1227,6 +1234,60 @@ button:focus-visible {
   display: inline-block;
   margin-left: 5px;
 }
+/* (v300) Markers' top on a wide screen: the search with Owned / Unowned / All / To buy beside it, then Random and Match
+   a colour with the line about the view and the link down to the tools (Order on a row of its own under them), so
+   the markers start higher. Elsewhere, and on a phone, the wrappers are no boxes and everything is as it was */
+.mkh1,
+.mkh2 {
+  display: contents;
+}
+@media (min-width: 700px) {
+  .wrap.mkmode .mkh1,
+  .wrap.mkmode .mkh2 {
+    display: flex;
+    align-items: center;
+    margin: 0 2px 12px;
+  }
+  .wrap.mkmode .mkh1 {
+    gap: 14px;
+  }
+  .wrap.mkmode .mkh2 {
+    flex-wrap: wrap;
+    gap: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .wrap.mkmode .mkh1 > *,
+  .wrap.mkmode .mkh2 > * {
+    margin: 0;
+  }
+  .wrap.mkmode #findWrap {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  /* (on the right in every view: To buy has no search, and it had jumped to the left, from under the finger) */
+  .wrap.mkmode #ownWrap {
+    flex: none;
+    margin-left: auto;
+  }
+  /* (the switch says what it is; the label stays for screen readers, aria-labelledby) */
+  .wrap.mkmode #ownWrap > .szlbl {
+    display: none;
+  }
+  .wrap.mkmode #mkDraw {
+    flex: none;
+  }
+  .wrap.mkmode #ownHint {
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+  .wrap.mkmode #mkJump {
+    flex: none;
+  }
+  .wrap.mkmode #gapWrap {
+    order: 9;
+    flex: 1 1 100%;
+  }
+}
 /* Tick / Untick all shown: clear of the last swatch, and Untick at full contrast (it read as disabled) */
 #ownStateWrap {
   margin-top: 22px;
@@ -1338,4 +1399,59 @@ button:focus-visible {
 }
 #libRow .libmenu button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.07);
+}
+
+/* ---- Palette's two groups (v300): its settings, and the palette with its buttons. In one column as ever, but on a
+   wide screen held sideways (an iPad), side by side: the palette and Generate on the first screen ---- */
+.palsplit,
+.palset,
+.palmain {
+  display: contents;
+}
+@media (min-width: 1000px) and (orientation: landscape) {
+  /* (Filters, moved here with the settings: chrome.js palFiltersPlace) */
+  .wrap.palmode .palset #filterBar {
+    margin-top: 6px;
+  }
+  .wrap.palmode .palsplit {
+    display: grid;
+    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+    column-gap: 28px;
+    align-items: start;
+  }
+  .wrap.palmode .palset,
+  .wrap.palmode .palmain {
+    display: block;
+    min-width: 0;
+  }
+  /* (labels above their choices, in the narrower column) */
+  .wrap.palmode .palset .optrow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .wrap.palmode .palset .optrow .szlbl {
+    min-width: 0;
+  }
+  .wrap.palmode .palette {
+    height: clamp(220px, 46vh, 400px);
+  }
+  /* (more than 8 colours, tiles: as tall as they are, as anywhere else, v300) */
+  .wrap.palmode .palette.gridmode {
+    height: auto;
+  }
+}
+/* the Colours sizes on one row where there's room for them (a phone: two even rows, chrome.js) */
+@media (min-width: 600px) {
+  #segs {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+  }
+}
+/* (beside the palette, the column is narrow again: up to 9 on a row, else two even rows, as on a phone) */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .wrap.palmode #segs {
+    grid-template-columns: repeat(var(--segcolsw, var(--segcols, 7)), auto);
+    grid-auto-flow: row;
+  }
 }

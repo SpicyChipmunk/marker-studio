@@ -16,8 +16,8 @@ test('one word per idea', async () => {
   await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
   await page.click('.sftabbtn[data-t="share"]');
-  assert.equal(await page.textContent('#sfPrint'), 'Print…');
-  assert.equal(await page.textContent('#sfExport'), 'Save image');
+  assert.equal((await page.textContent('#sfPrint')).trim(), 'Print…');
+  assert.equal((await page.textContent('#sfExport')).trim(), 'Save image');
   assert.match(await page.textContent('#sfBack2'), /Edit sections/);
   await page.click('#sfPrint');
   assert.equal(await page.textContent('#sfPDF'), 'Download PDF');

@@ -1311,13 +1311,27 @@ button.hiwdot.on::before {
   background: var(--bg);
 }
 button.hlphiw {
-  padding: 10px 16px;
+  position: relative;
+  padding: 10px 40px 10px 16px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
   text-align: left;
   border-radius: var(--r-md);
+}
+/* (a chevron, as the sections under it have: it opens How it works, v300) */
+button.hlphiw::after {
+  content: '';
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -5px;
+  border-right: 2px solid rgba(230, 224, 255, 0.72);
+  border-bottom: 2px solid rgba(230, 224, 255, 0.72);
+  transform: rotate(-45deg);
 }
 .hlphiwsub {
   font-size: var(--t-sm);
@@ -1344,13 +1358,20 @@ button.hlphiw {
 .hlpsec > summary::-webkit-details-marker {
   display: none;
 }
+/* (v300: a chevron, as the rest of the app's rows that open have, rather than a small triangle) */
 .hlpsec > summary::after {
-  content: '\25b8';
-  color: var(--sub);
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-right: 4px;
+  border-right: 2px solid var(--sub);
+  border-bottom: 2px solid var(--sub);
+  transform: rotate(-45deg);
   transition: transform 0.15s ease;
 }
 .hlpsec[open] > summary::after {
-  transform: rotate(90deg);
+  transform: rotate(45deg);
 }
 .hlpsec > summary:focus-visible {
   outline: 2px solid var(--focus);

@@ -846,6 +846,9 @@ return {
   askBox: askBox,
   guideBrief: guideBrief,
   loadSample: sampleFromAnywhere,
+  // (the sample page and its guide, for Home's start card, v300)
+  sampleBA: sampleBA,
+  startPic: startPic,
   pickPhoto: pickPhoto,
   pickPhotoHome: pickPhotoHome,
   edToPlan: edToPlan,

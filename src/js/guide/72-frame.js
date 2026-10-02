@@ -95,15 +95,24 @@ function frameSize() {
     // the controls keeping 340px), the two centred
     // (on a landscape phone, under 600px tall, the header would leave the picture too little: there it fills the
     // screen's height, whole once the page is scrolled to it, as before)
-    let pt = 0;
-    for (let n = sfView; n; n = n.offsetParent) pt += n.offsetTop;
+    // (where the picture starts with the page at the top: the card's top and its padding. Not the picture's own
+    // offsetTop, which for a sticky picture counts how far the page is scrolled: measured scrolled down, after Focus
+    // mode say, the picture came out smaller, v300)
+    let pt = workEl.clientTop + (parseFloat(getComputedStyle(workEl).paddingTop) || 0);
+    for (let n = workEl; n; n = n.offsetParent) pt += n.offsetTop;
     const avail = Math.max(160, vh >= 600 ? vh - Math.min(pt, vh * 0.3) - 12 : vh - 16),
-      ww = workEl.clientWidth - 34,
+      // (the width there is to use: the card's own is set below, v300)
+      ww = (workEl.parentElement ? workEl.parentElement.clientWidth - 2 : workEl.clientWidth) - 34,
       // (a narrow landscape phone, 640–690px, can't give 280 + 340: the controls give up to 40px first, then the
       // picture's column, so nothing is cut off at the right)
       cm = Math.max(300, Math.min(340, ww - 280)),
       pc = Math.round(Math.max(Math.min(280, ww - cm), Math.min(avail / ar + 64, ww * 0.6, ww - cm)));
-    workEl.style.gridTemplateColumns = pc + 'px minmax(' + cm + 'px, 560px)';
+    // (v300) the card as wide as the menu above it, the controls taking what the picture leaves, unless the picture
+    // and the controls at their narrowest need more (a landscape page): then as wide as that
+    const mn = document.querySelector('.wrap > .modes'),
+      need = pc + 34 + cm + 2;
+    workEl.style.gridTemplateColumns = pc + 'px minmax(' + cm + 'px, 1fr)';
+    workEl.style.maxWidth = Math.max(mn ? mn.offsetWidth : 0, need) + 'px';
     const colW = sfView.clientWidth;
     workEl.classList.add('sftoolsv');
     // (measured as the stack it would be: icons only, without the words a row 700px wide had, v288)
@@ -123,6 +132,7 @@ function frameSize() {
   } else {
     workEl.classList.remove('sftoolsv');
     workEl.style.gridTemplateColumns = '';
+    workEl.style.maxWidth = '';
     const vw = picBox.clientWidth || sfView.clientWidth,
       small = vh < 780,
       along = sfmode === 'color',
@@ -887,7 +897,7 @@ function closeSheet(quiet) {
   sheetO = null;
   const had = S.el.contains(document.activeElement);
   S.el.remove();
-  document.documentElement.classList.remove('sfsheeton', 'sfsheetsd');
+  document.documentElement.classList.remove('sfsheeton', 'sfsheetsd', 'sfsheetin');
   touchRule();
   if (S.o.restore !== false && S.y1 !== S.y0 && Math.abs(window.scrollY - S.y1) < 2) {
     window.scrollTo(0, S.y0);
@@ -953,7 +963,10 @@ function placeSheet() {
     s.top = '0px';
     s.maxHeight = '';
     s.width = '';
-    s.right = '';
+    // (its right edge on the card's where the card stops well short of the screen's, an iPad, now the card can be
+    // narrower; else, as on a phone held sideways, to the screen's edge, v300)
+    const rg = Math.round((window.innerWidth || 0) - workEl.getBoundingClientRect().right);
+    s.right = (rg > 24 ? rg : 0) + 'px';
     s.left = Math.round(Math.max(v.right + 4, r.left - 10)) + 'px';
     el.classList.add('sfshside');
   } else {
@@ -962,7 +975,9 @@ function placeSheet() {
     let L = 0,
       w = vw;
     if (wr && wr.width > 0) {
-      const g = Math.min(18, Math.max(0, wr.left));
+      // (on a phone the whole screen; on an iPad exactly the card's width, its edges on the card's and the menu's, v300:
+      // 18px past them on each side, it had looked wider than the page)
+      const g = vw >= 700 ? 0 : Math.min(18, Math.max(0, wr.left));
       L = Math.max(0, Math.round(wr.left - g));
       w = Math.min(vw - L, Math.round(wr.width + 2 * g));
     }
@@ -977,6 +992,7 @@ function placeSheet() {
     el.classList.remove('sfshside');
   }
   de.classList.toggle('sfsheetsd', el.classList.contains('sfshside'));
+  de.classList.toggle('sfsheetin', el.classList.contains('sfshside') && parseFloat(s.right) > 0);
   de.style.setProperty(
     '--shTop',
     (el.classList.contains('sfshside') ? 0 : Math.round((window.innerHeight || 0) - el.offsetHeight)) + 'px',

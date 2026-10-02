@@ -192,6 +192,20 @@ function showHome() {
   var rz = document.getElementById('sfResume');
   if (rz && rz.innerHTML.trim()) rz.style.display = '';
 }
+// (v300) the start card's picture, the sample page and its guide, until there's a guide of one's own: then just the
+// words (Home's renderRecent says which, as guides are saved and deleted)
+function startPic(on) {
+  var s = document.getElementById('sfStart'),
+    p = document.getElementById('sfStPic');
+  if (!s || !p) return;
+  if (on === undefined)
+    on = !state.saved.some(function (g) {
+      return g.type === 'guide';
+    });
+  s.classList.toggle('compact', !on);
+  if (on && !p.firstChild) p.innerHTML = sampleBA();
+  else if (!on && p.firstChild) p.innerHTML = '';
+}
 function enterWork() {
   workEl.style.display = '';
   workOn(true);
@@ -201,8 +215,8 @@ function enterWork() {
 }
 function mount() {
   root.innerHTML =
-    '<div class="sfcard" id="sfStart"><button id="sfHelpQ0" class="hlpq" data-help="sheet" aria-label="Help"><span aria-hidden="true">?</span></button><h2>New colouring guide</h2><div class="sftag">Turn a line-art photo into a marker-by-number guide built from the markers you own \u2014 complete with blend companions and a To buy list for shades you still need.</div><div id="sfPalNote"></div><div class="sfmeta" id="sfMeta"></div>' +
-    '<div class="sfstrow"><button id="sfPick" class="btn-primary sfstpick">Choose a photo</button><button id="sfSample" class="sfstbtn">Try the sample</button><button id="sfLib" class="sfstbtn">Library</button><button id="sfImport" class="sfstbtn">Import a guide</button></div></div>' +
+    '<div class="sfcard compact" id="sfStart"><button type="button" id="sfStPic" class="sfstpic" tabindex="-1" aria-hidden="true"></button><div class="sfstbody"><button id="sfHelpQ0" class="hlpq" data-help="sheet" aria-label="Help"><span aria-hidden="true">?</span></button><h2>New colouring guide</h2><div class="sftag">Turn a line-art photo into a marker-by-number guide built from the markers you own \u2014 complete with blend companions and a To buy list for shades you still need.</div><div id="sfPalNote"></div><div class="sfmeta" id="sfMeta"></div>' +
+    '<div class="sfstrow"><button id="sfPick" class="btn-primary sfstpick">Choose a photo</button><button id="sfSample" class="sfstbtn">Try the sample</button><button id="sfLib" class="sfstbtn">Library</button><button id="sfImport" class="sfstbtn">Import a guide</button></div></div></div>' +
     '<div class="sfcard" id="sfWork" style="display:none"><div id="sfHead" class="sfhead"></div><div id="sfView"><div id="sfPicBox" class="sfpicbox"><div id="sfPic" class="sfpic"><canvas id="sfCanvas" role="img" aria-label="Colouring page"></canvas></div></div>' +
     toolsHTML() +
     '<button id="sfFullX" class="sfz sffullx" aria-label="Close full screen">' +
@@ -232,6 +246,8 @@ function mount() {
   });
   var _smp = document.getElementById('sfSample');
   if (_smp) _smp.addEventListener('click', loadSample);
+  document.getElementById('sfStPic').addEventListener('click', loadSample);
+  startPic();
   document.getElementById('sfLib').addEventListener('click', function () {
     if (api.openLibrary) api.openLibrary();
   });

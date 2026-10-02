@@ -2091,7 +2091,8 @@ async function exportPDF() {
   if (!assignData) return;
   note('Preparing PDF…');
   var _b = document.getElementById('sfPDF'),
-    _o = _b ? _b.textContent : '';
+    // (its icon too: the words and the picture back as they were, v300)
+    _o = _b ? _b.innerHTML : '';
   if (_b) {
     _b.textContent = 'Preparing…';
     _b.disabled = true;
@@ -2121,7 +2122,7 @@ async function exportPDF() {
     } else note('Couldn’t build the PDF.');
   }
   if (_b) {
-    _b.textContent = _o;
+    _b.innerHTML = _o;
     _b.disabled = false;
   }
 }
@@ -2196,10 +2197,9 @@ function celebrate() {
   if (!focus && sfmode === 'color') {
     hlKey = null;
     hlZone = null;
-    if (_fnOl) {
-      _fnOl = false;
-      outlineSecs(null);
-    }
+    // (any outline goes: Find next's, and an open row's, which could be left drawn after Focus mode, v300)
+    _fnOl = false;
+    outlineSecs(null);
     resetZoom();
     renderGuide();
     renderAlong();
@@ -2310,7 +2310,8 @@ function exportImage() {
   exportImage.busy = 1;
   note('Preparing image\u2026');
   const _b = document.getElementById('sfExport'),
-    _o = _b ? _b.textContent : '';
+    // (its icon too: the words and the picture back as they were, v300)
+    _o = _b ? _b.innerHTML : '';
   if (_b) {
     _b.textContent = 'Preparing\u2026';
     _b.disabled = true;
@@ -2322,7 +2323,7 @@ function exportImage() {
       freeCanvas(xc);
       exportImage.busy = 0;
       if (_b) {
-        _b.textContent = _o;
+        _b.innerHTML = _o;
         _b.disabled = false;
       }
       if (!blob) {

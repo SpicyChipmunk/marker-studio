@@ -195,7 +195,9 @@ test('v285: the Continue card is the newest guide part-way coloured — its pict
   await sampleGuide(page); await saveGuide(page);
   await letterGuide(page); await page.waitForFunction(() => __mstest.inLibrary); await idle(page);
   await page.click('#mHome'); await idle(page);
-  assert.equal(await page.isVisible('#homeCont'), false, 'nothing started: no Continue card');
+  // (v300: on an iPad, the start card in its place)
+  assert.equal(await page.isVisible('#homeCont .hccard[data-cont]'), false, 'nothing started: no Continue card');
+  assert.equal(await page.isVisible('#homeCont .hcstart'), true, 'the start card instead');
   assert.equal(await page.isVisible('#homeView .homehead'), false, 'and no intro line once there are guides');
   assert.equal(await page.locator('#sfRecent .sfRecCard').count(), 2);
   // colour a few sections of the Letter page
@@ -225,14 +227,26 @@ test('v285: the Continue card is the newest guide part-way coloured — its pict
   assert.deepEqual(errors, []);
 });
 
-test('v285: with no guides, Home is the intro line, New colouring guide and the three cards', async () => {
+test('v285: with no guides, Home is the intro line, New colouring guide and the three cards (v300: on an iPad, the start card and the cards beside it)', async () => {
   const { page, errors } = await openApp({ width: 834, height: 1194, storage: onboardedV265({ [KEY]: appState() }) });
   await idle(page);
+  assert.equal(await page.isVisible('#sfRecent'), false);
+  // iPad: the start card on the left, the cards beside it; no intro line or New colouring guide (the card is both)
+  assert.equal(await page.isVisible('#homeCont .hcstart'), true);
+  assert.equal(await page.isVisible('#homeView .homehead'), false);
+  assert.equal(await page.isVisible('#homeNew'), false);
+  const c = await hrect(page, '#homeCont'), g = await hrect(page, '.homegrid');
+  assert.ok(c.right <= g.left + 1 && Math.abs(c.top - g.top) < 24, 'side by side: ' + JSON.stringify([c, g]));
+  assert.match(await page.textContent('#homeCont .hcstart'), /Built from the \d+ markers you own/);
+  // the whole sample page in the picture, not cut off
+  const fit = await page.evaluate(() => { const i = document.querySelector('#homeCont .hcstart img'), b = i.parentElement.getBoundingClientRect(), r = i.getBoundingClientRect(); return r.top >= b.top - 1 && r.bottom <= b.bottom + 1 && i.complete; });
+  assert.ok(fit);
+  // a phone: as it was, the intro line, New colouring guide and the cards in one column
+  await page.setViewportSize({ width: 390, height: 844 }); await idle(page);
   assert.equal(await page.isVisible('#homeView .homehead'), true);
   assert.equal(await page.isVisible('#homeCont'), false);
-  assert.equal(await page.isVisible('#sfRecent'), false);
   assert.equal(await page.evaluate(() => document.getElementById('homeNew').classList.contains('homenew2')), false, 'New colouring guide is the main button');
-  const g = await hrect(page, '.homegrid'), w = await page.evaluate(() => innerWidth);
-  assert.ok(g.width <= 441 && Math.abs(g.left + g.width / 2 - w / 2) < 2, 'one centred column');
+  const g2 = await hrect(page, '.homegrid'), w = await page.evaluate(() => innerWidth);
+  assert.ok(Math.abs(g2.left + g2.width / 2 - w / 2) < 2, 'one centred column');
   assert.deepEqual(errors, []);
 });

@@ -12,12 +12,13 @@
   text-align: center;
   border-radius: var(--r-md);
   background: linear-gradient(135deg, var(--ok2), var(--ok));
-  color: #fff;
+  /* (v300: dark on the green, about 7:1; white was 2.3:1) */
+  color: #0b2219;
   font-weight: 700;
   font-size: var(--t-md);
 }
 #sfRoot .sfpgdone .sflink {
-  color: #fff;
+  color: #0b2219;
   text-decoration: underline;
   margin-left: 6px;
 }

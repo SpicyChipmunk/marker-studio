@@ -1516,3 +1516,49 @@ Four reviews ran side by side: v298's changes on their own, the marker scan (abo
 Not changed: Undo of re-detecting sections after a merge, and edits brought back by Resume, don't carry the merges' ticks (v298's behaviour before these fixes applies there). Two caps of the same code from different brands read with one name in a single read can't be told apart.
 
 - Cache bumped to `marker-studio-v299`.
+
+# Changes — v300 (polish: the iPad)
+
+A screenshot tour of every screen on an iPad (upright and sideways, with Safari's bars) and a phone, then the iPad's rough edges, one at a time. No new features. New tests: `e2e/v300.test.mjs` (10); the guide-picture test fails on v299 in WebKit, and the finished-page and no-markers checks on v300 before their fixes.
+
+**Home**
+- **Two columns on an iPad in every state.** With no guide in progress, a start card (Choose a photo, or try the sample) takes the Continue card's place beside Markers, Palette and Library, instead of a narrow column in the middle. A phone keeps New colouring guide and one column.
+- **Until there's a guide of your own**, the start card (and the Guide tab's) shows the sample page beside its finished guide, codes on it; tapping the picture opens the sample. Once a guide is saved, both cards are words only and Your guides moves up. Delete every guide and the picture comes back.
+- **Guides' pictures show the whole page.** In Safari, the Continue card's and Your guides' pictures had the top and bottom of the page cut off (a picture can't take its height from a box whose height comes from the layout); they're now fitted inside their box.
+
+**Guide**
+- **The Guide tab's start card**: a serif heading, Choose a photo across the card, Try the sample, Library and Import a guide in a row under it; the picture beside it on an iPad, above it on a phone.
+- **Held sideways, the guide card is as wide as the menu above it** when the picture and the controls fit (upright pages: Letter, A4, the sample), the controls taking the room; it had been wider than the menu, with empty space at its sides. A landscape page still gets a wider card, so its picture is as big as before. Sheets beside the picture end at the card's edge.
+- **Edit sections' tools** (Leave out, Merge, Split, Add) are one even row across the controls, as Temperature and Mood are, rather than four small buttons of different widths.
+- **"Page finished!"** is dark on its green (about 7:1); white was 2.3:1, hard to read.
+- **A finished page kept an outline** round the sections of the marker row last open (after Focus mode). Finishing clears every outline.
+- **Share's buttons all have their icon** (Save image, Print…, Save as palette, Guide file had none). **+ Zone**'s tap area is 44px tall.
+
+**Palette and Markers**
+- **Palette held sideways on an iPad**: the settings (scheme, size, seed, photo) in a column beside the palette, so Generate is on the first screen. Upright, the sizes are one row.
+- **Palette held sideways**: Filters is with the other settings, in the column beside the palette, on the first screen (it had been under both columns, below it). Upright, on a phone, and in Markers and Random, it's where it was.
+- Palette's lock buttons are clearer on a touch screen (no hover to bring them up), on pale colours too.
+- **Markers on an iPad**: the search with Owned / Unowned / All / To buy beside it, then Random, Match a colour, the line about the view and Sets & swatch chart on the next row (Order under them, in Unowned). The markers start about 85px higher. A phone is as before.
+
+**Found by the screenshot tour and a review of v300's own changes**
+- With no markers owned (or after Clear collection), "Add a set you own" landed inside the iPad's new row of tools. It's above the row.
+- Home on an iPad: its two columns start level (an empty note had pushed the right one down 16px), and its edges are the menu's. The headline doesn't break "marker-by- / number". The Guide tab's start card was wider than the menu when held sideways; its smaller buttons were bigger than Choose a photo and uneven.
+- Markers' To buy has no search: Owned / Unowned / All / To buy had jumped to the left, from under the finger. It stays on the right.
+- Deleting the only guide from the Library left the Guide tab's start card without its picture until the tab was left.
+- On an iPad with no guide in progress, closing the last note on Home sent the focus to a hidden button; it goes to Choose a photo. The start cards' pictures are a tap target only, so screen readers don't hear "Try the sample" twice.
+- Scan's brand choice is chosen in the app's green, as every other choice is. Help's sections open with a chevron, as the rest of the app's rows do. Scan's list no longer shows below its Add button, and its count ("3 markers · 2 new · 2 to choose") breaks only between its parts.
+- Save image lost its new icon (and kept a stray space) after saving; it keeps both. On an iPad, Markers' Order sits clear of the row above it; To buy has no "Sets & swatch chart" link (its sets aren't there). Random with a selection has "Working from a selection" above "← Markers" again, as before v300. The Guide tab's start picture is shorter on a phone held sideways, and Edit sections' tools go onto two rows rather than run over at a large text size on a narrow phone.
+
+**Last nits**
+- **The guide's picture came back smaller after Focus mode** (and after anything else that measured it with the page scrolled down): its sticky picture's position counted the scroll. It's measured from the card now, so it stays the size it was; the finished page no longer "shrinks".
+- On an iPad, the Change colour sheet (and the guide's other sheets held upright) is exactly as wide as the guide card, and Cancel and Done share its width, as the guide's own bar does; In this guide's row fades out more clearly where it scrolls on.
+- Palette held sideways: up to 9 sizes on one row in the settings column (Triadic's 3–10 had made a 4×2 block).
+- Home's Choose a photo (and Continue) are the app's main-button size, as on the Guide tab. Help's How it works has a chevron too.
+- A palette of more than 8 colours (tiles) is as tall as its tiles: there had been 70px of empty card under two rows of them (150px beside the settings on an iPad held sideways). Each tile's code is at its foot, clear of its lock, which had covered it.
+- **Smaller nits:** the Yellow family's dot (filters and Markers' headings) was an ochre, as brown as Orange's and Earth's: Yellow, Orange and Fluorescent have dots of their own clear colour (canary, orange, fluorescent pink; Fluorescent's had been Yellow-Green's green). Temperature lists Any first, as Mood under it does. Home's guide cards say "finished · today", in the Library's order. A palette's name keeps its line beside a long list of codes, which take more lines instead.
+- Scan's "Ready" has a crosshair, not a dot that read as a stray speck. The welcome's list of sets fades at its foot, so it reads as going on (there are more sets below).
+
+**Tests**
+- The Pattern tab's Shuffle-and-Pin test waits for the tab to settle before measuring (once, under load, it measured mid-layout).
+
+- Cache bumped to `marker-studio-v300`.

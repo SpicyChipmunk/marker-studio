@@ -5,6 +5,7 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'On an iPad, Home, Palette and Markers use the width: Home is two columns, Palette held sideways puts its settings beside the palette, and Markers puts the search and Owned / All on one row. Home’s guide pictures show the whole page, and until you’ve made a guide, the start card shows the sample page beside its guide.',
   'Scanning no longer glues a stray digit onto a code, heeds the brand printed on the cap, and reads Copic 0 and Ohuhu 120. Splitting a coloured section keeps its marker and zone, and Mark all coloured and a re-rolled palette colour can be undone.',
   'Scanning reads every line of a pasted list, keeps two caps read together with one name, and says a held cap once. Ticks follow sections you merge or split, Focus mode tells a screen reader each section, and zones keep touching sections apart across their borders.',
   'Scanning markers asks when the code and the colour name don’t agree, knows Ohuhu’s old codes, and waits in the list with any question so you can sweep on. The welcome offers it for markers bought one at a time. Palette’s Undo goes back to that palette’s scheme and size.',

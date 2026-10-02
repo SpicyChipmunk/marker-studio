@@ -400,7 +400,8 @@ function scanSay(kind, big, small, i, choices) {
   el.className = 'scstat ' + kind;
   el.innerHTML =
     '<span class="scmark" aria-hidden="true">' +
-    ({ ok: '✓', same: '=', ask: '?', none: '✕' }[kind] || '·') +
+    // (waiting: the crosshair, as for Match a colour; a "·" there read as a stray speck, v300)
+    ({ ok: '✓', same: '=', ask: '?', none: '✕' }[kind] || ic('crosshair')) +
     '</span>' +
     (i >= 0 ? '<span class="scsw" style="background:' + COLORS[i].hex + '"></span>' : '') +
     '<span class="sctext"><b></b><span></span></span>';
@@ -702,9 +703,10 @@ function scanRender() {
     .join('');
   $('scEmpty').hidden = scanList.length > 0;
   $('scCount').textContent = scanList.length
-    ? (marks ? marks + (marks === 1 ? ' marker' : ' markers') : '') +
-      (fresh < marks ? ' · ' + fresh + ' new' : '') +
-      (asks ? (marks ? ' · ' : '') + asks + ' to choose' : '')
+    ? // (each part kept on one line: "2 to / choose" had broken in two on a phone, v300)
+      (marks ? marks + (marks === 1 ? '\u00a0marker' : '\u00a0markers') : '') +
+      (fresh < marks ? ' · ' + fresh + '\u00a0new' : '') +
+      (asks ? (marks ? ' · ' : '') + asks + '\u00a0to\u00a0choose' : '')
     : '';
   const add = $('scAdd');
   add.disabled = !fresh;

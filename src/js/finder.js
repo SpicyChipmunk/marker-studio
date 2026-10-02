@@ -391,6 +391,8 @@ mkJump.className = 'mkjump';
 mkJump.style.display = 'none';
 ownHint.insertAdjacentElement('afterend', mkJump);
 function mkJumpSync(col) {
+  // (not in To buy: its sets aren't there, and Print a swatch chart is just under it, v300)
+  col = col && state.collView !== 'wish';
   mkJump.style.display = col ? '' : 'none';
   if (!col) return;
   // with an empty collection the sets are at the top already (chrome.js), so the link names the other two

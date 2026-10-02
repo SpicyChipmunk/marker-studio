@@ -549,6 +549,11 @@ html.sfsheeton body {
   padding-top: env(safe-area-inset-top, 0px);
   box-shadow: -18px 0 40px -10px rgba(0, 0, 0, 0.7);
 }
+/* (v300: ending at the card's right edge, in from the screen's on an iPad, placeSheet) */
+html.sfsheetin #sfRoot .sfsheet.sfshside {
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px 18px 0 0;
+}
 @keyframes sfsheetup {
   from {
     transform: translateY(24px);
@@ -608,18 +613,15 @@ html.sfsheeton body {
   padding: 10px 14px max(12px, env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line);
 }
-/* (a sheet's one button, the markers list's Done, across a phone's width rather than half of it, v289) */
-@media (max-width: 699px) {
-  #sfRoot .sfshft button:only-child {
-    max-width: none;
-  }
-}
+/* (v300: a sheet's buttons share its width on an iPad too, as the guide's own bar does: two at 280px at the right
+   had started a long way in from everything above them) */
 #sfRoot .sfshft button {
   flex: 1 1 0;
   height: 44px;
   min-width: 0;
-  /* (a sheet as wide as an iPad's card keeps its buttons a button's size, at the right) */
-  max-width: 280px;
+  /* (the same padding, so two share the width evenly: Done had been 10px wider than Cancel, v300) */
+  padding-left: 12px;
+  padding-right: 12px;
   color: var(--ink);
   font-size: var(--t-md);
 }
@@ -672,9 +674,11 @@ html.sfsheeton body {
   .wrap.sfmode {
     max-width: 1600px;
   }
-  /* (v288: the header and menu as wide as on the other screens) */
+  /* (v288: the header and menu as wide as on the other screens; v300: the start card too, and a message under it) */
   .wrap.sfmode > .head,
-  .wrap.sfmode > .modes {
+  .wrap.sfmode > .modes,
+  #sfRoot > #sfStart,
+  #sfRoot > #sfStart + .mserr {
     max-width: var(--wrapHW, none);
     margin-left: auto;
     margin-right: auto;
@@ -687,6 +691,9 @@ html.sfsheeton body {
     column-gap: 14px;
     align-items: start;
     padding: 10px 10px 0;
+    /* (as wide as the menu above it when the picture and controls fit, frameSize, v300) */
+    margin-left: auto;
+    margin-right: auto;
   }
   #sfRoot #sfHead {
     grid-column: 2;

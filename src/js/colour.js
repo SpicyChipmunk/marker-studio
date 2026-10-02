@@ -386,6 +386,32 @@ const families = Object.keys(fmap).map((name) => {
   if (avgH < 0) avgH += 360;
   return { name, idxs, avgH, neutral: ss / idxs.length < 0.12, repHex: COLORS[rep].hex, repL: HS[rep].l };
 });
+// (v300) a family's dot is its marker nearest the middle lightness, which for Yellow is an ochre and for Yellow-Red /
+// Orange a brown, both like Earth's, and for Fluorescent a green like Yellow-Green's: those take the marker nearest a
+// clear colour of their own instead (a canary yellow, an orange, the fluorescent pink; L*, C*, h°)
+const FAM_IDEAL = { 'Yellow-Red / Orange': [64, 62, 55], Yellow: [84, 80, 95], Fluorescent: [60, 85, 350] };
+families.forEach((f) => {
+  const id = FAM_IDEAL[f.name];
+  if (!id) return;
+  const a0 = id[1] * Math.cos((id[2] * Math.PI) / 180),
+    b0 = id[1] * Math.sin((id[2] * Math.PI) / 180);
+  let best = -1,
+    bd = Infinity;
+  f.idxs.forEach((i) => {
+    const [L, C, h] = LCH[i],
+      a = C * Math.cos((h * Math.PI) / 180),
+      b = C * Math.sin((h * Math.PI) / 180),
+      d = (L - id[0]) ** 2 + (a - a0) ** 2 + (b - b0) ** 2;
+    if (d < bd) {
+      bd = d;
+      best = i;
+    }
+  });
+  if (best >= 0) {
+    f.repHex = COLORS[best].hex;
+    f.repL = HS[best].l;
+  }
+});
 const FAM_ORDER = [
   'Red',
   'Yellow-Red / Orange',

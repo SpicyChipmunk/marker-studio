@@ -216,7 +216,8 @@ test('What’s new: shown after an update, not on a fresh install, and stays dis
     assert.equal((await page.textContent('#wnTitle')).trim(), `What’s new in ${ver}`);
     const n = await page.evaluate(() => document.querySelectorAll('#whatsNew li').length);
     assert.ok(n >= 1 && n <= 4, `${n} bullets`);
-    assert.match(await page.textContent('#whatsNew'), /Scan or type codes/);
+    // (the newest first: v300's line; Scan or type codes, v296, is now the fifth, past the four shown)
+    assert.match(await page.textContent('#whatsNew'), /On an iPad, Home, Palette and Markers/);
     assert.equal(await page.getAttribute('#wnClose', 'aria-label'), 'Dismiss what’s new');
     await shot(page, 'help-whatsnew');
     await page.reload(); await idle(page);
