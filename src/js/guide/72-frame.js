@@ -601,7 +601,15 @@ function focusOpened() {
   }
   const t = document.getElementById('sfGTitle'),
     a = document.activeElement;
-  if (!t || !workEl || workEl.offsetParent === null || (a && a !== document.body && a !== t)) return;
+  // (a button left focused in the welcome as it closed doesn't count: it's no longer on screen, v300 — in Safari the
+  // welcome's Try the sample kept focus while the guide's header was first drawn, and the name never got it)
+  if (
+    !t ||
+    !workEl ||
+    workEl.offsetParent === null ||
+    (a && a !== document.body && a !== t && a.getClientRects().length)
+  )
+    return;
   _focOpen = 0;
   try {
     t.focus({ preventScroll: true });

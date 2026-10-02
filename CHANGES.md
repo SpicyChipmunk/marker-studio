@@ -1562,3 +1562,9 @@ A screenshot tour of every screen on an iPad (upright and sideways, with Safari'
 - The Pattern tab's Shuffle-and-Pin test waits for the tab to settle before measuring (once, under load, it measured mid-layout).
 
 - Cache bumped to `marker-studio-v300`.
+
+# Changes — v301 (a fix from v300's GitHub run)
+
+GitHub's WebKit run of v300 failed one test, the same every time, not a flaky one: after the welcome's **Try the sample**, focus was left on the page instead of the guide's name (`e2e/welcome.test.mjs`). In Safari the welcome's button still had focus as the guide's header was first drawn, though the welcome had closed, and the guide took that as a choice of the user's to leave alone. A focused button no longer on screen doesn't count now. The test passes again in WebKit and Chromium; it passed on v299. No flaky tests in the run (no test failed once and passed on its retry).
+
+- Cache bumped to `marker-studio-v301`.
