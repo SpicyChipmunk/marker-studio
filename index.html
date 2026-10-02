@@ -1766,7 +1766,11 @@ button:focus-visible {
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 22px;
+  /* (v296: clear of the status bar and the home bar when installed on a phone) */
+  padding: max(22px, calc(env(safe-area-inset-top, 0px) + 8px))
+    max(22px, calc(env(safe-area-inset-right, 0px) + 8px))
+    max(22px, calc(env(safe-area-inset-bottom, 0px) + 8px))
+    max(22px, calc(env(safe-area-inset-left, 0px) + 8px));
   background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(6px);
 }
@@ -5853,7 +5857,8 @@ html.sfsheetsd .mstoast {
 }
 .bands.grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  /* (no more than 6 across, growing to fill the card: on an iPad 12 colours were one row of small tiles, v299) */
+  grid-template-columns: repeat(auto-fit, minmax(max(60px, calc((100% - 25px) / 6)), 1fr));
   gap: 5px;
   height: auto;
   align-content: start;
@@ -5975,7 +5980,9 @@ button.sfSeeAll {
   border-radius: var(--r-lg);
   padding: 22px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-  max-height: calc(100vh - 44px);
+  /* (v296: the room the overlay leaves, inside its padding, which keeps clear of the status and home bars; was
+     100vh − 44px, taller than Safari shows with its toolbar) */
+  max-height: 100%;
   overflow: hidden;
 }
 .wcard > div {
@@ -6493,7 +6500,8 @@ button.sfSeeAll {
   }
 }
 #matchOverlay {
-  padding: 12px;
+  padding: max(12px, calc(env(safe-area-inset-top, 0px) + 6px)) max(12px, env(safe-area-inset-right, 0px))
+    max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
   align-items: flex-start;
 }
 .dcard {
@@ -8431,6 +8439,305 @@ button.wrm {
 }
 .swcard .swgo {
   font-size: var(--t-md);
+}
+/* ===== Scan or type codes (v296) ===== */
+.scanopen {
+  margin-top: 10px;
+  min-height: 44px;
+}
+/* at the top of the screen: Scan Text's camera takes the lower half */
+#scanOverlay {
+  padding: max(12px, calc(env(safe-area-inset-top, 0px) + 6px)) max(12px, env(safe-area-inset-right, 0px))
+    max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+  align-items: flex-start;
+}
+/* (a long list scrolls the card: nothing in it is squashed to make room, the box least of all) */
+.sccard > * {
+  flex: none;
+}
+.sccard .scbrand {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  width: 100%;
+}
+.sccard .scbrand button {
+  width: auto;
+  padding: 0 8px;
+}
+.sccard .scbrand button[aria-pressed='true'] {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.1);
+}
+/* (16px or more: Safari zooms into a smaller box) */
+.scbox {
+  font-size: max(16px, var(--t-lg));
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.scstat {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 58px;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--glass);
+}
+.scstat.ok {
+  border-color: rgba(var(--ok-rgb), 0.5);
+  background: rgba(var(--ok-rgb), 0.1);
+}
+.scstat.same,
+.scstat.ask {
+  border-color: rgba(var(--warn-rgb), 0.45);
+  background: rgba(var(--warn-rgb), 0.08);
+}
+.scstat.none {
+  border-color: rgba(255, 110, 100, 0.45);
+  background: rgba(255, 110, 100, 0.08);
+}
+.scmark {
+  flex: none;
+  width: 22px;
+  text-align: center;
+  font-weight: 700;
+  font-size: var(--t-xl);
+  color: var(--sub);
+}
+.scstat.ok .scmark {
+  color: var(--ok);
+}
+.scstat.same .scmark,
+.scstat.ask .scmark {
+  color: var(--warn);
+}
+.scstat.none .scmark {
+  color: #ff8a80;
+}
+.scsw {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.sctext {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+.sctext b {
+  font-size: var(--t-lg);
+}
+.sctext > span {
+  color: var(--sub);
+  font-size: var(--t-sm);
+}
+.scpick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.scpick button {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--raise);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+.schead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+.schead .lbl {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sub);
+}
+.sccount {
+  flex: 1;
+  color: var(--sub);
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+}
+.schead .sflink {
+  min-height: 44px;
+}
+.sclist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.scrow {
+  display: grid;
+  grid-template-columns: 24px 4.6em 1fr 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 2px 2px 8px;
+  border-radius: var(--r-sm);
+  background: var(--glass);
+}
+.scrow .scsw {
+  width: 22px;
+  height: 22px;
+}
+.sccode {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.scname {
+  min-width: 0;
+  font-size: var(--t-base);
+  line-height: 1.3;
+  padding-block: 5px;
+}
+.scname small {
+  display: block;
+  color: var(--sub);
+  font-size: var(--t-sm);
+}
+.scname i {
+  font-style: normal;
+  color: var(--warn);
+}
+.scrow.mine .sccode,
+.scrow.mine .scname {
+  color: var(--sub);
+}
+.scrow.mine .scname i {
+  color: var(--sub);
+}
+.scdel {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sub);
+  cursor: pointer;
+}
+.scempty {
+  color: var(--sub);
+  font-size: var(--t-base);
+  line-height: 1.45;
+}
+.scadd {
+  font-size: var(--t-md);
+}
+.scadd:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+.sccard [hidden] {
+  display: none;
+}
+/* a question waiting in the list: two brands' code, or a code that could be either way up */
+.scrow.scask {
+  grid-template-columns: 24px 1fr 44px;
+  align-items: start;
+  padding-top: 6px;
+  background: rgba(var(--warn-rgb), 0.07);
+}
+.scask .scmark {
+  font-size: var(--t-lg);
+  color: var(--warn);
+  padding-top: 4px;
+}
+.scask .scname b {
+  display: block;
+  color: var(--ink);
+}
+.scask .scname {
+  padding-block: 4px 6px;
+}
+.scchoose {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px 0 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--raise);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-base);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.scchoose .scsw {
+  width: 20px;
+  height: 20px;
+}
+/* Add stays in reach as the list grows */
+.sccard .scadd {
+  position: sticky;
+  bottom: 0;
+  box-shadow: 0 -10px 18px 4px var(--bg);
+}
+/* the welcome's way here, for markers bought one at a time: a link in the sentence, with a 44px tap area */
+.wcsub .wcscan {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  min-height: 0;
+  text-align: left;
+}
+.wcsub .wcscan::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
+}
+/* ===== iPad and iPhone only (v296) ===== */
+/* Safari there zooms the page into a text field under 16px when it's focused, and doesn't zoom back out:
+   the small fields are 16px there (only there: -webkit-touch-callout is Safari on iOS). Last of the stylesheets, so it wins */
+@supports (-webkit-touch-callout: none) {
+  .search,
+  .libin,
+  .libbar .libin,
+  .libsel,
+  .libbar .libsel,
+  .ordsel,
+  .bktext,
+  .sname-in,
+  #savedList .stile .sname-in,
+  #sfRoot #sfCtl .sfc-select,
+  #sfRoot .sfzname,
+  #sfRoot #sfCtl .sfzname {
+    /* (the text size setting's own step, never under 16px) */
+    font-size: max(16px, var(--t-md));
+  }
+}
+/* a marker held down opens its details: no text selection or callout starting under the finger first */
+.cell {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }</style></head><body>
 <!-- Line icons (v285): Lucide (ISC) and Feather-derived (MIT), see src/assets/icons/LICENSE-Lucide-Feather.txt; codes and values are this app's own. Used as <svg class="ic"><use href="#i-NAME"/></svg> (ic() in core.js). -->
 <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs>
@@ -8468,7 +8775,7 @@ button.wrm {
 <div class="wrap" role="main">
  <div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div>
  <nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v295</div></div></div>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v299</div></div></div>
  <div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div>
  <div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -8478,7 +8785,7 @@ button.wrm {
  <div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" aria-label="Search markers"></div>
  
  <div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
-  <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div><div id="presetWrap" style="display:none"><button id="presetHdr" class="presethdr" aria-expanded="false"><span>Add a set you own</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><div id="presetBody" style="display:none"><div class="presethint">Tick the boxes for the marker sets you own, then add them all at once.</div><div id="presetList"></div><div class="presetfoot"><button id="presetAdd" class="btn-primary" disabled>Add markers</button><button id="presetReset">Clear collection</button></div></div></div><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div>
+  <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div><div id="presetWrap" style="display:none"><button id="presetHdr" class="presethdr" aria-expanded="false"><span>Add a set you own</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><div id="presetBody" style="display:none"><div class="presethint">Tick the boxes for the marker sets you own, then add them all at once.</div><div id="presetList"></div><div class="presetfoot"><button id="presetAdd" class="btn-primary" disabled>Add markers</button><button id="presetReset">Clear collection</button></div></div><button id="scanOpen" class="presethdr scanopen"><span>Scan or type codes</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div>
  <div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div>
  
@@ -8536,12 +8843,13 @@ button.wrm {
 <div class="overlay" id="seedOverlay" role="dialog" aria-modal="true" aria-labelledby="pickTitle"><div class="ocard dcard"><div class="mhead"><h2 class="mtitle" id="pickTitle">Start the palette from</h2><button id="seedClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub" id="pickCap">Pick a marker to build the harmony around it.</div><input id="seedSearch" class="search" placeholder="Search code or name…" autocomplete="off" aria-label="Search markers"><div class="pile seedgrid" id="seedGrid"></div><button id="seedRandom" class="dbtn">Random base</button></div></div>
 <div class="overlay" id="savedOverlay" role="dialog" aria-modal="true" aria-labelledby="libTitle"><div class="ocard dcard"><div class="mhead"><h2 class="mtitle" id="libTitle">Library</h2><button id="savedClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub" id="libSub">Tap a palette to load it, or a guide to open it.</div><div class="libbar"><input id="libSearch" type="text" placeholder="Search name or marker" class="libin" aria-label="Search the Library"><select id="libSort" class="libsel" aria-label="Sort"><option value="recent">Recent</option><option value="name">Name</option><option value="markers">Markers</option></select></div><div id="libStat" class="libstat"></div><div id="savedList" tabindex="-1"></div><div class="drow libimport"><button id="homeImport">Import a guide</button></div><div class="dsub libbackup">One backup file holds your markers, palettes and guides.</div><div class="drow"><button id="guidesBackup">Back up</button><button id="guidesRestore">Restore</button></div><button id="libBkText" class="sflink bkshow">Markers &amp; palettes as text (copy / paste)</button><input type="file" id="guidesFile" class="fileinput" accept=".json,.txt,application/json,text/plain"></div></div>
 <div class="overlay" id="backupOverlay" role="dialog" aria-modal="true" aria-labelledby="bkTitle"><div class="ocard dcard"><div class="mhead"><h2 class="mtitle" id="bkTitle">Back up &amp; restore</h2><button id="backupClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">One file with your markers, saved palettes and guides. Keep it somewhere safe — restore it on a new phone or after clearing the browser. Older backup files (collection or guides) restore here too.</div><div class="drow"><button id="backupDownload" class="btn-primary">Back up</button><button id="backupImport">Restore</button></div><div class="dsub" id="backupCap" role="status"></div><button id="backupShow" class="sflink bkshow" aria-expanded="false">Markers &amp; palettes as text (copy / paste)</button><div id="backupTextWrap" class="bktextwrap" style="display:none"><textarea id="backupText" class="bktext" spellcheck="false" aria-label="Backup text"></textarea><div class="drow"><button id="backupCopy">Copy</button><button id="backupRestore">Restore</button></div></div><input type="file" id="backupFile" class="fileinput" accept=".txt,application/json,text/plain"></div></div>
+<div class="overlay" id="scanOverlay" role="dialog" aria-modal="true" aria-labelledby="scTitle"><div class="ocard dcard sccard"><div class="mhead"><h2 class="mtitle" id="scTitle">Scan or type codes</h2><button id="scClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Type or paste codes, then press Enter. On an iPad or iPhone, tap the box, then <b>AutoFill › Scan Text</b>, and hold each marker’s cap in view until it beeps: no need to tap Insert.</div><div class="segs wide scbrand" id="scBrand" role="group" aria-label="Brand"></div><input id="scBox" class="search scbox" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" placeholder="Scan or type a code" aria-label="Marker codes"><div id="scStat" class="scstat" role="status" aria-live="polite"></div><div class="schead"><span class="lbl">Read so far</span><span id="scCount" class="sccount"></span><button type="button" id="scClear" class="sflink" hidden>Clear list</button></div><ul id="scList" class="sclist"></ul><div id="scEmpty" class="scempty">Nothing yet. Each marker read joins this list, to check before adding.</div><button id="scAdd" class="btn-primary scadd" disabled>Add to my collection</button></div></div>
 <div class="overlay" id="swOverlay" role="dialog" aria-modal="true" aria-labelledby="swTitle"><div class="ocard dcard swcard"><div class="mhead"><h2 class="mtitle" id="swTitle">Swatch chart</h2><button id="swClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Print it, colour each box with the real marker and pin it up. The strip beside each box is the colour shown on screen, which is only an approximation: the chart shows how your markers really look.</div><div id="swOpts" class="swopts"></div><div id="swSum" class="swsum" role="status" aria-live="polite"></div><button id="swGo" class="btn-primary swgo">Download PDF</button></div></div>
 <div class="overlay" id="sfPlanOverlay" role="dialog" aria-modal="true" aria-labelledby="planTitle"><div class="ocard dcard plancard"><div class="mhead"><h2 class="mtitle" id="planTitle">Blend plan</h2><button id="sfPlanClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Every colour in this guide with a lighter and darker shade from your markers. Amber outline: a marker you don’t own yet.</div><div id="sfPlanBuy"></div><div id="sfPlanList" class="planlist"></div></div></div>
-<div class="overlay" id="welcome" role="dialog" aria-modal="true" aria-labelledby="wcTitle"><div class="ocard wcard"><div id="wcStep1"><div class="wcscroll"><div class="wctitle" id="wcTitle">Welcome to Marker Studio</div><div class="wcsub">Palettes and colouring guides are built from the markers you own. Tick the sets you have — you can add or remove single markers later.</div><div class="wcbrands" role="group" aria-label="Jump to a brand"><button type="button" data-b="Ohuhu" class="on">Ohuhu</button><button type="button" data-b="Copic">Copic</button></div><div id="wcSets" class="wcsets"></div></div><div class="wcacts"><div id="wcErr" role="alert" style="display:none"></div><button id="wcAdd" class="btn-primary" disabled>Tick a set above</button><div class="wcrow"><button id="wcSkip" class="obGhost">I’ll do this later</button><button id="wcRestore" class="obGhost">Restore a backup</button></div></div><input type="file" id="wcFile" class="fileinput" accept=".json,.txt,application/json,text/plain"></div><div id="wcStep2" style="display:none"><div class="wctitle" id="wcT2">You’re all set</div><div class="wcsub" id="wcDone"></div><button id="wcSample" class="btn-primary">Try the sample</button><button id="wcPhoto" class="obSecond">Make a guide from my photo</button><button id="wcLook" class="obGhost">Look around first</button></div></div></div>
+<div class="overlay" id="welcome" role="dialog" aria-modal="true" aria-labelledby="wcTitle"><div class="ocard wcard"><div id="wcStep1"><div class="wcscroll"><div class="wctitle" id="wcTitle">Welcome to Marker Studio</div><div class="wcsub">Palettes and colouring guides are built from the markers you own. Tick the sets you have — you can add or remove single markers later. Bought them one at a time? <button type="button" id="wcScan" class="sflink wcscan">Scan or type their codes</button></div><div class="wcbrands" role="group" aria-label="Jump to a brand"><button type="button" data-b="Ohuhu" class="on" data-first>Ohuhu</button><button type="button" data-b="Copic">Copic</button></div><div id="wcSets" class="wcsets"></div></div><div class="wcacts"><div id="wcErr" role="alert" style="display:none"></div><button id="wcAdd" class="btn-primary" disabled>Tick a set above</button><div class="wcrow"><button id="wcSkip" class="obGhost">I’ll do this later</button><button id="wcRestore" class="obGhost">Restore a backup</button></div></div><input type="file" id="wcFile" class="fileinput" accept=".json,.txt,application/json,text/plain"></div><div id="wcStep2" style="display:none"><div class="wctitle" id="wcT2">You’re all set</div><div class="wcsub" id="wcDone"></div><button id="wcSample" class="btn-primary">Try the sample</button><button id="wcPhoto" class="obSecond">Make a guide from my photo</button><button id="wcLook" class="obGhost">Look around first</button></div></div></div>
 
 
-<div class="overlay" id="matchOverlay" role="dialog" aria-modal="true" aria-labelledby="mtTitle"><div class="mcard"><div class="mhead"><h2 class="mtitle" id="mtTitle">Match a colour</h2><button id="matchClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="msub">Find the closest markers you own to any colour.</div><div class="msrc" role="group" aria-label="Colour source"><button type="button" data-src="photo" class="on" aria-pressed="true">Photo</button><button type="button" data-src="camera" id="matchCamBtn" aria-pressed="false" style="display:none">Camera</button><button type="button" data-src="hex" aria-pressed="false" aria-label="Hex code">Hex</button><button type="button" data-src="screen" id="matchEye" aria-pressed="false" style="display:none">Screen</button></div><div class="mpane" data-pane="photo"><button id="matchPhotoBtn" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10.5" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg><b>Choose a photo</b><span>Then tap or drag on it to sample a colour</span></button><input type="file" id="matchFile" class="fileinput" accept="image/*"><div id="matchPhotoWrap" class="mstage" style="display:none"><canvas id="matchCanvas"></canvas><div id="matchRing" class="mring" style="display:none"></div></div><div class="mhint" id="mPhotoHint" style="display:none">Tap or drag on the photo to sample. <button class="sflink" id="matchPhotoChange">Change photo</button></div><div class="paperrow" id="matchPaperRow" style="display:none"><button id="matchPaper" class="paperbtn" aria-pressed="false" title="Correct the photo’s lighting from a white part of the page">Tap the white paper</button><button id="matchLight" class="lightchip" style="display:none" aria-label="Lighting corrected: remove the correction">Lighting corrected <svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="papernote" id="matchPaperNote" role="status"></div></div><div class="mpane" data-pane="camera" style="display:none"><button id="matchCamOff" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><b>Start camera</b><span>Point the ring at a colour to match it live</span></button><div id="matchCamWrap" style="display:none"><div id="matchVideoBox" class="mstage"><video id="matchVideo" playsinline autoplay muted></video><div id="matchReticle" class="mring" style="left:50%;top:50%"></div><div class="mbadge" id="matchLive"><i></i>LIVE</div><div class="mcamctl"><button id="matchTorch" class="mpill" style="display:none">Light</button><button id="matchFreeze" class="mpill primary">Freeze</button></div></div><div class="mhint">Drag the ring onto a colour · pinch to zoom · <button class="sflink" id="matchCamStop">Stop camera</button></div></div><div class="mhint" id="matchCamTip">For the truest match, take a photo and tap the white paper.</div></div><div class="mpane" data-pane="hex" style="display:none"><div class="mhexrow"><label class="mpick empty" title="Open colour picker" aria-label="Open colour picker"><input type="color" id="matchPicker" value="#7c5cff"></label><input type="text" id="matchHex" placeholder="#RRGGBB" maxlength="7" autocomplete="off" spellcheck="false" aria-label="Hex colour code"></div></div><div class="mpane" data-pane="screen" style="display:none"><button id="matchEyeGo" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5M17 7l-9.5 9.5L5 19l2.5-2.5"/><path d="M13 6l5 5"/></svg><b>Pick from the screen</b><span>Click anywhere on your screen to sample it</span></button></div><div id="matchResult" aria-live="polite"></div></div></div>
+<div class="overlay" id="matchOverlay" role="dialog" aria-modal="true" aria-labelledby="mtTitle"><div class="mcard"><div class="mhead"><h2 class="mtitle" id="mtTitle">Match a colour</h2><button id="matchClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="msub">Find the closest markers you own to any colour.</div><div class="msrc" role="group" aria-label="Colour source"><button type="button" data-src="photo" class="on" aria-pressed="true">Photo</button><button type="button" data-src="camera" id="matchCamBtn" aria-pressed="false" style="display:none">Camera</button><button type="button" data-src="hex" aria-pressed="false" aria-label="Hex code">Hex</button><button type="button" data-src="screen" id="matchEye" aria-pressed="false" style="display:none">Screen</button></div><div class="mpane" data-pane="photo"><button id="matchPhotoBtn" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10.5" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg><b>Choose a photo</b><span>Then tap or drag on it to sample a colour</span></button><input type="file" id="matchFile" class="fileinput" accept="image/*"><div id="matchPhotoWrap" class="mstage" style="display:none"><canvas id="matchCanvas"></canvas><div id="matchRing" class="mring" style="display:none"></div></div><div class="mhint" id="mPhotoHint" style="display:none">Tap or drag on the photo to sample. <button class="sflink" id="matchPhotoChange">Change photo</button></div><div class="paperrow" id="matchPaperRow" style="display:none"><button id="matchPaper" class="paperbtn" aria-pressed="false" title="Correct the photo’s lighting from a white part of the page">Tap the white paper</button><button id="matchLight" class="lightchip" style="display:none" aria-label="Lighting corrected: remove the correction">Lighting corrected <svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="papernote" id="matchPaperNote" role="status"></div></div><div class="mpane" data-pane="camera" style="display:none"><button id="matchCamOff" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><b>Start camera</b><span>Point the ring at a colour to match it live</span></button><div id="matchCamWrap" style="display:none"><div id="matchVideoBox" class="mstage"><video id="matchVideo" playsinline autoplay muted></video><div id="matchReticle" class="mring" style="left:50%;top:50%"></div><div class="mbadge" id="matchLive"><i></i>LIVE</div><div class="mcamctl"><button id="matchTorch" class="mpill" style="display:none">Light</button><button id="matchFreeze" class="mpill primary">Freeze</button></div></div><div class="mhint">Drag the ring onto a colour · pinch to zoom · <button class="sflink" id="matchCamStop">Stop camera</button></div></div><div class="mhint" id="matchCamTip">For the truest match, take a photo and tap the white paper.</div></div><div class="mpane" data-pane="hex" style="display:none"><div class="mhexrow"><label class="mpick empty" title="Open colour picker" aria-label="Open colour picker"><input type="color" id="matchPicker" value="#7c5cff"></label><input type="text" id="matchHex" placeholder="#RRGGBB" maxlength="7" autocomplete="off" spellcheck="false" aria-label="Hex colour code"></div></div><div class="mpane" data-pane="screen" style="display:none"><button id="matchEyeGo" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5M17 7l-9.5 9.5L5 19l2.5-2.5"/><path d="M13 6l5 5"/></svg><b>Pick from the screen</b><span>Click anywhere on your screen to sample it</span></button></div><div id="matchResult"></div><div id="matchSay" class="hlpsr" aria-live="polite"></div></div></div>
 
 <div class="overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="ocard dcard hlpcard"><div class="mhead"><h2 class="mtitle" id="helpTitle">Help</h2><button id="helpClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><button id="helpHiw" class="btn-soft hlphiw" data-help="hiw"><span>How it works</span><span class="hlphiwsub">3 quick steps</span></button><details class="hlpsec" id="helpPhoto"><summary>Photographing a page</summary><div class="hlpbody"><ul><li>Lay the page flat on a table. Smooth out any curl.</li><li>Use even light: daylight near a window, or a bright room. Keep your shadow and your hand off the page, and avoid shiny glare.</li><li>Hold the phone above the page and get all of it in the frame. A bit of table around it is fine.</li><li>Taken at an angle? The app finds the page and straightens it. If it isn’t sure, drag the corners, then tap <b>Straighten</b>.</li><li>Clear, dark lines work best. If sections come out wrong, <b>← Edit sections</b> lets you merge, split or add them.</li><li>Scans and screenshots work too.</li></ul></div></details><details class="hlpsec" id="helpGloss"><summary>Glossary</summary><div class="hlpbody"><dl class="hlpgl"><dt>Section</dt><dd>One area of the picture, closed in by lines, that you colour with one marker. Its marker code is printed on it.</dd><dt>Background / left out</dt><dd>Parts that stay white. The background is the paper around the drawing. Left-out sections are ones you’ve tapped with <b>Leave out</b> in <b>Edit sections</b>; tap one there again to bring it back.</dd><dt>Colour pattern</dt><dd>How markers are spread over the page, in <b>Pattern</b>:<ul><li><b>Gradient</b>: colours flow across the page along a path (serpentine, vertical, diagonal or radial).</li><li><b>Random</b>: markers scattered over the sections. <b>Main colour</b> gives one colour about 60% of the picture, a second 30% and an accent 10% (tap the bar to choose them); <b>Mixed</b> treats every marker alike, and <b>No repeats</b> gives each section its own.</li><li><b>Blend</b>: tap to drop colour anchors; colours blend between them.</li><li><b>Photo</b>: colours taken from a photo you lay over the page.</li><li><b>Manual</b>: you pick every section’s marker.</li></ul></dd><dt>Zone</dt><dd>A part of the picture with its own pattern and colours, like a flower against the background around it. In <b>Pattern</b>, tap <b><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg> Zone</b>, then tap or drag across sections to add them. The chips at the top of <b>Pattern</b> and <b>Colours</b> choose which zone those tabs change; <b>Main</b> is the rest of the picture. With shading on, each zone can be shaded or left flat, with its own roundness, highlights and shadows (<b>Shading</b>, under its chips); the light is the whole picture’s.</dd><dt>Pin</dt><dd>Keeps a section’s marker when you shuffle or change the pattern; a pinned section has a ring around its label. Tap a section, then <b>Pin</b>. Changing a section’s colour pins it too (<b>Unpin</b> lets the plan choose again).</dd><dt>Kept</dt><dd>A section you’ve coloured keeps its marker, whatever you change in the plan: it’s on your paper already. Kept sections have no ring; untick one and the plan can colour it again.</dd><dt>Blend companions</dt><dd>A lighter and a darker marker for each colour, listed in the printed key, for blending.</dd><dt>Shading</dt><dd>Adds light and shadow with lighter and darker markers you own. Drag the sun to move the light, or, with the Photo pattern, take the light from your photo (<b>Light from</b>).</dd><dt>Highlight / Base / Shadow (H/B/S)</dt><dd>The tones of a shaded section. <b>B</b> is its main marker. <b>H</b> is a lighter one on the side facing the light (or a warmer one, or the paper left white: <b>Shading › Highlights</b>), <b>S</b> a darker one on the far side (or a cooler or grey one laid over the base: <b>Shading › Shadows</b>). “2nd coat” means going over the base again.</dd><dt>Greyscale</dt><dd>The button with three grey bars under the picture (once called Values). It shows your guide in greys, so you can judge its values: where it’s light and dark, without the colours. It only changes the view.</dd><dt>Focus mode</dt><dd>In <b>Colour along</b>. It zooms to one section at a time, colour by colour. Tap <b>✓ Done</b> (or the section) to move on.</dd><dt>Reveal</dt><dd>In <b>Share</b>. Plays your page filling with colour, to share as a picture or a clip.</dd></dl></div></details><details class="hlpsec" id="helpKeys"><summary>Keyboard and screen readers</summary><div class="hlpbody"><ul><li>Picking a single section on the picture needs touch or a mouse: <b>Change colour</b>, <b>Pin</b>, <b>Paint</b> and ticking off one section.</li><li>By keyboard, use <b>Colour along</b>’s list instead: open a marker, then <b>Mark all coloured</b> or <b>Find next</b>. <b>Focus mode</b> and everything else work by keyboard too.</li><li>In <b>Markers</b>, press <b>Shift+F10</b> on a marker to open its details.</li><li>In <b>Change colour</b>, <b>Tab</b> moves from one row or group of markers to the next, and the arrow keys within it.</li><li>A zone’s sections can be chosen by keyboard: in the zone’s editor, Tab to <b>Choose sections with the keys</b>. The arrow keys then move a ring from section to section, and Space adds the ringed one to the zone or takes it out.</li></ul></div></details><details class="hlpsec" id="helpData"><summary>Your data</summary><div class="hlpbody"><ul><li>Your markers, palettes, guides and photos stay on this device. Nothing is uploaded.</li><li>There’s no account, no ads and no tracking. The app works offline.</li><li>On iPhone, Safari can clear a website’s data if you don’t open it for a while. Adding Marker Studio to your Home Screen (Share › Add to Home Screen) keeps it safer.</li><li>Back up now and then: <b>Library › Back up</b> saves one file with everything. <b>Restore</b> brings it back on any phone.</li><li>A guide missing from your Library may still be stored on this device. <b>Find lost guides</b> looks for any and can add them back.</li></ul><div class="hlplost"><button type="button" id="helpLost" class="btn-soft">Find lost guides</button><div id="helpLostRes" class="hlplostres" role="status"></div></div></div></details><details class="hlpsec" id="helpAbout"><summary>About</summary><div class="hlpbody"><p class="hlpapp"><b>Marker Studio</b> <span id="helpVer" class="hlpver"></span></p><p>Turns a photo of a colouring page into a marker-by-number guide, using the Ohuhu and Copic markers you own.</p><div class="hlpwn"><p class="hlpwnt">What’s new in <span id="helpWnVer"></span></p><ul id="helpWnList"></ul></div><p>Nothing you add leaves this device. There are no accounts, ads or analytics.</p><p>Ohuhu and Copic are trademarks of their owners; colours on screen are approximate — compare with your own swatches. <b>Markers › Print a swatch chart</b> makes a page to colour in.</p><p>Fonts: Fraunces and Hanken Grotesk, under the SIL Open Font License.</p><p>© 2026 SpicyChipmunk. All rights reserved.</p><a id="helpFeedback" class="btn-soft hlpfb" target="_blank" rel="noopener" hidden>Send feedback</a></div></details></div></div>
 <div class="overlay" id="hiwOverlay" role="dialog" aria-modal="true" aria-labelledby="hiwTitle"><div class="ocard dcard hiwcard"><div class="mhead"><h2 class="mtitle" id="hiwTitle">How it works</h2><button id="hiwClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="hiwtrack" id="hiwTrack"><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH1"><div class="hiwart" data-art="1"></div><div class="hiwstep">Step 1 of 3</div><h3 id="hiwH1">Photograph a colouring page</h3><p>Choose a photo of a line-art page, or try the sample.</p><ul class="hiwtips"><li>Lay the page flat, in even light.</li><li>Get the whole page in the frame.</li><li>Taken at an angle? The app straightens it.</li></ul></section><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH2" aria-hidden="true"><div class="hiwart" data-art="2"></div><div class="hiwstep">Step 2 of 3</div><h3 id="hiwH2">Sections and colours</h3><p>The app finds the sections — the areas you’ll colour — and picks a marker for each, from the markers you own.</p><ul class="hiwtips"><li>Tap a section to change its colour or pin it.</li><li>Try patterns and shading in the Pattern and Shading tabs.</li></ul></section><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH3" aria-hidden="true"><div class="hiwart" data-art="3"></div><div class="hiwstep">Step 3 of 3</div><h3 id="hiwH3">Colour along</h3><p>Tap Colour along and tick sections off as you colour them.</p><ul class="hiwtips"><li>Focus mode zooms to one section at a time and walks you through.</li><li>Finished? Reveal &amp; share shows your page filling with colour.</li></ul></section></div><div class="hlpsr" id="hiwLive" aria-live="polite"></div><div class="hiwnav"><button id="hiwBack" class="hiwback" style="visibility:hidden">Back</button><div class="hiwdots" id="hiwDots" role="group" aria-label="Steps"><button class="hiwdot on" data-i="0" aria-label="Step 1: Photograph a colouring page" aria-current="step"></button><button class="hiwdot" data-i="1" aria-label="Step 2: Sections and colours"></button><button class="hiwdot" data-i="2" aria-label="Step 3: Colour along"></button></div><button data-first id="hiwNext" class="btn-primary hiwnext">Next</button></div></div></div>
@@ -9482,6 +9790,19 @@ function esc(v) {
 }
 // iPhone Safari counts canvas memory until garbage collection and refuses new canvases past a limit;
 // shrinking a finished helper canvas hands its memory back straight away
+// Copic 0, the Colorless Blender, lays down no colour: it can be owned (and is listed with your markers), but it's
+// never picked as a colour — not for a palette, a guide, a match or a photo's colours. (Its #ffffff made it the
+// "closest marker" to white paper, v298.)
+const NOINK = new Set();
+COLORS.forEach(function (c, i) {
+  if (/colou?rless blender/i.test(c.name || '')) NOINK.add(i);
+});
+// any marker owned that lays down colour (not only the Colorless Blender)
+function inkOwned() {
+  return COLORS.some(function (c, i) {
+    return !NOINK.has(i) && isOwned(i);
+  });
+}
 function freeCanvas(c) {
   try {
     if (c) {
@@ -9841,6 +10162,12 @@ function cleanSaved(e) {
   o.keys = Array.isArray(e.keys) ? e.keys.filter((k) => typeof k === 'string') : [];
   if ('thumb' in o) o.thumb = safeThumb(o.thumb);
   if ('done' in o && !(Number.isInteger(o.done) && o.done >= 0)) delete o.done;
+  // (when it was saved: a time, or none — a word there showed as "Invalid Date" in the Library, v298)
+  if ('ts' in o) {
+    const t = Number(o.ts);
+    if (Number.isFinite(t) && t > 0 && t < 8.64e15) o.ts = t;
+    else delete o.ts;
+  }
   return o;
 }
 const stage = $('stage'),
@@ -10743,6 +11070,7 @@ function matchNearest(lab) {
     if (list.length > max) list.pop();
   };
   for (let i = 0; i < LAB.length; i++) {
+    if (NOINK.has(i)) continue;
     const o = { i: i, d: de2000(lab, LAB[i]) };
     if (isOwned(i) && !isDry(i)) keep(owned, 5, o);
     else keep(others, 3, o);
@@ -10797,13 +11125,20 @@ function paperSpot(lin) {
   };
 }
 var _saveHold = false,
-  _lastRaw = null;
+  _lastRaw = null,
+  // (v296) the unreadable original, when there wasn't room to keep a copy of it: for Download the original, this time
+  _lossRaw = null;
 const _savedGone = new Set(),
   STATE_BK = 'ms-state-backup',
   LOAD_NOTE = 'ms-load-note';
 let state = load();
 if (!state.palSize) state.palSize = 4;
 if (!state.harmony) state.harmony = 'complementary';
+// (v296) each palette's scheme, in step with the palettes (an older save has none: not known)
+if (!Array.isArray(state.palH)) state.palH = [];
+while (state.palH.length < state.palettes.length) state.palH.unshift(null);
+if (state.palH.length > state.palettes.length)
+  state.palH = state.palH.slice(state.palH.length - state.palettes.length);
 {
   const R = HARM_RANGE[state.harmony] || [2, 6];
   state.palSize = Math.max(R[0], Math.min(R[1], state.palSize));
@@ -10819,6 +11154,11 @@ if (state.mode === 'finder') state.mode = 'collection';
 if (!['random', 'palette', 'collection', 'sections', 'home'].includes(state.mode)) state.mode = 'random';
 if (state.mode === 'sections') state.mode = 'home';
 if (!Array.isArray(state.pool)) state.pool = null;
+else {
+  // (known markers only, and never the Colorless Blender: no colour to draw, v299)
+  state.pool = state.pool.filter((i) => Number.isInteger(i) && i >= 0 && i < COLORS.length && !NOINK.has(i));
+  if (!state.pool.length) state.pool = null;
+}
 state.brands = Array.isArray(state.brands)
   ? new Set(state.brands.filter((b) => b === 'Ohuhu' || b === 'Copic'))
   : new Set(['Ohuhu', 'Copic']);
@@ -11150,12 +11490,20 @@ function parseState(raw) {
       drawn: f('drawn', arr, [], (a) => [...new Set(idxs('drawn', a))]),
       excluded: new Set(f('excluded', arr, [], (a) => a.filter((x) => typeof x === 'string'))),
       palettes: f('palettes', arr, [], (a) =>
-        a.filter((p) => {
+        a.filter((p, j) => {
           const ok = arr(p) && p.length > 0 && p.every(ix);
-          if (!ok) bad.push('palettes');
+          if (!ok) {
+            bad.push('palettes');
+            // (its scheme goes with it)
+            if (arr(v.palH) && v.palH.length === a.length) v.palH[j] = undefined;
+          }
           return ok;
         }),
       ),
+      // (v296) each palette's scheme, in step with palettes: Undo goes back to it
+      palH: arr(v.palH)
+        ? v.palH.filter((x) => x !== undefined).map((x) => (typeof x === 'string' && HARM[x] ? x : null))
+        : [],
       pool: f('pool', arr, null, (a) => {
         const o = idxs('pool', a);
         return o.length ? o : null;
@@ -11184,10 +11532,14 @@ function parseState(raw) {
     },
   };
 }
+// → whether the copy is there
 function keepStateCopy(raw) {
   try {
     if (localStorage.getItem(STATE_BK) !== raw) localStorage.setItem(STATE_BK, raw);
-  } catch (e) {}
+    return localStorage.getItem(STATE_BK) === raw;
+  } catch (e) {
+    return false;
+  }
 }
 function holdSaves() {
   _saveHold = true;
@@ -11215,7 +11567,10 @@ function noteLoss(p) {
     localStorage.setItem(
       LOAD_NOTE,
       JSON.stringify(
-        p.broken ? { all: true } : { markers: l.markers, palettes: l.palettes, guides: l.guides },
+        Object.assign(
+          p.broken ? { all: true } : { markers: l.markers, palettes: l.palettes, guides: l.guides },
+          p.nocopy ? { nocopy: true } : {},
+        ),
       ),
     );
   } catch (e) {}
@@ -11230,8 +11585,18 @@ function load() {
   if (typeof raw !== 'string') raw = null;
   if (raw != null) {
     const p = parseState(raw);
-    if (lossOf(p)) keepStateCopy(raw);
-    noteLoss(p);
+    // (no room for the copy, storage being full: the note says so, and the original is kept here for this time, so
+    // Download the original still works; it used to say a copy was kept, v296)
+    // (the note first, small, as having no copy: a copy that took the last of the room would leave none for the note,
+    // and the loss would go unsaid; once the copy is kept the note says so, v298)
+    if (lossOf(p)) {
+      p.nocopy = true;
+      noteLoss(p);
+      if (keepStateCopy(raw)) {
+        delete p.nocopy;
+        noteLoss(p);
+      } else _lossRaw = raw;
+    }
     if (p.broken) holdSaves();
     else {
       _lastRaw = raw;
@@ -11313,6 +11678,7 @@ function save(quiet) {
       drawn: state.drawn,
       excluded: [...state.excluded],
       palettes: state.palettes,
+      palH: state.palH,
       pool: state.pool,
       brands: [...state.brands],
       owned: [...state.owned],
@@ -11406,6 +11772,14 @@ function syncFromStorage() {
     }, 0);
   }
 }
+// (v296) a page brought back from the browser's back/forward cache, or a tab coming back into view, hears no storage
+// events from while it was away: it reads what's saved before its next save can write its old markers back
+addEventListener('pageshow', function (e) {
+  if (e.persisted) syncFromStorage();
+});
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') syncFromStorage();
+});
 addEventListener('storage', function (e) {
   if (e.key === KEY || e.key === null) syncFromStorage();
   else if (e.key === BK_KEY || e.key === BK_SIG || e.key === BK_SNOOZE) {
@@ -11497,13 +11871,19 @@ function avail(i) {
   return passes(i) && matchesSearch(i);
 }
 function setPool(a) {
+  // (never the Colorless Blender: no colour to draw, though "N colours" counted it, v299)
+  if (a) a = a.filter((i) => !NOINK.has(i));
   state.pool = a && a.length ? a.slice() : null;
   poolSet = state.pool ? new Set(state.pool) : null;
 }
 var _poolAll = false;
 function inPool(i) {
+  if (NOINK.has(i)) return false;
   if (_poolAll) return passes(i);
-  return state.pool ? poolSet.has(i) : (state.owned.size ? isOwned(i) && !isDry(i) : true) && passes(i);
+  // (a selection leaves out markers marked dry too, as everything else does: "Palette from these" let them in, v299)
+  return state.pool
+    ? poolSet.has(i) && !(isOwned(i) && isDry(i))
+    : (state.owned.size ? isOwned(i) && !isDry(i) : true) && passes(i);
 }
 function counts() {
   const dn = new Set(state.drawn);
@@ -11998,10 +12378,16 @@ function palMinDE(pal, fixed) {
     }
   return m;
 }
+// (v296) from a map made once: it's asked per marker in Library tiles, To buy and the swatch chart
+let _keyIdx = null;
 function keyIdx(key) {
   if (key == null) return null;
-  for (let i = 0; i < COLORS.length; i++) if (mkey(i) === key) return i;
-  return null;
+  if (!_keyIdx) {
+    _keyIdx = new Map();
+    for (let i = 0; i < COLORS.length; i++) _keyIdx.set(mkey(i), i);
+  }
+  const i = _keyIdx.get(key);
+  return i == null ? null : i;
 }
 function paletteOpts() {
   const opts = { locked: {} };
@@ -12014,10 +12400,17 @@ function paletteOpts() {
   } else if (cur && cur.length && state.locked.length) {
     opts.baseHue = LCH[cur[0]][2];
   }
-  if (cur)
+  if (cur) {
+    const out = [];
     cur.forEach((idx, pos) => {
-      if (state.locked.includes(idx) && opts.locked[pos] == null) opts.locked[pos] = idx;
+      if (!state.locked.includes(idx) || Object.values(opts.locked).includes(idx)) return;
+      if (pos < state.palSize && opts.locked[pos] == null) opts.locked[pos] = idx;
+      else out.push(idx);
     });
+    // (v296) a colour locked past the new size (8 → 4) moves into a free place instead of being dropped
+    for (let pos = state.palSize - 1; pos >= 0 && out.length; pos--)
+      if (opts.locked[pos] == null) opts.locked[pos] = out.shift();
+  }
   return opts;
 }
 // Palette › From photo: the photo, the colour each band came from, and the lighting correction from its paper (when
@@ -12044,10 +12437,12 @@ function swapPhotoBand(k) {
     }
   }
   if (best < 0) return;
-  pal[k] = best;
-  state.palettes[state.palettes.length - 1] = pal;
+  // (a new step in the history, so Undo brings the colour back, v299)
+  const np = pal.slice();
+  np[k] = best;
+  palPush(np, 20);
   save();
-  showPalette(pal, false);
+  showPalette(np, false);
 }
 function _pRgbLab(r, g, b) {
   return hexToLab(
@@ -12108,12 +12503,15 @@ function extractPhotoPalette(img, n, fix) {
   cv.width = w;
   cv.height = hh;
   var cx = cv.getContext('2d');
-  cx.drawImage(img, 0, 0, w, hh);
+  // (in halving steps: Safari's engine shrinks in one go without averaging, so the photo's colours came out noisy, v296)
+  drawShrunk(cx, img, w, hh);
   var d;
   try {
     d = cx.getImageData(0, 0, w, hh).data;
   } catch (e) {
     return null;
+  } finally {
+    freeCanvas(cv);
   }
   if (fix) lightApplyData(fix, d);
   var px = [],
@@ -12254,8 +12652,7 @@ function applyPhotoPalette() {
     );
     return;
   }
-  state.palettes.push(pal);
-  if (state.palettes.length > 20) state.palettes.shift();
+  palPush(pal, 20);
   state.locked = [];
   save();
   showPalette(pal, true);
@@ -12265,7 +12662,7 @@ function applyPhotoPalette() {
         ? state.palSize +
           ' colours pulled \u2192 ' +
           pal.length +
-          ' distinct markers' +
+          (pal.length === 1 ? ' distinct marker' : ' distinct markers') +
           (state.owned.size ? ' you own' : '')
         : pal.length + ' markers matched from your photo';
   chrome();
@@ -12305,6 +12702,27 @@ function genPalette(n, harmony, opts) {
     ctx.bh = LCH[bi][2];
   }
   const plan = genSlots(ctx, n);
+  // (v296) the chosen marker, locked first, takes the target that fits it (Analogous: the middle of the fan; Monochrome:
+  // the step nearest its lightness), not the first one (the fan's end, the lightest step): the other colours were
+  // lopsided round it, two thirds of them on one side
+  const si = opts.seedIdx;
+  if (si != null && locked[0] === si && n > 1 && (harmony === 'analogous' || harmony === 'mono')) {
+    let best = 0,
+      bd = Infinity;
+    plan.slots.forEach(function (sl, p) {
+      const dL = Math.abs(sl.L - LCH[si][0]),
+        d = harmony === 'mono' ? dL : hueDist(sl.h, LCH[si][2]) + dL / 10;
+      if (d < bd) {
+        bd = d;
+        best = p;
+      }
+    });
+    if (best) {
+      const t = plan.slots[0];
+      plan.slots[0] = plan.slots[best];
+      plan.slots[best] = t;
+    }
+  }
   let res = null;
   for (const lv of ctx.levels) {
     for (let t = 0; t < 3 && !res; t++) res = genTry(ctx, plan, locked, lv);
@@ -12376,6 +12794,45 @@ function rerollPick(pal, k, harmony) {
     ctx.greyFam = LCH[cur][1] < GREY_C || famGreyish(cur);
   }
   const slot = { h: LCH[cur][2], L: LCH[cur][0] };
+  // (a scheme of set hues: aimed at the scheme hue nearest this colour, around the base the other colours fit best —
+  // the one leaving the most room either side, half a degree at a time — not at this colour's own hue, so re-rolling
+  // one colour again and again doesn't walk it away from the scheme, v298; v299: the best fit, not one of the other
+  // colours' own hues, and leaving out colours you locked, as the scheme's note does)
+  const A = ANCH[harmony];
+  if (A && harmony !== 'mono') {
+    const clear = (i) => LCH[i][1] >= GREY_C,
+      lk = new Set(state.locked || []);
+    let hs = others.filter((i) => clear(i) && !lk.has(i)).map((i) => LCH[i][2]);
+    if (!hs.length) hs = others.filter(clear).map((i) => LCH[i][2]);
+    if (hs.length) {
+      let bb = 0,
+        be = Infinity;
+      for (let b = 0; b < 360; b += 0.5) {
+        let e = 0;
+        for (const h of hs) {
+          let d = Infinity;
+          for (const a of A) d = Math.min(d, hueDist(h, b + a));
+          if (d > e) e = d;
+          if (e >= be) break;
+        }
+        if (e < be) {
+          be = e;
+          bb = b;
+        }
+      }
+      let to = slot.h,
+        d = Infinity;
+      for (const a of A) {
+        const t = (bb + a) % 360,
+          dd = hueDist(slot.h, t);
+        if (dd < d) {
+          d = dd;
+          to = t;
+        }
+      }
+      slot.h = to;
+    }
+  }
   for (const lv of ctx.levels) {
     const st = genState(ctx, lv, others);
     st.avoid = cur;
@@ -12389,14 +12846,26 @@ function rerollPick(pal, k, harmony) {
 function palOnScheme(pal, harmony, fixed) {
   const hs = pal.filter((i) => !(fixed && fixed.has(i)) && LCH[i][1] >= GREY_C).map((i) => LCH[i][2]);
   if (hs.length < 2) return true;
+  // (v298: the bases tried are exactly the ones that can matter — where a colour sits at the edge of a hue's window —
+  // so no palette made on the scheme is called off it, and none just off it passes; before, whole degrees and half a
+  // degree of slack)
   const win = GEN_LEVELS[harmony === 'mono' || harmony === 'analogous' ? harmony : 'anchors'][0][1],
-    A = ANCH[harmony] || [0];
-  for (let b = 0; b < 360; b++) {
-    // Analogous: every hue within its spread, going round from this one
-    if (harmony === 'analogous') {
-      if (hs.every((h) => (h - b + 360) % 360 <= win)) return true;
-    } else if (hs.every((h) => A.some((a) => hueDist(h, b + a) <= win))) return true;
-  }
+    A = harmony === 'analogous' ? [0] : ANCH[harmony] || [0],
+    E = 1e-6,
+    fits =
+      harmony === 'analogous'
+        ? // Analogous: every hue within its spread, going round from the base
+          (b) => hs.every((h) => (((h - b) % 360) + 360) % 360 <= win + E)
+        : (b) => hs.every((h) => A.some((a) => hueDist(h, b + a) <= win + E)) && covers(b),
+    // (v299) a scheme of set hues uses as many of them as it has colours for: four blues aren't Complementary, though
+    // each sits on one of its hues. Colours you locked count here, on the hue they take.
+    all = pal.filter((i) => LCH[i][1] >= GREY_C).map((i) => LCH[i][2]),
+    need = Math.min(A.length, all.length),
+    covers = (b) => A.filter((a) => all.some((h) => hueDist(h, b + a) <= win + E)).length >= need;
+  for (const h of harmony === 'analogous' ? hs : all)
+    for (const a of A)
+      for (const b of harmony === 'analogous' ? [h, h - win] : [h - a - win, h - a + win, h - a])
+        if (fits(b)) return true;
   return false;
 }
 // the line under the Colours row when a generated palette isn't clean: two colours closer than its scheme wants, or
@@ -12506,10 +12975,13 @@ function showPalette(pal, animate) {
 }
 // the line under a palette's name: its scheme, and the marker it was built from (a photo's is just "From photo")
 function palSub(pal) {
-  const base = COLORS[pal[0]];
-  return state.harmony === 'photo'
-    ? HARM.photo
-    : HARM[state.harmony] + ' \u00b7 ' + base.brand + ' ' + base.name + ' base';
+  if (state.harmony === 'photo') return HARM.photo;
+  // (v296) "… base" only for the marker you chose to build from (Start from): otherwise the first colour is just the
+  // lightest of the scheme's first hue, and the base the palette was built round isn't in it
+  const si = keyIdx(state.seed);
+  return si != null && pal[0] === si
+    ? HARM[state.harmony] + ' \u00b7 ' + COLORS[si].brand + ' ' + COLORS[si].name + ' base'
+    : HARM[state.harmony];
 }
 // a palette's name, its line, and its codes under them (each code kept whole; brand letters as on the bands, when
 // the palette or your collection mixes brands)
@@ -13470,7 +13942,8 @@ function libRowChanged(id) {
     im = row.querySelector('img.sthumb'),
     t = safeThumb(s.thumb);
   if (m) m.innerHTML = libMeta(s);
-  if (nm && s.name) nm.textContent = s.name;
+  // (keeping the spacer that holds the first line clear of ⋯, v299)
+  if (nm && s.name) nm.innerHTML = '<span class="snfl" aria-hidden="true"></span>' + esc(s.name);
   if (im && t && !im.dataset.ts) {
     im.src = t;
     im.hidden = false;
@@ -13548,13 +14021,20 @@ function loadDraw(entry) {
   disarm();
   unownDisarm();
   state.mode = 'random';
-  const st = entry.st || {};
-  if (Array.isArray(st.brands)) state.brands = new Set(st.brands);
-  if (Array.isArray(st.tones)) state.tones = new Set(st.tones);
-  if (Array.isArray(st.sats)) state.sats = new Set(st.sats);
-  if (Array.isArray(st.excluded)) state.excluded = new Set(st.excluded);
-  setPool(st.pool ? st.pool.map(keyIdx).filter((i) => i != null) : null);
-  state.drawn = entry.keys.map(keyIdx).filter((i) => i != null);
+  const st = entry.st && typeof entry.st === 'object' ? entry.st : {},
+    // (only what the app knows: a draw from an edited backup could filter out every marker, or not open at all, v299)
+    known = (a, ok) => (Array.isArray(a) ? a.filter((x) => typeof x === 'string' && ok(x)) : null),
+    brands = known(st.brands, (x) => BRAND_DEFS.some((d) => d.k === x)),
+    tones = known(st.tones, (x) => TONE_DEFS.some((d) => d.k === x)),
+    sats = known(st.sats, (x) => SAT_DEFS.some((d) => d.k === x)),
+    exc = known(st.excluded, () => true),
+    pool = known(st.pool, () => true);
+  if (brands && brands.length) state.brands = new Set(brands);
+  if (tones) state.tones = new Set(tones);
+  if (sats) state.sats = new Set(sats);
+  if (exc) state.excluded = new Set(exc);
+  setPool(pool ? pool.map(keyIdx).filter((i) => i != null) : null);
+  state.drawn = (Array.isArray(entry.keys) ? entry.keys : []).map(keyIdx).filter((i) => i != null);
   save();
   fullRender();
 }
@@ -13568,7 +14048,9 @@ function ensureCustomSize() {
 // a custom slot's marker is fine while it's in play: in the selection, or one of your markers that isn't dry (any
 // marker while the collection is empty); filters don't count, the slot was chosen by hand
 function customOk(i) {
-  return state.pool ? poolSet.has(i) : !state.owned.size || (isOwned(i) && !isDry(i));
+  return state.pool
+    ? poolSet.has(i) && !(isOwned(i) && isDry(i))
+    : !state.owned.size || (isOwned(i) && !isDry(i));
 }
 function showCustom() {
   ensureCustomSize();
@@ -14291,13 +14773,15 @@ function chrome() {
     const si = keyIdx(state.seed),
       off = si != null && !inPool(si),
       why = off
-        ? state.pool
-          ? 'not in the selection'
-          : isOwned(si) && isDry(si)
-            ? 'dry'
-            : state.owned.size && !isOwned(si)
-              ? 'not owned'
-              : 'filtered out'
+        ? NOINK.has(si)
+          ? 'not a colour'
+          : state.pool
+            ? 'not in the selection'
+            : isOwned(si) && isDry(si)
+              ? 'dry'
+              : state.owned.size && !isOwned(si)
+                ? 'not owned'
+                : 'filtered out'
         : '';
     seedBtn.innerHTML =
       si != null
@@ -14380,9 +14864,11 @@ function chrome() {
   filterSum.textContent = filterSummary();
   poolBar.style.display = pooled ? 'flex' : 'none';
   if (pooled) {
-    poolN.textContent = state.pool.length;
+    // (the ones in play: a dry one in the selection isn't, v299)
+    var _pn = state.pool.filter(inPool).length;
+    poolN.textContent = _pn;
     var _pwd = document.getElementById('poolW');
-    if (_pwd) _pwd.textContent = state.pool.length === 1 ? 'colour' : 'colours';
+    if (_pwd) _pwd.textContent = _pn === 1 ? 'colour' : 'colours';
   }
   libRow.style.display = pal || rnd ? 'flex' : 'none';
   // (v289) the saved palettes and draws, a link at the top of Palette (they were only in ⋯ › Library)
@@ -14450,21 +14936,23 @@ function chrome() {
     const { t, u, left } = counts();
     fill.style.width = (t ? (u / t) * 100 : 0) + '%';
     statusEl.innerHTML = '<b>' + u + '</b> drawn, <b>' + left + '</b> left to draw';
-    const bad = pooled
-      ? left === 0
-        ? 'All drawn'
-        : null
-      : !af
-        ? 'Turn on a family'
-        : !at
-          ? 'Turn on a tone'
-          : !as
-            ? 'Turn on saturation'
-            : !ab
-              ? 'Turn on a brand'
-              : left === 0
-                ? 'All drawn'
-                : null;
+    // (nothing in play at all isn't "All drawn": a brand filtered out, every marker dry, v299)
+    const none = t === 0 ? 'No markers to draw' : 'All drawn',
+      bad = pooled
+        ? left === 0
+          ? none
+          : null
+        : !af
+          ? 'Turn on a family'
+          : !at
+            ? 'Turn on a tone'
+            : !as
+              ? 'Turn on saturation'
+              : !ab
+                ? 'Turn on a brand'
+                : left === 0
+                  ? none
+                  : null;
     drawBtn.disabled = !!bad || rolling;
     drawFocusBack();
     drawBtn.textContent = bad || 'Draw a marker';
@@ -14841,7 +15329,10 @@ function doReRollBand(k) {
   const cd = b.querySelector('.bcode');
   const finish = () => {
     if (state.palettes[state.palettes.length - 1] !== pal || !b.isConnected) return;
-    pal[k] = pick;
+    // (a new step in the history, so Undo brings the colour back, v299: it was gone for good)
+    const np = pal.slice();
+    np[k] = pick;
+    palPush(np, 24);
     save();
     const c = COLORS[pick];
     b.style.background = c.hex;
@@ -14854,8 +15345,8 @@ function doReRollBand(k) {
       void b.offsetWidth;
       b.classList.add('bin');
     }
-    const base = COLORS[pal[0]];
-    palReadout(shownPaletteName(pal), palSub(pal), pal);
+    const base = COLORS[np[0]];
+    palReadout(shownPaletteName(np), palSub(np), np);
     setAmb(base.hex);
     closeNote();
     buzz(24);
@@ -14923,8 +15414,7 @@ function doGenerate() {
   }
   retrigger(drawBtn, 'flash');
   const commit = () => {
-    state.palettes.push(pal);
-    if (state.palettes.length > 24) state.palettes.shift();
+    palPush(pal, 24);
     state.locked = state.locked.filter((i) => pal.includes(i));
     save();
     showPalette(pal, true);
@@ -14971,11 +15461,35 @@ function doGenerate() {
 function action() {
   state.mode === 'palette' ? doGenerate() : state.mode === 'random' ? doDraw() : 0;
 }
+// The palette history, with each palette's scheme beside it (state.palH)
+function palPush(pal, max) {
+  state.palettes.push(pal);
+  state.palH.push(state.harmony);
+  while (state.palettes.length > max) {
+    state.palettes.shift();
+    state.palH.shift();
+  }
+}
+function palPop() {
+  state.palettes.pop();
+  state.palH.pop();
+}
 function undo() {
   if (rolling) return;
   if (state.mode === 'palette') {
     if (!state.palettes.length) return;
-    state.palettes.pop();
+    palPop();
+    // (v296) back to the palette before with its own scheme and size, not under the ones chosen since; locks it
+    // doesn't have go
+    const top = state.palettes[state.palettes.length - 1],
+      h = state.palH[state.palH.length - 1];
+    if (top) {
+      const gen = (x) => x && x !== 'custom' && x !== 'photo';
+      if (gen(h) && gen(state.harmony) && h !== state.harmony) state.harmony = h;
+      const R = HARM_RANGE[state.harmony] || [2, 6];
+      if (state.harmony !== 'photo' && top.length >= R[0] && top.length <= R[1]) state.palSize = top.length;
+    }
+    state.locked = state.locked.filter((i) => top && top.includes(i));
   } else if (state.mode === 'random') {
     if (!state.drawn.length) return;
     state.drawn.shift();
@@ -14991,8 +15505,8 @@ function filterChanged() {
 function regenReplace() {
   const pal = genPalette(state.palSize, state.harmony, paletteOpts());
   if (pal) {
-    if (state.palettes.length) state.palettes.pop();
-    state.palettes.push(pal);
+    if (state.palettes.length) palPop();
+    palPush(pal, 24);
     state.locked = state.locked.filter((i) => pal.includes(i));
     save();
     showPalette(pal, true);
@@ -15126,6 +15640,7 @@ resetBtn.addEventListener('click', () => {
       if (state.harmony === 'custom') state.customPal = state.customPal.map(() => null);
       else {
         state.palettes = [];
+        state.palH = [];
         state.locked = [];
       }
     } else state.drawn = [];
@@ -15505,7 +16020,7 @@ harm.addEventListener('click', (e) => {
       c = document.createElement('canvas');
     c.width = Math.max(1, Math.round(_photoImg.width * s));
     c.height = Math.max(1, Math.round(_photoImg.height * s));
-    c.getContext('2d').drawImage(_photoImg, 0, 0, c.width, c.height);
+    drawShrunk(c.getContext('2d'), _photoImg, c.width, c.height);
     return c;
   }
   function useFix(fix) {
@@ -15520,6 +16035,7 @@ harm.addEventListener('click', (e) => {
         lightApplyData(fix, im.data);
         g.putImageData(im, 0, 0);
         thumb.src = c.toDataURL('image/jpeg', 0.9);
+        freeCanvas(c);
       } else if (thumbSrc != null) {
         thumb.src = thumbSrc;
         thumbSrc = null;
@@ -15565,6 +16081,9 @@ harm.addEventListener('click', (e) => {
         );
       } catch (err) {
         return;
+      } finally {
+        // (v296: Safari counts a canvas until it's collected)
+        freeCanvas(c);
       }
       if (r.bad) {
         setNote(r.note); // stays in the mode for another try
@@ -16341,6 +16860,11 @@ function presetListHTML() {
       add.textContent = n ? 'Add ' + n + ' set' + (n > 1 ? 's' : '') : 'Add markers';
     }
   }
+  function relist() {
+    if (!list) return;
+    list.innerHTML = presetListHTML();
+    upd();
+  }
   if (list) list.addEventListener('change', upd);
   if (add)
     add.addEventListener('click', function () {
@@ -16376,6 +16900,8 @@ function presetListHTML() {
         )
           return;
         fullRender();
+        // (the sets' "in your collection" marks follow, v298)
+        relist();
         if (prev.length)
           toastAction(
             'Cleared ' + prev.length + ' marker' + (prev.length === 1 ? '' : 's') + ' from your collection',
@@ -16386,6 +16912,7 @@ function presetListHTML() {
               });
               save();
               fullRender();
+              relist();
             },
           );
       } else {
@@ -16640,7 +17167,7 @@ function sfCollection() {
   const demo = state.owned.size === 0,
     out = [];
   for (let i = 0; i < COLORS.length; i++) {
-    if (!demo && (!isOwned(i) || isDry(i))) continue;
+    if (NOINK.has(i) || (!demo && (!isOwned(i) || isDry(i)))) continue;
     const c = COLORS[i];
     out.push({
       mkey: mkey(i),
@@ -16956,7 +17483,10 @@ function guideMeta(d, id) {
 // d.quiet: the caller tells the user about a failure (no storage-full toast from here)
 function sfSaveDesign(d) {
   const id = d.id || Date.now(),
-    had = state.saved.some((s) => s.id === id);
+    had = state.saved.some((s) => s.id === id),
+    // (the copies kept aside so far: this save, made from the guide as it is now, makes those unneeded, not one
+    // kept aside while it was being written, v298)
+    leaveAt = _leaveN;
   if (d.mustExist && !had) return Promise.resolve(null);
   if (d.id && !had) libUnpend(id);
   return (
@@ -16991,7 +17521,7 @@ function sfSaveDesign(d) {
           return null;
         }
         askPersist();
-        leaveDrop(id);
+        leaveDrop(id, leaveAt);
         return id;
       });
     })
@@ -17006,10 +17536,13 @@ function sfSaveDesign(d) {
 // row, if nothing saved the guide since (the row as it was then: base) and the pictures are still the ones stored.
 // A save of the guide that lands meanwhile makes them unneeded. Only for a guide already in the Library.
 const LEAVE_KEY = 'ms-guide-leave';
-function leaveDrop(id) {
+// (each copy kept aside is numbered: a save that began before it was made doesn't make it unneeded, v298)
+let _leaveN = 0;
+function leaveDrop(id, upTo) {
   try {
     const j = JSON.parse(localStorage.getItem(LEAVE_KEY) || 'null');
-    if (j && (id == null || j.id === id)) localStorage.removeItem(LEAVE_KEY);
+    if (j && (id == null || j.id === id) && (upTo == null || !(j.seq > upTo)))
+      localStorage.removeItem(LEAVE_KEY);
   } catch (_) {}
 }
 function leaveHash(s) {
@@ -17062,6 +17595,7 @@ function sfSaveDesignNow(d) {
       LEAVE_KEY,
       JSON.stringify({
         id: d.id,
+        seq: ++_leaveN,
         base: +e.ts || 0,
         name: d.name,
         W: d.W,
@@ -17673,7 +18207,8 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done) {
         done(any || ok || x.dup || x.bad || x.full ? got(ok, x) : null);
         return;
       }
-      if (x.openRep) msg += ' \u201c' + x.openRep + '\u201d was replaced by the backup\u2019s newer copy.';
+      if (x.openRep)
+        msg += ' \u201c' + esc(x.openRep) + '\u201d was replaced by the backup\u2019s newer copy.';
       msg += copies
         ? ' ' +
           copies +
@@ -18222,7 +18757,7 @@ let locks = {}; // written by: 10-segment, 20-image-input, 30-palette-assign, 65
 let lockMode = false; // written by: 20-image-input, 30-palette-assign, 50-controls, 87-undo, 97-open
 
 // ---- colouring along and Focus ----
-let celebrated = false; // written by: 10-segment, 30-palette-assign, 82-colour-mode, 90-export, 97-open
+let celebrated = false; // written by: 10-segment, 30-palette-assign, 75-focus, 82-colour-mode, 90-export, 97-open
 // when the first section was ticked and when the page was finished (ms; 0: not yet), saved with the guide (v284)
 let progAt = { s: 0, e: 0 }; // written by: 10-segment, 82-colour-mode, 90-export, 97-open
 // Share › Save image with the codes on it (this session's choice)
@@ -19277,6 +19812,8 @@ function labelCells() {
 }
 function segment() {
   const n = W * H;
+  // (sections found afresh: ticks held for an Undo of a merge were the old sections', 65-edit)
+  _tickHeld = {};
   // (where the zones were, pixel by pixel, to place them again on the new sections: 34-zones)
   zonePixCapture();
   labels = new Int32Array(n);
@@ -19411,6 +19948,10 @@ function resetForNewPicture() {
   photoReset();
   rot90 = 0;
   tilt = 0;
+  // (Enhance and its line sensitivity were set for the old picture's lighting, as its turn and crop were, v298)
+  enhance = true;
+  adaptC = 9;
+  _tickHeld = {};
   cropRect = null;
   cropMode = false;
   cropFull = null;
@@ -19661,8 +20202,10 @@ function processSrc() {
   const cr = cropRect || { x: 0, y: 0, w: 1, h: 1 },
     cx = Math.round(cr.x * fw),
     cy = Math.round(cr.y * fh),
-    cw = Math.max(8, Math.round(cr.w * fw)),
-    ch = Math.max(8, Math.round(cr.h * fh));
+    // (no wider than what's left of the photo: rounded up past its edge, the last column was left empty and read as
+    // a line of ink, v296)
+    cw = Math.max(8, Math.min(Math.round(cr.w * fw), fw - cx)),
+    ch = Math.max(8, Math.min(Math.round(cr.h * fh), fh - cy));
   // (the picture changes shape: the zones can't be placed on the sections found from it)
   zoneGeoLost();
   W = cw;
@@ -19670,6 +20213,9 @@ function processSrc() {
   cv.width = W;
   cv.height = H;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // (on white: a picture under 8 pixels across is made 8, and the part past its edge would read as ink, v298)
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, H);
   ctx.drawImage(oc, cx, cy, cw, ch, 0, 0, W, H);
   freeCanvas(oc);
   const d = ctx.getImageData(0, 0, W, H).data,
@@ -19771,6 +20317,10 @@ function keepSnap(geo) {
             y1: c.y1,
             merged: c.merged,
             page: c.page,
+            // (what it was merged into or split off from, since the last build: tickCarry)
+            into: c.into,
+            from: c.from,
+            at: c.at,
           }
         : null;
     }),
@@ -20156,6 +20706,9 @@ function pgFind(img) {
   const g = c.getContext('2d', { willReadFrequently: true });
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'medium';
+  // (on white, as the picture itself is drawn: a see-through PNG's clear parts read as black otherwise, v298)
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, w, h);
   drawShrunk(g, img, w, h);
   let d;
   try {
@@ -20761,6 +21314,8 @@ function pgWarp(img, q, aspect) {
   sc.width = iw;
   sc.height = ih;
   const sg = sc.getContext('2d');
+  sg.fillStyle = '#fff';
+  sg.fillRect(0, 0, iw, ih);
   sg.drawImage(img, 0, 0);
   const s = sg.getImageData(0, 0, iw, ih).data;
   freeCanvas(sc);
@@ -21186,11 +21741,14 @@ function pgRefFlat(img, f35) {
       const g = src.getContext('2d');
       g.imageSmoothingEnabled = true;
       g.imageSmoothingQuality = 'high';
-      g.drawImage(img, 0, 0, src.width, src.height);
+      // (in halving steps: a phone photo's noise evened out in Safari too, as when a photo is read, v296)
+      drawShrunk(g, img, src.width, src.height);
     }
-    const f = pgFind(src);
-    if (f.tier !== 'sure') return null;
-    const out = pgWarp(src, f.q, pgShapeOf(f.q, src.width, src.height, f35, null).aspect);
+    const f = pgFind(src),
+      out =
+        f.tier === 'sure' ? pgWarp(src, f.q, pgShapeOf(f.q, src.width, src.height, f35, null).aspect) : null;
+    if (src !== img) freeCanvas(src);
+    if (!out) return null;
     out._pgFlat = true;
     return out;
   } catch (e) {
@@ -21955,7 +22513,8 @@ function buildRandom(cl, pool) {
       const nbs = [];
       if (a[l])
         a[l].forEach(function (nb) {
-          if (assign[nb]) nbs.push(assign[nb]);
+          const x = nbOf(assign, nb);
+          if (x) nbs.push(x);
         });
       clear.length = 0;
       other.length = 0;
@@ -22631,14 +23190,21 @@ function buildGuide() {
   }
   if (!coll.length) {
     // (markers owned but every one marked dry: coll leaves those out)
-    let anyOwned = false;
+    // (or only the Colorless Blender, which lays down no colour, v299)
+    let anyOwned = false,
+      anyInk = false;
     try {
       anyOwned = state.owned.size > 0;
+      anyInk = COLORS.some(function (c, i) {
+        return !NOINK.has(i) && isOwned(i);
+      });
     } catch (_) {}
     note(
-      anyOwned
+      anyInk
         ? 'Every marker you own is marked dry \u2014 mark some as not dry in Markers, then Build guide.'
-        : 'No markers in your collection \u2014 add the ones you own in Markers, then Build guide.',
+        : anyOwned
+          ? 'No colours in your collection (a blender lays down none) \u2014 add the markers you own in Markers, then Build guide.'
+          : 'No markers in your collection \u2014 add the ones you own in Markers, then Build guide.',
     );
     return;
   }
@@ -22689,6 +23255,8 @@ function buildGuide() {
     curId = null;
     curName = null;
   }
+  // (the ticks follow merges and splits: 65-edit)
+  tickCarry();
   _segFresh = false;
   zoneBuilt();
   zoneSigSync();
@@ -22758,6 +23326,18 @@ function keepMarkers(prev, cl) {
       A[l] = _gone[l].m;
       B[l] = _gone[l].m;
       delete P[l];
+    } else {
+      // a part split off a section with ink on it has that ink: its marker, its pin, flat or held shading, as the
+      // section had (its tick follows it too: tickCarry, 65-edit). v299: it got whatever the pattern gave it.
+      const f = splitFrom(l);
+      if (f >= 0 && pa[f] && inkOn(f)) {
+        A[l] = pa[f];
+        B[l] = pb[f] || pa[f];
+        delete P[l];
+        if (locks[f] !== undefined) locks[l] = locks[f];
+        if (shadeFlat[f]) shadeFlat[l] = 1;
+        if (heldSh[f]) heldSh[l] = Object.assign({}, heldSh[f]);
+      }
     }
   });
   const ord = assignData.order.filter(function (l) {
@@ -23683,7 +24263,8 @@ function buildBalance(cl, p) {
     const nbs = [];
     if (a && a[l])
       a[l].forEach(function (q) {
-        if (assign[q]) nbs.push(assign[q]);
+        const x = nbOf(assign, q);
+        if (x) nbs.push(x);
       });
     const notSame = function (m) {
         return !nbs.some(function (x) {
@@ -23815,7 +24396,8 @@ function buildNoRep(cl, pool) {
     const nbs = [];
     if (a && a[l])
       a[l].forEach(function (q) {
-        if (assign[q]) nbs.push(assign[q]);
+        const x = nbOf(assign, q);
+        if (x) nbs.push(x);
       });
     const notSame = function (m) {
         return !nbs.some(function (x) {
@@ -24746,6 +25328,14 @@ function zoneWith(id, fn) {
 // them together with the other zones' sections as they were. The zone being edited is built last, so what the
 // controls show about the last build (the pool's size, the Photo pattern's figures) is about it. Without zones it's
 // build(all sections). False when a build couldn't be made (no markers for it): that zone keeps what it had.
+// Sections of other zones that touch the zone being built, with the markers they have (set by zoneRun): the builds
+// that keep touching sections apart (Balance, No repeats, Random's clearly different) keep clear of them too, so a
+// zone's border is no place for two touching sections to share a marker. A zone being built later in the same run
+// isn't counted (its markers are about to change; it keeps clear of this one instead). v298
+let zoneNb = null;
+function nbOf(assign, q) {
+  return assign[q] || (zoneNb && zoneNb[q]) || null;
+}
 function zoneRun(ids, build) {
   if (!zones.length) return build(countedList()) !== false;
   const prev = assignData,
@@ -24765,7 +25355,20 @@ function zoneRun(ids, build) {
         return;
       }
       assignData = prev;
-      if (build(cl) === false) {
+      zoneNb = {};
+      all.forEach(function (l) {
+        const z = zoneOf(l);
+        if (z === id) return;
+        const src = parts[z] ? parts[z].assign : ids.indexOf(z) >= 0 ? null : prev && prev.assign;
+        if (src && src[l]) zoneNb[l] = src[l];
+      });
+      let r;
+      try {
+        r = build(cl);
+      } finally {
+        zoneNb = null;
+      }
+      if (r === false) {
         ok = false;
         return;
       }
@@ -25309,6 +25912,12 @@ function zoneAfterEdit(cl, prev) {
   const a = adj || (adj = buildAdj()),
     moves = {};
   fresh.forEach(function (l) {
+    // (a part split off a section: in that section's zone, whatever surrounds it, v299)
+    const f = splitFrom(l);
+    if (f >= 0) {
+      if (zoneOf(f)) moves[l] = zoneOf(f);
+      return;
+    }
     const n = {};
     let best = 0,
       bn = 0;
@@ -25919,8 +26528,10 @@ function rgGridAdd(G, l, b) {
     gy1 = Math.min(G.ny - 1, (b[3] / RG_GRID) | 0);
   for (let gy = gy0; gy <= gy1; gy++)
     for (let gx = gx0; gx <= gx1; gx++) {
-      const k = gy * G.nx + gx;
-      (G.c[k] || (G.c[k] = [])).push(l);
+      const k = gy * G.nx + gx,
+        c = G.c[k] || (G.c[k] = []);
+      // (once per cell: a section redrawn again and again in Paint or Colour along, v296)
+      if (c.indexOf(l) < 0) c.push(l);
     }
 }
 // per-section colour and flags in typed arrays, so the per-pixel loop does no object lookups.
@@ -26253,6 +26864,8 @@ function renderGuide() {
     shadeToneColl,
     linesOn,
     labOn,
+    // (Codes off draws a tick differently: a full draw, v296)
+    hideLabels,
     anch,
     sfmode,
     family,
@@ -26262,7 +26875,8 @@ function renderGuide() {
     cv.width,
     cv.height,
   ];
-  // (zoomed in, the codes are on their own sharper canvas: drawn whole each time)
+  // (zoomed in, the codes are on their own sharper canvas; at the same zoom step, a change is drawn on both a part at
+  // a time, as without it: a full draw each time made every Paint stroke and tick zoomed in redraw the lot, v296)
   const hiK = labOn ? labHiK() : 0;
   const ring =
     fcur > 0 && focusBox
@@ -26271,8 +26885,8 @@ function renderGuide() {
   let inc = !!(
     _rg &&
     !anch &&
-    !hiK &&
-    !_rg.hiK &&
+    hiK === (_rg.hiK || 0) &&
+    (!hiK || (labHi && labHi.width === Math.round(W * hiK) && labHi.style.display !== 'none')) &&
     _rg.gk.length === gk.length &&
     gk.every(function (v, i) {
       return v === _rg.gk[i];
@@ -26481,13 +27095,34 @@ function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tic
       if (!grew || ++guard > 50) break;
     }
     ctx.putImageData(imgData, 0, 0, r[0], r[1], r[2] - r[0], r[3] - r[1]);
-    if (!ids.length) continue;
-    ids.sort(function (a, b) {
-      return a - b;
-    });
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    for (let k = 0; k < ids.length; k++) secLabel(ids[k], assign[ids[k]], tick, true);
+    // zoomed in: the codes are on their own canvas, at its scale: its part of the rectangle cleared, and drawn there
+    const main = ctx,
+      hk = _rg.hiK;
+    if (hk) {
+      const hx = labHi.getContext('2d'),
+        sx = labHi.width / W,
+        sy = labHi.height / H;
+      hx.setTransform(1, 0, 0, 1, 0, 0);
+      hx.clearRect(
+        Math.floor(r[0] * sx),
+        Math.floor(r[1] * sy),
+        Math.ceil(r[2] * sx) - Math.floor(r[0] * sx),
+        Math.ceil(r[3] * sy) - Math.floor(r[1] * sy),
+      );
+      hx.setTransform(sx, 0, 0, sy, 0, 0);
+      ctx = hx;
+    }
+    try {
+      if (!ids.length) continue;
+      ids.sort(function (a, b) {
+        return a - b;
+      });
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let k = 0; k < ids.length; k++) secLabel(ids[k], assign[ids[k]], tick, true);
+    } finally {
+      ctx = main;
+    }
   }
   _rg.skey = skey;
   _rg.ring = ring;
@@ -26538,8 +27173,14 @@ function drawFocusRing(l, bits, sh) {
     return o;
   };
   // (v288: the same two-tone line as Find next's, white inside dark, so it shows on any colour)
-  ctx.drawImage(ringOf(r2, 'rgba(0,0,0,.8)'), x0, y0);
-  ctx.drawImage(ringOf(r, '#fff'), x0, y0);
+  // (the three helper canvases handed back at once: Safari counts them until collected, v296)
+  const o1 = ringOf(r2, 'rgba(0,0,0,.8)'),
+    o2 = ringOf(r, '#fff');
+  ctx.drawImage(o1, x0, y0);
+  ctx.drawImage(o2, x0, y0);
+  freeCanvas(o1);
+  freeCanvas(o2);
+  freeCanvas(m);
   return [x0, y0, x0 + w, y0 + h];
 }
 /* ---- shading: layered tones inside each section, lit by one sun you can drag around the picture ----
@@ -27991,6 +28632,8 @@ function keepProgress(snapCol) {
   const c = new Uint8Array(comps.length);
   c.set(colored.subarray(0, Math.min(colored.length, c.length)));
   setColored(c);
+  // (ticks a build took off for a merge this Undo takes apart: 65-edit)
+  tickBack();
 }
 // bring part-done tones in line with the current plan. A section whose done tones are all the plan now asks for
 // (shading switched off, left flat, full light to shadows only) counts as done, but keeps its tones: when the plan
@@ -28928,9 +29571,25 @@ function photoPick(targets0, pool0, N, quick) {
   if (!targets0.length || !pool0.length) return { chosen: [], pick: [] };
   const pr = _photoPrep(targets0, pool0);
   if (!pr.pool.length) {
-    const nn = targets0.map(function (t) {
+    // (no marker is near any of the colours: the closest ones, but still no more than N of them — the ones the most
+    // of the picture would take — each colour then taking the closest of those, v298)
+    let nn = targets0.map(function (t) {
       return nearestInPool(t.lab, pool0);
     });
+    const wt = new Map();
+    nn.forEach(function (m, i) {
+      if (m) wt.set(m, (wt.get(m) || 0) + (targets0[i].w || 0));
+    });
+    if (N > 0 && wt.size > N) {
+      const keep = [...wt.keys()]
+        .sort(function (a, b) {
+          return wt.get(b) - wt.get(a);
+        })
+        .slice(0, N);
+      nn = targets0.map(function (t) {
+        return nearestInPool(t.lab, keep);
+      });
+    }
     return { chosen: [...new Set(nn)], pick: nn };
   }
   const targets = pr.targets,
@@ -29492,7 +30151,10 @@ function loadPhotoRef(file) {
     if (!here()) return;
     lens.then(function (f35) {
       if (!here()) return;
-      const ref = photoFromImage(pgRefFlat(img, f35) || img);
+      const flat = pgRefFlat(img, f35),
+        ref = photoFromImage(flat || img);
+      // (the flattened page was only needed to read it from, v296)
+      if (flat) freeCanvas(flat);
       if (!ref) {
         note('Couldn’t read that photo.');
         return;
@@ -31765,18 +32427,21 @@ function edBarSync() {
     const show = ed && hasProgress();
     kl.style.display = show ? '' : 'none';
     if (show)
-      kl.textContent = 'Build again keeps your colouring; sections you merge or split start uncoloured.';
+      kl.textContent =
+        'Build again keeps your colouring. Merged sections stay ticked only when every part was.';
   }
 }
 // back to the plan from Edit sections: as it is when nothing was edited; otherwise asked first
 // newGuide (Home's New colouring guide, v289): Discard edits also opens the photo picker, within the tap (iOS)
 function edToPlan(newGuide) {
   if (!secEdPending()) {
+    // (edits undone by hand: a copy kept for Resume earlier is stale now, v298)
+    edSlotDrop();
     edGoPlan();
     return;
   }
   askEdits(
-    newGuide
+    newGuide === true
       ? function (a) {
           if (a === 'discard') pickPhoto();
         }
@@ -31800,8 +32465,11 @@ function edToPlan(newGuide) {
           .catch(function () {
             note('Couldn\u2019t open the guide as built \u2014 Build again keeps the edits.');
           });
-      } else if (discardEdits()) edGoPlan();
-      else note('Some edits couldn\u2019t be undone \u2014 Build again keeps them, or use Undo.');
+      } else if (discardEdits()) {
+        // (and the copy kept for Resume when the page was hidden, as Discard when something else opens does, v298)
+        edSlotDrop();
+        edGoPlan();
+      } else note('Some edits couldn\u2019t be undone \u2014 Build again keeps them, or use Undo.');
     }
   });
 }
@@ -31949,7 +32617,11 @@ function ctlSections() {
     });
   }); // show "Building…" before the work starts
   var _tp = document.getElementById('sfToPlan');
-  if (_tp) _tp.addEventListener('click', edToPlan);
+  // (not edToPlan itself: the click would come in as newGuide, and Discard would open the photo picker, v296)
+  if (_tp)
+    _tp.addEventListener('click', function () {
+      edToPlan(false);
+    });
   edBarSync();
   function wire(id, ev, fn) {
     const el = document.getElementById(id);
@@ -32422,6 +33094,17 @@ function edDropResumed() {
     if (m && m.edits) clearAutosave();
   });
 }
+// Section edits kept for Resume (keepEdits, when the page was hidden) that are no longer wanted: this visit's own copy
+// in the slot goes, so Home doesn't offer it back and the next guide doesn't keep it in the Library (v298). Edits an
+// earlier visit left there are not this visit's to drop: the next save keeps them as "… (section edits)" (v299: they
+// went too, without a word)
+function edSlotDrop() {
+  const tok = _gTok;
+  slotOp(function () {
+    const m = slotNote();
+    if (m && m.edits && slotMine(tok, m)) clearAutosave();
+  });
+}
 // the answer: built (then saved like any change), discarded (the guide as built stays what is kept, and a copy of the
 // edits kept for Resume goes), or nothing opens
 function edDecide() {
@@ -32437,19 +33120,14 @@ function edDecide() {
     }
     if (a === 'discard') {
       _edDisc = true;
-      const id = curId;
       // (edits brought back by Resume: what's open is the edited guide, so nothing of it is saved; the Library keeps
       // the guide as it was built, and the copy in the slot goes)
       if (_edResumed) {
         edDropResumed();
         return true;
       }
-      // (the edits kept for Resume go too: this guide's in the Library, or this visit's own)
-      const tok = _gTok;
-      slotOp(function () {
-        const m = slotNote();
-        if (m && m.edits && ((id != null && m.savedId === id) || slotMine(tok, m))) clearAutosave();
-      });
+      // (the edits this visit kept for Resume go too)
+      edSlotDrop();
       return stashDirty();
     }
     return false;
@@ -33272,7 +33950,11 @@ function libMerge() {
         }
         if (!_mergeSaid) {
           _mergeSaid = true;
-          toast('This guide was also changed in another tab \u2014 merged', 5000);
+          // (what is merged, said plainly: only ticks and done tones come across; v299, it said "merged")
+          toast(
+            'This guide was also changed in another tab \u2014 its ticks are added here; this tab\u2019s colours and pins are kept.',
+            6500,
+          );
         }
       });
     });
@@ -33733,6 +34415,10 @@ function snapshotSeg() {
             y1: c.y1,
             merged: c.merged,
             page: c.page,
+            // (what it was merged into or split off from, since the last build: tickCarry)
+            into: c.into,
+            from: c.from,
+            at: c.at,
           }
         : null;
     }),
@@ -33854,11 +34540,106 @@ function mergeCells(a, b) {
   }
   if (A.y1 != null && A.y0 != null) A.h = A.y1 - A.y0;
   comps[b].merged = true;
+  // (what it went into, so the tick can follow it when the guide is built: tickCarry)
+  comps[b].into = a;
+  comps[b].at = _tickGen;
   comps[b].area = 0;
   adj = null;
   edgeDist = null;
   labelPts = null;
   texField = null;
+}
+// Building again after Edit sections: the ticks follow the paper. A part split off a coloured section is coloured;
+// sections merged together stay ticked only when every one of them was; a merged-away section's own tick (and its
+// part-done tones) go, so they're never counted. Then the trail is cleared for the next edit. (v298: a merged-away
+// tick used to stay, so a page could ask about losing colouring it didn't show, and the note said merged and split
+// sections start uncoloured when they didn't.)
+// (only what was done since the last build counts: an Undo back past a build brings back an older trail, already
+// carried, so each build has its own number)
+let _tickGen = 0;
+// the section l was split off since the last build (following a split of a split), or -1
+function splitFrom(l) {
+  let f = l;
+  for (let n = 0; comps[f] && comps[f].from != null && comps[f].at === _tickGen && n < comps.length; n++)
+    f = comps[f].from;
+  return f !== l ? f : -1;
+}
+// ticks (and part-done tones) a build took off because of a merge: Undo of that merge in Edit sections gives them back
+// (keepProgress), as the paper still has them (v299: they were lost). { label: { c, t, parts } }: parts, the sections
+// merged into it (it was the half-ticked merge's); none, a merged-away section's own
+let _tickHeld = {};
+function tickBack() {
+  const P = tonePart && tonePart._c === colored ? tonePart : null;
+  for (const k in _tickHeld) {
+    const l = +k,
+      c = comps[l],
+      h = _tickHeld[k];
+    if (!c || c.merged || l >= colored.length) continue;
+    if (
+      h.parts &&
+      !h.parts.some(function (q) {
+        return comps[q] && !comps[q].merged;
+      })
+    )
+      continue;
+    if (h.c) colored[l] = 1;
+    if (P && h.t) P[l] = h.t;
+    delete _tickHeld[k];
+  }
+}
+function tickCarry() {
+  const gen = _tickGen++;
+  if (!colored) return;
+  const P = tonePart && tonePart._c === colored ? tonePart : null,
+    root = function (l) {
+      for (
+        let n = 0;
+        comps[l] && comps[l].merged && comps[l].into != null && comps[l].at === gen && n < comps.length;
+        n++
+      )
+        l = comps[l].into;
+      return l;
+    },
+    src = function (l) {
+      for (let n = 0; comps[l] && comps[l].from != null && comps[l].at === gen && n < comps.length; n++)
+        l = comps[l].from;
+      return l;
+    };
+  // split-off parts first (one merged afterwards counts as the part of the paper it was), then the merges
+  for (let l = 1; l < comps.length; l++) {
+    const c = comps[l];
+    if (!c || c.at !== gen || c.from == null) continue;
+    const f = src(l);
+    if (f !== l) {
+      colored[l] = colored[f];
+      if (P) P[l] = P[f];
+    }
+  }
+  for (let l = 1; l < comps.length; l++) {
+    const c = comps[l];
+    if (!c || c.at !== gen || !c.merged) continue;
+    const r = root(l);
+    if (r !== l && !colored[l] && !(comps[r] && comps[r].merged)) {
+      if (colored[r] || (P && P[r])) {
+        const h = _tickHeld[r] || (_tickHeld[r] = { c: colored[r], t: P ? P[r] : 0, parts: [] });
+        h.parts.push(l);
+      }
+      colored[r] = 0;
+      if (P) P[r] = 0;
+    }
+  }
+  for (let l = 1; l < comps.length; l++) {
+    const c = comps[l];
+    if (!c) continue;
+    if (c.merged) {
+      if (colored[l] || (P && P[l])) _tickHeld[l] = { c: colored[l], t: P ? P[l] : 0 };
+      colored[l] = 0;
+      if (P) P[l] = 0;
+    }
+    delete c.into;
+    delete c.from;
+    delete c.at;
+  }
 }
 function relabelRegion(L) {
   const n = W * H;
@@ -33934,7 +34715,12 @@ function relabelRegion(L) {
     comps[lab].x1 = mxx;
     comps[lab].y1 = mxy;
     comps[lab].merged = false;
-    if (!first) made++;
+    if (!first) {
+      made++;
+      // (split off from L: its part of the paper is coloured if L was)
+      comps[lab].from = L;
+      comps[lab].at = _tickGen;
+    }
     first = false;
   }
   growArrays();
@@ -35613,7 +36399,15 @@ function goFocus(pos, anim, noHist) {
   focusZ = focusZoomFor(l);
   renderGuide();
   frameFocus(anim);
+  focusSay();
 } // bar text first: its height sizes the picture
+// (where Focus is up to, for a screen reader: the marker and which of its sections, or that the page is finished; the
+// bar's text changes in place, which a screen reader doesn't say by itself, v298)
+function focusSay() {
+  var nm = document.getElementById('sfFocName'),
+    sub = document.getElementById('sfFocSub');
+  if (nm && nm.textContent) sayLive(nm.textContent + (sub && sub.textContent ? '. ' + sub.textContent : ''));
+}
 function finishFocus() {
   focusFin = true;
   hlKey = null;
@@ -35625,7 +36419,10 @@ function finishFocus() {
   animXform(true);
   renderGuide();
   renderFocusUI();
+  var was = celebrated;
   checkComplete();
+  // (just finished: the toast says so instead)
+  if (celebrated === was) focusSay();
 }
 function focusDone() {
   var l = focusCur();
@@ -35691,10 +36488,15 @@ function focusAllOfColour() {
   var l = focusCur();
   if (l < 0) return;
   var k = assignData.assign[l].mkey,
-    z = focusZoneOf(l);
+    z = focusZoneOf(l),
+    was = {},
+    g = loadGen,
+    at = focusPos,
+    code = assignData.assign[l].code;
   guideDirty = true;
   focusOrd.forEach(function (q) {
     if (assignData.assign[q].mkey === k && focusZoneOf(q) === z) {
+      if (!colored[q] && !was[q]) was[q] = [colored[q], tp()[q]];
       colored[q] = 1;
       tp()[q] = 0;
     }
@@ -35704,6 +36506,25 @@ function focusAllOfColour() {
   var nx = nextUndone(focusPos);
   if (nx < 0) finishFocus();
   else goFocus(nx, true);
+  // (an Undo, as Mark all coloured in the list has: a mis-tap lost which were really done, v299; not when that
+  // finished the page, which says so instead)
+  if (Object.keys(was).length && nx >= 0)
+    toastAction('Marked all ' + esc(code) + ' done', 'Undo', function () {
+      if (g !== loadGen || !assignData || !focus) return;
+      const P = tp();
+      for (const q in was) {
+        if (!colored[q]) continue;
+        colored[q] = was[q][0];
+        P[q] = was[q][1];
+      }
+      guideDirty = true;
+      // (no longer finished: finishing it again celebrates again)
+      celebrated = false;
+      normalizeTones();
+      renderGuide();
+      updateProgress();
+      goFocus(Math.min(at, focusOrd.length - 1), true, true);
+    });
 }
 function revealFromColour() {
   if (focus) exitFocus();
@@ -36735,33 +37556,42 @@ function markActive(done) {
     const m = assignData.assign[l];
     if (m.mkey === k && hlMatch(l)) {
       code = m.code;
-      if (!done && (colored[l] || _P[l])) was[l] = [colored[l], _P[l], heldSh[l] || null];
+      if (done ? !colored[l] : colored[l] || _P[l]) was[l] = [colored[l], _P[l], heldSh[l] || null];
       colored[l] = done ? 1 : 0;
       _P[l] = 0;
     }
   });
+  const wasC = celebrated;
   checkComplete();
   renderGuide();
   updateProgress();
   renderFocusMarkers();
-  if (!done && Object.keys(was).length)
-    toastAction('Cleared ' + esc(code), 'Undo', function () {
-      if (g !== loadGen || !assignData || comps.length !== K) return;
-      const P = tp();
-      for (const l in was) {
-        if (!assignData.assign[l] || colored[l]) continue;
-        colored[l] = was[l][0];
-        P[l] = was[l][1];
-        // (with the shading they were coloured with: 34-zones)
-        if (was[l][2]) heldSh[l] = was[l][2];
-      }
-      guideDirty = true;
-      normalizeTones();
-      renderGuide();
-      updateProgress();
-      renderFocusMarkers();
-      sayLive('Ticks back for ' + code);
-    });
+  // (marking all done says so with an Undo too, putting back which were really done: a mis-tap lost that, v299;
+  // not when that finished the page: "Page finished!" is said then, with nothing over it)
+  if (Object.keys(was).length && !(done && celebrated && !wasC))
+    toastAction(
+      (done ? 'Marked all ' : 'Cleared ') + esc(code) + (done ? ' coloured' : ''),
+      'Undo',
+      function () {
+        if (g !== loadGen || !assignData || comps.length !== K) return;
+        const P = tp();
+        for (const l in was) {
+          if (!assignData.assign[l] || (done ? !colored[l] : colored[l])) continue;
+          colored[l] = was[l][0];
+          P[l] = was[l][1];
+          // (with the shading they were coloured with: 34-zones)
+          if (was[l][2]) heldSh[l] = was[l][2];
+          else if (done) delete heldSh[l];
+        }
+        guideDirty = true;
+        if (done) celebrated = false;
+        normalizeTones();
+        renderGuide();
+        updateProgress();
+        renderFocusMarkers();
+        sayLive((done ? 'Ticks as they were for ' : 'Ticks back for ') + code);
+      },
+    );
 }
 // how many sections are ticked, or part-way done (a tone ticked): what Reset progress would clear
 function progressCount() {
@@ -40197,11 +41027,14 @@ function planRestore(e, noFilt) {
     }
     return m || (k ? catMarker(k) : null);
   };
-  // (sections with ink on the paper keep the markers they have now: holdOn, 30-palette-assign)
-  const keep = {};
+  // (sections with ink on the paper keep the markers they have now: holdOn, 30-palette-assign; but not one whose pin
+  // the step being undone made or changed: Change colour or Paint on it, which Undo puts back, v298)
+  const keep = {},
+    was = s.locks || {};
   if (assignData && colored)
     assignData.order.forEach(function (l) {
-      if (assignData.assign[l] && inkOn(l)) keep[l] = assignData.assign[l];
+      if (assignData.assign[l] && inkOn(l) && (locks[l] || '') === (was[l] || ''))
+        keep[l] = assignData.assign[l];
     });
   const assign = {},
     base = {};
@@ -41512,6 +42345,7 @@ function pdfZoneOverlay(g, x0, y0, f, ids) {
   ga.putImageData(im, 0, 0);
   g.imageSmoothingEnabled = true;
   g.drawImage(a, x0, y0, f.w, f.h);
+  freeCanvas(a);
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.font = '700 ' + PX(8) + 'px ' + LFONT;
@@ -42264,6 +43098,8 @@ function _buildPDF(dry) {
           );
         }
       }
+      // (a whole-picture canvas: handed back now, not when the browser gets round to it — iPad's limit, v298)
+      freeCanvas(art1);
     } else for (let i = 0; i < closeP; i++) pages.push(null);
   }
   _pdfCloseN = Object.keys(shown).length;
@@ -42447,7 +43283,11 @@ function _buildPDF(dry) {
     pvy = pvTop;
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'high';
-  if (!dry) g.drawImage(pdfArt(true, sh), pvx, pvy, f2.w, f2.h);
+  if (!dry) {
+    const art2 = pdfArt(true, sh);
+    g.drawImage(art2, pvx, pvy, f2.w, f2.h);
+    freeCanvas(art2);
+  }
   if (!dry && zIds.length) pdfZoneOverlay(g, pvx, pvy, f2, zIds);
   g.strokeStyle = 'rgba(0,0,0,.15)';
   g.lineWidth = PX(0.6);
@@ -43085,7 +43925,10 @@ function exportImage() {
     _b.disabled = true;
   }
   setTimeout(function () {
-    buildExportCanvas(false, !exCodes).toBlob(function (blob) {
+    const xc = buildExportCanvas(false, !exCodes);
+    xc.toBlob(function (blob) {
+      // (the picture is in the file now: its canvas handed back, v296)
+      freeCanvas(xc);
       exportImage.busy = 0;
       if (_b) {
         _b.textContent = _o;
@@ -43548,7 +44391,10 @@ function thumbFor(id) {
             var tg = t.getContext('2d');
             tg.imageSmoothingEnabled = true;
             tg.drawImage(c, 0, 0, tw, tth);
-            res(t.toDataURL('image/jpeg', 0.62));
+            freeCanvas(c);
+            var url = t.toDataURL('image/jpeg', 0.62);
+            freeCanvas(t);
+            res(url);
           } catch (e) {
             res('');
           }
@@ -43979,6 +44825,11 @@ function enter() {
     fitBar();
     planFit();
     if (sideBySide()) pinPicture();
+    // (the codes were on their own canvas, zoomed in, and leave() handed it back: drawn again, v296)
+    if (assignData && _rg && _rg.hiK && (!labHi || !labHi.width)) {
+      _rg = null;
+      renderGuide();
+    }
   });
 }
 function leave() {
@@ -43995,6 +44846,9 @@ function leave() {
     closeSwatchPop();
   }
   closeSheet();
+  // (the sharp codes' canvas, up to 12 million pixels when zoomed in, isn't kept while elsewhere: enter() draws it
+  // again on return, v296)
+  labHiOff();
   // (a save waiting its moment is made now: Home, which may be next, then shows the guide as it is, v289)
   if (autoT && !pickPending()) doAutosave(true);
   relWake();
@@ -44043,6 +44897,14 @@ function catMarker(k) {
     pass: false,
     fam: c.fam,
   };
+}
+function noInkOwned(k) {
+  try {
+    const i = keyIdx(k);
+    return i != null && NOINK.has(i) && isOwned(i);
+  } catch (_) {
+    return false;
+  }
 }
 function markerDry(k) {
   try {
@@ -44116,8 +44978,27 @@ function openDesignObj(d, id, resumed, quiet, col) {
         const v = data[j] | (data[j + 1] << 8) | (data[j + 2] << 16);
         raw[i] = v === 0 ? -1 : v - 1;
       }
-      const map = {};
+      // (lookups by what the file says: with no prototype, a key like "constructor" finds nothing, v298)
+      const map = Object.create(null);
       let next = 0;
+      // The guide's own section numbers, gaps and all (a gap: a section merged away), so what's saved is the picture
+      // as stored, and changes kept as the page went away (sfSaveDesignNow) still find it. v299: numbered afresh,
+      // which an edited guide's gaps changed, so those changes were thrown away on the next start. Afresh only for
+      // numbers that aren't a guide's (0, or far more than its sections).
+      let lo = Infinity,
+        hi = 0,
+        cnt = 0;
+      for (let i = 0; i < n; i++) {
+        const r = raw[i];
+        if (r < 0 || map[r] !== undefined) continue;
+        map[r] = 0;
+        cnt++;
+        if (r < lo) lo = r;
+        if (r > hi) hi = r;
+      }
+      const own = cnt > 0 && lo >= 1 && hi <= cnt * 2 + 64;
+      for (const r in map) map[r] = own ? +r : undefined;
+      if (own) next = hi;
       for (let i = 0; i < n; i++) {
         const r = raw[i];
         if (r < 0) {
@@ -44155,6 +45036,11 @@ function openDesignObj(d, id, resumed, quiet, col) {
       }
       for (let l = 1; l <= K; l++) {
         const c = comps[l];
+        // (a gap in the numbers: a section merged away, as in the guide when it was saved)
+        if (!c.area) {
+          c.merged = true;
+          continue;
+        }
         c.cx = sx[l] / c.area;
         c.cy = sy[l] / c.area;
         c.bpx = bp[l];
@@ -44179,8 +45065,9 @@ function openDesignObj(d, id, resumed, quiet, col) {
       colored = new Uint8Array(comps.length);
       heldSh = {};
       progAt = {
-        s: d.dates && d.dates.s > 0 ? +d.dates.s : 0,
-        e: d.dates && d.dates.e > 0 ? +d.dates.e : 0,
+        // (a time a Date can show: "started Invalid Date" otherwise, v299)
+        s: d.dates && +d.dates.s > 0 && +d.dates.s < 8.64e15 ? +d.dates.s : 0,
+        e: d.dates && +d.dates.e > 0 && +d.dates.e < 8.64e15 ? +d.dates.e : 0,
         // (u: coloured before the dates were kept, v284: when it was started isn't known, so none are given)
         u:
           !d.dates &&
@@ -44201,15 +45088,15 @@ function openDesignObj(d, id, resumed, quiet, col) {
       imgData = new ImageData(rgbOut, W, H);
       // the saved markers: a dry one, or one no longer in the collection, shows as the closest one owned in a section
       // still to colour (a done section keeps it; so does every section when nothing owned is close)
-      const byKey = {};
+      const byKey = Object.create(null);
       coll.forEach(function (m) {
         byKey[m.mkey] = m;
       });
       const assign = {},
         order = [],
         sa = d.assign && typeof d.assign === 'object' ? d.assign : {},
-        done = {},
-        cat = {},
+        done = Object.create(null),
+        cat = Object.create(null),
         dryK = {},
         goneK = {};
       if (Array.isArray(d.prog))
@@ -44218,6 +45105,9 @@ function openDesignObj(d, id, resumed, quiet, col) {
         });
       const pick = function (k) {
         if (byKey[k]) return { m: byKey[k] };
+        // (Copic 0, the Colorless Blender: not a colour to pick since v298, but a guide made before may have it;
+        // owned, it's yours as it was, not "no longer in your collection", v299)
+        if (!(k in cat) && noInkOwned(k)) cat[k] = { m: catMarker(k) };
         if (!(k in cat)) {
           const c = catMarker(k);
           cat[k] = { c: c, rep: c && c.lab && coll.length ? nearestInPool(c.lab, coll) : null };
@@ -44513,6 +45403,41 @@ function openDesign(id, cont) {
   const g = loadGen;
   stashDirty().then(function (ok) {
     if (!ok || g !== loadGen) return;
+    // Changes to this guide that couldn't be saved to the Library (storage full) wait in the Resume slot: newer than
+    // the Library's copy, they're what opens, as Resume would (v299: the older copy opened, and its next save threw
+    // the newer one away)
+    const m = slotNote(),
+      e =
+        api.listDesigns &&
+        api.listDesigns().find(function (x) {
+          return x.id === id;
+        });
+    if (m && m.savedId === id && m.dirty && !m.edits && !slotMine(_gTok, m) && e && +m.ts > (+e.ts || 0)) {
+      IDB.get('guide-autosave')
+        .then(function (d) {
+          if (g !== loadGen) return;
+          if (!d || d.savedId !== id) return openStored();
+          const pl = d.payload || {},
+            nAll = pl.assign && typeof pl.assign === 'object' ? Object.keys(pl.assign).length : 0,
+            nDone = Array.isArray(pl.prog) ? pl.prog.length : 0,
+            part = pl.tones && typeof pl.tones === 'object' ? Object.keys(pl.tones).length : 0;
+          _contNext = !!cont;
+          openDesignObj(
+            Object.assign({}, pl, { name: d.name, W: d.W, H: d.H }),
+            id,
+            true,
+            false,
+            (nDone > 0 || part > 0) && nDone < nAll,
+          );
+          note('Opened with the changes that couldn\u2019t be saved last time.');
+        })
+        .catch(openStored);
+      return;
+    }
+    openStored();
+  });
+  function openStored() {
+    if (g !== loadGen) return;
     Promise.resolve(api.loadDesign ? api.loadDesign(id) : null)
       .then(function (d) {
         if (g !== loadGen) return;
@@ -44527,7 +45452,7 @@ function openDesign(id, cont) {
       .catch(function (err) {
         note('Couldn’t open that guide: ' + ((err && err.message) || err));
       });
-  });
+  }
 }
 // a backup replaced the open guide's Library entry, or another tab saved it: the open copy is dropped for what is
 // stored (col: it was open in Colour along)
@@ -44715,6 +45640,10 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     get saveErr() {
       return _saveErr;
+    },
+    // (which sections touch: the builds' own idea of it)
+    get adj() {
+      return adj || (adj = buildAdj());
     },
     mergeCellsSnap: function (a, b) {
       snapshotSeg();
@@ -46483,6 +47412,995 @@ function closeSwatch() {
     swSync();
   });
 })();
+/* ===== Scan or type codes (Markers › Scan or type codes, v296) =====
+   Add markers by their codes: typed, pasted (a list from notes or a spreadsheet), or read off the caps with the
+   iPad's or iPhone's Scan Text (AutoFill › Scan Text in the box), which puts what the camera reads into the box as
+   you aim, one marker after another. The page can't see the camera; it reads what arrives in the box. What's read
+   collects in a list to check (each with its colour), and Add puts the new ones in the collection in one go.
+   Reading: only real codes count, with the usual mix-ups put right (BO15 → B015, 8G011 → BG011); the colour name,
+   when it comes along, confirms the code and picks the brand of a code both brands use; a cap read upside down
+   (E19 comes out as "6L3") is turned the right way round, and asked about when that could be two codes. */
+const SCAN_NUM = { O: '0', Q: '0', D: '0', I: '1', L: '1', T: '1', S: '5', B: '8', Z: '2', G: '6' };
+const SCAN_LET = { 0: 'O', 1: 'I', 8: 'B', 6: 'G', 9: 'G', 5: 'S', 2: 'Z' };
+// a character read upside down → what it is the right way up (some could be two things)
+const SCAN_FLIP = {
+  9: '6G',
+  6: '9',
+  L: '17',
+  Z: '2',
+  2: 'Z2',
+  E: '3',
+  3: 'E',
+  A: 'VY',
+  V: 'A',
+  人: 'Y',
+  '⅄': 'Y',
+  Λ: 'Y',
+  H: '4',
+  Ч: '4',
+  0: '0G',
+  O: '0G',
+  D: '0',
+  8: '8B',
+  日: 'B',
+  S: 'S5',
+  5: 'S5',
+  B: 'B8',
+  と: 'R',
+  ᴚ: 'R',
+  ɹ: 'R',
+  1: '1',
+  I: '1',
+  N: 'N',
+  X: 'X',
+  W: 'M',
+  M: 'W',
+  C: 'C',
+  G: '9',
+  レ: '1',
+  ﾚ: '1',
+  タ: 'R',
+  ク: 'R',
+};
+let _scanIx = null;
+const scanKey = (s) =>
+  String(s)
+    .normalize('NFKC')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+// codes as they are now; Ohuhu's old codes (on the caps of older sets) as well; the colour names
+function scanIndex() {
+  if (_scanIx) return _scanIx;
+  const byCode = new Map(),
+    byOld = new Map(),
+    names = [];
+  const put = (m, k, i) => {
+    if (!m.has(k)) m.set(k, []);
+    m.get(k).push(i);
+  };
+  COLORS.forEach(function (c, i) {
+    put(byCode, scanKey(c.code), i);
+    if (c.old && scanKey(c.old) !== scanKey(c.code)) put(byOld, scanKey(c.old), i);
+    const n = scanKey(c.name || '');
+    // (its words too: a short name, Fig or Tea, counts only as a word of its own)
+    if (n.length >= 3) names.push([n, i, scanWords(c.name || '')]);
+  });
+  return (_scanIx = { byCode: byCode, byOld: byOld, names: names });
+}
+const scanWords = (s) =>
+  String(s)
+    .normalize('NFKC')
+    .toUpperCase()
+    .split(/[^A-Z0-9]+/)
+    .filter(Boolean);
+// words on the caps and their labels that are never a code, nor the reason a number-only code (0, 120) isn't one
+const SCAN_NOISE =
+  /^(OHUHU|HONOLULU|COPIC|SKETCH|CIAO|CLASSIC|ALCOHOL|ART|ARTS|MARKERS?|BRUSH|FINE|CHISEL|DUAL|TIPS?|NO|\d{8,})$/;
+// whether a word is a code as read, now or an old one
+function scanIsCode(x) {
+  const ix = scanIndex();
+  return ix.byCode.has(x) || ix.byOld.has(x);
+}
+// a brand's name on the cap
+const SCAN_BRANDS = [
+  [/OHUHU|HONOLULU/, 'Ohuhu'],
+  [/COPIC|SKETCH|CIAO/, 'Copic'],
+];
+// the text as read first, then every split into a letter part (up to 3) and a number part with its mix-ups put right
+function scanVariants(t) {
+  const out = [t];
+  for (let k = 0; k <= Math.min(3, t.length - 1); k++) {
+    const pre = t.slice(0, k).replace(/[0-9]/g, (c) => SCAN_LET[c] || c),
+      num = t.slice(k).replace(/[A-Z]/g, (c) => SCAN_NUM[c] || c);
+    if (/^[A-Z]*$/.test(pre) && /^[0-9]+$/.test(num) && out.indexOf(pre + num) < 0) out.push(pre + num);
+  }
+  return out;
+}
+// the codes a word could be if it was read upside down (reversed, each character turned round)
+function scanFlipped(t, has) {
+  const cs = [...t].reverse();
+  if (cs.length < 2 || cs.length > 6) return [];
+  let combos = [''];
+  for (const c of cs) {
+    const o = SCAN_FLIP[c];
+    if (!o) return [];
+    const next = [];
+    for (const p of combos) for (const x of o) next.push(p + x);
+    combos = next;
+    if (combos.length > 512) return [];
+  }
+  return [...new Set(combos.filter(has))];
+}
+// characters only an upside-down read gives (a turned Y, B, R…)
+const SCAN_TURNED = '人⅄Λ日とᴚɹレタクﾚЧ';
+// the codes a word could be read upside down, with the longer codes whose first letter could have been lost
+// (YR213 read as R213): [] when it isn't worth trying (no digit and no turned character: "Sea" isn't Y35)
+function scanTurned(t, has) {
+  if (!/[0-9]/.test(t) && ![...t].some((c) => SCAN_TURNED.indexOf(c) >= 0)) return [];
+  const f = scanFlipped(t, has);
+  if (!f.length || f.length > 4) return [];
+  const ix = scanIndex(),
+    like = new Set();
+  f.forEach(function (x) {
+    ix.byCode.forEach(function (is, c) {
+      if (c.length <= x.length + 2 && c.slice(-x.length) === x && has(c)) like.add(c);
+    });
+  });
+  return [...like];
+}
+// What a piece of read text holds. brand: '' for either, or the brand chosen above the box.
+// → { codes: [{ code, opts: [colour indices], named, fixed, old, asked }], byName: index or -1, flips: [{ as, opts }],
+//     other: [markers read whose brand isn't the one chosen] }
+// A code with more than one option is asked about: asked 'name' (the code read and the colour name read disagree),
+// 'turned' (a misread put right, or another code upside down: "603"), 'old' (an old code that's now another
+// marker's), else two brands' (B04).
+function scanRead(text, brand) {
+  // a list (a paste): each line on its own, so one line's colour name can't settle another line's code
+  const lines = String(text || '')
+    .split(/[\r\n]+/)
+    .filter((l) => l.trim());
+  // (v298: every line counts — one with only a name, another brand's code or a code upside down too, as a question
+  // in the list — and the same code is one entry only when it's the same marker: B04 Copic on one line and B04 Ohuhu
+  // on another are two)
+  if (lines.length > 1) {
+    const out = { codes: [], byName: -1, flips: [], other: [], names: [], many: true },
+      seen = {};
+    lines.forEach(function (l) {
+      const r = scanRead(l, brand);
+      r.codes.forEach(function (c) {
+        const k = c.code + '|' + c.opts.join(',');
+        if (!seen[k]) out.codes.push(c);
+        seen[k] = 1;
+      });
+      out.flips.push(...r.flips);
+      if (r.byName >= 0 && out.names.indexOf(r.byName) < 0) out.names.push(r.byName);
+      r.other.forEach((i) => out.other.indexOf(i) < 0 && out.other.push(i));
+    });
+    return out;
+  }
+  const ix = scanIndex(),
+    chosen = (i) => !brand || COLORS[i].brand === brand,
+    has = (c) => ix.byCode.has(c) && ix.byCode.get(c).some(chosen);
+  // (full-width letters and digits as plain ones; a turned Y read as ¥)
+  const up = String(text || '')
+    .normalize('NFKC')
+    .toUpperCase()
+    .replace(/¥/g, 'Y');
+  // a brand's name on the cap: settles a code both brands use
+  const hints = SCAN_BRANDS.filter((b) => b[0].test(up)).map((b) => b[1]),
+    hint = hints.length === 1 ? hints[0] : '';
+  // words; one with a turned character is left to the upside-down reading below; a dash on its own is dropped
+  // ("C - 3")
+  const words = up.split(new RegExp('[^A-Z0-9' + SCAN_TURNED + '-]+')).filter((w) => w && !/^-+$/.test(w));
+  const toks = words.map((t) => (/[A-Z0-9]/.test(t) && !/[^A-Z0-9-]/.test(t) ? t.replace(/-/g, '') : null));
+  const tries = [];
+  toks.forEach(function (t, i) {
+    if (!t) return;
+    tries.push({ t: t });
+    // a code with its name run on ("B015CELADON")
+    const g = /^([A-Z]{1,3}[0-9]{1,4})[A-Z]{3,}$/.exec(t);
+    if (g) tries.push({ t: g[1] });
+    // a code read in two pieces ("YG 06"): only as it is, no misreads put right across the gap, and only when
+    // neither piece is a code of its own (v299: "E00 0", Copic E00 with the blender beside it, was read as E000, and a
+    // count after a code, "BG21 1", as BG211)
+    // ("C - 0" is still C-0: a first piece of letters only joins whatever follows)
+    const u = toks[i + 1];
+    if (u && (t + u).length <= 6 && (!/\d/.test(t) || (!scanIsCode(t) && !scanIsCode(u))))
+      tries.push({ t: t + u, joined: true });
+  });
+  // the colour names in the text, of either brand: its words in a row ("Cool Gray No.1"), or run together when the
+  // name is long enough not to turn up inside other words ("LightSalmon"); the longest (Honey Brown, not Honey too)
+  const tw = scanWords(up),
+    joined = tw.join('');
+  const inRow = (nw) => {
+    for (let k = 0; k + nw.length <= tw.length; k++) if (nw.every((w, j) => tw[k + j] === w)) return true;
+    return false;
+  };
+  const hit = ix.names.filter((n) => inRow(n[2]) || (n[0].length >= 6 && joined.indexOf(n[0]) >= 0));
+  const named = new Set(
+    hit
+      .filter((n) => !hit.some((m) => m[0].length > n[0].length && m[0].indexOf(n[0]) >= 0))
+      .map((n) => n[1]),
+  );
+  const namedOk = [...named].filter(chosen),
+    // (the words of the names read: beside codes, still caps in view)
+    nameWords = new Set([].concat(...[...named].map((i) => scanWords(COLORS[i].name || ''))));
+  const codes = [],
+    seen = {},
+    other = new Set();
+  for (const tr of tries) {
+    const t = tr.t;
+    if (t.length > 6) continue;
+    // another brand's code exactly as read, or with that brand's colour name: said so, not bent into a code of the
+    // brand chosen (Copic YG11 isn't Ohuhu Y611 misread; Copic B04 Tahitian Blue isn't Ohuhu B04)
+    if (brand) {
+      const ex = ix.byCode.get(t) || [];
+      const otherNamed = [...named].filter((i) => !chosen(i) && scanKey(COLORS[i].code) === t);
+      if ((ex.length && !ex.some(chosen)) || otherNamed.length) {
+        (otherNamed.length ? otherNamed : ex).forEach((i) => other.add(i));
+        continue;
+      }
+    }
+    // every reading of the word that is a real code, as now or an old Ohuhu code; misreads are put right only in a
+    // word that has a digit ("Egg" isn't E66, "Bog" isn't B06, "No" isn't N-0)
+    const cands = [];
+    for (const v of /\d/.test(t) && !tr.joined ? scanVariants(t) : [t]) {
+      const cur = ix.byCode.get(v) || [],
+        // (a code made of two words is a code as it is now, not an old one: "E17 0" isn't E170, E58's old code)
+        old = tr.joined ? [] : (ix.byOld.get(v) || []).filter((i) => cur.indexOf(i) < 0),
+        all = cur.concat(old);
+      if (!all.length) continue;
+      // a code that's only a number (0, 100, 120): only as read and on its own, or with its name
+      // (words on every cap don't count: "Copic 0", "Ohuhu 120" are the code, v299)
+      // (as read beside other codes only, two caps in view, "E43 120": asked about rather than dropped, v299)
+      let numAsk = false;
+      if (
+        /^\d+$/.test(v) &&
+        (v !== t || toks.filter((x) => x && !SCAN_NOISE.test(x)).length > 1) &&
+        !all.some((i) => named.has(i))
+      ) {
+        // (not a word of a name read: "Cool Gray No.0")
+        if (
+          v !== t ||
+          tr.joined ||
+          nameWords.has(t) ||
+          !toks.every((x) => !x || x === t || SCAN_NOISE.test(x) || scanIsCode(x) || nameWords.has(x))
+        )
+          continue;
+        numAsk = true;
+      }
+      const opts = all.filter(chosen);
+      if (!opts.length) continue;
+      const withName = opts.filter((i) => named.has(i));
+      cands.push({
+        code: v,
+        opts: withName.length ? withName : opts,
+        named: withName.length > 0,
+        fixed: v !== t,
+        old: (withName.length ? withName : opts).every((i) => old.indexOf(i) >= 0),
+        asked: '',
+        hadOld: old.length > 0 && cur.some(chosen),
+        numAsk: numAsk,
+      });
+    }
+    if (!cands.length) continue;
+    // the reading the colour name agrees with (YG11 read with "Dark Sand" is Ohuhu Y611), else the text as read
+    const c = cands.find((x) => x.named) || cands[0];
+    // the other brand's name on the cap: that brand's code, said so, not added as the brand chosen ("Ohuhu B04" with
+    // Copic chosen had added Copic B04, v299)
+    if (brand && hint && hint !== brand && !c.named) {
+      const hb = (ix.byCode.get(c.code) || []).filter((i) => COLORS[i].brand === hint);
+      if (hb.length) {
+        hb.forEach((i) => other.add(i));
+        continue;
+      }
+    }
+    if (seen[c.code]) continue;
+    seen[c.code] = 1;
+    c.t = t;
+    codes.push(c);
+  }
+  // A colour name read that another code in the text already accounts for settles nothing more: two caps in view,
+  // R46 and R48, with R46's "Old Rose" read, are R46 and R48, not a question about R48 (v298: they were)
+  const told = new Set();
+  codes.forEach((c) => c.named && c.opts.forEach((i) => told.add(i)));
+  const loose = namedOk.filter((i) => !told.has(i));
+  codes.forEach(function (c) {
+    if (c.numAsk) c.asked = 'num';
+    // (a brand's name on the cap, and a code that brand hasn't: "Ohuhu … 0" isn't simply Copic 0, v299)
+    else if (hint && !c.named && !c.opts.some((i) => COLORS[i].brand === hint)) c.asked = 'hint';
+    else if (!c.named && loose.length) {
+      // the colour name read says another marker (R4b with "Old Rose": R48 read, R46 named): ask between them
+      loose.forEach((i) => c.opts.indexOf(i) < 0 && c.opts.push(i));
+      c.asked = 'name';
+    } else if (!c.named && c.hadOld) {
+      // an old code that's now another marker's (R25 was Pale Blue Violet, now BV26; R25 is Tender Pink): ask
+      c.asked = 'old';
+    } else if (c.fixed && !c.named) {
+      // a reading put right that could also be another code read upside down: ask
+      const turned = scanTurned(c.t, has).filter((x) => x !== c.code);
+      if (turned.length) {
+        turned.forEach((x) =>
+          ix.byCode
+            .get(x)
+            .filter(chosen)
+            .forEach((i) => c.opts.indexOf(i) < 0 && c.opts.push(i)),
+        );
+        c.asked = 'turned';
+      }
+    }
+    // the brand's name on the cap settles a code both brands use
+    if (!c.asked && c.opts.length > 1 && hint) {
+      const h = c.opts.filter((i) => COLORS[i].brand === hint);
+      if (h.length === 1) c.opts = h;
+    }
+    delete c.hadOld;
+    delete c.numAsk;
+    delete c.t;
+  });
+  // (another brand's cap read with this brand's: asked about in the list, not dropped, v299)
+  if (codes.length) return { codes: codes, byName: -1, flips: [], other: [...other] };
+  // another brand's code (with that brand chosen): that, not a reading of something else
+  if (other.size) return { codes: [], byName: -1, flips: [], other: [...other] };
+  if (namedOk.length === 1) return { codes: [], byName: namedOk[0], flips: [], other: [] };
+  if (!namedOk.length && named.size === 1) return { codes: [], byName: -1, flips: [], other: [...named] };
+  // nothing the right way up: each word as if it was read upside down
+  const flips = [];
+  for (const t of words) {
+    // (a number-only code as read, 120, isn't BG21 upside down; nor is a word on every cap, v299)
+    if ((/^\d+$/.test(t) && ix.byCode.has(t)) || SCAN_NOISE.test(t)) continue;
+    const like = scanTurned(t, has);
+    if (like.length)
+      flips.push({ as: t, opts: [].concat(...like.map((x) => ix.byCode.get(x).filter(chosen))) });
+  }
+  return { codes: [], byName: -1, flips: flips, other: [] };
+}
+
+/* ---- the dialog ---- */
+// The list, newest first, kept while the app is open: { i: colour index, how: '' | 'upside' | 'name' | 'chosen' }, or a
+// question to answer before it counts: { ask: key, title, opts: [{ i, how }] } (two brands' B04, a code that could be
+// either way up). Questions wait in the list, so sweeping on from cap to cap loses none.
+const SCAN_BRAND_KEY = 'ms-scan-brand';
+let scanList = [],
+  scanBrand = '',
+  scanOpener = null,
+  scanAudio = null,
+  scanLast = { i: -1, at: 0 },
+  scanLastMany = { key: '', at: 0 },
+  // the box's wait for Scan Text's text to hold still, and the text last read from it
+  scanStill = null,
+  scanText = '';
+try {
+  scanBrand = localStorage.getItem(SCAN_BRAND_KEY) || '';
+} catch (_) {}
+function scanBeep(kind) {
+  try {
+    if (!scanAudio) scanAudio = new (window.AudioContext || window.webkitAudioContext)();
+    if (scanAudio.state === 'suspended') scanAudio.resume();
+    const tones =
+      kind === 'ok'
+        ? [
+            [880, 0],
+            [1320, 0.09],
+          ]
+        : kind === 'same'
+          ? [[520, 0]]
+          : [
+              [220, 0],
+              [196, 0.12],
+            ];
+    for (const [f, at] of tones) {
+      const o = scanAudio.createOscillator(),
+        g = scanAudio.createGain(),
+        t0 = scanAudio.currentTime + at;
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.2, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
+      o.connect(g).connect(scanAudio.destination);
+      o.start(t0);
+      o.stop(t0 + 0.14);
+    }
+  } catch (_) {}
+}
+const scanName = (i) => COLORS[i].code + ' ' + COLORS[i].name;
+const scanBrandOf = (i) => ' · ' + COLORS[i].brand;
+const scanNew = () => scanList.filter((e) => !e.ask && !state.owned.has(mkey(e.i)));
+const scanAsks = () => scanList.filter((e) => e.ask).length;
+// the card under the box: what the last read did. kind: ok, same, ask, none; choices: buttons to add with
+function scanSay(kind, big, small, i, choices) {
+  const el = $('scStat');
+  if (!el) return;
+  el.className = 'scstat ' + kind;
+  el.innerHTML =
+    '<span class="scmark" aria-hidden="true">' +
+    ({ ok: '✓', same: '=', ask: '?', none: '✕' }[kind] || '·') +
+    '</span>' +
+    (i >= 0 ? '<span class="scsw" style="background:' + COLORS[i].hex + '"></span>' : '') +
+    '<span class="sctext"><b></b><span></span></span>';
+  el.querySelector('b').textContent = big;
+  el.querySelector('.sctext span').textContent = small;
+  if (choices && choices.length) {
+    const row = document.createElement('span');
+    row.className = 'scpick';
+    choices.forEach(function (c) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = c.label;
+      b.addEventListener('click', function () {
+        scanTake(c.i, c.how, true);
+        scanFocusBox();
+      });
+      row.appendChild(b);
+    });
+    el.querySelector('.sctext').appendChild(row);
+  }
+}
+// into the list. loud: said and sounded even when it's the marker just read (a read from the camera holding still on
+// one cap comes again and again: only the first says so)
+function scanTake(i, how, loud, batch) {
+  const now = Date.now(),
+    again = !loud && scanLast.i === i && now - scanLast.at < 6000;
+  scanLast = { i: i, at: now };
+  if (scanList.some((e) => e.i === i)) {
+    if (!again && !batch) {
+      scanSay('same', scanName(i), 'Already in the list' + scanBrandOf(i), i);
+      scanBeep('same');
+    }
+    return false;
+  }
+  scanList.unshift({ i: i, how: how || '' });
+  if (batch) return true;
+  const mine = state.owned.has(mkey(i));
+  scanSay(
+    'ok',
+    scanName(i),
+    (mine ? 'Already in your collection' : 'Added to the list') +
+      scanBrandOf(i) +
+      (how === 'upside' ? ' · read upside down, check it' : how === 'old' ? ' · by its old code' : ''),
+    i,
+  );
+  scanBeep(mine ? 'same' : 'ok');
+  scanRender();
+  return true;
+}
+// a question for the list (once per key)
+function scanAsk(key, title, opts, batch, loud) {
+  // (asked already: the same question waiting)
+  if (scanList.some((e) => e.ask === key)) return false;
+  // (one of its answers was read a moment ago: the same cap, still in view with less of it read, isn't asked about.
+  // v299: once any answer was in the list it was never asked, so after Ohuhu B04, Copic B04's cap was lost)
+  if (!batch && !loud && Date.now() - scanLast.at < 2500 && opts.some((o) => o.i === scanLast.i)) {
+    // (still in view: the moment runs on while it's read again and again)
+    scanLast.at = Date.now();
+    return false;
+  }
+  scanList.unshift({ ask: key, title: title, opts: opts });
+  if (batch) return true;
+  scanSay('ask', title, 'Choose in the list below', -1);
+  scanBeep('same');
+  scanRender();
+  return true;
+}
+// A card said once while the camera holds still on what it's about (the same name, the same other brand's code):
+// again only after a while, or on Enter (v298: it buzzed and was said again every time the text settled)
+let scanLastCard = { key: '', at: 0 };
+function scanCardAgain(key, loud) {
+  const now = Date.now(),
+    again = !loud && scanLastCard.key === key && now - scanLastCard.at < 6000;
+  scanLastCard = { key: key, at: now };
+  return again;
+}
+// A piece of text from the box. loud: Enter or a paste, said even when nothing in it is a code. Returns how many
+// markers or questions it held (0: nothing to clear the box for).
+function scanHandle(text, loud) {
+  if (!String(text).trim()) return 0;
+  const r = scanRead(text, scanBrand);
+  let n = 0;
+  // several at once (a pasted list): into the list together, then said once
+  // (another brand's codes read along with codes of the brand chosen, or in a list, are questions in the list)
+  const others = r.many || r.codes.length ? r.other : [],
+    many = r.codes.length + (r.many ? r.flips.length + r.names.length : 0) + others.length > 1,
+    len0 = scanList.length;
+  let took = 0,
+    asked = 0;
+  const ask = function (key, title, opts) {
+    if (scanAsk(key, title, opts, many, loud)) asked++;
+    else if (!many && loud) {
+      // (said when it's typed: the question is waiting in the list already)
+      scanSay('same', title, 'Waiting in the list below', -1);
+      scanBeep('same');
+    }
+  };
+  r.codes.forEach(function (c) {
+    n++;
+    if (c.asked === 'num' || c.asked === 'hint') {
+      ask(
+        c.asked + ' ' + c.code,
+        c.asked === 'num'
+          ? c.code + ' was read beside other codes: is it this one?'
+          : c.code + ' isn\u2019t a code of the brand on the cap: is it this one?',
+        c.opts.map((i) => ({ i: i, how: 'chosen' })),
+      );
+      return;
+    }
+    if (c.opts.length === 1) {
+      if (scanTake(c.opts[0], c.old ? 'old' : c.named ? 'name' : '', loud, many)) took++;
+      return;
+    }
+    const codeOf = (i) => scanKey(COLORS[i].code),
+      others = [...new Set(c.opts.filter((i) => codeOf(i) !== c.code).map((i) => COLORS[i].code))];
+    if (c.asked === 'turned')
+      ask(
+        'turned ' + c.code,
+        c.code + ', or ' + others.join(' or ') + ' upside down?',
+        c.opts.map((i) => ({ i: i, how: codeOf(i) === c.code ? 'chosen' : 'upside' })),
+      );
+    else if (c.asked === 'name')
+      ask(
+        'name ' + c.code + ' ' + c.opts.join(','),
+        'The code and the name read don’t match: which one?',
+        c.opts.map((i) => ({ i: i, how: 'chosen' })),
+      );
+    else if (c.asked === 'old')
+      ask(
+        'old ' + c.code,
+        c.code + ': this one, or the old ' + c.code + '?',
+        c.opts.map((i) => ({ i: i, how: codeOf(i) === c.code ? 'chosen' : 'old' })),
+      );
+    else
+      ask(
+        'brands ' + c.code,
+        c.code + ': ' + c.opts.map((i) => COLORS[i].brand).join(' or ') + '?',
+        c.opts.map((i) => ({ i: i, how: 'chosen' })),
+      );
+  });
+  if (r.many) {
+    // a list's other lines: each a question in the list, to say yes to (nothing from them is added unasked)
+    r.flips.forEach(function (f) {
+      n++;
+      ask(
+        'upside ' + f.as,
+        f.opts.length === 1 ? 'Read upside down: is it this one?' : 'Upside down: which one?',
+        f.opts.map((i) => ({ i: i, how: 'upside' })),
+      );
+    });
+    r.names.forEach(function (i) {
+      n++;
+      ask('byname ' + i, 'Only its name was read: is it this one?', [{ i: i, how: 'name' }]);
+    });
+  }
+  others.forEach(function (i) {
+    n++;
+    ask('other ' + i, 'Another brand than the one chosen (' + scanBrand + '): add it?', [
+      { i: i, how: 'chosen' },
+    ]);
+  });
+  if (many) {
+    const same = n - took - asked,
+      key = r.codes
+        .map((c) => c.code + '|' + c.opts.join(','))
+        .sort()
+        .join(' '),
+      now = Date.now(),
+      again = !loud && !took && !asked && scanLastMany.key === key && now - scanLastMany.at < 6000;
+    scanLastMany = { key: key, at: now };
+    // (two caps held in view come again and again: said once)
+    if (!again && n) {
+      scanSay(
+        took ? 'ok' : asked ? 'ask' : 'same',
+        took
+          ? took + ' added to the list'
+          : asked
+            ? asked + ' to choose in the list'
+            : 'All already in the list',
+        [took && asked ? asked + ' to choose below' : '', same ? same + ' already in the list' : '']
+          .filter(Boolean)
+          .join(' · ') || 'Check them below',
+        -1,
+      );
+      scanBeep(took ? 'ok' : 'same');
+    }
+    if (scanList.length !== len0) scanRender();
+  }
+  if (n) return n;
+  if (r.byName >= 0) {
+    // (while aiming, the name can come before the code: said quietly, and only asked about on Enter)
+    const i = r.byName;
+    if (scanCardAgain('name ' + i, loud)) return 0;
+    scanSay('ask', 'Is it ' + scanName(i) + '?', 'Only its name was read' + scanBrandOf(i), i, [
+      { i: i, how: 'name', label: 'Add ' + COLORS[i].code },
+    ]);
+    if (loud) scanBeep('same');
+    return 0;
+  }
+  r.flips.forEach(function (f) {
+    n++;
+    if (f.opts.length === 1) scanTake(f.opts[0], 'upside', loud);
+    else
+      scanAsk(
+        'upside ' + f.as,
+        'Upside down: which one?',
+        f.opts.map((i) => ({ i: i, how: 'upside' })),
+      );
+  });
+  if (n) return n;
+  if (r.other.length) {
+    if (scanCardAgain('other ' + r.other.join(','), loud)) return 0;
+    const one = r.other.length === 1 ? r.other[0] : -1;
+    // (v298: "Ohuhu E19 Dried Sage", not "E19 is a Ohuhu code")
+    scanSay(
+      'ask',
+      one >= 0 ? COLORS[one].brand + ' ' + scanName(one) : COLORS[r.other[0]].code + ': another brand’s code',
+      'Another brand than the one chosen (' + scanBrand + ')',
+      one,
+      r.other.map((i) => ({ i: i, how: 'chosen', label: 'Add ' + COLORS[i].brand + ' ' + COLORS[i].code })),
+    );
+    scanBeep('none');
+    return 0;
+  }
+  if (loud) {
+    scanSay('none', 'No marker code found', '“' + String(text).trim().slice(0, 40) + '”', -1);
+    scanBeep('none');
+  }
+  return 0;
+}
+function scanRender() {
+  const list = $('scList');
+  if (!list) return;
+  const fresh = scanNew().length,
+    asks = scanAsks(),
+    marks = scanList.length - asks;
+  list.innerHTML = scanList
+    .map(function (e, n) {
+      const del =
+        '<button type="button" class="scdel" data-n="' +
+        n +
+        '" aria-label="Take ' +
+        esc(e.ask ? e.title : COLORS[e.i].code) +
+        ' off the list">' +
+        ic('x') +
+        '</button>';
+      if (e.ask)
+        return (
+          '<li class="scrow scask"><span class="scmark" aria-hidden="true">?</span><span class="scname"><b>' +
+          esc(e.title) +
+          '</b><span class="scpick">' +
+          e.opts
+            .map(
+              (o) =>
+                '<button type="button" class="scchoose" data-n="' +
+                n +
+                '" data-i="' +
+                o.i +
+                '" data-how="' +
+                o.how +
+                '"><span class="scsw" style="background:' +
+                COLORS[o.i].hex +
+                '"></span>' +
+                esc(scanName(o.i)) +
+                ' · ' +
+                esc(COLORS[o.i].brand) +
+                '</button>',
+            )
+            .join('') +
+          '</span></span>' +
+          del +
+          '</li>'
+        );
+      const c = COLORS[e.i],
+        mine = state.owned.has(mkey(e.i));
+      return (
+        '<li class="scrow' +
+        (mine ? ' mine' : '') +
+        '"><span class="scsw" style="background:' +
+        c.hex +
+        '"></span><span class="sccode">' +
+        esc(c.code) +
+        '</span><span class="scname">' +
+        esc(c.name) +
+        '<small>' +
+        esc(c.brand) +
+        (mine
+          ? ' · <i>already yours</i>'
+          : e.how === 'upside'
+            ? ' · <i>read upside down</i>'
+            : e.how === 'old'
+              ? ' · <i>by its old code</i>'
+              : '') +
+        '</small></span>' +
+        del +
+        '</li>'
+      );
+    })
+    .join('');
+  $('scEmpty').hidden = scanList.length > 0;
+  $('scCount').textContent = scanList.length
+    ? (marks ? marks + (marks === 1 ? ' marker' : ' markers') : '') +
+      (fresh < marks ? ' · ' + fresh + ' new' : '') +
+      (asks ? (marks ? ' · ' : '') + asks + ' to choose' : '')
+    : '';
+  const add = $('scAdd');
+  add.disabled = !fresh;
+  add.textContent = fresh
+    ? 'Add ' + fresh + ' to my collection'
+    : marks
+      ? 'All already in your collection'
+      : 'Add to my collection';
+  $('scClear').hidden = !scanList.length;
+}
+function scanFocusBox() {
+  const b = $('scBox');
+  if (b) b.focus({ preventScroll: true });
+}
+function scanBrandButtons() {
+  const seg = $('scBrand'),
+    brands = [...new Set(COLORS.map((c) => c.brand))];
+  if (scanBrand && brands.indexOf(scanBrand) < 0) scanBrand = '';
+  seg.innerHTML =
+    '<button type="button" data-b="">Either brand</button>' +
+    brands.map((b) => '<button type="button" data-b="' + esc(b) + '">' + esc(b) + '</button>').join('');
+  seg
+    .querySelectorAll('button')
+    .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.b === scanBrand)));
+}
+function openScan() {
+  const ov = $('scanOverlay');
+  if (!ov) return;
+  scanOpener = document.activeElement;
+  scanBrandButtons();
+  scanSay('', 'Ready', 'Each marker read shows here, with a sound', -1);
+  scanRender();
+  openDialog(ov);
+  // (straight into the box: what's done here is typing or Scan Text, which the box's own menu starts)
+  scanFocusBox();
+}
+function closeScan() {
+  const ov = $('scanOverlay');
+  if (!ov || !ov.classList.contains('on')) return;
+  closeDialog(ov);
+  clearTimeout(scanStill);
+  scanText = '';
+  const bx = $('scBox');
+  bx.value = '';
+  bx.dispatchEvent(new Event('scanreset'));
+  if (scanOpener && scanOpener.isConnected) scanOpener.focus({ preventScroll: true });
+  scanOpener = null;
+}
+function scanAdd() {
+  const fresh = scanNew();
+  if (!fresh.length) return;
+  const keys = fresh.map((e) => mkey(e.i)),
+    wishWas = state.wish.slice();
+  keys.forEach((k) => state.owned.add(k));
+  // (bought: off the To buy list, as its Bought button does)
+  state.wish = state.wish.filter((w) => keys.indexOf(w.k) < 0);
+  const offList = wishWas.length - state.wish.length;
+  if (
+    !keep(function () {
+      keys.forEach((k) => state.owned.delete(k));
+      state.wish = wishWas;
+    })
+  )
+    return;
+  // (questions not yet answered stay for next time; what was added, and what was already yours, go; Undo brings
+  // the list back too, to put right and add again)
+  const listWas = scanList.slice();
+  scanList = scanList.filter((e) => e.ask);
+  closeScan();
+  fullRender();
+  if (offList) wishChanged();
+  toastAction(
+    'Added ' +
+      keys.length +
+      ' marker' +
+      (keys.length === 1 ? '' : 's') +
+      ' to your collection' +
+      (offList ? ' (' + offList + ' off your To buy list)' : ''),
+    'Undo',
+    function () {
+      const wishNow = state.wish.slice();
+      scanList = scanList.filter((e) => listWas.indexOf(e) < 0).concat(listWas);
+      keys.forEach((k) => state.owned.delete(k));
+      // (back on the To buy list, unless put back there since)
+      wishWas.forEach(function (w) {
+        if (keys.indexOf(w.k) >= 0 && !state.wish.some((x) => x.k === w.k)) state.wish.push(w);
+      });
+      if (
+        keep(function () {
+          keys.forEach((k) => state.owned.add(k));
+          state.wish = wishNow;
+        })
+      ) {
+        fullRender();
+        wishChanged();
+      }
+    },
+  );
+}
+(function () {
+  const ov = $('scanOverlay'),
+    box = $('scBox'),
+    go = $('scanOpen');
+  if (!ov || !box || !go) return;
+  go.addEventListener('click', openScan);
+  $('scClose').addEventListener('click', closeScan);
+  $('scAdd').addEventListener('click', scanAdd);
+  $('scClear').addEventListener('click', function () {
+    // (a second tap, as Clear collection: one mis-tap lost a whole sweep, v299)
+    const cb = $('scClear');
+    if (cb.dataset.arm !== '1') {
+      cb.dataset.arm = '1';
+      cb.textContent = 'Tap again to clear';
+      clearTimeout(cb._t);
+      cb._t = setTimeout(function () {
+        cb.dataset.arm = '';
+        cb.textContent = 'Clear list';
+      }, 3000);
+      return;
+    }
+    clearTimeout(cb._t);
+    cb.dataset.arm = '';
+    cb.textContent = 'Clear list';
+    scanList = [];
+    scanLast = { i: -1, at: 0 };
+    scanSay('', 'Ready', 'List cleared', -1);
+    scanRender();
+    scanFocusBox();
+  });
+  ov.addEventListener('click', function (e) {
+    if (e.target === ov) return closeScan();
+    const t = e.target.closest ? e.target : null;
+    if (!t) return;
+    const d = t.closest('.scdel');
+    // (after either, back to the box: the button tapped is gone, and on an iPad the keyboard and Scan Text with it)
+    if (d) {
+      const e2 = scanList[+d.dataset.n];
+      scanList.splice(+d.dataset.n, 1);
+      if (e2 && e2.i === scanLast.i) scanLast = { i: -1, at: 0 };
+      scanRender();
+      scanFocusBox();
+      return;
+    }
+    const ch = t.closest('.scchoose');
+    if (ch) {
+      // the answer takes the question's place
+      scanList.splice(+ch.dataset.n, 1);
+      scanTake(+ch.dataset.i, ch.dataset.how, true);
+      scanRender();
+      scanFocusBox();
+      return;
+    }
+    const b = t.closest('#scBrand button');
+    if (b) {
+      scanBrand = b.dataset.b;
+      try {
+        localStorage.setItem(SCAN_BRAND_KEY, scanBrand);
+      } catch (_) {}
+      $('scBrand')
+        .querySelectorAll('button')
+        .forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      // a question between the two brands that the brand just chosen answers: answered
+      if (scanBrand) {
+        let any = false;
+        scanList = scanList
+          .map(function (e) {
+            if (!e.ask || e.ask.indexOf('brands ') !== 0) return e;
+            const o = e.opts.filter((x) => COLORS[x.i].brand === scanBrand);
+            if (o.length !== 1) return e;
+            any = true;
+            // (its answer already in the list: the question just goes, v299)
+            return scanList.some((y) => y.i === o[0].i) ? null : { i: o[0].i, how: 'chosen' };
+          })
+          .filter(Boolean);
+        if (any) scanRender();
+      }
+    }
+  });
+  // sound can only start from a tap
+  box.addEventListener('pointerdown', function () {
+    try {
+      if (!scanAudio) scanAudio = new (window.AudioContext || window.webkitAudioContext)();
+      scanAudio.resume();
+    } catch (_) {}
+  });
+  // Scan Text puts in what it reads while you aim, and swaps it as the camera moves: read once the text has held
+  // still for a moment, then the box clears for the next cap. Text with nothing in it to read is cleared too, a moment
+  // later, so it can't run on into the next cap's. Typing (a letter at a time) waits for Enter; a paste is read at once.
+  // (v298: the same text coming back is read once but still cleared — it was left in the box for good — and a
+  // letter added to the end of a word being composed is typing too: Android's keyboards send each letter that way, and
+  // a pause half-way through a code read what was there)
+  let was = '',
+    wasN = 0;
+  const ANDROID = /Android/i.test(navigator.userAgent || '');
+  const set = function (v) {
+    box.value = v;
+    was = v;
+  };
+  // (v299) pend: text read and about to be cleared; waiting: text arrived and waits to hold still
+  let pend = '',
+    waiting = false;
+  const settle = function () {
+    waiting = false;
+    const text = box.value;
+    if (text !== scanText) {
+      scanText = text;
+      wasN = scanHandle(text, false);
+    }
+    pend = text;
+    scanStill = setTimeout(
+      function () {
+        pend = '';
+        if (box.value === text) set('');
+        scanText = '';
+      },
+      wasN ? 250 : 1500,
+    );
+  };
+  box.addEventListener('scanreset', function () {
+    was = '';
+  });
+  box.addEventListener('input', function (e) {
+    clearTimeout(scanStill);
+    waiting = false;
+    const v = box.value,
+      before = was,
+      typed = e.inputType === 'insertText' && !e.isComposing && e.data && e.data.length === 1;
+    was = v;
+    // a letter typed while what Scan Text left is about to be cleared: that goes, the letter stays (v299: they ran
+    // together, "R014E4")
+    if (
+      pend &&
+      before === pend &&
+      typed &&
+      v.length === pend.length + 1 &&
+      v.slice(0, pend.length) === pend
+    ) {
+      set(v.slice(pend.length));
+      pend = '';
+      scanText = '';
+      return;
+    }
+    pend = '';
+    if (typed) return; // typing
+    if (e.inputType && e.inputType.indexOf('delete') === 0) return;
+    if (
+      ANDROID &&
+      (e.isComposing || e.inputType === 'insertCompositionText') &&
+      v.length === before.length + 1 &&
+      v.slice(0, before.length) === before
+    )
+      return; // typing, composed (Android only: what Scan Text shows as it reads could come the same way, v299)
+    waiting = true;
+    scanStill = setTimeout(settle, 600);
+  });
+  // a paste is read at once, as pasted (a one-line box would run a list's lines together)
+  box.addEventListener('paste', function (e) {
+    const text = e.clipboardData && e.clipboardData.getData('text');
+    if (!text) return;
+    e.preventDefault();
+    clearTimeout(scanStill);
+    // (what Scan Text had put in the box, waiting to hold still, is read first and cleared; v299: it was left there)
+    if (waiting && box.value.trim()) {
+      if (box.value !== scanText) scanHandle(box.value, false);
+      set('');
+    } else if (pend && box.value === pend) set('');
+    waiting = false;
+    pend = '';
+    scanText = '';
+    scanHandle(text, true);
+  });
+  box.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || e.isComposing) return;
+    e.preventDefault();
+    clearTimeout(scanStill);
+    // (read now; the same text arriving again afterwards is read again, a new cap)
+    scanText = '';
+    pend = '';
+    waiting = false;
+    if (scanHandle(box.value, true)) set('');
+  });
+})();
 </script>
 <!-- start-up, Match and Help each in a script of their own, so an error in one can't stop the others -->
 <script>mHome.addEventListener('click', () => setMode('home'));
@@ -46785,6 +48703,12 @@ document.addEventListener('keydown', function (e) {
     if (SF.pickPhoto) SF.pickPhoto();
   });
   $('wcLook').addEventListener('click', close);
+  // (v296) markers bought one at a time: Markers, with Scan or type codes open
+  $('wcScan').addEventListener('click', function () {
+    close();
+    if (state.mode !== 'collection') setMode('collection');
+    if (typeof openScan === 'function') openScan();
+  });
   if (!done) openDialog(ov);
 })();
 // The phone's text size can change while the app is in the background (iOS Dynamic Type, Android font size). The
@@ -47098,7 +49022,9 @@ function lossWords(n) {
 }
 // k: lost guides found on this device, offered in the same note (Add them back) when what was lost included guides
 function loadNoteHTML(n, k) {
-  const rs = !!n.all || n.markers === -1,
+  // (no copy, and the original no longer here either (the app was opened again): nothing to download)
+  const dl = !n.nocopy || typeof _lossRaw === 'string',
+    rs = !!n.all || n.markers === -1,
     only = !n.all && n.guides > 0 && !n.markers && !n.palettes,
     it = k === 1 ? 'it' : 'them',
     head = !k
@@ -47111,7 +49037,11 @@ function loadNoteHTML(n, k) {
     head +
     ' <span>' +
     (k ? 'Add ' + it + ' back to your Library. ' : '') +
-    'A copy of the original was kept.' +
+    (!n.nocopy
+      ? 'A copy of the original was kept.'
+      : typeof _lossRaw === 'string'
+        ? 'There wasn’t room to keep a copy of the original: download it now, before you close the app.'
+        : 'There wasn’t room to keep a copy of the original.') +
     (rs ? ' If you have a backup file, restore it.' : '') +
     '</span></div><div class="nrow">' +
     (k
@@ -47119,11 +49049,16 @@ function loadNoteHTML(n, k) {
         it +
         ' back</button>' +
         (rs ? '<button id="lnRestore" data-ln="restore">Restore a backup</button>' : '') +
-        '<button id="lnSave" data-ln="save">Download the original</button>'
+        (dl ? '<button id="lnSave" data-ln="save">Download the original</button>' : '')
       : rs
-        ? '<button class="nb1" id="lnRestore" data-ln="restore">Restore a backup</button><button id="lnSave" data-ln="save">Download the original</button>'
-        : '<button class="nb1" id="lnSave" data-ln="save">Download the original</button>') +
-    '<button id="lnOk" data-ln="ok">OK</button></div>' +
+        ? '<button class="nb1" id="lnRestore" data-ln="restore">Restore a backup</button>' +
+          (dl ? '<button id="lnSave" data-ln="save">Download the original</button>' : '')
+        : dl
+          ? '<button class="nb1" id="lnSave" data-ln="save">Download the original</button>'
+          : '') +
+    '<button ' +
+    (!k && !rs && !dl ? 'class="nb1" ' : '') +
+    'id="lnOk" data-ln="ok">OK</button></div>' +
     (rs
       ? '<input type="file" id="lnFile" class="fileinput" accept=".json,.txt,application/json,text/plain">'
       : '')
@@ -47230,6 +49165,8 @@ function renderHomeNotes() {
     try {
       raw = localStorage.getItem(STATE_BK);
     } catch (_) {}
+    // (this time's original first: one from an earlier note can still be in the copy)
+    if (typeof _lossRaw === 'string') raw = _lossRaw;
     if (typeof raw !== 'string' || !raw) {
       errCard(b.parentNode, 'The copy couldn’t be read on this device.');
       return;
@@ -47413,7 +49350,9 @@ function renderHomeNotes() {
     );
   }
   function render(hex) {
-    var _k = hex + '|' + state.owned.size;
+    // (what's owned and what's dry, not just how many: swapping one marker for another, or one marked dry in
+    // another tab, read again, v296)
+    var _k = hex + '|' + [...state.owned].join(',') + '|' + JSON.stringify(state.ink || {});
     if (_k === lastHex && res.innerHTML) return;
     lastHex = _k;
     var near = matchNearest(hexToLab(hex)),
@@ -47471,9 +49410,13 @@ function renderHomeNotes() {
       html =
         '<div class="mbest"><div class="mcmp"><span style="background:' +
         hex +
-        '"></span></div><div class="mbinfo"><div class="mbname mbnone">No markers in your collection yet</div><div class="mbbrand">Sampled ' +
+        '"></span></div><div class="mbinfo"><div class="mbname mbnone">' +
+        // (markers owned but every one marked dry is a different thing from none yet, v298)
+        (inkOwned() ? 'None of your markers to use' : 'No markers in your collection yet') +
+        '</div><div class="mbbrand">Sampled ' +
         hex.toUpperCase() +
-        ' · add your sets in Markers</div></div></div>';
+        (inkOwned() ? ' · mark some as not dry in Markers' : ' · add your sets in Markers') +
+        '</div></div></div>';
     }
 
     if (closer.length)
@@ -47485,6 +49428,26 @@ function renderHomeNotes() {
           })
           .join('');
     res.innerHTML = html;
+    sayBest(
+      owned.length
+        ? word(owned[0].d) + ' match: ' + COLORS[owned[0].i].code + ' ' + (COLORS[owned[0].i].name || '')
+        : res.textContent.replace(/\s+/g, ' ').trim(),
+    );
+  }
+  // The best match, said once the colour holds still: not on every frame of a drag or of the live camera (the result
+  // is redrawn each time, and was announced each time, v299)
+  var sayT = 0,
+    sayText = '';
+  function sayBest(t) {
+    sayText = t;
+    clearTimeout(sayT);
+    // (nothing while the camera is live: Freeze says it)
+    if (_camStream && !_camFrozen) return;
+    sayT = setTimeout(function () {
+      if (_camStream && !_camFrozen) return;
+      var el = document.getElementById('matchSay');
+      if (el) el.textContent = sayText;
+    }, 700);
   }
   function sample(hex) {
     hex = normHex(hex);
@@ -47533,6 +49496,7 @@ function renderHomeNotes() {
     if (v) sample(v);
   };
   function close() {
+    clearTimeout(sayT);
     closeDialog(ov);
     stopCam();
     setPaperMode(false);
@@ -47662,7 +49626,8 @@ function renderHomeNotes() {
         cv.height = Math.max(1, Math.round(hh * s));
         cx.imageSmoothingEnabled = true;
         cx.imageSmoothingQuality = 'high';
-        cx.drawImage(img, 0, 0, cv.width, cv.height);
+        // (in halving steps, so a colour read from it is the photo's, evened out, in Safari too, v296)
+        drawShrunk(cx, img, cv.width, cv.height);
         URL.revokeObjectURL(img.src);
         paperReset();
         var _pr = document.getElementById('matchPaperRow');
@@ -48090,6 +50055,7 @@ function renderHomeNotes() {
         _lv.innerHTML = '<i></i>' + (_camFrozen ? 'FROZEN' : 'LIVE');
       }
       if (_camFrozen) {
+        sayBest(sayText);
         try {
           video.pause();
         } catch (e) {}
@@ -48168,6 +50134,10 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'Scanning no longer glues a stray digit onto a code, heeds the brand printed on the cap, and reads Copic 0 and Ohuhu 120. Splitting a coloured section keeps its marker and zone, and Mark all coloured and a re-rolled palette colour can be undone.',
+  'Scanning reads every line of a pasted list, keeps two caps read together with one name, and says a held cap once. Ticks follow sections you merge or split, Focus mode tells a screen reader each section, and zones keep touching sections apart across their borders.',
+  'Scanning markers asks when the code and the colour name don’t agree, knows Ohuhu’s old codes, and waits in the list with any question so you can sweep on. The welcome offers it for markers bought one at a time. Palette’s Undo goes back to that palette’s scheme and size.',
+  'Markers › Scan or type codes: type or paste codes, or on an iPad or iPhone hold your markers’ caps up to Scan Text one after another. Each one beeps as it’s read; check the list, then add them all at once.',
   'A grainy or noisy photo is read the same way in every browser: it’s shrunk in steps, so the grain evens out instead of being taken for the edge of the page.',
   'Zoomed in, the marker codes on the picture stay sharp. In Safari, the back swipe closes what’s open first (a sheet, the Library, Focus mode, Colour along) before it leaves the app.',
   'Back (on Android, or in a computer’s browser) closes what’s open first: a sheet, the Library, Focus mode, Colour along. On a phone the Plan’s tabs show on the first screen, and Focus mode keeps its buttons off the picture. Colour along says “coloured”, the Library uses Home’s words, and Palette has a Saved palettes link.',

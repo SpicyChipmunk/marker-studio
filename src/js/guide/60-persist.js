@@ -394,6 +394,17 @@ function edDropResumed() {
     if (m && m.edits) clearAutosave();
   });
 }
+// Section edits kept for Resume (keepEdits, when the page was hidden) that are no longer wanted: this visit's own copy
+// in the slot goes, so Home doesn't offer it back and the next guide doesn't keep it in the Library (v298). Edits an
+// earlier visit left there are not this visit's to drop: the next save keeps them as "… (section edits)" (v299: they
+// went too, without a word)
+function edSlotDrop() {
+  const tok = _gTok;
+  slotOp(function () {
+    const m = slotNote();
+    if (m && m.edits && slotMine(tok, m)) clearAutosave();
+  });
+}
 // the answer: built (then saved like any change), discarded (the guide as built stays what is kept, and a copy of the
 // edits kept for Resume goes), or nothing opens
 function edDecide() {
@@ -409,19 +420,14 @@ function edDecide() {
     }
     if (a === 'discard') {
       _edDisc = true;
-      const id = curId;
       // (edits brought back by Resume: what's open is the edited guide, so nothing of it is saved; the Library keeps
       // the guide as it was built, and the copy in the slot goes)
       if (_edResumed) {
         edDropResumed();
         return true;
       }
-      // (the edits kept for Resume go too: this guide's in the Library, or this visit's own)
-      const tok = _gTok;
-      slotOp(function () {
-        const m = slotNote();
-        if (m && m.edits && ((id != null && m.savedId === id) || slotMine(tok, m))) clearAutosave();
-      });
+      // (the edits this visit kept for Resume go too)
+      edSlotDrop();
       return stashDirty();
     }
     return false;
@@ -1244,7 +1250,11 @@ function libMerge() {
         }
         if (!_mergeSaid) {
           _mergeSaid = true;
-          toast('This guide was also changed in another tab \u2014 merged', 5000);
+          // (what is merged, said plainly: only ticks and done tones come across; v299, it said "merged")
+          toast(
+            'This guide was also changed in another tab \u2014 its ticks are added here; this tab\u2019s colours and pins are kept.',
+            6500,
+          );
         }
       });
     });

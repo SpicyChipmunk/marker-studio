@@ -114,13 +114,15 @@ function chrome() {
     const si = keyIdx(state.seed),
       off = si != null && !inPool(si),
       why = off
-        ? state.pool
-          ? 'not in the selection'
-          : isOwned(si) && isDry(si)
-            ? 'dry'
-            : state.owned.size && !isOwned(si)
-              ? 'not owned'
-              : 'filtered out'
+        ? NOINK.has(si)
+          ? 'not a colour'
+          : state.pool
+            ? 'not in the selection'
+            : isOwned(si) && isDry(si)
+              ? 'dry'
+              : state.owned.size && !isOwned(si)
+                ? 'not owned'
+                : 'filtered out'
         : '';
     seedBtn.innerHTML =
       si != null
@@ -203,9 +205,11 @@ function chrome() {
   filterSum.textContent = filterSummary();
   poolBar.style.display = pooled ? 'flex' : 'none';
   if (pooled) {
-    poolN.textContent = state.pool.length;
+    // (the ones in play: a dry one in the selection isn't, v299)
+    var _pn = state.pool.filter(inPool).length;
+    poolN.textContent = _pn;
     var _pwd = document.getElementById('poolW');
-    if (_pwd) _pwd.textContent = state.pool.length === 1 ? 'colour' : 'colours';
+    if (_pwd) _pwd.textContent = _pn === 1 ? 'colour' : 'colours';
   }
   libRow.style.display = pal || rnd ? 'flex' : 'none';
   // (v289) the saved palettes and draws, a link at the top of Palette (they were only in ⋯ › Library)
@@ -273,21 +277,23 @@ function chrome() {
     const { t, u, left } = counts();
     fill.style.width = (t ? (u / t) * 100 : 0) + '%';
     statusEl.innerHTML = '<b>' + u + '</b> drawn, <b>' + left + '</b> left to draw';
-    const bad = pooled
-      ? left === 0
-        ? 'All drawn'
-        : null
-      : !af
-        ? 'Turn on a family'
-        : !at
-          ? 'Turn on a tone'
-          : !as
-            ? 'Turn on saturation'
-            : !ab
-              ? 'Turn on a brand'
-              : left === 0
-                ? 'All drawn'
-                : null;
+    // (nothing in play at all isn't "All drawn": a brand filtered out, every marker dry, v299)
+    const none = t === 0 ? 'No markers to draw' : 'All drawn',
+      bad = pooled
+        ? left === 0
+          ? none
+          : null
+        : !af
+          ? 'Turn on a family'
+          : !at
+            ? 'Turn on a tone'
+            : !as
+              ? 'Turn on saturation'
+              : !ab
+                ? 'Turn on a brand'
+                : left === 0
+                  ? none
+                  : null;
     drawBtn.disabled = !!bad || rolling;
     drawFocusBack();
     drawBtn.textContent = bad || 'Draw a marker';
@@ -664,7 +670,10 @@ function doReRollBand(k) {
   const cd = b.querySelector('.bcode');
   const finish = () => {
     if (state.palettes[state.palettes.length - 1] !== pal || !b.isConnected) return;
-    pal[k] = pick;
+    // (a new step in the history, so Undo brings the colour back, v299: it was gone for good)
+    const np = pal.slice();
+    np[k] = pick;
+    palPush(np, 24);
     save();
     const c = COLORS[pick];
     b.style.background = c.hex;
@@ -677,8 +686,8 @@ function doReRollBand(k) {
       void b.offsetWidth;
       b.classList.add('bin');
     }
-    const base = COLORS[pal[0]];
-    palReadout(shownPaletteName(pal), palSub(pal), pal);
+    const base = COLORS[np[0]];
+    palReadout(shownPaletteName(np), palSub(np), np);
     setAmb(base.hex);
     closeNote();
     buzz(24);
@@ -746,8 +755,7 @@ function doGenerate() {
   }
   retrigger(drawBtn, 'flash');
   const commit = () => {
-    state.palettes.push(pal);
-    if (state.palettes.length > 24) state.palettes.shift();
+    palPush(pal, 24);
     state.locked = state.locked.filter((i) => pal.includes(i));
     save();
     showPalette(pal, true);
@@ -794,11 +802,35 @@ function doGenerate() {
 function action() {
   state.mode === 'palette' ? doGenerate() : state.mode === 'random' ? doDraw() : 0;
 }
+// The palette history, with each palette's scheme beside it (state.palH)
+function palPush(pal, max) {
+  state.palettes.push(pal);
+  state.palH.push(state.harmony);
+  while (state.palettes.length > max) {
+    state.palettes.shift();
+    state.palH.shift();
+  }
+}
+function palPop() {
+  state.palettes.pop();
+  state.palH.pop();
+}
 function undo() {
   if (rolling) return;
   if (state.mode === 'palette') {
     if (!state.palettes.length) return;
-    state.palettes.pop();
+    palPop();
+    // (v296) back to the palette before with its own scheme and size, not under the ones chosen since; locks it
+    // doesn't have go
+    const top = state.palettes[state.palettes.length - 1],
+      h = state.palH[state.palH.length - 1];
+    if (top) {
+      const gen = (x) => x && x !== 'custom' && x !== 'photo';
+      if (gen(h) && gen(state.harmony) && h !== state.harmony) state.harmony = h;
+      const R = HARM_RANGE[state.harmony] || [2, 6];
+      if (state.harmony !== 'photo' && top.length >= R[0] && top.length <= R[1]) state.palSize = top.length;
+    }
+    state.locked = state.locked.filter((i) => top && top.includes(i));
   } else if (state.mode === 'random') {
     if (!state.drawn.length) return;
     state.drawn.shift();
@@ -814,8 +846,8 @@ function filterChanged() {
 function regenReplace() {
   const pal = genPalette(state.palSize, state.harmony, paletteOpts());
   if (pal) {
-    if (state.palettes.length) state.palettes.pop();
-    state.palettes.push(pal);
+    if (state.palettes.length) palPop();
+    palPush(pal, 24);
     state.locked = state.locked.filter((i) => pal.includes(i));
     save();
     showPalette(pal, true);

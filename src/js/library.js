@@ -914,7 +914,8 @@ function libRowChanged(id) {
     im = row.querySelector('img.sthumb'),
     t = safeThumb(s.thumb);
   if (m) m.innerHTML = libMeta(s);
-  if (nm && s.name) nm.textContent = s.name;
+  // (keeping the spacer that holds the first line clear of ⋯, v299)
+  if (nm && s.name) nm.innerHTML = '<span class="snfl" aria-hidden="true"></span>' + esc(s.name);
   if (im && t && !im.dataset.ts) {
     im.src = t;
     im.hidden = false;
@@ -992,13 +993,20 @@ function loadDraw(entry) {
   disarm();
   unownDisarm();
   state.mode = 'random';
-  const st = entry.st || {};
-  if (Array.isArray(st.brands)) state.brands = new Set(st.brands);
-  if (Array.isArray(st.tones)) state.tones = new Set(st.tones);
-  if (Array.isArray(st.sats)) state.sats = new Set(st.sats);
-  if (Array.isArray(st.excluded)) state.excluded = new Set(st.excluded);
-  setPool(st.pool ? st.pool.map(keyIdx).filter((i) => i != null) : null);
-  state.drawn = entry.keys.map(keyIdx).filter((i) => i != null);
+  const st = entry.st && typeof entry.st === 'object' ? entry.st : {},
+    // (only what the app knows: a draw from an edited backup could filter out every marker, or not open at all, v299)
+    known = (a, ok) => (Array.isArray(a) ? a.filter((x) => typeof x === 'string' && ok(x)) : null),
+    brands = known(st.brands, (x) => BRAND_DEFS.some((d) => d.k === x)),
+    tones = known(st.tones, (x) => TONE_DEFS.some((d) => d.k === x)),
+    sats = known(st.sats, (x) => SAT_DEFS.some((d) => d.k === x)),
+    exc = known(st.excluded, () => true),
+    pool = known(st.pool, () => true);
+  if (brands && brands.length) state.brands = new Set(brands);
+  if (tones) state.tones = new Set(tones);
+  if (sats) state.sats = new Set(sats);
+  if (exc) state.excluded = new Set(exc);
+  setPool(pool ? pool.map(keyIdx).filter((i) => i != null) : null);
+  state.drawn = (Array.isArray(entry.keys) ? entry.keys : []).map(keyIdx).filter((i) => i != null);
   save();
   fullRender();
 }

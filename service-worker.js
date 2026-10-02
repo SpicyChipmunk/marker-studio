@@ -1,4 +1,4 @@
-const CACHE='marker-studio-v295';
+const CACHE='marker-studio-v299';
 const CORE=['./','./index.html'];
 const OPTIONAL=['./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./apple-touch-icon.png','./src/assets/fonts/fraunces-latin-opsz-normal.woff2','./src/assets/fonts/hanken-grotesk-latin-wght-normal.woff2'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(CORE.map(function(u){return new Request(u,{cache:'reload'});})).then(function(){return Promise.allSettled(OPTIONAL.map(function(u){return c.add(u);}));});}).then(()=>self.skipWaiting()));});

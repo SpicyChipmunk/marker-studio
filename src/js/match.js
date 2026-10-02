@@ -104,7 +104,9 @@
     );
   }
   function render(hex) {
-    var _k = hex + '|' + state.owned.size;
+    // (what's owned and what's dry, not just how many: swapping one marker for another, or one marked dry in
+    // another tab, read again, v296)
+    var _k = hex + '|' + [...state.owned].join(',') + '|' + JSON.stringify(state.ink || {});
     if (_k === lastHex && res.innerHTML) return;
     lastHex = _k;
     var near = matchNearest(hexToLab(hex)),
@@ -162,9 +164,13 @@
       html =
         '<div class="mbest"><div class="mcmp"><span style="background:' +
         hex +
-        '"></span></div><div class="mbinfo"><div class="mbname mbnone">No markers in your collection yet</div><div class="mbbrand">Sampled ' +
+        '"></span></div><div class="mbinfo"><div class="mbname mbnone">' +
+        // (markers owned but every one marked dry is a different thing from none yet, v298)
+        (inkOwned() ? 'None of your markers to use' : 'No markers in your collection yet') +
+        '</div><div class="mbbrand">Sampled ' +
         hex.toUpperCase() +
-        ' · add your sets in Markers</div></div></div>';
+        (inkOwned() ? ' · mark some as not dry in Markers' : ' · add your sets in Markers') +
+        '</div></div></div>';
     }
 
     if (closer.length)
@@ -176,6 +182,26 @@
           })
           .join('');
     res.innerHTML = html;
+    sayBest(
+      owned.length
+        ? word(owned[0].d) + ' match: ' + COLORS[owned[0].i].code + ' ' + (COLORS[owned[0].i].name || '')
+        : res.textContent.replace(/\s+/g, ' ').trim(),
+    );
+  }
+  // The best match, said once the colour holds still: not on every frame of a drag or of the live camera (the result
+  // is redrawn each time, and was announced each time, v299)
+  var sayT = 0,
+    sayText = '';
+  function sayBest(t) {
+    sayText = t;
+    clearTimeout(sayT);
+    // (nothing while the camera is live: Freeze says it)
+    if (_camStream && !_camFrozen) return;
+    sayT = setTimeout(function () {
+      if (_camStream && !_camFrozen) return;
+      var el = document.getElementById('matchSay');
+      if (el) el.textContent = sayText;
+    }, 700);
   }
   function sample(hex) {
     hex = normHex(hex);
@@ -224,6 +250,7 @@
     if (v) sample(v);
   };
   function close() {
+    clearTimeout(sayT);
     closeDialog(ov);
     stopCam();
     setPaperMode(false);
@@ -353,7 +380,8 @@
         cv.height = Math.max(1, Math.round(hh * s));
         cx.imageSmoothingEnabled = true;
         cx.imageSmoothingQuality = 'high';
-        cx.drawImage(img, 0, 0, cv.width, cv.height);
+        // (in halving steps, so a colour read from it is the photo's, evened out, in Safari too, v296)
+        drawShrunk(cx, img, cv.width, cv.height);
         URL.revokeObjectURL(img.src);
         paperReset();
         var _pr = document.getElementById('matchPaperRow');
@@ -781,6 +809,7 @@
         _lv.innerHTML = '<i></i>' + (_camFrozen ? 'FROZEN' : 'LIVE');
       }
       if (_camFrozen) {
+        sayBest(sayText);
         try {
           video.pause();
         } catch (e) {}

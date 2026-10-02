@@ -42,6 +42,19 @@ function esc(v) {
 }
 // iPhone Safari counts canvas memory until garbage collection and refuses new canvases past a limit;
 // shrinking a finished helper canvas hands its memory back straight away
+// Copic 0, the Colorless Blender, lays down no colour: it can be owned (and is listed with your markers), but it's
+// never picked as a colour — not for a palette, a guide, a match or a photo's colours. (Its #ffffff made it the
+// "closest marker" to white paper, v298.)
+const NOINK = new Set();
+COLORS.forEach(function (c, i) {
+  if (/colou?rless blender/i.test(c.name || '')) NOINK.add(i);
+});
+// any marker owned that lays down colour (not only the Colorless Blender)
+function inkOwned() {
+  return COLORS.some(function (c, i) {
+    return !NOINK.has(i) && isOwned(i);
+  });
+}
 function freeCanvas(c) {
   try {
     if (c) {
@@ -401,6 +414,12 @@ function cleanSaved(e) {
   o.keys = Array.isArray(e.keys) ? e.keys.filter((k) => typeof k === 'string') : [];
   if ('thumb' in o) o.thumb = safeThumb(o.thumb);
   if ('done' in o && !(Number.isInteger(o.done) && o.done >= 0)) delete o.done;
+  // (when it was saved: a time, or none — a word there showed as "Invalid Date" in the Library, v298)
+  if ('ts' in o) {
+    const t = Number(o.ts);
+    if (Number.isFinite(t) && t > 0 && t < 8.64e15) o.ts = t;
+    else delete o.ts;
+  }
   return o;
 }
 const stage = $('stage'),

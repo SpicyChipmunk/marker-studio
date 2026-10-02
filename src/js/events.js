@@ -43,6 +43,7 @@ resetBtn.addEventListener('click', () => {
       if (state.harmony === 'custom') state.customPal = state.customPal.map(() => null);
       else {
         state.palettes = [];
+        state.palH = [];
         state.locked = [];
       }
     } else state.drawn = [];
@@ -422,7 +423,7 @@ harm.addEventListener('click', (e) => {
       c = document.createElement('canvas');
     c.width = Math.max(1, Math.round(_photoImg.width * s));
     c.height = Math.max(1, Math.round(_photoImg.height * s));
-    c.getContext('2d').drawImage(_photoImg, 0, 0, c.width, c.height);
+    drawShrunk(c.getContext('2d'), _photoImg, c.width, c.height);
     return c;
   }
   function useFix(fix) {
@@ -437,6 +438,7 @@ harm.addEventListener('click', (e) => {
         lightApplyData(fix, im.data);
         g.putImageData(im, 0, 0);
         thumb.src = c.toDataURL('image/jpeg', 0.9);
+        freeCanvas(c);
       } else if (thumbSrc != null) {
         thumb.src = thumbSrc;
         thumbSrc = null;
@@ -482,6 +484,9 @@ harm.addEventListener('click', (e) => {
         );
       } catch (err) {
         return;
+      } finally {
+        // (v296: Safari counts a canvas until it's collected)
+        freeCanvas(c);
       }
       if (r.bad) {
         setNote(r.note); // stays in the mode for another try
@@ -1258,6 +1263,11 @@ function presetListHTML() {
       add.textContent = n ? 'Add ' + n + ' set' + (n > 1 ? 's' : '') : 'Add markers';
     }
   }
+  function relist() {
+    if (!list) return;
+    list.innerHTML = presetListHTML();
+    upd();
+  }
   if (list) list.addEventListener('change', upd);
   if (add)
     add.addEventListener('click', function () {
@@ -1293,6 +1303,8 @@ function presetListHTML() {
         )
           return;
         fullRender();
+        // (the sets' "in your collection" marks follow, v298)
+        relist();
         if (prev.length)
           toastAction(
             'Cleared ' + prev.length + ' marker' + (prev.length === 1 ? '' : 's') + ' from your collection',
@@ -1303,6 +1315,7 @@ function presetListHTML() {
               });
               save();
               fullRender();
+              relist();
             },
           );
       } else {

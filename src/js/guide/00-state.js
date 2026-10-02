@@ -198,7 +198,7 @@ let locks = {}; // written by: 10-segment, 20-image-input, 30-palette-assign, 65
 let lockMode = false; // written by: 20-image-input, 30-palette-assign, 50-controls, 87-undo, 97-open
 
 // ---- colouring along and Focus ----
-let celebrated = false; // written by: 10-segment, 30-palette-assign, 82-colour-mode, 90-export, 97-open
+let celebrated = false; // written by: 10-segment, 30-palette-assign, 75-focus, 82-colour-mode, 90-export, 97-open
 // when the first section was ticked and when the page was finished (ms; 0: not yet), saved with the guide (v284)
 let progAt = { s: 0, e: 0 }; // written by: 10-segment, 82-colour-mode, 90-export, 97-open
 // Share › Save image with the codes on it (this session's choice)

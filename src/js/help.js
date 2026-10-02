@@ -5,6 +5,10 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'Scanning no longer glues a stray digit onto a code, heeds the brand printed on the cap, and reads Copic 0 and Ohuhu 120. Splitting a coloured section keeps its marker and zone, and Mark all coloured and a re-rolled palette colour can be undone.',
+  'Scanning reads every line of a pasted list, keeps two caps read together with one name, and says a held cap once. Ticks follow sections you merge or split, Focus mode tells a screen reader each section, and zones keep touching sections apart across their borders.',
+  'Scanning markers asks when the code and the colour name don’t agree, knows Ohuhu’s old codes, and waits in the list with any question so you can sweep on. The welcome offers it for markers bought one at a time. Palette’s Undo goes back to that palette’s scheme and size.',
+  'Markers › Scan or type codes: type or paste codes, or on an iPad or iPhone hold your markers’ caps up to Scan Text one after another. Each one beeps as it’s read; check the list, then add them all at once.',
   'A grainy or noisy photo is read the same way in every browser: it’s shrunk in steps, so the grain evens out instead of being taken for the edge of the page.',
   'Zoomed in, the marker codes on the picture stay sharp. In Safari, the back swipe closes what’s open first (a sheet, the Library, Focus mode, Colour along) before it leaves the app.',
   'Back (on Android, or in a computer’s browser) closes what’s open first: a sheet, the Library, Focus mode, Colour along. On a phone the Plan’s tabs show on the first screen, and Focus mode keeps its buttons off the picture. Colour along says “coloured”, the Library uses Home’s words, and Palette has a Saved palettes link.',

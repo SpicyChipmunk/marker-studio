@@ -543,6 +543,7 @@ function matchNearest(lab) {
     if (list.length > max) list.pop();
   };
   for (let i = 0; i < LAB.length; i++) {
+    if (NOINK.has(i)) continue;
     const o = { i: i, d: de2000(lab, LAB[i]) };
     if (isOwned(i) && !isDry(i)) keep(owned, 5, o);
     else keep(others, 3, o);

@@ -148,7 +148,10 @@ function thumbFor(id) {
             var tg = t.getContext('2d');
             tg.imageSmoothingEnabled = true;
             tg.drawImage(c, 0, 0, tw, tth);
-            res(t.toDataURL('image/jpeg', 0.62));
+            freeCanvas(c);
+            var url = t.toDataURL('image/jpeg', 0.62);
+            freeCanvas(t);
+            res(url);
           } catch (e) {
             res('');
           }
@@ -579,6 +582,11 @@ function enter() {
     fitBar();
     planFit();
     if (sideBySide()) pinPicture();
+    // (the codes were on their own canvas, zoomed in, and leave() handed it back: drawn again, v296)
+    if (assignData && _rg && _rg.hiK && (!labHi || !labHi.width)) {
+      _rg = null;
+      renderGuide();
+    }
   });
 }
 function leave() {
@@ -595,6 +603,9 @@ function leave() {
     closeSwatchPop();
   }
   closeSheet();
+  // (the sharp codes' canvas, up to 12 million pixels when zoomed in, isn't kept while elsewhere: enter() draws it
+  // again on return, v296)
+  labHiOff();
   // (a save waiting its moment is made now: Home, which may be next, then shows the guide as it is, v289)
   if (autoT && !pickPending()) doAutosave(true);
   relWake();

@@ -658,7 +658,8 @@ function buildBalance(cl, p) {
     const nbs = [];
     if (a && a[l])
       a[l].forEach(function (q) {
-        if (assign[q]) nbs.push(assign[q]);
+        const x = nbOf(assign, q);
+        if (x) nbs.push(x);
       });
     const notSame = function (m) {
         return !nbs.some(function (x) {
@@ -790,7 +791,8 @@ function buildNoRep(cl, pool) {
     const nbs = [];
     if (a && a[l])
       a[l].forEach(function (q) {
-        if (assign[q]) nbs.push(assign[q]);
+        const x = nbOf(assign, q);
+        if (x) nbs.push(x);
       });
     const notSame = function (m) {
         return !nbs.some(function (x) {

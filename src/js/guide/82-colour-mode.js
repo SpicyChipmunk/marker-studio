@@ -44,33 +44,42 @@ function markActive(done) {
     const m = assignData.assign[l];
     if (m.mkey === k && hlMatch(l)) {
       code = m.code;
-      if (!done && (colored[l] || _P[l])) was[l] = [colored[l], _P[l], heldSh[l] || null];
+      if (done ? !colored[l] : colored[l] || _P[l]) was[l] = [colored[l], _P[l], heldSh[l] || null];
       colored[l] = done ? 1 : 0;
       _P[l] = 0;
     }
   });
+  const wasC = celebrated;
   checkComplete();
   renderGuide();
   updateProgress();
   renderFocusMarkers();
-  if (!done && Object.keys(was).length)
-    toastAction('Cleared ' + esc(code), 'Undo', function () {
-      if (g !== loadGen || !assignData || comps.length !== K) return;
-      const P = tp();
-      for (const l in was) {
-        if (!assignData.assign[l] || colored[l]) continue;
-        colored[l] = was[l][0];
-        P[l] = was[l][1];
-        // (with the shading they were coloured with: 34-zones)
-        if (was[l][2]) heldSh[l] = was[l][2];
-      }
-      guideDirty = true;
-      normalizeTones();
-      renderGuide();
-      updateProgress();
-      renderFocusMarkers();
-      sayLive('Ticks back for ' + code);
-    });
+  // (marking all done says so with an Undo too, putting back which were really done: a mis-tap lost that, v299;
+  // not when that finished the page: "Page finished!" is said then, with nothing over it)
+  if (Object.keys(was).length && !(done && celebrated && !wasC))
+    toastAction(
+      (done ? 'Marked all ' : 'Cleared ') + esc(code) + (done ? ' coloured' : ''),
+      'Undo',
+      function () {
+        if (g !== loadGen || !assignData || comps.length !== K) return;
+        const P = tp();
+        for (const l in was) {
+          if (!assignData.assign[l] || (done ? !colored[l] : colored[l])) continue;
+          colored[l] = was[l][0];
+          P[l] = was[l][1];
+          // (with the shading they were coloured with: 34-zones)
+          if (was[l][2]) heldSh[l] = was[l][2];
+          else if (done) delete heldSh[l];
+        }
+        guideDirty = true;
+        if (done) celebrated = false;
+        normalizeTones();
+        renderGuide();
+        updateProgress();
+        renderFocusMarkers();
+        sayLive((done ? 'Ticks as they were for ' : 'Ticks back for ') + code);
+      },
+    );
 }
 // how many sections are ticked, or part-way done (a tone ticked): what Reset progress would clear
 function progressCount() {

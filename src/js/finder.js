@@ -8,7 +8,9 @@ function ensureCustomSize() {
 // a custom slot's marker is fine while it's in play: in the selection, or one of your markers that isn't dry (any
 // marker while the collection is empty); filters don't count, the slot was chosen by hand
 function customOk(i) {
-  return state.pool ? poolSet.has(i) : !state.owned.size || (isOwned(i) && !isDry(i));
+  return state.pool
+    ? poolSet.has(i) && !(isOwned(i) && isDry(i))
+    : !state.owned.size || (isOwned(i) && !isDry(i));
 }
 function showCustom() {
   ensureCustomSize();

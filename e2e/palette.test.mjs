@@ -423,7 +423,8 @@ test('Palette: the card’s title is the name the Library saves it under, with t
   await page.click('#mPalette'); await page.click('#draw'); await idle(page, 1200);
   const title = (await page.textContent('#readout .name')).trim();
   assert.notEqual(title, 'Complementary', 'not the scheme');
-  assert.match(await page.textContent('#readout .fam'), /^Complementary · Ohuhu .+ base$/);
+  // (no marker chosen to start from: just the scheme; "… base" is only for a chosen one, v296)
+  assert.equal((await page.textContent('#readout .fam')).trim(), 'Complementary');
   await page.click('#saveBtn'); await idle(page, 1500);
   assert.equal(await page.evaluate(() => state.saved[0].name), title, 'saved under the name shown');
   assert.equal((await page.textContent('#readout .name')).trim(), title, 'and the card still says it');

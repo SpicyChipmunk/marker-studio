@@ -86,6 +86,10 @@ function snapshotSeg() {
             y1: c.y1,
             merged: c.merged,
             page: c.page,
+            // (what it was merged into or split off from, since the last build: tickCarry)
+            into: c.into,
+            from: c.from,
+            at: c.at,
           }
         : null;
     }),
@@ -207,11 +211,106 @@ function mergeCells(a, b) {
   }
   if (A.y1 != null && A.y0 != null) A.h = A.y1 - A.y0;
   comps[b].merged = true;
+  // (what it went into, so the tick can follow it when the guide is built: tickCarry)
+  comps[b].into = a;
+  comps[b].at = _tickGen;
   comps[b].area = 0;
   adj = null;
   edgeDist = null;
   labelPts = null;
   texField = null;
+}
+// Building again after Edit sections: the ticks follow the paper. A part split off a coloured section is coloured;
+// sections merged together stay ticked only when every one of them was; a merged-away section's own tick (and its
+// part-done tones) go, so they're never counted. Then the trail is cleared for the next edit. (v298: a merged-away
+// tick used to stay, so a page could ask about losing colouring it didn't show, and the note said merged and split
+// sections start uncoloured when they didn't.)
+// (only what was done since the last build counts: an Undo back past a build brings back an older trail, already
+// carried, so each build has its own number)
+let _tickGen = 0;
+// the section l was split off since the last build (following a split of a split), or -1
+function splitFrom(l) {
+  let f = l;
+  for (let n = 0; comps[f] && comps[f].from != null && comps[f].at === _tickGen && n < comps.length; n++)
+    f = comps[f].from;
+  return f !== l ? f : -1;
+}
+// ticks (and part-done tones) a build took off because of a merge: Undo of that merge in Edit sections gives them back
+// (keepProgress), as the paper still has them (v299: they were lost). { label: { c, t, parts } }: parts, the sections
+// merged into it (it was the half-ticked merge's); none, a merged-away section's own
+let _tickHeld = {};
+function tickBack() {
+  const P = tonePart && tonePart._c === colored ? tonePart : null;
+  for (const k in _tickHeld) {
+    const l = +k,
+      c = comps[l],
+      h = _tickHeld[k];
+    if (!c || c.merged || l >= colored.length) continue;
+    if (
+      h.parts &&
+      !h.parts.some(function (q) {
+        return comps[q] && !comps[q].merged;
+      })
+    )
+      continue;
+    if (h.c) colored[l] = 1;
+    if (P && h.t) P[l] = h.t;
+    delete _tickHeld[k];
+  }
+}
+function tickCarry() {
+  const gen = _tickGen++;
+  if (!colored) return;
+  const P = tonePart && tonePart._c === colored ? tonePart : null,
+    root = function (l) {
+      for (
+        let n = 0;
+        comps[l] && comps[l].merged && comps[l].into != null && comps[l].at === gen && n < comps.length;
+        n++
+      )
+        l = comps[l].into;
+      return l;
+    },
+    src = function (l) {
+      for (let n = 0; comps[l] && comps[l].from != null && comps[l].at === gen && n < comps.length; n++)
+        l = comps[l].from;
+      return l;
+    };
+  // split-off parts first (one merged afterwards counts as the part of the paper it was), then the merges
+  for (let l = 1; l < comps.length; l++) {
+    const c = comps[l];
+    if (!c || c.at !== gen || c.from == null) continue;
+    const f = src(l);
+    if (f !== l) {
+      colored[l] = colored[f];
+      if (P) P[l] = P[f];
+    }
+  }
+  for (let l = 1; l < comps.length; l++) {
+    const c = comps[l];
+    if (!c || c.at !== gen || !c.merged) continue;
+    const r = root(l);
+    if (r !== l && !colored[l] && !(comps[r] && comps[r].merged)) {
+      if (colored[r] || (P && P[r])) {
+        const h = _tickHeld[r] || (_tickHeld[r] = { c: colored[r], t: P ? P[r] : 0, parts: [] });
+        h.parts.push(l);
+      }
+      colored[r] = 0;
+      if (P) P[r] = 0;
+    }
+  }
+  for (let l = 1; l < comps.length; l++) {
+    const c = comps[l];
+    if (!c) continue;
+    if (c.merged) {
+      if (colored[l] || (P && P[l])) _tickHeld[l] = { c: colored[l], t: P ? P[l] : 0 };
+      colored[l] = 0;
+      if (P) P[l] = 0;
+    }
+    delete c.into;
+    delete c.from;
+    delete c.at;
+  }
 }
 function relabelRegion(L) {
   const n = W * H;
@@ -287,7 +386,12 @@ function relabelRegion(L) {
     comps[lab].x1 = mxx;
     comps[lab].y1 = mxy;
     comps[lab].merged = false;
-    if (!first) made++;
+    if (!first) {
+      made++;
+      // (split off from L: its part of the paper is coloured if L was)
+      comps[lab].from = L;
+      comps[lab].at = _tickGen;
+    }
     first = false;
   }
   growArrays();

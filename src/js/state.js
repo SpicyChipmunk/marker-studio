@@ -1,11 +1,18 @@
 var _saveHold = false,
-  _lastRaw = null;
+  _lastRaw = null,
+  // (v296) the unreadable original, when there wasn't room to keep a copy of it: for Download the original, this time
+  _lossRaw = null;
 const _savedGone = new Set(),
   STATE_BK = 'ms-state-backup',
   LOAD_NOTE = 'ms-load-note';
 let state = load();
 if (!state.palSize) state.palSize = 4;
 if (!state.harmony) state.harmony = 'complementary';
+// (v296) each palette's scheme, in step with the palettes (an older save has none: not known)
+if (!Array.isArray(state.palH)) state.palH = [];
+while (state.palH.length < state.palettes.length) state.palH.unshift(null);
+if (state.palH.length > state.palettes.length)
+  state.palH = state.palH.slice(state.palH.length - state.palettes.length);
 {
   const R = HARM_RANGE[state.harmony] || [2, 6];
   state.palSize = Math.max(R[0], Math.min(R[1], state.palSize));
@@ -21,6 +28,11 @@ if (state.mode === 'finder') state.mode = 'collection';
 if (!['random', 'palette', 'collection', 'sections', 'home'].includes(state.mode)) state.mode = 'random';
 if (state.mode === 'sections') state.mode = 'home';
 if (!Array.isArray(state.pool)) state.pool = null;
+else {
+  // (known markers only, and never the Colorless Blender: no colour to draw, v299)
+  state.pool = state.pool.filter((i) => Number.isInteger(i) && i >= 0 && i < COLORS.length && !NOINK.has(i));
+  if (!state.pool.length) state.pool = null;
+}
 state.brands = Array.isArray(state.brands)
   ? new Set(state.brands.filter((b) => b === 'Ohuhu' || b === 'Copic'))
   : new Set(['Ohuhu', 'Copic']);
@@ -352,12 +364,20 @@ function parseState(raw) {
       drawn: f('drawn', arr, [], (a) => [...new Set(idxs('drawn', a))]),
       excluded: new Set(f('excluded', arr, [], (a) => a.filter((x) => typeof x === 'string'))),
       palettes: f('palettes', arr, [], (a) =>
-        a.filter((p) => {
+        a.filter((p, j) => {
           const ok = arr(p) && p.length > 0 && p.every(ix);
-          if (!ok) bad.push('palettes');
+          if (!ok) {
+            bad.push('palettes');
+            // (its scheme goes with it)
+            if (arr(v.palH) && v.palH.length === a.length) v.palH[j] = undefined;
+          }
           return ok;
         }),
       ),
+      // (v296) each palette's scheme, in step with palettes: Undo goes back to it
+      palH: arr(v.palH)
+        ? v.palH.filter((x) => x !== undefined).map((x) => (typeof x === 'string' && HARM[x] ? x : null))
+        : [],
       pool: f('pool', arr, null, (a) => {
         const o = idxs('pool', a);
         return o.length ? o : null;
@@ -386,10 +406,14 @@ function parseState(raw) {
     },
   };
 }
+// → whether the copy is there
 function keepStateCopy(raw) {
   try {
     if (localStorage.getItem(STATE_BK) !== raw) localStorage.setItem(STATE_BK, raw);
-  } catch (e) {}
+    return localStorage.getItem(STATE_BK) === raw;
+  } catch (e) {
+    return false;
+  }
 }
 function holdSaves() {
   _saveHold = true;
@@ -417,7 +441,10 @@ function noteLoss(p) {
     localStorage.setItem(
       LOAD_NOTE,
       JSON.stringify(
-        p.broken ? { all: true } : { markers: l.markers, palettes: l.palettes, guides: l.guides },
+        Object.assign(
+          p.broken ? { all: true } : { markers: l.markers, palettes: l.palettes, guides: l.guides },
+          p.nocopy ? { nocopy: true } : {},
+        ),
       ),
     );
   } catch (e) {}
@@ -432,8 +459,18 @@ function load() {
   if (typeof raw !== 'string') raw = null;
   if (raw != null) {
     const p = parseState(raw);
-    if (lossOf(p)) keepStateCopy(raw);
-    noteLoss(p);
+    // (no room for the copy, storage being full: the note says so, and the original is kept here for this time, so
+    // Download the original still works; it used to say a copy was kept, v296)
+    // (the note first, small, as having no copy: a copy that took the last of the room would leave none for the note,
+    // and the loss would go unsaid; once the copy is kept the note says so, v298)
+    if (lossOf(p)) {
+      p.nocopy = true;
+      noteLoss(p);
+      if (keepStateCopy(raw)) {
+        delete p.nocopy;
+        noteLoss(p);
+      } else _lossRaw = raw;
+    }
     if (p.broken) holdSaves();
     else {
       _lastRaw = raw;
@@ -515,6 +552,7 @@ function save(quiet) {
       drawn: state.drawn,
       excluded: [...state.excluded],
       palettes: state.palettes,
+      palH: state.palH,
       pool: state.pool,
       brands: [...state.brands],
       owned: [...state.owned],
@@ -608,6 +646,14 @@ function syncFromStorage() {
     }, 0);
   }
 }
+// (v296) a page brought back from the browser's back/forward cache, or a tab coming back into view, hears no storage
+// events from while it was away: it reads what's saved before its next save can write its old markers back
+addEventListener('pageshow', function (e) {
+  if (e.persisted) syncFromStorage();
+});
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') syncFromStorage();
+});
 addEventListener('storage', function (e) {
   if (e.key === KEY || e.key === null) syncFromStorage();
   else if (e.key === BK_KEY || e.key === BK_SIG || e.key === BK_SNOOZE) {
@@ -699,13 +745,19 @@ function avail(i) {
   return passes(i) && matchesSearch(i);
 }
 function setPool(a) {
+  // (never the Colorless Blender: no colour to draw, though "N colours" counted it, v299)
+  if (a) a = a.filter((i) => !NOINK.has(i));
   state.pool = a && a.length ? a.slice() : null;
   poolSet = state.pool ? new Set(state.pool) : null;
 }
 var _poolAll = false;
 function inPool(i) {
+  if (NOINK.has(i)) return false;
   if (_poolAll) return passes(i);
-  return state.pool ? poolSet.has(i) : (state.owned.size ? isOwned(i) && !isDry(i) : true) && passes(i);
+  // (a selection leaves out markers marked dry too, as everything else does: "Palette from these" let them in, v299)
+  return state.pool
+    ? poolSet.has(i) && !(isOwned(i) && isDry(i))
+    : (state.owned.size ? isOwned(i) && !isDry(i) : true) && passes(i);
 }
 function counts() {
   const dn = new Set(state.drawn);

@@ -736,6 +736,7 @@ function pdfZoneOverlay(g, x0, y0, f, ids) {
   ga.putImageData(im, 0, 0);
   g.imageSmoothingEnabled = true;
   g.drawImage(a, x0, y0, f.w, f.h);
+  freeCanvas(a);
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.font = '700 ' + PX(8) + 'px ' + LFONT;
@@ -1488,6 +1489,8 @@ function _buildPDF(dry) {
           );
         }
       }
+      // (a whole-picture canvas: handed back now, not when the browser gets round to it — iPad's limit, v298)
+      freeCanvas(art1);
     } else for (let i = 0; i < closeP; i++) pages.push(null);
   }
   _pdfCloseN = Object.keys(shown).length;
@@ -1671,7 +1674,11 @@ function _buildPDF(dry) {
     pvy = pvTop;
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'high';
-  if (!dry) g.drawImage(pdfArt(true, sh), pvx, pvy, f2.w, f2.h);
+  if (!dry) {
+    const art2 = pdfArt(true, sh);
+    g.drawImage(art2, pvx, pvy, f2.w, f2.h);
+    freeCanvas(art2);
+  }
   if (!dry && zIds.length) pdfZoneOverlay(g, pvx, pvy, f2, zIds);
   g.strokeStyle = 'rgba(0,0,0,.15)';
   g.lineWidth = PX(0.6);
@@ -2309,7 +2316,10 @@ function exportImage() {
     _b.disabled = true;
   }
   setTimeout(function () {
-    buildExportCanvas(false, !exCodes).toBlob(function (blob) {
+    const xc = buildExportCanvas(false, !exCodes);
+    xc.toBlob(function (blob) {
+      // (the picture is in the file now: its canvas handed back, v296)
+      freeCanvas(xc);
       exportImage.busy = 0;
       if (_b) {
         _b.textContent = _o;

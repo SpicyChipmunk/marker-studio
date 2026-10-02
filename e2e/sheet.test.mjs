@@ -258,6 +258,8 @@ test('side by side (844×390): the sheet covers the controls column, beside the 
   const { page, errors } = await open({ width: 844, height: 390 });
   const [l] = await shownSecs(page, 1);
   await changeColour(page, l);
+  // (GitHub's WebKit can still be sliding it in when idle: once it measured 7 px down)
+  await page.waitForFunction(() => Math.abs(document.getElementById('sfSheet').getBoundingClientRect().top) < 0.5, null, { timeout: 3000 }).catch(() => {});
   const sh = await rect(page, '#sfSheet'), v = await rect(page, '#sfView'), cv = await rect(page, '#sfCanvas'), ctl = await rect(page, '#sfCtl');
   assert.ok(await page.evaluate(() => document.getElementById('sfSheet').classList.contains('sfshside')));
   assert.ok(sh.left >= v.right - 0.5 && sh.left >= cv.right - 0.5, 'beside the picture, not over it');

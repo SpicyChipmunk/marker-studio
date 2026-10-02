@@ -475,10 +475,16 @@ function palMinDE(pal, fixed) {
     }
   return m;
 }
+// (v296) from a map made once: it's asked per marker in Library tiles, To buy and the swatch chart
+let _keyIdx = null;
 function keyIdx(key) {
   if (key == null) return null;
-  for (let i = 0; i < COLORS.length; i++) if (mkey(i) === key) return i;
-  return null;
+  if (!_keyIdx) {
+    _keyIdx = new Map();
+    for (let i = 0; i < COLORS.length; i++) _keyIdx.set(mkey(i), i);
+  }
+  const i = _keyIdx.get(key);
+  return i == null ? null : i;
 }
 function paletteOpts() {
   const opts = { locked: {} };
@@ -491,10 +497,17 @@ function paletteOpts() {
   } else if (cur && cur.length && state.locked.length) {
     opts.baseHue = LCH[cur[0]][2];
   }
-  if (cur)
+  if (cur) {
+    const out = [];
     cur.forEach((idx, pos) => {
-      if (state.locked.includes(idx) && opts.locked[pos] == null) opts.locked[pos] = idx;
+      if (!state.locked.includes(idx) || Object.values(opts.locked).includes(idx)) return;
+      if (pos < state.palSize && opts.locked[pos] == null) opts.locked[pos] = idx;
+      else out.push(idx);
     });
+    // (v296) a colour locked past the new size (8 → 4) moves into a free place instead of being dropped
+    for (let pos = state.palSize - 1; pos >= 0 && out.length; pos--)
+      if (opts.locked[pos] == null) opts.locked[pos] = out.shift();
+  }
   return opts;
 }
 // Palette › From photo: the photo, the colour each band came from, and the lighting correction from its paper (when
@@ -521,10 +534,12 @@ function swapPhotoBand(k) {
     }
   }
   if (best < 0) return;
-  pal[k] = best;
-  state.palettes[state.palettes.length - 1] = pal;
+  // (a new step in the history, so Undo brings the colour back, v299)
+  const np = pal.slice();
+  np[k] = best;
+  palPush(np, 20);
   save();
-  showPalette(pal, false);
+  showPalette(np, false);
 }
 function _pRgbLab(r, g, b) {
   return hexToLab(
@@ -585,12 +600,15 @@ function extractPhotoPalette(img, n, fix) {
   cv.width = w;
   cv.height = hh;
   var cx = cv.getContext('2d');
-  cx.drawImage(img, 0, 0, w, hh);
+  // (in halving steps: Safari's engine shrinks in one go without averaging, so the photo's colours came out noisy, v296)
+  drawShrunk(cx, img, w, hh);
   var d;
   try {
     d = cx.getImageData(0, 0, w, hh).data;
   } catch (e) {
     return null;
+  } finally {
+    freeCanvas(cv);
   }
   if (fix) lightApplyData(fix, d);
   var px = [],
@@ -731,8 +749,7 @@ function applyPhotoPalette() {
     );
     return;
   }
-  state.palettes.push(pal);
-  if (state.palettes.length > 20) state.palettes.shift();
+  palPush(pal, 20);
   state.locked = [];
   save();
   showPalette(pal, true);
@@ -742,7 +759,7 @@ function applyPhotoPalette() {
         ? state.palSize +
           ' colours pulled \u2192 ' +
           pal.length +
-          ' distinct markers' +
+          (pal.length === 1 ? ' distinct marker' : ' distinct markers') +
           (state.owned.size ? ' you own' : '')
         : pal.length + ' markers matched from your photo';
   chrome();
@@ -782,6 +799,27 @@ function genPalette(n, harmony, opts) {
     ctx.bh = LCH[bi][2];
   }
   const plan = genSlots(ctx, n);
+  // (v296) the chosen marker, locked first, takes the target that fits it (Analogous: the middle of the fan; Monochrome:
+  // the step nearest its lightness), not the first one (the fan's end, the lightest step): the other colours were
+  // lopsided round it, two thirds of them on one side
+  const si = opts.seedIdx;
+  if (si != null && locked[0] === si && n > 1 && (harmony === 'analogous' || harmony === 'mono')) {
+    let best = 0,
+      bd = Infinity;
+    plan.slots.forEach(function (sl, p) {
+      const dL = Math.abs(sl.L - LCH[si][0]),
+        d = harmony === 'mono' ? dL : hueDist(sl.h, LCH[si][2]) + dL / 10;
+      if (d < bd) {
+        bd = d;
+        best = p;
+      }
+    });
+    if (best) {
+      const t = plan.slots[0];
+      plan.slots[0] = plan.slots[best];
+      plan.slots[best] = t;
+    }
+  }
   let res = null;
   for (const lv of ctx.levels) {
     for (let t = 0; t < 3 && !res; t++) res = genTry(ctx, plan, locked, lv);
@@ -853,6 +891,45 @@ function rerollPick(pal, k, harmony) {
     ctx.greyFam = LCH[cur][1] < GREY_C || famGreyish(cur);
   }
   const slot = { h: LCH[cur][2], L: LCH[cur][0] };
+  // (a scheme of set hues: aimed at the scheme hue nearest this colour, around the base the other colours fit best —
+  // the one leaving the most room either side, half a degree at a time — not at this colour's own hue, so re-rolling
+  // one colour again and again doesn't walk it away from the scheme, v298; v299: the best fit, not one of the other
+  // colours' own hues, and leaving out colours you locked, as the scheme's note does)
+  const A = ANCH[harmony];
+  if (A && harmony !== 'mono') {
+    const clear = (i) => LCH[i][1] >= GREY_C,
+      lk = new Set(state.locked || []);
+    let hs = others.filter((i) => clear(i) && !lk.has(i)).map((i) => LCH[i][2]);
+    if (!hs.length) hs = others.filter(clear).map((i) => LCH[i][2]);
+    if (hs.length) {
+      let bb = 0,
+        be = Infinity;
+      for (let b = 0; b < 360; b += 0.5) {
+        let e = 0;
+        for (const h of hs) {
+          let d = Infinity;
+          for (const a of A) d = Math.min(d, hueDist(h, b + a));
+          if (d > e) e = d;
+          if (e >= be) break;
+        }
+        if (e < be) {
+          be = e;
+          bb = b;
+        }
+      }
+      let to = slot.h,
+        d = Infinity;
+      for (const a of A) {
+        const t = (bb + a) % 360,
+          dd = hueDist(slot.h, t);
+        if (dd < d) {
+          d = dd;
+          to = t;
+        }
+      }
+      slot.h = to;
+    }
+  }
   for (const lv of ctx.levels) {
     const st = genState(ctx, lv, others);
     st.avoid = cur;
@@ -866,14 +943,26 @@ function rerollPick(pal, k, harmony) {
 function palOnScheme(pal, harmony, fixed) {
   const hs = pal.filter((i) => !(fixed && fixed.has(i)) && LCH[i][1] >= GREY_C).map((i) => LCH[i][2]);
   if (hs.length < 2) return true;
+  // (v298: the bases tried are exactly the ones that can matter — where a colour sits at the edge of a hue's window —
+  // so no palette made on the scheme is called off it, and none just off it passes; before, whole degrees and half a
+  // degree of slack)
   const win = GEN_LEVELS[harmony === 'mono' || harmony === 'analogous' ? harmony : 'anchors'][0][1],
-    A = ANCH[harmony] || [0];
-  for (let b = 0; b < 360; b++) {
-    // Analogous: every hue within its spread, going round from this one
-    if (harmony === 'analogous') {
-      if (hs.every((h) => (h - b + 360) % 360 <= win)) return true;
-    } else if (hs.every((h) => A.some((a) => hueDist(h, b + a) <= win))) return true;
-  }
+    A = harmony === 'analogous' ? [0] : ANCH[harmony] || [0],
+    E = 1e-6,
+    fits =
+      harmony === 'analogous'
+        ? // Analogous: every hue within its spread, going round from the base
+          (b) => hs.every((h) => (((h - b) % 360) + 360) % 360 <= win + E)
+        : (b) => hs.every((h) => A.some((a) => hueDist(h, b + a) <= win + E)) && covers(b),
+    // (v299) a scheme of set hues uses as many of them as it has colours for: four blues aren't Complementary, though
+    // each sits on one of its hues. Colours you locked count here, on the hue they take.
+    all = pal.filter((i) => LCH[i][1] >= GREY_C).map((i) => LCH[i][2]),
+    need = Math.min(A.length, all.length),
+    covers = (b) => A.filter((a) => all.some((h) => hueDist(h, b + a) <= win + E)).length >= need;
+  for (const h of harmony === 'analogous' ? hs : all)
+    for (const a of A)
+      for (const b of harmony === 'analogous' ? [h, h - win] : [h - a - win, h - a + win, h - a])
+        if (fits(b)) return true;
   return false;
 }
 // the line under the Colours row when a generated palette isn't clean: two colours closer than its scheme wants, or
@@ -983,10 +1072,13 @@ function showPalette(pal, animate) {
 }
 // the line under a palette's name: its scheme, and the marker it was built from (a photo's is just "From photo")
 function palSub(pal) {
-  const base = COLORS[pal[0]];
-  return state.harmony === 'photo'
-    ? HARM.photo
-    : HARM[state.harmony] + ' \u00b7 ' + base.brand + ' ' + base.name + ' base';
+  if (state.harmony === 'photo') return HARM.photo;
+  // (v296) "… base" only for the marker you chose to build from (Start from): otherwise the first colour is just the
+  // lightest of the scheme's first hue, and the base the palette was built round isn't in it
+  const si = keyIdx(state.seed);
+  return si != null && pal[0] === si
+    ? HARM[state.harmony] + ' \u00b7 ' + COLORS[si].brand + ' ' + COLORS[si].name + ' base'
+    : HARM[state.harmony];
 }
 // a palette's name, its line, and its codes under them (each code kept whole; brand letters as on the bands, when
 // the palette or your collection mixes brands)

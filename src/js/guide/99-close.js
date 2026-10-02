@@ -168,6 +168,10 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get saveErr() {
       return _saveErr;
     },
+    // (which sections touch: the builds' own idea of it)
+    get adj() {
+      return adj || (adj = buildAdj());
+    },
     mergeCellsSnap: function (a, b) {
       snapshotSeg();
       const r = mergeCells(a, b);

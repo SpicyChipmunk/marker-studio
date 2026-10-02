@@ -298,6 +298,12 @@ document.addEventListener('keydown', function (e) {
     if (SF.pickPhoto) SF.pickPhoto();
   });
   $('wcLook').addEventListener('click', close);
+  // (v296) markers bought one at a time: Markers, with Scan or type codes open
+  $('wcScan').addEventListener('click', function () {
+    close();
+    if (state.mode !== 'collection') setMode('collection');
+    if (typeof openScan === 'function') openScan();
+  });
   if (!done) openDialog(ov);
 })();
 // The phone's text size can change while the app is in the background (iOS Dynamic Type, Android font size). The
@@ -611,7 +617,9 @@ function lossWords(n) {
 }
 // k: lost guides found on this device, offered in the same note (Add them back) when what was lost included guides
 function loadNoteHTML(n, k) {
-  const rs = !!n.all || n.markers === -1,
+  // (no copy, and the original no longer here either (the app was opened again): nothing to download)
+  const dl = !n.nocopy || typeof _lossRaw === 'string',
+    rs = !!n.all || n.markers === -1,
     only = !n.all && n.guides > 0 && !n.markers && !n.palettes,
     it = k === 1 ? 'it' : 'them',
     head = !k
@@ -624,7 +632,11 @@ function loadNoteHTML(n, k) {
     head +
     ' <span>' +
     (k ? 'Add ' + it + ' back to your Library. ' : '') +
-    'A copy of the original was kept.' +
+    (!n.nocopy
+      ? 'A copy of the original was kept.'
+      : typeof _lossRaw === 'string'
+        ? 'There wasn’t room to keep a copy of the original: download it now, before you close the app.'
+        : 'There wasn’t room to keep a copy of the original.') +
     (rs ? ' If you have a backup file, restore it.' : '') +
     '</span></div><div class="nrow">' +
     (k
@@ -632,11 +644,16 @@ function loadNoteHTML(n, k) {
         it +
         ' back</button>' +
         (rs ? '<button id="lnRestore" data-ln="restore">Restore a backup</button>' : '') +
-        '<button id="lnSave" data-ln="save">Download the original</button>'
+        (dl ? '<button id="lnSave" data-ln="save">Download the original</button>' : '')
       : rs
-        ? '<button class="nb1" id="lnRestore" data-ln="restore">Restore a backup</button><button id="lnSave" data-ln="save">Download the original</button>'
-        : '<button class="nb1" id="lnSave" data-ln="save">Download the original</button>') +
-    '<button id="lnOk" data-ln="ok">OK</button></div>' +
+        ? '<button class="nb1" id="lnRestore" data-ln="restore">Restore a backup</button>' +
+          (dl ? '<button id="lnSave" data-ln="save">Download the original</button>' : '')
+        : dl
+          ? '<button class="nb1" id="lnSave" data-ln="save">Download the original</button>'
+          : '') +
+    '<button ' +
+    (!k && !rs && !dl ? 'class="nb1" ' : '') +
+    'id="lnOk" data-ln="ok">OK</button></div>' +
     (rs
       ? '<input type="file" id="lnFile" class="fileinput" accept=".json,.txt,application/json,text/plain">'
       : '')
@@ -743,6 +760,8 @@ function renderHomeNotes() {
     try {
       raw = localStorage.getItem(STATE_BK);
     } catch (_) {}
+    // (this time's original first: one from an earlier note can still be in the copy)
+    if (typeof _lossRaw === 'string') raw = _lossRaw;
     if (typeof raw !== 'string' || !raw) {
       errCard(b.parentNode, 'The copy couldn’t be read on this device.');
       return;

@@ -330,6 +330,14 @@ function zoneWith(id, fn) {
 // them together with the other zones' sections as they were. The zone being edited is built last, so what the
 // controls show about the last build (the pool's size, the Photo pattern's figures) is about it. Without zones it's
 // build(all sections). False when a build couldn't be made (no markers for it): that zone keeps what it had.
+// Sections of other zones that touch the zone being built, with the markers they have (set by zoneRun): the builds
+// that keep touching sections apart (Balance, No repeats, Random's clearly different) keep clear of them too, so a
+// zone's border is no place for two touching sections to share a marker. A zone being built later in the same run
+// isn't counted (its markers are about to change; it keeps clear of this one instead). v298
+let zoneNb = null;
+function nbOf(assign, q) {
+  return assign[q] || (zoneNb && zoneNb[q]) || null;
+}
 function zoneRun(ids, build) {
   if (!zones.length) return build(countedList()) !== false;
   const prev = assignData,
@@ -349,7 +357,20 @@ function zoneRun(ids, build) {
         return;
       }
       assignData = prev;
-      if (build(cl) === false) {
+      zoneNb = {};
+      all.forEach(function (l) {
+        const z = zoneOf(l);
+        if (z === id) return;
+        const src = parts[z] ? parts[z].assign : ids.indexOf(z) >= 0 ? null : prev && prev.assign;
+        if (src && src[l]) zoneNb[l] = src[l];
+      });
+      let r;
+      try {
+        r = build(cl);
+      } finally {
+        zoneNb = null;
+      }
+      if (r === false) {
         ok = false;
         return;
       }
@@ -893,6 +914,12 @@ function zoneAfterEdit(cl, prev) {
   const a = adj || (adj = buildAdj()),
     moves = {};
   fresh.forEach(function (l) {
+    // (a part split off a section: in that section's zone, whatever surrounds it, v299)
+    const f = splitFrom(l);
+    if (f >= 0) {
+      if (zoneOf(f)) moves[l] = zoneOf(f);
+      return;
+    }
     const n = {};
     let best = 0,
       bn = 0;

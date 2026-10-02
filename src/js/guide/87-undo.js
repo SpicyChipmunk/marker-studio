@@ -540,11 +540,14 @@ function planRestore(e, noFilt) {
     }
     return m || (k ? catMarker(k) : null);
   };
-  // (sections with ink on the paper keep the markers they have now: holdOn, 30-palette-assign)
-  const keep = {};
+  // (sections with ink on the paper keep the markers they have now: holdOn, 30-palette-assign; but not one whose pin
+  // the step being undone made or changed: Change colour or Paint on it, which Undo puts back, v298)
+  const keep = {},
+    was = s.locks || {};
   if (assignData && colored)
     assignData.order.forEach(function (l) {
-      if (assignData.assign[l] && inkOn(l)) keep[l] = assignData.assign[l];
+      if (assignData.assign[l] && inkOn(l) && (locks[l] || '') === (was[l] || ''))
+        keep[l] = assignData.assign[l];
     });
   const assign = {},
     base = {};

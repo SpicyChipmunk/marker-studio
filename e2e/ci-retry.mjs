@@ -48,7 +48,7 @@ for (const f of whole) {
 }
 
 // still failing: a retried test that didn't pass, or a whole file with a failure or no results again
-const again = existsSync(out) ? readFileSync(out, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
+const again = existsSync(out) ? readFileSync(out, 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean) : [];
 const passed = new Set(again.filter((r) => r.ev === 'pass').map((r) => r.file + '\u0000' + r.name));
 let still = 0;
 for (const [f, names] of byName) for (const n of names) if (!passed.has(f + '\u0000' + n)) still++;

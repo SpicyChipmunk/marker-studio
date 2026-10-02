@@ -495,9 +495,25 @@ function photoPick(targets0, pool0, N, quick) {
   if (!targets0.length || !pool0.length) return { chosen: [], pick: [] };
   const pr = _photoPrep(targets0, pool0);
   if (!pr.pool.length) {
-    const nn = targets0.map(function (t) {
+    // (no marker is near any of the colours: the closest ones, but still no more than N of them — the ones the most
+    // of the picture would take — each colour then taking the closest of those, v298)
+    let nn = targets0.map(function (t) {
       return nearestInPool(t.lab, pool0);
     });
+    const wt = new Map();
+    nn.forEach(function (m, i) {
+      if (m) wt.set(m, (wt.get(m) || 0) + (targets0[i].w || 0));
+    });
+    if (N > 0 && wt.size > N) {
+      const keep = [...wt.keys()]
+        .sort(function (a, b) {
+          return wt.get(b) - wt.get(a);
+        })
+        .slice(0, N);
+      nn = targets0.map(function (t) {
+        return nearestInPool(t.lab, keep);
+      });
+    }
     return { chosen: [...new Set(nn)], pick: nn };
   }
   const targets = pr.targets,
@@ -1059,7 +1075,10 @@ function loadPhotoRef(file) {
     if (!here()) return;
     lens.then(function (f35) {
       if (!here()) return;
-      const ref = photoFromImage(pgRefFlat(img, f35) || img);
+      const flat = pgRefFlat(img, f35),
+        ref = photoFromImage(flat || img);
+      // (the flattened page was only needed to read it from, v296)
+      if (flat) freeCanvas(flat);
       if (!ref) {
         note('Couldn’t read that photo.');
         return;

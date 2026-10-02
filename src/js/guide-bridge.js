@@ -3,7 +3,7 @@ function sfCollection() {
   const demo = state.owned.size === 0,
     out = [];
   for (let i = 0; i < COLORS.length; i++) {
-    if (!demo && (!isOwned(i) || isDry(i))) continue;
+    if (NOINK.has(i) || (!demo && (!isOwned(i) || isDry(i)))) continue;
     const c = COLORS[i];
     out.push({
       mkey: mkey(i),
@@ -319,7 +319,10 @@ function guideMeta(d, id) {
 // d.quiet: the caller tells the user about a failure (no storage-full toast from here)
 function sfSaveDesign(d) {
   const id = d.id || Date.now(),
-    had = state.saved.some((s) => s.id === id);
+    had = state.saved.some((s) => s.id === id),
+    // (the copies kept aside so far: this save, made from the guide as it is now, makes those unneeded, not one
+    // kept aside while it was being written, v298)
+    leaveAt = _leaveN;
   if (d.mustExist && !had) return Promise.resolve(null);
   if (d.id && !had) libUnpend(id);
   return (
@@ -354,7 +357,7 @@ function sfSaveDesign(d) {
           return null;
         }
         askPersist();
-        leaveDrop(id);
+        leaveDrop(id, leaveAt);
         return id;
       });
     })
@@ -369,10 +372,13 @@ function sfSaveDesign(d) {
 // row, if nothing saved the guide since (the row as it was then: base) and the pictures are still the ones stored.
 // A save of the guide that lands meanwhile makes them unneeded. Only for a guide already in the Library.
 const LEAVE_KEY = 'ms-guide-leave';
-function leaveDrop(id) {
+// (each copy kept aside is numbered: a save that began before it was made doesn't make it unneeded, v298)
+let _leaveN = 0;
+function leaveDrop(id, upTo) {
   try {
     const j = JSON.parse(localStorage.getItem(LEAVE_KEY) || 'null');
-    if (j && (id == null || j.id === id)) localStorage.removeItem(LEAVE_KEY);
+    if (j && (id == null || j.id === id) && (upTo == null || !(j.seq > upTo)))
+      localStorage.removeItem(LEAVE_KEY);
   } catch (_) {}
 }
 function leaveHash(s) {
@@ -425,6 +431,7 @@ function sfSaveDesignNow(d) {
       LEAVE_KEY,
       JSON.stringify({
         id: d.id,
+        seq: ++_leaveN,
         base: +e.ts || 0,
         name: d.name,
         W: d.W,
@@ -1036,7 +1043,8 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done) {
         done(any || ok || x.dup || x.bad || x.full ? got(ok, x) : null);
         return;
       }
-      if (x.openRep) msg += ' \u201c' + x.openRep + '\u201d was replaced by the backup\u2019s newer copy.';
+      if (x.openRep)
+        msg += ' \u201c' + esc(x.openRep) + '\u201d was replaced by the backup\u2019s newer copy.';
       msg += copies
         ? ' ' +
           copies +

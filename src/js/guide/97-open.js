@@ -37,6 +37,14 @@ function catMarker(k) {
     fam: c.fam,
   };
 }
+function noInkOwned(k) {
+  try {
+    const i = keyIdx(k);
+    return i != null && NOINK.has(i) && isOwned(i);
+  } catch (_) {
+    return false;
+  }
+}
 function markerDry(k) {
   try {
     const i = keyIdx(k);
@@ -109,8 +117,27 @@ function openDesignObj(d, id, resumed, quiet, col) {
         const v = data[j] | (data[j + 1] << 8) | (data[j + 2] << 16);
         raw[i] = v === 0 ? -1 : v - 1;
       }
-      const map = {};
+      // (lookups by what the file says: with no prototype, a key like "constructor" finds nothing, v298)
+      const map = Object.create(null);
       let next = 0;
+      // The guide's own section numbers, gaps and all (a gap: a section merged away), so what's saved is the picture
+      // as stored, and changes kept as the page went away (sfSaveDesignNow) still find it. v299: numbered afresh,
+      // which an edited guide's gaps changed, so those changes were thrown away on the next start. Afresh only for
+      // numbers that aren't a guide's (0, or far more than its sections).
+      let lo = Infinity,
+        hi = 0,
+        cnt = 0;
+      for (let i = 0; i < n; i++) {
+        const r = raw[i];
+        if (r < 0 || map[r] !== undefined) continue;
+        map[r] = 0;
+        cnt++;
+        if (r < lo) lo = r;
+        if (r > hi) hi = r;
+      }
+      const own = cnt > 0 && lo >= 1 && hi <= cnt * 2 + 64;
+      for (const r in map) map[r] = own ? +r : undefined;
+      if (own) next = hi;
       for (let i = 0; i < n; i++) {
         const r = raw[i];
         if (r < 0) {
@@ -148,6 +175,11 @@ function openDesignObj(d, id, resumed, quiet, col) {
       }
       for (let l = 1; l <= K; l++) {
         const c = comps[l];
+        // (a gap in the numbers: a section merged away, as in the guide when it was saved)
+        if (!c.area) {
+          c.merged = true;
+          continue;
+        }
         c.cx = sx[l] / c.area;
         c.cy = sy[l] / c.area;
         c.bpx = bp[l];
@@ -172,8 +204,9 @@ function openDesignObj(d, id, resumed, quiet, col) {
       colored = new Uint8Array(comps.length);
       heldSh = {};
       progAt = {
-        s: d.dates && d.dates.s > 0 ? +d.dates.s : 0,
-        e: d.dates && d.dates.e > 0 ? +d.dates.e : 0,
+        // (a time a Date can show: "started Invalid Date" otherwise, v299)
+        s: d.dates && +d.dates.s > 0 && +d.dates.s < 8.64e15 ? +d.dates.s : 0,
+        e: d.dates && +d.dates.e > 0 && +d.dates.e < 8.64e15 ? +d.dates.e : 0,
         // (u: coloured before the dates were kept, v284: when it was started isn't known, so none are given)
         u:
           !d.dates &&
@@ -194,15 +227,15 @@ function openDesignObj(d, id, resumed, quiet, col) {
       imgData = new ImageData(rgbOut, W, H);
       // the saved markers: a dry one, or one no longer in the collection, shows as the closest one owned in a section
       // still to colour (a done section keeps it; so does every section when nothing owned is close)
-      const byKey = {};
+      const byKey = Object.create(null);
       coll.forEach(function (m) {
         byKey[m.mkey] = m;
       });
       const assign = {},
         order = [],
         sa = d.assign && typeof d.assign === 'object' ? d.assign : {},
-        done = {},
-        cat = {},
+        done = Object.create(null),
+        cat = Object.create(null),
         dryK = {},
         goneK = {};
       if (Array.isArray(d.prog))
@@ -211,6 +244,9 @@ function openDesignObj(d, id, resumed, quiet, col) {
         });
       const pick = function (k) {
         if (byKey[k]) return { m: byKey[k] };
+        // (Copic 0, the Colorless Blender: not a colour to pick since v298, but a guide made before may have it;
+        // owned, it's yours as it was, not "no longer in your collection", v299)
+        if (!(k in cat) && noInkOwned(k)) cat[k] = { m: catMarker(k) };
         if (!(k in cat)) {
           const c = catMarker(k);
           cat[k] = { c: c, rep: c && c.lab && coll.length ? nearestInPool(c.lab, coll) : null };
@@ -506,6 +542,41 @@ function openDesign(id, cont) {
   const g = loadGen;
   stashDirty().then(function (ok) {
     if (!ok || g !== loadGen) return;
+    // Changes to this guide that couldn't be saved to the Library (storage full) wait in the Resume slot: newer than
+    // the Library's copy, they're what opens, as Resume would (v299: the older copy opened, and its next save threw
+    // the newer one away)
+    const m = slotNote(),
+      e =
+        api.listDesigns &&
+        api.listDesigns().find(function (x) {
+          return x.id === id;
+        });
+    if (m && m.savedId === id && m.dirty && !m.edits && !slotMine(_gTok, m) && e && +m.ts > (+e.ts || 0)) {
+      IDB.get('guide-autosave')
+        .then(function (d) {
+          if (g !== loadGen) return;
+          if (!d || d.savedId !== id) return openStored();
+          const pl = d.payload || {},
+            nAll = pl.assign && typeof pl.assign === 'object' ? Object.keys(pl.assign).length : 0,
+            nDone = Array.isArray(pl.prog) ? pl.prog.length : 0,
+            part = pl.tones && typeof pl.tones === 'object' ? Object.keys(pl.tones).length : 0;
+          _contNext = !!cont;
+          openDesignObj(
+            Object.assign({}, pl, { name: d.name, W: d.W, H: d.H }),
+            id,
+            true,
+            false,
+            (nDone > 0 || part > 0) && nDone < nAll,
+          );
+          note('Opened with the changes that couldn\u2019t be saved last time.');
+        })
+        .catch(openStored);
+      return;
+    }
+    openStored();
+  });
+  function openStored() {
+    if (g !== loadGen) return;
     Promise.resolve(api.loadDesign ? api.loadDesign(id) : null)
       .then(function (d) {
         if (g !== loadGen) return;
@@ -520,7 +591,7 @@ function openDesign(id, cont) {
       .catch(function (err) {
         note('Couldn’t open that guide: ' + ((err && err.message) || err));
       });
-  });
+  }
 }
 // a backup replaced the open guide's Library entry, or another tab saved it: the open copy is dropped for what is
 // stored (col: it was open in Colour along)

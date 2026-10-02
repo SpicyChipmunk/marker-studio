@@ -756,7 +756,8 @@ function buildRandom(cl, pool) {
       const nbs = [];
       if (a[l])
         a[l].forEach(function (nb) {
-          if (assign[nb]) nbs.push(assign[nb]);
+          const x = nbOf(assign, nb);
+          if (x) nbs.push(x);
         });
       clear.length = 0;
       other.length = 0;
@@ -1432,14 +1433,21 @@ function buildGuide() {
   }
   if (!coll.length) {
     // (markers owned but every one marked dry: coll leaves those out)
-    let anyOwned = false;
+    // (or only the Colorless Blender, which lays down no colour, v299)
+    let anyOwned = false,
+      anyInk = false;
     try {
       anyOwned = state.owned.size > 0;
+      anyInk = COLORS.some(function (c, i) {
+        return !NOINK.has(i) && isOwned(i);
+      });
     } catch (_) {}
     note(
-      anyOwned
+      anyInk
         ? 'Every marker you own is marked dry \u2014 mark some as not dry in Markers, then Build guide.'
-        : 'No markers in your collection \u2014 add the ones you own in Markers, then Build guide.',
+        : anyOwned
+          ? 'No colours in your collection (a blender lays down none) \u2014 add the markers you own in Markers, then Build guide.'
+          : 'No markers in your collection \u2014 add the ones you own in Markers, then Build guide.',
     );
     return;
   }
@@ -1490,6 +1498,8 @@ function buildGuide() {
     curId = null;
     curName = null;
   }
+  // (the ticks follow merges and splits: 65-edit)
+  tickCarry();
   _segFresh = false;
   zoneBuilt();
   zoneSigSync();
@@ -1559,6 +1569,18 @@ function keepMarkers(prev, cl) {
       A[l] = _gone[l].m;
       B[l] = _gone[l].m;
       delete P[l];
+    } else {
+      // a part split off a section with ink on it has that ink: its marker, its pin, flat or held shading, as the
+      // section had (its tick follows it too: tickCarry, 65-edit). v299: it got whatever the pattern gave it.
+      const f = splitFrom(l);
+      if (f >= 0 && pa[f] && inkOn(f)) {
+        A[l] = pa[f];
+        B[l] = pb[f] || pa[f];
+        delete P[l];
+        if (locks[f] !== undefined) locks[l] = locks[f];
+        if (shadeFlat[f]) shadeFlat[l] = 1;
+        if (heldSh[f]) heldSh[l] = Object.assign({}, heldSh[f]);
+      }
     }
   });
   const ord = assignData.order.filter(function (l) {

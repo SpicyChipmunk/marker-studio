@@ -1,5 +1,6 @@
 #matchOverlay {
-  padding: 12px;
+  padding: max(12px, calc(env(safe-area-inset-top, 0px) + 6px)) max(12px, env(safe-area-inset-right, 0px))
+    max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
   align-items: flex-start;
 }
 .dcard {

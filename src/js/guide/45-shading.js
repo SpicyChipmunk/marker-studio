@@ -1447,6 +1447,8 @@ function keepProgress(snapCol) {
   const c = new Uint8Array(comps.length);
   c.set(colored.subarray(0, Math.min(colored.length, c.length)));
   setColored(c);
+  // (ticks a build took off for a merge this Undo takes apart: 65-edit)
+  tickBack();
 }
 // bring part-done tones in line with the current plan. A section whose done tones are all the plan now asks for
 // (shading switched off, left flat, full light to shadows only) counts as done, but keeps its tones: when the plan

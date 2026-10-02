@@ -444,6 +444,8 @@ function labelCells() {
 }
 function segment() {
   const n = W * H;
+  // (sections found afresh: ticks held for an Undo of a merge were the old sections', 65-edit)
+  _tickHeld = {};
   // (where the zones were, pixel by pixel, to place them again on the new sections: 34-zones)
   zonePixCapture();
   labels = new Int32Array(n);

@@ -97,18 +97,21 @@ function edBarSync() {
     const show = ed && hasProgress();
     kl.style.display = show ? '' : 'none';
     if (show)
-      kl.textContent = 'Build again keeps your colouring; sections you merge or split start uncoloured.';
+      kl.textContent =
+        'Build again keeps your colouring. Merged sections stay ticked only when every part was.';
   }
 }
 // back to the plan from Edit sections: as it is when nothing was edited; otherwise asked first
 // newGuide (Home's New colouring guide, v289): Discard edits also opens the photo picker, within the tap (iOS)
 function edToPlan(newGuide) {
   if (!secEdPending()) {
+    // (edits undone by hand: a copy kept for Resume earlier is stale now, v298)
+    edSlotDrop();
     edGoPlan();
     return;
   }
   askEdits(
-    newGuide
+    newGuide === true
       ? function (a) {
           if (a === 'discard') pickPhoto();
         }
@@ -132,8 +135,11 @@ function edToPlan(newGuide) {
           .catch(function () {
             note('Couldn\u2019t open the guide as built \u2014 Build again keeps the edits.');
           });
-      } else if (discardEdits()) edGoPlan();
-      else note('Some edits couldn\u2019t be undone \u2014 Build again keeps them, or use Undo.');
+      } else if (discardEdits()) {
+        // (and the copy kept for Resume when the page was hidden, as Discard when something else opens does, v298)
+        edSlotDrop();
+        edGoPlan();
+      } else note('Some edits couldn\u2019t be undone \u2014 Build again keeps them, or use Undo.');
     }
   });
 }
@@ -281,7 +287,11 @@ function ctlSections() {
     });
   }); // show "Building…" before the work starts
   var _tp = document.getElementById('sfToPlan');
-  if (_tp) _tp.addEventListener('click', edToPlan);
+  // (not edToPlan itself: the click would come in as newGuide, and Discard would open the photo picker, v296)
+  if (_tp)
+    _tp.addEventListener('click', function () {
+      edToPlan(false);
+    });
   edBarSync();
   function wire(id, ev, fn) {
     const el = document.getElementById(id);

@@ -1,0 +1,26 @@
+/* ===== iPad and iPhone only (v296) ===== */
+/* Safari there zooms the page into a text field under 16px when it's focused, and doesn't zoom back out:
+   the small fields are 16px there (only there: -webkit-touch-callout is Safari on iOS). Last of the stylesheets, so it wins */
+@supports (-webkit-touch-callout: none) {
+  .search,
+  .libin,
+  .libbar .libin,
+  .libsel,
+  .libbar .libsel,
+  .ordsel,
+  .bktext,
+  .sname-in,
+  #savedList .stile .sname-in,
+  #sfRoot #sfCtl .sfc-select,
+  #sfRoot .sfzname,
+  #sfRoot #sfCtl .sfzname {
+    /* (the text size setting's own step, never under 16px) */
+    font-size: max(16px, var(--t-md));
+  }
+}
+/* a marker held down opens its details: no text selection or callout starting under the finger first */
+.cell {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

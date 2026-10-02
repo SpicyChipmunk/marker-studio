@@ -164,7 +164,8 @@
 }
 .bands.grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  /* (no more than 6 across, growing to fill the card: on an iPad 12 colours were one row of small tiles, v299) */
+  grid-template-columns: repeat(auto-fit, minmax(max(60px, calc((100% - 25px) / 6)), 1fr));
   gap: 5px;
   height: auto;
   align-content: start;
@@ -286,7 +287,9 @@ button.sfSeeAll {
   border-radius: var(--r-lg);
   padding: 22px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-  max-height: calc(100vh - 44px);
+  /* (v296: the room the overlay leaves, inside its padding, which keeps clear of the status and home bars; was
+     100vh − 44px, taller than Safari shows with its toolbar) */
+  max-height: 100%;
   overflow: hidden;
 }
 .wcard > div {

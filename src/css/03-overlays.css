@@ -5,7 +5,11 @@
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 22px;
+  /* (v296: clear of the status bar and the home bar when installed on a phone) */
+  padding: max(22px, calc(env(safe-area-inset-top, 0px) + 8px))
+    max(22px, calc(env(safe-area-inset-right, 0px) + 8px))
+    max(22px, calc(env(safe-area-inset-bottom, 0px) + 8px))
+    max(22px, calc(env(safe-area-inset-left, 0px) + 8px));
   background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(6px);
 }

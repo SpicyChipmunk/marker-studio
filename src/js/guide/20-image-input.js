@@ -46,6 +46,10 @@ function resetForNewPicture() {
   photoReset();
   rot90 = 0;
   tilt = 0;
+  // (Enhance and its line sensitivity were set for the old picture's lighting, as its turn and crop were, v298)
+  enhance = true;
+  adaptC = 9;
+  _tickHeld = {};
   cropRect = null;
   cropMode = false;
   cropFull = null;
@@ -296,8 +300,10 @@ function processSrc() {
   const cr = cropRect || { x: 0, y: 0, w: 1, h: 1 },
     cx = Math.round(cr.x * fw),
     cy = Math.round(cr.y * fh),
-    cw = Math.max(8, Math.round(cr.w * fw)),
-    ch = Math.max(8, Math.round(cr.h * fh));
+    // (no wider than what's left of the photo: rounded up past its edge, the last column was left empty and read as
+    // a line of ink, v296)
+    cw = Math.max(8, Math.min(Math.round(cr.w * fw), fw - cx)),
+    ch = Math.max(8, Math.min(Math.round(cr.h * fh), fh - cy));
   // (the picture changes shape: the zones can't be placed on the sections found from it)
   zoneGeoLost();
   W = cw;
@@ -305,6 +311,9 @@ function processSrc() {
   cv.width = W;
   cv.height = H;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // (on white: a picture under 8 pixels across is made 8, and the part past its edge would read as ink, v298)
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, H);
   ctx.drawImage(oc, cx, cy, cw, ch, 0, 0, W, H);
   freeCanvas(oc);
   const d = ctx.getImageData(0, 0, W, H).data,
@@ -406,6 +415,10 @@ function keepSnap(geo) {
             y1: c.y1,
             merged: c.merged,
             page: c.page,
+            // (what it was merged into or split off from, since the last build: tickCarry)
+            into: c.into,
+            from: c.from,
+            at: c.at,
           }
         : null;
     }),

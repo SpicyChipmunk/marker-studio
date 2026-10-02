@@ -228,7 +228,11 @@ test('re-rolling one colour: a free marker near it, clearly different from the r
         assert.ok(others.every((i) => t.de(i, pick) >= need), `${h}: clearly different from the others`);
         if (h !== 'mono') assert.ok(t.lch(pick)[1] >= t.GREY_C, `${h}: not a near-grey`);
         if (h === 'analogous') assert.ok(arc(t.clearHues(next)) <= 120, 'analogous stays within 120°');
-        else if (h !== 'mono') assert.ok(hd(t.lch(pick)[2], t.lch(pal[k])[2]) <= 30, `${h}: near the colour it replaces`);
+        else if (h !== 'mono') {
+          // (v298: aimed at the scheme hue nearest it, so it stays on the scheme the palette was on)
+          assert.ok(hd(t.lch(pick)[2], t.lch(pal[k])[2]) <= 60, `${h}: near the colour it replaces`);
+          if (a.__eval('palOnScheme')(pal, h, new Set())) assert.ok(a.__eval('palOnScheme')(next, h, new Set()), `${h}: still on the scheme`);
+        }
       }
     }
   });

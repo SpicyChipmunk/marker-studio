@@ -118,6 +118,9 @@ function pgFind(img) {
   const g = c.getContext('2d', { willReadFrequently: true });
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'medium';
+  // (on white, as the picture itself is drawn: a see-through PNG's clear parts read as black otherwise, v298)
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, w, h);
   drawShrunk(g, img, w, h);
   let d;
   try {
@@ -723,6 +726,8 @@ function pgWarp(img, q, aspect) {
   sc.width = iw;
   sc.height = ih;
   const sg = sc.getContext('2d');
+  sg.fillStyle = '#fff';
+  sg.fillRect(0, 0, iw, ih);
   sg.drawImage(img, 0, 0);
   const s = sg.getImageData(0, 0, iw, ih).data;
   freeCanvas(sc);
@@ -1148,11 +1153,14 @@ function pgRefFlat(img, f35) {
       const g = src.getContext('2d');
       g.imageSmoothingEnabled = true;
       g.imageSmoothingQuality = 'high';
-      g.drawImage(img, 0, 0, src.width, src.height);
+      // (in halving steps: a phone photo's noise evened out in Safari too, as when a photo is read, v296)
+      drawShrunk(g, img, src.width, src.height);
     }
-    const f = pgFind(src);
-    if (f.tier !== 'sure') return null;
-    const out = pgWarp(src, f.q, pgShapeOf(f.q, src.width, src.height, f35, null).aspect);
+    const f = pgFind(src),
+      out =
+        f.tier === 'sure' ? pgWarp(src, f.q, pgShapeOf(f.q, src.width, src.height, f35, null).aspect) : null;
+    if (src !== img) freeCanvas(src);
+    if (!out) return null;
     out._pgFlat = true;
     return out;
   } catch (e) {

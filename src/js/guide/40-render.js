@@ -591,8 +591,10 @@ function rgGridAdd(G, l, b) {
     gy1 = Math.min(G.ny - 1, (b[3] / RG_GRID) | 0);
   for (let gy = gy0; gy <= gy1; gy++)
     for (let gx = gx0; gx <= gx1; gx++) {
-      const k = gy * G.nx + gx;
-      (G.c[k] || (G.c[k] = [])).push(l);
+      const k = gy * G.nx + gx,
+        c = G.c[k] || (G.c[k] = []);
+      // (once per cell: a section redrawn again and again in Paint or Colour along, v296)
+      if (c.indexOf(l) < 0) c.push(l);
     }
 }
 // per-section colour and flags in typed arrays, so the per-pixel loop does no object lookups.
@@ -925,6 +927,8 @@ function renderGuide() {
     shadeToneColl,
     linesOn,
     labOn,
+    // (Codes off draws a tick differently: a full draw, v296)
+    hideLabels,
     anch,
     sfmode,
     family,
@@ -934,7 +938,8 @@ function renderGuide() {
     cv.width,
     cv.height,
   ];
-  // (zoomed in, the codes are on their own sharper canvas: drawn whole each time)
+  // (zoomed in, the codes are on their own sharper canvas; at the same zoom step, a change is drawn on both a part at
+  // a time, as without it: a full draw each time made every Paint stroke and tick zoomed in redraw the lot, v296)
   const hiK = labOn ? labHiK() : 0;
   const ring =
     fcur > 0 && focusBox
@@ -943,8 +948,8 @@ function renderGuide() {
   let inc = !!(
     _rg &&
     !anch &&
-    !hiK &&
-    !_rg.hiK &&
+    hiK === (_rg.hiK || 0) &&
+    (!hiK || (labHi && labHi.width === Math.round(W * hiK) && labHi.style.display !== 'none')) &&
     _rg.gk.length === gk.length &&
     gk.every(function (v, i) {
       return v === _rg.gk[i];
@@ -1153,13 +1158,34 @@ function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tic
       if (!grew || ++guard > 50) break;
     }
     ctx.putImageData(imgData, 0, 0, r[0], r[1], r[2] - r[0], r[3] - r[1]);
-    if (!ids.length) continue;
-    ids.sort(function (a, b) {
-      return a - b;
-    });
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    for (let k = 0; k < ids.length; k++) secLabel(ids[k], assign[ids[k]], tick, true);
+    // zoomed in: the codes are on their own canvas, at its scale: its part of the rectangle cleared, and drawn there
+    const main = ctx,
+      hk = _rg.hiK;
+    if (hk) {
+      const hx = labHi.getContext('2d'),
+        sx = labHi.width / W,
+        sy = labHi.height / H;
+      hx.setTransform(1, 0, 0, 1, 0, 0);
+      hx.clearRect(
+        Math.floor(r[0] * sx),
+        Math.floor(r[1] * sy),
+        Math.ceil(r[2] * sx) - Math.floor(r[0] * sx),
+        Math.ceil(r[3] * sy) - Math.floor(r[1] * sy),
+      );
+      hx.setTransform(sx, 0, 0, sy, 0, 0);
+      ctx = hx;
+    }
+    try {
+      if (!ids.length) continue;
+      ids.sort(function (a, b) {
+        return a - b;
+      });
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let k = 0; k < ids.length; k++) secLabel(ids[k], assign[ids[k]], tick, true);
+    } finally {
+      ctx = main;
+    }
   }
   _rg.skey = skey;
   _rg.ring = ring;
@@ -1210,7 +1236,13 @@ function drawFocusRing(l, bits, sh) {
     return o;
   };
   // (v288: the same two-tone line as Find next's, white inside dark, so it shows on any colour)
-  ctx.drawImage(ringOf(r2, 'rgba(0,0,0,.8)'), x0, y0);
-  ctx.drawImage(ringOf(r, '#fff'), x0, y0);
+  // (the three helper canvases handed back at once: Safari counts them until collected, v296)
+  const o1 = ringOf(r2, 'rgba(0,0,0,.8)'),
+    o2 = ringOf(r, '#fff');
+  ctx.drawImage(o1, x0, y0);
+  ctx.drawImage(o2, x0, y0);
+  freeCanvas(o1);
+  freeCanvas(o2);
+  freeCanvas(m);
   return [x0, y0, x0 + w, y0 + h];
 }

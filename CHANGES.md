@@ -1383,3 +1383,136 @@ Four reviewers went over v288 (code, a hands-on bug hunt, a hands-on UX walkthro
 - Re-colouring a picture a part at a time put each changed part back on the canvas with its own `putImageData`. Each one costs Playwright's WebKit about as much as putting back the whole picture (10–20 ms at 1200 × 1600, however small the part), and lining up a Photo pattern re-colours thousands of small sections, so it took 35–65 s there (Chromium: a moment). More than 8 parts are now put back as one rectangle round them all (the codes inside it are redrawn, which is cheap): 1.8 s. Pixel for pixel the same as before. `straighten`'s Photo pattern test failed on this on GitHub, and passed in v293 only by finishing just in time. Real Safari may not pay the same price per call; it can only help there.
 - Undo's Library-delete test taps the toast's Undo without waiting for it to hold still (Playwright waited 30 s once on GitHub's WebKit while the Library drew its pictures).
 - Cache bumped to `marker-studio-v295`.
+
+# Changes — v296 (Markers › Scan or type codes)
+
+- **Scan or type codes**, under **Add a set you own** in Markers, for markers bought one at a time. Type codes and press Enter, paste a list (from notes or a spreadsheet), or, on an iPad or iPhone, tap the box, then **AutoFill › Scan Text** and hold each marker's cap in view. Scan Text puts what the camera reads into the box as you aim, so there's no Insert to tap: once the text has held still for 0.6 s it's read, a beep says so, the box clears, and you move to the next cap. (The page can't see the camera or Apple's text reading itself; tried first: a reader shipped in the app (Tesseract) read about 1 cap in 4 from Ben's photos even with each cap cut out and turned level, and Google Lens on a whole close-up read 66 of its 119 codes, with Live Text missing caps too, so one cap at a time it is.)
+  - What's read goes into a list to check, each with its colour, brand and whether it's already yours; ✕ takes one off. **Add N to my collection** adds the new ones in one go, with Undo. The list is kept if the dialog is closed, until it's added or cleared.
+  - Only real codes count, with the usual misreads put right (BO15 → B015, 8G011 → BG011, a code read in two pieces). The colour name, when Scan Text catches it, confirms the code and settles the 54 codes both brands use (B04, E19…); otherwise it asks which, or the brand chosen at the top (Either / Ohuhu / Copic) does. Only a name read: it asks ("Is it E49 Honey Brown?"). A code that's just a number (0, 120) counts only on its own or with its name.
+  - A cap upside down comes through reversed and turned (E19 reads "6L3"): when nothing reads the right way up, each word is tried turned round, against the real codes. On Google Lens's text from Ben's photo this found 18 more codes, with 1 wrong (YR213 with its Y lost reads as R213), so where a turned-round code could also be a longer one, or two codes, it asks. Ones added this way say "read upside down" in the list.
+  - Typing (a letter at a time) waits for Enter; a paste is read at once, keeping its lines. Beeps: two rising for a new marker, one low for one already listed or already yours, a buzz when Enter or a paste had no code.
+  - `src/js/scan.js`, `src/css/11-scan.css`; `test/scan.test.mjs` (7) and `e2e/scan.test.mjs` (4).
+- Palette: the line "Some colours stray from the scheme" showed now and then for a palette that keeps to it (about 1 Analogous 8 in 200 with the 120 set): the check tried the scheme's hues a whole degree apart, so a palette spread across 119.8° of the 120° Analogous allows could miss them all. It now allows the half degree between. (Seen as a flaky test on GitHub's WebKit, run 36952636480.)
+- Tests: the side-by-side sheet test waits for the sheet to finish sliding in (GitHub's WebKit measured it 7 px down once). `guide-frame.test.mjs` is now two files (`guide-frame-2.test.mjs` the second half): on GitHub's WebKit the one file took 11½ minutes, near node's 12-minute limit for a file, and in run 36952636480 it gave no results until the retry ran all of it again (WebKit part 1 took 36 minutes). `e2e/ci-durations.json` has both halves and the new scan tests. The run summary now names a file the retry had to run again whole (no results the first time, or a failure outside any test) as a flaky file, a warning; before, it passed without a word.
+- Cache bumped to `marker-studio-v296`.
+
+# Changes — v297 (fresh-eyes sweep of v296: the marker scan pressure-tested, and fixes across the app)
+
+Three reviews this time: the guide's code, everything else, and the new marker scan on its own (brute force over every marker: its code with its name, every one-character misread, every code turned upside down, the words of every name), then a review of the fixes themselves.
+
+**Scan or type codes**
+- **The colour name now has its say.** A code read with another marker's name (R4b with "Old Rose": the code reads as R48, the cap is R46) is asked about instead of taken as read; a misread is put right towards the reading the name agrees with (YG11 with "Dark Sand" is Ohuhu Y611). Names are matched as words in a row ("Cool Gray No.1", and short ones like Fig only as a word of their own), or run together when long enough. Over every marker's code with its name and one misread character (6,100 reads), the review's brute force found hundreds of wrong markers added without a question; now 3, each a code and a name that are both right for another marker (Copic RV11 Pink, Ohuhu RV17 Pink).
+- **Ohuhu's old codes**, on the caps of older sets, are read (362 of them): as the marker they belong to now; where an old code is now another marker's code (26: R25 was Pale Blue Violet, now BV26; R25 is now Tender Pink), the name decides, or it asks.
+- **Words aren't codes.** Misreads are put right only in a word with a digit, and upside-down reading only tried on one with a digit or a character only an upside-down read gives: "Egg" had been read as E66, "Bog" as B06, "No" (in Cool Gray No.3) as Copic N-0, "Sea" turned round as Y35. No code is made up across two words with a misread put right ("B63 T-1" had added BG311).
+- **The brand chosen above the box isn't forced.** Another brand's code as read, or with its name, says "C-3 is a Copic code" (with a button to add it anyway) instead of being bent into the chosen brand's (Copic YG11 had become Ohuhu Y611; Copic E08 turned round into Ohuhu B03). The brand's name on a cap (Ohuhu, Honolulu, Copic, Sketch, Ciao) settles a code both brands use. Choosing a brand answers the questions between brands already waiting. The choice is remembered.
+- **Questions wait in the list** (two brands' B04; "603": G03, or E09 upside down; the code and the name disagree; an old code), with the answers as buttons, so sweeping on loses none; a question isn't asked again once answered, or when one of its answers is already listed. Nothing waiting is counted for Add.
+- **Quieter while sweeping:** one cap held in view (its text comes again each time the box clears) is said once, two caps held together likewise; a name read before its code is shown without a sound. Text with nothing to read in it is cleared a moment later, so it can't run into the next cap's.
+- A pasted list is read a line at a time (one line's name can't settle another line's code) and said once ("37 added to the list"); a whole collection pasted at once is listed in a moment. Full-width characters, a dash on its own ("C - 3") and a name run on to its code ("B015Celadon") are read. Focus goes back to the box after answering a question or taking a row off (on an iPad the keyboard, and Scan Text, went with the button). The box has focus when the dialog opens.
+- **Add** takes markers off the To buy list (bought, as its Bought button does), and its Undo puts them back and brings the list back too, to put right and add again. Add stays in reach at the bottom as the list grows.
+- **The welcome** offers it: "Bought them one at a time? Scan or type their codes" opens Markers with it.
+- Tests: `test/scan.test.mjs` 14 (+7), `e2e/scan.test.mjs` 9 (+5).
+
+**Bugs**
+- **← Plan › Discard edits opened the photo picker** (Edit sections, with an edit made): the button passed its click to the code as "this is Home's New guide". Picking a file there replaced the guide.
+- **Unreadable saved data with storage full**: Home said "A copy of the original was kept" when the copy had failed for lack of room, and the next save wrote over the original. Now it says there wasn't room, the original is kept for Download the original until the app is closed, and later starts don't offer a download that can't work.
+- **Palette Undo** went back to the palette before under the scheme and size chosen since (a Complementary 4 labelled Analogous, with 8 chosen, and the "stray" line); each palette's scheme is now kept beside it. A colour locked past a smaller size (8 → 4) was dropped; it now moves into a free place.
+- **Zoomed in**, every tick and Paint stroke redrew the whole picture and every code (since v293's sharp codes); now a part at a time on both, the same as a full draw (tested). The sharp codes' canvas is handed back on leaving the guide, and drawn again on return.
+- Codes off in Colour along left ticks in the old style where the picture was drawn a part at a time.
+- A crop rounded past the photo's edge left its last column empty, read as a line of ink.
+- Focus mode's outline, the export image, and the photo canvases of Straighten, Photo pattern, Palette's From photo and the paper spot weren't handed back (iPad Safari counts canvas memory until collected).
+- A tab brought back from the browser's back/forward cache, or coming back into view, didn't read changes saved meanwhile by another tab before its next save could write old markers back.
+- Match a colour kept a stale result when one marker was swapped for another (the same count) or marked dry in another tab.
+
+**Engines**
+- **Analogous and Monochrome from a chosen marker** were lopsided: the marker took the fan's end (Analogous) or the lightest step (Monochrome), so the other colours sat mostly on one side (Analogous 5: 293 above its hue, 160 below over 120 rolls). It now takes the target that fits it: 237 above, 243 below.
+- The scheme line said "… base" for a marker that wasn't the base (the base the palette was built round isn't in it); it now names a base only for a marker chosen to start from.
+- Palette's From photo, the paper spot's photo, Match's photo and the Photo pattern's flattened page are shrunk in halving steps too (Safari's engine doesn't average a big one-step shrink, so the colours read were noisy).
+- Marker keys are looked up from a map (Library tiles, To buy, the swatch chart asked once per marker, through all 721).
+
+**iPad and iPhone**
+- Text fields under 16px (search, Library search and sort, Order, backup text, rename, the guide's selects, zone name) are 16px there, so Safari no longer zooms in on focus and stays zoomed.
+- Dialogs keep clear of the status bar and home bar when installed; the welcome fits the height Safari shows. A marker held down no longer starts a text selection first.
+
+Not changed, for now: Match's rows are a button with a To buy button inside it (a nested control for screen readers; making the copy action its own button changes the row's layout); an IME's composition text in the scan box is read like Scan Text's (Scan Text's text may arrive the same way, and ignoring it could stop the sweep).
+
+- Cache bumped to `marker-studio-v297`.
+
+
+# Changes — v298 (a second fresh-eyes sweep of v297)
+
+Another full pass over the guide, the rest of the app and the marker scan, looking for what the first sweep missed. New tests: `test/v298.test.mjs` (7, six failing on v297) and `e2e/v298.test.mjs` (9, all failing on v297).
+
+**Scan or type codes**
+- **Two caps in view with one name read** (R46 and R48 with R46's "Old Rose"): the name was used against the other cap. R48 was asked about as "the code and the name don't match", and since R46 was already listed, the question was dropped and R48 was lost. A name another code in the text accounts for now settles nothing more.
+- **A pasted list keeps every line.** A line with only a name, another brand's code or a code upside down was dropped whenever another line had a code; each is now a question in the list. The same code from two brands on two lines (B04 Copic, B04 Ohuhu) is two entries, not one.
+- **The box no longer gets stuck.** When Scan Text swapped the text and then put the same text back, it stayed in the box for good. And after Enter, the same code from the next cap was ignored. Both are read and cleared now.
+- **Android keyboards** send each letter as the whole word being composed, so a pause half-way through typing a code read what was there ("R1" for R14). A letter added to a word being composed now waits for Enter, as typing does.
+- **Held in view:** another brand's code buzzed, and a name read on its own was said again, every time the text settled. Each is now said once. The card now reads "Copic C-3 Cool Gray No.3 · Another brand than the one chosen (Ohuhu)", not "a Ohuhu code".
+- Rows' remove buttons are 44px wide, and a long list scrolls the card instead of squashing the box.
+
+**Guide**
+- **Ticks after Edit sections.** A merged-away section kept its tick, unseen, so a page could warn about losing colouring it didn't show. A merge of a ticked and an unticked section stayed ticked. A part split off a coloured section came back uncoloured. Ticks now follow the paper: a merged section stays ticked only when every part was, and each part of a split one keeps its tick. The line in Edit sections says so (it used to say merged and split sections start uncoloured, which wasn't so).
+- **Zones:** touching sections either side of a zone's border could get the same marker, with No repeats, Main colour or "keep touching sections clearly different". Over 8 builds of the sample with a zone, none of the 160 touching pairs across the border now share one.
+- **Undo after Change colour** on a section already coloured kept the new marker (a coloured section keeps its marker through Plan changes, and that rule caught Undo too). It now goes back.
+- **Focus mode** now tells a screen reader each section as it comes ("E19 · Dried Sage. Section 2 of 5") and when the page is finished. Before, the bar changed silently.
+- A guide file with a key like "constructor" failed to open, and the guide that had been open was cleared first.
+- Ending Edit sections with nothing left to build, or with Discard, now also drops the copy of the edits kept for Resume, so Home no longer offers stale edits back. A save that started before a copy was kept aside for leaving the page no longer throws that copy away.
+- A new photo starts with Enhance on and the middle line sensitivity, not the last photo's.
+- A see-through PNG's clear parts were read as black when finding the page, and a picture under 8 pixels across read its padding as ink.
+- The Photo pattern used more markers than asked for when none of yours was close to the photo's colours.
+- More canvases are handed back as soon as they're done: the Library's thumbnails, the PDF's pictures and its zone outlines (iPad Safari counts canvas memory until it's collected).
+
+**Elsewhere**
+- **Copic 0 Colorless Blender** (#ffffff) was picked as a colour: in palettes, guides and From photo, and as Match's "closest marker" to white paper. It can still be owned, but is never picked as a colour.
+- **Re-rolling one palette colour** again and again walked it off the scheme (each re-roll could move it 30° from the last). It is now aimed at the scheme hue nearest it: over 600 re-rolls of four schemes, none leave it.
+- The "Some colours stray from the scheme" check now tests exactly the hues that matter, with no half-degree of slack either way.
+- Markers › Add a set kept showing sets as yours after Clear collection, and the reverse after its Undo.
+- Unreadable saved data with storage nearly full: the note about it is written before the copy of the original, so a copy that takes the last of the room can't leave the loss unsaid.
+- A restored guide's name in the restore message is escaped. A saved palette with a broken time no longer shows "Invalid Date". Match says "None of your markers to use" when every one is marked dry, not "No markers in your collection yet". "1 distinct marker", not "markers".
+- CI: a half-written line in the retry results no longer stops the retry report.
+
+Not changed: Random with "keep touching sections clearly different" off still picks freely. That's what the option means.
+
+- Cache bumped to `marker-studio-v298`.
+
+# Changes — v299 (a third fresh-eyes sweep: v298's own fixes, and what the first two missed)
+
+Four reviews ran side by side: v298's changes on their own, the marker scan (about 120,000 reads, brute force), the guide, and the rest of the app. Two of v298's fixes had bugs of their own; both are fixed. New tests: `test/v299.test.mjs` (6) and `e2e/v299.test.mjs` (11), all failing on v298.
+
+**v298's own fixes, put right**
+- **Section edits waiting for Resume could vanish.** If they came from an earlier visit, opening the same guide from the Library, going into Edit sections and back without a change deleted them without a word. Only this visit's own copy goes now; an earlier visit's is kept as "… (section edits)", as a save keeps it.
+- **Undo of a merge after building lost ticks.** The build had taken them off the merged sections (v298). They now come back when the merge is undone in Edit sections.
+- **The composed-letters rule for Android keyboards** (v298) is now Android only. On an iPad, Scan Text might show its reading the same way, and a cap would then not be read.
+
+**Guide**
+- **A part split off a coloured section** came out ticked but with a different marker, and often in another zone. It now keeps the section's marker, pin, flat shading and zone.
+- **Ticks kept as the page went away were lost for any guide with merged sections.** On iPhone, ticks made just before leaving are kept aside, in case the page is stopped before they're saved. Opening the guide numbered its sections afresh, so at the next start those kept ticks no longer matched the guide and were thrown away. A guide now keeps its own section numbers.
+- **Changes that couldn't be saved (storage full)** wait for Resume, but opening the guide from the Library or Continue opened the older stored copy, and its next save threw the newer one away. The newer one now opens, and is then saved.
+- **Mark all coloured** (Colour along) and **Mark all … done** (Focus mode) have an Undo, as Clear had: a mis-tap lost which sections were really done. (Not when it finishes the page: "Page finished!" shows then, with nothing over it.)
+- Two tabs on one guide: the message said "merged", though only ticks come across. It now says so.
+- A guide made before v298 that used Copic 0 opened saying the marker was "no longer in your collection", though it's owned; it opens as it was. The build's message for a collection of only the blender says so, not "every marker is dry".
+- A guide file with a nonsense start date said "started Invalid Date".
+
+**Scan or type codes**
+- **A stray digit was glued onto a code.** "E00 0" (Copic E00 with the blender beside it) added E000, and a count after a code in a pasted list ("BG21 1") added BG211. Two words join into one code only when neither is a code by itself, and only to a code as it is now (not an old Ohuhu one). "C - 0" is still C-0.
+- **The brand on the cap is heeded.** "Ohuhu B04" with Copic chosen had added Copic B04 without a word; it now says it's another brand's. A code the cap's brand hasn't ("Ohuhu … 0") is asked about.
+- **Copic 0, 100, 110 and Ohuhu 120** were lost whenever a word on the cap came with them ("Copic 0", "Ohuhu 120", "120 Brush"), and could turn into an "upside down" question. Words on every cap don't count now. Beside other codes ("E43 120": two caps in view) such a number is asked about, not dropped. A name's own number ("Cool Gray No.0") isn't taken for a code.
+- **Another brand's cap read alongside the chosen brand's** ("E19 C-3", Ohuhu chosen) was dropped; it's now a question in the list.
+- **A code both brands use** wasn't asked about once either brand's marker was in the list, so after Ohuhu B04, Copic B04's cap couldn't be added by its code. It's now asked about, except while the same cap is still in view (read again within a couple of seconds).
+- A paste while Scan Text's text was waiting left that text in the box unread; it's read first now. A letter typed just after a read ran on from the old text ("R014E4"); it starts afresh. Choosing a brand drops a question whose answer is already listed.
+- **Clear list** takes a second tap: one mis-tap lost a whole sweep. The question buttons, the card's Add button and Clear list are 44px tall.
+- Brute force over the same reads as the review's: no silent wrong markers left except reads the app can't tell apart (one name read for two caps of the same code). Lost markers in two-cap reads with a number-only code went from about 1% to 0.1%.
+
+**Palette and Markers**
+- **Re-rolling one colour couldn't be undone**: the band's tap changed the palette in place. Each re-roll (and From photo's band swap) is now a step Undo takes back.
+- **Re-rolling** a palette that sat loosely on its scheme still left it (v298 aimed at one of the other colours' hues). It now aims at the base that fits them best. Over 1,000 re-rolls of loosely fitting Triadic palettes, none leave the scheme.
+- **"Some colours stray from the scheme"** didn't show for four blues called Complementary (with only blues to choose from). A scheme of set hues now has to use as many of them as it has colours for. Generated palettes still pass, all 960 tried.
+- **"Palette from these" let dry markers back in**, and counted the Colorless Blender in "N colours". A selection leaves out dry markers (and the blender), and the count is what's in play. A saved selection holding the blender drops it.
+- Random said "All drawn" with nothing to draw (a brand filtered out, or every marker dry); it says "No markers to draw".
+- A saved draw from an edited backup could fail to open, leaving filters half-changed, or filter out every marker. Only filters the app knows are taken.
+- **Match** no longer announces every frame of the camera or a drag to screen readers. It says the best match once the colour holds still, and not while the camera is live.
+- Palettes on an iPad: at most 6 colours across, filling the card (12 had been one row of small tiles). A Library tile's name kept clear of ⋯ after the tile refreshed.
+
+Not changed: Undo of re-detecting sections after a merge, and edits brought back by Resume, don't carry the merges' ticks (v298's behaviour before these fixes applies there). Two caps of the same code from different brands read with one name in a single read can't be told apart.
+
+- Cache bumped to `marker-studio-v299`.

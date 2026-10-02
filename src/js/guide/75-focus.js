@@ -183,7 +183,15 @@ function goFocus(pos, anim, noHist) {
   focusZ = focusZoomFor(l);
   renderGuide();
   frameFocus(anim);
+  focusSay();
 } // bar text first: its height sizes the picture
+// (where Focus is up to, for a screen reader: the marker and which of its sections, or that the page is finished; the
+// bar's text changes in place, which a screen reader doesn't say by itself, v298)
+function focusSay() {
+  var nm = document.getElementById('sfFocName'),
+    sub = document.getElementById('sfFocSub');
+  if (nm && nm.textContent) sayLive(nm.textContent + (sub && sub.textContent ? '. ' + sub.textContent : ''));
+}
 function finishFocus() {
   focusFin = true;
   hlKey = null;
@@ -195,7 +203,10 @@ function finishFocus() {
   animXform(true);
   renderGuide();
   renderFocusUI();
+  var was = celebrated;
   checkComplete();
+  // (just finished: the toast says so instead)
+  if (celebrated === was) focusSay();
 }
 function focusDone() {
   var l = focusCur();
@@ -261,10 +272,15 @@ function focusAllOfColour() {
   var l = focusCur();
   if (l < 0) return;
   var k = assignData.assign[l].mkey,
-    z = focusZoneOf(l);
+    z = focusZoneOf(l),
+    was = {},
+    g = loadGen,
+    at = focusPos,
+    code = assignData.assign[l].code;
   guideDirty = true;
   focusOrd.forEach(function (q) {
     if (assignData.assign[q].mkey === k && focusZoneOf(q) === z) {
+      if (!colored[q] && !was[q]) was[q] = [colored[q], tp()[q]];
       colored[q] = 1;
       tp()[q] = 0;
     }
@@ -274,6 +290,25 @@ function focusAllOfColour() {
   var nx = nextUndone(focusPos);
   if (nx < 0) finishFocus();
   else goFocus(nx, true);
+  // (an Undo, as Mark all coloured in the list has: a mis-tap lost which were really done, v299; not when that
+  // finished the page, which says so instead)
+  if (Object.keys(was).length && nx >= 0)
+    toastAction('Marked all ' + esc(code) + ' done', 'Undo', function () {
+      if (g !== loadGen || !assignData || !focus) return;
+      const P = tp();
+      for (const q in was) {
+        if (!colored[q]) continue;
+        colored[q] = was[q][0];
+        P[q] = was[q][1];
+      }
+      guideDirty = true;
+      // (no longer finished: finishing it again celebrates again)
+      celebrated = false;
+      normalizeTones();
+      renderGuide();
+      updateProgress();
+      goFocus(Math.min(at, focusOrd.length - 1), true, true);
+    });
 }
 function revealFromColour() {
   if (focus) exitFocus();
