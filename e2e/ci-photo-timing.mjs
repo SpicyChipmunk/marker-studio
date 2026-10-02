@@ -81,7 +81,7 @@ while (Date.now() - t0 < 240000) {
       return {
         note: n ? n.textContent.trim().slice(0, 40) : '',
         build: !!(b && b.offsetParent),
-        pg: !!(window.__mstest && __mstest.pgMode),
+        pg: !!(window.__mstest && __mstest.pgEd),
       };
     })
     .catch(() => ({ note: '?', build: false, pg: false }));
@@ -94,9 +94,9 @@ while (Date.now() - t0 < 240000) {
     done = true;
     break;
   }
-  // a photographed page asks to check its corners: accept, as the photo tests do
+  // a photographed page asks to check its corners: Keep as is
   if (s.pg) {
-    const k = await page.$('#pgApply, #pgOk, .pgok');
+    const k = await page.$('#sfPgNo');
     if (k) await k.click().catch(() => {});
   }
   await page.waitForTimeout(250);

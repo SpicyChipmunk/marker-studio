@@ -241,6 +241,8 @@ test('disabled buttons look disabled; Clear only when there is something to clea
   assert.equal(await page.textContent('#reset'), 'Clear');
   assert.equal((await look('#reset')).op, 0.4);
   await page.click('#draw'); await idle(page);
+  // (the fade back in can still be under way when idle on GitHub's WebKit)
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('saveBtn')).opacity === '1', null, { timeout: 3000 }).catch(() => {});
   assert.equal((await look('#saveBtn')).op, 1);
   assert.equal((await look('#reset')).dis, false);
   await page.click('#saveBtn');

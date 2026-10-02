@@ -530,9 +530,14 @@ test('v285 iPad portrait: one column on the 11" and the 13", using the width; th
     assert.ok(g.ctlW > 600, `${w}×${h}: the controls use the width (${g.ctlW})`);
     assert.ok(Math.abs(g.picH - h * 0.6) < 3 || g.picW > g.ctlW - 4, `${w}×${h}: 60% (${g.picH})`);
     await page.evaluate(() => scrollTo(0, 2000)); await idle(page);
-    g = await geom(page);
     // (50%, or less shrunk where the page ends first: the tabs are only as tall as the tallest, so a big screen
-    // doesn't scroll into empty space just to shrink the picture)
+    // doesn't scroll into empty space just to shrink the picture. The picture shrinks after the scroll: WebKit on
+    // GitHub can still be at 60% when idle, so wait for it to settle)
+    await page.waitForFunction((h) => {
+      const v = document.getElementById('sfCanvas').getBoundingClientRect().height, end = Math.abs(scrollY - (document.documentElement.scrollHeight - innerHeight)) <= 1;
+      return Math.abs(v - h * 0.5) < 3 || (end && v > h * 0.5 && v < h * 0.6);
+    }, h, { timeout: 5000 }).catch(() => {});
+    g = await geom(page);
     const end = await page.evaluate(() => Math.abs(scrollY - (document.documentElement.scrollHeight - innerHeight)) <= 1);
     assert.ok(Math.abs(g.picH - h * 0.5) < 3 || (end && g.picH > h * 0.5 && g.picH < h * 0.6), `${w}×${h}: 50% scrolled, or as far as the page goes (${g.picH})`);
     // Colour along: 60%

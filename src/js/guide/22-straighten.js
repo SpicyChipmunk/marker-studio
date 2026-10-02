@@ -118,7 +118,7 @@ function pgFind(img) {
   const g = c.getContext('2d', { willReadFrequently: true });
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'medium';
-  g.drawImage(img, 0, 0, w, h);
+  drawShrunk(g, img, w, h);
   let d;
   try {
     d = g.getImageData(0, 0, w, h).data;

@@ -5,6 +5,7 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'A grainy or noisy photo is read the same way in every browser: it’s shrunk in steps, so the grain evens out instead of being taken for the edge of the page.',
   'Zoomed in, the marker codes on the picture stay sharp. In Safari, the back swipe closes what’s open first (a sheet, the Library, Focus mode, Colour along) before it leaves the app.',
   'Back (on Android, or in a computer’s browser) closes what’s open first: a sheet, the Library, Focus mode, Colour along. On a phone the Plan’s tabs show on the first screen, and Focus mode keeps its buttons off the picture. Colour along says “coloured”, the Library uses Home’s words, and Palette has a Saved palettes link.',
   'Colour along looks like your paper: what you’ve coloured in its colours, the rest pale. Find next and Focus mode zoom only as far as a section needs, with a bold outline; a list shows the markers to take out of the box; Change colour offers the closest markers first.',

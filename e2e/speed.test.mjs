@@ -3,7 +3,7 @@
 // per Done, no PNG re-encode on autosave, one-section zone markers) give the same answers as the slow ones.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, buildGo, ENGINE } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -85,13 +85,20 @@ test('a big phone photo is kept at working size, Done repaints one section, auto
     HTMLCanvasElement.prototype.toDataURL = function (type, q) { if ((!type || type === 'image/png') && this.width === __mstest.W) png++; return orig.call(this, type, q); };
     let t0 = performance.now(); __mstest.forceFullRender(); __mstest.renderGuide(); const full = performance.now() - t0;
     const before = __mstest.colored.reduce((a, b) => a + b, 0);
+    // what Done puts back on the picture: a whole redraw puts the whole picture, one section just its patch
+    let put = 0, whole = 0; const P = CanvasRenderingContext2D.prototype, oput = P.putImageData;
+    P.putImageData = function (im, x, y, dx, dy, dw, dh) { if (this.canvas.width === __mstest.W) { if (arguments.length >= 7) put += dw * dh; else { whole++; put += im.width * im.height; } } return oput.apply(this, arguments); };
     t0 = performance.now(); document.getElementById('sfFDone').click(); const done = performance.now() - t0;
+    P.putImageData = oput;
     await window.__idle.wait(2200, 20000); // until the auto-save (1.5 s after the change) has run
     // (v285: built, it's in the Library, so its changes save into its entry)
     const saved = await IDB.get('guide-' + __mstest.curId);
-    return { full, done, png, before, savedProg: saved && saved.prog.length };
+    return { full, done, png, before, savedProg: saved && saved.prog.length, put: put / (__mstest.W * __mstest.H), whole };
   });
-  assert.ok(t.done < t.full * 0.5, `Done took ${t.done.toFixed(0)} ms vs ${t.full.toFixed(0)} ms for a full redraw`);
+  assert.equal(t.whole, 0, 'Done did not redraw the whole picture');
+  assert.ok(t.put > 0 && t.put < 0.2, `Done repainted ${(t.put * 100).toFixed(1)}% of the picture`);
+  // (the time only in Chromium: GitHub's WebKit redraws the whole picture in about 50 ms, so the gap is too small to time)
+  if (ENGINE !== 'webkit') assert.ok(t.done < t.full * 0.5, `Done took ${t.done.toFixed(0)} ms vs ${t.full.toFixed(0)} ms for a full redraw`);
   assert.equal(t.png, 0, 'autosave reused the saved section map');
   assert.equal(t.savedProg, t.before + 1, 'autosave still stored the new tick');
   await page.click('#sfFDone'); await idle(page);

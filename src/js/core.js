@@ -50,6 +50,31 @@ function freeCanvas(c) {
     }
   } catch (_) {}
 }
+// draws a picture much smaller (w × h) by halving it in steps first: Safari's engine shrinks in one go without
+// averaging, so a photo's grain and camera noise would survive into the small copy (Chrome averages either way)
+function drawShrunk(g, img, w, h) {
+  let src = img,
+    sw = img.naturalWidth || img.width,
+    sh = img.naturalHeight || img.height;
+  const tmp = [];
+  try {
+    while (sw >= 2 * w && sh >= 2 * h) {
+      const c = document.createElement('canvas');
+      c.width = Math.ceil(sw / 2);
+      c.height = Math.ceil(sh / 2);
+      const cg = c.getContext('2d');
+      cg.imageSmoothingEnabled = true;
+      cg.imageSmoothingQuality = 'high';
+      cg.drawImage(src, 0, 0, c.width, c.height);
+      tmp.push(c);
+      src = c;
+      sw = c.width;
+      sh = c.height;
+    }
+  } catch (_) {}
+  g.drawImage(src, 0, 0, w, h);
+  tmp.forEach(freeCanvas);
+}
 function hideToast() {
   const t = document.getElementById('msToast');
   if (t) t.classList.remove('on');

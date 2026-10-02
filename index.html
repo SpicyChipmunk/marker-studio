@@ -8468,7 +8468,7 @@ button.wrm {
 <div class="wrap" role="main">
  <div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div>
  <nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v293</div></div></div>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v294</div></div></div>
  <div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div>
  <div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -9489,6 +9489,31 @@ function freeCanvas(c) {
       c.height = 0;
     }
   } catch (_) {}
+}
+// draws a picture much smaller (w × h) by halving it in steps first: Safari's engine shrinks in one go without
+// averaging, so a photo's grain and camera noise would survive into the small copy (Chrome averages either way)
+function drawShrunk(g, img, w, h) {
+  let src = img,
+    sw = img.naturalWidth || img.width,
+    sh = img.naturalHeight || img.height;
+  const tmp = [];
+  try {
+    while (sw >= 2 * w && sh >= 2 * h) {
+      const c = document.createElement('canvas');
+      c.width = Math.ceil(sw / 2);
+      c.height = Math.ceil(sh / 2);
+      const cg = c.getContext('2d');
+      cg.imageSmoothingEnabled = true;
+      cg.imageSmoothingQuality = 'high';
+      cg.drawImage(src, 0, 0, c.width, c.height);
+      tmp.push(c);
+      src = c;
+      sw = c.width;
+      sh = c.height;
+    }
+  } catch (_) {}
+  g.drawImage(src, 0, 0, w, h);
+  tmp.forEach(freeCanvas);
 }
 function hideToast() {
   const t = document.getElementById('msToast');
@@ -19934,7 +19959,7 @@ function fitSource(img) {
     const g = c.getContext('2d');
     g.imageSmoothingEnabled = true;
     g.imageSmoothingQuality = 'high';
-    g.drawImage(img, 0, 0, c.width, c.height);
+    drawShrunk(g, img, c.width, c.height);
     return c;
   } catch (e) {
     return img;
@@ -20131,7 +20156,7 @@ function pgFind(img) {
   const g = c.getContext('2d', { willReadFrequently: true });
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'medium';
-  g.drawImage(img, 0, 0, w, h);
+  drawShrunk(g, img, w, h);
   let d;
   try {
     d = g.getImageData(0, 0, w, h).data;
@@ -28439,7 +28464,7 @@ function photoFromImage(img, url) {
   g.fillRect(0, 0, w, h);
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'high';
-  g.drawImage(img, 0, 0, w, h);
+  drawShrunk(g, img, w, h);
   let data;
   try {
     data = g.getImageData(0, 0, w, h).data;
@@ -48128,6 +48153,7 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'A grainy or noisy photo is read the same way in every browser: it’s shrunk in steps, so the grain evens out instead of being taken for the edge of the page.',
   'Zoomed in, the marker codes on the picture stay sharp. In Safari, the back swipe closes what’s open first (a sheet, the Library, Focus mode, Colour along) before it leaves the app.',
   'Back (on Android, or in a computer’s browser) closes what’s open first: a sheet, the Library, Focus mode, Colour along. On a phone the Plan’s tabs show on the first screen, and Focus mode keeps its buttons off the picture. Colour along says “coloured”, the Library uses Home’s words, and Palette has a Saved palettes link.',
   'Colour along looks like your paper: what you’ve coloured in its colours, the rest pale. Find next and Focus mode zoom only as far as a section needs, with a bold outline; a list shows the markers to take out of the box; Change colour offers the closest markers first.',

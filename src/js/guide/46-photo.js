@@ -46,7 +46,7 @@ function photoFromImage(img, url) {
   g.fillRect(0, 0, w, h);
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'high';
-  g.drawImage(img, 0, 0, w, h);
+  drawShrunk(g, img, w, h);
   let data;
   try {
     data = g.getImageData(0, 0, w, h).data;

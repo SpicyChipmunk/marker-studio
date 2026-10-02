@@ -293,7 +293,18 @@ export async function longPress(page, x, y) {
 }
 
 // The guide's header row (Release 3): the ⋯ menu is a sheet; Save a copy lives in it; the name is renamed in place.
-export async function openMenu(page) { await page.click('#sfMore'); await page.waitForSelector('#sfSheet .sfmitem'); }
+export async function openMenu(page) {
+  await page.click('#sfMore');
+  // (if the menu doesn't open, say what was showing instead: seen once on GitHub's WebKit, run 36942766302)
+  await page.waitForSelector('#sfSheet .sfmitem', { timeout: 15000 }).catch(async (e) => {
+    const was = await page.evaluate(() => {
+      const m = document.getElementById('sfMore'), r = m && m.getBoundingClientRect(), sh = document.getElementById('sfSheet');
+      const top = r && document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { sheet: sh ? sh.className + ' ' + (sh.textContent || '').trim().slice(0, 60) : null, more: m ? { shown: !!m.offsetParent, expanded: m.getAttribute('aria-expanded') } : null, atMore: top ? top.id || top.className || top.tagName : null, layers: [...document.querySelectorAll('.overlay.on')].map((o) => o.id), toast: (document.querySelector('#msToast.on') || {}).textContent || '', mode: window.__mstest && __mstest.sfmode };
+    }).catch(() => null);
+    throw new Error(`the ⋯ menu didn't open: ${JSON.stringify(was)} (${String(e.message).split('\n')[0]})`);
+  });
+}
 export async function menuItem(page, label) { await openMenu(page); await page.click(`#sfSheet .sfmitem:text-is("${label}")`); }
 export const saveCopy = (page) => menuItem(page, 'Save a copy');
 export async function rename(page, name) { await page.click('#sfRename'); await page.fill('#sfGName', name); await page.press('#sfGName', 'Enter'); }

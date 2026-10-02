@@ -1369,3 +1369,11 @@ Four reviewers went over v288 (code, a hands-on bug hunt, a hands-on UX walkthro
 - The test files are shared out among the CI parts by how long they take (`e2e/ci-parts.mjs`, `e2e/ci-durations.json`): WebKit's six parts now finish within a few minutes of each other.
 - Escape-stack's keyboard way into the backup dialog waits for the Library to put focus on Back up first (a race on GitHub).
 
+# Changes — v294 (grainy photos in Safari's engine; GitHub run 36942766302)
+
+- A photo is shrunk in halving steps before it's read (finding the page, the working-size copy of a very big photo, and the photo's colours), so its grain and camera noise even out in every browser. Playwright's WebKit shrinks in one go without averaging: on a grainy page photo with uneven light, the grain survived into the small copy the page finder looks at, the brighter half of the page was taken for a page running off the photo, and the corner check came up where Chrome goes straight to Build. Same answers in both now. (Real Safari on an iPad may already average; this makes it not matter.) `paper-and-background`'s grainy-paper test failed on this on GitHub.
+- Speed test: Done repainting one section is checked by what it puts back on the picture (no whole redraw, under a fifth of the picture); the time against a full redraw only in Chromium, since GitHub's WebKit redraws the whole picture in about 50 ms.
+- Flaky on GitHub's WebKit, now waited for: the picture shrinking to 50% after a scroll on the 13" iPad; Save fading back in after Draw. If the ⋯ menu ever doesn't open, the failure now says what was showing instead (once in Colour along, passed on a retry).
+- The photo timing check reads the corner check from the page correctly (it never came up for its photo: Build in half a second). `e2e/ci-durations.json` refreshed from this run's slowest files (WebKit parts were 19 to 27 minutes).
+- Cache bumped to `marker-studio-v294`.
+

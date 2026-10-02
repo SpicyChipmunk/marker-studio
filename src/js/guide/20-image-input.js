@@ -594,7 +594,7 @@ function fitSource(img) {
     const g = c.getContext('2d');
     g.imageSmoothingEnabled = true;
     g.imageSmoothingQuality = 'high';
-    g.drawImage(img, 0, 0, c.width, c.height);
+    drawShrunk(g, img, c.width, c.height);
     return c;
   } catch (e) {
     return img;
