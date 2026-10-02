@@ -238,7 +238,9 @@ test('Library delete: Undo brings the guide back, and it opens with its progress
   assert.equal(await page.evaluate((id) => state.saved.some((s) => s.id === id), id), false);
   assert.ok(await hasPayload(page, id), 'its stored picture is kept for now');
   assert.match(await toastText(page), /Deleted “.+”/);
-  await page.click('#toastAct'); await idle(page);
+  // (force: once on GitHub's WebKit, Playwright waited 30 s for the Undo to hold still while the Library drew its
+  // pictures; the toast is on screen, and the tap is what's being tested)
+  await page.click('#toastAct', { force: true }); await idle(page);
   assert.equal(await page.locator(row(id)).count(), 1, 'back in the list');
   await idle(page, 6300); // until the 6 s Undo window has run out
   assert.ok(await hasPayload(page, id), 'still stored after the Undo window');

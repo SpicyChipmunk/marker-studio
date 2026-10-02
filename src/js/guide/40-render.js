@@ -1086,6 +1086,21 @@ function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tic
     }
   }
   addR(_rg.ringRect);
+  // (v295) many rectangles: one around them all instead. Each putImageData costs Safari's engine about as much as
+  // putting the whole picture (10–20 ms at 1200 × 1600, whatever the rectangle), so a Photo pattern lining up,
+  // which re-colours thousands of small sections, took a minute there; the one rectangle redraws more codes, which is cheap.
+  if (rects.length > 8) {
+    const u = rects[0].slice();
+    for (let i = 1; i < rects.length; i++) {
+      const q = rects[i];
+      if (q[0] < u[0]) u[0] = q[0];
+      if (q[1] < u[1]) u[1] = q[1];
+      if (q[2] > u[2]) u[2] = q[2];
+      if (q[3] > u[3]) u[3] = q[3];
+    }
+    rects.length = 0;
+    rects.push(u);
+  }
   // one rectangle at a time: grow it until it holds every label it touches whole, restore its pixels, then redraw
   // those labels in the same order as a full draw. Nothing is clipped (a clip can change how curves are smoothed),
   // and a later rectangle that overlaps an earlier one restores and redraws the shared labels again, whole.

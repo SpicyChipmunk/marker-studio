@@ -1377,3 +1377,9 @@ Four reviewers went over v288 (code, a hands-on bug hunt, a hands-on UX walkthro
 - The photo timing check reads the corner check from the page correctly (it never came up for its photo: Build in half a second). `e2e/ci-durations.json` refreshed from this run's slowest files (WebKit parts were 19 to 27 minutes).
 - Cache bumped to `marker-studio-v294`.
 
+
+# Changes — v295 (Photo pattern speed in Safari's engine; GitHub run 36948214640)
+
+- Re-colouring a picture a part at a time put each changed part back on the canvas with its own `putImageData`. Each one costs Playwright's WebKit about as much as putting back the whole picture (10–20 ms at 1200 × 1600, however small the part), and lining up a Photo pattern re-colours thousands of small sections, so it took 35–65 s there (Chromium: a moment). More than 8 parts are now put back as one rectangle round them all (the codes inside it are redrawn, which is cheap): 1.8 s. Pixel for pixel the same as before. `straighten`'s Photo pattern test failed on this on GitHub, and passed in v293 only by finishing just in time. Real Safari may not pay the same price per call; it can only help there.
+- Undo's Library-delete test taps the toast's Undo without waiting for it to hold still (Playwright waited 30 s once on GitHub's WebKit while the Library drew its pictures).
+- Cache bumped to `marker-studio-v295`.
