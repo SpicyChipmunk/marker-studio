@@ -177,6 +177,12 @@ function progMix(rgb, k) {
 }
 // a line icon from the sprite (html/icons.html: Lucide's, and the tool row's own Codes and Values), sized to the text
 // beside it; hidden from screen readers (the button or text it's in says what it does)
+// A marker's old code as shown and searched: some of Ohuhu's are stored with the Roman numeral Ⅱ ("CGⅡ00", as they
+// were printed), which most fonts draw like "ll"; shown with plain letters, "CGII00" (v302). The stored code stays as
+// it is: saved work from before the rename is matched by it (state.js mkKnown).
+function oldCode(c) {
+  return String(c.old || '').normalize('NFKC');
+}
 function ic(n, cls) {
   return (
     '<svg class="ic' +

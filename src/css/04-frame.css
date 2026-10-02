@@ -304,6 +304,15 @@
   border-color: var(--ok);
   color: #dff5ee;
 }
+/* (Codes with nothing to show, a finished page in Colour along: off, and plainly not to be tapped, v302) */
+#sfRoot .sftools .sfz:disabled,
+#sfRoot .sftools .sfz:disabled[aria-pressed='true'] {
+  opacity: 0.4;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--sub);
+  cursor: default;
+}
 #sfRoot .sftools .sfzundo {
   width: auto;
   display: inline-flex;

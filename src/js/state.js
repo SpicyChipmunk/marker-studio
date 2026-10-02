@@ -739,7 +739,9 @@ function passes(i) {
 function matchesSearch(i) {
   if (!searchStr) return true;
   const c = COLORS[i];
-  return (c.code + ' ' + c.name + ' ' + (c.old || '')).toLowerCase().includes(searchStr);
+  return (c.code + ' ' + c.name + ' ' + (c.old ? oldCode(c) : ''))
+    .toLowerCase()
+    .includes(searchStr.normalize('NFKC'));
 }
 function avail(i) {
   return passes(i) && matchesSearch(i);

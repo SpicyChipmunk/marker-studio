@@ -8,7 +8,7 @@ Five independent reviewers went over v286:
 - a hands-on UX walkthrough at iPad portrait (834×1194), iPad landscape (1194×834) and phone (390×844);
 - words, consistency and accessibility.
 
-The clear bugs were reproduced, fixed and tested in v287; CHANGES.md lists them. Below are the rest: decisions for the next version, ranked, each with a recommendation, then the known limits.
+The clear bugs were reproduced, fixed and tested in v287; docs/CHANGES-archive.md lists them. Below are the rest: decisions for the next version, ranked, each with a recommendation, then the known limits.
 
 ## Decisions for the next version
 

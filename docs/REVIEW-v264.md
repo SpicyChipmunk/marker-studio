@@ -97,7 +97,7 @@ Nothing here could be tested in Safari; the device checklist covers what needs a
 - **Lint** is at 0 errors and 0 warnings (from 216 errors and 125 warnings). The deliberate empty `catch` blocks are allowed by the lint config.
 - **Duplicates merged:** one `openLibrary()`, and one block of CSS for the section tip.
 - **Tests:** eight fixed waits in the auto-save tests now flush instead of sleeping, and stale names were fixed.
-- **Still to do from the v259 cleanup plan** (all done by v268; see `CHANGES.md`):
+- **Still to do from the v259 cleanup plan** (all done by v268; see `docs/CHANGES-archive.md`):
   - Move the closure's opening and closing lines into the template, then format everything mechanically.
   - Rewrite `00-state.js` with one variable per line.
   - Build shared helpers: one dialog stack with one Escape handler, and one field list for a guide's style.

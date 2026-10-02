@@ -874,6 +874,26 @@
   white-space: nowrap;
   pointer-events: none;
 }
+/* the pointer to the section (positionTip): under the tip, or over it when the tip is below the section */
+#sfRoot .sftip::after {
+  content: '';
+  position: absolute;
+  left: var(--tipx, 50%);
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  margin-left: -7px;
+  background: #161d1c;
+  border-right: 1px solid rgba(255, 255, 255, 0.22);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+#sfRoot .sftip.sftipdn::after {
+  bottom: auto;
+  top: -7px;
+  transform: rotate(-135deg);
+}
 #sfRoot .sftip i {
   width: 12px;
   height: 12px;

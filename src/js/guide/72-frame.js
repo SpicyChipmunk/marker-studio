@@ -800,7 +800,12 @@ function renderTools() {
     onGuide = guide && (sfmode === 'guide' || sfmode === 'color');
   if (cb) {
     cb.style.display = onGuide ? '' : 'none';
-    cb.setAttribute('aria-pressed', hideLabels ? 'false' : 'true');
+    // (v302: in Colour along a coloured section shows no code, so a finished page has none to show: Codes is off then,
+    // and says so, rather than looking on over a picture with none)
+    const none = sfmode === 'color' && pageDone();
+    cb.setAttribute('aria-pressed', hideLabels || none ? 'false' : 'true');
+    cb.disabled = none;
+    cb.title = none ? 'Every section is coloured: no codes to show' : 'Marker codes';
   }
   // Greyscale: greys over the guide only (the sections editor's colours are a map, not the guide)
   const vb = document.getElementById('sfVals');

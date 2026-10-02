@@ -425,8 +425,9 @@
   gap: 4px;
 }
 #sfRoot .sffit .sfedit {
-  flex: 1 1 auto;
-  min-width: 0;
+  /* (v302: even widths where they fit, as Temperature's and Mood's are; else as wide as their words, then a new row) */
+  flex: 1 1 0;
+  min-width: max-content;
   padding: 4px 7px;
   line-height: 1.2;
 }
@@ -830,6 +831,21 @@
 #sfRoot #sfCtl #sfPal.sfc-segs .sfedit {
   min-width: 0;
   white-space: nowrap;
+}
+/* (the Filters bar's edges on the rows of choices above and below it: the main one's 2px side margins had left it inset
+   here, v302) */
+#sfRoot #sfCtl #sfFiltToggle {
+  margin-left: 0;
+  margin-right: 0;
+}
+/* Colours from (Owned, Saved palette, Generate palette): even, across the controls, as Temperature and Mood are; on
+   two rows rather than run over where they don't fit (v302) */
+#sfRoot #sfCtl #sfSrc.sfc-segs {
+  gap: 4px;
+}
+#sfRoot #sfCtl #sfSrc.sfc-segs .sfedit {
+  flex: 1 1 0;
+  min-width: max-content;
 }
 /* v300: Edit sections' tools (Leave out, Merge, Split, Add) the same even row */
 #sfRoot #sfCtl #sfEdit.sfc-segs {

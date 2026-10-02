@@ -103,7 +103,7 @@ function cellHtml(i, rank) {
   const c = COLORS[i];
   const col = state.mode === 'collection';
   const own = isOwned(i);
-  const old = c.old && c.old !== c.code ? ' · old ' + c.old : '';
+  const old = c.old && c.old !== c.code ? ' · old ' + oldCode(c) : '';
   const rk = rank ? '<span class="rankb">' + rank + '</span>' : '';
   const cls =
     'cell' + (col && !own && state.collView !== 'unowned' ? ' notown' : '') + (col && own ? ' own' : '');

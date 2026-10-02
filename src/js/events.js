@@ -238,7 +238,7 @@ function mkFill(i) {
   $('mkMeta').textContent = [
     c.fam || '',
     c.hex.toUpperCase(),
-    c.old && c.old !== c.code ? 'old code ' + c.old : '',
+    c.old && c.old !== c.code ? 'old code ' + oldCode(c) : '',
   ]
     .filter(Boolean)
     .join(' \u00b7 ');

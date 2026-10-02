@@ -2356,8 +2356,9 @@ button:focus-visible {
   gap: 4px;
 }
 #sfRoot .sffit .sfedit {
-  flex: 1 1 auto;
-  min-width: 0;
+  /* (v302: even widths where they fit, as Temperature's and Mood's are; else as wide as their words, then a new row) */
+  flex: 1 1 0;
+  min-width: max-content;
   padding: 4px 7px;
   line-height: 1.2;
 }
@@ -2761,6 +2762,21 @@ button:focus-visible {
 #sfRoot #sfCtl #sfPal.sfc-segs .sfedit {
   min-width: 0;
   white-space: nowrap;
+}
+/* (the Filters bar's edges on the rows of choices above and below it: the main one's 2px side margins had left it inset
+   here, v302) */
+#sfRoot #sfCtl #sfFiltToggle {
+  margin-left: 0;
+  margin-right: 0;
+}
+/* Colours from (Owned, Saved palette, Generate palette): even, across the controls, as Temperature and Mood are; on
+   two rows rather than run over where they don't fit (v302) */
+#sfRoot #sfCtl #sfSrc.sfc-segs {
+  gap: 4px;
+}
+#sfRoot #sfCtl #sfSrc.sfc-segs .sfedit {
+  flex: 1 1 0;
+  min-width: max-content;
 }
 /* v300: Edit sections' tools (Leave out, Merge, Split, Add) the same even row */
 #sfRoot #sfCtl #sfEdit.sfc-segs {
@@ -3356,6 +3372,15 @@ button:focus-visible {
   background: rgba(95, 184, 159, 0.16);
   border-color: var(--ok);
   color: #dff5ee;
+}
+/* (Codes with nothing to show, a finished page in Colour along: off, and plainly not to be tapped, v302) */
+#sfRoot .sftools .sfz:disabled,
+#sfRoot .sftools .sfz:disabled[aria-pressed='true'] {
+  opacity: 0.4;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--sub);
+  cursor: default;
 }
 #sfRoot .sftools .sfzundo {
   width: auto;
@@ -3996,6 +4021,9 @@ html.sfsheetin #sfRoot .sfsheet.sfshside {
   padding: 2px 8px 10px 36px;
 }
 #sfRoot .sfacts .sfedit {
+  /* (even widths; on a phone, two on a row and the third across under them rather than ragged, v302) */
+  flex: 1 1 0;
+  min-width: max-content;
   min-height: 44px;
   padding: 0 12px;
   font-size: var(--t-sm);
@@ -5265,6 +5293,26 @@ button.sffoccols::after {
   color: #e8eef0;
   white-space: nowrap;
   pointer-events: none;
+}
+/* the pointer to the section (positionTip): under the tip, or over it when the tip is below the section */
+#sfRoot .sftip::after {
+  content: '';
+  position: absolute;
+  left: var(--tipx, 50%);
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  margin-left: -7px;
+  background: #161d1c;
+  border-right: 1px solid rgba(255, 255, 255, 0.22);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+#sfRoot .sftip.sftipdn::after {
+  bottom: auto;
+  top: -7px;
+  transform: rotate(-135deg);
 }
 #sfRoot .sftip i {
   width: 12px;
@@ -9144,7 +9192,7 @@ button.wrm {
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v301</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v302</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><button id="presetHdr" class="presethdr" aria-expanded="false"><span>Add a set you own</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><div id="presetBody" style="display:none"><div class="presethint">Tick the boxes for the marker sets you own, then add them all at once.</div><div id="presetList"></div><div class="presetfoot"><button id="presetAdd" class="btn-primary" disabled>Add markers</button><button id="presetReset">Clear collection</button></div></div><button id="scanOpen" class="presethdr scanopen"><span>Scan or type codes</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -10267,6 +10315,12 @@ function progMix(rgb, k) {
 }
 // a line icon from the sprite (html/icons.html: Lucide's, and the tool row's own Codes and Values), sized to the text
 // beside it; hidden from screen readers (the button or text it's in says what it does)
+// A marker's old code as shown and searched: some of Ohuhu's are stored with the Roman numeral Ⅱ ("CGⅡ00", as they
+// were printed), which most fonts draw like "ll"; shown with plain letters, "CGII00" (v302). The stored code stays as
+// it is: saved work from before the rename is matched by it (state.js mkKnown).
+function oldCode(c) {
+  return String(c.old || '').normalize('NFKC');
+}
 function ic(n, cls) {
   return (
     '<svg class="ic' +
@@ -12233,7 +12287,9 @@ function passes(i) {
 function matchesSearch(i) {
   if (!searchStr) return true;
   const c = COLORS[i];
-  return (c.code + ' ' + c.name + ' ' + (c.old || '')).toLowerCase().includes(searchStr);
+  return (c.code + ' ' + c.name + ' ' + (c.old ? oldCode(c) : ''))
+    .toLowerCase()
+    .includes(searchStr.normalize('NFKC'));
 }
 function avail(i) {
   return passes(i) && matchesSearch(i);
@@ -12324,7 +12380,7 @@ function showColor(idx, animate) {
     swatch.style.background = c.hex;
     code.textContent = c.code;
   }
-  const old = c.old && c.old !== c.code ? ' — was ' + c.old : '';
+  const old = c.old && c.old !== c.code ? ' — was ' + oldCode(c) : '';
   const tl = (TONE_DEFS.find((t) => t.k === TONE[idx]) || {}).t || '',
     sl = (SAT_DEFS.find((s) => s.k === SAT[idx]) || {}).t || '';
   readout.classList.remove('rpal');
@@ -14577,7 +14633,7 @@ function cellHtml(i, rank) {
   const c = COLORS[i];
   const col = state.mode === 'collection';
   const own = isOwned(i);
-  const old = c.old && c.old !== c.code ? ' · old ' + c.old : '';
+  const old = c.old && c.old !== c.code ? ' · old ' + oldCode(c) : '';
   const rk = rank ? '<span class="rankb">' + rank + '</span>' : '';
   const cls =
     'cell' + (col && !own && state.collView !== 'unowned' ? ' notown' : '') + (col && own ? ' own' : '');
@@ -16306,7 +16362,7 @@ function mkFill(i) {
   $('mkMeta').textContent = [
     c.fam || '',
     c.hex.toUpperCase(),
-    c.old && c.old !== c.code ? 'old code ' + c.old : '',
+    c.old && c.old !== c.code ? 'old code ' + oldCode(c) : '',
   ]
     .filter(Boolean)
     .join(' \u00b7 ');
@@ -26835,12 +26891,18 @@ function positionTip() {
   d.style.top = '0px';
   const w = d.offsetWidth,
     h = d.offsetHeight;
-  let top;
+  let top,
+    // (which side of the tip its pointer is on: under it when it's above the section, over it when below; in the last
+    // resort, the side towards the label)
+    below = false;
   if (top0 - g - h >= vt) top = top0 - g - h;
-  else if (bot0 + g + h <= ih - 6) top = bot0 + g;
-  else {
+  else if (bot0 + g + h <= ih - 6) {
+    top = bot0 + g;
+    below = true;
+  } else {
     const gp = Math.max(10, Math.min(28, (p.r || 6) * sx * 0.5 + 6));
     top = py - gp - h >= vt ? py - gp - h : Math.min(py + gp, Math.max(6, ih - 6 - h));
+    below = top > py;
   }
   let lo = Math.max(6, hv.left + 6),
     hi = Math.min(iw, hv.right) - 6 - w;
@@ -26848,8 +26910,12 @@ function positionTip() {
     lo = 6;
     hi = Math.max(6, iw - 6 - w);
   }
-  d.style.left = Math.round(Math.max(lo, Math.min(hi, px - w / 2))) + 'px';
+  const left = Math.round(Math.max(lo, Math.min(hi, px - w / 2)));
+  d.style.left = left + 'px';
   d.style.top = Math.round(top) + 'px';
+  // (a pointer to the section, from the tip's edge nearest it: above the section, its foot; below, its top, v302)
+  d.classList.toggle('sftipdn', below);
+  d.style.setProperty('--tipx', Math.round(Math.max(14, Math.min(w - 14, px - left))) + 'px');
 }
 // said by screen readers (an aria-live region made in mount)
 function sayLive(t) {
@@ -36289,7 +36355,12 @@ function renderTools() {
     onGuide = guide && (sfmode === 'guide' || sfmode === 'color');
   if (cb) {
     cb.style.display = onGuide ? '' : 'none';
-    cb.setAttribute('aria-pressed', hideLabels ? 'false' : 'true');
+    // (v302: in Colour along a coloured section shows no code, so a finished page has none to show: Codes is off then,
+    // and says so, rather than looking on over a picture with none)
+    const none = sfmode === 'color' && pageDone();
+    cb.setAttribute('aria-pressed', hideLabels || none ? 'false' : 'true');
+    cb.disabled = none;
+    cb.title = none ? 'Every section is coloured: no codes to show' : 'Marker codes';
   }
   // Greyscale: greys over the guide only (the sections editor's colours are a map, not the guide)
   const vb = document.getElementById('sfVals');
@@ -50672,31 +50743,31 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
-  'In Safari, Try the sample from the welcome puts the keyboard and screen reader on the guide’s name again, as it did before v300.',
-  'On an iPad, Home, Palette and Markers use the width: Home is two columns, Palette held sideways puts its settings beside the palette, and Markers puts the search and Owned / All on one row. Home’s guide pictures show the whole page, and until you’ve made a guide, the start card shows the sample page beside its guide.',
-  'Scanning no longer glues a stray digit onto a code, heeds the brand printed on the cap, and reads Copic 0 and Ohuhu 120. Splitting a coloured section keeps its marker and zone, and Mark all coloured and a re-rolled palette colour can be undone.',
-  'Scanning reads every line of a pasted list, keeps two caps read together with one name, and says a held cap once. Ticks follow sections you merge or split, Focus mode tells a screen reader each section, and zones keep touching sections apart across their borders.',
-  'Scanning markers asks when the code and the colour name don’t agree, knows Ohuhu’s old codes, and waits in the list with any question so you can sweep on. The welcome offers it for markers bought one at a time. Palette’s Undo goes back to that palette’s scheme and size.',
-  'Markers › Scan or type codes: type or paste codes, or on an iPad or iPhone hold your markers’ caps up to Scan Text one after another. Each one beeps as it’s read; check the list, then add them all at once.',
-  'A grainy or noisy photo is read the same way in every browser: it’s shrunk in steps, so the grain evens out instead of being taken for the edge of the page.',
-  'Zoomed in, the marker codes on the picture stay sharp. In Safari, the back swipe closes what’s open first (a sheet, the Library, Focus mode, Colour along) before it leaves the app.',
-  'Back (on Android, or in a computer’s browser) closes what’s open first: a sheet, the Library, Focus mode, Colour along. On a phone the Plan’s tabs show on the first screen, and Focus mode keeps its buttons off the picture. Colour along says “coloured”, the Library uses Home’s words, and Palette has a Saved palettes link.',
-  'Colour along looks like your paper: what you’ve coloured in its colours, the rest pale. Find next and Focus mode zoom only as far as a section needs, with a bold outline; a list shows the markers to take out of the box; Change colour offers the closest markers first.',
-  'Edit sections says what it’s for and goes back to the Plan when nothing changed. On an iPad the tool row has words (Codes, Greyscale, Full screen) and every screen is one width. Questions use the app’s own buttons, and the Print sheet shows each choice.',
-  'Home has a Continue card: your newest part-coloured guide as you’ve coloured it, opening Colour along at the marker to pick up. Guides from your photos keep themselves in the Library once built; the sample once you change it.',
-  'On an iPad the guide uses the screen: a bigger picture in portrait, and in landscape the picture fits beside the controls with nothing off the bottom. New line icons throughout.',
-  'What you’ve coloured stays put: ticked sections keep their markers when you change the plan, and a part-coloured guide reopens in Colour along. Turn codes off to see your picture as it is; a finished page shows what you coloured and when.',
-  'Printing: labels never overlap (tiny sections get magnified close-ups), and the key has boxes to tick and the order to colour in. Balance’s bar shows what’s really painted.',
-  'Random has a Balance: Main colour lays one colour over about 60% of the picture, a second over 30% and an accent over 10% (tap the bar to choose them). Mixed is Random as before, now with No repeats. Surprise can pick it too.',
-  'Test strip (Share › Print › Pages): a page of boxes to try each marker, and its highlight, base and shadow, on your own paper. Radial gradients have a centre mark to drag where the rings start, and a zone’s sections can be chosen with the keyboard.',
-  'Shading per zone: in Shading, the chips choose a zone to shade or leave flat, with its own roundness, highlights and shadows. The light stays one for the whole picture.',
-  'Zones: give part of your picture its own pattern and colours. In Pattern, tap the + Zone button, then tap or drag across sections. Colour along can go zone by zone.',
-  'Values (the three grey bars under the picture) shows your guide in greys, to judge its light and dark. Colour along lists markers lightest first, and Find next goes through a marker the way Focus mode does.',
-  'Shading has Highlights (warmer, or the paper left white) and Shadows (cooler, or grey). A Gradient that goes right round the colour wheel lets you choose its start colour. The sample now keeps all 166 of its sections.',
-  'The Photo pattern picks its markers more carefully, grades its matches in Match’s words, and suggests how many markers you need.',
-  'Gradients and palettes choose markers by how they look: no stray greys and no two colours you can’t tell apart. Gradients have a new Look, and Mood replaces Intensity.',
-  'Match a colour ranks markers by eye. In Match and From photo, Tap the white paper corrects a photo’s lighting; the Photo pattern does it by itself for photos of pages.',
-  'Codes are easier to read: dark or white text, whichever stands out, and each code shows its brand as a small tag.',
+  'When you tap a section, the box that opens now points to it. The guide’s rows of buttons are tidier.',
+  'On an iPad, the Home, Markers and Palette screens now use the full width, and Home shows what a finished guide looks like before you make your first.',
+  'Scan is more reliable and now reads the brand printed on the cap. You can now undo Mark all coloured, and a palette colour you re-rolled.',
+  'Paste a whole list of codes and every line is read. Your ticks stay put when you merge or split sections.',
+  'When a cap’s code and colour name don’t match, Scan asks which you have. It also knows Ohuhu’s older codes.',
+  'New: add markers by typing their codes, or on an iPad or iPhone by scanning their caps one after another (Markers › Scan or type codes).',
+  'Grainy photos of a page are read more reliably.',
+  'Codes stay sharp when you zoom in. In Safari, swiping back closes what’s open before it leaves the app.',
+  'Back closes what’s open before it leaves the app. On a phone, the guide’s tabs are on the first screen.',
+  'Colour along now looks like your paper: what you’ve coloured is in colour, the rest pale. Change colour offers the closest markers first.',
+  'The Print sheet shows what its page and label choices look like. On an iPad, the picture’s tools have names.',
+  'Home has a Continue card that takes you back to the marker you were on. Your guides save themselves.',
+  'On an iPad, the guide’s picture is bigger and fits beside the controls. New icons throughout.',
+  'Sections you’ve coloured keep their markers when you change the plan. Turn codes off to see your picture as it is.',
+  'Printed guides: labels never overlap, tiny sections get close-ups, and the key has boxes to tick.',
+  'Random’s Balance can follow the 60-30-10 rule: one main colour, a second and an accent.',
+  'Print a test strip to try each marker on your own paper first (Share › Print › Pages).',
+  'Each zone can have its own shading, or none.',
+  'New: zones. Give part of your picture its own pattern and colours (Pattern › + Zone).',
+  'Greyscale shows your guide in greys, to check its lights and darks. Colour along lists markers lightest first.',
+  'Shading has new highlight and shadow choices, and a gradient can start from the colour you choose.',
+  'The Photo pattern matches markers more closely and suggests how many you need.',
+  'Gradients and palettes avoid stray greys and colours too alike to tell apart.',
+  'Match a colour picks markers the way your eye would, and corrects a photo’s lighting from the white paper.',
+  'Codes are easier to read, and each shows its brand.',
 ];
 (function () {
   if (typeof MutationObserver === 'undefined') return;

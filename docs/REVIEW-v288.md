@@ -7,7 +7,7 @@ Four independent reviewers went over v288:
 - a hands-on UX walkthrough at iPad portrait (834×1194), iPad landscape (1194×834), phone (390×844), small phone (320×568) and large text;
 - words, consistency and accessibility.
 
-The clear bugs were reproduced, fixed and tested (`e2e/v289.test.mjs`); CHANGES.md lists them under v289. Below are the rest: the decisions, ranked, each with its recommendation (all built in v289 as recommended, #17 included; the Library as a screen of its own in #8 is still for later), then the known limits.
+The clear bugs were reproduced, fixed and tested (`e2e/v289.test.mjs`); docs/CHANGES-archive.md lists them under v289. Below are the rest: the decisions, ranked, each with its recommendation (all built in v289 as recommended, #17 included; the Library as a screen of its own in #8 is still for later), then the known limits.
 
 ## Fixed (v289)
 

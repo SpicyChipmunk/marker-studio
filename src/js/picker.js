@@ -53,7 +53,7 @@ function showColor(idx, animate) {
     swatch.style.background = c.hex;
     code.textContent = c.code;
   }
-  const old = c.old && c.old !== c.code ? ' — was ' + c.old : '';
+  const old = c.old && c.old !== c.code ? ' — was ' + oldCode(c) : '';
   const tl = (TONE_DEFS.find((t) => t.k === TONE[idx]) || {}).t || '',
     sl = (SAT_DEFS.find((s) => s.k === SAT[idx]) || {}).t || '';
   readout.classList.remove('rpal');

@@ -415,12 +415,18 @@ function positionTip() {
   d.style.top = '0px';
   const w = d.offsetWidth,
     h = d.offsetHeight;
-  let top;
+  let top,
+    // (which side of the tip its pointer is on: under it when it's above the section, over it when below; in the last
+    // resort, the side towards the label)
+    below = false;
   if (top0 - g - h >= vt) top = top0 - g - h;
-  else if (bot0 + g + h <= ih - 6) top = bot0 + g;
-  else {
+  else if (bot0 + g + h <= ih - 6) {
+    top = bot0 + g;
+    below = true;
+  } else {
     const gp = Math.max(10, Math.min(28, (p.r || 6) * sx * 0.5 + 6));
     top = py - gp - h >= vt ? py - gp - h : Math.min(py + gp, Math.max(6, ih - 6 - h));
+    below = top > py;
   }
   let lo = Math.max(6, hv.left + 6),
     hi = Math.min(iw, hv.right) - 6 - w;
@@ -428,8 +434,12 @@ function positionTip() {
     lo = 6;
     hi = Math.max(6, iw - 6 - w);
   }
-  d.style.left = Math.round(Math.max(lo, Math.min(hi, px - w / 2))) + 'px';
+  const left = Math.round(Math.max(lo, Math.min(hi, px - w / 2)));
+  d.style.left = left + 'px';
   d.style.top = Math.round(top) + 'px';
+  // (a pointer to the section, from the tip's edge nearest it: above the section, its foot; below, its top, v302)
+  d.classList.toggle('sftipdn', below);
+  d.style.setProperty('--tipx', Math.round(Math.max(14, Math.min(w - 14, px - left))) + 'px');
 }
 // said by screen readers (an aria-live region made in mount)
 function sayLive(t) {

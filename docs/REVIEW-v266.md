@@ -99,7 +99,7 @@ Nothing here could be tested in Safari; the device checklist covers what needs a
 
 ## 4. Decisions for Ben (ranked)
 
-All nine were settled and built in v267 (see `CHANGES.md`); for #9 Ben chose (a), with a minifier possible later.
+All nine were settled and built in v267 (see `docs/CHANGES-archive.md`); for #9 Ben chose (a), with a minifier possible later.
 
 1. **Brand letters when you own both brands.** Today a list that happens to be all one brand shows no letters, even when you own both. Example: Match's results come back all Copic, so "R16" there is ambiguous. **Recommend:** show letters when the view mixes brands *or* your collection does (the full range in demo mode). They'd be hidden only when everything in play is one brand. Exports stay as decided.
 2. **Undo toasts in the guide.** The tool row already has ↶ Undo, which says what it will undo; the toasts repeat it and get in the way. **Recommend:** only show an Undo toast for actions without a visible Undo, such as Reset progress, Clear ticks and Library delete.
