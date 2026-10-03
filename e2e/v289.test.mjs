@@ -240,8 +240,11 @@ test('Library: the line under the title fits what is there', async () => {
 test('iPad Home: with Your guides showing, no Library card (All guides goes there); the backup card waits the usual 14 days', async () => {
   const g = (id, d) => ({ id, type: 'guide', name: 'G' + id, keys: ['Ohuhu|R014', 'Ohuhu|Y111'], n: 40, done: d, ts: Date.now() - id });
   const st = (first) => ({ 'ms-onboarded': '1', 'ms-setup-tip': '1', 'ms-last-ver': 'v289', 'ms-first-use': String(Date.now() - first * 864e5), 'ohuhu-hb320-picker-v3': JSON.stringify({ mode: 'home', ownedSeedV: 2, copicAdd1: 1, libAdj1: 1, setFix1: 1, owned: ['Ohuhu|R014', 'Ohuhu|Y111'], saved: [g(1, 5), g(2, 9), g(3, 0)] }) });
+  // (v304: in a Safari tab a guide's first coloured section brings the backup card at once (v304-persist); the
+  // 14 days are the rule for other browsers, so this checks them in Chrome, also in Safari's engine)
+  const CHROME = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
   {
-    const { page, errors, ctx } = await openApp({ width: 834, height: 1194, storage: st(1) });
+    const { page, errors, ctx } = await openApp({ width: 834, height: 1194, storage: st(1), userAgent: CHROME });
     await idle(page);
     assert.equal(await page.isVisible('#sfRecent'), true);
     assert.equal(await page.isVisible('#homeLibCard'), false, 'no Library card beside All guides');
@@ -250,7 +253,7 @@ test('iPad Home: with Your guides showing, no Library card (All guides goes ther
     await ctx.close();
   }
   {
-    const { page, errors, ctx } = await openApp({ width: 834, height: 1194, storage: st(15) });
+    const { page, errors, ctx } = await openApp({ width: 834, height: 1194, storage: st(15), userAgent: CHROME });
     await page.waitForSelector('#backupNudge', { state: 'visible' });
     assert.doesNotMatch(await page.textContent('#backupNudge'), /One file holds/, 'one short line');
     assert.deepEqual(errors, []);

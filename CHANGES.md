@@ -361,4 +361,5 @@ Every key engine was reviewed in three passes: path by path with every constant 
 - In Safari on an iPhone or iPad, one **Keep your guide safe** card after you first colour a guide, and after 5 days or more away: back up, and add Marker Studio to the Home Screen.
 - A test pins the order of markers.json, since saved palettes keep markers by position.
 
+- From v304's GitHub run (every Chromium test and all but one WebKit test passed): an older test expected no backup card on an iPad's first day; in Safari's engine that is now the Keep your guide safe card by design, so the test checks the 14-day rule in Chrome, as it means to.
 - Cache bumped to `marker-studio-v304`.
