@@ -85,6 +85,40 @@ function showCustom() {
   setAmb(filled.length ? COLORS[filled[0]].hex : null);
 }
 
+// a family's markers in order: by brand as the data has them (its first marker's place), then by code as the data
+// lists them (by the code's text: YR015 before YR03, as printed on the sets' charts)
+let _brandAt = null;
+function famOrd(a, b) {
+  if (!_brandAt) {
+    _brandAt = {};
+    COLORS.forEach((c, i) => {
+      if (_brandAt[c.brand] == null) _brandAt[c.brand] = i;
+    });
+  }
+  const A = COLORS[a],
+    B = COLORS[b];
+  return _brandAt[A.brand] - _brandAt[B.brand] || (A.code < B.code ? -1 : A.code > B.code ? 1 : a - b);
+}
+// the grid's groups in order: the markers whose code the search names exactly, as "Best match", then those whose old
+// code it names, as "Old code" (v304: "g410" had shown G24, once G410, first), then each family, brand by brand and by
+// code within a brand (markers added to the data later, Ohuhu's R12 and R14 say, had come after the other brand's, v303)
+function searchGroups(m) {
+  const by = {},
+    best = [],
+    was = [],
+    out = [];
+  for (const i of m) {
+    const x = sExact(i);
+    if (x === 2) best.push(i);
+    else if (x === 1) was.push(i);
+    else (by[COLORS[i].fam] = by[COLORS[i].fam] || []).push(i);
+  }
+  if (best.length)
+    out.push({ f: { name: 'Best match', repHex: COLORS[best[0]].hex }, list: best.sort(famOrd) });
+  if (was.length) out.push({ f: { name: 'Old code', repHex: COLORS[was[0]].hex }, list: was.sort(famOrd) });
+  for (const f of families) if (by[f.name]) out.push({ f: f, list: by[f.name].sort(famOrd) });
+  return out;
+}
 function finderMatches() {
   const view = state.mode === 'collection' ? state.collView : state.finderScope === 'owned' ? 'owned' : 'all';
   const out = [];
@@ -238,7 +272,9 @@ function searchElsewhereHTML(more) {
   // a search for a code ("r22") names it, even when it also finds longer ones (R220); else the search as typed
   const typed = (searchInput.value || '').trim(),
     q = '\u201c' + esc(typed) + '\u201d',
-    exact = more.find((i) => COLORS[i].code.toLowerCase() === searchStr),
+    // (its own code before a marker that once had that code: "g410" is G410, not G24, whose old code it was, v304)
+    cur = more.find((i) => sExact(i) === 2),
+    exact = cur != null ? cur : more.find((i) => sExact(i) === 1),
     one = exact != null ? esc(COLORS[exact].code) : more.length === 1 ? esc(COLORS[more[0]].code) : '';
   return (
     '<div class="empty">' +
@@ -253,7 +289,10 @@ function searchElsewhereHTML(more) {
     moreInAllHTML(more.length, true)
   );
 }
-function renderResults() {
+function renderResults(bySearch) {
+  // (an armed Untick all shown counted what was shown then: a redraw disarms it, v304)
+  if (ownNoneBtn.dataset.arm === '1') unownDisarm();
+  results.classList.toggle('noanim', !!bySearch);
   mkHintRender();
   qClearSync();
   const more = searchOutside();
@@ -261,20 +300,32 @@ function renderResults() {
   if (more.length && results.firstElementChild && !results.querySelector('.moreall'))
     results.insertAdjacentHTML('beforeend', moreInAllHTML(more.length, !results.querySelector('.cell')));
 }
+// what the grid shows, in its order: what Tick all shown, Untick all shown, Copy codes and Palette from these act on
+// (v304: Ramp gaps shows only some of the matches, and Tick all shown had ticked all of them). To buy has no grid.
+let gridShown = [];
+function shownMatches() {
+  return state.mode === 'collection' && state.collView === 'wish' ? finderMatches() : gridShown.slice();
+}
+function gridActs(list) {
+  gridShown = list;
+  ownAllBtn.disabled = !list.length;
+  ownNoneBtn.disabled = !list.length;
+  // (a palette needs a colour: not only the Colorless Blender, v304)
+  toPalette.disabled = !list.some((i) => !NOINK.has(i));
+}
 function renderGrid(more) {
   const m = finderMatches();
   cellBt = brandsMixedIn(m);
-  ownAllBtn.disabled = !m.length;
-  ownNoneBtn.disabled = !m.length;
+  gridActs(m);
   matchHead(m.length, 'marker');
-  toPalette.disabled = !m.length;
   if (!m.length && more.length && state.owned.size) {
     results.innerHTML = searchElsewhereHTML(more);
     return;
   }
   if (!m.length) {
+    // (in Owned only: elsewhere a search that found nothing had said the collection was empty, v304)
     results.innerHTML =
-      state.mode === 'collection' && !state.owned.size && state.collView !== 'all'
+      state.mode === 'collection' && !state.owned.size && state.collView === 'owned'
         ? '<div class="empty">Your collection is empty. Tick the sets you own under <b>Add a set you own</b>, or switch to <b>All</b> to add single markers.</div>'
         : '<div class="empty">' +
           (searchStr
@@ -285,6 +336,7 @@ function renderGrid(more) {
   }
   if (state.mode === 'collection' && state.collView === 'unowned' && state.gapSort === 'gap') {
     const order = gapRank(m);
+    gridActs(order);
     results.innerHTML =
       '<div class="rgroup"><div class="pile">' +
       order.map((i, idx) => cellHtml(i, idx + 1)).join('') +
@@ -295,6 +347,7 @@ function renderGrid(more) {
     let html = '',
       s = 0;
     const gps = completeGroups(m);
+    gridActs([].concat(...gps.map((g) => g.un)));
     cellBt = brandsMixedIn([].concat(...gps.map((g) => g.un)));
     for (const gp of gps) {
       const rep = families.find((f) => f.name === gp.fam);
@@ -319,6 +372,7 @@ function renderGrid(more) {
   }
   if (state.mode === 'collection' && state.collView === 'unowned' && state.gapSort === 'ramps') {
     const order = rampRank(m);
+    gridActs(order);
     cellBt = brandsMixedIn(order);
     matchHead(order.length, 'ramp gap');
     if (!order.length) {
@@ -332,13 +386,13 @@ function renderGrid(more) {
       '</div></div>';
     return;
   }
-  const by = {};
-  for (const i of m) (by[COLORS[i].fam] = by[COLORS[i].fam] || []).push(i);
+  const groups = searchGroups(m);
   let html = '',
     s = 0;
-  for (const f of families) {
-    const list = by[f.name];
-    if (!list) continue;
+  gridActs([].concat(...groups.map((g) => g.list)));
+  for (const g of groups) {
+    const f = g.f,
+      list = g.list;
     html +=
       '<div class="rgroup" style="animation-delay:' +
       s * 45 +

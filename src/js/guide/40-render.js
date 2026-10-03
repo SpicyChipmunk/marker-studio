@@ -1,12 +1,14 @@
 // texture: distance to the nearest line (capped at 12, worked out directly in bytes) and a streaky paper field
+// (both on the picture as it came: an enlarged picture's distances and streaks are srcK times as many pixels, v303)
 function buildTexFields() {
   const n = W * H,
-    E = new Uint8Array(n);
+    E = new Uint8Array(n),
+    cap = Math.min(255, Math.round(12 * srcK));
   for (let y = 0; y < H; y++) {
     const ro = y * W;
     for (let x = 0; x < W; x++) {
       const q = ro + x;
-      let d = labels[q] === -1 ? 0 : 12;
+      let d = labels[q] === -1 ? 0 : cap;
       if (d) {
         if (x > 0 && E[q - 1] + 1 < d) d = E[q - 1] + 1;
         if (y > 0 && E[q - W] + 1 < d) d = E[q - W] + 1;
@@ -31,7 +33,7 @@ function buildTexFields() {
     diry = -0.39,
     SN = 4096,
     SIN = new Float32Array(SN),
-    ph = (0.07 * SN) / 6.283185307179586;
+    ph = ((0.07 / srcK) * SN) / 6.283185307179586;
   for (let i = 0; i < SN; i++) SIN[i] = Math.sin((i * 6.283185307179586) / SN) * 0.65 * 95;
   for (let y = 0; y < H; y++) {
     const ro = y * W,
@@ -495,7 +497,9 @@ function secLabel(l, m, tick, draw) {
   const c = comps[l],
     p = labelPos(l);
   if (tick && colored[l]) {
-    const fs = Math.floor(Math.max(7, Math.min(p.r * 1.7, Math.sqrt(c.area) * 0.5, 30)) * 2) / 2;
+    // (sizes in the picture's pixels; an enlarged one's are srcK times as many, so its ticks look as they did, v303)
+    const fs =
+      Math.floor(Math.max(7 * srcK, Math.min(p.r * 1.7, Math.sqrt(c.area) * 0.5, 30 * srcK)) * 2) / 2;
     if (draw) {
       ctx.font = '700 ' + fs + 'px ' + LFONT;
       ctx.textAlign = 'center';
@@ -513,9 +517,11 @@ function secLabel(l, m, tick, draw) {
     return [p.x - fs * 0.7 - 2, p.y - fs * 0.8 - 2, p.x + fs * 0.7 + 2, p.y + fs * 0.8 + 2];
   }
   const dark = darkText(m.hex),
+    // (in the picture's pixels: an enlarged picture's codes as big on the screen as they were before, v303)
     o = {
-      base: 9,
-      min: 5,
+      base: 9 * srcK,
+      min: 5 * srcK,
+      max: 30 * srcK,
       w: 600,
       swk: 0.27,
       stroke: dark ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.55)',
@@ -674,7 +680,7 @@ function paintPixels(PX, sh, x0, y0, x1, y1, one) {
       }
       if (f & 1) {
         const e = edgeDist[p],
-          mul = (e >= 9 ? 1 : 1 - A * (1 - e * 0.1111)) * (1 + Bt * (texField[p] - 128));
+          mul = (e >= 9 * srcK ? 1 : 1 - A * (1 - e / (9 * srcK))) * (1 + Bt * (texField[p] - 128));
         r *= mul;
         g *= mul;
         b *= mul;
@@ -872,7 +878,7 @@ function renderGuide() {
           }
           if (tex && colArr[l]) {
             const e = edgeDist[p],
-              ef = e >= 9 ? 1 : e * 0.1111,
+              ef = e >= 9 * srcK ? 1 : e / (9 * srcK),
               mul = (1 - texAmt * 0.3 * (1 - ef)) * (1 + texAmt * 0.1 * ((texField[p] - 128) * 0.0078125));
             pd[jj] = c[0] * mul;
             pd[jj + 1] = c[1] * mul;

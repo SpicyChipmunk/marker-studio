@@ -14,21 +14,63 @@ function labelsSig() {
   return W + 'x' + H + ':' + a + ':' + b;
 }
 function lmapURL() {
-  const sig = labelsSig();
+  // (with the specks folded into the lines, which ones: v304)
+  const f = foldSet(),
+    sig = labelsSig() + (f ? ':f' + f.sig : '');
   if (_lmC && _lmC.sig === sig) return _lmC.url;
-  const url = _lmapURL();
+  const url = _lmapURL(f);
   _lmC = { sig: sig, url: url };
   return url;
 }
-function _lmapURL() {
+// A very dense page (fine hatching, say) can have far more sections than a guide can open again (MAXSECS). When it has
+// more than FOLDAT, the specks smaller than Min section size are saved as part of the lines, the highest numbers
+// first (the rest keep theirs), until FOLDAT are left. Only in the saved copy: the sections on screen, and Undo, stay
+// as they are. Never one with a marker or left white, kept in the guide by a tap, ticked or part done, pinned, keeping
+// its shading, or left out keeping its marker. null when nothing is folded. (v304)
+const FOLDAT = 90000;
+function foldSet() {
+  if (!labels || !comps || comps.length - 1 <= FOLDAT) return null;
+  let live = 0;
+  for (let l = 1; l < comps.length; l++) if (comps[l] && !comps[l].merged) live++;
+  if (live <= FOLDAT) return null;
+  const mp = minPx(),
+    P = tonePart && tonePart._c === colored ? tonePart : null,
+    out = new Uint8Array(comps.length);
+  let n = 0,
+    h = 0;
+  for (let l = comps.length - 1; l >= 1 && live - n > FOLDAT; l--) {
+    if (!foldable(l, mp, P)) continue;
+    out[l] = 1;
+    n++;
+    h = (Math.imul(h, 31) + l) | 0;
+  }
+  return n ? { out: out, n: n, live: live, sig: n + '.' + h } : null;
+}
+// a speck that may be saved as part of the lines (foldSet), below Min section size mp
+function foldable(l, mp, P) {
+  const c = comps[l],
+    ad = assignData;
+  if (!c || c.merged || c.area >= mp || (secState && secState[l] === 1)) return false;
+  if (ad && (ad.assign[l] !== undefined || (ad.paper && ad.paper[l]))) return false;
+  return !(
+    (colored && colored[l]) ||
+    (P && P[l]) ||
+    locks[l] !== undefined ||
+    heldSh[l] ||
+    _gone[l] ||
+    _lostKeys[l]
+  );
+}
+function _lmapURL(f) {
   const c = document.createElement('canvas');
   c.width = W;
   c.height = H;
   const x = c.getContext('2d');
   const im = x.createImageData(W, H),
     d = im.data;
+  const fo = f ? f.out : null;
   for (let p = 0, j = 0; p < W * H; p++, j += 4) {
-    const v = labels[p] < 0 ? 0 : labels[p] + 1;
+    const v = labels[p] < 0 || (fo && fo[labels[p]]) ? 0 : labels[p] + 1;
     d[j] = v & 255;
     d[j + 1] = (v >> 8) & 255;
     d[j + 2] = (v >> 16) & 255;
@@ -38,6 +80,10 @@ function _lmapURL() {
   const u = c.toDataURL('image/png');
   freeCanvas(c);
   return u;
+}
+// background by the edge rule alone (applyBg), as a guide opened again works it out
+function bgByEdge(c) {
+  return bgMaxB > 0 && c.bpx >= (0.6 - (bgTrim / 100) * 0.5) * bgMaxB;
 }
 function guideStale() {
   return !!(assignData && guideSig && labels && labelsSig() !== guideSig);
@@ -97,11 +143,22 @@ function currentDesignObj(share, edits) {
       keys.push(k);
     }
   });
-  const ssMap = {};
+  const ssMap = {},
+    fo = foldSet();
   if (secState) {
-    for (let l = 1; l < secState.length; l++)
+    for (let l = 1; l < secState.length; l++) {
+      if (fo && fo.out[l]) continue;
       if (secState[l]) ssMap[l] = secState[l];
-      else if (comps && comps[l] && comps[l].page) ssMap[l] = 2;
+      // (background because of the page found in the photo, which a guide opened again doesn't find: worked out here,
+      // so an Undo can't lose it, v304; only the edge rule is done again on opening)
+      else if (
+        comps &&
+        comps[l] &&
+        !comps[l].merged &&
+        (comps[l].page || (comps[l].bg && !bgByEdge(comps[l])))
+      )
+        ssMap[l] = 2;
+    }
   }
   return {
     v: 1,
@@ -146,6 +203,8 @@ function currentDesignObj(share, edits) {
         edits: edits ? 1 : undefined,
         base: Object.keys(bas).length ? bas : undefined,
         locks: locks,
+        // (v303: how much its picture was enlarged, a small download, so Min section size means what it did)
+        upk: srcK > 1 ? Math.round(srcK * 1000) / 1000 : undefined,
       },
       // the zones besides Main (34-zones), only when there are any
       zones.length ? { zones: zoneSave() } : {},
@@ -220,6 +279,8 @@ function stashDirty() {
           'Couldn’t save “' +
             esc(nm) +
             '”, so it’s still open. Free up space (delete or back up guides in the Library), then try again.',
+          nm,
+          true,
         ),
         8000,
       );
@@ -246,6 +307,8 @@ function stashDirty() {
         'Couldn’t save “' +
           esc(nm) +
           '”, so it’s still open. Free up space (delete or back up guides in the Library), then try again.',
+        nm,
+        true,
       ),
       8000,
     );
@@ -415,7 +478,8 @@ function edDecide() {
     });
   return _edAsk.then(function (a) {
     if (a === 'build') {
-      if (secEdPending()) buildGuide();
+      // (not a page with more sections than a guide can keep: Build in Edit sections says what to do, v304)
+      if (secEdPending() && !denseStop()) buildGuide();
       return secEdPending() || !assignData || sfmode === 'review' ? false : stashDirty();
     }
     if (a === 'discard') {
@@ -1111,6 +1175,8 @@ function libAutosave(q) {
             'Couldn’t save “' +
               esc(nm) +
               '” — this browser’s storage is full. It stays open here: free up space (back up, then delete a few guides in the Library) and it saves with your next change.',
+            nm,
+            true,
           ),
           8000,
         );
@@ -1134,9 +1200,13 @@ function libLost(id, nm) {
     })
   )
     toast(
-      'Couldn\u2019t save the last changes to \u201c' +
-        esc(nm) +
-        '\u201d \u2014 this browser\u2019s storage is full. Free up space (back up, then delete a few guides in the Library).',
+      saveFailWords(
+        'Couldn\u2019t save the last changes to \u201c' +
+          esc(nm) +
+          '\u201d \u2014 this browser\u2019s storage is full. Free up space (back up, then delete a few guides in the Library).',
+        nm,
+        false,
+      ),
       8000,
     );
 }
@@ -1272,7 +1342,9 @@ function saveStText(pe) {
   if (!assignData) return labels && sfmode === 'review' ? 'Not saved yet' : '';
   const e = libEntry();
   if (!e && storeBlocked()) return 'Not saved \u2014 use Share \u203a Guide file';
-  if (_saveErr) return 'Not saved \u2014 storage is full';
+  // (v304: or the browser's database stopped answering)
+  if (_saveErr)
+    return storeNotAnswering() ? 'Not saved \u2014 reload to try again' : 'Not saved \u2014 storage is full';
   if (!e && curSample && !sampleTouched()) return 'Sample';
   if (!e) return sfmode === 'review' || _openEmpty ? 'Not saved yet' : 'Saving\u2026';
   if (guideDirty || _libBusy) return 'Saving\u2026';
@@ -1428,11 +1500,27 @@ function btnBusy(t) {
     b.textContent = _removed ? 'Put back' : 'Save';
   }
 }
-// a save that failed: when the browser blocks storage altogether (the shell's STORE_BLOCKED) that is what's said instead
-function saveFailWords(m) {
-  return typeof STORE_BLOCKED !== 'undefined' && STORE_BLOCKED
-    ? 'This browser isn’t letting Marker Studio save — use Share › Guide file to keep this guide.'
-    : m;
+// a save that failed: when the browser blocks storage altogether (the shell's STORE_BLOCKED) that is what's said instead.
+// (v304) When the browser's database stopped answering (iOS can drop it in the background) rather than filling up, that
+// is said instead of "storage is full": a reload fixes it, deleting guides doesn't. nm: the guide's name; open: whether
+// its changes are still open on screen
+function saveFailWords(m, nm, open) {
+  if (typeof STORE_BLOCKED !== 'undefined' && STORE_BLOCKED)
+    return 'This browser isn’t letting Marker Studio save — use Share › Guide file to keep this guide.';
+  if (m && storeNotAnswering())
+    return (
+      'Couldn’t save' +
+      (nm ? ' “' + esc(nm) + '”' : '') +
+      ' — this browser’s storage isn’t answering. Reload Marker Studio and try again' +
+      (open ? '; your changes are still open here.' : '.')
+    );
+  return m;
+}
+// (v304) the last guide save failed because the database didn't answer, not because storage was full (storeErr in
+// guide-bridge.js)
+function storeNotAnswering() {
+  const e = typeof storeErr === 'function' ? storeErr() : '';
+  return !!e && e !== 'QuotaExceededError';
 }
 // A new guide goes into the Library (v285: by itself once built, auto; or by the header's button: Put back after it was
 // deleted while open, or Save to try again after a save that failed), and from then on it saves itself. The button
@@ -1502,6 +1590,8 @@ function firstSave(auto) {
               'Couldn\u2019t save \u201c' +
                 esc(nm) +
                 '\u201d \u2014 this browser\u2019s storage may be full. Free up space (back up, then delete a few guides in the Library), then open it again.',
+              nm,
+              false,
             ),
             8000,
           );
@@ -1549,6 +1639,8 @@ function firstSave(auto) {
             'Couldn\u2019t save \u201c' +
               esc(nm) +
               '\u201d \u2014 this browser\u2019s storage is full. It stays open here: free up space (back up, then delete a few guides in the Library), or keep it with Share \u203a Guide file.',
+            nm,
+            true,
           ),
           8000,
         );
@@ -1593,6 +1685,8 @@ function saveCopy() {
             toast(
               saveFailWords(
                 'Couldn’t save a copy — this browser’s storage is full. Free up space (back up, then delete a few guides in the Library) and try again.',
+                '',
+                true,
               ),
               8000,
             );

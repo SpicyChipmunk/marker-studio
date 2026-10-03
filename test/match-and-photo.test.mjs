@@ -43,7 +43,8 @@ test('Match: nearest by eye among your markers (not dry); markers to buy only wh
   let listed = 0, hidden = 0;
   for (const t of targets) {
     const all = [...Array(N).keys()].map((i) => ({ i, d: de(t, LAB[i]) })).sort((x, y) => x.d - y.d || x.i - y.i);
-    const mine = all.filter((o) => use.includes(o.i)).slice(0, 5), others = all.filter((o) => !use.includes(o.i)).slice(0, 3);
+    // (v304: the markers to buy are of your brands, here Ohuhu; another brand's has its own place, test/v304-match)
+    const mine = all.filter((o) => use.includes(o.i)).slice(0, 5), others = all.filter((o) => !use.includes(o.i) && E(`COLORS[${o.i}].brand`) === 'Ohuhu').slice(0, 3);
     const r = nearest(t);
     assert.deepEqual([...r.owned.map((o) => o.i)], mine.map((o) => o.i), 'your five nearest by eye');
     assert.deepEqual([...r.buy.map((o) => o.i)], others.filter((o) => o.d <= mine[0].d - 2).map((o) => o.i), 'to buy: clearly closer only');

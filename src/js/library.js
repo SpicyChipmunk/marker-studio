@@ -114,9 +114,11 @@ function homeArt(g, mode, maxW) {
         var im = new Image();
         im.onload = function () {
           try {
+            // (drawn at twice the size and then shrunk smoothly: read pixel by pixel at the size shown, the lines came
+            // out stepped and broken, v303)
             var W = im.width,
               H = im.height,
-              k = Math.min(1, maxW / W, maxW / H),
+              k = Math.min(1, (2 * maxW) / W, (2 * maxW) / H),
               w = Math.max(1, Math.round(W * k)),
               h = Math.max(1, Math.round(H * k)),
               c = document.createElement('canvas');
@@ -165,9 +167,21 @@ function homeArt(g, mode, maxW) {
               px[j + 3] = 255;
             }
             gx.putImageData(id, 0, 0);
-            var u = c.toDataURL('image/jpeg', 0.86);
+            var k2 = Math.min(1, maxW / w, maxW / h),
+              o = c;
+            if (k2 < 1) {
+              o = document.createElement('canvas');
+              o.width = Math.max(1, Math.round(w * k2));
+              o.height = Math.max(1, Math.round(h * k2));
+              var og = o.getContext('2d');
+              og.imageSmoothingEnabled = true;
+              og.imageSmoothingQuality = 'high';
+              og.drawImage(c, 0, 0, o.width, o.height);
+              freeCanvas(c);
+            }
+            var u = o.toDataURL('image/jpeg', 0.86);
             // (the canvas let go at once: Safari limits the memory all canvases may hold)
-            freeCanvas(c);
+            freeCanvas(o);
             res(u);
           } catch (e) {
             res('');
@@ -608,12 +622,19 @@ function libMeta(s) {
     age = s.ts ? Date.now() - s.ts : -1,
     when = age >= 0 && age < 7 * 86400000 ? relDate(s.ts) : evoWhen(s.ts);
   // (an item without a name shows its kind as the name: not twice)
-  return [s.name ? t : '', cnt ? cnt + ' marker' + (cnt === 1 ? '' : 's') : '', p, when]
-    .filter(Boolean)
-    .map(function (x) {
-      return '<span>' + esc(x) + '</span>';
-    })
-    .join(' \u00b7 ');
+  // (v303: on two lines, what it is and then how far and when, as Home has them, so no tile is left with one word on a
+  // line of its own; the dot between the two lines is there for a screen reader, not shown)
+  const part = function (a) {
+      return a
+        .filter(Boolean)
+        .map(function (x) {
+          return '<span>' + esc(x) + '</span>';
+        })
+        .join(' \u00b7 ');
+    },
+    l1 = part([s.name ? t : '', cnt ? cnt + ' marker' + (cnt === 1 ? '' : 's') : '']),
+    l2 = part([p, when]);
+  return l1 && l2 ? l1 + '<span class="smsep"> \u00b7 </span>' + l2 : l1 || l2;
 }
 // A Library tile (v288: a grid of pictures): the picture and name open the item; ⋯ has Rename (the name becomes an
 // input in place: ed) and Delete (with Undo). A guide shows its page as you've coloured it (drawn when the tile comes
@@ -715,9 +736,15 @@ function libArt(row) {
       }),
     im = row && row.querySelector('img.sthumb');
   if (!s || s.type !== 'guide' || !im) return;
-  var w = Math.min(
+  // (the picture's longer side as shown: a tall page fills the box's height, v303)
+  var sp = row.querySelector('.spic'),
+    w = Math.min(
       480,
-      Math.round(((row.clientWidth || 160) * Math.min(2, window.devicePixelRatio || 1)) / 40) * 40 || 320,
+      Math.round(
+        (Math.max(row.clientWidth || 160, sp ? sp.clientHeight : 0) *
+          Math.min(2, window.devicePixelRatio || 1)) /
+          40,
+      ) * 40 || 320,
     ),
     ts = String(s.ts || 0);
   // (one at a time: each reads and redraws a whole stored page)

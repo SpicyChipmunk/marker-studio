@@ -121,8 +121,9 @@ test('Scan: the brand on the cap is heeded; words on every cap don’t hide a nu
     assert.equal(r.codes.length, 1, t);
     assert.equal(r.flips, 0, t);
   }
-  // a code the brand on the cap hasn't: asked
-  assert.deepEqual(read('Ohuhu Alcohol Marker 0').codes, [['Copic 0', 'hint']]);
+  // a code the brand on the cap hasn't: asked (v303: Ohuhu has a 0 too, its colourless blender: that one)
+  assert.deepEqual(read('Ohuhu Alcohol Marker 0').codes, [['Ohuhu 0', '']]);
+  assert.deepEqual(read('Ohuhu Alcohol Marker 100').codes, [['Copic 100', 'hint']]);
   // a name's own number isn't a code ("Cool Gray No.0")
   const c0 = C.find((c) => c.code === 'C-0');
   assert.deepEqual(read('C-0 ' + c0.name).codes, [['Copic C-0', '']]);

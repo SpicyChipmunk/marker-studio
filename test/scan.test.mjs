@@ -70,9 +70,11 @@ test('words are not codes: misreads are put right only in a word with a digit, t
     assert.equal(r.codes.length + r.flips.length, 0, w);
   }
   // every marker's code with its name reads as that marker, and its name alone never as a code
+  // (v303: but for the colourless blender, 0, which both brands have under the same name: both, to choose between)
   C.forEach((c, i) => {
-    const r = app.scanRead(c.code + ' ' + c.name, '');
-    assert.ok(r.codes.length === 1 && r.codes[0].opts.length === 1 && r.codes[0].opts[0] === i, c.brand + ' ' + c.code);
+    const r = app.scanRead(c.code + ' ' + c.name, ''),
+      twin = C.filter((d) => d.code === c.code && d.name === c.name).length;
+    assert.ok(r.codes.length === 1 && r.codes[0].opts.length === twin && r.codes[0].opts.includes(i), c.brand + ' ' + c.code);
     assert.equal(app.scanRead(c.name, '').codes.length, 0, c.name);
   });
 });

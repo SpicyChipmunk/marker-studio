@@ -92,8 +92,10 @@ if (process.env.GITHUB_ACTIONS) {
   console.log(`::notice title=${prop(title)}::${esc(`${count('pass')} passed, ${count('fail')} failed, ${count('skip')} skipped${flaky.length ? `, ${flaky.length} flaky (passed on a retry)` : ''}${flakyFiles.length ? `, ${flakyFiles.length} flaky file${flakyFiles.length > 1 ? 's' : ''}` : ''}; ${expected.length - missing.length} of ${expected.length} files finished`)}`);
   const per = new Map();
   for (const r of tests) per.set(r.file, (per.get(r.file) || 0) + r.ms);
-  const slowF = [...per.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([f, ms]) => `${f.replace(/^.*\//, '')} ${secs(ms)}`);
-  if (slowF.length) console.log(`::notice title=${prop(title + ': slowest files')}::${esc(slowF.join(', '))}`);
+  // (v303: every file's time, slowest first, not just the 8 slowest: e2e/ci-durations.json is refreshed from these, and
+  // a part's other files had been guesses, which left one WebKit part 9 minutes longer than the rest)
+  const slowF = [...per.entries()].sort((a, b) => b[1] - a[1]).map(([f, ms]) => `${f.replace(/^.*\//, '')} ${secs(ms)}`);
+  if (slowF.length) console.log(`::notice title=${prop(title + ': file times, slowest first')}::${esc(slowF.join(', '))}`);
   // failures first (as errors while they last), then flaky tests (never as errors)
   const left = { error: 10, warning: 10, notice: 8 };
   const emit = (kinds, f, head, msg) => {

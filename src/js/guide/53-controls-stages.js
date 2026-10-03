@@ -17,8 +17,7 @@ function ctlFocus() {
   var _fcb = document.getElementById('sfFocCols');
   if (_fcb)
     _fcb.addEventListener('click', function () {
-      focusSheet = !focusSheet;
-      renderFocusUI();
+      focusSheetSet(!focusSheet);
     });
   var _fal = document.getElementById('sfFocAll');
   if (_fal) _fal.addEventListener('click', focusAllOfColour);
@@ -166,6 +165,118 @@ function discardEdits() {
 }
 // Edit sections: Adjust photo (turn, straighten, crop, enhance, tilt), the warning when the sections look wrong, the
 // section sliders, the edit tools and the key, and Build guide
+// the warning over Edit sections when the picture didn't come out as line art (segQuality), or nothing
+function segWarnHTML() {
+  return segWarn && !segWarn.ok
+    ? '<div class="sfc-segwarn">' +
+        ic('triangle-alert', 'icw') +
+        ' <b>' +
+        segWarn.msg +
+        '</b><br><span class="sfc-sub">' +
+        segWarn.tip +
+        '</span></div>'
+    : '';
+}
+// Very dense pages (v304). Above DENSE_ASK sections Build asks first, once for a picture (again only when there are
+// twice as many): on a tablet each is a few pixels, to zoom in for. Above FOLDAT left after the specks are folded
+// (60-persist) the guide couldn't be opened again, so it isn't built until Min section size is raised.
+const DENSE_ASK = 3000;
+let _denseAsked = 0;
+// sections in the guide at Min section size pos, and those that would be saved (after the specks are folded)
+function denseCount(pos) {
+  const mp = minPx(pos),
+    P = tonePart && tonePart._c === colored ? tonePart : null;
+  let live = 0,
+    cnt = 0,
+    fold = 0;
+  for (let l = 1; l < comps.length; l++) {
+    const c = comps[l];
+    if (!c || c.merged) continue;
+    live++;
+    const s = secState[l];
+    if (s === 1 || (s !== 2 && !c.bg && c.area >= mp)) cnt++;
+    if (foldable(l, mp, P)) fold++;
+  }
+  return { cnt: cnt, live: live, kept: live > FOLDAT ? Math.max(FOLDAT, live - fold) : live };
+}
+// true when Build can't go ahead (too many sections to keep), said in a note
+function denseStop() {
+  if (!labels || !comps || comps.length - 1 <= FOLDAT || denseCount(minPos).kept <= FOLDAT) return false;
+  note(
+    'Couldn\u2019t build \u2014 this page has too many sections to keep. Raise Min section size, then Build guide.',
+  );
+  return true;
+}
+// the Min section size that leaves at most DENSE_ASK sections (and few enough to keep), or the largest
+function denseMin() {
+  for (let pos = Math.min(100, minPos + 5); pos <= 100; pos += 5) {
+    const d = denseCount(pos);
+    if (d.cnt <= DENSE_ASK && d.kept <= FOLDAT) return { pos: pos, d: d };
+  }
+  return { pos: 100, d: denseCount(100) };
+}
+// asked first, then go() (true: the question is open, or Build can't go ahead)
+function denseAsk(go) {
+  if (!labels || !comps || sfmode !== 'review') return false;
+  const d = denseCount(minPos),
+    stop = d.kept > FOLDAT;
+  if (!stop && (d.cnt <= DENSE_ASK || (_denseAsked && d.cnt < 2 * _denseAsked))) return false;
+  const m = denseMin(),
+    // (sizes as they look on this screen, the picture fitted to it)
+    k = cv && cv.offsetWidth && W ? cv.offsetWidth / W : 1,
+    each = Math.max(1, Math.round(Math.sqrt((W * H) / Math.max(1, d.cnt)) * k)),
+    under = Math.max(1, Math.round(Math.sqrt(minPx(m.pos)) * k)),
+    n = stop ? d.kept : d.cnt,
+    // (a page of sections all much the same size: no Min section size leaves fewer, so it isn't offered)
+    less = m.d.cnt < d.cnt,
+    // (a size under 3 px on this screen means nothing to read: the smallest, then)
+    keep = less
+      ? under < 3
+        ? ' Leaving out the smallest keeps ' + m.d.cnt.toLocaleString() + '.'
+        : ' Leaving out sections smaller than ' + under + ' px keeps ' + m.d.cnt.toLocaleString() + '.'
+      : '',
+    folds = d.live > FOLDAT;
+  askBox(
+    'This page has ' + n.toLocaleString() + ' sections.',
+    (stop
+      ? 'That\u2019s more than a guide can keep.' + keep
+      : 'About ' + each + ' px each on this screen, so you\u2019d zoom in for every one.' + keep) +
+      (folds ? ' Tiny specks are joined to the lines when it\u2019s saved.' : ''),
+    (stop
+      ? '<button type="button" class="btn-primary" data-a="min">Raise Min section size</button>'
+      : (less
+          ? '<button type="button" class="btn-primary" data-a="min">Leave out the small ones</button><button type="button" class="sfghost" data-a="all">'
+          : '<button type="button" class="btn-primary" data-a="all">') +
+        'Build all ' +
+        d.cnt.toLocaleString() +
+        '</button>') + '<button type="button" class="sfghost" data-a="stay">Cancel</button>',
+    true,
+  ).then(function (a) {
+    if (a === 'min') {
+      minPos = m.pos;
+      _denseAsked = m.d.cnt;
+      renderControls();
+      render();
+      if (!stop) go();
+    } else if (a === 'all') {
+      _denseAsked = d.cnt;
+      go();
+    }
+  });
+  return true;
+}
+// the warning box as segWarn says now, in place (v304: also after Sensitivity, Enhance and Undo, which found or put
+// back the sections without drawing the controls again, so a warning stayed or never showed)
+function segWarnSync() {
+  if (sfmode !== 'review' || !ctlEl) return;
+  const el = ctlEl.querySelector('.sfc-segwarn'),
+    h = segWarnHTML();
+  if (el) el.outerHTML = h;
+  else if (h) {
+    const ed = document.getElementById('sfEdit');
+    if (ed) ed.insertAdjacentHTML('beforebegin', h);
+  }
+}
 function ctlSections() {
   const mv = minPos,
     // (v288) what this step is for, and the tools first; Adjust photo after the sliders
@@ -210,15 +321,7 @@ function ctlSections() {
           ' \u00b7 <button class="sflink" id="sfPgAdj">Straighten</button></div>'
         : '') +
     head +
-    (segWarn && !segWarn.ok
-      ? '<div class="sfc-segwarn">' +
-        ic('triangle-alert', 'icw') +
-        ' <b>' +
-        segWarn.msg +
-        '</b><br><span class="sfc-sub">' +
-        segWarn.tip +
-        '</span></div>'
-      : '') +
+    segWarnHTML() +
     '<div id="sfEdit" role="group" aria-label="Edit tool" class="sfc-segs sfc-mt8"><button type="button" id="sfEmToggle" data-m="toggle" class="sfedit">Leave out</button><button type="button" id="sfEmMerge" data-m="merge" class="sfedit">Merge</button><button type="button" id="sfEmSplit" data-m="split" class="sfedit">Split</button><button type="button" id="sfEmAdd" data-m="add" class="sfedit">Add</button></div><label id="sfAutoCloseWrap" class="sfc-autoclose" style="display:none"><input type="checkbox" id="sfAutoClose"> Join the ends of a loop for me</label><div id="sfHint" class="sfc-note sfc-mt8"></div><div class="sfc-key"><span><span class="sfc-sw sfc-sw-sec"></span>section</span><span><span class="sfc-sw sfc-sw-bg"></span>background</span><span><span class="sfc-sw sfc-sw-ex"></span>left out</span></div>' +
     '<label class="sfrng sfc-mt12">Min section size<input type="range" id="sfMin" min="0" max="100" value="' +
     mv +
@@ -230,6 +333,12 @@ function ctlSections() {
     edBarHTML();
   minEl = document.getElementById('sfMin');
   countEl = document.getElementById('sfCount');
+  // (the warning about tiny fragments counts those in the guide, so it's checked again once the slider is let go, v303)
+  minEl.addEventListener('change', function () {
+    if (!labels || sfmode !== 'review') return;
+    segWarn = segQuality();
+    segWarnSync();
+  });
   minEl.addEventListener('input', function () {
     minPos = +minEl.value;
     if (labels && sfmode === 'review') {
@@ -268,6 +377,15 @@ function ctlSections() {
   document.getElementById('sfBuild').addEventListener('click', function () {
     const b = this;
     if (b.disabled) return;
+    // (a very dense page is asked about first, v304)
+    if (
+      denseAsk(function () {
+        // (the bar may have been drawn again meanwhile)
+        const nb = document.getElementById('sfBuild');
+        if (nb) nb.click();
+      })
+    )
+      return;
     stageGo();
     b.disabled = true;
     b.textContent = 'Building\u2026';

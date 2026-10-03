@@ -101,6 +101,8 @@ function snapshotSeg() {
 function doUndo() {
   const u = popUndo();
   if (!u) return;
+  // (a tilt still waiting would redo the picture over what Undo puts back, and clear the steps before it, v304)
+  imgCancel();
   if (u.t === 'ov') {
     secState.set(u.d.length > secState.length ? u.d.subarray(0, secState.length) : u.d);
     render();
@@ -110,6 +112,7 @@ function doUndo() {
     if (g) {
       W = g.W;
       H = g.H;
+      srcK = g.k || 1;
       gray = g.gray;
       srcImg = g.src;
       pgQ = g.pgQ;
@@ -117,6 +120,17 @@ function doUndo() {
       rot90 = g.rot90;
       tilt = g.tilt;
       cropRect = g.crop;
+      // (the photo back where it was on that picture, still to be placed again only if it was then; a photo chosen
+      // since was placed on the picture as it is, and is carried from there: 46-photo, v304)
+      if (photoRef && g.phRef === photoRef && g.phXf) {
+        photoXf = Object.assign({}, g.phXf);
+        _phCol = null;
+        _phGeo = g.phGeo;
+        _phRefit = !!g.phRefit;
+      } else {
+        _phRefit = false;
+        photoGeoAfter();
+      }
       cv.width = W;
       cv.height = H;
       rgbOut = new Uint8ClampedArray(W * H * 4);
@@ -128,6 +142,8 @@ function doUndo() {
     comps = u.comps;
     secColor = u.sec;
     secState = u.ov;
+    // (the warning about the picture is about the picture as it is again, v303)
+    if (gray) segWarn = segQuality();
     if (u.keep) {
       setColored(u.col);
       if (u.keep.tones) {
@@ -135,7 +151,7 @@ function doUndo() {
         P.set(u.keep.tones.subarray(0, Math.min(u.keep.tones.length, P.length)));
       }
       if (u.keep.progAt) progAt = Object.assign({}, u.keep.progAt);
-      if (u.keep.held) heldSh = Object.assign({}, u.keep.held);
+      if (u.keep.held) heldReset(u.keep.held);
     } else keepProgress(u.col);
     if (u.keep) {
       locks = u.keep.locks;
@@ -143,6 +159,11 @@ function doUndo() {
       _flatVer++;
       _segFresh = u.keep.fresh;
       hasEdits = u.keep.edits;
+      if (u.keep.det) {
+        enhance = u.keep.det.e;
+        adaptC = u.keep.det.c;
+        _reFrom = null;
+      }
       bgMaxB = u.keep.bgMaxB;
       _origKeys = u.keep.orig || {};
       _lostKeys = u.keep.lost || {};
@@ -163,8 +184,9 @@ function doUndo() {
     labelPts = null;
     texField = null;
     render();
+    if (g || (u.keep && u.keep.det)) renderControls();
+    else segWarnSync();
     if (g) {
-      renderControls();
       note('Back to the picture as it was.');
     }
   }
@@ -198,6 +220,8 @@ function mergeCells(a, b) {
   A.area = ta + tb;
   A.bpx = (A.bpx || 0) + (B.bpx || 0);
   A.bg = A.bg || B.bg;
+  // (the page's margin merged in: it is still the page, v304)
+  if (B.page) A.page = true;
   if (A.x0 == null) {
     A.x0 = B.x0;
     A.y0 = B.y0;
@@ -402,8 +426,12 @@ function relabelRegion(L) {
   texField = null;
   return made;
 }
+// how far a Split or Add stroke cuts each way (as thick on an enlarged picture as on the picture as it came, v303)
+function cutRad() {
+  return Math.max(3, Math.round(3 * srcK));
+}
 function paintStroke(pts, L) {
-  const rad = 3;
+  const rad = cutRad();
   for (let i = 0; i < pts.length - 1; i++) {
     const x0 = pts[i].x,
       y0 = pts[i].y,
@@ -424,13 +452,15 @@ function paintStroke(pts, L) {
     }
   }
 }
-// Split: a stroke that doesn't divide the section is taken back (no ink line left, no undo step, no edit)
-function splitAt(startL, pts) {
+// Split: a stroke that doesn't divide the section is taken back (no ink line left, no undo step, no edit); quiet: no
+// message, another section is tried next (v304)
+function splitAt(startL, pts, quiet) {
   if (pts.length < 2) return 0;
   snapshotSeg();
   paintStroke(pts, startL);
   if (relabelRegion(startL) < 1) {
     restoreSnap();
+    if (quiet) return 0;
     const h = document.getElementById('sfHint');
     if (h)
       h.textContent =

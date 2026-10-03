@@ -99,7 +99,7 @@ function clampPan() {
   // focus mode: the picture fills the space between its bars wherever it's big enough to (so a section near an edge
   // sits off-centre rather than beside blank space), and where it isn't, it sits in the middle of it, all of it seen
   if (focus && !focusFin && sfmode === 'color' && sfView) {
-    const g = focusGeo(),
+    const g = focusGeo(true),
       ol = cv.offsetLeft,
       ot = cv.offsetTop;
     panX = sw >= g.aw ? Math.min(-ol, Math.max(g.aw - ol - sw, panX)) : g.cx - ol - sw / 2;

@@ -5,6 +5,8 @@
 function styleFrom(d) {
   styleOpen(d.style && typeof d.style === 'object' ? d.style : {}, 'style');
   styleOpen(d, 'payload');
+  // (how much its picture was enlarged when its sections were found: Min section size is measured as before, v303)
+  srcK = typeof d.upk === 'number' && isFinite(d.upk) ? Math.max(1, Math.min(8, d.upk)) : 1;
   // (the photo's see-through goes back to its default even when the guide has no photo)
   photoOp = 0.65;
 }
@@ -202,7 +204,7 @@ function openDesignObj(d, id, resumed, quiet, col) {
       }
       secState = new Uint8Array(comps.length);
       colored = new Uint8Array(comps.length);
-      heldSh = {};
+      heldReset();
       progAt = {
         // (a time a Date can show: "started Invalid Date" otherwise, v299)
         s: d.dates && +d.dates.s > 0 && +d.dates.s < 8.64e15 ? +d.dates.s : 0,
@@ -290,6 +292,7 @@ function openDesignObj(d, id, resumed, quiet, col) {
         }
       _openEmpty = !order.length && Object.keys(sa).length > 0;
       assignData = { assign: assign, order: order, N: order.length, base: base };
+      layStatReset();
       guideSig = labelsSig();
       if (Array.isArray(d.paper)) {
         const _pp = {};
@@ -322,6 +325,9 @@ function openDesignObj(d, id, resumed, quiet, col) {
             op: photoOp,
             paper: photoPaper,
             light: _ph.light,
+            // (v304: 46-photo)
+            greys: _ph.greys === true,
+            refit: _ph.refit === true,
           };
           const _im = new Image(),
             _g = loadGen;
@@ -331,6 +337,8 @@ function openDesignObj(d, id, resumed, quiet, col) {
             if (r && !photoRef && _phPend && _phPend.url === _u) {
               photoRef = photoLitOpen(r, _phPend.light);
               photoXf = Object.assign({}, _phPend.xf);
+              photoGreys = _phPend.greys;
+              _phRefit = _phPend.refit;
               _phPend = null;
               planPhotoIn(photoRef);
               try {
@@ -418,10 +426,12 @@ function openDesignObj(d, id, resumed, quiet, col) {
             ['same', 'cool', 'grey'].includes(h[0]) &&
             ['same', 'warm', 'paper'].includes(h[1])
           )
-            heldSh[nl] =
+            heldSet(
+              nl,
               h.length > 2
                 ? { shadow: h[0], hilite: h[1], free: !!h[2] }
-                : { shadow: h[0], hilite: h[1], legacy: true };
+                : { shadow: h[0], hilite: h[1], legacy: true },
+            );
         }
       locks = {};
       if (d.locks && typeof d.locks === 'object')

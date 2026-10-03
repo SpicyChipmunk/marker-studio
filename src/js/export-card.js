@@ -27,8 +27,8 @@ function trunc(x, s, max) {
   return s + '…';
 }
 async function makeCard(idxs, kind) {
-  const scale = 2,
-    W = 600,
+  let scale = 2;
+  const W = 600,
     pad = 44,
     gap = 12,
     headerH = 132,
@@ -56,9 +56,12 @@ async function makeCard(idxs, kind) {
     bodyH = rows * (sqH + 20) + (rows - 1) * gap;
   }
   const H = headerH + bodyH + footerH;
+  // (no more than 16 million pixels, under iPad Safari's canvas limit: past about 440 markers the card is drawn less
+  // sharp rather than not at all, v304)
+  scale = Math.min(scale, Math.sqrt(16e6 / (W * H)));
   const cv = document.createElement('canvas');
-  cv.width = W * scale;
-  cv.height = H * scale;
+  cv.width = Math.round(W * scale);
+  cv.height = Math.round(H * scale);
   const x = cv.getContext('2d');
   x.scale(scale, scale);
   x.fillStyle = mix('#0c0c10', dom, 0.06);

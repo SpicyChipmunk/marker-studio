@@ -177,15 +177,31 @@ function shadeNormals(g) {
   g.N = { x: NX, y: NY, hw: hw };
   return g.N;
 }
-// why a section isn't shaded ('' when it is): not in the guide ('none'), too small or background-sized ('small'),
-// left flat itself ('flat'), in a zone that's flat ('zone'), or outside the photo the light comes from ('photo')
+// why a section isn't shaded ('' when it is): not in the guide ('none'), too small ('small'), the page's background
+// at a quarter of the picture or more ('bg'), left flat itself ('flat'), in a zone that's flat ('zone'), or outside the
+// photo the light comes from ('photo')
 function shadeWhy(l, g, fp) {
   if (!(assignData && assignData.assign[l])) return 'none';
-  if (g.mx[l] < SH_MINR || g.ar[l] >= 0.25 * W * H) return 'small';
+  // (SH_MINR in the guide's own pixels, as up to v302: v303 took it on the picture as it came, so a page downloaded at
+  // 400 pixels, enlarged, had half the shaded sections of the same page photographed, v304)
+  if (g.mx[l] < SH_MINR) return 'small';
+  // (a big shape inside the page is shaded; only the background that size is left flat. v303 left any section of a
+  // quarter of the picture flat as "too small", v304)
+  if (g.ar[l] >= 0.25 * W * H && shadeBgLike(l)) return 'bg';
   if (shadeFlat[l]) return 'flat';
   if (!zshOf(l).on) return 'zone';
   if ((fp === undefined ? shadeFromPhoto() : fp) && !photoCovers(l)) return 'photo';
   return '';
+}
+// is a background-sized section the page's background? The background itself, a section touching the picture's edge,
+// or the paper inside a frame drawn round the page: across most of the picture both ways, but filling under half of
+// its box, as the drawing is inside it (a big shape fills most of its box), v304
+function shadeBgLike(l) {
+  const c = comps[l];
+  if (!c || c.bg || c.bpx > 0 || c.x0 == null) return true;
+  const bw = c.x1 - c.x0 + 1,
+    bh = c.y1 - c.y0 + 1;
+  return bw >= 0.75 * W && bh >= 0.75 * H && c.area < 0.5 * bw * bh;
 }
 // is this section shaded at all? (fp: whether the light comes from the photo, when the caller knows)
 function shadeable(l, g, fp) {
@@ -202,10 +218,10 @@ function shadeField(step) {
       shadeSun.x.toFixed(4),
       shadeSun.y.toFixed(4),
       shadeRound.toFixed(3),
-      step,
+      's' + step,
       _flatVer,
-      // (the zones' membership and shading: 34-zones; Main's own flat choice)
-      _zshVer,
+      // (the zones' membership, Shade and Roundness: 34-zones; Main's own flat choice)
+      _zshGeoVer,
       zones.length && !shadeMain ? 'mflat' : '',
       fromPhoto
         ? [photoXf.cx, photoXf.cy, photoXf.sx, photoXf.sy, photoXf.r, photoRef.w, photoRef.url.length].join(
@@ -213,14 +229,19 @@ function shadeField(step) {
           )
         : '',
     ].join('|');
-  if (
-    shadeV &&
-    shadeVKey === key &&
-    shadeV._g === g &&
-    shadeV._a === assignData &&
-    (!fromPhoto || shadeV._p === photoRef)
-  )
-    return shadeV;
+  const same = function (k) {
+    return (
+      shadeV &&
+      shadeVKey === k &&
+      shadeV._g === g &&
+      shadeV._a === assignData &&
+      (!fromPhoto || shadeV._p === photoRef)
+    );
+  };
+  if (same(key)) return shadeV;
+  // (a preview asked for while the field at full size is still the one wanted, as when the Highlights or Shadows
+  // slider moves: that one does, every pixel of it, v304)
+  if (step > 1 && same(key.replace('|s' + step + '|', '|s1|'))) return shadeV;
   if (fromPhoto) return photoShadeField(g, step, key);
   const n = W * H,
     K = comps.length,
@@ -618,9 +639,8 @@ function shadeTones(base, zs) {
   let wantDark = null,
     wantLight = null;
   if (!isDemo()) {
-    const cat = catPool().filter(function (m) {
-        return m.brand === base.brand;
-      }),
+    // (base's own brand, or Brands I'd buy's when it isn't one of them, v304)
+    const cat = shadeBuyPool(base),
       // (a marker to buy for the shadow is never the highlight you already use)
       catS = light
         ? cat.filter(function (m) {
@@ -768,6 +788,8 @@ function shadeLinesDraw(sh, fade, o) {
   o = o || {};
   const V = sh.V,
     buf = o.buf || rgbOut,
+    // (in proportion to the guide's own pixels, as up to v302: with the smallest shaded sections back to SH_MINR, an
+    // enlarged picture's srcK-wide lines filled them, v304. Print passes its own)
     t = o.t || Math.max(1, Math.round(Math.max(W, H) / 900)),
     dash = o.dash || 6 * t,
     ink = o.ink,
@@ -785,7 +807,6 @@ function shadeLinesDraw(sh, fade, o) {
       const q = ro + x,
         v = V[q];
       if (!v) continue;
-      if ((((x + y) / dash) | 0) & 1) continue;
       const l = labels[q];
       if (one !== -2 && l !== one) continue;
       if (fade && fade[l]) continue;
@@ -799,6 +820,16 @@ function shadeLinesDraw(sh, fade, o) {
         (labels[qa] === l && V[qa] && zn[zb + V[qa]] !== z) ||
         (labels[qb] === l && V[qb] && zn[zb + V[qb]] !== z)
       ) {
+        // dashed along the line: a line running more up and down than across is dashed by y, otherwise by x (by x + y,
+        // a line at 45° to the corner the light comes from was drawn whole or not at all, v304). Which way it runs
+        // is from how the shade value changes across it, t pixels either side within the section.
+        const qc = q - t,
+          qd = q - t * W,
+          va = labels[qa] === l && V[qa] ? V[qa] : v,
+          vc = x >= t && labels[qc] === l && V[qc] ? V[qc] : v,
+          vb = labels[qb] === l && V[qb] ? V[qb] : v,
+          vd = y >= t && labels[qd] === l && V[qd] ? V[qd] : v;
+        if ((((Math.abs(va - vc) > Math.abs(vb - vd) ? y : x) / dash) | 0) & 1) continue;
         const j = q * 4;
         if (ink) {
           buf[j] = ink[0];
@@ -943,7 +974,7 @@ const SHADE_HOWTO_PAPER =
   'Shading \u2014 H = highlight (the paper left white), B = base (the section\u2019s marker), S = shadow. Colour the section with B, leaving the highlight white, add S in the shadow while it\u2019s still wet, then soften the edges with B. Dashed lines and the small H and S circles on the colouring page show where each goes; the \u2600 marks where the light comes from.';
 // the key's how-to line; with the light taken from the photo there is no sun to point at
 // (with zones, the highlights asked for in the shaded sections: all the paper, all a lighter marker, or some of each)
-function shadeHowto() {
+function shadeHowto(noLines) {
   const u = shadeUse(),
     t =
       shadeMode === 'full'
@@ -953,8 +984,15 @@ function shadeHowto() {
             ? SHADE_HOWTO_PAPER
             : SHADE_HOWTO
         : SHADE_HOWTO2;
+  // (noLines: printed without Print's Tone lines, so the circles alone, which go only where they fit, v304)
+  const tl = noLines
+    ? t.replace(
+        /(?:The d|D)ashed lines and (?:the )?small (H and S|S) circles on the colouring page show where (each goes|the shadow starts)/,
+        'The small $1 circles show where $2, where there\u2019s room',
+      )
+    : t;
   // (a cooler or grey shadow is a glaze: laid over the base once it's dry)
-  const tg = u.gl ? t + SHADE_HOWTO_GLAZE : t;
+  const tg = u.gl ? tl + SHADE_HOWTO_GLAZE : tl;
   return shadeFromPhoto()
     ? tg.replace('the \u2600 marks where the light comes from.', 'the light and shadow follow your photo.')
     : tg;
@@ -975,7 +1013,9 @@ function shadeTipHTML(l) {
           ? esc(zoneName(zoneOf(l))) + ' is flat — one colour'
           : why === 'photo'
             ? 'Outside the photo — one flat colour'
-            : 'Too small to shade — one flat colour') +
+            : why === 'bg'
+              ? 'Background-sized — one flat colour'
+              : 'Too small to shade — one flat colour') +
       '</div>'
     );
   const m = assignData.assign[l],
@@ -1506,6 +1546,8 @@ function shadeUse() {
       fp,
       fp ? [photoXf.cx, photoXf.cy, photoXf.sx, photoXf.sy, photoXf.r].join() + photoRef.w : '',
       labelPts,
+      // (a coloured section's held Highlights and Shadows, noted or let go as it's ticked and unticked, v304)
+      _heldVer,
     ];
   if (
     _suKey &&
@@ -1596,6 +1638,9 @@ function mixCache() {
       _flatVer,
       fp,
       fp ? [photoXf.cx, photoXf.cy, photoXf.sx, photoXf.sy, photoXf.r].join() : '',
+      // (which sections are shaded, and a coloured section's held Highlights and Shadows, v304)
+      labelPts,
+      _heldVer,
     ];
   if (
     _mixKey &&

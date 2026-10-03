@@ -105,8 +105,7 @@ function editTapAt(P) {
       if (focus) {
         if (focusFin) return;
         if (focusSheet) {
-          focusSheet = false;
-          renderFocusUI();
+          focusSheetSet(false);
           return;
         }
         if (l === focusCur()) focusDone();
@@ -168,6 +167,34 @@ function editTapAt(P) {
     hasEdits = true;
     render();
   }
+}
+// the section a Split or Add stroke is for: the one it runs through furthest, lines not counted (v304: the section it
+// started in, so a stroke begun on the outline did nothing, and one begun just over it tried to cut the neighbour)
+function strokeSection(pts) {
+  const n = {};
+  let best = 0,
+    bn = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const x0 = pts[i].x,
+      y0 = pts[i].y,
+      x1 = pts[i + 1].x,
+      y1 = pts[i + 1].y,
+      steps = Math.max(1, Math.hypot(x1 - x0, y1 - y0) | 0);
+    for (let s = i ? 1 : 0; s <= steps; s++) {
+      const x = Math.round(x0 + ((x1 - x0) * s) / steps),
+        y = Math.round(y0 + ((y1 - y0) * s) / steps);
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      const l = labels[y * W + x];
+      if (l < 1) continue;
+      const k = (n[l] || 0) + 1;
+      n[l] = k;
+      if (k > bn) {
+        bn = k;
+        best = l;
+      }
+    }
+  }
+  return best;
 }
 function onDown(e) {
   if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -287,7 +314,9 @@ function onDown(e) {
   }
   if (sfmode === 'review' && (editMode === 'split' || editMode === 'add')) {
     const P = evPt(e);
-    if (P.x >= 0 && P.y >= 0 && P.x < W && P.y < H && labels[P.y * W + P.x] > 0) {
+    // (v304: also from on a line, where a stroke drawn from edge to edge starts; which section it cuts is found when
+    // it ends, strokeSection)
+    if (P.x >= 0 && P.y >= 0 && P.x < W && P.y < H) {
       drawing = true;
       drawStartL = labels[P.y * W + P.x];
       strokePts = [P];
@@ -384,7 +413,8 @@ function onMove(e) {
       last = strokePts[strokePts.length - 1];
     strokePts.push(P);
     ctx.strokeStyle = '#ff3b3b';
-    ctx.lineWidth = Math.max(2, W / 380);
+    // (as wide as the cut it makes, v304: on an enlarged picture the line drawn was far thinner than the cut)
+    ctx.lineWidth = 2 * cutRad() + 1;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(last.x, last.y);
@@ -485,10 +515,18 @@ function onUp(e) {
   }
   if (drawing) {
     drawing = false;
+    // (a stroke the system took over, v304: nothing is cut)
+    if (e.type === 'pointercancel') strokePts = [];
+    // (the section it runs through furthest; failing that, the one it started in, v304)
+    const _s0 = drawStartL,
+      _alt = function (l) {
+        return _s0 > 0 && _s0 !== l ? _s0 : 0;
+      };
+    if (strokePts.length > 1) drawStartL = strokeSection(strokePts);
     if (strokePts.length > 1) {
       if (editMode === 'add') {
         if (drawStartL > 0) {
-          const _ec = edgeCut(drawStartL, strokePts);
+          const _ec = edgeCut(drawStartL, strokePts) || (_alt(drawStartL) > 0 && edgeCut(_s0, strokePts));
           const _hn = document.getElementById('sfHint');
           if (_hn)
             _hn.textContent = _ec
@@ -497,7 +535,12 @@ function onUp(e) {
                 ? 'That loop didn\u2019t enclose anything \u2014 return near where you started.'
                 : 'That stroke didn\u2019t divide anything \u2014 run it to a line or the page edge.';
         }
-      } else if (drawStartL > 0) splitAt(drawStartL, strokePts);
+      } else if (
+        drawStartL > 0 &&
+        !splitAt(drawStartL, strokePts, _alt(drawStartL) > 0) &&
+        _alt(drawStartL) > 0
+      )
+        splitAt(_s0, strokePts);
     }
     strokePts = [];
     render();

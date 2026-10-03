@@ -38,10 +38,11 @@ test('Match a colour: closer ones you could buy go on the list', async () => {
   await page.click('#mkMatchBtn');
   await page.click('.msrc [data-src="hex"]');
   // a turquoise your markers match roughly (BG311, 9.2) and two Copic markers clearly better (4.8, 6.4): markers to buy
-  // are listed only when at least 2 ΔE00 closer (#0bd6c8, used before, has none now)
+  // are listed only when at least 2 ΔE00 closer (#0bd6c8, used before, has none now). (v304: no Ohuhu marker is, so
+  // the nearest Copic one, BG13, is listed alone under "Closer in Copic")
   await page.fill('#matchHex', '#40e0d0'); await idle(page);
   const btns = page.locator('#matchResult .mrow .wishbtn');
-  const closer = await page.evaluate(() => { const h = [...document.querySelectorAll('#matchResult .mlh')].find((x) => /could buy/.test(x.textContent)); let n = 0, e = h && h.nextElementSibling; while (e && e.classList.contains('mrow')) { n++; e = e.nextElementSibling; } return n; });
+  const closer = await page.evaluate(() => { const h = [...document.querySelectorAll('#matchResult .mlh')].find((x) => /could buy|^Closer (still )?in /.test(x.textContent)); let n = 0, e = h && h.nextElementSibling; while (e && e.classList.contains('mrow')) { n++; e = e.nextElementSibling; } return n; });
   assert.ok(closer >= 1, 'there are closer ones to buy');
   assert.equal(await btns.count(), closer, 'each of those, and only those, has an add button');
   assert.equal((await btns.first().textContent()).trim(), '+ To buy');

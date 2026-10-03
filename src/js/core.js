@@ -65,28 +65,38 @@ function freeCanvas(c) {
 }
 // draws a picture much smaller (w × h) by halving it in steps first: Safari's engine shrinks in one go without
 // averaging, so a photo's grain and camera noise would survive into the small copy (Chrome averages either way)
+// (v304) no step larger than DRAW_CAP pixels: a canvas past Safari's 16.7-megapixel limit on iPad stays empty, so the
+// first half of a photo over about 67 megapixels came out blank; each step's canvas is freed as soon as the next is
+// drawn, not all at the end
+const DRAW_CAP = 16e6;
 function drawShrunk(g, img, w, h) {
   let src = img,
     sw = img.naturalWidth || img.width,
     sh = img.naturalHeight || img.height;
-  const tmp = [];
   try {
     while (sw >= 2 * w && sh >= 2 * h) {
+      let nw = Math.ceil(sw / 2),
+        nh = Math.ceil(sh / 2);
+      if (nw * nh > DRAW_CAP) {
+        const k = Math.sqrt(DRAW_CAP / (nw * nh));
+        nw = Math.max(w, Math.floor(nw * k));
+        nh = Math.max(h, Math.floor(nh * k));
+      }
       const c = document.createElement('canvas');
-      c.width = Math.ceil(sw / 2);
-      c.height = Math.ceil(sh / 2);
+      c.width = nw;
+      c.height = nh;
       const cg = c.getContext('2d');
       cg.imageSmoothingEnabled = true;
       cg.imageSmoothingQuality = 'high';
       cg.drawImage(src, 0, 0, c.width, c.height);
-      tmp.push(c);
+      if (src !== img) freeCanvas(src);
       src = c;
       sw = c.width;
       sh = c.height;
     }
   } catch (_) {}
   g.drawImage(src, 0, 0, w, h);
-  tmp.forEach(freeCanvas);
+  if (src !== img) freeCanvas(src);
 }
 function hideToast() {
   const t = document.getElementById('msToast');
@@ -302,9 +312,10 @@ function downloadBlob(blob, fname) {
     document.body.appendChild(a);
     a.click();
     a.remove();
+    // (a minute: Safari on an iPad asks before downloading, and the file has to be there when the answer comes, v304)
     setTimeout(function () {
       URL.revokeObjectURL(url);
-    }, 4000);
+    }, 60000);
     return true;
   } catch (e) {
     return false;
@@ -336,7 +347,8 @@ function handOver(blob, fname, o) {
       },
       function (err) {
         const nm = err && err.name;
-        if (nm === 'AbortError') return 'cancel';
+        // (InvalidStateError: a share sheet is already open, from a second tap: left alone, not downloaded, v304)
+        if (nm === 'AbortError' || nm === 'InvalidStateError') return 'cancel';
         if (nm === 'NotAllowedError' && !again && o.retry !== false)
           return new Promise(function (res) {
             if (o.onWait) o.onWait();

@@ -505,6 +505,12 @@ function balPlan() {
 // what each role would have had by the sections' sizes alone, and what it has painted, the last time each zone was laid
 // (for the note when the shares miss: the sizes, or too few markers to keep touching sections apart)
 let balStat = {};
+// (what the last laying worked out, which the controls say: another picture or guide, or Undo, has none of it yet; the
+// one before told of the guide before, v304)
+function layStatReset() {
+  balStat = {};
+  lastPoolN = 0;
+}
 function balZoneKey() {
   return String(zoneBuilding != null ? zoneBuilding : zoneCur);
 }
@@ -651,6 +657,7 @@ function buildBalance(cl, p) {
   const a = adj || (adj = buildAdj()),
     uses = {},
     alike = balAlike(),
+    twin = balAlike(TWIN_DE),
     seq = free.slice().sort(function (x, y) {
       return area(y) - area(x);
     });
@@ -663,7 +670,7 @@ function buildBalance(cl, p) {
       });
     const notSame = function (m) {
         return !nbs.some(function (x) {
-          return x.mkey === m.mkey;
+          return twin(m, x);
         });
       },
       clear = function (m) {
@@ -721,14 +728,26 @@ function buildBalance(cl, p) {
 }
 // do two markers look alike (CIEDE2000 under ADJ_DE, as Keep touching sections clearly different has it)? Worked out
 // once per pair while a pattern is laid
-function balAlike() {
-  const memo = new Map();
+// (de: under how much CIEDE2000 they count as alike; ADJ_DE unless given. With TWIN_DE: they look the same, often two
+// of one brand, or a Copic and an Ohuhu match, and touching sections never share them while another would do, v304)
+const TWIN_DE = 2.5;
+function balAlike(de) {
+  const lim = de || ADJ_DE,
+    gate = 64 * lim * lim,
+    memo = new Map();
   return function (m, x) {
     if (m.mkey === x.mkey) return true;
+    const a = m.lab,
+      b = x.lab;
+    if (!a || !b) return false;
+    // (plain L*a*b* distance first, before any memo: CIEDE2000 is never under lim where that is over 8 lim (6.4 at
+    // most over every pair of markers under 10 apart), and most pairs are)
+    const q = (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]);
+    if (q >= gate) return false;
     const k = m.mkey < x.mkey ? m.mkey + '\u0000' + x.mkey : x.mkey + '\u0000' + m.mkey;
     let v = memo.get(k);
     if (v === undefined) {
-      v = !!(m.lab && x.lab && de2000(m.lab, x.lab) < ADJ_DE);
+      v = de2000(a, b) < lim;
       memo.set(k, v);
     }
     return v;
@@ -751,6 +770,7 @@ function buildNoRep(cl, pool) {
     uses = {},
     at = {},
     alike = balAlike(),
+    twin = balAlike(TWIN_DE),
     a = adj || (adj = buildAdj());
   coll.forEach(function (m) {
     bk[m.mkey] = m;
@@ -796,7 +816,7 @@ function buildNoRep(cl, pool) {
       });
     const notSame = function (m) {
         return !nbs.some(function (x) {
-          return x.mkey === m.mkey;
+          return twin(m, x);
         });
       },
       clear = function (m) {

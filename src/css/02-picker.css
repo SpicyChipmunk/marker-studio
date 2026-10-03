@@ -211,6 +211,7 @@
 }
 .band {
   flex: 1;
+  container-type: inline-size;
   position: relative;
   display: flex;
   align-items: flex-end;
@@ -255,6 +256,9 @@
   font-family: 'Fraunces', Georgia, serif;
   font-weight: 500;
   font-size: clamp(12px, 3.3vw, 22px);
+  /* (no wider than its band: with 8 or more colours on a phone the codes had run into each other, v303) */
+  font-size: min(clamp(12px, 3.3vw, 22px), max(10px, calc(100cqi * 0.29)));
+  white-space: nowrap;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.32);
 }
 .blk {
@@ -449,6 +453,12 @@ button.sopen:hover {
 #savedList .smeta span {
   white-space: nowrap;
 }
+/* (v303) the break between the meta's two lines: what it is, then how far and when */
+#savedList .smeta .smsep {
+  display: block;
+  height: 0;
+  overflow: hidden;
+}
 .sname-in {
   width: 100%;
   min-width: 0;
@@ -617,6 +627,21 @@ button.sopen:hover {
 .readout > div:first-child {
   flex: none;
   max-width: 60%;
+}
+/* a marker's readout (not a palette's): the name and its brand line across the card, the hex beside the last line
+   only, so the brand line isn't wrapped into a narrow column beside it on a phone (v303) */
+.readout:not(.rpal) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 14px;
+  align-items: end;
+}
+.readout:not(.rpal) > div:first-child {
+  display: contents;
+}
+.readout:not(.rpal) .name,
+.readout:not(.rpal) .fam {
+  grid-column: 1 / -1;
 }
 /* the codes wrap onto more lines rather than running off the card */
 .readout .hex {
@@ -995,6 +1020,11 @@ button:focus-visible {
 }
 .chip[data-empty='1'] .rem {
   opacity: 0.5;
+}
+/* (v303) a filter with nothing in it under the other filters is dimmed, as its count is (still tappable: the other
+   filters may change) */
+.chip[data-empty='1']:not([data-sel='1']) {
+  opacity: 0.55;
 }
 .pile-head {
   margin: 30px 2px 13px;
@@ -1454,4 +1484,8 @@ button:focus-visible {
     grid-template-columns: repeat(var(--segcolsw, var(--segcols, 7)), auto);
     grid-auto-flow: row;
   }
+}
+/* (a search redraws the grid at each letter: no rise there, v304) */
+.noanim .rgroup {
+  animation: none;
 }

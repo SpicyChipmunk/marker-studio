@@ -67,13 +67,13 @@ test('the sheet opens from Markers and previews pages and markers for the collec
   await pick(page, 'what', 'Copic');
   assert.equal(await summary(page), '9 pages · 358 markers');
   await pick(page, 'what', 'Ohuhu');
-  assert.equal(await summary(page), '10 pages · 363 markers');
+  assert.equal(await summary(page), '10 pages · 364 markers');
   await pick(page, 'labels', 'code');
-  assert.equal(await summary(page), '9 pages · 363 markers', 'codes only fit more rows');
+  assert.equal(await summary(page), '9 pages · 364 markers', 'codes only fit more rows');
   await pick(page, 'paper', 'a5');
   const a5 = await page.evaluate(() => { const g = swGeom('a5', 'code'); return { cols: g.cols, box: g.box }; });
   assert.ok(a5.cols >= 3 && a5.box >= 16, 'pocket paper still has nib-sized boxes');
-  assert.match(await summary(page), /^\d+ pages · 363 markers$/);
+  assert.match(await summary(page), /^\d+ pages · 364 markers$/);
   assert.equal(await page.evaluate(() => localStorage.getItem('ms-paper')), 'a5', 'paper is the app’s shared print option');
   // the sheet's own choices are remembered, apart from which markers (always your collection when it opens)
   await page.keyboard.press('Escape'); await idle(page);
@@ -100,7 +100,7 @@ test('with no markers to print, Download is off and the sheet says why', async (
   assert.match(await summary(page), /To buy list is empty/);
   await pick(page, 'what', 'Ohuhu');
   assert.equal(await page.isDisabled('#swGo'), false, 'a whole brand can still be printed');
-  assert.match(await summary(page), /· 363 markers$/);
+  assert.match(await summary(page), /· 364 markers$/);
   assert.deepEqual(errors, []);
 });
 

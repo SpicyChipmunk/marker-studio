@@ -195,11 +195,12 @@ test('two caps held in view say so once; a question answered isn’t asked again
 
 test('a whole collection pasted at once: every marker listed, quickly', async () => {
   const { page, errors } = await opened();
-  const codes = await page.evaluate(() => COLORS.filter((c) => c.brand === 'Ohuhu').map((c) => c.code + ' ' + c.name).join('\n'));
+  // (v303: not the colourless blender, 0, which both brands have under the same name, so is asked about)
+  const codes = await page.evaluate(() => COLORS.filter((c) => c.brand === 'Ohuhu' && c.code !== '0').map((c) => c.code + ' ' + c.name).join('\n'));
   const t0 = Date.now();
   await paste(page, codes); await idle(page);
   const ms = Date.now() - t0;
-  const n = await page.evaluate(() => COLORS.filter((c) => c.brand === 'Ohuhu').length);
+  const n = await page.evaluate(() => COLORS.filter((c) => c.brand === 'Ohuhu' && c.code !== '0').length);
   assert.equal((await list(page)).length, n);
   assert.ok(ms < 8000, ms + ' ms');
   assert.match(await page.textContent('#scAdd'), new RegExp('Add ' + (n - 120) + ' to my collection'));

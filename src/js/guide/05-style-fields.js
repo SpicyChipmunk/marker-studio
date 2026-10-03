@@ -213,11 +213,35 @@ const STYLE_FIELDS = [
     in: 'style',
     undo: false,
     save: function () {
-      return photoRef && photoXf
-        ? { xf: photoXf, op: photoOp, paper: photoPaper, light: photoLitSave(photoRef) }
-        : _phPend
-          ? { xf: _phPend.xf, op: _phPend.op, paper: _phPend.paper, light: _phPend.light }
-          : null;
+      // (v304: greys, Use grey markers for the grey parts; refit, still to be placed again after the picture was
+      // straightened, which a reopened guide does when the Photo pattern is next laid: 46-photo)
+      // (only when on, so a guide without them saves exactly as before)
+      const o =
+        photoRef && photoXf
+          ? {
+              xf: photoXf,
+              op: photoOp,
+              paper: photoPaper,
+              light: photoLitSave(photoRef),
+              g: photoGreys,
+              r: _phRefit,
+            }
+          : _phPend
+            ? {
+                xf: _phPend.xf,
+                op: _phPend.op,
+                paper: _phPend.paper,
+                light: _phPend.light,
+                g: _phPend.greys,
+                r: _phPend.refit,
+              }
+            : null;
+      if (!o) return null;
+      if (o.g) o.greys = true;
+      if (o.r) o.refit = true;
+      delete o.g;
+      delete o.r;
+      return o;
     },
   },
   { key: 'expand', in: 'style', def: false, check: styleBool, undo: true },

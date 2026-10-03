@@ -410,8 +410,7 @@ function mount() {
     },
     close: function (e) {
       if (inField(e)) return false;
-      focusSheet = false;
-      renderFocusUI();
+      focusSheetSet(false);
     },
   });
   addLayer({
@@ -527,7 +526,7 @@ function mount() {
   );
   var _zc = function () {
     if (!focus || !sfView) return [];
-    var g = focusGeo();
+    var g = focusGeo(true);
     return [g.cx - cv.offsetLeft, g.cy - cv.offsetTop];
   };
   cv.style.transition = '';
@@ -604,6 +603,15 @@ function enter() {
       renderGuide();
     }
   });
+}
+// the collection or Brands I'd buy changed in another tab while the guide is showing: what it suggests follows at
+// once (shading's and the blend plan's markers to buy, the Photo pattern's, the header's count), as entering it again
+// would have it; nothing is laid again (v304)
+function collRefresh() {
+  if (!document.getElementById('sfPick') || root.style.display === 'none') return;
+  if (metaEl) metaEl.innerHTML = metaText();
+  renderControls();
+  if (sfmode === 'color') renderAlong();
 }
 function leave() {
   exitFull();

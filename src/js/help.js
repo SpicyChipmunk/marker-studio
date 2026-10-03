@@ -5,6 +5,8 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'Search finds a code however you type it (“c3”, “C-3”, “cool grey 3”). Restoring a backup keeps your newer progress, and Save image’s codes no longer sit on top of each other.',
+  'A page downloaded from the internet now makes a better guide: lines close together no longer run into one. Scan is more careful: prices and counts in a list aren’t read as markers.',
   'When you tap a section, the box that opens now points to it. The guide’s rows of buttons are tidier.',
   'On an iPad, the Home, Markers and Palette screens now use the full width, and Home shows what a finished guide looks like before you make your first.',
   'Scan is more reliable and now reads the brand printed on the cap. You can now undo Mark all coloured, and a palette colour you re-rolled.',

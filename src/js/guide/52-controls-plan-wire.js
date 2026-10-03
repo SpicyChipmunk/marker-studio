@@ -110,6 +110,13 @@ function ctlWirePatternFamily() {
       photoRoughOnly = e.target.checked;
       renderGuide();
     });
+  // (no colour in the photo: its grey shading coloured after all, v304)
+  var _phg = document.getElementById('sfPhGreys');
+  if (_phg)
+    _phg.addEventListener('click', function () {
+      photoGreys = true;
+      photoRecolour();
+    });
   var _phsu = document.getElementById('sfPhUse');
   if (_phsu) _phsu.addEventListener('click', photoSugUse);
   var _phw = document.getElementById('sfPhPaper');

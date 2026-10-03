@@ -20,18 +20,36 @@ function buildExportCanvas(outline, noCodes) {
         return u.m.brand;
       }),
     );
-  const cols = 3,
-    per = Math.ceil(uniq.length / cols),
-    rh = Math.max(28, W / 40),
-    legTop = Math.max(74, W / 14),
-    legH = per * rh + legTop + 16,
-    colw = (W - 40) / cols;
+  const K = exportKeyLayout(uniq.length),
+    // (one more line under the brand when some sections are too small for their code, v304)
+    noteH = Math.max(18, W / 46),
+    sizeOf = function (note) {
+      const legH = K.per * K.rh + K.legTop + (note ? noteH : 0) + 16;
+      // (no bigger than iPad Safari's canvas allows, 16.7 million pixels: a guide with hundreds of markers has a
+      // legend taller than its picture; past that the whole image is drawn smaller, xs, v304)
+      return { legH: legH, xs: Math.min(1, Math.sqrt(EXPORT_MAXPX / (W * (H + legH)))) };
+    };
+  // the codes placed first, as on the PDF's colouring page: none over another, each as big as its section allows or
+  // smaller down to the least size, else left off; the least size kept on the image as saved, after any shrinking
+  // (from the smaller size, the one with the extra line: without it the image is no smaller, v304)
+  const pl = noCodes ? null : exportPlace(sizeOf(true).xs),
+    note = !!(pl && pl.dropped.length),
+    S = sizeOf(note),
+    legH = S.legH,
+    xs = S.xs;
   const ex = document.createElement('canvas');
-  ex.width = W;
-  ex.height = H + legH;
-  const g = ex.getContext('2d');
-  g.fillStyle = '#fff';
-  g.fillRect(0, 0, ex.width, ex.height);
+  ex.width = Math.max(1, Math.round(W * xs));
+  ex.height = Math.max(1, Math.round((H + legH) * xs));
+  const g0 = ex.getContext('2d');
+  g0.fillStyle = '#fff';
+  g0.fillRect(0, 0, ex.width, ex.height);
+  // (made smaller: the picture is drawn full size on a canvas of its own first, then shrunk onto the image)
+  const pic = xs < 1 ? document.createElement('canvas') : null;
+  if (pic) {
+    pic.width = W;
+    pic.height = H;
+  }
+  const g = pic ? pic.getContext('2d') : g0;
   const im = g.createImageData(W, H),
     d = im.data,
     n = W * H,
@@ -50,7 +68,7 @@ function buildExportCanvas(outline, noCodes) {
       const c = shadeRGB(sh, p, l, bc[l] || (bc[l] = hexRgb(assign[l].hex)), sc);
       if (tx) {
         const e = edgeDist[p],
-          ef = e >= 9 ? 1 : e * 0.1111,
+          ef = e >= 9 * srcK ? 1 : e / (9 * srcK),
           mul = (1 - texAmt * 0.3 * (1 - ef)) * (1 + texAmt * 0.1 * ((texField[p] - 128) * 0.0078125));
         d[j] = c[0] * mul;
         d[j + 1] = c[1] * mul;
@@ -68,25 +86,90 @@ function buildExportCanvas(outline, noCodes) {
     d[j + 3] = 255;
   }
   g.putImageData(im, 0, 0);
-  for (const l in noCodes ? {} : assign) {
-    const m = assign[l],
-      dark = darkText(m.hex);
-    drawCode(g, l, m, {
+  if (pl) exportPlaceDraw(g, pl, outline);
+  return exportLegend(pic ? exportShrink(g0, pic, xs) : g, ex, uniq, one, K, note);
+}
+const EXPORT_MAXPX = 15e6;
+// The saved image's key (v304): 3 columns (2 on a picture under 700 px wide, where the key's letters stop getting
+// smaller and 3 would cut most names short), 4 when 3 would make the key taller than 60% of the picture (names still
+// fit 4 across from 812 px), and past 150 markers 6 of just the brand letter and code (5 or 6 across cut most names)
+function exportKeyLayout(nU) {
+  const rh = Math.max(28, W / 40),
+    legTop = Math.max(74, W / 14),
+    fs = Math.max(14, W / 58),
+    sw = Math.max(16, W / 50),
+    codes = nU > 150;
+  let cols = W < 700 ? 2 : 3;
+  if (codes)
+    // (as many as the codes fit, on a narrow picture: about 5.2 letter widths each)
+    cols = Math.max(2, Math.min(6, Math.floor((W - 40) / (5.2 * fs + sw + 16))));
+  else if (W >= 812 && Math.ceil(nU / cols) * rh > H * 0.6) cols = 4;
+  return {
+    cols: cols,
+    per: Math.ceil(nU / cols),
+    rh: rh,
+    legTop: legTop,
+    colw: (W - 40) / cols,
+    codes: codes,
+  };
+}
+// where each code goes on the saved image (pdfPlace): codes only, no numbers or dots; at least 6 picture px (more on a
+// picture enlarged before its sections were found) and 6 px on the image as saved (xs: how much it is shrunk)
+let _exPlaced = null;
+function exportPlace(xs) {
+  const mn = Math.max(6 * srcK, 6 / xs),
+    o = {
       bt: guideMixed(),
-      base: 10,
-      min: 9,
+      base: Math.max(mn, 10 * srcK),
+      min: mn,
+      max: Math.max(mn, 30 * srcK),
       w: 700,
       swk: 0.3,
-      stroke: outline || dark ? '#fff' : '#000',
-      fill: outline || dark ? '#111' : '#fff',
-    });
+    },
+    g = document.createElement('canvas').getContext('2d'),
+    pl = pdfPlace(g, Object.keys(assignData.assign).map(Number), o, 'codes', null, { noNum: true });
+  _exPlaced = {
+    boxes: pl.boxes.slice(0, pl.boxes.length - pl.dropped.length),
+    dropped: pl.dropped.slice(),
+    min: mn,
+  };
+  return pl;
+}
+function exportPlaceDraw(g, pl, outline) {
+  const asg = assignData.assign;
+  for (const l in pl.lays) {
+    const m = asg[l],
+      dark = darkText(m.hex);
+    drawCode(
+      g,
+      +l,
+      m,
+      Object.assign({}, pl.lays[l].o, {
+        stroke: outline || dark ? '#fff' : '#000',
+        fill: outline || dark ? '#111' : '#fff',
+      }),
+    );
   }
+}
+function exportShrink(g0, pic, xs) {
+  g0.imageSmoothingEnabled = true;
+  g0.imageSmoothingQuality = 'high';
+  g0.drawImage(pic, 0, 0, Math.round(W * xs), Math.round(H * xs));
+  freeCanvas(pic);
+  g0.setTransform(xs, 0, 0, xs, 0, 0);
+  return g0;
+}
+function exportLegend(g, ex, uniq, one, K, note) {
+  const cols = K.cols,
+    rh = K.rh,
+    colw = K.colw,
+    legTop = K.legTop + (note ? Math.max(18, W / 46) : 0);
   g.textAlign = 'left';
   g.textBaseline = 'middle';
   g.fillStyle = '#111';
   g.font = '700 ' + Math.max(20, W / 40) + 'px sans-serif';
   {
-    const suf = ' \u00b7 ' + nWord(uniq.length, 'marker');
+    const suf = ' · ' + nWord(uniq.length, 'marker');
     g.fillText(
       pdfTrunc(g, curName || 'Colouring guide', Math.max(40, W - 40 - g.measureText(suf).width)) + suf,
       20,
@@ -96,6 +179,12 @@ function buildExportCanvas(outline, noCodes) {
   g.font = '600 ' + Math.max(13, W / 70) + 'px sans-serif';
   g.fillStyle = '#777';
   g.fillText(one || brandKey(), 20, H + Math.max(28, W / 34) + Math.max(18, W / 46));
+  if (note)
+    g.fillText(
+      pdfTrunc(g, 'Small sections unlabelled: see the guide or the PDF’s close-ups.', W - 40),
+      20,
+      H + Math.max(28, W / 34) + 2 * Math.max(18, W / 46),
+    );
   g.fillStyle = '#111';
   const fs2 = Math.max(14, W / 58),
     sw = Math.max(16, W / 50);
@@ -115,7 +204,7 @@ function buildExportCanvas(outline, noCodes) {
     g.fillText(
       trunc(
         g,
-        (one ? '' : bTag(mk.brand) + '  ') + mk.code + (mk.name ? '   ' + mk.name : ''),
+        (one ? '' : bTag(mk.brand) + '  ') + mk.code + (mk.name && !K.codes ? '   ' + mk.name : ''),
         colw - sw - 16,
       ),
       x + sw + 8,
@@ -124,7 +213,10 @@ function buildExportCanvas(outline, noCodes) {
   }
   return ex;
 }
+// (null where the browser can't compress, before Safari 16.4: the page is then stored as it is, which a PDF allows,
+// v304)
 async function _flate(u8) {
+  if (typeof CompressionStream === 'undefined') return null;
   const cs = new CompressionStream('deflate');
   const w = cs.writable.getWriter();
   w.write(u8);
@@ -145,8 +237,9 @@ function _rgbOf(cv) {
   return o;
 }
 // one page per canvas; a page may also be a function that draws its canvas when its turn comes (so a long PDF
-// holds one page in memory at a time)
-async function canvasesToPDF(cvs, PW, PH) {
+// holds one page in memory at a time). blob: the file as a Blob made from its parts, without first copying them into
+// one array (pages stored uncompressed are about 11 MB each, v304)
+async function canvasesToPDF(cvs, PW, PH, blob) {
   PW = PW || 612;
   PH = PH || 792;
   const M = 0,
@@ -174,7 +267,9 @@ async function canvasesToPDF(cvs, PW, PH) {
     const cv = typeof cvs[i] === 'function' ? cvs[i]() : cvs[i],
       w = cv.width,
       h = cv.height,
-      comp = await _flate(_rgbOf(cv));
+      raw = _rgbOf(cv),
+      zc = await _flate(raw),
+      comp = zc || raw;
     freeCanvas(cv);
     so();
     push(
@@ -183,7 +278,9 @@ async function canvasesToPDF(cvs, PW, PH) {
         w +
         ' /Height ' +
         h +
-        ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length ' +
+        ' /ColorSpace /DeviceRGB /BitsPerComponent 8' +
+        (zc ? ' /Filter /FlateDecode' : '') +
+        ' /Length ' +
         comp.length +
         ' >>\nstream\n',
     );
@@ -238,6 +335,7 @@ async function canvasesToPDF(cvs, PW, PH) {
   push('xref\n0 ' + nObj + '\n0000000000 65535 f \n');
   for (const o of off) push(String(o).padStart(10, '0') + ' 00000 n \n');
   push('trailer\n<< /Size ' + nObj + ' /Root 1 0 R >>\nstartxref\n' + xo + '\n%%EOF');
+  if (blob) return new Blob(chunks, { type: 'application/pdf' });
   const out = new Uint8Array(len);
   let p = 0;
   for (const c of chunks) {
@@ -254,6 +352,9 @@ const PAPERS = { letter: [612, 792], a4: [595.28, 841.89], a5: [419.53, 595.28],
 // colouring their original book page. The paper defaults to Letter where Letter is the everyday size, else A4.
 let pdfLabels = 'codes',
   pdfDark = false,
+  // (Tone lines: the dashed lines where one tone hands over to the next, on the colouring page with shading. Its own
+  // choice here, not the screen's Show tone lines: on paper they're most sections' only mark, v304)
+  pdfToneLines = true,
   pdfWhat = 'page',
   pdfS = 1;
 const LETTER_LANDS = ['US', 'CA', 'MX', 'PH', 'CL', 'CO', 'VE', 'PR'];
@@ -277,6 +378,7 @@ try {
   paper = Object.prototype.hasOwnProperty.call(PAPERS, p) ? p : paperDefault();
   if (l === 'numbers' || l === 'none') pdfLabels = l;
   pdfDark = localStorage.getItem('ms-pdf-dark') === '1';
+  pdfToneLines = localStorage.getItem('ms-pdf-lines') !== '0';
   pdfWhat = localStorage.getItem('ms-pdf-what') === 'ref' ? 'ref' : 'page';
 } catch (_) {
   paper = paperDefault();
@@ -417,7 +519,11 @@ function openPrint() {
     (pdfDark ? ' checked' : '') +
     '> Darker labels</label>' +
     (shadeUse().on
-      ? '<div class="sfshhint" id="sfPrShNote">' + printShNote() + '</div>'
+      ? '<label class="sfchk"><input type="checkbox" id="sfPdfLines"' +
+        (pdfToneLines ? ' checked' : '') +
+        '> Tone lines</label><div class="sfshhint" id="sfPrShNote">' +
+        printShNote() +
+        '</div>'
       : '<label class="sfchk"><input type="checkbox" id="sfPdfBlend"' +
         (pdfBlend ? ' checked' : '') +
         '> Include blend companions (a lighter and darker shade for each colour)</label>') +
@@ -431,6 +537,7 @@ function openPrint() {
       '</button>',
   });
   el.classList.add('sfprsh');
+  printWait();
   el.addEventListener('click', function (e) {
     const x = e.target.closest('[data-pwhat],[data-plabels],[data-paper]');
     if (x) {
@@ -443,6 +550,7 @@ function openPrint() {
   });
   el.addEventListener('change', function (e) {
     if (e.target.id === 'sfPdfDark') printOptSet('dark', e.target.checked);
+    else if (e.target.id === 'sfPdfLines') printOptSet('lines', e.target.checked);
     else if (e.target.id === 'sfPdfBlend') {
       pdfBlend = e.target.checked;
       try {
@@ -538,6 +646,12 @@ function printOptsSync() {
     dk.disabled = pdfWhat !== 'page' || pdfLabels === 'none';
     dk.parentNode.classList.toggle('off', dk.disabled);
   }
+  // (only the colouring page has tone lines)
+  const tl = document.getElementById('sfPdfLines');
+  if (tl) {
+    tl.disabled = pdfWhat !== 'page';
+    tl.parentNode.classList.toggle('off', tl.disabled);
+  }
   const shn = document.getElementById('sfPrShNote');
   if (shn) shn.textContent = printShNote();
   const sm = document.getElementById('sfPrSum');
@@ -563,6 +677,10 @@ function printOptSet(k, v) {
     pdfDark = !!v;
     key = 'ms-pdf-dark';
     val = pdfDark ? '1' : '0';
+  } else if (k === 'lines') {
+    pdfToneLines = !!v;
+    key = 'ms-pdf-lines';
+    val = pdfToneLines ? '1' : '0';
   } else {
     if (Object.prototype.hasOwnProperty.call(PAPERS, v)) paper = v;
     key = 'ms-paper';
@@ -581,8 +699,9 @@ function PX(pt) {
 }
 // (a dry run, which only counts the pages, lays them out on 1×1 canvases)
 let _pdfDry = false;
-function pdfPage() {
-  const P = PAPERS[paper] || PAPERS.letter,
+// (pp: the paper the PDF was started on, for pages drawn while it is written: Paper can be changed meanwhile, v304)
+function pdfPage(pp) {
+  const P = PAPERS[pp || paper] || PAPERS.letter,
     c = document.createElement('canvas'),
     w = Math.round((P[0] / 72) * PDPI),
     h = Math.round((P[1] / 72) * PDPI);
@@ -695,19 +814,32 @@ function pdfZoneOverlay(g, x0, y0, f, ids) {
     const E = pdfDilate(inv, r1);
     for (let q = 0; q < n; q++) E[q] = E[q] ? 0 : 1;
     // (holes in it, where lines meet more thickly than that, filled: only its outer edge is drawn)
+    // (each pixel marked as it goes on the stack, so the stack holds it once at most: a plain array of every
+    // neighbour pushed reached 12.8 million entries on a 2400 × 2400 picture, v304)
     const out0 = new Uint8Array(n),
-      st = [];
-    for (let x = 0; x < W; x++) st.push(x, (H - 1) * W + x);
-    for (let y = 0; y < H; y++) st.push(y * W, y * W + W - 1);
-    while (st.length) {
-      const q = st.pop();
-      if (out0[q] || E[q]) continue;
-      out0[q] = 1;
-      const x = q % W;
-      if (x > 0) st.push(q - 1);
-      if (x < W - 1) st.push(q + 1);
-      if (q >= W) st.push(q - W);
-      if (q < n - W) st.push(q + W);
+      st = new Int32Array(n),
+      put = function (q) {
+        if (!out0[q] && !E[q]) {
+          out0[q] = 1;
+          st[sp++] = q;
+        }
+      };
+    let sp = 0;
+    for (let x = 0; x < W; x++) {
+      put(x);
+      put((H - 1) * W + x);
+    }
+    for (let y = 0; y < H; y++) {
+      put(y * W);
+      put(y * W + W - 1);
+    }
+    while (sp) {
+      const q = st[--sp],
+        x = q % W;
+      if (x > 0) put(q - 1);
+      if (x < W - 1) put(q + 1);
+      if (q >= W) put(q - W);
+      if (q < n - W) put(q + W);
     }
     for (let q = 0; q < n; q++) {
       E[q] = out0[q] ? 0 : 1;
@@ -953,13 +1085,16 @@ function pdfPlace(g, ids, o, lab, numOf, opt) {
           });
         });
       }
-      const t = numOf(mm),
-        N0 = pdfNumLay(g, l, t, o, null);
-      sizes(N0.fs).forEach(function (s) {
-        tries.push(function () {
-          return pdfNumLay(g, l, t, o, s);
+      // (opt.noNum: codes only, for the saved image, v304)
+      if (!opt.noNum) {
+        const t = numOf(mm),
+          N0 = pdfNumLay(g, l, t, o, null);
+        sizes(N0.fs).forEach(function (s) {
+          tries.push(function () {
+            return pdfNumLay(g, l, t, o, s);
+          });
         });
-      });
+      }
       for (let i = 0; i < tries.length; i++) {
         const L = tries[i]();
         if (free(L.box)) {
@@ -1118,10 +1253,11 @@ function pdfCloseMark(g, cr, letter, k, ink, pl) {
 }
 // the PDF's pages as canvases; dry: just how many there will be (for the Print sheet's summary), from the same
 // layout without drawing the pictures
-function buildPDFPages(dry) {
+// (lazy: the test strip's pages as functions that each draw one when the PDF writer comes to it, for exportPDF, v304)
+function buildPDFPages(dry, lazy) {
   _pdfDry = !!dry;
   try {
-    if (pdfWhat === 'strip') return testStripPages(!!dry);
+    if (pdfWhat === 'strip') return testStripPages(!!dry, !!lazy);
     return _buildPDF(!!dry);
   } finally {
     _pdfDry = false;
@@ -1308,10 +1444,14 @@ function _buildPDF(dry) {
       });
       g1.imageSmoothingEnabled = true;
       g1.imageSmoothingQuality = 'high';
-      const art1 = pdfArt(false, sh, {
-        t: Math.max(1, Math.round(PX(0.8) / f1.k)),
-        dash: Math.max(3, Math.round(PX(4) / f1.k)),
-      });
+      const art1 = pdfArt(
+        false,
+        sh,
+        pdfToneLines && {
+          t: Math.max(1, Math.round(PX(0.8) / f1.k)),
+          dash: Math.max(3, Math.round(PX(4) / f1.k)),
+        },
+      );
       g1.drawImage(art1, ox, top, f1.w, f1.h);
       g1.save();
       g1.setTransform(f1.k, 0, 0, f1.k, ox, top);
@@ -1538,7 +1678,7 @@ function _buildPDF(dry) {
     g.font = '500 ' + PX(8) + 'px ' + LFONT;
     // (tones that differ by zone: where the zones are)
     const words = (
-      shadeHowto() +
+      shadeHowto(!pdfToneLines) +
       (zIds.length
         ? ' Where a colour’s tones differ by zone, the key has a line for each: the zones are outlined below, and Main is the rest.'
         : '')
@@ -2088,7 +2228,32 @@ const pdfKit = {
   share: shareOrSave,
 };
 async function exportPDF() {
-  if (!assignData) return;
+  // (one at a time: the sheet can be closed and opened again while one is being written, v304)
+  if (!assignData || exportPDF.busy) return;
+  exportPDF.busy = 1;
+  try {
+    await _exportPDF();
+  } finally {
+    exportPDF.busy = 0;
+    // (the button of a sheet opened again meanwhile, back as it was)
+    const w = _pdfWait;
+    _pdfWait = null;
+    if (w && w.b.isConnected) {
+      w.b.innerHTML = w.h;
+      w.b.disabled = false;
+    }
+  }
+}
+// a Print sheet opened while a PDF is still being written: its button says so until it is done (v304)
+let _pdfWait = null;
+function printWait() {
+  const b = document.getElementById('sfPDF');
+  if (!exportPDF.busy || !b) return;
+  _pdfWait = { b: b, h: b.innerHTML };
+  b.textContent = 'Preparing\u2026';
+  b.disabled = true;
+}
+async function _exportPDF() {
   note('Preparing PDF…');
   var _b = document.getElementById('sfPDF'),
     // (its icon too: the words and the picture back as they were, v300)
@@ -2103,8 +2268,7 @@ async function exportPDF() {
   });
   try {
     const P = PAPERS[paper] || PAPERS.letter,
-      bytes = await canvasesToPDF(buildPDFPages(), P[0], P[1]);
-    const blob = new Blob([bytes], { type: 'application/pdf' });
+      blob = await canvasesToPDF(buildPDFPages(false, true), P[0], P[1], true);
     const fname =
       ((curName || 'colour-guide')
         .replace(/[^a-z0-9]+/gi, '-')
@@ -2316,16 +2480,29 @@ function exportImage() {
     _b.textContent = 'Preparing\u2026';
     _b.disabled = true;
   }
+  const done = function () {
+    exportImage.busy = 0;
+    if (_b) {
+      _b.innerHTML = _o;
+      _b.disabled = false;
+    }
+  };
   setTimeout(function () {
-    const xc = buildExportCanvas(false, !exCodes);
+    // (anything going wrong puts the button back: before, it stayed on Preparing… until the app was reloaded, v304)
+    let xc = null;
+    try {
+      if (!assignData) throw new Error('no guide');
+      xc = buildExportCanvas(false, !exCodes);
+    } catch (e) {
+      freeCanvas(xc);
+      done();
+      note('Couldn’t export the image.');
+      return;
+    }
     xc.toBlob(function (blob) {
       // (the picture is in the file now: its canvas handed back, v296)
       freeCanvas(xc);
-      exportImage.busy = 0;
-      if (_b) {
-        _b.innerHTML = _o;
-        _b.disabled = false;
-      }
+      done();
       if (!blob) {
         note('Couldn’t export the image.');
         return;
@@ -2342,7 +2519,7 @@ function exportImage() {
 // Under each box a thin bar printed in the screen's colour, a little apart so ink doesn't creep into it. The swatch
 // chart's corner marks (the bottom-right one hollow) and a fixed millimetre layout, so a photo of it could be read
 // back later. dry: just how many pages.
-function testStripPages(dry) {
+function testStripPages(dry, lazy) {
   const sh = shadeUse().on ? shadePrep(false) : null,
     withShade = !!sh,
     withBlend = !withShade && !!pdfBlend,
@@ -2412,7 +2589,8 @@ function testStripPages(dry) {
       return oneB ? c.code : bTag(c.brand) + ' ' + c.code;
     };
   // the page in millimetres
-  const P0 = PAPERS[paper] || PAPERS.letter,
+  const pap = paper,
+    P0 = PAPERS[pap] || PAPERS.letter,
     pw = (P0[0] / 72) * 25.4,
     ph = (P0[1] / 72) * 25.4,
     small = pw < 160,
@@ -2468,8 +2646,10 @@ function testStripPages(dry) {
   const np = Math.max(1, at.length ? at[at.length - 1].p + 1 : 1);
   if (dry) return np;
   const out = [];
-  for (let pi = 0; pi < np; pi++) {
-    const pg = pdfPage(),
+  for (let pi = 0; pi < np; pi++) out.push(lazy ? stripPage.bind(null, pi) : stripPage(pi));
+  return out;
+  function stripPage(pi) {
+    const pg = pdfPage(pap),
       g = pg.g,
       K = pg.w / pw,
       M = function (v) {
@@ -2481,7 +2661,6 @@ function testStripPages(dry) {
       rgb = function (c) {
         return 'rgb(' + c.map(Math.round).join(',') + ')';
       };
-    out.push(pg.c);
     // corner marks, as the swatch chart's
     [
       [mg, mg],
@@ -2630,6 +2809,6 @@ function testStripPages(dry) {
       g.fillStyle = gr;
       g.fillRect(M(rx), M(Y0 + box + 1.5), M(rw), M(1.6));
     });
+    return pg.c;
   }
-  return out;
 }

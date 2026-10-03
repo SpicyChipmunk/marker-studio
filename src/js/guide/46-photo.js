@@ -179,7 +179,7 @@ function photoLitLined() {
     if (x < 0 || y < 0 || x >= W || y >= H) continue;
     const i = y * W + x,
       l = labels[i];
-    if (l > 0 && l < K && ok[l] && _ldq[i] >= 32) m[k] = 1;
+    if (l > 0 && l < K && ok[l] && _ldq[i] >= 32 * srcK) m[k] = 1;
   }
   const paper = paperOf(S.d, function (p) {
     return m[p] === 1;
@@ -252,6 +252,9 @@ function photoViewUrl(ref) {
   return ref.view;
 }
 function photoReset() {
+  _phGeo = null;
+  _phRefit = false;
+  _phPD = null;
   photoWait = {};
   photoRef = null;
   photoXf = null;
@@ -260,11 +263,108 @@ function photoReset() {
   photoPeek = false;
   photoRoughOnly = false;
   photoPaper = true;
+  photoGreys = false;
+  _phNone = {};
+  _phPick++;
+  _phAlFail = false;
   _phErr = null;
   _phStats = null;
   _phCol = null;
   _phBumped = false;
   if (photoEl) photoEl.style.display = 'none';
+}
+/* ---- the photo through a change to the picture (v304) ----
+    The photo's placement is in the guide's pixels. Turning, tilting, cropping (by hand or Auto) and, since v303, the
+    enlarging that follows a crop change what a guide pixel is, so the placement is carried through the change: the
+    picture as it came (srcImg) is the fixed frame both guides are drawn from. Straightening makes a new srcImg (not a
+    turn and a size), so then the photo is placed again: lined up by itself if it can be, else Fill and lining up on. */
+let _phGeo = null,
+  _phRefit = false;
+// how the guide's pixels come from srcImg now (as buildRotatedFull and processSrc make them), or null
+function photoGeoNow() {
+  if (!srcImg || !W || !H) return null;
+  const rad = ((rot90 + tilt) * Math.PI) / 180,
+    sw = srcImg.width,
+    sh = srcImg.height,
+    c = Math.abs(Math.cos(rad)),
+    s = Math.abs(Math.sin(rad)),
+    bw = sw * c + sh * s,
+    bh = sw * s + sh * c,
+    sc = Math.min(1, MAXSIDE / Math.max(bw, bh)),
+    fw = Math.round(bw * sc),
+    fh = Math.round(bh * sc),
+    cr = cropRect || { x: 0, y: 0, w: 1, h: 1 },
+    ox = Math.round(cr.x * fw),
+    oy = Math.round(cr.y * fh),
+    cw = Math.max(8, Math.min(Math.round(cr.w * fw), fw - ox)),
+    ch = Math.max(8, Math.min(Math.round(cr.h * fh), fh - oy));
+  return {
+    src: srcImg,
+    rad: rad,
+    sw: sw,
+    sh: sh,
+    sc: sc,
+    fw: fw,
+    fh: fh,
+    ox: ox,
+    oy: oy,
+    kx: W / cw,
+    ky: H / ch,
+  };
+}
+// a guide point under geometry g to srcImg, and back
+function _phToSrc(g, x, y) {
+  const dx = (x / g.kx + g.ox - g.fw / 2) / g.sc,
+    dy = (y / g.ky + g.oy - g.fh / 2) / g.sc,
+    cs = Math.cos(g.rad),
+    sn = Math.sin(g.rad);
+  return [cs * dx + sn * dy + g.sw / 2, -sn * dx + cs * dy + g.sh / 2];
+}
+function _phFromSrc(g, x, y) {
+  const a = x - g.sw / 2,
+    b = y - g.sh / 2,
+    cs = Math.cos(g.rad),
+    sn = Math.sin(g.rad);
+  return [
+    ((cs * a - sn * b) * g.sc + g.fw / 2 - g.ox) * g.kx,
+    ((sn * a + cs * b) * g.sc + g.fh / 2 - g.oy) * g.ky,
+  ];
+}
+// carry the placement from geometry g0 to g1; false when it can't be (no placement, or another srcImg)
+function photoGeoMove(g0, g1) {
+  if (!photoXf || !g0 || !g1 || g0.src !== g1.src) return false;
+  const p = _phToSrc(g0, photoXf.cx, photoXf.cy),
+    q = _phFromSrc(g1, p[0], p[1]),
+    k = (g1.sc * Math.sqrt(g1.kx * g1.ky)) / (g0.sc * Math.sqrt(g0.kx * g0.ky));
+  photoXf = { cx: q[0], cy: q[1], sx: photoXf.sx * k, sy: photoXf.sy * k, r: photoXf.r + g1.rad - g0.rad };
+  _phCol = null;
+  return true;
+}
+// the picture was made again (processSrc): carry the photo, or place it again once the guide is laid (assignOne)
+function photoGeoAfter() {
+  const g1 = photoGeoNow();
+  if (photoRef && photoXf && !photoGeoMove(_phGeo, g1)) _phRefit = true;
+  _phGeo = g1;
+}
+// placed again from scratch: lined up by itself when the photo matches the picture, else Fill with lining up on
+function photoGeoRefit() {
+  _phRefit = false;
+  if (!photoRef || !labels) return;
+  photoFit('fill');
+  let xf = null;
+  try {
+    const fa = photoAlignRaw(photoFlatAlign);
+    if (fa) xf = fa.xf;
+    else {
+      const r = photoAlignRaw(photoAutoAlign);
+      if (r && r.score >= PH_ALIGN_MIN && r.peak >= PH_ALIGN_PEAK && r.lineShare >= 0.03) xf = r.xf;
+    }
+  } catch (_) {}
+  if (xf) photoXf = xf;
+  else photoAlign = true;
+  // (the no-colour line then says to line it up first, v304)
+  _phAlFail = !xf;
+  _phCol = null;
 }
 // bounding box of the sections in the guide (the artwork, not the paper around it)
 function artBox() {
@@ -303,6 +403,11 @@ function photoFit(mode) {
   }
   photoXf = { cx: (b.x0 + b.x1 + 1) / 2, cy: (b.y0 + b.y1 + 1) / 2, sx: sx, sy: sy, r: 0 };
   _phCol = null;
+}
+// the size at which the photo fills the drawing (photoFit's Fill)
+function photoFillScale() {
+  const b = artBox();
+  return Math.max((b.x1 - b.x0 + 1) / photoRef.w, (b.y1 - b.y0 + 1) / photoRef.h);
 }
 function photoXfOK(x) {
   return !!(
@@ -391,7 +496,8 @@ function photoPoints() {
     cnt = new Int32Array(K);
   for (let l = 1; l < K; l++) {
     const p = labelPts[l];
-    thr[l] = p ? Math.min(3, p.r * 0.5) * 8 : 0;
+    // (3 pixels of the picture as it came: an enlarged one's are srcK times as many, v303)
+    thr[l] = p ? Math.min(3 * srcK, p.r * 0.5) * 8 : 0;
   }
   for (let i = 0; i < n; i++) {
     const l = labels[i];
@@ -493,7 +599,8 @@ function photoColours() {
 // a marker by itself.
 function photoPick(targets0, pool0, N, quick) {
   if (!targets0.length || !pool0.length) return { chosen: [], pick: [] };
-  const pr = _photoPrep(targets0, pool0);
+  const PD = _photoPrepDist(targets0, pool0),
+    pr = PD.pr;
   if (!pr.pool.length) {
     // (no marker is near any of the colours: the closest ones, but still no more than N of them — the ones the most
     // of the picture would take — each colour then taking the closest of those, v298)
@@ -518,7 +625,7 @@ function photoPick(targets0, pool0, N, quick) {
   }
   const targets = pr.targets,
     pool = pr.pool,
-    D = _photoDist(targets, pool),
+    D = PD.D,
     cm = _photoChoose(targets, D, pool.length, N, quick).map(function (j) {
       return pool[j];
     }),
@@ -526,6 +633,15 @@ function photoPick(targets0, pool0, N, quick) {
   // (each colour then takes the chosen marker closest by eye)
   for (let i = 0; i < targets0.length; i++) pick[i] = nearestInPool(targets[pr.back[i]].lab, cm);
   return { chosen: cm, pick: pick };
+}
+// the merged targets, the pool near them and their distances, for these targets and pool: worked out once per laying,
+// shared by the marker choice and the suggested count (buildPhoto hands both the same arrays, v304)
+let _phPD = null;
+function _photoPrepDist(targets0, pool0) {
+  if (_phPD && _phPD.t === targets0 && _phPD.p === pool0) return _phPD;
+  const pr = _photoPrep(targets0, pool0);
+  _phPD = { t: targets0, p: pool0, pr: pr, D: pr.pool.length ? _photoDist(pr.targets, pr.pool) : null };
+  return _phPD;
 }
 // sections with (nearly) the same colour are merged (their weights added), and markers far from every colour are
 // dropped, before the search. back: each original target's merged one.
@@ -660,12 +776,13 @@ const PH_SUG_DE = 2,
 let _phSug = null; // { key, n (0: none; null: still working), timer }
 // the steps: a greedy run to PH_SUG_MAX gives an upper bound, then the full choice is tried at one fewer at a time
 function _photoSugSteps(targets0, pool0) {
-  const pr = _photoPrep(targets0, pool0),
+  const PD = _photoPrepDist(targets0, pool0),
+    pr = PD.pr,
     targets = pr.targets,
     P = pr.pool.length,
     T = targets.length;
   if (!T || P < 2) return null;
-  const D = _photoDist(targets, pr.pool),
+  const D = PD.D,
     best = new Float32Array(T),
     W = targets.reduce(function (a, t) {
       return a + t.w;
@@ -763,7 +880,8 @@ function photoSugPlan(targets0, pool0) {
 // the suggestion line, when there is one and it differs from what the guide uses by 2 or more
 function photoSugHTML() {
   const n = _phSug && _phSug.col === _phCol ? _phSug.n : 0;
-  if (!n || Math.abs(n - lastPoolN) < 2) return '';
+  // (lastPoolN is 0 after an Undo, which lays nothing: the markers the guide is set to use then, v304)
+  if (!n || Math.abs(n - (lastPoolN || limitN)) < 2) return '';
   return (
     '<span>About <b>' +
     n +
@@ -798,9 +916,69 @@ function photoPool() {
   }
   return poolFor('all');
 }
+/* ---- a photo with no colour (v304) ----
+    A photo of the page before it was coloured (or a blank one) has nothing for the markers to match: with white areas
+    left white, its paper and the shadows on it took near-white greys, and lines read as Black. So when no section
+    reads as a colour (chroma PH_NONE_C or more from the photo's own paper; measured: an uncoloured page at most 3,
+    pale pastels 13 or more), every section is left white and the Pattern panel says so. Grey shading can be coloured
+    anyway (photoGreys: Use grey markers for the grey parts, saved with the photo). Most of the sections past the
+    photo's edge: it isn't over the drawing, which is said instead. One record per zone (pwKey), for the panel. */
+const PH_NONE_C = 6,
+  PH_NONE_IN = 0.5,
+  PH_NONE_GREY = 0.05;
+let photoGreys = false,
+  _phNone = {},
+  _phAlFail = false;
+// null: colour to lay; {off: true}: the photo is mostly off these sections; {grey}: no colour (grey: the share of
+// their area that reads as grey, not paper and not line)
+function photoNoColour(t) {
+  const C = _phCol,
+    ref = photoRef,
+    wh = ref.lit && ref.lit.white ? ref.lit.white : [100, 0, 0];
+  let A = 0,
+    inn = 0,
+    grey = 0,
+    col = false;
+  for (let i = 0; i < t.length; i++) {
+    const l = t[i].l,
+      lab = t[i].lab,
+      a = (comps[l] && comps[l].area) || 1,
+      ch = Math.hypot(lab[1] - wh[1], lab[2] - wh[2]);
+    A += a;
+    inn += (C.inn ? C.inn[l] : 1) * a;
+    if (photoIsWhite(lab) || (lab[0] >= wh[0] - PH_WHITE_L && ch <= PH_WHITE_C)) continue;
+    if (ch >= PH_NONE_C) col = true;
+    else if (lab[0] >= 35) grey += a;
+  }
+  if (!A) return null;
+  if (inn / A < PH_NONE_IN) return { off: true };
+  if (col || !photoPaper || photoGreys) return null;
+  return { grey: grey / A };
+}
+// the Pattern panel's line for it
+function photoNoneHTML() {
+  const nc = _phNone[pwKey()];
+  if (!nc) return '';
+  if (nc.off)
+    return '<div class="sfphstat">The photo isn’t over the picture. Drag it onto the drawing, or tap Line up photo.</div>';
+  return (
+    '<div class="sfphstat">' +
+    (zones.length ? 'No colour in the photo over this zone' : 'No colour in this photo') +
+    ', so every section is left white. Choose a photo of the page once it’s coloured in.' +
+    (_phAlFail ? ' If it’s a coloured page, line it up first.' : '') +
+    (nc.grey >= PH_NONE_GREY
+      ? ' <button type="button" class="sflink" id="sfPhGreys">Use grey markers for the grey parts</button>'
+      : '') +
+    '</div>'
+  );
+}
 // quick: the quick marker choice (while the marker slider is dragged, and right after the photo is moved; the full one
 // follows once it's let go: photoRecolour)
 function buildPhoto(cl, quick) {
+  // (what's said about a photo with no colour is about this laying, v304)
+  const zk = pwKey(),
+    was = _phNone[zk];
+  delete _phNone[zk];
   const pool = photoPool().filter(function (m) {
     return m.lab;
   });
@@ -812,11 +990,41 @@ function buildPhoto(cl, quick) {
     // (a sliver narrower than PH_THIN has no pixel clear of the lines, so its colour is partly line: it doesn't
     // choose markers, and takes the nearest of those chosen, as a section too thin to sample does, below)
     const pt = labelPts && labelPts[l];
-    if (pt && pt.r < PH_THIN) return;
+    if (pt && pt.r < PH_THIN * srcK) return;
     const a = comps[l] ? comps[l].area : 1;
     t.push({ l: l, lab: [C.lab[l * 3], C.lab[l * 3 + 1], C.lab[l * 3 + 2]], w: Math.sqrt(Math.max(1, a)) });
   });
   if (!t.length) return false;
+  // (v304) no colour in the photo over these sections, with white areas left white: every one stays white (pins keep
+  // their markers), and the Pattern panel says so; a photo mostly off the drawing is laid as before, and said
+  const nc = photoNoColour(t);
+  if (nc) _phNone[zk] = nc;
+  if (nc && !nc.off) {
+    if (!was || was.off) sayLive('No colour in this photo, so every section is left white.');
+    const bk = {},
+      asg = {};
+    coll.forEach(function (m) {
+      bk[m.mkey] = m;
+    });
+    const pp = {};
+    t.forEach(function (x) {
+      if (locks[x.l] !== undefined && bk[locks[x.l]]) asg[x.l] = bk[locks[x.l]];
+      else pp[x.l] = 1;
+    });
+    const od = cl.filter(function (l) {
+      return !!asg[l];
+    });
+    lastPoolN = 0;
+    assignData = {
+      assign: asg,
+      order: od,
+      N: od.length,
+      base: Object.assign({}, asg),
+      paper: Object.keys(pp).length ? pp : null,
+    };
+    photoStats();
+    return true;
+  }
   // near-white photo areas are left white (not coloured, not labelled), unless pinned
   const paper = {},
     tc = [];
@@ -1007,18 +1215,26 @@ function photoMove(m0, m1, f, da) {
   const cs = Math.cos(da),
     sn = Math.sin(da),
     dx = X.cx - m0.x,
-    dy = X.cy - m0.y,
-    lo = 0.02,
-    hi = 50;
+    dy = X.cy - m0.y;
   let ff = f;
-  if (Math.min(X.sx, X.sy) * ff < lo) ff = lo / Math.min(X.sx, X.sy);
-  if (Math.max(X.sx, X.sy) * ff > hi) ff = hi / Math.max(X.sx, X.sy);
+  // (the size is kept between 1/50 and 30 times the size that fills the drawing, and only while it's being sized:
+  // a fixed 0.02-50 shrank a small photo, whose Fill is past 50, as soon as it was dragged, v304)
+  if (ff !== 1) {
+    const fs = photoFillScale(),
+      lo = fs / 50,
+      hi = fs * 30,
+      mn = Math.min(X.sx, X.sy),
+      mx = Math.max(X.sx, X.sy);
+    if (ff < 1 && mn * ff < lo) ff = Math.min(1, Math.max(ff, lo / mn));
+    if (ff > 1 && mx * ff > hi) ff = Math.max(1, Math.min(ff, hi / mx));
+  }
   X.cx = m1.x + ff * (dx * cs - dy * sn);
   X.cy = m1.y + ff * (dx * sn + dy * cs);
   X.sx *= ff;
   X.sy *= ff;
   X.r += da;
   _phCol = null;
+  _phAlFail = false;
   guideDirty = true;
   positionPhoto();
 }
@@ -1046,8 +1262,12 @@ function pickPhotoRef() {
   photoFileEl.click();
 }
 // the photo belongs to the guide open when it was picked: if another opens while it decodes, it is dropped quietly
+// (v304) each pick has its own number: a photo still decoding when another is picked, or after another pattern was
+// chosen, is dropped rather than replacing the newer one or switching the pattern back to Photo
+let _phPick = 0;
 function loadPhotoRef(file) {
-  const gen = loadGen;
+  const gen = loadGen,
+    pick = ++_phPick;
   let url = null;
   try {
     url = URL.createObjectURL(file);
@@ -1057,7 +1277,7 @@ function loadPhotoRef(file) {
     return;
   }
   const here = function () {
-    return gen === loadGen && !!assignData;
+    return gen === loadGen && !!assignData && pick === _phPick && family === 'photo';
   };
   const lens =
     file.slice && file.slice(0, 262144).arrayBuffer
@@ -1098,6 +1318,10 @@ function setPhotoRef(ref, noAuto) {
   photoRef = ref;
   photoWait = {};
   _phPend = null;
+  // (placed afresh on the picture as it is now, v304)
+  _phRefit = false;
+  _phAlFail = false;
+  photoGreys = false;
   photoFit('fill');
   photoAlign = true;
   family = 'photo';
@@ -1169,7 +1393,8 @@ function photoStats() {
   for (const k in assignData.assign) {
     const l = +k,
       m = assignData.assign[l];
-    if (!C.has[l] || !m.lab || locks[l]) continue;
+    // (with zones, only the sections of zones with the Photo pattern: v304)
+    if (!C.has[l] || !m.lab || locks[l] || (zones.length && zoneFamily(zoneOf(l)) !== 'photo')) continue;
     const t = [C.lab[l * 3], C.lab[l * 3 + 1], C.lab[l * 3 + 2]],
       e = de2000(t, m.lab);
     _phErr[l] = e;
@@ -1182,10 +1407,17 @@ function photoStats() {
   }
   let want = [];
   if (R.length && !isDemo()) {
-    const brands = {};
-    coll.forEach(function (m) {
-      brands[m.brand] = 1;
-    });
+    // (from your brands, or the ones ticked in Brands I'd buy, v304)
+    const brands = {},
+      bb = buyBrands();
+    if (bb)
+      bb.forEach(function (b) {
+        brands[b] = 1;
+      });
+    else
+      coll.forEach(function (m) {
+        brands[m.brand] = 1;
+      });
     const own = {};
     coll.forEach(function (m) {
       own[m.mkey] = 1;
@@ -1264,6 +1496,12 @@ function photoWant(R, cand) {
 const PH_SHORT = 12;
 function photoStatsHTML() {
   if (family !== 'photo' || !photoRef) return '';
+  // (no colour in the photo: said instead; the photo off the drawing: said first, v304)
+  const none = photoNoneHTML();
+  if (none && !_phNone[pwKey()].off) return none;
+  return none + photoStatsHTML0();
+}
+function photoStatsHTML0() {
   if (!_phCol) photoColours();
   photoStats();
   if (!_phStats) return '';
@@ -1397,8 +1635,9 @@ function positionPeekBtn() {
 // the picture as a grid of cells over the artwork (plus a margin): where each cell is and how much of it is line
 let _alC = null;
 function _alCache() {
-  if (!_alC || _alC.ref !== photoRef || _alC.lp !== labelPts)
-    _alC = { ref: photoRef, lp: labelPts, g: {}, e: {} };
+  // (and on the sections themselves: placed again just after the picture changed, labelPts is null both times, v304)
+  if (!_alC || _alC.ref !== photoRef || _alC.lp !== labelPts || _alC.lb !== labels)
+    _alC = { ref: photoRef, lp: labelPts, lb: labels, g: {}, e: {} };
   return _alC;
 }
 function _alignGrid(NG) {
@@ -1847,6 +2086,7 @@ function photoTryAutoAlign(quiet) {
   const fa = photoAlignRaw(photoFlatAlign);
   if (fa) {
     photoXf = fa.xf;
+    _phAlFail = false;
     photoLitLined();
     _phCol = null;
     guideDirty = true;
@@ -1860,6 +2100,7 @@ function photoTryAutoAlign(quiet) {
   }
   const r = photoAlignRaw(photoAutoAlign);
   if (!r || r.score < PH_ALIGN_MIN || r.peak < PH_ALIGN_PEAK || r.lineShare < 0.03) {
+    _phAlFail = true;
     if (!quiet)
       toast(
         'Couldn’t match this photo to the picture — line it up by hand (drag, pinch to size and turn).',
@@ -1868,6 +2109,7 @@ function photoTryAutoAlign(quiet) {
     return false;
   }
   photoXf = r.xf;
+  _phAlFail = false;
   photoLitLined();
   _phCol = null;
   guideDirty = true;

@@ -34,10 +34,18 @@ test('flags a mostly-dark image (photo/shaded) as "dark"', () => {
 
 test('flags an over-segmented (noisy/photo) result as "noisy"', () => {
   const areas = [];
-  for (let i = 0; i < 90; i++) areas.push(2);   // tiny fragments
+  for (let i = 0; i < 90; i++) areas.push(12);  // tiny fragments, over Min section size (9 px): in the guide
   for (let i = 0; i < 10; i++) areas.push(500); // a few bigger
   setup(PX, 40000, areas);                       // inkFrac 0.4, tinyFrac 0.9
   assert.equal(core.segQuality().code, 'noisy');
+});
+
+test('v303: not "noisy" when the tiny fragments are all under Min section size (left out of the guide anyway)', () => {
+  const areas = [];
+  for (let i = 0; i < 90; i++) areas.push(2);   // specks, left out
+  for (let i = 0; i < 10; i++) areas.push(500);
+  setup(PX, 40000, areas);
+  assert.equal(core.segQuality().ok, true);
 });
 
 test('passes clean line art (jellyfish-like profile)', () => {

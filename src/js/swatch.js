@@ -320,7 +320,8 @@ async function swDownload() {
           }),
         ]);
     } catch (_) {}
-    const bytes = await pk.toPDF(
+    // (the file made straight from its parts, v304)
+    const blob = await pk.toPDF(
       pages.map(function (pg, pi) {
         return function () {
           return swDraw(pg, pi, pages.length, g, info);
@@ -328,17 +329,11 @@ async function swDownload() {
       }),
       P[0],
       P[1],
+      true,
     );
-    pk.share(
-      new Blob([bytes], { type: 'application/pdf' }),
-      fname,
-      'Swatch chart',
-      'swatch chart',
-      'Swatch chart downloaded.',
-      function (m) {
-        if (m) toast(m);
-      },
-    );
+    pk.share(blob, fname, 'Swatch chart', 'swatch chart', 'Swatch chart downloaded.', function (m) {
+      if (m) toast(m);
+    });
   } catch (e) {
     toast('Couldn’t make the swatch chart. Try again, or choose fewer markers.', 6000);
   }

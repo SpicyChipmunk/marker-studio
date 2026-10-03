@@ -68,8 +68,8 @@ function markActive(done) {
           colored[l] = was[l][0];
           P[l] = was[l][1];
           // (with the shading they were coloured with: 34-zones)
-          if (was[l][2]) heldSh[l] = was[l][2];
-          else if (done) delete heldSh[l];
+          if (was[l][2]) heldSet(l, was[l][2]);
+          else if (done) heldSet(l, null);
         }
         guideDirty = true;
         if (done) celebrated = false;
@@ -144,7 +144,7 @@ function resetProgress() {
       tonePart = pt;
       celebrated = pcel;
       progAt = pat;
-      for (const l in phs) if (!heldSh[l]) heldSh[l] = phs[l];
+      for (const l in phs) if (!heldSh[l]) heldSet(l, phs[l]);
       progStamp();
       guideDirty = true;
       normalizeTones();

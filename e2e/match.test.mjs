@@ -49,9 +49,38 @@ test('the live camera shows a match and turns off when the dialog closes', { ski
   await idle(page);
   assert.ok((await best(page)).length > 0, 'live match shown');
   await shot(page, 'match-camera');
+  // (the stream is kept from before the close: the close also takes it off the video, so the video can't say whether
+  // its tracks were stopped)
+  const liveNow = () => page.evaluate(() => window.__camS.getTracks().some((t) => t.readyState === 'live'));
+  const keep = () => page.evaluate(() => { window.__camS = document.getElementById('matchVideo').srcObject; });
+  // the camera on again: Match opened if it was closed, on Camera (which starts it), or Start camera
+  const restart = async () => {
+    if (!(await page.isVisible('#matchOverlay.on'))) await page.click('#mkMatchBtn');
+    if (await page.isVisible('#matchCamOff')) await page.click('#matchCamOff');
+    else if (!(await page.isVisible('#matchCamWrap'))) await page.click('.msrc [data-src="camera"]');
+    await page.waitForFunction(() => { const v = document.getElementById('matchVideo'); return v.srcObject && v.readyState >= 2; });
+    await keep();
+  };
+  await keep();
+  assert.equal(await liveNow(), true, 'live while shown');
+  // released by ✕, Escape, Hex, Photo and the page being put away
   await page.click('#matchClose'); await idle(page);
-  const live = await page.evaluate(() => { const v = document.getElementById('matchVideo'), s = v && v.srcObject; return !!(s && s.getTracks().some((t) => t.readyState === 'live')); });
-  assert.equal(live, false, 'camera released');
+  assert.equal(await liveNow(), false, 'camera released by ✕');
+  for (const [how, act] of [
+    ['Escape', () => page.keyboard.press('Escape')],
+    ['Hex', () => page.click('.msrc [data-src="hex"]')],
+    ['Photo', () => page.click('.msrc [data-src="photo"]')],
+    ['the page put away', () => page.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); document.dispatchEvent(new Event('visibilitychange')); delete document.visibilityState; })],
+  ]) {
+    await restart();
+    await act(); await idle(page);
+    assert.equal(await liveNow(), false, 'camera released by ' + how);
+  }
+  // a camera that stops by itself (another app took it) says so, and isn't shown as live
+  await restart();
+  await page.evaluate(() => { const t = window.__camS.getVideoTracks()[0]; t.stop(); t.dispatchEvent(new Event('ended')); }); await idle(page);
+  assert.equal(await page.isVisible('#matchCamWrap'), false, 'no live view of a stopped camera');
+  assert.match(await page.textContent('#matchResult'), /The camera stopped/);
   assert.deepEqual(errors, []);
 });
 
@@ -136,7 +165,7 @@ test('Match ranks by eye (CIEDE2000): where plain L*a*b* distance would pick a v
   assert.equal(await page.getAttribute('#matchResult .mbq', 'title'), 'ΔE00 4.7');
   const rows = await page.$$eval('#matchResult .mrow', (l) => l.map((r) => { const m = /^ΔE00 ([\d.]+) · tap to copy$/.exec(r.title); return [r.title, r.querySelector('.mq').textContent, m && matchWord(+m[1])]; }));
   assert.ok(rows.length && rows.every(([, w, want]) => w === want), JSON.stringify(rows));
-  // a marker you own matches itself exactly (Find similar on the Markers screen opens Match this way)
+  // a marker you own matches itself exactly, its code typed or opened on (Find similar leaves it out, v304: v304-match)
   const own = await page.evaluate(() => COLORS[COLORS.findIndex((m, i) => isOwned(i))].hex);
   await page.evaluate((h) => window.msMatchHex(h), own); await idle(page);
   assert.equal(await page.textContent('#matchResult .mbq'), 'Near-exact match');
@@ -153,10 +182,11 @@ test('Match: markers to buy are listed only when at least 2 ΔE00 closer than yo
   assert.ok(near.bu < near.bo && near.bo - near.bu < 2, JSON.stringify(near));
   assert.equal(await buyHead(), false, 'no near-ties to buy');
   assert.equal(await page.locator('#matchResult .mrow.buy').count(), 0);
-  // #3a7bd5: B06 is 2.9 against your 5.5: listed, and every row listed is at least 2 closer
+  // #3a7bd5: B06 is 2.9 against your 5.5: listed, and every row listed is at least 2 closer (v304: B06 is Copic, and
+  // nothing of your Ohuhu is clearly closer, so it's listed alone under "Closer in Copic")
   await page.evaluate(() => window.msMatchHex('#3a7bd5')); await idle(page);
-  assert.equal(await buyHead(), true);
-  const gains = await page.evaluate(() => { const r = matchNearest(hexToLab('#3a7bd5')); return r.buy.map((o) => r.owned[0].d - o.d); });
+  assert.equal(await page.evaluate(() => [...document.querySelectorAll('#matchResult .mlh')].some((h) => h.textContent === 'Closer in Copic')), true);
+  const gains = await page.evaluate(() => { const r = matchNearest(hexToLab('#3a7bd5')); return r.buy.concat(r.other).map((o) => r.owned[0].d - o.d); });
   assert.ok(gains.length && gains.every((g) => g >= 2), JSON.stringify(gains));
   assert.equal(await page.locator('#matchResult .mrow.buy').count(), gains.length);
   assert.deepEqual(errors, []);

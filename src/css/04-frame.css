@@ -428,8 +428,19 @@
   align-items: stretch;
   margin: 16px -12px -1px;
   padding: 8px 12px max(8px, env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(0deg, #121215 calc(100% - 8px), rgba(18, 18, 21, 0));
+  background: #121215;
   border-radius: 0 0 var(--r-lg) var(--r-lg);
+}
+/* (v303) a fade above it, so what scrolls under the bar thins out there rather than being cut off by its buttons */
+#sfRoot .sfbar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 24px;
+  background: linear-gradient(0deg, #121215, rgba(18, 18, 21, 0));
+  pointer-events: none;
 }
 #sfRoot .sfbar button {
   height: 44px;
@@ -749,7 +760,9 @@ html.sfsheetin #sfRoot .sfsheet.sfshside {
   align-items: center;
   height: auto;
   width: auto;
-  min-width: 52px;
+  /* (as wide as its widest words, "sections", in Plan and Colour along alike: a column a few pixels narrower in one
+     moved the picture over between them, v303) */
+  min-width: min(calc(51 * var(--tpx) + 12px), 84px);
   max-width: 84px;
   padding: 8px 6px;
   gap: 8px;

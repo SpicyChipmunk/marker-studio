@@ -22,11 +22,19 @@ const MAG = [230, 59, 201];
 const HILITE = [255, 224, 84];
 const PAPER = [247, 244, 238];
 const MAXSIDE = 2400;
+// a downloaded page is often only 400-800 pixels across: at that size two lines close together run into one and the
+// sections between them are lost, so a small picture is enlarged (smoothly) to this before its sections are found (v303)
+const UPSIDE = 1600;
 const LFONT = '"Hanken Grotesk",system-ui,-apple-system,sans-serif';
 
 // ---- loading a picture ----
 let loadGen = 0; // written by: 20-image-input, 97-open
 let srcImg = null; // written by: 20-image-input, 22-straighten, 65-edit, 97-open
+let srcUp = false; // a picture of the person's own, enlarged to UPSIDE if smaller; not the sample (20-image-input)
+// how much the picture was enlarged (1: not at all). Min section size (minPx) and the specks of ink cleared
+// (despeckle) are measured on the picture as it came, so enlarging it finds the shapes its lines ran together
+// over, not specks too small to colour. Saved with the guide (upk). written by: 20-image-input, 65-edit, 97-open
+let srcK = 1;
 let enhance = true; // written by: 20-image-input, 50-controls, 99-close (test)
 let adaptC = 9; // written by: 20-image-input, 50-controls
 let reTimer = null; // written by: 20-image-input, 50-controls

@@ -115,24 +115,32 @@ function noiseLevel(g) {
   });
   return d[(d.length * 0.5) | 0];
 }
-function boxBlur(g) {
-  const out = new Uint8Array(g.length);
+// a box blur reaching r pixels each way (r 1: 3 x 3), as a row pass then a column pass of running sums (whole numbers,
+// so the mean comes out exactly as summing the box would); at the picture's edges, the mean of what's inside it
+function boxBlur(g, r) {
+  r = r || 1;
+  const n = g.length,
+    mid = new Int32Array(n),
+    out = new Uint8Array(n);
   for (let y = 0; y < H; y++) {
-    const y0 = y > 0 ? y - 1 : 0,
-      y1 = y < H - 1 ? y + 1 : H - 1;
+    const ro = y * W;
+    let s = 0;
+    for (let x = 0; x <= Math.min(r, W - 1); x++) s += g[ro + x];
     for (let x = 0; x < W; x++) {
-      const x0 = x > 0 ? x - 1 : 0,
-        x1 = x < W - 1 ? x + 1 : W - 1;
-      let s = 0,
-        c = 0;
-      for (let yy = y0; yy <= y1; yy++) {
-        const r = yy * W;
-        for (let xx = x0; xx <= x1; xx++) {
-          s += g[r + xx];
-          c++;
-        }
-      }
-      out[y * W + x] = (s / c + 0.5) | 0;
+      mid[ro + x] = s;
+      if (x + r + 1 < W) s += g[ro + x + r + 1];
+      if (x - r >= 0) s -= g[ro + x - r];
+    }
+  }
+  for (let x = 0; x < W; x++) {
+    const cw = Math.min(W - 1, x + r) - Math.max(0, x - r) + 1;
+    let s = 0;
+    for (let y = 0; y <= Math.min(r, H - 1); y++) s += mid[y * W + x];
+    for (let y = 0; y < H; y++) {
+      const ch = Math.min(H - 1, y + r) - Math.max(0, y - r) + 1;
+      out[y * W + x] = (s / (cw * ch) + 0.5) | 0;
+      if (y + r + 1 < H) s += mid[(y + r + 1) * W + x];
+      if (y - r >= 0) s -= mid[(y - r) * W + x];
     }
   }
   return out;
@@ -140,14 +148,18 @@ function boxBlur(g) {
 function denoise(g) {
   const nl = noiseLevel(g);
   const passes = nl < 3 ? 0 : nl < 7 ? 1 : 2;
-  for (let i = 0; i < passes; i++) g = boxBlur(g);
+  // (v303: a 3 x 3 box on an enlarged picture too, measured on it as it is. Measured and blurred on the picture as it
+  // came instead, a downloaded page's JPEG grain called for a blur that ran close lines together again, undoing what
+  // enlarging it is for: the zentangle 1,423 sections -> 1,040, the otter 238 -> 199)
+  for (let i = 0; i < passes; i++) g = boxBlur(g, 1);
   return g;
 }
 // grainy paper and camera noise leave specks of 'ink' that chop the paper into crumbs: drop any ink blob too
 // small to be part of a line (lines are long and connected; a dot eye is still far bigger than a speck)
 function despeckle(L) {
   const n = W * H,
-    sp = Math.max(4, Math.round(n / 500000) * 2),
+    // (an enlarged picture's specks are srcK² times as big: cleared as they were before it was enlarged, v303)
+    sp = Math.max(Math.round(4 * srcK * srcK), Math.round(n / 500000) * 2),
     seen = new Uint8Array(n),
     st = new Int32Array(n),
     blob = new Int32Array(sp + 1);
@@ -245,7 +257,7 @@ function findPage() {
     const v = labels[q];
     if (v === -1) return true;
     const k = comps[v];
-    return !k || k.bg || k.area < Math.max(40, N * 0.00002);
+    return !k || k.bg || k.area < Math.max(40 * srcK * srcK, N * 0.00002);
   };
   const S = 24,
     side = function (fn) {
@@ -310,15 +322,23 @@ function segQuality() {
   var px = W * H,
     ink = 0;
   for (var i = 0; i < px; i++) if (labels[i] === -1) ink++;
+  // (tiny: on the picture as it came, an enlarged one's srcK² times as many pixels, v303)
   var inkFrac = px ? ink / px : 0,
     N = 0,
     tiny = 0,
-    tc = Math.max(20, px * 0.00002);
+    kept = 0,
+    keptTiny = 0,
+    mp = minPx(),
+    tc = Math.max(20 * srcK * srcK, px * 0.00002);
   for (var l = 1; l < comps.length; l++) {
     var c = comps[l];
     if (!c || c.merged) continue;
     N++;
     if (c.area < tc && !c.bg) tiny++;
+    if (!c.bg && c.area >= mp) {
+      kept++;
+      if (c.area < tc) keptTiny++;
+    }
   }
   var tinyFrac = N ? tiny / N : 0;
   if (inkFrac < 0.02 && N < 5)
@@ -342,7 +362,9 @@ function segQuality() {
       msg: 'Most of the image is dark \u2014 this looks like a photo or heavily shaded drawing rather than outlines.',
       tip: 'Try high-contrast line art on white, or crop to just the drawing.',
     };
-  if (tinyFrac > 0.8)
+  // (v303: only when the fragments are in the guide, not just left out by Min section size: a clean page with a
+  // scanner's specks, all left out, had been told it was a photo or textured image)
+  if (tinyFrac > 0.8 && (kept === 0 || keptTiny > 0.3 * kept))
     return {
       ok: false,
       code: 'noisy',
@@ -436,7 +458,7 @@ function labelCells() {
   }
   secState = new Uint8Array(comps.length);
   colored = new Uint8Array(comps.length);
-  heldSh = {};
+  heldReset();
   progAt = { s: 0, e: 0 };
   celebrated = false;
   rgbOut = new Uint8ClampedArray(n * 4);
@@ -446,6 +468,8 @@ function segment() {
   const n = W * H;
   // (sections found afresh: ticks held for an Undo of a merge were the old sections', 65-edit)
   _tickHeld = {};
+  // (a section picked to merge is a number in the old sections, v304)
+  mergeSel = -1;
   // (where the zones were, pixel by pixel, to place them again on the new sections: 34-zones)
   zonePixCapture();
   labels = new Int32Array(n);

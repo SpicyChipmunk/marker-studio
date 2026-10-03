@@ -256,3 +256,109 @@ No new features. New tests: `e2e/v302.test.mjs` (4).
 - `index.html` (1.8 MB, about 570 KB compressed) stays as it is, unminified: it's kept for offline use after the first load, and comments and indentation are about a fifth of it.
 
 - Cache bumped to `marker-studio-v302`.
+
+# Changes — v303 (small downloaded pages; polish and housekeeping)
+
+New tests: `e2e/v303.test.mjs` (9), `e2e/v303-scan.test.mjs` (6), `test/v303.test.mjs` (5), `test/v303-scan.test.mjs` (10). v302's GitHub run passed in Chromium and WebKit with no failed or flaky tests.
+
+**Photos and pages**
+- **A small picture is enlarged before its sections are found.** A page downloaded from the internet is often only 400–800 pixels across, and at that size two lines close together run into one, so the sections between them were lost (a zentangle's flower centre came out as one section; an otter's face, muzzle and chest as one). A picture of the person's own under 1600 pixels on its long side is now enlarged to 1600 by bicubic interpolation of its greys, done in the app's own code so every browser finds the same sections. Checked on 14 downloaded colouring pages and photographed copies of them: the zentangle 1,120 → 1,423 sections, the otter 195 → 238, a paisley 369 → 402; clean pages (a fish, a dragon, tulips, roses, a tiling) the same as before. Phone photos (shrunk to 2400) and the sample are left as they are.
+- **Min section size and the specks of ink cleared are measured on the picture as it came**, so enlarging finds the shapes its lines ran together over, not specks too small to colour (enlarged without this, the otter had 73 more, most about 1.5 mm across on paper). The guide remembers how much its picture was enlarged (`upk` in its file), so it opens with the same sections. So are the other sizes meant for the picture as it came: the codes and ticks on the screen and in Save image, a drawn Split or Add line, which sections are too small to shade, how close to a line the Photo pattern samples, the crumbs ignored when looking for the page's edge, which sections count as touching, the texture's darker rim along the lines and its streaks, and Shading's tone lines. Not the grain smoothing: measured and smoothed on the picture as it came, a downloaded page's JPEG grain called for a blur that ran close lines together again (the zentangle 1,423 sections → 1,040), so it's measured and smoothed on the enlarged picture as before. (An older copy of the app opening such a guide doesn't know `upk`: its codes there are smaller.)
+- **The "a lot of tiny fragments" warning** counts only fragments that are in the guide: a clean scanned page whose specks Min section size already leaves out had been told it looked like a photo or textured image. Photos of things that aren't line art still get it. It's checked again when Min section size is let go and after an Undo that puts the picture back.
+
+**Scan or type codes** (a close look at it: a review of the code path by path, and every marker's code, name and old code read through it in about 29,000 ways — typed, spaced, with prices and counts, misread as a camera would — before and after, every changed reading checked)
+- **Numbers aren't markers**: a price ("$2.99", "3.5") is passed over, and a number beside other words isn't read as a code put right ("E19 Dried Sage $3.99" had added Ohuhu G112, the "99" read as its old code G9; "61" in a list's first column, G312). A count beside a code ("2x", "x2", "2 FB", "120 2") is just a count; a number after "No" isn't a code ("C-0 No.0"); a code without digits among other words isn't one ("the FB page"); "pack of 100" with Ohuhu chosen isn't Copic's 100.
+- **Questions don't come back**: one answered (or taken off the list) isn't asked again while its cap is still in view; a question whose answers are all in the list isn't asked (a list pasted twice); a second cap with the same code (Copic B04 after Ohuhu B04) is asked about once the first has gone, rather than never; and a cap's name read with its code settles the question its code alone raised a moment before (the question had stayed, "1 to choose"). A pasted or typed line's own questions stay.
+- **What's in the box isn't lost**: Add reads text left in the box (typed without Enter), and is on while there's some; Close reads it too, quietly. A card's **Add** (a name read alone, another brand's code) takes its text out of the box, which had run on into the next code typed ("Honey BrownB015").
+- **A word of a name** read beside a code settles it rather than asking about another marker: "BG212 Green" is BG212 Teal Green, not a question about the marker named Green; "B21 Porcelain" is Ohuhu's B21. Words of a name another code in the text accounts for don't count.
+- **The brand on the cap** narrows a code's choices before any question ("Copic R12" is Copic's R12, not a three-way question with two Ohuhu markers; "Ohuhu Y13" is Ohuhu E515 by its old code), and picks between two brands' markers of the same name ("Ohuhu Tahitian Blue"); a name both brands use, read alone, offers both rather than nothing.
+- **Codes in pieces** are read whole and their pieces not again ("E 614" had added Copic G14 too; "B G05", "R V 17", "WG 05").
+- **More misreads read**: | or ! for 1 ("B|12"), a T that could be 1 or 7 (asked: "E1T: E11 or E17?"), O for 0 in Copic's greys ("C-O"), Ohuhu's old code WG0.5, old codes with Ⅱ read as "ll" ("CGll00"), "Cool Gray 3" for Cool Gray No.3. A misread put right more than one way is asked about rather than the first taken.
+- **Ohuhu's colourless blender, 0**, is in the data (Ohuhu sells it, "0 Colorless Blender"; not part of any set, and like Copic's never chosen as a colour). With both brands having a 0, the brand on the cap or the brand chosen says which.
+- **The brand switch** answers what it can (a brand question, "another brand" for the brand now chosen or Either brand), narrows the others' choices (Either brand brings them back), says so, and goes back to the box.
+- **Kept**: the list survives a reload (Safari can reload a tab put away mid-sweep). Several read at once that are all yours already say so, with the quieter sound. After Add into an empty collection, focus goes back to Scan or type codes (it went to the top tab), and Add a set's ticks and counts follow; Undo puts To buy markers back where they were in it, and doesn't list a marker twice. A composed keyboard (pinyin, Japanese) waits for Enter. The sound starts from the tap that opens the dialog. On a narrow screen or at a large text size, a row's code sits over its name.
+
+**Polish**
+- **Library**: a guide's or palette's line under its name is on two lines, what it is ("Guide · 16 markers") and then how far and when ("finished · today"), as Home has them; a narrow tile had left "· today" or a dot on a line of its own.
+- **A marker's card** (Markers › Random): its brand line ("Ohuhu · Yellow-Red / Orange — was YR4") goes across the card, with the hex beside the last line; on a phone it had wrapped in 60% of the width.
+- **Plan → Colour along on an iPad held sideways**: the picture no longer moves 4 px to the side. The tools beside it were a few pixels narrower in Colour along (its count shorter than "sections"); they're as wide in both.
+- **A palette of 8 on a phone**: the codes are sized to their colours (11 px rather than 13) and no longer touch.
+- **Focus mode**: with **Colours** open, the section you're on is framed above the sheet (it could sit under it); closed by its button, a tap on the picture or Back, the section is framed in the whole room again. The picture keeps its size either way.
+- **Markers › All**: each family lists its markers brand by brand and by code; a few Ohuhu markers added to the data later (R12, R14, YR01…) had come after the Copic ones.
+- **Library and Home pictures** are drawn at twice their size and shrunk smoothly, so their lines are whole rather than stepped and broken, and at the size the tile shows a tall page.
+- **The bar under the guide** (Edit sections / Colour along) has a short fade above it, so what scrolls under it thins out rather than showing its edge just over the buttons.
+- **Colour along, finished**: a colour with one section says "Coloured ✓", not "All 1 coloured ✓".
+- **Filters**: a filter with nothing in it under the others is dimmed, as its count was; "Nothing chosen = all." keeps together on a line.
+- Harmony's rows are left as they are: Custom and Photo on a row of their own is deliberate (v289), and tidy on every size.
+- Left as they are, also deliberate: Palette's Colours sizes in two even rows of 4 on a phone when there are 8 (they don't fit one row beside their label at a finger's width), and Colour along's first-time tip with **More** on a line of its own.
+
+**Housekeeping**
+- The WebKit parts on GitHub are shared out by v302's real times (part 2 took 27 minutes, the others 18–21), and each part now lists every file's time, slowest first, so `e2e/ci-durations.json` can be refreshed from real times for every file.
+
+- Cache bumped to `marker-studio-v303`.
+
+# Changes — v304 (a review of the key engines)
+
+Every key engine was reviewed in three passes: path by path with every constant checked; then stress and corpus tests on copies, before and after; then again by a fresh reviewer, who looked for what was missed and tried to break the fixes. Each product choice was then measured on its own and with the others before anything was built. New tests: `test/v304-segmentation` (7), `v304-colour` (8), `v304-assign` (9), `v304-shading` (8), `v304-photo` (3), `v304-persist` (5, with `test/fixtures/marker-order.json`), `v304-match` (6), `v304-finder` (12), `v304-buy` (4); `e2e/v304-segmentation` (12), `v304-assign` (1), `v304-shading` (2), `v304-photo` (15), `v304-persist` (10), `v304-match` (7), `v304-export` (9), `v304-finder` (6), `v304-buy` (5). Each fails on v303.
+
+**Markers**
+- **Search finds a code however it's typed**: "c3", "C-3" and "c 3" are C-3; "copic b04" is Copic's B04; old codes as printed (Ⅱ typed as "ll" too). "grey" and "gray", "colour" and "color", and curly apostrophes are the same, so "grey" finds both brands' greys and "colourless" the blenders. A brand's name finds its markers from four letters ("copi"). Codes match from their start, so "g05" is G05, not BG05 and YG05; a number alone ("22", "000") finds the codes with it. The code searched for comes first under **Best match**, markers that once had it next under **Old code**, and "isn't in your collection" names the code typed. Choosing a marker for a custom palette slot searches the same way. Search boxes no longer autocorrect or capitalise.
+- **Tick all shown, Untick all shown, Copy codes and Palette from these act on what's on screen**: in Unowned › Ramp gaps they had acted on every unowned match (76 shown, 271 ticked). Copy codes copies in the order shown.
+- **Untick all shown, armed, is let go when the search changes**: a second tap had removed whatever the new search showed (the whole collection, in a test).
+- The custom slot picker shows every marker (it stopped at 400). Going to another scheme and back to Custom keeps all its markers (a 12-marker palette had come back with 8); a smaller size chosen in Custom still cuts it.
+- The Colorless Blender is no longer a gap to fill, and owning one doesn't count as owning white. Palette from these is off with only a blender shown. "Your collection is empty" only in Owned. The grid doesn't animate in at each letter typed.
+
+**Palette**
+- The guide's Generate palette uses your markers, not a selection left on the Palette screen by Find (it had made palettes of markers you don't own).
+- Palette › From photo: tapping a colour walks through the five nearest markers, clear of the other colours, then back to the first (it flipped between two).
+- Tap the white paper no longer darkens a scan or a white page, and takes a cream paper's cast out.
+- A palette from a mostly grey collection uses greys clearly different from each other. Re-rolling a colour keeps the palette on its scheme, and says so when nothing fits. A size, scheme, filter or base your markers can't fill says so (it kept the old palette silently); a filter changed mid-roll is applied after it.
+
+**Sections**
+- A Split or Add stroke can start on the outline: it cuts the section it crosses (it did nothing). The red line drawn is as wide as the cut.
+- Turning or tilting, then changing Sensitivity straight away, keeps the turn; Undo after a Sensitivity or Enhance change puts the slider back; the warning about the picture follows Sensitivity, Enhance and Undo; a stroke the system cancels cuts nothing; a section picked to merge is let go when the sections are found again.
+- A table photographed round the page stays background after the guide is reopened. The page's margin merged into a section stays the page.
+- **Very dense pages**: above 3,000 sections Build asks first and offers to leave out the small ones; a page with more sections than a guide can keep can't be built until Min section size is raised; and very dense pages save with their tiny specks joined to the lines, so they always open again.
+
+**Plan**
+- Sections added or split, then built, no longer get the same marker as a section they touch (about one split in four did). Nor do sections moved between zones.
+- With several zones laid at once, each zone's Gradient, Radial or Blend is laid over the zone itself, not the whole picture (it changed at the next tap).
+- Touching sections don't get two markers that look the same (CIEDE2000 under 2.5: often two of one brand, or a Copic and its Ohuhu match). Random › Mixed with "clearly different" off no longer puts one marker on touching sections. Touching sections are found across porous lines.
+- Removing the last Blend anchor brings back three in the zone ("Last anchor removed: Blend starts again from 3"; it had laid one marker everywhere).
+- Gradient's Start colour and Random with hundreds of markers respond much faster. With one marker the count says "all (1)". A new picture, an opened guide or Undo don't show the last guide's Balance note.
+
+**Shading**
+- A page downloaded small shades as many sections as the same page at its full size (since v303 about half were left flat). Guides from v303 made from small downloads gain shading when opened; no ticks change.
+- A big shape covering a quarter of the page or more is shaded; only the background that size stays flat, and its tip says "Background-sized — one flat colour" (it said "Too small to shade").
+- Tone lines are dashed along the line: with the sun in a corner some had gone solid or vanished.
+- **Print › Tone lines**: a Print option of its own (on unless unticked). The screen's Show tone lines stays the screen's.
+- The Colorless Blender isn't suggested as a marker to buy. Highlights and Shadows respond faster.
+
+**Photo pattern**
+- The photo stays on the picture when it's turned, cropped (by hand or Auto) or tilted, and Undo puts it back exactly; after straightening, it's lined up again (or set to Fill to line up). Its colours had come from the wrong part of the photo.
+- A photo of a page that isn't coloured yet leaves every section white and says so, instead of colouring it in greys and black; "Use grey markers for the grey parts" for pencil shading. A photo dragged off the drawing says so.
+- With zones, "% close match" counts the Photo zones only. A tiny photo keeps its size when dragged. A photo picked quickly after another, or still loading after another pattern was chosen, no longer comes back. Very large photos are shrunk in steps an iPad can hold.
+
+**Match**
+- After pinching to zoom, the camera reads the colour under the ring (it read a spot up to 150 px away); a pinch doesn't move the ring.
+- While the camera is live, taps on a row or + To buy work (about 1 in 14 did); the list stays put under the keyboard.
+- The camera turns off when the app is put away or another app takes it, and Start camera works after an unanswered camera question. "Copied" only when it was, read out; Light says on only when it is.
+- A photo is read from a little more than a dot, so grain matters less; the ring stays on the photo.
+- **To buy** suggests your brands first; another brand's marker only when clearly closer, under "Closer in Copic" (or Ohuhu). Or only the brands chosen in Brands I'd buy.
+- **Find similar** shows markers like the one you came from, under "Similar to …", not the marker itself; an identical colour is marked "Same colour"; none on the Colorless Blenders.
+
+**Brands I'd buy** (new)
+- Markers › **Brands I'd buy** (under Add a set you own and Scan or type codes, and in To buy) says which brands a marker you don't have is suggested from: in Match a colour, a guide's shading and blend plan, and the Photo pattern. **Your brands first** (another brand's marker only when it's clearly closer, or nothing of yours fits) or **Only these brands**. Kept with your collection and in backups; Match's heading names the brands when it leaves one out. A blend plan's markers to buy now come from your brands first (any brand before). A change made in another tab, to this or to your markers, shows at once in a guide open here (its notes had stayed as they were until drawn again).
+
+**Save image, print and share**
+- Save image's codes are placed so none overlap, shrinking as needed; sections with no room are left plain, with a line under the key saying so. The key is 2 columns on a narrow picture (names had been cut), 4 when it would be long, codes only past 150 markers; a guide with hundreds of markers still saves on an iPad.
+- Save image no longer stays on "Preparing…" after a problem. One PDF at a time. Test strip pages are drawn one by one, and changing Paper meanwhile doesn't mix sizes. PDFs work on Safari before 16.4. The colour card with hundreds of markers fits an iPad. A second Share tap doesn't download; downloads wait longer for Safari's question.
+
+**Backups and saving**
+- **Restoring a backup** keeps a guide that's stored but missing from the Library (it's offered back on Home) and keeps your own newer changes to a guide as "… (before restore)"; a guide deleted a moment ago comes back as itself. The Welcome and Home restores say so too.
+- When saving fails because Safari's storage stopped answering, it says to reload, not that storage is full.
+- A backup that couldn't read some guides says so, and reminds you to back up again.
+- In Safari on an iPhone or iPad, one **Keep your guide safe** card after you first colour a guide, and after 5 days or more away: back up, and add Marker Studio to the Home Screen.
+- A test pins the order of markers.json, since saved palettes keep markers by position.
+
+- Cache bumped to `marker-studio-v304`.

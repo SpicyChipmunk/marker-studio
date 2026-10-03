@@ -19,6 +19,9 @@ function resetForNewPicture() {
   clearTimeout(autoT);
   autoT = null;
   clearTimeout(reTimer);
+  imgCancel();
+  // (asked about a dense page: asked again for the next picture, v304)
+  _denseAsked = 0;
   saveReset();
   renaming = false;
   clearTimeout(lpT);
@@ -26,6 +29,7 @@ function resetForNewPicture() {
   alDone = [];
   alDoneOpen = false;
   blendOpen = {};
+  srcK = 1;
   _origKeys = {};
   _lostKeys = {};
   _openEmpty = false;
@@ -77,6 +81,7 @@ function resetForNewPicture() {
   anchors = [];
   selAnchor = -1;
   locks = {};
+  layStatReset();
   lockMode = false;
   revealF = null;
   revOrder = null;
@@ -291,6 +296,64 @@ function buildRotatedFull() {
   ox.drawImage(srcImg, -sw / 2, -sh / 2);
   return oc;
 }
+// A grey picture w x h enlarged to w2 x h2 by bicubic (Catmull-Rom) interpolation, the same in every browser (a
+// canvas's own smoothing differs between them, and Chrome's is softer). A line's soft grey edge becomes a clean gap
+// between two lines that run close together, which at the small size had run into one. (v303)
+function grayUp(g, w, h, w2, h2) {
+  const taps = function (n, n2) {
+    const ix = new Int32Array(n2 * 4),
+      wt = new Float32Array(n2 * 4),
+      k = n / n2;
+    for (let o = 0; o < n2; o++) {
+      const x = (o + 0.5) * k - 0.5,
+        x0 = Math.floor(x),
+        t = x - x0;
+      const t2 = t * t,
+        t3 = t2 * t;
+      const ws = [
+        (-t3 + 2 * t2 - t) / 2,
+        (3 * t3 - 5 * t2 + 2) / 2,
+        (-3 * t3 + 4 * t2 + t) / 2,
+        (t3 - t2) / 2,
+      ];
+      for (let i = 0; i < 4; i++) {
+        ix[o * 4 + i] = Math.min(n - 1, Math.max(0, x0 - 1 + i));
+        wt[o * 4 + i] = ws[i];
+      }
+    }
+    return { ix: ix, wt: wt };
+  };
+  const tx = taps(w, w2),
+    ty = taps(h, h2),
+    mid = new Float32Array(w2 * h),
+    out = new Uint8Array(w2 * h2);
+  for (let y = 0; y < h; y++) {
+    const r = y * w,
+      m = y * w2;
+    for (let o = 0, q = 0; o < w2; o++, q += 4)
+      mid[m + o] =
+        g[r + tx.ix[q]] * tx.wt[q] +
+        g[r + tx.ix[q + 1]] * tx.wt[q + 1] +
+        g[r + tx.ix[q + 2]] * tx.wt[q + 2] +
+        g[r + tx.ix[q + 3]] * tx.wt[q + 3];
+  }
+  for (let o = 0, q = 0; o < h2; o++, q += 4) {
+    const a = ty.ix[q] * w2,
+      b = ty.ix[q + 1] * w2,
+      c = ty.ix[q + 2] * w2,
+      d = ty.ix[q + 3] * w2,
+      wa = ty.wt[q],
+      wb = ty.wt[q + 1],
+      wc = ty.wt[q + 2],
+      wd = ty.wt[q + 3],
+      m = o * w2;
+    for (let x = 0; x < w2; x++) {
+      const v = mid[a + x] * wa + mid[b + x] * wb + mid[c + x] * wc + mid[d + x] * wd;
+      out[m + x] = v <= 0 ? 0 : v >= 255 ? 255 : (v + 0.5) | 0;
+    }
+  }
+  return out;
+}
 function processSrc() {
   _rg = null;
   if (!srcImg) return;
@@ -303,25 +366,39 @@ function processSrc() {
     // (no wider than what's left of the photo: rounded up past its edge, the last column was left empty and read as
     // a line of ink, v296)
     cw = Math.max(8, Math.min(Math.round(cr.w * fw), fw - cx)),
-    ch = Math.max(8, Math.min(Math.round(cr.h * fh), fh - cy));
+    ch = Math.max(8, Math.min(Math.round(cr.h * fh), fh - cy)),
+    // a small picture of the person's own (a page downloaded at 400-800 pixels, say) is enlarged to UPSIDE on its long
+    // side before its sections are found; not the sample, whose sections are its own (v303)
+    up = srcUp ? Math.min(8, MAXSIDE / Math.max(cw, ch), Math.max(1, UPSIDE / Math.max(cw, ch))) : 1;
   // (the picture changes shape: the zones can't be placed on the sections found from it)
   zoneGeoLost();
-  W = cw;
-  H = ch;
-  cv.width = W;
-  cv.height = H;
+  cv.width = cw;
+  cv.height = ch;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   // (on white: a picture under 8 pixels across is made 8, and the part past its edge would read as ink, v298)
   ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, W, H);
-  ctx.drawImage(oc, cx, cy, cw, ch, 0, 0, W, H);
+  ctx.fillRect(0, 0, cw, ch);
+  ctx.drawImage(oc, cx, cy, cw, ch, 0, 0, cw, ch);
   freeCanvas(oc);
-  const d = ctx.getImageData(0, 0, W, H).data,
-    n = W * H;
-  gray = new Uint8Array(n);
-  for (let i = 0, j = 0; i < n; i++, j += 4)
-    gray[i] = (d[j] * 0.299 + d[j + 1] * 0.587 + d[j + 2] * 0.114) | 0;
+  const d = ctx.getImageData(0, 0, cw, ch).data,
+    n = cw * ch,
+    g0 = new Uint8Array(n);
+  for (let i = 0, j = 0; i < n; i++, j += 4) g0[i] = (d[j] * 0.299 + d[j + 1] * 0.587 + d[j + 2] * 0.114) | 0;
+  W = cw;
+  H = ch;
+  gray = g0;
+  srcK = 1;
+  if (up > 1.05) {
+    W = Math.round(cw * up);
+    H = Math.round(ch * up);
+    gray = grayUp(g0, cw, ch, W, H);
+    srcK = W / cw;
+    cv.width = W;
+    cv.height = H;
+  }
   segment();
+  // (the Photo pattern's photo goes with the picture: 46-photo, v304)
+  photoGeoAfter();
 }
 // Sensitivity and Enhance: the sections are found again. On a guide with progress or section edits that asks first,
 // as turning the picture does (once: the Undo step kept covers the changes that follow); No puts the control back.
@@ -366,11 +443,14 @@ function resegment() {
   return true;
 }
 function reseg() {
-  _reFrom = null;
   keepSnap(false);
+  _reFrom = null;
   segment();
   hasEdits = false;
-  if (sfmode === 'review') render();
+  if (sfmode === 'review') {
+    render();
+    segWarnSync();
+  }
   note('Sections detected again \u2014 tap Undo to go back.');
   return true;
 }
@@ -434,6 +514,8 @@ function keepSnap(geo) {
       flat: Object.assign({}, shadeFlat),
       fresh: _segFresh,
       edits: hasEdits,
+      // (Enhance and Sensitivity as they were, v304)
+      det: _reFrom ? { e: _reFrom.e, c: _reFrom.c } : { e: enhance, c: adaptC },
       bgMaxB: bgMaxB,
       ad: ad,
       sig: guideSig,
@@ -447,6 +529,7 @@ function keepSnap(geo) {
           ? {
               W: W,
               H: H,
+              k: srcK,
               gray: gray,
               src: srcImg,
               pgQ: pgQ,
@@ -454,6 +537,12 @@ function keepSnap(geo) {
               rot90: rot90,
               tilt: tilt,
               crop: cropRect ? Object.assign({}, cropRect) : null,
+              // (the Photo pattern's placement on the picture as it was, the photo it was for, and whether it was still to be
+              // placed again, v304)
+              phXf: photoXf ? Object.assign({}, photoXf) : null,
+              phRef: photoRef,
+              phGeo: _phGeo,
+              phRefit: _phRefit,
             }
           : null,
     },
@@ -509,6 +598,7 @@ function geoUndoOK() {
 }
 function reprocessImg() {
   if (!srcImg) return;
+  _reFrom = null;
   const he = hasEdits || hasProgress();
   processSrc();
   hasEdits = false;
@@ -524,13 +614,26 @@ function reprocessImg() {
       : metaText(),
   );
 }
+// (v304: a tilt waiting to be applied has a timer of its own, so a Sensitivity change, or a control on the Plan, no
+// longer drops it; it finds the sections with the settings as they are by then)
+let _imgT = 0;
 function debSeg() {
+  if (_imgT) return;
   clearTimeout(reTimer);
   reTimer = setTimeout(resegment, 80);
 }
 function debImg() {
   clearTimeout(reTimer);
-  reTimer = setTimeout(reprocessImg, 90);
+  clearTimeout(_imgT);
+  _imgT = setTimeout(function () {
+    _imgT = 0;
+    reprocessImg();
+  }, 90);
+}
+// (a tilt still waiting, dropped: a new picture, or Undo, which puts back the picture as it was, v304)
+function imgCancel() {
+  clearTimeout(_imgT);
+  _imgT = 0;
 }
 var SAMPLES = ['@@dataurl(assets/sample-jellyfish.png)'],
   SAMPLE_NAMES = ['jellyfish'],
@@ -572,6 +675,7 @@ function _loadSample() {
       takeNextPal();
       pgOrig = null;
       srcImg = img;
+      srcUp = false;
       processSrc();
       sfmode = 'review';
       resetZoom();
@@ -665,6 +769,7 @@ function _loadImage(file) {
           // (once the photo has opened: one that won't leaves the open guide's palette alone, v289)
           takeNextPal();
           srcImg = fitSource(img);
+          srcUp = true;
           enterWork();
           var _rs = document.getElementById('sfResume');
           if (_rs) _rs.style.display = 'none';

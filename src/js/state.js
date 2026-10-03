@@ -37,7 +37,12 @@ state.brands = Array.isArray(state.brands)
   ? new Set(state.brands.filter((b) => b === 'Ohuhu' || b === 'Copic'))
   : new Set(['Ohuhu', 'Copic']);
 if (!state.brands.size) state.brands = new Set(['Ohuhu', 'Copic']);
+// Brands I'd buy (v304): which brands a marker to buy is suggested from, in Match, Shading and the Photo pattern.
+// null: automatic (your brands first, another brand only when it's clearly closer); else the brands ticked
+state.buyBrands = cleanBuy(state.buyBrands);
+// (v303: and the colourless blender, 0, added to the data)
 const EXTRA_OHUHU = new Set([
+  '0',
   'B04',
   'BV18',
   'BV39',
@@ -383,6 +388,7 @@ function parseState(raw) {
         return o.length ? o : null;
       }),
       brands: f('brands', arr, null),
+      buyBrands: f('buyBrands', arr, null),
       owned: f('owned', arr, modern ? [] : null, (a) => a.map(knownMkey).filter(Boolean)),
       collView:
         typeof v.collView === 'string' ? v.collView : typeof v.finderView === 'string' ? v.finderView : null,
@@ -555,6 +561,7 @@ function save(quiet) {
       palH: state.palH,
       pool: state.pool,
       brands: [...state.brands],
+      buyBrands: state.buyBrands,
       owned: [...state.owned],
       collView: state.collView,
       finderScope: state.finderScope,
@@ -608,12 +615,14 @@ function syncFromStorage() {
   const v = p.v,
     G = (a) => new Map(a.filter((s) => s.type === 'guide').map((s) => [s.id, s])),
     g0 = G(state.saved),
-    sig = () => JSON.stringify([[...state.owned].sort(), state.saved, state.wish, state.ink]),
+    sig = () =>
+      JSON.stringify([[...state.owned].sort(), state.saved, state.wish, state.ink, state.buyBrands]),
     was = sig();
   if (Array.isArray(v.owned)) state.owned = new Set(v.owned);
   if (Array.isArray(v.saved)) state.saved = v.saved.map(cleanSaved).filter(Boolean);
   state.wish = cleanWish(v.wish);
   state.ink = cleanInk(v.ink);
+  state.buyBrands = cleanBuy(v.buyBrands);
   if (sig() === was) return; // only another tab's screen or settings changed
   const g1 = G(state.saved),
     S = window.SF;
@@ -634,6 +643,8 @@ function syncFromStorage() {
   try {
     if (state.mode === 'sections') {
       if (S && S.setCollection) S.setCollection(sfCollection());
+      // (and what the open guide suggests follows: its notes had stayed as they were until drawn again, v304)
+      if (S && S.collRefresh) S.collRefresh();
     } else fullRender();
     if (savedOverlay.classList.contains('on') && !_libEd) renderSaved();
     else renderLibStat();
@@ -736,12 +747,95 @@ function fgNormalize() {
 function passes(i) {
   return !state.excluded.has(COLORS[i].fam) && inTone(i) && inSat(i) && inBrand(i);
 }
-function matchesSearch(i) {
-  if (!searchStr) return true;
-  const c = COLORS[i];
-  return (c.code + ' ' + c.name + ' ' + (c.old ? oldCode(c) : ''))
+// Markers' search (v304; it had looked for the text as typed in code, name and old code, so "C3", "cool grey 3" and
+// "colourless" found nothing, and "grey" none of Copic's Gray). Text is folded once per marker (sFold): compatibility
+// forms (NFKC: Ⅱ, full-width letters), case, curly quotes and dashes, and the two spellings ("grey" finds Gray,
+// "colour" Colorless). Each word typed must be found: in the name, at the start of the brand (from four letters: "copi",
+// not "cop" on the way to "copper"), or at the start of the code or an old code with hyphens, dots and spaces left out
+// ("c3" and "c 3" find C-3; "CGll00", the Ⅱ read as two l's, finds CGII00). A number alone looks after a code's letters
+// ("22" finds R22 and E22, "000" the 000s); with other words it is the whole number ("copic 0" finds the 0s, not
+// every Copic code with a 0 after its letters). A search that is a whole code (sExact) puts that marker first, then any
+// whose old code it was.
+function sFold(s) {
+  return String(s == null ? '' : s)
+    .normalize('NFKC')
     .toLowerCase()
-    .includes(searchStr.normalize('NFKC'));
+    .replace(/[\u2018\u2019\u02bc`\u00b4]/g, "'")
+    .replace(/[\u2010-\u2015\u2212]/g, '-')
+    .replace(/grey/g, 'gray')
+    .replace(/colour/g, 'color');
+}
+const sCompact = (s) => sFold(s).replace(/[-.\s]/g, '');
+let _sHay = null;
+function sHay(i) {
+  if (!_sHay)
+    _sHay = COLORS.map((c) => {
+      const codes = [sCompact(c.code)];
+      if (c.old && c.old !== c.code) {
+        const o = sCompact(oldCode(c));
+        codes.push(o);
+        if (/\u2161/.test(c.old)) codes.push(o.replace(/ii/g, 'll'));
+      }
+      return {
+        codes: codes,
+        nums: codes.map((x) => x.replace(/^[a-z]+/, '')),
+        // (the name as written too: "gre" still finds Grey on the way to "grey")
+        text: sFold(c.name) + '\n' + String(c.name).normalize('NFKC').toLowerCase(),
+        brand: sFold(c.brand),
+      };
+    });
+  return _sHay[i];
+}
+// the query, folded and split (the last two kept: Markers' and the slot picker's)
+let _sQs = [];
+function sQueryOf(str) {
+  let q = _sQs.find((x) => x.s === str);
+  if (!q) {
+    const f = sFold(str).trim(),
+      words = f.split(/\s+/).filter(Boolean);
+    // (a code typed with a space, "c 3" or "r 22", is one code when there is such a code ("gray no 3" stays three
+    // words): not a "c" anywhere in a name and a 3 at the end of any code, v304)
+    for (let k = words.length - 2; k >= 0; k--) {
+      const w = words[k] + words[k + 1];
+      if (
+        /^[a-z]{1,3}$/.test(words[k]) &&
+        /^\d+$/.test(words[k + 1]) &&
+        COLORS.some((_, i) => sHay(i).codes.some((x) => x.startsWith(w)))
+      )
+        words.splice(k, 2, w);
+    }
+    q = { s: str, words: words, whole: f.replace(/[-.\s]/g, '') };
+    _sQs = [q].concat(_sQs.slice(0, 1));
+  }
+  return q;
+}
+function sWord(h, w, multi) {
+  if (h.text.includes(w) || (w.length >= 4 && h.brand.startsWith(w))) return true;
+  const k = w.replace(/[-.]/g, '');
+  if (!k) return false;
+  if (h.codes.some((x) => x.startsWith(k))) return true;
+  if (!/^\d+$/.test(k)) return false;
+  return multi ? h.nums.includes(k) : h.nums.some((x) => x.startsWith(k));
+}
+// whether marker i matches a search (Markers' and the custom slot picker's)
+function sMatch(i, str) {
+  if (!str) return true;
+  const q = sQueryOf(str),
+    h = sHay(i);
+  if (q.whole && h.codes.some((x) => x.startsWith(q.whole))) return true;
+  return q.words.length > 0 && q.words.every((w) => sWord(h, w, q.words.length > 1));
+}
+function matchesSearch(i) {
+  return sMatch(i, searchStr);
+}
+// 2: Markers' search names this marker's code (or one word of it does: "copic b04"); 1: one of its old codes; 0: neither
+function sExact(i) {
+  if (!searchStr) return 0;
+  const q = sQueryOf(searchStr),
+    h = sHay(i),
+    ws = [q.whole].concat(q.words.map((w) => w.replace(/[-.]/g, '')));
+  if (ws.includes(h.codes[0])) return 2;
+  return h.codes.slice(1).some((x) => ws.includes(x)) ? 1 : 0;
 }
 function avail(i) {
   return passes(i) && matchesSearch(i);
@@ -752,10 +846,8 @@ function setPool(a) {
   state.pool = a && a.length ? a.slice() : null;
   poolSet = state.pool ? new Set(state.pool) : null;
 }
-var _poolAll = false;
 function inPool(i) {
   if (NOINK.has(i)) return false;
-  if (_poolAll) return passes(i);
   // (a selection leaves out markers marked dry too, as everything else does: "Palette from these" let them in, v299)
   return state.pool
     ? poolSet.has(i) && !(isOwned(i) && isDry(i))
@@ -777,3 +869,14 @@ const anyFam = () => families.some((f) => !state.excluded.has(f.name));
 const anyTone = () => state.tones.size > 0;
 const anySat = () => state.sats.size > 0;
 const anyBrand = () => state.brands.size > 0;
+
+// Brands I'd buy (v304): the brands in the data, as they come; a saved choice kept to those (null: automatic)
+// (a function, not a constant: the saved choice is read near the top of this file, before a constant here exists)
+function allBrands() {
+  return [...new Set(COLORS.map((c) => c.brand))];
+}
+function cleanBuy(a) {
+  if (!Array.isArray(a)) return null;
+  const o = allBrands().filter((b) => a.indexOf(b) >= 0);
+  return o.length ? o : null;
+}

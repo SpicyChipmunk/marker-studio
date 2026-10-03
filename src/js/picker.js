@@ -140,7 +140,8 @@ function genNeed(harmony) {
 // The steps tried in turn: [smallest ΔE00 between two colours, hue allowance in degrees, greys allowed]. The hue
 // allowance is how far a colour may be from its scheme hue; for Analogous it's how widely all its hues may spread (it
 // gives up closeness entirely before spreading past 120°, or it wouldn't be analogous any more); for Monochrome how far
-// from the base colour's hue. Colour schemes give up a little closeness before drifting a little in hue.
+// from the base colour's hue. Colour schemes give up a little closeness before drifting a little in hue. (v304: when
+// greys have to fill in, closeness is asked for again first, so the greys chosen aren't near-copies of each other)
 const GEN_LEVELS = {
   anchors: [
     [10, 30],
@@ -152,6 +153,9 @@ const GEN_LEVELS = {
     [4, 90],
     [0, 90],
     [0, 180],
+    [10, 180, 1],
+    [6, 180, 1],
+    [4, 180, 1],
     [0, 180, 1],
   ],
   analogous: [
@@ -162,6 +166,9 @@ const GEN_LEVELS = {
     [0, 120],
     [0, 180],
     [0, 360],
+    [10, 360, 1],
+    [6, 360, 1],
+    [4, 360, 1],
     [0, 360, 1],
   ],
   mono: [
@@ -172,6 +179,9 @@ const GEN_LEVELS = {
     [0, 35],
     [0, 60],
     [0, 180],
+    [6, 180, 1],
+    [4, 180, 1],
+    [2, 180, 1],
     [0, 180, 1],
   ],
 };
@@ -515,23 +525,56 @@ function paletteOpts() {
 var _photoImg = null,
   _photoLabs = null,
   _photoFix = null;
+// (each band's markers shown since the photo's palette was made: a tap walks on to the next nearest instead of going
+// back to the one before, v304)
+var _photoTried = {};
 function swapPhotoBand(k) {
   var pal = state.palettes[state.palettes.length - 1];
   if (!pal || !_photoLabs || !_photoLabs[k]) return;
   var lab = _photoLabs[k],
     exc = {},
+    tried = _photoTried[k] || (_photoTried[k] = new Set()),
+    others = pal.filter(function (_, p) {
+      return p !== k;
+    }),
     i;
   for (i = 0; i < pal.length; i++) exc[pal[i]] = 1;
-  var best = -1,
-    bd = 1e9,
-    d;
-  for (i = 0; i < COLORS.length; i++) {
-    if (exc[i] || !inPool(i)) continue;
-    d = de2000(lab, LAB[i]);
-    if (d < bd) {
+  tried.add(pal[k]);
+  // (round the five nearest and back to the first: Photo has no Undo button, so the taps mustn't only lead away, v304)
+  if (tried.size > 5) {
+    tried.clear();
+    tried.add(pal[k]);
+  }
+  // the nearest free marker not shown yet that keeps `min` (CIEDE2000) from the other colours, as the palette does
+  function near(min) {
+    var best = -1,
+      bd = 1e9,
+      d;
+    for (var j = 0; j < COLORS.length; j++) {
+      if (exc[j] || tried.has(j) || !inPool(j)) continue;
+      d = de2000(lab, LAB[j]);
+      if (d >= bd) continue;
+      if (
+        min > 0 &&
+        others.some(function (o) {
+          return de2000(LAB[o], LAB[j]) < min;
+        })
+      )
+        continue;
       bd = d;
-      best = i;
+      best = j;
     }
+    return best;
+  }
+  var best = near(6);
+  if (best < 0) best = near(4);
+  if (best < 0) best = near(0);
+  // every marker shown: round again from the nearest
+  if (best < 0 && tried.size > 1) {
+    tried.clear();
+    tried.add(pal[k]);
+    best = near(6);
+    if (best < 0) best = near(0);
   }
   if (best < 0) return;
   // (a new step in the history, so Undo brings the colour back, v299)
@@ -738,6 +781,7 @@ function applyPhotoPalette() {
   }
   var pal = _res.markers;
   _photoLabs = _res.labs;
+  _photoTried = {};
   if (!pal.length) {
     errCard(
       document.getElementById('photoPick'),
@@ -869,7 +913,7 @@ function genPalette(n, harmony, opts) {
 // Re-rolling one colour of a generated palette (tapping its band): another marker near its hue and lightness, by the
 // scheme's rules against the palette's other colours (clearly different from them, no greys in a colour scheme,
 // Analogous within its spread, Monochrome near the palette's hue), and visibly different from the one it replaces
-// where it can be. Returns a marker index, or -1 when no other marker is free.
+// where it can be. Returns a marker index, or -1 when no other marker fits the scheme (v304).
 function rerollPick(pal, k, harmony) {
   harmony = harmony || state.harmony;
   const cur = pal[k],
@@ -891,6 +935,21 @@ function rerollPick(pal, k, harmony) {
     ctx.greyFam = LCH[cur][1] < GREY_C || famGreyish(cur);
   }
   const slot = { h: LCH[cur][2], L: LCH[cur][0] };
+  // (Analogous: its spread measured round the other colours' own hues, not this one's, which for a near-grey means
+  // nothing; such a colour is aimed at their middle, v304)
+  if (harmony === 'analogous') {
+    let x = 0,
+      y = 0;
+    for (const i of others)
+      if (LCH[i][1] >= GREY_C) {
+        x += Math.cos((LCH[i][2] * Math.PI) / 180);
+        y += Math.sin((LCH[i][2] * Math.PI) / 180);
+      }
+    if (x || y) {
+      ctx.bh = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+      if (LCH[cur][1] < GREY_C) slot.h = ctx.bh;
+    }
+  }
   // (a scheme of set hues: aimed at the scheme hue nearest this colour, around the base the other colours fit best —
   // the one leaving the most room either side, half a degree at a time — not at this colour's own hue, so re-rolling
   // one colour again and again doesn't walk it away from the scheme, v298; v299: the best fit, not one of the other
@@ -930,11 +989,27 @@ function rerollPick(pal, k, harmony) {
       slot.h = to;
     }
   }
-  for (const lv of ctx.levels) {
+  // (v304) only the steps that keep to the scheme's hues, closeness given up a step at a time: on a small collection
+  // a tap turned a Monochrome's yellow green once the yellows ran out. A grey's own band may take another grey.
+  const win = ctx.levels[0][1],
+    steps = ctx.levels.filter((lv) => lv[1] <= win && !lv[2]);
+  for (const c of [6, 4, 2, 0]) if (c < steps[steps.length - 1][0]) steps.push([c, win]);
+  if (LCH[cur][1] < GREY_C) steps.push([0, win, 1]);
+  // (and a palette on its scheme stays on it, as its note judges it: one colour at a time can walk a Monochrome's
+  // hues apart even within its window)
+  const fixed = new Set(state.locked || []),
+    wasOn = palOnScheme(pal, harmony, fixed),
+    np = pal.slice();
+  for (const lv of steps) {
     const st = genState(ctx, lv, others);
     st.avoid = cur;
-    const j = genPick(ctx, slot, lv, st);
-    if (j >= 0) return ctx.pool[j];
+    for (let t = 0; t < 24; t++) {
+      const j = genPick(ctx, slot, lv, st);
+      if (j < 0) break;
+      np[k] = ctx.pool[j];
+      if (!wasOn || palOnScheme(np, harmony, fixed)) return ctx.pool[j];
+      st.used[j] = 1;
+    }
   }
   return -1;
 }

@@ -66,10 +66,19 @@ function scanIndex() {
   };
   COLORS.forEach(function (c, i) {
     put(byCode, scanKey(c.code), i);
-    if (c.old && scanKey(c.old) !== scanKey(c.code)) put(byOld, scanKey(c.old), i);
-    const n = scanKey(c.name || '');
+    if (c.old && scanKey(c.old) !== scanKey(c.code)) {
+      put(byOld, scanKey(c.old), i);
+      // (v303: an old code with Ⅱ, "CGⅡ00", is printed in a font where it looks like two l's or 1's: read so too)
+      if (/Ⅱ/.test(c.old)) ['LL', '11'].forEach((r) => put(byOld, scanKey(c.old.replace(/Ⅱ/g, r)), i));
+    }
+    const n = scanKey(c.name || ''),
+      ws = scanWords(c.name || '');
     // (its words too: a short name, Fig or Tea, counts only as a word of its own)
-    if (n.length >= 3) names.push([n, i, scanWords(c.name || '')]);
+    if (n.length >= 3) {
+      names.push([n, i, ws]);
+      // (v303: "Cool Gray 3" for Cool Gray No.3: the name without its "No")
+      if (ws.indexOf('NO') > 0) names.push([n, i, ws.filter((w) => w !== 'NO')]);
+    }
   });
   return (_scanIx = { byCode: byCode, byOld: byOld, names: names });
 }
@@ -81,7 +90,7 @@ const scanWords = (s) =>
     .filter(Boolean);
 // words on the caps and their labels that are never a code, nor the reason a number-only code (0, 120) isn't one
 const SCAN_NOISE =
-  /^(OHUHU|HONOLULU|COPIC|SKETCH|CIAO|CLASSIC|ALCOHOL|ART|ARTS|MARKERS?|BRUSH|FINE|CHISEL|DUAL|TIPS?|NO|\d{8,})$/;
+  /^(OHUHU|HONOLULU|COPIC|SKETCH|CIAO|CLASSIC|ALCOHOL|ART|ARTS|MARKERS?|BRUSH|FINE|CHISEL|DUAL|TIPS?|NO|\d{8,}|X\d{1,3}|\d{1,3}X)$/;
 // whether a word is a code as read, now or an old one
 function scanIsCode(x) {
   const ix = scanIndex();
@@ -93,12 +102,17 @@ const SCAN_BRANDS = [
   [/COPIC|SKETCH|CIAO/, 'Copic'],
 ];
 // the text as read first, then every split into a letter part (up to 3) and a number part with its mix-ups put right
+// (v303: a T in the number part could be a 1 or a 7: both are tried)
 function scanVariants(t) {
   const out = [t];
   for (let k = 0; k <= Math.min(3, t.length - 1); k++) {
-    const pre = t.slice(0, k).replace(/[0-9]/g, (c) => SCAN_LET[c] || c),
-      num = t.slice(k).replace(/[A-Z]/g, (c) => SCAN_NUM[c] || c);
-    if (/^[A-Z]*$/.test(pre) && /^[0-9]+$/.test(num) && out.indexOf(pre + num) < 0) out.push(pre + num);
+    const pre = t.slice(0, k).replace(/[0-9]/g, (c) => SCAN_LET[c] || c);
+    if (!/^[A-Z]*$/.test(pre)) continue;
+    const rest = t.slice(k);
+    for (const tv of /T/.test(rest) ? ['1', '7'] : ['1']) {
+      const num = rest.replace(/[A-Z]/g, (c) => (c === 'T' ? tv : SCAN_NUM[c] || c));
+      if (/^[0-9]+$/.test(num) && out.indexOf(pre + num) < 0) out.push(pre + num);
+    }
   }
   return out;
 }
@@ -149,7 +163,7 @@ function scanRead(text, brand) {
   // in the list — and the same code is one entry only when it's the same marker: B04 Copic on one line and B04 Ohuhu
   // on another are two)
   if (lines.length > 1) {
-    const out = { codes: [], byName: -1, flips: [], other: [], names: [], many: true },
+    const out = { codes: [], byName: -1, flips: [], other: [], names: [], names2: [], many: true },
       seen = {};
     lines.forEach(function (l) {
       const r = scanRead(l, brand);
@@ -160,6 +174,8 @@ function scanRead(text, brand) {
       });
       out.flips.push(...r.flips);
       if (r.byName >= 0 && out.names.indexOf(r.byName) < 0) out.names.push(r.byName);
+      // (v303: a line with only a name both brands use: one question between them)
+      if (r.byNames && !out.names2.some((n) => n.join() === r.byNames.join())) out.names2.push(r.byNames);
       r.other.forEach((i) => out.other.indexOf(i) < 0 && out.other.push(i));
     });
     return out;
@@ -168,31 +184,73 @@ function scanRead(text, brand) {
     chosen = (i) => !brand || COLORS[i].brand === brand,
     has = (c) => ix.byCode.has(c) && ix.byCode.get(c).some(chosen);
   // (full-width letters and digits as plain ones; a turned Y read as ¥)
-  const up = String(text || '')
+  let up = String(text || '')
     .normalize('NFKC')
     .toUpperCase()
     .replace(/¥/g, 'Y');
+  // (v303) a price or any number with a decimal point ("$2.99", "3.5"; a comma only after a currency sign: "100,110"
+  // is two codes) is no code: gone, so its digits aren't read as
+  // one ("99" as G9, Ohuhu's old code for G112); a dot inside a code joins it up ("WG0.5", Ohuhu's old code for YR02);
+  // a | or ! between letters and digits is a 1 ("B|12")
+  up = up
+    .replace(/(^|[^A-Z0-9.])(?:[$€£]\d+[.,]\d+|\d+\.\d+)(?![A-Z0-9])/g, '$1 ')
+    .replace(/([A-Z]+\d+)\.(\d+)/g, '$1$2')
+    .replace(/[|!]/g, (m, o, str) =>
+      /[A-Z0-9]/.test(str[o - 1] || '') && /[A-Z0-9]/.test(str[o + 1] || '') ? '1' : ' ',
+    );
   // a brand's name on the cap: settles a code both brands use
   const hints = SCAN_BRANDS.filter((b) => b[0].test(up)).map((b) => b[1]),
-    hint = hints.length === 1 ? hints[0] : '';
+    hint = hints.length === 1 ? hints[0] : '',
+    ofHint = (i) => COLORS[i].brand === hint;
   // words; one with a turned character is left to the upside-down reading below; a dash on its own is dropped
   // ("C - 3")
   const words = up.split(new RegExp('[^A-Z0-9' + SCAN_TURNED + '-]+')).filter((w) => w && !/^-+$/.test(w));
-  const toks = words.map((t) => (/[A-Z0-9]/.test(t) && !/[^A-Z0-9-]/.test(t) ? t.replace(/-/g, '') : null));
-  const tries = [];
+  const toks = words.map((t) => (/[A-Z0-9]/.test(t) && !/[^A-Z0-9-]/.test(t) ? t.replace(/-/g, '') : null)),
+    // (v303: a short word with a dash, "C-O", gets its misreads put right as one with a digit does: Copic's greys)
+    dash = words.map((w, i) => !!toks[i] && /-/.test(w) && toks[i].length <= 4),
+    lettersOnly = (x) => !!x && /^[A-Z]+$/.test(x);
+  // (v303) a code read in pieces ("E 614", "B G05", "R V 17"): the pieces it's made of aren't read on their own as well
+  // (E 614 had added Copic G14 too)
+  const used = new Set(),
+    tries = [];
   toks.forEach(function (t, i) {
-    if (!t) return;
-    tries.push({ t: t });
+    if (!t || used.has(i)) return;
+    const u = toks[i + 1],
+      w = toks[i + 2];
+    if (
+      lettersOnly(t) &&
+      lettersOnly(u) &&
+      w &&
+      /^\d+$/.test(w) &&
+      (t + u + w).length <= 6 &&
+      scanIsCode(t + u + w)
+    ) {
+      tries.push({ t: t + u + w, joined: true, oldOk: true, at: i });
+      used.add(i + 1).add(i + 2);
+      return;
+    }
+    if (
+      lettersOnly(t) &&
+      u &&
+      (t + u).length <= 6 &&
+      (ix.byCode.has(t + u) || (ix.byOld.has(t + u) && !scanIsCode(u)))
+    ) {
+      // (an old code too, "WG 05" is Ohuhu YR02, once WG0.5; but not when the second piece is a code of its own:
+      // "W G05" is Copic G05)
+      tries.push({ t: t + u, joined: true, oldOk: true, at: i });
+      used.add(i + 1);
+      return;
+    }
+    tries.push({ t: t, at: i, dash: dash[i] });
     // a code with its name run on ("B015CELADON")
     const g = /^([A-Z]{1,3}[0-9]{1,4})[A-Z]{3,}$/.exec(t);
-    if (g) tries.push({ t: g[1] });
+    if (g) tries.push({ t: g[1], at: i });
     // a code read in two pieces ("YG 06"): only as it is, no misreads put right across the gap, and only when
     // neither piece is a code of its own (v299: "E00 0", Copic E00 with the blender beside it, was read as E000, and a
     // count after a code, "BG21 1", as BG211)
     // ("C - 0" is still C-0: a first piece of letters only joins whatever follows)
-    const u = toks[i + 1];
-    if (u && (t + u).length <= 6 && (!/\d/.test(t) || (!scanIsCode(t) && !scanIsCode(u))))
-      tries.push({ t: t + u, joined: true });
+    if (u && !used.has(i + 1) && (t + u).length <= 6 && (!/\d/.test(t) || (!scanIsCode(t) && !scanIsCode(u))))
+      tries.push({ t: t + u, joined: true, at: i });
   });
   // the colour names in the text, of either brand: its words in a row ("Cool Gray No.1"), or run together when the
   // name is long enough not to turn up inside other words ("LightSalmon"); the longest (Honey Brown, not Honey too)
@@ -203,25 +261,77 @@ function scanRead(text, brand) {
     return false;
   };
   const hit = ix.names.filter((n) => inRow(n[2]) || (n[0].length >= 6 && joined.indexOf(n[0]) >= 0));
-  const named = new Set(
+  let named = new Set(
     hit
       .filter((n) => !hit.some((m) => m[0].length > n[0].length && m[0].indexOf(n[0]) >= 0))
       .map((n) => n[1]),
   );
+  // (v303: the brand on the cap picks between two brands' markers of the same name, Tahitian Blue; other names read
+  // stay, another cap's: "Copic B04 Tahitian Blue R46 Old Rose" is still Ohuhu's R46)
+  if (hint)
+    named = new Set(
+      [...named].filter(
+        (i) =>
+          ofHint(i) ||
+          // (one whose own code is read beside it stays: "B09 Tahitian Blue Copic" is Ohuhu's B09)
+          toks.indexOf(scanKey(COLORS[i].code)) >= 0 ||
+          ![...named].some(
+            (j) => j !== i && ofHint(j) && scanKey(COLORS[j].name) === scanKey(COLORS[i].name),
+          ),
+      ),
+    );
   const namedOk = [...named].filter(chosen),
     // (the words of the names read: beside codes, still caps in view)
     nameWords = new Set([].concat(...[...named].map((i) => scanWords(COLORS[i].name || ''))));
+  // (v303) worked out once, not for every word: a long line of codes had taken seconds
+  const plain = toks.filter((x) => x && !SCAN_NOISE.test(x)),
+    // (words that are neither codes nor of a name read; a count, "2", is one only beside another code: "2 FB" is
+    // Copic FB, "120 2" Ohuhu 120)
+    stray = [...new Set(toks.filter((x) => x && !SCAN_NOISE.test(x) && !scanIsCode(x) && !nameWords.has(x)))],
+    isCount = (x) => /^\d{1,2}$/.test(x),
+    strayWords = stray.filter((x) => !isCount(x)),
+    codeToks = new Set(plain.filter(scanIsCode)),
+    otherCodes = (t) => codeToks.size > (codeToks.has(t) ? 1 : 0),
+    strayW = new Set(strayWords),
+    // (whether a stray word is beside t other than t itself and the words of its markers' own names: counted, not
+    // filtered for every word, so a long line stays quick)
+    strayBeside = function (t, markers) {
+      if (!strayW.size) return false;
+      const own = new Set([].concat(...markers.map((i) => scanWords(COLORS[i].name || ''))));
+      own.add(t);
+      let n = 0;
+      own.forEach((w) => strayW.has(w) && n++);
+      return strayW.size > n;
+    };
   const codes = [],
     seen = {},
     other = new Set();
   for (const tr of tries) {
     const t = tr.t;
     if (t.length > 6) continue;
+    const digits = /^\d+$/.test(t),
+      // (v303) beside other words: a number isn't read as a code put right ("61" as G1), nor a code without a digit
+      // ("FB") among words that aren't codes, nor a number after "No" ("Cool Gray No.0")
+      beside = plain.length > 1,
+      afterNo = digits && beside && tr.at > 0 && toks[tr.at - 1] === 'NO';
+    if (afterNo) continue;
     // another brand's code exactly as read, or with that brand's colour name: said so, not bent into a code of the
     // brand chosen (Copic YG11 isn't Ohuhu Y611 misread; Copic B04 Tahitian Blue isn't Ohuhu B04)
-    if (brand) {
+    // (v303: nor a number beside stray words, "pack of 100": that's no code at all; beside another code, "E43 120", or a
+    // word of its own name, "110 Black", it's still said to be the other brand's)
+    if (
+      brand &&
+      !(
+        digits &&
+        beside &&
+        strayBeside(t, ix.byCode.get(t) || []) &&
+        !(ix.byCode.get(t) || []).some((i) => named.has(i))
+      )
+    ) {
       const ex = ix.byCode.get(t) || [];
-      const otherNamed = [...named].filter((i) => !chosen(i) && scanKey(COLORS[i].code) === t);
+      // (not when the brand chosen has the same code and name: both brands' colourless blender, 0)
+      const sameNamed = [...named].some((i) => chosen(i) && scanKey(COLORS[i].code) === t),
+        otherNamed = sameNamed ? [] : [...named].filter((i) => !chosen(i) && scanKey(COLORS[i].code) === t);
       if ((ex.length && !ex.some(chosen)) || otherNamed.length) {
         (otherNamed.length ? otherNamed : ex).forEach((i) => other.add(i));
         continue;
@@ -230,30 +340,26 @@ function scanRead(text, brand) {
     // every reading of the word that is a real code, as now or an old Ohuhu code; misreads are put right only in a
     // word that has a digit ("Egg" isn't E66, "Bog" isn't B06, "No" isn't N-0)
     const cands = [];
-    for (const v of /\d/.test(t) && !tr.joined ? scanVariants(t) : [t]) {
+    for (const v of (/\d/.test(t) || tr.dash) && !tr.joined ? scanVariants(t) : [t]) {
       const cur = ix.byCode.get(v) || [],
         // (a code made of two words is a code as it is now, not an old one: "E17 0" isn't E170, E58's old code)
-        old = tr.joined ? [] : (ix.byOld.get(v) || []).filter((i) => cur.indexOf(i) < 0),
+        old = tr.joined && !tr.oldOk ? [] : (ix.byOld.get(v) || []).filter((i) => cur.indexOf(i) < 0),
         all = cur.concat(old);
       if (!all.length) continue;
+      const isNamed = all.some((i) => named.has(i)),
+        // (v303: a word of its own name beside it, "FB Blue", "0 Colorless", isn't stray)
+        strayHere = strayBeside(t, all);
+      if (digits && v !== t && beside && !isNamed) continue;
+      if (!/\d/.test(v) && v === t && beside && !isNamed && strayHere) continue;
       // a code that's only a number (0, 100, 120): only as read and on its own, or with its name
       // (words on every cap don't count: "Copic 0", "Ohuhu 120" are the code, v299)
       // (as read beside other codes only, two caps in view, "E43 120": asked about rather than dropped, v299)
       let numAsk = false;
-      if (
-        /^\d+$/.test(v) &&
-        (v !== t || toks.filter((x) => x && !SCAN_NOISE.test(x)).length > 1) &&
-        !all.some((i) => named.has(i))
-      ) {
+      if (/^\d+$/.test(v) && (v !== t || beside) && !isNamed) {
         // (not a word of a name read: "Cool Gray No.0")
-        if (
-          v !== t ||
-          tr.joined ||
-          nameWords.has(t) ||
-          !toks.every((x) => !x || x === t || SCAN_NOISE.test(x) || scanIsCode(x) || nameWords.has(x))
-        )
-          continue;
-        numAsk = true;
+        if (v !== t || tr.joined || nameWords.has(t) || strayHere) continue;
+        // (beside another code, two caps in view: asked; beside a count or a word of its name only, it's that code)
+        numAsk = otherCodes(t);
       }
       const opts = all.filter(chosen);
       if (!opts.length) continue;
@@ -267,15 +373,28 @@ function scanRead(text, brand) {
         asked: '',
         hadOld: old.length > 0 && cur.some(chosen),
         numAsk: numAsk,
+        // (which of them are by an old code, for "by its old code" once the options are narrowed, v303)
+        oldSet: new Set(old),
       });
     }
     if (!cands.length) continue;
     // the reading the colour name agrees with (YG11 read with "Dark Sand" is Ohuhu Y611), else the text as read
-    const c = cands.find((x) => x.named) || cands[0];
+    let c = cands.find((x) => x.named) || cands[0];
+    // (v303) misreads put right more than one way, none as read ("E1T": E11 or E17): asked, not the first taken
+    if (!c.named && c.fixed && cands.length > 1) {
+      const os = [],
+        oldSet = new Set();
+      cands.forEach((x) => {
+        x.opts.forEach((i) => os.indexOf(i) < 0 && os.push(i));
+        x.oldSet.forEach((i) => oldSet.add(i));
+      });
+      const cs = [...new Set(os.map((i) => COLORS[i].code))];
+      if (cs.length > 1) c = Object.assign({}, c, { opts: os, fix: cs, oldSet: oldSet });
+    }
     // the other brand's name on the cap: that brand's code, said so, not added as the brand chosen ("Ohuhu B04" with
     // Copic chosen had added Copic B04, v299)
     if (brand && hint && hint !== brand && !c.named) {
-      const hb = (ix.byCode.get(c.code) || []).filter((i) => COLORS[i].brand === hint);
+      const hb = (ix.byCode.get(c.code) || []).filter(ofHint);
       if (hb.length) {
         hb.forEach((i) => other.add(i));
         continue;
@@ -290,16 +409,65 @@ function scanRead(text, brand) {
   // R46 and R48, with R46's "Old Rose" read, are R46 and R48, not a question about R48 (v298: they were)
   const told = new Set();
   codes.forEach((c) => c.named && c.opts.forEach((i) => told.add(i)));
-  const loose = namedOk.filter((i) => !told.has(i));
+  const toldWords = new Set([].concat(...[...told].map((i) => scanWords(COLORS[i].name || ''))));
+  // (v303: nor does a name read that's only a word or two of the code's own marker's name: "BG212 Green" is BG212 Teal
+  // Green, not a question about the marker called Green)
+  const partOf = (i) =>
+    codes.some((c) =>
+      c.opts.some(
+        (j) => j !== i && scanWords(COLORS[i].name).every((w) => scanWords(COLORS[j].name).indexOf(w) >= 0),
+      ),
+    );
+  const loose = namedOk.filter((i) => !told.has(i) && !partOf(i) && (!hint || ofHint(i))),
+    // (nor a word of another marker's whole name read, "Light" of B06 Light Cerulean beside B02)
+    looseWords = new Set([].concat(...loose.map((i) => scanWords(COLORS[i].name || ''))));
   codes.forEach(function (c) {
+    // (v303) the brand's name on the cap first: its markers only, when it has any here ("Copic R12" isn't asked about
+    // Ohuhu's R12 or the Ohuhu marker whose old code was R12)
+    if (hint && !c.named) {
+      const h = c.opts.filter(ofHint);
+      if (h.length && h.length < c.opts.length) {
+        c.opts = h;
+        c.hadOld = c.hadOld && h.length > 1;
+        // (by its old code, if that's all the brand on the cap has under it: "Ohuhu Y13" is E515, once Y13)
+        c.old = h.every((i) => c.oldSet.has(i));
+        if (c.fix) {
+          const cs = [...new Set(h.map((i) => COLORS[i].code))];
+          c.fix = cs.length > 1 ? cs : null;
+        }
+      }
+    }
+    // (v303) a word of one of its markers' names read beside a code more than one marker has ("B21 Porcelain": Ohuhu's
+    // B21 Porcelain Blue, not Copic's): that one
+    if (!c.named && c.opts.length > 1) {
+      // (not a word of a name read whole, another cap's: "B015 Celadon Blue B04" isn't Copic B04 Tahitian Blue)
+      const pw = new Set(
+          tw.filter(
+            (w) =>
+              w.length >= 3 &&
+              !SCAN_NOISE.test(w) &&
+              !scanIsCode(w) &&
+              !toldWords.has(w) &&
+              !looseWords.has(w),
+          ),
+        ),
+        m = c.opts.filter((j) => scanWords(COLORS[j].name).some((w) => pw.has(w)));
+      if (pw.size && m.length === 1) {
+        c.opts = m;
+        c.old = c.oldSet.has(m[0]);
+        c.hadOld = false;
+        c.fix = null;
+      }
+    }
     if (c.numAsk) c.asked = 'num';
     // (a brand's name on the cap, and a code that brand hasn't: "Ohuhu … 0" isn't simply Copic 0, v299)
-    else if (hint && !c.named && !c.opts.some((i) => COLORS[i].brand === hint)) c.asked = 'hint';
+    else if (hint && !c.named && !c.opts.some(ofHint)) c.asked = 'hint';
     else if (!c.named && loose.length) {
       // the colour name read says another marker (R4b with "Old Rose": R48 read, R46 named): ask between them
       loose.forEach((i) => c.opts.indexOf(i) < 0 && c.opts.push(i));
       c.asked = 'name';
-    } else if (!c.named && c.hadOld) {
+    } else if (c.fix) c.asked = 'fix';
+    else if (!c.named && c.hadOld) {
       // an old code that's now another marker's (R25 was Pale Blue Violet, now BV26; R25 is Tender Pink): ask
       c.asked = 'old';
     } else if (c.fixed && !c.named) {
@@ -315,20 +483,23 @@ function scanRead(text, brand) {
         c.asked = 'turned';
       }
     }
-    // the brand's name on the cap settles a code both brands use
-    if (!c.asked && c.opts.length > 1 && hint) {
-      const h = c.opts.filter((i) => COLORS[i].brand === hint);
-      if (h.length === 1) c.opts = h;
-    }
+    if (c.asked === 'fix') c.as = c.t;
+    // (the options asked about by an old code are said so)
+    c.oldOf = c.opts.filter((i) => c.oldSet.has(i));
+    delete c.oldSet;
     delete c.hadOld;
     delete c.numAsk;
     delete c.t;
+    delete c.fix;
   });
   // (another brand's cap read with this brand's: asked about in the list, not dropped, v299)
   if (codes.length) return { codes: codes, byName: -1, flips: [], other: [...other] };
   // another brand's code (with that brand chosen): that, not a reading of something else
   if (other.size) return { codes: [], byName: -1, flips: [], other: [...other] };
   if (namedOk.length === 1) return { codes: [], byName: namedOk[0], flips: [], other: [] };
+  // (v303: a name both brands use, read alone: which one, rather than nothing)
+  if (namedOk.length > 1 && new Set(namedOk.map((i) => scanKey(COLORS[i].name))).size === 1)
+    return { codes: [], byName: -1, byNames: namedOk, flips: [], other: [] };
   if (!namedOk.length && named.size === 1) return { codes: [], byName: -1, flips: [], other: [...named] };
   // nothing the right way up: each word as if it was read upside down
   const flips = [];
@@ -356,13 +527,82 @@ let scanList = [],
   // the box's wait for Scan Text's text to hold still, and the text last read from it
   scanStill = null,
   scanText = '';
+// (v303) when each marker was last read (the same cap held in view, read again and again), and when each question was
+// last answered or let go by: a cap still in view isn't asked about again
+const scanTookAt = new Map(),
+  scanAnsweredAt = new Map();
+// (v303) the list is kept through a reload (Safari can reload a tab put away mid-sweep): markers by their keys
+const SCAN_LIST_KEY = 'ms-scan-list';
 try {
   scanBrand = localStorage.getItem(SCAN_BRAND_KEY) || '';
 } catch (_) {}
+function scanSaveList() {
+  try {
+    if (!scanList.length) localStorage.removeItem(SCAN_LIST_KEY);
+    else
+      localStorage.setItem(
+        SCAN_LIST_KEY,
+        JSON.stringify(
+          scanList.map((e) =>
+            e.ask
+              ? {
+                  ask: e.ask,
+                  title: e.title,
+                  opts: e.opts.map((o) => ({ k: mkey(o.i), how: o.how })),
+                  // (all its answers, when the brand chosen has narrowed them: Either brand brings them back)
+                  opts0: e.opts0 ? e.opts0.map((o) => ({ k: mkey(o.i), how: o.how })) : undefined,
+                }
+              : { k: mkey(e.i), how: e.how },
+          ),
+        ),
+      );
+  } catch (_) {}
+}
+(function scanLoadList() {
+  try {
+    const a = JSON.parse(localStorage.getItem(SCAN_LIST_KEY) || '[]');
+    if (!Array.isArray(a)) return;
+    const idx = (k) => (typeof k === 'string' ? keyIdx(k) : null);
+    scanList = a
+      .map(function (e) {
+        if (!e || typeof e !== 'object') return null;
+        if (typeof e.ask === 'string' && Array.isArray(e.opts)) {
+          const opts = e.opts
+            .map((o) => o && { i: idx(o.k), how: typeof o.how === 'string' ? o.how : '' })
+            .filter((o) => o && o.i != null);
+          const all = Array.isArray(e.opts0)
+            ? e.opts0
+                .map((o) => o && { i: idx(o.k), how: typeof o.how === 'string' ? o.how : '' })
+                .filter((o) => o && o.i != null)
+            : null;
+          return opts.length
+            ? {
+                ask: e.ask,
+                title: String(e.title || ''),
+                opts: opts,
+                opts0: all && all.length ? all : undefined,
+                at: 0,
+              }
+            : null;
+        }
+        const i = idx(e.k);
+        return i == null ? null : { i: i, how: typeof e.how === 'string' ? e.how : '' };
+      })
+      .filter(Boolean);
+  } catch (_) {
+    scanList = [];
+  }
+})();
+// (v303) no sound while the dialog closes (text left in the box read on the way out)
+let scanMute = false;
 function scanBeep(kind) {
+  if (scanMute) return;
   try {
     if (!scanAudio) scanAudio = new (window.AudioContext || window.webkitAudioContext)();
-    if (scanAudio.state === 'suspended') scanAudio.resume();
+    if (scanAudio.state === 'suspended') {
+      const pr = scanAudio.resume();
+      if (pr && pr.catch) pr.catch(function () {});
+    }
     const tones =
       kind === 'ok'
         ? [
@@ -408,7 +648,8 @@ function scanSay(kind, big, small, i, choices) {
   el.querySelector('b').textContent = big;
   el.querySelector('.sctext span').textContent = small;
   if (choices && choices.length) {
-    const row = document.createElement('span');
+    const row = document.createElement('span'),
+      from = scanHandling;
     row.className = 'scpick';
     choices.forEach(function (c) {
       const b = document.createElement('button');
@@ -416,6 +657,16 @@ function scanSay(kind, big, small, i, choices) {
       b.textContent = c.label;
       b.addEventListener('click', function () {
         scanTake(c.i, c.how, true);
+        // (v303) the text the card was about goes from the box (typed, and not cleared as it had no code in it): it
+        // had run on into the next code typed ("Honey BrownB015")
+        const bx = $('scBox');
+        if (bx && from.trim() && bx.value.trim() === from.trim()) {
+          clearTimeout(scanStill);
+          bx.value = '';
+          scanText = '';
+          bx.dispatchEvent(new Event('scanreset'));
+          scanAddState();
+        }
         scanFocusBox();
       });
       row.appendChild(b);
@@ -429,6 +680,25 @@ function scanTake(i, how, loud, batch) {
   const now = Date.now(),
     again = !loud && scanLast.i === i && now - scanLast.at < 6000;
   scanLast = { i: i, at: now };
+  scanTookAt.set(i, now);
+  // (v303) the cap's name read with its code settles a question about the same cap asked a moment ago, with less of
+  // it read ("YG06", Ohuhu or Copic, then "YG06 Sugarcane"): the question goes
+  // (only for Scan Text's reads: a pasted list's or a typed line's own questions stay, each line a marker of its own;
+  // nor one asked by this same read; and it isn't asked again while the cap's in view)
+  if (how === 'name' && !loud) {
+    const n0 = scanList.length;
+    scanList = scanList.filter(function (e) {
+      const go =
+        e.ask &&
+        e.hid !== scanHandleId &&
+        !/^(other|byname)/.test(e.ask) &&
+        now - (e.at || 0) < 10000 &&
+        e.opts.some((o) => o.i === i);
+      if (go) scanAnsweredAt.set(e.ask, now);
+      return !go;
+    });
+    if (scanList.length !== n0) scanRender();
+  }
   if (scanList.some((e) => e.i === i)) {
     if (!again && !batch) {
       scanSay('same', scanName(i), 'Already in the list' + scanBrandOf(i), i);
@@ -452,17 +722,28 @@ function scanTake(i, how, loud, batch) {
   return true;
 }
 // a question for the list (once per key)
+// Returns true when asked, else why not: 'waiting' (the same question is), 'listed' (every answer is in the list),
+// 'quiet' (the cap's still in view, v303)
 function scanAsk(key, title, opts, batch, loud) {
   // (asked already: the same question waiting)
-  if (scanList.some((e) => e.ask === key)) return false;
-  // (one of its answers was read a moment ago: the same cap, still in view with less of it read, isn't asked about.
-  // v299: once any answer was in the list it was never asked, so after Ohuhu B04, Copic B04's cap was lost)
-  if (!batch && !loud && Date.now() - scanLast.at < 2500 && opts.some((o) => o.i === scanLast.i)) {
-    // (still in view: the moment runs on while it's read again and again)
-    scanLast.at = Date.now();
-    return false;
+  if (scanList.some((e) => e.ask === key)) return 'waiting';
+  const now = Date.now();
+  // (v303) nothing to ask: every answer is in the list already (a list pasted twice)
+  if (opts.every((o) => scanList.some((e) => e.i === o.i))) return 'listed';
+  if (!loud) {
+    // (v303) answered a moment ago, and the cap's still in view: not asked again (it came back with a beep every time
+    // the camera read it again). The moment runs on while it's read again and again.
+    const was = scanAnsweredAt.get(key);
+    if (was && now - was < 4000) {
+      scanAnsweredAt.set(key, now);
+      return 'quiet';
+    }
+    // (one of its answers was read a moment ago: the same cap, still in view with less of it read, isn't asked about;
+    // v303: the moment runs from when that marker was last read, not from each partial read, so a second cap with the
+    // same code, Copic B04 after Ohuhu B04, is asked about once the first has gone)
+    if (opts.some((o) => now - (scanTookAt.get(o.i) || 0) < 2500)) return 'quiet';
   }
-  scanList.unshift({ ask: key, title: title, opts: opts });
+  scanList.unshift({ ask: key, title: title, opts: opts, at: now, hid: scanHandleId });
   if (batch) return true;
   scanSay('ask', title, 'Choose in the list below', -1);
   scanBeep('same');
@@ -480,22 +761,28 @@ function scanCardAgain(key, loud) {
 }
 // A piece of text from the box. loud: Enter or a paste, said even when nothing in it is a code. Returns how many
 // markers or questions it held (0: nothing to clear the box for).
+let scanHandling = '',
+  scanHandleId = 0;
 function scanHandle(text, loud) {
   if (!String(text).trim()) return 0;
+  scanHandling = String(text);
+  scanHandleId++;
   const r = scanRead(text, scanBrand);
   let n = 0;
   // several at once (a pasted list): into the list together, then said once
   // (another brand's codes read along with codes of the brand chosen, or in a list, are questions in the list)
   const others = r.many || r.codes.length ? r.other : [],
-    many = r.codes.length + (r.many ? r.flips.length + r.names.length : 0) + others.length > 1,
-    len0 = scanList.length;
+    many =
+      r.codes.length + (r.many ? r.flips.length + r.names.length + r.names2.length : 0) + others.length > 1;
   let took = 0,
+    mine = 0,
     asked = 0;
   const ask = function (key, title, opts) {
-    if (scanAsk(key, title, opts, many, loud)) asked++;
+    const a = scanAsk(key, title, opts, many, loud);
+    if (a === true) asked++;
     else if (!many && loud) {
-      // (said when it's typed: the question is waiting in the list already)
-      scanSay('same', title, 'Waiting in the list below', -1);
+      // (said when it's typed: the question is waiting in the list already, or its answers are in it)
+      scanSay('same', title, a === 'listed' ? 'Already in the list' : 'Waiting in the list below', -1);
       scanBeep('same');
     }
   };
@@ -507,17 +794,26 @@ function scanHandle(text, loud) {
         c.asked === 'num'
           ? c.code + ' was read beside other codes: is it this one?'
           : c.code + ' isn\u2019t a code of the brand on the cap: is it this one?',
-        c.opts.map((i) => ({ i: i, how: 'chosen' })),
+        c.opts.map((i) => ({ i: i, how: (c.oldOf || []).indexOf(i) >= 0 ? 'old' : 'chosen' })),
       );
       return;
     }
     if (c.opts.length === 1) {
-      if (scanTake(c.opts[0], c.old ? 'old' : c.named ? 'name' : '', loud, many)) took++;
+      if (scanTake(c.opts[0], c.old ? 'old' : c.named ? 'name' : '', loud, many)) {
+        took++;
+        if (state.owned.has(mkey(c.opts[0]))) mine++;
+      }
       return;
     }
     const codeOf = (i) => scanKey(COLORS[i].code),
       others = [...new Set(c.opts.filter((i) => codeOf(i) !== c.code).map((i) => COLORS[i].code))];
-    if (c.asked === 'turned')
+    if (c.asked === 'fix')
+      ask(
+        'fix ' + c.as,
+        c.as + ': ' + [...new Set(c.opts.map((i) => COLORS[i].code))].join(' or ') + '?',
+        c.opts.map((i) => ({ i: i, how: (c.oldOf || []).indexOf(i) >= 0 ? 'old' : 'chosen' })),
+      );
+    else if (c.asked === 'turned')
       ask(
         'turned ' + c.code,
         c.code + ', or ' + others.join(' or ') + ' upside down?',
@@ -525,9 +821,9 @@ function scanHandle(text, loud) {
       );
     else if (c.asked === 'name')
       ask(
-        'name ' + c.code + ' ' + c.opts.join(','),
+        'name ' + c.code + ' ' + c.opts.map(mkey).join(','),
         'The code and the name read don’t match: which one?',
-        c.opts.map((i) => ({ i: i, how: 'chosen' })),
+        c.opts.map((i) => ({ i: i, how: (c.oldOf || []).indexOf(i) >= 0 ? 'old' : 'chosen' })),
       );
     else if (c.asked === 'old')
       ask(
@@ -539,7 +835,7 @@ function scanHandle(text, loud) {
       ask(
         'brands ' + c.code,
         c.code + ': ' + c.opts.map((i) => COLORS[i].brand).join(' or ') + '?',
-        c.opts.map((i) => ({ i: i, how: 'chosen' })),
+        c.opts.map((i) => ({ i: i, how: (c.oldOf || []).indexOf(i) >= 0 ? 'old' : 'chosen' })),
       );
   });
   if (r.many) {
@@ -554,12 +850,21 @@ function scanHandle(text, loud) {
     });
     r.names.forEach(function (i) {
       n++;
-      ask('byname ' + i, 'Only its name was read: is it this one?', [{ i: i, how: 'name' }]);
+      ask('byname ' + mkey(i), 'Only its name was read: is it this one?', [{ i: i, how: 'name' }]);
+    });
+    // (v303: a name both brands use)
+    r.names2.forEach(function (is) {
+      n++;
+      ask(
+        'bynames ' + is.map(mkey).join(','),
+        'Only its name was read: which one?',
+        is.map((i) => ({ i: i, how: 'name' })),
+      );
     });
   }
   others.forEach(function (i) {
     n++;
-    ask('other ' + i, 'Another brand than the one chosen (' + scanBrand + '): add it?', [
+    ask('other ' + mkey(i), 'Another brand than the one chosen (' + scanBrand + '): add it?', [
       { i: i, how: 'chosen' },
     ]);
   });
@@ -574,21 +879,28 @@ function scanHandle(text, loud) {
     scanLastMany = { key: key, at: now };
     // (two caps held in view come again and again: said once)
     if (!again && n) {
+      // (v303: what's added that's already yours is said so, with the quieter sound, as one read alone is)
+      const allMine = took && mine === took;
       scanSay(
-        took ? 'ok' : asked ? 'ask' : 'same',
+        took && !allMine ? 'ok' : asked ? 'ask' : 'same',
         took
           ? took + ' added to the list'
           : asked
             ? asked + ' to choose in the list'
             : 'All already in the list',
-        [took && asked ? asked + ' to choose below' : '', same ? same + ' already in the list' : '']
+        [
+          allMine ? (took === 1 ? 'Already in your collection' : 'All already in your collection') : '',
+          took && asked ? asked + ' to choose below' : '',
+          same ? same + ' already in the list' : '',
+        ]
           .filter(Boolean)
           .join(' · ') || 'Check them below',
         -1,
       );
-      scanBeep(took ? 'ok' : 'same');
+      scanBeep(took && !allMine ? 'ok' : 'same');
     }
-    if (scanList.length !== len0) scanRender();
+    // (v303: drawn every time: a question settled by a name read can leave the list as long as it was)
+    scanRender();
   }
   if (n) return n;
   if (r.byName >= 0) {
@@ -601,11 +913,25 @@ function scanHandle(text, loud) {
     if (loud) scanBeep('same');
     return 0;
   }
+  if (r.byNames) {
+    // (v303: a name both brands use, read alone: which one)
+    if (scanCardAgain('names ' + r.byNames.join(','), loud)) return 0;
+    scanSay(
+      'ask',
+      'Is it ' + scanName(r.byNames[0]) + '?',
+      'Only its name was read: ' + r.byNames.map((i) => COLORS[i].brand).join(' and ') + ' both have it',
+      -1,
+      r.byNames.map((i) => ({ i: i, how: 'name', label: 'Add ' + COLORS[i].brand + ' ' + COLORS[i].code })),
+    );
+    if (loud) scanBeep('same');
+    return 0;
+  }
   r.flips.forEach(function (f) {
     n++;
     if (f.opts.length === 1) scanTake(f.opts[0], 'upside', loud);
+    // (v303: through ask, so on Enter a question already waiting is said so)
     else
-      scanAsk(
+      ask(
         'upside ' + f.as,
         'Upside down: which one?',
         f.opts.map((i) => ({ i: i, how: 'upside' })),
@@ -661,7 +987,7 @@ function scanRender() {
                 '" data-i="' +
                 o.i +
                 '" data-how="' +
-                o.how +
+                esc(o.how) +
                 '"><span class="scsw" style="background:' +
                 COLORS[o.i].hex +
                 '"></span>' +
@@ -709,13 +1035,20 @@ function scanRender() {
       (asks ? (marks ? ' · ' : '') + asks + '\u00a0to\u00a0choose' : '')
     : '';
   const add = $('scAdd');
-  add.disabled = !fresh;
+  scanAddState();
   add.textContent = fresh
     ? 'Add ' + fresh + ' to my collection'
     : marks
       ? 'All already in your collection'
       : 'Add to my collection';
   $('scClear').hidden = !scanList.length;
+  scanSaveList();
+}
+// Add: on with new markers in the list, or (v303) text in the box, which it reads first
+function scanAddState() {
+  const add = $('scAdd'),
+    bx = $('scBox');
+  if (add) add.disabled = !scanNew().length && !(bx && bx.value.trim());
 }
 function scanFocusBox() {
   const b = $('scBox');
@@ -735,6 +1068,12 @@ function scanBrandButtons() {
 function openScan() {
   const ov = $('scanOverlay');
   if (!ov) return;
+  // (v303: sound can only start from a tap; the one that opened this counts, not only a tap in the box)
+  try {
+    if (!scanAudio) scanAudio = new (window.AudioContext || window.webkitAudioContext)();
+    const pr = scanAudio.resume();
+    if (pr && pr.catch) pr.catch(function () {});
+  } catch (_) {}
   scanOpener = document.activeElement;
   scanBrandButtons();
   scanSay('', 'Ready', 'Each marker read shows here, with a sound', -1);
@@ -743,9 +1082,28 @@ function openScan() {
   // (straight into the box: what's done here is typing or Scan Text, which the box's own menu starts)
   scanFocusBox();
 }
+// (v303) text still in the box, typed without Enter or just put in by Scan Text, is read before the box is let go of
+// (Add and Close had thrown it away)
+function scanFlushBox(loud) {
+  const bx = $('scBox');
+  if (!bx || !bx.value.trim()) return;
+  clearTimeout(scanStill);
+  const v = bx.value;
+  if (v !== scanText) scanHandle(v, loud);
+  scanText = '';
+  bx.value = '';
+  bx.dispatchEvent(new Event('scanreset'));
+  scanRender();
+}
 function closeScan() {
   const ov = $('scanOverlay');
   if (!ov || !ov.classList.contains('on')) return;
+  scanMute = true;
+  try {
+    scanFlushBox(false);
+  } finally {
+    scanMute = false;
+  }
   closeDialog(ov);
   clearTimeout(scanStill);
   scanText = '';
@@ -756,8 +1114,12 @@ function closeScan() {
   scanOpener = null;
 }
 function scanAdd() {
+  const asks0 = scanAsks();
+  scanFlushBox(true);
   const fresh = scanNew();
   if (!fresh.length) return;
+  // (v303: the text left in the box raised a question: shown, with the dialog left open, before anything's added)
+  if (scanAsks() > asks0) return;
   const keys = fresh.map((e) => mkey(e.i)),
     wishWas = state.wish.slice();
   keys.forEach((k) => state.owned.add(k));
@@ -775,8 +1137,12 @@ function scanAdd() {
   // the list back too, to put right and add again)
   const listWas = scanList.slice();
   scanList = scanList.filter((e) => e.ask);
-  closeScan();
+  scanSaveList();
+  // (v303: drawn first, then closed: the first markers in an empty collection move Add a set and this button with it,
+  // and focus went back to the top tab; the sets' ticks and counts follow too)
   fullRender();
+  if (typeof presetRelist === 'function') presetRelist();
+  closeScan();
   if (offList) wishChanged();
   toastAction(
     'Added ' +
@@ -788,12 +1154,20 @@ function scanAdd() {
     'Undo',
     function () {
       const wishNow = state.wish.slice();
-      scanList = scanList.filter((e) => listWas.indexOf(e) < 0).concat(listWas);
+      // (v303: the markers it added back on the list, once each; its questions are as they are now)
+      scanList = scanList.concat(listWas.filter((e) => !e.ask && !scanList.some((x) => x.i === e.i)));
+      scanSaveList();
       keys.forEach((k) => state.owned.delete(k));
-      // (back on the To buy list, unless put back there since)
-      wishWas.forEach(function (w) {
-        if (keys.indexOf(w.k) >= 0 && !state.wish.some((x) => x.k === w.k)) state.wish.push(w);
-      });
+      // (back on the To buy list, unless put back there since: v303, where they were in it, not at its end)
+      const back = wishWas.filter((w) => keys.indexOf(w.k) >= 0 && !state.wish.some((x) => x.k === w.k));
+      if (back.length) {
+        const order = wishWas.map((w) => w.k),
+          all = state.wish.concat(back);
+        state.wish = all
+          .map((w, n) => ({ w: w, at: order.indexOf(w.k) >= 0 ? order.indexOf(w.k) : 1e6 + n }))
+          .sort((a, b) => a.at - b.at)
+          .map((x) => x.w);
+      }
       if (
         keep(function () {
           keys.forEach((k) => state.owned.add(k));
@@ -801,6 +1175,7 @@ function scanAdd() {
         })
       ) {
         fullRender();
+        if (typeof presetRelist === 'function') presetRelist();
         wishChanged();
       }
     },
@@ -832,6 +1207,9 @@ function scanAdd() {
     cb.textContent = 'Clear list';
     scanList = [];
     scanLast = { i: -1, at: 0 };
+    // (v303: a cleared list asks afresh)
+    scanTookAt.clear();
+    scanAnsweredAt.clear();
     scanSay('', 'Ready', 'List cleared', -1);
     scanRender();
     scanFocusBox();
@@ -846,6 +1224,8 @@ function scanAdd() {
       const e2 = scanList[+d.dataset.n];
       scanList.splice(+d.dataset.n, 1);
       if (e2 && e2.i === scanLast.i) scanLast = { i: -1, at: 0 };
+      // (v303: a question let go by isn't asked again while its cap's still in view)
+      if (e2 && e2.ask) scanAnsweredAt.set(e2.ask, Date.now());
       scanRender();
       scanFocusBox();
       return;
@@ -853,6 +1233,9 @@ function scanAdd() {
     const ch = t.closest('.scchoose');
     if (ch) {
       // the answer takes the question's place
+      // (v303: and isn't asked again while its cap's still in view)
+      const q = scanList[+ch.dataset.n];
+      if (q && q.ask) scanAnsweredAt.set(q.ask, Date.now());
       scanList.splice(+ch.dataset.n, 1);
       scanTake(+ch.dataset.i, ch.dataset.how, true);
       scanRender();
@@ -869,27 +1252,49 @@ function scanAdd() {
         .querySelectorAll('button')
         .forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
       // a question between the two brands that the brand just chosen answers: answered
-      if (scanBrand) {
-        let any = false;
-        scanList = scanList
-          .map(function (e) {
-            if (!e.ask || e.ask.indexOf('brands ') !== 0) return e;
-            const o = e.opts.filter((x) => COLORS[x.i].brand === scanBrand);
-            if (o.length !== 1) return e;
-            any = true;
-            // (its answer already in the list: the question just goes, v299)
-            return scanList.some((y) => y.i === o[0].i) ? null : { i: o[0].i, how: 'chosen' };
-          })
-          .filter(Boolean);
-        if (any) scanRender();
-      }
+      // (v303: and "another brand than the one chosen" for a marker of the brand now chosen, or with Either brand, is
+      // answered too; other questions keep only the brand chosen's answers, where it has any; and it's said)
+      let done = 0;
+      const out = [];
+      scanList.forEach(function (e) {
+        if (!e.ask) return out.push(e);
+        // (from all its answers as first asked: switching back to Either brand brings them back)
+        const all = e.opts0 || e.opts,
+          o = scanBrand ? all.filter((x) => COLORS[x.i].brand === scanBrand) : all;
+        const answer =
+          (/^(brands|bynames) /.test(e.ask) && scanBrand && o.length === 1) ||
+          (/^other /.test(e.ask) && o.length === 1);
+        if (answer) {
+          done++;
+          // (its answer already in the list: the question just goes, v299)
+          if (!scanList.some((y) => y.i === o[0].i) && !out.some((y) => y.i === o[0].i))
+            out.push({ i: o[0].i, how: o[0].how === 'name' ? 'name' : 'chosen' });
+          return;
+        }
+        out.push(
+          o.length && o.length < all.length
+            ? Object.assign({}, e, { opts: o, opts0: all })
+            : Object.assign({}, e, { opts: all, opts0: undefined }),
+        );
+      });
+      scanList = out;
+      scanRender();
+      if (done)
+        scanSay(
+          'ok',
+          done === 1 ? '1 question answered' : done + ' questions answered',
+          scanBrand ? 'By the brand chosen: ' + scanBrand : 'Either brand',
+          -1,
+        );
+      scanFocusBox();
     }
   });
   // sound can only start from a tap
   box.addEventListener('pointerdown', function () {
     try {
       if (!scanAudio) scanAudio = new (window.AudioContext || window.webkitAudioContext)();
-      scanAudio.resume();
+      const pr = scanAudio.resume();
+      if (pr && pr.catch) pr.catch(function () {});
     } catch (_) {}
   });
   // Scan Text puts in what it reads while you aim, and swaps it as the camera moves: read once the text has held
@@ -899,11 +1304,18 @@ function scanAdd() {
   // letter added to the end of a word being composed is typing too: Android's keyboards send each letter that way, and
   // a pause half-way through a code read what was there)
   let was = '',
-    wasN = 0;
+    wasN = 0,
+    keyAt = 0;
   const ANDROID = /Android/i.test(navigator.userAgent || '');
+  // (v303) a key pressed just before text arrives: typing. Scan Text puts its text in without any key, so composed text
+  // (a pinyin or Japanese keyboard) that follows keys is typing on an iPad too, not a cap read half-way
+  box.addEventListener('keydown', function () {
+    keyAt = Date.now();
+  });
   const set = function (v) {
     box.value = v;
     was = v;
+    scanAddState();
   };
   // (v299) pend: text read and about to be cleared; waiting: text arrived and waits to hold still
   let pend = '',
@@ -927,9 +1339,13 @@ function scanAdd() {
   };
   box.addEventListener('scanreset', function () {
     was = '';
+    pend = '';
+    waiting = false;
   });
   box.addEventListener('input', function (e) {
     clearTimeout(scanStill);
+    // (Add reads text left in the box: on while there's some)
+    scanAddState();
     waiting = false;
     const v = box.value,
       before = was,
@@ -959,6 +1375,7 @@ function scanAdd() {
       v.slice(0, before.length) === before
     )
       return; // typing, composed (Android only: what Scan Text shows as it reads could come the same way, v299)
+    if ((e.isComposing || e.inputType === 'insertCompositionText') && Date.now() - keyAt < 1000) return;
     waiting = true;
     scanStill = setTimeout(settle, 600);
   });
@@ -978,8 +1395,20 @@ function scanAdd() {
     scanText = '';
     scanHandle(text, true);
   });
+  // (v303) a composition (a pinyin or Japanese keyboard) under way, or just ended: Safari's Enter that ends one can come
+  // as key 229 with isComposing false, and isn't an Enter to read the box
+  let composing = false,
+    composedAt = 0;
+  box.addEventListener('compositionstart', function () {
+    composing = true;
+  });
+  box.addEventListener('compositionend', function () {
+    composing = false;
+    composedAt = Date.now();
+  });
   box.addEventListener('keydown', function (e) {
-    if (e.key !== 'Enter' || e.isComposing) return;
+    if (e.key !== 'Enter' || e.isComposing || composing) return;
+    if (e.keyCode === 229 && Date.now() - composedAt < 200) return;
     e.preventDefault();
     clearTimeout(scanStill);
     // (read now; the same text arriving again afterwards is read again, a new cap)

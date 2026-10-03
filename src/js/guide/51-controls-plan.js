@@ -103,20 +103,22 @@ function ctlPlanColours() {
       _psz = sliderMax(),
       _cnt = Math.min(limitN, _psz),
       // (Random's No repeats: as many as there are sections, so the count has nothing to say)
-      _nr = family === 'random' && balance === 'mixed' && noRep;
+      _nr = family === 'random' && balance === 'mixed' && noRep,
+      // (one marker to use: the slider, which starts at 2, has nothing to choose either; it said "all (2)", v304)
+      _one = (_srcSeed && !expand ? curSeedLen() : poolFor(palette).length) <= 1;
     _mkH +=
       '<label class="sfmkcount' +
-      (_nr ? ' sfoff' : '') +
+      (_nr || _one ? ' sfoff' : '') +
       '">Markers in this ' +
       (zones.length ? 'zone' : 'guide') +
       ' <b id="sfMkNlbl">' +
-      (_nr ? 'one per section' : _cnt >= _psz ? 'all (' + _psz + ')' : _cnt) +
+      (_nr ? 'one per section' : _one ? 'all (1)' : _cnt >= _psz ? 'all (' + _psz + ')' : _cnt) +
       '</b><input type="range" id="sfMkCount" min="2" max="' +
       _psz +
       '" value="' +
       _cnt +
       '"' +
-      (_nr ? ' disabled' : '') +
+      (_nr || _one ? ' disabled' : '') +
       '></label>';
     if (_srcSeed) {
       _expH +=

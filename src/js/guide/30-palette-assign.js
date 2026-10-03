@@ -11,7 +11,8 @@ function hexRgb(x) {
    minPosOld and minPosFromOld convert between the two scales for saved guides.) */
 function minPx(pos) {
   const t = (pos == null ? minPos : pos) / 100;
-  return Math.round(MIN_LO * Math.pow(MIN_HI / MIN_LO, t));
+  // (on the picture as it came: an enlarged one's sections are srcK² times as many pixels, v303)
+  return Math.round(MIN_LO * Math.pow(MIN_HI / MIN_LO, t) * srcK * srcK);
 }
 function minPosOld(pos) {
   const px = MIN_LO * Math.pow(MIN_HI / MIN_LO, pos / 100);
@@ -411,7 +412,35 @@ function gradTour(D, n, open, init) {
 }
 // Markers in the order they run: a loop cut where its step is widest, a ramp from its lighter end. Bands of several
 // on a loop run round the hue circle from its widest gap (any greys after, light to dark).
+// (the last few worked out, by their markers: the Pattern tab's Start colour asks for the same one the guide was just
+// laid with, and working out hundreds of markers' differences and tour again took as long as laying the guide, v304)
+const _seqMemo = new Map();
 function gradSequence(ms, g, loop) {
+  const key =
+    (loop ? 'L' : 'R') +
+    (loop && g > 1 ? 'b' : '') +
+    ms
+      .map(function (m) {
+        return m.mkey;
+      })
+      .join(',');
+  let v = _seqMemo.get(key);
+  if (!v) {
+    v = _gradSequence(ms, g, loop).map(function (m) {
+      return m.mkey;
+    });
+    if (_seqMemo.size >= 6) _seqMemo.delete(_seqMemo.keys().next().value);
+    _seqMemo.set(key, v);
+  }
+  const by = {};
+  ms.forEach(function (m) {
+    by[m.mkey] = m;
+  });
+  return v.map(function (k) {
+    return by[k];
+  });
+}
+function _gradSequence(ms, g, loop) {
   const init = hueRun(ms).concat(ms.filter(isGreyM).sort(byLightFirst));
   if (init.length < 3 || (loop && g > 1)) return init;
   const n = init.length,
@@ -666,13 +695,35 @@ const ADJ_SEEN = 3;
 function adjReach() {
   return Math.max(3, Math.round(Math.max(W, H) / 40));
 }
+/* Specks: cells smaller than Min section size starts at (and than it is set to now), not kept by a tap. White specks
+   inside a porous line, seen as sections of their own, hid the two sections either side of them from each other: the
+   look across goes over them as over the line. { tiny: 1 for each, sig: which they are (_adjSig: those adj was found
+   with; Build guide finds it again when they've changed) }. v304 */
+let _adjSig = '';
+function adjTiny() {
+  const n = comps ? comps.length : 0,
+    lim = Math.min(minPx(MIN_DEF), minPx()),
+    tiny = new Uint8Array(n),
+    kept = [];
+  for (let l = 1; l < n; l++) {
+    const c = comps[l];
+    if (!c || c.merged || !(c.area < lim)) continue;
+    if (secState && secState[l] === 1) kept.push(l);
+    else tiny[l] = 1;
+  }
+  return { tiny: tiny, sig: lim + ':' + kept.join(',') };
+}
 function buildAdj() {
   const D = adjReach(),
     n = comps ? comps.length : 0,
     seen = new Map(),
     // down each column: the section last seen in it, and the row where that section ended
     colL = new Int32Array(W),
-    colEnd = new Int32Array(W);
+    colEnd = new Int32Array(W),
+    // (specks, adjTiny, are looked across as the line is, v304)
+    sp = adjTiny(),
+    tiny = sp.tiny;
+  _adjSig = sp.sig;
   function saw(l, r) {
     const k = l < r ? l * n + r : r * n + l;
     seen.set(k, (seen.get(k) || 0) + 1);
@@ -684,7 +735,7 @@ function buildAdj() {
       end = 0;
     for (let x = 0; x < W; x++) {
       const l = labels[row + x];
-      if (l < 1) continue;
+      if (l < 1 || tiny[l]) continue;
       if (rowOn) {
         if (l !== last) {
           if (last >= 1 && x - end <= D) saw(last, l);
@@ -704,7 +755,8 @@ function buildAdj() {
   }
   const a = {};
   seen.forEach(function (k, key) {
-    if (k < ADJ_SEEN) return;
+    // (an enlarged picture's borders are srcK times as long in its pixels, v303)
+    if (k < ADJ_SEEN * srcK) return;
     const x = Math.floor(key / n),
       y = key - x * n;
     (a[x] || (a[x] = new Set())).add(y);
@@ -717,18 +769,22 @@ function buildAdj() {
    it touches that already has one; where no marker in the pool is, one that isn't the same marker as any of theirs;
    and where none is left, any. Pinned sections keep their markers and go first, so their neighbours keep clear of
    them too. (It used to avoid only the same marker, and only on the touching sections it could see.) */
-const ADJ_DE = 10;
+const ADJ_DE = 10,
+  RAND_ENOUGH = 24;
 function buildRandom(cl, pool) {
   const order = cl.slice(),
     assign = {};
   let a = null;
-  if (noAdj && pool.length > 1) a = adj || (adj = buildAdj());
+  // (touching sections never share a marker, or one as good as it (TWIN_DE), while another would do; "clearly
+  // different" (noAdj) keeps them ADJ_DE apart too, v304)
+  if (pool.length > 1) a = adj || (adj = buildAdj());
   if (!a) {
     for (let i = 0; i < order.length; i++) assign[order[i]] = pool[(Math.random() * pool.length) | 0];
   } else {
     const P = pool.length,
       at = new Map(),
-      // pool markers i and j look alike (1), or not (2); 0 not yet worked out
+      // pool markers i and j: as good as the same (3, under TWIN_DE), alike (1, under ADJ_DE) or not (2); 0 not yet
+      // worked out
       like = new Uint8Array(P * P),
       bk = {};
     pool.forEach(function (m, i) {
@@ -737,14 +793,45 @@ function buildRandom(cl, pool) {
     coll.forEach(function (m) {
       bk[m.mkey] = m;
     });
-    const alike = function (i, m) {
-      const j = at.get(m.mkey);
-      if (j === undefined) return !!(pool[i].lab && m.lab) && de2000(pool[i].lab, m.lab) < ADJ_DE;
-      const k = i * P + j;
-      if (!like[k])
-        like[k] = like[j * P + i] = pool[i].lab && m.lab && de2000(pool[i].lab, m.lab) < ADJ_DE ? 1 : 2;
-      return like[k] === 1;
-    };
+    // a step through the pool that visits every marker once (prime to P)
+    let step = 1;
+    for (let c = Math.max(1, Math.round(P * 0.618)); c < P * 2; c++) {
+      let x = c,
+        y = P;
+      while (y) {
+        const t = x % y;
+        x = y;
+        y = t;
+      }
+      if (x === 1) {
+        step = c;
+        break;
+      }
+    }
+    // (plain L*a*b* distance first: CIEDE2000 is never under a limit where that is over 8 times it, 6.4 at most over
+    // every pair of markers; only the limit in use is looked for, v304)
+    const gate = 64 * (noAdj ? ADJ_DE * ADJ_DE : TWIN_DE * TWIN_DE);
+    const cat = function (i, m) {
+        const j = at.get(m.mkey),
+          k = j === undefined ? -1 : i * P + j;
+        if (k >= 0 && like[k]) return like[k];
+        const a = pool[i].lab,
+          b = m.lab,
+          q =
+            a && b
+              ? (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2])
+              : 0,
+          d = a && b ? (q < gate ? de2000(a, b) : 99) : Infinity,
+          v = d < TWIN_DE ? 3 : d < ADJ_DE ? 1 : 2;
+        if (k >= 0) like[k] = like[j * P + i] = v;
+        return v;
+      },
+      twin = function (i, m) {
+        return cat(i, m) === 3;
+      },
+      alike = function (i, m) {
+        return cat(i, m) !== 2;
+      };
     order.forEach(function (l) {
       if (locks[l] !== undefined && bk[locks[l]]) assign[l] = bk[locks[l]];
     });
@@ -761,15 +848,19 @@ function buildRandom(cl, pool) {
         });
       clear.length = 0;
       other.length = 0;
-      for (let i = 0; i < P; i++) {
+      // (from a random place, by a step that visits each once, until RAND_ENOUGH are clear: with hundreds of markers
+      // testing every one against every neighbour took a second or more, v304)
+      const s0 = (Math.random() * P) | 0;
+      for (let j = 0; j < P && clear.length < RAND_ENOUGH; j++) {
+        const i = (s0 + j * step) % P;
         let ok = true,
           same = false;
         for (let k = 0; k < nbs.length; k++) {
-          if (nbs[k].mkey === pool[i].mkey) {
+          if (nbs[k].mkey === pool[i].mkey || twin(i, nbs[k])) {
             same = true;
             break;
           }
-          if (ok && alike(i, nbs[k])) ok = false;
+          if (noAdj && ok && alike(i, nbs[k])) ok = false;
         }
         if (same) continue;
         if (ok) clear.push(pool[i]);
@@ -1381,6 +1472,8 @@ function assignOne(cl) {
     blendAssign(cl, pool);
   } else if (family === 'manual') buildManual(cl, pool);
   else if (family === 'photo') {
+    // (placed again after the picture was straightened: 46-photo, v304)
+    if (_phRefit && photoRef) photoGeoRefit();
     if (photoRef && photoXf && buildPhoto(cl)) return true;
     // (Photo chosen, its photo not picked yet: the pattern before it is laid, and saved, until one is: photoWait)
     const pw = photoWait[pwKey()];
@@ -1399,6 +1492,9 @@ function assignOne(cl) {
 // Blend again from its anchors (a drag, the Spread slider, an anchor's colour): the zone being edited only
 function blendNow() {
   holdRun([zoneCur], function (cl) {
+    // (the last anchor removed: three new ones, as a Blend starts, not one marker everywhere; here, inside the zone
+    // being laid, so they're placed over its own extent, v304)
+    if (!anchors.length) seedAnchors();
     blendAssign(cl, activePool());
   });
 }
@@ -1426,6 +1522,8 @@ function buildManual(cl, pool) {
 let _gone = {};
 function buildGuide() {
   if (!labels) return;
+  // (which sections touch is found again when the specks looked across changed: Min section size, a keep tap, v304)
+  if (adj && _adjSig !== adjTiny().sig) adj = null;
   const cl = countedList();
   if (cl.length < 2) {
     note('Not enough sections \u2014 lower Min section size, then Build guide.');
@@ -1475,7 +1573,24 @@ function buildGuide() {
     if (_segFresh) _zLost = !zoneAfterFresh();
     else zoneAfterEdit(cl, prev);
   }
-  if (!assignNow()) return;
+  // (the sections keeping their markers (keepMarkers) are laid as pinned for the moment, so the ones new to the guide
+  // keep clear of them: v303 laid them all afresh, then put the old markers back next to the new ones, v304)
+  const _lk0 = locks;
+  if (prev) {
+    const tmp = {};
+    cl.forEach(function (l) {
+      const m = prev.assign[l] || (_gone[l] && _gone[l].m);
+      if (m && !(prev.paper && prev.paper[l])) tmp[l] = m.mkey;
+    });
+    locks = Object.assign(tmp, locks);
+  }
+  let _built;
+  try {
+    _built = assignNow();
+  } finally {
+    locks = _lk0;
+  }
+  if (!_built) return;
   if (_zLost)
     toast(
       'The zones were cleared: turning, straightening or cropping the picture finds its sections afresh.',
@@ -1579,7 +1694,7 @@ function keepMarkers(prev, cl) {
         delete P[l];
         if (locks[f] !== undefined) locks[l] = locks[f];
         if (shadeFlat[f]) shadeFlat[l] = 1;
-        if (heldSh[f]) heldSh[l] = Object.assign({}, heldSh[f]);
+        if (heldSh[f]) heldSet(l, Object.assign({}, heldSh[f]));
       }
     }
   });
@@ -1628,32 +1743,49 @@ function zoneSigSync() {
 let _holdOff = false,
   _heldRun = null,
   _heldTold = 0;
-function holdOn(run) {
+function holdOn(run, extra) {
   _heldRun = null;
-  if (_holdOff || !assignData || !colored) return null;
+  if (!assignData) return null;
   const was = locks,
     tmp = Object.assign({}, locks),
     kept = [];
-  assignData.order.forEach(function (l) {
-    const m = assignData.assign[l];
-    if (!m || tmp[l] !== undefined || !inkOn(l) || (zones.length && run.indexOf(zoneOf(l)) < 0)) return;
-    tmp[l] = m.mkey;
-    kept.push(l);
-  });
-  if (!kept.length) return null;
+  if (!_holdOff && colored)
+    assignData.order.forEach(function (l) {
+      const m = assignData.assign[l];
+      if (!m || tmp[l] !== undefined || !inkOn(l) || (zones.length && run.indexOf(zoneOf(l)) < 0)) return;
+      tmp[l] = m.mkey;
+      kept.push(l);
+    });
+  // (sections keeping their markers anyway, as a Random zone's that stayed put: laid as pinned for the moment, so the
+  // sections laid afresh around them keep clear of them, v304)
+  let more = 0;
+  if (extra)
+    for (const l in extra)
+      if (tmp[l] === undefined) {
+        tmp[l] = extra[l];
+        more++;
+      }
+  if (!kept.length && !more) return null;
   locks = tmp;
-  _heldRun = { secs: kept, run: run.slice() };
+  if (kept.length) _heldRun = { secs: kept, run: run.slice() };
   return was;
 }
 // lay the zones ids with fn, sections with ink on the paper held (holdOn): every re-laying of the plan goes through
 // here (reassign; the sun moved under a light-to-dark Gradient; Blend's anchors; the Photo pattern's photo)
-function holdRun(ids, fn) {
-  const was = holdOn(ids);
+function holdRun(ids, fn, extra) {
+  const was = holdOn(ids, extra);
   try {
     return zoneRun(ids, fn);
   } finally {
     if (was) locks = was;
   }
+}
+// { section: marker key } of a zoneStayRandom result (null for none)
+function stayKeys(stay) {
+  if (!stay) return null;
+  const o = {};
+  for (const l in stay) o[l] = stay[l].m.mkey;
+  return o;
 }
 function reassign(ids, moved) {
   if (!labels || sfmode !== 'guide') return;
@@ -1664,7 +1796,7 @@ function reassign(ids, moved) {
     all = _zSig !== sig,
     run = !zones.length || all ? zoneAll() : ids || [zoneCur],
     stay = moved && !all ? zoneStayRandom(run, moved) : null,
-    ok = holdRun(run, assignOne);
+    ok = holdRun(run, assignOne, stayKeys(stay));
   // (with zones, the others were laid even if one couldn't be: no markers for it, which a note has said)
   if (!ok && !zones.length) return false;
   if (ok) _zSig = sig;

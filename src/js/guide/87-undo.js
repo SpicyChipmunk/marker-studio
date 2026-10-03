@@ -71,7 +71,10 @@ function planSnap() {
   s.xf = photoXf ? { cx: photoXf.cx, cy: photoXf.cy, sx: photoXf.sx, sy: photoXf.sy, r: photoXf.r } : null;
   s.op = photoOp;
   s.ppaper = photoPaper;
-  return { s: s, js: JSON.stringify(s), ref: photoRef, filt: planFilt() };
+  // (Use grey markers for the grey parts, v304)
+  if (photoGreys) s.pgrey = 1;
+  // (what the Pattern panel says about a photo with no colour, as this laying found it: 46-photo, v304)
+  return { s: s, js: JSON.stringify(s), ref: photoRef, filt: planFilt(), none: Object.assign({}, _phNone) };
 }
 function planSame(p, q, noFilt) {
   return !!(p && q && p.js === q.js && p.ref === q.ref && (noFilt || p.filt === q.filt));
@@ -493,7 +496,7 @@ function heldRecolour(hr) {
     lost[l] = { c: colored[l], t: P[l], h: heldSh[l] || null };
     colored[l] = 0;
     P[l] = 0;
-    delete heldSh[l];
+    heldSet(l, null);
   });
   const n = Object.keys(lost).length;
   if (!n) return;
@@ -514,6 +517,7 @@ function planReset() {
 }
 function planRestore(e, noFilt) {
   const s = e.s;
+  layStatReset();
   // (Undo: a line about kept sections spoke of the change undone)
   heldNoteClear();
   pinNoteClear();
@@ -571,7 +575,7 @@ function planRestore(e, noFilt) {
       if (!assign[l]) continue;
       colored[l] = t.c;
       P[l] = t.t;
-      if (t.h) heldSh[l] = t.h;
+      if (t.h) heldSet(l, t.h);
     }
   }
   if (s.p && s.p.length) {
@@ -599,6 +603,8 @@ function planRestore(e, noFilt) {
   photoXf = s.xf ? Object.assign({}, s.xf) : null;
   photoOp = s.op;
   photoPaper = s.ppaper;
+  photoGreys = !!s.pgrey;
+  _phNone = e.none ? Object.assign({}, e.none) : {};
   if (!photoRef || family !== 'photo') {
     photoAlign = false;
     photoPeek = false;

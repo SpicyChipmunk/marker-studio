@@ -172,7 +172,12 @@ function askPersist() {
 const BK_KEY = 'ms-guides-backup-ts',
   BK_SNOOZE = 'ms-backup-snooze',
   BK_SIG = 'ms-backup-sig',
-  FIRST_USE = 'ms-first-use';
+  FIRST_USE = 'ms-first-use',
+  // (v304) the Library guides the last backup couldn't read; the once-only reminder after a first coloured section has
+  // been put away; when this device last opened the app
+  BK_MISS = 'ms-backup-missed',
+  BK_FIRST = 'ms-backup-first',
+  LAST_VISIT = 'ms-last-visit';
 function lastGuideBackup() {
   try {
     return +localStorage.getItem(BK_KEY) || 0;
@@ -224,6 +229,12 @@ function firstUse() {
 }
 // The reminder is for anyone with something to lose (markers, palettes or guides) that changed since the last backup,
 // when that backup is over two weeks old, or there's never been one and the work is over two weeks old (v289).
+// (v304) Safari, in a tab (not the Home Screen app), deletes a website's saved work after about seven days of using
+// Safari without opening it: a visit resets that, so the app's own age is the wrong clock there. In such a tab, with
+// guides coloured or palettes to lose (not markers only), it's also due the first time Home shows after a guide's first
+// coloured section (once, until backed up or put away), and on a visit after five days or more away (the next gap may
+// pass a week). And a guide the last backup couldn't read makes it due at once, anywhere. why: 'missed', 'age',
+// 'first' or 'gap'.
 function backupDue() {
   const all = state.saved.filter((s) => s.type === 'guide').length,
     // (guides saved as built with nothing coloured don't count: trying a photo isn't work to lose, v285)
@@ -234,16 +245,85 @@ function backupDue() {
   const bk = lastGuideBackup(),
     risk = guidesAtRisk(),
     now = Date.now(),
-    first = firstUse();
+    first = firstUse(),
+    d = { bk: bk, risk: risk, gs: gs, pals: pals, mk: mk };
+  const miss = backupMissed();
+  if (miss) return Object.assign(d, { why: 'missed', miss: miss });
   let sig = null;
   try {
     sig = localStorage.getItem(BK_SIG);
   } catch (e) {}
-  const other = !!(mk || pals) && (!bk || sig !== dataSig());
+  const palsNew = !!pals && (!bk || sig !== dataSig()),
+    other = !!(mk || pals) && (!bk || sig !== dataSig());
   if (!risk && !other) return null;
   // (v289: 14 days from the first day too, however many guides: not a large card beside Continue on day one)
-  if (now - (bk || first) <= 14 * 864e5) return null;
-  return { bk: bk, risk: risk, gs: gs, pals: pals, mk: mk };
+  if (now - (bk || first) > 14 * 864e5) return Object.assign(d, { why: 'age' });
+  if (!webkitTab() || !(risk || palsNew)) return null;
+  let once = false;
+  try {
+    once = !!localStorage.getItem(BK_FIRST);
+  } catch (e) {}
+  if (
+    !bk &&
+    !once &&
+    state.saved.some(function (s) {
+      return s.type === 'guide' && (+s.done > 0 || +s.tn > 0);
+    })
+  )
+    return Object.assign(d, { why: 'first' });
+  if (_visitGap >= 5 * 864e5) return Object.assign(d, { why: 'gap' });
+  return null;
+}
+// (v304) how many Library guides the last backup couldn't read (still here)
+function backupMissed() {
+  let ids = [];
+  try {
+    ids = JSON.parse(localStorage.getItem(BK_MISS) || '[]');
+  } catch (e) {}
+  if (!Array.isArray(ids) || !ids.length) return 0;
+  return state.saved.filter(function (s) {
+    return s.type === 'guide' && ids.indexOf(s.id) >= 0;
+  }).length;
+}
+// (v304) a browser tab where Safari's seven-day rule applies: any browser on an iPhone or iPad, or Safari on a Mac, and
+// not opened from the Home Screen (or the Dock)
+function webkitTab() {
+  if (isStandalone()) return false;
+  const ua = navigator.userAgent || '';
+  return (
+    isIOSDevice() ||
+    (/Macintosh/.test(ua) && /Safari\//.test(ua) && !/Chrome|Chromium|Edg|OPR|Firefox/.test(ua))
+  );
+}
+// (v304) the time since the last visit before this one (the longest seen this session): a visit is the app opened or
+// brought back into view
+let _visitGap = 0;
+function noteVisit(away) {
+  try {
+    const now = Date.now(),
+      t = +localStorage.getItem(LAST_VISIT) || 0;
+    if (!away && t && now - t > _visitGap) _visitGap = now - t;
+    localStorage.setItem(LAST_VISIT, String(now));
+  } catch (e) {}
+}
+noteVisit();
+document.addEventListener('visibilitychange', function () {
+  noteVisit(document.visibilityState !== 'visible');
+});
+// Later on the reminder (or Not now on the card it shares with Add to Home Screen): a week's rest, and the once-only
+// reminder after a first coloured section is done with (v304)
+function backupLater() {
+  try {
+    localStorage.setItem(BK_SNOOZE, String(Date.now() + 7 * 864e5));
+    localStorage.setItem(BK_FIRST, '1');
+  } catch (e) {}
+}
+// (v304) Safari's seven-day rule, in words
+function safariWords() {
+  const ua = navigator.userAgent || '';
+  return /CriOS|FxiOS|EdgiOS/.test(ua)
+    ? 'This browser deletes a website’s saved work after about seven days without opening it.'
+    : 'Safari deletes a website’s saved work after about seven days of using Safari without opening it.';
 }
 // Home shows at most one card under its tiles, the first that is due of: this reminder, Add to Home Screen (it also
 // says to back up first), What's new. Backing up comes first so what's here is safe before anything else is asked;
@@ -255,11 +335,14 @@ function renderBackupNudge() {
   try {
     snooze = +localStorage.getItem(BK_SNOOZE) || 0;
   } catch (e) {}
-  const d = el && Date.now() > snooze ? backupDue() : null,
-    inst = renderInstallCard(!!d);
-  if (el) el.style.display = d ? '' : 'none';
+  // (a guide the last backup couldn’t read: due whatever an earlier Later said, v304)
+  const d = el && (Date.now() > snooze || backupMissed()) ? backupDue() : null,
+    // (on an iPhone or iPad in a tab, Safari's reminders are one card with Add to Home Screen, v304)
+    merge = !!d && (d.why === 'first' || d.why === 'gap') && isIOSDevice(),
+    inst = renderInstallCard(!!d && !merge, merge ? d : null);
+  if (el) el.style.display = d && !merge ? '' : 'none';
   if (typeof window.renderWhatsNew === 'function') window.renderWhatsNew(!inst && !d);
-  if (!d) return;
+  if (!d || merge) return;
   const what = [
       d.mk ? nWord(d.mk, 'marker') : '',
       d.pals ? nWord(d.pals, 'palette') : '',
@@ -268,14 +351,18 @@ function renderBackupNudge() {
     list = what.length > 1 ? what.slice(0, -1).join(', ') + ' and ' + what[what.length - 1] : what[0];
   el.innerHTML =
     '<div class="ntxt"><b>Back up your work.</b> <span>' +
-    (d.bk
-      ? d.risk
-        ? d.risk + ' guide' + (d.risk === 1 ? ' has' : 's have') + ' changed since your last backup.'
-        : 'Your markers or palettes have changed since your last backup.'
-      : 'Your ' +
-        list +
-        (what.length === 1 && /^1 /.test(list) ? ' is' : ' are') +
-        ' only stored on this device.') +
+    (d.why === 'missed'
+      ? nWord(d.miss, 'guide') +
+        ' couldn’t be read by your last backup. Reload Marker Studio, then back up again.'
+      : (d.why === 'first' || d.why === 'gap' ? safariWords() + ' ' : '') +
+        (d.bk
+          ? d.risk
+            ? d.risk + ' guide' + (d.risk === 1 ? ' has' : 's have') + ' changed since your last backup.'
+            : 'Your markers or palettes have changed since your last backup.'
+          : 'Your ' +
+            list +
+            (what.length === 1 && /^1 /.test(list) ? ' is' : ' are') +
+            ' only stored on this device.')) +
     '</span></div><div class="nrow"><button class="nb1" id="bkGo" data-bk="go">Back up now</button><button data-bk="later">Later</button></div>';
 }
 // a guide's row in the Library from what is saved (d: as for sfSaveDesign)
@@ -325,6 +412,7 @@ function sfSaveDesign(d) {
     leaveAt = _leaveN;
   if (d.mustExist && !had) return Promise.resolve(null);
   if (d.id && !had) libUnpend(id);
+  storeErr.last = '';
   return (
     had
       ? IDB.get('guide-' + id).catch(function () {
@@ -354,6 +442,8 @@ function sfSaveDesign(d) {
             state.saved.splice(j, 1);
             IDB.del('guide-' + id).catch(function () {});
           }
+          // (the app's own storage is full: said as such, v304)
+          storeErr.last = 'QuotaExceededError';
           return null;
         }
         askPersist();
@@ -361,10 +451,18 @@ function sfSaveDesign(d) {
         return id;
       });
     })
-    .catch(function () {
+    .catch(function (e) {
+      storeErr.last = (e && e.name) || 'Error';
       return null;
     });
 }
+// why the last save of a guide failed (v304): '' (it worked, or hasn't failed), 'QuotaExceededError' (storage full),
+// else the name of the database's error: it stopped answering (iOS can drop it in the background), which a reload fixes
+// and deleting guides doesn't (saveFailWords says which). Cleared as each save begins, so it never goes stale
+function storeErr() {
+  return storeErr.last || '';
+}
+storeErr.last = '';
 // The page is going away (a reload, the tab closed) or hidden (a phone may stop it) with changes to a Library guide not
 // yet stored: the browser drops a database write begun then, so they're kept in localStorage at once (v286), without
 // the guide's big pictures (the section map, a photo: each kept as a fingerprint of the stored one). Its Library row
@@ -560,7 +658,17 @@ function gatherGuides() {
     }),
   )
     .then(function (a) {
-      return a.filter(Boolean);
+      // (the Library guides that couldn't be read, left out of the backup: said, not "Backed up ✓", v304)
+      var b = a.filter(Boolean);
+      b.missedIds = gs
+        .filter(function (s, i) {
+          return !a[i];
+        })
+        .map(function (s) {
+          return s.id;
+        });
+      b.missed = b.missedIds.length;
+      return b;
     })
     .then(function (a) {
       var m = null;
@@ -642,6 +750,9 @@ function backupAll(btnId) {
         try {
           localStorage.setItem(BK_KEY, String(now));
           localStorage.setItem(BK_SIG, sig);
+          // (guides it couldn't read make the reminder due at once, v304)
+          if (guides.missed) localStorage.setItem(BK_MISS, JSON.stringify(guides.missedIds));
+          else localStorage.removeItem(BK_MISS);
         } catch (e) {}
         const ids = {};
         guides.forEach(function (g) {
@@ -659,11 +770,22 @@ function backupAll(btnId) {
           foc = !!card && (!fa || fa === document.body || card.contains(fa));
         renderBackupNudge();
         renderLibStat();
+        const miss = guides.missed || 0;
+        if (miss)
+          toast(
+            'Backed up, but ' +
+              nWord(miss, 'guide') +
+              ' couldn\u2019t be read and ' +
+              (miss === 1 ? 'isn\u2019t' : 'aren\u2019t') +
+              ' in it. Reload Marker Studio and back up again before deleting anything.',
+            10000,
+          );
         if (bb && bb.isConnected && bb.getClientRects().length)
           _btnFlash(bid, how === 'share' ? 'Saved ✓' : 'Downloaded ✓', label);
         else {
           _btnFlash(bid, label, label, 10);
-          toast('Backed up ✓');
+          if (!miss) toast('Backed up ✓');
+          // (focus follows the card away with guides left out too, v304)
           if (foc) homeCardNext(card);
         }
         var cap = $('backupCap');
@@ -678,7 +800,7 @@ function backupAll(btnId) {
             ) +
             ' and ' +
             nWord(guides.length, 'guide') +
-            ' ✓';
+            (guides.missed ? ' \u2014 ' + nWord(guides.missed, 'guide') + ' couldn\u2019t be read' : ' ✓');
         return true;
       }
       function failed() {
@@ -707,6 +829,7 @@ function backupAll(btnId) {
               owned: [...state.owned],
               wish: state.wish,
               ink: state.ink,
+              buyBrands: state.buyBrands,
               saved: state.saved.filter(function (s) {
                 return s.type !== 'guide';
               }),
@@ -823,12 +946,15 @@ function applyCollectionBackup(o, fts, replace) {
       saved: state.saved.slice(),
       wish: state.wish.slice(),
       ink: Object.assign({}, state.ink),
+      buy: state.buyBrands,
     },
     back = function () {
       state.owned = was.owned;
       state.saved = was.saved;
       state.wish = was.wish;
       state.ink = was.ink;
+      state.buyBrands = was.buy;
+      if (typeof buySumSync === 'function') buySumSync();
       if (savedOverlay.classList.contains('on')) renderSaved();
       return { failed: true };
     };
@@ -843,6 +969,15 @@ function applyCollectionBackup(o, fts, replace) {
   }
   if (!same) state.owned = own;
   wishRestore(o, !same);
+  // (Brands I'd buy goes with the collection it was chosen for, when the file has it, v304)
+  if (o && 'buyBrands' in o) {
+    const bb = cleanBuy(o.buyBrands);
+    if (JSON.stringify(bb) !== JSON.stringify(state.buyBrands)) {
+      state.buyBrands = bb;
+      if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
+      if (typeof buySumSync === 'function') buySumSync();
+    }
+  }
   const n = mergeBackupPals(pals);
   if (!save(true)) return back();
   wishChanged();
@@ -991,6 +1126,37 @@ function restoreAny(file, btnId, done) {
   };
   fr.readAsText(file);
 }
+// what a restore kept beside the backup's guides ({copies, kept, lost}), in words, each sentence after a space ('' when
+// nothing was): a newer guide here (v289), one changed here since its last backup and one not in the Library (v304)
+function restoreKeptWords(x) {
+  let s = '';
+  if (x.copies)
+    s +=
+      ' ' +
+      x.copies +
+      ' guide' +
+      (x.copies > 1 ? 's were' : ' was') +
+      ' newer here, so ' +
+      (x.copies > 1 ? 'they were' : 'it was') +
+      ' kept and the backup’s version added as “(from backup)”.';
+  if (x.kept)
+    s +=
+      ' ' +
+      nWord(x.kept, 'guide') +
+      ' changed here since your last backup ' +
+      (x.kept > 1 ? 'were' : 'was') +
+      ' kept as “… (before restore)”.';
+  if (x.lost)
+    s +=
+      ' ' +
+      nWord(x.lost, 'guide') +
+      ' stored on this device but not in your Library ' +
+      (x.lost > 1 ? 'were left as they are' : 'was left as it is') +
+      ' — add ' +
+      (x.lost > 1 ? 'them' : 'it') +
+      ' back from Home.';
+  return s;
+}
 // restoreAny once the question about markers (if any) is answered
 function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done) {
   {
@@ -1007,7 +1173,7 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done) {
       errCard(fb && fb.parentNode, RESTORE_FULL);
       return;
     }
-    var got = function (g, x) {
+    var got = function (g, x, copies) {
       x = x || {};
       return {
         markers: col && col.mk ? state.owned.size : 0,
@@ -1016,6 +1182,10 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done) {
         dup: x.dup || 0,
         bad: x.bad || 0,
         full: x.full || 0,
+        // (what was kept beside the backup's guides: the Welcome and Home's note say it too, v304)
+        copies: copies || 0,
+        kept: x.kept || 0,
+        lost: x.lost || 0,
       };
     };
     if (!guides || !guides.length) {
@@ -1040,28 +1210,30 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done) {
       var msg = guideRestoreWords(col, ok, x);
       if (cap) cap.textContent = msg;
       if (done) {
-        done(any || ok || x.dup || x.bad || x.full ? got(ok, x) : null);
+        done(any || ok || x.dup || x.bad || x.full ? got(ok, x, copies) : null);
         return;
       }
       if (x.openRep)
         msg += ' \u201c' + esc(x.openRep) + '\u201d was replaced by the backup\u2019s newer copy.';
-      msg += copies
-        ? ' ' +
-          copies +
-          ' guide' +
-          (copies > 1 ? 's were' : ' was') +
-          ' newer here, so ' +
-          (copies > 1 ? 'they were' : 'it was') +
-          ' kept and the backup’s version added as “(from backup)”.'
-        : '';
+      msg += restoreKeptWords({ copies: copies, kept: x.kept, lost: x.lost });
       if (x.full) {
         var fb = document.getElementById(bid);
         errCard(fb && fb.parentNode, msg + ' Delete a few guides from the Library, then restore again.');
         return;
       }
-      toast(msg, copies || x.bad ? 7000 : 3500);
+      toast(msg, copies || x.bad || x.kept || x.lost ? 7000 : 3500);
     });
   }
+}
+// (v304) a "(before restore)" copy taken out again (its stored guide only once its row is gone from what's saved)
+function dropKept(id) {
+  state.saved = state.saved.filter(function (s) {
+    return s.id !== id;
+  });
+  if (save(true))
+    IDB.del('guide-' + id).catch(function () {
+      return null;
+    });
 }
 function _newGuideId() {
   let id = Date.now();
@@ -1088,7 +1260,9 @@ function restoreGuideList(guides, _fts, done) {
     copies = 0,
     dup = 0,
     bad = 0,
-    full = 0;
+    full = 0,
+    kept = 0,
+    lost = 0;
   function same(js, lm, ids) {
     var k = 0;
     function step() {
@@ -1115,7 +1289,10 @@ function restoreGuideList(guides, _fts, done) {
       }
       renderSaved();
       renderRecent();
-      if (done) done(ok, copies, { dup: dup, bad: bad, full: full, openRep: openRep });
+      if (done)
+        done(ok, copies, { dup: dup, bad: bad, full: full, openRep: openRep, kept: kept, lost: lost });
+      // (a lost guide left beside the backup's copy is offered on Home, v304)
+      if (lost && typeof lostRefresh === 'function') lostRefresh();
       return;
     }
     var g = guides[i++];
@@ -1172,52 +1349,112 @@ function restoreGuideList(guides, _fts, done) {
           next();
           return;
         }
-        var copy = false;
-        if (_ex && (+_ex.ts || 0) > (+g.ts || 0)) {
-          _gid = _newGuideId();
-          _nm = _cn;
-          copy = true;
-        } else if (!_gid) _gid = _newGuideId();
-        Promise.resolve(
-          sfSaveDesign({
-            id: _gid,
-            name: _nm,
-            W: W0,
-            H: H0,
-            keys: Array.isArray(g.keys)
-              ? g.keys.filter(function (k) {
-                  return typeof k === 'string';
-                })
-              : [],
-            n: +g.n || 0,
-            thumb: safeThumb(g.thumb),
-            payload: g.payload,
-            ts: +g.ts || 0,
-            keepTs: true,
-            quiet: true,
-          }),
+        var copy = false,
+          isLost = false,
+          kid = null;
+        // (v304) a guide stored under this id that no Library row points to (a lost guide: its row couldn't be read) may
+        // be newer than the backup's: it is left as it is, to be added back from Home, and the backup's copy comes in
+        // beside it. Not one whose delete is still finishing (Undo showing, or to finish at the next start): the
+        // backup's copy takes its place, as before
+        // (v304) a Library guide changed here since its last backup, about to be replaced by the backup's newer copy, is
+        // kept first as "… (before restore)"
+        var pend =
+            !_ex &&
+            !!_gid &&
+            libPendList().some(function (x) {
+              return x.id === _gid;
+            }),
+          atRisk = _ex && (+_ex.ts || 0) <= (+g.ts || 0) && (+_ex.ts || 0) > (+_ex.bk || lastGuideBackup());
+        ((!_ex && _gid && !pend) || atRisk
+          ? IDB.get('guide-' + (_ex ? _ex.id : _gid)).catch(function () {
+              return null;
+            })
+          : Promise.resolve(null)
         )
-          .catch(function () {
-            return null;
-          })
-          .then(function (id) {
-            if (!id) {
-              full++;
-              next();
+          .then(function (here) {
+            var differs = !!here && !(here.lmap === g.payload.lmap && JSON.stringify(here) === js);
+            if (!_ex && differs) {
+              _gid = _newGuideId();
+              _nm = _cn;
+              isLost = true;
               return;
             }
-            ok++;
-            if (copy) copies++;
-            // (the guide open on the Guide screen, replaced by the backup's newer copy: said in the summary, v289)
-            else if (_ex && open && open.id === id) openRep = _ex.name || open.name;
-            const m = state.saved.find(function (x) {
-              return x.id === id;
-            });
-            if (m) m.bk = m.ts || 1;
-            // (also a guide deleted while open, restored with the same id: the open copy becomes the restored one, v289;
-            // libChanged leaves any other guide alone)
-            if (window.SF && SF.libChanged) SF.libChanged(id, 'replaced');
-            next();
+            if (_ex && (+_ex.ts || 0) > (+g.ts || 0)) {
+              _gid = _newGuideId();
+              _nm = _cn;
+              copy = true;
+              return;
+            }
+            if (!_gid) _gid = _newGuideId();
+            if (!(atRisk && differs)) return;
+            return Promise.resolve(
+              sfSaveDesign({
+                id: _newGuideId(),
+                name: (_ex.name || 'Guide').slice(0, 104) + ' (before restore)',
+                W: _ex.W,
+                H: _ex.H,
+                keys: _ex.keys || [],
+                n: _ex.n,
+                thumb: safeThumb(_ex.thumb),
+                payload: here,
+                ts: _ex.ts,
+                keepTs: true,
+                quiet: true,
+              }),
+            )
+              .catch(function () {
+                return null;
+              })
+              .then(function (k) {
+                kid = k;
+              });
+          })
+          .then(function () {
+            Promise.resolve(
+              sfSaveDesign({
+                id: _gid,
+                name: _nm,
+                W: W0,
+                H: H0,
+                keys: Array.isArray(g.keys)
+                  ? g.keys.filter(function (k) {
+                      return typeof k === 'string';
+                    })
+                  : [],
+                n: +g.n || 0,
+                thumb: safeThumb(g.thumb),
+                payload: g.payload,
+                ts: +g.ts || 0,
+                keepTs: true,
+                quiet: true,
+              }),
+            )
+              .catch(function () {
+                return null;
+              })
+              .then(function (id) {
+                if (!id) {
+                  // (the guide here wasn't replaced, so the copy kept of it goes again: none piles up, v304)
+                  if (kid) dropKept(kid);
+                  full++;
+                  next();
+                  return;
+                }
+                ok++;
+                if (kid) kept++;
+                if (isLost) lost++;
+                else if (copy) copies++;
+                // (the guide open on the Guide screen, replaced by the backup's newer copy: said in the summary, v289)
+                else if (_ex && open && open.id === id) openRep = _ex.name || open.name;
+                const m = state.saved.find(function (x) {
+                  return x.id === id;
+                });
+                if (m) m.bk = m.ts || 1;
+                // (also a guide deleted while open, restored with the same id: the open copy becomes the restored one, v289;
+                // libChanged leaves any other guide alone)
+                if (window.SF && SF.libChanged) SF.libChanged(id, 'replaced');
+                next();
+              });
           });
       });
     });
@@ -1352,7 +1589,7 @@ function sfRenderFilters(el) {
   const clr = (g, q) =>
     '<button data-q="' + q + '"' + (fgIsAll(g) ? ' style="visibility:hidden"' : '') + '>Clear</button>';
   el.innerHTML =
-    '<div class="fhint">Tap to show only those markers; tap more to add. Nothing chosen = all.</div><div class="fam-head"><span class="lbl">Brand</span><span class="quick">' +
+    '<div class="fhint">Tap to show only those markers; tap more to add. Nothing\u00a0chosen\u00a0=\u00a0all.</div><div class="fam-head"><span class="lbl">Brand</span><span class="quick">' +
     clr('brand', 'brandAll') +
     '</span></div><div class="fams" id="sf_brands"></div><div class="fam-head"><span class="lbl">Tone</span><span class="quick">' +
     clr('tone', 'toneAll') +

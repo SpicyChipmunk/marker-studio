@@ -111,6 +111,16 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       labelPts = v;
     },
     segQuality: segQuality,
+    // (v304: very dense pages, a stroke begun on a line, a merge picked before the sections were found again)
+    foldSet: foldSet,
+    denseCount: denseCount,
+    strokeSection: strokeSection,
+    get mergeSel() {
+      return mergeSel;
+    },
+    set mergeSel(v) {
+      mergeSel = v;
+    },
     get segWarn() {
       return segWarn;
     },
@@ -216,6 +226,10 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     shadeField: shadeField,
     shadeTones: shadeTones,
+    // (v304 tests: the tone lines drawn into a buffer; a held shading put back as Undo does; the brand letters in print)
+    shadeLinesDraw: shadeLinesDraw,
+    heldSet: heldSet,
+    guideMixed: guideMixed,
     shadePick: shadePick,
     shadeStylePick: shadeStylePick,
     shadeGeom: shadeGeom,
@@ -287,6 +301,44 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     photoTryAutoAlign: photoTryAutoAlign,
     photoFromImage: photoFromImage,
     setPhotoRef: setPhotoRef,
+    // (v304: the Photo pattern through a change to the picture, its size limits, a photo with no colour)
+    geoSet: function (o) {
+      okGeom(function () {
+        // (q: the page's corners in the photo as taken, straightened)
+        if (o.q) {
+          srcImg = pgOrig;
+          pgApply(o.q, false);
+          return;
+        }
+        if ('rot90' in o) rot90 = o.rot90;
+        if ('tilt' in o) tilt = o.tilt;
+        if ('crop' in o) cropRect = o.crop;
+        reprocessImg();
+      });
+    },
+    autoCrop: autoCrop,
+    buildGuide: buildGuide,
+    photoMove: photoMove,
+    photoFit: photoFit,
+    photoPrepDist: _photoPrepDist,
+    photoStatsHTML: photoStatsHTML,
+    zoneNew: zoneNew,
+    zoneSelect: zoneSelect,
+    get pgOrig() {
+      return pgOrig;
+    },
+    get phRefit() {
+      return _phRefit;
+    },
+    get phNone() {
+      return _phNone;
+    },
+    get photoGreys() {
+      return photoGreys;
+    },
+    get phStats() {
+      return _phStats;
+    },
     photoPageCheck: photoPageCheck,
     photoLitToggle: photoLitToggle,
     photoIsWhite: photoIsWhite,
@@ -392,6 +444,11 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get pdfP1() {
       return _pdfP1;
     },
+    // (the saved image's codes as placed, and its key's columns, v304)
+    get exPlaced() {
+      return _exPlaced;
+    },
+    exportKeyLayout: exportKeyLayout,
     renderControls: renderControls,
     get pgHint() {
       return pgHint;
@@ -568,11 +625,60 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     shadeTipHTML: shadeTipHTML,
     shT2: shT2,
     minPx: minPx,
+    grayUp: grayUp,
+    boxBlur: boxBlur,
+    focusCur: focusCur,
+    get srcK() {
+      return srcK;
+    },
+    set srcK(v) {
+      srcK = v;
+    },
     minPosOld: minPosOld,
     MIN_DEF: MIN_DEF,
     gradStartSay: gradStartSay,
     styleSave: styleSave,
     styleFields: STYLE_FIELDS,
+    // laying a guide out and changing it, for test/v304-assign.test.mjs
+    assign: {
+      buildGuide: buildGuide,
+      blendNow: blendNow,
+      zoneNew: zoneNew,
+      zoneSelect: zoneSelect,
+      planCommit: planCommit,
+      planUndo: planUndo,
+      resetForNewPicture: resetForNewPicture,
+      colours: ctlPlanColours,
+      get planStack() {
+        return planStack;
+      },
+      get balStat() {
+        return balStat;
+      },
+      get lastPoolN() {
+        return lastPoolN;
+      },
+      set sfmode(v) {
+        sfmode = v;
+      },
+      set segFresh(v) {
+        _segFresh = v;
+      },
+      set adj(v) {
+        adj = v;
+      },
+      // (no screen in the unit tests: drawing and the controls left out)
+      quiet: function () {
+        renderGuide =
+          renderControls =
+          render =
+          saveStatus =
+          markBuilt =
+          positionPhoto =
+          showTip =
+            function () {};
+      },
+    },
     // every style setting (and the section settings saved beside it) by its variable's name, to read and set, for
     // e2e/style-fields.test.mjs and test/style-fields.test.mjs
     styleVars: {
@@ -837,6 +943,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
 }
 return {
   setCollection,
+  collRefresh,
   configure,
   enter,
   leave,

@@ -126,7 +126,9 @@ function nextUndone(from) {
   }
   return -1;
 }
-function focusGeo() {
+// (sheet: with the Colours sheet's room taken off, for framing the section above it: not for the picture's size, which
+// stays the same whether the sheet is open or not, v303)
+function focusGeo(sheet) {
   var bar = document.querySelector('.sffocbar'),
     bot = document.querySelector('.sffocbot'),
     t = bar ? bar.offsetHeight : 0,
@@ -135,11 +137,15 @@ function focusGeo() {
     b = (bot ? bot.offsetHeight : 0) + (zs ? zs.offsetHeight : 0),
     vw = sfView.clientWidth,
     vh = sfView.clientHeight,
-    ah = Math.max(40, vh - t - b);
+    sh = sheet && focusSheet ? document.getElementById('sfFocSheet') : null;
+  // (the Colours sheet, open, lies over the foot of the picture: the section is framed above it, v303)
+  if (sh && sh.offsetHeight)
+    b = Math.max(b, sfView.getBoundingClientRect().bottom - sh.getBoundingClientRect().top);
+  var ah = Math.max(40, vh - t - b);
   return { t: t, b: b, cx: vw / 2, cy: t + ah / 2, aw: vw, ah: ah };
 }
 function focusZoomFor(l) {
-  var g = focusGeo();
+  var g = focusGeo(true);
   return fitZoom(focusBox, l, g.aw, g.ah);
 }
 var _ftT = 0;
@@ -156,7 +162,7 @@ function animXform(anim) {
 function frameFocus(anim) {
   var l = focusCur();
   if (l < 0 || !cv || !sfView) return;
-  var g = focusGeo(),
+  var g = focusGeo(true),
     DW = cv.offsetWidth,
     DH = cv.offsetHeight,
     z = focusZ,
@@ -191,6 +197,17 @@ function focusSay() {
   var nm = document.getElementById('sfFocName'),
     sub = document.getElementById('sfFocSub');
   if (nm && nm.textContent) sayLive(nm.textContent + (sub && sub.textContent ? '. ' + sub.textContent : ''));
+}
+// the Colours sheet opened or closed, however (its button, a tap on the picture, Back): the section framed again in the
+// room it leaves (v303)
+function focusSheetSet(open) {
+  focusSheet = open;
+  renderFocusUI();
+  const l = focusCur();
+  if (!focusFin && l >= 0) {
+    focusZ = focusZoomFor(l);
+    frameFocus(true);
+  }
 }
 function finishFocus() {
   focusFin = true;

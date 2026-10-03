@@ -52,7 +52,8 @@ let zones = [], // [{ id, name, secs: { l: 1 }, st, an }] (the zone being edited
   zoneBuilding = null, // the zone a pattern is being built for (zoneRun), else the one being edited
   zBox = null, // the extent the pattern being built lays its flow over ({ x0, y0, x1, y1 }; null: the picture)
   _zmap = null, // zone of each section (Int32Array, rebuilt when membership changes: zoneDirty)
-  _zshVer = 0; // goes up whenever which zone a section is in, or a zone's shading, may have changed (45-shading's caches)
+  _zshVer = 0, // goes up whenever which zone a section is in, or a zone's shading, may have changed (45-shading's caches)
+  _zshGeoVer = 0; // the same, but only for what the shade field depends on: membership, Shade (on) and Roundness
 
 function zoneById(id) {
   for (let i = 0; i < zones.length; i++) if (zones[i].id === id) return zones[i];
@@ -66,6 +67,7 @@ function zoneName(id) {
 function zoneDirty() {
   _zmap = null;
   _zshVer++;
+  _zshGeoVer++;
 }
 // the zone a section is in (0: Main)
 function zoneOf(l) {
@@ -165,8 +167,21 @@ function zsh(id) {
 // its shading is looked up while it's coloured (heldSweep notes them all on the way back to the plan), dropped once it
 // isn't. A record is replaced, never changed in place (Undo keeps references to them). Recolour them too (87-undo)
 // lets them go. Saved with the guide where they differ.
-let heldSh = {};
+let heldSh = {},
+  // goes up with every change to it: heldSet and heldReset, v304
+  _heldVer = 0;
 const _zshHeld = new WeakMap();
+// every change to heldSh goes through these two, so the caches that go by it (shadeUse, mixCache) see it: one made
+// by Undo or on opening a guide too, v304
+function heldSet(l, h) {
+  if (h) heldSh[l] = h;
+  else delete heldSh[l];
+  _heldVer++;
+}
+function heldReset(o) {
+  heldSh = o ? Object.assign({}, o) : {};
+  _heldVer++;
+}
 function inkOn(l) {
   return !!colored && (!!colored[l] || !!(tonePart && tonePart._c === colored && tonePart[l]));
 }
@@ -179,16 +194,18 @@ function zshOf(l) {
   if (!colored) return z;
   let h = heldSh[l];
   if (!inkOn(l)) {
-    if (h) delete heldSh[l];
+    if (h) heldSet(l, null);
     return z;
   }
   const so = shadowOn(l);
   if (!h) {
-    heldSh[l] = { shadow: z.shadow, hilite: z.hilite, free: !so };
+    heldSet(l, { shadow: z.shadow, hilite: z.hilite, free: !so });
     return z;
   }
-  if (!h.legacy && !!h.free === so)
-    h = heldSh[l] = { shadow: so ? z.shadow : h.shadow, hilite: h.hilite, free: !so };
+  if (!h.legacy && !!h.free === so) {
+    h = { shadow: so ? z.shadow : h.shadow, hilite: h.hilite, free: !so };
+    heldSet(l, h);
+  }
   const sh = h.free ? z.shadow : h.shadow;
   if (sh === z.shadow && h.hilite === z.hilite) return z;
   // (one object per zone's shading and what's held, as the tones' caches go by its identity)
@@ -228,6 +245,8 @@ function zshSet(id, k, v) {
     z.sh = o;
   }
   _zshVer++;
+  // (Highlights and Shadows change the tones only, not where the light falls, v304)
+  if (k === 'on' || k === 'round') _zshGeoVer++;
 }
 // a zone's shading from a saved guide: each setting checked as the guide's own are (STYLE_FIELDS' shade group), and
 // one it doesn't have (a zone saved before v281) is Main's, which it had then
@@ -350,6 +369,9 @@ function zoneRun(ids, build) {
     parts = {};
   let ok = true;
   order.forEach(function (id) {
+    // (as it was before this run while zoneWith finds the zone's extent from its sections: the zone laid before left
+    // only its own in assignData, so every zone after the first was laid over the whole picture, v304)
+    assignData = prev;
     zoneWith(id, function () {
       const cl = zoneSecs(id, all);
       if (!cl.length) {

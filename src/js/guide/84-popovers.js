@@ -517,6 +517,8 @@ function openAnchorPop(idx) {
       if (selAnchor >= 0) {
         anchors.splice(selAnchor, 1);
         selAnchor = -1;
+        // (the last one: Blend starts again from three (blendNow), and its Undo step says so, v304)
+        if (!anchors.length) planWhy = 'Last anchor removed: Blend starts again from 3';
         blendNow();
         renderGuide();
         renderControls();

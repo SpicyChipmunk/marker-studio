@@ -19,7 +19,7 @@ const letters = (page, sel) => page.$$eval(sel, (els) => els.filter((e) => e.off
 // every text drawn on the PDF's pages (page number and text)
 const pdfTexts = (page) => page.evaluate(() => { const P = CanvasRenderingContext2D.prototype, of = P.fillText, log = []; P.fillText = function (t) { log.push({ cv: this.canvas, t: String(t) }); return of.apply(this, arguments); }; let cvs; try { cvs = __mstest.buildPDFPages(); } finally { P.fillText = of; } window.__pdf0 = cvs[0].toDataURL('image/png'); return log.filter((e) => cvs.indexOf(e.cv) >= 0).map((e) => ({ p: cvs.indexOf(e.cv), t: e.t })); });
 const canvasTexts = (page, fn) => page.evaluate((fn) => { const P = CanvasRenderingContext2D.prototype, of = P.fillText, log = []; P.fillText = function (t) { log.push(String(t)); return of.apply(this, arguments); }; try { __mstest[fn](); } finally { P.fillText = of; } return log; }, fn);
-test('brand letters: hidden in an Ohuhu-only Owned view, shown in All and Unowned, and in Match results that mix brands', async () => {
+test('brand letters: hidden in an Ohuhu-only Owned view, shown in All and Unowned, and in Match results that mix brands (another brand clearly closer is named in full)', async () => {
   const { page, errors } = await openApp();
   await welcome(page, 'look');
   await page.click('#mCollection'); await idle(page);
@@ -41,13 +41,18 @@ test('brand letters: hidden in an Ohuhu-only Owned view, shown in All and Unowne
   await page.evaluate(() => { fgClear('brand'); save(); fullRender(); }); await idle(page);
   // Match: letters on every row when the rows mix brands, on none when they don't
   await page.click('#mkMatchBtn'); await page.click('.msrc [data-src="hex"]');
-  let mixedSeen = false, singleSeen = false;
+  let mixedSeen = false, singleSeen = false, otherSeen = false;
   for (const hex of ['#0bd6c8', '#e03c31', '#f2c14e', '#6b4f9e', '#9a9a9a', '#2e7d32', '#ff8fb1', '#3a7bd5']) {
     await page.fill('#matchHex', hex); await idle(page);
-    const r = await page.evaluate(() => { const rows = [...document.querySelectorAll('#matchResult .mrow')], best = document.querySelector('#matchResult .mbbrand'); const bs = new Set(rows.map((x) => x.getAttribute('data-copy').split(' ')[0])); if (best && /marker$/.test(best.textContent)) bs.add(best.textContent.split(' ')[0]); return { n: rows.length, tags: document.querySelectorAll('#matchResult .mtag').length, mixed: bs.size > 1 }; });
+    // (v304: another brand's row under "Closer in Copic" names its brand in full and carries no letter; the letters
+    // follow the other rows)
+    const r = await page.evaluate(() => { const full = (x) => /^(Ohuhu|Copic) /.test(x.querySelector('.mnm b').textContent); if ([...document.querySelectorAll('#matchResult .mrow')].some((x) => full(x) && x.querySelector('.mtag'))) return { bad: 1 }; const rows = [...document.querySelectorAll('#matchResult .mrow')].filter((x) => !full(x)), best = document.querySelector('#matchResult .mbbrand'); const bs = new Set(rows.map((x) => x.getAttribute('data-copy').split(' ')[0])); if (best && /marker$/.test(best.textContent)) bs.add(best.textContent.split(' ')[0]); return { n: rows.length, tags: document.querySelectorAll('#matchResult .mtag').length, mixed: bs.size > 1, other: document.querySelectorAll('#matchResult .mrow').length - rows.length }; });
+    assert.ok(!r.bad, hex + ': no letter on a row that names its brand');
+    if (r.other) otherSeen = true;
     if (r.mixed) { mixedSeen = true; assert.equal(r.tags, r.n, hex + ': mixed → a letter on every row'); if (SHOTS && !singleSeen) await snap(page, 'c-match'); } else { singleSeen = true; assert.equal(r.tags, 0, hex + ': one brand → no letters'); }
   }
-  assert.ok(mixedSeen, 'some result mixes brands');
+  // (v304: an Ohuhu collection's rows are Ohuhu, yours and to buy; a Copic one clearly closer is named in full)
+  assert.ok(otherSeen || mixedSeen, 'some result names another brand');
   await page.click('#matchClose');
   // Palette and Random with only Ohuhu markers: no letters
   await page.click('#mPalette'); await page.click('#draw'); await idle(page);
@@ -124,7 +129,8 @@ const pdfTextsOnly = (page) => page.evaluate(() => { const P = CanvasRenderingCo
 // Match a colour: the rows, how many carry a letter, and whether they mix brands
 async function matchRows(page, hex) {
   await page.fill('#matchHex', hex); await idle(page);
-  return page.evaluate(() => { const rows = [...document.querySelectorAll('#matchResult .mrow')]; return { n: rows.length, tags: document.querySelectorAll('#matchResult .mtag').length, mixed: new Set(rows.map((x) => x.getAttribute('data-copy').split(' ')[0])).size > 1 }; });
+  // (v304: another brand's row under "Closer in Copic" names its brand in full, with no letter: left out here)
+  return page.evaluate(() => { const rows = [...document.querySelectorAll('#matchResult .mrow')].filter((x) => !/^(Ohuhu|Copic) /.test(x.querySelector('.mnm b').textContent)); return { n: rows.length, tags: document.querySelectorAll('#matchResult .mtag').length, mixed: new Set(rows.map((x) => x.getAttribute('data-copy').split(' ')[0])).size > 1 }; });
 }
 const HEXES = ['#0bd6c8', '#e03c31', '#f2c14e', '#6b4f9e', '#9a9a9a', '#2e7d32'];
 async function markersView(page, v) { await page.click('#mCollection'); await idle(page); await page.click(`#ownView [data-v="${v}"]`); await idle(page); }

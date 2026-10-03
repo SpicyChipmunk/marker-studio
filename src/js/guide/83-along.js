@@ -244,7 +244,9 @@ function alongRow(e, inDone) {
     esc(m.name || '') +
     (inDone && e.z != null ? ' <span class="sfazt">· ' + esc(zoneName(e.z)) + '</span>' : '') +
     '</span><span class="cnt">' +
-    (full ? 'All ' + e.n + ' coloured <span aria-hidden="true">✓</span>' : e.d + ' of ' + e.n + ' coloured') +
+    (full
+      ? (e.n === 1 ? 'Coloured' : 'All ' + e.n + ' coloured') + ' <span aria-hidden="true">✓</span>'
+      : e.d + ' of ' + e.n + ' coloured') +
     '</span>' +
     // (its tones: none when none of its sections is shaded; each zone's where they differ)
     // (several options: on as many lines as they take, rather than cut off at the row's edge)

@@ -55,9 +55,8 @@ if (_hv)
       if (!b) return;
       if (b.dataset.bk === 'go') backupAll('bkGo');
       else {
-        try {
-          localStorage.setItem(BK_SNOOZE, String(Date.now() + 7 * 864e5));
-        } catch (_) {}
+        // (with the once-only reminder after a first coloured section, v304)
+        backupLater();
         homeCardGone(_bn);
       }
     });
@@ -95,16 +94,23 @@ SF.configure({
     });
   },
   // opts goes to the Palette screen's generator as it is ({ mood }: the guide's Mood, a MOOD_KEYS key)
+  // (from the guide's own markers: yours that aren't dry, or any with none, in the filters; never the Palette
+  // screen's selection, which can hold markers you don't own and outlives the Finder hand-off it came from, v304)
   genPalette: function (n, harm, opts) {
-    _poolAll = !state.owned.size;
+    const sel = state.pool;
+    state.pool = null;
     try {
       return (genPalette(n, harm, opts) || []).map(mkey);
     } finally {
-      _poolAll = false;
+      state.pool = sel;
     }
   },
   isDemo: function () {
     return state.owned.size === 0;
+  },
+  // Brands I'd buy (v304): null for automatic, else the brands ticked
+  buyBrands: function () {
+    return state.buyBrands ? state.buyBrands.slice() : null;
   },
   goMarkers: function () {
     goMarkers();
@@ -283,7 +289,9 @@ document.addEventListener('keydown', function (e) {
       close();
       if (state.mode !== 'home') setMode('home');
       else fullRender();
-      toast('Restored ' + what + (left ? '. ' + left : ''), left ? 7000 : 4000);
+      // (and what was kept beside the backup's guides, v304)
+      const kw = restoreKeptWords(r);
+      toast('Restored ' + what + (left ? '. ' + left : kw ? '.' : '') + kw, left || kw ? 7000 : 4000);
     });
   });
   $('wcSample').addEventListener('click', function () {
@@ -583,6 +591,14 @@ function addLost(ids) {
               ' back already.';
     });
 }
+// (v304) look for lost guides again (a restore left one beside the backup's copy) and offer them on Home
+function lostRefresh() {
+  findLost().then(function (ids) {
+    _lostIds = ids;
+    _lostHid = false;
+    renderHomeNotes();
+  });
+}
 function lostAddTap(b, ids, after) {
   const was = b.textContent;
   b.disabled = true;
@@ -735,7 +751,8 @@ function renderHomeNotes() {
       }
       gone();
       fullRender();
-      toast('Restored ' + what + (left ? '. ' + left : ''), left ? 7000 : 4000);
+      const kw = restoreKeptWords(r);
+      toast('Restored ' + what + (left ? '. ' + left : kw ? '.' : '') + kw, left || kw ? 7000 : 4000);
     });
   });
   el.addEventListener('click', function (e) {

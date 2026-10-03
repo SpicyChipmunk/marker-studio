@@ -243,6 +243,8 @@ function mkFill(i) {
     .filter(Boolean)
     .join(' \u00b7 ');
   $('mkOwn').checked = isOwned(i);
+  // (v304: nothing is like the Colorless Blender, which lays down no colour; it was matched to a warm grey)
+  $('mkSimilar').style.display = NOINK.has(i) ? 'none' : '';
   mkWishFill(i);
 }
 function openMarkerSheet(i) {
@@ -289,12 +291,13 @@ $('mkCopy').addEventListener('click', async () => {
 });
 $('mkSimilar').addEventListener('click', () => {
   if (mkOpenIdx == null) return;
-  const hex = COLORS[mkOpenIdx].hex;
+  const i = mkOpenIdx;
   closeMarkerSheet();
-  if (window.msMatchHex) window.msMatchHex(hex);
+  // (the marker itself left out: what's like it, not it, v304)
+  if (window.msMatchHex) window.msMatchHex(COLORS[i].hex, { exclude: i });
 });
 copyBtn.addEventListener('click', async () => {
-  const m = finderMatches();
+  const m = shownMatches();
   if (!m.length) {
     flashCopy('Nothing to copy');
     return;
@@ -307,7 +310,7 @@ copyBtn.addEventListener('click', async () => {
 });
 searchInput.addEventListener('input', () => {
   searchStr = (searchInput.value || '').trim().toLowerCase();
-  if (state.mode === 'finder' || state.mode === 'collection') renderResults();
+  if (state.mode === 'finder' || state.mode === 'collection') renderResults(true);
 });
 toPalette.addEventListener('click', () => handoff('palette'));
 poolClear.addEventListener('click', () => {
@@ -365,14 +368,20 @@ harm.addEventListener('click', (e) => {
       pf.value = '';
       pf.click();
     });
+  // (v304) each pick has its own number: a photo still being read when another is picked is dropped, not shown
+  // over the newer one's palette
+  var pickN = 0;
   if (pf)
     pf.addEventListener('change', function () {
       var f = pf.files && pf.files[0];
       if (!f) return;
+      var n = ++pickN;
       var fr = new FileReader();
       fr.onload = function () {
+        if (n !== pickN) return;
         var im = new Image();
         im.onload = function () {
+          if (n !== pickN) return;
           _photoImg = im;
           var t = document.getElementById('photoThumb');
           if (t) t.src = fr.result;
@@ -380,11 +389,13 @@ harm.addEventListener('click', (e) => {
           applyPhotoPalette();
         };
         im.onerror = function () {
+          if (n !== pickN) return;
           errCard(pk, 'Couldn\u2019t read that image. Try a JPEG or PNG photo.');
         };
         im.src = fr.result;
       };
       fr.onerror = function () {
+        if (n !== pickN) return;
         errCard(pk, 'Couldn\u2019t read that file.');
       };
       fr.readAsDataURL(f);
@@ -515,18 +526,13 @@ function setSeed(key) {
   regenReplace();
 }
 function renderSeedGrid() {
+  // (the same search as Markers', and every marker: it had stopped at 400, v304)
   const q = (seedSearch.value || '').trim().toLowerCase();
   const out = [];
-  for (let i = 0; i < COLORS.length; i++) {
-    if (!inPool(i)) continue;
-    const c = COLORS[i];
-    if (q && !(c.code + ' ' + c.name).toLowerCase().includes(q)) continue;
-    out.push(i);
-  }
-  const shown = out.slice(0, 400),
-    mix = brandsMixedIn(shown);
+  for (let i = 0; i < COLORS.length; i++) if (inPool(i) && sMatch(i, q)) out.push(i);
+  const mix = brandsMixedIn(out);
   seedGrid.innerHTML = out.length
-    ? shown
+    ? out
         .map((i) => {
           const c = COLORS[i];
           return (
@@ -1017,7 +1023,7 @@ if (_mkd)
     setMode('random');
   });
 ownAllBtn.addEventListener('click', () => {
-  const add = finderMatches()
+  const add = shownMatches()
     .map((i) => mkey(i))
     .filter((k) => !state.owned.has(k));
   add.forEach((k) => state.owned.add(k));
@@ -1235,6 +1241,8 @@ function presetListHTML() {
   });
   return html;
 }
+// (v303) the sets' ticks and counts drawn again from outside (Scan or type codes' Add and its Undo), set by initPresets
+let presetRelist = null;
 (function initPresets() {
   var list = document.getElementById('presetList');
   if (list) {
@@ -1265,9 +1273,16 @@ function presetListHTML() {
   }
   function relist() {
     if (!list) return;
+    // (the boxes ticked stay ticked)
+    const on = [...list.querySelectorAll('input:checked')].map((x) => x.getAttribute('data-i'));
     list.innerHTML = presetListHTML();
+    on.forEach((i) => {
+      const x = list.querySelector('input[data-i="' + i + '"]');
+      if (x) x.checked = true;
+    });
     upd();
   }
+  presetRelist = relist;
   if (list) list.addEventListener('change', upd);
   if (add)
     add.addEventListener('click', function () {
@@ -1342,7 +1357,7 @@ function unownDisarm() {
 }
 let unownAt = 0;
 ownNoneBtn.addEventListener('click', () => {
-  const m = finderMatches();
+  const m = shownMatches();
   if (!m.length) return;
   // (the second tap of a double tap isn't the confirming one: as Clear ticks, 400 ms)
   if (ownNoneBtn.dataset.arm === '1' && Date.now() - unownAt < 400) return;
@@ -1484,6 +1499,7 @@ function openBackup() {
     owned: [...state.owned],
     wish: state.wish,
     ink: state.ink,
+    buyBrands: state.buyBrands,
     saved: state.saved.filter(function (s) {
       return s.type !== 'guide';
     }),

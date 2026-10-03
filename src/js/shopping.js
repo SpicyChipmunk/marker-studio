@@ -306,7 +306,8 @@ function renderWish() {
   const n = state.wish.length;
   if (!n) {
     v.innerHTML =
-      '<div class="wishempty"><b>Your To buy list is empty.</b> Wherever Marker Studio suggests a marker you don’t have, tap <b>+ To buy</b> to add it here: in <b>Match a colour</b>, a marker’s details (press and hold one), and a guide’s blend plan, shading and photo notes. Mark a marker as <b>Running low</b> in its details to add a replacement.</div>';
+      '<div class="wishempty"><b>Your To buy list is empty.</b> Wherever Marker Studio suggests a marker you don’t have, tap <b>+ To buy</b> to add it here: in <b>Match a colour</b>, a marker’s details (press and hold one), and a guide’s blend plan, shading and photo notes. Mark a marker as <b>Running low</b> in its details to add a replacement.</div>' +
+      buyRowHTML();
     return;
   }
   const by = {};
@@ -375,7 +376,9 @@ function renderWish() {
   h +=
     '<div class="wishacts"><button type="button" id="wishCopy">Copy list</button>' +
     (navigator.share ? '<button type="button" id="wishShare">Share list</button>' : '') +
-    '</div>';
+    '</div>' +
+    // (which brands the suggestions to buy come from, v304)
+    buyRowHTML();
   v.innerHTML = h;
 }
 function wishRefresh() {
@@ -597,4 +600,140 @@ function setInk(i, v) {
     a.wishBtn = wishBtnHTML;
     return cf(a);
   };
+})();
+
+/* ---- Brands I'd buy (v304) ----
+   Which brands a marker to buy is suggested from, in Match, a guide's shading and blend plan and the Photo pattern:
+   automatic (your brands first; another brand only when it's clearly closer: matchNearest), or only the brands ticked
+   (state.buyBrands). Kept with the collection, and in backups. */
+// your brands as Match has them: those of the markers you own that lay down colour (not a Colorless Blender alone)
+function buyOwnBrands() {
+  const s = new Set();
+  for (let i = 0; i < COLORS.length; i++) if (!NOINK.has(i) && isOwned(i)) s.add(COLORS[i].brand);
+  return allBrands().filter((b) => s.has(b));
+}
+const buyAnd = (a) => (a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0] || '');
+function buySummary() {
+  const b = state.buyBrands;
+  if (!b) return 'Your brands first';
+  return b.length >= allBrands().length ? 'All brands' : b.join(', ');
+}
+function buyRowHTML() {
+  return (
+    '<button type="button" class="presethdr scanopen buyopen" id="wishBuyOpen"><span>Brands I’d buy</span><span class="buysum">' +
+    esc(buySummary()) +
+    '</span>' +
+    '<span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span>' +
+    '</button>'
+  );
+}
+function buySumSync() {
+  document.querySelectorAll('.buyopen .buysum').forEach(function (e) {
+    e.textContent = buySummary();
+  });
+}
+let _buyFrom = null,
+  _buyPick = null;
+function buyRender() {
+  const pick = !!_buyPick;
+  document.querySelectorAll('#buyMode button').forEach(function (b) {
+    const on = (b.dataset.m === 'pick') === pick;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+  const ch = document.getElementById('buyChips');
+  ch.hidden = !pick;
+  ch.innerHTML = allBrands()
+    .map(function (b) {
+      const on = pick && _buyPick.indexOf(b) >= 0;
+      return (
+        '<button type="button" class="chip" data-b="' +
+        esc(b) +
+        '" data-sel="' +
+        (on ? 1 : 0) +
+        '" aria-pressed="' +
+        on +
+        '">' +
+        esc(b) +
+        '</button>'
+      );
+    })
+    .join('');
+  const own = buyOwnBrands();
+  document.getElementById('buyNote').textContent = pick
+    ? _buyPick.length
+      ? 'Only ' + buyAnd(_buyPick) + ' markers are suggested to buy.'
+      : 'Tick at least one brand.'
+    : own.length
+      ? buyAnd(own) +
+        ' first, as you have ' +
+        (own.length > 1 ? 'those' : 'that brand') +
+        '. Another brand’s marker only when it’s clearly closer, or nothing of yours fits.'
+      : 'With no markers in your collection yet, every brand.';
+  document.getElementById('buyDone').disabled = pick && !_buyPick.length;
+}
+function openBuy(from) {
+  const ov = document.getElementById('buyOverlay');
+  if (!ov) return;
+  _buyFrom = from || null;
+  _buyPick = state.buyBrands ? state.buyBrands.slice() : null;
+  buyRender();
+  openDialog(ov);
+  const f = ov.querySelector('#buyMode button.on');
+  if (f) f.focus();
+}
+// what's chosen is kept on Done (or the box's close, Escape, Back: the same; with no brand ticked, what was kept
+// before stays)
+function closeBuy() {
+  const ov = document.getElementById('buyOverlay');
+  if (!ov || !ov.classList.contains('on')) return;
+  const nb = !_buyPick ? null : _buyPick.length ? _buyPick.slice() : state.buyBrands,
+    was = JSON.stringify(state.buyBrands);
+  closeDialog(ov);
+  if (JSON.stringify(nb) !== was) {
+    const old = state.buyBrands;
+    state.buyBrands = nb;
+    if (!save()) state.buyBrands = old;
+    else if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
+  }
+  buySumSync();
+  if (_buyFrom && _buyFrom.isConnected) _buyFrom.focus();
+  else {
+    const r = document.querySelector('.buyopen');
+    if (r && r.offsetParent) r.focus();
+  }
+  _buyFrom = null;
+}
+(function () {
+  const ov = document.getElementById('buyOverlay');
+  if (!ov) return;
+  ov.addEventListener('click', function (e) {
+    if (e.target === ov) return closeBuy();
+    const t = e.target.closest ? e.target.closest('button') : null;
+    if (!t) return;
+    if (t.id === 'buyClose' || t.id === 'buyDone') return closeBuy();
+    if (t.dataset.m) {
+      // (Only these: starting from your brands, or every brand with none)
+      if (t.dataset.m === 'pick' && !_buyPick) {
+        const own = buyOwnBrands();
+        _buyPick = own.length ? own : allBrands();
+      } else if (t.dataset.m === 'auto') _buyPick = null;
+      buyRender();
+      return;
+    }
+    if (t.dataset.b && _buyPick) {
+      const b = t.dataset.b,
+        k = _buyPick.indexOf(b);
+      if (k >= 0) _buyPick.splice(k, 1);
+      else _buyPick = allBrands().filter((x) => x === b || _buyPick.indexOf(x) >= 0);
+      buyRender();
+      const again = document.querySelector('#buyChips [data-b="' + b + '"]');
+      if (again) again.focus();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    const t = e.target.closest ? e.target.closest('.buyopen') : null;
+    if (t) openBuy(t);
+  });
+  buySumSync();
 })();

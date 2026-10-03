@@ -295,9 +295,12 @@ function rampRank(cands) {
   return order;
 }
 function gapRank(cands) {
-  if (!cands.length) return [];
+  // (the Colorless Blender lays down no colour: not a gap to fill, and owning one doesn't cover white, v304)
+  const blend = cands.filter((i) => NOINK.has(i));
+  cands = cands.filter((i) => !NOINK.has(i));
+  if (!cands.length) return blend;
   const owned = [];
-  for (let i = 0; i < COLORS.length; i++) if (isOwned(i)) owned.push(i);
+  for (let i = 0; i < COLORS.length; i++) if (isOwned(i) && !NOINK.has(i)) owned.push(i);
   const D = (a, b) => {
     const l = a[0] - b[0],
       m = a[1] - b[1],
@@ -334,7 +337,7 @@ function gapRank(cands) {
         if (d < dmin[j]) dmin[j] = d;
       }
   }
-  return order;
+  return order.concat(blend);
 }
 const TONE = HS.map((o) => (o.l >= 0.8 ? 'pale' : o.l >= 0.62 ? 'light' : o.l >= 0.49 ? 'mid' : 'dark'));
 const TONE_DEFS = [
@@ -556,11 +559,22 @@ function matchWord(d) {
 // about 2 is just noticeable)
 const MATCH_BUY_GAIN = 2;
 // The markers nearest a colour (L*a*b*), each { i, d } with d its CIEDE2000, nearest first: `owned`, up to 5 you can
-// use (owned and not dry), and `buy`, those of the 3 nearest others (not owned, or dry) that are clearly closer than
-// the best of yours (all 3 when you have none). One pass, no sort of every marker: it runs on every frame of a drag.
-function matchNearest(lab) {
+// use (owned and not dry, any brand), and `buy`, those of the 3 nearest markers to buy (not owned, or dry) that are
+// clearly closer than the best of yours (all 3 when you have none). Which brands a marker to buy comes from is Brands
+// I'd buy (v304): automatic, your brands (those of the markers you own that lay down colour, dry ones too; none, an
+// empty collection, is all), and `other`, at most one marker of another brand, only when it is clearly closer than both
+// your best and anything of your brands (an Ohuhu-only collection was offered Copic markers 0.1 closer than an Ohuhu
+// one); or only the brands ticked, and no `other`. opt.exclude: a marker left out (Find similar's own, v304). One
+// pass, no sort of every marker: it runs on every frame of a drag.
+function matchNearest(lab, opt) {
+  const ex = opt && opt.exclude != null ? opt.exclude : -1,
+    set = state.buyBrands,
+    mine = new Set(set || []);
+  if (!set) for (let i = 0; i < LAB.length; i++) if (!NOINK.has(i) && isOwned(i)) mine.add(COLORS[i].brand);
   const owned = [],
     others = [];
+  let ownNear = Infinity,
+    oth = null;
   const keep = (list, max, o) => {
     if (list.length === max && o.d >= list[max - 1].d) return;
     let k = list.length;
@@ -569,10 +583,21 @@ function matchNearest(lab) {
     if (list.length > max) list.pop();
   };
   for (let i = 0; i < LAB.length; i++) {
-    if (NOINK.has(i)) continue;
-    const o = { i: i, d: de2000(lab, LAB[i]) };
-    if (isOwned(i) && !isDry(i)) keep(owned, 5, o);
-    else keep(others, 3, o);
+    if (NOINK.has(i) || i === ex) continue;
+    const o = { i: i, d: de2000(lab, LAB[i]) },
+      use = isOwned(i) && !isDry(i);
+    // (a marker you can use counts whatever its brand: Brands I'd buy is about buying)
+    if (use) {
+      keep(owned, 5, o);
+      if (o.d < ownNear) ownNear = o.d;
+      continue;
+    }
+    if (mine.size && !mine.has(COLORS[i].brand)) {
+      if (!set && (!oth || o.d < oth.d)) oth = o;
+      continue;
+    }
+    if (o.d < ownNear) ownNear = o.d;
+    keep(others, 3, o);
   }
   const best = owned.length ? owned[0].d : Infinity;
   return {
@@ -580,6 +605,7 @@ function matchNearest(lab) {
     buy: others.filter(function (o) {
       return o.d <= best - MATCH_BUY_GAIN;
     }),
+    other: oth && oth.d <= Math.min(best, ownNear) - MATCH_BUY_GAIN ? [oth] : [],
   };
 }
 
@@ -607,7 +633,22 @@ function patchLin(data, w, h, x, y, rad) {
 // the paper already looks white; { bad: true, note } when the spot can't be paper
 function paperSpot(lin) {
   const fix = lightFix(lin);
-  if (fix) return { fix: fix, note: '' };
+  if (fix) {
+    // (paper brighter than paper white — a scan, a picture made on screen — is balanced to its own brightest channel
+    // instead of darkened to PAPER_LIN: a cream scan loses its cast, a white one is left as it is, v304)
+    const mx = Math.max(lin[0], lin[1], lin[2]);
+    if (mx <= PAPER_LIN) return { fix: fix, note: '' };
+    const gain = lin.map(function (v) {
+      return mx / Math.max(v, 1e-4);
+    });
+    if (
+      gain.some(function (g) {
+        return g >= 1.02;
+      })
+    )
+      return { fix: { gain: gain }, note: '' };
+    return { fix: null, note: 'The paper already looks white: nothing to correct.' };
+  }
   // lightFix gives none both for paper that needs no correction (every channel within 2% of it) and for a spot that
   // can't be paper
   if (

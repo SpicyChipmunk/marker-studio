@@ -75,62 +75,166 @@
     return (c.brand + ' ' + c.code + (c.name ? ' ' + c.name : '')).replace(/"/g, '');
   }
   var rowBt = true; // brand letters on the rows when the result or your collection mixes brands
-  function row(o, buy) {
-    var c = COLORS[o.i];
+  // (v304) Find similar: the marker it was opened from, left out of the result while its colour is the one shown
+  var simFrom = null;
+  function simHex() {
+    return simFrom === null ? null : COLORS[simFrom].hex.toLowerCase();
+  }
+  // a row's word; a marker of exactly the colour Find similar came from says so (v304)
+  function rword(o) {
+    return simFrom !== null && COLORS[o.i].hex.toLowerCase() === simHex() ? 'Same colour' : word(o.d);
+  }
+  // full: another brand's marker, its brand written out (v304)
+  function row(o, buy, full) {
+    var c = COLORS[o.i],
+      tag = rowBt && !full;
     return (
       '<div class="mrow' +
       (buy ? ' buy' : '') +
-      (rowBt ? ' tagd' : '') +
+      (tag ? ' tagd' : '') +
       '" role="button" tabindex="0" data-copy="' +
       esc(cpText(c)) +
       '" title="ΔE00 ' +
       o.d.toFixed(1) +
       ' · tap to copy" aria-label="' +
-      esc(cpText(c) + ', ' + word(o.d) + ', copy') +
+      esc(cpText(c) + ', ' + rword(o) + ', copy') +
       '"><span class="msw" style="background:' +
       c.hex +
       '"></span>' +
-      (rowBt ? '<span class="mtag" aria-hidden="true">' + bTag(c.brand) + '</span>' : '') +
+      (tag ? '<span class="mtag" aria-hidden="true">' + bTag(c.brand) + '</span>' : '') +
       '<span class="mnm"><b>' +
-      esc(c.code) +
+      esc((full ? c.brand + ' ' : '') + c.code) +
       '</b>' +
       esc(c.name || '') +
       '</span><span class="mq">' +
       meter(o.d) +
-      word(o.d) +
+      rword(o) +
       '</span>' +
       (buy ? '<span class="mbrk"></span>' + wishBtnHTML(mkey(o.i), 'from Match a colour', true) : '') +
       '</div>'
     );
   }
+  // (v304) while a finger or the mouse is down on the result, it isn't redrawn under it: the live camera redrew it
+  // about 7 times a second, and a tap on a row or + To buy was lost when its row was replaced mid-tap (about 1 press
+  // in 14 worked). Nor while a row has the keyboard's focus (it went to the page when its row was replaced). The colour
+  // that came meanwhile is shown once the tap is over, or the focus leaves the result.
+  var resHold = false,
+    heldHex = null,
+    lastSig = null,
+    holdT = 0;
+  function keyHold() {
+    var a = document.activeElement;
+    if (!a || a === res || !res.contains(a)) return false;
+    try {
+      return a.matches(':focus-visible');
+    } catch (e) {
+      return false;
+    }
+  }
+  function flushHeld() {
+    if (resHold || !heldHex) return;
+    var h = heldHex;
+    heldHex = null;
+    render(h);
+  }
+  function releaseHold() {
+    clearTimeout(holdT);
+    holdT = 0;
+    resHold = false;
+    flushHeld();
+  }
+  function dropHold() {
+    clearTimeout(holdT);
+    holdT = 0;
+    resHold = false;
+    heldHex = null;
+  }
   function render(hex) {
+    if (resHold || keyHold()) {
+      heldHex = hex;
+      return;
+    }
     // (what's owned and what's dry, not just how many: swapping one marker for another, or one marked dry in
     // another tab, read again, v296)
-    var _k = hex + '|' + [...state.owned].join(',') + '|' + JSON.stringify(state.ink || {});
+    var _k =
+      hex +
+      '|' +
+      simFrom +
+      '|' +
+      [...state.owned].join(',') +
+      '|' +
+      JSON.stringify(state.ink || {}) +
+      '|' +
+      JSON.stringify(state.buyBrands);
     if (_k === lastHex && res.innerHTML) return;
     lastHex = _k;
-    var near = matchNearest(hexToLab(hex)),
+    var near = matchNearest(hexToLab(hex), simFrom === null ? null : { exclude: simFrom }),
       owned = near.owned,
       closer = near.buy,
+      other = near.other,
       html;
+    // (v304: the letters go by what you own and your brand's rows; another brand's row writes its brand out)
     rowBt = brandsMixedIn(
       owned.concat(closer).map(function (o) {
         return o.i;
       }),
     );
+    // (v304) the same markers with the same words and letters as the result showing: only the colour and the ΔE00
+    // tooltips change, in place, so the rows (and what VoiceOver is on) stay put
+    var sig =
+      [owned, closer, other]
+        .map(function (l) {
+          return l
+            .map(function (o) {
+              return o.i + ':' + rword(o);
+            })
+            .join(',');
+        })
+        .join('|') +
+      '|' +
+      inkOwned() +
+      '|' +
+      rowBt +
+      '|' +
+      JSON.stringify(state.buyBrands);
+    if (sig === lastSig && res.querySelector('.mbest')) {
+      var sw = res.querySelector('.mcmp span');
+      if (sw) {
+        sw.style.background = hex;
+        if (owned.length) sw.style.color = txt(hex);
+      }
+      var cmp = res.querySelector('.mcmp');
+      if (cmp && owned.length) cmp.title = cmpTitle(hex, COLORS[owned[0].i]);
+      var bq = res.querySelector('.mbq');
+      if (bq && owned.length) bq.title = 'ΔE00 ' + owned[0].d.toFixed(1);
+      var rows = res.querySelectorAll('.mrow'),
+        rest = owned.slice(1).concat(closer, other);
+      for (var q = 0; q < rows.length && q < rest.length; q++)
+        rows[q].title = 'ΔE00 ' + rest[q].d.toFixed(1) + ' · tap to copy';
+      if (!owned.length) {
+        var bb = res.querySelector('.mbbrand');
+        if (bb) bb.textContent = noneLine(hex);
+      }
+      return;
+    }
+    lastSig = sig;
+    var from = simFrom === null ? null : COLORS[simFrom];
+    // (v304: Find similar says what it's similar to, and leaves that marker out)
+    html = from ? '<div class="msimh">Similar to ' + esc(from.brand + ' ' + from.code) + '</div>' : '';
     if (owned.length) {
       var b = owned[0],
-        c = COLORS[b.i];
-      html =
-        '<div class="mbest"><div class="mcmp" title="Your colour ' +
-        hex.toUpperCase() +
-        ' (left) vs the marker ' +
-        c.hex.toUpperCase() +
-        ' (right)"><span style="background:' +
+        c = COLORS[b.i],
+        bw = rword(b);
+      html +=
+        '<div class="mbest"><div class="mcmp" title="' +
+        esc(cmpTitle(hex, c)) +
+        '"><span style="background:' +
         hex +
         ';color:' +
         txt(hex) +
-        '"><i>You</i></span><span style="background:' +
+        '"><i>' +
+        esc(from ? from.code : 'You') +
+        '</i></span><span style="background:' +
         c.hex +
         ';color:' +
         txt(c.hex) +
@@ -140,8 +244,8 @@
         '" title="ΔE00 ' +
         b.d.toFixed(1) +
         '">' +
-        word(b.d) +
-        ' match</div><div class="mbname"><b>' +
+        (bw === 'Same colour' ? bw : bw + ' match') +
+        '</div><div class="mbname"><b>' +
         esc(c.code) +
         '</b> ' +
         esc(c.name || '') +
@@ -161,31 +265,69 @@
             })
             .join('');
     } else {
-      html =
+      html +=
         '<div class="mbest"><div class="mcmp"><span style="background:' +
         hex +
         '"></span></div><div class="mbinfo"><div class="mbname mbnone">' +
         // (markers owned but every one marked dry is a different thing from none yet, v298)
         (inkOwned() ? 'None of your markers to use' : 'No markers in your collection yet') +
-        '</div><div class="mbbrand">Sampled ' +
-        hex.toUpperCase() +
-        (inkOwned() ? ' · mark some as not dry in Markers' : ' · add your sets in Markers') +
+        '</div><div class="mbbrand">' +
+        noneLine(hex) +
         '</div></div></div>';
     }
 
     if (closer.length)
       html +=
-        '<div class="mlh">Closer ones you could buy</div>' +
+        '<div class="mlh">Closer ones you could buy' +
+        // (Brands I'd buy narrowed to some brands: which, so a brand missing here isn't a puzzle, v304)
+        (state.buyBrands && state.buyBrands.length < allBrands().length
+          ? ' \u00b7 ' + esc(state.buyBrands.join(', '))
+          : '') +
+        '</div>' +
         closer
           .map(function (o) {
             return row(o, true);
           })
           .join('');
+    // (v304) another brand's marker only when it's clearly closer than anything of your brands, after them
+    if (other.length)
+      html +=
+        '<div class="mlh">Closer ' +
+        (closer.length ? 'still ' : '') +
+        'in ' +
+        esc(COLORS[other[0].i].brand) +
+        '</div>' +
+        other
+          .map(function (o) {
+            return row(o, true, true);
+          })
+          .join('');
     res.innerHTML = html;
     sayBest(
       owned.length
-        ? word(owned[0].d) + ' match: ' + COLORS[owned[0].i].code + ' ' + (COLORS[owned[0].i].name || '')
+        ? rword(owned[0]) +
+            (rword(owned[0]) === 'Same colour' ? ': ' : ' match: ') +
+            COLORS[owned[0].i].code +
+            ' ' +
+            (COLORS[owned[0].i].name || '')
         : res.textContent.replace(/\s+/g, ' ').trim(),
+    );
+  }
+  function cmpTitle(hex, c) {
+    return (
+      (simFrom === null
+        ? 'Your colour ' + hex.toUpperCase()
+        : COLORS[simFrom].brand + ' ' + COLORS[simFrom].code) +
+      ' (left) vs the marker ' +
+      c.hex.toUpperCase() +
+      ' (right)'
+    );
+  }
+  function noneLine(hex) {
+    return (
+      'Sampled ' +
+      hex.toUpperCase() +
+      (inkOwned() ? ' · mark some as not dry in Markers' : ' · add your sets in Markers')
     );
   }
   // The best match, said once the colour holds still: not on every frame of a drag or of the live camera (the result
@@ -203,9 +345,31 @@
       if (el) el.textContent = sayText;
     }, 700);
   }
-  function sample(hex) {
+  res.addEventListener('pointerdown', function (e) {
+    // (the main button only: a right-click or Ctrl-click opens a menu, and on a Mac its pointerup never comes)
+    if (e.button !== 0) return;
+    clearTimeout(holdT);
+    resHold = true;
+    // (never held longer than a long press, so a press whose end is lost can't leave the result stuck)
+    holdT = setTimeout(releaseHold, 1500);
+  });
+  // (after the click that ends the tap; a new press on the result before then keeps it held)
+  var resRelease = function () {
+    if (!resHold) return;
+    clearTimeout(holdT);
+    holdT = setTimeout(releaseHold, 250);
+  };
+  document.addEventListener('pointerup', resRelease, true);
+  document.addEventListener('pointercancel', resRelease, true);
+  res.addEventListener('contextmenu', releaseHold);
+  res.addEventListener('focusout', function () {
+    setTimeout(flushHeld, 0);
+  });
+  // sim: Find similar's own sample; any other (a typed code, the photo, the camera) is an ordinary match again (v304)
+  function sample(hex, sim) {
     hex = normHex(hex);
     if (!hex) return;
+    if (!sim) simFrom = null;
     if (picker) picker.value = hex;
     if (hexIn) hexIn.value = hex;
     pickEmpty(false);
@@ -235,22 +399,28 @@
   function open() {
     openDialog(ov);
     lastHex = null;
+    lastSig = null;
+    simFrom = null;
+    dropHold();
     res.innerHTML = '';
     clearHexHint();
     if (hexIn) hexIn.value = '';
     pickEmpty(true);
     setSrc('photo');
   }
-  // open straight on a colour (a marker's "Find similar")
-  window.msMatchHex = function (hex) {
+  // open straight on a colour (a marker's "Find similar": opt.exclude, that marker, left out of the result, v304)
+  window.msMatchHex = function (hex, opt) {
     open();
     setSrc('hex');
-    var v = normHex(hex);
+    var v = normHex(hex),
+      ex = opt && COLORS[opt.exclude] ? opt.exclude : null;
+    if (ex !== null && v === COLORS[ex].hex.toLowerCase()) simFrom = ex;
     if (hexIn) hexIn.value = v || hex;
-    if (v) sample(v);
+    if (v) sample(v, true);
   };
   function close() {
     clearTimeout(sayT);
+    dropHold();
     closeDialog(ov);
     stopCam();
     setPaperMode(false);
@@ -262,6 +432,8 @@
   });
   var _toast = document.createElement('div');
   _toast.className = 'mcopied';
+  // (v304: said by screen readers too, "Copied" or that it couldn't)
+  _toast.setAttribute('role', 'status');
   ov.appendChild(_toast);
   var _ttmr;
   function _showToast(m) {
@@ -277,10 +449,14 @@
     if (!rw) return;
     var cp = rw.getAttribute('data-copy');
     if (cp) {
-      try {
-        copyText(cp);
-      } catch (_) {}
-      _showToast('Copied ' + cp);
+      Promise.resolve(copyText(cp)).then(
+        function (ok) {
+          _showToast(ok ? 'Copied ' + cp : 'Couldn\u2019t copy \u2014 select the code and copy it yourself.');
+        },
+        function () {
+          _showToast('Couldn\u2019t copy \u2014 select the code and copy it yourself.');
+        },
+      );
     }
   });
 
@@ -396,10 +572,6 @@
       };
       img.src = URL.createObjectURL(f);
     });
-  function toLin(v) {
-    v /= 255;
-    return v > 0.04045 ? Math.pow((v + 0.055) / 1.055, 2.4) : v / 12.92;
-  }
   function toSrgb(v) {
     v = v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
     return Math.max(0, Math.min(255, Math.round(v * 255)));
@@ -422,8 +594,14 @@
     return out;
   }
   // the colour of a small patch of the photo (averaged in linear light), through the lighting correction when there is one
+  // (v304) the patch is the middle of the ring on screen (3 CSS px around its centre), in canvas pixels: it was 1 to 4
+  // canvas pixels from the canvas's width alone. Not the whole ring: that mixed the outlines into a small area
+  function sampleRad() {
+    var w = cv.getBoundingClientRect().width || cv.width;
+    return Math.max(1, Math.min(12, Math.round((3 * cv.width) / w)));
+  }
   function sampleCanvas(x, y) {
-    var rad = Math.max(1, Math.min(4, Math.round(cv.width / 240)));
+    var rad = sampleRad();
     var x0 = Math.max(0, x - rad),
       y0 = Math.max(0, y - rad),
       pw = Math.min(rad * 2 + 1, cv.width - x0),
@@ -527,6 +705,12 @@
     rafM = 0,
     pendM = null;
   function placeRing(cxp, cyp) {
+    // (v304: on the photo, where it's sampled: a drag past its edge left the ring over the black beside it)
+    var cr = cv.getBoundingClientRect();
+    if (cr.width && cr.height) {
+      cxp = Math.max(cr.left, Math.min(cr.right - 1, cxp));
+      cyp = Math.max(cr.top, Math.min(cr.bottom - 1, cyp));
+    }
     if (ring) {
       var wr = pWrap.getBoundingClientRect();
       ring.style.left = cxp - wr.left + 'px';
@@ -594,7 +778,7 @@
   // --- camera matching ---
   var _camStream = null,
     _camTimer = 0,
-    _camPt = { x: 0.5, y: 0.5 },
+    _camBox = { x: 0.5, y: 0.5 },
     _camFrozen = false,
     _camDrag = false,
     _camRaf = 0,
@@ -602,6 +786,8 @@
     _torchOn = false,
     _camZoom = 1,
     _ptrs = {},
+    _ringWas = null,
+    _pinched = false,
     _pinchD0 = 0,
     _zoom0 = 1,
     _camOC = document.createElement('canvas'),
@@ -614,57 +800,58 @@
     freezeB = document.getElementById('matchFreeze'),
     camStopB = document.getElementById('matchCamStop'),
     torchB = document.getElementById('matchTorch');
-  function camPatchHex() {
+  // (v304) the frame's pixel under the ring is worked out each time from where the ring is on screen and the zoom of
+  // the moment: it was kept in the video's own coordinates from the last drag, so after a pinch (or Stop and Start,
+  // which goes back to 1x) the colour came from somewhere else than the ring, off the picture at 3x. Only the patch
+  // is read, at the frame's own size (no shrinking of the whole frame, which Safari does without averaging), and it is
+  // the middle of the ring at any zoom (8 CSS px around its centre; it was 7 pixels of a 360-wide copy, 9 to 37 CSS px).
+  var _camEma = null;
+  function camPatchHex(smooth) {
     var vw = video.videoWidth,
       vh = video.videoHeight;
     if (!vw || !vh) return null;
-    var w = Math.min(360, vw),
-      s = w / vw,
-      hh = Math.max(1, Math.round(vh * s));
-    _camOC.width = w;
-    _camOC.height = hh;
-    try {
-      _camOCx.drawImage(video, 0, 0, w, hh);
-    } catch (e) {
-      return null;
-    }
     var bx = (videoBox || video).getBoundingClientRect(),
       BW = (videoBox || video).clientWidth || bx.width || 1,
       BH = (videoBox || video).clientHeight || bx.height || 1,
       sc = Math.max(BW / vw, BH / vh),
-      fx = (_camPt.x * BW - (BW - vw * sc) / 2) / (vw * sc),
-      fy = (_camPt.y * BH - (BH - vh * sc) / 2) / (vh * sc);
-    var cx = Math.max(0, Math.min(w - 1, Math.round(fx * w))),
-      cy = Math.max(0, Math.min(hh - 1, Math.round(fy * hh)));
-    var rad = 3,
+      ux = 0.5 + (_camBox.x - 0.5) / _camZoom,
+      uy = 0.5 + (_camBox.y - 0.5) / _camZoom,
+      fx = (ux * BW - (BW - vw * sc) / 2) / (vw * sc),
+      fy = (uy * BH - (BH - vh * sc) / 2) / (vh * sc);
+    var cx = Math.max(0, Math.min(vw - 1, Math.floor(fx * vw))),
+      cy = Math.max(0, Math.min(vh - 1, Math.floor(fy * vh))),
+      rad = Math.max(1, Math.min(40, Math.round(8 / (sc * _camZoom)))),
       x0 = Math.max(0, cx - rad),
       y0 = Math.max(0, cy - rad),
-      pw = Math.min(rad * 2 + 1, w - x0),
-      ph = Math.min(rad * 2 + 1, hh - y0);
+      pw = Math.min(cx + rad + 1, vw) - x0,
+      ph = Math.min(cy + rad + 1, vh) - y0;
+    if (_camOC.width !== pw) _camOC.width = pw;
+    if (_camOC.height !== ph) _camOC.height = ph;
     try {
-      var d = _camOCx.getImageData(x0, y0, pw, ph).data,
-        rl = 0,
-        gl = 0,
-        bl = 0,
-        n = 0,
-        i;
-      for (i = 0; i < d.length; i += 4) {
-        if (d[i + 3] === 0) continue;
-        rl += toLin(d[i]);
-        gl += toLin(d[i + 1]);
-        bl += toLin(d[i + 2]);
-        n++;
-      }
-      if (!n) return null;
-      return rgb2hex(toSrgb(rl / n), toSrgb(gl / n), toSrgb(bl / n));
+      _camOCx.drawImage(video, x0, y0, pw, ph, 0, 0, pw, ph);
+      var lin = patchLin(_camOCx.getImageData(0, 0, pw, ph).data, pw, ph, cx - x0, cy - y0, rad);
+      if (!lin) return null;
+      // (v304) live, the colour is eased over about half a second (each frame a third of the way), so the camera's
+      // flicker doesn't reorder the list several times a second; a drag, a pinch or a new start reads it straight
+      if (smooth && _camEma) for (var k = 0; k < 3; k++) lin[k] = _camEma[k] + (lin[k] - _camEma[k]) * 0.35;
+      _camEma = lin;
+      return rgb2hex(toSrgb(lin[0]), toSrgb(lin[1]), toSrgb(lin[2]));
     } catch (e) {
       return null;
     }
   }
+  function camResample() {
+    if (!_camRaf)
+      _camRaf = requestAnimationFrame(function () {
+        _camRaf = 0;
+        var hex = camPatchHex();
+        if (hex) sample(hex);
+      });
+  }
   function camTick() {
     if (_camFrozen) return;
     if (!video || video.readyState < 2) return;
-    var hex = camPatchHex();
+    var hex = camPatchHex(true);
     if (hex) sample(hex);
   }
   // each camera request gets a number; one that finishes after the dialog closed, the tab changed or a newer request
@@ -687,7 +874,9 @@
     _torchOn = false;
     if (torchB) torchB.style.display = 'none';
     _camZoom = 1;
+    _camEma = null;
     _ptrs = {};
+    _pinched = false;
     if (video) video.style.transform = '';
     if (_camStream) {
       try {
@@ -717,6 +906,7 @@
   function startCam() {
     if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
       lastHex = null;
+      lastSig = null;
       res.innerHTML = '<div class="mempty">Camera isn\u2019t available on this device.</div>';
       return;
     }
@@ -739,6 +929,16 @@
         _camStream = st;
         video.srcObject = st;
         _camTrack = (st.getVideoTracks && st.getVideoTracks()[0]) || null;
+        if (_camTrack && _camTrack.addEventListener) {
+          var tr = _camTrack;
+          tr.addEventListener('ended', function () {
+            if (_camTrack !== tr) return;
+            stopCam();
+            lastHex = null;
+            lastSig = null;
+            res.innerHTML = '<div class="mempty">The camera stopped. Tap Start camera to go on.</div>';
+          });
+        }
         var _caps = _camTrack && _camTrack.getCapabilities ? _camTrack.getCapabilities() : {};
         if (torchB) {
           if (_caps && _caps.torch) {
@@ -759,6 +959,7 @@
         if (reticle) reticle.style.display = '';
         _camZoom = 1;
         _ptrs = {};
+        _pinched = false;
         if (video) video.style.transform = '';
         clearInterval(_camTimer);
         _camTimer = setInterval(camTick, 140);
@@ -768,6 +969,7 @@
         _camPending = false;
         if (camWrap) camWrap.style.display = 'none';
         lastHex = null;
+        lastSig = null;
         res.innerHTML =
           '<div class="mempty">Couldn\u2019t open the camera' +
           (err && err.name === 'NotAllowedError' ? ' \u2014 permission was denied.' : '.') +
@@ -783,22 +985,29 @@
       reticle.style.left = sx * 100 + '%';
       reticle.style.top = sy * 100 + '%';
     }
-    _camPt.x = Math.max(0, Math.min(1, 0.5 + (sx - 0.5) / _camZoom));
-    _camPt.y = Math.max(0, Math.min(1, 0.5 + (sy - 0.5) / _camZoom));
-    if (!_camRaf)
-      _camRaf = requestAnimationFrame(function () {
-        _camRaf = 0;
-        var hex = camPatchHex();
-        if (hex) sample(hex);
-      });
+    _camBox.x = sx;
+    _camBox.y = sy;
+    camResample();
   }
   if (camBtn && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     camBtn.style.display = '';
   }
   {
     var _co = document.getElementById('matchCamOff');
-    if (_co) _co.addEventListener('click', startCam);
+    if (_co)
+      _co.addEventListener('click', function () {
+        // (a request that never answered, e.g. its question put away with the app: ask again)
+        if (_camPending) stopCam();
+        startCam();
+      });
   }
+  // (v304) the camera stops when the page is put away (another app, the lock screen, another tab): Safari stops
+  // sending frames, and the last frame (or a black one) was matched as LIVE until Stop and Start
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'hidden') return;
+    if (_camStream || _camPending) stopCam();
+    releaseHold();
+  });
   if (freezeB)
     freezeB.addEventListener('click', function () {
       _camFrozen = !_camFrozen;
@@ -822,11 +1031,16 @@
   if (torchB)
     torchB.addEventListener('click', function () {
       if (!_camTrack) return;
-      _torchOn = !_torchOn;
-      _camTrack.applyConstraints({ advanced: [{ torch: _torchOn }] }).catch(function () {
-        _torchOn = !_torchOn;
-      });
-      torchB.textContent = _torchOn ? 'Light on' : 'Light';
+      var want = !_torchOn,
+        tr = _camTrack;
+      tr.applyConstraints({ advanced: [{ torch: want }] }).then(
+        function () {
+          if (_camTrack !== tr) return;
+          _torchOn = want;
+          torchB.textContent = want ? 'Light on' : 'Light';
+        },
+        function () {},
+      );
     });
   function ptrDist() {
     var k = Object.keys(_ptrs);
@@ -838,6 +1052,8 @@
   function setZoom(z) {
     _camZoom = Math.max(1, Math.min(4, z));
     if (video) video.style.transform = _camZoom > 1.005 ? 'scale(' + _camZoom + ')' : '';
+    // (read again straight away, live or frozen: the live reading eased from the spot before the zoom, v304)
+    camResample();
   }
   if (video) {
     var _endP = function (e) {
@@ -847,7 +1063,9 @@
       } catch (_) {}
       var k = Object.keys(_ptrs);
       if (k.length < 2) _pinchD0 = 0;
-      _camDrag = k.length === 1;
+      // (the finger left after a pinch doesn't drag the ring)
+      if (!k.length) _pinched = false;
+      _camDrag = k.length === 1 && !_pinched;
     };
     video.addEventListener('pointerdown', function (e) {
       _ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
@@ -858,8 +1076,15 @@
       var k = Object.keys(_ptrs);
       if (k.length === 1) {
         _camDrag = true;
+        _ringWas = { x: _camBox.x, y: _camBox.y };
         moveReticle(e.clientX, e.clientY);
       } else if (k.length === 2) {
+        // (v304) a pinch, not a tap: the ring goes back to where it was before the first finger moved it there
+        if (_ringWas && !_pinched) {
+          var r = (videoBox || video).getBoundingClientRect();
+          moveReticle(r.left + _ringWas.x * r.width, r.top + _ringWas.y * r.height);
+        }
+        _pinched = true;
         _camDrag = false;
         _pinchD0 = ptrDist();
         _zoom0 = _camZoom;

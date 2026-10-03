@@ -243,7 +243,9 @@ test('touching sections: found across thick lines (up to a 40th of the picture),
   // 8 px across; 1 | a 6 px line | 3, with a 2 × 2 speck of 2 on 3's edge)
   const W = 300, H = 300, L = new Int32Array(W * H);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) L[y * W + x] = x < 140 ? 1 : x < 146 ? -1 : x < 148 && y >= 100 && y < 102 ? 2 : 3;
-  core.W = W; core.H = H; core.labels = L; core.comps = [null, { cx: 70, cy: 150, area: 1 }, { cx: 147, cy: 101, area: 4 }, { cx: 220, cy: 150, area: 1 }];
+  core.W = W; core.H = H; core.labels = L; core.comps = [null, { cx: 70, cy: 150, area: 42000 }, { cx: 147, cy: 101, area: 4 }, { cx: 220, cy: 150, area: 46196 }];
+  // (real areas, and nothing kept by a tap: v304 looks across specks smaller than Min section size, adjTiny)
+  core.secState = new Uint8Array(4);
   const a3 = K.adj();
   assert.ok(a3[1].has(3), 'across a 6 px line');
   assert.ok(!a3[1].has(2), 'the speck of 2 is not touching 1');

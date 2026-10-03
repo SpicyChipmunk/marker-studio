@@ -115,6 +115,9 @@ function catPool() {
   if (!_catPool) {
     _catPool = [];
     for (var i = 0; i < COLORS.length; i++) {
+      // (not the Colorless Blenders: they lay down no colour, so they're never a marker to buy for a colour, v298;
+      // they had come up as the highlight to buy for pale greys, even for someone who owns one, v304)
+      if (NOINK.has(i)) continue;
       _catPool.push({
         code: COLORS[i].code,
         brand: COLORS[i].brand,
@@ -127,24 +130,60 @@ function catPool() {
   }
   return _catPool;
 }
+// Brands I'd buy (Markers, v304): null for automatic, else the brands ticked; a marker to buy is suggested only from
+// those (shadeBuyPool, blendCompanions, the Photo pattern's markers to buy)
+function buyBrands() {
+  const b = api.buyBrands ? api.buyBrands() : null;
+  return b && b.length ? b : null;
+}
+// the markers to buy for a colour of base's: automatic, base's own brand (one brand's markers blend over each other
+// best); with brands ticked, base's brand if it's one of them, else the ones ticked
+function shadeBuyPool(base) {
+  const b = buyBrands(),
+    only = !b || b.indexOf(base.brand) >= 0 ? [base.brand] : b;
+  return catPool().filter(function (m) {
+    return only.indexOf(m.brand) >= 0;
+  });
+}
 function blendCompanions(base) {
   var bl = base.lab && base.lab.length ? base.lab : hexToLab(base.hex);
   var light = _findComp(bl, base, coll, -1),
     dark = _findComp(bl, base, coll, 1);
   var lo = !!light,
     dOwn = !!dark;
-  if (!light) {
-    var s = _findComp(bl, base, catPool(), -1);
-    if (s) {
-      light = s;
-      lo = false;
+  // (to buy: from Brands I'd buy when brands are ticked; else your brands first, then any (it had been any brand,
+  // v304)
+  var bb = buyBrands(),
+    mine = {};
+  coll.forEach(function (m) {
+    mine[m.brand] = 1;
+  });
+  var pools = bb
+    ? [
+        catPool().filter(function (m) {
+          return bb.indexOf(m.brand) >= 0;
+        }),
+      ]
+    : [
+        catPool().filter(function (m) {
+          return mine[m.brand];
+        }),
+        catPool(),
+      ];
+  for (var p = 0; p < pools.length && (!light || !dark); p++) {
+    if (!light) {
+      var s = _findComp(bl, base, pools[p], -1);
+      if (s) {
+        light = s;
+        lo = false;
+      }
     }
-  }
-  if (!dark) {
-    var s2 = _findComp(bl, base, catPool(), 1);
-    if (s2) {
-      dark = s2;
-      dOwn = false;
+    if (!dark) {
+      var s2 = _findComp(bl, base, pools[p], 1);
+      if (s2) {
+        dark = s2;
+        dOwn = false;
+      }
     }
   }
   return { light: light, lightOwned: lo, dark: dark, darkOwned: dOwn };

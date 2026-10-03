@@ -698,6 +698,11 @@ img.paperpick {
   font-weight: 700;
   margin: 14px 0 2px;
 }
+/* Find similar: what the result is like (v304) */
+.msimh {
+  font-weight: 700;
+  margin: 0 0 8px;
+}
 .mrow {
   display: flex;
   align-items: center;

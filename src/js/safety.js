@@ -133,8 +133,10 @@ window.addEventListener('appinstalled', function () {
 });
 const SHARE_ICON =
   '<svg class="instshare" width="15" height="17" viewBox="0 0 15 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 1.5v9M4.5 4.3l3-2.9 3 2.9"/><path d="M5 7H2.5v8.5h10V7H10"/></svg>';
-// true when the card is showing; `wait`: another card (the backup reminder) goes first, so this one stays hidden
-function renderInstallCard(wait) {
+// true when the card is showing; `wait`: another card (the backup reminder) goes first, so this one stays hidden.
+// keep (v304): Safari's backup reminder in a tab on an iPhone or iPad ({why: 'first' or 'gap', risk}, from backupDue),
+// shown as this card with Back up now first, whatever Not now said before
+function renderInstallCard(wait, keep) {
   const home = document.getElementById('homeView');
   if (!home) return false;
   let el = document.getElementById('installCard'),
@@ -142,7 +144,7 @@ function renderInstallCard(wait) {
   try {
     snooze = +localStorage.getItem(INSTALL_SNOOZE) || 0;
   } catch (e) {}
-  const kind = wait || Date.now() < snooze ? '' : installKind();
+  const kind = keep ? 'ios' : wait || Date.now() < snooze ? '' : installKind();
   if (!kind) {
     if (el) el.style.display = 'none';
     return false;
@@ -158,18 +160,45 @@ function renderInstallCard(wait) {
   }
   el.style.display = '';
   el.dataset.kind = kind;
+  el.dataset.keep = keep ? '1' : '';
   // Chrome and Firefox on an iPhone (CriOS, FxiOS) add to the Home Screen from their own Share menu, not Safari's
   if (kind === 'ios') {
     const ua = navigator.userAgent || '',
       dev = /iPad/.test(ua) || /Macintosh/.test(ua) ? 'iPad' : 'iPhone',
       has = state.owned.size || state.saved.length,
-      saf = !/CriOS|FxiOS|EdgiOS/.test(ua);
+      saf = !/CriOS|FxiOS|EdgiOS/.test(ua),
+      steps =
+        '<ol class="insteps"><li>' +
+        (saf
+          ? 'Tap the Share button ' + SHARE_ICON + ' in Safari.'
+          : 'Open this browser’s Share menu ' + SHARE_ICON + '.') +
+        '</li><li>Choose <b>Add to Home Screen</b>, then open Marker Studio from its icon.</li></ol>';
+    if (keep) {
+      el.innerHTML =
+        '<div class="ntxt"><b>Keep your ' +
+        (keep.why === 'first' ? 'guide' : 'work') +
+        ' safe on this ' +
+        dev +
+        '</b> <span>' +
+        safariWords() +
+        (keep.why === 'gap' && keep.risk
+          ? ' ' +
+            nWord(keep.risk, 'guide') +
+            (keep.risk === 1 ? ' has' : ' have') +
+            ' changed since your last backup.'
+          : '') +
+        ' Add Marker Studio to your Home Screen to stop that — back up first, then restore the file in the Home Screen app.</span></div>' +
+        steps +
+        '<div class="nrow"><button class="nb1" id="instBackup" data-inst="backup">Back up now</button><button data-inst="later">Not now</button></div>';
+      return true;
+    }
     el.innerHTML =
       '<div class="ntxt"><b>Add Marker Studio to your Home Screen</b> <span>so your ' +
       dev +
       ' keeps your markers and guides. ' +
-      (saf ? 'Safari clears' : 'Browsers on an ' + dev + ' clear') +
-      ' a website’s storage after about a week without a visit.</span></div><ol class="insteps"><li>' +
+      // (the same words as the Keep your guide safe card, v304)
+      safariWords() +
+      '</span></div><ol class="insteps"><li>' +
       (saf
         ? 'Tap the Share button ' + SHARE_ICON + ' in Safari.'
         : 'Open this browser’s Share menu ' + SHARE_ICON + '.') +
@@ -196,6 +225,8 @@ function installClick(e) {
   const a = b.dataset.inst;
   if (a === 'later') {
     snoozeInstall();
+    // (the card Safari's backup reminder shares: both rest for a week, v304)
+    if (b.closest('.nudge').dataset.keep) backupLater();
     homeCardGone(b.closest('.nudge'));
   } else if (a === 'backup') backupAll('instBackup');
   else if (a === 'go' && installEvt) {

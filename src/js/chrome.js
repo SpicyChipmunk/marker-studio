@@ -560,6 +560,8 @@ function fullRender() {
   chrome();
   syncModeA11y();
   headBrands();
+  // (Brands I'd buy's row: another tab or a restore may have changed it, v304)
+  if (typeof buySumSync === 'function') buySumSync();
   if (state.mode === 'palette') {
     if (state.harmony === 'custom') showCustom();
     else {
@@ -676,7 +678,16 @@ function doReRollBand(k) {
   const pal = state.palettes[state.palettes.length - 1];
   if (!pal || k >= pal.length) return;
   const pick = rerollPick(pal, k, state.harmony);
-  if (pick < 0) return;
+  // (said, not a tap that does nothing or a colour off the scheme, v304)
+  if (pick < 0) {
+    toast(
+      state.pool
+        ? 'No other marker in the selection fits this scheme \u2014 clear the selection to use all your markers.'
+        : 'No other marker fits this scheme \u2014 add markers or loosen the filters.',
+      4000,
+    );
+    return;
+  }
   const b = [...bands.children][k];
   if (!b) return;
   const cd = b.querySelector('.bcode');
@@ -722,6 +733,7 @@ function doReRollBand(k) {
       rolling = false;
       finish();
       chrome();
+      regenFlush();
     }
   };
   setTimeout(tick, delays[0]);
@@ -757,12 +769,7 @@ function doGenerate() {
   disarm();
   const pal = genPalette(state.palSize, state.harmony, paletteOpts());
   if (!pal) {
-    toast(
-      'Couldn\u2019t make a ' +
-        state.palSize +
-        '-colour palette from the markers in play \u2014 try fewer colours or loosen the filters.',
-      5000,
-    );
+    palFailToast();
     return;
   }
   retrigger(drawBtn, 'flash');
@@ -773,6 +780,7 @@ function doGenerate() {
     showPalette(pal, true);
     chrome();
     buzz(28);
+    regenFlush();
   };
   if (reduce) {
     commit();
@@ -855,14 +863,42 @@ function filterChanged() {
   else save();
   fullRender();
 }
+// Generate's palette can't be made from the markers in play (v304: a Finder selection has no filters to loosen)
+function palFailToast() {
+  toast(
+    'Couldn\u2019t make a ' +
+      state.palSize +
+      '-colour palette from the markers in play \u2014 try fewer colours or ' +
+      (state.pool ? 'clear the selection.' : 'loosen the filters.'),
+    5000,
+  );
+}
+// the palette made again for a new scheme, size, filter or base; when the markers in play can't fill it, said as
+// Generate says it (the palette shown stays as it was, v304). While a palette or a colour is rolling it's made once
+// the roll ends (v304: the roll's palette, made before the change, landed on top of it)
+let regenLater = false;
 function regenReplace() {
+  if (rolling) {
+    regenLater = true;
+    return;
+  }
   const pal = genPalette(state.palSize, state.harmony, paletteOpts());
-  if (pal) {
-    if (state.palettes.length) palPop();
-    palPush(pal, 24);
-    state.locked = state.locked.filter((i) => pal.includes(i));
-    save();
-    showPalette(pal, true);
+  if (!pal) {
+    palFailToast();
+    return;
+  }
+  if (state.palettes.length) palPop();
+  palPush(pal, 24);
+  state.locked = state.locked.filter((i) => pal.includes(i));
+  save();
+  showPalette(pal, true);
+}
+function regenFlush() {
+  if (!regenLater) return;
+  regenLater = false;
+  if (state.mode === 'palette' && state.harmony !== 'custom' && state.harmony !== 'photo') {
+    regenReplace();
+    chrome();
   }
 }
 function setSize(n) {
@@ -883,6 +919,9 @@ function setHarmony(h) {
   if (rolling || state.harmony === h) return;
   state.harmony = h;
   const R = HARM_RANGE[h] || [2, 6];
+  // (back to Custom: its own size, as many slots as it has; another scheme's smaller sizes had cut them, v304. A smaller
+  // size chosen in Custom still cuts them: ensureCustomSize)
+  if (h === 'custom' && (state.customPal || []).length) state.palSize = state.customPal.length;
   state.palSize = Math.max(R[0], Math.min(R[1], state.palSize));
   if (h === 'photo') state.palSize = photoSnap(state.palSize);
   save();
@@ -898,7 +937,8 @@ function setHarmony(h) {
   chrome();
 }
 function handoff(target) {
-  const m = finderMatches();
+  // (what's shown, and not the Colorless Blender alone: that had given the whole collection, v304)
+  const m = shownMatches().filter((i) => !NOINK.has(i));
   if (!m.length) return;
   setPool(m);
   disarm();
