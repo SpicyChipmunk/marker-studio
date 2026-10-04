@@ -63,7 +63,7 @@ test('the saved style: its exact text, nesting and order', () => {
   );
   // the section settings are saved beside the style, in this place among the rest
   assert.deepEqual(Object.keys(d.payload), ['lmap', 'ref', 'paper', 'assign', 'style', 'anchors', 'prog', 'tones', 'held', 'dates', 'out',
-    'edits', 'base', 'locks', 'upk', 'minPos', 'minSize', 'bgTrim', 'addAutoClose', 'secStates']);
+    'edits', 'base', 'locks', 'upk', 'frame', 'minPos', 'minSize', 'bgTrim', 'addAutoClose', 'secStates']);
   // (the smallest section: minSize on the slider's scale since v277, minPos on the old one for older copies)
   assert.deepEqual([d.payload.minSize, d.payload.minPos, d.payload.bgTrim, d.payload.addAutoClose], [12, 3, 64, true]);
   // a guide file to share has the same style
@@ -110,14 +110,15 @@ test('STYLE_FIELDS: every default is its variable’s first value, and what a fi
     assert.deepEqual(plain(f.check(undefined, f.def)), plain(f.def), f.key + ' (missing)');
     n++;
   }
-  assert.equal(n, 39);
+  // (v306: 42, with Scatter's gradScat, gradJit and gradFix)
+  assert.equal(n, 42);
 });
 
 test('STYLE_FIELDS: where each setting is saved (in the order written) and which ones Undo keeps', () => {
   const core = createApp().__mstest;
   assert.deepEqual([...core.styleFields].map((f) => f.in + '.' + f.key + (f.undo ? '' : ' (no undo)')), [
     'style.family', 'style.palette', 'style.gradShape', 'style.dir', 'style.look', 'style.emphasis', 'style.limitN',
-    'style.noAdj', 'style.balance', 'style.balM', 'style.balS', 'style.balA', 'style.balSeed', 'style.noRep', 'style.gradSeed', 'style.blendFall', 'style.blendVivid (no undo)', 'style.blendMix', 'style.texAmt', 'style.radC',
+    'style.noAdj', 'style.balance', 'style.balM', 'style.balS', 'style.balA', 'style.balSeed', 'style.noRep', 'style.gradSeed', 'style.gradScat', 'style.gradJit', 'style.gradFix', 'style.blendFall', 'style.blendVivid (no undo)', 'style.blendMix', 'style.texAmt', 'style.radC',
     'shade.mode', 'shade.x', 'shade.y', 'shade.round', 'shade.lines', 'shade.hi', 'shade.lo', 'shade.lightSrc', 'shade.light (no undo)', 'shade.main', 'shade.shadow',
     'shade.hilite', 'shade.flat',
     'style.photo (no undo)', 'style.expand', 'style.expandChar', 'style.paletteSource', 'style.savedPalId',

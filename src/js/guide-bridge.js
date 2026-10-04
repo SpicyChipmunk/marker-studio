@@ -400,6 +400,10 @@ function guideMeta(d, id) {
     if (_tn) meta.tn = _tn;
   }
   if (d.fresh) meta.fresh = 1;
+  // (v306: a copy with section edits still to be built, which Home's latest piece leaves out; 0 once a guide named
+  // "… (section edits)" is saved built)
+  if (_pl && _pl.edits === 1) meta.eds = 1;
+  else if (/ \(section edits\)$/.test(meta.name || '')) meta.eds = 0;
   return meta;
 }
 // d.mustExist: only update an entry still in the Library (an auto-save never brings back a guide deleted meanwhile);
@@ -960,15 +964,30 @@ function applyCollectionBackup(o, fts, replace) {
     };
   const same = own.size === state.owned.size && [...own].every((k) => state.owned.has(k));
   if (!same && (!own.size || (state.owned.size && !replace))) {
-    const n = mergeBackupPals(pals);
-    if (n) {
+    // (v305: your markers stay, and the backup's To buy and ink marks merge in for them; its Brands I'd buy is taken
+    // only when yours is automatic. Before, all three were dropped.)
+    const wr = wishRestore(o, false, state.owned);
+    let bb = false;
+    if (state.buyBrands == null && o && 'buyBrands' in o && cleanBuy(o.buyBrands)) {
+      state.buyBrands = cleanBuy(o.buyBrands);
+      bb = true;
+    }
+    const n = mergeBackupPals(pals),
+      ink = wr.low + wr.dry;
+    if (n || wr.wish || ink || bb) {
       if (!save(true)) return back();
+      if (wr.wish || ink) wishChanged();
+      if (bb) {
+        if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
+        if (typeof buySumSync === 'function') buySumSync();
+      }
       fullRender();
     }
-    return { mk: false, pals: n };
+    return { mk: false, pals: n, wish: wr.wish, low: wr.low, dry: wr.dry, buy: bb };
   }
   if (!same) state.owned = own;
-  wishRestore(o, !same);
+  // (the same markers: the lists merge as for Keep mine, v305)
+  wishRestore(o, !same, same ? state.owned : null);
   // (Brands I'd buy goes with the collection it was chosen for, when the file has it, v304)
   if (o && 'buyBrands' in o) {
     const bb = cleanBuy(o.buyBrands);
@@ -1012,15 +1031,40 @@ function mergeBackupPals(pals) {
   if (n && typeof savedOverlay !== 'undefined' && savedOverlay.classList.contains('on')) renderSaved();
   return n;
 }
-// what a restore of markers and palettes did, for the toast
+// "a, b and c" ('' for none)
+function andList(w) {
+  w = w.filter(Boolean);
+  return w.length > 1 ? w.slice(0, -1).join(', ') + ' and ' + w[w.length - 1] : w[0] || '';
+}
+// what came in beside your markers (Keep mine, v305): "2 to buy, 1 Running low note and 1 palette"
+function keptList(r) {
+  return andList([
+    r.wish ? r.wish + ' to buy' : '',
+    r.low ? nWord(r.low, 'Running low note') : '',
+    r.dry ? nWord(r.dry, 'dry note') : '',
+    r.pals ? nWord(r.pals, 'palette') : '',
+  ]);
+}
+const BUY_FROM_BACKUP = 'Brands I\u2019d buy set from the backup.';
+// what a restore of markers and palettes did, for the toast: "Restored — 8 markers. 1 palette added.", or with your
+// markers kept "Kept your markers; added 2 to buy and 1 Running low note." ('' when nothing came in)
 function restoredWords(r) {
   if (!r || r.failed) return '';
-  const p = r.pals ? nWord(r.pals, 'palette') + ' added.' : '';
-  return r.mk
-    ? 'Restored \u2014 ' + nWord(state.owned.size, 'marker') + '.' + (p ? ' ' + p : '')
-    : p
-      ? (state.owned.size ? 'Kept your markers; ' : '') + p
+  if (r.mk)
+    return (
+      'Restored \u2014 ' +
+      nWord(state.owned.size, 'marker') +
+      '.' +
+      (r.pals ? ' ' + nWord(r.pals, 'palette') + ' added.' : '')
+    );
+  const l = keptList(r);
+  if (!l && !r.buy) return '';
+  const s = state.owned.size
+    ? 'Kept your markers' + (l ? '; added ' + l : '') + '.'
+    : l
+      ? 'Added ' + l + '.'
       : '';
+  return s + (r.buy ? (s ? ' ' : '') + BUY_FROM_BACKUP : '');
 }
 // why a restore brought nothing back (restoreAny's done), in words
 function restoreWhy(why) {
@@ -1046,25 +1090,31 @@ function guidesLeft(x) {
 // what a restore with guides did, for the Back up & restore dialog: "Markers restored, 1 palette added; 2 guides
 // restored.", then what wasn't added (guidesLeft)
 function guideRestoreWords(col, ok, x) {
-  const a =
+  const l = col && !col.mk ? keptList(col) : '',
+    a =
       col && col.mk
         ? 'Markers restored' + (col.pals ? ', ' + nWord(col.pals, 'palette') + ' added' : '')
-        : col && col.pals
-          ? nWord(col.pals, 'palette') + ' added'
+        : l
+          ? 'Added ' + l
           : '',
     h = [a, ok ? nWord(ok, 'guide') + ' restored' : ''].filter(Boolean).join('; '),
+    b = col && !col.mk && col.buy ? BUY_FROM_BACKUP : '',
     t = guidesLeft(x);
-  return (h ? h + '.' : '') + (h && t ? ' ' : '') + t;
+  return [h ? h + '.' : '', b, t].filter(Boolean).join(' ');
 }
 // what came back from a restore ({markers,palettes,guides}), for Welcome's and Home's toast: "2 palettes and 1 guide"
 // (guides it didn't add: guidesLeft(r))
 function restoredList(r) {
-  const w = [
+  // (and, with your markers kept, what came in beside them, v305)
+  return andList([
     r.markers ? nWord(r.markers, 'marker') : '',
     r.palettes ? nWord(r.palettes, 'palette') : '',
+    r.wish ? nWord(r.wish, 'marker') + ' to buy' : '',
+    r.low ? nWord(r.low, 'Running low note') : '',
+    r.dry ? nWord(r.dry, 'dry note') : '',
+    r.buy ? 'Brands I\u2019d buy' : '',
     r.guides ? nWord(r.guides, 'guide') : '',
-  ].filter(Boolean);
-  return w.length > 1 ? w.slice(0, -1).join(', ') + ' and ' + w[w.length - 1] : w[0] || '';
+  ]);
 }
 // done (optional): called with what came back ({markers,palettes,guides}, and guides not added: {dup,bad,full}), or null
 // and why ('bad': not a backup, 'read': unreadable, 'full': storage full, nothing changed; nothing when nothing came
@@ -1161,7 +1211,7 @@ function restoreKeptWords(x) {
 function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done) {
   {
     var col = collection ? applyCollectionBackup(d, fts, rep) : null,
-      any = !!(col && (col.mk || col.pals));
+      any = !!(col && (col.mk || col.pals || col.wish || col.low || col.dry || col.buy));
     if (col && col.failed) {
       _btnFlash(bid, label, label, 10);
       if (cap) cap.textContent = '';
@@ -1178,6 +1228,10 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done) {
       return {
         markers: col && col.mk ? state.owned.size : 0,
         palettes: col ? col.pals || 0 : 0,
+        wish: col ? col.wish || 0 : 0,
+        low: col ? col.low || 0 : 0,
+        dry: col ? col.dry || 0 : 0,
+        buy: !!(col && col.buy),
         guides: g,
         dup: x.dup || 0,
         bad: x.bad || 0,

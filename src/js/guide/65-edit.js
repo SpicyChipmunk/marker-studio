@@ -86,6 +86,7 @@ function snapshotSeg() {
             y1: c.y1,
             merged: c.merged,
             page: c.page,
+            framed: c.framed,
             // (what it was merged into or split off from, since the last build: tickCarry)
             into: c.into,
             from: c.from,
@@ -175,6 +176,8 @@ function doUndo() {
         assignData = u.keep.ad;
         guideSig = u.keep.sig;
         planStack = (u.keep.plan || []).slice();
+        // (and nothing to redo: the steps undone were of the sections since changed, v305)
+        planFwd = [];
         planSync();
       }
     }
@@ -222,6 +225,8 @@ function mergeCells(a, b) {
   A.bg = A.bg || B.bg;
   // (the page's margin merged in: it is still the page, v304)
   if (B.page) A.page = true;
+  // (and the paper inside a frame, still left white: 10-segment, v305)
+  if (B.framed) A.framed = true;
   if (A.x0 == null) {
     A.x0 = B.x0;
     A.y0 = B.y0;

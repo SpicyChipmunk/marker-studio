@@ -62,6 +62,9 @@ function openDesignObj(d, id, resumed, quiet, col) {
     if (!document.getElementById('sfPick')) mount();
   }
   _smpLoad = false;
+  // (v306) what Home's latest piece asked for once this guide opens (openThen): only for this open of that guide
+  const then = _thenAct && _thenAct.id === id && _thenAct.gen === loadGen && !quiet ? _thenAct.act : null;
+  _thenAct = null;
   const gen = ++loadGen,
     // (from Home's Continue: taken here, so no other open finds it left on)
     cont = _contNext;
@@ -224,6 +227,13 @@ function openDesignObj(d, id, resumed, quiet, col) {
           const v = d.secStates[k];
           if (nl && nl < secState.length && (v === 1 || v === 2)) secState[nl] = v;
         }
+      }
+      // (v306) the paper inside a frame, as saved: its line to Colour it shows again while it's left white. Only
+      // when that section is there; a guide saved before has no `frame` and none is found again (a photo's page
+      // margin would be)
+      if (typeof d.frame === 'number') {
+        const fl = map[d.frame];
+        if (fl && fl < comps.length && comps[fl] && !comps[fl].merged) comps[fl].framed = true;
       }
       rgbOut = new Uint8ClampedArray(n * 4);
       imgData = new ImageData(rgbOut, W, H);
@@ -500,6 +510,9 @@ function openDesignObj(d, id, resumed, quiet, col) {
         if (cont) alongResume();
       }
       if (id === _justImported) _justImported = null;
+      // (not with section edits waiting to be built: those come first)
+      // (as the guide stands now: opening it moved loadGen on once more, resetForNewPicture)
+      if (then && !_edResumed) thenDo(then, id, loadGen);
     } catch (err) {
       curId = null;
       guideDirty = false;
@@ -518,6 +531,35 @@ function openDesignObj(d, id, resumed, quiet, col) {
     if (gen === loadGen) note('Couldn’t read that guide.');
   };
   img.src = d.lmap;
+}
+// (v306) Home's latest piece: open a guide, then Reveal & share ('reveal') or Print… ('print') once it has opened. Not
+// when the open fails (storage, a missing copy), the guide has section edits waiting, or another guide opens first.
+let _thenAct = null;
+function openThen(id, act) {
+  _thenAct = null;
+  if (
+    assignData &&
+    labels &&
+    id != null &&
+    id === curId &&
+    !pgMode &&
+    !cropMode &&
+    !guideStale() &&
+    !secEdPending()
+  ) {
+    openDesign(id);
+    thenDo(act, id, loadGen);
+    return;
+  }
+  openDesign(id);
+  _thenAct = { id: id, gen: loadGen, act: act };
+}
+function thenDo(act, id, gen) {
+  setTimeout(function () {
+    if (gen !== loadGen || curId !== id || !assignData || secEdPending()) return;
+    if (act === 'reveal') startReveal();
+    else if (act === 'print') openPrint();
+  }, 0);
 }
 // Home's Continue: open the guide (in Colour along, as a part-coloured one does) at the marker to pick up
 let _contNext = false;
@@ -616,6 +658,8 @@ function reloadOpen(id, col) {
 function setCollection(list) {
   coll = Array.isArray(list) ? list : [];
   if (metaEl) metaEl.innerHTML = metaText();
+  // (a finished page's "Did any run low?" chips follow a marker's ink or a marker no longer yours, v306)
+  lowRefresh();
 }
 function configure(a) {
   api = a || {};

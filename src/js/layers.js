@@ -12,6 +12,9 @@
       marker picker  the guide's picker sheet (84-popovers.js): as its Cancel, taking back a pick that was previewing
       sheet          any other guide sheet (72-frame.js): the ⋯ menu, Reset progress's question, Print; focus goes back
                      to what opened it
+      run-low box    "Did any run low?" › Another…'s box: a code in it is cleared, then it closes (88-coverage-blend.js)
+      code box       Colour along's "Type its code" box with a code in it or a search run: Escape clears it (v306,
+                     83-along.js), before the tip
       section tip    the tip over a tapped section (40-render.js)
       focus sheet    focus mode's Colours sheet
       focus mode     (82-colour-mode.js exitFocus); these two let an Escape from a form field in focus mode go by

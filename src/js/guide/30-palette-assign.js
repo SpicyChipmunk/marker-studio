@@ -90,6 +90,20 @@ function orderSections(cl) {
     arr.sort(function (a, b) {
       return Math.hypot(c[a].cx - mx, c[a].cy - my) - Math.hypot(c[b].cx - mx, c[b].cy - my);
     });
+  } else if (gradShape === 'around') {
+    // (v305) round Radial's centre, clockwise from the top; at the same angle, outwards
+    const rc = radCentre(),
+      ang = {},
+      rad = {};
+    arr.forEach(function (l) {
+      let t = Math.atan2(c[l].cy - rc.y, c[l].cx - rc.x) + Math.PI / 2;
+      if (t < 0) t += 2 * Math.PI;
+      ang[l] = t;
+      rad[l] = Math.hypot(c[l].cx - rc.x, c[l].cy - rc.y);
+    });
+    arr.sort(function (a, b) {
+      return ang[a] - ang[b] || rad[a] - rad[b] || a - b;
+    });
   } else {
     const rowH = Math.max(1, zbH() / Math.max(1, Math.round(Math.sqrt(N || 1)))),
       y0 = zbY0();
@@ -251,7 +265,12 @@ function hueDiff(h, t) {
 // markers cover), each the marker near it in hue with a lightness near the middle of them all and a clear colour,
 // so they run smoothly at much the same lightness. rnd (a ramp's Shuffle) picks at random among the near-equal ones.
 const GRAD_NEAR = 6;
-function gradPickSpread(src, K, loop, rnd) {
+// (v306) With shading on (zs: the zone's shading), a marker the shading can't give a lighter and darker partner
+// (gradShadeOK) costs GRAD_SH_COST more, and the 12 nearest are looked at instead of 8: Honolulu 48 at 16 markers went
+// from 8 to 14 of 16 that shade, with less clash
+const GRAD_SH_COST = 15,
+  GRAD_SH_NEAR = 12;
+function gradPickSpread(src, K, loop, rnd, zs) {
   const col = src.filter(notGreyM);
   if (col.length <= K) return src.slice(0, K);
   const n = col.length,
@@ -268,26 +287,33 @@ function gradPickSpread(src, K, loop, rnd) {
       }),
     Lmed = Ls[n >> 1],
     used = new Uint8Array(n),
-    out = [];
+    out = [],
+    NEAR = zs ? GRAD_SH_NEAR : 8,
+    shOK = zs ? new Int8Array(n).fill(-1) : null;
   for (let k = 0; k < K; k++) {
     const th = (h0 + (loop ? (360 * k) / K : K > 1 ? (span * k) / (K - 1) : 0)) % 360,
       near = [];
-    // the 8 unused markers nearest this hue, and what each would cost
+    // the 8 (12 with shading) unused markers nearest this hue, and what each would cost
     for (let i = 0; i < n; i++) {
       if (used[i]) continue;
       const d = hueDiff(mLch(col[i])[2], th);
-      if (near.length < 8 || d < near[near.length - 1][0]) {
+      if (near.length < NEAR || d < near[near.length - 1][0]) {
         near.push([d, i]);
         near.sort(function (a, b) {
           return a[0] - b[0];
         });
-        if (near.length > 8) near.pop();
+        if (near.length > NEAR) near.pop();
       }
     }
     if (!near.length) break;
     const cost = near.map(function (e) {
       const x = mLch(col[e[1]]);
-      return e[0] + Math.abs(x[0] - Lmed) * 0.8 - x[1] * 0.15;
+      let v = e[0] + Math.abs(x[0] - Lmed) * 0.8 - x[1] * 0.15;
+      if (zs) {
+        if (shOK[e[1]] < 0) shOK[e[1]] = gradShadeOK(col[e[1]], zs) ? 1 : 0;
+        if (!shOK[e[1]]) v += GRAD_SH_COST;
+      }
+      return v;
     });
     let b = 0;
     for (let q = 1; q < near.length; q++) if (cost[q] < cost[b]) b = q;
@@ -314,6 +340,141 @@ function gradPickField(src, M, rnd) {
   }
   return out;
 }
+/* ---- (v306) Palette's Rainbow scheme: the Gradient's own picking, for the Palette screen ----
+   n colours evenly round the rainbow at similar lightness, picked as the Gradient picks one marker per band from your
+   markers (gradTierPool, then gradPickSpread's targets and costs, in gradSequence's order), so at the same count a
+   Rainbow palette is the Gradient's markers in the Gradient's order, and a guide laid from it lays them so. Three
+   differences, all Palette's: two colours closer than RAINBOW_NEED (CIEDE2000) are avoided where another marker near
+   that hue will do (Ben's thin teal–cyan stretch gave B111 and B112, 3.9 apart, at 16); `locked` markers (palette
+   place → marker index) stay in their places and the free colours are picked round them (each takes the target hue
+   nearest it); and `seed` (0 to 1; 0 or none is the Gradient's own pick) picks at random among the near-equal
+   markers, so Generate rolls another rainbow. At most as many colours as there are clear markers.
+   `idxs`: the markers in play (marker indexes); `mood`: a MOOD_KEYS key. Returns marker indexes in palette order. */
+const RAINBOW_NEED = 5;
+function rainbowPick(n, mood, idxs, opt) {
+  opt = opt || {};
+  const all = idxs.map(function (i) {
+      return { i: i, mkey: mkey(i), lab: hexToLab(COLORS[i].hex), fam: COLORS[i].fam };
+    }),
+    locked = opt.locked || {},
+    lockIdx = [];
+  for (const p in locked)
+    if (+p < n && locked[p] != null && lockIdx.indexOf(locked[p]) < 0) lockIdx.push(locked[p]);
+  const pre = lockIdx.map(function (i) {
+      return (
+        all.find(function (m) {
+          return m.i === i;
+        }) || { i: i, mkey: mkey(i), lab: hexToLab(COLORS[i].hex), fam: COLORS[i].fam }
+      );
+    }),
+    list = all.filter(function (m) {
+      return lockIdx.indexOf(m.i) < 0;
+    }),
+    pool = moodPick(list, MOOD_KEYS.indexOf(mood) >= 0 ? mood : 'neutral', n, mLch).items,
+    K = Math.min(n, pool.filter(notGreyM).length + pre.length);
+  if (K < 1) return [];
+  const tier = gradTierPool(pool, K - pre.length),
+    loop = gradIsLoop(tier.concat(pre)),
+    picks = rainbowSpread(tier, K, loop, opt.seed > 0 ? seededRandom(opt.seed) : null, pre),
+    seq = gradSequence(picks, 1, loop),
+    out = new Array(K).fill(-1);
+  for (const p in locked) if (+p < K && locked[p] != null && out.indexOf(locked[p]) < 0) out[+p] = locked[p];
+  let q = 0;
+  for (const m of seq) {
+    if (lockIdx.indexOf(m.i) >= 0) continue;
+    while (q < K && out[q] >= 0) q++;
+    if (q < K) out[q] = m.i;
+  }
+  return out.filter(function (i) {
+    return i >= 0;
+  });
+}
+// gradPickSpread's picking (the same targets, nearest 8 and costs), with the markers in `pre` already placed, each on
+// the free target hue nearest it, and never a marker within RAINBOW_NEED of one placed while one further off is near
+function rainbowSpread(src, K, loop, rnd, pre) {
+  const col = src.filter(notGreyM);
+  if (!pre.length && col.length <= K) return src.slice(0, K);
+  const n = col.length,
+    hv = huesOf(col.length ? col : pre),
+    gap = hueGap(hv),
+    h0 = hv[gap[1]],
+    span = loop ? 360 : 360 - gap[0],
+    Ls = col
+      .map(function (m) {
+        return mLch(m)[0];
+      })
+      .sort(function (a, b) {
+        return a - b;
+      }),
+    Lmed = Ls[n >> 1],
+    used = new Uint8Array(n),
+    out = pre.slice(),
+    th = [],
+    free = [];
+  for (let k = 0; k < K; k++) th.push((h0 + (loop ? (360 * k) / K : K > 1 ? (span * k) / (K - 1) : 0)) % 360);
+  const taken = new Uint8Array(K);
+  pre.forEach(function (m) {
+    let b = -1;
+    for (let k = 0; k < K; k++)
+      if (!taken[k] && (b < 0 || hueDiff(mLch(m)[2], th[k]) < hueDiff(mLch(m)[2], th[b]))) b = k;
+    if (b >= 0) taken[b] = 1;
+  });
+  for (let k = 0; k < K; k++) if (!taken[k]) free.push(k);
+  for (const k of free) {
+    // the 8 unused markers nearest this hue (as gradPickSpread), less those too close to one placed; when all 8
+    // are, the 8 nearest that aren't; when every one is, the 8 nearest
+    const close = function (i) {
+        return out.some(function (o) {
+          return de2000(o.lab, col[i].lab) < RAINBOW_NEED;
+        });
+      },
+      nearest = function (ok) {
+        const a = [];
+        for (let i = 0; i < n; i++) {
+          if (used[i] || !ok(i)) continue;
+          const d = hueDiff(mLch(col[i])[2], th[k]);
+          if (a.length < 8 || d < a[a.length - 1][0]) {
+            a.push([d, i]);
+            a.sort(function (x, y) {
+              return x[0] - y[0];
+            });
+            if (a.length > 8) a.pop();
+          }
+        }
+        return a;
+      },
+      any = function () {
+        return true;
+      },
+      far = function (i) {
+        return !close(i);
+      };
+    let near = nearest(any);
+    const keep = near.filter(function (e) {
+      return !close(e[1]);
+    });
+    if (keep.length) near = keep;
+    else if (near.length) {
+      const f = nearest(far);
+      if (f.length) near = f;
+    }
+    if (!near.length) break;
+    const cost = near.map(function (e) {
+      const x = mLch(col[e[1]]);
+      return e[0] + Math.abs(x[0] - Lmed) * 0.8 - x[1] * 0.15;
+    });
+    let b = 0;
+    for (let q = 1; q < near.length; q++) if (cost[q] < cost[b]) b = q;
+    if (rnd) {
+      const ok = [];
+      for (let q = 0; q < near.length; q++) if (cost[q] <= cost[b] + GRAD_NEAR) ok.push(q);
+      b = ok[Math.floor(rnd() * ok.length)];
+    }
+    used[near[b][1]] = 1;
+    out.push(col[near[b][1]]);
+  }
+  return out;
+}
 // the colour differences between these markers, n × n
 function deMatrix(ms) {
   const n = ms.length,
@@ -324,10 +485,12 @@ function deMatrix(ms) {
 }
 // The smoothest order of n colours (D their differences): `init` (an order to start from) and nearest neighbour
 // from a few starts, each shortened by 2-opt (turning round a stretch wherever that makes the whole shorter),
-// keeping the best. After GRAD_TOUR_MS it stops improving and keeps the best so far, so thousands of sections and
-// hundreds of markers can't freeze the page. A loop, unless `open`: then its ends are free (a loop through one more
-// stop that is no distance from any colour, cut there).
-const GRAD_TOUR_MS = 150;
+// keeping the best. After GRAD_TOUR_WORK steps of work it stops improving and keeps the best so far, so hundreds of
+// markers can't freeze the page. Counted in steps, not on the clock (v306): with a time limit a slower iPad, or a
+// busy one, stopped sooner and laid a different guide from the same settings. A loop, unless `open`: then its ends
+// are free (a loop through one more stop that is no distance from any colour, cut there).
+const GRAD_TOUR_WORK = 3e7;
+let gradTourWork = 0;
 function gradTour(D, n, open, init) {
   const idx = [];
   for (let i = 0; i < n; i++) idx.push(i);
@@ -340,7 +503,7 @@ function gradTour(D, n, open, init) {
     for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) E[i * m + j] = D[i * n + j];
     if (init) init = init.concat([n]);
   }
-  const end = Date.now() + GRAD_TOUR_MS;
+  let work = 0;
   function len(t) {
     let L = 0;
     for (let q = 0; q < m; q++) L += E[t[q] * m + t[(q + 1) % m]];
@@ -350,6 +513,7 @@ function gradTour(D, n, open, init) {
     const t = [st],
       used = new Uint8Array(m);
     used[st] = 1;
+    work += m * m;
     while (t.length < m) {
       const l = t[t.length - 1] * m;
       let bj = -1,
@@ -369,7 +533,8 @@ function gradTour(D, n, open, init) {
     while (imp) {
       imp = false;
       for (let i = 0; i < m - 1; i++) {
-        if ((i & 15) === 0 && Date.now() >= end) return;
+        if (work >= GRAD_TOUR_WORK) return;
+        work += m - i;
         const A = t[i] * m,
           B = t[i + 1];
         for (let k = i + 2; k < m; k++) {
@@ -377,6 +542,7 @@ function gradTour(D, n, open, init) {
           const C = t[k],
             F = t[(k + 1) % m];
           if (E[A + C] + E[B * m + F] < E[A + B] + E[C * m + F] - 1e-6) {
+            work += k - i;
             for (let x = i + 1, y = k; x < y; x++, y--) {
               const s = t[x];
               t[x] = t[y];
@@ -395,7 +561,7 @@ function gradTour(D, n, open, init) {
   let best = null,
     bl = Infinity;
   for (let s = 0; s < starts.length; s++) {
-    if (best && Date.now() >= end) break;
+    if (best && work >= GRAD_TOUR_WORK) break;
     const t = typeof starts[s] === 'number' ? nearest(starts[s]) : starts[s];
     twoOpt(t);
     const L = len(t);
@@ -404,6 +570,7 @@ function gradTour(D, n, open, init) {
       best = t;
     }
   }
+  gradTourWork = work;
   if (open) {
     const z = best.indexOf(n);
     best = best.slice(z + 1).concat(best.slice(0, z));
@@ -468,9 +635,12 @@ function _gradSequence(ms, g, loop) {
 // where they come from (poolSource); N the sections.
 function gradPlan(src, N) {
   const pool = src.items,
-    M = Math.max(1, Math.min(limitN, N, pool.length)),
+    cnt = gradCount(src, N),
+    M = cnt.M,
     g = gradGroupSize(look, M, N, gradShape);
-  let loop, seq;
+  let loop,
+    seq,
+    shp = false;
   if (src.seeded) {
     loop = gradIsLoop(pool);
     seq = gradSequence(pool, g, loop);
@@ -479,8 +649,12 @@ function gradPlan(src, N) {
     const tier = gradTierPool(pool, M),
       rnd = gradSeed > 0 ? seededRandom(gradSeed) : null;
     loop = gradIsLoop(tier);
+    // (shading-aware picks, v306: one marker to a band, with shading on as it's laid)
+    shp = g === 1 && gradShpOn();
     seq = gradSequence(
-      g === 1 ? gradPickSpread(tier, M, loop, loop ? null : rnd) : gradPickField(tier, M, loop ? null : rnd),
+      g === 1
+        ? gradPickSpread(tier, M, loop, loop ? null : rnd, shp ? zsh(zoneLive()) : null)
+        : gradPickField(tier, M, loop ? null : rnd),
       g,
       loop,
     );
@@ -498,7 +672,66 @@ function gradPlan(src, N) {
     r = gradStartOf(nc);
     seq = seq.slice(r, nc).concat(seq.slice(0, r), seq.slice(nc));
   }
-  return { seq: seq, g: Math.max(1, Math.min(g, seq.length)), loop: loop, base: base, nc: nc, r: r };
+  return {
+    seq: seq,
+    g: Math.max(1, Math.min(g, seq.length)),
+    loop: loop,
+    base: base,
+    nc: nc,
+    r: r,
+    reuse: cnt.reuse,
+    shp: shp,
+  };
+}
+/* How many markers the Gradient lays: the marker count's worth, or fewer with fewer sections or markers. { M, reuse }.
+   v306 (U6): with the count at all your markers on a page with more sections than your clear markers (chroma 20 or
+   more, lightness 34 to 90: GRAD_TIERS' widest), it lays just the clear ones, some on two sections (reuse), instead of
+   reaching for greys and browns; the Earthy, Soft, Deep and Pastel Moods (whose colours aren't clear ones) and a
+   palette are laid as before. On Ben's 448-section mandala: 268 clear markers instead of 448 with 86 greys. */
+const GRAD_REUSE_MOODS = ['neutral', 'vivid'];
+function gradClearM(m) {
+  const x = mLch(m),
+    T = GRAD_TIERS[GRAD_TIERS.length - 1];
+  return x[1] >= T[0] && x[0] >= T[1] && x[0] <= T[2];
+}
+function gradCount(src, N) {
+  const pool = src.items;
+  let M = Math.max(1, Math.min(limitN, N, pool.length)),
+    reuse = false;
+  if (!src.seeded && GRAD_REUSE_MOODS.indexOf(emphasis) >= 0 && limitN >= sliderMax()) {
+    let k = 0;
+    for (let i = 0; i < pool.length; i++) if (gradClearM(pool[i])) k++;
+    if (k >= 2 && k < N) {
+      M = k;
+      reuse = true;
+    }
+  }
+  return { M: M, reuse: reuse };
+}
+// the Gradient's marker count for the zone being edited, as gradPlan finds it (for the Colours and Pattern tabs)
+function gradCountNow() {
+  const N = zoneList().length;
+  return gradCount(poolSource(Math.min(limitN, N), true), N);
+}
+/* Shading-aware picks (U7, v306): a Gradient laid with shading on (Main's or the zone's) prefers markers the shading
+   has a lighter and darker partner for (gradShadeOK: shadeTones' own test). Turning shading on never picks again by
+   itself: re-laying a gradient to face the light keeps how its markers were picked (_shpForce, from assignData's
+   shp / shps), and the Shading tab offers "Pick shadeable ones" instead (gradShadeOffer). */
+let _shpForce = null;
+function gradShpOn() {
+  const z = zoneLive();
+  if (_shpForce) return !!_shpForce[z];
+  return shadeMode !== 'off' && zsh(z).on;
+}
+// how a zone's markers were picked the last time it was laid (true: shading-aware)
+function gradShpOf(id) {
+  if (!assignData) return false;
+  if (assignData.shps) return !!assignData.shps[id];
+  return !id && !!assignData.shp;
+}
+function gradShadeOK(m, zs) {
+  const t = shadeTones(m, zs);
+  return !!t.dark && (shadeMode !== 'full' || !!t.light || !!t.paper);
 }
 // how far round a loop of n starts: gradSeed is kept as a share of the way round (0 is the smoothest start), so a
 // start stays about where it was when the marker count changes
@@ -516,7 +749,16 @@ function gradStartInfo() {
   if (family !== 'gradient' || !labels || !comps) return null;
   const N = zoneList().length;
   if (!N) return null;
-  const p = gradPlan(poolSource(Math.min(limitN, N), true), N);
+  // (its markers picked as the guide's were: a guide laid before shading was turned on shows the loop it has)
+  const f0 = _shpForce;
+  _shpForce = {};
+  _shpForce[zoneLive()] = assignData ? gradShpOf(zoneLive()) : gradShpOn();
+  let p;
+  try {
+    p = gradPlan(poolSource(Math.min(limitN, N), true), N);
+  } finally {
+    _shpForce = f0;
+  }
   if (!p.loop || !p.base || p.nc < 3) return null;
   return { cols: p.base.slice(0, p.nc), n: p.nc, r: p.r };
 }
@@ -560,7 +802,7 @@ function splitByArea(items, shares, mins) {
 // sun when the zone is shaded by it, else the top (a flat zone, or light from the photo, has no sun to face). 0 for
 // Radial, whose rings run light to dark and back.
 function gradLightSign() {
-  if (gradShape === 'radial') return 0;
+  if (gradShape === 'radial' || gradShape === 'around') return 0;
   const ax = gradShape === 'diagonal' ? [Math.SQRT1_2, -Math.SQRT1_2] : [0, 1];
   let d = 0;
   // (where the sun is from the middle of the extent the flow runs over: the zone's, or the picture's)
@@ -578,6 +820,13 @@ function radCentre() {
 // where a section sits across its band: smaller is nearer the light side (for Radial, round its ring)
 function gradAcross(sign) {
   const c = comps;
+  // (Around: from the centre outwards)
+  if (gradShape === 'around') {
+    const rc = radCentre();
+    return function (l) {
+      return Math.hypot(c[l].cx - rc.x, c[l].cy - rc.y);
+    };
+  }
   if (gradShape === 'radial') {
     const rc = radCentre();
     return function (l) {
@@ -589,11 +838,25 @@ function gradAcross(sign) {
     return -sign * (c[l].cx * ax[0] + c[l].cy * ax[1]);
   };
 }
+// Around with markers that don't go right round the colour wheel (a warm or cool Temperature, a narrow palette): out
+// and back (every other marker one way, the rest back), so the ends meet where the flow comes round to its start
+// with no seam, as Radial's rings run light to dark and back
+function outAndBack(seq) {
+  const ev = [],
+    od = [];
+  seq.forEach(function (m, q) {
+    (q % 2 ? od : ev).push(m);
+  });
+  return ev.concat(od.reverse());
+}
 function buildGradient(cl) {
-  const N = cl.length,
+  // (the guide as it was: the other zones' markers, which rough spots' new markers keep clear of)
+  const prevAll = assignData,
+    N = cl.length,
     order = orderSections(cl),
-    plan = gradPlan(poolSource(Math.min(limitN, N)), N),
-    seq = plan.seq,
+    src = poolSource(Math.min(limitN, N)),
+    plan = gradPlan(src, N),
+    seq = gradShape === 'around' && !plan.loop && plan.seq.length > 2 ? outAndBack(plan.seq) : plan.seq,
     M = seq.length,
     K = Math.max(1, Math.round(M / plan.g)),
     groups = [],
@@ -636,10 +899,716 @@ function buildGradient(cl) {
     for (let q = 0; q < parts.length; q++)
       for (let j = 0; j < parts[q].length; j++) assign[parts[q][j]] = grp[q];
   }
+  // Scatter, Textured and up: the markers laid again, mixed within their band of the run and strayed across bands
+  // (Around's two ends meet, so its run goes round as a loop)
+  const scat = gradScatAt(M);
+  gradScatLast = null;
+  if (scat >= 2 && N > 2) {
+    const t0 = Date.now();
+    gradScatter(order, assign, plan.loop || gradShape === 'around', seq, scat);
+    gradScatLast.ms = Date.now() - t0;
+  }
   assignData = { assign: assign, order: order, N: N, base: Object.assign({}, assign) };
-  // (which way its bands' light side faces, for gradFollowLight)
-  if (sign) assignData.lit = sign;
+  // (which way its bands' light side faces, for gradFollowLight: not once Scatter has mixed them, so moving the sun
+  // never lays a scattered guide again)
+  if (sign && scat < 2) assignData.lit = sign;
+  // (its markers picked with shading in mind: kept so when it's laid again to face the light)
+  if (plan.shp) assignData.shp = 1;
   applyLocks();
+  gradPinClear(order, seq, M >= N && !plan.reuse);
+  gradSmoothLast = null;
+  gradFixLast = null;
+  // (the Gradient's own: not the Photo pattern before it has a photo) Polished: smoothed, and with markers used twice
+  // (gradCount's reuse) touching sections sharing one count as a clash; Natural and Scatter: only those split up
+  if (family === 'gradient') {
+    if (scat === 0) gradSmooth(order, M >= N, limitN >= src.items.length, plan.reuse ? 'reuse' : '');
+    else if (plan.reuse) gradSmooth(order, false, true, 'split');
+    // rough spots smoothed ("Smooth them"), after the Polished pass, so a change that lays it again keeps them
+    if (scat === 0 && gradFix) gradFixApply(order, src, prevAll);
+  }
+}
+// A Gradient with a marker for every section (each): a section not pinned whose marker a pinned section has (the
+// sections keeping their markers when the guide is built again, as Colour it on the paper round the drawing does, are
+// laid as pinned: buildGuide) takes the nearest of the run's markers no section has instead, so it keeps clear of them
+// (v306 debugging: Colour it gave the paper a marker another section kept, and the count said one more than there were)
+function gradPinClear(order, seq, each) {
+  if (!each || !assignData) return;
+  const A = assignData.assign,
+    pinned = {},
+    on = {};
+  let any = false;
+  order.forEach(function (l) {
+    if (!A[l]) return;
+    on[A[l].mkey] = 1;
+    if (locks[l] !== undefined) {
+      pinned[A[l].mkey] = 1;
+      any = true;
+    }
+  });
+  if (!any) return;
+  const spare = seq.filter(function (m) {
+    return !on[m.mkey];
+  });
+  order.forEach(function (l) {
+    const m = A[l];
+    if (!m || locks[l] !== undefined || !pinned[m.mkey] || !spare.length) return;
+    let bi = 0,
+      bd = Infinity;
+    spare.forEach(function (s, i) {
+      const d = m.lab && s.lab ? de2000(m.lab, s.lab) : i;
+      if (d < bd) {
+        bd = d;
+        bi = i;
+      }
+    });
+    A[l] = spare.splice(bi, 1)[0];
+    if (assignData.base) assignData.base[l] = A[l];
+  });
+}
+// The Scatter laid with M markers: Gradient only, and Polished below GRAD_SCAT_MIN markers (with so few there are only
+// two colour bands: Sparkle and Confetti came out the same and colours jumped wildly)
+const GRAD_SCAT_MIN = 9;
+function gradScatAt(M) {
+  return family === 'gradient' && M >= GRAD_SCAT_MIN ? gradScat : 0;
+}
+/* Scatter (v306): 0 Polished (laid, then smoothed: gradSmooth, v305), 1 Natural (laid as v304 did, no smoothing),
+   2 Textured, 3 Sparkle, 4 Confetti. For 2-4 the gradient is laid as Natural (the base), then:
+   - the run of markers is cut into bands of about a tenth of the run each (GRAD_BANDS; fewer for a short run, at
+     least 3 markers to a band), each cut moved to the nearest change of hue family (gradFamOf) within 30% of a band,
+     so a band is about one hue family: the light and dark of one colour;
+   - each section's place is its base band plus where it sits in that band (by area, along the flow), 0 to 1;
+   - Sparkle and Confetti: a share of the sections (GRAD_STRAY) move to the band next door, or two away, either way,
+     keeping where they sit in the band (round the run for a loop; turned back at the ends of a run that isn't);
+   - the sections are sorted by their new place and cut by area into the bands (each band its markers' share, so
+     every marker keeps its share of the picture);
+   - Textured and on: within its band, the sections are in a random order and cut by area to the band's markers (any
+     of the band's markers anywhere in it).
+   Draws come from gradJit and the section's number. On Radial, sections of one ring (radius within a small gap of
+   the last and within GRAD_RING[1] of the ring's first) and about the same area (within GRAD_RING[2] of the
+   smallest) share one place and their draws, so petals stay matched. The flow's first section keeps its marker
+   (Start colour); pins and coloured sections keep theirs (applyLocks, after). Saved guides keep their markers, so
+   one laid at any stop reopens as it was. */
+const GRAD_SCAT_LABEL = ['Polished', 'Natural', 'Textured', 'Sparkle', 'Confetti'];
+const GRAD_SCAT_DESC = [
+  '',
+  'In flow order, with no clashes tidied away',
+  'Light and dark of each colour mixed; bands stay crisp',
+  'Textured, with flecks of the next colour along',
+  'Colours stray further: confetti close up, a rainbow from afar',
+];
+const GRAD_BANDS = 10;
+// [share of sections going to the next band, share going two bands away], by level
+const GRAD_STRAY = [null, null, [0, 0], [0.3, 0], [0.3, 0.2]];
+// rings on Radial: [gap, span] as parts of the largest radius, area ratio
+const GRAD_RING = [0.005, 0.03, 1.35];
+let gradScatLast = null; // (what the last one did, for the tests)
+function gradHash(s, l, salt) {
+  let h =
+    Math.imul(s ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(l + 1, 0xc2b2ae35) ^ Math.imul(salt + 7, 0x27d4eb2f);
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x7feb352d);
+  h ^= h >>> 15;
+  h = Math.imul(h, 0x846ca68b);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function gradFamOf(m) {
+  if (isGreyM(m)) return -1;
+  const h = mLch(m)[2];
+  // R 5-45, YR -75, Y -100, YG -130, G -170, BG -210, B -250, BV -290, V -330, RV -365
+  const from = [5, 45, 75, 100, 130, 170, 210, 250, 290, 330];
+  let f = 9;
+  for (let i = 0; i < from.length; i++) if (h >= from[i]) f = i;
+  return f;
+}
+function gradScatter(order, assign, loop, seq, lv) {
+  const c = comps,
+    s = Math.floor((gradJit || 0) * 4294967296) >>> 0,
+    first = order[0],
+    firstM = assign[first],
+    used = new Set();
+  order.forEach(function (l) {
+    if (assign[l]) used.add(assign[l].mkey);
+  });
+  const seen = new Set(),
+    mk = seq.filter(function (m) {
+      if (!used.has(m.mkey) || seen.has(m.mkey)) return false;
+      seen.add(m.mkey);
+      return true;
+    }),
+    K = mk.length,
+    F = Math.max(2, Math.min(GRAD_BANDS, Math.floor(K / 3)));
+  // the bands of the run, each cut moved to a change of hue family nearby
+  const fam = mk.map(gradFamOf),
+    cut = [0];
+  for (let k = 1; k < F; k++) {
+    const ideal = Math.round((k * K) / F),
+      r = Math.floor((0.3 * K) / F),
+      lo = Math.max(cut[k - 1] + 1, ideal - r),
+      hi = Math.min(K - (F - k), ideal + r);
+    let best = Math.max(lo, Math.min(hi, ideal)),
+      bd = Infinity;
+    for (let j = lo; j <= hi; j++)
+      if (fam[j] !== fam[j - 1] && Math.abs(j - ideal) < bd) {
+        bd = Math.abs(j - ideal);
+        best = j;
+      }
+    cut.push(best);
+  }
+  cut.push(K);
+  const bandOf = new Map();
+  for (let b = 0; b < F; b++) for (let i = cut[b]; i < cut[b + 1]; i++) bandOf.set(mk[i].mkey, b);
+  const edge = cut.map(function (x) {
+    return x / K;
+  });
+  const secs = order.filter(function (l) {
+      return assign[l] && bandOf.has(assign[l].mkey);
+    }),
+    ns = secs.length,
+    oi = new Map();
+  secs.forEach(function (l, i) {
+    oi.set(l, i);
+  });
+  // each section's place in its base band (by area along the flow), 0 to 1
+  const inB = [];
+  for (let b = 0; b < F; b++) inB.push([]);
+  secs.forEach(function (l) {
+    inB[bandOf.get(assign[l].mkey)].push(l);
+  });
+  const t = new Float64Array(ns),
+    base = new Int32Array(ns);
+  inB.forEach(function (list, b) {
+    let acc = 0,
+      run = 0;
+    list.forEach(function (l) {
+      acc += Math.max(1, c[l].area || 1);
+    });
+    list.forEach(function (l) {
+      const a = Math.max(1, c[l].area || 1),
+        i = oi.get(l);
+      t[i] = b + (run + a / 2) / acc;
+      base[i] = b;
+      run += a;
+    });
+  });
+  // rings (Radial): sections that share one place and their draws
+  const gid = new Int32Array(ns).fill(-1);
+  let ng = 0;
+  if (gradShape === 'radial') {
+    const rc = radCentre(),
+      rr = secs.map(function (l, i) {
+        return [i, Math.hypot(c[l].cx - rc.x, c[l].cy - rc.y)];
+      });
+    rr.sort(function (a, b) {
+      return a[1] - b[1];
+    });
+    const R = rr.length ? rr[rr.length - 1][1] : 1,
+      gap = GRAD_RING[0] * R,
+      span = GRAD_RING[1] * R,
+      rings = [];
+    let cur = [],
+      r0 = 0,
+      rp = 0;
+    rr.forEach(function (x) {
+      if (cur.length && (x[1] - rp > gap || x[1] - r0 > span)) {
+        rings.push(cur);
+        cur = [];
+      }
+      if (!cur.length) r0 = x[1];
+      cur.push(x[0]);
+      rp = x[1];
+    });
+    if (cur.length) rings.push(cur);
+    rings.forEach(function (ring) {
+      ring.sort(function (a, b) {
+        return (c[secs[a]].area || 1) - (c[secs[b]].area || 1);
+      });
+      let a0 = -1,
+        g = -1,
+        mem = [];
+      const close = function () {
+        if (mem.length > 1) {
+          let m = 0;
+          mem.forEach(function (i) {
+            m += t[i];
+          });
+          m /= mem.length;
+          mem.forEach(function (i) {
+            t[i] = m;
+            gid[i] = g;
+          });
+        }
+      };
+      ring.forEach(function (i) {
+        const a = Math.max(1, c[secs[i]].area || 1);
+        if (a0 < 0 || a > a0 * GRAD_RING[2]) {
+          close();
+          g = ng++;
+          a0 = a;
+          mem = [];
+        }
+        mem.push(i);
+      });
+      close();
+    });
+  }
+  function draw(i, salt) {
+    return gradHash(s, gid[i] >= 0 ? 1000000 + gid[i] : secs[i], salt);
+  }
+  // strays: the sections (a ring as one) in the order of a draw; the first GRAD_STRAY[lv][0] of them (by count) go
+  // to the band next door, the next GRAD_STRAY[lv][1] two bands away, either way (so the share is the same for any
+  // seed); then each section's new place along the run (0 to 1)
+  const st = GRAD_STRAY[lv] || [0, 0],
+    far = new Int8Array(ns),
+    byU = [];
+  for (let i = 1; i < ns; i++) byU.push(i);
+  const uu = new Float64Array(ns);
+  for (let i = 0; i < ns; i++) uu[i] = draw(i, 3);
+  byU.sort(function (a, b) {
+    return uu[a] - uu[b] || gid[a] - gid[b] || a - b;
+  });
+  let taken = 0;
+  for (let q = 0; q < byU.length; q++) {
+    const i = byU[q];
+    // (a ring goes as one: it takes the step of its first section)
+    const f = taken < st[0] * ns ? 1 : taken < (st[0] + st[1]) * ns ? 2 : 0;
+    if (gid[i] >= 0 && q > 0 && gid[byU[q - 1]] === gid[i]) far[i] = far[byU[q - 1]];
+    else far[i] = f;
+    taken++;
+  }
+  const key = new Float64Array(ns),
+    ix = [];
+  for (let i = 0; i < ns; i++) {
+    const sg = draw(i, 4) < 0.5 ? -1 : 1;
+    let d = far[i] * sg;
+    let tb = Math.floor(t[i]);
+    const fr = Math.min(0.999999, t[i] - tb);
+    if (tb >= F) tb = F - 1;
+    if (loop) tb = (((tb + d) % F) + F) % F;
+    else {
+      if (tb + d < 0 || tb + d >= F) d = -d;
+      tb = Math.max(0, Math.min(F - 1, tb + d));
+    }
+    key[i] = edge[tb] + fr * (edge[tb + 1] - edge[tb]);
+    ix.push(i);
+  }
+  ix.sort(function (a, b) {
+    return key[a] - key[b] || gid[a] - gid[b] || a - b;
+  });
+  const shares = [];
+  for (let b = 0; b < F; b++) shares.push(cut[b + 1] - cut[b]);
+  const bands = splitByArea(
+    ix.map(function (i) {
+      return secs[i];
+    }),
+    shares,
+    shares,
+  );
+  const fin = new Int32Array(ns);
+  for (let b = 0; b < F; b++) {
+    const band = bands[b],
+      ms = mk.slice(cut[b], cut[b + 1]);
+    band.forEach(function (l) {
+      fin[oi.get(l)] = b;
+    });
+    const k2 = new Map();
+    band.forEach(function (l) {
+      const i = oi.get(l);
+      k2.set(l, draw(i, 2));
+    });
+    const sorted = band.slice().sort(function (x, y) {
+      return k2.get(x) - k2.get(y) || gid[oi.get(x)] - gid[oi.get(y)] || oi.get(x) - oi.get(y);
+    });
+    const ones = ms.map(function () {
+        return 1;
+      }),
+      parts = splitByArea(sorted, ones, ones);
+    for (let q = 0; q < parts.length; q++)
+      for (let j = 0; j < parts[q].length; j++) assign[parts[q][j]] = ms[q];
+  }
+  // the flow's first section keeps its marker: swap with the section of about its area that has it now
+  if (firstM && assign[first] !== firstM) {
+    const fa = c[first].area || 1;
+    let best = null,
+      bd = Infinity;
+    secs.forEach(function (l) {
+      if (assign[l] === firstM) {
+        const d = Math.abs(Math.log((c[l].area || 1) / fa));
+        if (d < bd) {
+          bd = d;
+          best = l;
+        }
+      }
+    });
+    if (best !== null) {
+      assign[best] = assign[first];
+      assign[first] = firstM;
+    }
+  }
+  // (how far the sections strayed from their base band, for the tests)
+  const cnt = [0, 0, 0];
+  for (let i = 0; i < ns; i++) {
+    let d = Math.abs(fin[i] - base[i]);
+    if (loop) d = Math.min(d, F - d);
+    cnt[Math.min(2, d)]++;
+  }
+  gradScatLast = {
+    loop: !!loop,
+    bands: F,
+    sizes: shares,
+    groups: ng,
+    grouped: Array.from(gid).filter(function (g) {
+      return g >= 0;
+    }).length,
+    n: ns,
+    meant:
+      Array.from(far).filter(function (f) {
+        return f > 0;
+      }).length / ns,
+    stray1: cnt[1] / ns,
+    stray2: cnt[2] / ns,
+  };
+}
+/* Smoothing (v305): after the Gradient is laid, two sections near each other along the flow swap markers when that
+   lowers the clash between touching sections (the sum of their CIEDE2000 differences squared). Gradient only: on
+   Random it would undo "touching sections differ", and Blend is smooth already. Guards, so the gradient stays as
+   laid:
+   - each marker moves at most `win` places from where the flow put it, win = sections / 30 between 2 and 12 (a
+     37-section page keeps its gradient: 12 places is a third of it);
+   - the flow's first section keeps its marker, so the Start colour still starts the flow;
+   - while a marker covers several sections, only sections within 1.5 times each other's area swap, so each marker
+     keeps its share of the picture;
+   - with the marker count at all your markers, a swap never makes a new pair of touching sections that share one;
+   - pinned sections and those with ink on the paper (laid as pinned for the moment: holdOn) stay as they are.
+   Deterministic: a fixed number of passes, no clock (a slower device lays the same). Typed arrays throughout.
+   mode (v306, markers used twice: gradCount's reuse): 'reuse', two touching sections sharing a marker count as a
+   clash of SMOOTH_SAME (on Ben's mandala they went from 56 to 4); 'split', for Natural and Scatter, which aren't
+   smoothed: only that, so a swap is made only where it leaves fewer touching sections sharing a marker. */
+const SMOOTH_PASSES = 8,
+  SMOOTH_AREA = 1.5,
+  SMOOTH_SAME = 30;
+let gradSmoothLast = null; // (what the last one did, for the tests)
+function gradSmooth(order, one, all, mode) {
+  const n = order.length;
+  gradSmoothLast = null;
+  if (!assignData || n < 3) return;
+  const A = assignData.assign,
+    B = assignData.base,
+    a = adj || (adj = buildAdj()),
+    WIN = Math.max(2, Math.min(12, Math.round(n / 30))),
+    at = new Map(),
+    mk = [],
+    mi = new Map(),
+    cur = new Int32Array(n),
+    fix = new Uint8Array(n),
+    from = new Int32Array(n),
+    ar = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const l = order[i],
+      m = A[l];
+    at.set(l, i);
+    from[i] = i;
+    if (!m) {
+      cur[i] = -1;
+      fix[i] = 1;
+      continue;
+    }
+    let k = mi.get(m.mkey);
+    if (k === undefined) {
+      k = mk.length;
+      mi.set(m.mkey, k);
+      mk.push(m);
+    }
+    cur[i] = k;
+    fix[i] = locks[l] !== undefined ? 1 : 0;
+    ar[i] = Math.max(1, comps[l].area || 1);
+  }
+  fix[0] = 1;
+  const K = mk.length,
+    D = new Float32Array(K * K).fill(-1),
+    st = new Int32Array(n + 1),
+    nb = [];
+  for (let i = 0; i < n; i++) {
+    st[i] = nb.length;
+    const s = a[order[i]];
+    if (s)
+      s.forEach(function (q) {
+        const j = at.get(q);
+        if (j !== undefined) nb.push(j);
+      });
+  }
+  st[n] = nb.length;
+  const NB = Int32Array.from(nb);
+  const same = mode === 'reuse' ? SMOOTH_SAME * SMOOTH_SAME : mode === 'split' ? 1 : 0;
+  function d2(x, y) {
+    if (x < 0 || y < 0) return 0;
+    if (x === y) return same;
+    if (mode === 'split') return 0;
+    const k = x * K + y;
+    let v = D[k];
+    if (v < 0) {
+      v = de2000(mk[x].lab, mk[y].lab);
+      v = D[k] = D[y * K + x] = v * v;
+    }
+    return v;
+  }
+  // the clash round section i with marker m (not counting section skip, the other one in the swap)
+  function cost(i, m, skip) {
+    let t = 0;
+    for (let e = st[i]; e < st[i + 1]; e++) {
+      const j = NB[e];
+      if (j !== skip) t += d2(m, cur[j]);
+    }
+    return t;
+  }
+  // a section touching i (other than skip) that has marker m already
+  function shares(i, m, skip) {
+    for (let e = st[i]; e < st[i + 1]; e++) {
+      const j = NB[e];
+      if (j !== skip && cur[j] === m) return true;
+    }
+    return false;
+  }
+  let swaps = 0,
+    pass = 0;
+  while (pass < SMOOTH_PASSES) {
+    pass++;
+    let did = 0;
+    for (let i = 1; i < n; i++) {
+      if (fix[i]) continue;
+      for (let j = i + 1; j < n && j <= i + WIN; j++) {
+        const x = cur[i],
+          y = cur[j];
+        if (fix[j] || x === y) continue;
+        if (!one && (ar[i] > ar[j] * SMOOTH_AREA || ar[j] > ar[i] * SMOOTH_AREA)) continue;
+        if (Math.abs(from[i] - j) > WIN || Math.abs(from[j] - i) > WIN) continue;
+        if (cost(i, y, j) + cost(j, x, i) - cost(i, x, j) - cost(j, y, i) >= -1e-6) continue;
+        if (all && (shares(i, y, j) || shares(j, x, i))) continue;
+        cur[i] = y;
+        cur[j] = x;
+        const f = from[i];
+        from[i] = from[j];
+        from[j] = f;
+        did++;
+      }
+    }
+    swaps += did;
+    if (!did) break;
+  }
+  let moved = 0;
+  for (let i = 0; i < n; i++) {
+    if (fix[i]) continue;
+    const l = order[i],
+      m = mk[cur[i]];
+    if (A[l] !== m) {
+      A[l] = m;
+      moved = Math.max(moved, Math.abs(from[i] - i));
+    }
+    // (Unpin gives back the marker as smoothed)
+    if (B) B[l] = m;
+  }
+  gradSmoothLast = { swaps: swaps, passes: pass, win: WIN, moved: moved, mode: mode || '' };
+}
+/* Rough spots (v306): touching sections of one Gradient zone whose markers jump in colour (CIEDE2000 over ROUGH_DE).
+   "Smooth them" (gradFix, saved with the guide and kept by Undo) gives one section of each such pair a marker the
+   guide doesn't use, after the Polished pass, so Shuffle or any change that lays it again keeps them smoothed:
+   - only from the Gradient's own pool (gradFixPool: your clear markers in its Temperature and Mood, never a grey or
+     a dull brown; a palette's own markers), never a marker with the code of one already in the guide (the other
+     brand's Y26, nor of a highlight or shadow it uses: v306), and each new marker once;
+   - only where it leaves that section fewer rough neighbours, and the pair no longer rough;
+   - never a pinned or coloured section, nor the flow's first (the Start colour);
+   - only with the marker count at all your markers (gradFixCan): a guide of 16 markers stays 16.
+   With Ben's markers: 11 rough spots to 0 on his page, 18 to 2 on his other, in a few milliseconds. On a big
+   mandala every clear marker is used already, so there's nothing to do and nothing is shown (87-undo). */
+const ROUGH_DE = 30;
+let gradFixLast = null; // (what the last one did, for the tests)
+const _deMemo = new Map();
+function deMk(a, b) {
+  const k = a.mkey < b.mkey ? a.mkey + '\u0001' + b.mkey : b.mkey + '\u0001' + a.mkey;
+  let v = _deMemo.get(k);
+  if (v === undefined) {
+    if (_deMemo.size > 200000) _deMemo.clear();
+    v = de2000(a.lab, b.lab);
+    _deMemo.set(k, v);
+  }
+  return v;
+}
+// the rough pairs among secs (both of them in secs), as [l, q, ΔE], the roughest first
+function gradRough(secs, A) {
+  const a = adj || (adj = buildAdj()),
+    inS = new Set(secs),
+    out = [];
+  secs.forEach(function (l) {
+    const s = a[l];
+    if (!s || !A[l]) return;
+    s.forEach(function (q) {
+      if (q <= l || !inS.has(q) || !A[q]) return;
+      const d = deMk(A[l], A[q]);
+      if (d > ROUGH_DE) out.push([l, q, d]);
+    });
+  });
+  out.sort(function (x, y) {
+    return y[2] - x[2] || x[0] - y[0] || x[1] - y[1];
+  });
+  return out;
+}
+function gradFixCan() {
+  return limitN >= sliderMax();
+}
+// (a palette's own markers; else your clear ones (gradClearM) in the Temperature and Mood)
+function gradFixPool(src) {
+  return src.seeded ? src.items : src.items.filter(gradClearM);
+}
+// Smooth the rough spots among secs in A (changed in place) with markers from cands that no section uses (nor one of
+// their codes): theirs in A as it goes, and ext's ({ used, codes }: the guide's other sections'); fixed(l): a
+// section that keeps its marker. A marker a swap takes away can serve elsewhere. { before, after, swaps: [[l, mkey]] }
+const FIX_PASSES = 4;
+function gradFixRun(secs, A, cands, fixed, ext) {
+  const a = adj || (adj = buildAdj()),
+    inS = new Set(secs),
+    first = gradRough(secs, A),
+    swaps = [],
+    nK = new Map(),
+    nC = new Map(),
+    inc = function (m, d) {
+      nK.set(m.mkey, (nK.get(m.mkey) || 0) + d);
+      nC.set(m.code, (nC.get(m.code) || 0) + d);
+    },
+    // (and never the other brand of a highlight or shadow the guide uses, v306: ext.part, { code: { marker key } })
+    part = ext.part || {},
+    taken = function (m) {
+      const p = part[m.code];
+      return (
+        ext.used.has(m.mkey) ||
+        ext.codes.has(m.code) ||
+        (!!p && !p[m.mkey]) ||
+        nK.get(m.mkey) > 0 ||
+        nC.get(m.code) > 0
+      );
+    };
+  secs.forEach(function (l) {
+    if (A[l]) inc(A[l], 1);
+  });
+  let pairs = first,
+    pass = 0;
+  // (again over what's left while a pass changed something: a swap can open the way for another)
+  while (pass++ < FIX_PASSES) {
+    const n0 = swaps.length;
+    if (pass > 1) pairs = gradRough(secs, A);
+    for (let i = 0; i < pairs.length; i++) {
+      const l = pairs[i][0],
+        q = pairs[i][1];
+      if (deMk(A[l], A[q]) <= ROUGH_DE) continue;
+      let best = null;
+      [l, q].forEach(function (s) {
+        if (fixed(s)) return;
+        const o = s === l ? q : l,
+          nb = [];
+        a[s].forEach(function (x) {
+          if (x !== s && inS.has(x) && A[x]) nb.push(x);
+        });
+        let now = 0;
+        nb.forEach(function (x) {
+          if (deMk(A[s], A[x]) > ROUGH_DE) now++;
+        });
+        cands.forEach(function (m) {
+          if (taken(m) || deMk(m, A[o]) > ROUGH_DE) return;
+          let r = 0,
+            sum = 0;
+          for (let j = 0; j < nb.length; j++) {
+            const d = deMk(m, A[nb[j]]);
+            if (d > ROUGH_DE) r++;
+            sum += d * d;
+          }
+          if (r >= now) return;
+          if (!best || r < best.r || (r === best.r && sum < best.sum)) best = { s: s, m: m, r: r, sum: sum };
+        });
+      });
+      if (!best) continue;
+      inc(A[best.s], -1);
+      inc(best.m, 1);
+      A[best.s] = best.m;
+      swaps.push([best.s, best.m.mkey]);
+    }
+    if (swaps.length === n0) break;
+  }
+  return {
+    before: first.length,
+    after: swaps.length ? gradRough(secs, A).length : first.length,
+    swaps: swaps,
+  };
+}
+// the markers (and their codes) of the guide's sections outside secs: as A has them, or for a zone being laid, the
+// other zones' as they are now (zoneNb: those laid just before this one in the same run as laid, v306: it took prev's,
+// the guide before, so Smooth them in two zones gave both the same new marker), else as prev (the guide before) has them
+// With shading on, part: the codes of every section's highlight and shadow (secs' too, as they are before the fix),
+// with the markers of each ({ code: { marker key: 1 } }), so the fix never brings in the other brand of one (v306).
+function gradFixExt(secs, A, prev) {
+  const used = new Set(),
+    codes = new Set(),
+    part = {},
+    inS = new Set(secs),
+    sh = shadeOn() ? shadeGeom() : null,
+    add = function (m) {
+      if (!m) return;
+      used.add(m.mkey);
+      codes.add(m.code);
+    },
+    addP = function (l, m) {
+      if (!sh || !m || !shadeable(l, sh)) return;
+      const t = shadeTones(m, zshOf(l));
+      [t.light, t.dark].forEach(function (x) {
+        if (x) (part[x.code] || (part[x.code] = {}))[x.mkey] = 1;
+      });
+    },
+    seen = {};
+  for (const l in A) {
+    if (!inS.has(+l)) add(A[l]);
+    addP(+l, A[l]);
+    seen[l] = 1;
+  }
+  if (prev && zones.length) {
+    const z = zoneLive();
+    for (const l in prev.assign)
+      if (!inS.has(+l) && zoneOf(+l) !== z) {
+        const m = zoneNb && zoneNb[l] ? zoneNb[l] : prev.assign[l];
+        add(m);
+        if (!seen[l]) addP(+l, m);
+        seen[l] = 1;
+      }
+    if (zoneNb)
+      for (const l in zoneNb)
+        if (!inS.has(+l)) {
+          add(zoneNb[l]);
+          if (!seen[l]) addP(+l, zoneNb[l]);
+        }
+  }
+  return { used: used, codes: codes, part: part };
+}
+// (buildGradient) the zone's rough spots smoothed, as laid now
+function gradFixApply(order, src, prevAll) {
+  if (!gradFixCan() || !assignData) return;
+  const A = assignData.assign,
+    B = assignData.base,
+    secs = order.filter(function (l) {
+      return !!A[l];
+    }),
+    first = order[0],
+    t0 = Date.now(),
+    r = gradFixRun(
+      secs,
+      A,
+      gradFixPool(src),
+      function (l) {
+        return l === first || locks[l] !== undefined;
+      },
+      gradFixExt(secs, A, prevAll),
+    );
+  r.swaps.forEach(function (x) {
+    if (B) B[x[0]] = A[x[0]];
+  });
+  r.ms = Date.now() - t0;
+  gradFixLast = r;
 }
 // Shading turned on or off, or the sun moved: a gradient laid out here whose bands run light to dark turns them
 // round if their light side no longer faces the light. (Not a guide that was opened, taken back by Undo or kept
@@ -667,21 +1636,33 @@ function heldMerge(a, b) {
 }
 function _gradFollowLight() {
   if (!assignData || sfmode !== 'guide') return;
+  let ids = [];
   if (!zones.length) {
     if (!assignData.lit || family !== 'gradient') return;
-    if (gradLightSign() !== assignData.lit) holdRun(zoneAll(), assignOne);
-    return;
-  }
-  // with zones: each gradient zone whose bands no longer face the light
-  const lits = assignData.lits || {},
-    ids = [];
-  zoneIds().forEach(function (id) {
-    if (!lits[id]) return;
-    zoneWith(id, function () {
-      if (family === 'gradient' && gradLightSign() !== lits[id]) ids.push(id);
+    if (gradLightSign() !== assignData.lit) ids = zoneAll();
+  } else {
+    // with zones: each gradient zone whose bands no longer face the light
+    const lits = assignData.lits || {};
+    zoneIds().forEach(function (id) {
+      if (!lits[id]) return;
+      zoneWith(id, function () {
+        if (family === 'gradient' && gradLightSign() !== lits[id]) ids.push(id);
+      });
     });
+  }
+  if (!ids.length) return;
+  // (its markers picked as they were: turning shading on never picks others by itself, v306)
+  const f0 = _shpForce,
+    f = {};
+  ids.forEach(function (id) {
+    f[id] = gradShpOf(id);
   });
-  if (ids.length) holdRun(ids, assignOne);
+  _shpForce = f;
+  try {
+    holdRun(ids, assignOne);
+  } finally {
+    _shpForce = f0;
+  }
 }
 /* Which sections touch (share a border), for Random's "Keep touching sections clearly different": { l: Set of the
    sections l touches }. Lines differ a lot in thickness (a thick felt-tip outline can be 20 px or more across), so
@@ -937,39 +1918,156 @@ function anchorAt(P) {
   }
   return -1;
 }
-function seedAnchors() {
-  const pool = poolFor(palette)
-    .slice()
-    .sort(function (a, b) {
-      return (a.hue || 0) - (b.hue || 0);
+// A new Blend's three anchors: their markers (v305) are the vivid ones (as colourful as the pool's middle or more) nearest
+// red, green and blue round the hue wheel, so it starts as a rainbow; they were the first, a third and two thirds of
+// the way along the pool in hue order, which with a big set always began on a brown (E713 of 451)
+const SEED_HUES = [30, 150, 270];
+function seedKeys(pool) {
+  const L = pool.map(function (m) {
+      const x = mLch(m);
+      return { k: m.mkey, c: x[1], h: (((x[2] || 0) % 360) + 360) % 360 };
+    }),
+    cs = L.map(function (o) {
+      return o.c;
+    }).sort(function (a, b) {
+      return a - b;
+    }),
+    med = cs[Math.floor(cs.length / 2)],
+    used = {};
+  let viv = L.filter(function (o) {
+    return o.c >= med;
+  });
+  if (viv.length < SEED_HUES.length) viv = L;
+  return SEED_HUES.map(function (h, i) {
+    let best = null,
+      bd = 1e9;
+    viv.forEach(function (o) {
+      if (used[o.k]) return;
+      const d0 = Math.abs(o.h - h),
+        d = Math.min(d0, 360 - d0);
+      if (d < bd) {
+        bd = d;
+        best = o;
+      }
     });
+    if (!best) best = viv[i % viv.length];
+    used[best.k] = 1;
+    return best.k;
+  });
+}
+function seedAnchors(cl) {
+  const pool = poolFor(palette);
   if (!pool.length) {
     anchors = [];
     return;
   }
-  // (three spread over the extent the pattern covers: a zone's, or the picture)
-  const x0 = zbX0(),
+  const keys = seedKeys(pool);
+  // (three spread over the extent the pattern covers: a zone's, or the picture; v305: over the drawing's own extent,
+  // the sections cl, and each one on a section of them, so none sits on the blank paper round the drawing)
+  let x0 = zbX0(),
     y0 = zbY0(),
     w = zbW(),
-    h = zbH(),
-    pts = [
+    h = zbH();
+  const own = cl && cl.length ? new Set(cl) : null;
+  if (own) {
+    let a0 = 1e9,
+      b0 = 1e9,
+      a1 = -1,
+      b1 = -1;
+    cl.forEach(function (l) {
+      const c = comps[l];
+      if (!c) return;
+      a0 = Math.min(a0, c.x0);
+      b0 = Math.min(b0, c.y0);
+      a1 = Math.max(a1, c.x1);
+      b1 = Math.max(b1, c.y1);
+    });
+    if (a1 > a0 && b1 > b0) {
+      x0 = a0;
+      y0 = b0;
+      w = a1 - a0;
+      h = b1 - b0;
+    }
+  }
+  const pts = [
       [x0 + w * 0.25, y0 + h * 0.25],
       [x0 + w * 0.75, y0 + h * 0.3],
       [x0 + w * 0.5, y0 + h * 0.75],
-    ];
+    ],
+    used = {};
   anchors = pts.map(function (p, i) {
-    return { x: p[0], y: p[1], mkey: pool[Math.floor((i / pts.length) * pool.length)].mkey };
+    let x = p[0],
+      y = p[1];
+    const L = labels ? labels[Math.round(y) * W + Math.round(x)] : 0;
+    if (own && !own.has(L)) {
+      // (off them: the nearest one's label point, a section no anchor before it took)
+      let best = -1,
+        bd = 1e18;
+      cl.forEach(function (l) {
+        if (used[l]) return;
+        const q = labelPos(l),
+          d = (q.x - x) * (q.x - x) + (q.y - y) * (q.y - y);
+        if (d < bd) {
+          bd = d;
+          best = l;
+        }
+      });
+      if (best >= 0) {
+        const q = labelPos(best);
+        x = q.x;
+        y = q.y;
+        used[best] = 1;
+      }
+    } else if (own) used[L] = 1;
+    return { x: x, y: y, mkey: keys[i] };
   });
 }
+// An anchor added by a tap (v306): the vivid marker (as colourful as the pool's middle or more, not a fluorescent)
+// whose hue (L*C*h°, as the first three go by) is furthest from every anchor's, so each one adds a colour the blend
+// hasn't got; when the vivid ones are all anchors already, any marker not yet one. (It took the next marker along the
+// pool in hue order, which with Ben's markers gave FY02, then R016, then the beige E85.)
 function addAnchor(P) {
-  const pool = poolFor(palette)
-    .slice()
-    .sort(function (a, b) {
-      return (a.hue || 0) - (b.hue || 0);
-    });
+  const pool = poolFor(palette);
   if (!pool.length) return;
-  const m = pool[anchors.length % pool.length];
-  anchors.push({ x: P.x, y: P.y, mkey: m.mkey });
+  const have = {},
+    hs = [];
+  const bk = {};
+  coll.forEach(function (m) {
+    bk[m.mkey] = m;
+  });
+  anchors.forEach(function (a) {
+    have[a.mkey] = 1;
+    if (bk[a.mkey]) hs.push(mLch(bk[a.mkey])[2]);
+  });
+  const cs = pool
+      .map(function (m) {
+        return mLch(m)[1];
+      })
+      .sort(function (a, b) {
+        return a - b;
+      }),
+    med = cs[Math.floor(cs.length / 2)],
+    free = pool.filter(function (m) {
+      return !have[m.mkey];
+    }),
+    viv = free.filter(function (m) {
+      return mLch(m)[1] >= med && m.fam !== 'Fluorescent';
+    }),
+    from = viv.length ? viv : free.length ? free : pool;
+  let best = from[0],
+    bd = -1;
+  from.forEach(function (m) {
+    const h = mLch(m)[2];
+    let d = 360;
+    hs.forEach(function (x) {
+      d = Math.min(d, hueDiff(h, x));
+    });
+    if (d > bd) {
+      bd = d;
+      best = m;
+    }
+  });
+  anchors.push({ x: P.x, y: P.y, mkey: best.mkey });
 }
 function blendAssign(cl, pool) {
   guideDirty = true;
@@ -1178,11 +2276,15 @@ function genSize(h, n) {
   const R = HARM_RANGE[h] || [3, 8];
   return Math.max(R[0], Math.min(R[1], n || R[1]));
 }
-function generatePalette() {
+// (reroll: Shuffle's, another of the same scheme. v306: a Rainbow is the Gradient's own unless it's asked for another,
+// as Palette's Generate does, so Shuffle gave the same Rainbow every time)
+function generatePalette(reroll) {
   if (GEN_HARMS.indexOf(genHarmony) < 0) genHarmony = 'analogous';
   // (the Colours tab's Mood goes to the generator, which keeps to it where it can)
   if (api.genPalette)
-    genPal = api.genPalette(genSize(genHarmony, limitN), genHarmony, { mood: emphasis }) || [];
+    genPal =
+      api.genPalette(genSize(genHarmony, limitN), genHarmony, { mood: emphasis, reroll: reroll === true }) ||
+      [];
 }
 function genPalKeys(a) {
   return (a || [])
@@ -1433,11 +2535,16 @@ function savedRamp() {
 // What Auto does (the note under Look): it goes by how many sections each marker covers
 function lookNote() {
   if (look !== 'auto' || family !== 'gradient') return '';
-  if (gradShape === 'serpentine') return 'Auto: smooth, as Serpentine runs in rows.';
   const N = zoneList().length,
-    M = Math.max(1, Math.min(limitN, N, poolSource(Math.min(limitN, N), true).items.length)),
-    g = gradGroupSize('auto', M, N, gradShape),
+    M = gradCountNow().M,
+    g = gradShape === 'serpentine' ? 1 : gradGroupSize('auto', M, N, gradShape),
     per = N / M;
+  // (Scatter, Textured and up, places the markers itself: Look still picks them, v306)
+  if (gradScatAt(M) >= 2)
+    return (
+      'Auto: markers picked for ' + (g <= 1 ? 'a smooth run' : 'bands of ' + g) + '; Scatter places them.'
+    );
+  if (gradShape === 'serpentine') return 'Auto: smooth, as Serpentine runs in rows.';
   if (g <= 1) return 'Auto: smooth, as each marker covers about ' + Math.round(per) + ' sections.';
   if (g >= gradGroupSize('ltd', M, N, gradShape))
     return M >= N
@@ -1468,7 +2575,7 @@ function assignOne(cl) {
   }
   if (family === 'random') buildRandomBal(cl, pool);
   else if (family === 'blend') {
-    if (anchors.length === 0) seedAnchors();
+    if (anchors.length === 0) seedAnchors(cl);
     blendAssign(cl, pool);
   } else if (family === 'manual') buildManual(cl, pool);
   else if (family === 'photo') {
@@ -1494,7 +2601,7 @@ function blendNow() {
   holdRun([zoneCur], function (cl) {
     // (the last anchor removed: three new ones, as a Blend starts, not one marker everywhere; here, inside the zone
     // being laid, so they're placed over its own extent, v304)
-    if (!anchors.length) seedAnchors();
+    if (!anchors.length) seedAnchors(cl);
     blendAssign(cl, activePool());
   });
 }
@@ -1518,9 +2625,10 @@ function buildManual(cl, pool) {
 // keeps its marker whatever the pattern (a Random guide isn't rolled again), only sections new to it get the
 // pattern's; with the sections unchanged the plan's undo steps stay too. Sections found afresh start over. A section
 // taken out of the guide (Edit sections) keeps its marker, pin, tick and tones in _gone (saved with the guide as
-// `out`), and has them again when it is brought back in.
+// `out`), and has them again when it is brought back in. keepPlan (true): the plan's Undo steps are kept even though
+// the guide changed, for a change that makes its own step (Colour it on the paper inside a frame, v306)
 let _gone = {};
-function buildGuide() {
+function buildGuide(keepPlan) {
   if (!labels) return;
   // (which sections touch is found again when the specks looked across changed: Min section size, a keep tap, v304)
   if (adj && _adjSig !== adjTiny().sig) adj = null;
@@ -1601,6 +2709,8 @@ function buildGuide() {
     // (its markers are the old guide's, not a layout that can turn to face the light)
     delete assignData.lit;
     delete assignData.lits;
+    delete assignData.shp;
+    delete assignData.shps;
   }
   if (_had && _pc && !_segFresh) {
     const _nc = new Uint8Array(comps.length);
@@ -1652,14 +2762,17 @@ function buildGuide() {
   if (unchanged) {
     planLast = now;
     planBtn();
-  } else planReset();
+  } else if (keepPlan !== true) planReset();
   markBuilt();
   saveStatus();
   // (a new guide from your photo goes into the Library straight away, not after the usual pause: a page closed or
   // reloaded just after Build lost it, v287)
+  // (v305: once the first Build's bloom is over, 41-bloom.js: about a second, the save's work held up its frames)
   if (canAuto())
     setTimeout(function () {
-      if (autoT && canAuto() && !_firstBusy) flushAutosave();
+      bloomAfter(function () {
+        if (autoT && canAuto() && !_firstBusy) flushAutosave();
+      });
     }, 60);
 }
 // the sections the guide had keep their markers (or stay white), the rest keep what the pattern just gave them

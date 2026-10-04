@@ -1,6 +1,6 @@
 {
  "sample": {
-  "sha256": "4f2bd98dbd11d36c41e96824423682c4442fd764c832be775e8ce9822ffd89ce",
+  "sha256": "243bc2708a933c6f1c14163a51037c194cafac312069c7b1e9cb44cfab7fe60e",
   "bytes": 4130,
   "style": {
    "family": "gradient",
@@ -48,7 +48,7 @@
   }
  },
  "sample-share": {
-  "sha256": "4f2bd98dbd11d36c41e96824423682c4442fd764c832be775e8ce9822ffd89ce",
+  "sha256": "243bc2708a933c6f1c14163a51037c194cafac312069c7b1e9cb44cfab7fe60e",
   "bytes": 4130,
   "style": {
    "family": "gradient",
@@ -96,7 +96,7 @@
   }
  },
  "sample-edits": {
-  "sha256": "d6b98dab8b985ef639545df93bb30f8313bbb37026a1bc04d52d82059dd3b676",
+  "sha256": "f7edd7ade2981a16aa9a61237f5420f809c49a34ed0fe7589807ddb1f1a5bdac",
   "bytes": 4140,
   "style": {
    "family": "gradient",
@@ -144,7 +144,7 @@
   }
  },
  "limitN": {
-  "sha256": "ba99ea911c8fc39631e7bd519d6bd58fb7bab94741a1be55fea63b1561a9d6f5",
+  "sha256": "e5c97ec1def75399e3e052a0341c6fc32b5a1bfa3cca054a4a1f817596f9f9cc",
   "bytes": 4095,
   "style": {
    "family": "gradient",
@@ -192,7 +192,7 @@
   }
  },
  "palette": {
-  "sha256": "b4cecdc4fd9a51ab2c96dc1702521c7f2c0a0dd3a4b49c6bac3c39e8729e4d8c",
+  "sha256": "5a6706b829c8a90ac8cccde44de9453a7446d0f8b4061baaae087352012ba26f",
   "bytes": 4063,
   "style": {
    "family": "gradient",
@@ -240,7 +240,7 @@
   }
  },
  "emphasis": {
-  "sha256": "c7affefe9b5431b43c1899933ff099aa0bd91852f19886eda1c648e6e4a54498",
+  "sha256": "3a331a8b17dcf9ddc3195944956fdce98c42d08b52c5db98ad726e5ff7779e5f",
   "bytes": 4044,
   "style": {
    "family": "gradient",
@@ -994,8 +994,8 @@
   }
  },
  "blend": {
-  "sha256": "524e5e3e45ee2a18c39a7151a828ee5af8db17079f205b68853b9f22111f156f",
-  "bytes": 4353,
+  "sha256": "facd112224c2fd33361f7b22da6daeaa8cec4fee49967d1c34f349bb599fdccc",
+  "bytes": 4370,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1053,8 +1053,8 @@
   }
  },
  "blendFall": {
-  "sha256": "c738c3aedae5effed32fdcc8301f1c47c6d653f08ca87eca47a561152e679bdd",
-  "bytes": 4348,
+  "sha256": "38a5385bc6b6272ec475672903d7c72ffde679cf0605372669d18868c16082d6",
+  "bytes": 4382,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1112,8 +1112,8 @@
   }
  },
  "blendMix-paint": {
-  "sha256": "fdad4575953c1466fbeec054ac9aa2b2dce6fdfcb764751f2c1d7407cd1d6143",
-  "bytes": 4346,
+  "sha256": "121b59120db25fb22e4f3484442f7b0934ca7863f9f915369705e21bce8e7cde",
+  "bytes": 4384,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1171,8 +1171,8 @@
   }
  },
  "blendMix": {
-  "sha256": "5bdc446a9cf4d31a7d89a17ea29a6c2729b6f676ecac771c56c63353f97233ce",
-  "bytes": 4355,
+  "sha256": "c6a8243343bbd3c3f776ac5d1a64e34f220b876d39f6ab3a668080d741b79e84",
+  "bytes": 4397,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1230,8 +1230,8 @@
   }
  },
  "shadeMode": {
-  "sha256": "53f9475163c25f343b5f36ade30dfc057b6a507fcacfc223a5b274ec5beb2cb8",
-  "bytes": 4356,
+  "sha256": "4f5b3c3c02474ded370438b2d642d435cf3561f97c880459cf95834b66037c9a",
+  "bytes": 4398,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1289,8 +1289,8 @@
   }
  },
  "shadeHi": {
-  "sha256": "e7ff52f20b1bced05d8bedcae969c6b3fb7e50d0d496d7a8abcc4dc5582c9927",
-  "bytes": 4356,
+  "sha256": "a57ed2e6cf7b684b880bd8433bf1dc6f69a4533583595b0c83f1acb33f8b5050",
+  "bytes": 4398,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1348,8 +1348,8 @@
   }
  },
  "shadeLo": {
-  "sha256": "de6cb220402a387122d376fcc32d2128eee5ece79ff7796b3416eb40343fd094",
-  "bytes": 4356,
+  "sha256": "d61848c4e310c7217c0feaf3a36d74a627e49da5ff3e809e2a518db48767bc6c",
+  "bytes": 4398,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1407,8 +1407,8 @@
   }
  },
  "shadeRound": {
-  "sha256": "f7dd129fc8b80984d8396ad164885ac4f5aef8230c2a81b08d115814af8f8069",
-  "bytes": 4356,
+  "sha256": "2be129a886f4224e7a8f8bc619f2fc7424bbdf8d62e5920fe24a48c45f9e547c",
+  "bytes": 4398,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1466,8 +1466,8 @@
   }
  },
  "shadeLines": {
-  "sha256": "511dd5470e2f88b55dff40332ee0023f74bbb69d4c51fb323f14b909f0d576d5",
-  "bytes": 4357,
+  "sha256": "0900064655b8348d06295da52612292504ad40395b4ce120982dabb731c17b75",
+  "bytes": 4399,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1525,8 +1525,8 @@
   }
  },
  "shadeHilite": {
-  "sha256": "db7b9e42b84ecd5940388281285e5e40d090ceb3986e7af1ba18680ba3308c06",
-  "bytes": 4357,
+  "sha256": "df96978926a3926c6b9774b30119f8e0996a0272f62be9d2e636354095ce7c48",
+  "bytes": 4399,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1584,8 +1584,8 @@
   }
  },
  "shadeShadow": {
-  "sha256": "4321d240d0e9ce412db7d6bcff6f4178353ea3e1f4662f2bfbc01675c3de74e7",
-  "bytes": 4357,
+  "sha256": "a668d3206d92c7d0d86b26a38b58f88d30b60552d3035cb34e770896e9d671ba",
+  "bytes": 4399,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1643,8 +1643,8 @@
   }
  },
  "shadeSunFlat": {
-  "sha256": "6862811a309512f94b8c69ab88f4737ad2afbef6a69270911c2ff571f4348ec7",
-  "bytes": 4359,
+  "sha256": "ba18a9bbf1b69f5e003ecefeea80f8145b726d71ab19daa4fe6aa64b0683a31c",
+  "bytes": 4401,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1705,8 +1705,8 @@
   }
  },
  "texAmt": {
-  "sha256": "e1931e2914e15c16a00fb4bf2ef35fddf8bacfe8bd12a61c298b1e0c8c857213",
-  "bytes": 4360,
+  "sha256": "dadfa25d0756bd15c8debac4e5c4c9d6983b6433b8034d2b9d5fa62cdb06d4da",
+  "bytes": 4402,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1767,8 +1767,8 @@
   }
  },
  "texAmt-share": {
-  "sha256": "e1931e2914e15c16a00fb4bf2ef35fddf8bacfe8bd12a61c298b1e0c8c857213",
-  "bytes": 4360,
+  "sha256": "dadfa25d0756bd15c8debac4e5c4c9d6983b6433b8034d2b9d5fa62cdb06d4da",
+  "bytes": 4402,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1829,8 +1829,8 @@
   }
  },
  "manual": {
-  "sha256": "edbfee406db7a476c4ed47da1f6ed79540c0a7f8390fd0ede8ab115a6c81f97d",
-  "bytes": 4361,
+  "sha256": "04c993626b02ac623d0ca097dddccfc05dbf0e6c56d0b67e4856f37b9201c1ce",
+  "bytes": 4403,
   "style": {
    "family": "manual",
    "palette": "warm",
@@ -1891,8 +1891,8 @@
   }
  },
  "gradient": {
-  "sha256": "02d1da6d78688bae3a30d8a6f54790fa26d722dad0ad763cd9082d2f47fb9a50",
-  "bytes": 4418,
+  "sha256": "f83a99bbde67b5080f693a58027f5ba82335f693424dd4b7f7bf6c3281a33a12",
+  "bytes": 4435,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -1953,8 +1953,8 @@
   }
  },
  "pins": {
-  "sha256": "f5df32e5834c11266011bd25a8d21f2fff692d9e636693ed694e536b3626b072",
-  "bytes": 4456,
+  "sha256": "08c9d3880322e6d6606757f3138d47e980ea99a881cbc38b912ae39ac08939f9",
+  "bytes": 4473,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2015,8 +2015,8 @@
   }
  },
  "surprise": {
-  "sha256": "7fa43b6c6013af12e42d454df72b3bd4df18b87451ad41ad4f309fdddf110085",
-  "bytes": 4503,
+  "sha256": "4a046d106aebc411ed856a0f22d603fbb61159cbb9e6ec0323cf22d2d698ba30",
+  "bytes": 4520,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2075,8 +2075,8 @@
   }
  },
  "savedPalette": {
-  "sha256": "4b48e115f18b9287eda41bd655fe526065bbeabd18a4dc1f47fa85e5c326cfe2",
-  "bytes": 4502,
+  "sha256": "43e5fc32f3c87f1ee17768d25c5acbd04f4af38c6e61d086a82eb67e4be1aae6",
+  "bytes": 4519,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2135,8 +2135,8 @@
   }
  },
  "savedPalette-render": {
-  "sha256": "83652246be1989220e70f05c144592de8bcc4093fbc48b37465f49cf4bc97eac",
-  "bytes": 4505,
+  "sha256": "b80e3ab4d302ce6961388a213c3db5668d546910831f6c88486ba615d80900b4",
+  "bytes": 4522,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2196,8 +2196,8 @@
  },
  "edits-pending": null,
  "edits-pending-edits": {
-  "sha256": "fe13d9ca6e356c76d0ed001f58cd5c17fcf0e97d06d9b075bf2300a7ecfd960a",
-  "bytes": 4521,
+  "sha256": "2aa6b8281a2342e437bfff776fa6ffbd2e4379dbc57ed4d9a2f81f55d311c3cb",
+  "bytes": 4538,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2610,8 +2610,8 @@
   }
  },
  "photo-gradient": {
-  "sha256": "9ce77654f52b6cf785c3a3ed8c75ecadcdece5215560106c79e063a2b2944256",
-  "bytes": 4380,
+  "sha256": "2ed1c6a4c628317978e02f88de7462337e9fa62d257f4f6424f9996ec4d9a709",
+  "bytes": 4375,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2669,8 +2669,8 @@
   }
  },
  "photo-gradient-share": {
-  "sha256": "a075314a79ec692ae7cda75cdd85fd569f5b23e2514d6ee8f2a104008368f256",
-  "bytes": 4366,
+  "sha256": "59c0a2e263ab3b4d90304cb9e96afb548fa46a439344a19ad9eeaabf5348e1f4",
+  "bytes": 4361,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2728,7 +2728,7 @@
   }
  },
  "open-all-set": {
-  "sha256": "fc5accc96da87f61ca0036d8835b4ba56004f14104ba2cfcf7bd784e86683625",
+  "sha256": "d152c08b7cbba289465b54dc4b90f7e9e7700fbe4d4e306472012942f9a3029b",
   "bytes": 4189,
   "style": {
    "family": "random",
@@ -2780,13 +2780,13 @@
    "genHarmony": "triadic",
    "genPal": [
     "Ohuhu|YG211",
-    "Ohuhu|G410",
-    "Ohuhu|G311"
+    "Ohuhu|G311",
+    "Ohuhu|G410"
    ]
   }
  },
  "open-odd-types": {
-  "sha256": "c2c6fc72e61929f0cdd6ed671fbd802650f0169093f99561057e1573963aa94f",
+  "sha256": "5aa7b77dba477dd21ac5a1a3dc60af6d5538dca1a9ba6edf922b7e0240001757",
   "bytes": 4127,
   "style": {
    "family": "gradient",
@@ -2834,7 +2834,7 @@
   }
  },
  "open-odd-high": {
-  "sha256": "7d4e2921c029934456d897c3bece5ebd1189e617fb9fdc169597f1ba193a16cb",
+  "sha256": "71567063ef9e2b1caf9775add6cc63ccb3ad2f8c8f08edfcf613e07c677b59f0",
   "bytes": 4129,
   "style": {
    "family": "gradient",
@@ -2885,7 +2885,7 @@
   }
  },
  "open-odd-low": {
-  "sha256": "8aae5166aa0572396d9cae98d9485ac09a2a4ce97036f9b48a729b96ad3c14f6",
+  "sha256": "154e4f4438fadcbc45261ab8919931fe4acb753c92365efcfbd54524bcb12b3e",
   "bytes": 4119,
   "style": {
    "family": "gradient",
@@ -2936,7 +2936,7 @@
   }
  },
  "open-odd-enum": {
-  "sha256": "f2af4afafcd1b8ce8e8bd39c4fce7fd62d13390011aeff2fab194cdb39b4eab1",
+  "sha256": "7456a46a5a7e5949c1f562919004a96bc291b3a56e4dc66cb3d7d937f0e2717d",
   "bytes": 4170,
   "style": {
    "family": "gradient",
@@ -2988,7 +2988,7 @@
   }
  },
  "open-nothing": {
-  "sha256": "a09e1c33c4f5b3b8b3c6be5dcd3e3d9c5c1178a21d5ff9707d5d79175d31ccc0",
+  "sha256": "d0cf4e2feb5c51b4130957ac127b8ad59a5de62b68a5a5c6d0c2fdaa66e3c2c8",
   "bytes": 4131,
   "style": {
    "family": "gradient",

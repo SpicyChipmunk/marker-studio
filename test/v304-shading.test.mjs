@@ -66,7 +66,7 @@ test('enlarged 3 times, a section 6 pixels across on the picture as it came (18 
   core.srcK = 1;
 });
 
-test('a big shape inside the page is shaded; the background, a section at the edge and the paper inside a frame are not', () => {
+test('a big shape inside the page is shaded; the background, a section at the edge and the paper inside a frame (brought back) are not', () => {
   // an apple a third of the page across: about 27% of the picture
   let cl = page(800, 1000, ring(400, 500, 264));
   assert.ok(areaOf(biggest(cl)) >= 0.25 * 800 * 1000);
@@ -91,8 +91,13 @@ test('a big shape inside the page is shaded; the background, a section at the ed
       (Math.abs(x - 400) < 2 && Math.hypot(x - 400, y - 500) < 360) ||
       (Math.abs(y - 500) < 2 && Math.hypot(x - 400, y - 500) < 360),
   );
-  const paper = biggest(cl),
+  // (v305: on a fresh scan the paper inside the frame is left white; brought back with Colour it, it's flat)
+  const paper = core.comps.findIndex((k) => k && k.framed),
     c = core.comps[paper];
+  assert.ok(paper > 0 && !cl.includes(paper), 'the frame’s paper is left white');
+  core.secState[paper] = 1;
+  core.assignData.assign[paper] = by('R16');
+  core.assignData.order.push(paper);
   assert.ok(areaOf(paper) >= 0.25 * 800 * 1000 && !c.bpx, 'the frame’s paper: ' + areaOf(paper));
   assert.equal(core.shadeWhy(paper), 'bg');
   // a section too small says so as before

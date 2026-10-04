@@ -533,8 +533,13 @@ const scanTookAt = new Map(),
   scanAnsweredAt = new Map();
 // (v303) the list is kept through a reload (Safari can reload a tab put away mid-sweep): markers by their keys
 const SCAN_LIST_KEY = 'ms-scan-list';
+// (v305) whether a brand was ever tapped here (Either brand counts): until then, a collection all of one brand starts
+// on it (scanBrandAuto)
+let scanBrandChosen = false;
 try {
-  scanBrand = localStorage.getItem(SCAN_BRAND_KEY) || '';
+  const sb = localStorage.getItem(SCAN_BRAND_KEY);
+  scanBrand = sb || '';
+  scanBrandChosen = sb != null;
 } catch (_) {}
 function scanSaveList() {
   try {
@@ -654,7 +659,7 @@ function scanSay(kind, big, small, i, choices) {
     choices.forEach(function (c) {
       const b = document.createElement('button');
       b.type = 'button';
-      b.textContent = c.label;
+      b.textContent = c.label + (state.owned.has(mkey(c.i)) ? ' · already yours' : '');
       b.addEventListener('click', function () {
         scanTake(c.i, c.how, true);
         // (v303) the text the card was about goes from the box (typed, and not cleared as it had no code in it): it
@@ -994,6 +999,8 @@ function scanRender() {
                 esc(scanName(o.i)) +
                 ' · ' +
                 esc(COLORS[o.i].brand) +
+                // (v305: which of the answers you have)
+                (state.owned.has(mkey(o.i)) ? ' · <i>already yours</i>' : '') +
                 '</button>',
             )
             .join('') +
@@ -1054,6 +1061,15 @@ function scanFocusBox() {
   const b = $('scBox');
   if (b) b.focus({ preventScroll: true });
 }
+// (v305) the brand to start on when none was ever chosen: the one brand of your markers, when Brands I'd buy is that
+// brand too (or automatic: your brands first). Shown pressed and said on the card, never stored; '' for Either brand.
+// (Not silently: someone with only Ohuhu may be scanning their first Copic markers.)
+function scanBrandAuto() {
+  if (scanBrandChosen) return '';
+  const own = buyOwnBrands(),
+    bb = state.buyBrands;
+  return own.length === 1 && (!bb || (bb.length === 1 && bb[0] === own[0])) ? own[0] : '';
+}
 function scanBrandButtons() {
   const seg = $('scBrand'),
     brands = [...new Set(COLORS.map((c) => c.brand))];
@@ -1075,8 +1091,17 @@ function openScan() {
     if (pr && pr.catch) pr.catch(function () {});
   } catch (_) {}
   scanOpener = document.activeElement;
+  const auto = scanBrandAuto();
+  if (!scanBrandChosen) scanBrand = auto;
   scanBrandButtons();
-  scanSay('', 'Ready', 'Each marker read shows here, with a sound', -1);
+  scanSay(
+    '',
+    'Ready',
+    auto
+      ? 'Set to ' + auto + ', the brand of all your markers · Either brand reads both'
+      : 'Each marker read shows here, with a sound',
+    -1,
+  );
   scanRender();
   openDialog(ov);
   // (straight into the box: what's done here is typing or Scan Text, which the box's own menu starts)
@@ -1144,42 +1169,33 @@ function scanAdd() {
   if (typeof presetRelist === 'function') presetRelist();
   closeScan();
   if (offList) wishChanged();
-  toastAction(
-    'Added ' +
-      keys.length +
-      ' marker' +
-      (keys.length === 1 ? '' : 's') +
-      ' to your collection' +
-      (offList ? ' (' + offList + ' off your To buy list)' : ''),
-    'Undo',
-    function () {
-      const wishNow = state.wish.slice();
-      // (v303: the markers it added back on the list, once each; its questions are as they are now)
-      scanList = scanList.concat(listWas.filter((e) => !e.ask && !scanList.some((x) => x.i === e.i)));
-      scanSaveList();
-      keys.forEach((k) => state.owned.delete(k));
-      // (back on the To buy list, unless put back there since: v303, where they were in it, not at its end)
-      const back = wishWas.filter((w) => keys.indexOf(w.k) >= 0 && !state.wish.some((x) => x.k === w.k));
-      if (back.length) {
-        const order = wishWas.map((w) => w.k),
-          all = state.wish.concat(back);
-        state.wish = all
-          .map((w, n) => ({ w: w, at: order.indexOf(w.k) >= 0 ? order.indexOf(w.k) : 1e6 + n }))
-          .sort((a, b) => a.at - b.at)
-          .map((x) => x.w);
-      }
-      if (
-        keep(function () {
-          keys.forEach((k) => state.owned.add(k));
-          state.wish = wishNow;
-        })
-      ) {
-        fullRender();
-        if (typeof presetRelist === 'function') presetRelist();
-        wishChanged();
-      }
-    },
-  );
+  toastAction(addedManyLine(keys.length, offList), 'Undo', function () {
+    const wishNow = state.wish.slice();
+    // (v303: the markers it added back on the list, once each; its questions are as they are now)
+    scanList = scanList.concat(listWas.filter((e) => !e.ask && !scanList.some((x) => x.i === e.i)));
+    scanSaveList();
+    keys.forEach((k) => state.owned.delete(k));
+    // (back on the To buy list, unless put back there since: v303, where they were in it, not at its end)
+    const back = wishWas.filter((w) => keys.indexOf(w.k) >= 0 && !state.wish.some((x) => x.k === w.k));
+    if (back.length) {
+      const order = wishWas.map((w) => w.k),
+        all = state.wish.concat(back);
+      state.wish = all
+        .map((w, n) => ({ w: w, at: order.indexOf(w.k) >= 0 ? order.indexOf(w.k) : 1e6 + n }))
+        .sort((a, b) => a.at - b.at)
+        .map((x) => x.w);
+    }
+    if (
+      keep(function () {
+        keys.forEach((k) => state.owned.add(k));
+        state.wish = wishNow;
+      })
+    ) {
+      fullRender();
+      if (typeof presetRelist === 'function') presetRelist();
+      wishChanged();
+    }
+  });
 }
 (function () {
   const ov = $('scanOverlay'),
@@ -1245,6 +1261,7 @@ function scanAdd() {
     const b = t.closest('#scBrand button');
     if (b) {
       scanBrand = b.dataset.b;
+      scanBrandChosen = true;
       try {
         localStorage.setItem(SCAN_BRAND_KEY, scanBrand);
       } catch (_) {}

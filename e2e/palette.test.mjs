@@ -208,7 +208,7 @@ test('Generate palette: the Palette screen’s harmonies in its order, each at a
   const guide = await page.$$eval('#sfHarm option', (os) => os.map((o) => o.value + '=' + o.textContent));
   const palette = await page.$$eval('#harm button', (bs) => bs.filter((b) => !['custom', 'photo'].includes(b.dataset.h)).map((b) => b.dataset.h + '=' + b.textContent));
   assert.deepEqual(guide, palette);
-  assert.deepEqual(guide.map((x) => x.split('=')[1]), ['Complementary', 'Analogous', 'Triadic', 'Split complementary', 'Tetradic', 'Monochrome']);
+  assert.deepEqual(guide.map((x) => x.split('=')[1]), ['Complementary', 'Analogous', 'Triadic', 'Split complementary', 'Tetradic', 'Monochrome', 'Rainbow']);
   for (const expand of [true, false]) {
     const got = await page.evaluate((expand) => __mstest.GEN_HARMS.map((h) => { const t = __mstest; t.genHarmony = h; t.limitN = 16; t.expand = expand; t.paletteSource = 'generate'; t.generatePalette(); return { h, n: t.genPal.length, pool: t.activePool().length, R: HARM_RANGE[h] }; }), expand);
     for (const g of got) {
@@ -235,7 +235,7 @@ for (const [w, scale] of [[360, 1], [360, 1.3], [390, 1.6]]) {
     const { page, errors } = await openAtScale(scale, { width: w, height: 800 });
     await welcome(page, 'look');
     await page.click('#mPalette'); await idle(page);
-    for (const h of ['complementary', 'analogous', 'triadic', 'split', 'tetradic', 'mono', 'custom']) {
+    for (const h of ['complementary', 'analogous', 'triadic', 'split', 'tetradic', 'mono', 'rainbow', 'custom']) {
       await page.evaluate((h) => setHarmony(h), h); await idle(page);
       const m = await page.evaluate(() => { const bs = [...document.querySelectorAll('#segs button')].filter((b) => b.offsetParent).map((b) => b.getBoundingClientRect()); return { n: bs.length, left: Math.min(...bs.map((r) => r.left)), right: Math.max(...bs.map((r) => r.right)), minW: Math.min(...bs.map((r) => r.width)), vw: innerWidth, sw: document.documentElement.scrollWidth }; });
       assert.ok(m.left >= 0 && m.right <= m.vw, `${h}: its ${m.n} sizes are on screen ${JSON.stringify(m)}`);
@@ -481,6 +481,7 @@ test('Palette: a line under the Harmony choices says what the chosen one does', 
     split: 'One colour and the two either side of its opposite',
     tetradic: 'Two pairs of opposites',
     mono: 'One colour, light to dark',
+    rainbow: 'Evenly round the rainbow, at similar lightness',
     custom: 'Markers you choose: tap a slot to pick one',
     photo: 'A photo’s main colours, matched to markers',
   };

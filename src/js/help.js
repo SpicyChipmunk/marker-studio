@@ -5,6 +5,8 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'Scatter a gradient from Polished to Confetti, and smooth rough spots in one tap. Codes in both brands are marked, and Colour along finds a marker by its code. Your finished piece leads Home.',
+  'Finish a page and Reveal shows it off on its paper, ready to share. Gradients are smoother, with a new Around flow for mandalas, and Redo is beside Undo.',
   'Search finds a code however you type it (“c3”, “C-3”, “cool grey 3”). Restoring a backup keeps your newer progress, and Save image’s codes no longer sit on top of each other.',
   'A page downloaded from the internet now makes a better guide: lines close together no longer run into one. Scan is more careful: prices and counts in a list aren’t read as markers.',
   'When you tap a section, the box that opens now points to it. The guide’s rows of buttons are tidier.',
@@ -210,9 +212,7 @@ const WHATS_NEW = [
       next = D.getElementById('hiwNext'),
       live = D.getElementById('hiwLive');
     let cur = 0;
-    const still = function () {
-      return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-    };
+    const still = reducedMotion;
     function paint() {
       slides.forEach(function (s, i) {
         if (i === cur) s.removeAttribute('aria-hidden');

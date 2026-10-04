@@ -36,8 +36,10 @@ function probe(page, keep) {
 // (below the page's header, whose line of what's where changes with close-ups: v284)
 const labelInk = (page, a, b) => page.evaluate(([a, b]) => { const A = window.__p0[a], B = window.__p0[b], L = (d, i) => 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; let min = 255, n = 0; for (let i = Math.floor(A.length * 0.12 / 4) * 4; i < A.length; i += 4) { const la = L(A, i); if (la < L(B, i) - 30) { n++; if (la < min) min = la; } } return { min, n }; }, [a, b]);
 const pick = (page, sel) => page.click(sel);
-// the key's number column (bold, right-aligned, black)
-const keyNums = (r) => r.texts.filter((e) => e.p > 0 && e.al === 'right' && e.fill === '#111111' && /^\d+$/.test(e.t)).map((e) => e.t);
+// the key's number column (right-aligned; v305: drawn as the colouring page's numbers are, light grey or with Darker
+// labels near-black)
+const NUM_INK = /^#(a0a0a0|111111)$/;
+const keyNums = (r) => r.texts.filter((e) => e.p > 0 && e.al === 'right' && NUM_INK.test(e.fill) && /^\d+$/.test(e.t)).map((e) => e.t);
 // Share › Print… opens the Print sheet; Cancel closes it
 async function sharePrint(page) { await page.click('.sftabbtn[data-t="share"]'); await page.click('#sfPrint'); await page.waitForSelector('#sfSheet.sfprsh'); await idle(page); }
 async function closePrint(page) { await page.click('#sfSheet [data-pr="cancel"]'); await page.waitForSelector('#sfSheet', { state: 'detached' }); }
@@ -80,7 +82,8 @@ test('labels: Codes, Numbers or None on the colouring page, light grey unless Da
   const want = Array.from({ length: nums.keyN }, (_, i) => String(i + 1));
   const ns = [...new Set(nums.onArt.filter((t) => /^\d+$/.test(t)))];
   assert.ok(ns.every((t) => want.includes(t)) && ns.length >= want.length - 2, 'numbers on the page, one per marker');
-  const keyNums = nums.texts.filter((e) => e.p === nums.keyP && e.al === 'right' && e.fill === '#111111' && /^\d+$/.test(e.t)).map((e) => e.t);
+  // (v305: the key's numbers look as the page's do: light grey, as its labels are by default)
+  const keyNums = nums.texts.filter((e) => e.p === nums.keyP && e.al === 'right' && e.fill === '#a0a0a0' && /^\d+$/.test(e.t)).map((e) => e.t);
   assert.deepEqual(keyNums, want, 'the key lists 1…N in order');
   assert.ok(nums.texts.some((e) => e.p === nums.keyP && e.t === 'NO.'), 'number column heading');
   assert.ok(nums.texts.some((e) => e.p === 0 && /numbers: see the colour key/.test(e.t)), 'the page says where the numbers are');

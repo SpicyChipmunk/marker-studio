@@ -94,13 +94,15 @@ var _thumbTried = {};
 // The intro line shows only before there are any guides. ----
 var _homeArt = {};
 // a guide's picture from its stored sections: mode 'plan' every section in its marker; 'prog' those coloured (ticked,
-// or some tones) in theirs and the rest pale. Resolves to a data: URL, or '' when it can't be drawn.
-function homeArt(g, mode, maxW) {
-  var key = g.id + '|' + (g.ts || 0) + '|' + mode + '|' + maxW;
+// or some tones) in theirs and the rest pale. Resolves to a data: URL, or '' when it can't be drawn. `over`: how many
+// times bigger it is drawn before being shrunk smoothly (2; the latest piece's 1.4, about half the work, v306)
+function homeArt(g, mode, maxW, over) {
+  over = over || 2;
+  var key = g.id + '|' + (g.ts || 0) + '|' + mode + '|' + maxW + (over === 2 ? '' : '|' + over);
   if (_homeArt[key]) return _homeArt[key];
   // (one picture kept per guide and kind: an older one of this guide goes)
   var pre = g.id + '|',
-    suf = '|' + mode + '|' + maxW;
+    suf = '|' + mode + '|' + maxW + (over === 2 ? '' : '|' + over);
   Object.keys(_homeArt).forEach(function (k) {
     if (k.indexOf(pre) === 0 && k.slice(-suf.length) === suf) delete _homeArt[k];
   });
@@ -118,7 +120,7 @@ function homeArt(g, mode, maxW) {
             // out stepped and broken, v303)
             var W = im.width,
               H = im.height,
-              k = Math.min(1, (2 * maxW) / W, (2 * maxW) / H),
+              k = Math.min(1, (over * maxW) / W, (over * maxW) / H),
               w = Math.max(1, Math.round(W * k)),
               h = Math.max(1, Math.round(H * k)),
               c = document.createElement('canvas');
@@ -297,6 +299,176 @@ function homeStartBtn() {
   var b = document.querySelector('#homeCont [data-start="photo"]');
   return b && b.getClientRects().length ? b : document.getElementById('homeNew');
 }
+/* ---- Home's latest piece (v306): the newest guide, when it's finished and none is in progress, leads Home above the
+   two columns, with Reveal & share and Print…. Its box is laid out at once from what the Library holds (the name,
+   sections, markers and the markers' ribbon, the picture's box in the page's shape) and the picture comes after the
+   first paint, drawn from the guide's sections at 1.4 times its size (cached, as Home's other pictures are), with the
+   finish date; the glow is soft washes of the guide's own colours (no blur: heavy in Safari). Nothing new is saved.
+   A guide whose picture can't be read has none: Home goes back to the start card. ---- */
+var _heroBad = {};
+// a copy kept with section edits still to be built ("… (section edits)", keepSlot in 60-persist): its row says so
+// (eds), or, kept before rows did, its name does
+function heroEdits(g) {
+  return g.eds === 1 || (g.eds === undefined && / \(section edits\)$/.test(g.name || ''));
+}
+// the newest guide, leaving out copies with section edits to build, when it's finished and Continue has nothing to
+// offer; else null
+function homeHeroPick(all, cont) {
+  var g =
+    !cont &&
+    all.find(function (x) {
+      return !heroEdits(x);
+    });
+  if (!g || !(+g.n > 0) || +g.done < +g.n) return null;
+  return _heroBad[g.id + '|' + (g.ts || 0)] ? null : g;
+}
+// "4 Oct" (and the year, when it isn't this one)
+function heroDate(t) {
+  try {
+    var d = new Date(t),
+      o = { day: 'numeric', month: 'short' };
+    if (d.getFullYear() !== new Date().getFullYear()) o.year = 'numeric';
+    return d.toLocaleDateString('en-GB', o);
+  } catch (e) {
+    return '';
+  }
+}
+function heroHex(keys) {
+  return (keys || [])
+    .map(function (k) {
+      var i = keyIdx(k);
+      return i != null && COLORS[i] ? COLORS[i].hex : null;
+    })
+    .filter(Boolean);
+}
+// the ribbon: the guide's markers in the order they were laid (up to 32, evenly), hard stops
+function heroRibbon(hx) {
+  if (!hx.length) return 'none';
+  var n = Math.min(32, hx.length),
+    out = [];
+  for (var q = 0; q < n; q++) {
+    var c = hx[Math.floor(((q + 0.5) * hx.length) / n)];
+    out.push(c + ' ' + ((q * 100) / n).toFixed(2) + '%', c + ' ' + (((q + 1) * 100) / n).toFixed(2) + '%');
+  }
+  return 'linear-gradient(90deg,' + out.join(',') + ')';
+}
+// the glow: four soft washes of its colours, from the start of the run (top left) to its end (bottom right)
+function heroGlow(hx) {
+  if (!hx.length) return '';
+  var at = function (f) {
+      var c = hx[Math.min(hx.length - 1, Math.floor(f * hx.length))];
+      return [1, 3, 5]
+        .map(function (q) {
+          return parseInt(c.slice(q, q + 2), 16);
+        })
+        .join(',');
+    },
+    w = function (x, y, f, a) {
+      return (
+        'radial-gradient(ellipse 60% 70% at ' +
+        x +
+        ' ' +
+        y +
+        ',rgba(' +
+        at(f) +
+        ',' +
+        a +
+        '),transparent 70%)'
+      );
+    };
+  return [
+    w('8%', '6%', 0.05, 0.3),
+    w('92%', '10%', 0.35, 0.22),
+    w('10%', '96%', 0.65, 0.24),
+    w('94%', '94%', 0.92, 0.26),
+  ].join(',');
+}
+function homeHero(g) {
+  var el = document.getElementById('homeHero');
+  if (!el) return;
+  if (!g) {
+    if (el.getAttribute('data-hid')) {
+      el.removeAttribute('data-hid');
+      el.innerHTML = '';
+    }
+    el.style.display = 'none';
+    return;
+  }
+  var sig = g.id + '|' + (g.ts || 0) + '|' + homeName(g);
+  el.style.display = '';
+  if (el.getAttribute('data-hid') === sig) return;
+  el.setAttribute('data-hid', sig);
+  var nm = esc(homeName(g)),
+    hx = heroHex(g.keys),
+    nk = (g.keys || []).length,
+    W = +g.W > 0 ? +g.W : 3,
+    H = +g.H > 0 ? +g.H : 4,
+    ar = Math.max(0.2, Math.min(5, W / H));
+  el.innerHTML =
+    '<div class="hhcard" style="background-image:' +
+    heroGlow(hx) +
+    '"><button type="button" class="hhpic" data-hero="open" aria-label="Open ' +
+    nm +
+    '"><span class="hhbox" style="--ar:' +
+    ar.toFixed(4) +
+    '"></span></button><div class="hhbody"><span class="hheb"><i class="hhdone" aria-hidden="true"></i><span class="hhwhen">Finished</span></span><h2 class="hhname">' +
+    nm +
+    '</h2><span class="hhmeta">' +
+    nWord(+g.n, 'section') +
+    ' · ' +
+    nk +
+    ' marker' +
+    (nk === 1 ? '' : 's') +
+    '</span><span class="hhribbon" aria-hidden="true" style="background:' +
+    heroRibbon(hx) +
+    '"></span><div class="hhacts"><button type="button" id="homeHeroGo" class="btn-primary hhgo" data-hero="reveal">' +
+    ic('sparkles') +
+    ' Reveal &amp; share</button><button type="button" id="homeHeroPrint" class="hhprint" data-hero="print" aria-haspopup="dialog">' +
+    ic('printer') +
+    ' Print…</button></div></div></div>';
+  var gid = g.id,
+    same = function () {
+      return el.getAttribute('data-hid') === sig;
+    };
+  // (after the first paint: drawing the picture holds the page up for a moment, longer in Safari)
+  requestAnimationFrame(function () {
+    setTimeout(function () {
+      var box = same() && el.querySelector('.hhbox');
+      if (!box) return;
+      var r = box.getBoundingClientRect(),
+        px = Math.max(r.width, r.height) * Math.min(2, window.devicePixelRatio || 1),
+        maxW = Math.max(200, Math.min(1200, Math.ceil(px / 50) * 50));
+      Promise.all([
+        homeArt(g, 'plan', maxW, 1.4),
+        IDB.get('guide-' + gid).catch(function () {
+          return null;
+        }),
+      ]).then(function (res) {
+        if (!same()) return;
+        if (!res[0]) {
+          // (its picture can't be read: no latest piece, and Home as it would be without it)
+          _heroBad[g.id + '|' + (g.ts || 0)] = 1;
+          renderRecent();
+          return;
+        }
+        var b = el.querySelector('.hhbox');
+        if (b) b.innerHTML = '<img alt="" src="' + res[0] + '"' + (reduce ? '' : ' class="hhfade"') + '>';
+        var e = res[1] && res[1].dates && +res[1].dates.e,
+          wh = el.querySelector('.hhwhen');
+        if (e && wh) wh.textContent = 'Finished · ' + heroDate(e);
+      });
+    }, 0);
+  });
+  el.onclick = function (e) {
+    var b = e.target.closest('[data-hero]');
+    if (!b || !window.SF) return;
+    var what = b.getAttribute('data-hero');
+    setMode('sections');
+    if (what === 'open' || !SF.openThen) {
+      if (SF.openDesign) SF.openDesign(gid);
+    } else SF.openThen(gid, what);
+  };
+}
 function renderRecent() {
   var _ls = document.getElementById('homeLibSub');
   if (_ls) {
@@ -327,11 +499,14 @@ function renderRecent() {
         return (b.ts || 0) - (a.ts || 0);
       }),
     cont = all.find(homeStarted) || null,
+    // (v306: the latest piece, left out of Your guides before its cards are picked, or the grid shows three)
+    hero = homeHeroPick(all, cont),
     gs = all
       .filter(function (g) {
-        return g !== cont;
+        return g !== cont && g !== hero;
       })
       .slice(0, 4);
+  homeHero(hero);
   if (head) head.style.display = all.length ? 'none' : '';
   // the Continue card
   if (cel) {

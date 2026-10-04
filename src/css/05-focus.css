@@ -282,3 +282,8 @@ button.sffoccols::after {
   color: inherit;
   white-space: inherit;
 }
+/* (v306) "Not the Ohuhu Y26": the marker in hand has its code in the guide in the other brand too */
+.sffocname span span.sffocnot {
+  color: var(--warn);
+  font-weight: 700;
+}

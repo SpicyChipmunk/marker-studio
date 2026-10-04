@@ -135,7 +135,8 @@ const ANCH = {
 };
 // the smallest colour difference (CIEDE2000) a scheme's palette aims for between any two of its colours
 function genNeed(harmony) {
-  return harmony === 'mono' ? 6 : 10;
+  // (v306: Rainbow's colours are only as far apart as the markers round the wheel allow, at similar lightness)
+  return harmony === 'mono' ? 6 : harmony === 'rainbow' ? 5 : 10;
 }
 // The steps tried in turn: [smallest ΔE00 between two colours, hue allowance in degrees, greys allowed]. The hue
 // allowance is how far a colour may be from its scheme hue; for Analogous it's how widely all its hues may spread (it
@@ -594,45 +595,18 @@ function _pRgbLab(r, g, b) {
         .join(''),
   );
 }
-function _pRange(box) {
-  var mn = [255, 255, 255],
-    mx = [0, 0, 0],
-    i,
-    k,
-    p;
-  for (i = 0; i < box.length; i++) {
-    p = box[i];
-    for (k = 0; k < 3; k++) {
-      if (p[k] < mn[k]) mn[k] = p[k];
-      if (p[k] > mx[k]) mx[k] = p[k];
-    }
-  }
-  return [mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]];
-}
-function _pAvg(box) {
-  var r = 0,
-    g = 0,
-    b = 0,
-    i;
-  for (i = 0; i < box.length; i++) {
-    r += box[i][0];
-    g += box[i][1];
-    b += box[i][2];
-  }
-  var n = box.length || 1;
-  return [r / n, g / n, b / n];
-}
 /* The markers for a photo (Palette › From photo): { markers, labs } (labs: the photo colour each marker stands for), or
    null when the image can't be read; { none: true } when it has no colour a marker can make.
-   The photo's colours come from median cut (the box with the widest range of red, green or blue split at its middle,
-   into a few more boxes than colours wanted), averaged per box and merged when they look alike (CIEDE2000 under 5).
-   Then, most-used first, each gets the marker in play nearest it by eye that is clearly different from those already
-   chosen (CIEDE2000 at least 6), or none. Near-white is skipped: no marker makes white. A short palette relaxes to 4,
-   then 0; when the photo has fewer colours than wanted, its colours take a second marker each, and so on, until there
-   are n (or the markers in play run out). Measured on 13 photos at 6, 8 and 12 colours against a 451-marker
-   collection, against the nearest marker for each colour by plain L*a*b* distance before: the photos' colours a little
-   nearer their palettes on average (CIEDE2000 8.0 against 8.1), no two colours alike (21 pairs under 5 before) and no
-   short palettes (3 before).
+   The photo's colours (v305): its pixels binned by colour, then clustered in L*a*b* (k-means from a fixed seed, so the
+   same photo always gives the same palette) and merged when they look alike (CIEDE2000 under 5). Median cut before
+   split each colour's pixels across boxes and averaged them into mud (six bright blocks on a dark ground gave white,
+   two browns and one yellow). Each colour is ranked by √share × (1 + chroma/30); only when at least a tenth of the
+   photo is clearly coloured do its blacks, whites and paper go well down and its mid-greys a little, so a grey cat on
+   grass keeps its grey. The boldest colour covering at least 1% is always kept (a red umbrella in a grey street).
+   Then each colour in turn gets the marker in play nearest it by eye: first only a close match (within 12) clearly
+   different from those chosen (at least 10), then looser (20 and 6, then any). Near-white is skipped: no marker
+   makes white. When the photo has fewer colours than wanted, its colours take a second marker each, and so on,
+   until there are n (or the markers in play run out).
    `fix` (optional): the lighting correction from the photo's paper, applied first. */
 function extractPhotoPalette(img, n, fix) {
   var cv = document.createElement('canvas'),
@@ -654,61 +628,156 @@ function extractPhotoPalette(img, n, fix) {
     freeCanvas(cv);
   }
   if (fix) lightApplyData(fix, d);
-  var px = [],
-    i;
+  // the pixels by colour (5 bits a channel), each bin the average L*a*b* of its pixels and how many
+  var bins = new Map(),
+    i,
+    j;
   for (i = 0; i < d.length; i += 4) {
     if (d[i + 3] < 125) continue;
-    px.push([d[i], d[i + 1], d[i + 2]]);
+    var key = ((d[i] >> 3) << 10) | ((d[i + 1] >> 3) << 5) | (d[i + 2] >> 3),
+      bn = bins.get(key);
+    if (!bn) {
+      bn = [0, 0, 0, 0];
+      bins.set(key, bn);
+    }
+    bn[0] += d[i];
+    bn[1] += d[i + 1];
+    bn[2] += d[i + 2];
+    bn[3]++;
   }
-  if (!px.length) return { markers: [], labs: [], none: true };
-  var boxes = [px],
-    want = Math.min(px.length, Math.max(n * 2, n + 4));
-  while (boxes.length < want) {
-    boxes.sort(function (a, b) {
-      var ra = _pRange(a),
-        rb = _pRange(b);
-      return Math.max(rb[0], rb[1], rb[2]) - Math.max(ra[0], ra[1], ra[2]);
-    });
-    var bx = boxes[0];
-    if (bx.length < 2) break;
-    boxes.shift();
-    var r = _pRange(bx),
-      ax = r[0] >= r[1] && r[0] >= r[2] ? 0 : r[1] >= r[2] ? 1 : 2;
-    bx.sort(function (p, q) {
-      return p[ax] - q[ax];
-    });
-    var m = bx.length >> 1;
-    boxes.push(bx.slice(0, m), bx.slice(m));
+  if (!bins.size) return { markers: [], labs: [], none: true };
+  var px = [],
+    wt = [];
+  bins.forEach(function (bn) {
+    px.push(_pRgbLab(bn[0] / bn[3], bn[1] / bn[3], bn[2] / bn[3]));
+    wt.push(bn[3]);
+  });
+  var U = px.length;
+  // k-means in L*a*b* (weighted by pixels), k-means++ start from a fixed seed: the same photo always gives the same palette
+  var k = Math.min(U, Math.max(16, 3 * n)),
+    seed = 0x9e3779b9;
+  function rnd() {
+    seed = (seed + 0x6d2b79f5) >>> 0;
+    var t = seed;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
+  function d2(a, b) {
+    var x = a[0] - b[0],
+      y = a[1] - b[1],
+      z = a[2] - b[2];
+    return x * x + y * y + z * z;
+  }
+  var first = 0;
+  for (i = 1; i < U; i++) if (wt[i] > wt[first]) first = i;
+  var C = [px[first].slice()],
+    best = new Float64Array(U);
+  for (i = 0; i < U; i++) best[i] = d2(px[i], C[0]);
+  while (C.length < k) {
+    var tot = 0;
+    for (i = 0; i < U; i++) tot += best[i] * wt[i];
+    if (!tot) break;
+    var r = rnd() * tot;
+    for (i = 0; i < U - 1 && r > best[i] * wt[i]; i++) r -= best[i] * wt[i];
+    var c = px[i].slice();
+    C.push(c);
+    for (j = 0; j < U; j++) {
+      var dd = d2(px[j], c);
+      if (dd < best[j]) best[j] = dd;
+    }
+  }
+  var asg = new Int32Array(U).fill(-1),
+    K = C.length,
+    it,
+    moved = true;
+  for (it = 0; it < 12 && moved; it++) {
+    moved = false;
+    for (i = 0; i < U; i++) {
+      var b = 0,
+        bd = Infinity;
+      for (j = 0; j < K; j++) {
+        var e = d2(px[i], C[j]);
+        if (e < bd) {
+          bd = e;
+          b = j;
+        }
+      }
+      if (asg[i] !== b) {
+        asg[i] = b;
+        moved = true;
+      }
+    }
+    var S = [];
+    for (j = 0; j < K; j++) S.push([0, 0, 0, 0]);
+    for (i = 0; i < U; i++) {
+      var s = S[asg[i]],
+        ww = wt[i];
+      s[0] += px[i][0] * ww;
+      s[1] += px[i][1] * ww;
+      s[2] += px[i][2] * ww;
+      s[3] += ww;
+    }
+    for (j = 0; j < K; j++) if (S[j][3]) C[j] = [S[j][0] / S[j][3], S[j][1] / S[j][3], S[j][2] / S[j][3]];
+  }
+  var cnt = new Array(K).fill(0);
+  for (i = 0; i < U; i++) cnt[asg[i]] += wt[i];
   var reps = [];
-  for (i = 0; i < boxes.length; i++) {
-    if (!boxes[i].length) continue;
-    var a = _pAvg(boxes[i]);
-    reps.push({ lab: _pRgbLab(a[0], a[1], a[2]), w: boxes[i].length });
-  }
+  for (j = 0; j < K; j++) if (cnt[j]) reps.push({ lab: C[j], w: cnt[j] });
   reps.sort(function (a, b) {
     return b.w - a.w;
   });
-  var merged = [],
-    j;
+  var merged = [];
   for (i = 0; i < reps.length; i++) {
     var dup = false;
-    for (j = 0; j < merged.length; j++) {
+    for (j = 0; j < merged.length; j++)
       if (de2000(reps[i].lab, merged[j].lab) < 5) {
-        merged[j].w += reps[i].w;
+        var m = merged[j],
+          tw = m.w + reps[i].w;
+        m.lab = [0, 1, 2].map(function (z) {
+          return (m.lab[z] * m.w + reps[i].lab[z] * reps[i].w) / tw;
+        });
+        m.w = tw;
         dup = true;
         break;
       }
-    }
-    if (!dup) merged.push(reps[i]);
+    if (!dup) merged.push({ lab: reps[i].lab, w: reps[i].w });
   }
-  merged.sort(function (a, b) {
-    return b.w - a.w;
-  });
   var cand = merged.filter(function (rp) {
     return !(rp.lab[0] >= 90 && Math.hypot(rp.lab[1], rp.lab[2]) < GREY_C);
   });
   if (!cand.length) return { markers: [], labs: [], none: true };
+  // ranked by share × colourfulness; when a fair part of the photo has colour (10%), its greys and blacks (a
+  // background, a tray, shadows) come after its colours
+  var tw2 = 0,
+    cw = 0;
+  cand.forEach(function (c) {
+    c.c = Math.hypot(c.lab[1], c.lab[2]);
+    tw2 += c.w;
+    if (c.c >= 20) cw += c.w;
+  });
+  var colourful = cw >= 0.1 * tw2;
+  cand.forEach(function (c) {
+    var sh = c.w / tw2;
+    c.s =
+      Math.sqrt(sh) *
+      (1 + Math.min(c.c, 60) / 30) *
+      (colourful ? Math.max(c.lab[0] < 25 || c.lab[0] > 80 ? 0.15 : 0.8, Math.min(1, (c.c - 6) / 18)) : 1) *
+      (sh < 0.005 ? 0.1 : 1);
+  });
+  cand.sort(function (a, b) {
+    return b.s - a.s;
+  });
+  // the photo's boldest colour (at least 1% of it) is never left out: a red umbrella in a grey street
+  var acc = -1;
+  for (i = 0; i < cand.length; i++)
+    if (
+      cand[i].c >= 30 &&
+      cand[i].w >= 0.01 * tw2 &&
+      (acc < 0 || cand[i].c * Math.sqrt(cand[i].w) > cand[acc].c * Math.sqrt(cand[acc].w))
+    )
+      acc = i;
+  if (acc > 1) cand.splice(1, 0, cand.splice(acc, 1)[0]);
   var pool = [];
   for (i = 0; i < COLORS.length; i++) if (inPool(i)) pool.push(i);
   var out = [],
@@ -719,13 +788,13 @@ function extractPhotoPalette(img, n, fix) {
   function pick(lab, min) {
     var best = -1,
       bd = 1e9,
-      k,
+      kk,
       q,
       mi,
       dd,
       ok;
-    for (k = 0; k < pool.length; k++) {
-      mi = pool[k];
+    for (kk = 0; kk < pool.length; kk++) {
+      mi = pool[kk];
       if (taken.has(mi)) continue;
       dd = de2000(lab, LAB[mi]);
       if (dd >= bd) continue;
@@ -742,28 +811,29 @@ function extractPhotoPalette(img, n, fix) {
     out.push(mi);
     outLabs.push(lab);
   }
-  var steps = [6, 4, 0],
-    s,
-    done = new Set(),
-    b;
-  for (s = 0; s < steps.length && out.length < n; s++)
+  // first the colours a marker matches well (within 12) and clearly different from those chosen (10), then looser
+  var steps = [10, 6, 0],
+    caps = [12, 20, 1e9],
+    st,
+    done = new Set();
+  for (st = 0; st < steps.length && out.length < n; st++)
     for (i = 0; i < cand.length && out.length < n; i++) {
       if (done.has(i)) continue;
-      b = pick(cand[i].lab, steps[s]);
-      if (b >= 0) {
-        add(b, cand[i].lab);
+      var bb = pick(cand[i].lab, steps[st]);
+      if (bb >= 0 && de2000(cand[i].lab, LAB[bb]) <= caps[st]) {
+        add(bb, cand[i].lab);
         done.add(i);
       }
     }
   // fewer colours in the photo than wanted: each takes another marker in turn, as different as can be
-  for (s = 0; s < steps.length && out.length < n; s++) {
+  for (st = 0; st < steps.length && out.length < n; st++) {
     var more = true;
     while (more && out.length < n) {
       more = false;
       for (i = 0; i < cand.length && out.length < n; i++) {
-        b = pick(cand[i].lab, steps[s]);
-        if (b >= 0) {
-          add(b, cand[i].lab);
+        var b2 = pick(cand[i].lab, steps[st]);
+        if (b2 >= 0) {
+          add(b2, cand[i].lab);
           more = true;
         }
       }
@@ -824,6 +894,7 @@ function genPalette(n, harmony, opts) {
   opts = opts || {};
   n = n || state.palSize;
   harmony = harmony || state.harmony;
+  if (harmony === 'rainbow') return genRainbow(n, opts);
   const mood = MOODS[opts.mood] && MOOD_KEYS.includes(opts.mood) ? opts.mood : 'neutral',
     locked = opts.locked || {},
     ctx = genCtx(harmony, mood, null);
@@ -910,6 +981,35 @@ function genPalette(n, harmony, opts) {
   }
   return pal;
 }
+/* (v306) Rainbow: n colours evenly round the wheel at similar lightness, picked from the markers in play (inPool:
+   filters and a selection count) as the guide's Gradient picks them (SF.rainbowPick), so a saved Rainbow laid by the
+   Gradient at the same count gives the same markers. Generate rolls another from a new seed (opts.reroll); a scheme,
+   size or filter change makes the Gradient's own. Locked colours stay, and the free ones are picked round them. At
+   most as many colours as there are clear markers in play; null when fewer than its smallest size. */
+function genRainbow(n, opts) {
+  if (!window.SF || !SF.rainbowPick) return null;
+  const pool = [];
+  for (let i = 0; i < COLORS.length; i++) if (inPool(i)) pool.push(i);
+  const mood = MOODS[opts.mood] && MOOD_KEYS.includes(opts.mood) ? opts.mood : 'neutral',
+    pal = SF.rainbowPick(n, mood, pool, {
+      locked: opts.locked || {},
+      seed: opts.reroll ? Math.random() || 0.5 : 0,
+    });
+  if (!pal || pal.length < Math.min(n, HARM_RANGE.rainbow[0])) return null;
+  if (opts.report) {
+    const fixed = new Set(Object.values(opts.locked || {})),
+      minDE = palMinDE(pal, fixed);
+    Object.assign(opts.report, {
+      need: genNeed('rainbow'),
+      minDE,
+      relaxed: minDE != null && minDE < genNeed('rainbow'),
+      hueWidened: !palOnScheme(pal, 'rainbow', fixed),
+      moodWidened: 0,
+      grey: pal.some((i) => !fixed.has(i) && LCH[i][1] < GREY_C),
+    });
+  }
+  return pal;
+}
 // Re-rolling one colour of a generated palette (tapping its band): another marker near its hue and lightness, by the
 // scheme's rules against the palette's other colours (clearly different from them, no greys in a colour scheme,
 // Analogous within its spread, Monochrome near the palette's hue), and visibly different from the one it replaces
@@ -935,6 +1035,31 @@ function rerollPick(pal, k, harmony) {
     ctx.greyFam = LCH[cur][1] < GREY_C || famGreyish(cur);
   }
   const slot = { h: LCH[cur][2], L: LCH[cur][0] };
+  // (v306) Rainbow: aimed at the middle of the gap round the wheel this colour fills (between its neighbours in hue
+  // among the other clear colours), at their middle lightness
+  if (harmony === 'rainbow') {
+    const hs = others
+        .filter((i) => LCH[i][1] >= GREY_C)
+        .map((i) => LCH[i][2])
+        .sort((a, b) => a - b),
+      Ls = others.map((i) => LCH[i][0]).sort((a, b) => a - b);
+    if (hs.length >= 2) {
+      const h = LCH[cur][2];
+      let lo = hs[hs.length - 1] - 360,
+        hi = hs[0];
+      for (let q = 0; q < hs.length; q++) {
+        const a = hs[q],
+          b = q + 1 < hs.length ? hs[q + 1] : hs[0] + 360;
+        if ((h >= a && h < b) || (h + 360 >= a && h + 360 < b)) {
+          lo = a;
+          hi = b;
+          break;
+        }
+      }
+      slot.h = ((((lo + hi) / 2) % 360) + 360) % 360;
+    }
+    if (Ls.length) slot.L = Ls[Ls.length >> 1];
+  }
   // (Analogous: its spread measured round the other colours' own hues, not this one's, which for a near-grey means
   // nothing; such a colour is aimed at their middle, v304)
   if (harmony === 'analogous') {
@@ -1021,6 +1146,18 @@ function palOnScheme(pal, harmony, fixed) {
   // (v298: the bases tried are exactly the ones that can matter — where a colour sits at the edge of a hue's window —
   // so no palette made on the scheme is called off it, and none just off it passes; before, whole degrees and half a
   // degree of slack)
+  // (v306) Rainbow: round the whole wheel, as the Gradient's loop is (no gap between its hues as wide as
+  // GRAD_LOOP_GAP's 100°); colours you locked count, as they take their place on it
+  if (harmony === 'rainbow') {
+    const all = pal
+      .filter((i) => LCH[i][1] >= GREY_C)
+      .map((i) => LCH[i][2])
+      .sort((a, b) => a - b);
+    if (all.length < 3) return false;
+    let gap = 360 - all[all.length - 1] + all[0];
+    for (let q = 1; q < all.length; q++) gap = Math.max(gap, all[q] - all[q - 1]);
+    return gap < 100;
+  }
   const win = GEN_LEVELS[harmony === 'mono' || harmony === 'analogous' ? harmony : 'anchors'][0][1],
     A = harmony === 'analogous' ? [0] : ANCH[harmony] || [0],
     E = 1e-6,
@@ -1054,7 +1191,15 @@ function closeNote() {
         si = keyIdx(state.seed);
       if (si != null && pal[0] === si) fixed.add(si);
       const d = palMinDE(pal, fixed);
-      if (d != null && d < genNeed(state.harmony))
+      // (v306) a Rainbow stops at the clear markers in play
+      if (state.harmony === 'rainbow' && pal.length < state.palSize)
+        t =
+          'Your markers in play have ' +
+          pal.length +
+          ' clear colours for a rainbow, not ' +
+          state.palSize +
+          '.';
+      else if (d != null && d < genNeed(state.harmony))
         t =
           'Two colours are close: your markers don\u2019t have ' +
           pal.length +
@@ -1195,6 +1340,6 @@ function currentPaletteIdxs() {
   if (state.mode !== 'palette') return [];
   if (state.harmony === 'custom') return state.customPal.filter((x) => x != null);
   if (state.harmony === 'photo' && !_photoImg) return [];
-  const p = state.palettes[state.palettes.length - 1];
+  const p = state.palettes[state.palettes.length - 1] || palPreview();
   return p ? p.slice() : [];
 }

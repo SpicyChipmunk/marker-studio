@@ -102,20 +102,49 @@ function famOrd(a, b) {
 // the grid's groups in order: the markers whose code the search names exactly, as "Best match", then those whose old
 // code it names, as "Old code" (v304: "g410" had shown G24, once G410, first), then each family, brand by brand and by
 // code within a brand (markers added to the data later, Ohuhu's R12 and R14 say, had come after the other brand's, v303)
+// (v305) a search that is the start of a code ("E", "BG", "E0", "r2": one to three letters, then any digits) shows
+// the markers whose code starts so next, as "Codes starting E" ("BG" is BG's, not BGY's: the letters end there), and
+// those whose old code does with the old codes; names come after ("E" had shown R014 first, every name with an e)
+function searchPrefix() {
+  const q = searchStr ? sQueryOf(searchStr) : null;
+  return q && q.words.length === 1 && /^[a-z]{1,3}\d*$/.test(q.whole) ? q.whole : '';
+}
+function codeStarts(x, p) {
+  return x.startsWith(p) && !/[a-z]/.test(x.charAt(p.length));
+}
 function searchGroups(m) {
   const by = {},
     best = [],
     was = [],
+    wasPre = [],
+    pre = [],
+    p = searchPrefix(),
     out = [];
   for (const i of m) {
-    const x = sExact(i);
+    const x = sExact(i),
+      h = p && !x ? sHay(i) : null;
     if (x === 2) best.push(i);
     else if (x === 1) was.push(i);
+    else if (h && codeStarts(h.codes[0], p)) pre.push(i);
+    else if (h && h.codes.slice(1).some((c) => codeStarts(c, p))) wasPre.push(i);
     else (by[COLORS[i].fam] = by[COLORS[i].fam] || []).push(i);
   }
+  // (v306) an old code that only starts with the search isn't an old code it names: "Y26" had filed Y39 (once Y260)
+  // under Old code, "R25" R54 (once R250). They get their own group, or, after an exact match, their families.
+  if (best.length) for (const i of wasPre) (by[COLORS[i].fam] = by[COLORS[i].fam] || []).push(i);
   if (best.length)
     out.push({ f: { name: 'Best match', repHex: COLORS[best[0]].hex }, list: best.sort(famOrd) });
+  if (pre.length)
+    out.push({
+      f: { name: 'Codes starting ' + p.toUpperCase(), repHex: COLORS[pre[0]].hex },
+      list: pre.sort(famOrd),
+    });
   if (was.length) out.push({ f: { name: 'Old code', repHex: COLORS[was[0]].hex }, list: was.sort(famOrd) });
+  if (wasPre.length && !best.length)
+    out.push({
+      f: { name: 'Old codes starting ' + p.toUpperCase(), repHex: COLORS[wasPre[0]].hex },
+      list: wasPre.sort(famOrd),
+    });
   for (const f of families) if (by[f.name]) out.push({ f: f, list: by[f.name].sort(famOrd) });
   return out;
 }
@@ -141,7 +170,8 @@ function cellHtml(i, rank) {
   const rk = rank ? '<span class="rankb">' + rank + '</span>' : '';
   const cls =
     'cell' + (col && !own && state.collView !== 'unowned' ? ' notown' : '') + (col && own ? ' own' : '');
-  const check = col && own ? '<span class="owncheck">\u2713</span>' : '';
+  // (the tick shows ownership where owned and not owned are mixed: All. In Owned every marker is yours, v305)
+  const check = col && own && state.collView !== 'owned' ? '<span class="owncheck">\u2713</span>' : '';
   const act = col ? (own ? 'remove' : 'add') : 'copy';
   return (
     '<div class="' +

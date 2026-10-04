@@ -76,25 +76,49 @@ function removeWish(k, quiet) {
   }
   return { w: w, j: j };
 }
+// Markers that have just become yours leave To buy (one with its ink marked stays: it's the replacement), v305.
+// Returns what came off, for wishPutBack (Undo, or storage full).
+function wishOwnedOff(keys) {
+  const out = [];
+  keys.forEach(function (k) {
+    if (state.ink[k]) return;
+    const r = removeWish(k, true);
+    if (r) out.push(r);
+  });
+  return out;
+}
+function wishPutBack(rs) {
+  for (let q = rs.length - 1; q >= 0; q--)
+    if (!isWished(rs[q].w.k)) state.wish.splice(Math.min(rs[q].j, state.wish.length), 0, rs[q].w);
+}
 // a backup's list and ink: replacing (the person chose the backup's markers) takes the backup's; otherwise the two lists
 // merge. The caller saves (and puts everything back if that fails), then calls wishChanged.
-function wishRestore(o, replace) {
-  if (!o || Array.isArray(o)) return;
+// mine (v305): your markers, when they stay (Keep mine, or the backup has the same ones). The backup's ink marks come
+// in only for markers in it, and yours win; its To buy entries come in, once each, for markers not in it, or in it and
+// now marked Running low or dry. Returns what came in: { wish, low, dry } (how many entries and marks of each).
+function wishRestore(o, replace, mine) {
+  const got = { wish: 0, low: 0, dry: 0 };
+  if (!o || Array.isArray(o)) return got;
   const w = Array.isArray(o.wish) ? cleanWish(o.wish) : null,
     ink = o.ink && typeof o.ink === 'object' ? cleanInk(o.ink) : null;
   if (replace) {
     if (w) state.wish = w;
     if (ink) state.ink = ink;
-  } else {
-    if (w)
-      w.forEach(function (x) {
-        if (!isWished(x.k)) state.wish.push(x);
-      });
-    if (ink)
-      Object.keys(ink).forEach(function (k) {
-        if (!state.ink[k]) state.ink[k] = ink[k];
-      });
+    return got;
   }
+  if (ink)
+    Object.keys(ink).forEach(function (k) {
+      if (state.ink[k] || (mine && !mine.has(k))) return;
+      state.ink[k] = ink[k];
+      got[ink[k]]++;
+    });
+  if (w)
+    w.forEach(function (x) {
+      if (isWished(x.k) || (mine && mine.has(x.k) && !state.ink[x.k])) return;
+      state.wish.push(x);
+      got.wish++;
+    });
+  return got;
 }
 
 /* ---- the buttons ---- */
@@ -230,7 +254,7 @@ document.addEventListener(
     }
     const k = b.getAttribute('data-wk');
     if (isWished(k)) {
-      if (removeWish(k)) toast('Took ' + esc(wishName(k)) + ' off your To buy list.', 2200);
+      if (removeWish(k)) toast('Took ' + esc(wishName(k)) + ' off To buy.', 2200);
     } else if (addWish(k, b.getAttribute('data-why')))
       toast(
         esc(wishName(k)) + ' added to your To buy list <span class="wishwhere">(Markers › To buy)</span>',
@@ -359,7 +383,10 @@ function renderWish() {
               esc(o.w.why || 'added by you') +
               (own && ink && !/low|dry/.test(o.w.why || '')
                 ? ' · yours is ' + (ink === 'dry' ? 'dry' : 'running low')
-                : '') +
+                : // (v305: one you own with no ink mark, from before ticking took it off, or from a backup)
+                  own && !ink
+                  ? ' · already yours'
+                  : '') +
               '</div></div><button type="button" class="wbought" data-bought="' +
               esc(o.w.k) +
               '">Bought ✓</button><button type="button" class="wrm" data-rm="' +
@@ -552,6 +579,13 @@ function setInk(i, v) {
     })
   )
     return false;
+  inkCell(i);
+  if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
+  if (state.mode === 'collection') wishChrome(true);
+  return true;
+}
+// the marker's cell on the Markers screen, drawn again with its ink badge
+function inkCell(i) {
   const el =
     typeof results !== 'undefined' && results ? results.querySelector('.cell[data-i="' + i + '"]') : null;
   if (el) {
@@ -560,8 +594,47 @@ function setInk(i, v) {
     t.innerHTML = cellHtml(i, rb ? +rb.textContent : 0);
     el.replaceWith(t.firstChild);
   }
-  if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
-  if (state.mode === 'collection') wishChrome(true);
+}
+/* (v306) "Did any run low?" after a page is finished (the guide's 88-coverage-blend.js): one tap marks a marker
+   Running low and puts it on To buy, in one save. */
+// its ink for that row: null when it isn't yours (or lays no colour, the Colorless Blender), else '', 'low' or 'dry'
+function lowInk(k) {
+  const i = keyIdx(k);
+  if (i == null || NOINK.has(i) || !isOwned(i)) return null;
+  return state.ink[k] || '';
+}
+// Running low and on To buy (if it wasn't), in one save: storage full puts both back and returns null. Else
+// { k, added }: added, whether this put it on To buy (Undo takes it off again only then)
+function lowMark(k) {
+  if (lowInk(k) !== '') return null;
+  const added = !isWished(k);
+  state.ink[k] = 'low';
+  if (added) state.wish.push({ k: k, why: 'running low', ts: Date.now() });
+  if (
+    !keep(function () {
+      delete state.ink[k];
+      if (added) removeWish(k, true);
+    })
+  )
+    return null;
+  inkCell(keyIdx(k));
+  wishChanged();
+  return { k: k, added: added };
+}
+// back to OK (Undo, or its chip tapped again), and off To buy when dropWish (the tap that marked it put it there)
+function lowUnmark(k, dropWish) {
+  if (lowInk(k) !== 'low') return false;
+  const r = dropWish ? removeWish(k, true) : null;
+  delete state.ink[k];
+  if (
+    !keep(function () {
+      state.ink[k] = 'low';
+      if (r) wishPutBack([r]);
+    })
+  )
+    return false;
+  inkCell(keyIdx(k));
+  wishChanged();
   return true;
 }
 (function () {
@@ -598,6 +671,13 @@ function setInk(i, v) {
     a.wishChip = wishChipHTML;
     a.wishAll = wishAllHTML;
     a.wishBtn = wishBtnHTML;
+    // (v306: Did any run low?)
+    a.lowInk = lowInk;
+    a.lowMark = lowMark;
+    a.lowUnmark = lowUnmark;
+    a.ownsAny = function () {
+      return state.owned.size > 0;
+    };
     return cf(a);
   };
 })();

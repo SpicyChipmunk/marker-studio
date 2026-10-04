@@ -249,10 +249,9 @@ function chrome() {
   }
   harmDescSync(pal);
   {
-    const R = HARM_RANGE[state.harmony] || [2, 6];
     [...segs.children].forEach((b) => {
       const n = +b.dataset.n;
-      const okn = n >= R[0] && n <= R[1];
+      const okn = sizeOffered(state.harmony, n);
       b.disabled = !okn;
       b.style.display = okn ? '' : 'none';
       segOn(b, okn && n === state.palSize);
@@ -565,8 +564,10 @@ function fullRender() {
   if (state.mode === 'palette') {
     if (state.harmony === 'custom') showCustom();
     else {
-      const p = state.palettes[state.palettes.length - 1];
+      const p = state.palettes[state.palettes.length - 1],
+        pv = p ? null : palPreview();
       if (p && !(state.harmony === 'photo' && !_photoImg)) showPalette(p, false);
+      else if (pv) showPalette(pv, false);
       else {
         clearPalette();
         if (state.harmony === 'photo' && phint) phint.style.display = '';
@@ -579,6 +580,39 @@ function fullRender() {
   }
 }
 
+// (v305) Palette's first visit: a palette made from your markers to look at, so the screen doesn't open empty. It
+// isn't one of your palettes yet (not in state.palettes: not in Remove's history, not kept, no storage written just by
+// opening the screen); it becomes yours once you lock or change one of its colours (palAdopt), and Save, Save image and
+// Use in a guide take it as it is. Generate palette makes a new one as before. Not for Custom or From photo, and not
+// again after Clear.
+let palPv = null,
+  palPvOff = false;
+function palPreview() {
+  if (
+    palPvOff ||
+    state.mode !== 'palette' ||
+    state.palettes.length ||
+    state.harmony === 'custom' ||
+    state.harmony === 'photo'
+  )
+    return null;
+  if (!palPv || palPv.h !== state.harmony || palPv.n !== state.palSize)
+    palPv = {
+      p: genPalette(state.palSize, state.harmony, paletteOpts()),
+      h: state.harmony,
+      n: state.palSize,
+    };
+  return palPv.p || null;
+}
+function palAdopt() {
+  const p = palPreview();
+  if (!p) return false;
+  palPush(p.slice(), 24);
+  palPv = null;
+  palPvOff = true;
+  save();
+  return true;
+}
 let rolling = false;
 function doDraw() {
   if (rolling) return;
@@ -767,13 +801,15 @@ function toggleLock(k) {
 function doGenerate() {
   if (rolling || state.harmony === 'custom') return;
   disarm();
-  const pal = genPalette(state.palSize, state.harmony, paletteOpts());
+  // (v306: Rainbow rolls another from a new seed; a scheme or size change makes the Gradient's own, regenReplace)
+  const pal = genPalette(state.palSize, state.harmony, Object.assign(paletteOpts(), { reroll: true }));
   if (!pal) {
     palFailToast();
     return;
   }
   retrigger(drawBtn, 'flash');
   const commit = () => {
+    palPvOff = true;
     palPush(pal, 24);
     state.locked = state.locked.filter((i) => pal.includes(i));
     save();
@@ -848,7 +884,14 @@ function undo() {
       const gen = (x) => x && x !== 'custom' && x !== 'photo';
       if (gen(h) && gen(state.harmony) && h !== state.harmony) state.harmony = h;
       const R = HARM_RANGE[state.harmony] || [2, 6];
-      if (state.harmony !== 'photo' && top.length >= R[0] && top.length <= R[1]) state.palSize = top.length;
+      // (a Rainbow capped at the clear markers in play keeps the size chosen)
+      if (
+        state.harmony !== 'photo' &&
+        top.length >= R[0] &&
+        top.length <= R[1] &&
+        (state.harmony !== 'rainbow' || sizeOffered('rainbow', top.length))
+      )
+        state.palSize = top.length;
     }
     state.locked = state.locked.filter((i) => top && top.includes(i));
   } else if (state.mode === 'random') {
@@ -904,7 +947,7 @@ function regenFlush() {
 function setSize(n) {
   if (rolling || state.palSize === n) return;
   const R = HARM_RANGE[state.harmony] || [2, 6];
-  if (n < R[0] || n > R[1]) return;
+  if (n < R[0] || n > R[1] || (state.harmony === 'rainbow' && !sizeOffered('rainbow', n))) return;
   state.palSize = n;
   save();
   if (state.mode === 'palette') {
@@ -924,6 +967,7 @@ function setHarmony(h) {
   if (h === 'custom' && (state.customPal || []).length) state.palSize = state.customPal.length;
   state.palSize = Math.max(R[0], Math.min(R[1], state.palSize));
   if (h === 'photo') state.palSize = photoSnap(state.palSize);
+  if (h === 'rainbow') state.palSize = rainbowSnap(state.palSize);
   save();
   if (state.mode === 'palette') {
     if (h === 'custom') {
@@ -970,6 +1014,7 @@ const HARM_DESC = {
   split: 'One colour and the two either side of its opposite',
   tetradic: 'Two pairs of opposites',
   mono: 'One colour, light to dark',
+  rainbow: 'Evenly round the rainbow, at similar lightness',
   custom: 'Markers you choose: tap a slot to pick one',
   photo: 'A photo\u2019s main colours, matched to markers',
 };

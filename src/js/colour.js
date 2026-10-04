@@ -235,7 +235,17 @@ function completeGroups(only) {
   groups.forEach((g) => g.un.sort((x, y) => HS[x].l - HS[y].l));
   return groups;
 }
+// (v305) a ramp is one hue getting lighter or darker: fluorescents and the blacks aren't shading ramps, and within a
+// family only markers of about the same hue (30°, or both near-grey) count as the gap's ends (a pink between a red
+// and a violet isn't a step between light and dark)
+const RAMP_SKIP = new Set(['Fluorescent', 'Neutral / Black']);
+function rampAlong(a, b) {
+  const ga = LCH[a][1] < GREY_C,
+    gb = LCH[b][1] < GREY_C;
+  return ga || gb ? ga && gb : hueDist(LCH[a][2], LCH[b][2]) <= 30;
+}
 function rampRank(cands) {
+  cands = cands.filter((i) => !RAMP_SKIP.has(COLORS[i].fam));
   if (!cands.length) return [];
   const TH = 8;
   const sub = (a, b) => [LAB[a][0] - LAB[b][0], LAB[a][1] - LAB[b][1], LAB[a][2] - LAB[b][2]];
@@ -247,8 +257,8 @@ function rampRank(cands) {
       (present[f] = present[f] || []).push(i);
     }
   const scoreOf = (c) => {
-    const arr = present[COLORS[c].fam];
-    if (!arr || arr.length < 2) return -1;
+    const arr = (present[COLORS[c].fam] || []).filter((o) => rampAlong(o, c));
+    if (arr.length < 2) return -1;
     let n1 = -1,
       d1 = 1e9;
     for (const o of arr) {
@@ -539,6 +549,32 @@ function lightApplyData(fix, data) {
     data[i + 2] = lut[2][data[i + 2]];
   }
   return data;
+}
+
+// (v306) Palette › From photo's "Paper looks warm · Make it white": the photo's paper (paperOf), when it is clearly
+// paper and clearly warm: light (L* 75 or more), at least 15% of the picture near-neutral and light enough to be
+// paper, and yellow by b* 8 or more. Returns { fix, lab, share } (fix: what tapping that paper would do, paperSpot) or
+// null. Measured on synthetic photos: white paper under a warm lamp shows it; daylight and cool light, sunsets, autumn
+// leaves and caps on a wooden desk (no paper found) don't, nor pale fur or skin (too dark to be paper). Cream paper
+// in daylight reads warm too, so the wording says what is seen, not why. Never applied by itself: a sunset's cast is
+// the picture.
+const WARM_PAPER = { L: 75, share: 0.15, b: 8 };
+function paperWarm(data) {
+  let n = 0,
+    ok = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < 125) continue;
+    n++;
+    const lab = rgbLab8(data[i], data[i + 1], data[i + 2]);
+    if (Math.hypot(lab[1], lab[2]) < 14 && lab[0] > 30) ok++;
+  }
+  if (!n || ok / n < WARM_PAPER.share) return null;
+  const p = paperOf(data);
+  if (!p) return null;
+  const lab = linLab(p[0], p[1], p[2]);
+  if (lab[0] < WARM_PAPER.L || lab[2] < WARM_PAPER.b) return null;
+  const r = paperSpot(p);
+  return r.fix ? { fix: r.fix, lab: lab, share: ok / n } : null;
 }
 
 /* ---- Match a colour: the markers nearest a colour, by eye (match.js) ----

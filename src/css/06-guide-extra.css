@@ -115,6 +115,53 @@
   pointer-events: none;
   animation: revflash 0.6s ease-out forwards;
 }
+/* Reveal's end (v305, guide/89-show.js): the piece on its paper over a glow of its own colours, its title and
+   markers, above the bar and under the ✕. Its parts are placed by showLayout; the movement is the Web Animations
+   API's (none with reduced motion). */
+.sfshow {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: var(--revBot, 76px);
+  z-index: 7001;
+  overflow: hidden;
+  background: #0c0b0f;
+}
+.sfshow canvas,
+.sfshow .sfsh-paper {
+  position: absolute;
+  display: block;
+}
+.sfshow .sfsh-bg {
+  transform-origin: 50% 40%;
+}
+.sfshow .sfsh-paper {
+  overflow: hidden;
+  background: rgb(247, 244, 238);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+.sfshow .sfsh-paper canvas {
+  position: static;
+  width: 100%;
+  height: 100%;
+}
+.sfshow .sfsh-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.5) 48%, transparent 60%);
+  mix-blend-mode: soft-light;
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+/* the first Build's bloom (v305, guide/41-bloom.js): over the picture, never in the way of a tap */
+#sfRoot .sfbloom {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
 /* the confetti when the page is finished (guide/90-export.js), drawn over everything and never in the way */
 .sfconfetti {
   position: fixed;
@@ -613,6 +660,34 @@
   pointer-events: none;
   z-index: 21;
 }
+/* v306: rough spots, ringed where two touching sections jump in colour (the line under the tabs says how many) */
+#sfRoot .sfroughs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+#sfRoot .sfring {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 3px solid #ffd84a;
+  box-shadow:
+    0 0 0 1.5px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1.5px rgba(0, 0, 0, 0.55);
+}
+#sfRoot .sfheldnote.sfrough {
+  flex-wrap: nowrap;
+  column-gap: 2px;
+}
+#sfRoot .sfheldnote.sfrough > span {
+  flex: 0 1 auto;
+}
+#sfRoot .sfheldnote.sfrough .sfheldx {
+  margin-left: auto;
+}
 #sfRoot .sfzone.off {
   opacity: 0.3;
 }
@@ -666,6 +741,16 @@
   margin-top: 10px;
   height: 44px;
   color: var(--ink);
+}
+/* Photo before its photo is chosen (v305): Choose a photo… and Back to the pattern before, side by side */
+#sfRoot .sfphwait {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+#sfRoot .sfphwait .sfphbtn {
+  margin-top: 0;
 }
 #sfRoot .sfphrow {
   display: flex;
@@ -827,7 +912,8 @@
   flex: 0 0 auto;
 }
 /* "✓ Page straightened · Undo · Adjust corners": its small links get 44px to tap */
-#sfRoot .sfpgline {
+#sfRoot .sfpgline,
+#sfRoot .sfframeline {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -839,7 +925,8 @@
 #sfRoot .sfpgline > span[aria-hidden] {
   margin-right: 3px;
 }
-#sfRoot .sfpgline .sflink {
+#sfRoot .sfpgline .sflink,
+#sfRoot .sfframeline .sflink {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -1159,6 +1246,17 @@
   font-size: var(--t-sm);
   color: var(--sub);
 }
+/* (v306) Change colour: the chosen marker's code is in the guide in the other brand too */
+#sfRoot .sfpopsame {
+  flex: none;
+  margin-top: 6px;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--warn);
+}
+#sfRoot .sfpopsame[hidden] {
+  display: none;
+}
 /* Manual: Paint toggle and the brush */
 #sfRoot .sfpaint {
   display: flex;
@@ -1459,7 +1557,8 @@ html.sfsheetsd .mstoast {
   font-size: var(--t-sm);
   color: var(--sub);
 }
-#sfRoot .sfmkcount.sfoff {
+#sfRoot .sfmkcount.sfoff,
+#sfRoot .sfc-slider.sfoff {
   opacity: 0.55;
 }
 /* v284: "Kept 8 coloured sections as they are · Recolour them too ✕", under the Plan's tabs */

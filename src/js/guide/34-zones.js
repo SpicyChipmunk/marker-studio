@@ -33,6 +33,9 @@ const ZONE_KEYS = [
   'balSeed',
   'noRep',
   'gradSeed',
+  'gradScat',
+  'gradJit',
+  'gradFix',
   'radC',
   'blendFall',
   'blendMix',
@@ -409,6 +412,7 @@ function zoneMerge(prev, parts, all) {
     base = {},
     paper = {},
     lits = {},
+    shps = {},
     order = [];
   let hasPaper = false;
   zoneIds().forEach(function (id) {
@@ -427,6 +431,8 @@ function zoneMerge(prev, parts, all) {
         }
       if (p.lit) lits[id] = p.lit;
       else if (p.lits && p.lits[id]) lits[id] = p.lits[id];
+      // (its markers picked with shading in mind, v306: gradShpOf)
+      if (p.shp || (p.shps && p.shps[id])) shps[id] = 1;
     } else if (prev) {
       prev.order.forEach(function (l) {
         if (zoneOf(l) !== id || !prev.assign[l]) return;
@@ -442,6 +448,7 @@ function zoneMerge(prev, parts, all) {
           }
       if (prev.lits && prev.lits[id]) lits[id] = prev.lits[id];
       else if (!id && prev.lit) lits[0] = prev.lit;
+      if (prev.shps ? prev.shps[id] : !id && prev.shp) shps[id] = 1;
     }
   });
   // sections counted but in no part yet (brought in since the last build): the pattern of their zone comes next time;
@@ -449,6 +456,7 @@ function zoneMerge(prev, parts, all) {
   const d = { assign: assign, order: order, N: order.length, base: base };
   if (hasPaper) d.paper = paper;
   if (Object.keys(lits).length) d.lits = lits;
+  if (Object.keys(shps).length) d.shps = shps;
   void all;
   return d;
 }

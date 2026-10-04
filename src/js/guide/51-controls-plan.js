@@ -32,11 +32,14 @@ function ctlPlan() {
   ctlEl.innerHTML =
     ctlPlanHead() + ctlPlanColours() + ctlPlanPattern() + ctlPlanShading() + ctlPlanShare() + ctlPlanBar();
   ctlPlanWire();
+  frameLineWire();
   ctlEl.setAttribute('data-tab', gTab);
   heldNoteWire();
   pinNoteWire();
   sampleNoteWire();
   toolTipWire();
+  roughWire();
+  positionRough();
 }
 // a Plan panel's attributes: shown only while its tab is chosen
 function ctlTabAttrs(t) {
@@ -76,6 +79,7 @@ function ctlPlanHead() {
       );
     }).join('') +
     '</div>' +
+    frameLineHTML() +
     heldNoteHTML() +
     pinNoteHTML() +
     sampleNoteHTML() +
@@ -89,8 +93,23 @@ function ctlPlanHead() {
             ' a section on the picture to change or pin its colour.',
           true,
         )
-      : '')
+      : '') +
+    // (v306: rough spots, last in the queue)
+    roughLineHTML()
   );
+}
+// The marker count's label: "all (451)" or "16"; for the Gradient, how many it lays when that's fewer (v306): "all ·
+// 216 used" (fewer sections), "300 · 216 used", or "all · 268, some twice" (more sections than clear markers:
+// gradCount's reuse)
+function mkCountLabel(psz) {
+  const all = limitN >= psz,
+    base = all ? 'all' : String(limitN);
+  if (gradFamily() && labels && comps) {
+    const c = gradCountNow();
+    if (c.reuse) return base + ' \u00b7 ' + c.M + ', some twice';
+    if (c.M < Math.min(limitN, psz)) return base + ' \u00b7 ' + c.M + ' used';
+  }
+  return all ? 'all (' + psz + ')' : base;
 }
 // Colours: how many markers comes first (it changes the guide the most), then where the colours come from (with
 // the filters for Owned), then Temperature and Mood
@@ -112,7 +131,7 @@ function ctlPlanColours() {
       '">Markers in this ' +
       (zones.length ? 'zone' : 'guide') +
       ' <b id="sfMkNlbl">' +
-      (_nr ? 'one per section' : _one ? 'all (1)' : _cnt >= _psz ? 'all (' + _psz + ')' : _cnt) +
+      (_nr ? 'one per section' : _one ? 'all (1)' : mkCountLabel(_psz)) +
       '</b><input type="range" id="sfMkCount" min="2" max="' +
       _psz +
       '" value="' +
@@ -320,6 +339,7 @@ function gradStartNote(gs, r) {
   );
 }
 // Pattern: the chooser (one row where it fits), that pattern's options, then Shuffle and Pin side by side
+const FAM_NAME = { gradient: 'Gradient', random: 'Random', blend: 'Blend', manual: 'Manual' };
 function ctlPlanPattern() {
   let html = '<div class="sftab" data-tab="pattern"' + ctlTabAttrs('pattern') + '>';
   // the zone editor takes the tab's place while it's open (85-zones-ui)
@@ -340,9 +360,10 @@ function ctlPlanPattern() {
       ctlSeg('vertical', 'Vertical', gradShape === 'vertical') +
       ctlSeg('diagonal', 'Diagonal', gradShape === 'diagonal') +
       ctlSeg('radial', 'Radial', gradShape === 'radial') +
+      ctlSeg('around', 'Around', gradShape === 'around') +
       '</div>' +
-      // (Radial: where its rings start, the centre mark on the picture)
-      (gradShape === 'radial'
+      // (Radial: where its rings start, the centre mark on the picture; Around: what the colours go round, v305)
+      (gradShape === 'radial' || gradShape === 'around'
         ? '<div id="sfRadNote" class="sfc-note sfc-mt6">Centre: ' +
           (radC
             ? '<b>moved</b> <button type="button" id="sfRadReset" class="sflink">Back to the middle</button>'
@@ -368,6 +389,31 @@ function ctlPlanPattern() {
       '</div>';
     const _ln = lookNote();
     if (_ln) html += '<div id="sfLookNote" class="sfc-note sfc-mt6">' + _ln + '</div>';
+    // Scatter (v306): one line, its note only away from Polished; with too few markers it stays Polished and says why
+    const _sOff = gradCountNow().M < GRAD_SCAT_MIN,
+      _sv = _sOff ? 0 : gradScat;
+    html +=
+      '<label class="sfc-slider sfc-mt10' +
+      (_sOff ? ' sfoff' : '') +
+      '">Scatter <b id="sfGradScatName">' +
+      GRAD_SCAT_LABEL[_sv] +
+      '</b><input type="range" id="sfGradScat" min="0" max="4" step="1" value="' +
+      _sv +
+      '" aria-valuetext="' +
+      GRAD_SCAT_LABEL[_sv] +
+      '" class="sfc-range"' +
+      (_sOff ? ' disabled aria-describedby="sfGradScatNote"' : '') +
+      '></label><div id="sfGradScatNote" class="sfc-note sfc-mt6"' +
+      (_sv || _sOff ? '' : ' hidden') +
+      '>' +
+      (_sOff
+        ? 'Scatter needs ' +
+          GRAD_SCAT_MIN +
+          ' or more markers in this ' +
+          (zones.length ? 'zone' : 'guide') +
+          '.'
+        : GRAD_SCAT_DESC[_sv]) +
+      '</div>';
   } else if (family === 'random') {
     // (Balance, its bar, Keep touching sections clearly different and No repeats: 31-balance)
     html += balHTML();
@@ -394,13 +440,25 @@ function ctlPlanPattern() {
       (BLEND_MIX_DESC[blendMix] || '') +
       '</div>';
   } else if (family === 'photo') {
+    const _pw = !photoRef && photoWait[pwKey()] !== 'photo' ? photoWait[pwKey()] : null,
+      _pwName = _pw ? FAM_NAME[_pw] || _pw : '';
     if (!photoRef)
       html +=
         infoLine(
           'photo',
           'Colours come from a photo you choose',
           'Colours come from a photo you choose — a sunset, a painting, a fabric, or a coloured version of this picture. Each section gets the colour under it, matched to your markers.',
-        ) + '<button id="sfPhPick" class="sfghost sfphbtn">Choose a photo…</button>';
+        ) +
+        // (v305: until a photo is chosen the picture keeps the pattern before, and that is what Colour along and the
+        // Library use: said here, with a way back to it beside Choose a photo)
+        (_pw
+          ? '<div class="sfphwait"><button id="sfPhPick" class="sfghost sfphbtn">Choose a photo…</button>' +
+            '<button type="button" id="sfPhBack" class="sfghost sfphbtn">Back to ' +
+            esc(_pwName) +
+            '</button></div><div id="sfPhWait" class="sfc-note sfc-mt6">Until you choose a photo, the picture keeps its ' +
+            esc(_pwName) +
+            ' colours.</div>'
+          : '<button id="sfPhPick" class="sfghost sfphbtn">Choose a photo…</button>');
     else {
       html +=
         '<div class="sfphrow"><img class="sfphthumb" src="' +
@@ -685,8 +743,11 @@ function ctlPlanShare() {
     ' Reveal &amp; share</button><button id="sfExport" class="sfghost">' +
     ic('image') +
     ' Save image</button></div><label class="sfchk sfc-check sfc-inline sfc-mt8"><input type="checkbox" id="sfExCodes"' +
-    (exCodes ? ' checked' : '') +
-    '> Codes on the saved image</label></div><div class="sfgrp"><h3 class="sfglbl">Print</h3><button id="sfPrint" class="sfghost sffull" aria-haspopup="dialog">' +
+    (exCodesNow() ? ' checked' : '') +
+    '> Codes on the saved image</label>' +
+    // (v306: Did any run low?, once the page is finished)
+    lowHost('S') +
+    '</div><div class="sfgrp"><h3 class="sfglbl">Print</h3><button id="sfPrint" class="sfghost sffull" aria-haspopup="dialog">' +
     ic('printer') +
     ' Print…</button></div><div class="sfgrp"><h3 class="sfglbl">Plan &amp; keep</h3><div class="sfrow2"><button id="sfPlan" class="sfghost">' +
     ic('blend') +

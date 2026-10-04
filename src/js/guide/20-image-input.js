@@ -14,6 +14,10 @@ function resetForNewPicture() {
   zoneNoneLeft();
   // (Radial's centre was a place on the old picture)
   radC = null;
+  // (a new picture, the sample too, starts at Polished with no rough spots smoothed: Scatter is chosen per guide, v306)
+  gradScat = 0;
+  gradJit = 0;
+  gradFix = false;
   relWake();
   const gen = ++loadGen;
   clearTimeout(autoT);
@@ -495,6 +499,7 @@ function keepSnap(geo) {
             y1: c.y1,
             merged: c.merged,
             page: c.page,
+            framed: c.framed,
             // (what it was merged into or split off from, since the last build: tickCarry)
             into: c.into,
             from: c.from,
@@ -639,7 +644,30 @@ var SAMPLES = ['@@dataurl(assets/sample-jellyfish.png)'],
   SAMPLE_NAMES = ['jellyfish'],
   sampleIdx = 0,
   // (v300) the sample page coloured from its guide, codes on it: the start cards' picture of what the app makes
-  SAMPLE_DONE = '@@dataurl(assets/sample-coloured.webp)';
+  SAMPLE_DONE = '@@dataurl(assets/sample-coloured.webp)',
+  // (v306) the same, without its codes: the welcome's picture (src/assets/sample-plain.webp, the sample's guide as Save
+  // image makes it with Codes unticked, 340 px wide)
+  SAMPLE_PLAIN = '@@dataurl(assets/sample-plain.webp)';
+// the welcome's picture: the sample page (its white made the guide's paper, its black the guide's lines, so the coloured
+// guide lies exactly over it) and its guide without codes. A canvas, drawn once the page has loaded: only for a first run
+function samplePics() {
+  const c = document.createElement('canvas'),
+    img = new Image();
+  img.onload = function () {
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const g = c.getContext('2d');
+    g.fillStyle = 'rgb(' + PAPER.join(',') + ')';
+    g.fillRect(0, 0, c.width, c.height);
+    g.globalCompositeOperation = 'multiply';
+    g.drawImage(img, 0, 0);
+    g.globalCompositeOperation = 'lighten';
+    g.fillStyle = 'rgb(' + LINE.join(',') + ')';
+    g.fillRect(0, 0, c.width, c.height);
+  };
+  img.src = SAMPLES[0];
+  return { line: c, plain: SAMPLE_PLAIN };
+}
 // the start cards' before and after (the page, then its guide), until there's a guide of one's own
 function sampleBA() {
   return (

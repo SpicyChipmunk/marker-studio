@@ -230,6 +230,7 @@ function enterColor() {
   hlZone = null;
   blendOpen = {};
   alDoneOpen = false;
+  findForget();
   alDone = alongList()
     .filter(function (e) {
       return e.d >= e.n;

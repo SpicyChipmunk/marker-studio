@@ -3,6 +3,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     segment: segment,
     labelCells: labelCells,
     applyBg: applyBg,
+    // (the paper inside a drawn frame, v305)
+    frameLeft: frameLeft,
+    frameColour: frameColour,
     otsu: otsu,
     splitAt: splitAt,
     counted: counted,
@@ -155,6 +158,29 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     goFocus: goFocus,
     renderGuide: renderGuide,
     normalizeTones: normalizeTones,
+    // (v306: the same code in both brands, worked out from the guide as shown)
+    sameCodeScan: sameCodeScan,
+    sameName: sameName,
+    codeNorm: codeNorm,
+    openSectionPop: openSectionPop,
+    // (v306: the marker strokes when a page is finished in Focus mode)
+    get markerStrokesN() {
+      return markerStrokes.n || 0;
+    },
+    // (v306: find by code, and the iPad's keyboard over the code box)
+    codeFind: codeFind,
+    findLine: findLine,
+    findPartLine: findPartLine,
+    get kbdSim() {
+      return _kbdSim;
+    },
+    set kbdSim(v) {
+      _kbdSim = v;
+      findKbd();
+    },
+    // (v306: Did any run low?)
+    lowCover: lowCover,
+    lowTop: lowTop,
     get guideDirty() {
       return guideDirty;
     },
@@ -278,6 +304,12 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get anchors() {
       return anchors;
     },
+    set anchors(v) {
+      anchors = v;
+    },
+    // (Blend's first three anchors and one added by a tap, v306)
+    seedAnchors: seedAnchors,
+    addAnchor: addAnchor,
     pickPhotoRef: pickPhotoRef,
     get photoChecking() {
       return photoChecking;
@@ -518,6 +550,30 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       plan: gradPlan,
       poolSource: poolSource,
       build: buildGradient,
+      order: orderSections,
+      outAndBack: outAndBack,
+      get smoothed() {
+        return gradSmoothLast;
+      },
+      get scattered() {
+        return gradScatLast;
+      },
+      centre: radCentre,
+      // (v306: Scatter, U6's count, U7's picks and rough spots)
+      get fixed() {
+        return gradFixLast;
+      },
+      count: gradCount,
+      countNow: gradCountNow,
+      scatAt: gradScatAt,
+      shadeOK: gradShadeOK,
+      shadeOffer: gradShadeOffer,
+      shadePick: gradShadePick,
+      rough: gradRough,
+      fixRun: gradFixRun,
+      roughNow: roughNow,
+      roughSmooth: roughSmooth,
+      mkCountLabel: mkCountLabel,
     },
     // the lookups and pattern parts shared by several patterns (30-palette-assign, 88-coverage-blend), for the tests
     colour: {
@@ -537,11 +593,46 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     set coll(v) {
       coll = v;
     },
-    get gradTourMs() {
-      return GRAD_TOUR_MS;
+    get gradTourWork() {
+      return [gradTourWork, GRAD_TOUR_WORK];
     },
     surprise: surprise,
-    buildShareCard: buildShareCard,
+    // (v305: the share card is Reveal's layout, 89-show.js)
+    buildShareCard: function () {
+      return buildShowCard(cv);
+    },
+    buildShowCard: buildShowCard,
+    get bloomOn() {
+      return !!_bloom;
+    },
+    get bloomCount() {
+      return bloomCount;
+    },
+    get bloomLast() {
+      return bloomLast;
+    },
+    showModel: showModel,
+    showLayout: showLayout,
+    showTitleFit: showTitleFit,
+    get showOn() {
+      return !!_show;
+    },
+    get showBlob() {
+      return _show ? _show.blob : null;
+    },
+    exCodesNow: function () {
+      return exCodesNow();
+    },
+    set exCodes(v) {
+      exCodes = v;
+    },
+    showBands: showBands,
+    showMarkers: showMarkers,
+    famCmp: famCmp,
+    alongResume: alongResume,
+    alongSort: alongSort,
+    // (a ✓ still showing on the art in Colour along, v305)
+    tkFresh: tkFresh,
     reassign: reassign,
     secEdPending: secEdPending,
     get phPend() {
@@ -778,6 +869,24 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       set gradSeed(v) {
         gradSeed = v;
       },
+      get gradScat() {
+        return gradScat;
+      },
+      set gradScat(v) {
+        gradScat = v;
+      },
+      get gradJit() {
+        return gradJit;
+      },
+      set gradJit(v) {
+        gradJit = v;
+      },
+      get gradFix() {
+        return gradFix;
+      },
+      set gradFix(v) {
+        gradFix = v;
+      },
       get blendFall() {
         return blendFall;
       },
@@ -955,6 +1064,11 @@ return {
   loadSample: sampleFromAnywhere,
   // (the sample page and its guide, for Home's start card, v300)
   sampleBA: sampleBA,
+  // (the welcome's picture, v306)
+  samplePics: samplePics,
+  // (v306: Palette's Rainbow scheme picks as the Gradient does; Home's latest piece opens a guide and acts)
+  rainbowPick: rainbowPick,
+  openThen: openThen,
   startPic: startPic,
   pickPhoto: pickPhoto,
   pickPhotoHome: pickPhotoHome,

@@ -51,6 +51,7 @@ function alongHintSeen() {
 function alongControls() {
   ctlEl.innerHTML =
     '<div class="sfpane sfalongp"><div id="sfDone" class="sfpgdone" style="display:none">Page finished!<div id="sfDoneSum" class="sfpgsum"></div></div>' +
+    lowHost('A') +
     alongHint() +
     (zones.length
       ? '<div id="sfAlOrder" class="sfc-segs sfalorder" role="group" aria-label="Colour along goes through">' +
@@ -58,6 +59,17 @@ function alongControls() {
         ctlSeg('zones', 'Zone by zone', alongZones()) +
         '</div>'
       : '') +
+    '<div id="sfAlSort" class="sfc-segs sfalorder" role="group" aria-label="Order of the list">' +
+    ctlSeg('light', 'Lightest first', alongSort() === 'light') +
+    ctlSeg('rainbow', 'Rainbow', alongSort() === 'rainbow') +
+    ctlSeg('brand', 'By brand', alongSort() === 'brand') +
+    // (on a phone the code box folds away behind this, so the first rows stay above the bar)
+    '<button type="button" id="sfFindOpen" class="sffindopen" aria-label="Find a marker by its code" aria-controls="sfFind" aria-expanded="' +
+    (alFindQ ? 'true' : 'false') +
+    '">' +
+    ic('search') +
+    '</button></div>' +
+    findBoxHTML() +
     '<div id="sfAlist" class="sfalist"></div></div><div class="sfbar"><button id="sfDoneBtn" class="sfghost" aria-label="Back to the plan" data-long="← Plan" data-short="← Plan">← Plan</button><button id="sfFocus" class="sfprimary" aria-label="Focus mode" data-ic="focus" data-long="Focus mode" data-short="Focus">' +
     ic('focus') +
     // (v288: a finished page's bar offers Reveal & share instead, updateProgress)
@@ -101,6 +113,28 @@ function alongControls() {
         : 'Colour along goes through the whole picture',
     );
   });
+  q('sfAlSort', function (e) {
+    const b = e.target.closest('button[data-v]');
+    if (!b || b.getAttribute('aria-pressed') === 'true') return;
+    try {
+      localStorage.setItem(ALONG_SORT, b.dataset.v);
+    } catch (_) {}
+    this.querySelectorAll('button[data-v]').forEach(function (x) {
+      const on = x === b;
+      x.classList.toggle('on', on);
+      x.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    renderAlong();
+    sayLive(
+      'The list goes ' +
+        (b.dataset.v === 'rainbow'
+          ? 'in rainbow order'
+          : b.dataset.v === 'brand'
+            ? 'by brand'
+            : 'lightest first'),
+    );
+  });
+  findWire();
   q('sfAlMore', function () {
     _alMore = true;
     const h = document.getElementById('sfAlHint'),
@@ -125,6 +159,19 @@ function alongZones() {
     return localStorage.getItem(ALONG_ZONES) === '1';
   } catch (_) {
     return false;
+  }
+}
+// (v305) the order of Colour along's list: Lightest first (as focus mode goes: lighter inks down before darker ones next
+// to them), Rainbow (the colour families round the wheel, lightest first in each, as the keys) or By brand (each brand's
+// markers by code, as they sit in their case). Kept on this device. The list only: focus mode and Home's Continue keep
+// lightest first, the order that keeps inks from bleeding.
+const ALONG_SORT = 'ms-along-sort';
+function alongSort() {
+  try {
+    const v = localStorage.getItem(ALONG_SORT);
+    return v === 'rainbow' || v === 'brand' ? v : 'light';
+  } catch (_) {
+    return 'light';
   }
 }
 // a row's key: its marker, or zone by zone "marker@zone"
@@ -186,8 +233,8 @@ function hlMatch(l) {
 }
 // each marker in the guide (zone by zone: in each zone) with how many of its sections there are and how many are
 // ticked, lightest first (as focus mode goes: lighter inks down before darker ones next to them, which could bleed
-// into them), then most sections first
-function alongList() {
+// into them), then most sections first; or, for the list, as sort says (alongSort)
+function alongList(sort) {
   const map = {},
     arr = [],
     byZ = alongZones();
@@ -209,7 +256,17 @@ function alongList() {
       zi[id] = i;
     });
   return arr.sort(function (a, b) {
-    return (byZ ? zi[a.z] - zi[b.z] : 0) || _lum(b.m.hex) - _lum(a.m.hex) || b.n - a.n;
+    return (
+      (byZ ? zi[a.z] - zi[b.z] : 0) ||
+      (sort === 'rainbow'
+        ? famCmp(a.m, b.m)
+        : sort === 'brand'
+          ? a.m.brand.localeCompare(b.m.brand) ||
+            a.m.code.localeCompare(b.m.code, 'en', { numeric: true, sensitivity: 'base' })
+          : 0) ||
+      _lum(b.m.hex) - _lum(a.m.hex) ||
+      b.n - a.n
+    );
   });
 }
 // inDone: in the Done group, where zone by zone a row says which zone it's from (there's no zone heading over it)
@@ -219,7 +276,9 @@ function alongRow(e, inDone) {
     full = e.d >= e.n,
     open = hlKey === m.mkey && (e.z == null ? hlZone == null : hlZone === e.z),
     bo = open && !!blendOpen[k],
-    tr = shadeOn() ? toneRows(e.secs) : [];
+    tr = shadeOn() ? toneRows(e.secs) : [],
+    // (v306: its code is in the guide in the other brand too)
+    sn = sameName(m);
   let r =
     '<div class="sfarow' +
     (full ? ' full' : '') +
@@ -241,6 +300,11 @@ function alongRow(e, inDone) {
     '<b>' +
     esc(m.code) +
     '</b> ' +
+    (sn
+      ? '<span class="sf2b" aria-hidden="true">2 brands</span><span class="sfsr">(' +
+        esc(sn) +
+        ' is in this guide too) </span>'
+      : '') +
     esc(m.name || '') +
     (inDone && e.z != null ? ' <span class="sfazt">· ' + esc(zoneName(e.z)) + '</span>' : '') +
     '</span><span class="cnt">' +
@@ -309,7 +373,7 @@ function renderAlong() {
     row = el.contains(ae) ? ae.closest('.sfarow') : null,
     fid = el.contains(ae) ? ae.id || '' : '',
     fk = row && !fid ? row.dataset.k : null;
-  const list = alongList(),
+  const list = alongList(alongSort()),
     full = {};
   list.forEach(function (e) {
     if (e.d >= e.n) full[e.key] = 1;
@@ -329,6 +393,25 @@ function renderAlong() {
       t.d += e.d;
     });
   let lastZ = null;
+  // (v306) a search by code: only its rows, the exact code's first, each saying its zone, the Done ones among them
+  // (by marker, so Whole picture or Zone by zone chosen with a search shown keeps its rows)
+  if (alFind && alFind.g !== loadGen) findForget();
+  if (alFind) {
+    const rk = alFind.rank;
+    el.innerHTML = list
+      .filter(function (e) {
+        return rk[e.m.mkey] != null;
+      })
+      .sort(function (a, b) {
+        return rk[a.m.mkey] - rk[b.m.mkey];
+      })
+      .map(function (e) {
+        return alongRow(e, true);
+      })
+      .join('');
+    alongRefocus(el, fid, fk);
+    return;
+  }
   let h = list
     .filter(function (e) {
       return alDone.indexOf(e.key) < 0;
@@ -365,6 +448,10 @@ function renderAlong() {
             .join('')
         : '');
   el.innerHTML = h;
+  alongRefocus(el, fid, fk);
+}
+// (keyboard focus back on the same button after a redraw of the list)
+function alongRefocus(el, fid, fk) {
   let f = fid ? document.getElementById(fid) : null;
   if (fk)
     el.querySelectorAll('.sfarow').forEach(function (x) {
@@ -489,6 +576,8 @@ function findInList(l) {
     try {
       navigator.vibrate(18);
     } catch (_) {}
+  // (a search by code that hasn't its marker's row: the whole list again, so the row is there to open)
+  if (alFind && alFind.rank[m.mkey] == null) findClear(true);
   alongOpen(alongKey(m.mkey, zoneOf(l)), true);
   const row = document.querySelector('#sfAlist .sfarow.open');
   if (row) {
@@ -499,4 +588,458 @@ function findInList(l) {
       row.classList.remove('flash');
     }, 1600);
   }
+}
+
+/* ---- (v306) Find a marker by its code ----
+    "Marker in your hand? Type its code": a box above the list. While you type, nothing opens: one line above the box
+    says what the code matches ("Ohuhu Y26 Light Gold · Copic Y26 Mustard"), as the box is what the iPad's keyboard
+    leaves in view. Return (the keyboard's Go) runs the search: the keyboard closes, the list shows only that marker's
+    rows (zone by zone, each zone's; the exact code's first, then markers it's the highlight or shadow of) and its row
+    opens, the first not finished, with its sections shown on the picture. Two brands of the code ask "Two Y26s: which
+    is in your hand?" and open neither; a code that's only a highlight or shadow here says what it goes with instead
+    ("Y06 is a highlight for Y07, Y09": findPartLine). Codes are read as the caps show them now: an old code finds
+    nothing (Ben's caps carry the current ones, and 19 old Ohuhu codes are another marker's current one). The list's
+    order setting stays as it was; clearing the box (its ✕, emptying it, or Escape) brings the whole list back. "/"
+    goes to the box from the keyboard. Not in Focus mode, which has its own order and Colours sheet. */
+let alFind = null, // the search run: { q, rank: { marker key: 0 the code's own, 1 its highlight or shadow's, 2 starts so } }
+  alFindQ = '', // the box's text, kept through a redraw of the controls
+  alFindL = '', // the line above the box
+  _kbdSim = null; // (tests: an on-screen keyboard this tall)
+// a code box (Colour along's, and Another… under "Did any run low?"): capitals, no corrections, the 16px text that
+// keeps iPad Safari from zooming in, and Go on the keyboard's Return
+function codeBoxHTML(id, ph, label, lineId) {
+  return (
+    '<input id="' +
+    id +
+    '" class="sfcodein" type="text" enterkeyhint="go" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" aria-label="' +
+    esc(label) +
+    '"' +
+    (lineId ? ' aria-describedby="' + lineId + '"' : '') +
+    ' placeholder="' +
+    esc(ph) +
+    '">'
+  );
+}
+function findBoxHTML() {
+  return (
+    '<div id="sfFind" class="sffind' +
+    (alFindQ ? ' sffindon' : '') +
+    '"><div id="sfFindL" class="sffindl" aria-live="polite">' +
+    esc(alFindL) +
+    '</div><form id="sfFindF" class="sffindf" role="search" action="#" novalidate>' +
+    codeBoxHTML('sfFindIn', 'Marker in your hand? Type its code', 'Find a marker by its code', 'sfFindL') +
+    '<button type="button" id="sfFindX" class="sffindx" aria-label="Clear the code"' +
+    (alFindQ ? '' : ' hidden') +
+    '>' +
+    ic('x') +
+    '</button></form></div>'
+  );
+}
+// what a code finds in the guide: base, markers that are a section's own; part, highlights and shadows of some
+// ({ m, highlight: { marker key: base }, shadow: {…} }); pre, the guide's codes that start with it; known, whether any
+// marker has it at all
+function codeFind(raw) {
+  const q = codeNorm(raw),
+    r = {
+      q: q,
+      raw: String(raw == null ? '' : raw)
+        .trim()
+        .toUpperCase(),
+      base: [],
+      part: [],
+      pre: [],
+      known: false,
+    };
+  if (!q || !assignData) return r;
+  const B = {},
+    P = {},
+    pre = {},
+    sh = shadeOn();
+  for (const l in assignData.assign) {
+    const m = assignData.assign[l],
+      c = codeNorm(m.code);
+    if (c === q) B[m.mkey] = m;
+    else if (c.indexOf(q) === 0) pre[m.code] = 1;
+    const t = sh ? shadeSec(+l) : null;
+    if (t)
+      [
+        ['light', 'highlight'],
+        ['dark', 'shadow'],
+      ].forEach(function (p) {
+        const x = t[p[0]];
+        if (!x || codeNorm(x.code) !== q) return;
+        const e = P[x.mkey] || (P[x.mkey] = { m: x, highlight: {}, shadow: {} });
+        e[p[1]][m.mkey] = m;
+      });
+  }
+  const vals = function (o) {
+    return Object.keys(o).map(function (k) {
+      return o[k];
+    });
+  };
+  r.base = vals(B).sort(function (a, b) {
+    return a.brand.localeCompare(b.brand);
+  });
+  r.part = vals(P);
+  r.pre = Object.keys(pre).sort(function (a, b) {
+    return a.localeCompare(b, 'en', { numeric: true });
+  });
+  r.known = COLORS.some(function (c) {
+    return codeNorm(c.code) === q;
+  });
+  return r;
+}
+// the brands a search found (the code's own markers and its highlights and shadows)
+function findBrands(r) {
+  const b = {};
+  r.base.forEach(function (m) {
+    b[m.brand] = 1;
+  });
+  r.part.forEach(function (p) {
+    b[p.m.brand] = 1;
+  });
+  return Object.keys(b);
+}
+// the line above the box for what a code finds: "Y26 Light Gold", "Ohuhu Y26 Light Gold · Copic Y26 Mustard",
+// "Y11: highlight for Y26, Y35", "Codes starting Y2: Y21, Y210, Y26", "Y26 isn't in this guide", "No marker R99"
+function findLine(r) {
+  if (!r.q) return '';
+  const two = findBrands(r).length > 1,
+    nm = function (m) {
+      return (two ? m.brand + ' ' : '') + m.code;
+    },
+    few = function (a) {
+      return a.slice(0, 4).join(', ') + (a.length > 4 ? ' +' + (a.length - 4) + ' more' : '');
+    },
+    out = [];
+  r.base.forEach(function (m) {
+    out.push(nm(m) + (m.name ? ' ' + m.name : ''));
+  });
+  r.part.forEach(function (p) {
+    const own = r.base.some(function (m) {
+        return m.mkey === p.m.mkey;
+      }),
+      roles = ['highlight', 'shadow']
+        .filter(function (k) {
+          return Object.keys(p[k]).length;
+        })
+        .map(function (k) {
+          return (
+            k +
+            ' for ' +
+            few(
+              Object.keys(p[k]).map(function (x) {
+                return p[k][x].code;
+              }),
+            )
+          );
+        });
+    if (own) out.push((two ? nm(p.m) + ' also ' : 'also ') + roles.join(' and '));
+    else out.push(nm(p.m) + ': ' + roles.join(' and '));
+  });
+  if (out.length) return out.join(' · ');
+  if (r.pre.length) return 'Codes starting ' + r.raw + ': ' + few(r.pre);
+  return r.known ? r.raw + ' isn’t in this guide' : 'No marker ' + r.raw;
+}
+// (v306) Return on a code that's only a highlight or shadow in this guide: "Y06 is a highlight for Y07, Y09", or with
+// both brands of it in use "Y06 is a highlight here: Copic for FY00 · Ohuhu for Y07, Y09" (both kinds: "Y06 is a
+// highlight and a shadow here: Copic shadow for FY00 · Ohuhu highlight for Y07")
+function findPartLine(r) {
+  const kinds = ['highlight', 'shadow'],
+    by = {},
+    has = {};
+  r.part.forEach(function (p) {
+    const e = by[p.m.brand] || (by[p.m.brand] = { highlight: [], shadow: [] });
+    kinds.forEach(function (k) {
+      for (const x in p[k]) {
+        const c = p[k][x].code;
+        if (e[k].indexOf(c) < 0) e[k].push(c);
+        has[k] = 1;
+      }
+    });
+  });
+  const few = function (a) {
+      return a.slice(0, 4).join(', ') + (a.length > 4 ? ' +' + (a.length - 4) + ' more' : '');
+    },
+    ks = kinds.filter(function (k) {
+      return has[k];
+    }),
+    both = ks.length > 1,
+    brands = Object.keys(by).sort(),
+    // one brand's part: "highlight for Y07 and shadow for R20", or (one kind) "for Y07"
+    roles = function (e, named) {
+      return ks
+        .filter(function (k) {
+          return e[k].length;
+        })
+        .map(function (k) {
+          return (named ? k + ' ' : '') + 'for ' + few(e[k]);
+        })
+        .join(' and ');
+    },
+    what = ks
+      .map(function (k) {
+        return 'a ' + k;
+      })
+      .join(' and ');
+  if (brands.length < 2) {
+    const e = by[brands[0]];
+    return (
+      r.raw +
+      ' is ' +
+      ks
+        .map(function (k) {
+          return 'a ' + k + ' for ' + few(e[k]);
+        })
+        .join(' and ')
+    );
+  }
+  return (
+    r.raw +
+    ' is ' +
+    what +
+    ' here: ' +
+    brands
+      .map(function (b) {
+        return b + ' ' + roles(by[b], both);
+      })
+      .join(' \u00b7 ')
+  );
+}
+function findSetLine(t) {
+  alFindL = t || '';
+  const el = document.getElementById('sfFindL');
+  if (el) el.textContent = alFindL;
+}
+// Return: run the search (see above)
+function findGo() {
+  const inp = document.getElementById('sfFindIn');
+  if (!inp || !assignData) return;
+  alFindQ = inp.value;
+  const r = codeFind(inp.value);
+  if (!r.q) {
+    findClear();
+    return;
+  }
+  // (the keyboard closes, so the rows and the picture are in view)
+  try {
+    inp.blur();
+  } catch (_) {}
+  const list = alongList(),
+    rank = {},
+    bases = {},
+    partB = {};
+  r.base.forEach(function (m) {
+    bases[m.mkey] = 1;
+  });
+  r.part.forEach(function (p) {
+    ['highlight', 'shadow'].forEach(function (k) {
+      for (const x in p[k]) partB[x] = 1;
+    });
+  });
+  list.forEach(function (e) {
+    const k = e.m.mkey;
+    if (bases[k]) rank[k] = 0;
+    else if (partB[k]) rank[k] = 1;
+  });
+  if (!Object.keys(rank).length)
+    list.forEach(function (e) {
+      if (codeNorm(e.m.code).indexOf(r.q) === 0) rank[e.m.mkey] = 2;
+    });
+  if (!Object.keys(rank).length) {
+    alFind = null;
+    const t = findLine(r);
+    findSetLine(t);
+    renderAlong();
+    sayLive(t);
+    return;
+  }
+  alFind = { q: r.q, rank: rank, g: loadGen };
+  let open = null,
+    line = findLine(r);
+  // (only a highlight or shadow here: what it goes with, the rows of those markers shown)
+  if (!r.base.length && r.part.length) line = findPartLine(r);
+  else if (findBrands(r).length > 1) line = 'Two ' + r.raw + 's: which is in your hand?';
+  if (findBrands(r).length < 2) {
+    // the one marker it is (the code's own, or the one marker it's the highlight or shadow of): its first row not
+    // finished, else its first
+    const mk = r.base.length ? [r.base[0].mkey] : r.part.length ? Object.keys(partB) : [];
+    if (mk.length === 1) {
+      const rows = list.filter(function (e) {
+        return e.m.mkey === mk[0];
+      });
+      const e =
+        rows.find(function (x) {
+          return x.d < x.n;
+        }) || rows[0];
+      if (e) open = e.key;
+    }
+  }
+  findSetLine(line);
+  if (open) {
+    alongOpen(open);
+    return;
+  }
+  alongSet(null);
+  blendOpen = {};
+  renderGuide();
+  renderAlong();
+  sayLive(line);
+  findReveal();
+}
+// (a new start: Colour along entered again, another guide)
+function findForget() {
+  alFind = null;
+  alFindQ = '';
+  alFindL = '';
+}
+// the box emptied: the whole list again, the open row (if any) kept in view (quiet: only the box and the search, for
+// a caller that draws the list itself)
+function findClear(quiet) {
+  const inp = document.getElementById('sfFindIn'),
+    was = !!alFind;
+  alFind = null;
+  alFindQ = '';
+  if (inp && inp.value) inp.value = '';
+  const x = document.getElementById('sfFindX');
+  if (x) x.hidden = true;
+  findSetLine('');
+  if (!was || quiet === true) return;
+  renderAlong();
+  sayLive('Showing all colours');
+  alongReveal();
+}
+// with no row opened, the box and the rows under it brought into view just under the pinned picture
+function findReveal() {
+  const el = document.getElementById('sfFind');
+  if (!el || el.offsetParent === null) return;
+  const top =
+      safeTop() +
+      (geo.side ? 0 : parseFloat(document.documentElement.style.getPropertyValue('--pinH')) || 0) +
+      6,
+    r = el.getBoundingClientRect();
+  if (Math.abs(r.top - top) < 1) return;
+  window.scrollTo(0, Math.max(0, Math.round(window.scrollY + r.top - top)));
+}
+function findWire() {
+  const f = document.getElementById('sfFindF'),
+    inp = document.getElementById('sfFindIn'),
+    x = document.getElementById('sfFindX');
+  if (!f || !inp) return;
+  inp.value = alFindQ;
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    findGo();
+  });
+  inp.addEventListener('input', function () {
+    if (x) x.hidden = !inp.value;
+    if (!inp.value.trim()) {
+      findClear();
+      return;
+    }
+    findSetLine(findLine(codeFind(inp.value)));
+  });
+  if (x)
+    x.addEventListener('click', function () {
+      findClear();
+      // (on a phone ✕ folds the box away again)
+      if (findPhone()) {
+        findFold(false);
+        const ob = document.getElementById('sfFindOpen');
+        try {
+          if (ob) ob.focus({ preventScroll: true });
+        } catch (_) {}
+        return;
+      }
+      try {
+        inp.focus({ preventScroll: true });
+      } catch (_) {}
+    });
+  const ob = document.getElementById('sfFindOpen');
+  if (ob)
+    ob.addEventListener('click', function () {
+      const on = !document.getElementById('sfFind').classList.contains('sffindon');
+      findFold(on);
+      if (on)
+        try {
+          inp.focus({ preventScroll: true });
+        } catch (_) {}
+    });
+  // (a phone's box with nothing in it folds away once you leave it)
+  inp.addEventListener('blur', function () {
+    if (findPhone() && !inp.value.trim() && !alFind)
+      setTimeout(function () {
+        if (document.activeElement !== inp && document.activeElement !== ob) findFold(false);
+      }, 0);
+  });
+  inp.addEventListener('focus', findKbd);
+  inp.addEventListener('blur', function () {
+    setTimeout(findKbd, 0);
+  });
+}
+// Escape (a layer, 95-mount.js): with a code in the box or a search run, it clears that first
+function findOpen() {
+  const inp = document.getElementById('sfFindIn');
+  return sfmode === 'color' && !focus && !!inp && inp.offsetParent !== null && (!!inp.value || !!alFind);
+}
+// a phone (the box folds away behind a button in the order row there, 04-along.css)
+function findPhone() {
+  try {
+    return matchMedia('(max-width: 599px)').matches;
+  } catch (_) {
+    return false;
+  }
+}
+// a phone's folded code box: open (and into the box) or fold again
+function findFold(open) {
+  const f = document.getElementById('sfFind'),
+    b = document.getElementById('sfFindOpen');
+  if (f) f.classList.toggle('sffindon', !!open);
+  if (b) b.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+// "/" from the keyboard goes to the box (not plain letters, which VoiceOver uses to move about)
+function findKey(e) {
+  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
+  const t = e.target,
+    tn = t && t.tagName;
+  if (tn === 'INPUT' || tn === 'TEXTAREA' || tn === 'SELECT' || (t && t.isContentEditable)) return;
+  if (sfmode !== 'color' || focus || dialogOpen() || sheetOpen()) return;
+  findFold(true);
+  const inp = document.getElementById('sfFindIn');
+  if (!inp || inp.offsetParent === null) return;
+  e.preventDefault();
+  try {
+    inp.focus({ preventScroll: true });
+  } catch (_) {}
+  findReveal();
+}
+// The iPad's keyboard in portrait leaves the space between the pinned picture and itself, too little for the line
+// and the box: while it's up over the box, the picture stops being pinned and the line goes to the top of the screen.
+// It's pinned again when the keyboard goes (Return closes it).
+function findKbd() {
+  if (!workEl) return;
+  const inp = document.getElementById('sfFindIn'),
+    vv = window.visualViewport,
+    ih = window.innerHeight || 0,
+    kb = _kbdSim != null ? _kbdSim : vv ? Math.max(0, ih - vv.height) : 0,
+    on =
+      !!inp && document.activeElement === inp && sfmode === 'color' && !focus && !geo.side && kb > ih * 0.2,
+    was = workEl.classList.contains('sfkbd');
+  if (on !== was) {
+    workEl.classList.toggle('sfkbd', on);
+    if (on) document.documentElement.style.setProperty('--pinH', '0px');
+    else frameSize();
+  }
+  if (!on) return;
+  const el = document.getElementById('sfFind'),
+    top = (vv && _kbdSim == null ? vv.offsetTop : 0) + safeTop() + 8;
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  if (Math.abs(r.top - top) > 2) window.scrollTo(0, Math.max(0, Math.round(window.scrollY + r.top - top)));
+}
+if (typeof document !== 'undefined' && document.addEventListener) {
+  document.addEventListener('keydown', findKey);
+  try {
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', findKbd);
+  } catch (_) {}
 }

@@ -65,7 +65,7 @@ function tools(a) {
 
 test('the sizes each scheme offers', () => {
   const R = JSON.parse(JSON.stringify(createApp().__eval('HARM_RANGE')));
-  assert.deepEqual(R, { complementary: [2, 8], analogous: [2, 8], triadic: [3, 10], split: [3, 10], tetradic: [4, 12], mono: [2, 10], custom: [2, 16], photo: [4, 16] });
+  assert.deepEqual(R, { complementary: [2, 8], analogous: [2, 8], triadic: [3, 10], split: [3, 10], tetradic: [4, 12], mono: [2, 10], rainbow: [6, 16], custom: [2, 16], photo: [4, 16] });
 });
 
 test('320 set: every scheme at every size is full, clearly different, grey-free and on its hues', () => {

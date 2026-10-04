@@ -177,6 +177,13 @@ let balA = 'auto';
 let balSeed = 0;
 let noRep = false;
 let gradSeed = 0; // written by: 05-style-fields, 30-palette-assign, 50-controls, 99-close (test)
+// the Gradient's Scatter (v306): 0 Polished (v305 as laid), 1 Natural, 2 Textured, 3 Sparkle, 4 Confetti; gradJit, the
+// seed its draws come from (Shuffle at Textured and up re-rolls only it); gradFix, rough spots smoothed ("Smooth
+// them", Polished only). A new picture starts at Polished with none smoothed (resetForNewPicture).
+// Written by: 05-style-fields, 20-image-input, 30-palette-assign, 52-controls-plan-wire, 99-close (test)
+let gradScat = 0;
+let gradJit = 0;
+let gradFix = false;
 // Radial's centre ({ x, y } as parts of the picture's width and height), or null: the middle of what the flow runs
 // over (the zone's own, or the picture). v282. Written by: 05-style-fields, 30-palette-assign, 99-close (test)
 let radC = null;
@@ -209,8 +216,17 @@ let lockMode = false; // written by: 20-image-input, 30-palette-assign, 50-contr
 let celebrated = false; // written by: 10-segment, 30-palette-assign, 75-focus, 82-colour-mode, 90-export, 97-open
 // when the first section was ticked and when the page was finished (ms; 0: not yet), saved with the guide (v284)
 let progAt = { s: 0, e: 0 }; // written by: 10-segment, 82-colour-mode, 90-export, 97-open
-// Share › Save image with the codes on it (this session's choice)
-let exCodes = true; // written by: 52-controls-plan-wire
+// Share › Save image with the codes on it: this session's choice, or null (v305) for "automatic": codes on until every
+// section is ticked, then the picture as it is, framed (exCodesNow). Written by: 52-controls-plan-wire
+let exCodes = null;
+function exCodesNow() {
+  return exCodes !== null ? exCodes : !pageDone();
+}
+// (the Share tab's box follows the automatic choice as the ticks change: updateProgress)
+function exCodesSync() {
+  const b = document.getElementById('sfExCodes');
+  if (b && exCodes === null) b.checked = exCodesNow();
+}
 let blendOpen = {}; // written by: 20-image-input, 82-colour-mode, 83-along
 let wakeLock = null; // written by: 82-colour-mode
 let hideLabels = false; // written by: 72-frame

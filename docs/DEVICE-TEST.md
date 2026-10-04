@@ -78,6 +78,34 @@ On a guide, open **Style** and set **Shading** to **Light & shadow**.
 - [ ] **Blend:** a tap still adds an anchor; press and hold a section shows Change colour / Pin. **Manual:** a tap opens the picker.
 - [ ] **Style → Pin colours:** taps pin and unpin sections directly.
 
+## 3i. v306 on the iPad (12 min)
+
+On your iPad in Safari, with your own collection.
+
+- [ ] **Welcome** (use a private tab to see it fresh): the jellyfish colours itself from the bell down, three times, then stays coloured; smooth, not stepped. Turn the iPad sideways: it stands beside the list. "You're all set" fans out your markers.
+- [ ] **Scatter:** on your page, Gradient, one per section: try each stop, Polished → Confetti. Each looks clearly different from the last (Polished and Natural only slightly). Shuffle at Sparkle mixes again but the Start colour stays. On a mandala with Radial, matching petals mostly match.
+- [ ] **Rough spots:** at Polished with "all", rings and "N rough spots · Smooth them" under the tabs; Smooth them clears them without greys; Undo brings them back.
+- [ ] **Two brands:** a guide that uses both Ohuhu and Copic Y26 (or another shared code) shows "2 brands" in Colour along and "Not the … Y26" in Focus.
+- [ ] **Find by code:** in Colour along type a code, press Go: its rows show and its sections are pointed out. With the on-screen keyboard up, the line above the box stays visible.
+- [ ] **Finish** a page in Focus: marker strokes fly up from the progress bar, no box over the picture. Under Page finished, tap a "Did any run low?" chip: it goes on To buy (Undo takes it off).
+- [ ] **Home:** with nothing in progress and a finished guide, it leads Home; Reveal & share and Print… work from there. Choose a photo is still on screen.
+- [ ] **Framed page:** Colour it, then Undo and Redo; save, close and reopen: the line is still there.
+- [ ] **Palette › Rainbow** gives an even rainbow; Generate gives another.
+
+## 3h. The v305 review, on the iPad (10 min)
+
+On your iPad in Safari, with your own collection and one downloaded mandala plus one of your own pages.
+
+- [ ] **Build bloom:** pick a new picture and Build. The line art shows, then the colours flood out (round like a clock hand with Around), then the codes. It should look smooth, not stepped; note if it stutters. A tap during it picks the section tapped. Build again, Edit sections and reopening don't bloom. (If it ever ended at once by itself, the iPad was judged too slow and it stays off: say so.)
+- [ ] **Gradient:** on the mandala, try Flow › **Around**; with a warm or cool Temperature the colours go out and back with no hard seam. At one marker per section, neighbours look smoother than before.
+- [ ] **Framed page:** a page with a frame drawn round it keeps the paper inside the frame white, with "Paper round the drawing is left white · Colour it" under the picture; Colour it brings it back.
+- [ ] **Reveal & share:** finish a page (Mark all coloured), Reveal: the piece lifts onto its paper over a soft glow, then its title, the line ("… sections · … markers · finished …") and the ribbon. Share at once: the card is the same picture, tall (4:5), and opens in Messages uncropped. Long title: stays on the card. Turn the iPad sideways: nothing squashed.
+- [ ] **Save image** on a finished page: no codes, framed like the card. Untick or tick Codes and it does as you chose.
+- [ ] **Redo:** in the Plan, Surprise then Undo: ↷ appears beside Undo and takes you forward again.
+- [ ] **Shading drop-downs** (Highlights, Shadows) are readable.
+- [ ] **From photo** (Palette): a colourful photo gives its real colours, not browns and greys.
+- [ ] **To buy:** tick a marker that's on To buy in the Markers grid: it leaves the list (Undo puts it back).
+
 ## 3g. The v288 review's decisions, v289 (12 min)
 
 On your phone (and an iPhone SE-size screen if you have one) and your iPad, with one of your own photographed pages.

@@ -211,8 +211,10 @@ test('Match: the result isn’t a live region; the best match is said once the c
   assert.deepEqual(errors, []);
 });
 
+// (v305: Either brand chosen before, as these tests are about reading either brand: a collection all of one brand
+// otherwise starts on its brand)
 async function scanOpened(opts) {
-  const a = await openApp(opts);
+  const a = await openApp({ storage: { 'ms-scan-brand': '' }, ...opts });
   await welcome(a.page, 'look'); await idle(a.page);
   await a.page.click('#mCollection'); await idle(a.page);
   await a.page.click('#scanOpen'); await idle(a.page);

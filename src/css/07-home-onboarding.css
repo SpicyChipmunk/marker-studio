@@ -358,6 +358,236 @@ button.sfSeeAll {
 .wcsets .presetbrand {
   margin-top: 10px;
 }
+/* (v306) The welcome's picture (boot.js, a first run only): the sample page, and its guide flooding down over it from
+   the bell, held, then faded back to the page; three times, then it stays coloured. The picture lies on its side above
+   the heading (portrait), or stands beside the list on a landscape screen. Not under 761 px of height. Not .ocard img's
+   frame (03-overlays.css). */
+.wcpic {
+  display: none;
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  aspect-ratio: 898 / 340;
+  border-radius: var(--r-md);
+  background: #f7f4ee;
+}
+.wcpicin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(100% * 340 / 898);
+  height: calc(100% * 898 / 340);
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+.wcpicin > * {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* The guide's layer (.wcfl) reaches from 0.3 of the picture's height above it to 1.3 below, its foot an ellipse fading
+   out. The flood moves the layer down over the page while the guide in it moves up as much, so the guide stays put and
+   its edge sweeps down: only transforms and opacity change, which Safari draws without repainting. At rest it covers
+   the whole picture, its corners too. */
+.wcpicin > .wcfl {
+  top: -30%;
+  height: 160%;
+  -webkit-mask-image: radial-gradient(125% 100% at 50% 0, #000 90%, transparent);
+  mask-image: radial-gradient(125% 100% at 50% 0, #000 90%, transparent);
+  will-change: transform, opacity;
+}
+.wcard .wcfl img {
+  position: absolute;
+  left: 0;
+  top: 18.75%;
+  width: 100%;
+  height: 62.5%;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.wcfl.flood {
+  animation: wcflood 10.4s 0.6s both;
+}
+.wcfl.flood img {
+  will-change: transform;
+  animation: wcflood2 10.4s 0.6s both;
+}
+.wcfl.fade {
+  animation: wcfade 10.4s 0.6s both;
+}
+/* a round is 4.4 s: the flood 1.6 s, held 1.8 s, faded back 0.6 s, the page alone 0.4 s; the third flood stays.
+   wcflood2 is wcflood's move undone, keyframe for keyframe */
+@keyframes wcflood {
+  0%,
+  42.31%,
+  84.62% {
+    transform: translateY(-100%);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.45, 0.05, 0.45, 1);
+  }
+  15.38%,
+  57.69%,
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+  32.69%,
+  75% {
+    transform: none;
+    opacity: 1;
+    animation-timing-function: ease-in-out;
+  }
+  38.46%,
+  80.77% {
+    transform: none;
+    opacity: 0;
+  }
+  38.5%,
+  42.27%,
+  80.81%,
+  84.58% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+@keyframes wcflood2 {
+  0%,
+  42.31%,
+  84.62% {
+    transform: translateY(160%);
+    animation-timing-function: cubic-bezier(0.45, 0.05, 0.45, 1);
+  }
+  15.38%,
+  57.69%,
+  100% {
+    transform: none;
+  }
+  32.69%,
+  75% {
+    transform: none;
+    animation-timing-function: ease-in-out;
+  }
+  38.46%,
+  80.77% {
+    transform: none;
+  }
+  38.5%,
+  42.27%,
+  80.81%,
+  84.58% {
+    transform: translateY(160%);
+  }
+}
+@keyframes wcfade {
+  0%,
+  38.46%,
+  42.31%,
+  80.77%,
+  84.62% {
+    opacity: 0;
+  }
+  15.38%,
+  32.69%,
+  57.69%,
+  75%,
+  100% {
+    opacity: 1;
+  }
+}
+/* (the page behind darker, not blurred, while the picture moves: boot.js) */
+#welcome.wcplain {
+  backdrop-filter: none;
+  background: rgba(0, 0, 0, 0.84);
+}
+@media (min-height: 761px) {
+  .wcpic {
+    display: block;
+  }
+  /* the list gives way to the picture, down to its least height (not the heading and intro), so it isn't a list
+     scrolling inside another */
+  .wcard.haspic .wcscroll > * {
+    flex-shrink: 0;
+  }
+  .wcard.haspic .wcsets {
+    flex: 0 1 auto;
+  }
+}
+/* a landscape iPad: the picture upright in a column of its own, beside the list, in a wider card */
+@media (min-height: 761px) and (min-width: 900px) and (orientation: landscape) {
+  .wcard.haspic {
+    max-width: 760px;
+    --wcpw: min(250px, calc((100vh - 150px) * 340 / 898));
+  }
+  .wcard.haspic #wcStep1 {
+    display: grid;
+    grid-template-columns: var(--wcpw) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    column-gap: 22px;
+    row-gap: 12px;
+  }
+  .wcard.haspic .wcpic {
+    grid-row: 1 / 3;
+    align-self: center;
+    width: var(--wcpw);
+    aspect-ratio: 340 / 898;
+  }
+  .wcard.haspic .wcpicin {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: none;
+  }
+  .wcard.haspic .wcscroll {
+    min-height: 0;
+  }
+  .wcard.haspic .wcsets {
+    flex: 1 1 0;
+    max-height: none;
+  }
+}
+/* (v306) "You're all set": the markers fanned out like swatches (boot.js). Open as it stands; wcfan only swings it open */
+.wcfan {
+  --fR: min(150px, 33vw);
+  position: relative;
+  flex: none;
+  height: calc(var(--fR) + 4px);
+}
+.wcfan i {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--fR) * 0.3);
+  width: calc(var(--fR) * 0.17);
+  height: calc(var(--fR) * 0.7);
+  margin-left: calc(var(--fR) * -0.085);
+  border-radius: calc(var(--fR) * 0.06);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.22),
+    -3px 0 8px rgba(0, 0, 0, 0.3);
+  transform-origin: 50% calc(100% + var(--fR) * 0.3);
+  transform: rotate(var(--a));
+  animation: wcfan 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes wcfan {
+  from {
+    transform: rotate(0deg);
+  }
+}
+@media (max-height: 500px) {
+  .wcfan {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wcfl,
+  .wcfl img,
+  .wcfan i {
+    animation: none !important;
+  }
+}
 /* a landscape phone: one scrolling area, not the list scrolling inside another that hides it below its fold */
 @media (max-height: 500px) {
   .wcsets {
@@ -923,4 +1153,163 @@ button.hcpic:focus-visible {
   color: #8a8070;
   font-size: calc(26 * var(--tpx));
   font-weight: 700;
+}
+/* ---- Home's latest piece (v306): the newest guide, finished, above the two columns (a phone: the Continue card's
+   footprint, picture left). The card is laid out at once; the picture fills its box (the page's shape, --ar) after
+   the first paint. The glow is soft washes of its own colours, set on the card (no blur: heavy in Safari). ---- */
+.hhcard {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  overflow: hidden;
+  background-color: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+.hhpic {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 132px;
+  min-height: 212px;
+  margin: 0;
+  padding: 10px;
+  border: 0;
+  border-radius: 0;
+  background: #f6f3ec;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.hhpic:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -4px;
+}
+.hhbox {
+  position: relative;
+  display: block;
+  width: min(100%, calc(192px * var(--ar)));
+  aspect-ratio: var(--ar);
+}
+.hhbox img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.hhfade {
+  animation: hhfade 0.35s ease-out both;
+}
+@keyframes hhfade {
+  from {
+    opacity: 0;
+  }
+}
+.hhbody {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  padding: 12px 14px 14px;
+}
+.hheb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--t-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sub);
+  font-weight: 700;
+}
+.hhdone {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3fb27f;
+}
+.hhname {
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  font-size: var(--t-lg);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.hhmeta {
+  color: var(--sub);
+  font-size: var(--t-sm);
+}
+.hhribbon {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+}
+.hhacts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.hhacts button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--r-md);
+  font-size: var(--t-md);
+}
+.hhprint {
+  background: rgba(255, 255, 255, 0.06);
+}
+@media (min-width: 700px) {
+  .homehero {
+    /* (the page's own gap to the columns under it, 16px, as between the others) */
+    min-width: 0;
+  }
+  .hhpic {
+    width: auto;
+    min-height: 0;
+    padding: clamp(18px, 3vh, 34px);
+    padding-right: 0;
+    background: none;
+  }
+  .hhbox {
+    width: min(44vw, calc(clamp(200px, 36vh, 420px) * var(--ar)));
+    background: #f6f3ec;
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+  .hhbox img {
+    inset: 3%;
+    width: 94%;
+    height: 94%;
+  }
+  .hhbody {
+    gap: 10px;
+    padding: 24px clamp(20px, 3.4vw, 40px);
+  }
+  .hhname {
+    font-size: calc(30 * var(--tpx));
+  }
+  .hhmeta {
+    font-size: var(--t-md);
+  }
+  .hhribbon {
+    max-width: 440px;
+    height: 10px;
+    border-radius: 5px;
+  }
+  .hhacts {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
 }

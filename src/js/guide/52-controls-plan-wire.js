@@ -45,7 +45,7 @@ function ctlWirePatternFamily() {
         if (family === 'photo' && !photoRef) {
           if (was !== 'photo') photoWait[pwKey()] = was;
           renderControls();
-          pickPhotoRef();
+          pickPhotoRef(true);
           return;
         }
         // (Random's first main colour is anyone's guess, not the same pairing on every guide: 31-balance)
@@ -68,8 +68,14 @@ function ctlWirePatternFamily() {
       }
     });
   // colour from a photo
+  // (v305: Photo's photo not chosen yet, back to the pattern before it)
+  var _phb = document.getElementById('sfPhBack');
+  if (_phb) _phb.addEventListener('click', photoWaitBack);
   var _php = document.getElementById('sfPhPick');
-  if (_php) _php.addEventListener('click', pickPhotoRef);
+  if (_php)
+    _php.addEventListener('click', function () {
+      pickPhotoRef();
+    });
   var _phu = document.getElementById('sfPhAuto');
   if (_phu)
     _phu.addEventListener('click', function () {
@@ -207,7 +213,7 @@ function ctlWireColours() {
       var lb = document.getElementById('sfMkNlbl');
       if (lb) {
         var psz2 = sliderMax();
-        lb.textContent = limitN >= psz2 ? 'all (' + psz2 + ')' : limitN;
+        lb.textContent = mkCountLabel(psz2);
       }
       clearTimeout(reTimer);
       reTimer = setTimeout(reassign, 90);
@@ -264,7 +270,7 @@ function ctlWirePatternOptions() {
       radC = null;
       reassign();
       positionRadC();
-      ctlRefocus('#sfShape [data-v="radial"]');
+      ctlRefocus('#sfShape [data-v="' + gradShape + '"]');
     });
   var _fl = document.getElementById('sfDir');
   if (_fl)
@@ -317,8 +323,35 @@ function ctlWirePatternOptions() {
   // Shuffle: a Gradient that loops round the colour wheel turns its start by 10–90% (never almost where it was, which
   // changed only a few sections); a ramp of your markers picks others where there is a near choice (gradPlan); a
   // generated palette is made again
+  // Scatter (v306): the name and its line follow the drag; the guide is laid again when it's let go
+  var _gsc = document.getElementById('sfGradScat');
+  if (_gsc) {
+    _gsc.addEventListener('input', function (e) {
+      var v = Math.max(0, Math.min(4, Math.round(+e.target.value)));
+      var nm = document.getElementById('sfGradScatName'),
+        nt = document.getElementById('sfGradScatNote');
+      if (nm) nm.textContent = GRAD_SCAT_LABEL[v];
+      if (nt) {
+        nt.textContent = GRAD_SCAT_DESC[v];
+        nt.hidden = !v;
+      }
+      e.target.setAttribute('aria-valuetext', GRAD_SCAT_LABEL[v]);
+    });
+    _gsc.addEventListener('change', function (e) {
+      var v = Math.max(0, Math.min(4, Math.round(+e.target.value)));
+      if (v === gradScat) return;
+      gradScat = v;
+      reassign();
+    });
+  }
   function shuffleNow() {
-    if (paletteSource === 'generate') generatePalette();
+    // Textured and up: new draws for the scatter only, the same markers and Start colour (v306)
+    if (family === 'gradient' && gradScatAt(gradCountNow().M) >= 2) {
+      gradJit = (((gradJit || 0) % 1) + 1.1 + Math.random() * 0.8) % 1;
+      reassign();
+      return;
+    }
+    if (paletteSource === 'generate') generatePalette(true);
     if (family === 'gradient') gradSeed = (((gradSeed || 0) % 1) + 1.1 + Math.random() * 0.8) % 1;
     reassign();
   }
@@ -538,6 +571,8 @@ function ctlWireShading() {
     });
   var _snt = document.getElementById('sfShNoteT');
   if (_snt) _snt.addEventListener('click', shadeNoteToggle);
+  var _spk = document.getElementById('sfShPickGo');
+  if (_spk) _spk.addEventListener('click', gradShadePick);
 }
 function ctlWirePin() {
   var _lk = document.getElementById('sfLock');

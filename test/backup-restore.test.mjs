@@ -50,14 +50,15 @@ test('a backup with no markers leaves the markers here alone and asks nothing; i
   ev('confirm=function(){throw new Error("asked");}');
   const backup = { v: 3, type: 'ms-backup', ts: 5, owned: [], saved: [{ id: 99, type: 'palette', name: 'New', keys: ['Ohuhu|G36'], ts: 99 }] };
   const r = JSON.parse(ev(`JSON.stringify(applyCollectionBackup(${JSON.stringify(backup)},5))`));
-  assert.deepEqual(r, { mk: false, pals: 1 });
+  // (v305: Keep mine also says what came in beside your markers: here nothing)
+  assert.deepEqual(r, { mk: false, pals: 1, wish: 0, low: 0, dry: 0, buy: false });
   assert.deepEqual(owned(ev), [...OWN].sort());
   assert.equal(JSON.parse(ls.getItem(KEY)).saved.length, 2, 'saved');
-  assert.equal(ev(`restoredWords({mk:false,pals:1})`), 'Kept your markers; 1 palette added.');
+  assert.equal(ev(`restoredWords({mk:false,pals:1})`), 'Kept your markers; added 1 palette.');
   assert.equal(ev(`restoredList({markers:0,palettes:2,guides:1})`), '2 palettes and 1 guide');
   // with no markers here either, nothing claims to keep them
   const e2 = boot(stored({ owned: [] })).ev;
   e2('confirm=function(){throw new Error("asked");}');
   e2(`applyCollectionBackup(${JSON.stringify(backup)},5)`);
-  assert.equal(e2(`restoredWords({mk:false,pals:1})`), '1 palette added.');
+  assert.equal(e2(`restoredWords({mk:false,pals:1})`), 'Added 1 palette.');
 });

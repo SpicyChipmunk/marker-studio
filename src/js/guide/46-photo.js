@@ -1246,7 +1246,28 @@ function photoWheel(e) {
   clearTimeout(_phT);
   _phT = setTimeout(photoRecolour, 160);
 }
-function pickPhotoRef() {
+// Back to the pattern Photo was chosen over, its photo not picked yet (v305): that pattern is still laid (photoWait), so
+// it is only named again, its colours and anchors just as they are, and no Undo step
+function photoWaitBack() {
+  const k = pwKey(),
+    pw = photoWait[k];
+  if (family !== 'photo' || photoRef || !pw || pw === 'photo' || sfmode !== 'guide') return;
+  delete photoWait[k];
+  family = pw;
+  if (family === 'blend' || family === 'manual') lockMode = false;
+  photoAlign = false;
+  zStash(zoneCur);
+  hideTip();
+  renderControls();
+  renderGuide();
+  positionPhoto();
+  planCommit();
+}
+// (v305) the picker closed without a photo, when choosing the Photo pattern opened it (auto): the pattern before it
+// comes back, as Back to it would, if nothing has changed since (the same guide, zone and waiting pattern). Browsers
+// without the picker's cancel event (Safari before 16.4) keep the Back to button for it.
+let _phAuto = null;
+function pickPhotoRef(auto) {
   if (!photoFileEl) {
     photoFileEl = document.createElement('input');
     photoFileEl.type = 'file';
@@ -1255,10 +1276,18 @@ function pickPhotoRef() {
     document.body.appendChild(photoFileEl);
     photoFileEl.addEventListener('change', function () {
       const f = photoFileEl.files && photoFileEl.files[0];
+      _phAuto = null;
       photoFileEl.value = '';
       if (f) loadPhotoRef(f);
     });
+    photoFileEl.addEventListener('cancel', function () {
+      const a = _phAuto;
+      _phAuto = null;
+      if (a && a.gen === loadGen && a.key === pwKey() && photoWait[a.key] === a.was) photoWaitBack();
+    });
   }
+  const pw = photoWait[pwKey()];
+  _phAuto = auto === true && pw && pw !== 'photo' ? { gen: loadGen, key: pwKey(), was: pw } : null;
   photoFileEl.click();
 }
 // the photo belongs to the guide open when it was picked: if another opens while it decodes, it is dropped quietly

@@ -265,3 +265,197 @@
 #sfRoot .sfatones.sfatm {
   white-space: normal;
 }
+
+/* (v306) a code in the guide in both brands: "2 brands" on its row, in the amber of the labels' filled tag */
+#sfRoot .sf2b {
+  display: inline-block;
+  margin: 0 4px 0 1px;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: #ffb454;
+  color: #1a1a1a;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  line-height: 1.3;
+  vertical-align: 1px;
+}
+
+/* (v306) Find a marker by its code: the line saying what the code matches above the box (the iPad's keyboard leaves
+   the box in view, not what's under it), then the box with its ✕ */
+#sfRoot .sffind {
+  margin: 8px 0 2px;
+}
+#sfRoot .sffindl {
+  min-height: 1.35em;
+  margin: 0 2px 4px;
+  font-size: var(--t-sm);
+  line-height: 1.35;
+  color: var(--sub);
+}
+/* on a phone the box folds away behind a ⌕ at the end of the order row (Colour along's first rows stay above the
+   bar), and its line takes no room while empty */
+#sfRoot .sffindopen {
+  display: none;
+}
+@media (max-width: 599px) {
+  #sfRoot .sffindopen {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    min-height: 44px;
+    margin-left: auto;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: none;
+    color: var(--ink);
+  }
+  #sfRoot .sffindopen[aria-expanded='true'] {
+    border-color: var(--focus);
+  }
+  #sfRoot .sffind:not(.sffindon) {
+    display: none;
+  }
+  #sfRoot .sffindl:empty {
+    min-height: 0;
+    margin-bottom: 0;
+  }
+}
+#sfRoot .sffindf {
+  position: relative;
+  margin: 0;
+}
+/* 16px, so iPad Safari doesn't zoom in on it */
+#sfRoot .sfcodein {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 46px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  font: inherit;
+  font-size: max(16px, var(--t-lg));
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+#sfRoot .sfcodein::placeholder {
+  color: var(--sub);
+  letter-spacing: 0;
+  text-transform: none;
+}
+#sfRoot .sfcodein:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
+}
+#sfRoot .sffindx {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: none;
+}
+#sfRoot .sffindx[hidden] {
+  display: none;
+}
+/* the iPad's keyboard is up over the box (83-along.js findKbd): the picture isn't pinned meanwhile */
+#sfRoot #sfWork.sfkbd #sfView {
+  position: relative;
+  top: auto;
+}
+
+/* (v306) "Did any run low?" under Page finished and in Share › Show it off (88-coverage-blend.js): one quiet row of
+   compact chips, swatch and code */
+#sfRoot .sflow {
+  margin: 10px 0 2px;
+}
+#sfRoot .sflowh {
+  margin: 0 2px 6px;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+#sfRoot .sflowc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+/* (a phone: one row that scrolls sideways, rather than three) */
+@media (max-width: 599px) {
+  #sfRoot .sflowc {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -12px;
+    padding: 0 12px 2px;
+  }
+  #sfRoot .sflowc::-webkit-scrollbar {
+    display: none;
+  }
+  #sfRoot .sflowb {
+    flex: none;
+  }
+}
+#sfRoot .sflowb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 12px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  transform: none;
+}
+#sfRoot .sflowb i {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  flex: none;
+}
+#sfRoot .sflowb.on {
+  border-color: rgba(var(--warn-rgb), 0.7);
+  background: rgba(var(--warn-rgb), 0.16);
+}
+#sfRoot .sflowb.on::after {
+  content: 'low';
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--warn);
+}
+#sfRoot .sflowb.dry {
+  opacity: 0.55;
+}
+#sfRoot .sflowb.dry small {
+  font-size: var(--t-sm);
+  font-weight: 400;
+}
+#sfRoot .sflowmore {
+  color: var(--sub);
+  border-style: dashed;
+}
+#sfRoot .sflowf {
+  margin-top: 8px;
+}
+#sfRoot .sflowf .sfcodein {
+  padding-right: 12px;
+}
+#sfRoot .sflow-host:empty {
+  display: none;
+}

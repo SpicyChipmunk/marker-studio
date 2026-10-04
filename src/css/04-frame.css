@@ -409,6 +409,7 @@
   gap: 6px;
 }
 #sfRoot.sffoc #sfZoomCtl #sfPlanUndo,
+#sfRoot.sffoc #sfZoomCtl #sfPlanRedo,
 #sfRoot.sffoc #sfZoomCtl .sfstat,
 #sfRoot.sffoc #sfZoomCtl #sfCodes,
 #sfRoot.sffoc #sfZoomCtl #sfPhPeek,

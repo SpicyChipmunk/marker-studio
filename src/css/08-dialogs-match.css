@@ -521,6 +521,14 @@
   border-color: rgba(143, 214, 180, 0.45);
   padding: 4px 14px;
 }
+/* (v306) the offer to correct a warm-looking paper: a pale amber pill, like a suggestion rather than a choice */
+.warmchip {
+  border-radius: var(--r-pill);
+  font-size: var(--t-base);
+  background: rgba(240, 180, 90, 0.14);
+  border-color: rgba(240, 190, 110, 0.5);
+  padding: 4px 14px;
+}
 .lightchip span {
   margin-left: 6px;
   opacity: 0.75;

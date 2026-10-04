@@ -34,6 +34,11 @@
   --focus: var(--ink);
   --focus-pic: #fff;
 }
+/* (v305) drop-downs drawn as the dark app they're in: Safari's engine otherwise draws its own pale box under their light
+   text, and Highlights and Shadows read as blank; their lists open dark too */
+select {
+  color-scheme: dark;
+}
 * {
   box-sizing: border-box;
 }
@@ -248,7 +253,8 @@ html.noamb .ambient {
   border-radius: var(--r-md);
   padding: 3px;
 }
-/* (v289) Harmony: Custom and Photo, which aren't harmonies, on a row of their own */
+/* (v289) Harmony: Custom and Photo, which aren't harmonies, on a row of their own (v306: with Rainbow, which goes
+   round the whole wheel; alone on a row of its own after the six, it looked left over) */
 .segs .segbrk {
   flex-basis: 100%;
   height: 0;

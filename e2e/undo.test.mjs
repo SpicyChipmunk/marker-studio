@@ -430,3 +430,63 @@ test('Plan: pattern, shading and colour changes make no toast (↶ Undo says wha
   assert.deepEqual(await map(), a0);
   assert.deepEqual(errors, []);
 });
+
+// ---- v305: Redo ----
+test('Redo takes the plan forward again step by step (↷ beside ↶, Ctrl+Shift+Z, Ctrl+Y); a new step clears it', async () => {
+  const { page, errors } = await openApp({ width: 820, height: 1180 });
+  await sampleGuide(page);
+  const redoShown = () => page.evaluate(() => getComputedStyle(document.getElementById('sfPlanRedo')).display !== 'none');
+  assert.equal(await redoShown(), false);
+  const a0 = await assignMap(page);
+  await tab(page, 'pattern'); await page.click('#sfFam [data-v="random"]'); await idle(page);
+  const a1 = await assignMap(page);
+  await page.click('#sfShuffle'); await idle(page);
+  const a2 = await assignMap(page);
+  await page.click('#sfPlanUndo'); await idle(page); await page.click('#sfPlanUndo'); await idle(page);
+  assert.deepEqual(await assignMap(page), a0);
+  assert.equal(await page.getAttribute('#sfPlanRedo', 'aria-label'), 'Redo: Pattern: Random');
+  // (the plan's: not in Colour along or its Focus mode, and still there back in the plan)
+  await page.click('#sfColor'); await idle(page);
+  assert.equal(await redoShown(), false, 'not in Colour along');
+  await page.click('#sfFocus'); await idle(page);
+  assert.equal(await redoShown(), false, 'not in Focus mode');
+  await page.keyboard.press('Escape'); await idle(page);
+  await page.click('#sfDoneBtn'); await idle(page);
+  assert.equal(await redoShown(), true, 'back in the plan');
+  await page.click('#sfPlanRedo'); await idle(page);
+  assert.deepEqual(await assignMap(page), a1);
+  await page.keyboard.press('Control+Shift+Z'); await idle(page);
+  assert.deepEqual(await assignMap(page), a2);
+  assert.equal(await redoShown(), false, 'nothing left to redo');
+  await page.keyboard.press('Control+z'); await idle(page);
+  await page.keyboard.press('Control+y'); await idle(page);
+  assert.deepEqual(await assignMap(page), a2);
+  await page.keyboard.press('Control+z'); await idle(page);
+  await page.click('#sfShuffle'); await idle(page);
+  assert.equal(await redoShown(), false, 'a new step clears Redo');
+  assert.deepEqual(errors, []);
+});
+
+test('Redo of Change colour clears the part-done tones its Undo brought back', async () => {
+  const { page, errors } = await openApp();
+  await sampleGuide(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await scrollTop(page);
+  const l = await page.evaluate(() => { const t = __mstest, g = t.shadeGeom(); return t.assignData.order.filter((l) => t.shadeable(l, g)).sort((a, b) => t.comps[b].area - t.comps[a].area)[0]; });
+  const part = () => page.evaluate((l) => [__mstest.colored[l], __mstest.tonePart[l], __mstest.assignData.assign[l].mkey], l);
+  await page.evaluate((l) => { __mstest.stepSet(l, 1, true); __mstest.renderGuide(); }, l);
+  const t0 = await part();
+  const k = await page.evaluate((l) => { const used = __mstest.assignData.assign[l].mkey; return sfCollection().find((m) => m.mkey !== used).mkey; }, l);
+  const p = await sectionPoint(page, l); await page.mouse.click(p.x, p.y); await idle(page);
+  await page.click('.sftip [data-a="change"]');
+  await page.click(`#sfPopSw .sfswg:not(.sfswrec) .sfsw[data-k="${k}"]`); await page.click('#sfPopConfirm'); await idle(page);
+  const t1 = await part();
+  assert.deepEqual(t1, [0, 0, k]);
+  await page.click('#sfPlanUndo'); await idle(page);
+  assert.deepEqual(await part(), t0);
+  await page.click('#sfPlanRedo'); await idle(page);
+  assert.deepEqual(await part(), t1, 'the new marker, its tones afresh');
+  await page.click('#sfPlanUndo'); await idle(page);
+  assert.deepEqual(await part(), t0, 'and Undo once more brings them back');
+  assert.deepEqual(errors, []);
+});

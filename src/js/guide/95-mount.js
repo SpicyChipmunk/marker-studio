@@ -386,6 +386,28 @@ function mount() {
       zoneEditEnd();
     },
   });
+  // (v306) Colour along's code box: a code in it, or a search run, is cleared first
+  addLayer({
+    name: 'code box',
+    order: 45,
+    isOpen: findOpen,
+    close: function () {
+      findClear();
+    },
+  });
+  // (v306) "Did any run low?" › Another…'s box: a code in it is cleared, then it closes
+  addLayer({
+    name: 'run-low box',
+    order: 46,
+    isOpen: function () {
+      // (Escape in Colour along's own code box is that box's)
+      const ae = document.activeElement;
+      return !(ae && ae.id === 'sfFindIn') && !!lowBoxOpen();
+    },
+    close: function () {
+      lowBoxEsc();
+    },
+  });
   addLayer({
     name: 'section tip',
     order: 40,
@@ -469,6 +491,7 @@ function mount() {
       if (sunEl || radEl) positionSun();
       if (photoEl) positionPhoto();
       if (zoneEl) positionZones();
+      if (roughEl) positionRough();
       if (tipL >= 0) positionTip();
       if (olSet) positionOutline();
     });

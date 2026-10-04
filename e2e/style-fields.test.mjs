@@ -43,6 +43,9 @@ const DEF_STYLE = {
   photo: null, expand: false, expandChar: 0.5, paletteSource: 'owned', savedPalId: null, genHarmony: 'analogous', genPal: [],
 };
 const DEF_PAY = { minSize: 30, bgTrim: 50, addAutoClose: false };
+// (v306) Scatter's settings, written only when used (a guide at Polished says nothing of them, as before): Sparkle,
+// its seed and rough spots smoothed
+const SCAT = { gradScat: 3, gradJit: 0.6, gradFix: true };
 
 // the style and section settings of the open guide, as saved
 const settings = (page, share, edits) => page.evaluate(([s, e]) => {
@@ -283,6 +286,7 @@ test('every field: a value that isn’t the default is kept through save, reload
   const { page, errors } = await openApp();
   await sampleGuide(page);
   const v = await nonDefault(page);
+  v.style = { ...v.style, ...SCAT };
   await openWith(page, 'All set', v);
   const s1 = await allSettings(page);
   // what it opened with is what the file said (the flat sections are renumbered the way the map is read)
@@ -395,6 +399,9 @@ const CONTROLS = [
   ['dir', 'pattern', (p) => click(p, '#sfDir [data-d="-1"]')],
   ['look', 'pattern', (p) => click(p, '#sfLook [data-v="ltd"]')],
   ['gradSeed', 'pattern', async (p) => { await seed(p, 23); await click(p, '#sfVary'); }],
+  // (v306: Scatter, then Shuffle at Sparkle, which turns only its seed)
+  ['gradScat', 'pattern', (p) => slide(p, 'sfGradScat', 3)],
+  ['gradJit', 'pattern', async (p) => { await seed(p, 26); await click(p, '#sfVary'); }],
   ['family', 'pattern', async (p) => { await seed(p, 24); await click(p, '#sfFam [data-v="random"]'); }],
   ['noAdj', 'pattern', async (p) => { await seed(p, 25); await click(p, '#sfNoAdj'); }],
   ['family', 'pattern', (p) => click(p, '#sfFam [data-v="blend"]')],
@@ -470,18 +477,25 @@ test('a guide file: every field survives Share › Guide file and Import', async
   assert.deepEqual(errors, []);
 });
 
-test('a new picture (the sample) keeps the style and section settings; only the flat sections go', async () => {
+test('a new picture (the sample) keeps the style and section settings; only the flat sections go, and Scatter starts at Polished', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   const v = await nonDefault(page);
+  v.style = { ...v.style, ...SCAT };
   await openWith(page, 'All set', v);
   await page.evaluate(() => { __mstest.styleVars.photoOp = 0.44; __mstest.styleVars.photoPaper = false; });
   const s1 = await allSettings(page);
+  assert.deepEqual([s1.style.gradScat, s1.style.gradJit, s1.style.gradFix], [3, 0.6, true]);
   await page.evaluate(() => SF.loadSample());
   await page.waitForFunction(() => __mstest.assignData && __mstest.curName !== 'All set'); await idle(page);
   // (the photo's white areas go back to white; its see-through stays; "Shade Main" is shaded again, as it goes with
   // the zones, which a new picture doesn't have; Radial's centre is the middle again, a place on the old picture)
-  assert.deepEqual(await allSettings(page), { ...s1, style: { ...s1.style, radC: null, shade: { ...s1.style.shade, flat: [], main: true } }, photoPaper: true });
+  // (v306, deliberately: Scatter is chosen per guide, so a new picture starts at Polished with none smoothed, and
+  // saves nothing of it)
+  const { gradScat, gradJit, gradFix, ...rest } = s1.style;
+  void gradScat, void gradJit, void gradFix;
+  assert.deepEqual(await allSettings(page), { ...s1, style: { ...rest, radC: null, shade: { ...s1.style.shade, flat: [], main: true } }, photoPaper: true });
+  assert.deepEqual(await page.evaluate(() => [__mstest.styleVars.gradScat, __mstest.styleVars.gradJit, __mstest.styleVars.gradFix]), [0, 0, false]);
   assert.deepEqual(errors, []);
 });
 
@@ -518,6 +532,16 @@ test('an old guide missing a field opens with today’s default for it, and the 
     n++;
   }
   assert.equal(n, 27 + 13 + 3);
+  // (v306) Scatter's: missing, Polished, with nothing else of it written
+  {
+    const sc = { ...v.style, ...SCAT };
+    await openWith(page, 'Scatter', { ...v, style: sc });
+    assert.deepEqual((await settings(page)).style, { ...s1.style, ...SCAT });
+    const { gradScat, ...noScat } = sc;
+    void gradScat;
+    await openWith(page, 'Missing gradScat', { ...v, style: noScat });
+    assert.deepEqual((await settings(page)).style, { ...s1.style, gradFix: true }, 'missing gradScat');
+  }
   // a guide saved before v277 has only minPos, on the old scale: 26 (137 px) opens as about the same size
   await openWith(page, 'Before v277', { ...v, minSize: '__delete', minPos: 26 });
   assert.equal((await settings(page)).minSize, 80);

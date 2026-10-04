@@ -234,6 +234,19 @@ function applyBg(fresh) {
       if (c.bpx > 0 || c.cx < pg.x0 || c.cx > pg.x1 || c.cy < pg.y0 || c.cy > pg.y1) c.bg = true;
     }
   }
+  // the paper inside a drawn frame (findFrame) is left white, and so is anything whose middle is outside the frame (a
+  // watermark's letters)
+  for (let l = 1; l < n; l++) {
+    const f = comps[l];
+    if (!f || f.merged || !f.framed) continue;
+    f.bg = true;
+    for (let k = 1; k < n; k++) {
+      const c = comps[k];
+      if (!c || c.merged || k === l) continue;
+      if (c.cx < f.x0 || c.cx > f.x1 || c.cy < f.y0 || c.cy > f.y1) c.bg = true;
+    }
+    break;
+  }
 }
 // a phone photo that shows the table around the page: the paper's blank margin is one big region that rings
 // the drawing on all four sides, brighter than what lies outside it. That margin (and the table) is background.
@@ -316,6 +329,93 @@ function findPage() {
     }
   if (!ni || !no || si / ni - so / no < 18) return;
   c.page = true;
+}
+/* A frame drawn round the picture on the same paper (v305): the paper inside it is one big section whose box runs
+   along the frame's inner edge on all four sides, with the drawing inside that box. A page without a frame leaves its
+   paper white, so a frame doesn't change that: the section is marked framed and left white (applyBg), with a line
+   to Colour it (frameLeft). Only when a picture's sections are found (segment), not when a guide opens again: a
+   guide saved before keeps its sections as they were saved. The rule:
+   - the biggest section (not background, not the page in a photo) is at least 8% of the picture;
+   - its box spans at least half the picture's width and height;
+   - each of the box's four edges is at least 75% that section (looked at 4 px in from the edge, every other px);
+   - the sections outside its box add up to at most 0.5% of the picture.
+   On the downloaded pages tried it finds the mandala's and the paisley's frames (2 of 15), and no other page (the
+   octopus and otter frames have art breaking out of them); a sky over a horizon, a board in the middle of a
+   drawing, art breaking out of a frame and a frame of tiles don't count. */
+const FRAME_MIN = 0.08,
+  FRAME_SPAN = 0.5,
+  FRAME_EDGE = 0.75,
+  FRAME_OUT = 0.005;
+function findFrame() {
+  const n = comps.length,
+    N = W * H,
+    mp = minPx();
+  let best = 0,
+    ba = 0;
+  for (let l = 1; l < n; l++) {
+    const c = comps[l];
+    if (!c || c.merged || c.bg || c.page) continue;
+    if (c.area > ba) {
+      ba = c.area;
+      best = l;
+    }
+  }
+  if (!best || ba < N * FRAME_MIN) return;
+  const c = comps[best];
+  if (c.x1 - c.x0 < W * FRAME_SPAN || c.y1 - c.y0 < H * FRAME_SPAN) return;
+  // how much of one edge of its box is the section (horiz: a top or bottom edge, at row `at`; dir: inwards)
+  const edge = function (horiz, at, from, to, dir) {
+    let hit = 0,
+      tot = 0;
+    for (let v = from; v <= to; v += 2) {
+      tot++;
+      for (let k = 0; k < 4; k++) {
+        const x = horiz ? v : at + dir * k,
+          y = horiz ? at + dir * k : v;
+        if (x >= 0 && y >= 0 && x < W && y < H && labels[y * W + x] === best) {
+          hit++;
+          break;
+        }
+      }
+    }
+    return tot ? hit / tot : 0;
+  };
+  if (
+    Math.min(
+      edge(true, c.y0, c.x0, c.x1, 1),
+      edge(true, c.y1, c.x0, c.x1, -1),
+      edge(false, c.x0, c.y0, c.y1, 1),
+      edge(false, c.x1, c.y0, c.y1, -1),
+    ) < FRAME_EDGE
+  )
+    return;
+  let out = 0;
+  for (let l = 1; l < n; l++) {
+    const d = comps[l];
+    if (!d || d.merged || d.bg || l === best || d.area < mp) continue;
+    if (d.cx < c.x0 || d.cx > c.x1 || d.cy < c.y0 || d.cy > c.y1) out += d.area;
+  }
+  if (out > N * FRAME_OUT) return;
+  c.framed = true;
+}
+// the paper inside a frame, while it's left white (not brought back as a section): its number, else 0
+function frameLeft() {
+  if (!comps || !labels) return 0;
+  for (let l = 1; l < comps.length; l++) {
+    const c = comps[l];
+    if (c && c.framed && !c.merged) return counted(l) ? 0 : l;
+  }
+  return 0;
+}
+// the paper inside a frame, left white or brought back: its number, saved with the guide (`frame`, v306) so a guide
+// opened again has its line to Colour it; undefined when there's none
+function frameSaved() {
+  if (!comps) return undefined;
+  for (let l = 1; l < comps.length; l++) {
+    const c = comps[l];
+    if (c && c.framed && !c.merged) return l;
+  }
+  return undefined;
 }
 function segQuality() {
   if (!labels || !comps) return { ok: true };
@@ -449,6 +549,8 @@ function labelCells() {
   applyBg(true);
   findPage();
   applyBg(false);
+  findFrame();
+  applyBg(false);
   secColor = new Array(comps.length);
   for (let l = 1; l < comps.length; l++) {
     const hh = (l * 137.508) % 248,
@@ -554,5 +656,6 @@ function render() {
   // an edit may have made (or undone) section edits still to be built: the line under the name says so, and the bar
   saveStatus();
   edBarSync();
+  frameLineSync();
   outlineMerge();
 }

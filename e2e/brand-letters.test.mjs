@@ -77,7 +77,8 @@ test('exports: one brand is named once in the headers (no letters); mixed brands
   let img = await canvasTexts(page, 'buildExportCanvas');
   assert.ok(img.includes('Ohuhu markers') && !img.some((s) => /= Copic/.test(s)) && !img.some((s) => /^O {2}/.test(s)));
   let card = await canvasTexts(page, 'buildShareCard');
-  assert.ok(card.includes('Ohuhu markers') && !card.includes('O'));
+  // (v305: the card's line says "… 16 Ohuhu markers …", as Reveal's end does)
+  assert.ok(card.some((s) => /\bOhuhu markers\b/.test(s)) && !card.includes('O'));
   // the same picture with Copic markers too
   await page.evaluate(() => { COLORS.forEach((c, i) => { if (c.brand === 'Copic') state.owned.add(mkey(i)); }); save(); SF.setCollection(sfCollection()); __mstest.reassign(); });
   await idle(page);
@@ -191,7 +192,8 @@ test('letters, both brands owned: on every list (Owned, Palette, Match, the guid
   const img = await canvasTexts(page, 'buildExportCanvas');
   assert.ok(img.includes('Ohuhu markers') && !img.includes('O') && !img.some((s) => /^O {2}/.test(s)));
   const card = await canvasTexts(page, 'buildShareCard');
-  assert.ok(card.includes('Ohuhu markers') && !card.includes('O'));
+  // (v305: the card's line says "… 16 Ohuhu markers …", as Reveal's end does)
+  assert.ok(card.some((s) => /\bOhuhu markers\b/.test(s)) && !card.includes('O'));
   // the shell's lists
   await markersView(page, 'owned');
   const own = await letters(page, '#results .cell .bt');
@@ -248,7 +250,7 @@ const tagsOf = (page, what) => page.evaluate((what) => {
   P.fillText = function (t) { if (this.__box) log.push({ box: this.__box, t: String(t), cv: this.canvas }); this.__box = null; return ot.apply(this, arguments); };
   let cvs;
   try { if (what === 'screen') { cvs = [cv]; __mstest.forceFullRender(); __mstest.renderGuide(); } else if (what === 'pdf') cvs = __mstest.buildPDFPages(); else cvs = [__mstest.buildExportCanvas()]; } finally { P.fill = of; P.arcTo = oa; P.fillText = ot; }
-  return log.filter((e) => cvs.indexOf(e.cv) >= 0).map((e) => ({ box: e.box, t: e.t }));
+  return log.filter((e) => cvs.indexOf(e.cv) >= 0).map((e) => (what === 'pdf' ? { box: e.box, t: e.t, p: cvs.indexOf(e.cv) } : { box: e.box, t: e.t }));
 }, what);
 const ownAllCopic = (page) => page.evaluate(() => { COLORS.forEach((c, i) => { if (c.brand === 'Copic') state.owned.add(mkey(i)); }); save(); SF.setCollection(sfCollection()); __mstest.reassign(); });
 
@@ -267,8 +269,10 @@ test('brand tags: a small box after every code when the collection mixes brands 
   assert.ok(scr.some((e) => e.t === 'O') && scr.some((e) => e.t === 'C'), 'both brands');
   for (const e of scr) assert.equal(e.box, e.t === 'C' ? '#c4c1c9' : '#26252b', 'Copic pale, Ohuhu dark: ' + JSON.stringify(e));
   // the print's light labels draw them as light as the codes; the saved image as on screen
-  const pdf = await tagsOf(page, 'pdf');
-  assert.ok(pdf.length > 20 && pdf.every((e) => e.box === (e.t === 'C' ? '#ffffff' : '#a0a0a0')), JSON.stringify(pdf.slice(0, 3)));
+  // (v305: the close-ups' codes are near-black; v306: their tags in print colours too, near-black and white)
+  const pdf = await tagsOf(page, 'pdf'), p1 = pdf.filter((e) => e.p === 0), cu = pdf.filter((e) => e.p > 0);
+  assert.ok(p1.length > 20 && p1.every((e) => e.box === (e.t === 'C' ? '#ffffff' : '#a0a0a0')), JSON.stringify(p1.slice(0, 3)));
+  assert.ok(cu.every((e) => e.box === (e.t === 'C' ? '#ffffff' : '#1a1a1a')), JSON.stringify(cu.slice(0, 3)));
   const img = await tagsOf(page, 'image');
   assert.ok(img.length > 20 && img.every((e) => e.box === (e.t === 'C' ? '#c4c1c9' : '#26252b')), JSON.stringify(img.slice(0, 3)));
   // pixels: a big label's tag, drawn on a canvas of its own (inside its padding: the fill; on its left edge: the outline)

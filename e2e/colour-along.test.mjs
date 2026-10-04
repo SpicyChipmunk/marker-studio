@@ -47,14 +47,19 @@ test('the list starts right under the pinned block: an ⓘ line, then one 48px r
   const g = await page.evaluate(() => {
     const pane = document.querySelector('#sfCtl .sfpane'), vis = [...pane.children].filter((e) => e.getClientRects().length);
     const tools = document.getElementById('sfZoomCtl').getBoundingClientRect(), info = document.querySelector('#sfCtl .sfinfo'), list = document.getElementById('sfAlist');
-    return { first: vis[0] && vis[0].className, gap: Math.round(info.getBoundingClientRect().top - tools.bottom), infoOpen: info.classList.contains('open'), text: info.textContent, listGap: Math.round(list.getBoundingClientRect().top - info.getBoundingClientRect().bottom), inputs: document.querySelectorAll('#sfCtl input').length, kids: vis.map((e) => e.id || e.className.split(' ')[0]) };
+    return { first: vis[0] && vis[0].className, gap: Math.round(info.getBoundingClientRect().top - tools.bottom), infoOpen: info.classList.contains('open'), text: info.textContent, folded: !document.getElementById('sfFind').getClientRects().length, listGap: Math.round(list.getBoundingClientRect().top - document.getElementById('sfAlSort').getBoundingClientRect().bottom), sortGap: Math.round(document.getElementById('sfAlSort').getBoundingClientRect().top - info.getBoundingClientRect().bottom), inputs: [...document.querySelectorAll('#sfCtl input')].map((i) => i.id), kids: vis.map((e) => e.id || e.className.split(' ')[0]) };
   });
   assert.match(g.first, /sfinfo/, 'the ⓘ line comes first');
   assert.ok(g.gap >= 0 && g.gap <= 16, `straight under the tool row (${g.gap}px)`);
   assert.ok(g.infoOpen && /^iTap a marker to see its sections, then tap each section on the picture as you colour it\.More$/.test(g.text.trim()), 'the first line of the instructions and More, the first time');
+  // (v305: the list's order, Lightest first · Rainbow · By brand, between them)
+  assert.ok(g.sortGap >= 0 && g.sortGap <= 16, `the list's order right after it (${g.sortGap}px)`);
+  // (v306: the code box, "Marker in your hand? Type its code", folds behind ⌕ at the end of the order row on a phone,
+  // so the list follows the order row; e2e/v306-smalls opens it)
+  assert.ok(g.folded, 'the code box folded on a phone');
   assert.ok(g.listGap >= 0 && g.listGap <= 16, `the list right after it (${g.listGap}px)`);
-  assert.equal(g.inputs, 0, 'no name box');
-  assert.deepEqual(g.kids, ['sfAlHint', 'sfAlist'], 'only the ⓘ line (the first time: its first line and More) and the list: no progress bar or Mark all above it (progress is in the tool row and on each row)');
+  assert.deepEqual(g.inputs, ['sfFindIn'], 'no name box: only the code box');
+  assert.deepEqual(g.kids, ['sfAlHint', 'sfAlSort', 'sfAlist'], 'only the ⓘ line (the first time: its first line and More), the list’s order (with ⌕ for the code box) and the list: no progress bar or Mark all above it (progress is in the tool row and on each row)');
   const rs = await rows(page), N = await page.evaluate(() => __mstest.assignData.N);
   assert.ok(rs.length > 5);
   assert.deepEqual([...new Set(rs.map((r) => r.h))], [48], 'every closed row is one 48px line');

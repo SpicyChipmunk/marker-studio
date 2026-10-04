@@ -1147,20 +1147,28 @@ function shadeNoteHTML() {
       ' no lighter marker in your collection, so ' +
       (noLight.length === 1 ? 'its' : 'their') +
       ' highlight stays the base colour. ';
-  const head = w.length
-    ? w.length + ' marker' + (w.length === 1 ? '' : 's') + ' would make the shading richer'
-    : coats.length
-      ? coats.length +
-        ' of ' +
-        n +
-        (n === 1 ? ' colour shades' : coats.length === 1 ? ' colours shades' : ' colours shade') +
-        ' with a second coat'
-      : noLight.length
-        ? (noLight.length === 1 ? noLight[0] + ' has' : noLight.length + ' colours have') +
-          ' no lighter marker'
-        : fellS.length
-          ? few(fellS, 'has', 'have') + ' a same-colour shadow instead'
-          : few(fellH, 'has', 'have') + ' a same-colour highlight instead';
+  // (v306: a Gradient whose markers were picked before shading was on, which shading-aware picks would shade more of,
+  // says so first, with Pick shadeable ones)
+  const offer = gradShadeOffer();
+  const head = offer
+    ? offer.ok +
+      ' of ' +
+      offer.n +
+      ' can be shaded \u00b7 <button type="button" id="sfShPickGo" class="sfonelb">Pick shadeable ones</button>'
+    : w.length
+      ? w.length + ' marker' + (w.length === 1 ? '' : 's') + ' would make the shading richer'
+      : coats.length
+        ? coats.length +
+          ' of ' +
+          n +
+          (n === 1 ? ' colour shades' : coats.length === 1 ? ' colours shades' : ' colours shade') +
+          ' with a second coat'
+        : noLight.length
+          ? (noLight.length === 1 ? noLight[0] + ' has' : noLight.length + ' colours have') +
+            ' no lighter marker'
+          : fellS.length
+            ? few(fellS, 'has', 'have') + ' a same-colour shadow instead'
+            : few(fellH, 'has', 'have') + ' a same-colour highlight instead';
   let more = s ? '<div>' + s.trim() + '</div>' : '';
   // letters when these, with the guide's own markers, mix brands (or your collection does)
   if (w.length) {
@@ -1215,6 +1223,65 @@ function shadeNoteHTML() {
     '</div></div>'
   );
 }
+/* U7 (v306): a Gradient laid before shading was on picked its markers without it, and turning shading on doesn't
+   pick again by itself (gradShpOn). The Shading tab says how many of its colours shade, "8 of 16 can be shaded ·
+   Pick shadeable ones", which lays it again with shading-aware picks as one Undo step. Only for the Gradients that
+   pick that way (one marker to a band, from your markers), only when that would pick more that shade, and gone once
+   they were picked with shading on. It leads the shading note (shadeNoteHTML). */
+let _shOffer = null;
+function gradShadeOffer() {
+  if (!shadeOn() || sfmode !== 'guide') return null;
+  const ids = [];
+  let n = 0,
+    ok = 0;
+  zoneIds().forEach(function (id) {
+    if (zoneFamily(id) !== 'gradient' || gradShpOf(id)) return;
+    const zs = zsh(id),
+      seen = {};
+    let now = 0,
+      k = 0,
+      could = -1;
+    zoneSecs(id).forEach(function (l) {
+      const m = assignData.assign[l];
+      if (!m || seen[m.mkey]) return;
+      seen[m.mkey] = 1;
+      k++;
+      if (gradShadeOK(m, zs)) now++;
+    });
+    if (now >= k) return;
+    zoneWith(id, function () {
+      if (!gradShpOn()) return;
+      const N = zoneList().length,
+        src = poolSource(Math.min(limitN, N), true),
+        M = gradCount(src, N).M;
+      if (src.seeded || gradGroupSize(look, M, N, gradShape) !== 1) return;
+      // (how many the shading-aware picks would shade: worked out again only when something they go by changed)
+      const key = JSON.stringify([zLiveSt(), N, coll.length, planFilt(), shadeMode, zs]);
+      if (_shOffer && _shOffer.key === key) {
+        could = _shOffer.n;
+        return;
+      }
+      const tier = gradTierPool(src.items, M),
+        loop = gradIsLoop(tier),
+        rnd = gradSeed > 0 && !loop ? seededRandom(gradSeed) : null;
+      could = gradPickSpread(tier, M, loop, rnd, zs).filter(function (m) {
+        return gradShadeOK(m, zs);
+      }).length;
+      _shOffer = { key: key, n: could };
+    });
+    if (could <= now) return;
+    ids.push(id);
+    n += k;
+    ok += now;
+  });
+  return ids.length ? { ids: ids, n: n, ok: ok } : null;
+}
+function gradShadePick() {
+  const o = gradShadeOffer();
+  if (!o) return;
+  planWhy = 'Shadeable markers picked';
+  reassign(o.ids);
+}
 // Show / Hide in place (the rest of the tab stays as it is)
 function shadeNoteToggle() {
   shNoteOpen = !shNoteOpen;
@@ -1239,7 +1306,7 @@ function radCOn() {
     sfmode === 'guide' &&
     gTab === 'pattern' &&
     family === 'gradient' &&
-    gradShape === 'radial' &&
+    (gradShape === 'radial' || gradShape === 'around') &&
     assignData &&
     !zoneEditOn() &&
     !root.classList.contains('sfrev') &&
@@ -1341,6 +1408,13 @@ function positionRadC() {
   x = Math.max(22, Math.min(hs.clientWidth - 22, x));
   y = Math.max(22, Math.min(hs.clientHeight - 22, y));
   radEl.style.display = '';
+  // (Around goes round the same centre, v305)
+  radEl.setAttribute(
+    'aria-label',
+    gradShape === 'around'
+      ? 'Centre \u2014 drag, or use the arrow keys, to move what the colours go round'
+      : 'Radial centre \u2014 drag, or use the arrow keys, to move where the rings start',
+  );
   radEl.style.left = x + 'px';
   radEl.style.top = y + 'px';
 }
@@ -1690,6 +1764,84 @@ function mcodeHTML(m) {
 }
 function msay(m) {
   return (brandsMixed() ? m.brand + ' ' : '') + m.code;
+}
+/* (v306) Same code, two brands. 18 of Ben's codes are both an Ohuhu and a Copic marker (Y26 is Ohuhu Light Gold and
+   Copic Mustard), and a guide can use both: a Gradient at one marker per section, Random, zones each laying their
+   own, Change colour, or a shading partner. Nothing is moved apart (the nearest other marker was always clearly
+   worse); instead the two are marked wherever you pick a marker up: a "2 brands" chip on Colour along's rows, a filled
+   brand tag on the labels and in the PDF key, "Not the Ohuhu Y26" in Focus mode and a line in Change colour. Worked
+   out from the guide as it is shown (its sections, every zone's, and with shading on each section's highlight and
+   shadow), so a guide saved before v306 gets the marks too, and nothing new is saved. */
+function codeNorm(c) {
+  return String(c == null ? '' : c)
+    .toUpperCase()
+    .replace(/[-.\s]/g, '');
+}
+// { marker key: [the guide's markers of the same code in another brand] }, for every such marker in the guide
+function sameCodeScan() {
+  const by = {},
+    out = {};
+  if (!assignData) return out;
+  const put = function (m) {
+      if (!m || !m.mkey || !m.code) return;
+      const k = codeNorm(m.code);
+      (by[k] || (by[k] = {}))[m.mkey] = m;
+    },
+    sh = shadeOn();
+  for (const l in assignData.assign) {
+    put(assignData.assign[l]);
+    if (sh) {
+      const t = shadeSec(+l);
+      if (t) {
+        put(t.light);
+        put(t.dark);
+      }
+    }
+  }
+  for (const k in by) {
+    const ms = Object.keys(by[k]).map(function (x) {
+      return by[k][x];
+    });
+    if (ms.length < 2) continue;
+    ms.forEach(function (m) {
+      const o = ms.filter(function (x) {
+        return x.brand !== m.brand;
+      });
+      if (o.length) out[m.mkey] = o;
+    });
+  }
+  return out;
+}
+// (worked out once for everything drawn in one go: every label asks. Forgotten at each redraw of the picture, where
+// a change to the markers always ends, and once the task that asked is over)
+let _scMemo = null;
+function sameCodes() {
+  if (_scMemo && _scMemo.a === assignData) return _scMemo.v;
+  const v = sameCodeScan();
+  _scMemo = { a: assignData, v: v };
+  setTimeout(function () {
+    _scMemo = null;
+  }, 0);
+  return v;
+}
+function sameCodeReset() {
+  _scMemo = null;
+}
+// the guide's other markers with m's code (another brand), or null
+function sameOf(m) {
+  const o = m && assignData ? sameCodes()[m.mkey] : null;
+  return o && o.length ? o : null;
+}
+// "Ohuhu Y26" (the others with m's code), or ''
+function sameName(m) {
+  const o = sameOf(m);
+  return o
+    ? o
+        .map(function (x) {
+          return x.brand + ' ' + x.code;
+        })
+        .join(' or ')
+    : '';
 }
 // "1 E69 › 2 E713 › 3 R215" (or "… › 3 2nd coat") for a colour's tones t (a section's: shadeSec; Main's if not
 // given) (as HTML the letters and › are hidden from screen readers, which hear "highlight R11, base R16, shadow R28")

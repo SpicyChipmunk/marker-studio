@@ -431,6 +431,11 @@
   padding: 4px 7px;
   line-height: 1.2;
 }
+/* (v305: five Flows, Around the fifth, still on one row on a phone 375 wide or more) */
+#sfRoot #sfShape .sfedit {
+  padding-left: 4px;
+  padding-right: 4px;
+}
 #sfRoot .sfshpin {
   margin-top: 14px;
   padding-top: 12px;

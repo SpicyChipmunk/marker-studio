@@ -48,8 +48,15 @@ test('a photo showing the table around the page: the blank margin and the table 
   assert.deepEqual(errors, []);
 });
 
-test('a drawn frame on plain paper is not mistaken for the page edge: the area inside it stays a section', async () => {
-  const { r, errors } = await fromPage({ frame: 1 });
-  assert.ok(r.biggest > 0.3, 'the big area inside the frame is still a section');
+// (v305: the paper inside the frame is left white on a fresh scan, as a page without a frame leaves its paper, with a
+// line to Colour it; it was a section before)
+test('a drawn frame on plain paper is not mistaken for the page edge: the area inside it is left white, with Colour it', async () => {
+  const { page, r, errors } = await fromPage({ frame: 1 });
+  const f = await page.evaluate(() => { const t = __mstest, l = t.comps.findIndex((c) => c && !c.merged && c.framed); return { l, page: l > 0 && !!t.comps[l].page, area: l > 0 ? t.comps[l].area / (t.W * t.H) : 0 }; });
+  assert.ok(f.l > 0 && f.area > 0.3, 'the big area inside the frame is the frame’s paper');
+  assert.equal(f.page, false, 'not taken for the page');
+  assert.ok(r.biggest < 0.3, 'left white');
+  await page.click('#sfFrameColour'); await idle(page);
+  assert.equal(await page.evaluate((l) => __mstest.counted(l), f.l), true, 'Colour it: a section again');
   assert.deepEqual(errors, []);
 });

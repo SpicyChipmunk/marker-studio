@@ -478,10 +478,12 @@
       }
     });
     // while the code isn't a colour yet, say what's expected and grey out the previous result
-    var hexHint = function () {
+    // (v305: a code left part-typed, "#12345", on Enter or leaving the field says so too, and while it's part-typed the
+    // previous result is greyed out, not shown as if it matched)
+    var hexHint = function (done) {
       var t = hexIn.value.trim(),
         ok = /^#?[0-9a-f]{6}$/i.test(t) || /^#?[0-9a-f]{3}$/i.test(t),
-        bad = t.length > 0 && !ok && (t.replace('#', '').length >= 6 || /[^#0-9a-f]/i.test(t));
+        bad = t.length > 0 && !ok && (done || t.replace('#', '').length >= 6 || /[^#0-9a-f]/i.test(t));
       var h = document.getElementById('matchHexHint');
       if (!h) {
         h = document.createElement('div');
@@ -492,8 +494,11 @@
       }
       h.textContent = bad ? 'Enter 6 hex digits, e.g. #3A7BD5' : '';
       h.style.display = bad ? '' : 'none';
-      res.style.opacity = bad ? '.35' : '';
+      res.style.opacity = t.length > 0 && !ok ? '.35' : '';
     };
+    hexIn.addEventListener('change', function () {
+      hexHint(true);
+    });
     hexIn.addEventListener('input', function () {
       hexHint();
       if (/^#?[0-9a-f]{6}$/i.test(hexIn.value.trim())) {

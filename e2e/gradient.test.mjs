@@ -375,10 +375,11 @@ test('speed: a guide of 3,600 sections with the whole catalogue lays out a gradi
       t.grad.build(cl);
       out[look + ' ' + shape] = [Math.round(performance.now() - t0), new Set(Object.values(t.assignData.assign).map((m) => m.mkey)).size];
     }
-    return { out, n: t.coll.length };
+    // (v306: more sections than clear markers, so every clear one, some used twice, rather than greys)
+    return { out, n: t.grad.count(t.grad.poolSource(cl.length, true), cl.length).M };
   });
   for (const [k, [t, used]] of Object.entries(ms.out)) {
-    assert.equal(used, ms.n, k + ': every marker used');
+    assert.equal(used, ms.n, k + ': every clear marker used');
     assert.ok(t < 1200, `${k}: ${t}ms`);
   }
   assert.deepEqual(errors, []);

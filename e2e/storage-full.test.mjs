@@ -59,7 +59,8 @@ test('storage full: Save and ticking a marker say so, keep nothing and offer no 
   assert.match(await toastText(page), /storage is full/);
   assert.equal(await page.evaluate(() => !!document.getElementById('toastAct')), false, 'no Undo');
   assert.equal(await page.evaluate((i) => isOwned(i), i), true, 'still owned');
-  assert.equal(await page.evaluate((i) => document.querySelector(`#results .cell[data-i="${i}"] .owncheck`) != null, i), true, 'and still ticked');
+  // (v305: the Owned view has no tick badges, every marker in it being yours; the cell is still shown as owned)
+  assert.equal(await page.evaluate((i) => document.querySelector(`#results .cell.own[data-i="${i}"]`) != null, i), true, 'and still shown as owned');
   // Own all / Clear / the shopping list / ink leave things as they were too
   await page.click('#ownView [data-v="all"]'); await idle(page);
   await page.click('#ownAll'); await idle(page);

@@ -179,6 +179,9 @@ try {
 // are told apart at a glance (a raised letter read like a degree sign: "B112°"). Sizes are fractions of the code's
 // font size (the corner radius, of the box's height). o.tag (optional) gives other colours, as {dark, pale}: the
 // print's light labels.
+// (v306) A code that is in the guide in both brands (sameOf) has its tag filled in amber with a dark letter, and a
+// heavier edge, whichever brand: the letter is the thing to check before picking up the marker. On the screen, in
+// the PDF (page 1 and the close-ups) and on the saved image; Reveal's card has no tags.
 const TAG = {
   gap: 0.2,
   pad: 0.15,
@@ -188,11 +191,13 @@ const TAG = {
   line: 0.07,
   dark: '#26252b',
   pale: '#c4c1c9',
+  same: '#ffb454',
+  sameInk: '#1a1a1a',
 };
 function tagOutlined(brand) {
   return brand === 'Copic';
 }
-function drawTag(g, tg, outlined, x, y, w, fs, col) {
+function drawTag(g, tg, outlined, x, y, w, fs, col, same) {
   const h = fs * TAG.h,
     top = y - h / 2,
     r = h * TAG.r;
@@ -203,12 +208,12 @@ function drawTag(g, tg, outlined, x, y, w, fs, col) {
   g.arcTo(x, top + h, x, top, r);
   g.arcTo(x, top, x + w, top, r);
   g.closePath();
-  g.fillStyle = outlined ? col.pale : col.dark;
+  g.fillStyle = same ? TAG.same : outlined ? col.pale : col.dark;
   g.fill();
-  g.lineWidth = Math.max(1, fs * TAG.line);
+  g.lineWidth = Math.max(1, fs * TAG.line * (same ? 1.6 : 1));
   g.strokeStyle = col.dark;
   g.stroke();
-  g.fillStyle = outlined ? col.dark : '#fff';
+  g.fillStyle = same ? TAG.sameInk : outlined ? col.dark : '#fff';
   g.font = '700 ' + fs * TAG.font + 'px ' + LFONT;
   g.textAlign = 'center';
   g.fillText(tg, x + w / 2, y + fs * 0.02);
@@ -274,7 +279,8 @@ function drawCode(g, l, m, o) {
   g.font = o.w + ' ' + fs + 'px ' + LFONT;
   g.strokeText(m.code, x0, y);
   g.fillText(m.code, x0, y);
-  if (L.tg) drawTag(g, L.tg, tagOutlined(m.brand), x0 + L.cw + fs * TAG.gap, y, L.gw, fs, o.tag || TAG);
+  if (L.tg)
+    drawTag(g, L.tg, tagOutlined(m.brand), x0 + L.cw + fs * TAG.gap, y, L.gw, fs, o.tag || TAG, !!sameOf(m));
   g.textAlign = 'center';
   _lastBox = L.box;
   return fs;
@@ -777,9 +783,59 @@ function pageDone() {
   for (let i = 0; i < assignData.order.length; i++) if (!colored[assignData.order[i]]) return false;
   return true;
 }
+// (v305) Colour along with the codes on: a section ticked shows its ✓ for about a second, then the ✓ goes (redrawn
+// a section at a time, renderIncremental) and its own colour says it's done. With the codes off the ✓ stays: it's the
+// only mark of a done section there. Sections already ticked when the list is shown have none.
+const TICK_SHOW = 1000;
+let _tkSeen = null,
+  _tkOf = null,
+  _tkAt = {},
+  _tkT = 0;
+function tkTrack(on) {
+  if (!on || !colored) {
+    _tkSeen = null;
+    _tkOf = null;
+    _tkAt = {};
+    clearTimeout(_tkT);
+    _tkT = 0;
+    return;
+  }
+  const K = colored.length;
+  if (!_tkSeen || _tkOf !== colored || _tkSeen.length !== K) {
+    _tkSeen = Uint8Array.from(colored);
+    _tkOf = colored;
+    _tkAt = {};
+    return;
+  }
+  const now = performance.now();
+  for (let l = 1; l < K; l++) {
+    if (colored[l] && !_tkSeen[l]) _tkAt[l] = now;
+    else if (!colored[l]) delete _tkAt[l];
+    _tkSeen[l] = colored[l];
+  }
+  let next = Infinity;
+  for (const l in _tkAt) {
+    if (now - _tkAt[l] >= TICK_SHOW) delete _tkAt[l];
+    else next = Math.min(next, _tkAt[l] + TICK_SHOW);
+  }
+  clearTimeout(_tkT);
+  _tkT = 0;
+  if (next < Infinity)
+    _tkT = setTimeout(
+      function () {
+        _tkT = 0;
+        if (sfmode === 'color' && assignData) renderGuide();
+      },
+      Math.max(16, next - now + 4),
+    );
+}
+function tkFresh(l) {
+  return _tkAt[l] != null;
+}
 function renderGuide() {
   if (!assignData) return;
   _mixKey = null;
+  sameCodeReset();
   sizeCanvas();
   if (labHi && !labHiK()) labHiOff();
   if (sfmode !== 'guide') {
@@ -898,6 +954,7 @@ function renderGuide() {
     positionSun();
     return;
   }
+  tkTrack(dim && revealF == null);
   const labOn = revealF == null && !finView && !(hideLabels && sfmode === 'guide'),
     linesOn = !!(sh && shadeLines && revealF == null && !hideLabels && !finView),
     anch = sfmode === 'guide' && family === 'blend' && anchors.length > 0 && revealF == null;
@@ -914,7 +971,9 @@ function renderGuide() {
               ? 1
               : 0
             : dim && colored[l]
-              ? 1
+              ? tkFresh(l)
+                ? 1
+                : 0
               : 2);
     skey[l] =
       (shown ? colArr[l].join(',') : 'p') +
@@ -1067,10 +1126,12 @@ function renderGuide() {
   }
   positionSun();
   positionZones();
+  positionRough();
   positionPhoto();
   if (tipL >= 0) positionTip();
   rowOutline();
-  if (olSet) positionOutline();
+  // (always: with nothing left to outline, e.g. a row's last section ticked or Mark all, this hides the outline, v305)
+  positionOutline();
   if (!pickPending()) scheduleAutosave();
 }
 function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tick, fcur, ring) {

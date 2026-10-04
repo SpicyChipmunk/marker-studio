@@ -116,8 +116,10 @@ test('Shading: the modes, sliders, tone guides, Leave sections flat, the suggest
   await page.uncheck('#sfShLines'); assert.match(await page.evaluate(() => JSON.stringify(__mstest.currentDesignObj())), /"lines":false/);
   await page.check('#sfShLines');
   // the suggestions: one line, "N markers would make the shading richer · Show"
+  // (v306, deliberately: led by "13 of 16 can be shaded · Pick shadeable ones" while the Gradient's markers were picked
+  // before shading was on: U7)
   const head = await page.textContent('.sfshnote .sfonelh');
-  assert.match(head, /^\d+ markers? would make the shading richerShow$/);
+  assert.match(head, /^\d+ of 16 can be shaded · Pick shadeable onesShow$/);
   assert.equal(await page.getAttribute('#sfShNoteT', 'aria-expanded'), 'false');
   assert.equal(await page.isVisible('#sfShNoteMore'), false, 'details hidden');
   await page.click('#sfShNoteT');
@@ -245,7 +247,8 @@ test('each tab stays within about one and a half screens of room at 390×844, wi
       assert.equal(m.pic, 380, `${tb}: the picture at its floor size`);
       out[pass + ' ' + tb] = `${m.h}px (${(m.h / m.room).toFixed(2)} × the ${m.room}px under the pinned tabs)`;
       // (v288: Colours has the "N markers on this page ›" button too, 44px and its margin)
-      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
+      // (v306, deliberately: Pattern has the Gradient's Scatter slider too, one compact line, 49px and its margin)
+      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 : 0) + (tb === 'pattern' ? 50 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
     }
   }
   t.diagnostic(JSON.stringify(out));

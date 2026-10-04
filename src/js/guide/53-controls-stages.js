@@ -277,6 +277,61 @@ function segWarnSync() {
     if (ed) ed.insertAdjacentHTML('beforebegin', h);
   }
 }
+// The paper inside a drawn frame, left white (findFrame, 10-segment, v305): a line on Edit sections and in the Plan
+// with Colour it, which brings it back as a section (in the Plan, laid by the pattern, the rest keeping their
+// markers, as Build again does; v306: one Undo step, the plan's earlier steps kept). v306: "round the drawing", the
+// words for the paper a page without a frame leaves white too
+const FRAME_STEP = 'Paper round the drawing coloured';
+function frameLineHTML() {
+  if (!frameLeft() || (sfmode !== 'review' && sfmode !== 'guide')) return '';
+  return '<div id="sfFrameLine" class="sfframeline">Paper round the drawing is left white \u00b7 <button type="button" class="sflink" id="sfFrameColour">Colour it</button></div>';
+}
+function frameLineWire() {
+  const b = document.getElementById('sfFrameColour');
+  if (b) b.addEventListener('click', frameColour);
+}
+// (in step with the sections after a tap leaves the paper out or brings it back, on Edit sections)
+function frameLineSync() {
+  if (!ctlEl) return;
+  const el = document.getElementById('sfFrameLine'),
+    h = frameLineHTML();
+  if (!h) {
+    if (el) el.remove();
+    return;
+  }
+  if (el) return;
+  const at = ctlEl.querySelector(sfmode === 'review' ? '.sfedhead' : '.sftabs');
+  if (!at) return;
+  at.insertAdjacentHTML(sfmode === 'review' ? 'beforebegin' : 'afterend', h);
+  frameLineWire();
+}
+function frameColour() {
+  const l = frameLeft();
+  if (!l) return;
+  const was = secState[l];
+  pushUndo({ t: 'ov', d: secState.slice() });
+  secState[l] = 1;
+  if (sfmode === 'review') {
+    hasEdits = true;
+    render();
+    frameLineSync();
+    ctlRefocus('#sfEmToggle');
+    sayLive('Paper round the drawing is a section');
+    return;
+  }
+  // (the Plan: built again with it, as from Edit sections, its Undo steps kept; this is one more, which takes the
+  // paper out of the guide again: planUndo)
+  sfmode = 'review';
+  buildGuide(true);
+  if (sfmode !== 'guide') {
+    secState[l] = was;
+    sfmode = 'guide';
+    renderControls();
+    return;
+  }
+  planCommit(FRAME_STEP, false, { frame: { l: l, was: was } });
+  ctlRefocus('#sfTab-' + gTab);
+}
 function ctlSections() {
   const mv = minPos,
     // (v288) what this step is for, and the tools first; Adjust photo after the sliders
@@ -320,6 +375,7 @@ function ctlSections() {
           'Page kept as photographed' +
           ' \u00b7 <button class="sflink" id="sfPgAdj">Straighten</button></div>'
         : '') +
+    frameLineHTML() +
     head +
     segWarnHTML() +
     '<div id="sfEdit" role="group" aria-label="Edit tool" class="sfc-segs sfc-mt8"><button type="button" id="sfEmToggle" data-m="toggle" class="sfedit">Leave out</button><button type="button" id="sfEmMerge" data-m="merge" class="sfedit">Merge</button><button type="button" id="sfEmSplit" data-m="split" class="sfedit">Split</button><button type="button" id="sfEmAdd" data-m="add" class="sfedit">Add</button></div><label id="sfAutoCloseWrap" class="sfc-autoclose" style="display:none"><input type="checkbox" id="sfAutoClose"> Join the ends of a loop for me</label><div id="sfHint" class="sfc-note sfc-mt8"></div><div class="sfc-key"><span><span class="sfc-sw sfc-sw-sec"></span>section</span><span><span class="sfc-sw sfc-sw-bg"></span>background</span><span><span class="sfc-sw sfc-sw-ex"></span>left out</span></div>' +
@@ -391,8 +447,11 @@ function ctlSections() {
     b.textContent = 'Building\u2026';
     requestAnimationFrame(function () {
       setTimeout(function () {
+        // (the first Build of a new picture blooms: 41-bloom.js)
+        const first = !assignData;
         try {
           buildGuide();
+          if (first && assignData && sfmode === 'guide') bloomStart();
         } finally {
           if (b.isConnected) {
             b.disabled = false;
@@ -423,6 +482,7 @@ function ctlSections() {
   wire('sfPgOpen', 'click', pgAdjust);
   wire('sfPgAdj', 'click', pgAdjust);
   wire('sfPgUndo', 'click', pgUndo);
+  frameLineWire();
   wire('sfAutoCrop', 'click', autoCrop);
   wire('sfRotL', 'click', function () {
     okGeom(function () {

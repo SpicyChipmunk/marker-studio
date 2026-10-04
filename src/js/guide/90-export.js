@@ -12,8 +12,9 @@ function buildExportCanvas(outline, noCodes) {
       .map(function (k) {
         return map[k];
       })
+      // (v305: in colour-family order, lightest first in each family, as the PDF's key: it was by how many sections)
       .sort(function (a, b) {
-        return b.n - a.n;
+        return famCmp(a.m, b.m);
       }),
     one = brandLine(
       uniq.map(function (u) {
@@ -924,6 +925,21 @@ function pdfSwatch(g, x, y, sz, hex, owned) {
   g.strokeRect(x, y, sz, sz);
   g.setLineDash([]);
 }
+// a marker's colour family (COLORS' own), and the keys' order: the families round the colour wheel (FAM_ORDER),
+// lightest first in each (the PDF's key and, v305, the saved image's)
+function famOf(m) {
+  const ix = keyIdx(m.mkey);
+  return ix != null && COLORS[ix] ? COLORS[ix].fam : 'Other';
+}
+function famCmp(a, b) {
+  const fa = famOf(a),
+    fb = famOf(b),
+    ia = FAM_ORDER.indexOf(fa),
+    ib = FAM_ORDER.indexOf(fb),
+    La = a.lab && a.lab.length ? a.lab[0] : hexToLab(a.hex)[0],
+    Lb = b.lab && b.lab.length ? b.lab[0] : hexToLab(b.hex)[0];
+  return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || fa.localeCompare(fb) || Lb - La;
+}
 // one row per marker: its sections (secs), and with shading its tones (tones: toneRows, the first for the row, the
 // others, when zones shade it differently, as lines under it)
 function pdfKeyRows() {
@@ -935,18 +951,12 @@ function pdfKeyRows() {
     map[m.mkey].secs.push(l);
   });
   const rows = Object.keys(map).map(function (k) {
-    const e = map[k],
-      ix = keyIdx(k);
-    e.fam = ix != null && COLORS[ix] ? COLORS[ix].fam : 'Other';
-    e.L = e.m.lab && e.m.lab.length ? e.m.lab[0] : hexToLab(e.m.hex)[0];
+    const e = map[k];
+    e.fam = famOf(e.m);
     return e;
   });
-  const fo = (f) => {
-    const i = FAM_ORDER.indexOf(f);
-    return i < 0 ? 99 : i;
-  };
   rows.sort(function (a, b) {
-    return fo(a.fam) - fo(b.fam) || a.fam.localeCompare(b.fam) || b.L - a.L;
+    return famCmp(a.m, b.m);
   });
   // (each marker's place in colouring order, lightest first as Colour along goes: the key's ORDER column, v284)
   rows
@@ -1132,6 +1142,9 @@ function pdfPlaceDraw(g, asg, pl, o, numOf, dr, dotOk) {
   g.textAlign = 'left';
   g.textBaseline = 'alphabetic';
 }
+// a close-up page's codes and how strong its magnified lines are (v305: grey lines, near-black codes)
+const CU_INK = '#1a1a1a',
+  CU_LINES = 0.5;
 // 1st, 2nd, 3rd … (the key's colouring order, unlike its numbers: v284 review)
 function pdfOrd(n) {
   const t = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th';
@@ -1264,6 +1277,7 @@ function buildPDFPages(dry, lazy) {
   }
 }
 function _buildPDF(dry) {
+  sameCodeReset();
   // (shading that leaves every section flat has nothing to show: no tone marks, how-to or tone columns)
   const sh = shadeUse().on ? shadePrep(false) : null,
     withShade = !!sh,
@@ -1411,7 +1425,10 @@ function _buildPDF(dry) {
         closeups.forEach(function (c) {
           const cr = c.crop;
           c.k = Math.min(cell.w / (cr[2] - cr[0]), cell.h / (cr[3] - cr[1]));
-          c.lo = loAt(c.k);
+          // (v305: a close-up's codes near-black over its lines in mid grey, so the labels lead; page 1's stay light
+          // so they don't show through pale ink. v306: their brand tags in the same print colours, near-black and
+          // white, not the screen's)
+          c.lo = Object.assign(loAt(c.k), { fill: CU_INK, tag: { dark: CU_INK, pale: '#fff' } });
           c.pl = pdfPlace(
             g1,
             Object.keys(asg)
@@ -1595,7 +1612,12 @@ function _buildPDF(dry) {
           gc.clip();
           gc.imageSmoothingEnabled = true;
           gc.imageSmoothingQuality = 'high';
+          // (the magnified lines at about half strength: about 50% grey on the white page, v305)
+          gc.fillStyle = '#fff';
+          gc.fillRect(cx, iy, dw, dh);
+          gc.globalAlpha = CU_LINES;
           gc.drawImage(art1, cr[0], cr[1], cr[2] - cr[0], cr[3] - cr[1], cx, iy, dw, dh);
+          gc.globalAlpha = 1;
           gc.setTransform(kc, 0, 0, kc, cx - cr[0] * kc, iy - cr[1] * kc);
           // (a dot only for a small section still without a label: one labelled on page 1 needs none here)
           pdfPlaceDraw(gc, asg, c.pl, c.lo, numOf, PX(1.2) / kc, function (l) {
@@ -2043,17 +2065,35 @@ function _buildPDF(dry) {
     g.fillText(pdfOrd(r.ord), x + X.ord, y + PX(12.5));
     g.textAlign = 'left';
     if (keyNums) {
-      g.fillStyle = '#111';
-      g.font = '700 ' + PX(9.5) + 'px ' + LFONT;
+      // (v305: drawn as the numbers on the colouring page are, their weight, colour and white edge, so the two are
+      // seen to go together; ORDER beside it stays a grey "5th")
+      const fsN = PX(9.5);
+      g.font = LS.w + ' ' + fsN + 'px ' + LFONT;
       g.textAlign = 'right';
+      g.lineJoin = 'round';
+      g.lineWidth = Math.max(1, fsN * LS.swk);
+      g.strokeStyle = '#fff';
+      g.strokeText(String(num[mm.mkey]), x + lead + nw - PX(6), y + PX(12.5));
+      g.fillStyle = LS.fill;
       g.fillText(String(num[mm.mkey]), x + lead + nw - PX(6), y + PX(12.5));
       g.textAlign = 'left';
     }
     pdfSwatch(g, x + X.sw, y + PX(3.5), sw, mm.hex, true);
     if (!oneB) {
-      g.fillStyle = '#888';
-      g.font = '700 ' + PX(7) + 'px ' + LFONT;
-      g.fillText(bTag(mm.brand), x + X.tag, y + PX(12.5));
+      // (v306: a code in the guide in both brands has its letter in a filled tag, as on the labels)
+      if (sameOf(mm)) {
+        const fsT = PX(9.5);
+        g.font = '700 ' + fsT * TAG.font + 'px ' + LFONT;
+        const gw = g.measureText(bTag(mm.brand)).width + fsT * TAG.pad * 2;
+        g.textBaseline = 'middle';
+        drawTag(g, bTag(mm.brand), false, x + X.tag - fsT * TAG.pad, y + PX(9.5), gw, fsT, TAG, true);
+        g.textAlign = 'left';
+        g.textBaseline = 'alphabetic';
+      } else {
+        g.fillStyle = '#888';
+        g.font = '700 ' + PX(7) + 'px ' + LFONT;
+        g.fillText(bTag(mm.brand), x + X.tag, y + PX(12.5));
+      }
     }
     g.fillStyle = '#111';
     g.font = '700 ' + PX(9.5) + 'px ' + LFONT;
@@ -2350,9 +2390,10 @@ function checkComplete() {
     celebrate();
   }
 }
-// Finished: in focus mode Reveal & share is in its bottom bar and a toast says so; in the list the "Page complete!"
-// banner (with its Reveal & share) is brought into view just under the pinned block instead, with no toast over the
-// open row
+// Finished: in focus mode Reveal & share is in its bottom bar, which says "Page finished" with what was coloured; in
+// the list the "Page complete!" banner (with its Reveal & share) is brought into view just under the pinned block
+// instead, with no toast over the open row. (v306: Focus mode's toast went, as it said what the bar says over the
+// art; a screen reader hears it instead, and short marker strokes fly up from the progress bar, not confetti)
 function celebrate() {
   try {
     if (navigator.vibrate) navigator.vibrate([12, 40, 12]);
@@ -2368,11 +2409,89 @@ function celebrate() {
     renderGuide();
     renderAlong();
   }
-  const rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (focus || sfmode !== 'color')
+  const rm = reducedMotion();
+  if (focus) {
+    sayLive('Page finished. ' + finishLine() + '. Reveal & share is in the bar at the bottom.');
+    const pb = document.getElementById('sfFocProg');
+    if (!rm) markerStrokes(pb && pb.offsetParent !== null ? pb.getBoundingClientRect() : null);
+    return;
+  }
+  if (sfmode !== 'color')
     note(ic('sparkles') + ' Finished \u2014 every section coloured! Tap Reveal &amp; share to show it off.');
   else requestAnimationFrame(doneInView);
   if (!rm) confettiBurst();
+}
+// (v306) Focus mode's finish: up to STROKES_MAX short rounded strokes in the guide's own marker colours, flicked up
+// from the progress bar (r: its box on the screen; the foot of the screen without one) and falling away, about 1.6 s.
+// Plain strokes: no blend modes or shadows, which are slow in Safari.
+const STROKES_MAX = 80;
+function markerStrokes(r) {
+  const W0 = window.innerWidth,
+    H0 = window.innerHeight,
+    dpr = Math.min(2, window.devicePixelRatio || 1),
+    cv = document.createElement('canvas'),
+    x0 = r ? r.left : W0 * 0.1,
+    w0 = r ? r.width : W0 * 0.8,
+    y0 = r ? r.top + r.height / 2 : H0 - 40;
+  cv.width = W0 * dpr;
+  cv.height = H0 * dpr;
+  cv.className = 'sfconfetti sfstrokes';
+  document.body.appendChild(cv);
+  const g = cv.getContext('2d');
+  g.scale(dpr, dpr);
+  g.lineCap = 'round';
+  const pal = [],
+    seen = {};
+  if (assignData)
+    for (const l in assignData.assign) {
+      const hx = assignData.assign[l].hex;
+      if (!seen[hx]) {
+        seen[hx] = 1;
+        pal.push(hx);
+      }
+    }
+  if (!pal.length) pal.push('#7c5cff', '#ffd84a', '#3f7d4e', '#ff5c8a');
+  const N = Math.min(STROKES_MAX, Math.max(24, Math.round(w0 / 6))),
+    ps = [];
+  for (let i = 0; i < N; i++) {
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.3,
+      v = 8 + Math.random() * 9;
+    ps.push({
+      x: x0 + w0 * Math.random(),
+      y: y0,
+      vx: Math.cos(a) * v,
+      vy: Math.sin(a) * v,
+      len: 10 + Math.random() * 12,
+      lw: 4 + Math.random() * 4,
+      c: pal[(Math.random() * pal.length) | 0],
+    });
+  }
+  markerStrokes.n = N;
+  const start = performance.now();
+  let last = start;
+  (function frame(t) {
+    const dt = Math.min(2.2, (t - last) / 16.67) || 1,
+      age = (t - start) / 1600;
+    last = t;
+    g.clearRect(0, 0, W0, H0);
+    g.globalAlpha = Math.max(0, Math.min(1, 1.6 - age * 1.6));
+    let alive = false;
+    for (const p of ps) {
+      p.vy += 0.32 * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      if (p.y < H0 + 30) alive = true;
+      const sp = Math.hypot(p.vx, p.vy) || 1;
+      g.strokeStyle = p.c;
+      g.lineWidth = p.lw;
+      g.beginPath();
+      g.moveTo(p.x, p.y);
+      g.lineTo(p.x - (p.vx / sp) * p.len, p.y - (p.vy / sp) * p.len);
+      g.stroke();
+    }
+    if (alive && age < 1) requestAnimationFrame(frame);
+    else cv.remove();
+  })(start);
 }
 // (said after the tick that finished it, which the list announces first)
 function doneInView() {
@@ -2490,15 +2609,36 @@ function exportImage() {
   setTimeout(function () {
     // (anything going wrong puts the button back: before, it stayed on Preparing… until the app was reloaded, v304)
     let xc = null;
+    const codes = exCodesNow();
     try {
       if (!assignData) throw new Error('no guide');
-      xc = buildExportCanvas(false, !exCodes);
+      xc = buildExportCanvas(false, !codes);
     } catch (e) {
       freeCanvas(xc);
       done();
       note('Couldn’t export the image.');
       return;
     }
+    // (v305) without the codes it's the picture to show, not a guide: framed as Reveal's card is (89-show.js), twice
+    // its size so the art keeps its detail
+    (codes ? Promise.resolve() : showFonts()).then(function () {
+      if (!codes) {
+        let card = null;
+        try {
+          card = buildShowCard(xc, xc.width / W, 2160, 2700);
+        } catch (_) {}
+        freeCanvas(xc);
+        xc = card;
+        if (!xc) {
+          done();
+          note('Couldn’t export the image.');
+          return;
+        }
+      }
+      exportBlob(xc, codes);
+    });
+  }, 30);
+  function exportBlob(xc, codes) {
     xc.toBlob(function (blob) {
       // (the picture is in the file now: its canvas handed back, v296)
       freeCanvas(xc);
@@ -2507,9 +2647,15 @@ function exportImage() {
         note('Couldn’t export the image.');
         return;
       }
-      shareOrSave(blob, 'colour-guide.png', curName || 'Colouring guide', 'image', 'Image downloaded.');
+      shareOrSave(
+        blob,
+        codes ? 'colour-guide.png' : 'marker-studio-picture.png',
+        curName || (codes ? 'Colouring guide' : 'My colouring'),
+        'image',
+        'Image downloaded.',
+      );
     }, 'image/png');
-  }, 30);
+  }
 }
 // ---- Test strip (v282): Share › Print › Pages › Test strip. A page of boxes to try this guide's markers on the
 // paper you'll colour on, since paper changes a marker's colour a lot and the app only predicts a layered tone or a

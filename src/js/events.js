@@ -45,6 +45,8 @@ resetBtn.addEventListener('click', () => {
         state.palettes = [];
         state.palH = [];
         state.locked = [];
+        // (an empty card after Clear, not another preview)
+        palPvOff = true;
       }
     } else state.drawn = [];
     save();
@@ -71,6 +73,8 @@ palette.addEventListener('click', (e) => {
     }
     return;
   }
+  // (the first visit's preview becomes your palette once you lock or change one of its colours, v305)
+  if (e.target.closest('.band')) palAdopt();
   const lk = e.target.closest('.blk');
   if (lk) {
     const bb = lk.closest('.band');
@@ -100,6 +104,23 @@ pile.addEventListener('click', (e) => {
   save();
   fullRender();
 });
+// the toast for ticking or unticking one marker (v306: short enough for one line at 390, "Added Ohuhu B04 · taken off
+// To buy", "Removed Copic BG0000"; v305's "… to your collection and took it off your To buy list" wrapped at 820 too)
+function addedLine(had, c, off) {
+  const name = esc(c.brand + ' ' + c.code);
+  if (had) return 'Removed ' + name;
+  return 'Added ' + name + (off ? ' \u00b7 taken off To buy' : ' to your collection');
+}
+// and for several (Tick all shown, Scan's Add): "Added 12 markers · 3 off To buy"
+function addedManyLine(n, off) {
+  return (
+    'Added ' +
+    n +
+    ' marker' +
+    (n === 1 ? '' : 's') +
+    (off ? ' \u00b7 ' + off + ' off To buy' : ' to your collection')
+  );
+}
 results.addEventListener('click', async (e) => {
   const cell = e.target.closest('.cell');
   if (!cell) return;
@@ -112,16 +133,10 @@ results.addEventListener('click', async (e) => {
     const c = COLORS[i],
       had = setOwned(i, !isOwned(i));
     if (had == null) return;
-    toastAction(
-      (had ? 'Removed ' : 'Added ') +
-        esc(c.brand + ' ' + c.code) +
-        (had ? ' from' : ' to') +
-        ' your collection',
-      'Undo',
-      function () {
-        setOwned(i, had);
-      },
-    );
+    const off = setOwned.off;
+    toastAction(addedLine(had, c, off.length), 'Undo', function () {
+      setOwned(i, had, off);
+    });
   } else {
     const c = COLORS[i];
     const ok = await copyText(c.code);
@@ -131,15 +146,27 @@ results.addEventListener('click', async (e) => {
 // Tick or untick one marker. The swatch stays where it is (dimmed when unticked) until the list is next redrawn
 // by a search, filter or view change, so the grid never shifts under your finger. Returns whether it was owned, or
 // null when storage is full (nothing changed).
-function setOwned(i, on) {
+// (v305) Ticking it takes it off To buy unless it's marked Running low or dry (that entry is its replacement);
+// setOwned.off is what came off. `back` is given only by Undo: those entries go back where they were, and To buy is
+// otherwise left as it is (unticking a marker later never puts it back on the list).
+function setOwned(i, on, back) {
   const k = mkey(i),
     had = state.owned.has(k);
   if (on) state.owned.add(k);
   else state.owned.delete(k);
+  const off = on && !had && !back ? wishOwnedOff([k]) : [],
+    put = back && back.length ? back.slice() : [];
+  wishPutBack(put);
+  setOwned.off = off;
   if (
     !keep(function () {
       if (had) state.owned.add(k);
       else state.owned.delete(k);
+      wishPutBack(off);
+      put.forEach(function (r) {
+        const j = state.wish.indexOf(r.w);
+        if (j >= 0) state.wish.splice(j, 1);
+      });
     })
   ) {
     if (mkOpenIdx === i) mkFill(i);
@@ -162,9 +189,11 @@ function setOwned(i, on) {
   } finally {
     chrome.keepGrid = false;
   }
+  if (off.length || put.length) wishChanged();
   if (mkOpenIdx === i) mkFill(i);
   return had;
 }
+setOwned.off = [];
 // press and hold (or right-click) a marker for its details
 let mkHeld = false,
   mkT = 0,
@@ -267,17 +296,11 @@ $('mkOwn').addEventListener('change', (e) => {
     c = COLORS[i],
     had = setOwned(i, e.target.checked);
   if (had == null) return;
-  toastAction(
-    (had ? 'Removed ' : 'Added ') +
-      esc(c.brand + ' ' + c.code) +
-      (had ? ' from' : ' to') +
-      ' your collection',
-    'Undo',
-    function () {
-      setOwned(i, had);
-      if (mkOpenIdx === i) $('mkOwn').focus({ preventScroll: true });
-    },
-  );
+  const off = setOwned.off;
+  toastAction(addedLine(had, c, off.length), 'Undo', function () {
+    setOwned(i, had, off);
+    if (mkOpenIdx === i) $('mkOwn').focus({ preventScroll: true });
+  });
 });
 $('mkCopy').addEventListener('click', async () => {
   if (mkOpenIdx == null) return;
@@ -325,8 +348,9 @@ exportBtn.addEventListener('click', async () => {
       idxs = state.customPal.filter((x) => x != null);
       if (!idxs.length) return;
     } else {
-      const p = state.palettes[state.palettes.length - 1];
-      if (!p) return;
+      // (the palette shown: the first visit's preview too, v305)
+      const p = currentPaletteIdxs();
+      if (!p.length) return;
       idxs = p;
     }
     fn = 'marker-studio-palette.png';
@@ -386,6 +410,7 @@ harm.addEventListener('click', (e) => {
           var t = document.getElementById('photoThumb');
           if (t) t.src = fr.result;
           paperReset();
+          warmCheck();
           applyPhotoPalette();
         };
         im.onerror = function () {
@@ -415,6 +440,8 @@ harm.addEventListener('click', (e) => {
      automatic: a sunset's cast is the picture. */
   var paperB = document.getElementById('photoPaper'),
     lightB = document.getElementById('photoLight'),
+    warmB = document.getElementById('photoWarm'),
+    warm = null,
     note = document.getElementById('photoPaperNote'),
     thumb = document.getElementById('photoThumb'),
     paperMode = false,
@@ -440,6 +467,7 @@ harm.addEventListener('click', (e) => {
   function useFix(fix) {
     _photoFix = fix;
     if (lightB) lightB.style.display = fix ? '' : 'none';
+    warmShow();
     if (thumb) {
       if (fix) {
         if (thumbSrc == null) thumbSrc = thumb.src;
@@ -463,7 +491,42 @@ harm.addEventListener('click', (e) => {
     _photoFix = null;
     thumbSrc = null;
     if (lightB) lightB.style.display = 'none';
+    warm = null;
+    warmShow();
   }
+  /* (v306) "Paper looks warm · Make it white": offered when the photo's paper is clearly paper and clearly warm
+     (paperWarm, colour.js), and while no correction is in use; a tap uses the correction tapping that paper would.
+     Never automatic, and ✕ (Lighting corrected) takes it away again, which offers it again. Read from a small copy
+     of the photo (about 160 px square), as the palette's own is. */
+  function warmCheck() {
+    warm = null;
+    if (_photoImg) {
+      var sc = Math.min(1, Math.sqrt(25600 / Math.max(1, _photoImg.width * _photoImg.height))),
+        c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(_photoImg.width * sc));
+      c.height = Math.max(1, Math.round(_photoImg.height * sc));
+      try {
+        drawShrunk(c.getContext('2d'), _photoImg, c.width, c.height);
+        warm = paperWarm(c.getContext('2d').getImageData(0, 0, c.width, c.height).data);
+      } catch (err) {
+        warm = null;
+      } finally {
+        freeCanvas(c);
+      }
+    }
+    warmShow();
+  }
+  function warmShow() {
+    if (warmB) warmB.style.display = warm && !_photoFix ? '' : 'none';
+  }
+  if (warmB)
+    warmB.addEventListener('click', function () {
+      if (!warm) return;
+      setMode(false);
+      setNote('');
+      useFix(warm.fix);
+      if (lightB) lightB.focus();
+    });
   if (paperB)
     paperB.addEventListener('click', function () {
       setMode(!paperMode);
@@ -1027,18 +1090,22 @@ ownAllBtn.addEventListener('click', () => {
     .map((i) => mkey(i))
     .filter((k) => !state.owned.has(k));
   add.forEach((k) => state.owned.add(k));
-  if (!keep(() => add.forEach((k) => state.owned.delete(k)))) return;
+  const off = wishOwnedOff(add);
+  if (
+    !keep(() => {
+      add.forEach((k) => state.owned.delete(k));
+      wishPutBack(off);
+    })
+  )
+    return;
   fullRender();
   if (add.length)
-    toastAction(
-      'Added ' + add.length + ' marker' + (add.length === 1 ? '' : 's') + ' to your collection',
-      'Undo',
-      () => {
-        add.forEach((k) => state.owned.delete(k));
-        save();
-        fullRender();
-      },
-    );
+    toastAction(addedManyLine(add.length, off.length), 'Undo', () => {
+      add.forEach((k) => state.owned.delete(k));
+      wishPutBack(off);
+      save();
+      fullRender();
+    });
 });
 const OHUHU_SETS = {
   '24': 'Y111 Y26 Y216 YR313 R014 R210 R413 RV08 RV311 V010 V18 V416 BV310 B08 B111 BG114 BG311 G36 G310 G312 G410 CG18 BGY24 120',
@@ -1288,15 +1355,20 @@ let presetRelist = null;
     add.addEventListener('click', function () {
       var ch = list.querySelectorAll('input:checked');
       if (!ch.length) return;
-      const before = new Set(state.owned);
+      const before = new Set(state.owned),
+        wishWas = state.wish.slice(),
+        added = [];
       ch.forEach(function (x) {
         presetMkeys(MARKER_SETS[+x.getAttribute('data-i')]).forEach(function (k) {
+          if (!state.owned.has(k)) added.push(k);
           state.owned.add(k);
         });
       });
+      wishOwnedOff(added);
       if (
         !keep(function () {
           state.owned = before;
+          state.wish = wishWas;
         })
       )
         return;

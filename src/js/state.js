@@ -17,6 +17,7 @@ if (state.palH.length > state.palettes.length)
   const R = HARM_RANGE[state.harmony] || [2, 6];
   state.palSize = Math.max(R[0], Math.min(R[1], state.palSize));
   if (state.harmony === 'photo') state.palSize = photoSnap(state.palSize);
+  if (state.harmony === 'rainbow') state.palSize = rainbowSnap(state.palSize);
 }
 if (!state.tones) state.tones = new Set(['pale', 'light', 'mid', 'dark']);
 if (!state.sats) state.sats = new Set(['neutral', 'muted', 'medium', 'vivid']);

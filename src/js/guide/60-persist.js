@@ -205,6 +205,9 @@ function currentDesignObj(share, edits) {
         locks: locks,
         // (v303: how much its picture was enlarged, a small download, so Min section size means what it did)
         upk: srcK > 1 ? Math.round(srcK * 1000) / 1000 : undefined,
+        // (v306: the paper inside a frame, so a guide opened again knows it: its line to Colour it is back. Not found
+        // again on opening, so a guide saved before has none)
+        frame: frameSaved(),
       },
       // the zones besides Main (34-zones), only when there are any
       zones.length ? { zones: zoneSave() } : {},

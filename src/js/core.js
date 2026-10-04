@@ -7,6 +7,7 @@ const HARM = {
   split: 'Split complementary',
   tetradic: 'Tetradic',
   mono: 'Monochrome',
+  rainbow: 'Rainbow',
   custom: 'Custom',
   photo: 'From photo',
 };
@@ -15,7 +16,9 @@ const HARM = {
 // of ten, with each colour near its scheme hue: a scheme with more hues has room for more colours; Analogous keeps
 // within 120° and Complementary to two hues, so they stop at 8. Monochrome's steps may be closer (blending ramps).
 // A smaller collection gets the same sizes: its palettes relax closeness and say so. Photo keeps 4-16: bigger
-// collections still gain up to 16, little after.
+// collections still gain up to 16, little after. (v306) Rainbow goes round the whole wheel, as the Gradient's markers
+// do, so it starts at 6 and goes to 16 (in twos from 6, as Photo's: RAINBOW_SIZES); it stops at the clear markers in
+// play.
 const HARM_RANGE = {
   complementary: [2, 8],
   analogous: [2, 8],
@@ -23,6 +26,7 @@ const HARM_RANGE = {
   split: [3, 10],
   tetradic: [4, 12],
   mono: [2, 10],
+  rainbow: [6, 16],
   custom: [2, 16],
   photo: [4, 16],
 };
@@ -30,6 +34,17 @@ const HARM_RANGE = {
 const PHOTO_SIZES = [4, 6, 8, 10, 12, 16];
 function photoSnap(n) {
   return PHOTO_SIZES.reduce((b, x) => (Math.abs(x - n) < Math.abs(b - n) ? x : b), PHOTO_SIZES[0]);
+}
+// (v306) Rainbow's Colours choices, and another scheme's size moved to the nearest of them
+const RAINBOW_SIZES = [6, 8, 10, 12, 14, 16];
+function rainbowSnap(n) {
+  return RAINBOW_SIZES.reduce((b, x) => (Math.abs(x - n) < Math.abs(b - n) ? x : b), RAINBOW_SIZES[0]);
+}
+// whether the Colours row offers this size for this scheme (its buttons go to 12; Rainbow's 14 and 16 are its own)
+function sizeOffered(h, n) {
+  if (h === 'rainbow') return RAINBOW_SIZES.indexOf(n) >= 0;
+  const R = HARM_RANGE[h] || [2, 6];
+  return n >= R[0] && n <= R[1] && n <= 12;
 }
 const LOCKSVG =
   '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>';
@@ -533,7 +548,17 @@ const stage = $('stage'),
   dlLink = $('dlLink'),
   ovClose = $('ovClose'),
   root = document.documentElement;
-const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+// Reduced motion, from the system setting: reducedMotion() reads it afresh (a setting changed while the app is open
+// counts at once: the finish's strokes, Reveal, the Build bloom, How it works); reduce is the same read once at
+// startup, for the smooth scrolls (v306: one check, where four places had their own)
+function reducedMotion() {
+  try {
+    return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  } catch (e) {
+    return false;
+  }
+}
+const reduce = reducedMotion();
 const buzz = (n) => {
   try {
     navigator.vibrate && navigator.vibrate(n);

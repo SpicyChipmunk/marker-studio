@@ -523,8 +523,19 @@ function renderFocusUI() {
     // up to and what to do (the chips are for the eye; screen readers hear "base R16, shadow R28")
     // a shaded section: its tones as chips on a line of their own (the step lit, in step mode), and what to do on the
     // line under them (the chips are for the eye; screen readers hear "base R16, shadow R28")
+    // (v306) the marker in hand has its code in the guide in the other brand too: "Not the Ohuhu Y26" after it,
+    // on this line (the name line above stays as it was; the two together fit a phone)
+    const hand = !tt
+        ? [a]
+        : [bits & 1 ? tt.light : null, bits & 2 ? a : null, bits & 4 ? tt.dark || a : null],
+      not = hand
+        .map(function (x) {
+          return x ? sameName(x) : '';
+        })
+        .filter(Boolean)[0];
     sub.innerHTML =
       esc('Section ' + sAt + ' of ' + sTot) +
+      (not ? ' \u00b7 <span class="sffocnot">Not the ' + esc(not) + '</span>' : '') +
       (tt ? '<span class="sfsr">. ' + esc((st ? st.name + ', ' : '') + toneSay(a, tt)) + '.</span>' : '');
     if (chipEl) chipEl.innerHTML = tt ? toneChips(a, tt, bits, !!st) : '';
     if (tipEl && tt)

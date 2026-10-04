@@ -184,6 +184,34 @@ document.addEventListener('keydown', function (e) {
   var sets = $('wcSets'),
     add = $('wcAdd');
   sets.innerHTML = presetListHTML();
+  // (v306) the first step's picture: the sample page, its colour flooding down it from the bell, held, then back to the
+  // page; three times (11 s), then it stays coloured (07-home-onboarding.css: all of it CSS, nothing on a timer). On a
+  // portrait screen it lies on its side above the heading; on a landscape iPad it stands beside the list. Not on a short
+  // screen (under 761 px), and only built for a first run. WC_ANIM 'fade' cross-fades instead: less to draw each frame,
+  // if the flood stutters on an iPad.
+  var WC_ANIM = 'flood';
+  if (!done && window.SF && SF.samplePics) {
+    var sp = SF.samplePics(),
+      pic = document.createElement('div'),
+      pin = document.createElement('div'),
+      pfl = document.createElement('div'),
+      pim = new Image();
+    pic.className = 'wcpic';
+    pic.setAttribute('aria-hidden', 'true');
+    pin.className = 'wcpicin';
+    pfl.className = 'wcfl ' + WC_ANIM;
+    pim.alt = '';
+    pim.src = sp.plain;
+    pfl.appendChild(pim);
+    pin.appendChild(sp.line);
+    pin.appendChild(pfl);
+    pic.appendChild(pin);
+    $('wcStep1').insertBefore(pic, $('wcStep1').firstChild);
+    ov.querySelector('.wcard').classList.add('haspic');
+    // (not blurring the page behind while it moves: Safari's engine blurred it afresh every frame, ~1 s a frame
+    // headless, whichever way the picture moved)
+    ov.classList.add('wcplain');
+  }
   function upd() {
     var ch = sets.querySelectorAll('input:checked'),
       ks = new Set();
@@ -219,10 +247,49 @@ document.addEventListener('keydown', function (e) {
       });
     });
   }
-  function step2(msg, title) {
+  // (v306) "You're all set": up to 28 of the markers just added (or, skipped, of the whole range) fanned out like
+  // swatches, in hue order. Open as it stands: the opening is only a short animation onto that (none with reduced motion)
+  function fan(keys) {
+    var ix = [];
+    keys.forEach(function (k) {
+      var i = keyIdx(k);
+      if (i != null && HS[i].c >= 0.12) ix.push(i);
+    });
+    if (ix.length < 6)
+      keys.forEach(function (k) {
+        var i = keyIdx(k);
+        if (i != null && HS[i].c < 0.12) ix.push(i);
+      });
+    ix.sort(function (a, b) {
+      return HS[a].h - HS[b].h || HS[b].l - HS[a].l;
+    });
+    var n = Math.min(28, ix.length),
+      h = '';
+    for (var j = 0; j < n; j++) {
+      var i = ix[n === 1 ? 0 : Math.round((j * (ix.length - 1)) / (n - 1))];
+      h +=
+        '<i style="--a:' +
+        (n === 1 ? 0 : Math.round(-78 + (156 * j) / (n - 1))) +
+        'deg;background:' +
+        COLORS[i].hex +
+        '"></i>';
+    }
+    var f = $('wcFan');
+    if (!f) {
+      f = document.createElement('div');
+      f.id = 'wcFan';
+      f.className = 'wcfan';
+      f.setAttribute('aria-hidden', 'true');
+      $('wcStep2').insertBefore(f, $('wcStep2').firstChild);
+    }
+    f.innerHTML = h;
+  }
+  function step2(msg, title, keys) {
+    if (keys) fan(keys);
     $('wcT2').textContent = title || 'You\u2019re all set';
     $('wcStep1').style.display = 'none';
     $('wcStep2').style.display = '';
+    ov.classList.remove('wcplain');
     $('wcDone').textContent = msg;
     var b = $('wcSample');
     if (b) b.focus();
@@ -232,10 +299,12 @@ document.addEventListener('keydown', function (e) {
     markDone();
   }
   add.addEventListener('click', function () {
-    const before = new Set(state.owned);
+    const before = new Set(state.owned),
+      got = new Set();
     sets.querySelectorAll('input:checked').forEach(function (x) {
       presetMkeys(MARKER_SETS[+x.dataset.i]).forEach(function (k) {
         state.owned.add(k);
+        got.add(k);
       });
     });
     if (
@@ -247,12 +316,17 @@ document.addEventListener('keydown', function (e) {
     fullRender();
     step2(
       state.owned.size + ' markers are in your collection. Fine-tune single markers any time in Markers.',
+      '',
+      [...got],
     );
   });
   $('wcSkip').addEventListener('click', function () {
     step2(
       'No problem — add your markers any time from Markers. Until then, guides use the full Ohuhu + Copic range so you can try things out.',
       'Explore with the full range',
+      COLORS.map(function (c, i) {
+        return mkey(i);
+      }),
     );
   });
   // Restore a backup: the file picker opens in the same tap (an iPhone allows it only then). The welcome stays until a

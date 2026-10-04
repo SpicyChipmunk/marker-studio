@@ -742,7 +742,11 @@ function toolsHTML() {
     '<div id="sfZoomCtl" class="sftools" role="toolbar" aria-label="Picture"><div class="sfprog" aria-hidden="true"><i id="sfToolProg"></i></div>' +
     '<button type="button" id="sfPlanUndo" class="sfz sfzundo" style="display:none" aria-label="Undo">' +
     ic('undo-2') +
-    '<span class="sfzul">Undo</span></button><span id="sfStat" class="sfstat"></span>' +
+    '<span class="sfzul">Undo</span></button>' +
+    // (v305: Redo beside it, only while there's a step Undo took back; an icon, its label says the step)
+    '<button type="button" id="sfPlanRedo" class="sfz sfzredo" style="display:none" aria-label="Redo">' +
+    ic('redo-2') +
+    '</button><span id="sfStat" class="sfstat"></span>' +
     '<button type="button" id="sfPhPeek" class="sfz" style="display:none" aria-pressed="false" aria-label="Show the photo on top" title="Photo">' +
     ic('image') +
     '</button>' +

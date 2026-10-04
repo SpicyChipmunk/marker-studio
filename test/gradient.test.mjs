@@ -94,7 +94,9 @@ test('the gradient never uses more markers than sections, uses no greys while th
       core.grad.build(cl);
       const k = keysOf(core);
       assert.equal(k.length, 210);
-      assert.equal(new Set(k).size, 210, `${look} ${shape}: every section its own marker`);
+      // (v306: with more sections than clear markers, the clear ones, some used twice, rather than greys)
+      const cnt = core.grad.count(core.grad.poolSource(210, true), 210);
+      assert.equal(new Set(k).size, cnt.reuse ? cnt.M : 210, `${look} ${shape}: every section its own marker`);
       const a = core.assignData;
       assert.equal(a.order.filter((l) => Math.hypot(a.assign[l].lab[1], a.assign[l].lab[2]) < 12).length, 0, 'no greys');
       sv.limitN = 16;
@@ -135,16 +137,16 @@ test('ordering: an open ramp runs end to end from its lighter end; a loop tour i
   const run = (t) => t.slice(1).reduce((s, x, i) => s + D[t[i] * n + x], 0);
   assert.ok(run(open) < run(closed) + 1e-6);
   assert.deepEqual([...open].sort((a, b) => a - b), [...Array(n).keys()], 'a tour visits each once');
-  // 700 colours: stops improving at the budget, keeping the best so far. (The speed limits here and below catch a
+  // 700 colours: stops improving at a budget of steps (v306: counted, not on the clock), keeping the best so far. (The speed limits here and below catch a
   // slowdown of several times, not the difference between machines: GitHub's runners are 2-3 times slower than ours.)
   const all = appWith([]).core.coll;
   assert.ok(all.length > 700);
-  // (the differences are timed in processor time, which other tests running alongside don't inflate; the tour stops
-  // at a budget on the clock, so it is timed on the clock)
-  const big = all.slice(0, 700), c0 = cpuMs(), DB = g.deMatrix(big), c1 = cpuMs(), t1 = Date.now(), tb = g.tour(DB, 700, false), t2 = Date.now();
+  // (the differences are timed in processor time, which other tests running alongside don't inflate; so is the tour)
+  const big = all.slice(0, 700), c0 = cpuMs(), DB = g.deMatrix(big), c1 = cpuMs(), t1 = cpuMs(), tb = g.tour(DB, 700, false), t2 = cpuMs();
   assert.equal(new Set(tb).size, 700);
   assert.ok(c1 - c0 < 4000, 'differences ' + Math.round(c1 - c0) + 'ms');
-  assert.ok(t2 - t1 < core.gradTourMs + 1500, 'tour ' + (t2 - t1) + 'ms');
+  assert.ok(t2 - t1 < 2000, 'tour ' + Math.round(t2 - t1) + 'ms');
+  assert.ok(core.gradTourWork[0] < core.gradTourWork[1], 'all of them finish inside the budget');
 });
 
 test('sharing by area: each marker covers about the same share of the picture, more evenly than sharing by count', () => {
@@ -275,7 +277,10 @@ test('speed: 3,600 sections and the whole catalogue (721 markers) lay out withou
     const t = cpuMs();
     core.grad.build(cl);
     const ms = Math.round(cpuMs() - t);
-    assert.equal(new Set(keysOf(core)).size, core.coll.length, look);
+    // (v306: more sections than clear markers, so the clear ones, some used twice)
+    const cnt = core.grad.count(core.grad.poolSource(3600, true), 3600);
+    assert.ok(cnt.reuse);
+    assert.equal(new Set(keysOf(core)).size, cnt.M, look);
     assert.ok(ms < 4000, `${look} ${shape}: ${ms}ms`);
   }
 });

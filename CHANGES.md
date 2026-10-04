@@ -363,3 +363,68 @@ Every key engine was reviewed in three passes: path by path with every constant 
 
 - From v304's GitHub run (every Chromium test and all but one WebKit test passed): an older test expected no backup card on an iPad's first day; in Safari's engine that is now the Keep your guide safe card by design, so the test checks the 14-day rule in Chrome, as it means to.
 - Cache bumped to `marker-studio-v304`.
+
+# Changes — v305 (a fresh-eye review, pressure-tested)
+
+Four new reviewers looked at v304 as a first-time user and as Ben uses it: the guide flow; Markers, Palette and backups; the gradient on Ben's rainbow pages; and the finished picture. Each finding was then pressure-tested on 30 pages (16 downloaded, 14 photographed) in Chromium and WebKit, with prototypes, before anything was built; several fixes changed as a result, and Symmetric Radial was left out (its detection switched on for tile pages and missed photographed mandalas). New tests: `test/v305-photo` (5), `v305-restore` (4), `v305-finder` (2), `v305-guide` (4), `v305-gradient` (10), `v305-frame` (3), `v305-show` (5); `e2e/v305-tobuy` (5), `v305-restore` (2), `v305-small` (5), `v305-guide` (7), `v305-gradient` (3), `v305-frame` (4), `v305-show` (15). The tests for each change fail on v304. Saved guides open exactly as they were saved.
+
+**Gradient**
+- **Smoother gradients**: after a Gradient is laid, sections near each other along the flow swap markers where that makes touching sections clash less. Each marker stays near its place, the Start colour still starts the flow, each marker keeps its share of the picture, and pinned and coloured sections don't move. Over 30 pages, clashing between touching sections drops by about 30% at one marker per section (on Ben's page the worst pair goes from ΔE 56 to 39). It's the same every time on every device. Gradient only: Random keeps touching sections apart its own way.
+- **Around**, a fifth Flow: the colours go round the centre like a colour wheel, clockwise from the top (drag the ⊕ to move the centre). With a warm or cool set they go out and back, so the ends match where they meet. About 75% less clashing than Radial on a mandala.
+- **Framed pages**: on a new picture, the paper inside a frame drawn round the drawing is left white, as a page's paper always was, and so are watermark letters outside the frame (they had their own PDF close-ups). "Paper inside the frame is left white · Colour it" on Edit sections and in the Plan.
+
+**Guide**
+- **Redo** in the Plan: ↷ beside Undo while there's a step to redo, or Cmd/Ctrl+Shift+Z.
+- A marker's outline in Colour along goes once its sections are all ticked; it had stayed on screen, and in Focus mode floated over the wrong part of the picture (also after zooming or turning).
+- Photo before a photo is chosen says the picture keeps the pattern it had, with "Back to …" beside "Choose a photo…"; closing the picker without a photo goes back by itself.
+- A new Blend's three anchors sit on the drawing (13 of 30 had been on the paper round it), in vivid markers nearest red, green and blue (with Ben's markers it had always started with a brown).
+- Drop-downs are drawn dark, so Shading's Highlights and Shadows are readable in Safari.
+
+**Markers and Palette**
+- **From photo** picks a photo's real colours: it groups them in L\*a\*b\* and ranks them by share and colourfulness. Bright colours keep their hues (six clear blocks had lost orange to a grey-green; on a dark background, red, green and purple), a grey subject keeps a grey, a small bold colour is kept, and the same photo always gives the same palette.
+- Ticking a marker as yours takes it off To buy (unless it's marked Running low or dry), and Undo puts it back. Markers you own that are still on the list say "already yours".
+- **Restore › Keep mine** adds the backup's To buy list (not markers you own, unless marked low or dry), its Running low and dry marks for markers you own (yours win), and its Brands I'd buy if yours is automatic, and says what came in. It had dropped them.
+- Ramp gaps leaves out fluorescents and blacks and only fills gaps within one hue (it had led with four fluorescents).
+- Searching the start of a code ("E", "BG", "R2") shows "Codes starting …" first (an "E" search had started with reds).
+- "Restore a file" and "Restore from text" (both were "Restore"). A part-typed hex code greys the last match and says what's expected. Scan starts on your one brand when all your markers are one brand, and says so; its choices say which is yours.
+- Markers › Owned has no tick badges (every marker there is yours). Palette opens on a palette to look at, saved only when you lock, change, save or use it.
+
+**Show it off**
+- **Reveal & share** ends with your piece on its paper over a glow of its own colours, a sheen, then its title, what it took ("448 sections · 16 markers · finished 3 Oct 2026") and its markers as a ribbon (codes up to 16 markers). Share sends the same picture as a 1080 × 1350 card, made while it played so it's ready at once. Drawn without canvas filters, so Safari shows it the same.
+- **The first Build of a new picture blooms**: the line art, then the colours flood out from where the gradient starts (round like a clock hand for Around), then the codes. About 1.2 s; a tap ends it and still reaches the section; not on Build again, reopening, the sample or with reduced motion. A device too slow to draw it smoothly gets the guide at once and no bloom from then on.
+- **Save image** leaves the codes off once every section is ticked, and frames the picture as Reveal's card. Tick or untick the box to choose yourself.
+- Save image's key goes by colour family, as the PDF's does. The PDF key's numbers look like the page's. Colour along's list can go Lightest first, Rainbow or By brand (Focus mode keeps lightest first).
+- Ticks leave the picture a moment after ticking when the codes are on. The PDF's close-ups are lighter, with darker codes.
+
+- Cache bumped to `marker-studio-v305`.
+
+# Changes — v306 (left-out items, new ideas, Scatter, the welcome)
+
+A pass over what v305 left out and a session as Ben for new ideas; Ben chose the list. Each item was pressure-tested on 30 pages in Chromium and WebKit before building, built on four branches, then given a debugging pass across the merged code. Snap to tick (photograph a page in progress to tick what's coloured) was prototyped on synthetic photos and waits for real ones. New tests: `test/v306-colour` (17), `v306-dbg-colour` (3), `v306-frame` (2), `v306-along` (6), `v306-home` (11), `v306-smalls` (5), `v306-welcome` (4); `e2e/v306-colour` (8), `v306-frame` (5), `v306-along` (11), `v306-home` (11), `v306-dbg-along` (3), `v306-dbg-home` (3), `v306-dbg-e2e` (2), `v306-smalls` (7), `v306-welcome` (8). The tests for each change fail on v305. Saved guides open exactly as they were saved.
+
+**Gradient**
+- **Scatter** (under Look): Polished (v305's gradient), Natural (without v305's smoothing pass), Textured (light and dark of each colour mixed, bands kept crisp), Sparkle (flecks of the next colour along) and Confetti (confetti close up, a rainbow from afar). The same markers and each marker's share of the picture at every stop; the Start colour, pinned and coloured sections stay. Shuffle from Textured up mixes again and keeps the Start colour. On Radial, matching petals scatter together. A new guide starts at Polished; it needs 9 or more markers. Kept per guide and per zone, with Undo.
+- **Rough spots**: at Polished with the count at "all", touching sections that jump in colour are ringed, with "N rough spots · Smooth them" under the tabs. It swaps in clear markers you own that the guide doesn't use yet: never a grey, never the other brand of a code the guide (or its highlights and shadows) already uses, never a pinned, coloured or first section. Kept with the guide, so Shuffle keeps it; one Undo step.
+- **Big pages**: "all" on a page with more sections than your clear markers uses the clear ones twice instead of greys and browns (Any and Bright moods), with no two touching sections sharing one; the count says "all · 268, some twice" or "all · 216 used".
+- **Shading-aware picks**: with shading on, the Gradient prefers markers with lighter and darker partners (a 48-marker set: 8 → 14 of 16 shadeable); the shading note offers "Pick shadeable ones" as one Undo step.
+- Blend: an anchor you add is a bright colour the blend hasn't got (it had been a fluorescent, then a beige).
+- The Gradient lays the same guide from the same settings on any device: putting the markers in order no longer stopped after a set time (since v304), which on a slower or busy iPad could give a different guide or Rainbow palette.
+- Colour it on the paper round the drawing, with a marker for every section, gives the paper a marker of its own; a pinned section's marker isn't repeated on another section. Smooth them in two Gradient zones never brings the same new marker into both.
+
+**Framed pages**
+- "Paper round the drawing is left white · Colour it" comes back when a guide is opened again (saved as `frame`; guides saved before v306 stay as they were). Colour it is one Undo step and keeps the Plan's earlier steps; a tick on the paper goes with it.
+
+**Colour along and Focus**
+- **Codes in both brands** (Ohuhu and Copic Y26 are different colours) are marked wherever you pick a marker up: "2 brands" on rows, a filled tag on labels and in the PDF key, "Not the Copic Y26" in Focus, a line in Change colour. Worked out from the guide, its zones and its highlights and shadows, so older guides get it too.
+- **Find a marker by its code**: "Marker in your hand? Type its code" above the list. The line above the box says what matches; Return shows that marker's rows and opens it. Two brands ask which is in your hand; a code that's only a highlight or shadow says what it goes with. "/" goes to the box; Escape clears it. Switching Whole picture / Zone by zone keeps the search; press and hold a section the search isn't showing clears it.
+- **Did any run low?** under Page finished and in Share: one tap marks a marker Running low and puts it on To buy, with Undo; "Another…" finds any of yours by code and says when one is already marked.
+- Finishing in Focus: no toast over the art; short marker strokes fly up from the progress bar (none with reduced motion). The PDF close-ups' brand tags print in near-black and white.
+
+**Home, Palette and Markers**
+- **Your latest piece leads Home** once finished, with Reveal & share and Print… (Continue keeps priority; copies with section edits waiting are left out).
+- **Palette › Rainbow**: 6–16 colours evenly round the wheel at similar lightness, picked as the Gradient picks them, so a Rainbow palette used in a guide gives the guide's markers. Shuffle in a guide's Generate palette rolls another.
+- **The welcome** shows the sample page colouring itself (three times in 11 s, then it stays); beside the list on a landscape iPad, above it on a portrait screen; not on short screens; still with reduced motion. "You're all set" fans out the markers just added. The page behind isn't blurred while it moves (Safari had been redrawing the blur every frame).
+- Search: an old code that only starts with what you typed goes under "Old codes starting …" ("Y26" no longer files Y39). Toasts fit one line: "Added Ohuhu B04 · taken off To buy", "Removed Copic BG0000". From photo: "Paper looks warm · Make it white" when the paper reads warm; never applied by itself.
+
+- On a phone, Colour along's code box folds behind ⌕ at the end of the order row, so the first rows still show above the bar; ✕ folds it again. An iPad keeps it open.
+- Cache bumped to `marker-studio-v306`.

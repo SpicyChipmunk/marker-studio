@@ -340,7 +340,7 @@ test('To buy everywhere: Match, the marker sheet, the To buy view, the swatch sh
   assert.match(await b.getAttribute('aria-label'), /^On your To buy list: /);
   assert.match(await toastText(page), /^(Ohuhu|Copic) \S+ added to your To buy list/);
   assert.deepEqual(await oldWords(page), []);
-  await b.click(); await page.waitForFunction(() => /off your To buy list/.test(document.getElementById('msToast').textContent));
+  await b.click(); await page.waitForFunction(() => /^Took (Ohuhu|Copic) \S+ off To buy\.$/.test(document.getElementById('msToast').textContent));
   await page.click('#matchClose');
   // the marker sheet
   const u = await page.evaluate(() => COLORS.findIndex((c, i) => c.brand === 'Ohuhu' && !isOwned(i)));

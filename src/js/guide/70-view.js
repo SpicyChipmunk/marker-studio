@@ -88,6 +88,7 @@ function applyXform() {
   touchRule();
   if (sunEl || radEl) positionSun();
   if (zoneEl) positionZones();
+  if (roughEl) positionRough();
   if (photoEl) positionPhoto();
   if (tipL >= 0) positionTip();
   if (olSet) positionOutline();

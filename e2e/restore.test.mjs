@@ -351,7 +351,7 @@ test('a backup with no markers leaves yours alone, asks nothing, and adds its pa
   assert.deepEqual(await asked(page), [], 'no "Replace your 8 markers with the backup’s 0 markers?"');
   assert.equal(await page.evaluate(() => state.owned.size), OWN.length);
   assert.equal((await storedState(page)).saved.length, 1, 'the palette is added and saved');
-  assert.match(await page.textContent('#backupCap'), /Kept your markers; 1 palette added\./);
+  assert.match(await page.textContent('#backupCap'), /Kept your markers; added 1 palette\./);
   assert.deepEqual(errors, []);
 });
 
@@ -431,9 +431,9 @@ test('restore: the question is only about markers, with the right plurals; Cance
   await restore(page, backup(['Ohuhu|R014', 'Ohuhu|B08', 'Copic|E09'], [palAt(['Ohuhu|B08'], 404, 'From file')], { wish: [{ k: 'Ohuhu|G43', why: 'x', ts: 1 }] }));
   assert.deepEqual(await asked(page), ['The backup has 3 markers; you have 8 markers. Either way, the backup’s palettes and guides are added.']);
   assert.equal(await page.evaluate(() => state.owned.size), 8, 'Cancel keeps the markers');
-  assert.deepEqual(await page.evaluate(() => state.wish), [], 'and the To buy list that goes with them');
+  assert.deepEqual(await page.evaluate(() => state.wish.map((w) => w.k)), ['Ohuhu|G43'], 'the backup’s To buy merges in (v305)');
   assert.deepEqual(await palettes(page), ['101:Local only', '404:From file'], 'the palettes are added anyway');
-  assert.match(await toastText(page), /Kept your markers; 1 palette added\./);
+  assert.match(await toastText(page), /Kept your markers; added 1 to buy and 1 palette\./);
   // OK: the backup's markers (and its To buy list); the local palette is still there
   await askAnswer(page, true);
   await restore(page, backup(['Ohuhu|R014'], [palAt(['Ohuhu|B08'], 404, 'From file')], { wish: [{ k: 'Ohuhu|G43', why: 'x', ts: 1 }] }));

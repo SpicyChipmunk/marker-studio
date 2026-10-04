@@ -63,7 +63,10 @@ test('a finished page: the picture as it is, what was coloured and when (saved w
   // Save image, without the codes
   await page.click('#sfDoneBtn'); await idle(page);
   await page.click('.sftabbtn[data-t="share"]'); await idle(page);
-  assert.equal(await page.isChecked('#sfExCodes'), true);
+  // (v305: the codes go off by themselves once the page is finished; ticking and unticking is still your choice)
+  assert.equal(await page.isChecked('#sfExCodes'), false);
+  await page.check('#sfExCodes');
+  assert.equal(await page.evaluate(() => __mstest.exCodes), true);
   await page.uncheck('#sfExCodes');
   assert.equal(await page.evaluate(() => __mstest.exCodes), false);
   const diff = await page.evaluate(() => {

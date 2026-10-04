@@ -21,8 +21,9 @@
     for Undo in its own way (planSnap), beside the picture. blendVivid has no check or variable either:
     it is only written, for older copies of the app (blendMix is what is read).
 
-    Nothing here is reset for a new picture or the sample: a new picture keeps the style it had
-    (resetForNewPicture clears only the flat sections, which belong to the old sections). A guide that
+    Nothing here is reset for a new picture or the sample but Scatter: a new picture keeps the style it had
+    (resetForNewPicture clears only the flat sections, which belong to the old sections, and puts Scatter back to
+    Polished with no rough spots smoothed: gradScat, gradJit, gradFix, v306). A guide that
     opens takes every setting from its file. The variables' first values (00-state, 45-shading) are the
     same as def, which the unit tests check. */
 
@@ -93,7 +94,7 @@ const STYLE_FIELDS = [
     key: 'gradShape',
     in: 'style',
     def: 'serpentine',
-    check: styleOne(['serpentine', 'vertical', 'diagonal', 'radial']),
+    check: styleOne(['serpentine', 'vertical', 'diagonal', 'radial', 'around']),
     undo: true,
   },
   { key: 'dir', in: 'style', def: 1, check: styleOne([1, -1]), undo: true },
@@ -120,6 +121,39 @@ const STYLE_FIELDS = [
   { key: 'balSeed', in: 'style', def: 0, check: styleNum(0, 1), undo: true },
   { key: 'noRep', in: 'style', def: false, check: styleBool, undo: true },
   { key: 'gradSeed', in: 'style', def: 0, check: styleNum(0, 1), undo: true },
+  // the Gradient's Scatter (v306): a guide saved before it re-lays as Polished (what it was laid with since v305).
+  // Written only when it's used (gradJit only from Textured up, gradFix only when on), so a guide that doesn't use them
+  // saves exactly as before.
+  {
+    key: 'gradScat',
+    in: 'style',
+    def: 0,
+    check: styleWhole(0, 4),
+    undo: true,
+    save: function () {
+      return gradScat ? gradScat : undefined;
+    },
+  },
+  {
+    key: 'gradJit',
+    in: 'style',
+    def: 0,
+    check: styleNum(0, 1),
+    undo: true,
+    save: function () {
+      return gradScat >= 2 ? gradJit : undefined;
+    },
+  },
+  {
+    key: 'gradFix',
+    in: 'style',
+    def: false,
+    check: styleBool,
+    undo: true,
+    save: function () {
+      return gradFix ? true : undefined;
+    },
+  },
   { key: 'blendFall', in: 'style', def: 2, check: styleNum(0.6, 4), undo: true },
   // Blend's Mix. Before it there was only a "Keep colours vivid" tick box, saved as blendVivid: a guide saved then
   // (no blendMix) opens with Vivid if it was ticked. blendVivid is still written (true for Vivid) so an older copy of
@@ -393,6 +427,24 @@ const STYLE_VAR = {
   set gradSeed(v) {
     gradSeed = v;
   },
+  get gradScat() {
+    return gradScat;
+  },
+  set gradScat(v) {
+    gradScat = v;
+  },
+  get gradJit() {
+    return gradJit;
+  },
+  set gradJit(v) {
+    gradJit = v;
+  },
+  get gradFix() {
+    return gradFix;
+  },
+  set gradFix(v) {
+    gradFix = v;
+  },
   get blendFall() {
     return blendFall;
   },
@@ -543,8 +595,10 @@ function styleSave(where) {
   const out = {};
   STYLE_FIELDS.forEach(function (f) {
     if ((f.in === 'payload') !== (where === 'payload')) return;
-    const o = f.in === 'shade' ? out.shade || (out.shade = {}) : out;
-    o[f.key] = f.save ? f.save() : STYLE_VAR[f.key];
+    const o = f.in === 'shade' ? out.shade || (out.shade = {}) : out,
+      v = f.save ? f.save() : STYLE_VAR[f.key];
+    // (a setting written only when it's used says nothing otherwise: Scatter's, v306)
+    if (v !== undefined) o[f.key] = v;
   });
   return out;
 }

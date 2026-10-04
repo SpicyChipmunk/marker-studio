@@ -21,11 +21,16 @@ test('Undo names a zone step: made, deleted, renamed, sections added or taken ou
 
 test('a saved zone\'s settings are checked as a guide\'s are: odd values open as the default, good ones as saved', () => {
   const t = createApp().__mstest, keys = t.ZONE_KEYS;
-  assert.deepEqual([...keys].sort(), ['balA', 'balM', 'balS', 'balSeed', 'balance', 'blendFall', 'blendMix', 'dir', 'emphasis', 'expand', 'expandChar', 'family', 'genHarmony', 'genPal', 'gradSeed', 'gradShape', 'limitN', 'look', 'noAdj', 'noRep', 'palette', 'paletteSource', 'radC', 'savedPalId'].sort(), 'the zone\'s own settings: pattern and colours (and Radial\'s centre), not shading, texture or the photo');
+  assert.deepEqual([...keys].sort(), ['balA', 'balM', 'balS', 'balSeed', 'balance', 'blendFall', 'blendMix', 'dir', 'emphasis', 'expand', 'expandChar', 'family', 'genHarmony', 'genPal', 'gradSeed', 'gradScat', 'gradJit', 'gradFix', 'gradShape', 'limitN', 'look', 'noAdj', 'noRep', 'palette', 'paletteSource', 'radC', 'savedPalId'].sort(), 'the zone\'s own settings: pattern and colours (and Radial\'s centre), not shading, texture or the photo');
   const good = t.zoneStOpen({ family: 'random', gradShape: 'radial', dir: -1, limitN: 9, palette: 'warm', look: 'ltd', blendMix: 'paint', radC: { x: 0.25, y: 0.8 } });
   assert.deepEqual([good.family, good.gradShape, good.dir, good.limitN, good.palette, good.look, good.blendMix, good.radC], ['random', 'radial', -1, 9, 'warm', 'ltd', 'paint', { x: 0.25, y: 0.8 }]);
   const odd = t.zoneStOpen({ family: 'rainbow', gradShape: 5, dir: 0, limitN: 'x', palette: null, gradSeed: 7, radC: { x: 'a', y: 2 } });
   assert.deepEqual([odd.family, odd.gradShape, odd.dir, odd.limitN, odd.palette, odd.gradSeed, odd.radC], ['gradient', 'serpentine', 1, 16, 'all', 1, null]);
+  // (v306: Scatter, its seed and rough spots smoothed, per zone; odd values open as Polished)
+  const sc = t.zoneStOpen({ gradScat: 3, gradJit: 0.4, gradFix: true });
+  assert.deepEqual([sc.gradScat, sc.gradJit, sc.gradFix], [3, 0.4, true]);
+  const so = t.zoneStOpen({ gradScat: 'x', gradJit: 9, gradFix: 1 });
+  assert.deepEqual([so.gradScat, so.gradJit, so.gradFix], [0, 1, false]);
   // (a centre past the picture's edge is brought back onto it)
   assert.deepEqual(t.zoneStOpen({ radC: { x: 1.5, y: -0.2 } }).radC, { x: 1, y: 0 });
   // (reading them leaves the settings in use as they were)

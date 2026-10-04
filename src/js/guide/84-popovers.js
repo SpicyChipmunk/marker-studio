@@ -718,10 +718,11 @@ function positionOutline() {
     freeCanvas(r1);
     freeCanvas(r2);
     freeCanvas(m);
-    olEl.dataset.secs = olSet.join(' ');
     // (many at once, Everywhere or a row's: lighter and steady)
     olEl.classList.toggle('sfolmany', olRow || olSet.length > 1);
   }
+  // (set at each showing: hiding clears it, and the same sections shown again reuse the drawing, v305)
+  olEl.dataset.secs = olSet.join(' ');
   const st = olEl.style;
   st.display = '';
   st.left = (r0.left - vr.left) / q + x0 * k + 'px';
@@ -818,12 +819,14 @@ function openSectionPop(l, opt) {
       esc(_om.name || '') +
       (brandsMixed() ? ' · ' + esc(_om.brand) : '') +
       '</span>',
-    opts: scope,
+    // (v306: a line that says when the marker's code is in the guide in the other brand too)
+    opts: scope + '<div id="sfPopSame" class="sfpopsame" role="status"></div>',
     pool: coll,
     curKey: _om.mkey,
     onPick: function (k) {
       cur = k;
       put();
+      popSame(mkByKey(k));
     },
     extraLabel: opt.manual && _sv[l].p ? 'Unpin (allow fill)' : null,
     onExtra: function () {
@@ -895,6 +898,7 @@ function openSectionPop(l, opt) {
     },
   };
   openSwatchPop(o);
+  popSame(_om);
   // Only this section / Everywhere: the preview and the outlines follow
   var sc = document.querySelector('#sfSheet .sfpopscope');
   if (sc)
@@ -910,9 +914,19 @@ function openSectionPop(l, opt) {
       var nt = document.querySelector('#sfSheet .sfpopnote');
       if (nt) nt.hidden = !all;
       put();
+      popSame(mkByKey(cur) || _om);
       holdSave();
       outlineSecs(o.targets());
     });
+}
+// (v306) Change colour's line under its choices: "Ohuhu Y26 is in this guide too" when the marker chosen (as the
+// guide now has it, with the pick in place) shares its code with another brand's marker in the guide
+function popSame(m) {
+  const el = document.getElementById('sfPopSame');
+  if (!el) return;
+  const t = m ? sameName(m) : '';
+  el.textContent = t ? t + ' is in this guide too' : '';
+  el.hidden = !t;
 }
 // Pin: keep this section's marker through Shuffle, Surprise and pattern changes. Unpin gives it back to the pattern.
 function togglePin(l) {

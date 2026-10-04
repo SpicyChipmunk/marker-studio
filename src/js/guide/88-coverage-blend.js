@@ -2,6 +2,7 @@ function updateProgress() {
   if (!assignData) return;
   // (the dates follow the ticks however they changed: a section brought in, tones asked for again)
   progStamp();
+  exCodesSync();
   let done = 0;
   assignData.order.forEach(function (l) {
     if (colored[l]) done++;
@@ -23,6 +24,9 @@ function updateProgress() {
   }
   const ds = document.getElementById('sfDoneSum');
   if (ds && N > 0 && done >= N) ds.textContent = finishLine();
+  // (v306: Did any run low?, once the page is finished)
+  const lh = document.getElementById('sfLowA');
+  if (lh && fin !== !!lh.firstElementChild) lh.innerHTML = lowRowHTML('A');
   renderAlong();
 }
 function famVal(code) {
@@ -406,4 +410,326 @@ function renderBlendPlan() {
         '</div>'
       : '<div class="planbuy ok">\u2713 You own a shade for every colour in this guide.</div>';
   }
+}
+/* ---- (v306) "Did any run low?" ----
+    Once the page is finished: one quiet row in Colour along's "Page finished" panel and in Share › Show it off (Reveal
+    from Home lands in the Plan). Compact chips, swatch and code (the brand too for a code both brands have), for the
+    five markers that covered most of the page, a highlight or shadow counted for its share of each section it shades;
+    yours only, not one marked dry, never the Colorless Blender. One tap marks it Running low and puts it on To buy
+    (api.lowMark, one save), "R310 running low · on To buy · Undo"; a chip already on can be tapped back. "Another…"
+    opens a code box (Colour along's kind) for any marker of yours: one found is marked at once ("Copic Y26 is already
+    marked low", or "… is dry", when it is), two brands ask which; Escape clears the box, then closes it.
+    (The brand shows on a chip when you own its code in both brands.) The chips follow a change to your markers made
+    while they show (setCollection, 97-open).
+    Hidden while you own no markers. Nothing new is saved with the guide: ink and To buy are the collection's. */
+const LOW_N = 5;
+let _lowX = { g: -1, extra: [], added: {}, form: {}, line: {} };
+function lowState() {
+  if (_lowX.g !== loadGen) _lowX = { g: loadGen, extra: [], added: {}, form: {}, line: {} };
+  return _lowX;
+}
+// the guide's markers by how much of the page they cover (sections' areas; with shading, a highlight takes about
+// the lit part of each section it shades, up to T2, and a shadow the part past T3), most first: [{ k, a }]
+function lowCover() {
+  if (!assignData || !comps) return [];
+  const area = {},
+    add = function (m, a) {
+      if (m && a > 0) area[m.mkey] = (area[m.mkey] || 0) + a;
+    },
+    sh = shadeOn();
+  for (const l in assignData.assign) {
+    const m = assignData.assign[l],
+      a = comps[l] ? comps[l].area || 0 : 0,
+      t = sh ? shadeSec(+l) : null;
+    if (t) {
+      const h = t.light ? t.T2 : 0,
+        s = t.dark ? 1 - t.T3 : 0;
+      add(t.light, a * h);
+      add(t.dark, a * s);
+      add(m, a * Math.max(0, 1 - h - s));
+    } else add(m, a);
+  }
+  return Object.keys(area)
+    .map(function (k) {
+      return { k: k, a: area[k] };
+    })
+    .sort(function (x, y) {
+      return y.a - x.a;
+    });
+}
+// the five to offer: yours, not dry
+function lowTop() {
+  if (!api.lowInk) return [];
+  return lowCover()
+    .filter(function (x) {
+      const v = api.lowInk(x.k);
+      return v != null && v !== 'dry';
+    })
+    .slice(0, LOW_N)
+    .map(function (x) {
+      return x.k;
+    });
+}
+function lowShown() {
+  return !!(api.lowInk && api.ownsAny && api.ownsAny() && assignData && pageDone());
+}
+// (a code you own in both brands: its chip says which)
+function lowCodeBoth(code) {
+  const q = codeNorm(code),
+    b = {};
+  COLORS.forEach(function (c, i) {
+    if (codeNorm(c.code) === q && api.lowInk(mkey(i)) != null) b[c.brand] = 1;
+  });
+  return Object.keys(b).length > 1;
+}
+function lowChip(k) {
+  const i = keyIdx(k),
+    c = i != null ? COLORS[i] : null,
+    v = api.lowInk(k);
+  if (!c || v == null) return '';
+  const nm = (lowCodeBoth(c.code) ? c.brand + ' ' : '') + c.code,
+    sw = '<i style="background:' + esc(c.hex) + '"></i>';
+  if (v === 'dry')
+    return (
+      '<span class="sflowb dry" role="img" aria-label="' +
+      esc(c.brand + ' ' + c.code + ' is marked dry') +
+      '">' +
+      sw +
+      esc(nm) +
+      ' <small aria-hidden="true">dry</small></span>'
+    );
+  const on = v === 'low';
+  return (
+    '<button type="button" class="sflowb' +
+    (on ? ' on' : '') +
+    '" data-lk="' +
+    esc(k) +
+    '" aria-pressed="' +
+    on +
+    '" aria-label="' +
+    esc(c.brand + ' ' + c.code + ' ' + (c.name || '') + ', running low') +
+    '">' +
+    sw +
+    esc(nm) +
+    '</button>'
+  );
+}
+// w: where, 'A' (Colour along's Page finished panel) or 'S' (Share)
+function lowRowHTML(w) {
+  if (!lowShown()) return '';
+  const st = lowState(),
+    keys = lowTop();
+  st.extra.forEach(function (k) {
+    if (keys.indexOf(k) < 0) keys.push(k);
+  });
+  const fid = 'sfLowIn' + w,
+    lid = 'sfLowL' + w;
+  return (
+    '<div class="sflow" data-w="' +
+    w +
+    '"><div class="sflowh" id="sfLowH' +
+    w +
+    '">Did any run low?</div><div class="sflowc" role="group" aria-labelledby="sfLowH' +
+    w +
+    '">' +
+    keys.map(lowChip).join('') +
+    '<button type="button" class="sflowb sflowmore" data-lmore="1" aria-expanded="' +
+    !!st.form[w] +
+    '">Another…</button></div>' +
+    (st.form[w]
+      ? '<div class="sflowf"><div id="' +
+        lid +
+        '" class="sffindl" aria-live="polite">' +
+        esc(st.line[w] || '') +
+        '</div><form class="sffindf" data-lform="' +
+        w +
+        '" action="#" novalidate>' +
+        codeBoxHTML(fid, 'Type its code', 'Code of the marker running low', lid) +
+        '</form></div>'
+      : '') +
+    '</div>'
+  );
+}
+// every run-low row on screen drawn again (focus kept on the same chip, and a code being typed in Another…'s box kept)
+function lowRefresh() {
+  document.querySelectorAll('#sfRoot .sflow-host').forEach(function (h) {
+    const ae = document.activeElement,
+      inp0 = h.querySelector('input'),
+      typed = inp0 ? inp0.value : '',
+      fk =
+        ae && h.contains(ae) && ae.dataset
+          ? ae === inp0
+            ? 'box'
+            : ae.dataset.lk || (ae.dataset.lmore ? 'more' : '')
+          : '';
+    h.innerHTML = lowRowHTML(h.dataset.w);
+    const inp = h.querySelector('input');
+    if (inp && typed) inp.value = typed;
+    if (!fk) return;
+    const b =
+      fk === 'box'
+        ? inp
+        : fk === 'more'
+          ? h.querySelector('[data-lmore]')
+          : [].find.call(h.querySelectorAll('[data-lk]'), function (x) {
+              return x.dataset.lk === fk;
+            });
+    if (b)
+      try {
+        b.focus({ preventScroll: true });
+      } catch (_) {}
+  });
+}
+function lowHost(w) {
+  return '<div class="sflow-host" id="sfLow' + w + '" data-w="' + w + '">' + lowRowHTML(w) + '</div>';
+}
+// one tap: mark it (or, on, take it back)
+function lowTap(k) {
+  const i = keyIdx(k),
+    c = i != null ? COLORS[i] : null,
+    st = lowState();
+  if (!c) return;
+  // (named as its chip is: the brand too for a code you own in both)
+  const v = api.lowInk(k),
+    nm = (lowCodeBoth(c.code) ? c.brand + ' ' : '') + c.code;
+  if (v === 'low') {
+    if (api.lowUnmark(k, !!st.added[k])) {
+      delete st.added[k];
+      sayLive(nm + ' ink back to OK');
+    }
+    lowRefresh();
+    return;
+  }
+  if (v !== '') return;
+  const r = api.lowMark(k);
+  lowRefresh();
+  if (!r) return;
+  st.added[k] = r.added;
+  const g = loadGen;
+  toastAction(esc(nm) + ' running low · on To buy ·', 'Undo', function () {
+    if (api.lowUnmark(k, r.added) && g === loadGen) delete lowState().added[k];
+    lowRefresh();
+  });
+}
+// Another…: any marker of yours by its code (exact, as the caps show it now)
+function lowFind(w, raw) {
+  const st = lowState(),
+    q = codeNorm(raw),
+    up = String(raw || '')
+      .trim()
+      .toUpperCase();
+  if (!q) return;
+  const found = [];
+  let known = false;
+  COLORS.forEach(function (c, i) {
+    if (codeNorm(c.code) !== q) return;
+    known = true;
+    const k = mkey(i);
+    if (api.lowInk(k) != null) found.push(k);
+  });
+  found.forEach(function (k) {
+    if (st.extra.indexOf(k) < 0) st.extra.push(k);
+  });
+  st.line[w] = !found.length
+    ? known
+      ? up + ' isn’t one of your markers'
+      : 'No marker ' + up
+    : found.length > 1
+      ? 'Two ' + up + 's: which is in your hand?'
+      : '';
+  const v1 = found.length === 1 ? api.lowInk(found[0]) : null;
+  if (v1 === '') {
+    st.form[w] = false;
+    lowTap(found[0]);
+    const b = document.querySelector('#sfLow' + w + ' [data-lk="' + found[0] + '"]');
+    if (b)
+      try {
+        b.focus({ preventScroll: true });
+      } catch (_) {}
+    return;
+  }
+  // (one already marked: said so, with its brand, and the box stays for another)
+  if (v1) {
+    const i = keyIdx(found[0]),
+      c = COLORS[i];
+    st.line[w] = c.brand + ' ' + c.code + (v1 === 'dry' ? ' is dry' : ' is already marked low');
+  }
+  lowRefresh();
+  sayLive(st.line[w]);
+  const inp = document.getElementById('sfLowIn' + w);
+  if (inp && found.length) inp.value = '';
+  if (inp && v1)
+    try {
+      inp.focus({ preventScroll: true });
+    } catch (_) {}
+  if (inp && !found.length) {
+    inp.value = raw;
+    try {
+      inp.focus({ preventScroll: true });
+    } catch (_) {}
+  }
+}
+// Escape (a layer, 95-mount.js): Another…'s box, open on screen (the one with focus first): a code in it is cleared,
+// then the box closes, focus back on Another…
+function lowBoxOpen() {
+  const ae = document.activeElement,
+    fs = [].filter.call(document.querySelectorAll('#sfRoot form[data-lform]'), function (f) {
+      return f.offsetParent !== null;
+    });
+  return (
+    fs.find(function (f) {
+      return f.contains(ae);
+    }) ||
+    fs[0] ||
+    null
+  );
+}
+function lowBoxEsc() {
+  const f = lowBoxOpen();
+  if (!f) return;
+  const w = f.dataset.lform,
+    st = lowState(),
+    inp = f.querySelector('input');
+  if (inp && inp.value) {
+    inp.value = '';
+    st.line[w] = '';
+    const l = document.getElementById('sfLowL' + w);
+    if (l) l.textContent = '';
+    return;
+  }
+  st.form[w] = false;
+  st.line[w] = '';
+  lowRefresh();
+  const b = document.querySelector('#sfLow' + w + ' [data-lmore]');
+  if (b)
+    try {
+      b.focus({ preventScroll: true });
+    } catch (_) {}
+}
+if (typeof document !== 'undefined' && document.addEventListener) {
+  document.addEventListener('click', function (e) {
+    const b = e.target && e.target.closest ? e.target.closest('#sfRoot .sflow button') : null;
+    if (!b) return;
+    const h = b.closest('.sflow-host'),
+      w = h ? h.dataset.w : '';
+    if (b.dataset.lk) lowTap(b.dataset.lk);
+    else if (b.dataset.lmore) {
+      const st = lowState();
+      st.form[w] = !st.form[w];
+      st.line[w] = '';
+      lowRefresh();
+      const inp = document.getElementById('sfLowIn' + w);
+      if (inp)
+        try {
+          inp.focus();
+        } catch (_) {}
+    }
+  });
+  document.addEventListener('submit', function (e) {
+    const f = e.target && e.target.closest ? e.target.closest('#sfRoot form[data-lform]') : null;
+    if (!f) return;
+    e.preventDefault();
+    const inp = f.querySelector('input');
+    lowFind(f.dataset.lform, inp ? inp.value : '');
+  });
 }

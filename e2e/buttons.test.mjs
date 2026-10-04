@@ -22,7 +22,8 @@ const init = () => { Object.defineProperty(Navigator.prototype, 'standalone', { 
 // kinds of button that aren't actions or choices: tab bars, cards and list rows (bigger), small icons and pills
 const TAB = '.modes button,.sftabbtn';
 // (v288: a palette band's own button fills the band; the Print sheet's choices with a drawing over the word)
-const BIG = '.homecard,.sopen,.mdrop,.hlphiw,.sfRecCard,.sfah,.sfinfo,.focmk,.bhit,.sfprsh .segs button:has(.sfprpv)';
+// (v306: Home's latest piece's picture)
+const BIG = '.homecard,.sopen,.mdrop,.hlphiw,.sfRecCard,.sfah,.sfinfo,.focmk,.bhit,.sfprsh .segs button:has(.sfprpv),.hhpic';
 const CHOICE = '.segs button,.chip,.msrc button,.wcbrands button,#sfRoot .sfedit';
 // a link inside a sentence; the guide's tool-row icons and Save pill, whose tap areas stop at the picture's edge,
 // and ✎, whose lower edge the Save pill under it shares
@@ -148,6 +149,21 @@ test('Welcome and the guide keep the rule: 44px actions, 40px choices, a 44px Fo
   assert.deepEqual(errors, []);
 });
 
+// v306: Home's latest piece, Reveal & share and Print…: 44px actions, on a phone and an iPad
+test('Home’s latest piece keeps the rule: Reveal & share and Print… are 44px', async () => {
+  const { page, errors } = await openApp();
+  await sampleGuide(page); await saveGuide(page);
+  await page.evaluate(() => { const t = __mstest; t.assignData.order.forEach((l) => { t.colored[l] = 1; }); t.guideDirty = true; t.updateProgress(); t.renderGuide(); });
+  await page.evaluate(() => __mstest.flushSave()); await idle(page, 1500);
+  await page.click('#mHome'); await page.waitForSelector('#homeHero .hhbox img');
+  for (const [w, hh] of [[390, 844], [820, 1180], [1180, 820]]) {
+    await page.setViewportSize({ width: w, height: hh }); await idle(page);
+    const bs = await check(page, `Home (latest piece) at ${w}`, false);
+    assert.deepEqual([h(bs, '#homeHeroGo'), h(bs, '#homeHeroPrint')], [44, 44], `${w}: Reveal & share, Print…`);
+  }
+  assert.deepEqual(errors, []);
+});
+
 test('at 1.6x text, buttons grow with their labels rather than cutting them', async () => {
   const { page, errors } = await openAtScale(1.6, { userAgent: IPHONE, init, storage: storage() });
   await idle(page);
@@ -236,10 +252,10 @@ test('disabled buttons look disabled; Clear only when there is something to clea
   const { page, errors } = await openApp({ storage: onboardedV265({ [KEY]: appState() }) });
   await page.click('#mPalette'); await idle(page);
   const look = (sel) => page.evaluate((s) => { const e = document.querySelector(s), c = getComputedStyle(e); return { dis: e.disabled, op: +c.opacity, cur: c.cursor }; }, sel);
-  assert.deepEqual(await look('#saveBtn'), { dis: true, op: 0.4, cur: 'not-allowed' });
-  assert.equal((await look('#reset')).dis, true, 'nothing to clear');
+  // (Palette opens on a preview palette since v305: it can be saved, but there's none of yours to clear yet)
+  assert.equal((await look('#saveBtn')).dis, false, 'the preview can be saved');
+  assert.deepEqual(await look('#reset'), { dis: true, op: 0.4, cur: 'not-allowed' }, 'nothing to clear');
   assert.equal(await page.textContent('#reset'), 'Clear');
-  assert.equal((await look('#reset')).op, 0.4);
   await page.click('#draw'); await idle(page);
   // (the fade back in can still be under way when idle on GitHub's WebKit)
   await page.waitForFunction(() => getComputedStyle(document.getElementById('saveBtn')).opacity === '1', null, { timeout: 3000 }).catch(() => {});

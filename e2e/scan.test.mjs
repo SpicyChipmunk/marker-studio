@@ -7,9 +7,10 @@ import { setup, teardown, openApp, welcome, idle } from './helpers.mjs';
 before(setup);
 after(teardown);
 
-// an app with the Honolulu 120 set, on Markers, with the dialog open
+// an app with the Honolulu 120 set, on Markers, with the dialog open (v305: Either brand chosen before, as these tests
+// are about reading either brand: a collection all of one brand otherwise starts on its brand)
 async function opened() {
-  const a = await openApp();
+  const a = await openApp({ storage: { 'ms-scan-brand': '' } });
   await welcome(a.page, 'look'); await idle(a.page);
   await a.page.click('#mCollection'); await idle(a.page);
   await a.page.click('#scanOpen'); await idle(a.page);
@@ -212,7 +213,7 @@ test('a marker on the To buy list is taken off it when added (bought), and Undo 
   await page.evaluate(() => { addWish('Ohuhu|B015', 'test', true); save(); });
   await type(page, 'B015');
   await page.click('#scAdd'); await idle(page);
-  assert.match(await page.textContent('#msToast'), /Added 1 marker to your collection \(1 off your To buy list\)/);
+  assert.match(await page.textContent('#msToast'), /^Added 1 marker · 1 off To buy/);
   assert.equal(await page.evaluate(() => isWished('Ohuhu|B015')), false);
   await page.click('#toastAct'); await idle(page);
   assert.equal(await page.evaluate(() => isWished('Ohuhu|B015')), true);
