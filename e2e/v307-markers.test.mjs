@@ -469,7 +469,7 @@ test('service worker: a page load with a query is the cached page, offline too, 
     await srv.stop();
     await page.goto(srv.url + '?back=2');
     await page.waitForFunction(() => !!document.getElementById('appVer'));
-    assert.match(await page.textContent('#appVer'), /^v\d+$/);
+    assert.match(await page.textContent('#appVer'), /^v\d+(\.\d+)?$/);
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

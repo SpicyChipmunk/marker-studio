@@ -5,6 +5,7 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'Fixes: a new guide is kept even if you close the app straight after Build, and the Print sheet shows how far a PDF has got.',
   'Finished pages stay in full colour, shaded guides count every marker, and two-brand codes show both markers. PDFs and saving keep the app responsive, and warm photos of your marker trays can be balanced.',
   'Scatter a gradient from Polished to Confetti, and smooth rough spots in one tap. Codes in both brands are marked, and Colour along finds a marker by its code. Your finished piece leads Home.',
   'Finish a page and Reveal shows it off on its paper, ready to share. Gradients are smoother, with a new Around flow for mandalas, and Redo is beside Undo.',

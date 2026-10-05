@@ -112,7 +112,9 @@ test('the PDF is drawn a page at a time ("Page 2 of 3…"), packed in the worker
 });
 
 test('Save image is encoded in the worker, with the same pixels; a new guide’s section map is encoded there before its first save, the same file', async () => {
-  const { page, errors } = await openApp({ width: 1180, height: 820 });
+  // (v307.1: the first save waits for the worker only while the Build bloom shows, so this test has the bloom; with
+  // none it's saved at once, encoded on the page: v307-hotfix)
+  const { page, errors } = await openApp({ width: 1180, height: 820, init: () => { window.__MS_BLOOM = true; } });
   await welcome(page, 'look');
   await letterGuide(page);
   await page.waitForFunction(() => __mstest.inLibrary);

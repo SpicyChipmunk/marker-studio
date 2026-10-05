@@ -164,8 +164,10 @@ test('the picture’s animation ends within 15 s, and stops when Add moves on', 
   assert.equal(b.filter((x) => x.pic).length, 0, 'nothing of the picture runs on "You’re all set"');
   for (const x of b.filter((x) => x.fan)) assert.ok(x.end <= 1000, 'the fan opens in under a second');
   await idle(page);
+  // (v307.1: a finished one is left out: Safari's engine lists the fan's finished swings until its next animation
+  // update, a moment after they end, though they no longer run or hold anything in place)
   assert.deepEqual(
-    (await anims(page)).filter((x) => x.pic || x.fan),
+    (await anims(page)).filter((x) => (x.pic || x.fan) && x.state !== 'finished'),
     [],
   );
   assert.deepEqual(errors, []);

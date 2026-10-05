@@ -32,7 +32,7 @@ test('index.html links the manifest and the service worker precaches it', () => 
 
 test('the version shown on Home matches the service-worker cache version', () => {
   const html = read('index.html').toString();
-  const shown = html.match(/id="appVer"[^>]*>(v\d+)</)[1];
-  const cache = read('service-worker.js').toString().match(/marker-studio-(v\d+)/)[1];
+  const shown = html.match(/id="appVer"[^>]*>(v\d+(?:\.\d+)?)</)[1];
+  const cache = read('service-worker.js').toString().match(/marker-studio-(v\d+(?:\.\d+)?)/)[1];
   assert.equal(shown, cache, 'bump both together on each release');
 });

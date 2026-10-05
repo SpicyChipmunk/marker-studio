@@ -14,8 +14,10 @@ const hide = (page) => page.evaluate(() => { Object.defineProperty(document, 'vi
 const slot = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('ms-guide-auto') || 'null'));
 const ticked = (page, ls) => page.evaluate((ls) => ls.map((l) => __mstest.colored[l]), ls);
 const reopen = async (page, id) => {
-  await page.evaluate(() => location.reload());
-  await page.waitForLoadState('load'); await idle(page);
+  // (v307.1: page.reload waits for the new page. location.reload() from evaluate returned before the reload began, so
+  // waitForLoadState answered for the old page, and what came next could run there and be cut off by the reload:
+  // "Execution context was destroyed", seen once in CI. Not a reload of the app's own: checked, there's only this one)
+  await page.reload(); await idle(page);
   await page.evaluate((id) => SF.openDesign(id), id);
   await page.waitForFunction((id) => window.__mstest && __mstest.assignData && __mstest.curId === id, id); await idle(page, 1500);
 };

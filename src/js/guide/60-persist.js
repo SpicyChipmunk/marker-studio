@@ -91,6 +91,11 @@ function lmapPixels(d, f) {
 // the guide appears after Build: it's encoded in the worker (03-jobs) first, and lmapURL finds it ready. The same
 // pixels, checked there; the same file as the page makes (checked in the tests). Resolves once it's ready, or at once
 // where there's no worker (the save then encodes it here, as before).
+// (v307.1) The save waits for it only while the Build bloom shows, and LMAP_WAIT at most after that (30-palette-assign);
+// with no bloom it doesn't wait at all. In Safari's engine the worker can take a third of a second, and a page
+// reloaded or closed meanwhile lost the new guide (a database write begun as a page goes is dropped). The save then
+// encodes it here, as before v307; the worker's file, the same, is only kept for a later save if none was made meanwhile.
+const LMAP_WAIT = 100;
 function lmapWarm() {
   if (!JOBS.on || typeof OffscreenCanvas === 'undefined' || !labels) return Promise.resolve();
   const f = foldSet(),
@@ -101,8 +106,8 @@ function lmapWarm() {
   lmapPixels(d, f);
   return JOBS.run('lmap', { buf: d.buffer, w: W, h: H }, [d.buffer]).then(
     function (url) {
-      // (only if the sections are still the ones sent)
-      if (labels === lab && /^data:image\/png;base64,/.test(url)) {
+      // (only if the sections are still the ones sent, and the page hasn't encoded them itself meanwhile)
+      if (labels === lab && /^data:image\/png;base64,/.test(url) && !(_lmC && _lmC.sig === sig)) {
         const f2 = foldSet();
         if (labelsSig() + (f2 ? ':f' + f2.sig : '') === sig) _lmC = { sig: sig, url: url };
       }
@@ -189,7 +194,7 @@ function currentDesignObj(share, edits) {
         ssMap[l] = 2;
     }
   }
-  return {
+  const o = {
     v: 1,
     type: 'guide',
     name:
@@ -204,9 +209,6 @@ function currentDesignObj(share, edits) {
     H: H,
     keys: keys,
     n: assignData.N,
-    // (v307: for the Library's row, Home's latest piece says "16 markers + 29 for shading"; not in a guide file, and
-    // not part of what is compared to know whether it changed: libSig)
-    sk: share ? undefined : shadeExtra(),
     payload: Object.assign(
       {
         lmap: lmapURL(),
@@ -248,6 +250,17 @@ function currentDesignObj(share, edits) {
       { secStates: ssMap },
     ),
   };
+  // (v307: sk, for the Library's row, Home's latest piece says "16 markers + 29 for shading"; the saves hand it on.
+  // v307.1: not enumerable, so it's never written into the guide, the autosave copy or a guide file (JSON and the
+  // database leave it out), as v307 meant: it was in the guide, 7 bytes more. Not part of the change check: libSig)
+  if (!share)
+    Object.defineProperty(o, 'sk', {
+      value: shadeExtra(),
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    });
+  return o;
 }
 // Share › Guide file: handed over as the backup is (handOver: the share sheet on a phone, a download on a computer)
 function shareGuideFile() {

@@ -945,6 +945,9 @@ function tkStep(l) {
 // how strongly section l's ✓ is drawn (1 but while it fades: 0.75, 0.5, 0.25)
 function tkAlpha(l) {
   const s = sfmode === 'color' && !hideLabels ? tkStep(l) : 0;
+  // (v307.1: a ✓ drawn just as its fade ends, its step read a moment after the drawing chose to draw it, stays at the
+  // last step: it came back at full strength for a frame. Not with Reduce motion, where there's no fade)
+  if (!s && sfmode === 'color' && !hideLabels && !_tkRm && _tkAt[l] != null) return 1 / (TICK_STEPS + 1);
   return s && s <= TICK_STEPS ? s / (TICK_STEPS + 1) : 1;
 }
 function renderGuide() {

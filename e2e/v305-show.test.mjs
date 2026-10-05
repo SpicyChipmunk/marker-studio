@@ -600,10 +600,24 @@ test('Colour along: with the codes on a ✓ shows for about a second, then goes;
   );
   await scrollTop(page);
   let p = await sectionPoint(page, big[0]);
+  // (v307.1: the ✓'s colour as it's drawn, however strongly, not read off the canvas: v307's ✓ fades out, and a slow
+  // machine could read it part way through the fade, no longer the green looked for)
+  await page.evaluate((l) => {
+    const P = CanvasRenderingContext2D.prototype,
+      of = P.fillText,
+      q = __mstest.labelPos(l);
+    window.__tk = [];
+    window.__tkOff = () => { P.fillText = of; };
+    P.fillText = function (t, x, y) {
+      if (t === '✓' && Math.abs(x - q.x) < 0.5 && Math.abs(y - q.y) < 0.5) window.__tk.push([this.fillStyle, this.globalAlpha]);
+      return of.apply(this, arguments);
+    };
+  }, big[0]);
   await page.mouse.click(p.x, p.y);
   await until(page, (l) => __mstest.colored[l] === 1, big[0], 'ticked');
   assert.equal(await page.evaluate((l) => __mstest.tkFresh(l), big[0]), true, 'its ✓ showing');
-  assert.ok((await green(page, big[0])) > 10, 'drawn in green');
+  const tk = await page.evaluate(() => { window.__tkOff(); return window.__tk; });
+  assert.ok(tk.length && tk.every((x) => x[0] === '#3f7d4e'), 'drawn in green: ' + JSON.stringify(tk));
   await until(page, (l) => !__mstest.tkFresh(l), big[0], 'the ✓ gone after about a second', 4000);
   await frames(page);
   assert.equal(await green(page, big[0]), 0, 'no ✓ left on the art');

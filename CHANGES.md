@@ -461,3 +461,12 @@ A fresh-eye review of v306 by four reviewers (the Plan; Colour along to sharing;
 - WebKit on GitHub runs in 8 parts (it had outgrown 6 × 30 minutes; three files had run only in the retry), timed from v306's run. The bloom test waits for the overlay's fade-out.
 
 - Cache bumped to `marker-studio-v307`.
+
+# Changes — v307.1 (fixes from v307's GitHub run)
+
+- A new guide is in the Library straight after Build again, even if the page is reloaded or closed a moment later: v307 waited for the background worker before the first save. It now waits only while the Build bloom shows (as v305 did), then saves.
+- The Print sheet opened again while its PDF is being made says the page it's on ("Page 2 of 4…"), and one PDF comes.
+- A ticked ✓ no longer flashes back at full strength as it fades.
+- The count of markers shading takes is kept on the Library row only, not in the saved guide.
+- Tests: the storage-full reopen waits for the real reload; What's new is checked against the list's first four; the welcome test ignores finished animations; the tick-fade, "Saving…" and ✓-colour tests no longer depend on exact timing. New: `e2e/v307-hotfix` (3).
+- Cache bumped to `marker-studio-v307.1`.

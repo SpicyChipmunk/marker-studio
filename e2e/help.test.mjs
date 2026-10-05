@@ -155,7 +155,7 @@ test('the help sheet: from the guide and Home, glossary, your data, About with t
   const ver = (await page.textContent('#helpVer')).trim();
   assert.equal(ver, (await page.textContent('#appVer')).trim());
   const sw = await readFile(join(ROOT, 'service-worker.js'), 'utf8');
-  assert.equal(ver, sw.match(/marker-studio-(v\d+)/)[1]);
+  assert.equal(ver, sw.match(/marker-studio-(v\d+(?:\.\d+)?)/)[1]);
   const about = await page.textContent('#helpAbout');
   assert.ok(about.includes('Nothing you add leaves this device. There are no accounts, ads or analytics.'));
   assert.ok(about.includes('Ohuhu and Copic are trademarks of their owners; colours on screen are approximate — compare with your own swatches'));
@@ -216,9 +216,11 @@ test('What’s new: shown after an update, not on a fresh install, and stays dis
     assert.equal((await page.textContent('#wnTitle')).trim(), `What’s new in ${ver}`);
     const n = await page.evaluate(() => document.querySelectorAll('#whatsNew li').length);
     assert.ok(n >= 1 && n <= 4, `${n} bullets`);
-    // (the newest first: v304's and v303's lines)
-    assert.match(await page.textContent('#whatsNew'), /Search finds a code however you type it/);
-    assert.match(await page.textContent('#whatsNew'), /A page downloaded from the internet now makes a better guide/);
+    // (the newest first, the first four of the list: v307.1 checks them against the list itself, where it named
+    // v304's and v303's lines, which each new release's line pushes out of the four)
+    const want = await page.evaluate(() => WHATS_NEW.slice(0, 4));
+    assert.ok(want.length >= 1);
+    assert.deepEqual(await page.$$eval('#whatsNew li', (ls) => ls.map((l) => l.textContent)), want);
     assert.equal(await page.getAttribute('#wnClose', 'aria-label'), 'Dismiss what’s new');
     await shot(page, 'help-whatsnew');
     await page.reload(); await idle(page);

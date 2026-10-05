@@ -17,7 +17,7 @@ test('first run: pick a set, then Home shows the collection, Library and the bui
   assert.ok(await page.evaluate(() => state.owned.size) > 100);
   await page.click('#mHome');
   assert.equal(await page.textContent('#homeLibSub'), 'Nothing yet');
-  const sw = (await readFile(join(ROOT, 'service-worker.js'), 'utf8')).match(/marker-studio-(v\d+)/)[1];
+  const sw = (await readFile(join(ROOT, 'service-worker.js'), 'utf8')).match(/marker-studio-(v\d+(?:\.\d+)?)/)[1];
   assert.equal(await page.textContent('#appVer'), sw);
   await page.click('#homeLibCard');
   assert.ok(await page.evaluate(() => savedOverlay.classList.contains('on')));

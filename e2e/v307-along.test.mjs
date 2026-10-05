@@ -638,10 +638,18 @@ test('"Saving…" shows only while the guide is being written, not in the moment
       characterData: true,
       subtree: true,
     });
-    const put = IDB.put;
+    const put = IDB.put,
+      get = IDB.get;
     IDB.put = function (k) {
       if (/^guide-\d/.test(k)) window.__w.push(Math.round(performance.now() - t0));
       return put.apply(this, arguments);
+    };
+    // (v307.1: the save of a guide in the Library begins by reading its stored copy (sfSaveDesign), a moment before
+    // it writes: "Saving…" from then on is right. Checked against the write alone, it once came 9 ms early in WebKit)
+    window.__r = [];
+    IDB.get = function (k) {
+      if (/^guide-\d/.test(k)) window.__r.push(Math.round(performance.now() - t0));
+      return get.apply(this, arguments);
     };
   });
   const l = await page.evaluate(() => __mstest.assignData.order[3]);
@@ -651,42 +659,47 @@ test('"Saving…" shows only while the guide is being written, not in the moment
   assert.match(await page.textContent('#sfSaveSt'), /Saved in your Library|Saves itself from now on/);
   assert.ok(await page.evaluate(() => __mstest.colored[__mstest.assignData.order[3]] === 1), 'ticked');
   await idle(page, AUTO);
-  const { st, w } = await page.evaluate(() => ({ st: window.__st, w: window.__w }));
+  const { st, w, r } = await page.evaluate(() => ({ st: window.__st, w: window.__w, r: window.__r }));
   assert.equal(w.length, 1, 'written once: ' + JSON.stringify(w));
+  // (the read just before the write: the save's own)
+  const rd = r.filter((t) => t <= w[0]),
+    began = rd.length ? Math.max(...rd) : w[0];
   const saving = st.filter((x) => x[1] === 'Saving…');
   assert.ok(saving.length >= 1, 'said while writing: ' + JSON.stringify(st));
   assert.ok(
-    saving.every((x) => x[0] >= w[0] - 5),
-    'only once the write began: ' + JSON.stringify({ st, w }),
+    saving.every((x) => x[0] >= began - 5),
+    'only once the save began: ' + JSON.stringify({ st, w, r }),
   );
   assert.match(await page.textContent('#sfSaveSt'), /^(Saved in your Library|Saves itself from now on) ✓$/);
   assert.deepEqual(errors, []);
 });
 
 // how strongly each ✓ is drawn on section l, in order, from now until it has gone
-const tickFade = (page, l) =>
-  page.evaluate(
-    (l) =>
-      new Promise((res) => {
-        const P = CanvasRenderingContext2D.prototype,
-          ot = P.fillText,
-          q = __mstest.labelPos(l),
-          seen = [];
-        P.fillText = function (t, x, y) {
-          if (t === '✓' && Math.abs(x - q.x) < 0.5 && Math.abs(y - q.y) < 0.5) seen.push(this.globalAlpha);
-          return ot.apply(this, arguments);
+// (v307.1: the watch is set up before the tap, then read: it was started alongside the tap, which could come first, so
+// the ✓ drawn at full strength could be missed; a very slow machine can still miss it, so it isn't required)
+const tickFade = async (page, l) => {
+  await page.evaluate((l) => {
+    const P = CanvasRenderingContext2D.prototype,
+      ot = P.fillText,
+      q = __mstest.labelPos(l),
+      seen = [];
+    P.fillText = function (t, x, y) {
+      if (t === '✓' && Math.abs(x - q.x) < 0.5 && Math.abs(y - q.y) < 0.5) seen.push(this.globalAlpha);
+      return ot.apply(this, arguments);
+    };
+    window.__tickFade = new Promise((res) => {
+      const t0 = performance.now(),
+        wait = () => {
+          if (performance.now() - t0 > 1600) {
+            P.fillText = ot;
+            res(seen);
+          } else setTimeout(wait, 50);
         };
-        const t0 = performance.now(),
-          wait = () => {
-            if (performance.now() - t0 > 1600) {
-              P.fillText = ot;
-              res(seen);
-            } else setTimeout(wait, 50);
-          };
-        wait();
-      }),
-    l,
-  );
+      wait();
+    });
+  }, l);
+  return () => page.evaluate(() => window.__tickFade);
+};
 test('a section ticked in Colour along: its ✓ shows for a second, then fades out over about 200 ms in three steps; at once with Reduce motion', async () => {
   for (const rm of [false, true]) {
     const { page, errors } = await openApp({ width: 820, height: 1180, storage: { 'ms-wake-told': '1' } });
@@ -695,12 +708,37 @@ test('a section ticked in Colour along: its ✓ shows for a second, then fades o
     await along(page);
     const l = await page.evaluate(() => __mstest.assignData.order[5]);
     const p = await sectionPoint(page, l);
-    const fade = tickFade(page, l);
+    const fade = await tickFade(page, l);
     await page.mouse.click(p.x, p.y);
-    const a = await fade;
-    const steps = [...new Set(a.map((x) => Math.round(x * 100) / 100))];
+    const a = await fade();
+    // (v307.1: the draws as they come, each run of one value counted once, and not timed exactly: on a busy machine a
+    // frame drawn at full strength can be missed, and the fade's steps can be drawn more than once)
+    const steps = a.map((x) => Math.round(x * 100) / 100).filter((v, i, s) => !i || v !== s[i - 1]);
     if (rm) assert.deepEqual(steps, [1], 'Reduce motion: shown, then gone: ' + a);
-    else assert.deepEqual(steps, [1, 0.75, 0.5, 0.25], 'fading: ' + a);
+    else {
+      assert.ok(steps.length && steps.every((v) => [1, 0.75, 0.5, 0.25].includes(v)), 'shown, then in steps: ' + a);
+      // (never back at full strength as the fade ends: it was, for a frame, in WebKit)
+      assert.ok(steps.every((v, i) => !i || v < steps[i - 1]), 'only ever fainter: ' + a);
+      assert.ok(steps.filter((v) => v < 1).length >= 2, 'at least two steps of the fade: ' + a);
+    }
+    // and then gone: drawn again, no ✓
+    const left = await page.evaluate((l) => {
+      const P = CanvasRenderingContext2D.prototype,
+        ot = P.fillText,
+        q = __mstest.labelPos(l);
+      let n = 0;
+      P.fillText = function (t, x, y) {
+        if (t === '✓' && Math.abs(x - q.x) < 0.5 && Math.abs(y - q.y) < 0.5) n++;
+        return ot.apply(this, arguments);
+      };
+      try {
+        __mstest.renderGuide();
+      } finally {
+        P.fillText = ot;
+      }
+      return n;
+    }, l);
+    assert.equal(left, 0, 'gone');
     assert.deepEqual(errors, []);
   }
 });

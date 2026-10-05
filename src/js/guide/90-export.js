@@ -2436,10 +2436,12 @@ async function exportPDF() {
   // (one at a time: the sheet can be closed and opened again while one is being written, v304)
   if (!assignData || exportPDF.busy) return;
   exportPDF.busy = 1;
+  _pdfProg = '';
   try {
     await _exportPDF();
   } finally {
     exportPDF.busy = 0;
+    _pdfProg = '';
     // (the button of a sheet opened again meanwhile, back as it was)
     const w = _pdfWait;
     _pdfWait = null;
@@ -2449,13 +2451,15 @@ async function exportPDF() {
     }
   }
 }
-// a Print sheet opened while a PDF is still being written: its button says so until it is done (v304)
-let _pdfWait = null;
+// a Print sheet opened while a PDF is still being written: its button says so until it is done (v304), with the page
+// it's on (v307.1: "Page 2 of 4…", as the sheet it was started from says; "Preparing…" before the first)
+let _pdfWait = null,
+  _pdfProg = '';
 function printWait() {
   const b = document.getElementById('sfPDF');
   if (!exportPDF.busy || !b) return;
   _pdfWait = { b: b, h: b.innerHTML };
-  b.textContent = 'Preparing\u2026';
+  b.textContent = _pdfProg || 'Preparing\u2026';
   b.disabled = true;
 }
 async function _exportPDF() {
@@ -2475,8 +2479,9 @@ async function _exportPDF() {
     const P = PAPERS[paper] || PAPERS.letter,
       // (v307) each page drawn in turn, the button saying which (the Print sheet's, opened again meanwhile too)
       blob = await canvasesToPDF(buildPDFPages(false, true), P[0], P[1], true, function (i, n) {
+        if (n > 1) _pdfProg = 'Page ' + i + ' of ' + n + '\u2026';
         const b = document.getElementById('sfPDF');
-        if (b && b.disabled && n > 1) b.textContent = 'Page ' + i + ' of ' + n + '\u2026';
+        if (b && b.disabled && _pdfProg) b.textContent = _pdfProg;
       });
     const fname =
       ((curName || 'colour-guide')

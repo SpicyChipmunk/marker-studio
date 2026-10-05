@@ -144,20 +144,25 @@ test('PDF where the browser can’t compress (Safari before 16.4): the pages sto
   assert.deepEqual(errors, []);
 });
 
-test('Print sheet closed and opened again while its PDF is written: the button says Preparing… until it is done, and one PDF comes', async () => {
-  const { page, errors } = await openApp({ init: () => { const ab = Response.prototype.arrayBuffer; Response.prototype.arrayBuffer = function () { return new Promise((r) => setTimeout(r, Number(window.__slow || 0))).then(() => ab.call(this)); }; } });
+test('Print sheet closed and opened again while its PDF is written: the button says which page it is on until it is done, and one PDF comes', async () => {
+  // (v307.1: the pages are packed in the worker since v307, so slowing the page's own compression no longer held the
+  // PDF up, and on WebKit it was done before the sheet was open again: the worker's page jobs are held here instead.
+  // The button of the sheet opened again says the page, "Page 2 of 4…", as the sheet it was started from does; it
+  // said "Preparing…" before v307)
+  const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   let n = 0;
   page.on('download', () => n++);
   await sharePrint(page);
   const label = await page.textContent('#sfPDF');
-  await page.evaluate(() => { window.__slow = 600; });
+  await page.evaluate(() => { const J = __mstest.jobs, run = J.run; window.__held = 0; window.__go = new Promise((r) => { window.__release = r; }); J.run = function (k, d, t) { if (k !== 'pdf') return run.call(J, k, d, t); window.__held++; return window.__go.then(() => run.call(J, k, d, t)); }; });
   await page.click('#sfPDF');
-  await page.waitForTimeout(100);
+  await page.waitForFunction(() => window.__held >= 1);
   await page.click('#sfSheet [data-pr="cancel"]'); await page.waitForSelector('#sfSheet', { state: 'detached' });
   await page.click('#sfPrint'); await page.waitForSelector('#sfSheet.sfprsh');
-  assert.equal(await page.textContent('#sfPDF'), 'Preparing…');
+  assert.match(await page.textContent('#sfPDF'), /^Page [12] of [2-9]…$/);
   assert.equal(await page.isDisabled('#sfPDF'), true);
+  await page.evaluate(() => window.__release());
   await page.waitForFunction(() => !document.getElementById('sfPDF').disabled, null, { timeout: 30000 });
   assert.equal(await page.textContent('#sfPDF'), label, 'back as it was');
   await page.waitForTimeout(300);

@@ -2934,13 +2934,25 @@ function buildGuide(keepPlan) {
   // reloaded just after Build lost it, v287)
   // (v305: once the first Build's bloom is over, 41-bloom.js: about a second, the save's work held up its frames)
   // (v307: its section map encoded in the worker first, lmapWarm, so the save doesn't hold the page up just as the
-  // guide appears)
+  // guide appears. v307.1: only while the bloom shows, and LMAP_WAIT after it at most; with no bloom it's saved at
+  // once, encoded here, as in v306: waiting on the worker, a reload or close soon after Build lost the guide)
   if (canAuto())
     setTimeout(function () {
-      lmapWarm().then(function () {
-        bloomAfter(function () {
-          if (autoT && canAuto() && !_firstBusy) flushAutosave();
-        });
+      const save = function () {
+        if (autoT && canAuto() && !_firstBusy) flushAutosave();
+      };
+      if (!_bloom) {
+        save();
+        return;
+      }
+      const warm = lmapWarm();
+      bloomAfter(function () {
+        Promise.race([
+          warm,
+          new Promise(function (res) {
+            setTimeout(res, LMAP_WAIT);
+          }),
+        ]).then(save);
       });
     }, 60);
 }
