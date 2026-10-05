@@ -766,6 +766,11 @@ function toolsHTML() {
     '<span class="sfzw" aria-hidden="true">Full screen</span></button></div>'
   );
 }
+// Every section of the guide left white (a photo with no colour in it, 46-photo, v304): how many there are; else 0
+function guideWhite() {
+  if (!assignData || assignData.N || !assignData.paper) return 0;
+  return Object.keys(assignData.paper).length;
+}
 // the status (sections and markers, or how much is done) and the buttons that come and go. The status is in parts
 // that are dropped whole when the row is tight (planFit), never cut mid-number; side by side only the first shows.
 function renderTools() {
@@ -788,9 +793,13 @@ function renderTools() {
     pct = assignData.N ? Math.round((d / assignData.N) * 100) : 0;
     t = part('<b>' + d + '</b> of <b>' + assignData.N + '</b>', 'coloured');
   } else if (sfmode === 'guide' && guide) {
-    const mk = {};
+    const mk = {},
+      pw = guideWhite();
     for (const l in assignData.assign) mk[assignData.assign[l].mkey] = 1;
-    t = part(n(assignData.N, 'section', 'sections'), '· ' + n(Object.keys(mk).length, 'marker', 'markers'));
+    // (v307: a photo with no colour leaves every section white: "954 sections · left white", not "0 sections")
+    if (pw) t = part(n(pw, 'section', 'sections'), '· left white');
+    else
+      t = part(n(assignData.N, 'section', 'sections'), '· ' + n(Object.keys(mk).length, 'marker', 'markers'));
   } else if (sfmode === 'review' && labels && !pgMode && !cropMode && countEl)
     t = part(n(parseInt(countEl.textContent, 10) || 0, 'section', 'sections'));
   if (workEl) workEl.classList.toggle('sfalong', sfmode === 'color');

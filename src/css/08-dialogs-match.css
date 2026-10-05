@@ -925,8 +925,14 @@ img.paperpick {
   cursor: pointer;
   padding: 6px 16px;
 }
+/* (v307) not faded as a whole: "Tick a set above" and Scan's "Add to my collection" are instructions to read (they
+   were 2.5:1). A pale, flat fill (no glow) and greyed text still say it can't be used yet; the text is 6:1. */
 .btn-primary:disabled {
-  opacity: 0.4;
+  opacity: 1;
+  /* (solid: Scan's Add floats over its list) */
+  background: #2a2350;
+  box-shadow: none;
+  color: rgba(244, 242, 236, 0.62);
   cursor: default;
 }
 .wrap.homemode > *:not(.head):not(.modes):not(#homeView) {

@@ -17,7 +17,8 @@ const bigSections = (page, n = 6) => page.evaluate((n) => { const t = __mstest; 
 test('tool row: Undo when there is something to undo, the stage status, ◐ in Photo only, codes, −/+, Fit only zoomed in, full screen', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
-  const vis = (ids) => page.evaluate((ids) => ids.filter((id) => { const e = document.getElementById(id); return e && e.offsetParent; }), ids);
+  // (v307: Undo's room is kept while there's nothing to undo, hidden: not shown)
+  const vis = (ids) => page.evaluate((ids) => ids.filter((id) => { const e = document.getElementById(id); return e && e.offsetParent && getComputedStyle(e).visibility !== 'hidden'; }), ids);
   const ALL = ['sfPlanUndo', 'sfStat', 'sfPhPeek', 'sfCodes', 'sfZout', 'sfZin', 'sfZrst', 'sfFull'];
   const N = await page.evaluate(() => __mstest.assignData.N), mk = await page.evaluate(() => new Set(Object.values(__mstest.assignData.assign).map((m) => m.mkey)).size);
   assert.equal(await toolStatus(page), `${N} sections · ${mk} markers`);

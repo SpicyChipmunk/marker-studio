@@ -262,7 +262,9 @@ test('smoothing with the marker count at all your markers: no new pair of touchi
       const a = clash(app, t);
       // (v306: with more sections than clear markers, some used twice, touching ones sharing a marker count as a
       // clash too: fewer of those, rather than less clash by colour alone)
-      if (t.grad.smoothed.mode === 'reuse') assert.ok(a.same.size < b.same.size, shape + ': split up');
+      // (v307: and none left at all, by the pass after the smoothing; the Photo pattern before it has a photo, laid
+      // here as the base, has its repeats split up too now)
+      if (t.grad.smoothed.mode === 'reuse') assert.equal(a.same.size, 0, shape + ': split up');
       else assert.ok(t.grad.smoothed.swaps > 0 && a.sum < b.sum, shape + ': smoothed');
       const added = [...a.same].filter((p) => !b.same.has(p));
       assert.deepEqual(added, [], `${cl.length} ${shape}: new pairs sharing a marker`);

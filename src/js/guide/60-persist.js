@@ -3,6 +3,9 @@
 let _lmC = null,
   _lastAuto = null;
 function labelsSig() {
+  return labelsSigOf(labels, W, H);
+}
+function labelsSigOf(labels, W, H) {
   let a = 2166136261 | 0,
     b = 5381 | 0;
   const n = W * H;
@@ -66,8 +69,15 @@ function _lmapURL(f) {
   c.width = W;
   c.height = H;
   const x = c.getContext('2d');
-  const im = x.createImageData(W, H),
-    d = im.data;
+  const im = x.createImageData(W, H);
+  lmapPixels(im.data, f);
+  x.putImageData(im, 0, 0);
+  const u = c.toDataURL('image/png');
+  freeCanvas(c);
+  return u;
+}
+// the section map's pixels: each section's number + 1 in red, green and blue (0 for the lines and folded specks)
+function lmapPixels(d, f) {
   const fo = f ? f.out : null;
   for (let p = 0, j = 0; p < W * H; p++, j += 4) {
     const v = labels[p] < 0 || (fo && fo[labels[p]]) ? 0 : labels[p] + 1;
@@ -76,10 +86,29 @@ function _lmapURL(f) {
     d[j + 2] = (v >> 16) & 255;
     d[j + 3] = 255;
   }
-  x.putImageData(im, 0, 0);
-  const u = c.toDataURL('image/png');
-  freeCanvas(c);
-  return u;
+}
+// (v307) Encoding the section map holds Safari's engine up for about 0.4 s, and a new guide's first save comes just as
+// the guide appears after Build: it's encoded in the worker (03-jobs) first, and lmapURL finds it ready. The same
+// pixels, checked there; the same file as the page makes (checked in the tests). Resolves once it's ready, or at once
+// where there's no worker (the save then encodes it here, as before).
+function lmapWarm() {
+  if (!JOBS.on || typeof OffscreenCanvas === 'undefined' || !labels) return Promise.resolve();
+  const f = foldSet(),
+    sig = labelsSig() + (f ? ':f' + f.sig : '');
+  if (_lmC && _lmC.sig === sig) return Promise.resolve();
+  const d = new Uint8ClampedArray(W * H * 4),
+    lab = labels;
+  lmapPixels(d, f);
+  return JOBS.run('lmap', { buf: d.buffer, w: W, h: H }, [d.buffer]).then(
+    function (url) {
+      // (only if the sections are still the ones sent)
+      if (labels === lab && /^data:image\/png;base64,/.test(url)) {
+        const f2 = foldSet();
+        if (labelsSig() + (f2 ? ':f' + f2.sig : '') === sig) _lmC = { sig: sig, url: url };
+      }
+    },
+    function () {},
+  );
 }
 // background by the edge rule alone (applyBg), as a guide opened again works it out
 function bgByEdge(c) {
@@ -175,6 +204,9 @@ function currentDesignObj(share, edits) {
     H: H,
     keys: keys,
     n: assignData.N,
+    // (v307: for the Library's row, Home's latest piece says "16 markers + 29 for shading"; not in a guide file, and
+    // not part of what is compared to know whether it changed: libSig)
+    sk: share ? undefined : shadeExtra(),
     payload: Object.assign(
       {
         lmap: lmapURL(),
@@ -324,6 +356,7 @@ function stashDirty() {
       H: d.H,
       keys: d.keys,
       n: d.n,
+      sk: d.sk,
       payload: d.payload,
       thumb: makeThumb(),
     }),
@@ -523,6 +556,7 @@ function saveOnLeave() {
     H: d.H,
     keys: d.keys,
     n: d.n,
+    sk: d.sk,
     payload: d.payload,
   });
 }
@@ -1036,10 +1070,13 @@ function libName(e) {
 }
 // what a save would store, minus the name (compared on its own, so a rename in the Library doesn't count as a change)
 function libSig(d) {
-  const n = d.name;
+  const n = d.name,
+    sk = d.sk;
   d.name = '';
+  d.sk = undefined;
   const s = JSON.stringify(d);
   d.name = n;
+  d.sk = sk;
   return s;
 }
 // Save into the Library entry when something changed since the last save or since it was opened: guideDirty, or
@@ -1091,6 +1128,7 @@ function libAutosave(q) {
           H: d.H,
           keys: d.keys,
           n: d.n,
+          sk: d.sk,
           payload: d.payload,
           thumb: th,
           mustExist: true,
@@ -1127,6 +1165,7 @@ function libAutosave(q) {
       H: d.H,
       keys: d.keys,
       n: d.n,
+      sk: d.sk,
       payload: d.payload,
       thumb: makeThumb(),
       mustExist: true,
@@ -1350,7 +1389,9 @@ function saveStText(pe) {
     return storeNotAnswering() ? 'Not saved \u2014 reload to try again' : 'Not saved \u2014 storage is full';
   if (!e && curSample && !sampleTouched()) return 'Sample';
   if (!e) return sfmode === 'review' || _openEmpty ? 'Not saved yet' : 'Saving\u2026';
-  if (guideDirty || _libBusy) return 'Saving\u2026';
+  // (v307: only while it's being written; a change waiting its moment to be saved said "Saving…" for 1.5 s after
+  // every tick, so Colour along read as always saving)
+  if (_libBusy) return 'Saving\u2026';
   return Date.now() - _savedNew < 6000 ? 'Saves itself from now on \u2713' : 'Saved in your Library \u2713';
 }
 function saveStatus() {
@@ -1362,7 +1403,7 @@ function saveStatus() {
     if (el.textContent !== t) el.textContent = t;
     el.style.display = t ? '' : 'none';
     el.classList.toggle('warn', pe || _saveErr || _removed || (!e && storeBlocked() && !!assignData));
-    el.classList.toggle('ok', !pe && !!e && !_saveErr && !guideDirty && !_libBusy);
+    el.classList.toggle('ok', !pe && !!e && !_saveErr && !_libBusy);
   }
   // the button: Put back (deleted while open), or Save to try again after a save that failed
   const b = document.getElementById('sfSave'),
@@ -1569,6 +1610,7 @@ function firstSave(auto) {
       H: d.H,
       keys: d.keys,
       n: d.n,
+      sk: d.sk,
       payload: d.payload,
       thumb: makeThumb(),
       quiet: auto,
@@ -1675,6 +1717,7 @@ function saveCopy() {
           H: d.H,
           keys: d.keys,
           n: d.n,
+          sk: d.sk,
           payload: d.payload,
           thumb: makeThumb(),
           quiet: true,

@@ -235,8 +235,9 @@ button.sffoccols::after {
   border-color: var(--line);
   color: var(--ink);
 }
+/* (v307: 0.35 left the ← at 3:1; at 0.55 it reads at 4.5:1 or more and still looks off) */
 .sffocbot button:disabled {
-  opacity: 0.35;
+  opacity: 0.55;
   cursor: default;
 }
 .sffocsheet {

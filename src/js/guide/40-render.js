@@ -1,6 +1,14 @@
 // texture: distance to the nearest line (capped at 12, worked out directly in bytes) and a streaky paper field
 // (both on the picture as it came: an enlarged picture's distances and streaks are srcK times as many pixels, v303)
 function buildTexFields() {
+  // (v307: kept for the session, as the label points are)
+  const key = 'tex:' + labelsSig() + ':' + srcK,
+    kept = lptsGet(key);
+  if (kept) {
+    edgeDist = kept.E;
+    texField = kept.T;
+    return;
+  }
   const n = W * H,
     E = new Uint8Array(n),
     cap = Math.min(255, Math.round(12 * srcK));
@@ -46,13 +54,23 @@ function buildTexFields() {
       texField[q] = v < 0 ? 0 : v > 255 ? 255 : v;
     }
   }
+  lptsPut(key, { E: edgeDist, T: texField });
 }
 // label points: the roomiest spot in each section (largest distance to its edge). The same two passes also give
 // each section's box, centre and area, and the distances shading needs, so nothing walks the picture again for them.
+// (v307) Worked out by labelPtsCore, from the section map alone, so the worker (03-jobs) can run it too; kept for the
+// session per section map (_lpts), so a guide opened again in the same session doesn't work them out again.
 function buildLabelPts() {
   if (!labels || !comps) return;
+  const K = comps.length,
+    key = lptsKey(K),
+    r = lptsGet(key) || labelPtsCore(labels, W, H, K);
+  lptsUse(r);
+  lptsPut(key, r);
+}
+// (runs in the worker too: nothing but its arguments)
+function labelPtsCore(labels, W, H, K) {
   const n = W * H,
-    K = comps.length,
     D = new Float32Array(n),
     bv = new Float32Array(K).fill(-1),
     bi = new Int32Array(K).fill(-1),
@@ -140,7 +158,7 @@ function buildLabelPts() {
       }
     }
   }
-  labelPts = new Array(K);
+  const lp = new Array(K);
   for (let l = 1; l < K; l++) {
     const q = bi[l];
     if (q < 0) continue;
@@ -150,14 +168,71 @@ function buildLabelPts() {
       b = x;
     while (a > 0 && labels[y * W + a - 1] === l) a--;
     while (b < W - 1 && labels[y * W + b + 1] === l) b++;
-    labelPts[l] = { x: (a + b + 1) / 2, y: y + 0.5, r: bv[l], aw: b - a + 1 };
+    lp[l] = { x: (a + b + 1) / 2, y: y + 0.5, r: bv[l], aw: b - a + 1 };
   }
+  return { lp: lp, Q: Q, sx: sx, sy: sy, ar: ar, x0: x0, y0: y0, x1: x1, y1: y1 };
+}
+function lptsUse(r) {
+  labelPts = r.lp;
+  const Q = r.Q;
   Q._lp = labelPts;
-  Q._sx = sx;
-  Q._sy = sy;
-  Q._ar = ar;
+  Q._sx = r.sx;
+  Q._sy = r.sy;
+  Q._ar = r.ar;
   _ldq = Q;
-  _sb = { lp: labelPts, K: K, x0: x0, y0: y0, x1: x1, y1: y1 };
+  _sb = { lp: labelPts, K: r.lp.length, x0: r.x0, y0: r.y0, x1: r.x1, y1: r.y1 };
+}
+// The session's label points and edge texture, per section map: those of the three most recent guides (about 4 bytes
+// a pixel each).
+// Keyed by the section map's signature (labelsSig) and its number of sections; the texture also by how much the
+// picture was enlarged (srcK). Nothing here changes once made (v307)
+const _lpts = [];
+function lptsKey(K) {
+  return labelsSig() + ':' + K;
+}
+function lptsGet(key) {
+  for (let i = 0; i < _lpts.length; i++)
+    if (_lpts[i].key === key) {
+      const e = _lpts.splice(i, 1)[0];
+      _lpts.unshift(e);
+      return e.r;
+    }
+  return null;
+}
+// the label points of the sections as they are, worked out in the worker (03-jobs) and kept for buildLabelPts to
+// find: resolves once they are (at once without a worker, or when they're kept already). Nothing waiting for them
+// changes meanwhile: Build guide is off until it has run (v307)
+function lptsReady() {
+  if (!JOBS.on || !labels || !comps) return Promise.resolve();
+  const K = comps.length,
+    key = lptsKey(K);
+  if (lptsHas(key)) return Promise.resolve();
+  return JOBS.run('lpts', { buf: labels.slice().buffer, W: W, H: H, K: K }).then(
+    function (r) {
+      lptsPut(key, lptsFix(r, K));
+    },
+    function () {},
+  );
+}
+// (what the worker sent, as an array made here: its empty places stay empty)
+function lptsFix(r, K) {
+  const lp = new Array(K);
+  for (let l = 1; l < K; l++) if (r.lp[l]) lp[l] = r.lp[l];
+  r.lp = lp;
+  return r;
+}
+function lptsHas(key) {
+  return _lpts.some(function (e) {
+    return e.key === key;
+  });
+}
+function lptsPut(key, r) {
+  const i = _lpts.findIndex(function (e) {
+    return e.key === key;
+  });
+  if (i >= 0) _lpts.splice(i, 1);
+  _lpts.unshift({ key: key, r: r });
+  _lpts.length = Math.min(_lpts.length, 6);
 }
 function labelPos(l) {
   if (!labelPts) buildLabelPts();
@@ -194,6 +269,9 @@ const TAG = {
   same: '#ffb454',
   sameInk: '#1a1a1a',
 };
+// (v307) in print, a darker amber with a white letter: the screen's showed through pale yellow ink (Ohuhu Y26 Light
+// Gold). For the PDF's tags (col.same / col.sameInk); the screen and the saved image keep the screen's.
+const TAG_PRINT = { same: '#b45f06', sameInk: '#fff' };
 function tagOutlined(brand) {
   return brand === 'Copic';
 }
@@ -208,12 +286,12 @@ function drawTag(g, tg, outlined, x, y, w, fs, col, same) {
   g.arcTo(x, top + h, x, top, r);
   g.arcTo(x, top, x + w, top, r);
   g.closePath();
-  g.fillStyle = same ? TAG.same : outlined ? col.pale : col.dark;
+  g.fillStyle = same ? col.same || TAG.same : outlined ? col.pale : col.dark;
   g.fill();
   g.lineWidth = Math.max(1, fs * TAG.line * (same ? 1.6 : 1));
   g.strokeStyle = col.dark;
   g.stroke();
-  g.fillStyle = same ? TAG.sameInk : outlined ? col.dark : '#fff';
+  g.fillStyle = same ? col.sameInk || TAG.sameInk : outlined ? col.dark : '#fff';
   g.font = '700 ' + fs * TAG.font + 'px ' + LFONT;
   g.textAlign = 'center';
   g.fillText(tg, x + w / 2, y + fs * 0.02);
@@ -518,7 +596,14 @@ function secLabel(l, m, tick, draw) {
         ctx.strokeText('✓', p.x, p.y);
         ctx.fillStyle = dk ? '#141414' : '#fff';
       } else ctx.fillStyle = '#3f7d4e';
+      // (v307: a fresh ✓ fading out)
+      const a = tkAlpha(l);
+      if (a < 1) {
+        ctx.save();
+        ctx.globalAlpha = a;
+      }
       ctx.fillText('✓', p.x, p.y);
+      if (a < 1) ctx.restore();
     }
     return [p.x - fs * 0.7 - 2, p.y - fs * 0.8 - 2, p.x + fs * 0.7 + 2, p.y + fs * 0.8 + 2];
   }
@@ -786,11 +871,16 @@ function pageDone() {
 // (v305) Colour along with the codes on: a section ticked shows its ✓ for about a second, then the ✓ goes (redrawn
 // a section at a time, renderIncremental) and its own colour says it's done. With the codes off the ✓ stays: it's the
 // only mark of a done section there. Sections already ticked when the list is shown have none.
-const TICK_SHOW = 1000;
+const TICK_SHOW = 1000,
+  // (v307) then it fades out over this long, in TICK_STEPS redraws of its section (at once with Reduce motion)
+  TICK_FADE = 200,
+  TICK_STEPS = 3;
 let _tkSeen = null,
   _tkOf = null,
   _tkAt = {},
-  _tkT = 0;
+  _tkT = 0,
+  // (Reduce motion, as it was at the last drawing)
+  _tkRm = false;
 function tkTrack(on) {
   if (!on || !colored) {
     _tkSeen = null;
@@ -807,7 +897,9 @@ function tkTrack(on) {
     _tkAt = {};
     return;
   }
-  const now = performance.now();
+  _tkRm = reducedMotion();
+  const now = performance.now(),
+    end = tkEnd();
   for (let l = 1; l < K; l++) {
     if (colored[l] && !_tkSeen[l]) _tkAt[l] = now;
     else if (!colored[l]) delete _tkAt[l];
@@ -815,8 +907,14 @@ function tkTrack(on) {
   }
   let next = Infinity;
   for (const l in _tkAt) {
-    if (now - _tkAt[l] >= TICK_SHOW) delete _tkAt[l];
-    else next = Math.min(next, _tkAt[l] + TICK_SHOW);
+    const age = now - _tkAt[l];
+    if (age >= end) delete _tkAt[l];
+    else {
+      // (the next step: the fade's start, each of its steps, its end)
+      let at = TICK_SHOW;
+      while (at <= age) at += TICK_FADE / TICK_STEPS;
+      next = Math.min(next, _tkAt[l] + Math.min(at, end));
+    }
   }
   clearTimeout(_tkT);
   _tkT = 0;
@@ -831,6 +929,23 @@ function tkTrack(on) {
 }
 function tkFresh(l) {
   return _tkAt[l] != null;
+}
+// how long a ✓ shows in all, its fade included (none with Reduce motion)
+function tkEnd() {
+  return TICK_SHOW + (_tkRm ? 0 : TICK_FADE);
+}
+// a fresh ✓'s step: TICK_STEPS + 1 while it shows in full, then one less at each step of its fade (0: gone)
+function tkStep(l) {
+  if (_tkAt[l] == null) return 0;
+  const age = performance.now() - _tkAt[l];
+  if (age < TICK_SHOW) return TICK_STEPS + 1;
+  if (age >= tkEnd()) return 0;
+  return Math.max(1, TICK_STEPS - Math.floor((age - TICK_SHOW) / (TICK_FADE / TICK_STEPS)));
+}
+// how strongly section l's ✓ is drawn (1 but while it fades: 0.75, 0.5, 0.25)
+function tkAlpha(l) {
+  const s = sfmode === 'color' && !hideLabels ? tkStep(l) : 0;
+  return s && s <= TICK_STEPS ? s / (TICK_STEPS + 1) : 1;
 }
 function renderGuide() {
   if (!assignData) return;
@@ -856,13 +971,26 @@ function renderGuide() {
     finView = sfmode === 'color' && ((focus && focusFin) || pageDone()),
     ticksOnly = sfmode === 'color' && hideLabels && !finView,
     dim = sfmode === 'color' && !finView && !hideLabels;
-  const fade = {};
+  const fade = {},
+    // (v307: a code in both brands found by its code: both markers' sections shown, as an open row's are)
+    two = finView ? null : findTwo(),
+    twoB = {},
+    sel = !!hlKey || !!two;
+  if (two)
+    two.forEach(function (g) {
+      Object.assign(twoB, g.b);
+    });
   if (zoneEditOn()) {
     // the zone editor: the zone's own sections in their colours, the rest faded
     for (const l in assign) if (zoneOf(+l) !== zoneCur) fade[l] = 1;
-  } else if (hlKey) {
+  } else if (hlKey && !finView) {
+    // (v307: not on a page finished, which shows as it is, whatever row is open)
     for (const l in assign) {
       if (!hlMatch(+l)) fade[l] = 1;
+    }
+  } else if (two) {
+    for (const l in assign) {
+      if (!twoB[assign[l].mkey]) fade[l] = 1;
     }
   } else if (photoRoughOnly && revealF == null && sfmode === 'guide' && family === 'photo' && _phErr) {
     for (const l in assign) {
@@ -876,14 +1004,14 @@ function renderGuide() {
     const b = hexRgb(assign[l].hex);
     if (dim) {
       const ink = inkOn(+l),
-        on = fcur > 0 ? +l === fcur : hlKey ? !fade[l] && !colored[l] : ink;
-      colArr[l] = on ? b : progMix(b, ink ? (fcur > 0 || hlKey ? PROG_SOFT : 1) : PROG_PALE);
+        on = fcur > 0 ? +l === fcur : sel ? !fade[l] && !colored[l] : ink;
+      colArr[l] = on ? b : progMix(b, ink ? (fcur > 0 || sel ? PROG_SOFT : 1) : PROG_PALE);
       if (on) full[l] = 1;
       continue;
     }
     // (Colour along with the codes off and a row open: the rest softened, not gone, so the plan still shows, v288)
     colArr[l] = fade[l]
-      ? ticksOnly && hlKey
+      ? ticksOnly && sel
         ? progMix(b, PROG_SOFT)
         : [(b[0] * 0.12 + 224) | 0, (b[1] * 0.12 + 224) | 0, (b[2] * 0.12 + 224) | 0]
       : dim && colored[l]
@@ -971,7 +1099,7 @@ function renderGuide() {
               ? 1
               : 0
             : dim && colored[l]
-              ? tkFresh(l)
+              ? tkStep(l)
                 ? 1
                 : 0
               : 2);
@@ -987,7 +1115,9 @@ function renderGuide() {
       '|' +
       (sh && shOK[l] && sh.tone[l] ? sh.tone[l].id : 0) +
       (lk === 2 && locks[l] && sfmode !== 'color' ? 'L' : '') +
-      (lk === 2 && +l === fcur && stepFaint(+l) ? 'f' : '');
+      (lk === 2 && +l === fcur && stepFaint(+l) ? 'f' : '') +
+      // (a ✓ fading out: each step drawn again, v307)
+      (lk === 1 && dim ? 't' + tkStep(l) : '');
   }
   const gk = [
     W,

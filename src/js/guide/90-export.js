@@ -225,22 +225,59 @@ async function _flate(u8) {
   const ab = await new Response(cs.readable).arrayBuffer();
   return new Uint8Array(ab);
 }
-function _rgbOf(cv) {
-  const g = cv.getContext('2d'),
-    d = g.getImageData(0, 0, cv.width, cv.height).data,
-    n = cv.width * cv.height,
-    o = new Uint8Array(n * 3);
-  for (let i = 0, j = 0; i < n; i++) {
-    o[j++] = d[i * 4];
-    o[j++] = d[i * 4 + 1];
-    o[j++] = d[i * 4 + 2];
-  }
-  return o;
+// a page's pixels as RGB, packed and compressed: in the worker (03-jobs), while the page draws the next one, or here
+// where there is none (or it fails). Resolves to { w, h, b: the bytes, zc: compressed }. The same bytes either way
+// (v307)
+function pdfPagePack(cv) {
+  const w = cv.width,
+    h = cv.height,
+    read = function () {
+      return cv.getContext('2d').getImageData(0, 0, w, h).data;
+    },
+    here = function () {
+      const raw = rgbPack(read(), w * h);
+      // (the page's canvas handed back as soon as its pixels are out, v296)
+      freeCanvas(cv);
+      return _flate(raw).then(function (zc) {
+        return { w: w, h: h, b: zc || raw, zc: !!zc };
+      });
+    };
+  if (!JOBS.on) return here();
+  // (the pixels handed to the worker; the canvas kept until it's done, in case it fails)
+  const px = read();
+  return JOBS.run('pdf', { buf: px.buffer, n: w * h, z: typeof CompressionStream !== 'undefined' }, [
+    px.buffer,
+  ]).then(function (r) {
+    freeCanvas(cv);
+    // (a worker without compression where the page has it: compressed here, as the page would have)
+    if (r.zc || !r.b.length) return { w: w, h: h, b: r.b, zc: r.zc };
+    return _flate(r.b).then(function (zc) {
+      return { w: w, h: h, b: zc || r.b, zc: !!zc };
+    });
+  }, here);
+}
+// a moment for the screen between pages: the next frame (or a tenth of a second, where frames don't come)
+function pdfBreath() {
+  return new Promise(function (res) {
+    let done = false;
+    const go = function () {
+      if (!done) {
+        done = true;
+        res();
+      }
+    };
+    requestAnimationFrame(function () {
+      setTimeout(go, 0);
+    });
+    setTimeout(go, 100);
+  });
 }
 // one page per canvas; a page may also be a function that draws its canvas when its turn comes (so a long PDF
 // holds one page in memory at a time). blob: the file as a Blob made from its parts, without first copying them into
-// one array (pages stored uncompressed are about 11 MB each, v304)
-async function canvasesToPDF(cvs, PW, PH, blob) {
+// one array (pages stored uncompressed are about 11 MB each, v304). prog(i, n): called as page i (from 1) of n is
+// drawn. (v307: one page at a time, the screen updated in between; each page packed and compressed in the worker
+// while the next is drawn)
+async function canvasesToPDF(cvs, PW, PH, blob, prog) {
   PW = PW || 612;
   PH = PH || 792;
   const M = 0,
@@ -264,14 +301,23 @@ async function canvasesToPDF(cvs, PW, PH, blob) {
   const kids = cvs.map((_, i) => pNo(i) + ' 0 R').join(' ');
   so();
   push('2 0 obj\n<< /Type /Pages /Kids [' + kids + '] /Count ' + nP + ' >>\nendobj\n');
-  for (let i = 0; i < nP; i++) {
-    const cv = typeof cvs[i] === 'function' ? cvs[i]() : cvs[i],
-      w = cv.width,
-      h = cv.height,
-      raw = _rgbOf(cv),
-      zc = await _flate(raw),
-      comp = zc || raw;
-    freeCanvas(cv);
+  // (each page's packing started as soon as it's drawn; written in order, one behind)
+  let pend = null;
+  for (let i = 0; i <= nP; i++) {
+    let job = null;
+    if (i < nP) {
+      if (prog) prog(i + 1, nP);
+      if (prog || i) await pdfBreath();
+      job = pdfPagePack(typeof cvs[i] === 'function' ? cvs[i]() : cvs[i]);
+    }
+    if (pend) put(i - 1, await pend);
+    pend = job;
+  }
+  function put(i, pk) {
+    const w = pk.w,
+      h = pk.h,
+      zc = pk.zc,
+      comp = pk.b;
     so();
     push(
       imgNo(i) +
@@ -447,7 +493,7 @@ const PRINT_PV = (function () {
         (t
           ? '<text x="15" y="16.5" text-anchor="middle" font-size="' +
             (t.length > 1 ? 8 : 9.5) +
-            '" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" opacity=".8">' +
+            '" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor">' +
             t +
             '</text>'
           : '') +
@@ -485,6 +531,12 @@ function printOptVal(k) {
 // browser can share files, as on the swatch chart: swGoLabel() in swatch.js)
 function openPrint() {
   if (!assignData) return;
+  // (v307) the worker started, and its packing warmed up on a small page, while the options are looked at: the first
+  // page of the PDF isn't kept waiting for it
+  if (JOBS.on) {
+    const px = new Uint8Array(256 * 256 * 4);
+    JOBS.run('pdf', { buf: px.buffer, n: 256 * 256, z: false }, [px.buffer]).catch(function () {});
+  }
   let b = '<div class="swopts">';
   PRINT_OPTS.forEach(function (o) {
     b +=
@@ -700,12 +752,98 @@ function PX(pt) {
 }
 // (a dry run, which only counts the pages, lays them out on 1×1 canvases)
 let _pdfDry = false;
+// (v307) The PDF written a page at a time: as it's laid out, what's drawn on each page is noted down on a stand-in
+// (a 1×1 canvas, as a dry run uses, which measures text and keeps the drawing state), and the page is drawn for real
+// from those notes when the writer comes to it (pdfReplay): the same calls in the same order, so the same pixels, and
+// one page's canvas at a time. Pictures drawn onto the pages (pdfFree) are kept until the last page that shows them.
+let _pdfRec = null;
+// (calls that only read: not noted down)
+const PDF_READS = {
+  measureText: 1,
+  getTransform: 1,
+  getLineDash: 1,
+  getImageData: 1,
+  isPointInPath: 1,
+  isPointInStroke: 1,
+  getContextAttributes: 1,
+};
+function pdfRecCtx() {
+  const s = document.createElement('canvas');
+  s.width = s.height = 1;
+  const t = s.getContext('2d'),
+    ops = [];
+  const g = new Proxy(t, {
+    get: function (o, k) {
+      const v = o[k];
+      if (typeof v !== 'function') return v;
+      return function () {
+        const a = Array.prototype.slice.call(arguments);
+        if (!PDF_READS[k]) ops.push([k, a]);
+        // (no pixels to draw on the stand-in)
+        if (k === 'drawImage' || k === 'putImageData') return undefined;
+        return v.apply(o, a);
+      };
+    },
+    set: function (o, k, v) {
+      ops.push([k, v, 1]);
+      o[k] = v;
+      return true;
+    },
+  });
+  return { g: g, ops: ops };
+}
+function pdfReplay(ops, w, h) {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const g = c.getContext('2d');
+  for (let i = 0; i < ops.length; i++) {
+    const o = ops[i];
+    if (o[2]) g[o[0]] = o[1];
+    else g[o[0]].apply(g, o[1]);
+  }
+  return c;
+}
+// a picture drawn onto pages, done with: handed back now, or (noted down) after the last page that shows it
+function pdfFree(c) {
+  if (_pdfRec) _pdfRec.keep.push(c);
+  else freeCanvas(c);
+}
+// the pages as functions that each draw theirs (from what pdfPage noted down)
+function pdfLazy(pages, keep) {
+  const last = new Map();
+  pages.forEach(function (P, i) {
+    P.c.ops.forEach(function (o) {
+      if (!o[2]) for (const a of o[1]) if (keep.indexOf(a) >= 0) last.set(a, i);
+    });
+  });
+  keep.forEach(function (c) {
+    if (!last.has(c)) freeCanvas(c);
+  });
+  return pages.map(function (P, i) {
+    return function () {
+      const c = pdfReplay(P.c.ops, P.w, P.h);
+      P.c.ops = null;
+      last.forEach(function (j, a) {
+        if (j === i) freeCanvas(a);
+      });
+      return c;
+    };
+  });
+}
 // (pp: the paper the PDF was started on, for pages drawn while it is written: Paper can be changed meanwhile, v304)
 function pdfPage(pp) {
   const P = PAPERS[pp || paper] || PAPERS.letter,
-    c = document.createElement('canvas'),
     w = Math.round((P[0] / 72) * PDPI),
     h = Math.round((P[1] / 72) * PDPI);
+  if (_pdfRec) {
+    const r = pdfRecCtx();
+    r.g.fillStyle = '#fff';
+    r.g.fillRect(0, 0, w, h);
+    r.g.textBaseline = 'alphabetic';
+    return { c: r, g: r.g, w: w, h: h, m: PX(pdfS < 1 ? 30 : 36) };
+  }
+  const c = document.createElement('canvas');
   c.width = _pdfDry ? 1 : w;
   c.height = _pdfDry ? 1 : h;
   const g = c.getContext('2d');
@@ -869,7 +1007,7 @@ function pdfZoneOverlay(g, x0, y0, f, ids) {
   ga.putImageData(im, 0, 0);
   g.imageSmoothingEnabled = true;
   g.drawImage(a, x0, y0, f.w, f.h);
-  freeCanvas(a);
+  pdfFree(a);
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.font = '700 ' + PX(8) + 'px ' + LFONT;
@@ -1267,13 +1405,18 @@ function pdfCloseMark(g, cr, letter, k, ink, pl) {
 // the PDF's pages as canvases; dry: just how many there will be (for the Print sheet's summary), from the same
 // layout without drawing the pictures
 // (lazy: the test strip's pages as functions that each draw one when the PDF writer comes to it, for exportPDF, v304)
+// (v307: lazy, the guide's pages too, each noted down as it's laid out and drawn when the PDF writer comes to it)
 function buildPDFPages(dry, lazy) {
   _pdfDry = !!dry;
   try {
     if (pdfWhat === 'strip') return testStripPages(!!dry, !!lazy);
-    return _buildPDF(!!dry);
+    if (!lazy || dry) return _buildPDF(!!dry);
+    _pdfRec = { keep: [] };
+    const pages = _buildPDF(false);
+    return pdfLazy(pages, _pdfRec.keep);
   } finally {
     _pdfDry = false;
+    _pdfRec = null;
   }
 }
 function _buildPDF(dry) {
@@ -1331,7 +1474,7 @@ function _buildPDF(dry) {
     tagOf = function (c) {
       return oneB ? '' : bTag(c.brand) + ' ';
     },
-    nMk = rows.length + ' ' + (oneB ? oneB + ' ' : '') + 'marker' + (rows.length === 1 ? '' : 's');
+    nMk = mkCount(rows.length, oneB, withShade ? null : 0);
   const ref = pdfWhat === 'ref',
     lab = ref ? 'none' : pdfLabels,
     nums = lab === 'numbers',
@@ -1362,7 +1505,10 @@ function _buildPDF(dry) {
         fill: LS.fill,
         bt: guideMixed(),
         // the brand tags as light as the codes (outlined ones white inside)
-        tag: pdfDark ? null : { dark: LS.fill, pale: '#fff' },
+        tag: Object.assign(
+          pdfDark ? { dark: TAG.dark, pale: TAG.pale } : { dark: LS.fill, pale: '#fff' },
+          TAG_PRINT,
+        ),
       };
     };
   let keyNums = nums,
@@ -1428,7 +1574,10 @@ function _buildPDF(dry) {
           // (v305: a close-up's codes near-black over its lines in mid grey, so the labels lead; page 1's stay light
           // so they don't show through pale ink. v306: their brand tags in the same print colours, near-black and
           // white, not the screen's)
-          c.lo = Object.assign(loAt(c.k), { fill: CU_INK, tag: { dark: CU_INK, pale: '#fff' } });
+          c.lo = Object.assign(loAt(c.k), {
+            fill: CU_INK,
+            tag: Object.assign({ dark: CU_INK, pale: '#fff' }, TAG_PRINT),
+          });
           c.pl = pdfPlace(
             g1,
             Object.keys(asg)
@@ -1652,7 +1801,7 @@ function _buildPDF(dry) {
         }
       }
       // (a whole-picture canvas: handed back now, not when the browser gets round to it — iPad's limit, v298)
-      freeCanvas(art1);
+      pdfFree(art1);
     } else for (let i = 0; i < closeP; i++) pages.push(null);
   }
   _pdfCloseN = Object.keys(shown).length;
@@ -1839,7 +1988,7 @@ function _buildPDF(dry) {
   if (!dry) {
     const art2 = pdfArt(true, sh);
     g.drawImage(art2, pvx, pvy, f2.w, f2.h);
-    freeCanvas(art2);
+    pdfFree(art2);
   }
   if (!dry && zIds.length) pdfZoneOverlay(g, pvx, pvy, f2, zIds);
   g.strokeStyle = 'rgba(0,0,0,.15)';
@@ -1848,11 +1997,16 @@ function _buildPDF(dry) {
   // columns: [number] swatch, brand, code, name, sections, then (with blends or shading) the lighter and darker
   // marker, each as wide as its longest entry so the name keeps what's left, even on a small page
   // [☐ to tick off] [order] [number] swatch …: the box and the order come first (v284)
-  const nw = keyNums ? PX(20) : 0,
-    lead = PX(36),
+  // (v307: the order column as wide as its longest, "162nd", clear of the box: it touched it)
+  g.font = '600 ' + PX(8) + 'px ' + LFONT;
+  const ordR = rows.reduce(function (w, r) {
+      return Math.max(w, PX(14) + g.measureText(pdfOrd(r.ord)).width);
+    }, PX(32)),
+    nw = keyNums ? PX(20) : 0,
+    lead = ordR + PX(4),
     X = {
       box: 0,
-      ord: PX(32),
+      ord: ordR,
       sw: lead + nw,
       tag: lead + nw + PX(16),
       code: lead + nw + PX(28),
@@ -2086,7 +2240,17 @@ function _buildPDF(dry) {
         g.font = '700 ' + fsT * TAG.font + 'px ' + LFONT;
         const gw = g.measureText(bTag(mm.brand)).width + fsT * TAG.pad * 2;
         g.textBaseline = 'middle';
-        drawTag(g, bTag(mm.brand), false, x + X.tag - fsT * TAG.pad, y + PX(9.5), gw, fsT, TAG, true);
+        drawTag(
+          g,
+          bTag(mm.brand),
+          false,
+          x + X.tag - fsT * TAG.pad,
+          y + PX(9.5),
+          gw,
+          fsT,
+          Object.assign({}, TAG, TAG_PRINT),
+          true,
+        );
         g.textAlign = 'left';
         g.textBaseline = 'alphabetic';
       } else {
@@ -2228,6 +2392,7 @@ function _buildPDF(dry) {
     );
     gg.textAlign = 'left';
   });
+  if (_pdfRec) return pages;
   return pages.map(function (P) {
     return P.c;
   });
@@ -2302,13 +2467,17 @@ async function _exportPDF() {
     _b.textContent = 'Preparing…';
     _b.disabled = true;
   }
-  // (a moment for "Preparing…" to show: the pages are drawn in one go, v287)
+  // (a moment for "Preparing…" to show: the pages are laid out in one go, v287)
   await new Promise(function (r) {
     setTimeout(r, 30);
   });
   try {
     const P = PAPERS[paper] || PAPERS.letter,
-      blob = await canvasesToPDF(buildPDFPages(false, true), P[0], P[1], true);
+      // (v307) each page drawn in turn, the button saying which (the Print sheet's, opened again meanwhile too)
+      blob = await canvasesToPDF(buildPDFPages(false, true), P[0], P[1], true, function (i, n) {
+        const b = document.getElementById('sfPDF');
+        if (b && b.disabled && n > 1) b.textContent = 'Page ' + i + ' of ' + n + '\u2026';
+      });
     const fname =
       ((curName || 'colour-guide')
         .replace(/[^a-z0-9]+/gi, '-')
@@ -2340,6 +2509,35 @@ function progStamp() {
     if (!progAt.e) progAt.e = now;
   } else progAt.e = 0;
 }
+// (v307) how many markers a shaded guide's highlights and shadows take beyond its own colours: none with shading off.
+// "16 markers" said only the colours when shading used 45, on Page finished, Reveal's card, Home and the PDF.
+function shadeExtra() {
+  if (!assignData || !shadeOn()) return 0;
+  const base = {},
+    ex = {};
+  assignData.order.forEach(function (l) {
+    base[assignData.assign[l].mkey] = 1;
+  });
+  assignData.order.forEach(function (l) {
+    const t = shadeSec(l);
+    if (!t) return;
+    [t.light, t.dark].forEach(function (m) {
+      if (m && m.mkey && !base[m.mkey]) ex[m.mkey] = 1;
+    });
+  });
+  return Object.keys(ex).length;
+}
+// "16 markers", "16 Ohuhu markers", or with shading "16 markers + 29 for shading" (x: shadeExtra(), when known)
+function mkCount(n, brand, x) {
+  if (x == null) x = shadeExtra();
+  return (
+    n +
+    ' ' +
+    (brand ? brand + ' ' : '') +
+    (n === 1 ? 'marker' : 'markers') +
+    (x > 0 ? ' + ' + x + ' for shading' : '')
+  );
+}
 // "166 sections · 24 markers · started 12 Sep, finished today", for the page finished
 function finishLine() {
   const ord = assignData.order,
@@ -2361,14 +2559,7 @@ function finishLine() {
           : { day: 'numeric', month: 'short', year: 'numeric' },
       );
     };
-  let t =
-    ord.length +
-    ' section' +
-    (ord.length === 1 ? '' : 's') +
-    ' \u00b7 ' +
-    nm +
-    ' marker' +
-    (nm === 1 ? '' : 's');
+  let t = ord.length + ' section' + (ord.length === 1 ? '' : 's') + ' \u00b7 ' + mkCount(nm);
   if (progAt.s && progAt.e) {
     const a = day(progAt.s),
       b = day(progAt.e);
@@ -2378,6 +2569,10 @@ function finishLine() {
         : ' \u00b7 started ' + a + ', finished ' + b;
   }
   return t;
+}
+// (v307) what a screen reader hears as the page is finished, in Focus mode and in the list alike (they differed)
+function finishSay() {
+  return 'Page finished. ' + finishLine() + '. Reveal & share is in the bar at the bottom.';
 }
 function checkComplete() {
   progStamp();
@@ -2411,7 +2606,7 @@ function celebrate() {
   }
   const rm = reducedMotion();
   if (focus) {
-    sayLive('Page finished. ' + finishLine() + '. Reveal & share is in the bar at the bottom.');
+    sayLive(finishSay());
     const pb = document.getElementById('sfFocProg');
     if (!rm) markerStrokes(pb && pb.offsetParent !== null ? pb.getBoundingClientRect() : null);
     return;
@@ -2499,7 +2694,7 @@ function doneInView() {
   if (!dn || dn.offsetParent === null || focus) return;
   // (the open row's second check would scroll back to it: 83-along.js)
   _revStop();
-  sayLive('Finished \u2014 every section coloured! Reveal and share is in the bar at the bottom.');
+  sayLive(finishSay());
   const r = dn.getBoundingClientRect(),
     bar = barEl(),
     top =
@@ -2639,9 +2834,7 @@ function exportImage() {
     });
   }, 30);
   function exportBlob(xc, codes) {
-    xc.toBlob(function (blob) {
-      // (the picture is in the file now: its canvas handed back, v296)
-      freeCanvas(xc);
+    pngBlob(xc).then(function (blob) {
       done();
       if (!blob) {
         note('Couldn’t export the image.');
@@ -2654,8 +2847,37 @@ function exportImage() {
         'image',
         'Image downloaded.',
       );
-    }, 'image/png');
+    });
   }
+}
+// A canvas as a PNG file (a Blob, or null), its canvas then handed back (v296). v307: encoded in the worker (03-jobs)
+// where it can be, as Safari's engine holds the page up for over a second encoding the saved image: its pixels are
+// sent, and checked there, so the file has the same pixels. Where it can't, or that fails, encoded here as before.
+function pngBlob(xc) {
+  const here = function () {
+    return new Promise(function (res) {
+      try {
+        xc.toBlob(function (b) {
+          freeCanvas(xc);
+          res(b);
+        }, 'image/png');
+      } catch (_) {
+        freeCanvas(xc);
+        res(null);
+      }
+    });
+  };
+  if (!JOBS.on || typeof OffscreenCanvas === 'undefined') return here();
+  let px = null;
+  try {
+    px = xc.getContext('2d').getImageData(0, 0, xc.width, xc.height).data;
+  } catch (_) {
+    return here();
+  }
+  return JOBS.run('png', { buf: px.buffer, w: xc.width, h: xc.height }, [px.buffer]).then(function (b) {
+    freeCanvas(xc);
+    return b;
+  }, here);
 }
 // ---- Test strip (v282): Share › Print › Pages › Test strip. A page of boxes to try this guide's markers on the
 // paper you'll colour on, since paper changes a marker's colour a lot and the app only predicts a layered tone or a

@@ -500,12 +500,16 @@ function rgbLab8(r, g, b) {
   return hexToLab('#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1));
 }
 // the correction that takes `paper` ([r, g, b] linear, from paperOf or a tapped spot) to white; null for none needed or
-// a reference too dark or too coloured to be paper
-function lightFix(paper) {
+// a reference too dark or too coloured to be paper. `loose` (v307) is for "something white" rather than paper: a cap
+// label or a white mug in a dim, warm room (a cap tray under a lamp: brightest labels L* 70, blue at 0.47 of red)
+const LIGHT_REF = { dark: 0.08, ratio: 0.55 },
+  LIGHT_REF_LOOSE = { dark: 0.05, ratio: 0.42 };
+function lightFix(paper, loose) {
   if (!paper) return null;
   const mx = Math.max(paper[0], paper[1], paper[2]),
-    mn = Math.min(paper[0], paper[1], paper[2]);
-  if (mx < 0.08 || mn / mx < 0.55) return null;
+    mn = Math.min(paper[0], paper[1], paper[2]),
+    lim = loose ? LIGHT_REF_LOOSE : LIGHT_REF;
+  if (mx < lim.dark || mn / mx < lim.ratio) return null;
   const gain = paper.map(function (v) {
     return PAPER_LIN / Math.max(v, 1e-4);
   });
@@ -577,6 +581,68 @@ function paperWarm(data) {
   return r.fix ? { fix: r.fix, lab: lab, share: ok / n } : null;
 }
 
+// (v307) "Photo looks warm · Balance it", for a photo with no paper to go by (a tray of caps under a lamp): its
+// brightest 2% of pixels, when most of them are near-neutral (chroma under 26), together are dim (L* 35-80, where
+// paper white is about 95), stand out (at least twice as light as the picture's middle pixel: white things in a
+// scene, not a pale picture) and are spread over the picture (in at least half of a 4 × 4 grid: many white labels, not
+// one sun or lamp), are taken as something white, and lifted to paper white as a tap on them would be
+// (paperSpot, loose). Warm (b* 8 or more) or only dim says which. Returns { fix, lab, warm } or null. Never applied by
+// itself; asked only when paperWarm finds no paper. A sunset's brightest pixels are its sun and glow: too light, or
+// too coloured, or (exposed darker) in one place. Measured on Ben's cap-tray photo: labels L* 70, b* 20, 60% of the
+// brightest 2% near-neutral, 6.7 times as light as the middle pixel, in 11 of the 16 parts. `w`: the image's width.
+const WARM_PHOTO = { top: 0.02, C: 26, near: 0.5, Lmin: 35, Lmax: 80, b: 8, stand: 2, spread: 8 };
+function photoWarm(data, w) {
+  const px = [];
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < 125) continue;
+    px.push([
+      0.2126 * srgbToLin(data[i]) + 0.7152 * srgbToLin(data[i + 1]) + 0.0722 * srgbToLin(data[i + 2]),
+      i,
+    ]);
+  }
+  if (px.length < 100) return null;
+  px.sort(function (a, b) {
+    return b[0] - a[0];
+  });
+  // (every pixel as light as the 2%'s darkest: many labels alike are all in, not those first in the picture)
+  let n = Math.max(20, Math.round(px.length * WARM_PHOTO.top));
+  while (n < px.length && px[n][0] >= px[n - 1][0]) n++;
+  const top = px.slice(0, n),
+    ch = [[], [], []];
+  let near = 0;
+  top.forEach(function (p) {
+    const lab = rgbLab8(data[p[1]], data[p[1] + 1], data[p[1] + 2]);
+    if (Math.hypot(lab[1], lab[2]) < WARM_PHOTO.C) near++;
+    for (let k = 0; k < 3; k++) ch[k].push(srgbToLin(data[p[1] + k]));
+  });
+  if (
+    near / top.length < WARM_PHOTO.near ||
+    top[top.length >> 1][0] < WARM_PHOTO.stand * px[px.length >> 1][0]
+  )
+    return null;
+  const h = data.length / 4 / w,
+    cells = new Set();
+  top.forEach(function (p) {
+    const q = p[1] / 4;
+    cells.add(
+      Math.min(3, Math.floor(((q / w) | 0) / (h / 4))) * 4 + Math.min(3, Math.floor((q % w) / (w / 4))),
+    );
+  });
+  if (cells.size < WARM_PHOTO.spread) return null;
+  // the white: the median per channel, in linear light
+  const white = ch.map(function (a) {
+    a.sort(function (p, q) {
+      return p - q;
+    });
+    return a[a.length >> 1];
+  });
+  const lab = linLab(white[0], white[1], white[2]);
+  if (lab[0] < WARM_PHOTO.Lmin || lab[0] >= WARM_PHOTO.Lmax || Math.hypot(lab[1], lab[2]) >= WARM_PHOTO.C)
+    return null;
+  const r = paperSpot(white, true);
+  return r.fix ? { fix: r.fix, lab: lab, warm: lab[2] >= WARM_PHOTO.b } : null;
+}
+
 /* ---- Match a colour: the markers nearest a colour, by eye (match.js) ----
    Ranked by CIEDE2000, which follows the eye: plain L*a*b* distance (ΔE76) overstates differences in strong colours,
    so on a 451-marker collection its top pick wasn't the closest by eye about a third of the time. */
@@ -645,8 +711,9 @@ function matchNearest(lab, opt) {
   };
 }
 
-/* ---- "Tap the white paper" (Match's photo, Palette › From photo) ----
-   Never automatic: a sunset's warm cast is the picture, so only a spot you say is white paper corrects a photo. */
+/* ---- "Tap something white" (Match's photo, Palette › From photo; "Tap the white paper" until v307) ----
+   Never automatic: a sunset's warm cast is the picture, so only a spot you say is white corrects a photo (or an offer
+   you take: paperWarm, photoWarm). */
 // the average colour, in linear light, of the square patch of RGBA `data` (`w` × `h`) within `rad` of (x, y); null
 // when all of it is see-through
 function patchLin(data, w, h, x, y, rad) {
@@ -665,10 +732,35 @@ function patchLin(data, w, h, x, y, rad) {
     }
   return n ? [r / n, g / n, b / n] : null;
 }
-// what a tapped spot (linear [r, g, b], from patchLin) gives as the paper: { fix } to use; { fix: null, note } when
-// the paper already looks white; { bad: true, note } when the spot can't be paper
-function paperSpot(lin) {
-  const fix = lightFix(lin);
+// (v307) "Tap something white": the brightest quarter of the patch, averaged in linear light, so a small white thing
+// (a cap's label) among darker ones can be tapped; on plain paper it is the paper, as patchLin gives it
+function whiteLin(data, w, h, x, y, rad) {
+  const px = [];
+  for (let yy = Math.max(0, y - rad); yy <= Math.min(h - 1, y + rad); yy++)
+    for (let xx = Math.max(0, x - rad); xx <= Math.min(w - 1, x + rad); xx++) {
+      const i = (yy * w + xx) * 4;
+      if (data[i + 3] < 125) continue;
+      const c = [srgbToLin(data[i]), srgbToLin(data[i + 1]), srgbToLin(data[i + 2])];
+      px.push([0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2], c]);
+    }
+  if (!px.length) return null;
+  px.sort(function (a, b) {
+    return b[0] - a[0];
+  });
+  const top = px.slice(0, Math.max(1, Math.ceil(px.length / 4))),
+    s = [0, 0, 0];
+  top.forEach(function (p) {
+    for (let k = 0; k < 3; k++) s[k] += p[1][k];
+  });
+  return s.map(function (v) {
+    return v / top.length;
+  });
+}
+// what a tapped spot (linear [r, g, b], from patchLin or whiteLin) gives as the paper: { fix } to use; { fix: null,
+// note } when it already looks white (v307: whatever white thing was tapped, not just the paper); { bad: true, note } when the spot can't be paper. `loose`: the limits
+// for something white (lightFix)
+function paperSpot(lin, loose) {
+  const fix = lightFix(lin, loose);
   if (fix) {
     // (paper brighter than paper white — a scan, a picture made on screen — is balanced to its own brightest channel
     // instead of darkened to PAPER_LIN: a cream scan loses its cast, a white one is left as it is, v304)
@@ -683,7 +775,7 @@ function paperSpot(lin) {
       })
     )
       return { fix: { gain: gain }, note: '' };
-    return { fix: null, note: 'The paper already looks white: nothing to correct.' };
+    return { fix: null, note: 'That already looks white: nothing to correct.' };
   }
   // lightFix gives none both for paper that needs no correction (every channel within 2% of it) and for a spot that
   // can't be paper
@@ -693,10 +785,10 @@ function paperSpot(lin) {
       return Math.abs(PAPER_LIN / Math.max(v, 1e-4) - 1) < 0.02;
     })
   )
-    return { fix: null, note: 'The paper already looks white: nothing to correct.' };
+    return { fix: null, note: 'That already looks white: nothing to correct.' };
   return {
     bad: true,
     fix: null,
-    note: 'That spot is too dark or too coloured to be white paper. Tap a plain white part of the page.',
+    note: 'That spot is too dark or too coloured to be white. Tap the paper or something else white.',
   };
 }

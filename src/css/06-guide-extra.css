@@ -209,6 +209,20 @@
     0 2px 12px -4px rgba(77, 171, 247, 0.5),
     0 1px 0 rgba(255, 255, 255, 0.28) inset;
 }
+/* v307: off while every section is left white (a photo with no colour): no fill, its word still readable */
+.sfcolorcta:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  /* (v307 debug: --sub read at 4.55:1, just over; the greyed text of the app's other disabled primary buttons, 6:1) */
+  color: rgba(244, 242, 236, 0.62);
+  text-shadow: none;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  transform: none;
+}
+.sfcolorcta:disabled::before {
+  display: none;
+}
 @keyframes ctaShine {
   0%,
   64% {
@@ -678,6 +692,17 @@
     0 0 0 1.5px rgba(0, 0, 0, 0.55),
     inset 0 0 0 1.5px rgba(0, 0, 0, 0.55);
 }
+/* (v307: smaller on a phone, where the picture is a third of the width and 26px rings covered a third of it) */
+@media (max-width: 599px) {
+  #sfRoot .sfring {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.55),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+  }
+}
 #sfRoot .sfheldnote.sfrough {
   flex-wrap: nowrap;
   column-gap: 2px;
@@ -844,7 +869,8 @@
   color: var(--sub);
 }
 /* brand badge (O = Ohuhu, C = Copic), shown only when a guide mixes brands */
-#sfRoot .btag {
+#sfRoot .btag,
+#msToast .btag {
   display: inline-block;
   font-size: var(--t-sm);
   font-weight: 800;
@@ -854,6 +880,11 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: var(--sub);
   vertical-align: 1px;
+}
+/* (v307) in the toast, which is light: the badge in its text's colour */
+#msToast .btag {
+  color: inherit;
+  border-color: currentColor;
 }
 /* the toast's Undo is a real button, not a small link */
 #msToast .sflink {

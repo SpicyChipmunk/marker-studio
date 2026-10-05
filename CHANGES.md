@@ -428,3 +428,36 @@ A pass over what v305 left out and a session as Ben for new ideas; Ben chose the
 
 - On a phone, Colour along's code box folds behind ⌕ at the end of the order row, so the first rows still show above the bar; ✕ folds it again. An iPad keeps it open.
 - Cache bumped to `marker-studio-v306`.
+
+# Changes — v307 (bugs, polish and speed)
+
+A fresh-eye review of v306 by four reviewers (the Plan; Colour along to sharing; Markers, Palette, welcome and offline use; polish and speed), plus v306's GitHub run. Everything it found was built on four branches, then given a debugging pass across the merged code. No new features. New tests: `test/v307-guide` (8), `v307-along` (1), `v307-markers` (7), `v307-speed` (3), `v307-final` (4); `e2e/v307-guide` (6), `v307-along` (11), `v307-markers` (5), `v307-speed` (4), `v307-dbg-core` (3), `v307-dbg-ui` (1), `v307-final` (7). The tests for each change fail on v306. Saved guides open exactly as they were saved, and every guide lays the same markers as in v306 except where a fix below says otherwise.
+
+**Bugs**
+- A page finished in Focus mode stays in full colour after ✕ (it had faded to near-white under "Page finished!"): no row reopened, and no open-row fade on a finished page.
+- Big pages at "all · 268, some twice" no longer give touching sections the same marker: a last pass moves one of each pair to a nearby marker the guide already uses (954 sections: 11 → 0; 1,423: 48 → 0). The waiting Photo pattern gets it too.
+- Undo and Redo keep how the markers were picked with shading on, so the Start colour line stays right.
+- Another tab saving the open guide keeps Colour along as it was: the code box's text, cursor and line, a search, the open row, the focus and the scroll.
+- Shaded guides count their shading markers: "16 markers + 29 for shading" on Page finished, Focus's finish, Reveal's card, Home's latest piece and the PDF.
+- Colour it on the paper round the drawing smooths its rough spots in the same step when Smooth them is on; the rough-spot count shows with the first-time tip.
+- A code in both brands found by its code outlines both markers' sections, each in its own colour, until a row is tapped; the brand is a badge on screen and read out ("Ohuhu Y26") wherever a code is named.
+- Smooth them never brings in a marker whose own highlight or shadow is the other brand of a code in the guide. The find line names zones where a code is a highlight in one and a shadow in another.
+- The PDF key's three-digit order numbers ("162nd") clear the tick box; the two-brands tag is darker in print (the amber showed through pale yellow ink).
+- A photo with no colour says "N sections · left white", and Colour along is off.
+- A guide that opened (or reloaded from another tab) into Colour along with every section white showed a blank picture. Opening a guide just after pressing Build guide no longer takes it out of Colour along.
+
+**Polish**
+- From photo: a warm or dim photo with no paper in it, such as a tray of caps under a lamp, offers "Photo looks warm · Balance it" (the white labels become white; never applied by itself). "Tap something white" accepts a cap label; something already white says "That already looks white: nothing to correct."
+- Help › Your data is written for iPhone and iPad: Safari's seven days, the Home Screen app's own storage, "Restore a file", and whether Safari has agreed to keep your data.
+- Contrast at 4.5:1 or better: disabled buttons (pale fill, greyed words) including "Tick a set above", Scan's Add, "Page 2 of 3…" and "Building…"; brand letters and badges; the Print sheet's icons; Focus's disabled ←.
+- "Saving…" shows only while saving; ticks fade out; one "Page finished" announcement; "Scatter: Polished" styled like the other labels; Undo's space kept in the tool row; smaller rough-spot rings on a phone; Home's latest piece keeps "+ 21 for shading" on one line.
+- A hex code typed in Markers' search offers "Match this colour". Opening the app from an address with extra bits after it no longer stores another copy of the app.
+
+**Speed** (same PDF bytes, same pixels, same markers)
+- The PDF is drawn a page at a time ("Page 3 of 7…"), with packing and compression in a background worker; Save image and a new guide's first save are encoded in the worker; opening a guide works out its label points in the worker and keeps them for the session; Continue paints once; Home decodes a guide's picture before drawing it. In Safari's engine the longest freezes roughly halve (PDF 1.4–1.7 s → 0.7–1.0 s; opening 0.6–1.0 s → 0.4–0.5 s); total times are about the same, and Save image's is a little longer for its checks.
+- If the worker stops answering, the app does the work itself after a few seconds, with the same result.
+
+**Tests and CI**
+- WebKit on GitHub runs in 8 parts (it had outgrown 6 × 30 minutes; three files had run only in the retry), timed from v306's run. The bloom test waits for the overlay's fade-out.
+
+- Cache bumped to `marker-studio-v307`.

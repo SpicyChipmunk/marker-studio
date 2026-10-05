@@ -198,7 +198,7 @@ test('Match › Camera says a still photo gives a truer match', async () => {
   await page.evaluate(() => { document.getElementById('matchCamBtn').style.display = ''; navigator.mediaDevices.getUserMedia = () => new Promise(() => {}); });
   assert.equal(await page.isVisible('#matchCamTip'), false, 'not on the Photo pane');
   await page.click('.msrc [data-src="camera"]');
-  assert.equal(await page.textContent('#matchCamTip'), 'For the truest match, take a photo and tap the white paper.');
+  assert.equal(await page.textContent('#matchCamTip'), 'For the truest match, take a photo and tap something white.');
   assert.ok(await page.isVisible('#matchCamTip'));
   assert.deepEqual(errors, []);
 });
@@ -245,14 +245,14 @@ test('Match › Photo: Tap the white paper corrects the lighting; a bad spot say
   await loadPhoto(page);
   assert.ok(await page.isVisible('#matchPaper'));
   assert.equal(await page.getAttribute('#matchPaper', 'aria-pressed'), 'false');
-  assert.equal(await page.textContent('#matchPaper'), 'Tap the white paper');
+  assert.equal(await page.textContent('#matchPaper'), 'Tap something white');
   await tapPhoto(page, 0.77, 0.25);
   const red0 = await hexNow(page);
   assert.equal(red0, '#b8363c', 'the red as photographed');
   // into the mode: the next tap sets the paper, not a sample
   await page.click('#matchPaper');
   assert.equal(await page.getAttribute('#matchPaper', 'aria-pressed'), 'true');
-  assert.match(await page.textContent('#matchPaperNote'), /tap a plain white part of the paper/);
+  assert.match(await page.textContent('#matchPaperNote'), /tap something white in the photo/);
   // Escape leaves the mode, not the dialog
   await page.keyboard.press('Escape'); await idle(page);
   assert.equal(await page.getAttribute('#matchPaper', 'aria-pressed'), 'false');
@@ -260,7 +260,7 @@ test('Match › Photo: Tap the white paper corrects the lighting; a bad spot say
   assert.equal(await page.textContent('#matchPaperNote'), '');
   // the red patch can't be paper: said plainly, and the mode stays for another try
   await page.click('#matchPaper'); await tapPhoto(page, 0.77, 0.25);
-  assert.equal(await page.textContent('#matchPaperNote'), 'That spot is too dark or too coloured to be white paper. Tap a plain white part of the page.');
+  assert.equal(await page.textContent('#matchPaperNote'), 'That spot is too dark or too coloured to be white. Tap the paper or something else white.');
   assert.equal(await page.getAttribute('#matchPaper', 'aria-pressed'), 'true');
   assert.equal(await page.isVisible('#matchLight'), false);
   assert.equal(await hexNow(page), red0, 'no sample taken');
@@ -296,7 +296,7 @@ test('Match › Photo: Tap the white paper corrects the lighting; a bad spot say
   // paper that is already white: nothing to correct
   await loadPhoto(page, '#f1f1f1');
   await page.click('#matchPaper'); await tapPhoto(page, 0.2, 0.5);
-  assert.equal(await page.textContent('#matchPaperNote'), 'The paper already looks white: nothing to correct.');
+  assert.equal(await page.textContent('#matchPaperNote'), 'That already looks white: nothing to correct.');
   assert.equal(await page.isVisible('#matchLight'), false);
   assert.deepEqual(errors, []);
 });

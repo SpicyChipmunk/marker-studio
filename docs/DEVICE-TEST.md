@@ -78,6 +78,17 @@ On a guide, open **Style** and set **Shading** to **Light & shadow**.
 - [ ] **Blend:** a tap still adds an anchor; press and hold a section shows Change colour / Pin. **Manual:** a tap opens the picker.
 - [ ] **Style → Pin colours:** taps pin and unpin sections directly.
 
+## 3j. v307 on the iPad (8 min)
+
+- [ ] **Finish in Focus:** finish a page in Focus mode, tap ✕: the page stays in full colour.
+- [ ] **PDF:** Download PDF on a big page: the button counts "Page 2 of 7…" and the app keeps responding; the PDF looks as before.
+- [ ] **Save image** and **opening a guide** feel quicker to respond; a new guide saves and reopens.
+- [ ] **Two tabs:** type a code in Colour along's box, save from another tab: your text and open row stay.
+- [ ] **Shading:** a shaded guide's finish line says "N markers + M for shading".
+- [ ] **From photo:** a photo of your marker trays under a lamp offers "Photo looks warm · Balance it"; it brings back the blues and violets.
+- [ ] **Help › Your data** reads clearly on the iPad.
+- [ ] **Offline:** in airplane mode, open the Home Screen app, open a guide, make a PDF.
+
 ## 3i. v306 on the iPad (12 min)
 
 On your iPad in Safari, with your own collection.

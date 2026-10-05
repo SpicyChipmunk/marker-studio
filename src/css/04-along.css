@@ -117,6 +117,11 @@
 #sfRoot .sfarow.full .sfah > * {
   opacity: 0.5;
 }
+/* (v307) a finished row's brand badge as readable as its code: dimmed twice over, it was 2.2:1 */
+#sfRoot .sfarow.full .btag {
+  color: var(--ink);
+  border-color: rgba(255, 255, 255, 0.45);
+}
 #sfRoot .sfarow.full .sfah .cnt {
   color: var(--ok);
   opacity: 0.9;

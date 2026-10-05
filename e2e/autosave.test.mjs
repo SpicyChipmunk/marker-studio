@@ -45,12 +45,12 @@ test('a guide from your photo goes into the Library once built; then a pattern c
   assert.match(await page.textContent('#sfLive'), /Saved in your Library/, 'announced for screen readers');
   assert.equal(await page.evaluate(() => guidesAtRisk()), 0, 'as built, the backup reminder leaves it out');
 
-  // a pattern change: "Saving…" at once, then saved without pressing anything
+  // a pattern change: saved without pressing anything (v307: "Saving…" only while it's being written, not at once)
   const shape0 = (await stored(page, g.id)).shape;
   await page.click('.sftabbtn[data-t="pattern"]');
   const shape = await page.getAttribute('#sfShape .sfedit:not(.on)', 'data-v');
   await page.click(`#sfShape [data-v="${shape}"]`);
-  assert.equal(await status(page), 'Saving…');
+  assert.notEqual(await status(page), 'Saving…');
   await idle(page, AUTO);
   assert.match(await status(page), /^(Saved in your Library|Saves itself from now on) ✓$/);
   assert.notEqual(shape, shape0);

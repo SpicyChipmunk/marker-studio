@@ -453,7 +453,7 @@ harm.addEventListener('click', (e) => {
     paperMode = !!on;
     if (paperB) paperB.setAttribute('aria-pressed', paperMode ? 'true' : 'false');
     if (thumb) thumb.classList.toggle('paperpick', paperMode);
-    setNote(paperMode ? 'Now tap a plain white part of the paper in the photo.' : '');
+    setNote(paperMode ? 'Now tap something white in the photo: the paper, or a white label.' : '');
   }
   // the photo at up to 800px across, for the paper spot and the corrected thumbnail
   function photoCanvas() {
@@ -497,7 +497,8 @@ harm.addEventListener('click', (e) => {
   /* (v306) "Paper looks warm · Make it white": offered when the photo's paper is clearly paper and clearly warm
      (paperWarm, colour.js), and while no correction is in use; a tap uses the correction tapping that paper would.
      Never automatic, and ✕ (Lighting corrected) takes it away again, which offers it again. Read from a small copy
-     of the photo (about 160 px square), as the palette's own is. */
+     of the photo (about 160 px square), as the palette's own is. (v307) With no paper, "Photo looks warm · Balance
+     it" (or dim) in its place, from the photo's brightest near-white pixels (photoWarm). */
   function warmCheck() {
     warm = null;
     if (_photoImg) {
@@ -507,7 +508,15 @@ harm.addEventListener('click', (e) => {
       c.height = Math.max(1, Math.round(_photoImg.height * sc));
       try {
         drawShrunk(c.getContext('2d'), _photoImg, c.width, c.height);
-        warm = paperWarm(c.getContext('2d').getImageData(0, 0, c.width, c.height).data);
+        var px = c.getContext('2d').getImageData(0, 0, c.width, c.height).data,
+          pw = paperWarm(px),
+          ph = pw ? null : photoWarm(px, c.width);
+        if (pw) warm = { fix: pw.fix, text: 'Paper looks warm \u00b7 Make it white' };
+        else if (ph)
+          warm = {
+            fix: ph.fix,
+            text: (ph.warm ? 'Photo looks warm' : 'Photo looks dim') + ' \u00b7 Balance it',
+          };
       } catch (err) {
         warm = null;
       } finally {
@@ -517,7 +526,9 @@ harm.addEventListener('click', (e) => {
     warmShow();
   }
   function warmShow() {
-    if (warmB) warmB.style.display = warm && !_photoFix ? '' : 'none';
+    if (!warmB) return;
+    if (warm) warmB.textContent = warm.text;
+    warmB.style.display = warm && !_photoFix ? '' : 'none';
   }
   if (warmB)
     warmB.addEventListener('click', function () {
@@ -547,7 +558,7 @@ harm.addEventListener('click', (e) => {
         r;
       try {
         r = paperSpot(
-          patchLin(
+          whiteLin(
             c.getContext('2d').getImageData(0, 0, c.width, c.height).data,
             c.width,
             c.height,
@@ -555,6 +566,7 @@ harm.addEventListener('click', (e) => {
             y,
             Math.max(2, Math.round(c.width / 100)),
           ),
+          true,
         );
       } catch (err) {
         return;

@@ -75,10 +75,6 @@
   flex: 1;
   padding: 4px 12px;
 }
-#presetAdd:disabled {
-  opacity: 0.38;
-  cursor: default;
-}
 #presetReset {
   padding: 4px 15px;
   border-radius: var(--r-md);
@@ -1244,6 +1240,10 @@ button.hcpic:focus-visible {
 .hhmeta {
   color: var(--sub);
   font-size: var(--t-sm);
+}
+/* ("24 markers" and "+ 29 for shading" each kept on one line, v307) */
+.hhnw {
+  white-space: nowrap;
 }
 .hhribbon {
   display: block;

@@ -1024,12 +1024,12 @@ function shadeTipHTML(l) {
       return '<i style="background:' + esc(hex) + '"></i>';
     },
     parts = [];
-  if (t.light) parts.push(sw(t.light.hex) + 'H ' + esc(mcode(t.light)));
+  if (t.light) parts.push(sw(t.light.hex) + 'H ' + mcodeEye(t.light));
   else if (t.paper) parts.push(sw('rgb(' + t.L.join(',') + ')') + 'H paper');
-  parts.push(sw(m.hex) + 'B ' + esc(mcode(m)));
+  parts.push(sw(m.hex) + 'B ' + mcodeEye(m));
   if (!t.noShadow)
     parts.push(
-      t.dark ? sw(t.dark.hex) + 'S ' + esc(mcode(t.dark)) : sw('rgb(' + t.S.join(',') + ')') + 'S 2nd coat',
+      t.dark ? sw(t.dark.hex) + 'S ' + mcodeEye(t.dark) : sw('rgb(' + t.S.join(',') + ')') + 'S 2nd coat',
     );
   return (
     '<div class="sftipsh"><span class="sftv" aria-hidden="true">' +
@@ -1750,17 +1750,18 @@ function brandsMixed() {
 function mcode(m) {
   return (brandsMixed() ? bTag(m.brand) + ' ' : '') + m.code;
 }
-// as HTML: the letter is for the eye, a screen reader hears the brand's name (and for speech: msay)
+// (v307) the brand as a badge for the eye, as Colour along's rows show it (hidden from screen readers), or ''
+function mbadge(m) {
+  return brandsMixed() ? '<b class="btag" aria-hidden="true">' + esc(bTag(m.brand)) + '</b> ' : '';
+}
+// as HTML: the badge is for the eye, a screen reader hears the brand's name (and for speech: msay). v307: the letter
+// was bare ("O R46"), and read out as a letter
 function mcodeHTML(m) {
-  return (
-    (brandsMixed()
-      ? '<span aria-hidden="true">' +
-        esc(bTag(m.brand)) +
-        ' </span><span class="sfsr">' +
-        esc(m.brand) +
-        ' </span>'
-      : '') + esc(m.code)
-  );
+  return (brandsMixed() ? mbadge(m) + '<span class="sfsr">' + esc(m.brand) + ' </span>' : '') + esc(m.code);
+}
+// (for something hidden from screen readers, which hear msay's words elsewhere: the badge and the code)
+function mcodeEye(m) {
+  return mbadge(m) + esc(m.code);
 }
 function msay(m) {
   return (brandsMixed() ? m.brand + ' ' : '') + m.code;
@@ -1851,16 +1852,14 @@ function toneTrio(m, html, t) {
     sw = function (hex) {
       return html ? '<i style="background:' + esc(hex) + '"></i>' : '';
     },
-    c = function (s) {
-      return html ? esc(s) : s;
+    c = function (x) {
+      return html ? mcodeEye(x) : mcode(x);
     };
-  if (t.light) parts.push(sw(t.light.hex) + 'H ' + c(mcode(t.light)));
+  if (t.light) parts.push(sw(t.light.hex) + 'H ' + c(t.light));
   else if (t.paper) parts.push(sw('rgb(' + t.L.join(',') + ')') + 'H paper');
-  parts.push(sw(m.hex) + 'B ' + c(mcode(m)));
+  parts.push(sw(m.hex) + 'B ' + c(m));
   if (!t.noShadow)
-    parts.push(
-      t.dark ? sw(t.dark.hex) + 'S ' + c(mcode(t.dark)) : sw('rgb(' + t.S.join(',') + ')') + 'S 2nd coat',
-    );
+    parts.push(t.dark ? sw(t.dark.hex) + 'S ' + c(t.dark) : sw('rgb(' + t.S.join(',') + ')') + 'S 2nd coat');
   return html
     ? '<span class="sftv" aria-hidden="true">' +
         parts.join(' <span>›</span> ') +
@@ -1923,7 +1922,7 @@ function toneTrioMulti(m, rows, html) {
     }),
     H = opts(function (t) {
       return t.light
-        ? { k: t.light.mkey, hex: t.light.hex, tx: mcode(t.light), say: msay(t.light) }
+        ? { k: t.light.mkey, hex: t.light.hex, tx: mcode(t.light), th: mcodeEye(t.light), say: msay(t.light) }
         : t.paper
           ? { k: 'paper', hex: 'rgb(' + t.L.join(',') + ')', tx: 'paper', say: 'the paper left white' }
           : anyH
@@ -1938,6 +1937,7 @@ function toneTrioMulti(m, rows, html) {
               k: t.dark.mkey + (t.glaze ? 'g' : ''),
               hex: t.dark.hex,
               tx: mcode(t.dark),
+              th: mcodeEye(t.dark),
               say: msay(t.dark) + (t.glaze ? ' over the base' : ''),
             }
           : { k: 'coat', hex: 'rgb(' + t.S.join(',') + ')', tx: '2nd coat', say: 'a second coat' };
@@ -1959,7 +1959,9 @@ function toneTrioMulti(m, rows, html) {
       return (
         two
           .map(function (x, i) {
-            return '<i style="background:' + esc(x.hex) + '"></i>' + (i ? '' : lt + ' ') + esc(x.tx);
+            return (
+              '<i style="background:' + esc(x.hex) + '"></i>' + (i ? '' : lt + ' ') + (x.th || esc(x.tx))
+            );
           })
           .join(' / ') + esc(more)
       );
@@ -1981,7 +1983,7 @@ function toneTrioMulti(m, rows, html) {
     parts.push(part('H', H));
     sp.push(say('highlight', H));
   }
-  parts.push(html ? '<i style="background:' + esc(m.hex) + '"></i>B ' + esc(mcode(m)) : 'B ' + mcode(m));
+  parts.push(html ? '<i style="background:' + esc(m.hex) + '"></i>B ' + mcodeEye(m) : 'B ' + mcode(m));
   sp.push('base ' + msay(m));
   if (S.length) {
     parts.push(part('S', S));
@@ -1995,13 +1997,22 @@ function toneTrioMulti(m, rows, html) {
         '</span>'
     : parts.join(' › ');
 }
-// what one step asks you to do, for the focus bar
+// what one step asks you to do, for the focus bar: name as text, nameH with the brand as a badge, say for a screen
+// reader (the brand's name: v307)
 function stepText(l, bits) {
+  const r = stepText1(l, bits, mcode, false);
+  if (r) {
+    r.nameH = stepText1(l, bits, mcodeEye, true).name;
+    r.say = stepText1(l, bits, msay, false).name;
+  }
+  return r;
+}
+function stepText1(l, bits, cd, html) {
   const m = assignData.assign[l],
     t = shadeSec(l);
   if (!t || bits === shadeReq(l)) return null;
   const nm = function (x) {
-    return mcode(x) + (x.name ? ' ' + x.name : '');
+    return cd(x) + (x.name ? ' ' + (html ? esc(x.name) : x.name) : '');
   };
   if (bits === 4)
     return t.dark
@@ -2012,7 +2023,7 @@ function stepText(l, bits) {
         }
       : {
           hex: 'rgb(' + t.S.join(',') + ')',
-          name: 'Shadow \u00b7 2nd coat of ' + mcode(m),
+          name: 'Shadow \u00b7 2nd coat of ' + cd(m),
           sub: 'the side away from the light',
         };
   if (bits === 1)
@@ -2035,7 +2046,7 @@ function stepText(l, bits) {
   if (bits === 3)
     return {
       hex: m.hex,
-      name: 'Highlight ' + mcode(t.light) + ' \u203a Base ' + mcode(m),
+      name: 'Highlight ' + cd(t.light) + (html ? ' \u203a Base ' : ' \u203a Base ') + cd(m),
       sub: t.glaze ? 'the shadow goes over it later, once it\u2019s dry' : '2nd coat comes later',
     };
   return null;

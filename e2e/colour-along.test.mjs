@@ -375,7 +375,8 @@ test('finishing the page in Colour along brings "Page finished!" and its Reveal 
     const rv = await rect(page, '#sfAlongRev');
     assert.equal(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.id, [rv.x + rv.width / 2, rv.y + rv.height / 2]), 'sfAlongRev', 'Reveal & share can be tapped');
     assert.equal(await toastOn(page), false, 'no toast over the list: ' + await page.evaluate(() => document.getElementById('msToast')?.textContent));
-    assert.match(await page.textContent('#sfLive'), /Finished/, 'screen readers hear it');
+    // (v307: the same words as Focus mode's finish, "Page finished. …")
+    assert.match(await page.textContent('#sfLive'), /^Page finished\. /, 'screen readers hear it');
     if (w === 390) await shot(page, 'g1-1-after');
     // in focus mode the toast stays: Reveal & share is in its own bottom bar
     await page.click('#sfAlongRev'); await page.waitForSelector('#sfRoot.sfrev');

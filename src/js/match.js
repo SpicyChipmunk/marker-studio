@@ -623,7 +623,7 @@
     lastPt = canvasPt(clientX, clientY);
     sampleCanvas(lastPt[0], lastPt[1]);
   }
-  /* ---- Tap the white paper: the next tap on the photo sets the paper, and the photo (and every sample from it) is
+  /* ---- Tap something white (v307; was Tap the white paper): the next tap on the photo sets the paper, and the photo (and every sample from it) is
      corrected so that the paper is white. Never automatic; a new photo starts without it. ---- */
   var paperB = document.getElementById('matchPaper'),
     lightB = document.getElementById('matchLight'),
@@ -639,7 +639,7 @@
     paperMode = !!on;
     if (paperB) paperB.setAttribute('aria-pressed', paperMode ? 'true' : 'false');
     if (pWrap) pWrap.classList.toggle('paperpick', paperMode);
-    setPaperNote(paperMode ? 'Now tap a plain white part of the paper in the photo.' : '');
+    setPaperNote(paperMode ? 'Now tap something white in the photo: the paper, or a white label.' : '');
   }
   function showFix() {
     if (lightB) lightB.style.display = mFix ? '' : 'none';
@@ -663,7 +663,7 @@
       ph = Math.min(y + rad + 1, cv.height) - y0,
       r;
     try {
-      r = paperSpot(patchLin(srcData(x0, y0, pw, ph), pw, ph, x - x0, y - y0, rad));
+      r = paperSpot(whiteLin(srcData(x0, y0, pw, ph), pw, ph, x - x0, y - y0, rad), true);
     } catch (e) {
       return;
     }

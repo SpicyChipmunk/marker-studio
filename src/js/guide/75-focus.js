@@ -196,7 +196,9 @@ function goFocus(pos, anim, noHist) {
 function focusSay() {
   var nm = document.getElementById('sfFocName'),
     sub = document.getElementById('sfFocSub');
-  if (nm && nm.textContent) sayLive(nm.textContent + (sub && sub.textContent ? '. ' + sub.textContent : ''));
+  // (the name line's words for a screen reader: the brand's name, not the badge's letter, v307)
+  var t = nm ? nm.getAttribute('data-say') || nm.textContent : '';
+  if (t) sayLive(t + (sub && sub.textContent ? '. ' + sub.textContent : ''));
 }
 // the Colours sheet opened or closed, however (its button, a tap on the picture, Back): the section framed again in the
 // room it leaves (v303)
@@ -293,7 +295,7 @@ function focusAllOfColour() {
     was = {},
     g = loadGen,
     at = focusPos,
-    code = assignData.assign[l].code;
+    mm = assignData.assign[l];
   guideDirty = true;
   focusOrd.forEach(function (q) {
     if (assignData.assign[q].mkey === k && focusZoneOf(q) === z) {
@@ -310,7 +312,7 @@ function focusAllOfColour() {
   // (an Undo, as Mark all coloured in the list has: a mis-tap lost which were really done, v299; not when that
   // finished the page, which says so instead)
   if (Object.keys(was).length && nx >= 0)
-    toastAction('Marked all ' + esc(code) + ' done', 'Undo', function () {
+    toastAction('Marked all ' + mcodeHTML(mm) + ' done', 'Undo', function () {
       if (g !== loadGen || !assignData || !focus) return;
       const P = tp();
       for (const q in was) {
@@ -473,6 +475,7 @@ function renderFocusUI() {
   if (focusFin || l < 0) {
     sw.style.background = 'var(--ok)';
     nm.textContent = N && dn >= N ? 'Page finished' : 'Only skipped sections left';
+    nm.removeAttribute('data-say');
     sub.textContent = N && dn >= N ? finishLine() : dn + ' of ' + N + ' sections coloured';
     bot.innerHTML =
       '<button id="sfFBack" aria-label="Back">← Back</button><button id="sfFReveal" class="fdone">' +
@@ -507,7 +510,9 @@ function renderFocusUI() {
       }
     });
     sw.style.background = st ? st.hex : a.hex;
-    nm.textContent = st ? st.name : m ? mcode(m) + (m.name ? ' · ' + m.name : '') : k;
+    // (v307: the brand as a badge, as the list shows it; a screen reader hears its name, focusSay)
+    nm.innerHTML = st ? st.nameH : m ? mcodeEye(m) + (m.name ? ' · ' + esc(m.name) : '') : esc(k);
+    nm.setAttribute('data-say', st ? st.say : m ? msay(m) + (m.name ? ' · ' + m.name : '') : k);
     var tip = '';
     if (tt) {
       var gg = shadeGeom();
@@ -592,8 +597,9 @@ function renderFocusUI() {
       var all = document.getElementById('sfFocAll');
       if (all) {
         all.style.display = ck ? '' : 'none';
+        // (v307: the code with its brand, as a code in both brands needs)
         all.innerHTML =
-          '<span aria-hidden="true">✓</span> Mark all ' + esc(cm ? cm.code : 'of this colour') + ' done';
+          '<span aria-hidden="true">✓</span> Mark all ' + (cm ? mcodeHTML(cm) : 'of this colour') + ' done';
       }
       renderFocusMarkers();
     }

@@ -39,11 +39,11 @@ function markActive(done) {
     was = {},
     g = loadGen,
     K = comps.length;
-  let code = '';
+  let mk = null;
   assignData.order.forEach(function (l) {
     const m = assignData.assign[l];
     if (m.mkey === k && hlMatch(l)) {
-      code = m.code;
+      mk = m;
       if (done ? !colored[l] : colored[l] || _P[l]) was[l] = [colored[l], _P[l], heldSh[l] || null];
       colored[l] = done ? 1 : 0;
       _P[l] = 0;
@@ -58,7 +58,8 @@ function markActive(done) {
   // not when that finished the page: "Page finished!" is said then, with nothing over it)
   if (Object.keys(was).length && !(done && celebrated && !wasC))
     toastAction(
-      (done ? 'Marked all ' : 'Cleared ') + esc(code) + (done ? ' coloured' : ''),
+      // (v307: the code with its brand, as a code in both brands needs)
+      (done ? 'Marked all ' : 'Cleared ') + mcodeHTML(mk) + (done ? ' coloured' : ''),
       'Undo',
       function () {
         if (g !== loadGen || !assignData || comps.length !== K) return;
@@ -77,7 +78,7 @@ function markActive(done) {
         renderGuide();
         updateProgress();
         renderFocusMarkers();
-        sayLive((done ? 'Ticks as they were for ' : 'Ticks back for ') + code);
+        sayLive((done ? 'Ticks as they were for ' : 'Ticks back for ') + msay(mk));
       },
     );
 }
@@ -203,7 +204,9 @@ function renderFocusMarkers() {
         ';color:' +
         tc +
         '"><span class="fmc">' +
-        e.m.code +
+        // (v307: a screen reader hears the brand too)
+        (brandsMixed() ? '<span class="sfsr">' + esc(e.m.brand) + ' </span>' : '') +
+        esc(e.m.code) +
         '</span>' +
         (e.z != null ? '<span class="fmz">' + esc(zoneName(e.z)) + '</span>' : '') +
         '<span class="fmn">' +
@@ -218,10 +221,11 @@ function renderFocusMarkers() {
 }
 
 // Colour along: markers already finished are gathered in a collapsed "Done (n)" group at the bottom of the list
-function enterColor() {
+// (paint false: not painted here, as something else paints it next: Home's Continue, v307)
+function enterColor(paint) {
   zoneEditEnd(true);
   heldNoteClear();
-  if (!assignData) return;
+  if (!assignData || guideWhite()) return;
   if (popOpen()) closeSwatchPop();
   hideTip();
   normalizeTones();
@@ -241,7 +245,7 @@ function enterColor() {
   reqWake();
   stageGo();
   renderControls();
-  renderGuide();
+  if (paint !== false) renderGuide();
   updateProgress();
 }
 function exitColor() {
@@ -337,8 +341,9 @@ function exitFocus() {
   focusSheet = false;
   // (the row of the marker Focus mode was on once it has moved on from where it started, so you carry on where you
   // were; left at once, or finished, the row it started from, v287)
-  let _fk = _focK && alongEntry(_focK) ? _focK : null;
-  if (_fl >= 0 && focusPos !== _focAt) {
+  // (v307: a page finished leaves no row open, so the whole picture shows in its colours)
+  let _fk = _focK && alongEntry(_focK) && !pageDone() ? _focK : null;
+  if (_fl >= 0 && focusPos !== _focAt && !pageDone()) {
     const _l = _fl,
       _m = _l >= 0 && assignData && assignData.assign[_l];
     const _k = _m ? alongKey(_m.mkey, zoneOf(_l)) : null;

@@ -920,12 +920,111 @@ function buildGradient(cl) {
   gradFixLast = null;
   // (the Gradient's own: not the Photo pattern before it has a photo) Polished: smoothed, and with markers used twice
   // (gradCount's reuse) touching sections sharing one count as a clash; Natural and Scatter: only those split up
-  if (family === 'gradient') {
-    if (scat === 0) gradSmooth(order, M >= N, limitN >= src.items.length, plan.reuse ? 'reuse' : '');
-    else if (plan.reuse) gradSmooth(order, false, true, 'split');
-    // rough spots smoothed ("Smooth them"), after the Polished pass, so a change that lays it again keeps them
-    if (scat === 0 && gradFix) gradFixApply(order, src, prevAll);
+  // (v307: the Photo pattern before it has a photo, which lays the Gradient as Natural, has its repeats split up too)
+  if (family === 'gradient' && scat === 0)
+    gradSmooth(order, M >= N, limitN >= src.items.length, plan.reuse ? 'reuse' : '');
+  else if (plan.reuse) gradSmooth(order, false, true, 'split');
+  // (v307) markers used twice: what the smoothing left of touching sections sharing one is split up for good
+  gradSameLast = null;
+  if (plan.reuse) gradSplitSame(order);
+  // rough spots smoothed ("Smooth them"), after the Polished pass, so a change that lays it again keeps them
+  if (family === 'gradient' && scat === 0 && gradFix) gradFixApply(order, src, prevAll);
+}
+/* Markers used twice (gradCount's reuse, v307): the smoothing splits up most touching sections that share a marker,
+   but runs out of passes on a big page (11 such pairs on a 954-section page, 48 on one of 1,423). This last pass goes
+   through the flow in order and, for each pair still sharing one, gives one of the two another of the guide's markers
+   that no section touching it has, the nearest in colour to the one it had (so the flow keeps its look). Of the two,
+   the one that can move to the nearer marker moves (on a tie, the one met second); never the flow's first section
+   (the Start colour), a pinned one or one with ink on the paper (laid as pinned: holdOn). Only the zone being laid:
+   its sections, and the markers it lays. Deterministic: no clock, no draws. Saved guides keep their markers. */
+let gradSameLast = null; // (what the last one did, for the tests: { before, after, moved })
+function gradSplitSame(order) {
+  if (!assignData || order.length < 3) return;
+  const A = assignData.assign,
+    B = assignData.base,
+    a = adj || (adj = buildAdj()),
+    inZ = new Set(order),
+    ms = [],
+    seen = {};
+  order.forEach(function (l) {
+    const m = A[l];
+    if (m && !seen[m.mkey]) {
+      seen[m.mkey] = 1;
+      ms.push(m);
+    }
+  });
+  const first = order[0],
+    fixed = function (l) {
+      return l === first || locks[l] !== undefined;
+    },
+    // the nearest of the guide's markers to s's own that no section touching s has (null: none)
+    pick = function (s) {
+      const own = A[s],
+        near = {};
+      a[s].forEach(function (x) {
+        if (inZ.has(x) && A[x]) near[A[x].mkey] = 1;
+      });
+      let best = null,
+        bd = Infinity;
+      for (let i = 0; i < ms.length; i++) {
+        const m = ms[i];
+        if (m === own || near[m.mkey]) continue;
+        const d = own.lab && m.lab ? deMk(own, m) : i;
+        if (d < bd) {
+          bd = d;
+          best = m;
+        }
+      }
+      return best ? { m: best, d: bd } : null;
+    };
+  let before = 0,
+    after = 0,
+    moved = 0;
+  order.forEach(function (l) {
+    const s = a[l];
+    if (!s || !A[l]) return;
+    s.forEach(function (q) {
+      if (q <= l || !inZ.has(q) || !A[q] || A[q].mkey !== A[l].mkey) return;
+      before++;
+    });
+  });
+  gradSameLast = { before: before, after: 0, moved: 0 };
+  if (!before) return;
+  for (let i = 0; i < order.length; i++) {
+    const l = order[i],
+      s = a[l];
+    if (!s || !A[l]) continue;
+    const pairs = [];
+    s.forEach(function (q) {
+      if (inZ.has(q) && A[q] && A[q].mkey === A[l].mkey) pairs.push(q);
+    });
+    pairs.sort(function (x, y) {
+      return x - y;
+    });
+    for (let k = 0; k < pairs.length; k++) {
+      const q = pairs[k];
+      if (A[q].mkey !== A[l].mkey) continue;
+      const pl = fixed(l) ? null : pick(l),
+        pq = fixed(q) ? null : pick(q);
+      let mv = null;
+      if (pl && (!pq || pl.d < pq.d)) mv = [l, pl.m];
+      else if (pq) mv = [q, pq.m];
+      if (!mv) continue;
+      A[mv[0]] = mv[1];
+      if (B) B[mv[0]] = mv[1];
+      moved++;
+      if (mv[0] === l) break;
+    }
   }
+  order.forEach(function (l) {
+    const s = a[l];
+    if (!s || !A[l]) return;
+    s.forEach(function (q) {
+      if (q <= l || !inZ.has(q) || !A[q] || A[q].mkey !== A[l].mkey) return;
+      after++;
+    });
+  });
+  gradSameLast = { before: before, after: after, moved: moved };
 }
 // A Gradient with a marker for every section (each): a section not pinned whose marker a pinned section has (the
 // sections keeping their markers when the guide is built again, as Colour it on the paper round the drawing does, are
@@ -1475,16 +1574,34 @@ function gradFixRun(secs, A, cands, fixed, ext) {
       nC.set(m.code, (nC.get(m.code) || 0) + d);
     },
     // (and never the other brand of a highlight or shadow the guide uses, v306: ext.part, { code: { marker key } })
-    part = ext.part || {},
-    taken = function (m) {
+    part = Object.assign({}, ext.part || {}),
+    // (v307: nor a marker whose own highlight or shadow in section s (ext.tones) is the other brand of a code the guide
+    // uses, as a marker or as a highlight or shadow)
+    clash = function (x) {
+      const p = part[x.code];
+      if (p && !p[x.mkey]) return true;
+      if (nC.get(x.code) > 0 && !(nK.get(x.mkey) > 0)) return true;
+      return ext.codes.has(x.code) && !ext.used.has(x.mkey);
+    },
+    taken = function (m, s) {
       const p = part[m.code];
-      return (
+      if (
         ext.used.has(m.mkey) ||
         ext.codes.has(m.code) ||
         (!!p && !p[m.mkey]) ||
         nK.get(m.mkey) > 0 ||
         nC.get(m.code) > 0
-      );
+      )
+        return true;
+      return !!ext.tones && ext.tones(s, m).some(clash);
+    },
+    // (the partners a swap brings in join the list, so the next swap keeps clear of them too)
+    partAdd = function (s, m) {
+      if (!ext.tones) return;
+      ext.tones(s, m).forEach(function (x) {
+        const p = (part[x.code] = Object.assign({}, part[x.code]));
+        p[x.mkey] = 1;
+      });
     };
   secs.forEach(function (l) {
     if (A[l]) inc(A[l], 1);
@@ -1512,7 +1629,7 @@ function gradFixRun(secs, A, cands, fixed, ext) {
           if (deMk(A[s], A[x]) > ROUGH_DE) now++;
         });
         cands.forEach(function (m) {
-          if (taken(m) || deMk(m, A[o]) > ROUGH_DE) return;
+          if (deMk(m, A[o]) > ROUGH_DE || taken(m, s)) return;
           let r = 0,
             sum = 0;
           for (let j = 0; j < nb.length; j++) {
@@ -1528,6 +1645,7 @@ function gradFixRun(secs, A, cands, fixed, ext) {
       inc(A[best.s], -1);
       inc(best.m, 1);
       A[best.s] = best.m;
+      partAdd(best.s, best.m);
       swaps.push([best.s, best.m.mkey]);
     }
     if (swaps.length === n0) break;
@@ -1583,7 +1701,15 @@ function gradFixExt(secs, A, prev) {
           if (!seen[l]) addP(+l, zoneNb[l]);
         }
   }
-  return { used: used, codes: codes, part: part };
+  // (v307: a marker's own highlight and shadow in section l, for the fix to check before bringing it in)
+  const tones = sh
+    ? function (l, m) {
+        if (!shadeable(l, sh)) return [];
+        const t = shadeTones(m, zshOf(l));
+        return [t.light, t.dark].filter(Boolean);
+      }
+    : null;
+  return { used: used, codes: codes, part: part, tones: tones };
 }
 // (buildGradient) the zone's rough spots smoothed, as laid now
 function gradFixApply(order, src, prevAll) {
@@ -1609,6 +1735,45 @@ function gradFixApply(order, src, prevAll) {
   });
   r.ms = Date.now() - t0;
   gradFixLast = r;
+}
+/* Colour it on the paper round the drawing with Smooth them on (v307): the guide is built again with every section
+   keeping its marker (laid as pinned: buildGuide), so the fix couldn't move any and the rough spots by the paper came
+   back for a second tap. Smoothed again here as Smooth them would (roughNow's run): only pinned sections, those with
+   ink on the paper and the flow's first keep theirs. ids: the zones (every one by default). The swaps made. */
+function gradFixHeld(ids) {
+  if (!assignData || !labels || !comps) return 0;
+  const A0 = assignData.assign,
+    B = assignData.base;
+  let n = 0;
+  (ids || zoneIds()).forEach(function (id) {
+    if (zoneFamily(id) !== 'gradient') return;
+    zoneWith(id, function () {
+      if (!gradFix) return;
+      const cl = zoneList(),
+        N = cl.length;
+      if (!N) return;
+      const src = poolSource(Math.min(limitN, N), true);
+      if (gradScatAt(gradCount(src, N).M) !== 0 || !gradFixCan()) return;
+      const secs = cl.filter(function (l) {
+          return !!A0[l];
+        }),
+        first = orderSections(cl)[0],
+        r = gradFixRun(
+          secs,
+          A0,
+          gradFixPool(src),
+          function (l) {
+            return l === first || locks[l] !== undefined || inkOn(l);
+          },
+          gradFixExt(secs, A0, null),
+        );
+      r.swaps.forEach(function (x) {
+        if (B) B[x[0]] = A0[x[0]];
+      });
+      n += r.swaps.length;
+    });
+  });
+  return n;
 }
 // Shading turned on or off, or the sun moved: a gradient laid out here whose bands run light to dark turns them
 // round if their light side no longer faces the light. (Not a guide that was opened, taken back by Undo or kept
@@ -2768,10 +2933,14 @@ function buildGuide(keepPlan) {
   // (a new guide from your photo goes into the Library straight away, not after the usual pause: a page closed or
   // reloaded just after Build lost it, v287)
   // (v305: once the first Build's bloom is over, 41-bloom.js: about a second, the save's work held up its frames)
+  // (v307: its section map encoded in the worker first, lmapWarm, so the save doesn't hold the page up just as the
+  // guide appears)
   if (canAuto())
     setTimeout(function () {
-      bloomAfter(function () {
-        if (autoT && canAuto() && !_firstBusy) flushAutosave();
+      lmapWarm().then(function () {
+        bloomAfter(function () {
+          if (autoT && canAuto() && !_firstBusy) flushAutosave();
+        });
       });
     }, 60);
 }

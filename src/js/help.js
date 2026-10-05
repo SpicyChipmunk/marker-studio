@@ -5,6 +5,7 @@ const FEEDBACK_URL = '';
 // The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
 // lists them too.
 const WHATS_NEW = [
+  'Finished pages stay in full colour, shaded guides count every marker, and two-brand codes show both markers. PDFs and saving keep the app responsive, and warm photos of your marker trays can be balanced.',
   'Scatter a gradient from Polished to Confetti, and smooth rough spots in one tap. Codes in both brands are marked, and Colour along finds a marker by its code. Your finished piece leads Home.',
   'Finish a page and Reveal shows it off on its paper, ready to share. Gradients are smoother, with a new Around flow for mandalas, and Redo is beside Undo.',
   'Search finds a code however you type it (“c3”, “C-3”, “cool grey 3”). Restoring a backup keeps your newer progress, and Save image’s codes no longer sit on top of each other.',
@@ -335,6 +336,12 @@ const WHATS_NEW = [
     function openSheet() {
       const v = D.getElementById('helpVer');
       if (v) v.textContent = ver();
+      // (v307) whether this device keeps your data (guide-bridge.js keepWords)
+      const k = D.getElementById('helpKeep');
+      if (k && typeof keepWords === 'function')
+        keepWords(function (t) {
+          k.textContent = t;
+        });
       show(sheet);
     }
     // the guide's ⋯ menu opens it too (Help)

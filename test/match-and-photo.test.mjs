@@ -141,11 +141,11 @@ test('Tap the white paper: the spot is averaged in linear light; paper, white pa
   const white = spot(lin8(242, 242, 242));
   assert.equal(white.fix, null);
   assert.ok(!white.bad);
-  assert.equal(white.note, 'The paper already looks white: nothing to correct.');
+  assert.equal(white.note, 'That already looks white: nothing to correct.');
   for (const c of [[200, 50, 60], [15, 15, 15]]) {
     const r = spot(lin8(...c));
     assert.equal(r.bad, true, String(c));
     assert.equal(r.fix, null);
-    assert.equal(r.note, 'That spot is too dark or too coloured to be white paper. Tap a plain white part of the page.');
+    assert.equal(r.note, 'That spot is too dark or too coloured to be white. Tap the paper or something else white.');
   }
 });

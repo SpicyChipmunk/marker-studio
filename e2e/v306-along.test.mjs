@@ -9,6 +9,8 @@ before(setup);
 after(teardown);
 
 const AMBER = '#ffb454';
+// (v307: print's amber is darker, with a white letter: the screen's showed through pale yellow ink)
+const PRINT_AMBER = '#b45f06';
 // the sample at one marker per section from Ben's 451: Ohuhu and Copic Y26, R46 and RV09 are all in it
 async function benGuide(page) {
   await sampleGuide(page);
@@ -111,7 +113,7 @@ test('same code: both brands of a code in one guide get a "2 brands" chip on the
   // the PDF: page 1's labels and the close-ups' too, and in the key a filled tag before the code (drawn after its letter)
   const pdf = await tagsOf(page, 'pdf');
   assert.ok(
-    pdf.some((e) => e.p === 0 && e.box === AMBER),
+    pdf.some((e) => e.p === 0 && e.box === PRINT_AMBER),
     'page 1',
   );
   const kp = await page.evaluate(() => {
@@ -133,7 +135,7 @@ test('same code: both brands of a code in one guide get a "2 brands" chip on the
   assert.ok(kp > 0, 'the key’s page: ' + kp);
   const key = pdf.filter((e) => e.p >= kp);
   assert.ok(
-    key.length >= codes.size * 2 - 1 && key.every((e) => e.box === AMBER),
+    key.length >= codes.size * 2 - 1 && key.every((e) => e.box === PRINT_AMBER),
     'the key: a filled tag on each such row: ' + JSON.stringify(key),
   );
   // the share card (Reveal's) has no tags, and no amber
@@ -758,7 +760,7 @@ test('PDF close-ups: brand tags in print colours, near-black and white (they wer
   await idle(page);
   const pdf = await tagsOf(page, 'pdf'),
     kp = await page.evaluate(() => __mstest.pdfCloseL);
-  const cu = pdf.filter((e) => e.p > 0 && e.box !== AMBER && !/^(Colour key)/.test(e.code));
+  const cu = pdf.filter((e) => e.p > 0 && e.box !== PRINT_AMBER && !/^(Colour key)/.test(e.code));
   assert.ok(kp > 0 && cu.length > 0, 'close-ups with tags: ' + kp + ' ' + cu.length);
   for (const e of cu) assert.equal(e.box, e.t === 'C' ? '#ffffff' : '#1a1a1a', JSON.stringify(e));
   assert.deepEqual(errors, []);

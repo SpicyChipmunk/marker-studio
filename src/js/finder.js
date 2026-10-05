@@ -319,6 +319,25 @@ function searchElsewhereHTML(more) {
     moreInAllHTML(more.length, true)
   );
 }
+// (v307) a search for a hex code ("#ff0000", "ff0000", "f00") that finds no marker offers to match the colour
+// instead of "No markers match": '#rrggbb', or null for any other search. `q`: the search (the box's, if not given)
+function searchHex(q) {
+  const r = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(q == null ? searchInput.value || '' : q).trim());
+  if (!r) return null;
+  const h = r[1].toLowerCase();
+  return '#' + (h.length === 3 ? h[0] + h[0] + h[1] + h[1] + h[2] + h[2] : h);
+}
+function searchHexHTML(hex) {
+  return (
+    '<div class="empty">\u201c' +
+    esc((searchInput.value || '').trim()) +
+    '\u201d looks like a colour, not a marker code.</div><div class="moreall"><span class="hexdot" style="background:' +
+    hex +
+    '" aria-hidden="true"></span><button type="button" class="moreshow mkhexgo" data-hex="' +
+    hex +
+    '">Match this colour</button></div>'
+  );
+}
 function renderResults(bySearch) {
   // (an armed Untick all shown counted what was shown then: a redraw disarms it, v304)
   if (ownNoneBtn.dataset.arm === '1') unownDisarm();
@@ -350,6 +369,10 @@ function renderGrid(more) {
   matchHead(m.length, 'marker');
   if (!m.length && more.length && state.owned.size) {
     results.innerHTML = searchElsewhereHTML(more);
+    return;
+  }
+  if (!m.length && searchHex()) {
+    results.innerHTML = searchHexHTML(searchHex());
     return;
   }
   if (!m.length) {
@@ -458,6 +481,11 @@ qClear.addEventListener('click', () => {
   searchInput.focus();
 });
 results.addEventListener('click', (e) => {
+  const hx = e.target.closest('.mkhexgo');
+  if (hx) {
+    if (window.msMatchHex) window.msMatchHex(hx.dataset.hex);
+    return;
+  }
   if (!e.target.closest('.moreshow')) return;
   state.collView = 'all';
   save();

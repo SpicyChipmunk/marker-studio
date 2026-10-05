@@ -81,20 +81,30 @@ function openDesignObj(d, id, resumed, quiet, col) {
   }
   note('Opening guide\u2026');
   const img = new Image();
+  // (v307) the section map is read first and, with a worker (03-jobs), its label points are worked out there before
+  // the open goes on, so the page isn't held up for them; the same ones the page would work out
   img.onload = function () {
     if (gen !== loadGen) return;
+    const pre = openPre(img),
+      ahead = pre.labels ? lptsAhead(pre) : null;
+    if (!ahead) opened(pre, null);
+    else
+      ahead.then(function (lp) {
+        if (gen === loadGen) opened(pre, lp);
+      });
+  };
+  function opened(pre, lp) {
     try {
-      if (!(img.width > 0 && img.height > 0 && img.width <= MAXSIDE * 2 && img.height <= MAXSIDE * 2)) {
+      if (pre.ex) throw pre.ex;
+      if (pre.err === 'size') {
         note('Couldn’t load that guide \u2014 its picture is the wrong size.');
         return;
       }
-      // a section map with a different section on nearly every pixel would take all the memory there is: turned away first
-      const _lm = lmapRead(img);
-      if (!_lm) {
+      if (pre.err === 'read') {
         note('Couldn’t load that guide \u2014 its picture couldn\u2019t be read.');
         return;
       }
-      if (lmapCount(_lm, MAXSECS) > MAXSECS) {
+      if (pre.err === 'complex') {
         note(TOO_COMPLEX);
         return;
       }
@@ -114,44 +124,10 @@ function openDesignObj(d, id, resumed, quiet, col) {
       cv.width = W;
       cv.height = H;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      const data = _lm,
-        n = W * H,
-        raw = new Int32Array(n);
-      labels = new Int32Array(n);
-      for (let i = 0, j = 0; i < n; i++, j += 4) {
-        const v = data[j] | (data[j + 1] << 8) | (data[j + 2] << 16);
-        raw[i] = v === 0 ? -1 : v - 1;
-      }
-      // (lookups by what the file says: with no prototype, a key like "constructor" finds nothing, v298)
-      const map = Object.create(null);
-      let next = 0;
-      // The guide's own section numbers, gaps and all (a gap: a section merged away), so what's saved is the picture
-      // as stored, and changes kept as the page went away (sfSaveDesignNow) still find it. v299: numbered afresh,
-      // which an edited guide's gaps changed, so those changes were thrown away on the next start. Afresh only for
-      // numbers that aren't a guide's (0, or far more than its sections).
-      let lo = Infinity,
-        hi = 0,
-        cnt = 0;
-      for (let i = 0; i < n; i++) {
-        const r = raw[i];
-        if (r < 0 || map[r] !== undefined) continue;
-        map[r] = 0;
-        cnt++;
-        if (r < lo) lo = r;
-        if (r > hi) hi = r;
-      }
-      const own = cnt > 0 && lo >= 1 && hi <= cnt * 2 + 64;
-      for (const r in map) map[r] = own ? +r : undefined;
-      if (own) next = hi;
-      for (let i = 0; i < n; i++) {
-        const r = raw[i];
-        if (r < 0) {
-          labels[i] = -1;
-          continue;
-        }
-        if (map[r] === undefined) map[r] = ++next;
-        labels[i] = map[r];
-      }
+      labels = pre.labels;
+      const n = W * H,
+        map = pre.map,
+        next = pre.next;
       const K = next;
       comps = [null];
       for (let l = 1; l <= K; l++)
@@ -194,6 +170,14 @@ function openDesignObj(d, id, resumed, quiet, col) {
         c.y0 = mn[l];
         c.x1 = mxx[l];
         c.y1 = mx[l];
+      }
+      // (worked out in the worker as the guide was read, v307)
+      if (lp) {
+        lptsUse(lp);
+        lptsPut(pre.sig + ':' + comps.length, lp);
+      } else if (pre.sig) {
+        const kept = lptsGet(pre.sig + ':' + comps.length);
+        if (kept) lptsUse(kept);
       }
       // the guide's own settings first: which sections are background depends on its Background trim
       styleFrom(d);
@@ -303,7 +287,7 @@ function openDesignObj(d, id, resumed, quiet, col) {
       _openEmpty = !order.length && Object.keys(sa).length > 0;
       assignData = { assign: assign, order: order, N: order.length, base: base };
       layStatReset();
-      guideSig = labelsSig();
+      guideSig = pre.sig || labelsSig();
       if (Array.isArray(d.paper)) {
         const _pp = {};
         d.paper.forEach(function (o) {
@@ -467,8 +451,10 @@ function openDesignObj(d, id, resumed, quiet, col) {
       sfmode = _edResumed ? 'review' : 'guide';
       if (!quiet) enterWork();
       renderControls();
+      // (v307: one that goes on into Colour along is painted once, there)
+      const _toCol = col && !_edResumed;
       if (_edResumed) render();
-      else renderGuide();
+      else if (!_toCol) renderGuide();
       planReset();
       if (resumed) guideDirty = true;
       const nd = Object.keys(dryK).length,
@@ -505,10 +491,25 @@ function openDesignObj(d, id, resumed, quiet, col) {
       );
       // reloaded in place while colouring along (col): it stays in Colour along; from Home's Continue, at the marker
       // to pick up (_contNext)
-      if (col && !_edResumed) {
-        enterColor();
-        if (cont) alongResume();
+      if (_toCol) {
+        // (reloaded in place, quiet: it was in Colour along already, so not a change of stage that goes to the top of
+        // the page and its first control, v307)
+        if (quiet) _stg = { m: 'color', g: loadGen };
+        // (from Continue, not painted twice: alongResume paints it, v307)
+        enterColor(!cont);
+        if (quiet) _stgGo = false;
+        // (a guide left all white has no Colour along: it stays in the plan, painted there. v307 debug: the picture
+        // was left blank, as enterColor painted nothing and the plan's paint above was skipped)
+        if (sfmode !== 'color') {
+          if (quiet) _stg = { m: sfmode, g: loadGen };
+          renderGuide();
+        } else if (cont) {
+          if (!alongResume()) renderGuide();
+        }
+        // (another tab's save, reloaded in place: Colour along as it was, the code box's text and all, v307)
+        else if (quiet && _alKeep && _alKeep.id === id) alongRestore(_alKeep);
       }
+      _alKeep = null;
       if (id === _justImported) _justImported = null;
       // (not with section edits waiting to be built: those come first)
       // (as the guide stands now: opening it moved loadGen on once more, resetForNewPicture)
@@ -526,11 +527,116 @@ function openDesignObj(d, id, resumed, quiet, col) {
       }
       note('Couldn’t open that guide: ' + ((err && err.message) || err));
     }
-  };
+  }
   img.onerror = function () {
     if (gen === loadGen) note('Couldn’t read that guide.');
   };
   img.src = d.lmap;
+}
+// A saved guide's section map, read (v307: before the rest of the open, so its label points can be worked out in the
+// worker meanwhile). { labels, map (the file's section numbers to the guide's), next (the highest), sig } or, when it
+// can't open, { err } (or { ex }: what went wrong)
+function openPre(img) {
+  try {
+    if (!(img.width > 0 && img.height > 0 && img.width <= MAXSIDE * 2 && img.height <= MAXSIDE * 2))
+      return { err: 'size' };
+    // a section map with a different section on nearly every pixel would take all the memory there is: turned away first
+    const _lm = lmapRead(img);
+    if (!_lm) return { err: 'read' };
+    if (lmapCount(_lm, MAXSECS) > MAXSECS) return { err: 'complex' };
+    return lmapLabels(_lm, img.width, img.height);
+  } catch (e) {
+    return { ex: e };
+  }
+}
+function lmapLabels(data, w, h) {
+  const n = w * h,
+    raw = new Int32Array(n),
+    labels = new Int32Array(n);
+  let mx = -1;
+  for (let i = 0, j = 0; i < n; i++, j += 4) {
+    const v = data[j] | (data[j + 1] << 8) | (data[j + 2] << 16),
+      r = v === 0 ? -1 : v - 1;
+    raw[i] = r;
+    if (r > mx) mx = r;
+  }
+  // (lookups by what the file says: with no prototype, a key like "constructor" finds nothing, v298)
+  const map = Object.create(null);
+  let next = 0;
+  // The guide's own section numbers, gaps and all (a gap: a section merged away), so what's saved is the picture
+  // as stored, and changes kept as the page went away (sfSaveDesignNow) still find it. v299: numbered afresh,
+  // which an edited guide's gaps changed, so those changes were thrown away on the next start. Afresh only for
+  // numbers that aren't a guide's (0, or far more than its sections).
+  let lo = Infinity,
+    hi = 0,
+    cnt = 0;
+  if (mx < 1 << 21) {
+    // (v307) through a table of the file's numbers rather than the object, about a quarter quicker; the same numbers
+    const T = new Int32Array(mx + 1),
+      seen = new Uint8Array(mx + 1);
+    for (let i = 0; i < n; i++) {
+      const r = raw[i];
+      if (r < 0 || seen[r]) continue;
+      seen[r] = 1;
+      cnt++;
+      if (r < lo) lo = r;
+      if (r > hi) hi = r;
+    }
+    const own = cnt > 0 && lo >= 1 && hi <= cnt * 2 + 64;
+    if (own) {
+      for (let r = 0; r <= mx; r++) if (seen[r]) T[r] = r;
+      next = hi;
+    }
+    for (let i = 0; i < n; i++) {
+      const r = raw[i];
+      if (r < 0) {
+        labels[i] = -1;
+        continue;
+      }
+      let v = T[r];
+      if (!v) v = T[r] = ++next;
+      labels[i] = v;
+    }
+    for (let r = 0; r <= mx; r++) if (seen[r]) map[r] = T[r];
+  } else {
+    for (let i = 0; i < n; i++) {
+      const r = raw[i];
+      if (r < 0 || map[r] !== undefined) continue;
+      map[r] = 0;
+      cnt++;
+      if (r < lo) lo = r;
+      if (r > hi) hi = r;
+    }
+    const own = cnt > 0 && lo >= 1 && hi <= cnt * 2 + 64;
+    for (const r in map) map[r] = own ? +r : undefined;
+    if (own) next = hi;
+    for (let i = 0; i < n; i++) {
+      const r = raw[i];
+      if (r < 0) {
+        labels[i] = -1;
+        continue;
+      }
+      if (map[r] === undefined) map[r] = ++next;
+      labels[i] = map[r];
+    }
+  }
+  return { labels: labels, map: map, next: next, w: w, h: h, sig: '' };
+}
+// the label points of a section map just read, from the worker (03-jobs): resolves to them, or to null (worked out on
+// the page as before). null at once when there's no worker, or they're kept for the session already (40-render)
+function lptsAhead(pre) {
+  if (!JOBS.on) return null;
+  pre.sig = labelsSigOf(pre.labels, pre.w, pre.h);
+  const K = pre.next + 1;
+  if (lptsHas(pre.sig + ':' + K)) return null;
+  return JOBS.run('lpts', { buf: pre.labels.buffer, W: pre.w, H: pre.h, K: K }).then(
+    function (r) {
+      return lptsFix(r, K);
+    },
+    function () {
+      return null;
+    },
+  );
 }
 // (v306) Home's latest piece: open a guide, then Reveal & share ('reveal') or Print… ('print') once it has opened. Not
 // when the open fails (storage, a missing copy), the guide has section edits waiting, or another guide opens first.
@@ -565,8 +671,11 @@ function thenDo(act, id, gen) {
 let _contNext = false;
 function continueGuide(id) {
   if (assignData && id != null && id === curId && !pgMode && !cropMode && !guideStale() && !secEdPending()) {
-    if (sfmode !== 'color') enterColor();
-    alongResume();
+    // (painted once: v307)
+    if (sfmode !== 'color') {
+      enterColor(false);
+      if (!alongResume()) renderGuide();
+    } else alongResume();
     return;
   }
   openDesign(id, true);
@@ -649,6 +758,7 @@ function openDesign(id, cont) {
 // stored (col: it was open in Colour along)
 function reloadOpen(id, col) {
   const g = ++loadGen;
+  _alKeep = col ? alongKeep() : null;
   Promise.resolve(api.loadDesign ? api.loadDesign(id) : null)
     .then(function (d) {
       if (g === loadGen && d && id === curId) openDesignObj(d, id, false, true, col);

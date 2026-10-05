@@ -390,20 +390,21 @@ function ctlPlanPattern() {
     const _ln = lookNote();
     if (_ln) html += '<div id="sfLookNote" class="sfc-note sfc-mt6">' + _ln + '</div>';
     // Scatter (v306): one line, its note only away from Polished; with too few markers it stays Polished and says why
+    // (v307: its name over the slider as Flow, Direction, Start colour and Look have theirs, "Scatter: Polished")
     const _sOff = gradCountNow().M < GRAD_SCAT_MIN,
       _sv = _sOff ? 0 : gradScat;
     html +=
-      '<label class="sfc-slider sfc-mt10' +
+      '<div class="sfc-slider sfgscat' +
       (_sOff ? ' sfoff' : '') +
-      '">Scatter <b id="sfGradScatName">' +
+      '"><div class="sfsublbl" id="sfGradScatLbl">Scatter: <b id="sfGradScatName">' +
       GRAD_SCAT_LABEL[_sv] +
-      '</b><input type="range" id="sfGradScat" min="0" max="4" step="1" value="' +
+      '</b></div><input type="range" id="sfGradScat" min="0" max="4" step="1" value="' +
       _sv +
-      '" aria-valuetext="' +
+      '" aria-label="Scatter" aria-valuetext="' +
       GRAD_SCAT_LABEL[_sv] +
       '" class="sfc-range"' +
       (_sOff ? ' disabled aria-describedby="sfGradScatNote"' : '') +
-      '></label><div id="sfGradScatNote" class="sfc-note sfc-mt6"' +
+      '></div><div id="sfGradScatNote" class="sfc-note sfc-mt6"' +
       (_sv || _sOff ? '' : ' hidden') +
       '>' +
       (_sOff
@@ -758,7 +759,12 @@ function ctlPlanShare() {
     ' Guide file</button></div></div>'
   );
 }
-// the bottom bar (moved below the whole guide card by dockBar)
+// the bottom bar (moved below the whole guide card by dockBar); Colour along is off while every section is left white
+// (a photo with no colour, v307)
 function ctlPlanBar() {
-  return '<div class="sfbar"><button id="sfBack2" class="sfghost" aria-label="Back to Edit sections" data-long="\u2190 Edit sections" data-short="\u2190 Sections">\u2190 Edit sections</button><button id="sfColor" class="sfcolorcta">Colour along</button></div>';
+  return (
+    '<div class="sfbar"><button id="sfBack2" class="sfghost" aria-label="Back to Edit sections" data-long="\u2190 Edit sections" data-short="\u2190 Sections">\u2190 Edit sections</button><button id="sfColor" class="sfcolorcta"' +
+    (guideWhite() ? ' disabled title="Every section is left white: nothing to colour yet"' : '') +
+    '>Colour along</button></div>'
+  );
 }

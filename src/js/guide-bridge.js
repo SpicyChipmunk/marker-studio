@@ -157,6 +157,14 @@ const IDB = (function () {
   }
   return { put: put, get: get, getNow: getNow, hold: hold, del: del, keys: keys };
 })();
+// (v307) the browser's answer is kept (PERSIST_KEY: '1' kept, '0' may be cleared) for Help › Your data
+const PERSIST_KEY = 'ms-persisted';
+function notePersist(p) {
+  try {
+    localStorage.setItem(PERSIST_KEY, p ? '1' : '0');
+  } catch (e) {}
+  return p;
+}
 function askPersist() {
   try {
     if (askPersist.done || !(navigator.storage && navigator.storage.persist)) return;
@@ -164,9 +172,45 @@ function askPersist() {
     navigator.storage
       .persisted()
       .then(function (p) {
-        if (!p) return navigator.storage.persist();
+        return p || navigator.storage.persist();
       })
+      .then(notePersist)
       .catch(function () {});
+  } catch (e) {}
+}
+// (v307) Help › Your data's line on whether this device keeps your data: the answer the browser gave askPersist (or
+// gives now, if it was asked); with no answer, or none to be had (Safari's engine without navigator.storage), the
+// cautious line. `put(text)` gets the words, at once and again if the browser's answer changes them.
+function keepWords(put) {
+  const ua = navigator.userAgent || '',
+    who =
+      (/Safari/.test(ua) || /iPhone|iPad/.test(ua)) &&
+      !/Chrome|Chromium|Android|CriOS|FxiOS|EdgiOS|Firefox/.test(ua)
+        ? 'Safari'
+        : 'Your browser',
+    say = function (p) {
+      put(
+        p
+          ? who + ' has agreed to keep your data on this device.'
+          : who +
+              ' may clear your data if space runs low or you don’t open the app for a while, so keep a backup.',
+      );
+    };
+  let kept = false;
+  try {
+    kept = localStorage.getItem(PERSIST_KEY) === '1';
+  } catch (e) {}
+  say(kept);
+  try {
+    if (navigator.storage && navigator.storage.persisted)
+      navigator.storage
+        .persisted()
+        .then(function (p) {
+          // (only a request answers it the first time: don't note a "no" the app hasn't asked about)
+          if (p || localStorage.getItem(PERSIST_KEY) != null) notePersist(p);
+          if (!!p !== kept) say(p);
+        })
+        .catch(function () {});
   } catch (e) {}
 }
 const BK_KEY = 'ms-guides-backup-ts',
@@ -400,6 +444,9 @@ function guideMeta(d, id) {
     if (_tn) meta.tn = _tn;
   }
   if (d.fresh) meta.fresh = 1;
+  // (v307: the markers its shading takes beyond its own colours, for Home's latest piece; as it was when not given)
+  const _sk = d.sk !== undefined ? +d.sk : _ex && _ex.sk;
+  if (_sk > 0 && _sk < 10000) meta.sk = Math.round(_sk);
   // (v306: a copy with section edits still to be built, which Home's latest piece leaves out; 0 once a guide named
   // "… (section edits)" is saved built)
   if (_pl && _pl.edits === 1) meta.eds = 1;

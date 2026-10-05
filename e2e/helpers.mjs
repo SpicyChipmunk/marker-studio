@@ -192,6 +192,25 @@ function idleTracker() {
   if (W.Clipboard) for (const n of ['writeText', 'write']) wrap(Clipboard.prototype, n, promised('clipboard ' + n));
   if (W.MediaDevices) wrap(MediaDevices.prototype, 'getUserMedia', promised('getUserMedia'));
   wrap(HTMLMediaElement.prototype, 'play', promised('media play'));
+  // (v307) a job sent to a worker, until its answer (the app's worker answers each message once)
+  if (W.Worker) wrap(Worker.prototype, 'postMessage', function (o, a) {
+    const q = this.__idleQ || (this.__idleQ = []);
+    if (!this.__idleOn) {
+      this.__idleOn = true;
+      const next = () => { const d = q.shift(); if (d) d(); };
+      this.addEventListener('message', next);
+      this.addEventListener('error', () => { while (q.length) q.shift()(); });
+    }
+    q.push(op('worker job'));
+    // (a message that couldn't be sent gets no answer)
+    try { return o.apply(this, a); } catch (e) { const d = q.pop(); if (d) d(); throw e; }
+  });
+  // (a worker stopped with jobs in flight answers none of them: JOBS.off, or the app giving up on it)
+  if (W.Worker) wrap(Worker.prototype, 'terminate', function (o, a) {
+    const q = this.__idleQ;
+    while (q && q.length) q.shift()();
+    return o.apply(this, a);
+  });
   // images loading
   const src = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
   Object.defineProperty(HTMLImageElement.prototype, 'src', {

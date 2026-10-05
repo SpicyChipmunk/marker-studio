@@ -244,6 +244,8 @@ test('the first Build of a new picture blooms, once; a tap during it ends it and
   await page.waitForSelector('.sftip');
   assert.equal(await page.evaluate(() => __mstest.bloomOn), false, 'the tap ended it');
   await idle(page);
+  // (its quick fade-out can still be running when idle returns on a slow runner: wait for it, v307)
+  await page.waitForFunction(() => !document.querySelector('.sfbloom'), null, { timeout: 5000 }).catch(() => {});
   assert.equal(await page.evaluate(() => document.querySelectorAll('.sfbloom').length), 0, 'and it has gone');
   // Build again (after an edit to the sections) and a guide opened again: none
   await page.keyboard.press('Escape');

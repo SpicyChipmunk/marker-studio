@@ -119,7 +119,7 @@ test('v304: Tap the white paper never darkens a scan; a cream paper loses its ca
   ]) {
     const r = spot(lin(w));
     assert.equal(r.fix, null, String(w));
-    assert.equal(r.note, 'The paper already looks white: nothing to correct.');
+    assert.equal(r.note, 'That already looks white: nothing to correct.');
   }
   // cream scans: grey after, and not darker than before by more than the top end's easing
   for (const c of [

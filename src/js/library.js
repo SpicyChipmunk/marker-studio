@@ -114,7 +114,14 @@ function homeArt(g, mode, maxW, over) {
       if (!pl || typeof pl.lmap !== 'string' || pl.lmap.slice(0, 11) !== 'data:image/') return '';
       return new Promise(function (res) {
         var im = new Image();
+        // (v307: decoded first, off the page's thread where the browser can: drawn straight from the file, Safari's
+        // engine decoded it there and then, holding Home up)
         im.onload = function () {
+          if (im.decode && !im.__dec) {
+            im.__dec = 1;
+            im.decode().then(im.onload, im.onload);
+            return;
+          }
           try {
             // (drawn at twice the size and then shrunk smoothly: read pixel by pixel at the size shown, the lines came
             // out stepped and broken, v303)
@@ -415,10 +422,13 @@ function homeHero(g) {
     nm +
     '</h2><span class="hhmeta">' +
     nWord(+g.n, 'section') +
-    ' · ' +
+    ' · <span class="hhnw">' +
     nk +
     ' marker' +
     (nk === 1 ? '' : 's') +
+    '</span>' +
+    // (v307: with shading, the markers it takes besides; on a phone the line breaks only before the "+")
+    (+g.sk > 0 ? ' <span class="hhnw">+ ' + +g.sk + ' for shading</span>' : '') +
     '</span><span class="hhribbon" aria-hidden="true" style="background:' +
     heroRibbon(hx) +
     '"></span><div class="hhacts"><button type="button" id="homeHeroGo" class="btn-primary hhgo" data-hero="reveal">' +

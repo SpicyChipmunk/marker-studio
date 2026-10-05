@@ -163,15 +163,14 @@ function showModel() {
     meta =
       nWord(assignData.N || assignData.order.length, 'section') +
       ' · ' +
-      mk.length +
-      ' ' +
-      (one ? one + ' ' : '') +
-      (mk.length === 1 ? 'marker' : 'markers') +
+      mkCount(mk.length, one) +
       // (a page not finished says nothing about finishing; one finished before the dates were kept, no date)
       (fin ? ' · finished' + (progAt && progAt.e ? ' ' + showDate(progAt.e) : '') : '');
   return {
     title: curName || 'My colouring',
     meta: meta,
+    // (v307: without the brand's name, for a line that doesn't fit: shading's markers make it longer)
+    metaS: one ? meta.replace(' ' + one + ' marker', ' marker') : meta,
     fin: fin,
     mk: mk,
     bands: showBands(mk),
@@ -231,13 +230,19 @@ function showLayout(g, M, w, h, o) {
     capW = land ? Math.max(260, Math.min(440, w * 0.32)) : Math.min(w - 2 * u(70, 16), u(900)),
     T = showTitleFit(g, M.title, capW, titleFs),
     lh = T.fs * 1.14;
-  g.font = showFont(SHOW_TEXT, metaFs);
-  let metaFs2 = metaFs;
-  // (the line of what it took: smaller rather than cut, down to 80%)
-  while (metaFs2 > metaFs * 0.8 && g.measureText(M.meta).width > capW) {
-    metaFs2 -= 0.5;
+  let metaFs2 = metaFs,
+    metaT = M.meta;
+  // (the line of what it took: smaller rather than cut, down to 80%; then without the brand's name, v307)
+  [M.meta, M.metaS].forEach(function (t, i) {
+    if (i && (t === M.meta || g.measureText(metaT).width <= capW)) return;
+    metaT = t;
+    metaFs2 = metaFs;
     g.font = showFont(SHOW_TEXT, metaFs2);
-  }
+    while (metaFs2 > metaFs * 0.8 && g.measureText(t).width > capW) {
+      metaFs2 -= 0.5;
+      g.font = showFont(SHOW_TEXT, metaFs2);
+    }
+  });
   // the codes: under each of the ribbon's markers (tall), or chips in one or two rows (wide)
   let codes = null,
     ribW = land ? capW : Math.min(capW, Math.max(u(260), n * u(66)), u(860));
@@ -307,7 +312,7 @@ function showLayout(g, M, w, h, o) {
   const tx = land ? capX : capX + capW / 2;
   L.title = { lines: T.lines, fs: T.fs, lh: lh, x: tx, y: capY + T.fs * 0.92 };
   const lastBase = L.title.y + (T.lines.length - 1) * lh;
-  L.meta = { t: M.meta, fs: metaFs2, x: tx, y: lastBase + u(14) + metaFs2 };
+  L.meta = { t: metaT, fs: metaFs2, x: tx, y: lastBase + u(14) + metaFs2 };
   const rx = land ? capX : capX + (capW - ribW) / 2;
   L.rib = { x: rx, y: L.meta.y + u(26, 10) - metaFs2 * 0.2, w: ribW, h: ribH };
   if (codes) {
@@ -394,7 +399,7 @@ function showDrawCap(g, M, L, ox, oy) {
   });
   g.font = showFont(SHOW_TEXT, L.meta.fs);
   g.fillStyle = 'rgba(244,242,236,.66)';
-  g.fillText(M.meta, L.meta.x, L.meta.y);
+  g.fillText(L.meta.t, L.meta.x, L.meta.y);
   // the ribbon
   const R = L.rib,
     B = M.bands;

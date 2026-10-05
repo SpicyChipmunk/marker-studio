@@ -11,7 +11,7 @@ const all = readdirSync(new URL('../e2e', import.meta.url))
 const table = JSON.parse(readFileSync(new URL('../e2e/ci-durations.json', import.meta.url), 'utf8'));
 
 for (const [engine, n] of [
-  ['webkit', 6],
+  ['webkit', 8],
   ['chromium', 2],
 ]) {
   test(`${engine}: each test file in exactly one of ${n} parts, the parts within 25% of each other`, () => {

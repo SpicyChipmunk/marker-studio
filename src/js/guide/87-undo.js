@@ -85,7 +85,20 @@ function planSnap() {
   // (Use grey markers for the grey parts, v304)
   if (photoGreys) s.pgrey = 1;
   // (what the Pattern panel says about a photo with no colour, as this laying found it: 46-photo, v304)
-  return { s: s, js: JSON.stringify(s), ref: photoRef, filt: planFilt(), none: Object.assign({}, _phNone) };
+  // (v307) whether its markers were picked with shading in mind (assignData's shp / shps, 30-palette-assign), so the
+  // Start colour line names the marker the picture starts with after Undo and Redo. Beside the snapshot, not in it:
+  // it says how the markers were picked, not what the plan is (a step is a change to the plan, planSame)
+  const shp = assignData.shp ? 1 : 0,
+    shps = assignData.shps ? Object.assign({}, assignData.shps) : null;
+  return {
+    s: s,
+    js: JSON.stringify(s),
+    ref: photoRef,
+    filt: planFilt(),
+    none: Object.assign({}, _phNone),
+    shp: shp,
+    shps: shps,
+  };
 }
 function planSame(p, q, noFilt) {
   return !!(p && q && p.js === q.js && p.ref === q.ref && (noFilt || p.filt === q.filt));
@@ -249,7 +262,12 @@ function planCommit(why, quiet, more) {
     return;
   }
   // (Recolour them too that gave its sections the markers they had still took ticks away: a step, to put them back)
-  if (planSame(planLast, cur) && !Object.keys(tl).length) return;
+  if (planSame(planLast, cur) && !Object.keys(tl).length) {
+    // (the same plan, its markers picked as they are now: v307)
+    planLast.shp = cur.shp;
+    planLast.shps = cur.shps;
+    return;
+  }
   const prev = planLast;
   prev.label = w || planLabel(prev, cur);
   if (Object.keys(lost).length) prev.tones = lost;
@@ -443,8 +461,8 @@ function tapLineUp() {
 /* Rough spots (v306): at Polished, where markers the guide doesn't use can smooth them (gradFixRun, 30-palette-assign),
    a line under the tabs, "11 rough spots · Smooth them ✕", and a ring on the picture where each pair meets. Smooth
    them sets gradFix for those zones and lays them again: one Undo step. Last in the queue of lines there: not beside
-   the kept-sections, pinned or sample line, the tool names or the first-time hint. With nothing the fix can do (a
-   big mandala uses every clear marker already) neither is shown. */
+   the kept-sections, pinned or sample line or the tool names (v307: under the first-time hint, with it). With
+   nothing the fix can do (a big mandala uses every clear marker already) neither is shown. */
 let _rough = null, // { sig, pairs: [[l, q, ΔE]], ids: the zones it can smooth, pts: where each pair meets }
   _roughX = '', // the guide as it was when ✕ closed the line (it comes back after a change)
   roughEl = null;
@@ -511,7 +529,9 @@ function roughNow() {
 }
 function roughLineUp() {
   if (sfmode !== 'guide' || _heldNote || _pinNote || paintOn || lockMode || zoneEditOn()) return null;
-  if (_toolTip > 0 || tapLineUp() || sampleNoteHTML()) return null;
+  // (v307: beside the first-time "Tap a section" line, not after it: a page laid at all went from no line to 56 rough
+  // spots on the first change of any kind)
+  if (_toolTip > 0 || sampleNoteHTML()) return null;
   const r = roughNow();
   return r && r.ids.length && r.pairs.length && r.sig !== _roughX ? r : null;
 }
@@ -791,6 +811,8 @@ function planRestore(e, noFilt) {
     return !!assign[l];
   });
   assignData = { assign: assign, order: order, N: order.length, base: base };
+  if (e.shp) assignData.shp = 1;
+  if (e.shps) assignData.shps = Object.assign({}, e.shps);
   // (Recolour them too's ticks, tones and kept shading, back)
   if (e.ticks && colored) {
     const P = tp();
@@ -959,7 +981,12 @@ function planBtn() {
     on =
       rev ||
       (sfmode === 'guide' && !!assignData && planStack.length > 0 && !pgMode && !cropMode && !popOpen());
-  b.style.display = on ? '' : 'none';
+  // (v307: its room kept in the Plan and Edit sections while there's nothing to undo, so the status beside it doesn't
+  // shift when it comes; hidden from sight, taps and screen readers till then)
+  const room =
+    !on && (sfmode === 'guide' ? !!assignData : sfmode === 'review' && !!labels) && !pgMode && !cropMode;
+  b.style.display = on || room ? '' : 'none';
+  b.style.visibility = room ? 'hidden' : '';
   if (on) {
     const l = rev ? 'Undo the last section edit' : 'Undo: ' + planStack[planStack.length - 1].label;
     b.setAttribute('aria-label', l);

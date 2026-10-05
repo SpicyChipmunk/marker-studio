@@ -473,7 +473,7 @@ function pickTap(l) {
     return;
   }
   const m = assignData.assign[l];
-  sayLive((had ? 'Done. ' : '') + 'Now changing the section with ' + m.code + ' ' + (m.name || ''));
+  sayLive((had ? 'Done. ' : '') + 'Now changing the section with ' + msay(m) + ' ' + (m.name || ''));
 }
 // press and hold (or right-click) a section in Blend: its tip, or the open picker moves to it
 function holdSec(l) {
@@ -544,6 +544,7 @@ let olOnce = false,
   olMerge = -1;
 function outlineSecs(ls, once) {
   olRow = false;
+  olGroups = null;
   olSet = ls && ls.length ? ls.slice() : null;
   olKey = '';
   olOnce = !!once;
@@ -560,7 +561,9 @@ function outlineSecs(ls, once) {
 // Colour along (v288): with a row open, its sections still to do are outlined too, lighter and steady (a light marker's
 // full colour barely shows against the pale rest). Find next's own outline comes first while its section is still to
 // do. Set at each drawing of the picture.
-let olRow = false;
+let olRow = false,
+  // (v307: a two-brand search's outline, one group of sections per marker with its colour: [{ hex, s }])
+  olGroups = null;
 function rowOutline() {
   const fn =
     _fnOl &&
@@ -577,11 +580,40 @@ function rowOutline() {
     _fnOl = false;
     olSet = rest.length ? rest : null;
     olRow = !!olSet;
+    olGroups = null;
+    olOnce = false;
+    olMerge = -1;
+  } else if (sfmode === 'color' && !focus && findTwo() && assignData && !root.classList.contains('sfrev')) {
+    // (v307) a code in both brands, found by its code: each marker's sections still to do, in its own colour
+    const A = assignData.assign,
+      gs = findTwo()
+        .map(function (g) {
+          return {
+            hex: g.hex,
+            s: assignData.order.filter(function (l) {
+              return g.b[A[l].mkey] && !colored[l];
+            }),
+          };
+        })
+        .filter(function (g) {
+          return g.s.length;
+        }),
+      all = [];
+    gs.forEach(function (g) {
+      g.s.forEach(function (l) {
+        if (all.indexOf(l) < 0) all.push(l);
+      });
+    });
+    _fnOl = false;
+    olSet = all.length ? all : null;
+    olRow = !!olSet;
+    olGroups = olSet ? gs : null;
     olOnce = false;
     olMerge = -1;
   } else if (olRow) {
     olSet = null;
     olRow = false;
+    olGroups = null;
     positionOutline();
   }
 }
@@ -664,30 +696,50 @@ function positionOutline() {
   y0 = Math.max(0, y0 - pad);
   x1 = Math.min(W - 1, x1 + pad);
   y1 = Math.min(H - 1, y1 + pad);
-  const key = olSet.join(',') + '|' + s + '|' + W + 'x' + H;
+  const key =
+    olSet.join(',') +
+    '|' +
+    s +
+    '|' +
+    W +
+    'x' +
+    H +
+    (olGroups
+      ? '|' +
+        olGroups
+          .map(function (g) {
+            return g.hex + ':' + g.s.length;
+          })
+          .join()
+      : '');
   if (key !== olKey) {
     olKey = key;
     const ow = Math.max(1, Math.ceil((x1 - x0 + 1) * s)),
-      oh = Math.max(1, Math.ceil((y1 - y0 + 1) * s)),
-      f = new Uint8Array(comps.length);
-    olSet.forEach(function (l) {
-      if (l < f.length) f[l] = 1;
-    });
-    const m = document.createElement('canvas');
-    m.width = ow;
-    m.height = oh;
-    const mc = m.getContext('2d'),
-      im = mc.createImageData(ow, oh),
-      d = im.data;
-    for (let j = 0; j < oh; j++) {
-      const y = Math.min(H - 1, y0 + Math.floor((j + 0.5) / s)),
-        row = y * W;
-      for (let i = 0; i < ow; i++) {
-        const L = labels[row + Math.min(W - 1, x0 + Math.floor((i + 0.5) / s))];
-        if (L > 0 && f[L]) d[(j * ow + i) * 4 + 3] = 255;
+      oh = Math.max(1, Math.ceil((y1 - y0 + 1) * s));
+    // a mask of these sections (the white inside dark ring is drawn round it)
+    const mask = function (set) {
+      const f = new Uint8Array(comps.length);
+      set.forEach(function (l) {
+        if (l < f.length) f[l] = 1;
+      });
+      const m = document.createElement('canvas');
+      m.width = ow;
+      m.height = oh;
+      const mc = m.getContext('2d'),
+        im = mc.createImageData(ow, oh),
+        d = im.data;
+      for (let j = 0; j < oh; j++) {
+        const y = Math.min(H - 1, y0 + Math.floor((j + 0.5) / s)),
+          row = y * W;
+        for (let i = 0; i < ow; i++) {
+          const L = labels[row + Math.min(W - 1, x0 + Math.floor((i + 0.5) / s))];
+          if (L > 0 && f[L]) d[(j * ow + i) * 4 + 3] = 255;
+        }
       }
-    }
-    mc.putImageData(im, 0, 0);
+      mc.putImageData(im, 0, 0);
+      return m;
+    };
+    let m = null;
     const px = s / k,
       ring = function (rad, col) {
         const o = document.createElement('canvas');
@@ -711,13 +763,17 @@ function positionOutline() {
     g.clearRect(0, 0, ow, oh);
     // (the working canvases let go at once: Safari limits the memory all canvases hold, and a row's outline is drawn
     // again at each tick, v289)
-    const r1 = ring(Math.max(2, 6 * px), 'rgba(0,0,0,.8)'),
-      r2 = ring(Math.max(1.2, 3.5 * px), '#fff');
-    g.drawImage(r1, 0, 0);
-    g.drawImage(r2, 0, 0);
-    freeCanvas(r1);
-    freeCanvas(r2);
-    freeCanvas(m);
+    // (v307: a two-brand search's, each marker's sections in its own colour inside the dark ring)
+    (olGroups || [{ s: olSet, hex: '#fff' }]).forEach(function (q) {
+      m = mask(q.s);
+      const r1 = ring(Math.max(2, 6 * px), 'rgba(0,0,0,.8)'),
+        r2 = ring(Math.max(1.2, 3.5 * px), q.hex);
+      g.drawImage(r1, 0, 0);
+      g.drawImage(r2, 0, 0);
+      freeCanvas(r1);
+      freeCanvas(r2);
+      freeCanvas(m);
+    });
     // (many at once, Everywhere or a row's: lighter and steady)
     olEl.classList.toggle('sfolmany', olRow || olSet.length > 1);
   }
@@ -943,7 +999,7 @@ function togglePin(l) {
   renderGuide();
   renderControls();
   var m = assignData.assign[l];
-  sayLive((locks[l] !== undefined ? 'Pinned ' : 'Unpinned ') + m.code + ' ' + (m.name || ''));
+  sayLive((locks[l] !== undefined ? 'Pinned ' : 'Unpinned ') + msay(m) + ' ' + (m.name || ''));
   planCommit();
 }
 // Fill: every unpinned section still to colour takes the marker (one ticked done keeps its own, as with Everywhere:

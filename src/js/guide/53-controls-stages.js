@@ -329,6 +329,11 @@ function frameColour() {
     renderControls();
     return;
   }
+  // (v307: with Smooth them on, the rough spots the paper brings are smoothed in the same step, not after a second tap)
+  if (gradFixHeld()) {
+    renderGuide();
+    renderControls();
+  }
   planCommit(FRAME_STEP, false, { frame: { l: l, was: was } });
   ctlRefocus('#sfTab-' + gTab);
 }
@@ -445,11 +450,15 @@ function ctlSections() {
     stageGo();
     b.disabled = true;
     b.textContent = 'Building\u2026';
+    // (the picture Build was pressed on: another guide opened meanwhile isn't built over, v307 debug)
+    const g = loadGen;
     requestAnimationFrame(function () {
-      setTimeout(function () {
+      // (v307: the label points worked out in the worker first, while "Building…" shows: lptsReady, 40-render)
+      lptsReady().then(function () {
         // (the first Build of a new picture blooms: 41-bloom.js)
         const first = !assignData;
         try {
+          if (g !== loadGen) return;
           buildGuide();
           if (first && assignData && sfmode === 'guide') bloomStart();
         } finally {
@@ -460,7 +469,7 @@ function ctlSections() {
             edBarSync();
           }
         }
-      }, 0);
+      });
     });
   }); // show "Building…" before the work starts
   var _tp = document.getElementById('sfToPlan');

@@ -232,10 +232,6 @@
 .scadd {
   font-size: var(--t-md);
 }
-.scadd:disabled {
-  opacity: 0.38;
-  cursor: default;
-}
 .sccard [hidden] {
   display: none;
 }

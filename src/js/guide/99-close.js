@@ -229,6 +229,27 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       return tp();
     },
     buildPDFPages: buildPDFPages,
+    // (v307: the speed work)
+    canvasesToPDF: canvasesToPDF,
+    rgbPack: rgbPack,
+    jobs: JOBS,
+    pngBlob: pngBlob,
+    lmapWarm: lmapWarm,
+    lmapLabels: lmapLabels,
+    labelPtsCore: labelPtsCore,
+    // (the section map encoded here, whatever is kept; and what lmapWarm left for the next save)
+    lmapHere: function () {
+      return _lmapURL(foldSet());
+    },
+    get lmapKept() {
+      return _lmC && _lmC.url;
+    },
+    lmapForget: function () {
+      _lmC = null;
+    },
+    lptsKept: function () {
+      return _lpts.length;
+    },
     buildExportCanvas: buildExportCanvas,
     shadeZoneLabels: shadeZoneLabels,
     shadePrep: shadePrep,
@@ -563,6 +584,11 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       get fixed() {
         return gradFixLast;
       },
+      // (v307: touching sections sharing a marker, split up after the smoothing)
+      get same() {
+        return gradSameLast;
+      },
+      fixHeld: gradFixHeld,
       count: gradCount,
       countNow: gradCountNow,
       scatAt: gradScatAt,
@@ -738,6 +764,11 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       zoneSelect: zoneSelect,
       planCommit: planCommit,
       planUndo: planUndo,
+      planRedo: planRedo,
+      // (v307: the tool row's status, Colour along, and the line under the tabs)
+      planBar: ctlPlanBar,
+      planHead: ctlPlanHead,
+      guideWhite: guideWhite,
       resetForNewPicture: resetForNewPicture,
       colours: ctlPlanColours,
       get planStack() {

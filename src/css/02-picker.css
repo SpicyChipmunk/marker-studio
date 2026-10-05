@@ -677,7 +677,6 @@ button.sopen:hover {
 .readout.rpal .rbt {
   font-weight: 700;
   font-size: 0.85em;
-  opacity: 0.8;
 }
 @container (max-width:33rem) {
   .readout.rpal {
@@ -1242,6 +1241,13 @@ button:focus-visible {
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
+}
+/* (v307) a hex code searched for: its colour beside Match this colour */
+.hexdot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 /* the way down to the tools under the grid: a small link under the line about the view */
 .mkjump {

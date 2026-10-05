@@ -378,7 +378,7 @@ test('From photo: Tap the white paper takes the palette from the photo with its 
   assert.equal(await page.getAttribute('#photoPaper', 'aria-pressed'), 'false');
   await page.click('#photoPaper');
   assert.equal(await page.getAttribute('#photoPaper', 'aria-pressed'), 'true');
-  assert.match(await page.textContent('#photoPaperNote'), /tap a plain white part of the paper/);
+  assert.match(await page.textContent('#photoPaperNote'), /tap something white in the photo/);
   // a tap on the photo while not in the mode does nothing; Escape leaves the mode
   await page.keyboard.press('Escape'); await idle(page);
   assert.equal(await page.getAttribute('#photoPaper', 'aria-pressed'), 'false');
@@ -387,7 +387,7 @@ test('From photo: Tap the white paper takes the palette from the photo with its 
   assert.deepEqual(await photoPal(page), p0, 'nothing changes outside the mode');
   // a coloured spot can't be paper: said, and the mode stays
   await page.click('#photoPaper'); await thumb(0.63, 0.15);
-  assert.equal(await page.textContent('#photoPaperNote'), 'That spot is too dark or too coloured to be white paper. Tap a plain white part of the page.');
+  assert.equal(await page.textContent('#photoPaperNote'), 'That spot is too dark or too coloured to be white. Tap the paper or something else white.');
   assert.equal(await page.getAttribute('#photoPaper', 'aria-pressed'), 'true');
   assert.deepEqual(await photoPal(page), p0);
   // the paper: the palette comes again from the corrected photo, which the thumbnail shows

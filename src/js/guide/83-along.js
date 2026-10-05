@@ -195,9 +195,10 @@ function alongSet(key) {
   }
 }
 // Home's Continue (v285): the row to pick up, as Colour along goes (lightest first): a marker part-way done (some of
-// its sections ticked, or tones coloured), else the first not finished; opened, with its row in view
+// its sections ticked, or tones coloured), else the first not finished; opened, with its row in view. True once it has
+// painted the picture (v307)
 function alongResume() {
-  if (sfmode !== 'color' || !assignData || !colored) return;
+  if (sfmode !== 'color' || !assignData || !colored) return false;
   const P = tonePart && tonePart._c === colored ? tonePart : null,
     L = alongList(),
     nx =
@@ -214,7 +215,7 @@ function alongResume() {
       L.find(function (e) {
         return e.d < e.n;
       });
-  if (!nx) return;
+  if (!nx) return false;
   alongSet(nx.key);
   renderControls();
   renderGuide();
@@ -225,6 +226,7 @@ function alongResume() {
       alongReveal(true);
     });
   });
+  return true;
 }
 // is section l one of the open row's? (its marker, and zone by zone its zone)
 function hlMatch(l) {
@@ -472,7 +474,7 @@ function alongEntry(k) {
   return r;
 }
 function alongName(m) {
-  return m.code + (m.name ? ' ' + m.name : '');
+  return msay(m) + (m.name ? ' ' + m.name : '');
 }
 function alongClick(e) {
   const b = e.target.closest('button');
@@ -495,9 +497,9 @@ function alongClick(e) {
     sayLive(
       all
         ? en.n === 1
-          ? 'The ' + en.m.code + ' section coloured'
-          : 'All ' + en.n + ' ' + en.m.code + ' sections coloured'
-        : 'Cleared ' + en.m.code,
+          ? 'The ' + msay(en.m) + ' section coloured'
+          : 'All ' + en.n + ' ' + msay(en.m) + ' sections coloured'
+        : 'Cleared ' + msay(en.m),
     );
     alongReveal();
   } else if (b.id === 'sfFindNext') findNext();
@@ -510,6 +512,8 @@ function alongClick(e) {
 // open a marker's row (k) or close the open one (null); found: a press and hold on the picture chose it
 function alongOpen(k, found) {
   alongSet(k);
+  // (a row tapped after a two-brand search: that marker is the one in your hand, v307)
+  if (k && alFind) alFind.two = null;
   blendOpen = {};
   if (k) alongHintSeen();
   if (k && alDone.indexOf(k) >= 0) alDoneOpen = true;
@@ -668,8 +672,11 @@ function codeFind(raw) {
       ].forEach(function (p) {
         const x = t[p[0]];
         if (!x || codeNorm(x.code) !== q) return;
-        const e = P[x.mkey] || (P[x.mkey] = { m: x, highlight: {}, shadow: {} });
+        const e =
+          P[x.mkey] || (P[x.mkey] = { m: x, highlight: {}, shadow: {}, zn: { highlight: {}, shadow: {} } });
         e[p[1]][m.mkey] = m;
+        // (v307: the zones it's that in, so a highlight in one zone and a shadow in another can say where)
+        e.zn[p[1]][zones.length ? zoneOf(+l) : 0] = 1;
       });
   }
   const vals = function (o) {
@@ -700,6 +707,27 @@ function findBrands(r) {
   });
   return Object.keys(b);
 }
+// (v307) where a highlight or shadow is used, when it's a highlight in some zones and a shadow in others: " in Main"
+// (zn: { highlight: { zone id: 1 }, shadow: {…} }); '' when they're the same, or without zones
+function roleZones(zn, k) {
+  if (!zones.length || !zn) return '';
+  const ids = function (o) {
+      return zoneIds().filter(function (id) {
+        return o && o[id];
+      });
+    },
+    h = ids(zn.highlight),
+    s = ids(zn.shadow);
+  if (!h.length || !s.length || h.join() === s.join()) return '';
+  return (
+    ' in ' +
+    ids(zn[k])
+      .map(function (id) {
+        return zoneName(id);
+      })
+      .join(', ')
+  );
+}
 // the line above the box for what a code finds: "Y26 Light Gold", "Ohuhu Y26 Light Gold · Copic Y26 Mustard",
 // "Y11: highlight for Y26, Y35", "Codes starting Y2: Y21, Y210, Y26", "Y26 isn't in this guide", "No marker R99"
 function findLine(r) {
@@ -726,6 +754,7 @@ function findLine(r) {
         .map(function (k) {
           return (
             k +
+            roleZones(p.zn, k) +
             ' for ' +
             few(
               Object.keys(p[k]).map(function (x) {
@@ -749,13 +778,15 @@ function findPartLine(r) {
     by = {},
     has = {};
   r.part.forEach(function (p) {
-    const e = by[p.m.brand] || (by[p.m.brand] = { highlight: [], shadow: [] });
+    const e =
+      by[p.m.brand] || (by[p.m.brand] = { highlight: [], shadow: [], zn: { highlight: {}, shadow: {} } });
     kinds.forEach(function (k) {
       for (const x in p[k]) {
         const c = p[k][x].code;
         if (e[k].indexOf(c) < 0) e[k].push(c);
         has[k] = 1;
       }
+      if (p.zn) Object.assign(e.zn[k], p.zn[k]);
     });
   });
   const few = function (a) {
@@ -773,7 +804,7 @@ function findPartLine(r) {
           return e[k].length;
         })
         .map(function (k) {
-          return (named ? k + ' ' : '') + 'for ' + few(e[k]);
+          return (named ? k + roleZones(e.zn, k) + ' ' : '') + 'for ' + few(e[k]);
         })
         .join(' and ');
     },
@@ -789,7 +820,7 @@ function findPartLine(r) {
       ' is ' +
       ks
         .map(function (k) {
-          return 'a ' + k + ' for ' + few(e[k]);
+          return 'a ' + k + roleZones(e.zn, k) + ' for ' + few(e[k]);
         })
         .join(' and ')
     );
@@ -854,7 +885,7 @@ function findGo() {
     sayLive(t);
     return;
   }
-  alFind = { q: r.q, rank: rank, g: loadGen };
+  alFind = { q: r.q, rank: rank, g: loadGen, two: findTwoOf(r) };
   let open = null,
     line = findLine(r);
   // (only a highlight or shadow here: what it goes with, the rows of those markers shown)
@@ -886,6 +917,38 @@ function findGo() {
   renderAlong();
   sayLive(line);
   findReveal();
+}
+// (v307) a code in both brands: each marker it is (or is the highlight or shadow of) with its colour and the markers
+// whose sections it goes on ({ k, hex, b: { marker key: 1 } }), so the picture shows them all, each outlined in its
+// own colour, until a row is tapped (null for one marker)
+function findTwoOf(r) {
+  if (findBrands(r).length < 2) return null;
+  const out = [];
+  r.base.forEach(function (m) {
+    const b = {};
+    b[m.mkey] = 1;
+    out.push({ k: m.mkey, hex: m.hex, b: b });
+  });
+  r.part.forEach(function (p) {
+    if (
+      r.base.some(function (m) {
+        return m.mkey === p.m.mkey;
+      })
+    )
+      return;
+    const b = {};
+    ['highlight', 'shadow'].forEach(function (k) {
+      for (const x in p[k]) b[x] = 1;
+    });
+    out.push({ k: p.m.mkey, hex: p.m.hex, b: b });
+  });
+  return out.length > 1 ? out : null;
+}
+// the markers a two-brand search shows on the picture now (none once a row is open, or out of Colour along)
+function findTwo() {
+  return sfmode === 'color' && !focus && !hlKey && alFind && alFind.g === loadGen && alFind.two
+    ? alFind.two
+    : null;
 }
 // (a new start: Colour along entered again, another guide)
 function findForget() {
@@ -932,6 +995,8 @@ function findWire() {
     findGo();
   });
   inp.addEventListener('input', function () {
+    // (v307: kept as you type, so a redraw of the controls, another tab's save among them, keeps it)
+    alFindQ = inp.value;
     if (x) x.hidden = !inp.value;
     if (!inp.value.trim()) {
       findClear();
@@ -976,6 +1041,65 @@ function findWire() {
   inp.addEventListener('blur', function () {
     setTimeout(findKbd, 0);
   });
+}
+// (v307) Another tab saved the open guide, which is reloaded in place (reloadOpen): Colour along as it was kept first,
+// and put back once the guide has opened again: the code box's text, its cursor and the line above it, a search run,
+// the open row and its Blends, the Done group, which control had the keyboard, and where the page was scrolled.
+let _alKeep = null;
+function alongKeep() {
+  if (sfmode !== 'color' || focus || !assignData) return null;
+  const inp = document.getElementById('sfFindIn'),
+    ae = document.activeElement,
+    inCtl = !!(ae && ctlEl && ctlEl.contains(ae)),
+    row = inCtl && ae.closest ? ae.closest('.sfarow') : null,
+    f = document.getElementById('sfFind');
+  return {
+    id: curId,
+    q: inp ? inp.value : alFindQ,
+    line: alFindL,
+    find: alFind ? { q: alFind.q, rank: alFind.rank, two: alFind.two || null } : null,
+    key: alongKey(hlKey, hlZone),
+    blend: Object.assign({}, blendOpen),
+    done: alDone.slice(),
+    doneOpen: alDoneOpen,
+    foc: inCtl && ae.id ? ae.id : '',
+    fk: row && !ae.id ? row.dataset.k : null,
+    sel: inp && ae === inp ? [inp.selectionStart, inp.selectionEnd, inp.selectionDirection] : null,
+    fold: !!(f && f.classList.contains('sffindon')),
+    y: window.scrollY,
+  };
+}
+function alongRestore(k) {
+  if (!k || sfmode !== 'color' || focus || !assignData || k.id !== curId) return;
+  alFindQ = k.q || '';
+  if (k.find && alFindQ.trim()) {
+    alFind = { q: k.find.q, rank: k.find.rank, g: loadGen, two: k.find.two };
+    alFindL = k.line;
+  } else alFindL = alFindQ.trim() ? findLine(codeFind(alFindQ)) : '';
+  alDone = k.done.filter(function (x) {
+    return !!alongEntry(x);
+  });
+  alDoneOpen = k.doneOpen;
+  if (k.key && alongEntry(k.key)) {
+    alongSet(k.key);
+    blendOpen = k.blend;
+    if (alDone.indexOf(k.key) >= 0) alDoneOpen = true;
+  }
+  renderControls();
+  renderGuide();
+  if (k.fold) findFold(true);
+  window.scrollTo(0, k.y);
+  let el = k.foc ? document.getElementById(k.foc) : null;
+  if (!el && k.fk)
+    document.querySelectorAll('#sfAlist .sfarow').forEach(function (r) {
+      if (r.dataset.k === k.fk) el = r.querySelector('.sfah');
+    });
+  if (el && el.offsetParent !== null)
+    try {
+      el.focus({ preventScroll: true });
+      if (k.sel && el.id === 'sfFindIn' && el.setSelectionRange)
+        el.setSelectionRange(k.sel[0], k.sel[1], k.sel[2]);
+    } catch (_) {}
 }
 // Escape (a layer, 95-mount.js): with a code in the box or a search run, it clears that first
 function findOpen() {
