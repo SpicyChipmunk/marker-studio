@@ -3397,11 +3397,20 @@ function doneAfterFocus() {
       if (!dn || dn.offsetParent === null || focus) return;
       if (!doneScroll(dn, false)) return;
       picScroll();
+      let y2 = null;
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
           if (!focus && dn.offsetParent !== null) doneScroll(dn, false);
+          y2 = window.scrollY;
         });
       });
+      // and once more when the pinned picture has settled (a slow device can still be resizing it two frames on, which
+      // left the panel under the picture: WebKit on GitHub, v308)
+      // (not when you've scrolled since)
+      setTimeout(function () {
+        if (y2 !== null && Math.abs(window.scrollY - y2) > 2) return;
+        if (!focus && dn.offsetParent !== null && doneScroll(dn, false)) picScroll();
+      }, 260);
     });
   });
 }

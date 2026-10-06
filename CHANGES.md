@@ -504,3 +504,7 @@ Everything from the eight-reviewer beta-readiness review of v307 (all major, min
 - Size, scheme and filter changes can be undone; the first-visit preview follows your sets; saved palettes keep their scheme; opening one over Custom picks asks; empty filters say so; Save image uses the name; sizes capped to what your collection can make; Brands I'd buy with nothing owned; tiles show 16; From photo keeps hues apart, stops when colours run out ("about N colours") and sorts the bands; portrait keeps Save in view.
 
 - Cache bumped to `marker-studio-v308`; `package.json` 308.0.0.
+
+**From v308's first GitHub run**
+- The ⋯ menu test expects the Help group without its heading. Leaving Focus mode on a finished page places the Page finished panel once more when the pinned picture has settled (it could be left under the picture: flaky in WebKit).
+- The release workflow and its docs name `main`, the repository's branch. WebKit on GitHub runs in 10 parts (a part of 8 reached its 30-minute limit); every file's time is from this run.

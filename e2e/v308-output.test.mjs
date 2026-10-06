@@ -371,7 +371,9 @@ test('finishing in Focus mode and closing it: the Page finished panel sits just 
     assert.equal(await page.evaluate(() => __mstest.focusFin), true);
     await page.click('#sfExitFoc');
     await idle(page);
-    await page.waitForTimeout(150);
+    // (v308 run: the app places the panel again once the pinned picture has settled, 260 ms on)
+    await page.waitForTimeout(450);
+    await idle(page);
     const r = await page.evaluate(() => {
       const d = document.getElementById('sfDone').getBoundingClientRect(),
         z = document.getElementById('sfZoomCtl').getBoundingClientRect();

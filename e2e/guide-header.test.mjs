@@ -94,7 +94,10 @@ test('⋯ opens a menu sheet: New, This guide (Save a copy once saved; Reset pro
   assert.equal(await page.locator('#sfRoot [aria-label="More"]').count(), 1, 'the only ⋯ on the screen');
   await openMenu(page);
   assert.equal(await page.textContent('#sfSheetT'), await page.textContent('#sfGTitle'));
-  assert.deepEqual(await page.$$eval('#sfSheet .sfmh', (h) => h.map((x) => x.textContent)), ['New', 'Help']);
+  // (v308: the Help group has no heading of its own, which keeps the menu within a phone's room; it is named for screen
+  // readers)
+  assert.deepEqual(await page.$$eval('#sfSheet .sfmh', (h) => h.map((x) => x.textContent)), ['New']);
+  assert.equal(await page.locator('#sfSheet .sfmenu[aria-label="Help"]').count(), 1, 'the Help group');
   // (v308: Send feedback under Help)
   assert.deepEqual(await menuLabels(page), ['Choose a photo', 'Try the sample', 'Open from Library', 'Import a guide', 'Help', 'Send feedback']);
   await page.keyboard.press('Escape'); await idle(page);

@@ -416,10 +416,10 @@ test('README: for users first, the CI as it runs (8 WebKit parts), nothing out o
   ])
     assert.ok(top.includes(s), s);
   assert.ok(!/phone-first|graduating|3 parts|6 parts|the few\s/i.test(r));
-  assert.match(r, /WebKit \(Safari's engine\), in 8 parts/);
+  assert.match(r, /WebKit \(Safari's engine\), in 10 parts/);
   assert.match(r, /Chromium in 2 parts/);
   const wf = read('.github/workflows/test.yml');
-  assert.match(wf, /part: \[1, 2, 3, 4, 5, 6, 7, 8\]/, 'the README matches the workflow');
+  assert.match(wf, /part: \[1, 2, 3, 4, 5, 6, 7, 8, 9, 10\]/, 'the README matches the workflow');
   assert.match(read('docs/DEVICE-TEST.md'), /^# [^\n]*\n\n> \*\*Internal\.\*\*/);
 });
 

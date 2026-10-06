@@ -63,19 +63,19 @@ jobs:
   # The same browser tests on WebKit, Safari's engine, to catch iPhone-only problems early.
   # Informational: a failure here shows up in the run but doesn't fail the build.
   # GitHub's WebKit now and then misses a frame or a scroll event when the machine is busy, so here the tests run one
-  # file at a time, in 6 parts side by side (shared out by e2e/ci-parts.mjs to take about as long each), and a test that
+  # file at a time, in 10 parts side by side (shared out by e2e/ci-parts.mjs to take about as long each), and a test that
   # fails is run once more (e2e/ci-retry.mjs): one that then passes is reported as flaky (a warning), one that fails
   # again as a failure. Tests that can't pass on GitHub's WebKit
   # at all are left out, each with its reason (notOnWebKit in e2e/helpers.mjs). Each part's results go on the run's page.
   webkit:
-    name: browser tests on WebKit (Safari's engine), part ${{ matrix.part }} of 8
+    name: browser tests on WebKit (Safari's engine), part ${{ matrix.part }} of 10
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
-        part: [1, 2, 3, 4, 5, 6, 7, 8]
+        part: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -98,7 +98,7 @@ jobs:
         run: node e2e/ci-photo-timing.mjs
         env:
           E2E_BROWSER: webkit
-      - name: Browser tests (WebKit, part ${{ matrix.part }} of 8)
+      - name: Browser tests (WebKit, part ${{ matrix.part }} of 10)
         id: tests
         # failed tests don't fail this step: the retry below decides (and so does running out of time, which is why
         # a timeout here doesn't stop the job either)
@@ -111,19 +111,19 @@ jobs:
           (node --test --test-concurrency=1 --test-timeout=720000
           --test-reporter=spec --test-reporter-destination=stdout
           --test-reporter=./e2e/ci-report.mjs --test-reporter-destination=stdout
-          $(node e2e/ci-parts.mjs webkit ${{ matrix.part }} 8) || echo "Some tests failed: the retry below decides.")
+          $(node e2e/ci-parts.mjs webkit ${{ matrix.part }} 10) || echo "Some tests failed: the retry below decides.")
         env:
           E2E_BROWSER: webkit
           E2E_REPORT: e2e/.artifacts/webkit-results.jsonl
       - name: Retry what failed (once)
         if: always() && steps.tests.outcome != 'skipped'
         timeout-minutes: 15
-        run: node e2e/ci-retry.mjs e2e/.artifacts/webkit-results.jsonl e2e/.artifacts/webkit-retry.jsonl ${{ matrix.part }}/8
+        run: node e2e/ci-retry.mjs e2e/.artifacts/webkit-results.jsonl e2e/.artifacts/webkit-retry.jsonl ${{ matrix.part }}/10
         env:
           E2E_BROWSER: webkit
       - name: Summary
         if: always()
-        run: node e2e/ci-summary.mjs e2e/.artifacts/webkit-results.jsonl "WebKit, part ${{ matrix.part }} of 8" ${{ matrix.part }}/8
+        run: node e2e/ci-summary.mjs e2e/.artifacts/webkit-results.jsonl "WebKit, part ${{ matrix.part }} of 10" ${{ matrix.part }}/10
         env:
           E2E_BROWSER: webkit
           E2E_RETRY: e2e/.artifacts/webkit-retry.jsonl

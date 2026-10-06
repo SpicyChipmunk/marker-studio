@@ -9,7 +9,7 @@ on:
       ref:
         description: Branch or commit to release
         required: true
-        default: master
+        default: main
       rollback:
         description: Roll back (allow moving release to an older commit)
         type: boolean

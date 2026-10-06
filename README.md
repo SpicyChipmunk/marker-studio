@@ -38,7 +38,7 @@ Commit both `src/` and the rebuilt `index.html` — GitHub Pages serves
 `index.html` as-is, with no build step on the server. The unit tests fail if
 `index.html` doesn't match a fresh build, so the two can't drift apart.
 
-Pages serves the `release` branch, not `master`: a commit reaches testers only
+Pages serves the `release` branch, not `main`: a commit reaches testers only
 when the release workflow puts it there, after its tests have passed. See
 [docs/RELEASING.md](docs/RELEASING.md).
 
@@ -56,7 +56,7 @@ GitHub Actions runs both on every push to any branch but `release`
 
 - the unit tests, then the browser tests on Chromium in 2 parts side by side.
   These decide whether the run passes;
-- the same browser tests on WebKit (Safari's engine), in 8 parts side by side,
+- the same browser tests on WebKit (Safari's engine), in 10 parts side by side,
   one test file at a time. This job reports but doesn't fail the build. A failed
   test is run once more (`e2e/ci-retry.mjs`): one that then passes is reported
   as flaky, as a warning. Tests that can't pass on GitHub's WebKit at all are
