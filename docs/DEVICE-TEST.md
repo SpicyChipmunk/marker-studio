@@ -1,5 +1,9 @@
 # Device test pass (~15 min per phone)
 
+> **Internal.** This is Ben's own pre-release checklist, not for beta testers: testers get
+> [TESTERS.md](TESTERS.md) (also in the app, Help › Beta tester guide). See [RELEASING.md](RELEASING.md) for how a
+> release reaches them.
+
 Run this once on an iPhone (Safari) and once on an Android phone (Chrome) after each release. Open the live GitHub Pages URL, not a local file. Mark each line ✅ / ❌ and add a note for any ❌ (a screenshot helps).
 
 **Before you start:** if the app is already on the phone, open it and tap **Reload** when the "Marker Studio was updated" message appears. The small version number at the bottom of Home should match the latest release (e.g. v283).
@@ -77,6 +81,17 @@ On a guide, open **Style** and set **Shading** to **Light & shadow**.
 - [ ] The picker shows codes under each swatch, grouped by colour, with **Recently used** at the top the next time.
 - [ ] **Blend:** a tap still adds an anchor; press and hold a section shows Change colour / Pin. **Manual:** a tap opens the picker.
 - [ ] **Style → Pin colours:** taps pin and unpin sections directly.
+
+## 3k. v308 on the iPad (12 min)
+
+- [ ] **Home:** "v308 · Beta"; **Send feedback** at the foot opens the share sheet with a short report.
+- [ ] **Gradient at all:** on one of your 216-section pages, Gradient · all: no tan or grey band; Include › Browns on brings browns in. − / + step, hold runs, tapping the count lets you type.
+- [ ] **Rainbow** at 8 starts at red and has a real yellow.
+- [ ] **Photo:** photograph a page, Straighten: corners start on the page, not the drawing; Tilt 1° doesn't add sections.
+- [ ] **PDF** with shading on: the key's colour reference is a good size, one NO. column, the sun doesn't hide a code; no specks from the photo.
+- [ ] **Restore** an older backup: Keep mine is highlighted; after it, Undo puts things back.
+- [ ] **Palette:** Use in a guide, then tap a Mood: the palette's markers stay.
+- [ ] **Help › About › Copy diagnostics** pastes a readable report into Notes.
 
 ## 3j. v307 on the iPad (8 min)
 

@@ -144,7 +144,8 @@ test('turn then crop: each is its own Undo step', async () => {
   await answerAsks(page);
   await page.click('#sfBack2'); await page.click('#sfAdjToggle'); await page.click('#sfRotR'); await idle(page);
   const w1 = await page.evaluate(() => __mstest.W);
-  await page.click('#sfAutoCrop'); await idle(page);
+  // (v308: a crop chosen, as Crop › Apply does; Auto crop on the sample, which its drawing fills, has nothing to trim)
+  await page.evaluate(() => __mstest.geoSet({ crop: { x: 0.1, y: 0.1, w: 0.8, h: 0.8 } })); await idle(page);
   assert.ok(await page.evaluate(() => !!__mstest.cropRect), 'cropped');
   await page.click('#sfPlanUndo'); await idle(page);
   assert.deepEqual(await page.evaluate(() => [__mstest.rot90, !!__mstest.cropRect, __mstest.W]), [90, false, w1], 'one Undo: turned, not cropped');

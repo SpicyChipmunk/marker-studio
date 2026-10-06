@@ -876,6 +876,8 @@ function backupAll(btnId) {
             JSON.stringify({
               v: 3,
               type: 'ms-backup',
+              // (v308: the version that made it, so an older one can say it's from a newer version)
+              app: appVersion(),
               ts: now,
               owned: [...state.owned],
               wish: state.wish,
@@ -906,10 +908,13 @@ function backupAll(btnId) {
         return how ? made(how) : failed();
       });
     })
-    .catch(function () {
+    .catch(function (e) {
       _btnFlash(bid, label, label, 10);
       var _b = document.getElementById(bid);
-      errCard(_b && _b.parentNode, 'The backup couldn\u2019t be saved on this device. Try again.');
+      errCard(
+        _b && _b.parentNode,
+        errNote('The backup couldn\u2019t be saved on this device. Try again.', 'Backing up', e),
+      );
       return false;
     });
 }
@@ -940,9 +945,12 @@ function markRestored(fts) {
 }
 const RESTORE_FULL =
   'Couldn\u2019t restore \u2014 this browser\u2019s storage is full, so nothing was changed. Delete a few guides from the Library, then try again.';
-// whether a backup's markers would replace yours, asked first in the app's own dialog (v288): resolves true (replace)
-// or false (keep yours), or null for Cancel (v289: Escape and the backdrop too), when nothing is restored. Nothing to
-// ask when they're the same, when the backup has none (yours are kept) or you have none (theirs come in).
+// whether a backup's markers would replace yours, asked first in the app's own dialog (v288): resolves true (use the
+// backup's), false (keep yours), 'add' (yours and the backup's together, v308) or null for Cancel (v289: Escape and the
+// backdrop too), when nothing is restored. Nothing to ask when they're the same, when the backup has none (yours are
+// kept) or you have none (theirs come in).
+// (v308) Keep my markers is the highlighted answer: one tap on an old backup used to replace them. "Add the backup's"
+// shows only when it has markers you don't, and each answer says how many markers it leaves you with.
 function askReplaceMarkers(o) {
   const arr = Array.isArray(o) ? o : o && Array.isArray(o.owned) ? o.owned : null;
   if (!arr) return Promise.resolve(false);
@@ -950,35 +958,190 @@ function askReplaceMarkers(o) {
   const same = own.size === state.owned.size && [...own].every((k) => state.owned.has(k));
   if (same || !own.size) return Promise.resolve(!own.size ? false : true);
   if (!state.owned.size) return Promise.resolve(true);
+  let extra = 0,
+    shared = 0;
+  own.forEach(function (k) {
+    if (state.owned.has(k)) shared++;
+    else extra++;
+  });
+  const mine = state.owned.size,
+    lose = mine - shared,
+    what = o && Array.isArray(o.guides) && o.guides.length ? 'palettes and guides are' : 'palettes are';
   const ask =
     window.SF && SF.askBox
       ? SF.askBox(
-          'Replace your markers?',
-          'The backup has ' +
-            nWord(own.size, 'marker') +
-            '; you have ' +
-            nWord(state.owned.size, 'marker') +
-            '. Either way, the backup\u2019s palettes and guides are added.',
-          '<button type="button" class="btn-primary" data-a="replace">Replace my markers</button><button type="button" data-a="keep">Keep mine</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+          'Your markers differ from the backup’s',
+          'You have ' +
+            nWord(mine, 'marker') +
+            '; the backup has ' +
+            own.size +
+            (shared ? ' (' + (shared === own.size ? 'all' : shared) + ' of them yours too)' : '') +
+            '. Either way, the backup’s ' +
+            what +
+            ' added.',
+          '<button type="button" class="btn-primary" data-a="keep">Keep my ' +
+            mine +
+            '</button>' +
+            (extra
+              ? '<button type="button" data-a="add">Add the backup’s ' +
+                extra +
+                ' to mine (' +
+                (mine + extra) +
+                ')</button>'
+              : '') +
+            '<button type="button" data-a="replace">Use the backup’s ' +
+            own.size +
+            (lose ? ' (' + lose + ' of yours go)' : '') +
+            '</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
           true,
         )
       : Promise.resolve(
           confirm(
-            'Replace your ' +
-              nWord(state.owned.size, 'marker') +
-              ' with the backup\u2019s ' +
+            'Keep your ' +
+              nWord(mine, 'marker') +
+              '?\n\nOK keeps yours; Cancel uses the backup’s ' +
               nWord(own.size, 'marker') +
-              '?\n\nOK replaces them; Cancel keeps yours. Either way, the backup\u2019s palettes and guides are added.',
+              '. Either way, the backup’s ' +
+              what +
+              ' added.',
           )
-            ? 'replace'
-            : 'keep',
+            ? 'keep'
+            : 'replace',
         );
   // (Cancel, Escape or the backdrop: nothing restored)
   return ask.then(function (a) {
-    return a === 'replace' ? true : a === 'keep' ? false : null;
+    return a === 'replace' ? true : a === 'keep' ? false : a === 'add' ? 'add' : null;
   });
 }
-// replace: the answer from askReplaceMarkers
+// (v308) Undo for what a restore did to your markers: the markers, To buy, ink marks and Brands I'd buy as they were
+// before it. The toast's "Undo marker change" (12 s), and for 7 days, while the markers are as the restore left them,
+// "Put back the 451 markers you had before Sunday's restore" in the Library and Back up & restore (PRE_RESTORE).
+// Palettes and guides a restore added stay.
+// (var: the Library, drawn before this file has run, asks for it)
+var PRE_RESTORE = 'ms-pre-restore',
+  PRE_RESTORE_DAYS = 7;
+function mkSnap() {
+  return {
+    owned: [...state.owned],
+    wish: state.wish.map(function (w) {
+      return Object.assign({}, w);
+    }),
+    ink: Object.assign({}, state.ink),
+    buy: state.buyBrands == null ? null : state.buyBrands.slice(),
+  };
+}
+// the markers, To buy, ink and Brands I'd buy now, as a short fingerprint
+function mkSig(s) {
+  s = s || mkSnap();
+  return leaveHash(
+    JSON.stringify([
+      s.owned.slice().sort(),
+      s.wish.map(function (w) {
+        return w.k;
+      }),
+      Object.keys(s.ink)
+        .sort()
+        .map(function (k) {
+          return k + s.ink[k];
+        }),
+      s.buy,
+    ]),
+  );
+}
+function preRestoreGet() {
+  let j = null;
+  try {
+    j = JSON.parse(localStorage.getItem(PRE_RESTORE) || 'null');
+  } catch (_) {}
+  if (!j || !j.snap || !Array.isArray(j.snap.owned) || !(+j.t > 0)) return null;
+  if (Date.now() - j.t > PRE_RESTORE_DAYS * 864e5 || j.sig !== mkSig()) return null;
+  return j;
+}
+function preRestoreDrop() {
+  try {
+    localStorage.removeItem(PRE_RESTORE);
+  } catch (_) {}
+}
+// kept after a restore changed your markers (not when you had none: nothing to put back)
+function preRestoreKeep(snap) {
+  try {
+    localStorage.setItem(PRE_RESTORE, JSON.stringify({ t: Date.now(), sig: mkSig(), snap: snap }));
+  } catch (_) {}
+  preRestoreRender();
+}
+// "Sunday's restore", "today's restore", "yesterday's restore"
+function preRestoreWhen(t) {
+  const d = new Date(t),
+    now = new Date(),
+    day = function (x) {
+      return new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    },
+    ago = Math.round((day(now) - day(d)) / 864e5);
+  if (ago <= 0) return 'today’s';
+  if (ago === 1) return 'yesterday’s';
+  try {
+    return d.toLocaleDateString('en-GB', { weekday: 'long' }) + '’s';
+  } catch (_) {
+    return 'the last';
+  }
+}
+function preRestoreRender() {
+  const j = preRestoreGet();
+  ['libPreRestore', 'bkPreRestore'].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.hidden = !j;
+    if (j)
+      el.textContent =
+        'Put back the ' +
+        nWord(j.snap.owned.length, 'marker') +
+        ' you had before ' +
+        preRestoreWhen(j.t) +
+        ' restore';
+  });
+}
+// the markers as they were (snap); a toast says so
+function restoreUndo(snap) {
+  if (!snap) return false;
+  const was = mkSnap();
+  state.owned = new Set(snap.owned);
+  state.wish = cleanWish(snap.wish);
+  state.ink = cleanInk(snap.ink);
+  state.buyBrands = cleanBuy(snap.buy);
+  if (!save(true)) {
+    state.owned = new Set(was.owned);
+    state.wish = was.wish;
+    state.ink = was.ink;
+    state.buyBrands = was.buy;
+    toast('Couldn’t put your markers back — this browser’s storage is full.', 6000);
+    return false;
+  }
+  preRestoreDrop();
+  wishChanged();
+  if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
+  if (typeof buySumSync === 'function') buySumSync();
+  fullRender();
+  preRestoreRender();
+  toast('Put back your ' + nWord(snap.owned.length, 'marker') + ' as they were before the restore.', 4000);
+  return true;
+}
+// a restore's toast, with "Undo marker change" when it changed your markers (r.undo: as they were)
+function restoreToast(msg, ms, r) {
+  if (!msg) return;
+  if (r && r.undo) {
+    const snap = r.undo;
+    toastActions(
+      msg,
+      [{ label: 'Undo marker change', fn: () => restoreUndo(snap) }],
+      Math.max(ms || 0, 12000),
+    );
+  } else toast(msg, ms);
+}
+// replace: the answer from askReplaceMarkers. (v308) 'add': the backup's markers join yours; its To buy comes in for
+// markers you still don't own, and yours comes off for the markers it brought (unless marked running low or dry); your
+// ink marks win and Brands I'd buy is taken only when yours is automatic (as Keep mine, v305).
+// Returns {mk: the backup's markers are now yours, add: markers added, same: they already matched, undo: your markers
+// as they were (when the restore changed them)} with what else came in.
 function applyCollectionBackup(o, fts, replace) {
   const arr = Array.isArray(o) ? o : o && Array.isArray(o.owned) ? o.owned : null;
   if (!arr) return null;
@@ -999,6 +1162,8 @@ function applyCollectionBackup(o, fts, replace) {
       ink: Object.assign({}, state.ink),
       buy: state.buyBrands,
     },
+    snap = mkSnap(),
+    sig0 = mkSig(snap),
     back = function () {
       state.owned = was.owned;
       state.saved = was.saved;
@@ -1008,12 +1173,39 @@ function applyCollectionBackup(o, fts, replace) {
       if (typeof buySumSync === 'function') buySumSync();
       if (savedOverlay.classList.contains('on')) renderSaved();
       return { failed: true };
+    },
+    // (what the restore did to your markers can be undone; not when you had none. A handle for the toast, not part of
+    // what the restore says: not enumerable)
+    undoable = function (r) {
+      if (snap.owned.length && mkSig() !== sig0) {
+        Object.defineProperty(r, 'undo', { value: snap, enumerable: false });
+        preRestoreKeep(snap);
+      }
+      return r;
     };
+  let added = 0;
+  const got = new Set();
+  if (replace === 'add') {
+    own.forEach(function (k) {
+      if (!state.owned.has(k)) {
+        state.owned.add(k);
+        got.add(k);
+      }
+    });
+    added = got.size;
+    replace = false;
+  }
   const same = own.size === state.owned.size && [...own].every((k) => state.owned.has(k));
-  if (!same && (!own.size || (state.owned.size && !replace))) {
+  if (added || (!same && (!own.size || (state.owned.size && !replace)))) {
     // (v305: your markers stay, and the backup's To buy and ink marks merge in for them; its Brands I'd buy is taken
     // only when yours is automatic. Before, all three were dropped.)
     const wr = wishRestore(o, false, state.owned);
+    // (Add: your To buy entries for the markers it brought come off, unless marked running low or dry, its marks
+    // having come in first)
+    if (got.size)
+      state.wish = state.wish.filter(function (w) {
+        return !got.has(w.k) || !!state.ink[w.k];
+      });
     let bb = false;
     if (state.buyBrands == null && o && 'buyBrands' in o && cleanBuy(o.buyBrands)) {
       state.buyBrands = cleanBuy(o.buyBrands);
@@ -1021,25 +1213,29 @@ function applyCollectionBackup(o, fts, replace) {
     }
     const n = mergeBackupPals(pals),
       ink = wr.low + wr.dry;
-    if (n || wr.wish || ink || bb) {
+    if (n || wr.wish || ink || bb || added) {
       if (!save(true)) return back();
-      if (wr.wish || ink) wishChanged();
-      if (bb) {
+      if (wr.wish || ink || added) wishChanged();
+      if (bb || added) {
         if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
         if (typeof buySumSync === 'function') buySumSync();
       }
       fullRender();
     }
-    return { mk: false, pals: n, wish: wr.wish, low: wr.low, dry: wr.dry, buy: bb };
+    const r = { mk: false, pals: n, wish: wr.wish, low: wr.low, dry: wr.dry, buy: bb };
+    if (added) r.add = added;
+    return undoable(r);
   }
   if (!same) state.owned = own;
   // (the same markers: the lists merge as for Keep mine, v305)
-  wishRestore(o, !same, same ? state.owned : null);
+  const wr = wishRestore(o, !same, same ? state.owned : null);
   // (Brands I'd buy goes with the collection it was chosen for, when the file has it, v304)
+  let bb = false;
   if (o && 'buyBrands' in o) {
-    const bb = cleanBuy(o.buyBrands);
-    if (JSON.stringify(bb) !== JSON.stringify(state.buyBrands)) {
-      state.buyBrands = bb;
+    const b = cleanBuy(o.buyBrands);
+    if (JSON.stringify(b) !== JSON.stringify(state.buyBrands)) {
+      state.buyBrands = b;
+      bb = true;
       if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
       if (typeof buySumSync === 'function') buySumSync();
     }
@@ -1059,7 +1255,20 @@ function applyCollectionBackup(o, fts, replace) {
   )
     markRestored(fts);
   if (!same || n) fullRender();
-  return { mk: true, pals: n };
+  // (v308: the same markers aren't "restored"; what merged into the lists is said as for Keep mine)
+  return undoable(
+    same
+      ? {
+          mk: false,
+          same: own.size > 0,
+          pals: n,
+          wish: wr.wish,
+          low: wr.low,
+          dry: wr.dry,
+          buy: bb && !!state.buyBrands,
+        }
+      : { mk: true, pals: n },
+  );
 }
 // a backup's palettes that aren't here (by id) are added; returns how many
 function mergeBackupPals(pals) {
@@ -1092,62 +1301,146 @@ function keptList(r) {
     r.pals ? nWord(r.pals, 'palette') : '',
   ]);
 }
-const BUY_FROM_BACKUP = 'Brands I\u2019d buy set from the backup.';
+const BUY_FROM_BACKUP = 'Brands I’d buy set from the backup.';
+// (v308) the backup's markers added to yours: "Added 22 markers from the backup (142 now)"
+function addedWords(r) {
+  return 'Added ' + nWord(r.add, 'marker') + ' from the backup (' + state.owned.size + ' now)';
+}
 // what a restore of markers and palettes did, for the toast: "Restored — 8 markers. 1 palette added.", or with your
 // markers kept "Kept your markers; added 2 to buy and 1 Running low note." ('' when nothing came in)
+// (v308: Keep mine is said even when nothing else came in; the same markers aren't "restored")
 function restoredWords(r) {
   if (!r || r.failed) return '';
   if (r.mk)
     return (
-      'Restored \u2014 ' +
+      'Restored — ' +
       nWord(state.owned.size, 'marker') +
       '.' +
       (r.pals ? ' ' + nWord(r.pals, 'palette') + ' added.' : '')
     );
   const l = keptList(r);
-  if (!l && !r.buy) return '';
-  const s = state.owned.size
-    ? 'Kept your markers' + (l ? '; added ' + l : '') + '.'
-    : l
-      ? 'Added ' + l + '.'
-      : '';
+  let s = '';
+  if (r.add) s = addedWords(r) + (l ? '; also ' + l : '') + '.';
+  else if (r.same) s = 'Your markers already match the backup' + (l ? '; added ' + l : '') + '.';
+  else if (state.owned.size) s = 'Kept your markers' + (l ? '; added ' + l : '') + '.';
+  else if (l) s = 'Added ' + l + '.';
   return s + (r.buy ? (s ? ' ' : '') + BUY_FROM_BACKUP : '');
 }
 // why a restore brought nothing back (restoreAny's done), in words
+// (v308: an empty file, a picture, and a backup cut short each have their own words)
+const RESTORE_DAMAGED =
+  'This backup is incomplete or damaged — it may not have finished downloading. Download it again from Files or iCloud Drive, or choose an earlier backup.';
+// (a file the browser couldn't read is an error kept for Copy details, as other caught failures are)
 function restoreWhy(why) {
   return why === 'read'
-    ? 'Couldn\u2019t read that file.'
+    ? 'Couldn’t read that file.' + errBtns()
     : why === 'full'
       ? RESTORE_FULL
-      : 'That file isn\u2019t a Marker Studio backup. Choose the <b>.json</b> file saved by <b>Back up</b>.';
+      : why === 'damaged'
+        ? RESTORE_DAMAGED
+        : why === 'empty'
+          ? 'That file is empty. Choose the <b>.json</b> file saved by <b>Back up</b>.'
+          : why === 'picture'
+            ? 'That’s a picture, not a backup. Choose the <b>.json</b> file saved by <b>Back up</b>.'
+            : 'That file isn’t a Marker Studio backup. Choose the <b>.json</b> file saved by <b>Back up</b>.';
 }
-// guides a restore didn't add ({dup, bad, full} from restoreGuideList), in words: "1 guide was already here; 1 guide
-// couldn't be read." ('' when there are none)
+// (v308) what a file that didn't read as JSON is: 'empty', 'picture', 'damaged' (a backup or guide file cut short)
+// or 'bad'
+function fileTrouble(file, text) {
+  const t = typeof text === 'string' ? text : '';
+  if (!t.trim()) return 'empty';
+  if (
+    (file && /^image\//.test(file.type || '')) ||
+    /\.(jpe?g|png|heic|heif|webp|gif)$/i.test((file && file.name) || '') ||
+    /^(\x89PNG|\xff\xd8\xff|\ufffd\ufffd\ufffd|\ufffdPNG|GIF8|RIFF)/.test(t)
+  )
+    return 'picture';
+  // (a backup says what it is at its start; a guide file has its stored guide, "payload", after its name and markers)
+  return /^\s*\{/.test(t) &&
+    /"type"\s*:\s*"ms-(backup|guides)"|"payload"\s*:\s*\{|"lmap"\s*:\s*"data:/.test(t.slice(0, 6000))
+    ? 'damaged'
+    : 'bad';
+}
+// (v308) the app's version as Home shows it ("v308"), written into backups and guide files; a file from a newer
+// version is asked about before it's used (files from before v308 have none)
+function appVersion() {
+  const e = document.getElementById('appVer'),
+    m = /v?(\d+(?:\.\d+)?)/.exec((e && e.textContent) || '');
+  return m ? 'v' + m[1] : '';
+}
+function verNum(v) {
+  const m = /(\d+)(?:\.(\d+))?/.exec(String(v || ''));
+  return m ? +m[1] + (m[2] ? Math.min(+m[2], 999) / 1000 : 0) : 0;
+}
+function fileNewer(d) {
+  const a = verNum(d && typeof d === 'object' ? d.app : ''),
+    b = verNum(appVersion());
+  return a > 0 && b > 0 && a > b;
+}
+// resolves true to go on (not newer, or "anyway"), false for Cancel
+function askNewer(d, what, go) {
+  if (!fileNewer(d)) return Promise.resolve(true);
+  const v = String(d.app).slice(0, 12);
+  return (
+    window.SF && SF.askBox
+      ? SF.askBox(
+          'Made by a newer Marker Studio',
+          'This ' +
+            what +
+            ' was made by Marker Studio ' +
+            v +
+            '; this is ' +
+            appVersion() +
+            '. Update first: close and reopen the app, then try again.',
+          '<button type="button" data-a="go">' +
+            esc(go) +
+            '</button><button type="button" class="btn-primary" data-a="stay">Cancel</button>',
+          true,
+        )
+      : Promise.resolve(confirm('Made by a newer Marker Studio (' + v + '). ' + go + '?') ? 'go' : 'stay')
+  ).then(function (a) {
+    return a === 'go';
+  });
+}
+// guides a restore didn't add ({dup, ahead, bad, full} from restoreGuideList), in words: "1 guide was already here; 1
+// guide couldn't be read." ('' when there are none)
 function guidesLeft(x) {
   if (!x) return '';
   const p = [];
   if (x.dup) p.push(x.dup === 1 ? '1 guide was already here' : x.dup + ' guides were already here');
-  if (x.bad) p.push(nWord(x.bad, 'guide') + ' couldn\u2019t be read');
-  if (x.full)
-    p.push(nWord(x.full, 'guide') + ' couldn\u2019t be saved \u2014 this browser\u2019s storage is full');
+  // (v308: here, the same guide with more coloured; no "(from backup)" copy of it is added)
+  if (x.ahead)
+    p.push(
+      x.ahead === 1
+        ? '1 guide is further along here, so it was left as it is'
+        : x.ahead + ' guides are further along here, so they were left as they are',
+    );
+  if (x.bad) p.push(nWord(x.bad, 'guide') + ' couldn’t be read');
+  if (x.full) p.push(nWord(x.full, 'guide') + ' couldn’t be saved — this browser’s storage is full');
   if (!p.length) return '';
   const s = p.join('; ') + '.';
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 // what a restore with guides did, for the Back up & restore dialog: "Markers restored, 1 palette added; 2 guides
-// restored.", then what wasn't added (guidesLeft)
+// restored.", then what wasn't added (guidesLeft). ok: the guides restored as they were in the file (not the ones
+// added beside a guide here, said by restoreKeptWords: each guide in the file is said once, v308)
+// (v308: with your markers kept and guides restored, it says so: it had said only "1 guide restored.")
+const MARKERS_KEPT = 'Your markers are as they were.';
 function guideRestoreWords(col, ok, x) {
   const l = col && !col.mk ? keptList(col) : '',
     a =
       col && col.mk
         ? 'Markers restored' + (col.pals ? ', ' + nWord(col.pals, 'palette') + ' added' : '')
-        : l
-          ? 'Added ' + l
-          : '',
+        : col && col.add
+          ? addedWords(col) + (l ? ', ' + l : '')
+          : l
+            ? 'Added ' + l
+            : '',
     h = [a, ok ? nWord(ok, 'guide') + ' restored' : ''].filter(Boolean).join('; '),
+    k = ok && col && !col.mk && !col.add && (col.same || state.owned.size) ? MARKERS_KEPT : '',
     b = col && !col.mk && col.buy ? BUY_FROM_BACKUP : '',
     t = guidesLeft(x);
-  return [h ? h + '.' : '', b, t].filter(Boolean).join(' ');
+  return [h ? h + '.' : '', k, b, t].filter(Boolean).join(' ');
 }
 // what came back from a restore ({markers,palettes,guides}), for Welcome's and Home's toast: "2 palettes and 1 guide"
 // (guides it didn't add: guidesLeft(r))
@@ -1155,13 +1448,85 @@ function restoredList(r) {
   // (and, with your markers kept, what came in beside them, v305)
   return andList([
     r.markers ? nWord(r.markers, 'marker') : '',
+    r.added ? nWord(r.added, 'marker') + ' added to yours' : '',
     r.palettes ? nWord(r.palettes, 'palette') : '',
     r.wish ? nWord(r.wish, 'marker') + ' to buy' : '',
     r.low ? nWord(r.low, 'Running low note') : '',
     r.dry ? nWord(r.dry, 'dry note') : '',
-    r.buy ? 'Brands I\u2019d buy' : '',
+    r.buy ? 'Brands I’d buy' : '',
     r.guides ? nWord(r.guides, 'guide') : '',
   ]);
+}
+// (v308) Welcome's and Home's toast after a restore ({text, long}), or {err} when nothing came back: what came back,
+// what wasn't added, and what was kept beside the backup's guides. Each guide in the file is said once.
+function restoreSummary(r) {
+  const what = restoredList(r),
+    left = guidesLeft(r),
+    kw = restoreKeptWords(r).trim();
+  if (!what && !kw)
+    return {
+      err:
+        left ||
+        (r.same
+          ? 'Your markers already match the backup \u2014 there\u2019s nothing new in it to restore.'
+          : r.keptMine
+            ? 'Kept your markers \u2014 there\u2019s nothing new in the backup to restore.'
+            : 'That backup is empty \u2014 there\u2019s nothing in it to restore.'),
+    };
+  let s = what ? 'Restored ' + what : '';
+  // (v308: guides came in beside the markers you kept)
+  if (r.guides && (r.keptMine || r.same)) s += '. ' + MARKERS_KEPT.slice(0, -1);
+  const tail = [left, kw].filter(Boolean).join(' ');
+  if (tail) s = s ? s + '. ' + tail : tail;
+  return { text: s, long: !!tail };
+}
+// (v308) a restore in progress: one at a time, and what could start another (or change the markers under it) waits
+let _restoring = false;
+const RESTORE_LOCKS = [
+  'wcAdd',
+  'wcSkip',
+  'wcRestore',
+  'wcScan',
+  'wcSample',
+  'wcPhoto',
+  'wcLook',
+  'guidesBackup',
+  'guidesRestore',
+  'homeImport',
+  'libBkText',
+  'backupDownload',
+  'backupImport',
+  'backupRestore',
+  'lnRestore',
+];
+function restoreBusy(on) {
+  const els = RESTORE_LOCKS.map(function (id) {
+    return document.getElementById(id);
+  }).concat([].slice.call(document.querySelectorAll('#wcSets input, .wcbrands button')));
+  els.forEach(function (b) {
+    if (!b) return;
+    if (on) {
+      if (b.dataset.rsWas == null) b.dataset.rsWas = b.disabled ? '1' : '';
+      b.disabled = true;
+    } else if (b.dataset.rsWas != null) {
+      if (!b.dataset.rsWas) b.disabled = false;
+      delete b.dataset.rsWas;
+    }
+  });
+  document.documentElement.classList.toggle('msrestoring', !!on);
+}
+// a polite word for screen readers (the restore's progress)
+function liveSay(m) {
+  let el = document.getElementById('msLive');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'msLive';
+    el.className = 'sfsr';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    document.body.appendChild(el);
+  }
+  el.textContent = m;
 }
 // done (optional): called with what came back ({markers,palettes,guides}, and guides not added: {dup,bad,full}), or null
 // and why ('bad': not a backup, 'read': unreadable, 'full': storage full, nothing changed; nothing when nothing came
@@ -1171,26 +1536,34 @@ function restoreAny(file, btnId, done) {
     b0 = document.getElementById(bid),
     label = b0 ? b0.textContent : 'Restore a backup',
     cap = $('backupCap');
+  if (_restoring) {
+    toast('A restore is already under way — wait for it to finish.', 3200);
+    if (done) done(null);
+    return;
+  }
+  _restoring = true;
+  var fin = function () {
+    _restoring = false;
+    restoreBusy(false);
+  };
   var fr = new FileReader();
   fr.onload = function () {
     var d = null;
     try {
       d = JSON.parse(fr.result);
     } catch (e) {}
-    var bad = function () {
+    var bad = function (why) {
+      fin();
       _btnFlash(bid, label, label, 10);
       if (done) {
-        done(null, 'bad');
+        done(null, why || 'bad');
         return;
       }
       var b = document.getElementById(bid);
-      errCard(
-        b && b.parentNode,
-        'That file isn\u2019t a Marker Studio backup. Choose the <b>.json</b> file saved by <b>Back up</b>.',
-      );
+      errCard(b && b.parentNode, restoreWhy(why || 'bad'));
     };
-    if (!d) {
-      bad();
+    if (!d || typeof d !== 'object') {
+      bad(d ? 'bad' : fileTrouble(file, fr.result));
       return;
     }
     var guides = null,
@@ -1206,20 +1579,38 @@ function restoreAny(file, btnId, done) {
       bad();
       return;
     }
-    (collection ? askReplaceMarkers(d) : Promise.resolve(false)).then(function (rep) {
-      if (rep === null) {
-        _btnFlash(bid, label, label, 10);
-        if (cap) cap.textContent = 'Nothing restored.';
-        if (done) done(null);
-        else toast('Nothing restored.');
-        return;
-      }
-      restoreGo(d, fts, guides, collection, rep, bid, label, cap, done);
-    });
+    var stop = function () {
+      fin();
+      _btnFlash(bid, label, label, 10);
+      if (cap) cap.textContent = 'Nothing restored.';
+      if (done) done(null);
+      else toast('Nothing restored.');
+    };
+    askNewer(d, guides && !collection && d.payload ? 'guide file' : 'backup', 'Restore anyway')
+      .then(function (go) {
+        if (!go) return null;
+        return collection ? askReplaceMarkers(d) : false;
+      })
+      .then(function (rep) {
+        if (rep === null) {
+          stop();
+          return;
+        }
+        restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin);
+      });
   };
   fr.onerror = function () {
+    fin();
+    errLog('Restoring a backup', fr.error || 'the file couldn’t be read');
     if (cap) cap.textContent = 'Couldn’t read that file.';
-    if (done) done(null, 'read');
+    if (done) {
+      done(null, 'read');
+      return;
+    }
+    // (v308: the card other restore errors show; it had only changed the caption under the button)
+    _btnFlash(bid, label, label, 10);
+    var b = document.getElementById(bid);
+    errCard(b && b.parentNode, restoreWhy('read'));
   };
   fr.readAsText(file);
 }
@@ -1254,12 +1645,13 @@ function restoreKeptWords(x) {
       ' back from Home.';
   return s;
 }
-// restoreAny once the question about markers (if any) is answered
-function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done) {
+// restoreAny once the question about markers (if any) is answered; fin: the restore is over (called once)
+function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) {
+  fin = fin || function () {};
   {
-    var col = collection ? applyCollectionBackup(d, fts, rep) : null,
-      any = !!(col && (col.mk || col.pals || col.wish || col.low || col.dry || col.buy));
+    var col = collection ? applyCollectionBackup(d, fts, rep) : null;
     if (col && col.failed) {
+      fin();
       _btnFlash(bid, label, label, 10);
       if (cap) cap.textContent = '';
       if (done) {
@@ -1274,56 +1666,93 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done) {
       x = x || {};
       return {
         markers: col && col.mk ? state.owned.size : 0,
+        added: col ? col.add || 0 : 0,
         palettes: col ? col.pals || 0 : 0,
         wish: col ? col.wish || 0 : 0,
         low: col ? col.low || 0 : 0,
         dry: col ? col.dry || 0 : 0,
         buy: !!(col && col.buy),
-        guides: g,
+        // (v308: the guides restored as they were in the file; ones added beside a guide here are said apart)
+        guides: Math.max(0, g - (copies || 0) - (x.lost || 0)),
         dup: x.dup || 0,
+        ahead: x.ahead || 0,
         bad: x.bad || 0,
         full: x.full || 0,
         // (what was kept beside the backup's guides: the Welcome and Home's note say it too, v304)
         copies: copies || 0,
         kept: x.kept || 0,
         lost: x.lost || 0,
+        undo: col && col.undo ? col.undo : null,
+        // (nothing came back: your markers matched the backup's, or were kept)
+        same: !!(col && col.same),
+        keptMine: !!(col && !col.mk && !col.add && !col.same && state.owned.size),
       };
     };
     if (!guides || !guides.length) {
+      fin();
       if (collection) {
         var said = restoredWords(col);
-        _btnFlash(bid, col && col.mk ? 'Restored ✓' : 'Kept yours', label);
+        _btnFlash(
+          bid,
+          col && (col.mk || col.add) ? 'Restored ✓' : col && col.same ? 'Already here' : 'Kept yours',
+          label,
+        );
         if (cap) cap.textContent = said || 'Nothing changed.';
-        if (said && !done) toast(said);
+        if (said && !done) restoreToast(said, 4000, col);
       }
-      if (done) done(any ? got(0) : null);
+      // (v308: whatever a backup brought, the Welcome and Home say: the same markers, or yours kept with nothing new,
+      // aren't "That backup is empty")
+      if (done) done(collection ? got(0) : null);
       return;
     }
+    restoreBusy(true);
+    // (v308) "Restoring 12 of 65…" on the button, and said to a screen reader about once a second
+    var said0 = 0;
+    var prog = function (i, n) {
+      if (n < 2) return;
+      var t = 'Restoring ' + i + ' of ' + n + '…',
+        b = document.getElementById(bid);
+      if (b) b.textContent = t;
+      if (Date.now() - said0 > 1000) {
+        said0 = Date.now();
+        liveSay(t);
+      }
+    };
     // guides already here aren't counted as restored; ones storage had no room for are said as a failure, by the button
-    restoreGuideList(guides, fts, function (ok, copies, x) {
-      x = x || {};
-      _btnFlash(
-        bid,
-        ok ? 'Restored ' + ok + ' ✓' : x.dup && !x.bad && !x.full ? 'Already here' : label,
-        label,
-        1800,
-      );
-      var msg = guideRestoreWords(col, ok, x);
-      if (cap) cap.textContent = msg;
-      if (done) {
-        done(any || ok || x.dup || x.bad || x.full ? got(ok, x, copies) : null);
-        return;
-      }
-      if (x.openRep)
-        msg += ' \u201c' + esc(x.openRep) + '\u201d was replaced by the backup\u2019s newer copy.';
-      msg += restoreKeptWords({ copies: copies, kept: x.kept, lost: x.lost });
-      if (x.full) {
-        var fb = document.getElementById(bid);
-        errCard(fb && fb.parentNode, msg + ' Delete a few guides from the Library, then restore again.');
-        return;
-      }
-      toast(msg, copies || x.bad || x.kept || x.lost ? 7000 : 3500);
-    });
+    restoreGuideList(
+      guides,
+      fts,
+      function (ok, copies, x) {
+        x = x || {};
+        fin();
+        liveSay('');
+        _btnFlash(
+          bid,
+          ok ? 'Restored ' + ok + ' ✓' : (x.dup || x.ahead) && !x.bad && !x.full ? 'Already here' : label,
+          label,
+          1800,
+        );
+        var msg = guideRestoreWords(col, Math.max(0, ok - (copies || 0) - (x.lost || 0)), x),
+          kw = restoreKeptWords({ copies: copies, kept: x.kept, lost: x.lost });
+        if (cap) cap.textContent = (msg + kw).trim();
+        if (done) {
+          done(collection || ok || x.dup || x.ahead || x.bad || x.full ? got(ok, x, copies) : null);
+          return;
+        }
+        if (x.openRep) msg += ' “' + x.openRep + '” was replaced by the backup’s newer copy.';
+        msg = (msg + kw).trim();
+        if (x.full) {
+          var fb = document.getElementById(bid);
+          errCard(
+            fb && fb.parentNode,
+            esc(msg) + ' Delete a few guides from the Library, then restore again.',
+          );
+          return;
+        }
+        restoreToast(msg, copies || x.bad || x.kept || x.lost || x.ahead ? 7000 : 3500, col);
+      },
+      prog,
+    );
   }
 }
 // (v304) a "(before restore)" copy taken out again (its stored guide only once its row is gone from what's saved)
@@ -1353,7 +1782,63 @@ function _newGuideId() {
 // are saved first; if the backup replaces it, it reopens as restored. done(ok, copies, {dup, bad, full}): the guides
 // added or replaced, how many of those were added as "(from backup)" copies, and those already here, those unreadable
 // and those that couldn't be saved (storage full).
-function restoreGuideList(guides, _fts, done) {
+// (v308) A guide here that is the backup's with more coloured since (guideAhead) is "further along here" (ahead): no
+// "(from backup)" copy of it is added. prog(i, n), optional: called as the i-th of n guides is begun.
+// the guide here (h) is the backup's (b) with more coloured: the same stored sections and plan, and every tick, tone
+// and kept shading of the backup's still here (pt8-pc §2). A section edit, a zone or a pattern change makes it differ.
+function guideAhead(h, b) {
+  if (!h || !b || typeof h !== 'object' || typeof b !== 'object' || h.lmap !== b.lmap) return false;
+  const strip = function (p) {
+    const o = {};
+    Object.keys(p)
+      .sort()
+      .forEach(function (k) {
+        if (k === 'prog' || k === 'tones' || k === 'held' || k === 'dates' || p[k] === undefined) return;
+        if (k === 'out' && p.out && typeof p.out === 'object') {
+          const q = {};
+          Object.keys(p.out)
+            .sort()
+            .forEach(function (l) {
+              const x = p.out[l] || {};
+              q[l] = { k: x.k, lock: x.lock };
+            });
+          o.out = q;
+          return;
+        }
+        o[k] = p[k];
+      });
+    return JSON.stringify(o);
+  };
+  if (strip(h) !== strip(b)) return false;
+  const hp = new Set(Array.isArray(h.prog) ? h.prog : []),
+    ht = h.tones && typeof h.tones === 'object' ? h.tones : {},
+    hh = h.held && typeof h.held === 'object' ? h.held : {},
+    ho = h.out && typeof h.out === 'object' ? h.out : {};
+  if (
+    !(Array.isArray(b.prog) ? b.prog : []).every(function (l) {
+      return hp.has(l);
+    })
+  )
+    return false;
+  const bt = b.tones && typeof b.tones === 'object' ? b.tones : {};
+  for (const l in bt) if (!hp.has(+l) && !hp.has(l) && !((+ht[l] || 0) >= (+bt[l] || 0))) return false;
+  const bh = b.held && typeof b.held === 'object' ? b.held : {};
+  for (const l in bh) if (JSON.stringify(hh[l]) !== JSON.stringify(bh[l])) return false;
+  const bo = b.out && typeof b.out === 'object' ? b.out : {};
+  for (const l in bo) {
+    const x = ho[l] || {},
+      y = bo[l] || {};
+    if ((+x.done || 0) < (+y.done || 0) || (+x.t || 0) < (+y.t || 0)) return false;
+  }
+  return true;
+}
+// (v308) Library guides found damaged as they opened (97-open damagedGuide): a backup's copy of one replaces it, even
+// when it's older (no "(from backup)" copy beside a guide that can't be opened)
+const _damaged = new Set();
+function guideDamaged(id) {
+  _damaged.add(id);
+}
+function restoreGuideList(guides, _fts, done, prog) {
   var open = window.SF && SF.guideBrief ? SF.guideBrief() : null,
     openRep = '',
     i = 0,
@@ -1363,7 +1848,8 @@ function restoreGuideList(guides, _fts, done) {
     bad = 0,
     full = 0,
     kept = 0,
-    lost = 0;
+    lost = 0,
+    ahead = 0;
   function same(js, lm, ids) {
     var k = 0;
     function step() {
@@ -1377,7 +1863,8 @@ function restoreGuideList(guides, _fts, done) {
   }
   function check(pl) {
     return window.SF && SF.checkGuide
-      ? Promise.resolve(SF.checkGuide(pl)).catch(function () {
+      ? Promise.resolve(SF.checkGuide(pl)).catch(function (e) {
+          errLog('Restoring a backup', e);
           return { ok: false };
         })
       : Promise.resolve({ ok: !!(pl && typeof pl.lmap === 'string') });
@@ -1391,12 +1878,21 @@ function restoreGuideList(guides, _fts, done) {
       renderSaved();
       renderRecent();
       if (done)
-        done(ok, copies, { dup: dup, bad: bad, full: full, openRep: openRep, kept: kept, lost: lost });
+        done(ok, copies, {
+          dup: dup,
+          ahead: ahead,
+          bad: bad,
+          full: full,
+          openRep: openRep,
+          kept: kept,
+          lost: lost,
+        });
       // (a lost guide left beside the backup's copy is offered on Home, v304)
       if (lost && typeof lostRefresh === 'function') lostRefresh();
       return;
     }
     var g = guides[i++];
+    if (prog) prog(i, guides.length);
     if (g && !+g.ts && _fts) g.ts = _fts;
     if (!(g && g.payload && typeof g.payload === 'object')) {
       bad++;
@@ -1444,120 +1940,140 @@ function restoreGuideList(guides, _fts, done) {
             return s.id;
           }),
       );
-      same(js, g.payload.lmap, cand).then(function (isDup) {
-        if (isDup) {
-          dup++;
-          next();
-          return;
-        }
-        var copy = false,
-          isLost = false,
-          kid = null;
-        // (v304) a guide stored under this id that no Library row points to (a lost guide: its row couldn't be read) may
-        // be newer than the backup's: it is left as it is, to be added back from Home, and the backup's copy comes in
-        // beside it. Not one whose delete is still finishing (Undo showing, or to finish at the next start): the
-        // backup's copy takes its place, as before
-        // (v304) a Library guide changed here since its last backup, about to be replaced by the backup's newer copy, is
-        // kept first as "… (before restore)"
-        var pend =
-            !_ex &&
-            !!_gid &&
-            libPendList().some(function (x) {
-              return x.id === _gid;
-            }),
-          atRisk = _ex && (+_ex.ts || 0) <= (+g.ts || 0) && (+_ex.ts || 0) > (+_ex.bk || lastGuideBackup());
-        ((!_ex && _gid && !pend) || atRisk
-          ? IDB.get('guide-' + (_ex ? _ex.id : _gid)).catch(function () {
-              return null;
-            })
-          : Promise.resolve(null)
-        )
-          .then(function (here) {
-            var differs = !!here && !(here.lmap === g.payload.lmap && JSON.stringify(here) === js);
-            if (!_ex && differs) {
-              _gid = _newGuideId();
-              _nm = _cn;
-              isLost = true;
-              return;
-            }
-            if (_ex && (+_ex.ts || 0) > (+g.ts || 0)) {
-              _gid = _newGuideId();
-              _nm = _cn;
-              copy = true;
-              return;
-            }
-            if (!_gid) _gid = _newGuideId();
-            if (!(atRisk && differs)) return;
-            return Promise.resolve(
-              sfSaveDesign({
-                id: _newGuideId(),
-                name: (_ex.name || 'Guide').slice(0, 104) + ' (before restore)',
-                W: _ex.W,
-                H: _ex.H,
-                keys: _ex.keys || [],
-                n: _ex.n,
-                thumb: safeThumb(_ex.thumb),
-                payload: here,
-                ts: _ex.ts,
-                keepTs: true,
-                quiet: true,
+      same(js, g.payload.lmap, cand)
+        .then(function (isDup) {
+          // (v308: newer here only because more was coloured here since: left as it is, no copy)
+          if (isDup || !_ex || !((+_ex.ts || 0) > (+g.ts || 0))) return isDup;
+          return IDB.get('guide-' + _ex.id).then(
+            function (here) {
+              return guideAhead(here, g.payload) ? 'ahead' : false;
+            },
+            function () {
+              return false;
+            },
+          );
+        })
+        .then(function (isDup) {
+          if (isDup) {
+            if (isDup === 'ahead') ahead++;
+            else dup++;
+            next();
+            return;
+          }
+          var copy = false,
+            isLost = false,
+            kid = null;
+          // (v304) a guide stored under this id that no Library row points to (a lost guide: its row couldn't be read) may
+          // be newer than the backup's: it is left as it is, to be added back from Home, and the backup's copy comes in
+          // beside it. Not one whose delete is still finishing (Undo showing, or to finish at the next start): the
+          // backup's copy takes its place, as before
+          // (v304) a Library guide changed here since its last backup, about to be replaced by the backup's newer copy, is
+          // kept first as "… (before restore)"
+          var pend =
+              !_ex &&
+              !!_gid &&
+              libPendList().some(function (x) {
+                return x.id === _gid;
               }),
-            )
-              .catch(function () {
+            bust = !!_ex && _damaged.has(_ex.id),
+            atRisk =
+              !bust &&
+              _ex &&
+              (+_ex.ts || 0) <= (+g.ts || 0) &&
+              (+_ex.ts || 0) > (+_ex.bk || lastGuideBackup());
+          ((!_ex && _gid && !pend) || atRisk
+            ? IDB.get('guide-' + (_ex ? _ex.id : _gid)).catch(function () {
                 return null;
               })
-              .then(function (k) {
-                kid = k;
-              });
-          })
-          .then(function () {
-            Promise.resolve(
-              sfSaveDesign({
-                id: _gid,
-                name: _nm,
-                W: W0,
-                H: H0,
-                keys: Array.isArray(g.keys)
-                  ? g.keys.filter(function (k) {
-                      return typeof k === 'string';
-                    })
-                  : [],
-                n: +g.n || 0,
-                thumb: safeThumb(g.thumb),
-                payload: g.payload,
-                ts: +g.ts || 0,
-                keepTs: true,
-                quiet: true,
-              }),
-            )
-              .catch(function () {
-                return null;
-              })
-              .then(function (id) {
-                if (!id) {
-                  // (the guide here wasn't replaced, so the copy kept of it goes again: none piles up, v304)
-                  if (kid) dropKept(kid);
-                  full++;
-                  next();
-                  return;
-                }
-                ok++;
-                if (kid) kept++;
-                if (isLost) lost++;
-                else if (copy) copies++;
-                // (the guide open on the Guide screen, replaced by the backup's newer copy: said in the summary, v289)
-                else if (_ex && open && open.id === id) openRep = _ex.name || open.name;
-                const m = state.saved.find(function (x) {
-                  return x.id === id;
+            : Promise.resolve(null)
+          )
+            .then(function (here) {
+              var differs = !!here && !(here.lmap === g.payload.lmap && JSON.stringify(here) === js);
+              if (!_ex && differs) {
+                _gid = _newGuideId();
+                _nm = _cn;
+                isLost = true;
+                return;
+              }
+              if (_ex && !bust && (+_ex.ts || 0) > (+g.ts || 0)) {
+                _gid = _newGuideId();
+                _nm = _cn;
+                copy = true;
+                return;
+              }
+              if (!_gid) _gid = _newGuideId();
+              if (!(atRisk && differs)) return;
+              return Promise.resolve(
+                sfSaveDesign({
+                  id: _newGuideId(),
+                  name: (_ex.name || 'Guide').slice(0, 104) + ' (before restore)',
+                  W: _ex.W,
+                  H: _ex.H,
+                  keys: _ex.keys || [],
+                  n: _ex.n,
+                  thumb: safeThumb(_ex.thumb),
+                  payload: here,
+                  ts: _ex.ts,
+                  keepTs: true,
+                  quiet: true,
+                }),
+              )
+                .catch(function () {
+                  return null;
+                })
+                .then(function (k) {
+                  kid = k;
                 });
-                if (m) m.bk = m.ts || 1;
-                // (also a guide deleted while open, restored with the same id: the open copy becomes the restored one, v289;
-                // libChanged leaves any other guide alone)
-                if (window.SF && SF.libChanged) SF.libChanged(id, 'replaced');
-                next();
-              });
-          });
-      });
+            })
+            .then(function () {
+              Promise.resolve(
+                sfSaveDesign({
+                  id: _gid,
+                  name: _nm,
+                  W: W0,
+                  H: H0,
+                  keys: Array.isArray(g.keys)
+                    ? g.keys.filter(function (k) {
+                        return typeof k === 'string';
+                      })
+                    : [],
+                  n: +g.n || 0,
+                  thumb: safeThumb(g.thumb),
+                  payload: g.payload,
+                  ts: +g.ts || 0,
+                  keepTs: true,
+                  quiet: true,
+                }),
+              )
+                .catch(function () {
+                  return null;
+                })
+                .then(function (id) {
+                  if (!id) {
+                    // (the guide here wasn't replaced, so the copy kept of it goes again: none piles up, v304)
+                    if (kid) dropKept(kid);
+                    full++;
+                    next();
+                    return;
+                  }
+                  ok++;
+                  if (bust) _damaged.delete(_ex.id);
+                  if (kid) kept++;
+                  if (isLost) lost++;
+                  else if (copy) copies++;
+                  // (the guide open on the Guide screen, replaced by the backup's newer copy: said in the summary, v289)
+                  else if (_ex && open && open.id === id) openRep = _ex.name || open.name;
+                  const m = state.saved.find(function (x) {
+                    return x.id === id;
+                  });
+                  if (m) m.bk = m.ts || 1;
+                  // (also a guide deleted while open, restored with the same id: the open copy becomes the restored one, v289;
+                  // libChanged leaves any other guide alone)
+                  if (window.SF && SF.libChanged) SF.libChanged(id, 'replaced');
+                  next();
+                });
+            });
+        });
     });
   }
   Promise.resolve(window.SF && SF.flushSave ? SF.flushSave() : null)

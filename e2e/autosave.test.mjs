@@ -145,10 +145,10 @@ test('Save a copy makes a second entry, and the open guide becomes the copy', as
   const gs = await guides(page);
   assert.equal(gs.length, 2);
   const copy = gs.find((x) => x.id !== orig.id);
-  assert.equal(copy.name, orig.name + ' (copy)');
+  assert.equal(copy.name, orig.name + ' (2)'); // (v308: “(2)”, as for every name clash; was “(copy)”)
   assert.equal(await page.evaluate(() => __mstest.curId), copy.id, 'the copy is what is open');
   assert.equal(await guideName(page), copy.name);
-  assert.match(await page.textContent('#msToast'), /Saved a copy, “.+ \(copy\)”\. You’re now working on the copy/);
+  assert.match(await page.textContent('#msToast'), /Saved a copy, “.+ \(2\)”\. You’re now working on the copy/);
   assert.equal((await stored(page, orig.id)).prog, 1, 'the original kept the change made before copying');
   // changes now go into the copy only
   await tickInCode(page, 1); await flushSave(page);
@@ -156,7 +156,7 @@ test('Save a copy makes a second entry, and the open guide becomes the copy', as
   assert.equal((await stored(page, orig.id)).prog, 1);
   // a copy of the copy is numbered
   await saveCopy(page); await idle(page);
-  assert.ok((await guides(page)).some((x) => x.name === orig.name + ' (copy 2)'));
+  assert.ok((await guides(page)).some((x) => x.name === orig.name + ' (3)'));
   assert.deepEqual(errors, []);
 });
 

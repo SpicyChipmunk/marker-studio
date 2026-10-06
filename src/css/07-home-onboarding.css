@@ -139,6 +139,40 @@
 .photobody {
   margin-top: 14px;
 }
+/* (v308) on an iPad held upright (and other wide screens in one column), the photo beside its controls rather than over
+   them, so the palette's name, Save and Use in a guide stay on the first screen; beside the palette (02-picker.css's
+   two columns) it stays above them */
+@media (min-width: 600px) {
+  .photobody {
+    display: grid;
+    grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+    column-gap: 18px;
+    align-items: start;
+  }
+  .photobody > .photothumb {
+    grid-row: 1 / span 4;
+    max-height: 210px;
+    margin: 0;
+  }
+  .photobody > :not(.photothumb) {
+    grid-column: 2;
+  }
+  .photobody > .paperrow {
+    margin-top: 0;
+  }
+}
+@media (min-width: 1000px) and (orientation: landscape) {
+  .wrap.palmode .photobody {
+    display: block;
+  }
+  .wrap.palmode .photobody > .photothumb {
+    max-height: 300px;
+    margin: 0 auto;
+  }
+  .wrap.palmode .photobody > .paperrow {
+    margin-top: 10px;
+  }
+}
 /* the Colours row under the reference photo (the .optrow margin, with less above) */
 .optrow.photosizerow {
   margin-top: 12px;

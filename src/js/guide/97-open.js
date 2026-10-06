@@ -96,6 +96,10 @@ function openDesignObj(d, id, resumed, quiet, col) {
   function opened(pre, lp) {
     try {
       if (pre.ex) throw pre.ex;
+      if ((pre.err === 'size' || pre.err === 'read') && id != null && id !== _justImported) {
+        damagedGuide(id);
+        return;
+      }
       if (pre.err === 'size') {
         note('Couldn’t load that guide \u2014 its picture is the wrong size.');
         return;
@@ -288,6 +292,14 @@ function openDesignObj(d, id, resumed, quiet, col) {
       assignData = { assign: assign, order: order, N: order.length, base: base };
       layStatReset();
       guideSig = pre.sig || labelsSig();
+      // (v308) The stored section map is kept as it is until the sections change, rather than encoded afresh on the
+      // next save. Another browser engine encodes the same pixels to a different file (a backup or guide file from
+      // Chrome opened in Safari, or the other way), and the copy kept as the page went away (sfSaveDesignNow) carries
+      // a fingerprint of the map it was made on: with a fresh encoding it no longer matched the stored one, and the
+      // last ticks before a reload were thrown away at the next start. Only when the file's own section numbers were
+      // kept (pre.own), so its pixels are exactly what this guide would save.
+      if (pre.own && !foldSet() && typeof d.lmap === 'string' && /^data:image\/png;base64,/.test(d.lmap))
+        _lmC = { sig: guideSig, url: d.lmap };
       if (Array.isArray(d.paper)) {
         const _pp = {};
         d.paper.forEach(function (o) {
@@ -383,6 +395,11 @@ function openDesignObj(d, id, resumed, quiet, col) {
       // the guide's zones (34-zones), after its Main settings and anchors
       zoneOpen(d.zones, map);
       zoneSigSync();
+      // (v308: each zone's marker count says its own markers until it's laid again: mkOwnCount, 51-controls-plan)
+      _mkOpened = {};
+      zoneIds().forEach(function (id) {
+        _mkOpened[id] = 1;
+      });
       Object.keys(done).forEach(function (ol) {
         const nl = map[ol];
         if (nl) colored[nl] = 1;
@@ -525,13 +542,41 @@ function openDesignObj(d, id, resumed, quiet, col) {
         api.deleteDesign(id);
         if (api.refreshSaved) api.refreshSaved();
       }
-      note('Couldn’t open that guide: ' + ((err && err.message) || err));
+      note(errNote('Couldn’t open that guide.', 'Opening a guide', err));
     }
   }
   img.onerror = function () {
-    if (gen === loadGen) note('Couldn’t read that guide.');
+    if (gen !== loadGen) return;
+    if (id != null && id !== _justImported) damagedGuide(id);
+    else note('Couldn’t read that guide.');
   };
   img.src = d.lmap;
+}
+// (v308) A Library guide whose stored section map can't be read: one message (it was said twice, with nothing to do),
+// and what can be done: restore it from a backup (the backup's copy then takes its place, guide-bridge.js) or delete it
+// (with Undo, as in the Library)
+function damagedGuide(id) {
+  const e =
+      api.listDesigns &&
+      api.listDesigns().find(function (x) {
+        return x.id === id;
+      }),
+    nm = (e && e.name) || 'This guide';
+  note('');
+  if (typeof guideDamaged === 'function') guideDamaged(id);
+  askBox(
+    'Can\u2019t open this guide',
+    '\u201c' + nm + '\u201d can\u2019t be opened \u2014 its saved section map is damaged.',
+    '<button type="button" class="btn-primary" data-a="restore">Restore it from a backup</button><button type="button" data-a="del">Delete it</button><button type="button" class="sfghost" data-a="stay">Close</button>',
+    false,
+    function (a) {
+      // (the file picker opens within the tap, as an iPad needs)
+      if (a === 'restore') {
+        const f = document.getElementById('guidesFile');
+        if (f) f.click();
+      } else if (a === 'del' && typeof libDelete === 'function') libDelete(id);
+    },
+  );
 }
 // A saved guide's section map, read (v307: before the rest of the open, so its label points can be worked out in the
 // worker meanwhile). { labels, map (the file's section numbers to the guide's), next (the highest), sig } or, when it
@@ -569,7 +614,8 @@ function lmapLabels(data, w, h) {
   // numbers that aren't a guide's (0, or far more than its sections).
   let lo = Infinity,
     hi = 0,
-    cnt = 0;
+    cnt = 0,
+    own = false;
   if (mx < 1 << 21) {
     // (v307) through a table of the file's numbers rather than the object, about a quarter quicker; the same numbers
     const T = new Int32Array(mx + 1),
@@ -582,7 +628,7 @@ function lmapLabels(data, w, h) {
       if (r < lo) lo = r;
       if (r > hi) hi = r;
     }
-    const own = cnt > 0 && lo >= 1 && hi <= cnt * 2 + 64;
+    own = cnt > 0 && lo >= 1 && hi <= cnt * 2 + 64;
     if (own) {
       for (let r = 0; r <= mx; r++) if (seen[r]) T[r] = r;
       next = hi;
@@ -607,7 +653,7 @@ function lmapLabels(data, w, h) {
       if (r < lo) lo = r;
       if (r > hi) hi = r;
     }
-    const own = cnt > 0 && lo >= 1 && hi <= cnt * 2 + 64;
+    own = cnt > 0 && lo >= 1 && hi <= cnt * 2 + 64;
     for (const r in map) map[r] = own ? +r : undefined;
     if (own) next = hi;
     for (let i = 0; i < n; i++) {
@@ -620,7 +666,7 @@ function lmapLabels(data, w, h) {
       labels[i] = map[r];
     }
   }
-  return { labels: labels, map: map, next: next, w: w, h: h, sig: '' };
+  return { labels: labels, map: map, next: next, w: w, h: h, sig: '', own: own };
 }
 // the label points of a section map just read, from the worker (03-jobs): resolves to them, or to null (worked out on
 // the page as before). null at once when there's no worker, or they're kept for the session already (40-render)
@@ -750,7 +796,7 @@ function openDesign(id, cont) {
         openDesignObj(d, id, false, false, (nDone > 0 || part > 0) && nDone < nAll);
       })
       .catch(function (err) {
-        note('Couldn’t open that guide: ' + ((err && err.message) || err));
+        note(errNote('Couldn’t open that guide.', 'Opening a guide', err));
       });
   }
 }

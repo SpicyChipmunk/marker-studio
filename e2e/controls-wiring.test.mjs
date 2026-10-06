@@ -16,6 +16,8 @@ const WIRED = {
   // Plan: Colours
   sfSrc: ['click'], sfHarm: ['change'], sfPalPick: ['change'], sfPal: ['click'], sfMood: ['click'],
   sfMkCount: ['input', 'change'], sfExpand: ['change'], sfExpChar: ['input', 'change'], sfFiltToggle: ['click'],
+  // (v308: the count's − and +, held down to keep going, the count to type one, and the Include row)
+  sfMkMinus: ['pointerdown', 'pointerup', 'click'], sfMkPlus: ['pointerdown', 'pointerup', 'click'], sfMkNum: ['click'], sfIncl: ['click'],
   // Pattern
   sfFam: ['click'], sfShape: ['click'], sfDir: ['click'], sfGStart: ['input', 'change'], sfLook: ['click'], sfShuffle: ['click'], sfVary: ['click'], sfLock: ['click'],
   sfNoAdj: ['change'], sfResetA: ['click'], sfSpread: ['input', 'change'], sfMix: ['click'],

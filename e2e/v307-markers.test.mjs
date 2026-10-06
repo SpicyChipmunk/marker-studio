@@ -158,7 +158,8 @@ test('From photo: a warm, dim tray of caps offers "Photo looks warm · Balance i
       p,
     );
   assert.ok((await browns(p0)).length >= 1, 'browns before: ' + (await browns(p0)));
-  assert.deepEqual(await browns(p1), [], 'none after');
+  // (v308: From photo's first pass keeps hues apart, so the tray's dark yellow caps can bring one ochre with them)
+  assert.ok((await browns(p1)).length <= 1, 'none after, or one ochre: ' + (await browns(p1)));
   // ✕: as it was, and offered again
   await page.click('#photoLight');
   await idle(page);
@@ -218,7 +219,7 @@ async function yourData(page) {
   return (await page.textContent('#helpData .hlpbody')).replace(/\s+/g, ' ');
 }
 
-test('Help › Your data: for an iPhone or iPad, the Home Screen app’s own storage, Restore a file, and whether Safari keeps your data', async () => {
+test('Help › Your data: for an iPhone or iPad, the Home Screen app’s own storage, Library › Restore, and whether Safari keeps your data', async () => {
   // Safari agreed to keep it, when the welcome asked
   const a = await openApp({ width: 820, height: 1180, userAgent: IPAD, init: `(${storageIs})(true)` });
   await a.page.check('#wcSets input[data-i="3"]');
@@ -231,7 +232,8 @@ test('Help › Your data: for an iPhone or iPad, the Home Screen app’s own sto
   // (v307-final: Ben's shorter wording)
   assert.match(t, /On iPhone and iPad, Safari deletes a site’s data after about seven days without opening it\./);
   assert.match(t, /has its own storage: back up here first, then restore the file there\./);
-  assert.match(t, /Restore a file brings it back on any iPhone, iPad or computer\./);
+  // (v308: named as the Library's button is)
+  assert.match(t, /Library › Restore brings it back on any iPhone, iPad or computer\./);
   assert.doesNotMatch(t, /On iPhone,|any phone/);
   assert.equal(await a.page.textContent('#helpKeep'), 'Safari has agreed to keep your data on this device.');
   // Safari said no
@@ -459,7 +461,8 @@ test('service worker: a page load with a query is the cached page, offline too, 
           out.push(new URL(r.url).pathname + new URL(r.url).search);
       return out;
     });
-    assert.ok(keys.includes('/') && keys.includes('/index.html'), String(keys));
+    // (v308: the page is kept once, as index.html, and answers / too)
+    assert.ok(!keys.includes('/') && keys.includes('/index.html'), String(keys));
     assert.deepEqual(
       keys.filter((k) => k.includes('?')),
       [],

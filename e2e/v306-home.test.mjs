@@ -212,7 +212,7 @@ test('Palette › Rainbow: its line, sizes 6–16, the Gradient’s own first, G
   await idle(page);
   await page.click('#harm [data-h="rainbow"]');
   await idle(page);
-  assert.equal(await page.textContent('#harmDesc'), 'Evenly round the rainbow, at similar lightness');
+  assert.equal(await page.textContent('#harmDesc'), 'Round the rainbow from red'); // (v308: lightness follows hue now)
   const sizes = await page.$$eval('#segs button', (bs) =>
     bs.filter((b) => b.offsetParent).map((b) => +b.dataset.n),
   );
@@ -224,9 +224,10 @@ test('Palette › Rainbow: its line, sizes 6–16, the Gradient’s own first, G
   const p0 = await pal();
   assert.equal(p0.length, 16);
   assert.equal(await page.locator('#bands .band').count(), 16);
+  // (v308: the Gradient's own markers, shown from red)
   assert.deepEqual(
     p0,
-    await page.evaluate(() => SF.rainbowPick(16, 'neutral', COLORS.map((c, i) => i).filter(inPool), {})),
+    await page.evaluate(() => rainbowOrder(SF.rainbowPick(16, 'neutral', COLORS.map((c, i) => i).filter(inPool), {}))),
   );
   assert.match(await page.textContent('#readout .fam'), /^Rainbow$/);
   assert.equal(await page.isVisible('#palClose'), false, 'no note: clearly different and round the wheel');

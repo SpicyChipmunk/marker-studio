@@ -11,7 +11,8 @@ after(teardown);
 const AMBER = '#ffb454';
 // (v307: print's amber is darker, with a white letter: the screen's showed through pale yellow ink)
 const PRINT_AMBER = '#b45f06';
-// the sample at one marker per section from Ben's 451: Ohuhu and Copic Y26, R46 and RV09 are all in it
+// the sample at one marker per section from Ben's 451: Ohuhu and Copic Y26, R46 and RV09 are all in it (v308: laid as
+// a guide from before v308, everything included: a new guide's "all" is his 130 vivid markers, without Y26's mustard)
 async function benGuide(page) {
   await sampleGuide(page);
   await idle(page);
@@ -20,6 +21,7 @@ async function benGuide(page) {
     save();
     SF.setCollection(sfCollection());
     __mstest.styleVars.limitN = 999;
+    __mstest.styleVars.gradIncl = null;
     SF.reassign();
   });
   await idle(page);

@@ -247,7 +247,8 @@ test('v304: a filter or base changed while a palette is rolling is used once the
   assert.equal(JSON.stringify(E('state.palettes')), before, 'nothing made while it rolls');
   E('rolling = false; regenFlush()');
   const after = E('state.palettes');
-  assert.equal(after.length, 1, 'made in its place, one step');
+  // (v308: a new step, so Undo goes back to the palette that was there)
+  assert.equal(after.length, 2, 'made once, as a step of its own');
   assert.notEqual(JSON.stringify(after), before, 'made once the roll ended');
   E('regenFlush()');
   assert.equal(JSON.stringify(E('state.palettes')), JSON.stringify(after), 'and only once');
@@ -270,6 +271,9 @@ test('v304: the palette screen’s “can’t” toasts say what to do: loosen t
   E(`setPool([...state.owned].map(keyIdx).slice(0, 6))`);
   E('regenReplace()');
   assert.match(last(), /or clear the selection\.$/);
+  // (v308: Generate first brings the size down to what the markers in play can fill, palCap; three can't fill
+  // Tetradic's smallest, 4)
+  E(`setPool([...state.owned].map(keyIdx).slice(0, 3))`);
   E('doGenerate()');
   assert.match(last(), /or clear the selection\.$/);
   // a band with no other marker that fits

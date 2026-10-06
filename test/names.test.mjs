@@ -79,12 +79,15 @@ test('paletteName names a palette from its colours and skips names already in th
   app.__eval('state.saved = []');
 });
 
-test('copyName: "(copy)", then numbered, never a name already in the Library, and a copy of a copy counts on', () => {
-  app.__eval(`state.saved = [{ id: 1, type: 'guide', name: 'Rose Tango', keys: [] }, { id: 2, type: 'palette', name: 'Rose Tango (COPY)', keys: [] }]`);
-  assert.equal(app.copyName('Rose Tango'), 'Rose Tango (copy 2)', 'any item, any case, counts as taken');
-  assert.equal(app.copyName('Rose Tango (copy 2)', new Set(['rose tango', 'rose tango (copy)', 'rose tango (copy 2)'])), 'Rose Tango (copy 3)');
-  assert.equal(app.copyName('Moss', new Set()), 'Moss (copy)');
-  assert.equal(app.copyName('', new Set()), 'Colouring guide (copy)');
+// (v308: "… (2)", "… (3)" for every name clash — Save a copy, Duplicate, a guide imported again — was "(copy)", "(copy 2)")
+test('copyName: "(2)", then the next number, never a name already in the Library, and a copy of a copy counts on', () => {
+  app.__eval(`state.saved = [{ id: 1, type: 'guide', name: 'Rose Tango', keys: [] }, { id: 2, type: 'palette', name: 'Rose Tango (2)', keys: [] }]`);
+  assert.equal(app.copyName('Rose Tango'), 'Rose Tango (3)', 'any item, any case, counts as taken');
+  assert.equal(app.copyName('Rose Tango (3)', new Set(['rose tango', 'rose tango (2)', 'rose tango (3)'])), 'Rose Tango (4)');
+  assert.equal(app.copyName('Rose Tango (copy 2)', new Set(['rose tango'])), 'Rose Tango (2)', 'v307’s “(copy)” names count on too');
+  assert.equal(app.copyName('Moss', new Set()), 'Moss (2)');
+  assert.equal(app.copyName('', new Set()), 'Colouring guide (2)');
   assert.ok(app.copyName('x'.repeat(200), new Set()).length <= 120, 'fits the name limit');
+  assert.match(app.copyName('x'.repeat(200), new Set()), / \(2\)$/, 'with its number');
   app.__eval('state.saved = []');
 });

@@ -262,22 +262,28 @@ function gradientRun(t, n, src) {
     gradShape: 'serpentine',
     limitN: n,
     expand: false,
+    // (v308: a new guide's Gradient, Include as the Mood has it, as Palette's Rainbow picks)
+    gradIncl: {},
     ...src,
   });
   return [...t.grad.plan(t.grad.poolSource(n), N).seq].map((m) => m.mkey);
 }
 
+// (v308) the same markers in the same order round the loop: Palette's Rainbow starts at red (rainbowOrder), wherever
+// the Gradient's loop starts and whichever way it runs
+function sameLoop(a, b) {
+  if (a.length !== b.length) return false;
+  for (const s of [b, b.slice().reverse()])
+    for (let k = 0; k < s.length; k++) if (a.every((x, j) => x === s[(j + k) % s.length])) return true;
+  return false;
+}
 test('Rainbow: the Gradient’s markers in its order at the same count; a saved or generated Rainbow lays the same', () => {
   const { E, t } = rainbowApp();
   for (const n of [6, 8, 10, 12, 14]) {
     const pal = codes(E, rb(E, n));
     assert.equal(pal.length, n);
-    assert.deepEqual(pal, gradientRun(t, n), n + ': the Gradient’s own');
-    assert.deepEqual(
-      gradientRun(t, n, { paletteSource: 'generate', genPal: pal }),
-      pal,
-      n + ': laid from the palette',
-    );
+    assert.ok(sameLoop(pal, gradientRun(t, n)), n + ': the Gradient’s own');
+    assert.ok(sameLoop(gradientRun(t, n, { paletteSource: 'generate', genPal: pal }), pal), n + ': laid from the palette');
   }
 });
 
@@ -285,16 +291,17 @@ test('Rainbow: no two colours under ΔE 5 where another marker near that hue wil
   const { E, t } = rainbowApp();
   const own = gradientRun(t, 16),
     min = (keys) => E(`palMinDE(${JSON.stringify(keys)}.map(keyIdx))`);
-  // the Gradient's own 16 has a pair 3.9 apart (B111 and B112)
-  assert.ok(min(own) < 5, 'the Gradient’s: ' + min(own));
+  // (v308: the Gradient's own 16, from Ben's vivid markers with lightness following hue, no longer has a pair under 5,
+  // B111 and B112 3.9 apart before; the Rainbow is the Gradient's 16)
+  assert.ok(min(own) >= 5, 'the Gradient’s: ' + min(own));
   const pal = codes(E, rb(E, 16));
   assert.equal(pal.length, 16);
   assert.ok(min(pal) >= 5, 'the Rainbow’s: ' + min(pal));
-  assert.equal(pal.filter((k) => own.includes(k)).length, 15, 'one marker swapped');
+  assert.equal(pal.filter((k) => own.includes(k)).length, 16, 'the Gradient’s own');
   assert.ok(E(`palOnScheme(${JSON.stringify(pal)}.map(keyIdx), 'rainbow')`));
-  // at similar lightness: all within the middle of Ben's clear markers
+  // lightness follows hue now (yellow light, violet dark), within the vivid band
   const L = JSON.parse(E(`JSON.stringify(${JSON.stringify(pal)}.map((k) => LCH[keyIdx(k)][0]))`));
-  assert.ok(Math.max(...L) - Math.min(...L) < 35, L.join(' '));
+  assert.ok(Math.max(...L) - Math.min(...L) < 55, L.join(' '));
 });
 
 test('Rainbow: Generate rolls others (seeded), each a rainbow; locked colours stay where they are', () => {
@@ -317,13 +324,14 @@ test('Rainbow: Generate rolls others (seeded), each a rainbow; locked colours st
       `JSON.stringify(SF.rainbowPick(8, 'neutral', COLORS.map((c, i) => i).filter(inPool), { seed: 0.3 }))`,
     );
   assert.equal(s1, s2);
-  // locks: two colours kept in their places, the others picked round them, still round the wheel
+  // locks: two colours kept, the others picked round them, still round the wheel (v308: in rainbow order from red, the
+  // locked ones in their places in it)
   const lk = { 0: first[3], 5: first[0] };
   for (let k = 0; k < 4; k++) {
     const p = rb(E, 8, `{ reroll: true, locked: ${JSON.stringify(lk)} }`);
     assert.equal(p.length, 8);
-    assert.equal(p[0], first[3]);
-    assert.equal(p[5], first[0]);
+    assert.ok(p.includes(first[3]));
+    assert.ok(p.includes(first[0]));
     assert.equal(new Set(p).size, 8);
     assert.ok(E(`palOnScheme(${JSON.stringify(p)}, 'rainbow')`));
   }
@@ -352,7 +360,8 @@ test('Rainbow: from the markers in play (filters, a selection), the catalogue wi
   p = rb(E, 16);
   assert.equal(p.length, 16);
   assert.ok(E(`palMinDE(${JSON.stringify(p)})`) >= 5);
-  // Ciao 12: 11 clear colours and a black; 12 or 16 gives the 11, never the black
+  // Ciao 12: 11 clear colours and a black; 12 or 16 gives the 11, never the black (v308: past its vivid ones, the
+  // other clear ones, as Palette says there are)
   ({ E } = rainbowApp(['Ciao 12']));
   for (const n of [12, 16]) {
     p = rb(E, n);

@@ -129,6 +129,16 @@ function pgFind(img) {
     return { tier: 'none', why: 'read' };
   }
   freeCanvas(c);
+  // (v308) a page photographed under a warm lamp: the paper's tint taken out first (each channel scaled so the
+  // brightest 5% come out white, at most x2, only when they're tinted), so the paper isn't taken for something
+  // colourful like the wooden table under it
+  const wb = paperGains(d, w * h, 1);
+  if (wb)
+    for (let j = 0; j < d.length; j += 4) {
+      d[j] = d[j] * wb[0];
+      d[j + 1] = d[j + 1] * wb[1];
+      d[j + 2] = d[j + 2] * wb[2];
+    }
   // per block: its second-brightest and second-darkest pixel (about the 95th and 5th percentiles of 36), mean
   // brightness and mean colourfulness
   const B = 6,
@@ -877,6 +887,9 @@ function pgApply(q, auto, flat) {
   pgQ = q.map(function (p) {
     return p.slice();
   });
+  // (v308) a straightened photo is found at Sensitivity 7: thin gaps between shapes are kept (the otter's hand and
+  // body ran together at 5), unless Sensitivity was set by hand for this photo
+  if (!sensUser) adaptC = SENS_PHOTO;
   pgProceed(pgOrig ? null : 'Page straightened.');
   sayLive(auto ? 'Straightened the page so the drawing is flat and square.' : 'Page straightened.');
 }
@@ -885,6 +898,7 @@ function pgUndo() {
   okGeom(function () {
     srcImg = pgOrig;
     pgQ = null;
+    if (!sensUser) adaptC = 9;
     pgProceed('Back to the photo as taken.');
   });
 }
@@ -1128,8 +1142,23 @@ function pgAdjust() {
       try {
         f = pgFind(pgOrig);
       } catch (e) {}
+      // (v308) the photo's own rectangle, 3% in, when the finder's guess is the drawing rather than a page: a photo
+      // the page fills, or plain paper whose outline came from the drawing (Ben's pages: the drawing's diagonal band,
+      // which Straighten stretched into a strip)
+      if (f.tier === 'none' && (f.why === 'fills' || (f.why === 'plain' && f.kind === 'drawing'))) {
+        const iw = pgOrig.naturalWidth || pgOrig.width,
+          ih = pgOrig.naturalHeight || pgOrig.height,
+          m = 0.03;
+        q = [
+          [iw * m, ih * m],
+          [iw * (1 - m), ih * m],
+          [iw * (1 - m), ih * (1 - m)],
+          [iw * m, ih * (1 - m)],
+        ];
+        why = 'none';
+      }
       // (the finder's best guess at the corners, when it has one worth starting from: v285)
-      if (f.q && (f.tier !== 'none' || ['plain', 'fills', 'square'].indexOf(f.why) >= 0)) {
+      else if (f.q && (f.tier !== 'none' || ['plain', 'fills', 'square'].indexOf(f.why) >= 0)) {
         q = f.q;
         why = f.tier === 'sure' ? 'adjust' : f.tier === 'unsure' ? f.why : 'none';
       } else why = 'none';

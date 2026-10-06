@@ -312,7 +312,7 @@ function focusAllOfColour() {
   // (an Undo, as Mark all coloured in the list has: a mis-tap lost which were really done, v299; not when that
   // finished the page, which says so instead)
   if (Object.keys(was).length && nx >= 0)
-    toastAction('Marked all ' + mcodeHTML(mm) + ' done', 'Undo', function () {
+    toastActionHTML('Marked all ' + mcodeHTML(mm) + ' done', 'Undo', function () {
       if (g !== loadGen || !assignData || !focus) return;
       const P = tp();
       for (const q in was) {
@@ -329,11 +329,14 @@ function focusAllOfColour() {
       goFocus(Math.min(at, focusOrd.length - 1), true, true);
     });
 }
+// (v308: closing it goes back to Colour along, revClose; before, it left you on the Plan's Share tab)
 function revealFromColour() {
   if (focus) exitFocus();
+  const back = { tab: gTab };
   gTab = 'share';
   exitColor();
   startReveal();
+  _revCol = back;
 }
 // Focus mode is a modal view for the keyboard: focus goes into it, Tab stays in it (its bar, the colours sheet, the
 // zoom buttons and the bottom buttons) and the page behind is inert; leaving puts focus back on ⛶ Focus mode.
@@ -400,8 +403,27 @@ function focusTab(e) {
   // and Fit, then the bottom bar; the page's own order puts the tool row first, v288)
   var i = f.indexOf(document.activeElement);
   e.preventDefault();
-  if (i < 0) (e.shiftKey ? f[f.length - 1] : f[0]).focus();
-  else f[(i + (e.shiftKey ? f.length - 1 : 1)) % f.length].focus();
+  focusKbd(
+    i < 0 ? (e.shiftKey ? f[f.length - 1] : f[0]) : f[(i + (e.shiftKey ? f.length - 1 : 1)) % f.length],
+  );
+}
+// (v308) focus moved by the keyboard, with its ring: focused from script, Safari's engine doesn't count it as
+// :focus-visible, so Skip, Exit, Colours and Done showed none. The class goes when it loses focus.
+function focusKbd(el) {
+  try {
+    el.focus({ focusVisible: true });
+  } catch (_) {
+    el.focus();
+  }
+  if (document.activeElement !== el) return;
+  el.classList.add('sfkbd');
+  el.addEventListener(
+    'blur',
+    function () {
+      el.classList.remove('sfkbd');
+    },
+    { once: true },
+  );
 }
 function focusIn() {
   var b =

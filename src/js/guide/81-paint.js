@@ -163,7 +163,7 @@ function paintEnd(tap) {
     paintRaf = 0;
   }
   if (s.skip && assignData) {
-    const zn = esc(zoneName(zoneCur));
+    const zn = zoneName(zoneCur);
     toast(
       s.n
         ? 'Painted ' +

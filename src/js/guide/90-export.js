@@ -59,9 +59,11 @@ function buildExportCanvas(outline, noCodes) {
     sc = [0, 0, 0],
     bc = {};
   if (tx && !edgeDist) buildTexFields();
+  // (v308: the photo's debris left out, outDebris)
+  const db = outDebris();
   for (let p = 0, j = 0; p < n; p++, j += 4) {
     const l = labels[p];
-    if (l === -1) {
+    if (l === -1 && !(db && db[p])) {
       d[j] = LINE[0];
       d[j + 1] = LINE[1];
       d[j + 2] = LINE[2];
@@ -114,11 +116,15 @@ function exportKeyLayout(nU) {
     codes: codes,
   };
 }
-// where each code goes on the saved image (pdfPlace): codes only, no numbers or dots; at least 6 picture px (more on a
-// picture enlarged before its sections were found) and 6 px on the image as saved (xs: how much it is shrunk)
+// where each code goes on the saved image (pdfPlace): codes only, no numbers; at least 6 picture px (more on a picture
+// enlarged before its sections were found) and EXPORT_MINPX on the image as saved (xs: how much it is shrunk); a
+// section with no room for that gets a dot, as on the PDF (v308: codes of 6-8 px couldn't be read)
 let _exPlaced = null;
+function exportMinPx(xs) {
+  return Math.max(10, (W * xs) / 160);
+}
 function exportPlace(xs) {
-  const mn = Math.max(6 * srcK, 6 / xs),
+  const mn = Math.max(6 * srcK, exportMinPx(xs) / xs),
     o = {
       bt: guideMixed(),
       base: Math.max(mn, 10 * srcK),
@@ -151,6 +157,28 @@ function exportPlaceDraw(g, pl, outline) {
       }),
     );
   }
+  // (a dot in each section with no room for its code, unless a code is over that spot, v308)
+  const r = Math.max(1.5, _exPlaced ? _exPlaced.min * 0.24 : 2),
+    lb = Object.keys(pl.lays).map(function (l) {
+      return pl.lays[l].box;
+    });
+  pl.dropped.forEach(function (l) {
+    const p = labelPos(l),
+      dark = outline || darkText(asg[l].hex);
+    if (
+      lb.some(function (b) {
+        return p.x + r > b[0] && p.x - r < b[2] && p.y + r > b[1] && p.y - r < b[3];
+      })
+    )
+      return;
+    g.beginPath();
+    g.arc(p.x, p.y, r, 0, 6.283);
+    g.fillStyle = dark ? '#111' : '#fff';
+    g.fill();
+    g.lineWidth = Math.max(1, r * 0.35);
+    g.strokeStyle = dark ? '#fff' : '#000';
+    g.stroke();
+  });
 }
 function exportShrink(g0, pic, xs) {
   g0.imageSmoothingEnabled = true;
@@ -182,7 +210,7 @@ function exportLegend(g, ex, uniq, one, K, note) {
   g.fillText(one || brandKey(), 20, H + Math.max(28, W / 34) + Math.max(18, W / 46));
   if (note)
     g.fillText(
-      pdfTrunc(g, 'Small sections unlabelled: see the guide or the PDF’s close-ups.', W - 40),
+      pdfTrunc(g, 'A dot marks each small section: see the guide or the PDF’s close-ups.', W - 40),
       20,
       H + Math.max(28, W / 34) + 2 * Math.max(18, W / 46),
     );
@@ -852,6 +880,384 @@ function pdfPage(pp) {
   g.textBaseline = 'alphabetic';
   return { c: c, g: g, w: w, h: h, m: PX(pdfS < 1 ? 30 : 36) };
 }
+// ---- (v308) the photo's debris, left out of what's printed and saved: on a photographed page the black band of the
+// table at an edge, the next page's dashed edge and specks of grain came out on PDF page 1, Save image and Reveal's
+// card. Conservative: only ink that isn't the drawing's. Each patch of ink (8-connected) that touches none of the
+// drawing's sections (coloured, or left white on purpose) is left out when it lies wholly outside the box round those
+// sections and near an edge of the picture (a page's edge, a watermark), or is a speck (below); and ink at least twice
+// a line's width thick that runs along the picture's edge (the band) is left out beyond a line's width from the
+// sections, so they keep their edge (not a thick frame drawn round the page: one along three or four edges stays).
+// Everything else stays: the drawing's own lines, even open ones, and anything that touches it. A mask over the
+// picture (1: leave out), or null when there's none; kept until the sections or markers change.
+// A speck: a patch of ink well away from the sections, smaller than a 20,000th of the picture, no thicker than half
+// the drawing's line (measured along the middle of all its lines), not closed round any paper, and with no other ink
+// near it but specks like it, together under that size. (Before, a speck was under a third of a line's width squared,
+// about 22 px whatever the page, and most of the grain on Ben's page, 23-78 px, was printed.) So a dot drawn with the drawing's pen, a ring, a word, a dotted line or hatching stays, and so does
+// anything inside a section.
+// (The band's "line's width", lw, is as it was: it's measured next to the sections, about 8 px on most pages.)
+let _dbC = null;
+function outDebris() {
+  if (!labels || !comps || !assignData || !W || !H) return null;
+  const asg = assignData.assign,
+    pap = assignData.paper || {},
+    sig = Object.keys(asg).length + ':' + Object.keys(pap).length;
+  if (_dbC && _dbC.labels === labels && _dbC.asg === asg && _dbC.sig === sig && _dbC.W === W) return _dbC.m;
+  const n = W * H,
+    isS = new Uint8Array(comps.length + 1),
+    CAP = 255;
+  for (const l in asg) isS[l] = 1;
+  for (const l in pap) isS[l] = 1;
+  // chessboard distances, capped at 255: two passes
+  const dist = function (D) {
+    for (let y = 0; y < H; y++)
+      for (let x = 0, p = y * W; x < W; x++, p++) {
+        let v = D[p];
+        if (!v) continue;
+        if (x > 0 && D[p - 1] + 1 < v) v = D[p - 1] + 1;
+        if (y > 0) {
+          const u = p - W;
+          if (D[u] + 1 < v) v = D[u] + 1;
+          if (x > 0 && D[u - 1] + 1 < v) v = D[u - 1] + 1;
+          if (x < W - 1 && D[u + 1] + 1 < v) v = D[u + 1] + 1;
+        }
+        D[p] = v;
+      }
+    for (let y = H - 1; y >= 0; y--)
+      for (let x = W - 1, p = y * W + x; x >= 0; x--, p--) {
+        let v = D[p];
+        if (!v) continue;
+        if (x < W - 1 && D[p + 1] + 1 < v) v = D[p + 1] + 1;
+        if (y < H - 1) {
+          const u = p + W;
+          if (D[u] + 1 < v) v = D[u] + 1;
+          if (x > 0 && D[u - 1] + 1 < v) v = D[u - 1] + 1;
+          if (x < W - 1 && D[u + 1] + 1 < v) v = D[u + 1] + 1;
+        }
+        D[p] = v;
+      }
+    return D;
+  };
+  // how far each pixel is from the sections, and the box round them
+  const dS = new Uint8Array(n);
+  let bx0 = W,
+    by0 = H,
+    bx1 = -1,
+    by1 = -1;
+  for (let p = 0; p < n; p++) {
+    const l = labels[p];
+    if (l > 0 && isS[l]) {
+      const x = p % W,
+        y = (p / W) | 0;
+      if (x < bx0) bx0 = x;
+      if (x > bx1) bx1 = x;
+      if (y < by0) by0 = y;
+      if (y > by1) by1 = y;
+    } else dS[p] = CAP;
+  }
+  if (bx1 < 0) return (_dbC = { labels: labels, asg: asg, sig: sig, W: W, m: null }).m;
+  dist(dS);
+  // how deep in the ink each ink pixel is (the picture's edge counts as paper), and a line's width: the drawing's
+  // lines are mostly that deep at most
+  const dI = new Uint8Array(n);
+  for (let p = 0; p < n; p++) if (labels[p] === -1) dI[p] = CAP;
+  for (let x = 0; x < W; x++) {
+    if (dI[x]) dI[x] = 1;
+    if (dI[(H - 1) * W + x]) dI[(H - 1) * W + x] = 1;
+  }
+  for (let y = 0; y < H; y++) {
+    if (dI[y * W]) dI[y * W] = 1;
+    if (dI[y * W + W - 1]) dI[y * W + W - 1] = 1;
+  }
+  dist(dI);
+  const hist = new Uint32Array(256);
+  let nk = 0;
+  for (let p = 0; p < n; p++)
+    if (dI[p] && dS[p] <= 2) {
+      hist[dI[p]]++;
+      nk++;
+    }
+  let med = 1;
+  for (let v = 1, acc = 0; v < 256; v++) {
+    acc += hist[v];
+    if (acc * 2 >= nk) {
+      med = v;
+      break;
+    }
+  }
+  const lw = Math.max(3, Math.min(60, med * 4)),
+    m = new Uint8Array(n);
+  let any = false;
+  // (specks) the drawing's line, half its width: the median depth of the ink along the middle of its lines (where
+  // it's no shallower than any pixel round it), over all the ink
+  const rh = new Uint32Array(256);
+  let nr = 0;
+  for (let y = 0, p = 0; y < H; y++)
+    for (let x = 0; x < W; x++, p++) {
+      const v = dI[p];
+      if (!v) continue;
+      let top = true;
+      for (let dy = -1; dy <= 1 && top; dy++) {
+        const yy = y + dy;
+        if (yy < 0 || yy >= H) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          if (xx >= 0 && xx < W && dI[yy * W + xx] > v) {
+            top = false;
+            break;
+          }
+        }
+      }
+      if (top) {
+        rh[v]++;
+        nr++;
+      }
+    }
+  let rmed = 1;
+  for (let v = 1, acc = 0; v < 256; v++) {
+    acc += rh[v];
+    if (acc * 2 >= nr) {
+      rmed = v;
+      break;
+    }
+  }
+  // a speck's most: depth (half the line's depth), size, and how far it is from the sections; ink within skR of
+  // each other is looked at together
+  const skD = Math.max(1, rmed >> 1),
+    skA = Math.max(12, n / 20000),
+    skFar = 4 * rmed,
+    skR = Math.max(4 * rmed, Math.round(0.005 * Math.max(W, H))) >> 1,
+    skSz = [0],
+    skSeed = [0];
+  // (the specks' patches, numbered from 1; made when the first is found)
+  let cid = null;
+  // the patches of ink that touch no section
+  const seen = new Uint8Array(n),
+    q = new Int32Array(n);
+  for (let s0 = 0; s0 < n; s0++) {
+    if (seen[s0] || !dI[s0]) continue;
+    let h = 0,
+      t = 0,
+      minD = CAP,
+      dep = 0,
+      x0 = W,
+      y0 = H,
+      x1 = 0,
+      y1 = 0;
+    q[t++] = s0;
+    seen[s0] = 1;
+    while (h < t) {
+      const p = q[h++],
+        x = p % W,
+        y = (p / W) | 0;
+      if (dS[p] < minD) minD = dS[p];
+      if (dI[p] > dep) dep = dI[p];
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+      for (let dy = -1; dy <= 1; dy++) {
+        const yy = y + dy;
+        if (yy < 0 || yy >= H) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          if (xx < 0 || xx >= W) continue;
+          const r = yy * W + xx;
+          if (!seen[r] && dI[r]) {
+            seen[r] = 1;
+            q[t++] = r;
+          }
+        }
+      }
+    }
+    if (minD <= 1) continue;
+    const outside = x1 < bx0 - lw || x0 > bx1 + lw || y1 < by0 - lw || y0 > by1 + lw,
+      edge = x1 < W * 0.06 || x0 > W * 0.94 || y1 < H * 0.06 || y0 > H * 0.94;
+    if (outside && edge) {
+      for (let i = 0; i < t; i++) m[q[i]] = 1;
+      any = true;
+      continue;
+    }
+    // (the specks as they were before, 2: still kept out of the band below, as they were, so it finds what it did)
+    if (t < Math.max(12, 0.35 * lw * lw) && minD > 2 * lw) for (let i = 0; i < t; i++) m[q[i]] = 2;
+    if (t < skA && dep <= skD && minD > skFar && !outHole(q, t, x0, y0, x1, y1)) {
+      if (!cid) cid = new Int32Array(n);
+      for (let i = 0; i < t; i++) cid[q[i]] = skSz.length;
+      skSz.push(t);
+      skSeed.push(s0);
+    }
+  }
+  // the band: ink at least twice a line's width thick (and what's within a line's width of that), in a patch that
+  // runs along an edge of the picture for at least a sixth of it
+  const dC = new Uint8Array(n);
+  let core = false;
+  for (let p = 0; p < n; p++)
+    if (dI[p] > lw && !m[p]) core = true;
+    else dC[p] = CAP;
+  if (core) {
+    dist(dC);
+    seen.fill(0);
+    for (let s0 = 0; s0 < n; s0++) {
+      if (seen[s0] || !dI[s0] || m[s0] || dC[s0] > lw + 1) continue;
+      let h = 0,
+        t = 0,
+        ex = [W, -1, H, -1, W, -1, H, -1];
+      q[t++] = s0;
+      seen[s0] = 1;
+      while (h < t) {
+        const p = q[h++],
+          x = p % W,
+          y = (p / W) | 0;
+        // (how far along each edge it runs: top, bottom, left, right)
+        if (y <= 1) ((ex[0] = Math.min(ex[0], x)), (ex[1] = Math.max(ex[1], x)));
+        if (y >= H - 2) ((ex[4] = Math.min(ex[4], x)), (ex[5] = Math.max(ex[5], x)));
+        if (x <= 1) ((ex[2] = Math.min(ex[2], y)), (ex[3] = Math.max(ex[3], y)));
+        if (x >= W - 2) ((ex[6] = Math.min(ex[6], y)), (ex[7] = Math.max(ex[7], y)));
+        for (let dy = -1; dy <= 1; dy++) {
+          const yy = y + dy;
+          if (yy < 0 || yy >= H) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            const xx = x + dx;
+            if (xx < 0 || xx >= W) continue;
+            const r = yy * W + xx;
+            if (!seen[r] && dI[r] && !m[r] && dC[r] <= lw + 1) {
+              seen[r] = 1;
+              q[t++] = r;
+            }
+          }
+        }
+      }
+      // (along one side or two, as a table's edge or shadow is; along three or four it's a frame drawn round the
+      // page, which stays)
+      const sides =
+        (ex[1] - ex[0] >= W / 6) +
+        (ex[5] - ex[4] >= W / 6) +
+        (ex[3] - ex[2] >= H / 6) +
+        (ex[7] - ex[6] >= H / 6);
+      if (!sides || sides > 2) continue;
+      for (let i = 0; i < t; i++)
+        if (dS[q[i]] > lw) {
+          m[q[i]] = 1;
+          any = true;
+        }
+    }
+  }
+  // the specks: each looked at with the ink near it (within skR of it, and of that); left out when all of that is
+  // specks, together under skA. Ink already left out (a page's edge, the band) doesn't count; any other ink keeps them
+  const skOut = new Uint8Array(skSz.length);
+  if (cid) {
+    const dK = new Uint8Array(n),
+      stamp = new Int32Array(skSz.length);
+    for (let p = 0; p < n; p++) if (!dI[p]) dK[p] = CAP;
+    dist(dK);
+    seen.fill(0);
+    const grp = [];
+    for (let k = 1; k < skSz.length; k++) {
+      if (seen[skSeed[k]]) continue;
+      let h = 0,
+        t = 0,
+        sum = 0,
+        ok = true;
+      grp.length = 0;
+      q[t++] = skSeed[k];
+      seen[skSeed[k]] = 1;
+      // (each such patch is gone through whole, once)
+      while (h < t) {
+        const p = q[h++],
+          x = p % W,
+          y = (p / W) | 0;
+        if (dI[p] && m[p] !== 1) {
+          const c = cid[p];
+          if (!c) ok = false;
+          else if (stamp[c] !== k) {
+            stamp[c] = k;
+            grp.push(c);
+            sum += skSz[c];
+          }
+        }
+        for (let dy = -1; dy <= 1; dy++) {
+          const yy = y + dy;
+          if (yy < 0 || yy >= H) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            const xx = x + dx;
+            if (xx < 0 || xx >= W) continue;
+            const r = yy * W + xx;
+            if (seen[r] || dK[r] > skR) continue;
+            seen[r] = 1;
+            q[t++] = r;
+          }
+        }
+      }
+      if (sum >= skA) ok = false;
+      if (ok) for (const c of grp) skOut[c] = 1;
+    }
+  }
+  any = false;
+  for (let p = 0; p < n; p++) {
+    if (m[p] === 2) m[p] = 0;
+    if (cid && cid[p] && skOut[cid[p]]) m[p] = 1;
+    if (m[p]) any = true;
+  }
+  _dbC = { labels: labels, asg: asg, sig: sig, W: W, m: any ? m : null, lw: lw };
+  return _dbC.m;
+}
+// whether a patch of ink (its t pixels in q, inside x0..x1, y0..y1) closes round some paper (4 px or more: a ring, a
+// small closed detail; a speck of grain has a pinhole at most)
+function outHole(q, t, x0, y0, x1, y1) {
+  const bw = x1 - x0 + 3,
+    bh = y1 - y0 + 3,
+    b = new Uint8Array(bw * bh),
+    st = [];
+  for (let i = 0; i < t; i++) b[(((q[i] / W) | 0) - y0 + 1) * bw + (q[i] % W) - x0 + 1] = 1;
+  // (the paper reached from round the outside, 4-connected as ink is 8-connected)
+  b[0] = 2;
+  st.push(0);
+  while (st.length) {
+    const p = st.pop(),
+      x = p % bw;
+    for (const r of [x > 0 ? p - 1 : -1, x < bw - 1 ? p + 1 : -1, p - bw, p + bw])
+      if (r >= 0 && r < b.length && !b[r]) {
+        b[r] = 2;
+        st.push(r);
+      }
+  }
+  let k = 0;
+  for (let i = 0; i < b.length; i++) if (!b[i]) k++;
+  return k >= 4;
+}
+// a part of a picture drawn at k (src: the screen's canvas, cr: the part, in picture pixels) with the debris painted
+// paper, as a canvas of its own; null when there's none in it
+function outCleanPart(src, cr, k) {
+  const db = outDebris();
+  if (!db) return null;
+  const x0 = Math.floor(cr.x),
+    y0 = Math.floor(cr.y),
+    x1 = Math.min(W, Math.ceil(cr.x + cr.w)),
+    y1 = Math.min(H, Math.ceil(cr.y + cr.h));
+  let hit = false;
+  for (let y = y0; y < y1 && !hit; y++)
+    for (let x = x0, p = y * W + x0; x < x1; x++, p++) if (db[p]) hit = !0;
+  if (!hit) return null;
+  const c = document.createElement('canvas'),
+    w = Math.max(1, Math.round((x1 - x0) * k)),
+    h = Math.max(1, Math.round((y1 - y0) * k));
+  c.width = w;
+  c.height = h;
+  const g = c.getContext('2d');
+  g.drawImage(src, x0 * k, y0 * k, (x1 - x0) * k, (y1 - y0) * k, 0, 0, w, h);
+  const im = g.getImageData(0, 0, w, h),
+    d = im.data;
+  for (let y = 0, j = 0; y < h; y++) {
+    const py = Math.min(H - 1, y0 + Math.floor(y / k)) * W;
+    for (let x = 0; x < w; x++, j += 4)
+      if (db[py + Math.min(W - 1, x0 + Math.floor(x / k))]) {
+        d[j] = PAPER[0];
+        d[j + 1] = PAPER[1];
+        d[j + 2] = PAPER[2];
+      }
+  }
+  g.putImageData(im, 0, 0);
+  return { c: c, x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
 function pdfArt(coloured, sh, lines) {
   const a = document.createElement('canvas');
   a.width = W;
@@ -872,13 +1278,15 @@ function pdfArt(coloured, sh, lines) {
       C[l * 3 + 1] = c[1];
       C[l * 3 + 2] = c[2];
     }
+  const db = outDebris();
   for (let q = 0, j = 0, n = W * H; q < n; q++, j += 4) {
     const l = labels[q];
-    if (l === -1) {
+    if (l === -1 && !(db && db[q])) {
       d[j] = LINE[0];
       d[j + 1] = LINE[1];
       d[j + 2] = LINE[2];
     } else if (l < 0) {
+      // (ink that's the photo's debris too, v308)
       d[j] = d[j + 1] = d[j + 2] = 255;
     } else if (coloured && V && V[q] && ti[l]) {
       const k = ti[l] * 768 + V[q] * 3;
@@ -893,8 +1301,18 @@ function pdfArt(coloured, sh, lines) {
     }
     d[j + 3] = 255;
   }
-  if (!coloured && sh && lines)
+  if (!coloured && sh && lines) {
     shadeLinesDraw(sh, null, { buf: d, t: lines.t, dash: lines.dash, ink: [150, 150, 150] });
+    // (v308: none under the labels, lines.clear: their boxes; the line art stays)
+    (lines.clear || []).forEach(function (b) {
+      const x0 = Math.max(0, Math.floor(b[0])),
+        x1 = Math.min(W - 1, Math.ceil(b[2])),
+        y1 = Math.min(H - 1, Math.ceil(b[3]));
+      for (let y = Math.max(0, Math.floor(b[1])); y <= y1; y++)
+        for (let x = x0, q = y * W + x0, j = q * 4; x <= x1; x++, q++, j += 4)
+          if (labels[q] !== -1) d[j] = d[j + 1] = d[j + 2] = 255;
+    });
+  }
   g.putImageData(im, 0, 0);
   return a;
 }
@@ -1117,11 +1535,14 @@ let _pdfCloseN = 0,
   _pdfCloseL = 0,
   _pdfCU = [],
   // (and the colouring page's placing, for the tests)
-  _pdfP1 = null;
+  _pdfP1 = null,
+  // (v308: and where its sun went, for the tests)
+  _pdfSun = null;
 // a number label's size and box at size s (picture pixels), or as big as its section allows when s is null
-function pdfNumLay(g, l, t, o, s) {
+// (at: a centre of its own, in place of the section's label point, v308)
+function pdfNumLay(g, l, t, o, s, at) {
   const c = comps[l],
-    p = labelPos(l);
+    p = at || labelPos(l);
   let fs = s != null ? s : Math.max(o.base, Math.min(Math.sqrt(c.area) * 0.5, o.max));
   g.font = o.w + ' ' + fs + 'px ' + LFONT;
   let tw = g.measureText(t).width;
@@ -1138,17 +1559,24 @@ function pdfNumLay(g, l, t, o, s) {
     kind: 'num',
     t: t,
     fs: fs,
+    at: at || null,
     // (the box the ink takes: capitals and digits reach about 0.42 of the size either side of the middle)
     box: [p.x - tw / 2 - lw - 1, p.y - fs * 0.42 - lw - 1, p.x + tw / 2 + lw + 1, p.y + fs * 0.42 + lw + 1],
   };
 }
 function pdfNumPut(g, l, lay, o) {
-  const p = labelPos(l),
+  const p = lay.at || labelPos(l),
     lw = Math.max(1, lay.fs * o.swk);
   g.font = o.w + ' ' + lay.fs + 'px ' + LFONT;
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.lineJoin = 'round';
+  // (v308: a white halo first, wider than the edge, so tone lines and specks don't run through the label)
+  if (o.halo) {
+    g.lineWidth = lw * o.halo;
+    g.strokeStyle = '#fff';
+    g.strokeText(lay.t, p.x, p.y);
+  }
   g.lineWidth = lw;
   g.strokeStyle = o.stroke;
   g.fillStyle = o.fill;
@@ -1189,7 +1617,8 @@ function pdfPlace(g, ids, o, lab, numOf, opt) {
         a.push(b);
       });
     },
-    free = function (b) {
+    // (ign: a box that doesn't count, a section's own dot when a number takes its place)
+    free = function (b, ign) {
       if (bnd && (b[0] < bnd[0] || b[1] < bnd[1] || b[2] > bnd[2] || b[3] > bnd[3])) return false;
       let ok = true;
       cells(b, function (k) {
@@ -1197,6 +1626,7 @@ function pdfPlace(g, ids, o, lab, numOf, opt) {
         if (!ok || !a) return;
         for (let i = 0; i < a.length; i++) {
           const q = a[i];
+          if (q === ign) continue;
           if (b[0] < q[2] && q[0] < b[2] && b[1] < q[3] && q[1] < b[3]) {
             ok = false;
             return;
@@ -1255,12 +1685,34 @@ function pdfPlace(g, ids, o, lab, numOf, opt) {
       dropped.push(l);
     });
   // (the dots of those left out count as taken, for the shading's marks and the close-ups' letters)
+  const dots = {},
+    extra = [];
   dropped.forEach(function (l) {
     const p = labelPos(l),
       r = o.min * 0.4;
-    add([p.x - r, p.y - r, p.x + r, p.y + r]);
+    add((dots[l] = [p.x - r, p.y - r, p.x + r, p.y + r]));
   });
-  return { lays: lays, dropped: dropped, boxes: boxes, usedNum: usedNum, free: free, add: add };
+  return {
+    lays: lays,
+    dropped: dropped,
+    boxes: boxes,
+    usedNum: usedNum,
+    free: free,
+    add: add,
+    dots: dots,
+    // (v308: numbers squeezed in for small sections left with a dot, pdfNumSqueeze: { l: layout }, their boxes in
+    // extra, kept clear of everything placed after them but not listed in boxes)
+    sq: {},
+    extra: extra,
+    block: function (b) {
+      extra.push(b);
+      cells(b, function (k) {
+        let a = grid.get(k);
+        if (!a) grid.set(k, (a = []));
+        a.push(b);
+      });
+    },
+  };
 }
 // draw what pdfPlace placed, and a small dot (radius dr) in each section left out (dotOk: only those it allows)
 function pdfPlaceDraw(g, asg, pl, o, numOf, dr, dotOk) {
@@ -1269,8 +1721,10 @@ function pdfPlaceDraw(g, asg, pl, o, numOf, dr, dotOk) {
     if (L.kind === 'code') drawCode(g, +l, asg[l], L.o);
     else pdfNumPut(g, +l, L, o);
   }
+  for (const l in pl.sq || {}) pdfNumPut(g, +l, pl.sq[l], o);
   g.fillStyle = o.fill;
   pl.dropped.forEach(function (l) {
+    if (pl.sq && pl.sq[l]) return;
     if (dotOk && !dotOk(l)) return;
     const p = labelPos(l);
     g.beginPath();
@@ -1279,6 +1733,93 @@ function pdfPlaceDraw(g, asg, pl, o, numOf, dr, dotOk) {
   });
   g.textAlign = 'left';
   g.textBaseline = 'alphabetic';
+}
+// (v308) a small section left with only a dot: its number squeezed in after all, at the least size or a little
+// smaller, on its label point or elsewhere in the section, clear of every label (its own dot aside). Whether it was.
+function pdfNumSqueeze(g, pl, l, t, o) {
+  const p = labelPos(l),
+    dot = pl.dots[l],
+    step = o.min * 0.45,
+    at = [null];
+  for (let i = 1; i <= 8; i++)
+    for (let a = 0; a < 12; a++) {
+      const x = Math.round(p.x + Math.cos((a * Math.PI) / 6) * step * i),
+        y = Math.round(p.y + Math.sin((a * Math.PI) / 6) * step * i);
+      if (x >= 0 && y >= 0 && x < W && y < H && labels[y * W + x] === l) at.push({ x: x, y: y });
+    }
+  const sizes = [o.min, o.min * 0.86, o.min * 0.74];
+  for (let si = 0; si < sizes.length; si++)
+    for (let i = 0; i < at.length; i++) {
+      const L = pdfNumLay(g, l, t, o, sizes[si], at[i]);
+      if (pl.free(L.box, dot)) {
+        pl.sq[l] = L;
+        pl.block(L.box);
+        return true;
+      }
+    }
+  return false;
+}
+// (v308) where the shading's sun goes on the colouring page (sr: its radius; pl: page 1's placing, which then keeps it
+// clear): where the light comes from, else the nearest place clear of every label and on as little of the lines as
+// can be; with none near, further out on that side of the picture, else anywhere clear (it hid a section's code).
+// { x, y, box }
+function pdfSunAt(sr, pl) {
+  const h = sr * 2.3,
+    x0 = Math.max(h, Math.min(W - h, shadeSun.x * W)),
+    y0 = Math.max(h, Math.min(H - h, shadeSun.y * H)),
+    inkIn = function (x, y) {
+      let n = 0,
+        t = 0;
+      for (let j = -3; j <= 3; j++)
+        for (let i = -3; i <= 3; i++) {
+          const px = Math.round(x + (i * h) / 3),
+            py = Math.round(y + (j * h) / 3);
+          if (px < 0 || py < 0 || px >= W || py >= H) continue;
+          t++;
+          if (labels[py * W + px] === -1) n++;
+        }
+      return t ? n / t : 1;
+    };
+  let at = null,
+    best = Infinity;
+  // (k: how much a place is worth trying, low first; returns whether to stop looking)
+  const tryAt = function (x, y) {
+    if (x < h || y < h || x > W - h || y > H - h || (pl && !pl.free([x - h, y - h, x + h, y + h])))
+      return false;
+    const k = inkIn(x, y);
+    if (k < best) {
+      best = k;
+      at = [x, y];
+    }
+    // (the nearest that's mostly paper will do)
+    return k <= 0.06;
+  };
+  search: {
+    // near where the light comes from
+    for (let rr = 0; rr <= sr * 12; rr += sr * 0.75)
+      for (let a = 0; a < (rr ? 16 : 1); a++)
+        if (tryAt(x0 + Math.cos((a * Math.PI) / 8) * rr, y0 + Math.sin((a * Math.PI) / 8) * rr)) break search;
+    if (at) break search;
+    // else further out the same way from the middle of the picture (the light still comes from that side), then
+    // anywhere
+    const dx = x0 - W / 2,
+      dy = y0 - H / 2,
+      d = Math.hypot(dx, dy) || 1,
+      ux = dx / d,
+      uy = dy / d;
+    for (let t = d; t <= Math.hypot(W, H) / 2 && !at; t += sr)
+      for (const o of [0, 2, -2, 4, -4, 6, -6])
+        if (tryAt(W / 2 + ux * t - uy * o * sr, H / 2 + uy * t + ux * o * sr)) break search;
+    if (at) break search;
+    for (let rr = sr * 12; rr <= Math.max(W, H); rr += sr * 2)
+      for (let a = 0; a < 32; a++)
+        if (tryAt(x0 + Math.cos((a * Math.PI) / 16) * rr, y0 + Math.sin((a * Math.PI) / 16) * rr))
+          break search;
+  }
+  if (!at) at = [x0, y0];
+  const box = [at[0] - h, at[1] - h, at[0] + h, at[1] + h];
+  if (pl && pl.block) pl.block(box);
+  return { x: at[0], y: at[1], box: box };
 }
 // a close-up page's codes and how strong its magnified lines are (v305: grey lines, near-black codes)
 const CU_INK = '#1a1a1a',
@@ -1357,21 +1898,18 @@ function pdfClusters(ids, cell, k) {
   return out;
 }
 // a close-up's place on the colouring page: a dashed box with its letter (drawn in picture pixels, k to the page),
-// the letter as light as the labels (ink: their colour) so it doesn't show through pale marker. The letter goes in
-// the first corner of the box with nothing placed there (pl: page 1's placing, which then keeps it clear), white
-// round its strokes as the labels are; v284 review: a white tab under it used to rub out labels.
-function pdfCloseMark(g, cr, letter, k, ink, pl) {
-  g.save();
-  g.setLineDash([PX(2) / k, PX(2) / k]);
-  g.strokeStyle = '#b0b0b0';
-  g.lineWidth = PX(0.5) / k;
-  g.strokeRect(cr[0], cr[1], cr[2] - cr[0], cr[3] - cr[1]);
-  g.setLineDash([]);
+// the letter as light as the labels (ink: their colour) so it doesn't show through pale marker, white round its
+// strokes as the labels are; v284 review: a white tab under it used to rub out labels.
+// v308: the letter's place is found with the labels' (pdfCloseMarkAt, pl: page 1's placing, which then keeps it
+// clear): a corner or edge of the box clear of every label, on as little of the lines as can be (letters landed on
+// labels and on black lines, where grey can't be read). { box, pd, k }
+function pdfCloseMarkAt(g, cr, letter, k, pl) {
   g.font = '700 ' + PX(7.5) / k + 'px ' + LFONT;
   const tw = g.measureText(letter).width,
     pd = PX(1.5) / k,
     bw = tw + pd * 2,
     bh = PX(9) / k,
+    mx = (cr[0] + cr[2] - bw) / 2,
     at = [
       [cr[0], cr[1]],
       [cr[2] - bw, cr[1]],
@@ -1379,6 +1917,16 @@ function pdfCloseMark(g, cr, letter, k, ink, pl) {
       [cr[2] - bw, cr[3] - bh],
       [cr[0], cr[1] - bh],
       [cr[0], cr[3]],
+      [cr[2] - bw, cr[1] - bh],
+      [cr[2] - bw, cr[3]],
+      [mx, cr[1]],
+      [mx, cr[3] - bh],
+      [mx, cr[1] - bh],
+      [mx, cr[3]],
+      [cr[0] - bw, cr[1]],
+      [cr[2], cr[1]],
+      [cr[0] - bw, cr[3] - bh],
+      [cr[2], cr[3] - bh],
     ]
       .map(function (q) {
         return [q[0], q[1], q[0] + bw, q[1] + bh];
@@ -1386,20 +1934,70 @@ function pdfCloseMark(g, cr, letter, k, ink, pl) {
       .filter(function (b) {
         return b[0] >= 0 && b[1] >= 0 && b[2] <= W && b[3] <= H;
       });
-  const box = (pl &&
-    at.find(function (b) {
-      return pl.free(b);
-    })) ||
-    at[0] || [cr[0], cr[1], cr[0] + bw, cr[1] + bh];
+  // (how much of a box is line art, from a few points across it)
+  const inkIn = function (b) {
+    let n = 0,
+      t = 0;
+    for (let j = 0; j <= 4; j++)
+      for (let i = 0; i <= 6; i++) {
+        const x = Math.min(W - 1, Math.round(b[0] + ((b[2] - b[0]) * i) / 6)),
+          y = Math.min(H - 1, Math.round(b[1] + ((b[3] - b[1]) * j) / 4));
+        t++;
+        if (labels[y * W + x] === -1) n++;
+      }
+    return n / t;
+  };
+  let box = at[0] || [cr[0], cr[1], cr[0] + bw, cr[1] + bh],
+    best = Infinity;
+  const tryAt = function (b) {
+    const sc = (pl && !pl.free(b) ? 10 : 0) + inkIn(b);
+    if (sc < best - 1e-9) {
+      best = sc;
+      box = b;
+    }
+  };
+  at.forEach(tryAt);
+  // (no corner or middle clear of the labels: anywhere along the box's edges, inside or out)
+  if (best >= 10) {
+    const st = bw * 0.5,
+      put = function (x, y) {
+        const b = [x, y, x + bw, y + bh];
+        if (b[0] >= 0 && b[1] >= 0 && b[2] <= W && b[3] <= H) tryAt(b);
+      };
+    for (let x = cr[0] - bw; x <= cr[2]; x += st) {
+      put(x, cr[1] - bh);
+      put(x, cr[1]);
+      put(x, cr[3] - bh);
+      put(x, cr[3]);
+    }
+    for (let y = cr[1]; y <= cr[3] - bh; y += bh * 0.5) {
+      put(cr[0] - bw, y);
+      put(cr[0], y);
+      put(cr[2] - bw, y);
+      put(cr[2], y);
+    }
+  }
   if (pl) pl.add(box);
+  return { box: box, pd: pd, k: k };
+}
+function pdfCloseMark(g, cr, letter, k, ink, mk) {
+  g.save();
+  g.setLineDash([PX(2) / k, PX(2) / k]);
+  g.strokeStyle = '#b0b0b0';
+  g.lineWidth = PX(0.5) / k;
+  g.strokeRect(cr[0], cr[1], cr[2] - cr[0], cr[3] - cr[1]);
+  g.setLineDash([]);
+  g.font = '700 ' + PX(7.5) / k + 'px ' + LFONT;
+  const box = mk.box;
   g.textAlign = 'left';
   g.textBaseline = 'top';
   g.lineJoin = 'round';
-  g.lineWidth = PX(1.6) / k;
+  // (v308: a wider halo, as the labels have)
+  g.lineWidth = PX(2.4) / k;
   g.strokeStyle = '#fff';
-  g.strokeText(letter, box[0] + pd, box[1] + PX(1) / k);
+  g.strokeText(letter, box[0] + mk.pd, box[1] + PX(1) / k);
   g.fillStyle = ink;
-  g.fillText(letter, box[0] + pd, box[1] + PX(1) / k);
+  g.fillText(letter, box[0] + mk.pd, box[1] + PX(1) / k);
   g.restore();
 }
 // the PDF's pages as canvases; dry: just how many there will be (for the Print sheet's summary), from the same
@@ -1479,9 +2077,18 @@ function _buildPDF(dry) {
     lab = ref ? 'none' : pdfLabels,
     nums = lab === 'numbers',
     num = {};
-  rows.forEach(function (r, i) {
-    num[r.m.mkey] = i + 1;
+  // (v308: a marker's number is its place in colouring order, lightest first, as the key's ORDER was: with Numbers
+  // the key has that one column, its rows in that order, so "14" on the page is the 14th row. Before, a NO. column by
+  // colour family sat beside ORDER, and "14" wasn't the "14th")
+  rows.forEach(function (r) {
+    num[r.m.mkey] = r.ord;
   });
+  if (nums)
+    rows.sort(function (a, b) {
+      return a.ord - b.ord;
+    });
+  // (the family lines between rows, which a key in number order hasn't)
+  let famOn = !nums;
   const P0 = PAPERS[paper] || PAPERS.letter,
     m = PX(pdfS < 1 ? 30 : 36),
     bw = Math.round((P0[0] / 72) * PDPI) - 2 * m;
@@ -1503,6 +2110,7 @@ function _buildPDF(dry) {
         swk: LS.swk,
         stroke: '#fff',
         fill: LS.fill,
+        halo: 2,
         bt: guideMixed(),
         // the brand tags as light as the codes (outlined ones white inside)
         tag: Object.assign(
@@ -1513,7 +2121,9 @@ function _buildPDF(dry) {
     };
   let keyNums = nums,
     closeups = [],
-    closeP = 0;
+    closeP = 0,
+    // (the small sections a number was found for on page 1 after all, v308)
+    numd = 0;
   // (the sections with no room on page 1, and those of them a close-up labels)
   const small = {},
     shown = {};
@@ -1546,7 +2156,8 @@ function _buildPDF(dry) {
       numOf = function (mm) {
         return String(num[mm.mkey] || '');
       };
-    let pl = { lays: {}, dropped: [], boxes: [] };
+    let pl = { lays: {}, dropped: [], boxes: [], dots: {} },
+      sun = null;
     if (lab !== 'none') {
       pl = pdfPlace(g1, Object.keys(asg).map(Number), lo, lab, numOf);
       _pdfP1 = pl;
@@ -1595,7 +2206,29 @@ function _buildPDF(dry) {
           for (const l in c.pl.lays) if (small[l]) shown[l] = 1;
         });
       }
-    }
+      // (v308) a small section no close-up labels gets its number after all, a little smaller or off its label point
+      // if that's what it takes, in place of its dot: in its close-up, else on page 1. On Half Letter with Codes, 5
+      // sections had only a dot and were labelled nowhere
+      closeups.forEach(function (c) {
+        c.ids.forEach(function (l) {
+          if (shown[l] || !pdfNumSqueeze(g1, c.pl, l, numOf(asg[l]), c.lo)) return;
+          shown[l] = 1;
+          keyNums = true;
+        });
+      });
+      pl.dropped.forEach(function (l) {
+        if (shown[l] || !pdfNumSqueeze(g1, pl, l, numOf(asg[l]), lo)) return;
+        numd++;
+        keyNums = true;
+      });
+      // (v308) the light's sun, clear of the labels (and kept clear of the letters)
+      if (withShade && shadeUse().sun) sun = pdfSunAt(PX(6) / f1.k, pl);
+      _pdfSun = sun;
+      // the close-ups' letters, placed now among the labels (their boxes listed after them and the dots)
+      closeups.forEach(function (c, i) {
+        c.mark = pdfCloseMarkAt(g1, c.crop, pdfLetter(i), f1.k, pl);
+      });
+    } else if (withShade && shadeUse().sun) sun = pdfSunAt(PX(6) / f1.k, null);
     if (!dry) {
       g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
       const keyPg = 2 + closeP,
@@ -1610,22 +2243,26 @@ function _buildPDF(dry) {
       });
       g1.imageSmoothingEnabled = true;
       g1.imageSmoothingQuality = 'high';
+      // (v308: no tone line under a label, the sun or a close-up's letter; before, they struck through the codes)
       const art1 = pdfArt(
         false,
         sh,
         pdfToneLines && {
           t: Math.max(1, Math.round(PX(0.8) / f1.k)),
           dash: Math.max(3, Math.round(PX(4) / f1.k)),
+          clear: pl.boxes.concat(pl.extra || []),
         },
       );
       g1.drawImage(art1, ox, top, f1.w, f1.h);
       g1.save();
       g1.setTransform(f1.k, 0, 0, f1.k, ox, top);
-      pdfPlaceDraw(g1, asg, pl, lo, numOf, PX(1.2) / f1.k);
-      const lbox = pl.boxes;
+      pdfPlaceDraw(g1, asg, pl, lo, numOf, PX(1.2) / f1.k, function (l) {
+        return !pl.lays[l];
+      });
+      const lbox = pl.boxes.concat(pl.extra || []);
       // where each close-up is, lettered
       closeups.forEach(function (c, i) {
-        pdfCloseMark(g1, c.crop, pdfLetter(i), f1.k, LS.fill, pl);
+        pdfCloseMark(g1, c.crop, pdfLetter(i), f1.k, LS.fill, c.mark);
       });
       if (withShade) {
         const zr = PX(5.2) / f1.k;
@@ -1681,10 +2318,10 @@ function _buildPDF(dry) {
         });
         g1.textAlign = 'left';
         g1.textBaseline = 'alphabetic';
-        if (shadeUse().sun) {
+        if (sun) {
           const sr = PX(6) / f1.k,
-            sx = Math.max(sr * 2, Math.min(W - sr * 2, shadeSun.x * W)),
-            sy = Math.max(sr * 2, Math.min(H - sr * 2, shadeSun.y * H));
+            sx = sun.x,
+            sy = sun.y;
           g1.lineCap = 'round';
           g1.strokeStyle = '#fff';
           g1.lineWidth = PX(3.2) / f1.k;
@@ -1777,8 +2414,8 @@ function _buildPDF(dry) {
           gc.lineWidth = PX(0.6);
           gc.strokeRect(cx, iy, dw, dh);
         });
-        // (under the last of them: how many small sections no close-up could label)
-        const left = pl.dropped.length - Object.keys(shown).length;
+        // (under the last of them: how many small sections no close-up could label, nor a number on page 1)
+        const left = pl.dropped.length - Object.keys(shown).length - numd;
         if (left) {
           const gc = cp.g;
           gc.fillStyle = '#777';
@@ -1808,7 +2445,16 @@ function _buildPDF(dry) {
   _pdfCloseP = closeP;
   _pdfCloseL = closeups.length;
   _pdfCU = closeups;
-  _pdfLeft = Object.keys(small).length - _pdfCloseN;
+  _pdfLeft = Object.keys(small).length - _pdfCloseN - numd;
+  // (v308 debug: with Codes, numbers on the page for sections too small for a code (and in close-ups) put the key in
+  // their order too, without the family lines: they were in colouring order while the key stayed by family, so "14"
+  // sat among 8, 12, 13 and had to be hunted for)
+  if (keyNums && !nums) {
+    rows.sort(function (a, b) {
+      return a.ord - b.ord;
+    });
+    famOn = false;
+  }
   // ---- next: reference preview + colour key table (bigger preview for "Key + reference")
   let pg = pdfPage(),
     g = pg.g;
@@ -1894,7 +2540,10 @@ function _buildPDF(dry) {
     );
   });
   // dry run: how many pages does the key need if the table starts at `start`?
+  // (simFirst: how many of the key's rows the first page holds, v308)
+  let simFirst = 0;
   function simPages(start) {
+    simFirst = 0;
     let pages = 1,
       col = 0,
       colTop = start,
@@ -1914,13 +2563,14 @@ function _buildPDF(dry) {
       }
     };
     rows.forEach(function (r) {
-      if (r.fam !== last) {
+      if (famOn && r.fam !== last) {
         need(famH + rowH);
         y += famH;
         last = r.fam;
       }
       need(rowH);
       y += rowH;
+      if (pages === 1) simFirst++;
       // (a line for each zone that shades it differently)
       for (let i = 0; withShade && r.tones.length > 1 && i < r.tones.length; i++) {
         need(rowH);
@@ -1948,9 +2598,13 @@ function _buildPDF(dry) {
   }
   // biggest preview that still lets the whole key fit on this page; otherwise a modest one
   // (then a smaller preview, then slightly tighter rows, before letting the key run onto another sheet)
+  // v308: never smaller than about a third of the page (with shading or blends the key is long, and the reference
+  // shrank to a stamp to keep it on one page; it's what you colour from). When the key can't fit beside one that big,
+  // it continues on the next page and the reference takes the room the key's first page can spare: as big as it can
+  // be without the key needing another page. Key + reference goes down to that size too, to fit on one page.
   const avail = pg.h - 2 * m,
     hiF = ref ? 0.8 : 0.5,
-    loH = Math.max(PX(60), ref ? Math.round(avail * 0.62) : 0);
+    loH = Math.max(PX(60), Math.round(avail * 0.32));
   let pvH = 0;
   [PX(19), PX(16.5)].some(function (rh) {
     rowH = rh;
@@ -1963,22 +2617,32 @@ function _buildPDF(dry) {
     }
     return false;
   });
+  const onePage = !!pvH;
   if (!pvH) {
     rowH = PX(19);
-    pvH = ref ? Math.round(avail * 0.62) : PX(190);
+    const nP = simPages(pvTop + pdfFit(bw, loH).h + PX(18)),
+      // (and some of the key under it on its first page, not just the headings)
+      n1 = Math.min(rows.length, 4, simFirst);
+    pvH = loH;
+    for (let h = Math.round(avail * hiF); h > loH; h -= PX(10))
+      if (simPages(pvTop + pdfFit(bw, h).h + PX(18)) <= nP && simFirst >= n1) {
+        pvH = h;
+        break;
+      }
   }
   // a tall picture: the reference fills the left column and the key starts in the right one. "Key + reference" always;
   // "Page + key" too when the whole key fits that column (v284: a tall picture's reference was a sliver across the top)
   let famN = 0,
     famL = null;
   rows.forEach(function (r) {
-    if (r.fam !== famL) famN++;
+    if (famOn && r.fam !== famL) famN++;
     famL = r.fam;
   });
+  // (v308: Key + reference beside the key only when that keeps it on one page, or nothing would)
   const side =
     cols === 2 &&
     pdfFit(cw, pageBot0 - pvTop).k > pdfFit(bw, pvH).k &&
-    (ref || hdrH + famN * famH + rows.length * PX(19) <= pageBot0 - pvTop);
+    (hdrH + famN * famH + rows.length * PX(19) <= pageBot0 - pvTop || (ref && !onePage));
   if (side) rowH = PX(19);
   const f2 = side ? pdfFit(cw, pageBot0 - pvTop) : pdfFit(bw, pvH),
     pvx = m + ((side ? cw : bw) - f2.w) / 2,
@@ -1998,11 +2662,15 @@ function _buildPDF(dry) {
   // marker, each as wide as its longest entry so the name keeps what's left, even on a small page
   // [☐ to tick off] [order] [number] swatch …: the box and the order come first (v284)
   // (v307: the order column as wide as its longest, "162nd", clear of the box: it touched it)
-  g.font = '600 ' + PX(8) + 'px ' + LFONT;
-  const ordR = rows.reduce(function (w, r) {
-      return Math.max(w, PX(14) + g.measureText(pdfOrd(r.ord)).width);
-    }, PX(32)),
-    nw = keyNums ? PX(20) : 0,
+  // (v308: one column, NO. when the page has numbers (they are the colouring order), else ORDER)
+  g.font = keyNums ? LS.w + ' ' + PX(9.5) + 'px ' + LFONT : '600 ' + PX(8) + 'px ' + LFONT;
+  const ordR = rows.reduce(
+      function (w, r) {
+        return Math.max(w, PX(14) + g.measureText(keyNums ? String(r.ord) : pdfOrd(r.ord)).width);
+      },
+      keyNums ? PX(30) : PX(32),
+    ),
+    nw = 0,
     lead = ordR + PX(4),
     X = {
       box: 0,
@@ -2018,7 +2686,8 @@ function _buildPDF(dry) {
   const codeW = rows.reduce(function (w, r) {
     return Math.max(w, g.measureText(r.m.code).width);
   }, 0);
-  X.name = X.code + Math.min(PX(60), Math.max(PX(30), codeW + PX(8)));
+  // (v308: never cut short; the name is cut instead. Half Letter's key cut "Process B…" for both B05 and B112)
+  X.name = X.code + Math.max(PX(30), codeW + PX(8));
   // (t: the tones of a row or of one of its lines; none: a marker whose sections are all flat)
   const cellsOf = function (mm, t) {
     if (withShade) {
@@ -2113,13 +2782,8 @@ function _buildPDF(dry) {
     g.fillStyle = '#8a8a8a';
     g.font = '700 ' + PX(7) + 'px ' + LFONT;
     g.textAlign = 'right';
-    g.fillText('ORDER', x + X.ord, y + PX(10));
+    g.fillText(keyNums ? 'NO.' : 'ORDER', x + X.ord, y + PX(10));
     g.textAlign = 'left';
-    if (keyNums) {
-      g.textAlign = 'right';
-      g.fillText('NO.', x + lead + nw - PX(6), y + PX(10));
-      g.textAlign = 'left';
-    }
     g.fillText(withShade ? 'B  MARKER' : 'MARKER', x + X.code - (withShade ? PX(9) : 0), y + PX(10));
     g.textAlign = 'right';
     g.fillText('SECTIONS', x + X.cnt, y + PX(10));
@@ -2197,7 +2861,7 @@ function _buildPDF(dry) {
   const want = {};
   let lastFam = null;
   rows.forEach(function (r) {
-    if (r.fam !== lastFam) {
+    if (famOn && r.fam !== lastFam) {
       need(famH + rowH);
       const x = colX();
       g.fillStyle = '#555';
@@ -2213,25 +2877,25 @@ function _buildPDF(dry) {
     g.strokeStyle = '#9a9a9a';
     g.lineWidth = PX(0.7);
     g.strokeRect(x + PX(1), y + PX(4.5), PX(9), PX(9));
-    g.fillStyle = '#8a8a8a';
-    g.font = '600 ' + PX(8) + 'px ' + LFONT;
     g.textAlign = 'right';
-    g.fillText(pdfOrd(r.ord), x + X.ord, y + PX(12.5));
-    g.textAlign = 'left';
     if (keyNums) {
       // (v305: drawn as the numbers on the colouring page are, their weight, colour and white edge, so the two are
-      // seen to go together; ORDER beside it stays a grey "5th")
+      // seen to go together. v308: the one column, the colouring order)
       const fsN = PX(9.5);
       g.font = LS.w + ' ' + fsN + 'px ' + LFONT;
-      g.textAlign = 'right';
       g.lineJoin = 'round';
       g.lineWidth = Math.max(1, fsN * LS.swk);
       g.strokeStyle = '#fff';
-      g.strokeText(String(num[mm.mkey]), x + lead + nw - PX(6), y + PX(12.5));
+      g.strokeText(String(num[mm.mkey]), x + X.ord, y + PX(12.5));
       g.fillStyle = LS.fill;
-      g.fillText(String(num[mm.mkey]), x + lead + nw - PX(6), y + PX(12.5));
-      g.textAlign = 'left';
+      g.fillText(String(num[mm.mkey]), x + X.ord, y + PX(12.5));
+    } else {
+      // (a grey "5th", so it can't be taken for a number)
+      g.fillStyle = '#8a8a8a';
+      g.font = '600 ' + PX(8) + 'px ' + LFONT;
+      g.fillText(pdfOrd(r.ord), x + X.ord, y + PX(12.5));
     }
+    g.textAlign = 'left';
     pdfSwatch(g, x + X.sw, y + PX(3.5), sw, mm.hex, true);
     if (!oneB) {
       // (v306: a code in the guide in both brands has its letter in a filled tag, as on the labels)
@@ -2484,20 +3148,17 @@ async function _exportPDF() {
         if (b && b.disabled && _pdfProg) b.textContent = _pdfProg;
       });
     const fname =
-      ((curName || 'colour-guide')
-        .replace(/[^a-z0-9]+/gi, '-')
-        .replace(/^-+|-+$/g, '')
-        .toLowerCase()
-        .slice(0, 80) || 'colour-guide') +
+      fileSlug(curName, 'colour-guide', 80).toLowerCase() +
       (pdfWhat === 'strip' ? '-test-strip' : '') +
       '.pdf';
     shareOrSave(blob, fname, curName || 'Colouring guide', 'PDF', 'PDF downloaded.');
   } catch (e) {
     const sm = sheetOpen() && document.getElementById('sfPrSum');
     if (sm) {
+      errLog('Making the PDF', e);
       sm.classList.add('empty');
-      sm.textContent = 'Couldn’t build the PDF. Try again.';
-    } else note('Couldn’t build the PDF.');
+      sm.innerHTML = 'Couldn’t build the PDF. Try again.' + errBtns();
+    } else note(errNote('Couldn’t build the PDF.', 'Making the PDF', e));
   }
   if (_b) {
     _b.innerHTML = _o;
@@ -2700,6 +3361,14 @@ function doneInView() {
   // (the open row's second check would scroll back to it: 83-along.js)
   _revStop();
   sayLive(finishSay());
+  dn.classList.remove('flash');
+  void dn.offsetWidth;
+  dn.classList.add('flash');
+  doneScroll(dn, !reduce);
+}
+// the Page finished panel brought into view, its top just under the pinned picture and its tool row (smooth: scrolled
+// smoothly); where it shows whole already, left. Whether it scrolled.
+function doneScroll(dn, smooth) {
   const r = dn.getBoundingClientRect(),
     bar = barEl(),
     top =
@@ -2707,16 +3376,34 @@ function doneInView() {
       (geo.side ? 0 : parseFloat(document.documentElement.style.getPropertyValue('--pinH')) || 0) +
       6,
     bot = (bar ? bar.getBoundingClientRect().top : window.innerHeight) - 6;
-  dn.classList.remove('flash');
-  void dn.offsetWidth;
-  dn.classList.add('flash');
-  if (r.top >= top && r.bottom <= bot) return;
+  if (r.top >= top && r.bottom <= bot) return false;
+  // (taller than the room: its top, just under the picture; otherwise only as far as shows it whole)
   const y = Math.max(0, Math.round(window.scrollY + r.top - top));
   try {
-    window.scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' });
+    window.scrollTo({ top: y, behavior: smooth ? 'smooth' : 'auto' });
   } catch (_) {
     window.scrollTo(0, y);
   }
+  return true;
+}
+// (v308) leaving Focus mode on a finished page: the Page finished panel, with its "Did any run low?" question, just
+// under the pinned picture's tool row (it was left under the picture, its chips showing with no question above
+// them). Again a moment later: the pinned picture's size follows the scroll.
+function doneAfterFocus() {
+  if (!pageDone()) return;
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      const dn = document.getElementById('sfDone');
+      if (!dn || dn.offsetParent === null || focus) return;
+      if (!doneScroll(dn, false)) return;
+      picScroll();
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          if (!focus && dn.offsetParent !== null) doneScroll(dn, false);
+        });
+      });
+    });
+  });
 }
 function confettiBurst() {
   const dpr = Math.min(2, window.devicePixelRatio || 1),
@@ -2816,7 +3503,7 @@ function exportImage() {
     } catch (e) {
       freeCanvas(xc);
       done();
-      note('Couldn’t export the image.');
+      note(errNote('Couldn’t export the image.', 'Saving the image', e));
       return;
     }
     // (v305) without the codes it's the picture to show, not a guide: framed as Reveal's card is (89-show.js), twice
@@ -2831,7 +3518,7 @@ function exportImage() {
         xc = card;
         if (!xc) {
           done();
-          note('Couldn’t export the image.');
+          note(errNote('Couldn’t export the image.', 'Saving the image', 'its card couldn’t be drawn'));
           return;
         }
       }
@@ -2842,7 +3529,7 @@ function exportImage() {
     pngBlob(xc).then(function (blob) {
       done();
       if (!blob) {
-        note('Couldn’t export the image.');
+        note(errNote('Couldn’t export the image.', 'Saving the image', 'it couldn’t be encoded'));
         return;
       }
       shareOrSave(
@@ -2897,7 +3584,10 @@ function testStripPages(dry, lazy) {
     withShade = !!sh,
     withBlend = !withShade && !!pdfBlend,
     ramp = withShade || withBlend,
-    rows = pdfKeyRows(),
+    // (v308: numbered as the key's numbers are, in colouring order, lightest first)
+    rows = pdfKeyRows().sort(function (a, b) {
+      return a.ord - b.ord;
+    }),
     nm = curName || 'Colouring guide';
   pdfS = paper === 'a5' || paper === 'half' ? 0.84 : 1;
   const zOrd = zoneIds(),
@@ -2906,8 +3596,8 @@ function testStripPages(dry, lazy) {
       return 99;
     },
     rec = [];
-  rows.forEach(function (r, i) {
-    const no = String(i + 1);
+  rows.forEach(function (r) {
+    const no = String(r.ord);
     if (withShade) {
       const tr = toneRows(r.secs).sort(function (a, b) {
         return zFirst(a) - zFirst(b);

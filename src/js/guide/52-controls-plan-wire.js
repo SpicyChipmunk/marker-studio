@@ -109,6 +109,9 @@ function ctlWirePatternFamily() {
       guideDirty = true;
       positionPhoto();
       photoRecolour();
+      // (v308: the chip chosen shows as on)
+      renderControls();
+      ctlRefocus('#sfPhFit [data-v="' + b.dataset.v + '"]');
     });
   var _phr = document.getElementById('sfPhRough');
   if (_phr)
@@ -174,7 +177,8 @@ function ctlWireColours() {
           var pl = api.listPalettes ? api.listPalettes() : [];
           if (pl.length) savedPalId = pl[0].id;
         }
-        if (paletteSource === 'generate' && !genPal.length) generatePalette();
+        // (v308: Generate palette makes one, also in place of a palette handed over from Palette)
+        if (paletteSource === 'generate' && (!genPal.length || fromPal)) generatePalette();
         if (reassign() === false) {
           paletteSource = wasSrc;
           renderControls();
@@ -195,35 +199,32 @@ function ctlWireColours() {
       reassign();
     });
   }
-  // Mood: a generated palette is made again to suit it
+  // Mood: a generated palette is made again to suit it (not one handed over from Palette, whose Mood is greyed out)
   var _mood = document.getElementById('sfMood');
   if (_mood)
     _mood.addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (b && !b.disabled && b.dataset.v !== emphasis) {
         emphasis = b.dataset.v;
-        if (paletteSource === 'generate') generatePalette();
+        if (genMade()) generatePalette();
         reassign();
       }
     });
-  var _mkc = document.getElementById('sfMkCount');
-  if (_mkc)
-    _mkc.addEventListener('input', function (e) {
-      limitN = +e.target.value;
-      var lb = document.getElementById('sfMkNlbl');
-      if (lb) {
-        var psz2 = sliderMax();
-        lb.textContent = mkCountLabel(psz2);
-      }
-      clearTimeout(reTimer);
-      reTimer = setTimeout(reassign, 90);
-    });
-  if (_mkc)
-    _mkc.addEventListener('change', function () {
-      planDrag = false;
-      clearTimeout(reTimer);
+  // (v308) Include: a chip turns its group on or off (one Undo step)
+  var _incl = document.getElementById('sfIncl');
+  if (_incl)
+    _incl.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b || b.disabled) return;
+      var k = b.dataset.v,
+        o = inclCopy(gradIncl || {});
+      o[k] = !inclOn(gradIncl, emphasis)[k];
+      gradIncl = o;
+      planWhy = INCL_LABEL[k] + (o[k] ? ' on' : ' off');
       reassign();
+      ctlRefocus('#sfIncl [data-v="' + k + '"]');
     });
+  mkCountWire();
   var _exp = document.getElementById('sfExpand');
   if (_exp)
     _exp.addEventListener('change', function (e) {
@@ -263,6 +264,13 @@ function ctlWirePatternOptions() {
         gradShape = b.dataset.v;
         reassign();
       }
+    });
+  var _ua = document.getElementById('sfUseAround');
+  if (_ua)
+    _ua.addEventListener('click', function () {
+      gradShape = 'around';
+      reassign();
+      ctlRefocus('#sfShape [data-v="around"]');
     });
   var _rr = document.getElementById('sfRadReset');
   if (_rr)
@@ -331,10 +339,7 @@ function ctlWirePatternOptions() {
       var nm = document.getElementById('sfGradScatName'),
         nt = document.getElementById('sfGradScatNote');
       if (nm) nm.textContent = GRAD_SCAT_LABEL[v];
-      if (nt) {
-        nt.textContent = GRAD_SCAT_DESC[v];
-        nt.hidden = !v;
-      }
+      if (nt) nt.textContent = GRAD_SCAT_DESC[v];
       e.target.setAttribute('aria-valuetext', GRAD_SCAT_LABEL[v]);
     });
     _gsc.addEventListener('change', function (e) {
@@ -351,7 +356,8 @@ function ctlWirePatternOptions() {
       reassign();
       return;
     }
-    if (paletteSource === 'generate') generatePalette(true);
+    // (v308: not a palette handed over from Palette: its order or start changes, as a saved one's does)
+    if (genMade()) generatePalette(true);
     if (family === 'gradient') gradSeed = (((gradSeed || 0) % 1) + 1.1 + Math.random() * 0.8) % 1;
     reassign();
   }
@@ -609,5 +615,149 @@ function ctlWireTexture() {
           texRaf = 0;
           renderGuide();
         });
+    });
+}
+
+/* (v308) The marker count: the slider (its label follows the drag, the guide is laid a moment later), − and + (a step
+   each; held down they keep going, 4 a second at first, then faster, and the guide is laid when let go), and the count,
+   which a tap turns into a box to type a number in (the number pad on an iPad): Enter or leaving it sets it, Escape
+   puts it back. A count at or over the slider's end is "all" (MK_ALL). */
+function mkCountSet(n) {
+  const cap = mkCap();
+  limitN = n >= cap ? MK_ALL : Math.max(2, Math.round(n));
+}
+// the label, the slider and the buttons as the count now is, without laying the guide
+function mkCountShow() {
+  const cap = mkCap(),
+    v = Math.max(2, Math.min(limitN, cap)),
+    lb = document.getElementById('sfMkNlbl'),
+    sl = document.getElementById('sfMkCount'),
+    mi = document.getElementById('sfMkMinus'),
+    pl = document.getElementById('sfMkPlus'),
+    nb = document.getElementById('sfMkNum');
+  if (lb) lb.textContent = mkCountLabel();
+  if (sl) {
+    sl.value = v;
+    sl.setAttribute('aria-valuetext', mkCountSay());
+  }
+  if (nb) nb.setAttribute('aria-label', mkCountSay() + ', type a number');
+  if (mi) mi.disabled = v <= 2;
+  if (pl) pl.disabled = limitN >= cap;
+}
+let _mkHold = null;
+function mkHoldStop(lay) {
+  if (!_mkHold) return;
+  clearTimeout(_mkHold.t);
+  const moved = _mkHold.moved,
+    id = _mkHold.id;
+  _mkHold = null;
+  if (lay && moved) {
+    clearTimeout(reTimer);
+    reassign();
+    ctlRefocus('#' + id);
+  }
+}
+function mkCountWire() {
+  const sl = document.getElementById('sfMkCount');
+  if (sl) {
+    sl.addEventListener('input', function (e) {
+      mkCountSet(+e.target.value);
+      mkCountShow();
+      clearTimeout(reTimer);
+      reTimer = setTimeout(reassign, 90);
+    });
+    sl.addEventListener('change', function () {
+      planDrag = false;
+      clearTimeout(reTimer);
+      reassign();
+    });
+  }
+  ['sfMkMinus', 'sfMkPlus'].forEach(function (id) {
+    const b = document.getElementById(id);
+    if (!b) return;
+    const d = id === 'sfMkPlus' ? 1 : -1,
+      step = function () {
+        const cap = mkCap(),
+          v = Math.min(limitN, cap);
+        if ((d < 0 && v <= 2) || (d > 0 && limitN >= cap)) return false;
+        mkCountSet(v + d);
+        mkCountShow();
+        return true;
+      };
+    // (a press: one step now, more while it's held; the guide is laid once, when it's let go)
+    b.addEventListener('pointerdown', function (e) {
+      if (e.button > 0 || b.disabled) return;
+      mkHoldStop(false);
+      _mkHold = { id: id, moved: step(), t: 0, n: 0 };
+      const again = function () {
+        if (!_mkHold) return;
+        if (step()) _mkHold.moved = true;
+        else return;
+        _mkHold.n++;
+        _mkHold.t = setTimeout(again, _mkHold.n < 6 ? 250 : 70);
+      };
+      _mkHold.t = setTimeout(again, 450);
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
+      b.addEventListener(ev, function () {
+        if (_mkHold) b._mkUp = Date.now();
+        mkHoldStop(true);
+      });
+    });
+    // (the keyboard's Enter or Space, or a screen reader's activation: a click with no press before it)
+    b.addEventListener('click', function () {
+      if (b._mkUp && Date.now() - b._mkUp < 800) return;
+      if (step()) {
+        clearTimeout(reTimer);
+        reassign();
+        ctlRefocus('#' + id);
+      }
+    });
+    b.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+    });
+  });
+  const nb = document.getElementById('sfMkNum');
+  if (nb)
+    nb.addEventListener('click', function () {
+      const cap = mkCap(),
+        inp = document.createElement('input');
+      inp.type = 'number';
+      inp.id = 'sfMkType';
+      inp.className = 'sfmktype';
+      inp.min = 2;
+      inp.max = cap;
+      inp.step = 1;
+      inp.setAttribute('inputmode', 'numeric');
+      inp.setAttribute('enterkeyhint', 'done');
+      inp.setAttribute('aria-label', 'Markers: 2 to ' + cap + ' (' + cap + ' is all)');
+      inp.value = Math.min(limitN, cap);
+      let done = false;
+      const fin = function (ok) {
+        if (done) return;
+        done = true;
+        const n = parseInt(inp.value, 10);
+        if (ok && isFinite(n) && n !== Math.min(limitN, cap)) {
+          mkCountSet(n);
+          reassign();
+        } else renderControls();
+        ctlRefocus('#sfMkNum');
+      };
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          fin(true);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          fin(false);
+        }
+      });
+      inp.addEventListener('blur', function () {
+        fin(true);
+      });
+      nb.replaceWith(inp);
+      inp.focus();
+      inp.select();
     });
 }

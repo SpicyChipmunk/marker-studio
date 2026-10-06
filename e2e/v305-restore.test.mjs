@@ -39,7 +39,8 @@ test('restore › Keep mine merges the backup’s To buy, ink and Brands I’d b
   assert.deepEqual(s.wish, ['Copic|B000', 'Ohuhu|G43', 'Ohuhu|Y111'], 'once each; R014 is yours (no ink mark) so it stays off; Y111 is now marked low');
   assert.deepEqual(s.ink, { 'Ohuhu|B08': 'dry', 'Ohuhu|Y111': 'low' }, 'yours wins; none for E09 (not yours)');
   assert.deepEqual(s.buy, ['Ohuhu'], 'Brands I’d buy from the backup: yours was automatic');
-  assert.equal(await toastText(page), 'Kept your markers; added 2 to buy and 1 Running low note. Brands I’d buy set from the backup.');
+  // (v308: with Undo, as Keep mine changed your To buy, ink and Brands I'd buy)
+  assert.equal(await toastText(page), 'Kept your markers; added 2 to buy and 1 Running low note. Brands I’d buy set from the backup. Undo marker change');
   await page.reload(); await idle(page);
   assert.deepEqual(await page.evaluate(() => ({ wish: state.wish.map((w) => w.k), ink: state.ink, buy: state.buyBrands })), { wish: s.wish, ink: s.ink, buy: s.buy }, 'saved');
   // the To buy view shows them
@@ -55,7 +56,8 @@ test('restore › Keep mine with guides: the Back up & restore dialog and Welcom
   await openBackupDialog(page);
   await page.setInputFiles('#backupFile', file(BACKUP({ guides: [guide(21, 'Owl')] }))); await idle(page);
   await page.waitForFunction(() => /guide/.test(document.getElementById('backupCap').textContent), null, { timeout: 10000 });
-  assert.equal(await page.textContent('#backupCap'), 'Added 3 to buy and 2 Running low notes; 1 guide restored.');
+  // (v308 merge: and that your markers are as they were)
+  assert.equal(await page.textContent('#backupCap'), 'Added 3 to buy and 2 Running low notes; 1 guide restored. Your markers are as they were.');
   assert.deepEqual(await page.evaluate(() => state.buyBrands), ['Copic'], 'yours chosen: kept');
   // Welcome and Home's note (restoreAny's callback): a backup with only To buy entries isn't called empty
   const r = await page.evaluate(

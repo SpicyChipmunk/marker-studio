@@ -138,8 +138,9 @@ function shadeLabel(sa, sb) {
   if (sa.round !== sb.round) return 'Roundness changed';
   if (sa.shadow !== sb.shadow) return 'Shadows: ' + (SHADE_SHADOW_LABEL[sb.shadow] || sb.shadow);
   if (sa.hilite !== sb.hilite) return 'Highlights: ' + (SHADE_HILITE_LABEL[sb.hilite] || sb.hilite);
-  if (sa.hi !== sb.hi) return 'Highlight changed';
-  if (sa.lo !== sb.lo) return 'Shadow changed';
+  // (v308: as the controls are named: each kind's Amount slider)
+  if (sa.hi !== sb.hi) return 'Highlight amount: ' + Math.round(sb.hi * 100) + '%';
+  if (sa.lo !== sb.lo) return 'Shadow amount: ' + Math.round(sb.lo * 100) + '%';
   return '';
 }
 function planLabel1(p, q) {
@@ -158,6 +159,10 @@ function planLabel1(p, q) {
   // (the same photo with its lighting correction switched on or off is a new photo object: see 46-photo)
   const sameRaw = !!(p.ref && q.ref && p.ref.raw && p.ref.raw === q.ref.raw);
   if (p.ref !== q.ref && !sameRaw) return q.ref ? 'New photo' : 'Photo removed';
+  // (v308) a palette handed over from Palette, by its name
+  const fpa = JSON.stringify(a.fromPal || null),
+    fpb = JSON.stringify(b.fromPal || null);
+  if (fpa !== fpb && b.fromPal) return 'Palette: ' + b.fromPal.name;
   if (a.paletteSource !== b.paletteSource)
     return (
       'Colours from: ' +
@@ -166,8 +171,19 @@ function planLabel1(p, q) {
     );
   if (a.savedPalId !== b.savedPalId) return 'Saved palette changed';
   if (a.genHarmony !== b.genHarmony) return 'Palette: ' + (HARM[b.genHarmony] || b.genHarmony);
+  if (fpa !== fpb) return 'New palette';
   if (p.filt !== q.filt) return 'Filters changed';
-  if (a.limitN !== b.limitN) return 'Markers: ' + b.limitN;
+  if (a.limitN !== b.limitN) return 'Markers: ' + (b.limitN >= MK_ALL ? 'all' : b.limitN);
+  // (v308) the Include row: which group went on or off (as the Mood has them where not tapped)
+  if (JSON.stringify(a.incl) !== JSON.stringify(b.incl)) {
+    const ia = inclOn(a.incl, a.emphasis),
+      ib = inclOn(b.incl, b.emphasis);
+    for (let i = 0; i < INCL_KEYS.length; i++) {
+      const k = INCL_KEYS[i];
+      if (ia[k] !== ib[k]) return INCL_LABEL[k] + ' ' + onoff(ib[k]);
+    }
+    return 'Include changed';
+  }
   if (a.palette !== b.palette)
     return 'Temperature: ' + ({ cool: 'Cool', warm: 'Warm', all: 'Any' }[b.palette] || b.palette);
   if (a.emphasis !== b.emphasis) return 'Mood: ' + (MOODS[b.emphasis] ? MOODS[b.emphasis].label : b.emphasis);
@@ -212,7 +228,7 @@ function planLabel1(p, q) {
   if (sa.x !== sb.x || sa.y !== sb.y) return 'Light moved';
   const _sl = shadeLabel(sa, sb);
   if (_sl) return _sl;
-  if (sa.lines !== sb.lines) return 'Tone guides ' + onoff(sb.lines);
+  if (sa.lines !== sb.lines) return 'Tone lines ' + onoff(sb.lines);
   if (sa.flat.join() !== sb.flat.join())
     return sb.flat.length > sa.flat.length ? 'Section left flat' : 'Section shaded again';
   if (a.texAmt !== b.texAmt) return 'Texture: ' + Math.round(b.texAmt * 100) + '%';
@@ -307,7 +323,7 @@ function planCommit(why, quiet, more) {
   }
   const ub = document.getElementById('sfPlanUndo');
   if (/^Surprise\b/.test(prev.label) || !ub || ub.style.display === 'none' || !ub.getClientRects().length) {
-    toastAction(esc(prev.label), 'Undo', planUndo);
+    toastAction(prev.label, 'Undo', planUndo);
     return;
   }
   // (a change that has just said what it did in its own words, like a picker's Done, keeps them: said in this same
@@ -907,7 +923,7 @@ function planUndo() {
   planFwd.push({ fwd: fwd, back: e });
   planBtn();
   sayLive('Undone: ' + e.label);
-  toast('Undone: ' + esc(e.label), 1800);
+  toast('Undone: ' + e.label, 1800);
 }
 // Redo: the step the last Undo took back, as it left the plan; the part-done tones and ticks that step had cleared
 // (which its Undo put back) are cleared again, unless the section has been ticked since
@@ -939,7 +955,7 @@ function planRedo() {
   if (e.ticks) updateProgress();
   planBtn();
   sayLive('Redone: ' + e.label);
-  toast('Redone: ' + esc(e.label), 1800);
+  toast('Redone: ' + e.label, 1800);
 }
 // Colour it's step (the paper inside a frame brought into the guide, 53-controls-stages, v306), undone or redone: the
 // paper's section state as it was before (or brought back, 1), in the sections and in the guide as built, so Edit

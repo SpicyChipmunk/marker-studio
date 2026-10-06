@@ -129,7 +129,7 @@ test('under the test seam How it works stays out of the way unless a test asks f
   assert.deepEqual(errors, []);
 });
 
-test('the help sheet: from the guide and Home, glossary, your data, About with the version, no feedback link while FEEDBACK_URL is empty', async () => {
+test('the help sheet: from the guide and Home, glossary, your data, About with the version, Send feedback and Copy diagnostics', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await menuItem(page, 'Help'); await idle(page);
@@ -140,7 +140,8 @@ test('the help sheet: from the guide and Home, glossary, your data, About with t
   // glossary
   await page.click('#helpGloss > summary'); await idle(page);
   const terms = await page.evaluate(() => [...document.querySelectorAll('#helpGloss dt')].map((d) => d.textContent));
-  assert.deepEqual(terms, ['Section', 'Background / left out', 'Colour pattern', 'Zone', 'Pin', 'Kept', 'Blend companions', 'Shading', 'Highlight / Base / Shadow (H/B/S)', 'Greyscale', 'Focus mode', 'Reveal']);
+  // (v308: Flow, Look, Scatter, Rough spots, Mood, Include, Surprise and Colour along added)
+  assert.deepEqual(terms, ['Section', 'Background / left out', 'Colour pattern', 'Flow', 'Look', 'Scatter', 'Rough spots', 'Mood', 'Include', 'Surprise', 'Zone', 'Pin', 'Kept', 'Blend companions', 'Shading', 'Highlight / Base / Shadow (H/B/S)', 'Greyscale', 'Colour along', 'Focus mode', 'Reveal']);
   const pattern = await page.textContent('#helpGloss dd:nth-of-type(3)');
   for (const p of ['Gradient', 'Random', 'Blend', 'Photo', 'Manual']) assert.ok(pattern.includes(p), p);
   assert.ok(await page.isVisible('#helpGloss dt >> text=Focus mode'));
@@ -158,11 +159,12 @@ test('the help sheet: from the guide and Home, glossary, your data, About with t
   assert.equal(ver, sw.match(/marker-studio-(v\d+(?:\.\d+)?)/)[1]);
   const about = await page.textContent('#helpAbout');
   assert.ok(about.includes('Nothing you add leaves this device. There are no accounts, ads or analytics.'));
-  assert.ok(about.includes('Ohuhu and Copic are trademarks of their owners; colours on screen are approximate — compare with your own swatches'));
+  // (v308: not affiliated, said in full)
+  assert.ok(about.includes('Ohuhu and Copic are trademarks of their owners. Marker Studio isn’t affiliated with or endorsed by Ohuhu or Copic. Colours on screen are approximate — compare with your own swatches'));
   assert.match(about, /Fraunces[\s\S]*Hanken Grotesk[\s\S]*SIL Open Font License/);
-  assert.equal(await page.evaluate(() => FEEDBACK_URL), '');
-  assert.equal(await page.isVisible('#helpFeedback'), false, 'no feedback link');
-  assert.equal(await page.evaluate(() => document.getElementById('helpFeedback').hidden), true);
+  // (v308: Send feedback and Copy diagnostics, always there)
+  assert.equal(await page.evaluate(() => FEEDBACK_EMAIL), '');
+  assert.ok(await page.isVisible('#helpFeedback') && await page.isVisible('#helpDiag'));
   await shot(page, 'help-about');
   await page.click('#helpClose'); await idle(page);
   assert.equal(await on(page, 'helpOverlay'), false, '✕ closes');
@@ -217,8 +219,9 @@ test('What’s new: shown after an update, not on a fresh install, and stays dis
     const n = await page.evaluate(() => document.querySelectorAll('#whatsNew li').length);
     assert.ok(n >= 1 && n <= 4, `${n} bullets`);
     // (the newest first, the first four of the list: v307.1 checks them against the list itself, where it named
-    // v304's and v303's lines, which each new release's line pushes out of the four)
-    const want = await page.evaluate(() => WHATS_NEW.slice(0, 4));
+    // v304's and v303's lines, which each new release's line pushes out of the four; v308: each with its version, the
+    // list's own text)
+    const want = await page.evaluate(() => WHATS_NEW.slice(0, 4).map((x) => x.t));
     assert.ok(want.length >= 1);
     assert.deepEqual(await page.$$eval('#whatsNew li', (ls) => ls.map((l) => l.textContent)), want);
     assert.equal(await page.getAttribute('#wnClose', 'aria-label'), 'Dismiss what’s new');
@@ -298,9 +301,10 @@ test('What’s new: counts as shown only once on screen, goes by itself after 7 
   await page.click('#wnClose');
   await page.click('#homeHelp'); await page.waitForSelector('#helpOverlay.on');
   await page.click('#helpAbout > summary'); await page.waitForSelector('#helpAbout .hlpwnt', { state: 'visible' });
+  // (v308: this version's items only, each tagged with its version)
   assert.equal((await page.textContent('#helpAbout .hlpwnt')).trim(), `What’s new in ${ver}`);
   const items = await page.$$eval('#helpWnList li', (l) => l.map((x) => x.textContent));
-  assert.deepEqual(items, await page.evaluate(() => WHATS_NEW.slice(0, 4)));
+  assert.deepEqual(items, await page.evaluate((v) => WHATS_NEW.filter((x) => x.v === v).map((x) => x.t), ver));
   assert.ok(items.length >= 1);
   assert.ok(await page.isVisible('#helpWnList'));
   assert.deepEqual(errors, []);
@@ -315,7 +319,8 @@ test('Help › Keyboard and screen readers: what needs touch or a mouse, what wo
   const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState() }) });
   await page.click('#homeHelp'); await page.waitForSelector('#helpOverlay.on');
   const secs = await page.$$eval('#helpOverlay .hlpsec > summary', (l) => l.map((s) => s.textContent));
-  assert.deepEqual(secs, ['Photographing a page', 'Glossary', 'Keyboard and screen readers', 'Your data', 'About']);
+  // (v308: the beta tester guide first)
+  assert.deepEqual(secs, ['Beta tester guide', 'Photographing a page', 'Glossary', 'Keyboard and screen readers', 'Your data', 'About']);
   await page.click('#helpKeys > summary'); await page.waitForSelector('#helpKeys .hlpbody', { state: 'visible' });
   const t = await page.textContent('#helpKeys .hlpbody');
   assert.match(t, /needs touch or a mouse: Change colour, Pin, Paint and ticking off one section/);

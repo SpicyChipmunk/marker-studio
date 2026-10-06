@@ -163,10 +163,12 @@ function scanRead(text, brand) {
   // in the list — and the same code is one entry only when it's the same marker: B04 Copic on one line and B04 Ohuhu
   // on another are two)
   if (lines.length > 1) {
-    const out = { codes: [], byName: -1, flips: [], other: [], names: [], names2: [], many: true },
+    const out = { codes: [], byName: -1, flips: [], other: [], names: [], names2: [], many: true, unread: 0 },
       seen = {};
     lines.forEach(function (l) {
       const r = scanRead(l, brand);
+      // (v308: a line with nothing in it to read, said, not dropped without a word)
+      if (!r.codes.length && !r.flips.length && r.byName < 0 && !r.byNames && !r.other.length) out.unread++;
       r.codes.forEach(function (c) {
         const k = c.code + '|' + c.opts.join(',');
         if (!seen[k]) out.codes.push(c);
@@ -600,6 +602,8 @@ function scanSaveList() {
 })();
 // (v303) no sound while the dialog closes (text left in the box read on the way out)
 let scanMute = false;
+// (v308) lines of pasted lists with nothing to read in them since the last Add or Clear, said by Add's toast
+let scanUnread = 0;
 function scanBeep(kind) {
   if (scanMute) return;
   try {
@@ -833,7 +837,8 @@ function scanHandle(text, loud) {
     else if (c.asked === 'old')
       ask(
         'old ' + c.code,
-        c.code + ': this one, or the old ' + c.code + '?',
+        // (v308: it offered three markers across two brands as "this one, or the old R14?")
+        'Which ' + c.code + '?',
         c.opts.map((i) => ({ i: i, how: codeOf(i) === c.code ? 'chosen' : 'old' })),
       );
     else
@@ -882,6 +887,7 @@ function scanHandle(text, loud) {
       now = Date.now(),
       again = !loud && !took && !asked && scanLastMany.key === key && now - scanLastMany.at < 6000;
     scanLastMany = { key: key, at: now };
+    if (r.unread && !again) scanUnread += r.unread;
     // (two caps held in view come again and again: said once)
     if (!again && n) {
       // (v303: what's added that's already yours is said so, with the quieter sound, as one read alone is)
@@ -897,6 +903,7 @@ function scanHandle(text, loud) {
           allMine ? (took === 1 ? 'Already in your collection' : 'All already in your collection') : '',
           took && asked ? asked + ' to choose below' : '',
           same ? same + ' already in the list' : '',
+          r.unread ? r.unread + (r.unread === 1 ? ' line' : ' lines') + ' not read' : '',
         ]
           .filter(Boolean)
           .join(' · ') || 'Check them below',
@@ -1169,7 +1176,20 @@ function scanAdd() {
   if (typeof presetRelist === 'function') presetRelist();
   closeScan();
   if (offList) wishChanged();
-  toastAction(addedManyLine(keys.length, offList), 'Undo', function () {
+  // (v308) the questions still to answer, and lines not read, are said, with Open to go back to them
+  const left = scanAsks(),
+    unread = scanUnread;
+  scanUnread = 0;
+  const said =
+    addedManyLine(keys.length, offList) +
+    (left ? ' \u00b7 ' + left + ' still to choose' : '') +
+    (unread ? ' \u00b7 ' + unread + (unread === 1 ? ' line' : ' lines') + ' not read' : '');
+  toastActions(
+    said,
+    [{ label: 'Undo', fn: scanUndoAdd }].concat(left ? [{ label: 'Open', fn: openScan }] : []),
+    left || unread ? 10000 : 8000,
+  );
+  function scanUndoAdd() {
     const wishNow = state.wish.slice();
     // (v303: the markers it added back on the list, once each; its questions are as they are now)
     scanList = scanList.concat(listWas.filter((e) => !e.ask && !scanList.some((x) => x.i === e.i)));
@@ -1195,7 +1215,7 @@ function scanAdd() {
       if (typeof presetRelist === 'function') presetRelist();
       wishChanged();
     }
-  });
+  }
 }
 (function () {
   const ov = $('scanOverlay'),
@@ -1222,6 +1242,7 @@ function scanAdd() {
     cb.dataset.arm = '';
     cb.textContent = 'Clear list';
     scanList = [];
+    scanUnread = 0;
     scanLast = { i: -1, at: 0 };
     // (v303: a cleared list asks afresh)
     scanTookAt.clear();

@@ -40,13 +40,16 @@ async function fresh(page, step) {
   await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 60000 });
   await idle(page);
 }
-// Ben's own 451 markers, the marker count at all of them (before Build: the guide is laid with them)
+// Ben's own 451 markers, the marker count at all of them (before Build: the guide is laid with them). (v308: as a
+// guide from before v308 is laid, all 451 in play: a new guide's "all" is his 130 vivid markers, in bands on a page
+// of more than twice as many sections, which test/v308-colour.test.mjs covers)
 const bensOwned = (page) =>
   page.evaluate(() => {
     state.owned = new Set(defaultOwned());
     save();
     __mstest.coll = sfCollection();
     __mstest.styleVars.limitN = 999;
+    __mstest.styleVars.gradIncl = null;
   });
 async function built(page, step) {
   await sampleGuide(page);
@@ -93,7 +96,8 @@ test('a big page at “all · 268, some twice”: no touching sections share a m
   await built(page, 40);
   const N = await page.evaluate(() => __mstest.assignData.N);
   assert.ok(N > 500, N + ' sections');
-  assert.equal(await page.textContent('#sfMkNlbl'), 'all · 268, some twice');
+  // (v308: the count no longer says ", some twice")
+  assert.equal(await page.textContent('#sfMkNlbl'), 'all · 268');
   assert.deepEqual(await sharing(page), [], 'no touching sections share a marker');
   for (const shape of ['radial', 'around']) {
     await tab(page, 'pattern');
@@ -336,12 +340,14 @@ test('polish: Scatter’s name over its slider as Look’s is; Undo’s room kep
   ]) {
     const { page, errors, ctx } = await openApp({ width: w, height: h });
     await sampleGuide(page);
+    // (v308: rough spots need markers to spare: as a guide from before v308, all 451 in play)
     await page.evaluate(() => {
       const t = __mstest;
       state.owned = new Set(defaultOwned());
       save();
       t.coll = sfCollection();
       t.styleVars.limitN = 999;
+      t.styleVars.gradIncl = null;
       t.reassign();
     });
     await idle(page);

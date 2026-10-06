@@ -246,7 +246,22 @@ test('v285 iPad landscape: the picture and its tools fully on screen as the guid
       heights.push(await page.evaluate(() => document.documentElement.scrollHeight));
     }
     assert.ok(heights.every((x) => x === heights[0]), 'the same page height on every tab: ' + heights);
-    assert.ok(heights[0] - h <= 40, `${w}×${h}: no long scroll into empty space (${heights[0] - h}px)`);
+    // (v308: the Colours tab grew about 120px — the marker count's −/+ row and the Include row with its status line,
+    // as Ben chose — so on the 11" the page now scrolls about 110px to reach Colour along. That scroll must be the
+    // tallest tab's own content: the Colours panel filled to its end, and the page ending at the card's last button,
+    // not empty space under it. It had been "within 40px of the screen", from before Colours was taller than it.)
+    await page.evaluate(() => document.querySelector('.sftabbtn[data-t="colours"]').click()); await idle(page);
+    await page.evaluate(() => scrollTo(0, 5000)); await idle(page);
+    const fill = await page.evaluate(() => {
+      const p = document.getElementById('sfPanel-colours'), pb = p.getBoundingClientRect().bottom;
+      const last = [...p.querySelectorAll('*')].filter((x) => x.getClientRects().length).reduce((m, x) => Math.max(m, x.getBoundingClientRect().bottom), 0);
+      // (Colour along's bar stays at the foot of the screen: scrolled to the end, the tab's last line sits just above it)
+      return { slack: pb - last, end: document.getElementById('sfColor').getBoundingClientRect().top - last };
+    });
+    await page.evaluate(() => scrollTo(0, 0)); await idle(page);
+    assert.ok(heights[0] - h <= 40 || fill.slack <= 12, `${w}×${h}: the scroll is the Colours tab's content, not empty space (${heights[0] - h}px, ${Math.round(fill.slack)}px unused)`);
+    assert.ok(heights[0] - h <= 40 || (fill.end >= 0 && fill.end <= 60), `${w}×${h}: scrolled to the end, the Colours tab's last line just above the bar (${Math.round(fill.end)}px)`);
+    assert.ok(heights[0] - h <= 160, `${w}×${h}: no long scroll (${heights[0] - h}px)`);
     assert.deepEqual(errors, []);
     await ctx.close();
   }

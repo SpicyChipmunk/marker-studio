@@ -36,7 +36,21 @@ let srcUp = false; // a picture of the person's own, enlarged to UPSIDE if small
 // over, not specks too small to colour. Saved with the guide (upk). written by: 20-image-input, 65-edit, 97-open
 let srcK = 1;
 let enhance = true; // written by: 20-image-input, 50-controls, 99-close (test)
-let adaptC = 9; // written by: 20-image-input, 50-controls
+let adaptC = 9; // written by: 20-image-input, 22-straighten, 50-controls
+// (v308) a straightened photo's Sensitivity: 7 (adaptC 6), where a picture as it came is 5 (9)
+const SENS_PHOTO = 6;
+// (v308) Sensitivity moved by hand for this picture: a straightened photo's own default (Sensitivity 7) no longer
+// applies. written by: 20-image-input, 22-straighten, 53-controls-stages
+let sensUser = false;
+// (v308) faint grey marks (a watermark, light swirls): faintCut, the grey above which ink is ignored when they're ignored
+// (0: they aren't); faintOffer, the grey Ignore faint grey marks would use on this picture (0: not offered, the ink
+// doesn't split clearly into dark lines and faint marks). written by: 10-segment, 20-image-input, 53-controls-stages,
+// 65-edit
+let faintCut = 0;
+let faintOffer = 0;
+// (v308) how much of the picture is coloured once the paper's tint is taken out (0-1), measured from the picture as
+// it's read; null for a guide opened again without its picture. written by: 20-image-input, 65-edit
+let srcColour = null;
 let reTimer = null; // written by: 20-image-input, 50-controls
 let guideSig = null; // written by: 20-image-input, 30-palette-assign, 65-edit, 97-open
 let hasEdits = false; // written by: 20-image-input, 22-straighten, 65-edit, 80-input
@@ -165,6 +179,14 @@ let look = 'auto'; // written by: 05-style-fields, 30-palette-assign, 50-control
 let emphasis = 'neutral'; // written by: 05-style-fields, 30-palette-assign, 50-controls, 99-close (test)
 // written by: 05-style-fields, 30-palette-assign, 46-photo, 50-controls, 99-close (test)
 let limitN = 16;
+// (v308) the Gradient's Include row: { browns, greys, fluor }, each true or false once tapped, else as the Mood has it
+// (inclOn, 30-palette-assign). null: a guide saved before v308, laid exactly as v307 laid it (everything included,
+// v307's picks), even when laid again. A new picture (the sample too) starts with {} (resetForNewPicture).
+// Written by: 05-style-fields, 20-image-input, 30-palette-assign, 52-controls-plan-wire, 99-close (test)
+let gradIncl = null;
+// (v308) the zones of a guide opened from the Library, Main 0 too, not laid since: { id: 1 } (mkOwnCount)
+// Written by: 20-image-input, 30-palette-assign, 97-open
+let _mkOpened = {};
 let noAdj = false; // written by: 05-style-fields, 50-controls, 99-close (test)
 // Random's Balance (v283, 31-balance): 'main' (one main colour, a second and an accent, about 60/30/10 of the
 // picture) or 'mixed' (every marker alike, as Random always was); balM, balS, balA: each role's colour family
@@ -199,6 +221,9 @@ let paletteSource = 'owned';
 let savedPalId = null;
 let genHarmony = 'analogous'; // written by: 05-style-fields, 30-palette-assign, 50-controls, 99-close (test)
 let genPal = []; // written by: 05-style-fields, 30-palette-assign, 99-close (test)
+// (v308) a palette handed over by Palette's Use in a guide ({ name, h }: its name and scheme), which genPal holds: used
+// as it is, as a saved palette is, until a new one is generated (generatePalette clears it); null otherwise
+let fromPal = null; // written by: 05-style-fields, 30-palette-assign, 99-close (test)
 
 // ---- blend anchors ----
 let anchors = []; // written by: 20-image-input, 30-palette-assign, 50-controls, 87-undo, 97-open
@@ -229,6 +254,8 @@ function exCodesSync() {
 }
 let blendOpen = {}; // written by: 20-image-input, 82-colour-mode, 83-along
 let wakeLock = null; // written by: 82-colour-mode
+// (v308) until when the tool row's status says the screen stays on (wakeSay). written by: 82-colour-mode
+let _wakeUntil = 0;
 let hideLabels = false; // written by: 72-frame
 // Greyscale (Values before v288): the picture shown in greys, to judge its light and dark (a view only: not saved, not
 // in exports)
@@ -261,6 +288,9 @@ let pvCanvas = null; // written by: 40-render
 let revealF = null; // written by: 20-image-input, 86-reveal-share
 let revOrder = null; // written by: 20-image-input, 86-reveal-share
 let revRAF = 0; // written by: 86-reveal-share
+// (v308) Reveal opened from Colour along: { tab } to go back there when it's closed (the Plan's tab it was on), else
+// null. written by: 75-focus, 86-reveal-share
+let _revCol = null;
 let revRec = null; // written by: 86-reveal-share
 let revChunks = []; // written by: 86-reveal-share
 let revBlob = null; // written by: 86-reveal-share

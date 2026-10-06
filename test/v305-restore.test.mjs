@@ -105,7 +105,8 @@ test('Keep mine: the toast, the dialog and Welcome/Home say what came in', () =>
     words({ mk: false, pals: 0, buy: true }),
     'Kept your markers. Brands I’d buy set from the backup.',
   );
-  assert.equal(words({ mk: false, pals: 0, wish: 0 }), '');
+  // (v308: Keep mine is said even when nothing else came in; it gave no toast at all from pasted text)
+  assert.equal(words({ mk: false, pals: 0, wish: 0 }), 'Kept your markers.');
   assert.equal(
     words({ mk: true, pals: 1 }),
     'Restored — 3 markers. 1 palette added.',
@@ -114,10 +115,14 @@ test('Keep mine: the toast, the dialog and Welcome/Home say what came in', () =>
   // the Back up & restore dialog, with guides
   const gw = (col, ok, x) =>
     ev(`guideRestoreWords(${JSON.stringify(col)}, ${ok}, ${JSON.stringify(x || {})})`);
-  assert.equal(gw({ mk: false, pals: 1, wish: 2 }, 2), 'Added 2 to buy and 1 palette; 2 guides restored.');
+  // (v308: with guides restored beside the markers you kept, it says they are as they were)
+  assert.equal(
+    gw({ mk: false, pals: 1, wish: 2 }, 2),
+    'Added 2 to buy and 1 palette; 2 guides restored. Your markers are as they were.',
+  );
   assert.equal(
     gw({ mk: false, pals: 0, wish: 0, buy: true }, 1, { dup: 1 }),
-    '1 guide restored. Brands I’d buy set from the backup. 1 guide was already here.',
+    '1 guide restored. Your markers are as they were. Brands I’d buy set from the backup. 1 guide was already here.',
   );
   assert.equal(
     gw({ mk: true, pals: 1 }, 2),

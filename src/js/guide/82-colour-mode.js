@@ -11,7 +11,9 @@ function reqWake() {
             told = !!localStorage.getItem('ms-wake-told');
             localStorage.setItem('ms-wake-told', '1');
           } catch (_) {}
-          if (!told && sfmode === 'color') toast('Your screen stays on while you colour along.', 3600);
+          // (v308: in the tool row's status for a few seconds, "12 of 216 coloured · screen stays on", not a toast,
+          // which covered the rows)
+          if (!told && sfmode === 'color') wakeSay();
           if (w && w.addEventListener)
             w.addEventListener('release', function () {
               wakeLock = null;
@@ -21,7 +23,27 @@ function reqWake() {
     }
   } catch (_) {}
 }
+function wakeSay() {
+  _wakeUntil = Date.now() + 5000;
+  renderTools();
+  // (v308 debug: side by side, as on an iPad held sideways, and on a phone, the tool row shows only "12 of 216": there
+  // the toast says it, as before v308, or it was never seen, the one time it's said)
+  requestAnimationFrame(function () {
+    const s = document.querySelector('#sfStat .sfsp2');
+    if (sfmode === 'color' && !(s && s.getBoundingClientRect().width > 0)) {
+      _wakeUntil = 0;
+      renderTools();
+      toast(WAKE_SAY, 3600);
+    } else sayLive(WAKE_SAY);
+  });
+  setTimeout(function () {
+    _wakeUntil = 0;
+    renderTools();
+  }, 5000);
+}
+const WAKE_SAY = 'Your screen stays on while you colour along.';
 function relWake() {
+  _wakeUntil = 0;
   if (wakeLock) {
     try {
       wakeLock.release();
@@ -57,7 +79,7 @@ function markActive(done) {
   // (marking all done says so with an Undo too, putting back which were really done: a mis-tap lost that, v299;
   // not when that finished the page: "Page finished!" is said then, with nothing over it)
   if (Object.keys(was).length && !(done && celebrated && !wasC))
-    toastAction(
+    toastActionHTML(
       // (v307: the code with its brand, as a code in both brands needs)
       (done ? 'Marked all ' : 'Cleared ') + mcodeHTML(mk) + (done ? ' coloured' : ''),
       'Undo',
@@ -362,6 +384,7 @@ function exitFocus() {
   renderControls();
   renderGuide();
   backScroll();
+  doneAfterFocus();
   if (_fk)
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {

@@ -302,7 +302,7 @@ test('no bloom with reduced motion, nor in the tests unless asked for, nor for t
   assert.deepEqual(errors, []);
 });
 
-test('a device too slow for the bloom: it ends at once, the guide shows as usual, and it stays off there', async () => {
+test('a device too slow for the bloom: it ends at once, the guide shows as usual, and it stays off there (v308: until the next launch)', async () => {
   // (setting up "took too long": any time at all counts as too long here)
   let { page, errors } = await openApp({
     init: () => {
@@ -320,7 +320,7 @@ test('a device too slow for the bloom: it ends at once, the guide shows as usual
   await idle(page);
   assert.equal(await page.evaluate(() => __mstest.bloomOn), false);
   assert.equal(await page.evaluate(() => document.querySelectorAll('.sfbloom').length), 0, 'no overlay left');
-  assert.equal(await page.evaluate(() => localStorage.getItem('ms-bloom-slow')), '1', 'remembered');
+  assert.equal(await page.evaluate(() => sessionStorage.getItem('ms-bloom-slow')), '1', 'remembered');
   assert.deepEqual(errors, []);
   // slow first frames do the same
   ({ page, errors } = await openApp({
@@ -341,13 +341,13 @@ test('a device too slow for the bloom: it ends at once, the guide shows as usual
     (await page.evaluate(() => __mstest.bloomLast.frames.length)) <= 6,
     'ended after its first frames',
   );
-  assert.equal(await page.evaluate(() => localStorage.getItem('ms-bloom-slow')), '1');
+  assert.equal(await page.evaluate(() => sessionStorage.getItem('ms-bloom-slow')), '1');
   assert.deepEqual(errors, []);
-  // and once remembered, a new picture doesn't bloom
+  // and once remembered, a new picture doesn't bloom (in the same launch)
   ({ page, errors } = await openApp({
     init: () => {
       window.__MS_BLOOM = true;
-      localStorage.setItem('ms-bloom-slow', '1');
+      sessionStorage.setItem('ms-bloom-slow', '1');
     },
   }));
   await welcome(page, 'look');
@@ -468,7 +468,8 @@ test('the saved image’s key goes by colour family, lightest first in each, as 
   assert.deepEqual(errors, []);
 });
 
-test('the PDF key: NO. drawn as the page’s numbers are, ORDER a grey “5th”', async () => {
+// (v308: with Numbers, NO. is the one column, the colouring order: no ORDER "5th" beside it)
+test('the PDF key: NO. drawn as the page’s numbers are, and no ORDER beside it', async () => {
   const { page, errors } = await openApp({ storage: { 'ms-pdf-labels': 'numbers' } });
   await sampleGuide(page);
   await idle(page);
@@ -524,8 +525,7 @@ test('the PDF key: NO. drawn as the page’s numbers are, ORDER a grey “5th”
   for (const k of r.key) assert.deepEqual(k, r.art, 'NO. looks as the page’s numbers do');
   assert.equal(r.stroked, r.key.length, 'with their white edge');
   assert.deepEqual(r.strokes, ['#ffffff']);
-  assert.deepEqual(r.ord, ['#8a8a8a'], 'ORDER grey');
-  assert.equal(r.n, r.key.length);
+  assert.deepEqual(r.ord, [], 'no ORDER column');
   assert.deepEqual(errors, []);
 });
 

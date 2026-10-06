@@ -18,7 +18,8 @@ test('palette Undo: back to the palette before with its own scheme and size', ()
   E(`palPush(genPalette(4,'complementary',{}),24)`);
   E(`setHarmony('analogous')`);
   E(`setSize(8)`);
-  assert.equal(E('state.palettes.length'), 2);
+  // (v308: the scheme change is a step of its own, which the size change then replaces)
+  assert.equal(E('state.palettes.length'), 3);
   E('undo()');
   assert.equal(E('state.harmony'), 'complementary');
   assert.equal(E('state.palSize'), 4);

@@ -20,7 +20,8 @@ import {
 before(setup);
 after(teardown);
 
-// the sample at one marker per section from Ben's 451: Ohuhu and Copic Y26, R46 and RV09 are all in it
+// the sample at one marker per section from Ben's 451: Ohuhu and Copic Y26, R46 and RV09 are all in it (v308: laid as
+// a guide from before v308, everything included: a new guide's "all" is his 130 vivid markers, without Y26's mustard)
 async function benGuide(page) {
   await sampleGuide(page);
   await idle(page);
@@ -29,6 +30,7 @@ async function benGuide(page) {
     save();
     SF.setCollection(sfCollection());
     __mstest.styleVars.limitN = 999;
+    __mstest.styleVars.gradIncl = null;
     SF.reassign();
   });
   await idle(page);
@@ -494,7 +496,8 @@ test('the PDF key: three-digit order numbers ("162nd") clear the tick box; a cod
     };
     P.fillText = function (t, x) {
       const s = String(t);
-      if (/^\d+(st|nd|rd|th)$/.test(s) && this.textAlign === 'right')
+      // (v308: or the one NO. column, the same colouring order, where numbers stand in for codes on the page)
+      if (/^\d+(st|nd|rd|th)?$/.test(s) && this.textAlign === 'right')
         log.push({ k: 'ord', cv: this.canvas, t: s, l: x - this.measureText(s).width });
       if (this.__box)
         log.push({ k: 'tag', cv: this.canvas, box: this.__box, ink: String(this.fillStyle), t: s });
@@ -522,7 +525,7 @@ test('the PDF key: three-digit order numbers ("162nd") clear the tick box; a cod
     }
     return out;
   });
-  const three = r.gaps.filter((g) => g.t.length >= 5);
+  const three = r.gaps.filter((g) => g.t.replace(/\D/g, '').length >= 3);
   assert.ok(three.length > 50, 'three-digit order numbers: ' + three.length);
   const worst = Math.min(...r.gaps.map((g) => g.gap));
   assert.ok(worst >= 4, 'every order number clear of its box (device px): ' + worst);

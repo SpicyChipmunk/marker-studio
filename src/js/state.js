@@ -368,7 +368,8 @@ function parseState(raw) {
       tones: mk('tones', TK),
       sats: mk('sats', SK),
       drawn: f('drawn', arr, [], (a) => [...new Set(idxs('drawn', a))]),
-      excluded: new Set(f('excluded', arr, [], (a) => a.filter((x) => typeof x === 'string'))),
+      // (v308: Ohuhu's BGY and YGY families as now named, famNow)
+      excluded: new Set(f('excluded', arr, [], (a) => a.filter((x) => typeof x === 'string').map(famNow))),
       palettes: f('palettes', arr, [], (a) =>
         a.filter((p, j) => {
           const ok = arr(p) && p.length > 0 && p.every(ix);
@@ -382,7 +383,9 @@ function parseState(raw) {
       ),
       // (v296) each palette's scheme, in step with palettes: Undo goes back to it
       palH: arr(v.palH)
-        ? v.palH.filter((x) => x !== undefined).map((x) => (typeof x === 'string' && HARM[x] ? x : null))
+        ? v.palH
+            .filter((x) => x !== undefined)
+            .map((x) => (typeof x === 'string' && HARM[palHarm(x)] ? x : null))
         : [],
       pool: f('pool', arr, null, (a) => {
         const o = idxs('pool', a);
@@ -494,7 +497,7 @@ function load() {
         tones: new Set(TK),
         sats: new Set(SK),
         drawn: o.drawn.filter((i) => Number.isInteger(i) && i >= 0 && i < COLORS.length),
-        excluded: new Set(Array.isArray(o.excluded) ? o.excluded : []),
+        excluded: new Set(Array.isArray(o.excluded) ? o.excluded.map(famNow) : []),
         palettes: [],
         pool: null,
       };
@@ -852,7 +855,12 @@ function inPool(i) {
   // (a selection leaves out markers marked dry too, as everything else does: "Palette from these" let them in, v299)
   return state.pool
     ? poolSet.has(i) && !(isOwned(i) && isDry(i))
-    : (state.owned.size ? isOwned(i) && !isDry(i) : true) && passes(i);
+    : (state.owned.size ? isOwned(i) && !isDry(i) : buyOk(i)) && passes(i);
+}
+// (v308) with no markers added yet, the brands you'd buy (Brands I'd buy) stand in for a collection: "Only Copic" had
+// still given Ohuhu markers in palettes
+function buyOk(i) {
+  return !state.buyBrands || state.buyBrands.indexOf(COLORS[i].brand) >= 0;
 }
 function counts() {
   const dn = new Set(state.drawn);

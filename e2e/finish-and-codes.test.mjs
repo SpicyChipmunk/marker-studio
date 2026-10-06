@@ -123,16 +123,18 @@ test('codes on the picture: tinier than 6 screen pixels only where their section
   assert.deepEqual(errors, []);
 });
 
-test('the first time Colour along keeps the screen on, a toast says so (once)', async () => {
+// (v308: said in the tool row's status for a few seconds, not a toast, which covered the rows)
+test('the first time Colour along keeps the screen on, the tool row says so (once)', async () => {
   const init = () => { Object.defineProperty(navigator, 'wakeLock', { value: { request: () => Promise.resolve({ addEventListener() {}, release() {} }) }, configurable: true }); };
-  const { page, errors } = await openApp({ init });
+  // (an iPad held upright, where the tool row has room for it: on a phone or side by side a toast says it, v308-merge-r3)
+  const { page, errors } = await openApp({ width: 820, height: 1180, init });
   await sampleGuide(page); await idle(page);
   await page.click('#sfColor'); await idle(page);
-  await page.waitForFunction(() => /Your screen stays on while you colour along\./.test(document.getElementById('msToast')?.textContent || ''));
+  await page.waitForFunction(() => /coloured · screen stays on/.test(document.getElementById('sfStat')?.textContent || ''));
+  assert.ok(!/screen stays on/.test(await page.evaluate(() => { const t = document.getElementById('msToast'); return t && t.classList.contains('on') ? t.textContent : ''; })), 'no toast');
   await page.click('#sfDoneBtn'); await idle(page);
-  await page.evaluate(() => document.getElementById('msToast').classList.remove('on'));
   await page.click('#sfColor'); await idle(page);
   await page.waitForTimeout(300);
-  assert.ok(!/screen stays on/.test(await page.evaluate(() => { const t = document.getElementById('msToast'); return t.classList.contains('on') ? t.textContent : ''; })), 'not again');
+  assert.ok(!/screen stays on/.test(await page.textContent('#sfStat')), 'not again');
   assert.deepEqual(errors, []);
 });

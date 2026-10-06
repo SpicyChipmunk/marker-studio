@@ -54,11 +54,31 @@ function styleOne(list) {
 function styleBool(v, d) {
   return typeof v === 'boolean' ? v : d;
 }
+// (v308) Include: an object (a guide made since v308), its three choices each kept when true or false; anything else
+// (a guide saved before): null
+function styleIncl(v, d) {
+  return v && typeof v === 'object' && !Array.isArray(v) ? inclCopy(v) : d;
+}
+function inclCopy(v) {
+  const o = {};
+  ['browns', 'greys', 'fluor'].forEach(function (k) {
+    if (typeof v[k] === 'boolean') o[k] = v[k];
+  });
+  return o;
+}
 // a harmony by name: any name HARM has, as before, including Custom and From photo, which Generate palette
 // doesn't offer (generatePalette falls back to Analogous for those), and even a name HARM only inherits
 // ("constructor"): kept as it was, since changing it would change how old files open
 function styleHarmony(v, d) {
   return typeof v === 'string' && typeof HARM !== 'undefined' && HARM[v] ? v : d;
+}
+// (v308) a handed-over palette: its name (at most 80 characters) and scheme (Palette's: any name HARM has, or none)
+function styleFromPal(v, d) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return d;
+  return {
+    name: typeof v.name === 'string' && v.name ? v.name.slice(0, 80) : 'Palette',
+    h: styleHarmony(v.h, null),
+  };
 }
 function shadeFlatList() {
   return Object.keys(shadeFlat).map(Number);
@@ -103,6 +123,18 @@ const STYLE_FIELDS = [
   // the Mood, by its key in MOODS (the first three were Intensity's Any, Vivid and Soft)
   { key: 'emphasis', in: 'style', def: 'neutral', check: styleOne(MOOD_KEYS), undo: true },
   { key: 'limitN', in: 'style', def: 16, check: styleWhole(2, 999), undo: true },
+  // (v308) the Gradient's Include row (gradIncl, 00-state): written only for a guide made since v308, so a guide saved
+  // before saves exactly as it was and is laid as it was (no field: null)
+  {
+    key: 'incl',
+    in: 'style',
+    def: null,
+    check: styleIncl,
+    undo: true,
+    save: function () {
+      return gradIncl ? inclCopy(gradIncl) : undefined;
+    },
+  },
   { key: 'noAdj', in: 'style', def: false, check: styleBool, undo: true },
   // Random's Balance (v283): a guide saved before it that uses Random opens as Mixed, as it looked; any other opens on
   // Main colour, what Random starts with when chosen now
@@ -309,6 +341,18 @@ const STYLE_FIELDS = [
       genPal = v.slice();
     },
   },
+  // (v308) the palette Palette's Use in a guide handed over (fromPal, 00-state: its name and scheme), which genPal
+  // holds: written only while there is one, so any other guide saves exactly as it did
+  {
+    key: 'fromPal',
+    in: 'style',
+    def: null,
+    check: styleFromPal,
+    undo: true,
+    save: function () {
+      return fromPal ? { name: fromPal.name, h: fromPal.h } : undefined;
+    },
+  },
   // the Sections screen's settings: smallest section, background trim, Add's autoclose. The smallest section's
   // slider changed scale in v277 (minPx, 30-palette-assign): it's saved as minSize, and as minPos on the old scale
   // for older copies of the app, which read only that; a guide saved before v277 has only minPos, read on its old
@@ -378,6 +422,12 @@ const STYLE_VAR = {
   },
   set limitN(v) {
     limitN = v;
+  },
+  get incl() {
+    return gradIncl;
+  },
+  set incl(v) {
+    gradIncl = v;
   },
   get noAdj() {
     return noAdj;
@@ -570,6 +620,12 @@ const STYLE_VAR = {
   },
   set genPal(v) {
     genPal = v;
+  },
+  get fromPal() {
+    return fromPal;
+  },
+  set fromPal(v) {
+    fromPal = v;
   },
   get minSize() {
     return minPos;

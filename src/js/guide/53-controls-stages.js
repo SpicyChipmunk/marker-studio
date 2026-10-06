@@ -305,6 +305,47 @@ function frameLineSync() {
   at.insertAdjacentHTML(sfmode === 'review' ? 'beforebegin' : 'afterend', h);
   frameLineWire();
 }
+// (v308) Faint grey marks (faintSplit, 10-segment): offered on Edit sections only when the ink splits clearly into dark
+// outlines and pale grey marks. Ticked, the pale ink is ignored and the sections are found again (one Undo step, as
+// Sensitivity is). Pale swirls can be part of the drawing, so the line says so.
+function faintLineHTML() {
+  if (sfmode !== 'review' || !srcImg || !(faintOffer || faintCut)) return '';
+  return (
+    '<div id="sfFaintLine" class="sffaint"><label class="sffaintchk"><input type="checkbox" id="sfFaint"' +
+    (faintCut ? ' checked' : '') +
+    '> Ignore faint grey marks</label><div class="sfc-sub">For pale grey marks, like a watermark. Swirls this pale can be part of the drawing.</div></div>'
+  );
+}
+function faintWire() {
+  const b = document.getElementById('sfFaint');
+  if (!b) return;
+  b.addEventListener('change', function () {
+    reFrom();
+    faintCut = b.checked ? faintOffer : 0;
+    if (b.checked && !faintCut) {
+      b.checked = false;
+      return;
+    }
+    if (resegment() === false) return;
+    sayLive(faintCut ? 'Faint grey marks ignored' : 'Faint grey marks kept');
+  });
+}
+// (in step after the sections are found again without the controls being drawn again: Sensitivity, Enhance)
+function faintLineSync() {
+  if (sfmode !== 'review' || !ctlEl) return;
+  const el = document.getElementById('sfFaintLine'),
+    h = faintLineHTML();
+  if (el) {
+    if (!h) el.remove();
+    else if (!!document.getElementById('sfFaint').checked === !!faintCut) return;
+    else el.outerHTML = h;
+  } else if (h) {
+    const at = ctlEl.querySelector('.sfc-segwarn') || document.getElementById('sfEdit');
+    if (!at) return;
+    at.insertAdjacentHTML('beforebegin', h);
+  }
+  faintWire();
+}
 function frameColour() {
   const l = frameLeft();
   if (!l) return;
@@ -382,6 +423,7 @@ function ctlSections() {
         : '') +
     frameLineHTML() +
     head +
+    faintLineHTML() +
     segWarnHTML() +
     '<div id="sfEdit" role="group" aria-label="Edit tool" class="sfc-segs sfc-mt8"><button type="button" id="sfEmToggle" data-m="toggle" class="sfedit">Leave out</button><button type="button" id="sfEmMerge" data-m="merge" class="sfedit">Merge</button><button type="button" id="sfEmSplit" data-m="split" class="sfedit">Split</button><button type="button" id="sfEmAdd" data-m="add" class="sfedit">Add</button></div><label id="sfAutoCloseWrap" class="sfc-autoclose" style="display:none"><input type="checkbox" id="sfAutoClose"> Join the ends of a loop for me</label><div id="sfHint" class="sfc-note sfc-mt8"></div><div class="sfc-key"><span><span class="sfc-sw sfc-sw-sec"></span>section</span><span><span class="sfc-sw sfc-sw-bg"></span>background</span><span><span class="sfc-sw sfc-sw-ex"></span>left out</span></div>' +
     '<label class="sfrng sfc-mt12">Min section size<input type="range" id="sfMin" min="0" max="100" value="' +
@@ -492,6 +534,7 @@ function ctlSections() {
   wire('sfPgAdj', 'click', pgAdjust);
   wire('sfPgUndo', 'click', pgUndo);
   frameLineWire();
+  faintWire();
   wire('sfAutoCrop', 'click', autoCrop);
   wire('sfRotL', 'click', function () {
     okGeom(function () {
@@ -538,6 +581,7 @@ function ctlSections() {
   });
   wire('sfSens', 'input', function (e) {
     reFrom();
+    sensUser = true;
     adaptC = Math.round(16 - +e.target.value * 1.4);
     var v = document.getElementById('sfSensVal');
     if (v) v.textContent = e.target.value;

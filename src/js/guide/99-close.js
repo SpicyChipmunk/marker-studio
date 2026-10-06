@@ -251,6 +251,13 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       return _lpts.length;
     },
     buildExportCanvas: buildExportCanvas,
+    // (v308: the photo's debris left out of what's printed and saved, and the least code size on Save image)
+    outDebris: outDebris,
+    outDebrisReset: function () {
+      _dbC = null;
+    },
+    exportMinPx: exportMinPx,
+    pdfSunAt: pdfSunAt,
     shadeZoneLabels: shadeZoneLabels,
     shadePrep: shadePrep,
     get shadeMode() {
@@ -494,6 +501,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get pdfLeft() {
       return _pdfLeft;
     },
+    get pdfSun() {
+      return _pdfSun;
+    },
     get pdfP1() {
       return _pdfP1;
     },
@@ -562,6 +572,25 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       isLoop: gradIsLoop,
       tierPool: gradTierPool,
       pickSpread: gradPickSpread,
+      // (v308: the Include row, the vivid markers, lightness following hue, the shared picks)
+      pickSet: gradPickSet,
+      inclGroup: inclGroup,
+      inclOn: inclOn,
+      inclPick: inclPick,
+      inclPool: inclPool,
+      vivid: gradVividM,
+      lt: gradLt,
+      ltTarget: gradLtTarget,
+      hueWarp: gradHueWarp,
+      v8: gradV8,
+      sliderMax: sliderMax,
+      mandala: gradMandala,
+      fixPool: gradFixPool,
+      rc: gradRc,
+      inclStatus: inclStatus,
+      mkCap: mkCap,
+      rainbow: rainbowPick,
+      mandalaScore: gradMandalaScore,
       pickField: gradPickField,
       deMatrix: deMatrix,
       tour: gradTour,
@@ -723,6 +752,11 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       return hlZone;
     },
     hlPath: hlPath,
+    // (v308) a section's box, in picture pixels: [x0, y0, x1, y1]
+    secBox: function (l) {
+      const b = secBoxes();
+      return [b.x0[l], b.y0[l], b.x1[l], b.y1[l]];
+    },
     // a section's size on screen now, in CSS px (the zoom rule's test: at least ~44px, or as far as it may go)
     secOnScreen: function (l) {
       const b = secBoxes(),
@@ -763,6 +797,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       zoneNew: zoneNew,
       zoneSelect: zoneSelect,
       planCommit: planCommit,
+      // (v308: the marker an anchor gives; the shading's own markers)
+      anchorOut: anchorOut,
+      shadeExtra: shadeExtra,
       planUndo: planUndo,
       planRedo: planRedo,
       // (v307: the tool row's status, Colour along, and the line under the tabs)
@@ -845,6 +882,12 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       },
       set limitN(v) {
         limitN = v;
+      },
+      get gradIncl() {
+        return gradIncl;
+      },
+      set gradIncl(v) {
+        gradIncl = v;
       },
       get noAdj() {
         return noAdj;
@@ -1056,6 +1099,12 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       set genPal(v) {
         genPal = v;
       },
+      get fromPal() {
+        return fromPal;
+      },
+      set fromPal(v) {
+        fromPal = v;
+      },
       get minPos() {
         return minPos;
       },
@@ -1079,6 +1128,41 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       const t = undoStack[undoStack.length - 1];
       return t ? { geo: !!(t.keep && t.keep.geo), sealed: !!t.sealed } : null;
     },
+    // (v308: getting a picture in: faint grey marks, a coloured-in page, frames, Auto crop, a tilt's corners,
+    // a straightened photo's Sensitivity)
+    faintSplit: faintSplit,
+    paperGains: paperGains,
+    colourShare: colourShare,
+    ruledBox: ruledBox,
+    autoCropBox: autoCropBox,
+    edgePadded: edgePadded,
+    get faintOffer() {
+      return faintOffer;
+    },
+    set faintOffer(v) {
+      faintOffer = v;
+    },
+    get faintCut() {
+      return faintCut;
+    },
+    set faintCut(v) {
+      faintCut = v;
+    },
+    get srcColour() {
+      return srcColour;
+    },
+    set srcColour(v) {
+      srcColour = v;
+    },
+    get adaptC() {
+      return adaptC;
+    },
+    set adaptC(v) {
+      adaptC = v;
+    },
+    get tilt() {
+      return tilt;
+    },
   };
 }
 return {
@@ -1090,6 +1174,8 @@ return {
   openDesign,
   continueGuide,
   importFile: importFromHome,
+  // (v308: a photo picked in Import a guide)
+  photoFile: photoFromHome,
   askBox: askBox,
   guideBrief: guideBrief,
   loadSample: sampleFromAnywhere,

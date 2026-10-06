@@ -200,6 +200,69 @@ function despeckle(L) {
   }
   return gone;
 }
+// (v308) Faint grey marks: a watermark, or light decorative swirls, drawn much paler than the outlines. The ink is
+// grouped into blobs, each scored by its core (its 10th-percentile grey: a single pixel's grey can't tell them apart,
+// as the soft edges of black lines fill the gap). Ignore faint grey marks is offered only on a clear split: blobs with
+// dark cores (under 64) at least half the ink, faint ones (160 or more) at least 5%, and those between them under half
+// the faint share. Returns the grey above which ink would be ignored (the faint cores' typical grey less 32, never
+// below 160), or 0 when it isn't offered. (A page whose lines are all mid-grey is never offered it.)
+function faintSplit() {
+  const n = W * H;
+  if (!labels || !gray || gray.length !== n) return 0;
+  const seen = new Uint8Array(n),
+    st = new Int32Array(n),
+    hs = new Uint32Array(256),
+    fh = new Float64Array(256);
+  let dark = 0,
+    mid = 0,
+    faint = 0,
+    tot = 0;
+  for (let p = 0; p < n; p++) {
+    if (labels[p] !== -1 || seen[p]) continue;
+    let sn = 0,
+      cnt = 0;
+    st[sn++] = p;
+    seen[p] = 1;
+    hs.fill(0);
+    while (sn > 0) {
+      const q = st[--sn];
+      hs[gray[q]]++;
+      cnt++;
+      const x = q % W,
+        y = (q / W) | 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        const yy = y + dy;
+        if (yy < 0 || yy >= H) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          if (xx < 0 || xx >= W) continue;
+          const r = yy * W + xx;
+          if (labels[r] === -1 && !seen[r]) {
+            seen[r] = 1;
+            st[sn++] = r;
+          }
+        }
+      }
+    }
+    // its core: the 10th-percentile grey
+    const k = Math.max(1, Math.ceil(cnt * 0.1));
+    let core = 0,
+      acc = 0;
+    while (core < 255 && acc + hs[core] < k) acc += hs[core++];
+    tot += cnt;
+    if (core < 64) dark += cnt;
+    else if (core >= 160) {
+      faint += cnt;
+      fh[core] += cnt;
+    } else mid += cnt;
+  }
+  if (!tot || dark < 0.5 * tot || faint < 0.05 * tot || mid >= 0.5 * faint) return 0;
+  // the faint cores' typical grey (the median, by ink)
+  let c = 160,
+    acc = 0;
+  while (c < 255 && acc + fh[c] < faint / 2) acc += fh[c++];
+  return Math.max(160, c - 32);
+}
 /* ---- connected components ---- */
 function applyBg(fresh) {
   const n = comps.length,
@@ -338,18 +401,30 @@ function findPage() {
    - the biggest section (not background, not the page in a photo) is at least 8% of the picture;
    - its box spans at least half the picture's width and height;
    - each of the box's four edges is at least 75% that section (looked at 4 px in from the edge, every other px);
-   - the sections outside its box add up to at most 0.5% of the picture.
+   - the sections outside its box add up to at most 0.5% of the picture (v308: not counting the frame's own parts
+     just outside it, the strips between two frame lines and its corner ornaments: frameOwn).
    On the downloaded pages tried it finds the mandala's and the paisley's frames (2 of 15), and no other page (the
    octopus and otter frames have art breaking out of them); a sky over a horizon, a board in the middle of a
    drawing, art breaking out of a frame and a frame of tiles don't count. */
 const FRAME_MIN = 0.08,
   FRAME_SPAN = 0.5,
   FRAME_EDGE = 0.75,
-  FRAME_OUT = 0.005;
-function findFrame() {
+  FRAME_OUT = 0.005,
+  // (v308) what may lie just outside a frame without counting as art outside it: within FRAME_BAND of the short side
+  // beyond the frame, the strips between two frame lines (thinner than FRAME_STRIP of the short side, running along
+  // FRAME_RUN of a side or more: corner ornaments cut that strip into four) and the ornaments themselves (each at most
+  // FRAME_ORN of the picture, its middle within FRAME_CORNER of the short side from a corner of the frame)
+  FRAME_BAND = 0.06,
+  FRAME_STRIP = 0.03,
+  FRAME_RUN = 0.3,
+  FRAME_ORN = 0.003,
+  FRAME_CORNER = 0.1;
+// The biggest section (not background, not the page in a photo) when it's the paper inside a ruled rectangle: at
+// least FRAME_MIN of the picture, its box spanning FRAME_SPAN of the width and height, and each edge of its box
+// FRAME_EDGE that section. Its number, or 0. (findFrame, and Auto crop: 20-image-input, v308)
+function ruledBox() {
   const n = comps.length,
-    N = W * H,
-    mp = minPx();
+    N = W * H;
   let best = 0,
     ba = 0;
   for (let l = 1; l < n; l++) {
@@ -360,9 +435,9 @@ function findFrame() {
       best = l;
     }
   }
-  if (!best || ba < N * FRAME_MIN) return;
+  if (!best || ba < N * FRAME_MIN) return 0;
   const c = comps[best];
-  if (c.x1 - c.x0 < W * FRAME_SPAN || c.y1 - c.y0 < H * FRAME_SPAN) return;
+  if (c.x1 - c.x0 < W * FRAME_SPAN || c.y1 - c.y0 < H * FRAME_SPAN) return 0;
   // how much of one edge of its box is the section (horiz: a top or bottom edge, at row `at`; dir: inwards)
   const edge = function (horiz, at, from, to, dir) {
     let hit = 0,
@@ -388,15 +463,52 @@ function findFrame() {
       edge(false, c.x1, c.y0, c.y1, -1),
     ) < FRAME_EDGE
   )
-    return;
+    return 0;
+  return best;
+}
+// a part outside the frame's box c that is only the frame itself: a strip between two frame lines, or a corner
+// ornament (v308)
+function frameOwn(d, c) {
+  const S = Math.min(W, H),
+    b = S * FRAME_BAND;
+  if (d.x0 < c.x0 - b || d.x1 > c.x1 + b || d.y0 < c.y0 - b || d.y1 > c.y1 + b) return false;
+  const dw = d.x1 - d.x0 + 1,
+    dh = d.y1 - d.y0 + 1;
+  if (Math.min(dw, dh) < S * FRAME_STRIP) {
+    if (dw >= dh && dw >= FRAME_RUN * (c.x1 - c.x0)) return true;
+    if (dh > dw && dh >= FRAME_RUN * (c.y1 - c.y0)) return true;
+  }
+  if (d.area <= W * H * FRAME_ORN) {
+    const r = S * FRAME_CORNER;
+    for (const p of [
+      [c.x0, c.y0],
+      [c.x1, c.y0],
+      [c.x1, c.y1],
+      [c.x0, c.y1],
+    ])
+      if (Math.hypot(d.cx - p[0], d.cy - p[1]) <= r) return true;
+  }
+  return false;
+}
+// the share of the picture in sections outside the box of section `best` (their middles outside it), leaving out
+// specks under Min section size and the frame's own parts (frameOwn); inner: only those not touching the picture's
+// edge (Auto crop: a screenshot's browser bar runs to the edge, a drawing round a board doesn't)
+function frameOutside(best, inner) {
+  const n = comps.length,
+    mp = minPx(),
+    c = comps[best];
   let out = 0;
   for (let l = 1; l < n; l++) {
     const d = comps[l];
-    if (!d || d.merged || d.bg || l === best || d.area < mp) continue;
-    if (d.cx < c.x0 || d.cx > c.x1 || d.cy < c.y0 || d.cy > c.y1) out += d.area;
+    if (!d || d.merged || d.bg || l === best || d.area < mp || (inner && d.bpx > 0)) continue;
+    if ((d.cx < c.x0 || d.cx > c.x1 || d.cy < c.y0 || d.cy > c.y1) && !frameOwn(d, c)) out += d.area;
   }
-  if (out > N * FRAME_OUT) return;
-  c.framed = true;
+  return out / (W * H);
+}
+function findFrame() {
+  const best = ruledBox();
+  if (!best || frameOutside(best) > FRAME_OUT) return;
+  comps[best].framed = true;
 }
 // the paper inside a frame, while it's left white (not brought back as a section): its number, else 0
 function frameLeft() {
@@ -417,6 +529,62 @@ function frameSaved() {
   }
   return undefined;
 }
+// (v308) The paper's tint in a picture's pixels (RGBA d, n of them, looked at every step-th): the mean colour of the
+// brightest 5%, as gains for each channel that make it white, each at most x2; null when the paper is neutral already
+// (its brightest channel no more than 1.04 times its dimmest). Used to find a page photographed under a warm lamp
+// (pgFind) and to tell a coloured-in page from tinted paper (colourShare).
+function paperGains(d, n, step) {
+  step = step || 1;
+  const hs = new Uint32Array(256);
+  let m = 0;
+  for (let i = 0; i < n; i += step) {
+    const j = i * 4;
+    hs[(d[j] * 77 + d[j + 1] * 150 + d[j + 2] * 29) >> 8]++;
+    m++;
+  }
+  if (!m) return null;
+  const want = Math.max(1, m * 0.05);
+  let t = 255,
+    acc = 0;
+  while (t > 0 && acc + hs[t] < want) acc += hs[t--];
+  let r = 0,
+    g = 0,
+    b = 0;
+  for (let i = 0; i < n; i += step) {
+    const j = i * 4;
+    if ((d[j] * 77 + d[j + 1] * 150 + d[j + 2] * 29) >> 8 < t) continue;
+    r += d[j];
+    g += d[j + 1];
+    b += d[j + 2];
+  }
+  const mx = Math.max(r, g, b),
+    mn = Math.min(r, g, b);
+  if (!(mx > 0) || mx <= 1.04 * mn) return null;
+  return [
+    Math.min(2, mx / Math.max(1, r)),
+    Math.min(2, mx / Math.max(1, g)),
+    Math.min(2, mx / Math.max(1, b)),
+  ];
+}
+// how much of a picture (RGBA d, n pixels) is coloured: its share of pixels still clearly coloured once the paper's
+// tint is taken out (v308). A line-art page, photographed or downloaded, is well under 1%; a coloured-in one a third.
+const COLOUR_CHROMA = 60;
+function colourShare(d, n) {
+  if (!d || !n) return null;
+  const st = Math.max(1, Math.floor(n / 250000)),
+    k = paperGains(d, n, st) || [1, 1, 1];
+  let c = 0,
+    m = 0;
+  for (let i = 0; i < n; i += st) {
+    const j = i * 4,
+      r = Math.min(255, d[j] * k[0]),
+      g = Math.min(255, d[j + 1] * k[1]),
+      b = Math.min(255, d[j + 2] * k[2]);
+    m++;
+    if (Math.max(r, g, b) - Math.min(r, g, b) > COLOUR_CHROMA) c++;
+  }
+  return m ? c / m : null;
+}
 function segQuality() {
   if (!labels || !comps) return { ok: true };
   var px = W * H,
@@ -428,6 +596,9 @@ function segQuality() {
     tiny = 0,
     kept = 0,
     keptTiny = 0,
+    // (v308: sections in the guide under 3x Min section size, and specks left out by it)
+    keptSmall = 0,
+    specks = 0,
     mp = minPx(),
     tc = Math.max(20 * srcK * srcK, px * 0.00002);
   for (var l = 1; l < comps.length; l++) {
@@ -438,7 +609,8 @@ function segQuality() {
     if (!c.bg && c.area >= mp) {
       kept++;
       if (c.area < tc) keptTiny++;
-    }
+      if (c.area < 3 * mp) keptSmall++;
+    } else if (!c.bg) specks++;
   }
   var tinyFrac = N ? tiny / N : 0;
   if (inkFrac < 0.02 && N < 5)
@@ -462,6 +634,17 @@ function segQuality() {
       msg: 'Most of the image is dark \u2014 this looks like a photo or heavily shaded drawing rather than outlines.',
       tip: 'Try high-contrast line art on white, or crop to just the drawing.',
     };
+  // (v308) a page coloured in already: much of it coloured (the paper's tint taken out) and its colour broken into
+  // specks, more than 3 for every section. Real line-art pages are under 1% and 2 specks a section. Only with the
+  // picture itself to look at (srcColour): a guide opened again without it isn't checked. Before the warning about
+  // fragments: it says more.
+  if (srcColour != null && srcColour > 0.15 && specks > 3 * kept)
+    return {
+      ok: false,
+      code: 'coloured',
+      msg: 'This page looks coloured in already — its colours break up into specks.',
+      tip: 'Use the page before it was coloured, with plain outlines on white.',
+    };
   // (v303: only when the fragments are in the guide, not just left out by Min section size: a clean page with a
   // scanner's specks, all left out, had been told it was a photo or textured image)
   if (tinyFrac > 0.8 && (kept === 0 || keptTiny > 0.3 * kept))
@@ -470,6 +653,15 @@ function segQuality() {
       code: 'noisy',
       msg: 'Found a lot of tiny fragments \u2014 usually a photo or textured image rather than clean line art.',
       tip: 'Use line art with solid outlines, or raise Min section size in Edit sections.',
+    };
+  // (v308) hatching or shading lines: 200 sections or more, over half of them under 3x Min section size (a
+  // hatched page 72%; the most of any real page tried, 29%)
+  if (kept >= 200 && keptSmall > 0.5 * kept)
+    return {
+      ok: false,
+      code: 'hatched',
+      msg: 'Lots of slivers — this page looks hatched or shaded with lines.',
+      tip: 'The lines between the hatching become sections. Raise Min section size in Edit sections, or use a page with plain outlines.',
     };
   return { ok: true };
 }
@@ -583,7 +775,11 @@ function segment() {
     const thr = otsu(gray, n);
     for (let i = 0; i < n; i++) labels[i] = gray[i] < thr ? -1 : 0;
   }
+  // (v308: faint grey marks ignored, when asked: the ink lighter than faintCut is paper)
+  if (faintCut > 0) for (let i = 0; i < n; i++) if (labels[i] === -1 && gray[i] > faintCut) labels[i] = 0;
   despeckle(labels);
+  // (whether to offer to ignore them: measured while they're still there)
+  if (!faintCut) faintOffer = faintSplit();
   labelCells();
   adj = null;
   edgeDist = null;

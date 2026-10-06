@@ -25,6 +25,7 @@ const ZONE_KEYS = [
   'look',
   'emphasis',
   'limitN',
+  'incl',
   'noAdj',
   'balance',
   'balM',
@@ -45,6 +46,7 @@ const ZONE_KEYS = [
   'savedPalId',
   'genHarmony',
   'genPal',
+  'fromPal',
 ];
 // (at most this many zones besides Main: enough for a picture's parts, few enough for the row of chips)
 const ZONE_MAX = 8;

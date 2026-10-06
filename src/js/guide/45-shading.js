@@ -482,10 +482,10 @@ function shCoolWay(h) {
 function shWarmWay(h) {
   return -shCoolWay(h);
 }
-// the grey families: Cool, Warm, Green, Neutral and Toner Grey, and Ohuhu's BGY and YGY greys (not black)
+// the grey families: Cool, Warm, Green, Neutral and Toner Grey, and Ohuhu's BGY and YGY greys, Blue Grey and Yellow
+// Grey (v308; before, "Blue-Green-Yellow" and "Yellow-Green-Yellow") (not black)
 function shGreyFam(m) {
-  const f = m.fam || '';
-  return /Grey/.test(f) || f === 'Blue-Green-Yellow' || f === 'Yellow-Green-Yellow';
+  return /Grey/.test(m.fam || '');
 }
 function shLab(m) {
   return m.lab || hexToLab(m.hex);
@@ -1261,10 +1261,15 @@ function gradShadeOffer() {
         could = _shOffer.n;
         return;
       }
-      const tier = gradTierPool(src.items, M),
-        loop = gradIsLoop(tier),
-        rnd = gradSeed > 0 && !loop ? seededRandom(gradSeed) : null;
-      could = gradPickSpread(tier, M, loop, rnd, zs).filter(function (m) {
+      // (the same picks the Gradient makes: gradPickSet, from the same markers)
+      could = gradPickSet(
+        src.items,
+        M,
+        1,
+        gradSeed > 0 ? seededRandom(gradSeed) : null,
+        zs,
+        gradV8() ? emphasis : null,
+      ).picks.filter(function (m) {
         return gradShadeOK(m, zs);
       }).length;
       _shOffer = { key: key, n: could };
@@ -1461,7 +1466,7 @@ function positionSun() {
           );
         })
         .join('') +
-      '</g><circle cx="20" cy="20" r="8.5" fill="#ffd84a" stroke="rgba(0,0,0,.45)" stroke-width="1.5"/></svg>';
+      '</g><circle cx="20" cy="20" r="8.5" fill="#ffd84a" fill-opacity=".45" stroke="rgba(0,0,0,.45)" stroke-width="1.5"/></svg>';
     (picEl || sfView).appendChild(sunEl);
     let drag = false;
     const move = function (e) {

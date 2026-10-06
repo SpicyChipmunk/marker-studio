@@ -148,12 +148,27 @@ function searchGroups(m) {
   for (const f of families) if (by[f.name]) out.push({ f: f, list: by[f.name].sort(famOrd) });
   return out;
 }
+// (v308) Markers › Owned › "Running low · 3": only the markers you marked running low or dry (for this visit)
+let lowOnly = false;
+function lowCount() {
+  let n = 0,
+    dry = 0;
+  for (let i = 0; i < COLORS.length; i++) {
+    const v = state.ink[mkey(i)];
+    if (!v || !isOwned(i)) continue;
+    n++;
+    if (v === 'dry') dry++;
+  }
+  return { n: n, dry: dry };
+}
 function finderMatches() {
   const view = state.mode === 'collection' ? state.collView : state.finderScope === 'owned' ? 'owned' : 'all';
-  const out = [];
+  const out = [],
+    low = view === 'owned' && state.mode === 'collection' && lowOnly;
   for (let i = 0; i < COLORS.length; i++) {
     if (!avail(i)) continue;
     if (view === 'owned' && !isOwned(i)) continue;
+    if (low && !state.ink[mkey(i)]) continue;
     if (view === 'unowned' && isOwned(i)) continue;
     if (view === 'wish' && !isWished(mkey(i))) continue;
     out.push(i);
@@ -338,6 +353,27 @@ function searchHexHTML(hex) {
     '">Match this colour</button></div>'
   );
 }
+// (v308) a search that is a list of codes ("b02, b03"): search finds one marker at a time, so Scan or type codes, which
+// takes a list, is offered
+function searchList(q) {
+  const t = String(q == null ? searchInput.value || '' : q)
+    .toUpperCase()
+    .split(/[\s,;/+&]+/)
+    .filter(Boolean);
+  if (t.length < 2 || typeof scanIsCode !== 'function') return false;
+  return (
+    t.filter(function (x) {
+      return scanIsCode(x.replace(/-/g, ''));
+    }).length >= 2
+  );
+}
+function searchListHTML() {
+  return (
+    '<div class="empty">\u201c' +
+    esc((searchInput.value || '').trim()) +
+    '\u201d looks like a list of codes. Search finds one marker at a time; Scan or type codes takes a whole list.</div><div class="moreall"><button type="button" class="moreshow mkscanlist">Scan or type codes</button></div>'
+  );
+}
 function renderResults(bySearch) {
   // (an armed Untick all shown counted what was shown then: a redraw disarms it, v304)
   if (ownNoneBtn.dataset.arm === '1') unownDisarm();
@@ -373,6 +409,10 @@ function renderGrid(more) {
   }
   if (!m.length && searchHex()) {
     results.innerHTML = searchHexHTML(searchHex());
+    return;
+  }
+  if (!m.length && searchList()) {
+    results.innerHTML = searchListHTML();
     return;
   }
   if (!m.length) {
@@ -484,6 +524,18 @@ results.addEventListener('click', (e) => {
   const hx = e.target.closest('.mkhexgo');
   if (hx) {
     if (window.msMatchHex) window.msMatchHex(hx.dataset.hex);
+    return;
+  }
+  // (v308: the list searched for, read by Scan or type codes, where each is added or asked about)
+  if (e.target.closest('.mkscanlist')) {
+    const q = (searchInput.value || '').trim();
+    if (typeof openScan !== 'function') return;
+    openScan();
+    // (read as a pasted list is, a line each: the box is one line)
+    if (q && typeof scanHandle === 'function') {
+      scanHandle(q.replace(/[,;/+&]+\s*/g, '\n'), true);
+      if (typeof scanRender === 'function') scanRender();
+    }
     return;
   }
   if (!e.target.closest('.moreshow')) return;

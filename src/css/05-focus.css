@@ -288,3 +288,12 @@ button.sffoccols::after {
   color: var(--warn);
   font-weight: 700;
 }
+/* (v308) Focus mode's controls focused from the keyboard (focusTab): a ring Safari's engine doesn't draw by itself,
+   as it doesn't count focus moved from script as :focus-visible */
+#sfRoot .sfkbd:focus,
+.sffocbar .sfkbd:focus,
+.sffocbot .sfkbd:focus,
+.sffocsheet .sfkbd:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

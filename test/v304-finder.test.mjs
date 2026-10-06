@@ -121,14 +121,15 @@ test('Ramp gaps: Tick all shown and the rest act on the gaps shown, not every un
   assert.ok(shown < all, shown + ' of ' + all);
 });
 
-test('Fill gaps: the Colorless Blender comes last, and owning one doesn’t move the palest markers down', () => {
+// (v308: the Colorless Blender, and fluorescents, aren't listed in Fill the biggest gaps at all; they came last)
+test('Fill gaps: the Colorless Blender isn’t listed, and owning one doesn’t move the palest markers down', () => {
   const { __eval: E } = fresh();
   const rank = (ownBlender) =>
     JSON.parse(E(`state.owned = new Set([...defaultOwned()]); ${ownBlender ? `COLORS.forEach((c, i) => { if (NOINK.has(i) && c.brand === 'Copic') state.owned.add(mkey(i)); });` : ''} state.ink = {};
       (() => { const m = []; for (let i = 0; i < COLORS.length; i++) if (!isOwned(i) && passes(i)) m.push(i);
       const o = gapRank(m); return JSON.stringify({ blend: o.map((i, k) => [i, k]).filter(([i]) => NOINK.has(i)).map(([, k]) => k), n: o.length, top: o.slice(0, 20) }); })()`));
   const a = rank(false), b = rank(true);
-  assert.ok(a.blend.every((k) => k >= a.n - 2), 'blenders last: ' + JSON.stringify(a.blend) + ' of ' + a.n);
+  assert.deepEqual(a.blend, [], 'no blender: ' + JSON.stringify(a.blend) + ' of ' + a.n);
   assert.deepEqual(b.top, a.top, 'an owned blender changes nothing at the top');
 });
 

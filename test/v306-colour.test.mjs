@@ -264,21 +264,22 @@ test('U6: Ben’s 216-section pages are laid as before; the Earthy, Soft and Dee
   void cl;
 });
 
-test('U6: the marker count says how many the Gradient lays: “all · 216 used”, “300 · 216 used”, “all · 268, some twice”', () => {
+test('U6: the marker count says how many the Gradient lays: “all · 216”, “all · 268” (v308: a count at or over the slider’s end, the smaller of the sections and markers, reads as all)', () => {
   const { t } = appWith();
   page(t, 18, 12);
   style(t, {});
-  assert.equal(t.grad.mkCountLabel(451), 'all · 216 used');
+  assert.equal(t.grad.mkCountLabel(), 'all · 216');
+  // (v308: 300 on a 216-section page is at the slider's end: all; it said "300 · 216 used")
   t.styleVars.limitN = 300;
-  assert.equal(t.grad.mkCountLabel(451), '300 · 216 used');
+  assert.equal(t.grad.mkCountLabel(), 'all · 216');
   t.styleVars.limitN = 16;
-  assert.equal(t.grad.mkCountLabel(451), '16');
+  assert.equal(t.grad.mkCountLabel(), '16');
   page(t, 24, 20);
   t.styleVars.limitN = 999;
-  assert.equal(t.grad.mkCountLabel(451), 'all · 268, some twice');
-  // (Random takes the count's worth: as before)
+  assert.equal(t.grad.mkCountLabel(), 'all · 268');
+  // (Random takes the count's worth: all of the 451, fewer than the 480 sections)
   t.styleVars.family = 'random';
-  assert.equal(t.grad.mkCountLabel(451), 'all (451)');
+  assert.equal(t.grad.mkCountLabel(), 'all · 451');
 });
 
 // ---- U7: shading-aware base picks ----

@@ -291,7 +291,13 @@ test('sheets: portrait from under the pinned picture to the bottom; the page is 
   const v = await rect(page, '#sfView'), s = await rect(page, '#sfSheet'), c = await rect(page, '#sfCanvas');
   assert.equal(await picH(page), 380, 'picture at its floor size');
   assert.ok(s.top >= v.bottom - 1 && s.top >= c.bottom, `sheet under the pinned block (${s.top} vs ${v.bottom})`);
-  assert.ok(await page.evaluate(() => { const b = document.querySelector('#sfSheet .sfshbody'); return b.scrollHeight <= b.clientHeight + 1; }), 'sized to its content');
+  // (v308 added Send feedback to the menu: on this 844px phone it is now 27px taller than the room under the pinned
+  // picture, so it takes all that room and its body scrolls to the last item — as menus already did on shorter phones.
+  // It had been "sized to its content", which the five items fitted.)
+  const fit = await page.evaluate(() => { const b = document.querySelector('#sfSheet .sfshbody'); return b.scrollHeight <= b.clientHeight + 1; });
+  assert.ok(fit || Math.abs(s.top - v.bottom) <= 1, `sized to its content, or all the room under the picture (${s.top} vs ${v.bottom})`);
+  const lastSeen = await page.evaluate(() => { const b = document.querySelector('#sfSheet .sfshbody'), it = [...b.querySelectorAll('.sfmitem')].pop(); b.scrollTop = b.scrollHeight; const r = it.getBoundingClientRect(), q = b.getBoundingClientRect(); const ok = r.top >= q.top - 1 && r.bottom <= q.bottom + 1; b.scrollTop = 0; return ok; });
+  assert.ok(lastSeen, 'the last item scrolls into view');
   assert.ok(Math.abs(s.bottom - 844) <= 1, 'to the bottom of the screen');
   assert.ok(await page.evaluate(() => document.getElementById('sfSheet').contains(document.activeElement)), 'focus moved into the sheet');
   assert.equal(await page.evaluate(() => [document.getElementById('sfSheet').getAttribute('role'), document.getElementById('sfSheet').getAttribute('aria-modal')].join()), 'dialog,true');

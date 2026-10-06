@@ -606,7 +606,7 @@ function lowTap(k) {
   if (!r) return;
   st.added[k] = r.added;
   const g = loadGen;
-  toastAction(esc(nm) + ' running low · on To buy ·', 'Undo', function () {
+  toastAction(nm + ' running low · on To buy ·', 'Undo', function () {
     if (api.lowUnmark(k, r.added) && g === loadGen) delete lowState().added[k];
     lowRefresh();
   });

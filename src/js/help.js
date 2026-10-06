@@ -1,41 +1,113 @@
 // Help: "How it works" (three cards), the help sheet (photo tips, glossary, your data, about with what's new) and
 // "What's new" on Home.
-// A feedback page or mailto: link. Empty hides "Send feedback" in About.
-const FEEDBACK_URL = '';
-// The "What's new" card on Home shows up to four of these, once per new version (not on a fresh install); Help › About
-// lists them too.
+// What's new, newest first, each with the version it came in (v308). After an update, a card on Home shows those
+// newer than the version last seen (ms-last-ver), up to four (not on a fresh install); Help › About lists this
+// version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
-  'Fixes: a new guide is kept even if you close the app straight after Build, and the Print sheet shows how far a PDF has got.',
-  'Finished pages stay in full colour, shaded guides count every marker, and two-brand codes show both markers. PDFs and saving keep the app responsive, and warm photos of your marker trays can be balanced.',
-  'Scatter a gradient from Polished to Confetti, and smooth rough spots in one tap. Codes in both brands are marked, and Colour along finds a marker by its code. Your finished piece leads Home.',
-  'Finish a page and Reveal shows it off on its paper, ready to share. Gradients are smoother, with a new Around flow for mandalas, and Redo is beside Undo.',
-  'Search finds a code however you type it (“c3”, “C-3”, “cool grey 3”). Restoring a backup keeps your newer progress, and Save image’s codes no longer sit on top of each other.',
-  'A page downloaded from the internet now makes a better guide: lines close together no longer run into one. Scan is more careful: prices and counts in a list aren’t read as markers.',
-  'When you tap a section, the box that opens now points to it. The guide’s rows of buttons are tidier.',
-  'On an iPad, the Home, Markers and Palette screens now use the full width, and Home shows what a finished guide looks like before you make your first.',
-  'Scan is more reliable and now reads the brand printed on the cap. You can now undo Mark all coloured, and a palette colour you re-rolled.',
-  'Paste a whole list of codes and every line is read. Your ticks stay put when you merge or split sections.',
-  'When a cap’s code and colour name don’t match, Scan asks which you have. It also knows Ohuhu’s older codes.',
-  'New: add markers by typing their codes, or on an iPad or iPhone by scanning their caps one after another (Markers › Scan or type codes).',
-  'Grainy photos of a page are read more reliably.',
-  'Codes stay sharp when you zoom in. In Safari, swiping back closes what’s open before it leaves the app.',
-  'Back closes what’s open before it leaves the app. On a phone, the guide’s tabs are on the first screen.',
-  'Colour along now looks like your paper: what you’ve coloured is in colour, the rest pale. Change colour offers the closest markers first.',
-  'The Print sheet shows what its page and label choices look like. On an iPad, the picture’s tools have names.',
-  'Home has a Continue card that takes you back to the marker you were on. Your guides save themselves.',
-  'On an iPad, the guide’s picture is bigger and fits beside the controls. New icons throughout.',
-  'Sections you’ve coloured keep their markers when you change the plan. Turn codes off to see your picture as it is.',
-  'Printed guides: labels never overlap, tiny sections get close-ups, and the key has boxes to tick.',
-  'Random’s Balance can follow the 60-30-10 rule: one main colour, a second and an accent.',
-  'Print a test strip to try each marker on your own paper first (Share › Print › Pages).',
-  'Each zone can have its own shading, or none.',
-  'New: zones. Give part of your picture its own pattern and colours (Pattern › + Zone).',
-  'Greyscale shows your guide in greys, to check its lights and darks. Colour along lists markers lightest first.',
-  'Shading has new highlight and shadow choices, and a gradient can start from the colour you choose.',
-  'The Photo pattern matches markers more closely and suggests how many you need.',
-  'Gradients and palettes avoid stray greys and colours too alike to tell apart.',
-  'Match a colour picks markers the way your eye would, and corrects a photo’s lighting from the white paper.',
-  'Codes are easier to read, and each shows its brand.',
+  {
+    v: 'v308',
+    t: 'Gradients at “all” stay clear and bright: choose whether browns, greys and fluorescents join in, and set the count with − and +. Photographed pages straighten and tilt better, the printed key is easier to read, restoring a backup keeps your markers unless you say otherwise, and Send feedback is at the foot of Home.',
+  },
+  {
+    v: 'v307.1',
+    t: 'Fixes: a new guide is kept even if you close the app straight after Build, and the Print sheet shows how far a PDF has got.',
+  },
+  {
+    v: 'v307',
+    t: 'Finished pages stay in full colour, shaded guides count every marker, and two-brand codes show both markers. PDFs and saving keep the app responsive, and warm photos of your marker trays can be balanced.',
+  },
+  {
+    v: 'v306',
+    t: 'Scatter a gradient from Polished to Confetti, and smooth rough spots in one tap. Codes in both brands are marked, and Colour along finds a marker by its code. Your finished piece leads Home.',
+  },
+  {
+    v: 'v305',
+    t: 'Finish a page and Reveal shows it off on its paper, ready to share. Gradients are smoother, with a new Around flow for mandalas, and Redo is beside Undo.',
+  },
+  {
+    v: 'v304',
+    t: 'Search finds a code however you type it (“c3”, “C-3”, “cool grey 3”). Restoring a backup keeps your newer progress, and Save image’s codes no longer sit on top of each other.',
+  },
+  {
+    v: 'v303',
+    t: 'A page downloaded from the internet now makes a better guide: lines close together no longer run into one. Scan is more careful: prices and counts in a list aren’t read as markers.',
+  },
+  {
+    v: 'v302',
+    t: 'When you tap a section, the box that opens now points to it. The guide’s rows of buttons are tidier.',
+  },
+  {
+    v: 'v300',
+    t: 'On an iPad, the Home, Markers and Palette screens now use the full width, and Home shows what a finished guide looks like before you make your first.',
+  },
+  {
+    v: 'v299',
+    t: 'Scan is more reliable and now reads the brand printed on the cap. You can now undo Mark all coloured, and a palette colour you re-rolled.',
+  },
+  {
+    v: 'v298',
+    t: 'Paste a whole list of codes and every line is read. Your ticks stay put when you merge or split sections.',
+  },
+  {
+    v: 'v297',
+    t: 'When a cap’s code and colour name don’t match, Scan asks which you have. It also knows Ohuhu’s older codes.',
+  },
+  {
+    v: 'v296',
+    t: 'New: add markers by typing their codes, or on an iPad or iPhone by scanning their caps one after another (Markers › Scan or type codes).',
+  },
+  { v: 'v294', t: 'Grainy photos of a page are read more reliably.' },
+  {
+    v: 'v293',
+    t: 'Codes stay sharp when you zoom in. In Safari, swiping back closes what’s open before it leaves the app.',
+  },
+  {
+    v: 'v293',
+    t: 'Back closes what’s open before it leaves the app. On a phone, the guide’s tabs are on the first screen.',
+  },
+  {
+    v: 'v287',
+    t: 'Colour along now looks like your paper: what you’ve coloured is in colour, the rest pale. Change colour offers the closest markers first.',
+  },
+  {
+    v: 'v287',
+    t: 'The Print sheet shows what its page and label choices look like. On an iPad, the picture’s tools have names.',
+  },
+  {
+    v: 'v285',
+    t: 'Home has a Continue card that takes you back to the marker you were on. Your guides save themselves.',
+  },
+  {
+    v: 'v285',
+    t: 'On an iPad, the guide’s picture is bigger and fits beside the controls. New icons throughout.',
+  },
+  {
+    v: 'v284',
+    t: 'Sections you’ve coloured keep their markers when you change the plan. Turn codes off to see your picture as it is.',
+  },
+  {
+    v: 'v284',
+    t: 'Printed guides: labels never overlap, tiny sections get close-ups, and the key has boxes to tick.',
+  },
+  { v: 'v283', t: 'Random’s Balance can follow the 60-30-10 rule: one main colour, a second and an accent.' },
+  { v: 'v282', t: 'Print a test strip to try each marker on your own paper first (Share › Print › Pages).' },
+  { v: 'v281', t: 'Each zone can have its own shading, or none.' },
+  { v: 'v279', t: 'New: zones. Give part of your picture its own pattern and colours (Pattern › + Zone).' },
+  {
+    v: 'v278',
+    t: 'Greyscale shows your guide in greys, to check its lights and darks. Colour along lists markers lightest first.',
+  },
+  {
+    v: 'v277',
+    t: 'Shading has new highlight and shadow choices, and a gradient can start from the colour you choose.',
+  },
+  { v: 'v272', t: 'The Photo pattern matches markers more closely and suggests how many you need.' },
+  { v: 'v271', t: 'Gradients and palettes avoid stray greys and colours too alike to tell apart.' },
+  { v: 'v271', t: 'Codes are easier to read, and each shows its brand.' },
+  {
+    v: 'v270',
+    t: 'Match a colour picks markers the way your eye would, and corrects a photo’s lighting from the white paper.',
+  },
 ];
 (function () {
   if (typeof MutationObserver === 'undefined') return;
@@ -327,13 +399,17 @@ const WHATS_NEW = [
       }
     });
     // --- the help sheet ---
-    const fb = D.getElementById('helpFeedback');
-    if (fb) {
-      if (FEEDBACK_URL) {
-        fb.href = FEEDBACK_URL;
-        fb.hidden = false;
-      } else fb.hidden = true;
+    // (v308: Send feedback and Copy diagnostics are buttons, handled in safety.js; the beta's label and its guide)
+    if (typeof APP_BETA !== 'undefined' && APP_BETA) D.documentElement.classList.add('msbeta');
+    else {
+      const bg = D.getElementById('helpBeta');
+      if (bg) bg.hidden = true;
     }
+    const wipe = D.getElementById('helpWipe');
+    if (wipe && typeof askWipe === 'function')
+      wipe.addEventListener('click', function () {
+        askWipe(false);
+      });
     function openSheet() {
       const v = D.getElementById('helpVer');
       if (v) v.textContent = ver();
@@ -365,17 +441,31 @@ const WHATS_NEW = [
     if (av)
       av.insertAdjacentHTML(
         'beforebegin',
-        '<div class="homehelp"><button id="homeHiw" class="hlplink" data-help="hiw">How it works</button><span aria-hidden="true">·</span><button id="homeHelp" class="hlplink" data-help="sheet">Help</button></div>',
+        '<div class="homehelp"><button id="homeHiw" class="hlplink" data-help="hiw">How it works</button><span aria-hidden="true">·</span><button id="homeHelp" class="hlplink" data-help="sheet">Help</button><span aria-hidden="true">·</span><button id="homeFeedback" class="hlplink" data-feedback>Send feedback</button></div>',
       );
     // What's new: one card on Home after an update (never on a fresh install), when neither card above it is due (see
     // renderBackupNudge). It goes when ✕ is tapped, or by itself a week after it was first on screen: that time is kept
     // per version (WN_SHOWN, {v,t}), so time spent waiting behind the other cards doesn't count.
     const WN_SHOWN = 'ms-wn-shown',
       WN_DAYS = 7;
-    const wnItems = function () {
-      return WHATS_NEW.slice(0, 4)
-        .map(function (t) {
-          return '<li>' + esc(t) + '</li>';
+    // (v308) a version as a number to compare: v307.1 → 307.001; '' (none seen) → 0
+    const verNum = function (v) {
+      const m = /^v?(\d+)(?:\.(\d+))?/.exec(String(v || '').trim());
+      return m ? +m[1] + (+m[2] || 0) / 1000 : 0;
+    };
+    // what's new since the version last seen (up to four, newest first), and never what's newer than this one
+    const wnSince = function (last) {
+      const lo = verNum(last),
+        hi = verNum(ver()) || Infinity;
+      return WHATS_NEW.filter(function (x) {
+        const n = verNum(x.v);
+        return n > lo && n <= hi;
+      }).slice(0, 4);
+    };
+    const wnItems = function (list) {
+      return list
+        .map(function (x) {
+          return '<li>' + esc(x.t) + '</li>';
         })
         .join('');
     };
@@ -404,13 +494,15 @@ const WHATS_NEW = [
         }
       } else if (last === v) return false;
       const t = wnShownAt(v);
-      if (!WHATS_NEW.length || (t && Date.now() - t >= WN_DAYS * 864e5)) {
+      if (!wnSince(last).length || (t && Date.now() - t >= WN_DAYS * 864e5)) {
         put(LAST, v);
         return false;
       }
       return true;
     }
     function renderWhatsNew(allowed) {
+      // (v308) the beta's thanks first, once; What's new waits behind it
+      if (renderThanks(allowed)) allowed = false;
       let card = D.getElementById('whatsNew');
       if (!auto() || !wnDue() || !allowed) {
         if (card) card.remove();
@@ -428,7 +520,7 @@ const WHATS_NEW = [
           '</h2><button id="wnClose" class="wnx" aria-label="Dismiss what’s new">' +
           ic('x') +
           '</button></div><ul>' +
-          wnItems() +
+          wnItems(wnSince(get(LAST))) +
           '</ul>';
         const after = D.getElementById('backupNudge') || D.querySelector('#homeView .homegrid');
         if (after) after.insertAdjacentElement('afterend', card);
@@ -445,6 +537,57 @@ const WHATS_NEW = [
         put(WN_SHOWN, JSON.stringify({ v: v, t: Date.now() }));
     }
     window.renderWhatsNew = renderWhatsNew;
+    // (v308) "Thanks for testing": one card on Home in the beta, once set up (markers, or the welcome done), until its
+    // ✕ or a button on it is tapped. Under the browser tests only when a test sets window.__MS_THANKS_AUTO.
+    const THANKS = 'ms-beta-thanks';
+    function thanksDue() {
+      if (typeof APP_BETA === 'undefined' || !APP_BETA || get(THANKS)) return false;
+      if (window.__MS_TEST && !window.__MS_THANKS_AUTO) return false;
+      return !!(
+        get('ms-onboarded') ||
+        (typeof state !== 'undefined' && (state.owned.size || state.saved.length))
+      );
+    }
+    function renderThanks(allowed) {
+      let card = D.getElementById('betaThanks');
+      if (!allowed || !thanksDue()) {
+        if (card) card.remove();
+        return false;
+      }
+      if (!card) {
+        card = D.createElement('section');
+        card.id = 'betaThanks';
+        card.className = 'wnew';
+        card.setAttribute('aria-labelledby', 'btTitle');
+        card.innerHTML =
+          '<div class="wnhead"><h2 id="btTitle">Thanks for testing Marker Studio</h2><button id="btClose" class="wnx" aria-label="Dismiss thanks for testing">' +
+          ic('x') +
+          '</button></div><p>It’s a beta, so back up once a week (<b>Library › Back up</b>). Tell us what goes wrong, and what you’d like: <b>Send feedback</b> is at the foot of Home, and in the guide’s ⋯ menu.</p><div class="nrow"><button type="button" id="btGuide" class="nb1">Tester guide</button><button type="button" id="btFeedback" data-feedback>Send feedback</button></div>';
+        const after = D.getElementById('backupNudge') || D.querySelector('#homeView .homegrid');
+        if (after) after.insertAdjacentElement('afterend', card);
+        else if (av) av.insertAdjacentElement('beforebegin', card);
+        else return false;
+        const gone = function () {
+          put(THANKS, '1');
+          if (typeof homeCardGone === 'function') homeCardGone(card);
+          else card.remove();
+        };
+        card.querySelector('#btClose').addEventListener('click', gone);
+        card.querySelector('#btFeedback').addEventListener('click', gone);
+        card.querySelector('#btGuide').addEventListener('click', function () {
+          gone();
+          openSheet();
+          const g = D.getElementById('helpBeta');
+          if (g) {
+            g.open = true;
+            setTimeout(function () {
+              g.scrollIntoView({ block: 'start' });
+            }, 0);
+          }
+        });
+      }
+      return true;
+    }
     // Home was first drawn before this script ran
     if (typeof renderBackupNudge === 'function') {
       try {
@@ -457,8 +600,16 @@ const WHATS_NEW = [
     {
       const hv = D.getElementById('helpWnVer'),
         hl = D.getElementById('helpWnList');
-      if (hv) hv.textContent = ver();
-      if (hl) hl.innerHTML = wnItems();
+      // (v308: this version's, or the newest version's that has any)
+      const cur = WHATS_NEW.filter(function (x) {
+          return verNum(x.v) <= (verNum(ver()) || Infinity);
+        }),
+        top = cur.length ? cur[0].v : '',
+        mine = cur.filter(function (x) {
+          return x.v === top;
+        });
+      if (hv) hv.textContent = top || ver();
+      if (hl) hl.innerHTML = wnItems(mine);
     }
     // --- How it works, once: the first time the guide shows a photo or the sample (never over another dialog) ---
     if (

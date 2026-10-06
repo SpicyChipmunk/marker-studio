@@ -110,15 +110,20 @@ const JOBS = (function () {
         if (!waits.size) tail = 0;
         const st = m.err ? stats.failed : stats.done;
         st[w.k] = (st[w.k] || 0) + 1;
+        // (v308: kept for Copy details; a picture that isn't opaque is expected, and done on the page)
+        if (m.err && m.err !== 'not opaque')
+          errLog('Worker', w.k + ' job failed (done on the page): ' + m.err);
         if (m.err) w.rej(new Error(m.err));
         else w.res(m.r);
       };
       // (the worker couldn't start, or broke: every job waiting is done on the page instead, and so are later ones)
       wk.onerror = function (e) {
         if (e && e.preventDefault) e.preventDefault();
+        errLog('Worker', 'stopped (work done on the page): ' + ((e && e.message) || 'error'));
         stop();
       };
-    } catch (_) {
+    } catch (e) {
+      errLog('Worker', 'couldn’t start (work done on the page): ' + ((e && e.message) || e));
       stop();
     }
     return wk;
@@ -150,6 +155,7 @@ const JOBS = (function () {
     }
     waits.delete(id);
     stats.timedOut[w.k] = (stats.timedOut[w.k] || 0) + 1;
+    errLog('Worker', w.k + ' job gave no answer in ' + ms + ' ms (done on the page from now on)');
     w.rej(new Error('timed out'));
     stop();
   }

@@ -791,15 +791,25 @@ function renderTools() {
       if (colored[l]) d++;
     });
     pct = assignData.N ? Math.round((d / assignData.N) * 100) : 0;
-    t = part('<b>' + d + '</b> of <b>' + assignData.N + '</b>', 'coloured');
+    // (v308: for a few seconds the first time, that the screen stays on, wakeSay)
+    t = part(
+      '<b>' + d + '</b> of <b>' + assignData.N + '</b>',
+      'coloured' + (Date.now() < _wakeUntil ? ' · screen stays on' : ''),
+    );
   } else if (sfmode === 'guide' && guide) {
     const mk = {},
       pw = guideWhite();
     for (const l in assignData.assign) mk[assignData.assign[l].mkey] = 1;
     // (v307: a photo with no colour leaves every section white: "954 sections · left white", not "0 sections")
     if (pw) t = part(n(pw, 'section', 'sections'), '· left white');
-    else
-      t = part(n(assignData.N, 'section', 'sections'), '· ' + n(Object.keys(mk).length, 'marker', 'markers'));
+    else {
+      // (v308: with shading on, "+ 29 for shading", as Page finished, the Library and Home say: shadeExtra)
+      const sx = shadeOn() ? shadeExtra() : 0;
+      t = part(
+        n(assignData.N, 'section', 'sections'),
+        '· ' + n(Object.keys(mk).length, 'marker', 'markers') + (sx > 0 ? ' + ' + sx + ' for shading' : ''),
+      );
+    }
   } else if (sfmode === 'review' && labels && !pgMode && !cropMode && countEl)
     t = part(n(parseInt(countEl.textContent, 10) || 0, 'section', 'sections'));
   if (workEl) workEl.classList.toggle('sfalong', sfmode === 'color');
@@ -1077,8 +1087,10 @@ function openMenu() {
       g +
       '</div>';
   b +=
-    '<div class="sfmenu" role="group" aria-labelledby="sfMh3"><div class="sfmh" id="sfMh3">Help</div>' +
+    // (v308: no heading of its own: "Help" over a Help button said it twice, and the room keeps the menu on a phone)
+    '<div class="sfmenu" role="group" aria-label="Help">' +
     it('help', 'Help') +
+    it('feedback', 'Send feedback') +
     '</div>';
   const el = openSheet({
     title: (curName && curName.trim()) || 'New guide',
@@ -1107,7 +1119,7 @@ function menuDo(m) {
   else if (m === 'reset') askResetProgress();
   else if (m === 'help') {
     if (typeof window.openHelpSheet === 'function') window.openHelpSheet();
-  }
+  } else if (m === 'feedback') sendFeedback();
 }
 
 /* ---- #8 one-time hints ----

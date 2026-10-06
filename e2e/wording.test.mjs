@@ -52,7 +52,8 @@ const appState = (extra = {}) => JSON.stringify({ mode: 'home', ownedSeedV: 2, c
 test('wording: Help is Help, What’s new has no "….", the iOS card in Chrome doesn’t say Safari', async () => {
   const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState() }) });
   assert.equal(await page.textContent('#homeHelp'), 'Help');
-  assert.equal(await page.evaluate(() => WHATS_NEW.some((t) => t.includes('….'))), false);
+  // (v308: each entry is { v, t })
+  assert.equal(await page.evaluate(() => WHATS_NEW.some((x) => x.t.includes('….'))), false);
   assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('appVer')).opacity), '1');
   await page.click('#mSections'); await idle(page);
   assert.equal(await page.getAttribute('#sfHelpQ0', 'aria-label'), 'Help');

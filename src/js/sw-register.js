@@ -7,8 +7,8 @@ if ('serviceWorker' in navigator) {
         had = true;
         return;
       }
-      if (window.toast)
-        toast(
+      if (window.toastHTML)
+        toastHTML(
           'Marker Studio was updated. <button class="sflink" onclick="location.reload()">Reload</button>',
           15000,
         );

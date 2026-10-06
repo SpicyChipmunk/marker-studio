@@ -70,7 +70,7 @@ function editTapAt(P) {
     if (l > 0 && assignData && assignData.assign[l]) {
       // (a section of a flat zone is flat already: say so, rather than a tap that seems to do nothing)
       if (!shadeFlat[l] && !zshOf(l).on) {
-        toast(esc(zoneName(zoneOf(l))) + ' is flat, so its sections already are.', 2600);
+        toast(zoneName(zoneOf(l)) + ' is flat, so its sections already are.', 2600);
         return;
       }
       if (shadeFlat[l]) delete shadeFlat[l];
@@ -149,6 +149,12 @@ function editTapAt(P) {
   if (sfmode !== 'review') return;
   if (editMode === 'merge') {
     if (l > 0) {
+      // (v308) the background isn't merged with: a section merged into it went white with no word, or, brought back
+      // once, made the whole paper one section to colour. The selection stays for another tap.
+      if (l !== mergeSel && comps[l] && comps[l].bg && !counted(l)) {
+        toast(MERGE_BG_SAY, 4500);
+        return;
+      }
       if (mergeSel < 0) mergeSel = l;
       else if (mergeSel === l) mergeSel = -1;
       else {
@@ -168,6 +174,7 @@ function editTapAt(P) {
     render();
   }
 }
+const MERGE_BG_SAY = 'That’s the background, not a section. To make a section white, use Leave out.';
 // the section a Split or Add stroke is for: the one it runs through furthest, lines not counted (v304: the section it
 // started in, so a stroke begun on the outline did nothing, and one begun just over it tried to cut the neighbour)
 function strokeSection(pts) {
@@ -489,9 +496,9 @@ function onUp(e) {
           const _zo = zoneOf(labels[P.y * W + P.x]);
           toast(
             'That section is in ' +
-              esc(zoneName(_zo)) +
+              zoneName(_zo) +
               '. Choose ' +
-              esc(zoneName(_zo)) +
+              zoneName(_zo) +
               ' above to add anchors there.',
             2600,
           );

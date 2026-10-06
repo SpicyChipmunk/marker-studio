@@ -98,18 +98,70 @@ function ctlPlanHead() {
     roughLineHTML()
   );
 }
-// The marker count's label: "all (451)" or "16"; for the Gradient, how many it lays when that's fewer (v306): "all ·
-// 216 used" (fewer sections), "300 · 216 used", or "all · 268, some twice" (more sections than clear markers:
-// gradCount's reuse)
-function mkCountLabel(psz) {
-  const all = limitN >= psz,
-    base = all ? 'all' : String(limitN);
-  if (gradFamily() && labels && comps) {
-    const c = gradCountNow();
-    if (c.reuse) return base + ' \u00b7 ' + c.M + ', some twice';
-    if (c.M < Math.min(limitN, psz)) return base + ' \u00b7 ' + c.M + ' used';
-  }
-  return all ? 'all (' + psz + ')' : base;
+/* (v308) The marker count: −, a slider and + (each 44 px, held down they keep going), and the count, which a tap
+   turns into a box to type one. The slider runs from 2 to the smaller of the sections and the markers left (mkCap);
+   its right end is "all" (limitN kept as MK_ALL, so a guide stays at all on any page), and a saved count at or over
+   the end reads as all. The count says "24", or "all · 130" (how many all lays); a guide just opened, not laid since,
+   counts its own markers ("all · 78"), as the guide on screen is what it says. */
+const MK_ALL = 999;
+function mkCap() {
+  const N = labels && comps ? zoneList().length : 0,
+    p = sliderMax();
+  return Math.max(2, N >= 2 ? Math.min(N, p) : p);
+}
+// how many markers the sections of the zone being edited have, while it's as it opened (not laid since); else -1
+function mkOwnCount() {
+  if (!assignData || !_mkOpened[zoneCur]) return -1;
+  const seen = {};
+  let k = 0;
+  zoneList().forEach(function (l) {
+    const m = assignData.assign[l];
+    if (m && !seen[m.mkey]) {
+      seen[m.mkey] = 1;
+      k++;
+    }
+  });
+  return k;
+}
+function mkCountLabel() {
+  const cap = mkCap(),
+    all = limitN >= cap,
+    own = mkOwnCount();
+  if (own >= 0)
+    return all ? 'all \u00b7 ' + own : own !== limitN ? limitN + ' \u00b7 ' + own : String(limitN);
+  if (!all) return String(limitN);
+  return 'all \u00b7 ' + (gradFamily() && labels && comps ? gradCountNow().M : cap);
+}
+// the count's words for a screen reader ("all, 130 markers")
+function mkCountSay() {
+  return mkCountLabel().replace(' \u00b7 ', ', ') + ' markers';
+}
+function mkCountCtl(off) {
+  const cap = mkCap(),
+    v = Math.max(2, Math.min(limitN, cap));
+  return (
+    '<div class="sfmkhead"><span id="sfMkWord">Markers in this ' +
+    (zones.length ? 'zone' : 'guide') +
+    '</span><button type="button" id="sfMkNum" class="sfmknum" aria-label="' +
+    esc(mkCountSay()) +
+    ', type a number"' +
+    (off ? ' disabled' : '') +
+    '><b id="sfMkNlbl">' +
+    (off ? (off === 'one' ? 'one per section' : mkCountLabel()) : mkCountLabel()) +
+    '</b></button></div><div class="sfmkrow"><button type="button" class="sfedit sfmkstep" id="sfMkMinus" aria-label="One marker fewer"' +
+    (off || v <= 2 ? ' disabled' : '') +
+    '>\u2212</button><input type="range" id="sfMkCount" min="2" max="' +
+    cap +
+    '" value="' +
+    v +
+    '" aria-labelledby="sfMkWord" aria-valuetext="' +
+    esc(mkCountSay()) +
+    '"' +
+    (off ? ' disabled' : '') +
+    '><button type="button" class="sfedit sfmkstep" id="sfMkPlus" aria-label="One marker more"' +
+    (off || limitN >= cap ? ' disabled' : '') +
+    '>+</button></div>'
+  );
 }
 // Colours: how many markers comes first (it changes the guide the most), then where the colours come from (with
 // the filters for Owned), then Temperature and Mood
@@ -119,27 +171,19 @@ function ctlPlanColours() {
     _expH = '';
   if (family !== 'manual') {
     var _srcSeed = paletteSource === 'saved' || paletteSource === 'generate',
-      _psz = sliderMax(),
-      _cnt = Math.min(limitN, _psz),
+      // (a palette chosen: none saved, or a deleted one, uses your markers, v308)
+      _seedN = _srcSeed ? seedPool(true).length : 0,
       // (Random's No repeats: as many as there are sections, so the count has nothing to say)
       _nr = family === 'random' && balance === 'mixed' && noRep,
       // (one marker to use: the slider, which starts at 2, has nothing to choose either; it said "all (2)", v304)
-      _one = (_srcSeed && !expand ? curSeedLen() : poolFor(palette).length) <= 1;
+      _one = (_seedN && !expand ? _seedN : poolFor(palette).length) <= 1;
     _mkH +=
-      '<label class="sfmkcount' +
+      '<div class="sfmkcount' +
       (_nr || _one ? ' sfoff' : '') +
-      '">Markers in this ' +
-      (zones.length ? 'zone' : 'guide') +
-      ' <b id="sfMkNlbl">' +
-      (_nr ? 'one per section' : _one ? 'all (1)' : mkCountLabel(_psz)) +
-      '</b><input type="range" id="sfMkCount" min="2" max="' +
-      _psz +
-      '" value="' +
-      _cnt +
-      '"' +
-      (_nr || _one ? ' disabled' : '') +
-      '></label>';
-    if (_srcSeed) {
+      '">' +
+      mkCountCtl(_nr ? 'one' : _one ? 'off' : '') +
+      '</div>';
+    if (_srcSeed && (_seedN || paletteSource === 'generate')) {
       _expH +=
         '<label class="sfchk sfc-check sfc-inline sfc-mt8"><input type="checkbox" id="sfExpand"' +
         (expand ? ' checked' : '') +
@@ -201,11 +245,24 @@ function ctlPlanColours() {
         '</select>';
     }
   } else if (family !== 'manual' && paletteSource === 'generate') {
+    // (v308: a palette handed over from Palette shows as itself; choosing a harmony makes a new one)
     html +=
       '<select id="sfHarm" class="sfc-select" aria-label="Harmony">' +
+      (fromPal
+        ? '<option value="" selected disabled>' +
+          esc(fromPal.name) +
+          (fromPal.h ? ' (' + HARM[fromPal.h] + ')' : '') +
+          '</option>'
+        : '') +
       GEN_HARMS.map(function (h) {
         return (
-          '<option value="' + h + '"' + (genHarmony === h ? ' selected' : '') + '>' + HARM[h] + '</option>'
+          '<option value="' +
+          h +
+          '"' +
+          (genHarmony === h && !fromPal ? ' selected' : '') +
+          '>' +
+          HARM[h] +
+          '</option>'
         );
       }).join('') +
       '</select>';
@@ -241,8 +298,12 @@ function ctlPlanColours() {
   html += _expH;
   var _tShow = (paletteSource === 'owned' || family === 'manual') && family !== 'photo',
     _iShow = family !== 'manual' && family !== 'photo',
-    // a saved palette is used as it is: its Mood is greyed out (the line under it says so)
-    _mOff = _iShow && paletteSource === 'saved' && curSeedLen() > 0;
+    // a saved palette is used as it is: its Mood is greyed out (the line under it says so); so is one handed over
+    // from Palette (v308), until a new one is generated
+    _mOff =
+      _iShow &&
+      (paletteSource === 'saved' || (paletteSource === 'generate' && !!fromPal)) &&
+      curSeedLen() > 0;
   // (Random's Main colour with a colour chosen by hand: the colours are chosen, so Temperature has nothing to steer)
   var _tOff =
     _tShow &&
@@ -277,7 +338,23 @@ function ctlPlanColours() {
         return ctlSeg(k, MOODS[k].label, emphasis === k, _mOff);
       }).join('') +
       '</div>';
-  if (_tShow || _iShow) html += '<div class="sfpoolct">' + poolMsg() + '</div>';
+  // (v308) Include, the Gradient from your markers (or a palette Expand adds to) in a guide made since v308: three
+  // chips, a tick on those that are on; the line under says how many markers that leaves
+  var _inShow = _iShow && inclShow();
+  if (_inShow) {
+    var _inc = inclOn(gradIncl, emphasis);
+    html +=
+      '<div class="sfsublbl" id="sfInclLbl">Include</div><div id="sfIncl" role="group" aria-labelledby="sfInclLbl" class="sfc-segs sfincl">' +
+      INCL_KEYS.map(function (k) {
+        return ctlSeg(k, INCL_LABEL[k].replace('&', '&amp;'), _inc[k]);
+      }).join('') +
+      '</div>';
+  }
+  if (_tShow || _iShow)
+    html +=
+      '<div class="sfpoolct" id="sfPoolCt">' +
+      (_inShow && paletteSource === 'owned' ? inclStatus() : poolMsg()) +
+      '</div>';
   // (v288) the markers to get out of the box: every marker on the page, all zones, opens a list
   if (assignData) {
     const nm = pageMarkerKeys().length;
@@ -372,6 +449,10 @@ function ctlPlanPattern() {
               '<span class="sfsr">centre mark</span> on the picture to move it') +
           '</div>'
         : '') +
+      // (v308: Radial on a mandala-like page: Around keeps matching petals alike, Radial's rings cut across them)
+      (gradShape === 'radial' && labels && comps && gradMandala()
+        ? '<div id="sfAroundTip" class="sfc-note sfc-mt6">This page looks like a mandala: Around keeps matching shapes alike. <button type="button" id="sfUseAround" class="sflink">Use Around</button></div>'
+        : '') +
       '<div class="sfsublbl">Direction</div><div id="sfDir" role="group" aria-label="Direction" class="sffit"><button class="sfedit' +
       (dir > 0 ? ' on' : '') +
       '" data-d="1" aria-pressed="' +
@@ -389,7 +470,7 @@ function ctlPlanPattern() {
       '</div>';
     const _ln = lookNote();
     if (_ln) html += '<div id="sfLookNote" class="sfc-note sfc-mt6">' + _ln + '</div>';
-    // Scatter (v306): one line, its note only away from Polished; with too few markers it stays Polished and says why
+    // Scatter (v306): one line, and its note (v308: Polished's too); with too few markers it stays Polished and says why
     // (v307: its name over the slider as Flow, Direction, Start colour and Look have theirs, "Scatter: Polished")
     const _sOff = gradCountNow().M < GRAD_SCAT_MIN,
       _sv = _sOff ? 0 : gradScat;
@@ -404,9 +485,7 @@ function ctlPlanPattern() {
       GRAD_SCAT_LABEL[_sv] +
       '" class="sfc-range"' +
       (_sOff ? ' disabled aria-describedby="sfGradScatNote"' : '') +
-      '></div><div id="sfGradScatNote" class="sfc-note sfc-mt6"' +
-      (_sv || _sOff ? '' : ' hidden') +
-      '>' +
+      '></div><div id="sfGradScatNote" class="sfc-note sfc-mt6">' +
       (_sOff
         ? 'Scatter needs ' +
           GRAD_SCAT_MIN +
@@ -482,12 +561,22 @@ function ctlPlanPattern() {
         '</button><button id="sfPhPick" class="sfghost">Change photo</button>' +
         (photoAlign ? '<button id="sfPhAuto" class="sfghost">Line up automatically</button>' : '') +
         '</div>';
+      // (v308: the choice as it stands, "Place it: Fill", or how it got there, "Lined up automatically")
+      var _pl = photoAlign ? photoPlaceNow() : '';
       if (photoAlign)
         html +=
-          '<div class="sfsublbl">Place it</div><div id="sfPhFit" role="group" aria-label="Place it" class="sfc-segs">' +
-          ctlSeg('fill', 'Fill', false) +
-          ctlSeg('fit', 'Fit', false) +
-          ctlSeg('stretch', 'Stretch', false) +
+          '<div class="sfsublbl" id="sfPhFitLbl">Place it: <b>' +
+          ({
+            fill: 'Fill',
+            fit: 'Fit',
+            stretch: 'Stretch',
+            auto: 'Lined up automatically',
+            hand: 'Placed by hand',
+          }[_pl] || 'Lined up') +
+          '</b></div><div id="sfPhFit" role="group" aria-labelledby="sfPhFitLbl" class="sfc-segs">' +
+          ctlSeg('fill', 'Fill', _pl === 'fill') +
+          ctlSeg('fit', 'Fit', _pl === 'fit') +
+          ctlSeg('stretch', 'Stretch', _pl === 'stretch') +
           '</div><label class="sfc-slider sfc-mt10">See-through<input type="range" id="sfPhOp" min="20" max="90" value="' +
           Math.round(photoOp * 100) +
           '" class="sfc-range"></label><div class="sfphint desk">On a computer: scroll to size it, Shift + scroll to turn it.</div>';

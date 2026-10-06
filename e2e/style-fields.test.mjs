@@ -494,7 +494,8 @@ test('a new picture (the sample) keeps the style and section settings; only the 
   // saves nothing of it)
   const { gradScat, gradJit, gradFix, ...rest } = s1.style;
   void gradScat, void gradJit, void gradFix;
-  assert.deepEqual(await allSettings(page), { ...s1, style: { ...rest, radC: null, shade: { ...s1.style.shade, flat: [], main: true } }, photoPaper: true });
+  // (v308: a guide from before Include gets the Include row with a new picture, as the Mood has it: {})
+  assert.deepEqual(await allSettings(page), { ...s1, style: { ...rest, radC: null, incl: {}, shade: { ...s1.style.shade, flat: [], main: true } }, photoPaper: true });
   assert.deepEqual(await page.evaluate(() => [__mstest.styleVars.gradScat, __mstest.styleVars.gradJit, __mstest.styleVars.gradFix]), [0, 0, false]);
   assert.deepEqual(errors, []);
 });
@@ -592,7 +593,10 @@ test('odd values in a saved file (wrong type, out of range, unknown choice) open
   // an imported file goes through the same checks
   const good = await page.evaluate(() => __mstest.currentDesignObj());
   await page.evaluate((d) => SF.importFile(new File([JSON.stringify(d)], 'odd.msguide.json', { type: 'application/json' })), { ...good, name: 'Imported odd', payload: { ...good.payload, style: ODD_HIGH, ...ODD_HIGH_PAY } });
-  await page.waitForFunction(() => __mstest.curName === 'Imported odd' && __mstest.curId != null && __mstest.assignData, null, { timeout: 10000 }); await idle(page);
+  // (v308: the same picture and sections are in the Library already, kept as the guides above opened: Add a copy, which
+  // is named as a copy is)
+  await page.click('#sfEdAsk [data-a="copy"]');
+  await page.waitForFunction(() => __mstest.curName === 'Imported odd (2)' && __mstest.curId != null && __mstest.assignData, null, { timeout: 10000 }); await idle(page);
   assert.deepEqual(await settings(page), { style: ODD_HIGH_OPEN, minSize: 100, bgTrim: 100, addAutoClose: true });
   assert.deepEqual(errors, []);
 });

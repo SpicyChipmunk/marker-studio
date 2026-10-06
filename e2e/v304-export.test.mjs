@@ -28,7 +28,7 @@ const manyMarkers = (page, n) => page.evaluate((n) => {
   ids.forEach((l, i) => { const c = COLORS[(i * 7) % COLORS.length]; if (i < n) a[l] = Object.assign({}, base, { mkey: c.brand + ':' + c.code, hex: c.hex, code: c.code, name: c.name, brand: c.brand }); });
 }, n);
 
-test('Save image: codes placed as on the PDF, none over another and none under 6 px; the rest left off, said under the brand; Codes off draws none', async () => {
+test('Save image: codes placed as on the PDF, none over another and none under 10 px (v308); the rest a dot, said under the brand; Codes off draws none', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   const r = await imageTexts(page, false);
@@ -39,17 +39,18 @@ test('Save image: codes placed as on the PDF, none over another and none under 6
   assert.equal(over, 0, 'no two codes overlap (v303: 150 of the 166 did)');
   const codes = r.log.filter((e) => e.y < r.H);
   assert.equal(codes.length, b.length, 'one code per box placed');
-  assert.ok(codes.every((e) => e.fs >= 6), 'none smaller than 6 px');
-  assert.ok(r.pl.dropped.length > 0 && r.pl.dropped.length < 40, 'a few sections too small: ' + r.pl.dropped.length);
+  // (v308: none under 10 px on the image as saved, the sample saved full size; codes of 6-8 px couldn't be read)
+  assert.ok(codes.every((e) => e.fs >= 10), 'none smaller than 10 px');
+  assert.ok(r.pl.dropped.length > 0 && r.pl.dropped.length < 70, 'a few sections too small: ' + r.pl.dropped.length);
   assert.equal(codes.length + r.pl.dropped.length, await page.evaluate(() => Object.keys(__mstest.assignData.assign).length));
-  const nt = r.log.filter((e) => /^Small sections unlabelled: see the guide or the PDF’s close-ups\.$/.test(e.t));
+  const nt = r.log.filter((e) => /^A dot marks each small section: see the guide or the PDF’s close-ups\.$/.test(e.t));
   assert.equal(nt.length, 1, 'the line under the brand');
   const brand = r.log.find((e) => /Ohuhu markers/.test(e.t));
   assert.ok(nt[0].y > brand.y, 'under the brand line');
   // Codes off: no codes and no line about them
   const off = await imageTexts(page, true);
   assert.equal(off.log.filter((e) => e.y < off.H).length, 0, 'no codes');
-  assert.ok(!off.log.some((e) => /Small sections/.test(e.t)));
+  assert.ok(!off.log.some((e) => /small section/.test(e.t)));
   assert.ok(off.h < r.h, 'the image a line shorter');
   assert.deepEqual(errors, []);
 });

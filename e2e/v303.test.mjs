@@ -164,8 +164,12 @@ test('Colour along, a finished page: a colour with one section says "Coloured âœ
   await page.click('#sfColor'); await idle(page);
   await page.evaluate(() => { const t = __mstest; t.assignData.order.forEach((l) => { t.colored[l] = 1; }); t.guideDirty = true; t.renderGuide(); t.checkComplete(); t.updateProgress && t.updateProgress(); });
   await idle(page);
+  // (any marker with exactly one section: the sample used YG211 for one until v308's Include defaults changed its colours)
+  const one = await page.evaluate(() => { const t = __mstest, n = {}; t.assignData.order.forEach((l) => { const k = t.assignData.assign[l].code; n[k] = (n[k] || 0) + 1; }); return Object.keys(n).filter((k) => n[k] === 1); });
+  assert.ok(one.length, 'the sample has a marker with one section');
   const rows = await page.$$eval('#sfAlist .sfarow', (rs) => rs.map((r) => r.textContent.replace(/\s+/g, ' ')));
-  const yg = rows.find((t) => /YG211/.test(t));
+  const yg = rows.find((t) => one.some((k) => new RegExp('\\b' + k + '\\b').test(t)));
+  assert.ok(yg, 'its row: ' + one.join(' '));
   assert.match(yg, /Coloured âœ“/);
   assert.doesNotMatch(rows.join('|'), /All 1 coloured/);
   assert.deepEqual(errors, []);

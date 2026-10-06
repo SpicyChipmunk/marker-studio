@@ -89,7 +89,8 @@ test('a saved palette chosen for the next guide shows under Home’s New colouri
   await welcome(page, 'look');
   await page.click('#mPalette'); await page.click('#draw'); await idle(page);
   await page.click('#useInGuide');
-  await page.waitForFunction(() => __mstest.styleVars.paletteSource === 'saved');
+  // (v308: held for the next guide as it is, not saved to the Library first)
+  await page.waitForFunction(() => state.mode === 'sections');
   await page.click('#mHome'); await idle(page);
   assert.match(await page.textContent('#homePalNote'), /^Using “.+”\d+ markers · for your next new guide$/);
   await page.click('#homePalNote [data-clearpal]'); await idle(page);

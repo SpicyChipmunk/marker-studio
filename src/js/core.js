@@ -46,6 +46,15 @@ function sizeOffered(h, n) {
   const R = HARM_RANGE[h] || [2, 6];
   return n >= R[0] && n <= R[1] && n <= 12;
 }
+// (v308) a palette's entry in state.palH, beside it in the history: its scheme, with "+" after it when it was made by
+// itself (a size, scheme or filter change: regenReplace). The next such change replaces only a palette made that way,
+// so trying another size and going back with Undo finds the palette you had made.
+function palHarm(x) {
+  return typeof x === 'string' ? x.replace(/\+$/, '') : null;
+}
+function palAuto(x) {
+  return typeof x === 'string' && x.slice(-1) === '+';
+}
 const LOCKSVG =
   '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>';
 const $ = (id) => document.getElementById(id);
@@ -136,7 +145,7 @@ function toastBottom() {
 // doesn't end in a click leaves it for the next tap.
 function errCard(anchor, msg) {
   if (!anchor || !anchor.parentNode || !anchor.isConnected || !anchor.getClientRects().length) {
-    toast(ic('triangle-alert', 'icw') + ' ' + msg, 8000);
+    toastHTML(ic('triangle-alert', 'icw') + ' ' + msg, 8000);
     return null;
   }
   let c = anchor.nextElementSibling;
@@ -208,6 +217,28 @@ function progMix(rgb, k) {
 function oldCode(c) {
   return String(c.old || '').normalize('NFKC');
 }
+// (v308) A name made safe for a file name: letters and digits in any script are kept (a Japanese, Greek or Cyrillic
+// name used to become "guide.msguide.json", so several files shared one name), anything else becomes the separator;
+// spaces too, unless keepSpaces. At most max letters; fallback when nothing is left.
+function fileSlug(name, fallback, max, keepSpaces) {
+  const sep = keepSpaces ? ' ' : '-';
+  let s = String(name == null ? '' : name);
+  try {
+    s = s.normalize('NFC').replace(keepSpaces ? /[^\p{L}\p{M}\p{N}\- ]+/gu : /[^\p{L}\p{M}\p{N}]+/gu, sep);
+  } catch (_) {
+    s = s.replace(keepSpaces ? /[^\w\- ]+/g : /[^a-z0-9]+/gi, sep);
+  }
+  s = s
+    .split(sep)
+    .filter(Boolean)
+    .join(sep)
+    .replace(/^[-\s]+|[-\s]+$/g, '');
+  s = Array.from(s)
+    .slice(0, max || 80)
+    .join('')
+    .replace(/[-\s]+$/, '');
+  return s || fallback || 'file';
+}
 function ic(n, cls) {
   return (
     '<svg class="ic' +
@@ -218,8 +249,16 @@ function ic(n, cls) {
   );
 }
 // A toast stays while the pointer is over it or a button in it has the keyboard's focus (v284: an Undo can be read
-// and reached), and goes a moment after that ends
+// and reached), and goes a moment after that ends.
+// (v308) The message is plain text: a name in it (a guide's, a zone's, a palette's) is shown as written and can never
+// become markup. toastHTML is the explicit variant for a message built as HTML, its names escaped by the caller.
 function toast(m, ms) {
+  toastShow(m, ms, false);
+}
+function toastHTML(m, ms) {
+  toastShow(m, ms, true);
+}
+function toastShow(m, ms, html) {
   let t = document.getElementById('msToast');
   if (!t) {
     t = document.createElement('div');
@@ -245,7 +284,8 @@ function toast(m, ms) {
       setTimeout(go, 0);
     });
   }
-  t.innerHTML = m;
+  if (html) t.innerHTML = m;
+  else t.textContent = m == null ? '' : String(m);
   // (v288: on the guide's Share tab the buttons are at the bottom, so a toast sits just under the pinned picture)
   // (the Share panel itself showing: the Plan, not Colour along or Edit sections after it)
   const sh = document.querySelector('#sfCtl .sftab[data-tab="share"]');
@@ -272,29 +312,31 @@ function toast(m, ms) {
 function toastAction(m, label, fn, ms) {
   toastActions(m, [{ label: label, fn: fn }], ms);
 }
-// a toast with a button or more ([{ label, fn }]); the first is #toastAct. Long enough to read and reach: 8 s
-function toastActions(m, acts, ms) {
-  toast(
-    m +
-      acts
-        .map(function (a, i) {
-          return ' <button class="sflink" id="toastAct' + (i ? i + 1 : '') + '">' + a.label + '</button>';
-        })
-        .join(''),
-    ms || 8000,
-  );
+// (v308) as toastAction, with a message built as HTML (its names escaped by the caller)
+function toastActionHTML(m, label, fn, ms) {
+  toastActions(m, [{ label: label, fn: fn }], ms, true);
+}
+// a toast with a button or more ([{ label, fn }]); the first is #toastAct. Long enough to read and reach: 8 s.
+// The message is plain text unless html; the buttons' labels always are.
+function toastActions(m, acts, ms, html) {
+  toastShow(m, ms || 8000, !!html);
+  const t = document.getElementById('msToast');
+  if (!t) return;
   acts.forEach(function (a, i) {
-    const b = document.getElementById('toastAct' + (i ? i + 1 : ''));
-    if (b)
-      b.addEventListener(
-        'click',
-        function () {
-          const t = document.getElementById('msToast');
-          if (t) t.classList.remove('on');
-          a.fn();
-        },
-        { once: true },
-      );
+    const b = document.createElement('button');
+    b.className = 'sflink';
+    b.id = 'toastAct' + (i ? i + 1 : '');
+    b.textContent = a.label;
+    t.appendChild(document.createTextNode(' '));
+    t.appendChild(b);
+    b.addEventListener(
+      'click',
+      function () {
+        t.classList.remove('on');
+        a.fn();
+      },
+      { once: true },
+    );
   });
 }
 // A file for the person to keep. On a phone or tablet it goes to the share sheet (on an iPhone: Save to Files, iCloud
@@ -447,6 +489,8 @@ function cleanSaved(e) {
   o.keys = Array.isArray(e.keys) ? e.keys.filter((k) => typeof k === 'string') : [];
   if ('thumb' in o) o.thumb = safeThumb(o.thumb);
   if ('done' in o && !(Number.isInteger(o.done) && o.done >= 0)) delete o.done;
+  // (v308) a palette's scheme, to open it as that again
+  if ('h' in o && !(typeof o.h === 'string' && HARM[o.h])) delete o.h;
   // (when it was saved: a time, or none — a word there showed as "Invalid Date" in the Library, v298)
   if ('ts' in o) {
     const t = Number(o.ts);

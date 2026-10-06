@@ -32,6 +32,13 @@ function nameForSave(idxs) {
   }
   return nm;
 }
+// (v308) the Palette card's name again, after the Library renamed the palette shown (it kept the old one until drawn
+// again)
+function palNameSync() {
+  const el = state.mode === 'palette' && readout.querySelector('.name'),
+    idxs = el ? currentPaletteIdxs() : [];
+  if (el && idxs.length) el.textContent = shownPaletteName(idxs);
+}
 function doSave() {
   const idxs = currentPaletteIdxs();
   if (!idxs.length) return;
@@ -41,6 +48,8 @@ function doSave() {
     name: nameForSave(idxs),
     keys: idxs.map(mkey),
     ts: Date.now(),
+    // (v308) its scheme, so it opens as that again (it had always opened as Custom)
+    h: state.harmony,
   };
   state.saved.unshift(entry);
   saveNew(entry);
@@ -734,6 +743,7 @@ function libSubText() {
 function renderSaved() {
   if (_libEd) libEndRename(true, false);
   renderLibStat();
+  if (typeof preRestoreRender === 'function') preRestoreRender();
   var _sub = $('libSub');
   if (_sub) _sub.textContent = libSubText();
   var list = state.saved.slice();
@@ -827,8 +837,9 @@ function libMeta(s) {
 function libRowHTML(s, ed) {
   var nm = esc(s.name || ''),
     shown = nm || (s.type === 'draw' ? 'Random draw' : s.type === 'guide' ? 'Guide' : 'Palette');
+  // (v308: all of a palette's colours, up to its 16; 12 had cut a rainbow's last ones)
   var strip = (s.keys || [])
-    .slice(0, 12)
+    .slice(0, 16)
     .map(function (k) {
       var i = keyIdx(k);
       return i != null && COLORS[i] ? '<span style="background:' + COLORS[i].hex + '"></span>' : '';
@@ -875,7 +886,16 @@ function libRowHTML(s, ed) {
         shown +
         '">' +
         LIB_PEN +
-        '<span>Rename</span></button><button type="button" class="sdel" role="menuitem" tabindex="-1" aria-label="Delete ' +
+        '<span>Rename</span></button>' +
+        // (v308) a guide's copy with ticks starting fresh, to try another plan on the same page
+        (s.type === 'guide'
+          ? '<button type="button" class="sdup" role="menuitem" tabindex="-1" aria-label="Duplicate ' +
+            shown +
+            '">' +
+            ic('copy') +
+            '<span>Duplicate</span></button>'
+          : '') +
+        '<button type="button" class="sdel" role="menuitem" tabindex="-1" aria-label="Delete ' +
         shown +
         '">' +
         LIB_BIN +
@@ -1075,9 +1095,7 @@ function libDelete(id) {
   libFocus(at);
   toastAction(
     'Deleted \u201c' +
-      esc(
-        entry.name || (entry.type === 'guide' ? 'Guide' : entry.type === 'draw' ? 'Random draw' : 'Palette'),
-      ) +
+      (entry.name || (entry.type === 'guide' ? 'Guide' : entry.type === 'draw' ? 'Random draw' : 'Palette')) +
       '\u201d',
     'Undo',
     function () {
@@ -1099,6 +1117,76 @@ function libDelete(id) {
     },
     6000,
   );
+}
+// (v308) Duplicate: a guide's copy, "… (2)", with its plan, zones, pins, frame, photo and thumbnail, its ticks, tones,
+// kept shading and dates starting fresh. The open guide's last changes are saved first. Each copy holds its own photo.
+function libDuplicate(id) {
+  const e = state.saved.find((s) => s.id === id && s.type === 'guide');
+  if (!e) return Promise.resolve(null);
+  return Promise.resolve(window.SF && SF.flushSave ? SF.flushSave() : null)
+    .catch(function () {})
+    .then(function () {
+      return IDB.get('guide-' + id).catch(function () {
+        return null;
+      });
+    })
+    .then(function (pl) {
+      const src = state.saved.find((s) => s.id === id && s.type === 'guide') || e;
+      if (!pl || typeof pl !== 'object' || typeof pl.lmap !== 'string') {
+        toast(
+          'Couldn\u2019t duplicate \u201c' +
+            (src.name || 'Guide') +
+            '\u201d \u2014 its stored copy couldn\u2019t be read.',
+          5000,
+        );
+        return null;
+      }
+      const p = Object.assign({}, pl);
+      delete p.prog;
+      delete p.tones;
+      delete p.held;
+      delete p.dates;
+      if (p.out && typeof p.out === 'object') {
+        const q = {};
+        Object.keys(p.out).forEach(function (l) {
+          const x = Object.assign({}, p.out[l]);
+          delete x.done;
+          delete x.t;
+          q[l] = x;
+        });
+        p.out = q;
+      }
+      const nm = copyName(src.name || 'Guide');
+      return Promise.resolve(
+        sfSaveDesign({
+          id: _newGuideId(),
+          name: nm,
+          W: src.W,
+          H: src.H,
+          keys: src.keys || [],
+          n: src.n,
+          thumb: src.thumb || '',
+          payload: p,
+          quiet: true,
+        }),
+      ).then(function (nid) {
+        if (!nid) {
+          toast(
+            'Couldn\u2019t duplicate \u2014 this browser\u2019s storage is full. Back up, then delete a few guides in the Library.',
+            7000,
+          );
+          return null;
+        }
+        renderSaved();
+        renderRecent();
+        chrome();
+        toastAction('Duplicated as \u201c' + nm + '\u201d, ticks start fresh', 'Open', function () {
+          const x = state.saved.find((s) => s.id === nid);
+          if (x) loadGuide(x);
+        });
+        return nid;
+      });
+    });
 }
 function libFocus(at) {
   if (!savedOverlay.classList.contains('on')) return;
@@ -1162,6 +1250,7 @@ function libEndRename(take, refocus) {
   }
   if (changed) {
     if (s.type === 'guide' && window.SF && SF.renamed) SF.renamed(s.id, s.name);
+    else palNameSync();
     renderRecent();
   }
   if (row && s) {
@@ -1232,17 +1321,55 @@ function libBackfill() {
       libBackfill();
     });
 }
+// (v308) A saved palette opens as its own scheme, saved with it, as a new step in the palette history (Undo goes back
+// to the one that was there); Custom's, a photo's (its photo isn't kept) and one saved before v308 open as Custom
+// picks. Custom picks in progress that it would replace are asked about first (they had gone without a word).
 function loadSaved(entry) {
   const idxs = entry.keys.map(keyIdx).filter((i) => i != null);
   if (!idxs.length) return;
+  const h = typeof entry.h === 'string' && HARM[entry.h] ? entry.h : 'custom',
+    gen = h !== 'custom' && h !== 'photo',
+    n = Math.max(2, Math.min(16, idxs.length)),
+    picks = (state.customPal || []).filter((x) => x != null);
+  if (!gen && picks.length && picks.join() !== idxs.slice(0, n).join() && window.SF && SF.askBox) {
+    SF.askBox(
+      'Replace your Custom picks?',
+      'Opening \u201c' +
+        (entry.name || 'this palette') +
+        '\u201d replaces the ' +
+        (picks.length === 1 ? 'marker' : picks.length + ' markers') +
+        ' you\u2019ve picked in Custom.',
+      '<button type="button" class="sfghost" data-a="stay">Cancel</button><button type="button" class="btn-primary" data-a="go">Replace</button>',
+    ).then(function (a) {
+      if (a === 'go') loadSavedGo(idxs, h, n);
+    });
+    return;
+  }
+  loadSavedGo(idxs, h, n);
+}
+function loadSavedGo(idxs, h, n) {
   closeDialog(savedOverlay);
   disarm();
   unownDisarm();
-  state.harmony = 'custom';
   state.mode = 'palette';
-  const n = Math.max(2, Math.min(16, idxs.length));
-  state.palSize = n;
-  state.customPal = idxs.slice(0, n);
+  if (h !== 'custom' && h !== 'photo') {
+    state.harmony = h;
+    const R = HARM_RANGE[h] || [2, 6];
+    if (idxs.length >= R[0] && idxs.length <= R[1] && (h !== 'rainbow' || sizeOffered(h, idxs.length)))
+      state.palSize = idxs.length;
+    else
+      state.palSize = Math.max(
+        R[0],
+        Math.min(R[1], h === 'rainbow' ? rainbowSnap(state.palSize) : state.palSize),
+      );
+    palPvOff = true;
+    palPush(idxs.slice(), 24);
+    state.locked = state.locked.filter((i) => idxs.includes(i));
+  } else {
+    state.harmony = 'custom';
+    state.palSize = n;
+    state.customPal = idxs.slice(0, n);
+  }
   save();
   fullRender();
 }

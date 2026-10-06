@@ -211,11 +211,64 @@ function moodPick(list, mood, need, lchFn) {
     .slice(0, need - inside.length);
   return { items: inside.concat(out).map((s) => s[1]), widened: out.length };
 }
+/* (v308) Unowned's orders follow Brands I'd buy, as Match does. Automatic: your brands (those of the markers you own
+   that lay down colour; every brand when you have none) come first, and a marker of another brand only after them,
+   when it brings a colour none of your brands has (no marker of theirs within BUY_OTHER_DE): an Ohuhu-only collection
+   was told to buy 17 Copic markers before any Ohuhu one. Brands ticked: only those. Fluorescents and the Colorless
+   Blender aren't gaps to fill or families to finish (as Ramp gaps already left them out), unless the filters leave
+   nothing else. */
+const BUY_OTHER_DE = 8;
+function buyPref() {
+  if (state.buyBrands) return { pref: new Set(state.buyBrands), strict: true };
+  const s = new Set();
+  for (let i = 0; i < COLORS.length; i++) if (!NOINK.has(i) && isOwned(i)) s.add(COLORS[i].brand);
+  return { pref: s.size ? s : new Set(COLORS.map((c) => c.brand)), strict: false };
+}
+// how far each marker is from the nearest marker of these brands (CIEDE2000), kept for the brands asked last
+let _buyFar = null;
+function buyFar(pref) {
+  const key = [...pref].sort().join('|');
+  if (_buyFar && _buyFar.key === key) return _buyFar.d;
+  const ref = [];
+  for (let i = 0; i < COLORS.length; i++) if (!NOINK.has(i) && pref.has(COLORS[i].brand)) ref.push(i);
+  const d = new Float32Array(COLORS.length);
+  for (let i = 0; i < COLORS.length; i++) {
+    if (pref.has(COLORS[i].brand) || NOINK.has(i)) continue;
+    let mn = Infinity;
+    for (const p of ref) {
+      const x = de2000(LAB[i], LAB[p]);
+      if (x < mn) mn = x;
+    }
+    d[i] = mn;
+  }
+  _buyFar = { key: key, d: d };
+  return d;
+}
+// candidates as { mine: your brands' (or those ticked), other: another brand's that bring a colour yours don't have }
+function buySplit(cands) {
+  const bp = buyPref(),
+    mine = [],
+    other = [];
+  cands.forEach((i) => (bp.pref.has(COLORS[i].brand) ? mine : other).push(i));
+  if (bp.strict || !other.length) return { mine: mine, other: [] };
+  const far = buyFar(bp.pref);
+  return { mine: mine, other: other.filter((i) => far[i] >= BUY_OTHER_DE) };
+}
+// not a gap to fill: the Colorless Blender, and fluorescents (unless the filters leave only those)
+function gapCands(cands) {
+  const c = cands.filter((i) => !NOINK.has(i));
+  const nf = c.filter((i) => COLORS[i].fam !== 'Fluorescent');
+  return nf.length ? nf : c;
+}
 function completeGroups(only) {
-  const ok = only ? new Set(only) : null,
+  const ok = only ? new Set(gapCands(only)) : null,
+    bp = buyPref(),
+    noFl = !only || ok.size === 0 || [...ok].some((i) => COLORS[i].fam !== 'Fluorescent'),
     map = {};
   for (let i = 0; i < COLORS.length; i++) {
-    if (!passes(i)) continue;
+    if (!passes(i) || NOINK.has(i) || (noFl && COLORS[i].fam === 'Fluorescent')) continue;
+    // (a family is counted in your brands: one of another brand counts only when you own it)
+    if (!isOwned(i) && !bp.pref.has(COLORS[i].brand)) continue;
     const f = COLORS[i].fam;
     map[f] = map[f] || { owned: 0, total: 0, un: [] };
     map[f].total++;
@@ -245,7 +298,17 @@ function rampAlong(a, b) {
   return ga || gb ? ga && gb : hueDist(LCH[a][2], LCH[b][2]) <= 30;
 }
 function rampRank(cands) {
-  cands = cands.filter((i) => !RAMP_SKIP.has(COLORS[i].fam));
+  cands = cands.filter((i) => !RAMP_SKIP.has(COLORS[i].fam) && !NOINK.has(i));
+  if (!cands.length) return [];
+  // (v308: your brands' gaps first, then another brand's that bring a colour yours don't have)
+  const sp = buySplit(cands);
+  if (sp.other.length || sp.mine.length < cands.length) {
+    const a = rampRankOf(sp.mine);
+    return a.concat(rampRankOf(sp.other).filter((i) => a.indexOf(i) < 0));
+  }
+  return rampRankOf(cands);
+}
+function rampRankOf(cands) {
   if (!cands.length) return [];
   const TH = 8;
   const sub = (a, b) => [LAB[a][0] - LAB[b][0], LAB[a][1] - LAB[b][1], LAB[a][2] - LAB[b][2]];
@@ -305,12 +368,20 @@ function rampRank(cands) {
   return order;
 }
 function gapRank(cands) {
-  // (the Colorless Blender lays down no colour: not a gap to fill, and owning one doesn't cover white, v304)
-  const blend = cands.filter((i) => NOINK.has(i));
-  cands = cands.filter((i) => !NOINK.has(i));
-  if (!cands.length) return blend;
+  // (the Colorless Blender lays down no colour: not a gap to fill, and owning one doesn't cover white, v304; v308: nor
+  // fluorescents, and it isn't listed at all)
+  cands = gapCands(cands);
+  if (!cands.length) return [];
   const owned = [];
   for (let i = 0; i < COLORS.length; i++) if (isOwned(i) && !NOINK.has(i)) owned.push(i);
+  // (v308: your brands' first, then another brand's that bring a colour yours don't have, each filling what's left)
+  const sp = buySplit(cands);
+  if (sp.mine.length === cands.length) return gapOrder(cands, owned);
+  const a = gapOrder(sp.mine, owned);
+  return a.concat(gapOrder(sp.other, owned.concat(a)));
+}
+function gapOrder(cands, owned) {
+  if (!cands.length) return [];
   const D = (a, b) => {
     const l = a[0] - b[0],
       m = a[1] - b[1],
@@ -347,7 +418,7 @@ function gapRank(cands) {
         if (d < dmin[j]) dmin[j] = d;
       }
   }
-  return order.concat(blend);
+  return order;
 }
 const TONE = HS.map((o) => (o.l >= 0.8 ? 'pale' : o.l >= 0.62 ? 'light' : o.l >= 0.49 ? 'mid' : 'dark'));
 const TONE_DEFS = [
@@ -372,6 +443,11 @@ function hueDist(a, b) {
   return Math.min(d, 360 - d);
 }
 
+// family names saved before v308 (the Markers filters), as they are now
+const FAM_RENAMED = { 'Blue-Green-Yellow': 'Blue Grey', 'Yellow-Green-Yellow': 'Yellow Grey' };
+function famNow(n) {
+  return Object.prototype.hasOwnProperty.call(FAM_RENAMED, n) ? FAM_RENAMED[n] : n;
+}
 const fmap = {};
 COLORS.forEach((c, i) => {
   (fmap[c.fam] = fmap[c.fam] || []).push(i);
@@ -425,14 +501,14 @@ families.forEach((f) => {
     f.repL = HS[best].l;
   }
 });
+// (v308: Ohuhu's BGY and YGY greys are "Blue Grey" and "Yellow Grey", with the greys: they were "Blue-Green-Yellow" and
+// "Yellow-Green-Yellow", between the colours, while their caps say Storm Grey, Oyster Grey… FAM_RENAMED)
 const FAM_ORDER = [
   'Red',
   'Yellow-Red / Orange',
   'Yellow',
-  'Yellow-Green-Yellow',
   'Yellow-Green',
   'Green',
-  'Blue-Green-Yellow',
   'Blue-Green',
   'Blue',
   'Blue-Violet',
@@ -440,9 +516,11 @@ const FAM_ORDER = [
   'Red-Violet',
   'Earth / Skin / Brown',
   'Warm Grey',
+  'Yellow Grey',
   'Toner Grey',
   'Neutral Grey',
   'Cool Grey',
+  'Blue Grey',
   'Green Grey',
   'Neutral / Black',
   'Fluorescent',
@@ -503,12 +581,14 @@ function rgbLab8(r, g, b) {
 // a reference too dark or too coloured to be paper. `loose` (v307) is for "something white" rather than paper: a cap
 // label or a white mug in a dim, warm room (a cap tray under a lamp: brightest labels L* 70, blue at 0.47 of red)
 const LIGHT_REF = { dark: 0.08, ratio: 0.55 },
-  LIGHT_REF_LOOSE = { dark: 0.05, ratio: 0.42 };
+  LIGHT_REF_LOOSE = { dark: 0.05, ratio: 0.42 },
+  // (v308) "Photo looks dim"'s whites in a dark room: a night scene's lightest greys (L* about 25)
+  LIGHT_REF_DIM = { dark: 0.025, ratio: 0.42 };
 function lightFix(paper, loose) {
   if (!paper) return null;
   const mx = Math.max(paper[0], paper[1], paper[2]),
     mn = Math.min(paper[0], paper[1], paper[2]),
-    lim = loose ? LIGHT_REF_LOOSE : LIGHT_REF;
+    lim = loose === 'dim' ? LIGHT_REF_DIM : loose ? LIGHT_REF_LOOSE : LIGHT_REF;
   if (mx < lim.dark || mn / mx < lim.ratio) return null;
   const gain = paper.map(function (v) {
     return PAPER_LIN / Math.max(v, 1e-4);
@@ -590,17 +670,35 @@ function paperWarm(data) {
 // itself; asked only when paperWarm finds no paper. A sunset's brightest pixels are its sun and glow: too light, or
 // too coloured, or (exposed darker) in one place. Measured on Ben's cap-tray photo: labels L* 70, b* 20, 60% of the
 // brightest 2% near-neutral, 6.7 times as light as the middle pixel, in 11 of the 16 parts. `w`: the image's width.
-const WARM_PHOTO = { top: 0.02, C: 26, near: 0.5, Lmin: 35, Lmax: 80, b: 8, stand: 2, spread: 8 };
+// (v308) A photo whose whites are all dim (L* 15-35: a coffee cup or a landscape at night, a dark room) is offered "dim"
+// without its whites having to be spread about: they're the lightest things in a dark picture, not a lamp. A photo
+// that is nearly all black (85% of it under L* 12: a starry sky, deep space) is offered nothing: its stars aren't
+// whites in a dim room, and balancing turned its black space green.
+const WARM_PHOTO = {
+  top: 0.02,
+  C: 26,
+  near: 0.5,
+  Lmin: 35,
+  Lmax: 80,
+  b: 8,
+  stand: 2,
+  spread: 8,
+  dimMin: 15,
+  black: 0.85,
+  blackL: 12,
+};
 function photoWarm(data, w) {
-  const px = [];
+  const px = [],
+    // (the luminance of L* 12)
+    blk = Math.pow((WARM_PHOTO.blackL + 16) / 116, 3);
+  let nb = 0;
   for (let i = 0; i < data.length; i += 4) {
     if (data[i + 3] < 125) continue;
-    px.push([
-      0.2126 * srgbToLin(data[i]) + 0.7152 * srgbToLin(data[i + 1]) + 0.0722 * srgbToLin(data[i + 2]),
-      i,
-    ]);
+    const y = 0.2126 * srgbToLin(data[i]) + 0.7152 * srgbToLin(data[i + 1]) + 0.0722 * srgbToLin(data[i + 2]);
+    if (y < blk) nb++;
+    px.push([y, i]);
   }
-  if (px.length < 100) return null;
+  if (px.length < 100 || nb >= WARM_PHOTO.black * px.length) return null;
   px.sort(function (a, b) {
     return b[0] - a[0];
   });
@@ -628,7 +726,6 @@ function photoWarm(data, w) {
       Math.min(3, Math.floor(((q / w) | 0) / (h / 4))) * 4 + Math.min(3, Math.floor((q % w) / (w / 4))),
     );
   });
-  if (cells.size < WARM_PHOTO.spread) return null;
   // the white: the median per channel, in linear light
   const white = ch.map(function (a) {
     a.sort(function (p, q) {
@@ -636,11 +733,14 @@ function photoWarm(data, w) {
     });
     return a[a.length >> 1];
   });
-  const lab = linLab(white[0], white[1], white[2]);
-  if (lab[0] < WARM_PHOTO.Lmin || lab[0] >= WARM_PHOTO.Lmax || Math.hypot(lab[1], lab[2]) >= WARM_PHOTO.C)
-    return null;
-  const r = paperSpot(white, true);
-  return r.fix ? { fix: r.fix, lab: lab, warm: lab[2] >= WARM_PHOTO.b } : null;
+  const lab = linLab(white[0], white[1], white[2]),
+    warm = lab[2] >= WARM_PHOTO.b,
+    // (v308) all dim, and not warm: no spread asked for
+    dark = !warm && lab[0] >= WARM_PHOTO.dimMin && lab[0] < WARM_PHOTO.Lmin;
+  if (Math.hypot(lab[1], lab[2]) >= WARM_PHOTO.C || lab[0] >= WARM_PHOTO.Lmax) return null;
+  if (!dark && (lab[0] < WARM_PHOTO.Lmin || cells.size < WARM_PHOTO.spread)) return null;
+  const r = paperSpot(white, dark ? 'dim' : true);
+  return r.fix ? { fix: r.fix, lab: lab, warm: warm } : null;
 }
 
 /* ---- Match a colour: the markers nearest a colour, by eye (match.js) ----

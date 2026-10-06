@@ -94,18 +94,27 @@ test('From photo: n markers in play, every two at least 6 ΔE00 apart, no near-w
   }
 });
 
-test('From photo: a photo of few colours still gives n (a second marker each, as different as can be); the markers in play are the limit', () => {
+// (v308: it stops once the markers left are more than 18 from the photo's colours, rather than make colours up; the
+// bands come in hue order, not the photo's two colours first)
+test('From photo: a photo of few colours gives a second marker each while one is near; the markers in play are the limit', () => {
   const a = appWith('Honolulu 120'), E = a.__eval, de = a.de2000, LAB = E('LAB');
   const two = img(a, 40, 20, (x) => (x < 20 ? [221, 51, 51] : [51, 153, 204]));
-  const pal = [...a.extractPhotoPalette(two, 8).markers];
-  assert.equal(pal.length, 8);
-  assert.equal(new Set(pal).size, 8);
-  // the first two are the photo's two colours
+  const r2 = a.extractPhotoPalette(two, 8), pal = [...r2.markers];
+  assert.ok(pal.length > 2 && pal.length <= 8, pal.length + '');
+  assert.equal(new Set(pal).size, pal.length);
+  assert.equal(r2.few, pal.length < 8);
+  [...r2.labs].forEach((l, k) => assert.ok(de(l, LAB[pal[k]]) <= 18, 'near its colour'));
+  // the photo's two colours are in it
   const near = (hex) => { const t = a.hexToLab(hex); return E('COLORS.map((_, i) => i).filter((i) => inPool(i))').reduce((b, i) => (de(t, LAB[i]) < de(t, LAB[b]) ? i : b)); };
-  assert.deepEqual(pal.slice(0, 2).sort(), [near('#dd3333'), near('#3399cc')].sort());
-  // only three markers in play: three
-  E("setPool(COLORS.map((_, i) => i).filter((i) => isOwned(i)).slice(0, 3))");
+  assert.ok(pal.includes(near('#dd3333')) && pal.includes(near('#3399cc')));
+  // only three markers in play: those three (v308: the three nearest the photo's colours; markers far from every colour
+  // in it aren't used at all)
+  const three = [...pal].slice(0, 3);
+  E(`setPool(${JSON.stringify(three)})`);
   assert.equal(a.extractPhotoPalette(two, 8).markers.length, 3);
+  E("setPool(COLORS.map((_, i) => i).filter((i) => isOwned(i) && LCH[i][1] >= 20 && LCH[i][2] > 100 && LCH[i][2] < 160))");
+  assert.ok(E('state.pool.length') >= 3);
+  assert.equal(a.extractPhotoPalette(two, 8).markers.length, 0, 'only greens in play: none near a red or a blue');
   // a photo that is all white has nothing a marker can make
   E('setPool(null)');
   const white = a.extractPhotoPalette(img(a, 20, 20, () => [252, 252, 250]), 6);

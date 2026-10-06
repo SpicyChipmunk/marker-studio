@@ -538,6 +538,25 @@ button.sopen:hover {
   color: var(--sub);
   pointer-events: none;
 }
+/* (v308) the empty card when the filters or a selection leave no marker in play (chrome.js palNone) */
+.palnone {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 4px;
+  padding: 0 16px;
+  text-align: center;
+  color: var(--sub);
+  font-size: var(--t-base);
+}
+.palnone .sflink {
+  min-height: 44px;
+  padding: 0 6px;
+}
 .ghmark {
   width: 56px;
   height: auto;
@@ -1068,6 +1087,10 @@ button:focus-visible {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(calc(56 * var(--tpx)), 1fr));
   gap: 7px;
+}
+/* (v308) Random's "Colours you draw collect here." across the grid, not one word per line in its first cell */
+.pile > .empty {
+  grid-column: 1 / -1;
 }
 .cell {
   position: relative;

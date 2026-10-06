@@ -130,10 +130,16 @@ test('v284: labels on the colouring page never overlap; a section with no room h
     assert.ok(r.texts.some((e) => e.p === 0 && /close-ups? on pages? 2/.test(e.t)), 'the colouring page says where they are');
   }
   // the key: ORDER, with each marker's place lightest first, as 1st, 2nd … (so it can't be taken for a number)
-  assert.ok(r.texts.some((e) => e.p === r.keyP && e.t === 'ORDER'));
-  const ords = r.texts.filter((e) => e.p >= r.keyP && e.al === 'right' && e.fill === '#8a8a8a' && /^\d+(st|nd|rd|th)$/.test(e.t)).map((e) => e.t);
+  // (v308: one column. Where numbers stand in on the page they are that order, so the column is NO., 1…N)
   const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
-  assert.deepEqual(ords.slice().sort((a, b) => parseInt(a) - parseInt(b)), Array.from({ length: r.keyN }, (_, i) => ord(i + 1)));
+  if (r.texts.some((e) => e.p === r.keyP && e.t === 'NO.')) {
+    assert.ok(!r.texts.some((e) => e.p === r.keyP && e.t === 'ORDER'), 'one column, not two');
+    assert.deepEqual(keyNums(r).map(Number).sort((a, b) => a - b), Array.from({ length: r.keyN }, (_, i) => i + 1));
+  } else {
+    assert.ok(r.texts.some((e) => e.p === r.keyP && e.t === 'ORDER'));
+    const ords = r.texts.filter((e) => e.p >= r.keyP && e.al === 'right' && e.fill === '#8a8a8a' && /^\d+(st|nd|rd|th)$/.test(e.t)).map((e) => e.t);
+    assert.deepEqual(ords.slice().sort((a, b) => parseInt(a) - parseInt(b)), Array.from({ length: r.keyN }, (_, i) => ord(i + 1)));
+  }
   assert.deepEqual(errors, []);
 });
 

@@ -351,6 +351,9 @@ export async function openAtScale(scale, opts = {}) {
 // backup opened as a guide) are the app's own dialog (marked data-confirm). answerAsks answers both kinds, now and
 // after reloads: yes clicks the primary button (or accepts), no clicks Cancel / Keep mine (or dismisses). What was
 // asked collects in window.__asked (the dialog's question) and in the returned array (the browser's messages).
+// v308: answered by the buttons' data-a, as Keep my markers became the restore question's primary button: yes is
+// "Use the backup's" there (data-a="replace"), as before, and the primary button elsewhere; no is Keep mine or Cancel;
+// a string answers with that data-a ('add', 'keep', 'go'…), or Cancel when the question has no such button.
 export async function answerAsks(page, yes = true) {
   const fn = (y) => {
     window.__askYes = y;
@@ -363,7 +366,8 @@ export async function answerAsks(page, yes = true) {
         const q = o.querySelector('.dsub');
         window.__asked.push(q ? q.textContent : '');
         setTimeout(() => {
-          const b = window.__askYes ? o.querySelector('.btn-primary') : o.querySelector('[data-a="keep"]') || o.querySelector('[data-a="stay"]');
+          const y = window.__askYes;
+          const b = typeof y === 'string' ? o.querySelector(`[data-a="${y}"]`) || o.querySelector('[data-a="stay"]') : y ? o.querySelector('[data-a="replace"]') || o.querySelector('.btn-primary') : o.querySelector('[data-a="keep"]') || o.querySelector('[data-a="stay"]');
           if (b) b.click();
         }, 0);
       });

@@ -266,6 +266,8 @@ function currentDesignObj(share, edits) {
 function shareGuideFile() {
   const d = currentDesignObj(true);
   if (!d) return;
+  // (v308: the version that made it, so an older one can say it's from a newer version)
+  if (typeof appVersion === 'function') d.app = appVersion();
   let blob = null;
   try {
     blob = new Blob([JSON.stringify(d)], { type: 'application/json' });
@@ -273,18 +275,11 @@ function shareGuideFile() {
     note('Couldn’t export the guide file.');
     return;
   }
-  handOver(
-    blob,
-    ((d.name || 'guide')
-      .replace(/[^\w\- ]+/g, '')
-      .trim()
-      .slice(0, 40) || 'guide') + '.msguide.json',
-    {
-      title: d.name || 'Colouring guide',
-      text: 'A Marker Studio colouring guide \u2014 open it in Marker Studio (Import a guide) to colour along.',
-      what: 'guide file',
-    },
-  ).then(function (r) {
+  handOver(blob, fileSlug(d.name, 'guide', 40, true) + '.msguide.json', {
+    title: d.name || 'Colouring guide',
+    text: 'A Marker Studio colouring guide \u2014 open it in Marker Studio (Import a guide) to colour along.',
+    what: 'guide file',
+  }).then(function (r) {
     if (r === 'download')
       note('Guide file downloaded \u2014 keep it as a backup or move it to another device.');
     else if (r === false) note('Couldn’t export the guide file.');
@@ -325,7 +320,7 @@ function stashDirty() {
       toast(
         saveFailWords(
           'Couldn’t save “' +
-            esc(nm) +
+            nm +
             '”, so it’s still open. Free up space (delete or back up guides in the Library), then try again.',
           nm,
           true,
@@ -353,7 +348,7 @@ function stashDirty() {
     toast(
       saveFailWords(
         'Couldn’t save “' +
-          esc(nm) +
+          nm +
           '”, so it’s still open. Free up space (delete or back up guides in the Library), then try again.',
         nm,
         true,
@@ -489,8 +484,10 @@ function askBox(title, text, btns, yesNo, now) {
       else if (e.target === o && (Date.now() - t0 > 400 || e.detail === 0)) end('stay');
     });
     document.body.appendChild(o);
+    // the highlighted answer has the keyboard, else the first (v308: a selector list takes whichever comes first, so
+    // Restore anyway, or Open it, had it where Cancel, or Add a copy, was the highlighted answer)
     try {
-      o.querySelector('.btn-primary, [data-a]').focus();
+      (o.querySelector('.btn-primary') || o.querySelector('[data-a]')).focus();
     } catch (_) {}
   });
 }
@@ -591,6 +588,15 @@ document.addEventListener('visibilitychange', function () {
   saveOnLeave();
 });
 window.addEventListener('pagehide', keepEdits);
+// (v308) a photo picked in Import a guide, made into a new guide as a photo picked to make one is
+function photoFromHome(file) {
+  try {
+    localStorage.setItem('ms-onboarded', '1');
+  } catch (_) {}
+  if (!document.getElementById('sfPick')) mount();
+  setMode('sections');
+  loadImage(file);
+}
 function importFromHome(file) {
   try {
     localStorage.setItem('ms-onboarded', '1');
@@ -675,7 +681,27 @@ function importGuideFile(file) {
     try {
       d = JSON.parse(fr.result);
     } catch (e) {
-      note('Couldn’t read that guide file.');
+      // (v308: a photo is offered as a new guide; an empty or cut-short file is said as such)
+      const why = typeof fileTrouble === 'function' ? fileTrouble(file, fr.result) : 'bad';
+      if (why === 'picture') {
+        note('');
+        askBox(
+          'Make a guide from this photo?',
+          'That\u2019s a photo, not a guide file. Its sections can be found for a new guide.',
+          '<button type="button" class="btn-primary" data-a="go">Make a guide</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+          true,
+        ).then(function (a) {
+          if (a === 'go') loadImage(file);
+        });
+        return;
+      }
+      note(
+        why === 'empty'
+          ? 'Couldn’t read that guide file \u2014 it\u2019s empty.'
+          : why === 'damaged'
+            ? 'Couldn’t read that guide file \u2014 it\u2019s incomplete or damaged (it may not have finished downloading).'
+            : 'Couldn’t read that guide file.',
+      );
       return;
     }
     if (
@@ -692,32 +718,70 @@ function importGuideFile(file) {
       note('That file isn\u2019t a Marker Studio guide.');
       return;
     }
-    note('Importing\u2026');
-    guideCheck(d.payload).then(function (c) {
-      if (!c.ok) {
-        note(
-          c.why === 'size'
-            ? 'Couldn’t import that guide \u2014 its picture is the wrong size.'
-            : c.why === 'complex'
-              ? 'Couldn’t import that guide \u2014 it has too many sections (the file is too complex).'
-              : 'Couldn’t import that guide \u2014 its picture couldn\u2019t be read.',
-        );
-        return;
-      }
-      const w = c.w,
-        h = c.h;
-      const pl = d.payload,
-        sa = pl.assign && typeof pl.assign === 'object' ? pl.assign : {},
-        keys = Array.isArray(d.keys)
-          ? d.keys
-              .filter(function (k) {
-                return typeof k === 'string' && keyIdx(k) != null;
-              })
-              .slice(0, 400)
-          : [];
+    // (v308: one from a newer version is asked about first)
+    (typeof askNewer === 'function' ? askNewer(d, 'guide file', 'Open anyway') : Promise.resolve(true)).then(
+      function (go) {
+        if (go) importChecked(d);
+        else note('');
+      },
+    );
+  };
+  fr.onerror = function () {
+    note('Couldn’t read that file.');
+  };
+  fr.readAsText(file);
+}
+// (v308) a guide file that is already in the Library (the same picture and stored sections): its guide there, with how
+// far along each is, or null. Only guides of the same size are read.
+function importTwin(d, w, h) {
+  const list = (api.listDesigns ? api.listDesigns() : []).filter(function (s) {
+    return +s.W === w && +s.H === h;
+  });
+  let k = 0;
+  const step = function () {
+    if (k >= list.length || !api.loadDesign) return Promise.resolve(null);
+    const s = list[k++];
+    return Promise.resolve(api.loadDesign(s.id)).then(
+      function (x) {
+        return x && x.lmap === d.payload.lmap ? { e: s, pl: x } : step();
+      },
+      function () {
+        return step();
+      },
+    );
+  };
+  return step();
+}
+function importChecked(d) {
+  note('Importing\u2026');
+  guideCheck(d.payload).then(function (c) {
+    if (!c.ok) {
+      note(
+        c.why === 'size'
+          ? 'Couldn’t import that guide \u2014 its picture is the wrong size.'
+          : c.why === 'complex'
+            ? 'Couldn’t import that guide \u2014 it has too many sections (the file is too complex).'
+            : 'Couldn’t import that guide \u2014 its picture couldn\u2019t be read.',
+      );
+      return;
+    }
+    const w = c.w,
+      h = c.h;
+    const pl = d.payload,
+      sa = pl.assign && typeof pl.assign === 'object' ? pl.assign : {},
+      keys = Array.isArray(d.keys)
+        ? d.keys
+            .filter(function (k) {
+              return typeof k === 'string' && keyIdx(k) != null;
+            })
+            .slice(0, 400)
+        : [];
+    const nm0 = typeof d.name === 'string' && d.name.trim() ? d.name.slice(0, 120) : 'Imported guide';
+    const add = function (copy) {
+      // (v308: a name already in the Library gets the next "(n)", as Duplicate does)
       Promise.resolve(
         api.saveDesign({
-          name: typeof d.name === 'string' && d.name.trim() ? d.name.slice(0, 120) : 'Imported guide',
+          name: copy ? copyName(nm0) : freeName(nm0),
           W: w,
           H: h,
           keys: keys,
@@ -735,12 +799,43 @@ function importGuideFile(file) {
         .catch(function () {
           note('Couldn’t import that guide.');
         });
+    };
+    // (v308) the same guide already here: Open it rather than a twin that can't be told apart, unless the file has
+    // ticks this device doesn't (then Add a copy is the highlighted answer, and says why)
+    importTwin(d, w, h).then(function (tw) {
+      if (!tw) {
+        add(false);
+        return;
+      }
+      note('');
+      const here = Array.isArray(tw.pl.prog) ? tw.pl.prog : [],
+        hs = new Set(here.map(String)),
+        fp = Array.isArray(pl.prog) ? pl.prog : [],
+        more = fp.some(function (l) {
+          return !hs.has(String(l));
+        }),
+        n = +tw.e.n || Object.keys(sa).length;
+      askBox(
+        'Already in your Library',
+        '\u201c' +
+          (tw.e.name || 'Guide') +
+          '\u201d is here, ' +
+          (here.length ? Math.min(here.length, n) + ' of ' + n + ' coloured' : 'not started') +
+          ' (the file: ' +
+          (fp.length ? Math.min(fp.length, n) : 'none') +
+          ').' +
+          (more ? ' The file has ticks this one doesn\u2019t.' : ''),
+        '<button type="button"' +
+          (more ? '' : ' class="btn-primary"') +
+          ' data-a="open">Open it</button><button type="button"' +
+          (more ? ' class="btn-primary"' : '') +
+          ' data-a="copy">Add a copy</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+      ).then(function (a) {
+        if (a === 'open') openDesign(tw.e.id);
+        else if (a === 'copy') add(true);
+      });
     });
-  };
-  fr.onerror = function () {
-    note('Couldn’t read that file.');
-  };
-  fr.readAsText(file);
+  });
 }
 // Saving has two homes. A guide in the Library saves itself into its entry a moment after each change (and when the
 // page is hidden or something else opens). A new guide, not yet saved once, is kept in the autosave slot (IDB
@@ -939,7 +1034,7 @@ function keepSlot(m) {
               localStorage.setItem('ms-slot-kept', JSON.stringify(a.slice(-8)));
             } catch (_) {}
           }
-          toast('Kept \u201c' + esc(nm) + '\u201d in your Library', 4200);
+          toast('Kept \u201c' + nm + '\u201d in your Library', 4200);
           return true;
         });
     },
@@ -1228,7 +1323,7 @@ function libAutosave(q) {
         toast(
           saveFailWords(
             'Couldn’t save “' +
-              esc(nm) +
+              nm +
               '” — this browser’s storage is full. It stays open here: free up space (back up, then delete a few guides in the Library) and it saves with your next change.',
             nm,
             true,
@@ -1257,7 +1352,7 @@ function libLost(id, nm) {
     toast(
       saveFailWords(
         'Couldn\u2019t save the last changes to \u201c' +
-          esc(nm) +
+          nm +
           '\u201d \u2014 this browser\u2019s storage is full. Free up space (back up, then delete a few guides in the Library).',
         nm,
         false,
@@ -1561,13 +1656,14 @@ function btnBusy(t) {
 // (v304) When the browser's database stopped answering (iOS can drop it in the background) rather than filling up, that
 // is said instead of "storage is full": a reload fixes it, deleting guides doesn't. nm: the guide's name; open: whether
 // its changes are still open on screen
+// (plain text, v308: said in a toast, or by note with no name in it)
 function saveFailWords(m, nm, open) {
   if (typeof STORE_BLOCKED !== 'undefined' && STORE_BLOCKED)
     return 'This browser isn’t letting Marker Studio save — use Share › Guide file to keep this guide.';
   if (m && storeNotAnswering())
     return (
       'Couldn’t save' +
-      (nm ? ' “' + esc(nm) + '”' : '') +
+      (nm ? ' “' + nm + '”' : '') +
       ' — this browser’s storage isn’t answering. Reload Marker Studio and try again' +
       (open ? '; your changes are still open here.' : '.')
     );
@@ -1646,7 +1742,7 @@ function firstSave(auto) {
           toast(
             saveFailWords(
               'Couldn\u2019t save \u201c' +
-                esc(nm) +
+                nm +
                 '\u201d \u2014 this browser\u2019s storage may be full. Free up space (back up, then delete a few guides in the Library), then open it again.',
               nm,
               false,
@@ -1695,7 +1791,7 @@ function firstSave(auto) {
         toast(
           saveFailWords(
             'Couldn\u2019t save \u201c' +
-              esc(nm) +
+              nm +
               '\u201d \u2014 this browser\u2019s storage is full. It stays open here: free up space (back up, then delete a few guides in the Library), or keep it with Share \u203a Guide file.',
             nm,
             true,
@@ -1761,7 +1857,7 @@ function saveCopy() {
           renderHead();
           toast(
             'Saved a copy, “' +
-              esc(nm) +
+              nm +
               '”. You’re now working on the copy; the original stays in your Library as it was.',
             5000,
           );

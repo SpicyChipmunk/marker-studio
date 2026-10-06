@@ -138,7 +138,9 @@ function revCloseEl() {
     x.className = 'sfrevx';
     x.setAttribute('aria-label', 'Close');
     x.innerHTML = ic('x');
-    x.addEventListener('click', endReveal);
+    x.addEventListener('click', function () {
+      revClose();
+    });
     document.body.appendChild(x);
   }
   x.style.display = '';
@@ -228,6 +230,7 @@ function revModal(on) {
 }
 function startReveal() {
   if (!assignData) return;
+  _revCol = null;
   _revOp = document.activeElement;
   hideTip();
   exitFull();
@@ -241,10 +244,29 @@ function startReveal() {
   revCloseEl();
   revModal(true);
   requestAnimationFrame(function () {
+    // (v308: not if it was closed before this frame: Escape straight away left the show up over the guide)
+    if (rt && !rt.classList.contains('sfrev')) return;
     playRevealAnim();
   });
 }
+// Reveal closed by its ✕, Escape or Back: back to Colour along when it was opened from there (v308), its Page finished
+// panel in view; otherwise where it was opened from
+function revClose() {
+  const back = _revCol;
+  _revCol = null;
+  endReveal();
+  if (!back || !assignData || sfmode !== 'guide' || !root || root.style.display === 'none') return;
+  gTab = back.tab;
+  enterColor();
+  doneAfterFocus();
+  const b = document.getElementById('sfAlongRev');
+  if (b && b.offsetParent !== null)
+    try {
+      b.focus({ preventScroll: true });
+    } catch (_) {}
+}
 function endReveal() {
+  _revCol = null;
   showEnd();
   if (revRAF) cancelAnimationFrame(revRAF);
   revRAF = 0;

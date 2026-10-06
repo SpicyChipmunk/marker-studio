@@ -191,6 +191,20 @@ function chrome() {
   }
   [...ownView.children].forEach((b) => segOn(b, b.dataset.v === state.collView));
   gapWrap.style.display = col && state.collView === 'unowned' ? 'flex' : 'none';
+  {
+    // (v308) Owned's "Running low · 3", while any of yours are marked
+    const lw = $('lowWrap'),
+      lc = $('lowChip'),
+      lo = lowCount();
+    if (!lo.n) lowOnly = false;
+    const on = !!col && state.collView === 'owned' && lo.n > 0;
+    if (lw) lw.style.display = on ? 'flex' : 'none';
+    if (lc && on) {
+      lc.textContent = (lo.dry ? 'Running low or dry' : 'Running low') + ' \u00b7 ' + lo.n;
+      lc.dataset.sel = lowOnly ? '1' : '';
+      lc.setAttribute('aria-pressed', String(lowOnly));
+    }
+  }
   gapSort.value = state.gapSort;
   ownHint.style.display = col ? '' : 'none';
   mkJumpSync(col);
@@ -206,7 +220,9 @@ function chrome() {
               : 'Markers you don’t own yet — the gaps in your collection. Tap to add as you buy them.'
         : state.collView === 'all'
           ? 'Every marker. Narrow with filters, then “Tick all shown”.'
-          : 'Your collection. Switch to All to add more.';
+          : lowOnly
+            ? 'The markers you marked running low or dry. Tap it again for all your markers.'
+            : 'Your collection. Switch to All to add more.';
   filterBar.style.display = pooled ? 'none' : '';
   filtersEl.style.display = pooled || !state.filtersOpen ? 'none' : '';
   filterBar.classList.toggle('open', state.filtersOpen && !pooled);
@@ -251,7 +267,8 @@ function chrome() {
   {
     [...segs.children].forEach((b) => {
       const n = +b.dataset.n;
-      const okn = sizeOffered(state.harmony, n);
+      // (v308: and only what the markers in play can fill, palCap)
+      const okn = sizeOffered(state.harmony, n) && n <= palCap(state.harmony);
       b.disabled = !okn;
       b.style.display = okn ? '' : 'none';
       segOn(b, okn && n === state.palSize);
@@ -521,6 +538,13 @@ function chrome() {
     const _eo = $('emptyOwned'),
       _no = (pal || rnd) && !state.owned.size && !state.pool;
     if (_eo) _eo.style.display = _no ? '' : 'none';
+    // (v308: the brands you'd buy, when Brands I'd buy has chosen)
+    const _et = _no && _eo && _eo.firstElementChild,
+      _bt =
+        'Using every ' +
+        (state.buyBrands || allBrands()).join(' + ') +
+        ' marker. Add yours to match what you own.';
+    if (_et && _et.textContent !== _bt) _et.textContent = _bt;
   }
   if (browse && !chrome.keepGrid) renderResults();
   wishChrome(col);
@@ -561,9 +585,16 @@ function fullRender() {
   headBrands();
   // (Brands I'd buy's row: another tab or a restore may have changed it, v304)
   if (typeof buySumSync === 'function') buySumSync();
+  palNoneShow(false);
   if (state.mode === 'palette') {
+    // (the markers in play may have changed since: Markers, Brands I'd buy, another tab)
+    palSizeFit();
     if (state.harmony === 'custom') showCustom();
-    else {
+    else if (palNone()) {
+      clearPalette();
+      phint.style.display = 'none';
+      palNoneShow(true);
+    } else {
       const p = state.palettes[state.palettes.length - 1],
         pv = p ? null : palPreview();
       if (p && !(state.harmony === 'photo' && !_photoImg)) showPalette(p, false);
@@ -580,6 +611,40 @@ function fullRender() {
   }
 }
 
+// (v308) Palette with no marker in play (the filters, or a selection, leave none): an empty card that says so, with
+// the way back, rather than the last palette, every marker of it filtered out, with Save and Use in a guide still on
+function palNone() {
+  if (state.mode !== 'palette' || state.harmony === 'custom' || photoEmpty()) return false;
+  for (let i = 0; i < COLORS.length; i++) if (inPool(i)) return false;
+  return true;
+}
+const palNoneEl = document.createElement('div');
+palNoneEl.id = 'palNone';
+palNoneEl.className = 'palnone';
+palNoneEl.setAttribute('role', 'status');
+palNoneEl.style.display = 'none';
+palette.appendChild(palNoneEl);
+function palNoneShow(on) {
+  if (on) {
+    const sel = !!state.pool,
+      h =
+        '<span>' +
+        (sel ? 'No markers in this selection' : 'No markers match these filters') +
+        '</span><span aria-hidden="true"> \u00b7 </span><button type="button" class="sflink" id="palNoneClear">' +
+        (sel ? 'Clear selection' : 'Clear filters') +
+        '</button>';
+    if (palNoneEl.innerHTML !== h) palNoneEl.innerHTML = h;
+  }
+  palNoneEl.style.display = on ? '' : 'none';
+}
+palNoneEl.addEventListener('click', (e) => {
+  if (!e.target.closest('#palNoneClear')) return;
+  if (state.pool) setPool(null);
+  else ['brand', 'tone', 'sat', 'fam'].forEach(fgClear);
+  filterChanged();
+  const d = drawBtn && !drawBtn.disabled ? drawBtn : null;
+  if (d) d.focus({ preventScroll: true });
+});
 // (v305) Palette's first visit: a palette made from your markers to look at, so the screen doesn't open empty. It
 // isn't one of your palettes yet (not in state.palettes: not in Remove's history, not kept, no storage written just by
 // opening the screen); it becomes yours once you lock or change one of its colours (palAdopt), and Save, Save image and
@@ -596,13 +661,29 @@ function palPreview() {
     state.harmony === 'photo'
   )
     return null;
-  if (!palPv || palPv.h !== state.harmony || palPv.n !== state.palSize)
+  // (v308: made again when the markers in play change — your collection, the filters, a selection — not only the
+  // scheme or size: added sets had left it showing markers you don't own)
+  const k = state.harmony + '|' + state.palSize + '|' + poolSig();
+  if (!palPv || palPv.k !== k)
     palPv = {
       p: genPalette(state.palSize, state.harmony, paletteOpts()),
-      h: state.harmony,
-      n: state.palSize,
+      k: k,
     };
   return palPv.p || null;
+}
+// the markers in play (inPool), as a short string that changes whenever they do
+function poolSig() {
+  let s = '',
+    b = 0,
+    n = 0;
+  for (let i = 0; i < COLORS.length; i++) {
+    b = (b << 1) | (inPool(i) ? 1 : 0);
+    if (++n === 16) {
+      s += String.fromCharCode(65 + (b >> 8), 65 + (b & 255));
+      b = n = 0;
+    }
+  }
+  return s + n + ':' + b;
 }
 function palAdopt() {
   const p = palPreview();
@@ -801,6 +882,7 @@ function toggleLock(k) {
 function doGenerate() {
   if (rolling || state.harmony === 'custom') return;
   disarm();
+  palSizeFit();
   // (v306: Rainbow rolls another from a new seed; a scheme or size change makes the Gradient's own, regenReplace)
   const pal = genPalette(state.palSize, state.harmony, Object.assign(paletteOpts(), { reroll: true }));
   if (!pal) {
@@ -858,10 +940,11 @@ function doGenerate() {
 function action() {
   state.mode === 'palette' ? doGenerate() : state.mode === 'random' ? doDraw() : 0;
 }
-// The palette history, with each palette's scheme beside it (state.palH)
-function palPush(pal, max) {
+// The palette history, with each palette's scheme beside it (state.palH; `auto`: made by a size, scheme or filter
+// change, palHarm)
+function palPush(pal, max, auto) {
   state.palettes.push(pal);
-  state.palH.push(state.harmony);
+  state.palH.push(state.harmony + (auto ? '+' : ''));
   while (state.palettes.length > max) {
     state.palettes.shift();
     state.palH.shift();
@@ -876,20 +959,27 @@ function undo() {
   if (state.mode === 'palette') {
     if (!state.palettes.length) return;
     palPop();
+    // (v308) a photo's palette whose photo has gone (the page was opened again since) can't be shown as one: skipped
+    const lastH = () => palHarm(state.palH[state.palH.length - 1]);
+    while (state.palettes.length > 0 && lastH() === 'photo' && !_photoImg) palPop();
     // (v296) back to the palette before with its own scheme and size, not under the ones chosen since; locks it
-    // doesn't have go
+    // doesn't have go. (v308) Photo's palettes and the schemes' go back to their own: a photo's had been shown under
+    // Complementary's name, and a scheme's as From photo.
     const top = state.palettes[state.palettes.length - 1],
-      h = state.palH[state.palH.length - 1];
+      h = lastH();
     if (top) {
       const gen = (x) => x && x !== 'custom' && x !== 'photo';
-      if (gen(h) && gen(state.harmony) && h !== state.harmony) state.harmony = h;
+      if (h === 'photo' && state.harmony !== 'photo' && state.harmony !== 'custom') state.harmony = 'photo';
+      else if (gen(h) && (gen(state.harmony) || state.harmony === 'photo') && h !== state.harmony)
+        state.harmony = h;
       const R = HARM_RANGE[state.harmony] || [2, 6];
       // (a Rainbow capped at the clear markers in play keeps the size chosen)
       if (
-        state.harmony !== 'photo' &&
-        top.length >= R[0] &&
-        top.length <= R[1] &&
-        (state.harmony !== 'rainbow' || sizeOffered('rainbow', top.length))
+        state.harmony === 'photo'
+          ? PHOTO_SIZES.indexOf(top.length) >= 0
+          : top.length >= R[0] &&
+            top.length <= R[1] &&
+            (state.harmony !== 'rainbow' || sizeOffered('rainbow', top.length))
       )
         state.palSize = top.length;
     }
@@ -902,6 +992,7 @@ function undo() {
   fullRender();
 }
 function filterChanged() {
+  if (state.mode === 'palette') palSizeFit();
   if (state.mode === 'palette' && state.harmony !== 'custom' && state.harmony !== 'photo') regenReplace();
   else save();
   fullRender();
@@ -927,11 +1018,13 @@ function regenReplace() {
   }
   const pal = genPalette(state.palSize, state.harmony, paletteOpts());
   if (!pal) {
-    palFailToast();
+    if (!palNone()) palFailToast();
     return;
   }
-  if (state.palettes.length) palPop();
-  palPush(pal, 24);
+  // (v308) a new step, so Undo goes back to the palette that was there; only one made this way is replaced (trying
+  // 6, then 3, then Undo had lost the palette before both)
+  if (state.palettes.length && palAuto(state.palH[state.palH.length - 1])) palPop();
+  palPush(pal, 24, true);
   state.locked = state.locked.filter((i) => pal.includes(i));
   save();
   showPalette(pal, true);
@@ -948,6 +1041,7 @@ function setSize(n) {
   if (rolling || state.palSize === n) return;
   const R = HARM_RANGE[state.harmony] || [2, 6];
   if (n < R[0] || n > R[1] || (state.harmony === 'rainbow' && !sizeOffered('rainbow', n))) return;
+  if (n > palCap(state.harmony)) return;
   state.palSize = n;
   save();
   if (state.mode === 'palette') {
@@ -968,6 +1062,7 @@ function setHarmony(h) {
   state.palSize = Math.max(R[0], Math.min(R[1], state.palSize));
   if (h === 'photo') state.palSize = photoSnap(state.palSize);
   if (h === 'rainbow') state.palSize = rainbowSnap(state.palSize);
+  palSizeFit();
   save();
   if (state.mode === 'palette') {
     if (h === 'custom') {
@@ -1014,7 +1109,7 @@ const HARM_DESC = {
   split: 'One colour and the two either side of its opposite',
   tetradic: 'Two pairs of opposites',
   mono: 'One colour, light to dark',
-  rainbow: 'Evenly round the rainbow, at similar lightness',
+  rainbow: 'Round the rainbow from red',
   custom: 'Markers you choose: tap a slot to pick one',
   photo: 'A photo\u2019s main colours, matched to markers',
 };

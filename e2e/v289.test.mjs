@@ -91,7 +91,8 @@ test('Palette › Use in a guide › Recolour from Colour along: back to the Pla
   assert.equal(await page.evaluate(() => __mstest.sfmode), 'guide', 'in the Plan');
   const used = await page.evaluate(() => [...new Set(Object.values(__mstest.assignData.assign).map((m) => m.mkey))]);
   assert.ok(used.some((k) => pal.includes(k)), 'laid with the palette');
-  assert.match(await page.textContent('#msToast'), /Recoloured the guide with this palette|Colours from: Saved palette/);
+  // (v308: the palette isn't saved to the Library for it; the plan keeps it as handed over, and the toast offers Undo)
+  assert.match(await page.textContent('#msToast'), /Recoloured the guide with this palette|Palette: .+Undo/);
   // with section edits not built: nothing changes, and it says why
   await page.click('#sfBack2'); await idle(page);
   await page.evaluate(() => { const t = __mstest, l = t.assignData.order[4]; t.secState[l] = 2; t.render(); }); await idle(page);
@@ -198,7 +199,25 @@ test('Focus mode on a phone: Greyscale, zoom and Fit in a strip of their own abo
     await page.click('#sfColor'); await idle(page); await page.click('#sfFocus'); await idle(page);
     const g = await page.evaluate(() => { const r = (s) => document.querySelector(s).getBoundingClientRect(); return { z: r('#sfZoomCtl'), c: r('#sfCanvas'), b: r('#sfFocBot') }; });
     assert.ok(Math.abs(g.z.bottom - g.b.top) <= 1, `${w}×${h}: the strip sits on the bottom bar`);
-    assert.ok(g.c.bottom <= g.z.top + 1, `${w}×${h}: the picture ends above the strip (${g.c.bottom}, ${g.z.top})`);
+    // (v308: Focus mode opens zoomed in on the first section, so the canvas runs on past the strip. What the user
+    // sees: the picture right down to the strip, and the strip solid over the rest, nothing of the picture through it
+    // or beside its buttons. It had checked the canvas's own box, which ended above the strip at Fit.)
+    const seen = await page.evaluate(() => {
+      const z = document.getElementById('sfZoomCtl').getBoundingClientRect(), c = document.getElementById('sfCanvas');
+      const at = (x, y) => document.elementFromPoint(x, y);
+      const xs = [4, z.width / 4, z.width / 2, z.width - 4];
+      return {
+        above: xs.every((x) => at(x, z.top - 2) === c),
+        strip: xs.every((x) => document.getElementById('sfZoomCtl').contains(at(x, z.top + 2)) || document.getElementById('sfZoomCtl').contains(at(x, z.bottom - 2))),
+        solid: (() => { let e = document.getElementById('sfZoomCtl'); for (; e; e = e.parentElement) { const m = getComputedStyle(e).backgroundColor.match(/[\d.]+/g); if (m && (m.length < 4 || +m[3] === 1)) return true; if (e.id === 'sfFocBot' || e === document.body) break; } return false; })(),
+      };
+    });
+    assert.ok(seen.above, `${w}×${h}: the picture shows right down to the strip`);
+    assert.ok(seen.strip && seen.solid, `${w}×${h}: the strip sits solid over the picture (${JSON.stringify(seen)})`);
+    // and zoomed all the way out (Fit frames the section in Focus mode), the whole picture ends above the strip
+    for (let i = 0; i < 8 && (await page.evaluate(() => __mstest.zoom)) > 1.001; i++) { await page.click('#sfZout'); await idle(page); }
+    const c = await page.evaluate(() => document.getElementById('sfCanvas').getBoundingClientRect().toJSON());
+    assert.ok(c.bottom <= g.z.top + 1, `${w}×${h}: zoomed out, the picture ends above the strip (${c.bottom}, ${g.z.top})`);
     assert.ok(g.z.left <= 1 && g.z.right >= w - 1, 'the strip spans the screen');
     assert.deepEqual(errors, []);
     await ctx.close();

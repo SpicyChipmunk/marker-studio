@@ -238,6 +238,9 @@ export const SESSIONS = [
           const k = [...state.owned].sort((a, b) => hexToLab(COLORS[keyIdx(a)].hex)[0] - hexToLab(COLORS[keyIdx(b)].hex)[0])[0];
           state.saved.unshift({ id: 777003, type: 'palette', name: 'P three', keys: [k], ts: 777003 });
           save();
+          // (v308: drawn again so the picker lists it: chosen from an older list, no palette was chosen, and Expand
+          // shows only once one is)
+          __mstest.renderControls();
         });
         await choose(page, 'sfPalPick', '777003');
         await idle(page);

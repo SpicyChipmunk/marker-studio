@@ -254,9 +254,9 @@ document.addEventListener(
     }
     const k = b.getAttribute('data-wk');
     if (isWished(k)) {
-      if (removeWish(k)) toast('Took ' + esc(wishName(k)) + ' off To buy.', 2200);
+      if (removeWish(k)) toast('Took ' + wishName(k) + ' off To buy.', 2200);
     } else if (addWish(k, b.getAttribute('data-why')))
-      toast(
+      toastHTML(
         esc(wishName(k)) + ' added to your To buy list <span class="wishwhere">(Markers › To buy)</span>',
         2600,
       );
@@ -438,10 +438,10 @@ function wishBought(k) {
   wishRefresh();
   toastAction(
     had && ink
-      ? esc(wishName(k)) + ' is fresh again — ink set back to OK.'
+      ? wishName(k) + ' is fresh again — ink set back to OK.'
       : had
-        ? 'Removed ' + esc(wishName(k)) + ' from To buy.'
-        : 'Added ' + esc(wishName(k)) + ' to your collection.',
+        ? 'Removed ' + wishName(k) + ' from To buy.'
+        : 'Added ' + wishName(k) + ' to your collection.',
     'Undo',
     function () {
       if (!had) state.owned.delete(k);
@@ -474,7 +474,7 @@ function wishBought(k) {
         return;
       wishRefresh();
       if (r)
-        toastAction('Removed ' + esc(wishName(k)) + ' from your To buy list.', 'Undo', function () {
+        toastAction('Removed ' + wishName(k) + ' from your To buy list.', 'Undo', function () {
           if (!isWished(k)) state.wish.splice(Math.min(r.j, state.wish.length), 0, r.w);
           save();
           wishRefresh();
@@ -651,10 +651,10 @@ function lowUnmark(k, dropWish) {
     if (!ok) return;
     toast(
       v === 'dry'
-        ? esc(COLORS[i].code) + ' marked dry — left out of new palettes and guides.'
+        ? COLORS[i].code + ' marked dry — left out of new palettes and guides.'
         : v === 'low'
-          ? esc(COLORS[i].code) + ' marked running low.'
-          : esc(COLORS[i].code) + ' ink set back to OK.',
+          ? COLORS[i].code + ' marked running low.'
+          : COLORS[i].code + ' ink set back to OK.',
       2400,
     );
   });

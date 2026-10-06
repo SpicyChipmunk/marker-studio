@@ -470,3 +470,37 @@ A fresh-eye review of v306 by four reviewers (the Plan; Colour along to sharing;
 - The count of markers shading takes is kept on the Library row only, not in the saved guide.
 - Tests: the storage-full reopen waits for the real reload; What's new is checked against the list's first four; the welcome test ignores finished animations; the tick-fade, "Saving…" and ✓-colour tests no longer depend on exact timing. New: `e2e/v307-hotfix` (3).
 - Cache bumped to `marker-studio-v307.1`.
+
+# Changes — v308 (beta-ready)
+
+Everything from the eight-reviewer beta-readiness review of v307 (all major, minor and polish items, with Ben's decisions), built on six branches (beta, colour, intake, output, data, palette), merged, then given a cross-branch debugging pass by three reviewers and three follow-up fixes. New tests: `test/v308-beta` (14), `v308-colour` (11), `v308-intake` (10), `v308-output` (4), `v308-data` (9), `v308-toast` (1), `v308-markers` (8), `v308-palette` (15), `v308-merge` (1), `v308-merge-fa` (2); `e2e/v308-beta` (11), `v308-colour` (8), `v308-intake` (10), `v308-output` (14), `v308-restore` (8), `v308-library` (5), `v308-markers` (6), `v308-ticks` (2), `v308-palette` (11), `v308-handover` (2), `v308-specks` (1), `v308-merge-r2` (4), `v308-merge-r3` (2), `v308-merge-fa` (3). Saved guides open as they were saved; Surprise or a new palette moves an old guide onto v308's colour rules.
+
+**For testers**
+- Send feedback (foot of Home, the guide's ⋯ menu, beside errors): a short report of version, device, Home Screen or not, counts and the last errors, through the share sheet or copied; `FEEDBACK_EMAIL` in safety.js switches it to an email later. Copy details on errors (kept across reloads), Copy diagnostics in Help › About.
+- What's new by version (only what's newer than you last saw), "· Beta" on Home, a thanks card, Help › Beta tester guide (also `docs/TESTERS.md`), a user-first README, correct icon credits (32 Lucide icons), "Not affiliated with Ohuhu or Copic".
+- Delete all my data (type DELETE): clears every `ms-` key and the guides' database; other open tabs stop and reload.
+- Release branch: `release.yml` and `docs/RELEASING.md` (testers get only what's merged into `release`), `.nojekyll`; the service worker fetches the app once per update.
+
+**Colour**
+- Gradient: an Include row (Browns, Greys & black, Fluorescents; Earthy turns Browns on, Deep leaves greys off), a stricter vivid set for Any and Bright, and lightness that follows hue, so "all" no longer goes muddy. "all" repeats markers; touching repeats are split only up to twice the set.
+- The count: − and + (hold to run), tap to type, "24" / "all · 130"; the slider ends at what can be used.
+- Rainbow starts at red with a real yellow; Surprise keeps the count and follows Include; mandalas suggest Around; Photo's Place it, Blend anchors' markers, rainbow guide names, "+ N for shading", Undo labels that match their controls.
+- A palette from Palette's Use in a guide stays as it is (Mood greyed, Shuffle reorders only) until you ask for a new one; it isn't saved to the Library by itself.
+
+**Getting a picture in**
+- Tilt fills its corners as background; Straighten starts from the photo's own rectangle; pages under a warm lamp are found; frames with corner ornaments; Auto crop crops screenshots ("Nothing to trim" adds no Undo step); Faint marks; straightened photos start at Sensitivity 7; hatched or coloured-in pages warn; Merge refuses the background; one error message, not two; the bloom's "slow" flag lasts only the session; a note for PDF pages.
+
+**Output**
+- PDF key: the colour reference sized to the room left, the table continued on a second page, one NO. column in colouring order (also with Codes); the sun clear of labels, tone lines cut at labels, label halos; close-up letters clear of labels; dot-only sections numbered; names cut, never codes.
+- Save image's codes 10px or larger; specks from a photo left out of the outputs (on Ben's page: 22 of 22), never the drawing's dots.
+- Focus zooms about the section and shows a focus ring; Escape and Reveal go back to Colour along; the screen-on note in the tool row (a toast where the row is hidden); Print sheet options look choosable; dialogs keep Tab inside and open on their highlighted answer. The light's handle on the picture is see-through at rest, so a code under it reads; the ⋯ menu's Help group lost its heading, so the menu fits a phone.
+
+**Data and Markers**
+- Ticks made in the last moment before closing are kept in Chrome, Edge and Android.
+- Restore: Keep mine is the default, plus Add the backup's markers, with Undo (kept 7 days); progress; no pointless copies; a newer version's file warns; damaged and truncated files say so and offer what can be done; importing a guide already there asks; Library Duplicate; file names keep non-Latin names; plain-text toasts.
+- Unowned follows your brand and Brands I'd buy; Add a set has Undo; Copic fluorescent cap codes; Ohuhu's Blue Grey and Yellow Grey filed as greys; Running low list; "Which R14?"; Scan keeps its questions; the list-search hint; the Random pile; bigger tap targets.
+
+**Palette**
+- Size, scheme and filter changes can be undone; the first-visit preview follows your sets; saved palettes keep their scheme; opening one over Custom picks asks; empty filters say so; Save image uses the name; sizes capped to what your collection can make; Brands I'd buy with nothing owned; tiles show 16; From photo keeps hues apart, stops when colours run out ("about N colours") and sorts the bands; portrait keeps Save in view.
+
+- Cache bumped to `marker-studio-v308`; `package.json` 308.0.0.

@@ -263,7 +263,7 @@ test('Home’s latest piece on a phone: "16 markers" and "+ 21 for shading" each
 // ---- Help › Your data ------------------------------------------------------------------------------------------------
 const IPAD =
   'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
-test('Help › Your data: the shorter iPhone and iPad item, with whether Safari keeps your data and Restore a file, on a phone and an iPad', async () => {
+test('Help › Your data: the shorter iPhone and iPad item, with whether Safari keeps your data and Library › Restore, on a phone and an iPad', async () => {
   for (const [width, height] of [
     [390, 844],
     [820, 1180],
@@ -290,7 +290,8 @@ test('Help › Your data: the shorter iPhone and iPad item, with whether Safari 
       /^Safari (has agreed to keep|may clear) your data/,
       'whether Safari keeps it, next',
     );
-    assert.match(items[4], /Restore a file brings it back on any iPhone, iPad or computer\./);
+    // (v308: named as the Library's button is)
+    assert.match(items[4], /Library › Restore brings it back on any iPhone, iPad or computer\./);
     assert.equal(items.filter((t) => /seven days/.test(t)).length, 1, 'said once');
     // nothing wider than the sheet
     const over = await page.evaluate(() => {

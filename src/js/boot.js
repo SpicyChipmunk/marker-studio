@@ -354,18 +354,17 @@ document.addEventListener('keydown', function (e) {
         if (why) wcErr(restoreWhy(why));
         return;
       }
-      const what = restoredList(r),
-        left = guidesLeft(r);
-      if (!what) {
-        wcErr(left || 'That backup is empty \u2014 there\u2019s nothing in it to restore.');
+      // (and what was kept beside the backup's guides, v304; each guide in the file said once, and Undo for a change
+      // to your markers, v308)
+      const sm = restoreSummary(r);
+      if (sm.err) {
+        wcErr(sm.err);
         return;
       }
       close();
       if (state.mode !== 'home') setMode('home');
       else fullRender();
-      // (and what was kept beside the backup's guides, v304)
-      const kw = restoreKeptWords(r);
-      toast('Restored ' + what + (left ? '. ' + left : kw ? '.' : '') + kw, left || kw ? 7000 : 4000);
+      restoreToast(sm.text, sm.long ? 7000 : 4000, r);
     });
   });
   $('wcSample').addEventListener('click', function () {
@@ -454,15 +453,38 @@ function importPicked(f, btn) {
       SF.importFile(f);
       return;
     }
-    errCard(
-      btn,
-      'That file isn\u2019t a Marker Studio guide. Choose a guide\u2019s <b>.json</b> file, or use <b>Restore</b> for a backup.',
-    );
+    // (v308) a photo: offered as a new guide; an empty file, or a guide file or backup cut short, said as such
+    const why = d ? 'bad' : fileTrouble(f, fr.result);
+    if (why === 'picture' && window.SF && SF.photoFile) {
+      SF.askBox(
+        'Make a guide from this photo?',
+        'That\u2019s a photo, not a guide file. Its sections can be found for a new guide.',
+        '<button type="button" class="btn-primary" data-a="go">Make a guide</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+        true,
+      ).then(function (a) {
+        if (a !== 'go') return;
+        closeDialog(savedOverlay);
+        SF.photoFile(f);
+      });
+      return;
+    }
+    errCard(btn, importWhy(why, fr.result));
   };
   fr.onerror = function () {
     errCard(btn, 'Couldn\u2019t read that file.');
   };
   fr.readAsText(f);
+}
+// (v308) why a file picked in Import a guide can't be opened, in words
+function importWhy(why, text) {
+  if (why === 'empty') return 'That file is empty. Choose a guide\u2019s <b>.json</b> file.';
+  if (why === 'damaged')
+    return /"type"\s*:\s*"ms-(backup|guides)"/.test(String(text || '').slice(0, 400))
+      ? RESTORE_DAMAGED
+      : 'This guide file is incomplete or damaged \u2014 it may not have finished downloading. Download it again, or ask for it to be sent again.';
+  if (why === 'picture')
+    return 'That\u2019s a picture, not a guide file. Use <b>Make a guide from my photo</b> for it.';
+  return 'That file isn\u2019t a Marker Studio guide. Choose a guide\u2019s <b>.json</b> file, or use <b>Restore</b> for a backup.';
 }
 
 // what LOAD_NOTE held at start (null: nothing to say); cleared when the note is dealt with
@@ -817,16 +839,14 @@ function renderHomeNotes() {
         if (why) errCard(b && b.parentNode, restoreWhy(why));
         return;
       }
-      const what = restoredList(r),
-        left = guidesLeft(r);
-      if (!what) {
-        errCard(b && b.parentNode, left || 'That backup is empty — there’s nothing in it to restore.');
+      const sm = restoreSummary(r);
+      if (sm.err) {
+        errCard(b && b.parentNode, sm.err);
         return;
       }
       gone();
       fullRender();
-      const kw = restoreKeptWords(r);
-      toast('Restored ' + what + (left ? '. ' + left : kw ? '.' : '') + kw, left || kw ? 7000 : 4000);
+      restoreToast(sm.text, sm.long ? 7000 : 4000, r);
     });
   });
   el.addEventListener('click', function (e) {

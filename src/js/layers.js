@@ -20,6 +20,7 @@
       focus mode     (82-colour-mode.js exitFocus); these two let an Escape from a form field in focus mode go by
       Reveal         (86-reveal-share.js), then
       full screen    (70-view.js)
+      Colour along   back to the Plan, as Back does (v308; before, Back only), not from a box being typed in
       paper spot     Palette › From photo's "Tap the white paper" while it waits for the tap (events.js)
     The guide's layers are added when it is first drawn (95-mount.js). Several can be open at once (Help over full
     screen, the ⋯ menu reached by keyboard behind full screen, the Library over a sheet, How it works over Help): each
@@ -173,10 +174,28 @@ document.addEventListener(
   });
 })();
 (function () {
+  // (v308: a[href], not [href], which took an icon's <use href> for a control; and a <details>' summary, which Tab
+  // stops on: Tab left Scan and Help through them)
   const FOC =
-    'button:not([disabled]),[href],input:not([type=hidden]),select,textarea,[tabindex]:not([tabindex="-1"])';
+    'button:not([disabled]),a[href],input:not([type=hidden]):not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
   const back = new Map();
-  const vis = (el) => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  // (v308 debug: nor a control in a closed <details>, its summary aside: browsers give it a size but Tab passes it by,
+  // so with Help › About's Send feedback and Copy diagnostics last, Tab left Help from About's summary)
+  const shut = (el) => {
+    for (
+      let d = el.closest('details:not([open])');
+      d;
+      d = d.parentElement && d.parentElement.closest('details:not([open])')
+    ) {
+      const s = d.querySelector(':scope > summary');
+      if (!(s && s.contains(el))) return true;
+    }
+    return false;
+  };
+  const vis = (el) =>
+    !(el instanceof SVGElement) &&
+    !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length) &&
+    !shut(el);
   // closing a dialog returns focus to what opened it. Chromium may still report the hidden Close button as focused when
   // this runs (Safari goes on reporting it), so focus left inside the closed dialog (or on something hidden) counts as
   // no focus.

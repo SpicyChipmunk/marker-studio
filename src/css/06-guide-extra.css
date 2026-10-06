@@ -612,6 +612,16 @@
   cursor: grabbing;
   transform: translate(-50%, -50%) scale(1.18);
 }
+/* (v308) see-through at rest, so a code under the light still reads; whole while it's being moved or has the focus */
+#sfRoot .sfsun svg {
+  opacity: 0.75;
+  transition: opacity 0.12s ease;
+}
+#sfRoot .sfsun.on svg,
+#sfRoot .sfsun:hover svg,
+#sfRoot .sfsun:focus-visible svg {
+  opacity: 1;
+}
 #sfRoot .sfsun:focus-visible {
   outline: 2px solid var(--focus-pic);
   outline-offset: 2px;
@@ -952,6 +962,27 @@
   margin-top: 4px;
   font-size: var(--t-sm);
   color: var(--sub);
+}
+/* (v308) Ignore faint grey marks, on Edit sections when the page has them */
+#sfRoot .sffaint {
+  margin-top: 8px;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+#sfRoot .sffaintchk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: var(--t-base);
+  color: var(--ink);
+  cursor: pointer;
+}
+#sfRoot .sffaintchk input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
 }
 #sfRoot .sfpgline > span[aria-hidden] {
   margin-right: 3px;

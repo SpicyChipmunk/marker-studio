@@ -39,7 +39,12 @@ async function makeCard(idxs, kind) {
     few = idxs.length <= 8,
     brands = brandsIn(idxs),
     one = brandLine(brands),
+    // (v308) a palette's own name as the title, as the Palette card and the Library show it, and its scheme under it
+    // (the title had been "Complementary palette" and so on, whatever the palette was called)
+    pal = kind === 'palette',
+    title = pal ? shownPaletteName(idxs) : 'Drawn markers',
     sub =
+      (pal ? HARM[state.harmony] + ' \u00b7 ' : '') +
       idxs.length +
       ' colour' +
       (idxs.length > 1 ? 's' : '') +
@@ -97,7 +102,7 @@ async function makeCard(idxs, kind) {
   } catch (e) {}
   x.fillStyle = '#f5f3ee';
   x.font = '500 34px Fraunces, Georgia, serif';
-  x.fillText(kind === 'palette' ? HARM[state.harmony] + ' palette' : 'Drawn markers', pad, pad + 54);
+  x.fillText(trunc(x, title, W - 2 * pad), pad, pad + 54);
   x.fillStyle = 'rgba(244,242,236,.5)';
   x.font = '400 15px "Hanken Grotesk", system-ui, sans-serif';
   x.fillText(trunc(x, sub, W - 2 * pad), pad, pad + 78);

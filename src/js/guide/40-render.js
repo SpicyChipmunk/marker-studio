@@ -355,6 +355,22 @@ function drawCode(g, l, m, o) {
   g.strokeStyle = o.stroke;
   g.fillStyle = o.fill;
   g.font = o.w + ' ' + fs + 'px ' + LFONT;
+  // (o.halo, the PDF's: a white halo first, wider than the edge, round the code and its tag, so the shading's tone
+  // lines and the photo's specks don't run through it, v308)
+  if (o.halo) {
+    g.lineWidth = L.lw * o.halo;
+    g.strokeStyle = '#fff';
+    g.strokeText(m.code, x0, y);
+    if (L.tg) {
+      const hx = x0 + L.cw + fs * TAG.gap,
+        hh = fs * TAG.h + L.lw * o.halo;
+      g.fillStyle = '#fff';
+      g.fillRect(hx - (L.lw * o.halo) / 2, y - hh / 2, L.gw + L.lw * o.halo, hh);
+      g.fillStyle = o.fill;
+    }
+    g.lineWidth = L.lw;
+    g.strokeStyle = o.stroke;
+  }
   g.strokeText(m.code, x0, y);
   g.fillText(m.code, x0, y);
   if (L.tg)
@@ -1231,7 +1247,8 @@ function renderGuide() {
       const rad = Math.max(9, W / 70);
       for (let i = 0; i < anchors.length; i++) {
         const a = anchors[i],
-          m = bk[a.mkey],
+          // (v308: in the marker it gives on the page, after Temperature, Mood and the count: anchorOut)
+          m = anchorOut(bk[a.mkey]),
           rgb = m ? hexRgb(m.hex) : [128, 128, 128],
           sel = i === selAnchor,
           rr = sel ? rad * 1.35 : rad,

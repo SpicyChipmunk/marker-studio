@@ -191,7 +191,7 @@ test('the last Blend anchor removed: three again, inside the zone being laid', (
   assert.ok(new Set(blk.map((l) => t.assignData.assign[l].mkey)).size > 1, 'not one marker everywhere');
 });
 
-test('one marker to use: the count says "all (1)" and its slider can\'t move', () => {
+test('one marker to use: the count says "all · 1" (v308: "all (1)" before) and its slider can\'t move', () => {
   const { app, t, A } = appWith([]);
   const E = app.__eval;
   E('state.owned = new Set([presetMkeys(MARKER_SETS[0])[0]])');
@@ -199,7 +199,7 @@ test('one marker to use: the count says "all (1)" and its slider can\'t move', (
   grid(t, 4, 4);
   style(t, { family: 'gradient' });
   const h = A.colours();
-  assert.match(h, /id="sfMkNlbl">all \(1\)</);
+  assert.match(h, /id="sfMkNlbl">all · 1</);
   assert.match(h, /id="sfMkCount"[^>]* disabled/);
 });
 

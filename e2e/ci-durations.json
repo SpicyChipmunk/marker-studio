@@ -113,7 +113,21 @@
   "zones-colouring.test.mjs": 15,
   "zones-edits.test.mjs": 64,
   "zones-shading.test.mjs": 66,
-  "zones.test.mjs": 43
+  "zones.test.mjs": 43,
+  "v308-beta.test.mjs": 55,
+  "v308-colour.test.mjs": 71,
+  "v308-intake.test.mjs": 61,
+  "v308-library.test.mjs": 16,
+  "v308-markers.test.mjs": 19,
+  "v308-output.test.mjs": 72,
+  "v308-palette.test.mjs": 72,
+  "v308-restore.test.mjs": 28,
+  "v308-ticks.test.mjs": 23,
+  "v308-merge-fa.test.mjs": 30,
+  "v308-merge-r2.test.mjs": 25,
+  "v308-merge-r3.test.mjs": 30,
+  "v308-handover.test.mjs": 40,
+  "v308-specks.test.mjs": 20
  },
  "webkit": {
   "autosave.test.mjs": 168,
@@ -228,6 +242,20 @@
   "zones-colouring.test.mjs": 34,
   "zones-edits.test.mjs": 127,
   "zones-shading.test.mjs": 383,
-  "zones.test.mjs": 208
+  "zones.test.mjs": 208,
+  "v308-beta.test.mjs": 220,
+  "v308-colour.test.mjs": 284,
+  "v308-intake.test.mjs": 244,
+  "v308-library.test.mjs": 64,
+  "v308-markers.test.mjs": 76,
+  "v308-output.test.mjs": 288,
+  "v308-palette.test.mjs": 288,
+  "v308-restore.test.mjs": 112,
+  "v308-ticks.test.mjs": 92,
+  "v308-merge-fa.test.mjs": 120,
+  "v308-merge-r2.test.mjs": 100,
+  "v308-merge-r3.test.mjs": 120,
+  "v308-handover.test.mjs": 160,
+  "v308-specks.test.mjs": 80
  }
 }

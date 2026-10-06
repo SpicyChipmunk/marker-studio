@@ -67,7 +67,12 @@ test('restoring an older backup never overwrites a newer guide', async () => {
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#guidesBackup')]);
   const file = await dl.path();
   await page.keyboard.press('Escape');
-  await page.click('#mSections'); await page.click('#sfColor'); await colourSome(page, 3);
+  await page.click('#mSections');
+  // (v308: and a change to its plan here: a guide only further along here is left as it is, with no copy, v308-restore)
+  await page.click('.sftabbtn[data-t="pattern"]');
+  const shape = await page.getAttribute('#sfShape .sfedit:not(.on)', 'data-v');
+  await page.click(`#sfShape [data-v="${shape}"]`); await idle(page);
+  await page.click('#sfColor'); await colourSome(page, 3);
   await page.evaluate(() => __mstest.flushSave()); await idle(page); // it saves itself into its Library entry
   await page.click('#mHome'); await page.click('#homeLibCard');
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#guidesRestore')]);
@@ -173,7 +178,8 @@ test('restoring a backup that replaces the open guide reopens it as restored (no
   assert.equal((await stored(page, id)).prog, 9, 'and the Library keeps it');
   // a guide newer here: the backup's version is added once as "(from backup)", not again on a second restore
   await tickN(page, 1, 40); await idle(page, AUTO);
-  const old = await page.evaluate((g) => { g[0].ts = 1; return g; }, bk);
+  // (v308: with a plan that differs, a marker changed: one only further along here gets no copy, v308-restore)
+  const old = await page.evaluate((g) => { g[0].ts = 1; const a = g[0].payload.assign, k = Object.keys(a)[0]; a[k] = a[k] === 'Ohuhu|R014' ? 'Ohuhu|B08' : 'Ohuhu|R014'; return g; }, bk);
   await page.evaluate((g) => new Promise((r) => restoreGuideList(g, 0, r)), old); await idle(page);
   await page.evaluate((g) => new Promise((r) => restoreGuideList(g, 0, r)), old); await idle(page);
   assert.equal((await guides(page)).filter((g) => / \(from backup\)$/.test(g.name)).length, 1);
@@ -202,7 +208,8 @@ test('restore: no question on an empty device, plurals right, and no backup remi
   await page.setInputFiles('#guidesFile', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(file) }); await idle(page);
   const q = await asked(page);
   assert.equal(q.length, 1);
-  assert.equal(q[0], 'The backup has 1 marker; you have 2 markers. Either way, the backup’s palettes and guides are added.');
+  // (v308: the question's new words; this file has no guides)
+  assert.equal(q[0], 'You have 2 markers; the backup has 1 (all of them yours too). Either way, the backup’s palettes are added.');
   assert.deepEqual(errors, []);
 });
 
@@ -416,7 +423,8 @@ test('restore: palettes are merged (local ones kept, new ones added, a shared id
   assert.deepEqual(await asked(page), [], 'same markers: nothing to ask');
   assert.deepEqual(await palettes(page), ['101:Local only', '202:Mine', '303:Backup only']);
   assert.deepEqual(await page.evaluate(() => state.saved.find((s) => s.id === 202).keys), ['Ohuhu|Y111'], 'the local copy of a shared id is kept as it was');
-  assert.match(await toastText(page), /Restored — 8 markers\. 1 palette added\./);
+  // (v308: the same markers aren't "restored")
+  assert.match(await toastText(page), /Your markers already match the backup; added 1 palette\./);
   // kept after a reload
   await page.reload(); await idle(page);
   assert.deepEqual(await palettes(page), ['101:Local only', '202:Mine', '303:Backup only']);
@@ -429,7 +437,8 @@ test('restore: the question is only about markers, with the right plurals; Cance
   const { page, errors } = await openApp({ storage: onboardedV264({ [KEY]: appState({ saved: [palAt(['Ohuhu|R014'], 101, 'Local only')] }) }) });
   await answerAsks(page, false);
   await restore(page, backup(['Ohuhu|R014', 'Ohuhu|B08', 'Copic|E09'], [palAt(['Ohuhu|B08'], 404, 'From file')], { wish: [{ k: 'Ohuhu|G43', why: 'x', ts: 1 }] }));
-  assert.deepEqual(await asked(page), ['The backup has 3 markers; you have 8 markers. Either way, the backup’s palettes and guides are added.']);
+  // (v308: the question's new words; these files have no guides)
+  assert.deepEqual(await asked(page), ['You have 8 markers; the backup has 3 (2 of them yours too). Either way, the backup’s palettes are added.']);
   assert.equal(await page.evaluate(() => state.owned.size), 8, 'Cancel keeps the markers');
   assert.deepEqual(await page.evaluate(() => state.wish.map((w) => w.k)), ['Ohuhu|G43'], 'the backup’s To buy merges in (v305)');
   assert.deepEqual(await palettes(page), ['101:Local only', '404:From file'], 'the palettes are added anyway');
@@ -437,13 +446,13 @@ test('restore: the question is only about markers, with the right plurals; Cance
   // OK: the backup's markers (and its To buy list); the local palette is still there
   await askAnswer(page, true);
   await restore(page, backup(['Ohuhu|R014'], [palAt(['Ohuhu|B08'], 404, 'From file')], { wish: [{ k: 'Ohuhu|G43', why: 'x', ts: 1 }] }));
-  assert.equal((await asked(page))[1], 'The backup has 1 marker; you have 8 markers. Either way, the backup’s palettes and guides are added.');
+  assert.equal((await asked(page))[1], 'You have 8 markers; the backup has 1 (all of them yours too). Either way, the backup’s palettes are added.');
   assert.deepEqual(await page.evaluate(() => [...state.owned]), ['Ohuhu|R014']);
   assert.deepEqual(await page.evaluate(() => state.wish.map((w) => w.k)), ['Ohuhu|G43']);
   assert.deepEqual(await palettes(page), ['101:Local only', '404:From file']);
   // one marker here now: singular
   await restore(page, backup(['Ohuhu|R014', 'Ohuhu|B08'], []));
-  assert.equal((await asked(page))[2], 'The backup has 2 markers; you have 1 marker. Either way, the backup’s palettes and guides are added.');
+  assert.equal((await asked(page))[2], 'You have 1 marker; the backup has 2 (1 of them yours too). Either way, the backup’s palettes are added.');
   assert.deepEqual(await palettes(page), ['101:Local only', '404:From file'], 'a backup without palettes removes none');
   // pasted text (Markers › Back up & restore) merges the same way
   await page.keyboard.press('Escape');
@@ -495,6 +504,7 @@ test('restore: when the backup’s copy of the open guide is newer, the summary 
   await page.evaluate(() => openLibrary());
   await page.setInputFiles('#guidesFile', { name: 'b.json', mimeType: 'application/json', buffer: buf }); await idle(page);
   await page.waitForFunction(() => /restored/.test(document.getElementById('msToast').textContent));
-  assert.match(await toastText(page), new RegExp('1 guide restored\\. “' + g.name + '” was replaced by the backup’s newer copy\\.'));
+  // (v308 merge: the backup's markers match yours, so they are said to be as they were)
+  assert.match(await toastText(page), new RegExp('1 guide restored\\. Your markers are as they were\\. “' + g.name + '” was replaced by the backup’s newer copy\\.'));
   assert.deepEqual(errors, []);
 });

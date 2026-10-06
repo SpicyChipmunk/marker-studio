@@ -21,7 +21,7 @@ test('Undo names a zone step: made, deleted, renamed, sections added or taken ou
 
 test('a saved zone\'s settings are checked as a guide\'s are: odd values open as the default, good ones as saved', () => {
   const t = createApp().__mstest, keys = t.ZONE_KEYS;
-  assert.deepEqual([...keys].sort(), ['balA', 'balM', 'balS', 'balSeed', 'balance', 'blendFall', 'blendMix', 'dir', 'emphasis', 'expand', 'expandChar', 'family', 'genHarmony', 'genPal', 'gradSeed', 'gradScat', 'gradJit', 'gradFix', 'gradShape', 'limitN', 'look', 'noAdj', 'noRep', 'palette', 'paletteSource', 'radC', 'savedPalId'].sort(), 'the zone\'s own settings: pattern and colours (and Radial\'s centre), not shading, texture or the photo');
+  assert.deepEqual([...keys].sort(), ['balA', 'balM', 'balS', 'balSeed', 'balance', 'blendFall', 'blendMix', 'dir', 'emphasis', 'expand', 'expandChar', 'family', 'genHarmony', 'genPal', 'gradSeed', 'gradScat', 'gradJit', 'gradFix', 'gradShape', 'incl', 'limitN', 'look', 'noAdj', 'noRep', 'palette', 'paletteSource', 'radC', 'savedPalId', 'fromPal'].sort(), 'the zone\'s own settings: pattern and colours (and Radial\'s centre), not shading, texture or the photo');
   const good = t.zoneStOpen({ family: 'random', gradShape: 'radial', dir: -1, limitN: 9, palette: 'warm', look: 'ltd', blendMix: 'paint', radC: { x: 0.25, y: 0.8 } });
   assert.deepEqual([good.family, good.gradShape, good.dir, good.limitN, good.palette, good.look, good.blendMix, good.radC], ['random', 'radial', -1, 9, 'warm', 'ltd', 'paint', { x: 0.25, y: 0.8 }]);
   const odd = t.zoneStOpen({ family: 'rainbow', gradShape: 5, dir: 0, limitN: 'x', palette: null, gradSeed: 7, radC: { x: 'a', y: 2 } });
@@ -31,6 +31,12 @@ test('a saved zone\'s settings are checked as a guide\'s are: odd values open as
   assert.deepEqual([sc.gradScat, sc.gradJit, sc.gradFix], [3, 0.4, true]);
   const so = t.zoneStOpen({ gradScat: 'x', gradJit: 9, gradFix: 1 });
   assert.deepEqual([so.gradScat, so.gradJit, so.gradFix], [0, 1, false]);
+  // (v308: the Include row per zone: a zone saved before it has none, laid as before)
+  assert.equal(t.zoneStOpen({}).incl, null);
+  assert.deepEqual({ ...t.zoneStOpen({ incl: { browns: true, greys: 'x' } }).incl }, { browns: true });
+  // (v308: a palette handed over from Palette, per zone, as its Colours from is; none in a zone saved without one)
+  assert.equal(t.zoneStOpen({}).fromPal, null);
+  assert.deepEqual({ ...t.zoneStOpen({ fromPal: { name: 'Rainbow', h: 'rainbow' } }).fromPal }, { name: 'Rainbow', h: 'rainbow' });
   // (a centre past the picture's edge is brought back onto it)
   assert.deepEqual(t.zoneStOpen({ radC: { x: 1.5, y: -0.2 } }).radC, { x: 1, y: 0 });
   // (reading them leaves the settings in use as they were)
@@ -120,7 +126,7 @@ test('Undo names a change to one zone’s shading by the zone', () => {
   assert.equal(L(Zs(sh({})), Zs(sh({ round: 0.9 }))), 'Bell: Roundness changed');
   assert.equal(L(Zs(sh({})), Zs(sh({ hilite: 'paper' }))), 'Bell: Highlights: Paper white');
   assert.equal(L(Zs(sh({})), Zs(sh({ shadow: 'cool' }))), 'Bell: Shadows: Cooler');
-  assert.equal(L(Zs(sh({})), Zs(sh({ hi: 0.1 }))), 'Bell: Highlight changed');
+  assert.equal(L(Zs(sh({})), Zs(sh({ hi: 0.1 }))), 'Bell: Highlight amount: 10%');
   assert.equal(L(Zs(sh({})), Zs(sh({}))), '');
 });
 

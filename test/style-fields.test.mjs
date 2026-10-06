@@ -6,9 +6,9 @@ import assert from 'node:assert/strict';
 import { createApp } from './harness.mjs';
 
 // every setting, by the name of the variable that holds it (as __mstest.styleVars reads them)
-const NAMES = ['family', 'palette', 'gradShape', 'dir', 'look', 'emphasis', 'limitN', 'noAdj', 'balance', 'balM', 'balS', 'balA', 'balSeed', 'noRep', 'gradSeed', 'blendFall', 'blendMix',
+const NAMES = ['family', 'palette', 'gradShape', 'dir', 'look', 'emphasis', 'limitN', 'gradIncl', 'noAdj', 'balance', 'balM', 'balS', 'balA', 'balSeed', 'noRep', 'gradSeed', 'blendFall', 'blendMix',
   'texAmt', 'radC', 'shadeMode', 'shadeSun', 'shadeRound', 'shadeLines', 'shadeHi', 'shadeLo', 'shadeLight', 'shadeMain', 'shadeShadow', 'shadeHilite', 'shadeFlat', 'photoXf',
-  'photoOp', 'photoPaper', 'expand', 'expandChar', 'paletteSource', 'savedPalId', 'genHarmony', 'genPal', 'minPos', 'bgTrim',
+  'photoOp', 'photoPaper', 'expand', 'expandChar', 'paletteSource', 'savedPalId', 'genHarmony', 'genPal', 'fromPal', 'minPos', 'bgTrim',
   'addAutoClose'];
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
@@ -18,11 +18,16 @@ test('each style setting’s first value (a guide that changes nothing is saved 
   for (const k of NAMES) got[k] = plain(sv[k]);
   assert.deepEqual(got, {
     family: 'gradient', palette: 'all', gradShape: 'serpentine', dir: 1, look: 'auto', emphasis: 'neutral', limitN: 16,
+    // (v308: no Include row until a new picture gives it one; a guide saved before has none)
+    gradIncl: null,
     noAdj: false, balance: 'main', balM: 'auto', balS: 'auto', balA: 'auto', balSeed: 0, noRep: false, gradSeed: 0, blendFall: 2, blendMix: 'soft', texAmt: 0.5, radC: null, shadeMode: 'off', shadeSun: { x: 0.2, y: 0.12 },
     shadeRound: 0.5, shadeLines: true, shadeHi: 0.5, shadeLo: 0.5, shadeLight: 'auto', shadeMain: true, shadeShadow: 'same', shadeHilite: 'same',
     shadeFlat: {}, photoXf: null,
     photoOp: 0.65, photoPaper: true, expand: false, expandChar: 0.5, paletteSource: 'owned', savedPalId: null,
-    genHarmony: 'analogous', genPal: [], minPos: 30, bgTrim: 50, addAutoClose: false,
+    genHarmony: 'analogous', genPal: [],
+    // (v308: no palette handed over from Palette's Use in a guide)
+    fromPal: null,
+    minPos: 30, bgTrim: 50, addAutoClose: false,
   });
 });
 
@@ -44,6 +49,8 @@ function scene() {
     photoOp: 0.4, photoPaper: false, expand: true, expandChar: 0.1, paletteSource: 'saved', savedPalId: 99,
     // (a palette marker kept as a catalogue index is saved as its key)
     genHarmony: 'tetradic', genPal: ['Ohuhu|R16', 0, 'Ohuhu|B06'], minPos: 12, bgTrim: 64, addAutoClose: true,
+    // (v308: the palette handed over from Palette's Use in a guide, its name and scheme)
+    fromPal: { name: 'Sunset strip', h: 'photo' },
   });
   return { app, core };
 }
@@ -59,7 +66,8 @@ test('the saved style: its exact text, nesting and order', () => {
       '"gradSeed":0.25,"blendFall":3.4,"blendVivid":true,"blendMix":"vivid","texAmt":0.75,"radC":{"x":0.3,"y":0.7},' +
       '"shade":{"mode":"shadow","x":0.9,"y":0.05,"round":0.35,"lines":false,"hi":0.6,"lo":0.15,"lightSrc":"sun","light":"sun","main":true,"shadow":"grey","hilite":"paper","flat":[1,3]},' +
       '"photo":null,"expand":true,"expandChar":0.1,"paletteSource":"saved","savedPalId":99,"genHarmony":"tetradic",' +
-      '"genPal":["Ohuhu|R16","' + k0 + '","Ohuhu|B06"]}',
+      // (v308: fromPal, last, written only while a palette handed over from Palette is in use: see below)
+      '"genPal":["Ohuhu|R16","' + k0 + '","Ohuhu|B06"],"fromPal":{"name":"Sunset strip","h":"photo"}}',
   );
   // the section settings are saved beside the style, in this place among the rest
   assert.deepEqual(Object.keys(d.payload), ['lmap', 'ref', 'paper', 'assign', 'style', 'anchors', 'prog', 'tones', 'held', 'dates', 'out',
@@ -68,6 +76,20 @@ test('the saved style: its exact text, nesting and order', () => {
   assert.deepEqual([d.payload.minSize, d.payload.minPos, d.payload.bgTrim, d.payload.addAutoClose], [12, 3, 64, true]);
   // a guide file to share has the same style
   assert.equal(JSON.stringify(core.currentDesignObj(true).payload.style), JSON.stringify(d.payload.style));
+});
+
+test('fromPal (v308): not written without a palette handed over, so other guides save as before; odd values open as none', () => {
+  const { core } = scene();
+  core.styleVars.fromPal = null;
+  const st = core.currentDesignObj().payload.style;
+  assert.ok(!('fromPal' in st));
+  assert.equal(Object.keys(st).pop(), 'genPal');
+  const f = [...core.styleFields].find((x) => x.key === 'fromPal');
+  assert.deepEqual(plain(f.check({ name: 'Rainbow', h: 'rainbow' }, null)), { name: 'Rainbow', h: 'rainbow' });
+  // (a scheme the app doesn't know is none; no name is "Palette"; a long one is cut short)
+  assert.deepEqual(plain(f.check({ name: '', h: 'loud' }, null)), { name: 'Palette', h: null });
+  assert.equal(f.check({ name: 'x'.repeat(200) }, null).name.length, 80);
+  for (const v of [undefined, null, 'Rainbow', 3, true, ['a']]) assert.equal(f.check(v, null), null, String(v));
 });
 
 test('the saved style with a photo: its placement, see-through, white areas and lighting correction', () => {
@@ -101,7 +123,7 @@ test('the saved style with a photo: its placement, see-through, white areas and 
 test('STYLE_FIELDS: every default is its variable’s first value, and what a file that says nothing opens with', () => {
   const core = createApp().__mstest, sv = core.styleVars;
   const VAR = { mode: 'shadeMode', round: 'shadeRound', lines: 'shadeLines', hi: 'shadeHi', lo: 'shadeLo', lightSrc: 'shadeLight', main: 'shadeMain',
-    shadow: 'shadeShadow', hilite: 'shadeHilite', minSize: 'minPos' };
+    shadow: 'shadeShadow', hilite: 'shadeHilite', minSize: 'minPos', incl: 'gradIncl' };
   let n = 0;
   for (const f of core.styleFields) {
     if (!('def' in f)) continue;
@@ -110,19 +132,20 @@ test('STYLE_FIELDS: every default is its variable’s first value, and what a fi
     assert.deepEqual(plain(f.check(undefined, f.def)), plain(f.def), f.key + ' (missing)');
     n++;
   }
-  // (v306: 42, with Scatter's gradScat, gradJit and gradFix)
-  assert.equal(n, 42);
+  // (v306: 42, with Scatter's gradScat, gradJit and gradFix; v308: 43, with the Gradient's Include row; 44 with
+  // fromPal, the palette Palette's Use in a guide handed over, which Mood and Shuffle keep as it is)
+  assert.equal(n, 44);
 });
 
 test('STYLE_FIELDS: where each setting is saved (in the order written) and which ones Undo keeps', () => {
   const core = createApp().__mstest;
   assert.deepEqual([...core.styleFields].map((f) => f.in + '.' + f.key + (f.undo ? '' : ' (no undo)')), [
     'style.family', 'style.palette', 'style.gradShape', 'style.dir', 'style.look', 'style.emphasis', 'style.limitN',
-    'style.noAdj', 'style.balance', 'style.balM', 'style.balS', 'style.balA', 'style.balSeed', 'style.noRep', 'style.gradSeed', 'style.gradScat', 'style.gradJit', 'style.gradFix', 'style.blendFall', 'style.blendVivid (no undo)', 'style.blendMix', 'style.texAmt', 'style.radC',
+    'style.incl', 'style.noAdj', 'style.balance', 'style.balM', 'style.balS', 'style.balA', 'style.balSeed', 'style.noRep', 'style.gradSeed', 'style.gradScat', 'style.gradJit', 'style.gradFix', 'style.blendFall', 'style.blendVivid (no undo)', 'style.blendMix', 'style.texAmt', 'style.radC',
     'shade.mode', 'shade.x', 'shade.y', 'shade.round', 'shade.lines', 'shade.hi', 'shade.lo', 'shade.lightSrc', 'shade.light (no undo)', 'shade.main', 'shade.shadow',
     'shade.hilite', 'shade.flat',
     'style.photo (no undo)', 'style.expand', 'style.expandChar', 'style.paletteSource', 'style.savedPalId',
-    'style.genHarmony', 'style.genPal', 'payload.minPos (no undo)', 'payload.minSize (no undo)', 'payload.bgTrim (no undo)',
+    'style.genHarmony', 'style.genPal', 'style.fromPal', 'payload.minPos (no undo)', 'payload.minSize (no undo)', 'payload.bgTrim (no undo)',
     'payload.addAutoClose (no undo)',
   ]);
 });

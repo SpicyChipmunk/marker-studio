@@ -18,6 +18,9 @@ function resetForNewPicture() {
   gradScat = 0;
   gradJit = 0;
   gradFix = false;
+  // (v308: a new guide, the sample too, has the Include row, with the Mood's choices; a guide saved before has none)
+  if (!gradIncl) gradIncl = {};
+  _mkOpened = {};
   relWake();
   const gen = ++loadGen;
   clearTimeout(autoT);
@@ -57,6 +60,10 @@ function resetForNewPicture() {
   // (Enhance and its line sensitivity were set for the old picture's lighting, as its turn and crop were, v298)
   enhance = true;
   adaptC = 9;
+  sensUser = false;
+  faintCut = 0;
+  faintOffer = 0;
+  srcColour = null;
   _tickHeld = {};
   cropRect = null;
   cropMode = false;
@@ -97,14 +104,21 @@ function resetForNewPicture() {
   return gen;
 }
 function note(m) {
-  if (metaEl) metaEl.innerHTML = m;
   const _plain = typeof m === 'string' ? m.replace(/<[^>]*>/g, '') : '',
     _prog = /(\u2026|\.\.\.)\s*$/.test(_plain);
+  if (metaEl) metaEl.innerHTML = m;
   // a failure is shown as a card where the guide is, not as a passing toast
-  if (/^(could not|couldn|that file|that is not|that image|no markers|not enough)/i.test(_plain.trim())) {
+  if (
+    /^(could not|couldn|that file|that is not|that image|that\u2019s a pdf|no markers|not enough)/i.test(
+      _plain.trim(),
+    )
+  ) {
     const a = document.getElementById(workEl && workEl.offsetParent !== null ? 'sfHead' : 'sfStart');
-    if (a && a.offsetParent !== null) errCard(a, m);
-    else toast(m, 6500);
+    if (a && a.offsetParent !== null) {
+      errCard(a, m);
+      // (v308: under the start card, the card's own line goes back to what it says: the message was shown twice)
+      if (a.id === 'sfStart' && metaEl) metaEl.innerHTML = metaText();
+    } else toastHTML(m, 6500);
     return;
   }
   if (!_prog && root) clearErrs(root);
@@ -114,7 +128,7 @@ function note(m) {
     if (t && t.classList.contains('on') && /\u2026\s*$/.test(t.textContent)) t.classList.remove('on');
   }
   if (m && !_prog && workEl && workEl.offsetParent !== null && m !== metaText())
-    toast(m, /could not|couldn|failed|full|not enough|no longer/i.test(m) ? 6500 : 3200);
+    toastHTML(m, /could not|couldn|failed|full|not enough|no longer/i.test(m) ? 6500 : 3200);
 }
 function evCanvas(e) {
   const r = cv.getBoundingClientRect();
@@ -176,9 +190,24 @@ function cropHit(P) {
   if (P.x > r.x && P.x < r.x + r.w && P.y > r.y && P.y < r.y + r.h) return 'move';
   return 'new';
 }
-function autoCrop() {
-  if (!labels || !srcImg) return;
-  okGeom(function () {
+// Auto crop (v308): to the inside of the largest ruled rectangle when there is one (a page's own frame, in a
+// screenshot with the browser round it), padded 3%; otherwise to where the ink is, as before. Worked out before
+// anything changes: when it would trim almost nothing (97% or more of the picture both ways) it says so and adds no
+// Undo step. The rectangle is used only when the sections outside it, those not running to the picture's edge, come to
+// at most CROP_OUT of the picture (a screenshot's status text and tab dots; not a drawing round a board in its middle).
+const CROP_OUT = 0.03;
+function autoCropBox() {
+  let fb = ruledBox();
+  const out = fb ? frameOutside(fb, true) : null;
+  if (fb && out > CROP_OUT) fb = 0;
+  let x0, y0, x1, y1;
+  if (fb) {
+    const c = comps[fb];
+    x0 = c.x0;
+    y0 = c.y0;
+    x1 = c.x1;
+    y1 = c.y1;
+  } else {
     const rowInk = new Int32Array(H),
       colInk = new Int32Array(W);
     for (let y = 0; y < H; y++) {
@@ -191,31 +220,42 @@ function autoCrop() {
     }
     const rowThr = Math.max(1, W * 0.012),
       colThr = Math.max(1, H * 0.012);
-    let y0 = 0;
+    y0 = 0;
     while (y0 < H && rowInk[y0] < rowThr) y0++;
-    let y1 = H - 1;
+    y1 = H - 1;
     while (y1 > y0 && rowInk[y1] < rowThr) y1--;
-    let x0 = 0;
+    x0 = 0;
     while (x0 < W && colInk[x0] < colThr) x0++;
-    let x1 = W - 1;
+    x1 = W - 1;
     while (x1 > x0 && colInk[x1] < colThr) x1--;
-    if (x1 - x0 < W * 0.2 || y1 - y0 < H * 0.2) {
-      geoCancel();
-      note('Couldn\u2019t find the drawing \u2014 use Crop to choose it.');
-      return;
-    }
-    const padX = W * 0.03,
-      padY = H * 0.03;
-    x0 = Math.max(0, x0 - padX);
-    x1 = Math.min(W - 1, x1 + padX);
-    y0 = Math.max(0, y0 - padY);
-    y1 = Math.min(H - 1, y1 + padY);
+    if (x1 - x0 < W * 0.2 || y1 - y0 < H * 0.2) return null;
+  }
+  const padX = W * 0.03,
+    padY = H * 0.03;
+  x0 = Math.max(0, x0 - padX);
+  x1 = Math.min(W - 1, x1 + padX);
+  y0 = Math.max(0, y0 - padY);
+  y1 = Math.min(H - 1, y1 + padY);
+  return { x0: x0, y0: y0, x1: x1, y1: y1, ruled: !!fb, out: out };
+}
+function autoCrop() {
+  if (!labels || !srcImg) return;
+  const b = autoCropBox();
+  if (!b) {
+    note('Couldn\u2019t find the drawing \u2014 use Crop to choose it.');
+    return;
+  }
+  if (b.x1 - b.x0 >= W * 0.97 && b.y1 - b.y0 >= H * 0.97) {
+    note('Nothing to trim.');
+    return;
+  }
+  okGeom(function () {
     const cr = cropRect || { x: 0, y: 0, w: 1, h: 1 };
     cropRect = {
-      x: cr.x + (x0 / W) * cr.w,
-      y: cr.y + (y0 / H) * cr.h,
-      w: ((x1 - x0) / W) * cr.w,
-      h: ((y1 - y0) / H) * cr.h,
+      x: cr.x + (b.x0 / W) * cr.w,
+      y: cr.y + (b.y0 / H) * cr.h,
+      w: ((b.x1 - b.x0) / W) * cr.w,
+      h: ((b.y1 - b.y0) / H) * cr.h,
     };
     reprocessImg();
   });
@@ -277,7 +317,11 @@ function cancelCrop() {
   render();
   note(metaText());
 }
-function buildRotatedFull() {
+// The picture turned and tilted, at working size. edge (v308, for finding the sections: processSrc): a tilt's
+// turned-in corners are filled with the photo's own edge carried outwards, not white, so the grey paper of a
+// photographed page doesn't meet a white wedge that reads as a line and specks (Ben's page tilted 1°: 216 sections
+// became 446). Crop's view keeps white, to show where the photo ends.
+function buildRotatedFull(edge) {
   const rad = ((rot90 + tilt) * Math.PI) / 180,
     sw = srcImg.width,
     sh = srcImg.height,
@@ -296,9 +340,110 @@ function buildRotatedFull() {
   ox.fillRect(0, 0, fw, fh);
   ox.translate(fw / 2, fh / 2);
   ox.rotate(rad);
+  const tr = Math.abs(Math.sin((tilt * Math.PI) / 180));
+  if (edge && tr > 1e-4) {
+    const w = Math.max(1, Math.round(sw * sc)),
+      h = Math.max(1, Math.round(sh * sc)),
+      P = Math.ceil(Math.max(w, h) * tr) + 4,
+      pc = edgePadded(srcImg, w, h, P);
+    ox.drawImage(pc, -w / 2 - P, -h / 2 - P);
+    freeCanvas(pc);
+    return oc;
+  }
   ox.scale(sc, sc);
   ox.drawImage(srcImg, -sw / 2, -sh / 2);
   return oc;
+}
+// img drawn at w x h with a border P wide all round, the border each side's edge carried outwards: the average of 8
+// rows (or columns) starting 2 px in from that side, smoothed over 2 px either way along it; the corners carry the
+// ends of the top and bottom strips. (One row copied outwards turned the photo's grain into streaks.) v308
+function edgePadded(img, w, h, P) {
+  const c = document.createElement('canvas'),
+    cw = w + 2 * P,
+    ch = h + 2 * P;
+  c.width = cw;
+  c.height = ch;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, cw, ch);
+  g.drawImage(img, P, P, w, h);
+  if (w < 16 || h < 16) return c;
+  const D = 8,
+    IN = 2;
+  // the average colour along one side: n places, each the mean of D pixels across it
+  const strip = function (x, y, sw, sh, along) {
+    const d = g.getImageData(x, y, sw, sh).data,
+      n = along ? sw : sh,
+      a = new Float32Array(n * 3);
+    for (let k = 0; k < n; k++) {
+      let r = 0,
+        gg = 0,
+        b = 0;
+      for (let j = 0; j < D; j++) {
+        const p = (along ? j * sw + k : k * sw + j) * 4;
+        r += d[p];
+        gg += d[p + 1];
+        b += d[p + 2];
+      }
+      a[k * 3] = r / D;
+      a[k * 3 + 1] = gg / D;
+      a[k * 3 + 2] = b / D;
+    }
+    // (smoothed along the side, 2 px either way)
+    const o = new Uint8ClampedArray(n * 3);
+    for (let k = 0; k < n; k++) {
+      const k0 = Math.max(0, k - 2),
+        k1 = Math.min(n - 1, k + 2);
+      for (let ch2 = 0; ch2 < 3; ch2++) {
+        let s = 0;
+        for (let q = k0; q <= k1; q++) s += a[q * 3 + ch2];
+        o[k * 3 + ch2] = Math.round(s / (k1 - k0 + 1));
+      }
+    }
+    return o;
+  };
+  const top = strip(P, P + IN, w, D, true),
+    bot = strip(P, P + h - IN - D, w, D, true),
+    lef = strip(P + IN, P, D, h, false),
+    rig = strip(P + w - IN - D, P, D, h, false);
+  // the bands above and below (the full width, corners included), then left and right of the photo
+  const band = function (s, y0) {
+    const im = g.createImageData(cw, P),
+      d = im.data;
+    for (let x = 0; x < cw; x++) {
+      const k = Math.max(0, Math.min(w - 1, x - P)) * 3;
+      for (let y = 0; y < P; y++) {
+        const p = (y * cw + x) * 4;
+        d[p] = s[k];
+        d[p + 1] = s[k + 1];
+        d[p + 2] = s[k + 2];
+        d[p + 3] = 255;
+      }
+    }
+    g.putImageData(im, 0, y0);
+  };
+  const side = function (s, x0) {
+    const im = g.createImageData(P, h),
+      d = im.data;
+    for (let y = 0; y < h; y++) {
+      const k = y * 3;
+      for (let x = 0; x < P; x++) {
+        const p = (y * P + x) * 4;
+        d[p] = s[k];
+        d[p + 1] = s[k + 1];
+        d[p + 2] = s[k + 2];
+        d[p + 3] = 255;
+      }
+    }
+    g.putImageData(im, x0, P);
+  };
+  band(top, 0);
+  band(bot, P + h);
+  side(lef, 0);
+  side(rig, P + w);
+  return c;
 }
 // A grey picture w x h enlarged to w2 x h2 by bicubic (Catmull-Rom) interpolation, the same in every browser (a
 // canvas's own smoothing differs between them, and Chrome's is softer). A line's soft grey edge becomes a clean gap
@@ -361,7 +506,7 @@ function grayUp(g, w, h, w2, h2) {
 function processSrc() {
   _rg = null;
   if (!srcImg) return;
-  const oc = buildRotatedFull(),
+  const oc = buildRotatedFull(true),
     fw = oc.width,
     fh = oc.height;
   const cr = cropRect || { x: 0, y: 0, w: 1, h: 1 },
@@ -388,6 +533,8 @@ function processSrc() {
     n = cw * ch,
     g0 = new Uint8Array(n);
   for (let i = 0, j = 0; i < n; i++, j += 4) g0[i] = (d[j] * 0.299 + d[j + 1] * 0.587 + d[j + 2] * 0.114) | 0;
+  // (how much of it is coloured in, for the warning about a page coloured already: segQuality, v308)
+  srcColour = colourShare(d, n);
   W = cw;
   H = ch;
   gray = g0;
@@ -438,6 +585,7 @@ function resegment() {
       if (f) {
         adaptC = f.c;
         enhance = f.e;
+        faintCut = f.f || 0;
       }
       renderControls();
     });
@@ -454,6 +602,7 @@ function reseg() {
   if (sfmode === 'review') {
     render();
     segWarnSync();
+    faintLineSync();
   }
   note('Sections detected again \u2014 tap Undo to go back.');
   return true;
@@ -461,7 +610,7 @@ function reseg() {
 // the detection settings before a change to them (put back if the person says No above)
 let _reFrom = null;
 function reFrom() {
-  if (!_reFrom) _reFrom = { c: adaptC, e: enhance };
+  if (!_reFrom) _reFrom = { c: adaptC, e: enhance, f: faintCut };
 }
 // Before the sections are found afresh: one Undo step that brings back the sections and all that hangs on them (ticks,
 // part-done tones, pins, flat sections, the guide's colours); geo: also the picture as it was (turned, tilted,
@@ -520,8 +669,11 @@ function keepSnap(geo) {
       fresh: _segFresh,
       edits: hasEdits,
       // (Enhance and Sensitivity as they were, v304)
-      det: _reFrom ? { e: _reFrom.e, c: _reFrom.c } : { e: enhance, c: adaptC },
+      // (v308: and whether faint grey marks were ignored)
+      det: _reFrom ? { e: _reFrom.e, c: _reFrom.c, f: _reFrom.f } : { e: enhance, c: adaptC, f: faintCut },
       bgMaxB: bgMaxB,
+      // (v308: the offer to ignore faint grey marks, as it was for those sections)
+      fo: faintOffer,
       ad: ad,
       sig: guideSig,
       plan: ad ? planStack.slice() : null,
@@ -539,6 +691,8 @@ function keepSnap(geo) {
               src: srcImg,
               pgQ: pgQ,
               pgShape: pgShape,
+              // (v308: how coloured that picture was, for the warning)
+              col: srcColour,
               rot90: rot90,
               tilt: tilt,
               crop: cropRect ? Object.assign({}, cropRect) : null,
@@ -757,8 +911,19 @@ function fitSource(img) {
     return img;
   }
 }
+// (v308) a PDF colouring page: the picker takes pictures only, so a PDF that gets this far (from Files, say) is told
+// what to do instead
+const PDF_SAY = 'That\u2019s a PDF. Take a screenshot of the colouring page, then choose the screenshot.';
+function isPdf(file) {
+  return !!file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name || ''));
+}
 function _loadImage(file) {
   _smpLoad = false;
+  if (isPdf(file)) {
+    ++loadGen;
+    note(PDF_SAY);
+    return;
+  }
   note('Reading photo\u2026');
   const gen = ++loadGen;
   let url = null;
@@ -804,7 +969,13 @@ function _loadImage(file) {
           // a photographed page is found and flattened first (or its corners offered for checking); a scan goes straight on
           pgBegin(f35);
         } catch (err) {
-          note('Couldn’t process that photo: ' + ((err && err.message) || err));
+          note(
+            errNote(
+              'Couldn’t process that photo. Try it again, or another photo.',
+              'Processing a photo',
+              err,
+            ),
+          );
         }
       });
     };

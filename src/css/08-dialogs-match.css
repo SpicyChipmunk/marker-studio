@@ -203,6 +203,7 @@
   display: none;
 }
 #savedList .stile .smenu .sren,
+#savedList .stile .smenu .sdup,
 #savedList .stile .smenu .sdel {
   display: flex;
   align-items: center;
@@ -901,10 +902,25 @@ img.paperpick {
   text-underline-offset: 2px;
   cursor: pointer;
 }
-/* Back up & restore's "Markers & palettes as text": a small link at the start of its line */
+/* Back up & restore's "Markers & palettes as text": a small link at the start of its line (v308: and "Hide text" at
+   least 32px tall to tap: it was 17) */
 .sflink.bkshow {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
   font-size: var(--t-sm);
+}
+/* (v308) "Put back the 451 markers you had before Sunday's restore": a link with a full 44px to tap */
+.sflink.bkundo {
+  display: block;
+  align-self: center;
+  min-height: 44px;
+  padding: 0 4px;
+  font-size: var(--t-sm);
+}
+.sflink.bkundo[hidden] {
+  display: none;
 }
 /* (v288) the Library's line under Back up / Restore: a full 44px to tap */
 #savedOverlay #libBkText {
@@ -1581,4 +1597,86 @@ button.wnx::after,
 }
 .hlpbody .hlpwnt {
   margin: 0 0 6px;
+}
+/* (v308) Help › About's Send feedback and Copy diagnostics; the beta's label after the version; Help › Your data's
+   Delete all my data and its question; the welcome's privacy line; an error's Copy details and Send feedback, which
+   the guide's meta line (repeating the message) leaves out */
+.hlpfbrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hlpfbrow .hlpfb {
+  flex: 1 1 160px;
+}
+.msbeta #appVer::after,
+.msbeta #helpVer::after {
+  content: ' · Beta';
+}
+.hlpbody .hlpbt {
+  font-weight: 700;
+  color: var(--ink);
+  margin: 16px 0 4px;
+}
+.hlpbody .hlpbt:first-child {
+  margin-top: 0;
+}
+.hlpbody .hlpwipeh {
+  margin: 20px 0 8px;
+}
+.hlpwipe,
+#sfEdAsk .wipego {
+  color: var(--warn);
+  border-color: rgba(var(--warn-rgb), 0.45);
+}
+#sfEdAsk .wipego:not(:disabled) {
+  background: rgba(var(--warn-rgb), 0.2);
+  border-color: rgba(var(--warn-rgb), 0.8);
+  font-weight: 700;
+}
+#sfEdAsk .wipego:disabled {
+  opacity: 0.4;
+}
+.wipeword {
+  flex: 1 1 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--glass);
+  color: var(--ink);
+  font-size: var(--t-md);
+  letter-spacing: 0.08em;
+}
+.wcpriv {
+  margin-top: 10px;
+  text-align: center;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+.sfmeta .errbtns {
+  display: none;
+}
+#betaThanks p {
+  margin: 0 0 10px;
+  color: var(--sub);
+}
+#betaThanks p {
+  font-size: var(--t-base);
+  line-height: 1.45;
+  margin-right: 6px;
+}
+#betaThanks .nrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#betaThanks .nrow button {
+  padding: 0 14px;
+  border-radius: var(--r-md);
+  font-size: var(--t-base);
+}
+#betaThanks .nrow .nb1 {
+  background: rgba(124, 92, 255, 0.22);
+  border-color: rgba(124, 92, 255, 0.6);
 }

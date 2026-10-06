@@ -1,7 +1,7 @@
 {
  "sample": {
-  "sha256": "243bc2708a933c6f1c14163a51037c194cafac312069c7b1e9cb44cfab7fe60e",
-  "bytes": 4130,
+  "sha256": "7323c511585e436a4f3536e396a8cc21d5cb46b358ddf7c460a008d88a72cc1b",
+  "bytes": 4137,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -10,6 +10,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 16,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -48,8 +49,8 @@
   }
  },
  "sample-share": {
-  "sha256": "243bc2708a933c6f1c14163a51037c194cafac312069c7b1e9cb44cfab7fe60e",
-  "bytes": 4130,
+  "sha256": "7323c511585e436a4f3536e396a8cc21d5cb46b358ddf7c460a008d88a72cc1b",
+  "bytes": 4137,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -58,6 +59,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 16,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -96,8 +98,8 @@
   }
  },
  "sample-edits": {
-  "sha256": "f7edd7ade2981a16aa9a61237f5420f809c49a34ed0fe7589807ddb1f1a5bdac",
-  "bytes": 4140,
+  "sha256": "66b8abb841b3d292cf8a197af6c378690a2dec8e352e90ee043b661654f510bf",
+  "bytes": 4147,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -106,6 +108,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 16,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -144,8 +147,8 @@
   }
  },
  "limitN": {
-  "sha256": "e5c97ec1def75399e3e052a0341c6fc32b5a1bfa3cca054a4a1f817596f9f9cc",
-  "bytes": 4095,
+  "sha256": "eca56718e5e3d7b9cbe810713d8b9a6219e01d4c6720bc8de333572cddca55c0",
+  "bytes": 4066,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -154,6 +157,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -192,8 +196,8 @@
   }
  },
  "palette": {
-  "sha256": "5a6706b829c8a90ac8cccde44de9453a7446d0f8b4061baaae087352012ba26f",
-  "bytes": 4063,
+  "sha256": "5797a7d2b6061763061fcf69e62da14ea1a38c0c3764e9c72c4dbb91c6c2f249",
+  "bytes": 4040,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -202,6 +206,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -240,8 +245,8 @@
   }
  },
  "emphasis": {
-  "sha256": "3a331a8b17dcf9ddc3195944956fdce98c42d08b52c5db98ad726e5ff7779e5f",
-  "bytes": 4044,
+  "sha256": "379c95cdf4802ebc7e921e3f638a0bc23d12463bc292fbffe21599f78516c880",
+  "bytes": 4038,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -250,6 +255,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -288,8 +294,8 @@
   }
  },
  "generate": {
-  "sha256": "01d042f3d6a3ca14435ccbf13315b95bdfc836085b7c6692da8b70c65634383c",
-  "bytes": 4154,
+  "sha256": "095a3ecc323ab7fdaa0441c5cc8451c4f589f893a7d8f1a188b7a5d4ab6e8b9f",
+  "bytes": 4166,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -298,6 +304,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -333,20 +340,20 @@
    "savedPalId": null,
    "genHarmony": "analogous",
    "genPal": [
-    "Ohuhu|RV111",
-    "Ohuhu|R413",
+    "Ohuhu|V216",
+    "Ohuhu|V010",
+    "Ohuhu|RV316",
+    "Ohuhu|RV19",
+    "Ohuhu|RV212",
+    "Ohuhu|R514",
     "Ohuhu|R014",
-    "Ohuhu|YR111",
-    "Ohuhu|Y315",
-    "Ohuhu|Y111",
-    "Ohuhu|YG015",
-    "Ohuhu|YG211"
+    "Ohuhu|YR111"
    ]
   }
  },
  "harmony": {
-  "sha256": "2ae745eea7f91877dfd906657db93de636e63334c20cc54b0ffadbc64ae2370c",
-  "bytes": 4186,
+  "sha256": "47f7d2e9aa6a5727a1217c424f20c5878883d4e8998cfc4147fb771ebac44bff",
+  "bytes": 4208,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -355,6 +362,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -399,13 +407,13 @@
     "Ohuhu|G311",
     "Ohuhu|B111",
     "Ohuhu|BV310",
-    "Ohuhu|B115"
+    "Ohuhu|B114"
    ]
   }
  },
  "expand": {
-  "sha256": "ebab8f033bcb200752725fe7f05c1aac1eda37c98b0170873b5be9e0b77f08a6",
-  "bytes": 4185,
+  "sha256": "7d2c2ac5969803b962f92430e74e2ec49bd79a0ebc1eed71eb4291dd6b3f8908",
+  "bytes": 4207,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -414,6 +422,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -458,13 +467,13 @@
     "Ohuhu|G311",
     "Ohuhu|B111",
     "Ohuhu|BV310",
-    "Ohuhu|B115"
+    "Ohuhu|B114"
    ]
   }
  },
  "expandChar": {
-  "sha256": "16e76ae701ed8407dedb834471c66a6977122e5961ff6fda37f95391da624e2a",
-  "bytes": 4185,
+  "sha256": "9b1ec7a859bf35a06473fb9c75d05ed734f1a0f23145480194421cf5ab24482a",
+  "bytes": 4207,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -473,6 +482,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -517,13 +527,13 @@
     "Ohuhu|G311",
     "Ohuhu|B111",
     "Ohuhu|BV310",
-    "Ohuhu|B115"
+    "Ohuhu|B114"
    ]
   }
  },
  "gradShape": {
-  "sha256": "46db9cb4ef7e1cd6e530ea8d51d1ec0583514cee6851918df07d642fd9c2da98",
-  "bytes": 4192,
+  "sha256": "74182845b1a726c4cab7eb2e441176fd57bfe49687c1288e1609ae3ed42fe3c2",
+  "bytes": 4197,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -532,6 +542,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -576,13 +587,13 @@
     "Ohuhu|G311",
     "Ohuhu|B111",
     "Ohuhu|BV310",
-    "Ohuhu|B115"
+    "Ohuhu|B114"
    ]
   }
  },
  "dir": {
-  "sha256": "2123f809b297c2224cd7a8a11c5e9c0866141b7138610de64314950710a23ee7",
-  "bytes": 4209,
+  "sha256": "ec818b4f37c60bf6f1419d5878b3a37396d9cc8a6e5f98a146ab6098dde26121",
+  "bytes": 4227,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -591,6 +602,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -635,13 +647,13 @@
     "Ohuhu|G311",
     "Ohuhu|B111",
     "Ohuhu|BV310",
-    "Ohuhu|B115"
+    "Ohuhu|B114"
    ]
   }
  },
  "shuffle": {
-  "sha256": "074c868a3eec403580b157eeb41ceecac55d6092305b5d7ffa0033c9677c5923",
-  "bytes": 4234,
+  "sha256": "9e7ba5ba0547ef96a38ba6616d893e5b7e69cb79bcc952d9181f4cdbd8fd61c0",
+  "bytes": 4293,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -650,6 +662,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -685,22 +698,22 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y26",
-    "Ohuhu|Y29",
+    "Ohuhu|YG012",
+    "Ohuhu|Y27",
+    "Ohuhu|YR17",
     "Ohuhu|YR111",
-    "Ohuhu|YG212",
-    "Ohuhu|BG212",
+    "Ohuhu|BG114",
+    "Ohuhu|BG311",
     "Ohuhu|BG215",
-    "Ohuhu|G316",
-    "Ohuhu|V010",
+    "Ohuhu|RV311",
     "Ohuhu|V216",
     "Ohuhu|RV316"
    ]
   }
  },
  "look": {
-  "sha256": "e6c5cbb91f9563951fb39eee8ff5ec7e127090c467f7c286b70d9891228f762c",
-  "bytes": 4247,
+  "sha256": "7f75bd02d4a23e741a0eb13e9b3847c2743e92e527471f7a853b170dec0e5aa3",
+  "bytes": 4274,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -709,6 +722,7 @@
    "look": "ltd",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -744,22 +758,22 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y26",
-    "Ohuhu|Y29",
+    "Ohuhu|YG012",
+    "Ohuhu|Y27",
+    "Ohuhu|YR17",
     "Ohuhu|YR111",
-    "Ohuhu|YG212",
-    "Ohuhu|BG212",
+    "Ohuhu|BG114",
+    "Ohuhu|BG311",
     "Ohuhu|BG215",
-    "Ohuhu|G316",
-    "Ohuhu|V010",
+    "Ohuhu|RV311",
     "Ohuhu|V216",
     "Ohuhu|RV316"
    ]
   }
  },
  "look-auto": {
-  "sha256": "074c868a3eec403580b157eeb41ceecac55d6092305b5d7ffa0033c9677c5923",
-  "bytes": 4234,
+  "sha256": "9e7ba5ba0547ef96a38ba6616d893e5b7e69cb79bcc952d9181f4cdbd8fd61c0",
+  "bytes": 4293,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -768,6 +782,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -803,22 +818,22 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y26",
-    "Ohuhu|Y29",
+    "Ohuhu|YG012",
+    "Ohuhu|Y27",
+    "Ohuhu|YR17",
     "Ohuhu|YR111",
-    "Ohuhu|YG212",
-    "Ohuhu|BG212",
+    "Ohuhu|BG114",
+    "Ohuhu|BG311",
     "Ohuhu|BG215",
-    "Ohuhu|G316",
-    "Ohuhu|V010",
+    "Ohuhu|RV311",
     "Ohuhu|V216",
     "Ohuhu|RV316"
    ]
   }
  },
  "random": {
-  "sha256": "34f182f3d5f6be2e570918be7d15b5c5b4234f784321f729bffe91df959ca76a",
-  "bytes": 4216,
+  "sha256": "7fc6788b3409399a7d6c1e812bf0297d3dfd76c555eaf8f2b413269d813ed692",
+  "bytes": 4327,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -827,6 +842,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -862,22 +878,22 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y26",
-    "Ohuhu|Y29",
+    "Ohuhu|YG012",
+    "Ohuhu|Y27",
+    "Ohuhu|YR17",
     "Ohuhu|YR111",
-    "Ohuhu|YG212",
-    "Ohuhu|BG212",
+    "Ohuhu|BG114",
+    "Ohuhu|BG311",
     "Ohuhu|BG215",
-    "Ohuhu|G316",
-    "Ohuhu|V010",
+    "Ohuhu|RV311",
     "Ohuhu|V216",
     "Ohuhu|RV316"
    ]
   }
  },
  "random-shuffle": {
-  "sha256": "2aabf19bada43a991ccf407a9670e4a92562b4d4fcad647ae975bbfd820daced",
-  "bytes": 4277,
+  "sha256": "7b45fe0cd4c1d40301f28f0541b0363954a5833dcbec6ddbfb6e6d1bd8a27842",
+  "bytes": 4328,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -886,6 +902,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -921,10 +938,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -935,8 +952,8 @@
   }
  },
  "noAdj": {
-  "sha256": "670cd9a3ff6a7b5346c4461e91dd57b33b6ddaf71dfa4a5921ea247d06311cd8",
-  "bytes": 4273,
+  "sha256": "0f6ab8dbee98984fe997d8c9ff71ddca3312faa517132a885b6d9a2c680d0864",
+  "bytes": 4325,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -945,6 +962,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -980,10 +998,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -994,8 +1012,8 @@
   }
  },
  "blend": {
-  "sha256": "facd112224c2fd33361f7b22da6daeaa8cec4fee49967d1c34f349bb599fdccc",
-  "bytes": 4370,
+  "sha256": "a37cdf6c97eab76668414fe22142bd8fae4c9ccac4a7cc98b02f7eeef2476c87",
+  "bytes": 4363,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1004,6 +1022,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1039,10 +1058,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1053,8 +1072,8 @@
   }
  },
  "blendFall": {
-  "sha256": "38a5385bc6b6272ec475672903d7c72ffde679cf0605372669d18868c16082d6",
-  "bytes": 4382,
+  "sha256": "b2f664ecac2c582953494e2bacf37b826addc5eb6c9d1f0156f16ecfed3663de",
+  "bytes": 4374,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1063,6 +1082,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1098,10 +1118,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1112,8 +1132,8 @@
   }
  },
  "blendMix-paint": {
-  "sha256": "121b59120db25fb22e4f3484442f7b0934ca7863f9f915369705e21bce8e7cde",
-  "bytes": 4384,
+  "sha256": "02ebbe45b8d2b6ecb3665b6ef34ac7aa86b09fba9d40afa5ee26191aef2a6f04",
+  "bytes": 4374,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1122,6 +1142,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1157,10 +1178,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1171,8 +1192,8 @@
   }
  },
  "blendMix": {
-  "sha256": "c6a8243343bbd3c3f776ac5d1a64e34f220b876d39f6ab3a668080d741b79e84",
-  "bytes": 4397,
+  "sha256": "fa6f76489c56a9fed2502203a4bfd140efc125c38562474f9291a4e60abcd0c9",
+  "bytes": 4366,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1181,6 +1202,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1216,10 +1238,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1230,8 +1252,8 @@
   }
  },
  "shadeMode": {
-  "sha256": "4f5b3c3c02474ded370438b2d642d435cf3561f97c880459cf95834b66037c9a",
-  "bytes": 4398,
+  "sha256": "447baa1f1141b11f94d0439f4237b5475e70ee844447c1261d7c6829567f3a50",
+  "bytes": 4367,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1240,6 +1262,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1275,10 +1298,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1289,8 +1312,8 @@
   }
  },
  "shadeHi": {
-  "sha256": "a57ed2e6cf7b684b880bd8433bf1dc6f69a4533583595b0c83f1acb33f8b5050",
-  "bytes": 4398,
+  "sha256": "13d63b989094cff1fe63825583ace1e1eb581e51b2f5af96ef0c84390248a139",
+  "bytes": 4367,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1299,6 +1322,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1334,10 +1358,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1348,8 +1372,8 @@
   }
  },
  "shadeLo": {
-  "sha256": "d61848c4e310c7217c0feaf3a36d74a627e49da5ff3e809e2a518db48767bc6c",
-  "bytes": 4398,
+  "sha256": "018c9cd6d65bef6b37df0c89b0b4bdd38d99ee853792441ee16116cf657350c1",
+  "bytes": 4367,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1358,6 +1382,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1393,10 +1418,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1407,8 +1432,8 @@
   }
  },
  "shadeRound": {
-  "sha256": "2be129a886f4224e7a8f8bc619f2fc7424bbdf8d62e5920fe24a48c45f9e547c",
-  "bytes": 4398,
+  "sha256": "0254868a03e5ed5de988bba703130fb52b71a310eea639fdff30e23ea585c417",
+  "bytes": 4367,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1417,6 +1442,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1452,10 +1478,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1466,8 +1492,8 @@
   }
  },
  "shadeLines": {
-  "sha256": "0900064655b8348d06295da52612292504ad40395b4ce120982dabb731c17b75",
-  "bytes": 4399,
+  "sha256": "4a9f11fbe224d2d47254438191cac9f94fc1acdf9b602315a7970db7dcfffd7c",
+  "bytes": 4368,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1476,6 +1502,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1511,10 +1538,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1525,8 +1552,8 @@
   }
  },
  "shadeHilite": {
-  "sha256": "df96978926a3926c6b9774b30119f8e0996a0272f62be9d2e636354095ce7c48",
-  "bytes": 4399,
+  "sha256": "1e76f7137437b45f542f72b06384feb24bf30e29447623197c4a4a7fd48375c3",
+  "bytes": 4368,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1535,6 +1562,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1570,10 +1598,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1584,8 +1612,8 @@
   }
  },
  "shadeShadow": {
-  "sha256": "a668d3206d92c7d0d86b26a38b58f88d30b60552d3035cb34e770896e9d671ba",
-  "bytes": 4399,
+  "sha256": "f6ab534a461b5c8abd9a9ff68d1d9f1ab4bfa32020d33c55c5596ab3a366395e",
+  "bytes": 4368,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1594,6 +1622,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1629,10 +1658,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1643,8 +1672,8 @@
   }
  },
  "shadeSunFlat": {
-  "sha256": "ba18a9bbf1b69f5e003ecefeea80f8145b726d71ab19daa4fe6aa64b0683a31c",
-  "bytes": 4401,
+  "sha256": "792287dacd0ce921f1b701347ee04fef22ab284da131a4894f90b7d299e451d2",
+  "bytes": 4370,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1653,6 +1682,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1691,10 +1721,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1705,8 +1735,8 @@
   }
  },
  "texAmt": {
-  "sha256": "dadfa25d0756bd15c8debac4e5c4c9d6983b6433b8034d2b9d5fa62cdb06d4da",
-  "bytes": 4402,
+  "sha256": "416f248c6abb150b6f373f495ca1e4630411fb972cd98dd927c51f2b10f0cb6e",
+  "bytes": 4371,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1715,6 +1745,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1753,10 +1784,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1767,8 +1798,8 @@
   }
  },
  "texAmt-share": {
-  "sha256": "dadfa25d0756bd15c8debac4e5c4c9d6983b6433b8034d2b9d5fa62cdb06d4da",
-  "bytes": 4402,
+  "sha256": "416f248c6abb150b6f373f495ca1e4630411fb972cd98dd927c51f2b10f0cb6e",
+  "bytes": 4371,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1777,6 +1808,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1815,10 +1847,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1829,8 +1861,8 @@
   }
  },
  "manual": {
-  "sha256": "04c993626b02ac623d0ca097dddccfc05dbf0e6c56d0b67e4856f37b9201c1ce",
-  "bytes": 4403,
+  "sha256": "ef1ffad3ea7699e999ede8720d9c1f61a62ba716f5b2925da407e2f52d445850",
+  "bytes": 4372,
   "style": {
    "family": "manual",
    "palette": "warm",
@@ -1839,6 +1871,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1877,10 +1910,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1891,8 +1924,8 @@
   }
  },
  "gradient": {
-  "sha256": "f83a99bbde67b5080f693a58027f5ba82335f693424dd4b7f7bf6c3281a33a12",
-  "bytes": 4435,
+  "sha256": "18ef8e930d14bc53c6da798b20f7b5f694040d8e7cd2722cff88a167991c307f",
+  "bytes": 4436,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -1901,6 +1934,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -1939,10 +1973,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -1953,8 +1987,8 @@
   }
  },
  "pins": {
-  "sha256": "08c9d3880322e6d6606757f3138d47e980ea99a881cbc38b912ae39ac08939f9",
-  "bytes": 4473,
+  "sha256": "fc57418b3dcf8e117e502466f99187ab1caf1be2e9cdb1e020fc02e3a92a6be1",
+  "bytes": 4474,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -1963,6 +1997,7 @@
    "look": "auto",
    "emphasis": "vivid",
    "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -2001,10 +2036,10 @@
    "savedPalId": null,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|Y27",
-    "Ohuhu|YG211",
-    "Ohuhu|YR111",
-    "Ohuhu|Y216",
+    "Ohuhu|YG012",
+    "Ohuhu|YR17",
+    "Ohuhu|Y111",
+    "Ohuhu|Y213",
     "Ohuhu|BG114",
     "Ohuhu|BG311",
     "Ohuhu|BG314",
@@ -2015,8 +2050,8 @@
   }
  },
  "surprise": {
-  "sha256": "4a046d106aebc411ed856a0f22d603fbb61159cbb9e6ec0323cf22d2d698ba30",
-  "bytes": 4520,
+  "sha256": "eca2bdf52cf702c773840b68bba15e2ccd358ae162874cc9bcd80587da245776",
+  "bytes": 4476,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2024,7 +2059,8 @@
    "dir": 1,
    "look": "auto",
    "emphasis": "neutral",
-   "limitN": 18,
+   "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -2063,20 +2099,20 @@
    "savedPalId": null,
    "genHarmony": "analogous",
    "genPal": [
-    "Ohuhu|BV26",
     "Ohuhu|V010",
     "Ohuhu|V18",
     "Ohuhu|RV111",
-    "Ohuhu|R38",
-    "Ohuhu|R413",
-    "Ohuhu|R215",
-    "Ohuhu|R013"
+    "Ohuhu|R210",
+    "Ohuhu|R213",
+    "Ohuhu|R013",
+    "Ohuhu|YR111",
+    "Ohuhu|YR17"
    ]
   }
  },
  "savedPalette": {
-  "sha256": "43e5fc32f3c87f1ee17768d25c5acbd04f4af38c6e61d086a82eb67e4be1aae6",
-  "bytes": 4519,
+  "sha256": "ca0fbe77b794821d7357e658e87b329f321e5175cb368a98a8ac5c357b4f9c3d",
+  "bytes": 4475,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2084,7 +2120,8 @@
    "dir": 1,
    "look": "auto",
    "emphasis": "neutral",
-   "limitN": 18,
+   "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -2123,20 +2160,20 @@
    "savedPalId": 777001,
    "genHarmony": "analogous",
    "genPal": [
-    "Ohuhu|BV26",
     "Ohuhu|V010",
     "Ohuhu|V18",
     "Ohuhu|RV111",
-    "Ohuhu|R38",
-    "Ohuhu|R413",
-    "Ohuhu|R215",
-    "Ohuhu|R013"
+    "Ohuhu|R210",
+    "Ohuhu|R213",
+    "Ohuhu|R013",
+    "Ohuhu|YR111",
+    "Ohuhu|YR17"
    ]
   }
  },
  "savedPalette-render": {
-  "sha256": "b80e3ab4d302ce6961388a213c3db5668d546910831f6c88486ba615d80900b4",
-  "bytes": 4522,
+  "sha256": "d1410b14a6050a141b7c15cad320197ef319cf8b801345b396fa83d5984be959",
+  "bytes": 4358,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2144,7 +2181,8 @@
    "dir": 1,
    "look": "auto",
    "emphasis": "neutral",
-   "limitN": 18,
+   "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -2183,21 +2221,21 @@
    "savedPalId": 777001,
    "genHarmony": "analogous",
    "genPal": [
-    "Ohuhu|BV26",
     "Ohuhu|V010",
     "Ohuhu|V18",
     "Ohuhu|RV111",
-    "Ohuhu|R38",
-    "Ohuhu|R413",
-    "Ohuhu|R215",
-    "Ohuhu|R013"
+    "Ohuhu|R210",
+    "Ohuhu|R213",
+    "Ohuhu|R013",
+    "Ohuhu|YR111",
+    "Ohuhu|YR17"
    ]
   }
  },
  "edits-pending": null,
  "edits-pending-edits": {
-  "sha256": "2aa6b8281a2342e437bfff776fa6ffbd2e4379dbc57ed4d9a2f81f55d311c3cb",
-  "bytes": 4538,
+  "sha256": "be92ae30779162f64b5aa9c58f035ed955f386d38f1a2485d09e29a934d6ecfe",
+  "bytes": 4374,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2205,7 +2243,8 @@
    "dir": 1,
    "look": "auto",
    "emphasis": "neutral",
-   "limitN": 18,
+   "limitN": 10,
+   "incl": {},
    "noAdj": true,
    "balance": "main",
    "balM": "auto",
@@ -2244,20 +2283,20 @@
    "savedPalId": 777001,
    "genHarmony": "analogous",
    "genPal": [
-    "Ohuhu|BV26",
     "Ohuhu|V010",
     "Ohuhu|V18",
     "Ohuhu|RV111",
-    "Ohuhu|R38",
-    "Ohuhu|R413",
-    "Ohuhu|R215",
-    "Ohuhu|R013"
+    "Ohuhu|R210",
+    "Ohuhu|R213",
+    "Ohuhu|R013",
+    "Ohuhu|YR111",
+    "Ohuhu|YR17"
    ]
   }
  },
  "photo": {
-  "sha256": "de52b5282427b445b8eed1b8b02424377dfb319cb357260dea9ec35950e6da26",
-  "bytes": 4019,
+  "sha256": "edf39bc387eafc346b36d63919239c0062db17c6aaede59270fdb218609405d5",
+  "bytes": 4029,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2266,6 +2305,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 24,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -2315,8 +2355,8 @@
   }
  },
  "photo-share": {
-  "sha256": "de52b5282427b445b8eed1b8b02424377dfb319cb357260dea9ec35950e6da26",
-  "bytes": 4019,
+  "sha256": "edf39bc387eafc346b36d63919239c0062db17c6aaede59270fdb218609405d5",
+  "bytes": 4029,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2325,6 +2365,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 24,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -2374,8 +2415,8 @@
   }
  },
  "photoOp": {
-  "sha256": "ce6633c751ee9cef48b2d200c75bd6d1cbb1bb6508b8a819d72d627e02ba02f5",
-  "bytes": 4018,
+  "sha256": "592d3c1ad211c2fcbb9a25c0a01fd1e738fe0a0e272091f4e5bd4cc5e02f6c5c",
+  "bytes": 4028,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2384,6 +2425,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 24,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -2433,8 +2475,8 @@
   }
  },
  "photoPaper": {
-  "sha256": "7799779bf1a9882560f5e4f2c6efa381bc73a39240b623f195888fb8ab2892dd",
-  "bytes": 4019,
+  "sha256": "1f99e87b627e438f2948877dab76c43ff3a01dd3254866573e72fef50950f045",
+  "bytes": 4029,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2443,6 +2485,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 24,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -2492,8 +2535,8 @@
   }
  },
  "photo-shade": {
-  "sha256": "a5adc01a8f395224134372de4170a29001f5c0edbe61223b8da00d6eb598b309",
-  "bytes": 4022,
+  "sha256": "f972ea48565d0ff660b3d68de16781b85934396afd6707bd2e6b9c184bd380fd",
+  "bytes": 4032,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2502,6 +2545,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 24,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -2551,8 +2595,8 @@
   }
  },
  "photo-shadeLight": {
-  "sha256": "88fd81d1db283b6a9665a39c407b04430f5f1f52311f2ec51f2de48a228c7b29",
-  "bytes": 4019,
+  "sha256": "36569fb5b36908a638eed07668b046ec9d6c78a6c07c9eb9d7a09f296108b1b6",
+  "bytes": 4029,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2561,6 +2605,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 24,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -2610,8 +2655,8 @@
   }
  },
  "photo-gradient": {
-  "sha256": "2ed1c6a4c628317978e02f88de7462337e9fa62d257f4f6424f9996ec4d9a709",
-  "bytes": 4375,
+  "sha256": "78eb81b92eed359edc0f25bc759b8eae69fc0d263021498d521beea906b81426",
+  "bytes": 4348,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2620,6 +2665,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 24,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -2669,8 +2715,8 @@
   }
  },
  "photo-gradient-share": {
-  "sha256": "59c0a2e263ab3b4d90304cb9e96afb548fa46a439344a19ad9eeaabf5348e1f4",
-  "bytes": 4361,
+  "sha256": "654cdfa97697696dbdc8490b56c591f6e6003bb44388c8e15942d8c62463d07f",
+  "bytes": 4334,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2679,6 +2725,7 @@
    "look": "auto",
    "emphasis": "neutral",
    "limitN": 24,
+   "incl": {},
    "noAdj": false,
    "balance": "main",
    "balM": "auto",
@@ -2728,8 +2775,8 @@
   }
  },
  "open-all-set": {
-  "sha256": "d152c08b7cbba289465b54dc4b90f7e9e7700fbe4d4e306472012942f9a3029b",
-  "bytes": 4189,
+  "sha256": "1c42987ca417463313f32d0edbce0949edffe179005d2ac51ab7f2d1fe97260b",
+  "bytes": 4187,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -2779,15 +2826,15 @@
    "savedPalId": 4242,
    "genHarmony": "triadic",
    "genPal": [
-    "Ohuhu|YG211",
-    "Ohuhu|G311",
-    "Ohuhu|G410"
+    "Ohuhu|RV311",
+    "Ohuhu|R413",
+    "Ohuhu|RV212"
    ]
   }
  },
  "open-odd-types": {
-  "sha256": "5aa7b77dba477dd21ac5a1a3dc60af6d5538dca1a9ba6edf922b7e0240001757",
-  "bytes": 4127,
+  "sha256": "64f1a46904edbc7caee51ec1ddefabdf5b8c74676c6d8e98f448a7ae0660ce7a",
+  "bytes": 4124,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2834,8 +2881,8 @@
   }
  },
  "open-odd-high": {
-  "sha256": "71567063ef9e2b1caf9775add6cc63ccb3ad2f8c8f08edfcf613e07c677b59f0",
-  "bytes": 4129,
+  "sha256": "329d2d34eb2d435d7f571ae74bed8fe85c880cafb805f33b4e002fc5bdb2b393",
+  "bytes": 4126,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2885,8 +2932,8 @@
   }
  },
  "open-odd-low": {
-  "sha256": "154e4f4438fadcbc45261ab8919931fe4acb753c92365efcfbd54524bcb12b3e",
-  "bytes": 4119,
+  "sha256": "66a73d60ce8b4335ddb90fd804dce182aff017bcde8722e28e40cbd068cd1dc9",
+  "bytes": 4116,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2936,8 +2983,8 @@
   }
  },
  "open-odd-enum": {
-  "sha256": "7456a46a5a7e5949c1f562919004a96bc291b3a56e4dc66cb3d7d937f0e2717d",
-  "bytes": 4170,
+  "sha256": "0cd18a7e7163a7fd4cf2c7dfce6a69f30898c62f00ceb7bbd413a0ae6805edc9",
+  "bytes": 4167,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2988,8 +3035,8 @@
   }
  },
  "open-nothing": {
-  "sha256": "d0cf4e2feb5c51b4130957ac127b8ad59a5de62b68a5a5c6d0c2fdaa66e3c2c8",
-  "bytes": 4131,
+  "sha256": "8787bf7480d757713ee5fe834af4df6baee2a071d332b1fc3546de4d2400d3c9",
+  "bytes": 4128,
   "style": {
    "family": "gradient",
    "palette": "all",

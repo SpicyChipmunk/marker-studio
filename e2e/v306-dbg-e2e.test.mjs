@@ -81,7 +81,7 @@ for (const scat of [0, 2]) {
     const u1 = await used(page);
     assert.equal(u1.n, u0.n + 1, 'the paper is a section');
     assert.equal(u1.m, u1.n, 'and has a marker of its own: ' + JSON.stringify(u1));
-    assert.equal(u1.label, 'all · ' + u1.n + ' used');
+    assert.equal(u1.label, 'all · ' + u1.n); // (v308: "all · 9", not "all · 9 used")
     const after1 = await page.evaluate(() => {
       const a = __mstest.assignData.assign,
         o = {};

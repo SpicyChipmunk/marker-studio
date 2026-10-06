@@ -6,6 +6,9 @@
 let photoChecking = false,
   photoRef = null,
   photoXf = null,
+  // (v308) how the photo was last placed, for Place it: 'fill', 'fit', 'stretch', 'auto' (lined up automatically),
+  // 'hand' (dragged), or '' (as it opened, or as Undo put it back: photoPlaceNow tells a Fill, Fit or Stretch apart)
+  _phPlace = '',
   photoAlign = false,
   photoOp = 0.65,
   photoEl = null,
@@ -360,8 +363,10 @@ function photoGeoRefit() {
       if (r && r.score >= PH_ALIGN_MIN && r.peak >= PH_ALIGN_PEAK && r.lineShare >= 0.03) xf = r.xf;
     }
   } catch (_) {}
-  if (xf) photoXf = xf;
-  else photoAlign = true;
+  if (xf) {
+    photoXf = xf;
+    _phPlace = 'auto';
+  } else photoAlign = true;
   // (the no-colour line then says to line it up first, v304)
   _phAlFail = !xf;
   _phCol = null;
@@ -388,6 +393,12 @@ function artBox() {
 // place the photo over the artwork: fill (cover, no gaps), fit (whole photo visible) or stretch (exactly the box)
 function photoFit(mode) {
   if (!photoRef) return;
+  photoXf = photoFitXf(mode);
+  _phPlace = mode;
+  _phCol = null;
+}
+// where Fill, Fit or Stretch puts the photo
+function photoFitXf(mode) {
   const b = artBox(),
     bw = b.x1 - b.x0 + 1,
     bh = b.y1 - b.y0 + 1,
@@ -401,8 +412,24 @@ function photoFit(mode) {
     const s = mode === 'fit' ? Math.min(bw / pw, bh / ph) : Math.max(bw / pw, bh / ph);
     sx = sy = s;
   }
-  photoXf = { cx: (b.x0 + b.x1 + 1) / 2, cy: (b.y0 + b.y1 + 1) / 2, sx: sx, sy: sy, r: 0 };
-  _phCol = null;
+  return { cx: (b.x0 + b.x1 + 1) / 2, cy: (b.y0 + b.y1 + 1) / 2, sx: sx, sy: sy, r: 0 };
+}
+// (v308) Place it's choice as the photo is now: one of Fill, Fit and Stretch where it's exactly there, else 'auto'
+// (lined up automatically), 'hand', or 'lined' (as it opened, or Undo put it back)
+function photoPlaceNow() {
+  if (!photoRef || !photoXf) return '';
+  const X = photoXf,
+    near = function (a, b) {
+      return Math.abs(a - b) <= 1e-3 * Math.max(1, Math.abs(a), Math.abs(b));
+    };
+  const modes = ['fill', 'fit', 'stretch'];
+  if (modes.indexOf(_phPlace) >= 0) modes.unshift(_phPlace);
+  for (let i = 0; i < modes.length; i++) {
+    const F = photoFitXf(modes[i]);
+    if (near(X.cx, F.cx) && near(X.cy, F.cy) && near(X.sx, F.sx) && near(X.sy, F.sy) && near(X.r, F.r))
+      return modes[i];
+  }
+  return _phPlace === 'auto' || _phPlace === 'hand' ? _phPlace : 'lined';
 }
 // the size at which the photo fills the drawing (photoFit's Fill)
 function photoFillScale() {
@@ -1212,6 +1239,7 @@ const PH_SETTLE = 500;
 function photoMove(m0, m1, f, da) {
   const X = photoXf;
   if (!X) return;
+  _phPlace = 'hand';
   const cs = Math.cos(da),
     sn = Math.sin(da),
     dx = X.cx - m0.x,
@@ -1451,8 +1479,10 @@ function photoStats() {
     coll.forEach(function (m) {
       own[m.mkey] = 1;
     });
+    // (v308: never a grey to buy for the photo's lines, dark and colourless, which a section can take the colour of;
+    // nor a grey at all while the grey parts aren't coloured with greys: photoGreys)
     const cand = catPool().filter(function (m) {
-      return brands[m.brand] && !own[m.mkey] && m.lab;
+      return brands[m.brand] && !own[m.mkey] && m.lab && (photoGreys || !photoGreyish(m.lab));
     });
     // as in Match: against the best of yours, not only the one this guide uses (with a low marker count a section can
     // be rough while a marker you own would do); only where even that is a rough match is a marker to buy wanted
@@ -1461,6 +1491,7 @@ function photoStats() {
     });
     const R2 = [];
     R.forEach(function (r) {
+      if (photoLineish(r.lab) || (!photoGreys && photoGreyish(r.lab))) return;
       const e = pool.length ? Math.min(r.e, de2000(r.lab, nearestInPool(r.lab, pool).lab)) : r.e;
       if (e >= PH_ROUGH) R2.push({ lab: r.lab, e: e, w: r.w });
     });
@@ -1473,6 +1504,14 @@ function photoStats() {
     paper: assignData.paper ? Object.keys(assignData.paper).length : 0,
     want: want,
   };
+}
+// (v308) a colour with no colour to speak of (chroma under GREY_C), and one dark enough to be the photo's lines
+function photoGreyish(lab) {
+  return Math.hypot(lab[1], lab[2]) < GREY_C;
+}
+const PH_LINE_L = 35;
+function photoLineish(lab) {
+  return lab[0] < PH_LINE_L && photoGreyish(lab);
 }
 // up to 6 markers you don't own that bring the rough matches closest, by eye, chosen one at a time (each the one that
 // helps most). A marker only counts for a section when it is clearly closer there than what it has, by Match's
@@ -2115,6 +2154,7 @@ function photoTryAutoAlign(quiet) {
   const fa = photoAlignRaw(photoFlatAlign);
   if (fa) {
     photoXf = fa.xf;
+    _phPlace = 'auto';
     _phAlFail = false;
     photoLitLined();
     _phCol = null;
@@ -2138,6 +2178,7 @@ function photoTryAutoAlign(quiet) {
     return false;
   }
   photoXf = r.xf;
+  _phPlace = 'auto';
   _phAlFail = false;
   photoLitLined();
   _phCol = null;

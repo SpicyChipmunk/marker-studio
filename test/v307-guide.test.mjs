@@ -210,7 +210,8 @@ test('big pages at “all · 268, some twice”: no two touching sections share 
     for (const shape of ['serpentine', 'radial', 'around']) {
       for (const sc of [0, 1, 3]) {
         style(t, { gradShape: shape, gradScat: sc, gradJit: 0.2 });
-        assert.equal(t.grad.mkCountLabel(451), 'all · 268, some twice');
+        // (v308: the count says "all · 268"; it said ", some twice" too)
+        assert.equal(t.grad.mkCountLabel(), 'all · 268');
         t.grad.build(cl);
         const k = keys(t),
           tag = `${cl.length} ${shape} ${sc}`;

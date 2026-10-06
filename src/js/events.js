@@ -107,7 +107,7 @@ pile.addEventListener('click', (e) => {
 // the toast for ticking or unticking one marker (v306: short enough for one line at 390, "Added Ohuhu B04 · taken off
 // To buy", "Removed Copic BG0000"; v305's "… to your collection and took it off your To buy list" wrapped at 820 too)
 function addedLine(had, c, off) {
-  const name = esc(c.brand + ' ' + c.code);
+  const name = c.brand + ' ' + c.code;
   if (had) return 'Removed ' + name;
   return 'Added ' + name + (off ? ' \u00b7 taken off To buy' : ' to your collection');
 }
@@ -307,7 +307,7 @@ $('mkCopy').addEventListener('click', async () => {
   const ok = await copyText(COLORS[mkOpenIdx].code);
   toast(
     ok
-      ? 'Copied ' + esc(COLORS[mkOpenIdx].code)
+      ? 'Copied ' + COLORS[mkOpenIdx].code
       : 'Couldn\u2019t copy \u2014 select the code and copy it yourself.',
     ok ? 2200 : 5000,
   );
@@ -735,26 +735,12 @@ if (_uig)
     }
     useInGuideGo(idxs, keys, ex, false);
   });
-// Palette's Use in a guide, once it's decided: the palette saved (if it isn't), then the open guide recoloured with
-// it, or (fresh) the photo picker for a new guide that will use it
+// Palette's Use in a guide, once it's decided: the open guide recoloured with it, or (fresh) the photo picker for a new
+// guide that will use it. (v308) A palette in the Library is used from there; any other is handed over as it is
+// and isn't saved (every palette tried in a guide had been added to the Library)
 function useInGuideGo(idxs, keys, ex, fresh) {
   {
-    var id,
-      entry = null;
-    if (ex) {
-      id = ex.id;
-    } else {
-      entry = { id: Date.now(), type: 'palette', name: nameForSave(idxs), keys: keys, ts: Date.now() };
-      state.saved.push(entry);
-      id = entry.id;
-      // kept first: with storage full nothing changes and the message stays on this screen
-      if (
-        !keep(function () {
-          state.saved.splice(state.saved.indexOf(entry), 1);
-        })
-      )
-        return;
-    }
+    var id = ex ? ex.id : { keys: keys, name: shownPaletteName(idxs), h: state.harmony };
     // a new guide: the palette is held for it, the open guide left as it is
     if (fresh) {
       if (window.SF && SF.setNextPal) SF.setNextPal(id);
@@ -763,14 +749,11 @@ function useInGuideGo(idxs, keys, ex, fresh) {
       return;
     }
     // recolour: the open guide goes to its Plan first (from Colour along or Edit sections, v289) and is laid again with
-    // it; section edits not yet built wait for Build again or Discard (the palette stays in the Library)
+    // it; section edits not yet built wait for Build again or Discard (the palette stays on the Palette screen)
     const r = window.SF && SF.recolourWith ? SF.recolourWith(id) : true;
     setMode('sections');
     if (r === 'edits') {
-      toast(
-        'Build again or discard your section edits first, then Use in a guide. The palette is in your Library.',
-        7000,
-      );
+      toast('Build again or discard your section edits first, then Use in a guide.', 7000);
       return;
     }
     // (unless the guide has just said, under its tabs, that sections you've coloured were kept)
@@ -900,6 +883,11 @@ savedList.addEventListener('click', (e) => {
     libStartRename(id);
     return;
   }
+  if (e.target.closest('.sdup')) {
+    tileMenuClose(true);
+    libDuplicate(id);
+    return;
+  }
   if (e.target.closest('.sdel')) {
     tileMenuClose(true);
     libDelete(id);
@@ -928,7 +916,7 @@ if (_lo)
   });
 // Enter keeps a new name, Escape drops it (and only that: layers.js leaves an Escape in this field to it, so the Library
 // stays open), leaving the field keeps it
-// a tile's ⋯ menu by keyboard: arrows move between Rename and Delete, Tab leaves it closed
+// a tile’s ⋯ menu by keyboard: arrows move between its items (Rename, Duplicate, Delete), Tab leaves it closed
 savedList.addEventListener('keydown', (e) => {
   const m = e.target.closest && e.target.closest('.smenu');
   if (!m) return;
@@ -1007,7 +995,7 @@ const WARM_FAMS = new Set([
   'Yellow-Red / Orange',
   'Yellow',
   'Yellow-Green',
-  'Yellow-Green-Yellow',
+  'Yellow Grey',
   'Earth / Skin / Brown',
   'Warm Grey',
   'Toner Grey',
@@ -1015,7 +1003,7 @@ const WARM_FAMS = new Set([
 const COOL_FAMS = new Set([
   'Green',
   'Blue-Green',
-  'Blue-Green-Yellow',
+  'Blue Grey',
   'Blue',
   'Blue-Violet',
   'Violet',
@@ -1084,6 +1072,15 @@ gapSort.addEventListener('change', () => {
     chrome();
   }
 });
+{
+  const lc = $('lowChip');
+  if (lc)
+    lc.addEventListener('click', function () {
+      lowOnly = !lowOnly;
+      renderResults();
+      chrome();
+    });
+}
 ownView.addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (!b) return;
@@ -1376,7 +1373,7 @@ let presetRelist = null;
           state.owned.add(k);
         });
       });
-      wishOwnedOff(added);
+      const off = wishOwnedOff(added);
       if (
         !keep(function () {
           state.owned = before;
@@ -1384,9 +1381,36 @@ let presetRelist = null;
         })
       )
         return;
+      // (v308) said, with Undo (the markers and the To buy entries they took off), and the page stays where it was
+      // (it jumped to the bottom of the grid)
+      const y = window.scrollY;
       fullRender();
       list.innerHTML = presetListHTML();
       upd();
+      const stay = function () {
+        if (Math.abs(window.scrollY - y) > 1) window.scrollTo(0, y);
+      };
+      stay();
+      requestAnimationFrame(stay);
+      if (!added.length) {
+        toast(
+          ch.length > 1
+            ? 'Those sets are all in your collection already.'
+            : 'That set is all in your collection already.',
+          3200,
+        );
+        return;
+      }
+      toastAction(addedManyLine(added.length, off.length), 'Undo', function () {
+        added.forEach(function (k) {
+          state.owned.delete(k);
+        });
+        wishPutBack(off);
+        save();
+        if (off.length) wishChanged();
+        fullRender();
+        relist();
+      });
     });
   if (rst)
     rst.addEventListener('click', function () {
@@ -1580,6 +1604,7 @@ function goMarkers() {
 function openBackup() {
   backupText.value = JSON.stringify({
     v: 2,
+    app: appVersion(),
     owned: [...state.owned],
     wish: state.wish,
     ink: state.ink,
@@ -1589,6 +1614,7 @@ function openBackup() {
     }),
   });
   backupCap.textContent = '';
+  preRestoreRender();
   openDialog(backupOverlay);
 }
 {
@@ -1611,6 +1637,16 @@ $('libBkText').addEventListener('click', () => {
   if (w && w.style.display === 'none' && bs) bs.click();
 });
 backupClose.addEventListener('click', () => closeDialog(backupOverlay));
+// (v308) the markers as they were before a restore in the last 7 days, while they're as it left them
+['libPreRestore', 'bkPreRestore'].forEach(function (id) {
+  const b = $(id);
+  if (b)
+    b.addEventListener('click', function () {
+      const j = preRestoreGet();
+      if (j) restoreUndo(j.snap);
+      else preRestoreRender();
+    });
+});
 backupOverlay.addEventListener('click', (e) => {
   if (e.target === backupOverlay) closeDialog(backupOverlay);
 });
@@ -1634,33 +1670,37 @@ backupRestore.addEventListener('click', () => {
     const o = JSON.parse(backupText.value.trim());
     const arr = Array.isArray(o) ? o : o && Array.isArray(o.owned) ? o.owned : null;
     if (!arr) throw 0;
-    askReplaceMarkers(o).then(function (rep) {
-      if (rep === null) {
-        backupCap.textContent = 'Nothing restored.';
-        return;
-      }
-      let r = null;
-      try {
-        r = applyCollectionBackup(o, undefined, rep);
-      } catch (_) {
-        r = null;
-      }
-      if (!r) {
-        backupCap.textContent = 'That doesn\u2019t look like a valid backup. Paste the full text you copied.';
-        return;
-      }
-      if (r.failed) {
-        backupCap.textContent = RESTORE_FULL;
-        return;
-      }
-      const said = restoredWords(r);
-      if (!r.mk) {
-        if (said) toast(said);
-        return;
-      }
-      closeDialog(backupOverlay);
-      toast(said);
-    });
+    // (v308: one from a newer version is asked about first)
+    askNewer(o, 'backup', 'Restore anyway')
+      .then(function (go) {
+        return go ? askReplaceMarkers(o) : null;
+      })
+      .then(function (rep) {
+        if (rep === null) {
+          backupCap.textContent = 'Nothing restored.';
+          return;
+        }
+        let r = null;
+        try {
+          r = applyCollectionBackup(o, undefined, rep);
+        } catch (_) {
+          r = null;
+        }
+        if (!r) {
+          backupCap.textContent =
+            'That doesn\u2019t look like a valid backup. Paste the full text you copied.';
+          return;
+        }
+        if (r.failed) {
+          backupCap.textContent = RESTORE_FULL;
+          return;
+        }
+        // (v308: said in the dialog and the toast whichever was chosen, with Undo for a change to your markers)
+        const said = restoredWords(r) || 'Nothing changed.';
+        backupCap.textContent = said;
+        if (r.mk || r.add) closeDialog(backupOverlay);
+        restoreToast(said, 4000, r);
+      });
   } catch (e) {
     backupCap.textContent = 'That doesn\u2019t look like a valid backup. Paste the full text you copied.';
   }

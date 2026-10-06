@@ -91,7 +91,8 @@ function maybeShowResume() {
             } else note('Nothing to resume.');
           });
         })
-        .catch(function () {
+        .catch(function (e) {
+          errLog('Resuming', e);
           note('Couldn’t resume.');
         });
     });
@@ -216,7 +217,9 @@ function enterWork() {
 function mount() {
   root.innerHTML =
     '<div class="sfcard compact" id="sfStart"><button type="button" id="sfStPic" class="sfstpic" tabindex="-1" aria-hidden="true"></button><div class="sfstbody"><button id="sfHelpQ0" class="hlpq" data-help="sheet" aria-label="Help"><span aria-hidden="true">?</span></button><h2>New colouring guide</h2><div class="sftag">Turn a line-art photo into a marker-by-number guide built from the markers you own \u2014 complete with blend companions and a To buy list for shades you still need.</div><div id="sfPalNote"></div><div class="sfmeta" id="sfMeta"></div>' +
-    '<div class="sfstrow"><button id="sfPick" class="btn-primary sfstpick">Choose a photo</button><button id="sfSample" class="sfstbtn">Try the sample</button><button id="sfLib" class="sfstbtn">Library</button><button id="sfImport" class="sfstbtn">Import a guide</button></div></div></div>' +
+    '<div class="sfstrow"><button id="sfPick" class="btn-primary sfstpick">Choose a photo</button><button id="sfSample" class="sfstbtn">Try the sample</button><button id="sfLib" class="sfstbtn">Library</button><button id="sfImport" class="sfstbtn">Import a guide</button></div>' +
+    // (v308) a colouring page that came as a PDF: the picker takes pictures only
+    '<div class="sfstpdf">Colouring page in a PDF? Take a screenshot of it, then choose the screenshot.</div></div></div>' +
     '<div class="sfcard" id="sfWork" style="display:none"><div id="sfHead" class="sfhead"></div><div id="sfView"><div id="sfPicBox" class="sfpicbox"><div id="sfPic" class="sfpic"><canvas id="sfCanvas" role="img" aria-label="Colouring page"></canvas></div></div>' +
     toolsHTML() +
     '<button id="sfFullX" class="sfz sffullx" aria-label="Close full screen">' +
@@ -455,19 +458,20 @@ function mount() {
       return root.classList.contains('sfrev');
     },
     close: function () {
-      endReveal();
+      revClose();
     },
   });
-  // (Back only, v289: Escape doesn't leave Colour along)
+  // (v308: Escape leaves Colour along as Back does, once nothing is open over it; v289 left it to Back only. Not from
+  // a box being typed in: the code box's own Escape empties it and keeps it, a second one stays too)
   addLayer({
     name: 'Colour along',
     order: 4,
     back: true,
-    escape: false,
     isOpen: function () {
       return sfmode === 'color' && !!root && root.style.display !== 'none' && !!root.offsetParent;
     },
-    close: function () {
+    close: function (e) {
+      if (e && e.key === 'Escape' && inField(e)) return false;
       exitColor();
     },
   });
@@ -547,9 +551,19 @@ function mount() {
     },
     true,
   );
+  // (in Focus mode, + and − zoom about the section it's on while that shows, else the middle of the view: v308, the
+  // section at the top went off the screen as it zoomed about the middle)
   var _zc = function () {
     if (!focus || !sfView) return [];
-    var g = focusGeo(true);
+    var g = focusGeo(true),
+      l = focusCur();
+    if (l >= 0) {
+      var sx = panX + ((focusBox.x0[l] + focusBox.x1[l] + 1) / 2 / W) * cv.offsetWidth * zoom,
+        sy = panY + ((focusBox.y0[l] + focusBox.y1[l] + 1) / 2 / H) * cv.offsetHeight * zoom,
+        vx = sx + cv.offsetLeft,
+        vy = sy + cv.offsetTop;
+      if (vx >= 0 && vx <= g.aw && vy >= g.t && vy <= g.t + g.ah) return [sx, sy];
+    }
     return [g.cx - cv.offsetLeft, g.cy - cv.offsetTop];
   };
   cv.style.transition = '';

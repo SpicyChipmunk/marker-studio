@@ -1,6 +1,9 @@
 name: tests
 on:
+  # (not on the release branch: a commit gets there only after its tests passed here, by the release workflow; see
+  # docs/RELEASING.md)
   push:
+    branches-ignore: [release]
   pull_request:
 # The runners are pinned to Ubuntu 24.04: ubuntu-latest moves to Ubuntu 26 from 19 October 2026, and the browsers our
 # Playwright version installs (npx playwright install --with-deps) are built for 24.04. Move on when Playwright is

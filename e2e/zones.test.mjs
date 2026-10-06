@@ -351,7 +351,8 @@ test('with zones, Pattern, Colours and Shading fit in about one and a half scree
     assert.ok(m.chips > 0 && m.chips <= 64, `${tb}: the chips take one row (${m.chips}px)`);
     assert.ok(tb !== 'shading' || (m.shade > 0 && m.shade <= 40), `shading: "Shade Bell" is one line (${m.shade}px)`);
     // (v288: Colours has the "N markers on this page ›" button too, 44px and its margin)
-    assert.ok(m.h - m.chips - m.shade <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 : 0), `${tb}: ${m.h}px (${m.chips}px of chips, ${m.shade}px of Shade Bell) against ${m.room}px of room`);
+    // (v308: Colours' 120px more, the marker count's 44px − and + and Include's row of chips)
+    assert.ok(m.h - m.chips - m.shade <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 + 120 : 0), `${tb}: ${m.h}px (${m.chips}px of chips, ${m.shade}px of Shade Bell) against ${m.room}px of room`);
   }
   assert.deepEqual(errors, []);
 });

@@ -66,7 +66,8 @@ test('Scatter: five stops under Look, each one Undo step that says which; its li
     'the Look note stays under Look, Scatter after it',
   );
   assert.equal(await page.textContent('#sfGradScatName'), 'Polished');
-  assert.equal(await page.isVisible('#sfGradScatNote'), false, 'no line at Polished');
+  // (v308: Polished has its line too)
+  assert.equal(await page.textContent('#sfGradScatNote'), 'Neat bands in flow order');
   const names = ['Polished', 'Natural', 'Textured', 'Sparkle', 'Confetti'];
   let prev = await keys(page);
   for (let v = 1; v <= 4; v++) {
@@ -254,16 +255,17 @@ test('Scatter: moving the sun never lays a scattered guide again (a Polished one
   assert.deepEqual(errors, []);
 });
 
-test('U6: the marker count says how many the Gradient lays (“all · 166 used”); more sections than clear markers: “all · N, some twice”, no greys', async () => {
+test('U6: the marker count says how many the Gradient lays (v308: “all · 130”, Ben’s vivid markers); more sections than markers left: “all · N”, no greys', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await sampleGuide(page);
   await bens(page);
   await page.evaluate(() => __mstest.renderControls());
   await idle(page);
-  assert.equal(await page.textContent('#sfMkNlbl'), 'all · 166 used');
+  assert.equal(await page.textContent('#sfMkNlbl'), 'all · 130');
+  // (v308: the slider ends at the 130 left: 300 is all)
   await slide(page, 'sfMkCount', 300);
   await idle(page);
-  assert.equal(await page.textContent('#sfMkNlbl'), '300 · 166 used');
+  assert.equal(await page.textContent('#sfMkNlbl'), 'all · 130');
   // Honolulu 120's clear markers: fewer than the sample's sections
   await page.evaluate(() => {
     const t = __mstest;
@@ -285,8 +287,8 @@ test('U6: the marker count says how many the Gradient lays (“all · 166 used�
       cnt: t.grad.countNow(),
     };
   });
-  assert.ok(r.cnt.reuse && r.cnt.M < 166, JSON.stringify(r.cnt));
-  assert.equal(r.lbl, 'all · ' + r.cnt.M + ', some twice');
+  assert.ok(r.cnt.all && r.cnt.M < 166, JSON.stringify(r.cnt));
+  assert.equal(r.lbl, 'all · ' + r.cnt.M);
   assert.equal(r.n, r.cnt.M);
   assert.equal(r.dull, 0, 'no greys or dull browns');
   assert.deepEqual(errors, []);
@@ -301,9 +303,10 @@ test('U7: turning shading on doesn’t pick other markers; the note offers “Pi
   await page.click('#sfShade [data-v="full"]');
   await idle(page);
   assert.deepEqual(await keys(page), k0, 'shading on: the same markers');
+  // (v308: 11 of the new guide's 16 vivid markers; 13 of v307's)
   assert.match(
     await page.textContent('.sfshnote .sfonelh'),
-    /^13 of 16 can be shaded · Pick shadeable onesShow$/,
+    /^11 of 16 can be shaded · Pick shadeable onesShow$/,
   );
   await page.click('#sfShPickGo');
   await idle(page);
@@ -317,7 +320,8 @@ test('U7: turning shading on doesn’t pick other markers; the note offers “Pi
       ms = [...new Set(t.assignData.order.map((l) => A[l]))];
     return ms.filter((m) => t.grad.shadeOK(m)).length;
   });
-  assert.equal(ok, 16);
+  // (v308: 14 of the 16, picked from Honolulu 120's vivid markers; 16 from v307's wider pool)
+  assert.equal(ok, 14);
   // Undo: back as it was, and the offer with it
   await page.keyboard.press('Control+z');
   await idle(page);
@@ -347,6 +351,11 @@ test('U7: turning shading on doesn’t pick other markers; the note offers “Pi
 test('rough spots: at Polished with markers to spare, rings and “N rough spots · Smooth them”; one Undo step; never a grey or a second of a code; kept by Shuffle', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await sampleGuide(page);
+  // (v308: a new guide's "all" from Ben's 451 is his 130 vivid markers, fewer than the sample's 166 sections, so none
+  // to spare: a guide from before v308, with all 451 in play, has them)
+  await page.evaluate(() => {
+    __mstest.styleVars.gradIncl = null;
+  });
   await bens(page);
   // (the first-time "Tap a section" line has the slot under the tabs first)
   await tab(page, 'pattern');

@@ -1,13 +1,29 @@
 # Marker Studio
 
-A phone-first Progressive Web App that turns a photo of line art into a
-**marker-by-number colouring guide**, matched to the markers you actually own
-(Ohuhu, Copic). It segments the drawing into sections, assigns each a marker
-from your collection, and walks you through colouring it in.
+Marker Studio turns a colouring page into a **marker-by-number guide**, using
+the Ohuhu and Copic alcohol markers you own. It finds the page's sections,
+gives each one a marker from your collection, and walks you through colouring
+it, one marker at a time.
 
-> Status: graduating from a personal tool toward something shareable. The app
-> ships as a single self-contained `index.html` (offline-capable via a service
-> worker), built from readable source files in `src/`.
+**Open the app:** <https://spicychipmunk.github.io/marker-studio/>
+
+- **In beta.** Testers: please read the [tester guide](docs/TESTERS.md) first
+  (it's also in the app, under Help › Beta tester guide).
+- **Made for the iPad** (Safari), and it works on phones and computers too. On
+  an iPad or iPhone, add it to your Home Screen before you set up your markers.
+- **Private and offline.** No account, no ads, no tracking: your markers,
+  palettes, guides and photos stay on your device. The camera is used only to
+  scan marker caps or match a colour.
+- **Ohuhu and Copic only**, for now. Colours on screen are approximate.
+- **Feedback:** tap **Send feedback** at the foot of Home.
+
+Marker Studio isn't affiliated with or endorsed by Ohuhu or Copic.
+
+---
+
+The rest of this page is for working on the code. The app ships as a single
+self-contained `index.html` (offline-capable via a service worker), built from
+readable source files in `src/`.
 
 ## Working on it
 
@@ -22,6 +38,10 @@ Commit both `src/` and the rebuilt `index.html` — GitHub Pages serves
 `index.html` as-is, with no build step on the server. The unit tests fail if
 `index.html` doesn't match a fresh build, so the two can't drift apart.
 
+Pages serves the `release` branch, not `master`: a commit reaches testers only
+when the release workflow puts it there, after its tests have passed. See
+[docs/RELEASING.md](docs/RELEASING.md).
+
 ## Running the tests
 
 ```sh
@@ -31,14 +51,21 @@ npx playwright install chromium
 npm run e2e        # browser tests: drives the real app in headless Chromium
 ```
 
-GitHub Actions runs both on every push (`.github/workflows/test.yml`).
-`E2E_BROWSER=webkit npm run e2e` runs the same tests on WebKit (Safari's
-engine); CI runs that as a separate job, split into 3 parts, that reports but
-doesn't fail the build. It runs one test file at a time in 6 parts, and runs a failed
-test once more (`e2e/ci-retry.mjs`): one that then passes is reported as flaky, as a
-warning. Tests that can't pass on GitHub's WebKit at all are left out of that job, each
-with its reason (`notOnWebKit` in `e2e/helpers.mjs`). Each part lists its results on the
-run's page.
+GitHub Actions runs both on every push to any branch but `release`
+(`.github/workflows/test.yml`):
+
+- the unit tests, then the browser tests on Chromium in 2 parts side by side.
+  These decide whether the run passes;
+- the same browser tests on WebKit (Safari's engine), in 8 parts side by side,
+  one test file at a time. This job reports but doesn't fail the build. A failed
+  test is run once more (`e2e/ci-retry.mjs`): one that then passes is reported
+  as flaky, as a warning. Tests that can't pass on GitHub's WebKit at all are
+  left out of that job, each with its reason (`notOnWebKit` in
+  `e2e/helpers.mjs`).
+
+`e2e/ci-parts.mjs` shares the files out so the parts take about as long
+(`e2e/ci-durations.json`), and each part lists its results on the run's page.
+`E2E_BROWSER=webkit npm run e2e` runs the browser tests on WebKit locally.
 Screenshots and PDFs from the browser tests land in `e2e/.artifacts/`
 (ignored by git) so you can look at what the tests saw.
 
@@ -70,6 +97,9 @@ Screenshots and PDFs from the browser tests land in `e2e/.artifacts/`
   - `data/markers.json` — every marker (code, name, hex, family, brand), one
     per line.
   - `assets/sample-jellyfish.png` — the built-in sample picture.
+    `assets/sample-coloured.webp` (its guide, with codes, on the start cards)
+    and `assets/sample-plain.webp` (without codes, on the welcome) are the
+    app's own output from it.
 - `scripts/build.mjs` — the build (no dependencies; `--check` and `--watch`).
 - `scripts/make-icons.mjs` — draws the app icon and writes the icon PNGs and
   `src/assets/icon.svg` (needs `npm install`).
@@ -78,9 +108,14 @@ Screenshots and PDFs from the browser tests land in `e2e/.artifacts/`
 - `manifest.webmanifest`, `icon-192.png`, `icon-512.png`,
   `icon-maskable-512.png`, `apple-touch-icon.png` — what makes it installable
   (Add to Home Screen / Install app).
-- `docs/DEVICE-TEST.md` — a 15-minute manual checklist for iPhone and
-  Android, covering what headless tests can't (real camera, share sheets,
-  install).
+- `docs/TESTERS.md` — the beta tester guide (the same as Help › Beta tester
+  guide in the app).
+- `docs/RELEASING.md` — how a tested commit reaches testers (the `release`
+  branch, `.github/workflows/release.yml`), with the one-time Pages setup.
+- `docs/DEVICE-TEST.md` — the internal pre-release checklist for real devices,
+  covering what headless tests can't (real camera, share sheets, install). Not
+  for testers.
+- `.nojekyll` — tells GitHub Pages to serve the files as they are.
 - `test/` — unit tests. `harness.mjs` loads the real built script into a
   sandboxed Node context with browser shims, so tests exercise the shipped
   code directly.
@@ -272,5 +307,6 @@ path (marker reassignment plus UI wiring) is covered by the browser tests
 ## Licence
 
 All rights reserved: the code is published to be read, not reused. See
-[LICENSE](LICENSE). The fonts keep their SIL Open Font License, and the few
-Lucide and Feather icons their ISC and MIT licences.
+[LICENSE](LICENSE). The fonts keep their SIL Open Font License, and the 31
+Lucide icons (some derived from Feather) their ISC and MIT licences
+(`src/assets/icons/LICENSE-Lucide-Feather.txt`).

@@ -95,10 +95,11 @@ test('Use in a guide and a Library rename with storage full: nothing changes and
   const { page, errors } = await openApp({ storage: onboardedV265({ [KEY]: appState({ saved: [pal(['Ohuhu|R014', 'Ohuhu|B08'], 5, 'Old name')] }) }) });
   await page.click('#mPalette'); await page.click('#draw'); await idle(page);
   await fillStorage(page);
+  // (v308: Use in a guide saves nothing to the Library, so storage being full doesn't stop it)
   await page.click('#useInGuide'); await idle(page);
-  assert.equal(await page.evaluate(() => state.mode), 'palette', 'still on Palette');
-  assert.match(await toastText(page), /storage is full/, 'the message is still showing');
-  assert.equal(await page.evaluate(() => state.saved.length), 1, 'the palette is not in the Library in memory only');
+  assert.equal(await page.evaluate(() => state.mode), 'sections', 'on to the Guide screen');
+  assert.equal(await page.evaluate(() => state.saved.length), 1, 'nothing added to the Library');
+  await page.click('#mPalette'); await idle(page);
   // rename
   await page.click('#libMore'); await page.click('#savedBtn'); await libItem(page, '#savedList .srow[data-id="5"]', 'sren');
   await page.fill('#savedList .sname-in', 'New name'); await page.press('#savedList .sname-in', 'Enter'); await idle(page);

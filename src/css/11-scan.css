@@ -290,7 +290,9 @@
   white-space: nowrap;
   font: inherit;
   font-weight: 600;
-  padding: 0;
+  /* (v308: the link itself at least 24px tall, its line kept as it was by the margins) */
+  padding: 3px 0;
+  margin: -3px 0;
   min-height: 0;
   text-align: left;
 }

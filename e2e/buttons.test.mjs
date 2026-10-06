@@ -208,7 +208,8 @@ test('small controls have 44px tap areas; long palette codes wrap; the To buy vi
   await page.click('#homeLibCard');
   assert.ok(await hit('#savedClose'), 'dialog ✕');
   await page.keyboard.press('Escape');
-  await page.click('#mPalette'); await page.click('#segs [data-n="6"]'); await page.click('#draw'); await idle(page);
+  // (v308: eight markers, one of each colour, can't fill a Complementary of 6, so it isn't offered; a Rainbow of 6 is)
+  await page.click('#mPalette'); await page.click('#harm [data-h="rainbow"]'); await page.click('#segs [data-n="6"]'); await page.click('#draw'); await idle(page);
   assert.ok(await page.evaluate(() => { const h = document.querySelector('.readout .hex'); return h.scrollWidth <= h.clientWidth + 1 && h.getBoundingClientRect().right <= document.getElementById('stage').getBoundingClientRect().right + 1; }), 'codes stay on the card');
   await page.click('#mCollection'); await page.click('#ownView [data-v="wish"]'); await idle(page);
   assert.equal(await page.isVisible('#mkDraw'), false, 'no Random / Match in To buy');

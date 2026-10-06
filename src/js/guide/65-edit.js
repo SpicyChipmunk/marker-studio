@@ -118,6 +118,7 @@ function doUndo() {
       srcImg = g.src;
       pgQ = g.pgQ;
       pgShape = g.pgShape;
+      srcColour = g.col === undefined ? null : g.col;
       rot90 = g.rot90;
       tilt = g.tilt;
       cropRect = g.crop;
@@ -163,9 +164,11 @@ function doUndo() {
       if (u.keep.det) {
         enhance = u.keep.det.e;
         adaptC = u.keep.det.c;
+        faintCut = u.keep.det.f || 0;
         _reFrom = null;
       }
       bgMaxB = u.keep.bgMaxB;
+      if (u.keep.fo !== undefined) faintOffer = u.keep.fo;
       _origKeys = u.keep.orig || {};
       _lostKeys = u.keep.lost || {};
       _gone = u.keep.gone || {};

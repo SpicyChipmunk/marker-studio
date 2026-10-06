@@ -1182,13 +1182,15 @@ function balHTML() {
         balMore(p, ms);
     }
   }
+  // (v308: each on its own row, flex not inline-flex: side by side on a wide panel they read as one run-on line,
+  // "…clearly differentNo repeats…")
   h +=
-    '<label class="sfchk sfc-check sfc-inline sfc-mt10"><input type="checkbox" id="sfNoAdj"' +
+    '<label class="sfchk sfc-check sfc-flex sfc-mt10"><input type="checkbox" id="sfNoAdj"' +
     (noAdj ? ' checked' : '') +
     '> Keep touching sections clearly different</label>';
   if (balance === 'mixed') {
     h +=
-      '<label class="sfchk sfc-check sfc-inline sfc-mt8"><input type="checkbox" id="sfNoRep"' +
+      '<label class="sfchk sfc-check sfc-flex sfc-mt8"><input type="checkbox" id="sfNoRep"' +
       (noRep ? ' checked' : '') +
       '> No repeats: every section a different marker</label>';
     if (noRep) {

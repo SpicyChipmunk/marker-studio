@@ -305,6 +305,19 @@ function _evoWords(n) {
     .split(/[\s&-]+/)
     .filter(Boolean);
 }
+const EVO_ARC = {
+    red: 'r',
+    orange: 'r',
+    yellow: 'y',
+    lime: 'y',
+    green: 'g',
+    teal: 'g',
+    blue: 'b',
+    violet: 'b',
+    magenta: 'm',
+    pink: 'm',
+  },
+  EVO_ARC_MIN = 0.04;
 function evoName(hexes, seedExtra, avoid) {
   hexes = (hexes || []).filter(Boolean);
   var px = [];
@@ -347,10 +360,17 @@ function evoName(hexes, seedExtra, avoid) {
   var bigFams = fams.filter(function (f) {
     return fam[f] >= chromW * 0.1;
   });
+  // (v308) a rainbow: its colours reach every part of the wheel (reds and oranges, yellows, greens, blues, pinks and
+  // violets: EVO_ARC), each EVO_ARC_MIN of the colour or more. Weighed by chroma, a rainbow's warm half outweighs its
+  // blues, so a full-rainbow page was named for its biggest band ("Paprika Sonnet", "Turquoise Nightcap").
+  var arc = {};
+  for (var fk in fam) arc[EVO_ARC[fk]] = (arc[EVO_ARC[fk]] || 0) + fam[fk];
+  var arcs = 0;
+  for (var ak in arc) if (arc[ak] >= chromW * EVO_ARC_MIN) arcs++;
   var type =
     nC < n * 0.4 || meanC < 0.12
       ? 'neutral'
-      : (bigFams.length >= 5 && R < 0.5) || (bigFams.length >= 4 && R < 0.3)
+      : (bigFams.length >= 5 && R < 0.5) || (bigFams.length >= 4 && R < 0.3) || arcs >= 5
         ? 'spectrum'
         : bigFams.length >= 2 && fam[fams[1]] >= chromW * 0.15
           ? 'duo'
@@ -541,19 +561,27 @@ function usedSavedNames() {
     }),
   );
 }
-// the name for a copy, not yet used in the Library: "Rose Tango (copy)", then "(copy 2)", "(copy 3)"; a copy of a copy counts on
+// the name for a copy, not yet used in the Library: "Rose Tango (2)", then "(3)"; a copy of a copy counts on from the
+// name it was copied from (a trailing " (n)", or v307's " (copy)", is taken off first). Within 120 characters.
+// (v308: the one naming for every name clash: Save a copy, Duplicate, a guide imported again; was "(copy)", "(copy 2)")
 function copyName(name, used) {
   var base =
     String(name || '')
-      .replace(/\s*\(copy(?: \d+)?\)\s*$/i, '')
-      .trim()
-      .slice(0, 106) || 'Colouring guide';
+      .replace(/\s*\((?:copy(?: \d+)?|\d+)\)\s*$/i, '')
+      .trim() || 'Colouring guide';
   used = used || usedSavedNames();
-  for (var i = 1; i < 1000; i++) {
-    var n = base + (i === 1 ? ' (copy)' : ' (copy ' + i + ')');
+  for (var i = 2; i < 100000; i++) {
+    var suf = ' (' + i + ')',
+      n = base.slice(0, 120 - suf.length).trim() + suf;
     if (!used.has(n.toLowerCase())) return n;
   }
-  return base + ' (copy ' + Date.now() + ')';
+  return base.slice(0, 100) + ' (' + Date.now() + ')';
+}
+// a name for something new that isn't used yet: the name itself when it's free, else as copyName (v308)
+function freeName(name, used) {
+  used = used || usedSavedNames();
+  var n = String(name || '').slice(0, 120);
+  return n && !used.has(n.toLowerCase()) ? n : copyName(n, used);
 }
 // a new palette is named from its colours, like a guide, and never repeats a name already in the Library
 function paletteName(idxs) {

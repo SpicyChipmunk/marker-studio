@@ -95,18 +95,19 @@ test('⋯ opens a menu sheet: New, This guide (Save a copy once saved; Reset pro
   await openMenu(page);
   assert.equal(await page.textContent('#sfSheetT'), await page.textContent('#sfGTitle'));
   assert.deepEqual(await page.$$eval('#sfSheet .sfmh', (h) => h.map((x) => x.textContent)), ['New', 'Help']);
-  assert.deepEqual(await menuLabels(page), ['Choose a photo', 'Try the sample', 'Open from Library', 'Import a guide', 'Help']);
+  // (v308: Send feedback under Help)
+  assert.deepEqual(await menuLabels(page), ['Choose a photo', 'Try the sample', 'Open from Library', 'Import a guide', 'Help', 'Send feedback']);
   await page.keyboard.press('Escape'); await idle(page);
   assert.equal(await page.locator('#sfSheet').count(), 0, 'Escape closes it');
   assert.equal(await page.evaluate(() => document.activeElement.id), 'sfMore', 'focus back on ⋯');
   await saveGuide(page);
   await openMenu(page);
-  assert.deepEqual(await menuLabels(page), ['Choose a photo', 'Try the sample', 'Open from Library', 'Import a guide', 'Save a copy', 'Help']);
+  assert.deepEqual(await menuLabels(page), ['Choose a photo', 'Try the sample', 'Open from Library', 'Import a guide', 'Save a copy', 'Help', 'Send feedback']);
   await page.click('#sfSheet [data-m="close"]'); await idle(page);
   assert.equal(await page.locator('#sfSheet').count(), 0, 'Close closes it');
   await page.click('#sfColor'); await idle(page);
   await openMenu(page);
-  assert.deepEqual(await menuLabels(page), ['Choose a photo', 'Try the sample', 'Open from Library', 'Import a guide', 'Reset progress', 'Help']);
+  assert.deepEqual(await menuLabels(page), ['Choose a photo', 'Try the sample', 'Open from Library', 'Import a guide', 'Reset progress', 'Help', 'Send feedback']);
   await page.keyboard.press('Escape');
   // the items do what they say
   await menuItem(page, 'Open from Library'); await idle(page);

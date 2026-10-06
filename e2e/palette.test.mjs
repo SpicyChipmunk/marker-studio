@@ -66,8 +66,9 @@ test('palette screen: nothing to act on in Photo without a photo; too few marker
   await page.evaluate(() => setHarmony('triadic')); await page.click('#draw'); await idle(page, 1200);
   await page.click('#saveBtn'); await idle(page); await page.evaluate(() => { document.getElementById('saveBtn').disabled = false; }); await page.click('#saveBtn'); await idle(page, 1500);
   assert.equal(await page.textContent('#saveBtn'), 'Save');
-  // only three markers in play
-  await page.evaluate(() => { state.owned = new Set(['Ohuhu|R14', 'Ohuhu|B08', 'Ohuhu|Y26'].filter((k) => keyIdx(k) != null)); if (state.owned.size < 3) { state.owned = new Set(COLORS.slice(0, 3).map((c, i) => mkey(i))); } state.pool = null; save(); fullRender(); setHarmony('complementary'); setSize(4); });
+  // only three markers in play (v308: a scheme's sizes stop at what they can fill, so it's Tetradic's smallest, 4, that
+  // they can't)
+  await page.evaluate(() => { state.owned = new Set(['Ohuhu|R14', 'Ohuhu|B08', 'Ohuhu|Y26'].filter((k) => keyIdx(k) != null)); if (state.owned.size < 3) { state.owned = new Set(COLORS.slice(0, 3).map((c, i) => mkey(i))); } state.pool = null; save(); fullRender(); setHarmony('tetradic'); });
   await idle(page);
   assert.match(await page.textContent('#draw'), /Only 3 markers to choose from/);
   assert.equal(await page.isDisabled('#draw'), true);
@@ -111,9 +112,10 @@ test('demo mode and dry markers: photo palette, custom slots and seed use the ma
   assert.deepEqual(errors, []);
 });
 
-// v288: with a guide open it asks (in the app's dialog): recolour it, or a new guide with this palette; Recolour saves
-// the palette and the guide uses it at once; the guide's Undo goes back. With no guide open, nothing is asked.
-test('Use in a guide asks: Recolour saves the palette and the guide uses it; the guide’s Undo goes back; New guide opens the picker', async () => {
+// v288: with a guide open it asks (in the app's dialog): recolour it, or a new guide with this palette; Recolour gives
+// the guide the palette at once; the guide's Undo goes back. With no guide open, nothing is asked. (v308: the palette
+// isn't saved to the Library for it: the guide takes it as its own Generate palette)
+test('Use in a guide asks: Recolour gives the guide the palette; the guide’s Undo goes back; New guide opens the picker', async () => {
   const { page, errors } = await openApp();
   const dialogs = [];
   page.on('dialog', (d) => { dialogs.push(d.message()); d.dismiss(); });
@@ -128,9 +130,8 @@ test('Use in a guide asks: Recolour saves the palette and the guide uses it; the
   await page.click('#sfEdAsk [data-a="stay"]'); await idle(page);
   assert.equal(await page.evaluate(() => state.saved.filter((s) => s.type === 'palette').length), 0, 'Cancel saves nothing');
   await page.click('#useInGuide'); await page.click('#sfEdAsk [data-a="recolour"]');
-  await page.waitForFunction(() => state.saved.some((s) => s.type === 'palette'));
-  assert.equal(await page.evaluate(() => state.saved.filter((s) => s.type === 'palette').length), 1, 'saved');
-  await page.waitForFunction(() => __mstest.styleVars.paletteSource === 'saved'); await idle(page);
+  await page.waitForFunction(() => __mstest.styleVars.paletteSource === 'generate'); await idle(page);
+  assert.equal(await page.evaluate(() => state.saved.filter((s) => s.type === 'palette').length), 0, 'not saved');
   assert.deepEqual(dialogs, []);
   await page.click('#sfPlanUndo'); await idle(page);
   assert.equal(await page.evaluate(() => __mstest.styleVars.paletteSource), src0);
@@ -150,7 +151,7 @@ test('Use in a guide with no guide open asks nothing', async () => {
   const dialogs = [];
   page.on('dialog', (d) => { dialogs.push(d.message()); d.dismiss(); });
   await page.click('#mPalette'); await page.click('#draw'); await idle(page);
-  await page.click('#useInGuide'); await page.waitForFunction(() => state.saved.some((s) => s.type === 'palette'));
+  await page.click('#useInGuide'); await page.waitForFunction(() => state.mode === 'sections'); await idle(page);
   assert.equal(await page.locator('#sfEdAsk').count(), 0);
   assert.deepEqual(dialogs, []);
   assert.deepEqual(errors, []);
@@ -273,17 +274,19 @@ test('a palette whose colours are close says so in one line; a clean one says no
       assert.equal(await page.isVisible('#palClose'), false, `${h} ${n}: no line`);
     }
   }
-  // four markers that look nearly the same: Monochrome of 4 has to use them all
+  // two markers that look nearly the same: Monochrome of 2 has to use them both (v308: with only those, its sizes stop
+  // at its smallest, 2; four alike had been offered 4)
   await page.evaluate(() => {
     const P = COLORS.map((_, i) => i).filter((i) => COLORS[i].brand === 'Ohuhu' && LCH[i][1] > 20);
-    const x = P[0], near = P.filter((i) => i !== x).sort((a, b) => de2000(LAB[x], LAB[a]) - de2000(LAB[x], LAB[b])).slice(0, 3);
+    const x = P[0], near = P.filter((i) => i !== x).sort((a, b) => de2000(LAB[x], LAB[a]) - de2000(LAB[x], LAB[b])).slice(0, 1);
     state.owned = new Set([x, ...near].map(mkey)); state.seed = null; state.locked = []; save(); fullRender();
-    setHarmony('mono'); setSize(4);
+    setHarmony('mono');
   });
   await idle(page);
+  assert.equal(await page.evaluate(() => state.palSize), 2);
   await page.click('#draw'); await idle(page, 1300);
   assert.ok(await palMin(page) < 6, 'the palette has a close pair');
-  assert.equal(await page.textContent('#palClose'), 'Two colours are close: your markers don’t have 4 clearly different colours for this scheme.');
+  assert.equal(await page.textContent('#palClose'), 'Two colours are close: your markers don’t have 2 clearly different colours for this scheme.');
   assert.deepEqual(await visibleNotes(page), ['palClose'], 'one line');
   // it goes with the scheme: not in Custom or Photo, back with Monochrome
   await page.evaluate(() => setHarmony('custom')); await idle(page);
@@ -292,7 +295,7 @@ test('a palette whose colours are close says so in one line; a clean one says no
   assert.deepEqual(await visibleNotes(page), []);
   await page.evaluate(() => setHarmony('mono')); await idle(page);
   assert.equal(await page.isVisible('#palClose'), true);
-  // a locked close pair is the user's choice: locking all four clears it
+  // a locked close pair is the user's choice: locking both clears it
   await page.evaluate(() => { state.locked = state.palettes[state.palettes.length - 1].slice(); save(); fullRender(); }); await idle(page);
   assert.equal(await page.isVisible('#palClose'), false);
   assert.deepEqual(errors, []);
@@ -481,7 +484,7 @@ test('Palette: a line under the Harmony choices says what the chosen one does', 
     split: 'One colour and the two either side of its opposite',
     tetradic: 'Two pairs of opposites',
     mono: 'One colour, light to dark',
-    rainbow: 'Evenly round the rainbow, at similar lightness',
+    rainbow: 'Round the rainbow from red', // (v308: lightness follows hue now, and it starts at red)
     custom: 'Markers you choose: tap a slot to pick one',
     photo: 'A photo’s main colours, matched to markers',
   };

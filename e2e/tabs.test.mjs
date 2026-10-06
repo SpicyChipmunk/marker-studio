@@ -248,7 +248,9 @@ test('each tab stays within about one and a half screens of room at 390×844, wi
       out[pass + ' ' + tb] = `${m.h}px (${(m.h / m.room).toFixed(2)} × the ${m.room}px under the pinned tabs)`;
       // (v288: Colours has the "N markers on this page ›" button too, 44px and its margin)
       // (v306, deliberately: Pattern has the Gradient's Scatter slider too, one compact line, 49px and its margin)
-      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 : 0) + (tb === 'pattern' ? 50 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
+      // (v308, deliberately: Scatter's line at Polished, "Neat bands in flow order", 24px with its margin;
+      //  and Colours' 120px more, the marker count's 44px − and + and Include's row of chips, which Ben asked for)
+      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 + 120 : 0) + (tb === 'pattern' ? 74 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
     }
   }
   t.diagnostic(JSON.stringify(out));

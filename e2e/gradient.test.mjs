@@ -102,7 +102,9 @@ test('Auto’s note: smooth while each marker covers several sections, light to 
   await click(page, '#sfShape [data-v="diagonal"]'); await idle(page);
   const n = await page.evaluate(() => __mstest.countedList().length);
   assert.equal(await page.textContent('#sfLookNote'), `Auto: smooth, as each marker covers about ${Math.round(n / 16)} sections.`);
-  await page.evaluate(() => { __mstest.styleVars.limitN = 999; SF.reassign(); }); await idle(page);
+  // (v308: a new guide's "all" is its 73 vivid markers here, more sections than that: a guide from before v308, with
+  // all 320 in play, has one marker to every section)
+  await page.evaluate(() => { __mstest.styleVars.gradIncl = null; __mstest.styleVars.limitN = 999; SF.reassign(); }); await idle(page);
   assert.equal(await page.textContent('#sfLookNote'), 'Auto: light to dark, as every section has its own marker.');
   assert.deepEqual(errors, []);
 });
@@ -140,6 +142,10 @@ test('Mood: six choices in two rows, in order; filters your markers; old guides�
   await click(page, '#sfFam [data-v="gradient"]'); await idle(page);
   await tab(page, 'colours');
   await page.evaluate(() => { __mstest.styleVars.emphasis = 'earthy'; __mstest.styleVars.limitN = 999; SF.reassign(); }); await idle(page);
+  // (v308: a new guide's "all" is the Mood's own markers, no more, and the line says how many are left)
+  assert.match(await poolLine(page), /^\d+ of your markers · greys, fluorescents off$/);
+  // (a guide from before v308 takes in the nearest from outside the Mood, as it did)
+  await page.evaluate(() => { __mstest.styleVars.gradIncl = null; SF.reassign(); }); await idle(page);
   assert.match(await poolLine(page), /^Earthy: \d+ of your markers are earthy; the rest are the nearest to earthy$/);
   // an old guide: vivid and muted are Bright and Soft; no look is Auto
   for (const [old, label] of [['vivid', 'Bright'], ['muted', 'Soft']]) {
@@ -187,11 +193,18 @@ test('which markers: never more than sections, no greys while there are coloured
   await sample320(page);
   await tab(page, 'colours');
   const n = await page.evaluate(() => __mstest.countedList().length);
-  assert.equal(await poolLine(page), 'From your 320 markers');
+  // (v308: the line says how many of your markers the Include row and Mood leave)
+  const left = await page.evaluate(() => __mstest.grad.inclPool(16).items.length);
+  assert.ok(left > 40 && left < n, left + ' left');
+  assert.equal(await poolLine(page), left + ' of your markers · browns, greys, fluorescents off');
   await page.evaluate(() => { __mstest.styleVars.limitN = 999; SF.reassign(); }); await idle(page);
   const k = await keys(page);
   assert.equal(k.length, n);
-  assert.equal(new Set(k).size, n, 'one marker per section');
+  assert.equal(new Set(k).size, left, 'all of them, some twice (fewer than the sections)');
+  assert.equal(await poolLine(page), left + ' of your markers · browns, greys, fluorescents off');
+  // (a guide from before v308: one per section, as it was)
+  await page.evaluate(() => { __mstest.styleVars.gradIncl = null; SF.reassign(); }); await idle(page);
+  assert.equal(new Set(await keys(page)).size, n, 'one marker per section');
   assert.equal(await poolLine(page), 'From your 320 markers: one per section');
   const greys = await page.evaluate(() => { const a = __mstest.assignData; return a.order.filter((l) => Math.hypot(a.assign[l].lab[1], a.assign[l].lab[2]) < 12).length; });
   assert.equal(greys, 0);

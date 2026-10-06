@@ -118,6 +118,113 @@ function orderSections(cl) {
   if (dir < 0) arr.reverse();
   return arr;
 }
+/* (v308) Does this zone's page look like a mandala (rings of matching shapes round a middle)? Then Radial is offered
+   Around instead (Radial's rings cross the petals: on a mandala at "all" its colour steps were twice Around's), and
+   Surprise picks Around. Its sections are grouped into rings round the middle of their extent, as Radial's Scatter
+   groups them (GRAD_RING: within a small gap of the last, and a span of the ring's first), then by area within a ring
+   (within GRAD_RING[2] of the smallest). A group of 4 or more is symmetric when no gap between their angles is over
+   1.6 times an even share (360° / how many). A mandala: 40 sections or more, symmetric groups 30% of the area or
+   more, and at most 10% of it outside the circle that fits the extent (a tiling fails that). On 30 test pages it
+   picked exactly the 2 mandalas (both photographed too), at 43% to 98%; the next was 6%. */
+const MANDALA_MIN = 40,
+  MANDALA_SYM = 0.3,
+  MANDALA_OUT = 0.1,
+  MANDALA_GAP = 1.6;
+let _mandMemo = null;
+function gradMandalaScore(cl) {
+  const c = comps,
+    n = cl.length;
+  if (n < MANDALA_MIN || !c) return 0;
+  const key = W + 'x' + H + ':' + cl.join(',');
+  if (_mandMemo && _mandMemo.key === key && _mandMemo.c === c) return _mandMemo.v;
+  let x0 = Infinity,
+    y0 = Infinity,
+    x1 = -Infinity,
+    y1 = -Infinity,
+    tot = 0;
+  cl.forEach(function (l) {
+    const s = c[l];
+    x0 = Math.min(x0, s.x0 != null ? s.x0 : s.cx);
+    y0 = Math.min(y0, s.y0 != null ? s.y0 : s.cy);
+    x1 = Math.max(x1, s.x1 != null ? s.x1 : s.cx);
+    y1 = Math.max(y1, s.y1 != null ? s.y1 : s.cy);
+    tot += Math.max(1, s.area || 1);
+  });
+  const mx = (x0 + x1) / 2,
+    my = (y0 + y1) / 2,
+    rIn = (Math.min(x1 - x0, y1 - y0) / 2) * 1.02,
+    rr = cl.map(function (l) {
+      return [l, Math.hypot(c[l].cx - mx, c[l].cy - my)];
+    });
+  let out = 0;
+  rr.forEach(function (x) {
+    if (x[1] > rIn) out += Math.max(1, c[x[0]].area || 1);
+  });
+  let v = 0;
+  if (out <= MANDALA_OUT * tot) {
+    rr.sort(function (a, b) {
+      return a[1] - b[1];
+    });
+    const R = rr[rr.length - 1][1] || 1,
+      gap = GRAD_RING[0] * R,
+      span = GRAD_RING[1] * R,
+      rings = [];
+    let cur = [],
+      r0 = 0,
+      rp = 0;
+    rr.forEach(function (x) {
+      if (cur.length && (x[1] - rp > gap || x[1] - r0 > span)) {
+        rings.push(cur);
+        cur = [];
+      }
+      if (!cur.length) r0 = x[1];
+      cur.push(x[0]);
+      rp = x[1];
+    });
+    if (cur.length) rings.push(cur);
+    let sym = 0;
+    const check = function (g) {
+      const k = g.length;
+      if (k < 4) return;
+      const a = g
+        .map(function (l) {
+          return ((Math.atan2(c[l].cy - my, c[l].cx - mx) * 180) / Math.PI + 360) % 360;
+        })
+        .sort(function (p, q) {
+          return p - q;
+        });
+      let w = 360 - a[k - 1] + a[0];
+      for (let i = 1; i < k; i++) w = Math.max(w, a[i] - a[i - 1]);
+      if (w < (MANDALA_GAP * 360) / k)
+        g.forEach(function (l) {
+          sym += Math.max(1, c[l].area || 1);
+        });
+    };
+    rings.forEach(function (ring) {
+      ring.sort(function (a, b) {
+        return (c[a].area || 1) - (c[b].area || 1);
+      });
+      let a0 = -1,
+        g = [];
+      ring.forEach(function (l) {
+        const a = Math.max(1, c[l].area || 1);
+        if (a0 < 0 || a > a0 * GRAD_RING[2]) {
+          check(g);
+          g = [];
+          a0 = a;
+        }
+        g.push(l);
+      });
+      check(g);
+    });
+    v = sym / tot;
+  }
+  _mandMemo = { key: key, c: c, v: v };
+  return v;
+}
+function gradMandala(cl) {
+  return gradMandalaScore(cl || zoneList()) >= MANDALA_SYM;
+}
 function applyLocks() {
   if (!assignData) return;
   const bk = {};
@@ -202,10 +309,13 @@ function huesOf(ms) {
     });
 }
 // markers go right round the colour wheel (a loop) when no gap between their colours' hues is this wide
-const GRAD_LOOP_GAP = 100;
-function gradIsLoop(ms) {
+// (v308: GRAD_LOOP_GAP8 for a guide made since v308 and Palette's Rainbow, whose colours go red, orange, yellow, green,
+// blue, violet: at 6 there's no cyan, 122° between green and blue, and it's still a rainbow; wide: that)
+const GRAD_LOOP_GAP = 100,
+  GRAD_LOOP_GAP8 = 130;
+function gradIsLoop(ms, wide) {
   const hs = huesOf(ms);
-  return hs.length >= 3 && hueGap(hs)[0] < GRAD_LOOP_GAP;
+  return hs.length >= 3 && hueGap(hs)[0] < (wide ? GRAD_LOOP_GAP8 : GRAD_LOOP_GAP);
 }
 // the coloured ones in hue order, starting after the widest gap
 function hueRun(ms) {
@@ -223,6 +333,221 @@ function evenPick(list, k) {
   const out = [];
   for (let i = 0; i < k; i++) out.push(list[Math.floor(((i + 0.5) * list.length) / k)]);
   return out;
+}
+/* ---- (v308) the Gradient's Include row, its vivid markers, and lightness that follows hue ----
+   A guide made since v308 (gradIncl set: gradV8) picks from "the markers left": your markers in the Temperature and
+   filters, less the groups Include has off (Browns: the Earth family and the tans, ochres and olives; Greys & black:
+   the grey families, BGY, YGY and the blacks; Fluorescents), then
+   - Any and Bright: only vivid markers (gradVividM) besides the groups that are on;
+   - the other Moods: the Mood's own colours (a grey goes by its lightness alone; Soft, Pastel and Earthy nothing
+     darker than INCL_DARK).
+   Include's choices start as the Mood has them (INCL_MOOD: Earthy turns Browns on; Deep has Greys off like the rest)
+   until tapped. With fewer than GRAD_SET_MIN left, the clear ones (Any, Bright) or the Mood's nearest (the rest) not in
+   a group that's off; with fewer than 2 even then, v307's pool.
+   The marker count runs to the smaller of the sections and the markers left: at that end it's "all", every marker
+   left, used again where there are more sections (gradCount). Each pick's lightness follows its hue (yellow light,
+   violet dark: GRAD_LT), as far as the Mood lets it (GRAD_LT_FOLLOW), and a loop's hues are spread through the
+   rainbow's own colours from red (GRAD_ROYGBV), not evenly round L*C*h°, which skipped yellow. Palette's Rainbow
+   (rainbowPick) picks the same way. A guide saved before v308 (gradIncl null) is laid as v307 laid it. */
+const GRAD_LT = [
+  [0, 52],
+  [35, 50],
+  [62, 70],
+  [92, 86],
+  [115, 80],
+  [145, 62],
+  [180, 62],
+  [215, 70],
+  [255, 58],
+  [290, 42],
+  [315, 45],
+  [340, 55],
+  [360, 52],
+];
+// the lightness a clean colour of hue h has
+function gradLt(h) {
+  h = ((h % 360) + 360) % 360;
+  for (let i = 1; i < GRAD_LT.length; i++)
+    if (h <= GRAD_LT[i][0]) {
+      const a = GRAD_LT[i - 1],
+        b = GRAD_LT[i];
+      return a[1] + ((b[1] - a[1]) * (h - a[0])) / (b[0] - a[0]);
+    }
+  return GRAD_LT[0][1];
+}
+let _gradLtMean = null,
+  _gradCmax = null;
+// its average round the wheel
+function gradLtMean() {
+  if (_gradLtMean == null) {
+    let s = 0;
+    for (let h = 0; h < 360; h++) s += gradLt(h);
+    _gradLtMean = s / 360;
+  }
+  return _gradLtMean;
+}
+// the strongest chroma of any catalogue marker within 10° of hue h
+function gradCmaxAt(h) {
+  if (!_gradCmax) {
+    const c = new Array(36).fill(0);
+    for (let i = 0; i < LCH.length; i++) {
+      const b = Math.floor(LCH[i][2] / 10) % 36;
+      c[b] = Math.max(c[b], LCH[i][1]);
+    }
+    _gradCmax = c.map(function (v, i) {
+      return Math.max(c[(i + 35) % 36], v, c[(i + 1) % 36], 1);
+    });
+  }
+  return _gradCmax[Math.floor((((h % 360) + 360) % 360) / 10) % 36];
+}
+// A strong, clean colour for its hue: chroma 25 or more, at least half the strongest of its hue in the catalogue
+// (orange to yellow-green 0.55, more the darker it is than its hue's lightness, so ochres, mustards and olives miss),
+// and lightness from 18 under to 22 over its hue's
+const _vivTest = new WeakMap();
+function gradVivTest(m) {
+  let v = _vivTest.get(m);
+  if (v === undefined) {
+    const x = mLch(m),
+      L = x[0],
+      C = x[1],
+      h = x[2],
+      t = gradLt(h),
+      rc = C / gradCmaxAt(h),
+      warm = h >= 40 && h <= 115;
+    v = C >= 25 && rc >= (warm ? 0.55 + 0.02 * Math.max(0, t - L) : 0.5) && L >= t - 18 && L <= t + 22;
+    _vivTest.set(m, v);
+  }
+  return v;
+}
+// Include's group of a marker: 'browns', 'greys', 'fluor', or '' (a colour)
+const _inclGrp = new WeakMap();
+function inclGroup(m) {
+  let g = _inclGrp.get(m);
+  if (g === undefined) {
+    const f = m.fam || '';
+    if (/Fluorescent/.test(f)) g = 'fluor';
+    else if (
+      /Gr[ae]y|Black|Blue-Green-Yellow|Yellow-Green-Yellow/.test(f) ||
+      /^(BGY|YGY)\d/.test(m.code || '')
+    )
+      g = 'greys';
+    else if (/Earth/.test(f)) g = 'browns';
+    else {
+      const x = mLch(m);
+      g = !gradVivTest(m) && x[2] >= 25 && x[2] <= 125 && x[1] >= 12 && x[0] < 75 ? 'browns' : '';
+    }
+    _inclGrp.set(m, g);
+  }
+  return g;
+}
+// how strong a marker is for its hue: its chroma as a share of the strongest catalogue marker of that hue
+function gradRc(m) {
+  const x = mLch(m);
+  return x[1] / gradCmaxAt(x[2]);
+}
+// the middle strength of these (the picks keep near it: v308, the default 16 put a hot RV06 between soft R310 and
+// V010)
+function gradRcMid(col) {
+  const r = col.map(gradRc).sort(function (a, b) {
+    return a - b;
+  });
+  return r.length ? r[r.length >> 1] : 0;
+}
+const GRAD_RC_W = 20;
+// vivid: a colour (no group) that passes the test
+function gradVividM(m) {
+  return !inclGroup(m) && gradVivTest(m);
+}
+const GRAD_VIVID_MOODS = ['neutral', 'vivid'];
+function gradVividMood(mood) {
+  return GRAD_VIVID_MOODS.indexOf(mood) >= 0;
+}
+const INCL_KEYS = ['browns', 'greys', 'fluor'],
+  INCL_LABEL = { browns: 'Browns', greys: 'Greys & black', fluor: 'Fluorescents' },
+  INCL_WORD = { browns: 'browns', greys: 'greys', fluor: 'fluorescents' },
+  INCL_MOOD = { earthy: { browns: true } },
+  INCL_DARK = 25;
+// Include's three choices as they stand (inc: the guide's, each true or false once tapped; else the Mood's)
+function inclOn(inc, mood) {
+  const o = inc || {},
+    d = INCL_MOOD[mood] || {},
+    r = {};
+  INCL_KEYS.forEach(function (k) {
+    r[k] = typeof o[k] === 'boolean' ? o[k] : !!d[k];
+  });
+  return r;
+}
+// a marker left by Include (on: inclOn's) and the Mood
+function inclKeep(m, mood, on) {
+  const g = inclGroup(m);
+  if (g) {
+    if (!on[g]) return false;
+  } else if (gradVividMood(mood) && !gradVivTest(m)) return false;
+  if (mood === 'neutral' || !MOODS[mood]) return true;
+  const x = mLch(m);
+  if (g === 'greys') {
+    const C = MOODS[mood].C;
+    return moodOff(mood, [x[0], Math.max(C[0], Math.min(C[1], x[1]))]) === 0;
+  }
+  if ((mood === 'muted' || mood === 'pastel' || mood === 'earthy') && x[0] < INCL_DARK) return false;
+  return moodOff(mood, x) === 0;
+}
+// the markers left of `list`: { items, widened (taken in from outside as there were too few) }
+const GRAD_SET_MIN = 8;
+function inclPick(list, mood, inc, need) {
+  const on = inclOn(inc, mood),
+    items = list.filter(function (m) {
+      return inclKeep(m, mood, on);
+    });
+  if (items.length >= GRAD_SET_MIN || (items.length >= 2 && items.length >= need))
+    return { items: items, widened: 0 };
+  const isIn = new Set(items),
+    rest = list.filter(function (m) {
+      const g = inclGroup(m);
+      return !g || on[g];
+    }),
+    cand = gradVividMood(mood)
+      ? rest.filter(function (m) {
+          return isIn.has(m) || gradClearM(m);
+        })
+      : rest,
+    wide = moodPick(cand, mood, Math.max(2, Math.min(GRAD_SET_MIN, need)), mLch).items;
+  if (wide.length >= 2 && wide.length > items.length)
+    return {
+      items: wide,
+      widened: wide.filter(function (m) {
+        return !isIn.has(m);
+      }).length,
+    };
+  if (items.length >= 2) return { items: items, widened: 0 };
+  const r = moodPick(list, mood, need, mLch);
+  return { items: r.items, widened: r.widened };
+}
+// a guide (or zone) made since v308, laying its own Gradient (the Photo pattern too while it has no photo, as it lays
+// the Gradient then): the Include row and all that goes with it
+function gradV8() {
+  return gradIncl != null && (family === 'gradient' || (family === 'photo' && !photoRef));
+}
+// the markers left for this zone's Gradient (from your markers: not a palette)
+function inclPool(need) {
+  return inclPick(poolFor(palette), emphasis, gradIncl, need == null ? 1 : need);
+}
+// How far a Mood lets lightness follow hue (1: fully; Pastel's narrow band of light colours hardly), and the
+// lightness a pick at hue th aims for, round the pool's middle lightness
+const GRAD_LT_FOLLOW = { neutral: 1, vivid: 1, muted: 0.6, pastel: 0.3, deep: 0.5, earthy: 0.5 };
+function gradLtTarget(Lmed, th, mood) {
+  const f = GRAD_LT_FOLLOW[mood] != null ? GRAD_LT_FOLLOW[mood] : 1;
+  return Lmed + f * (gradLt(th) - gradLtMean());
+}
+// a loop's k-th of K target hues, spread evenly through red, orange, yellow, green, blue and violet, from red
+const GRAD_ROYGBV = [33, 62, 92, 148, 270, 320];
+function gradHueWarp(k, K) {
+  const u = (6 * k) / K,
+    i = Math.floor(u),
+    f = u - i,
+    a = GRAD_ROYGBV[i % 6],
+    b = GRAD_ROYGBV[(i + 1) % 6] + (i % 6 === 5 ? 360 : 0);
+  return (a + (b - a) * f) % 360;
 }
 // With markers to spare, the clearer mid-range ones: the tightest of these ([chroma at least, lightness from, to])
 // that still has `need`, else all the coloured ones; greys only when there aren't `need` coloured (spread through
@@ -261,6 +586,8 @@ function hueDiff(h, t) {
   const d = Math.abs(h - t) % 360;
   return Math.min(d, 360 - d);
 }
+// (v308, lt set: each pick's lightness follows its hue (gradLtTarget), a loop's hues go through the rainbow from red
+// (gradHueWarp), and picks keep near the pool's middle strength for their hue (GRAD_RC_W))
 // One marker per band, from your markers: K hues evenly round the wheel (for a ramp, along the stretch of it the
 // markers cover), each the marker near it in hue with a lightness near the middle of them all and a clear colour,
 // so they run smoothly at much the same lightness. rnd (a ramp's Shuffle) picks at random among the near-equal ones.
@@ -270,7 +597,8 @@ const GRAD_NEAR = 6;
 // from 8 to 14 of 16 that shade, with less clash
 const GRAD_SH_COST = 15,
   GRAD_SH_NEAR = 12;
-function gradPickSpread(src, K, loop, rnd, zs) {
+// (lt, v308: the Mood, for a guide whose picks' lightness follows hue, with a loop's hues spread from red; else null)
+function gradPickSpread(src, K, loop, rnd, zs, lt) {
   const col = src.filter(notGreyM);
   if (col.length <= K) return src.slice(0, K);
   const n = col.length,
@@ -289,9 +617,15 @@ function gradPickSpread(src, K, loop, rnd, zs) {
     used = new Uint8Array(n),
     out = [],
     NEAR = zs ? GRAD_SH_NEAR : 8,
-    shOK = zs ? new Int8Array(n).fill(-1) : null;
+    shOK = zs ? new Int8Array(n).fill(-1) : null,
+    rcW = lt ? GRAD_RC_W : 0,
+    rcMid = rcW ? gradRcMid(col) : 0;
   for (let k = 0; k < K; k++) {
-    const th = (h0 + (loop ? (360 * k) / K : K > 1 ? (span * k) / (K - 1) : 0)) % 360,
+    const th =
+        lt && loop
+          ? gradHueWarp(k, K)
+          : (h0 + (loop ? (360 * k) / K : K > 1 ? (span * k) / (K - 1) : 0)) % 360,
+      LT = lt ? gradLtTarget(Lmed, th, lt) : Lmed,
       near = [];
     // the 8 (12 with shading) unused markers nearest this hue, and what each would cost
     for (let i = 0; i < n; i++) {
@@ -308,7 +642,8 @@ function gradPickSpread(src, K, loop, rnd, zs) {
     if (!near.length) break;
     const cost = near.map(function (e) {
       const x = mLch(col[e[1]]);
-      let v = e[0] + Math.abs(x[0] - Lmed) * 0.8 - x[1] * 0.15;
+      let v = e[0] + Math.abs(x[0] - LT) * 0.8 - x[1] * 0.15;
+      if (rcW) v += rcW * Math.abs(gradRc(col[e[1]]) - rcMid);
       if (zs) {
         if (shOK[e[1]] < 0) shOK[e[1]] = gradShadeOK(col[e[1]], zs) ? 1 : 0;
         if (!shOK[e[1]]) v += GRAD_SH_COST;
@@ -341,7 +676,7 @@ function gradPickField(src, M, rnd) {
   return out;
 }
 /* ---- (v306) Palette's Rainbow scheme: the Gradient's own picking, for the Palette screen ----
-   n colours evenly round the rainbow at similar lightness, picked as the Gradient picks one marker per band from your
+   n colours round the rainbow (v308: lightness follows hue, from red), picked as the Gradient picks one marker per band from your
    markers (gradTierPool, then gradPickSpread's targets and costs, in gradSequence's order), so at the same count a
    Rainbow palette is the Gradient's markers in the Gradient's order, and a guide laid from it lays them so. Three
    differences, all Palette's: two colours closer than RAINBOW_NEED (CIEDE2000) are avoided where another marker near
@@ -354,7 +689,7 @@ const RAINBOW_NEED = 5;
 function rainbowPick(n, mood, idxs, opt) {
   opt = opt || {};
   const all = idxs.map(function (i) {
-      return { i: i, mkey: mkey(i), lab: hexToLab(COLORS[i].hex), fam: COLORS[i].fam };
+      return { i: i, mkey: mkey(i), code: COLORS[i].code, lab: hexToLab(COLORS[i].hex), fam: COLORS[i].fam };
     }),
     locked = opt.locked || {},
     lockIdx = [];
@@ -364,18 +699,23 @@ function rainbowPick(n, mood, idxs, opt) {
       return (
         all.find(function (m) {
           return m.i === i;
-        }) || { i: i, mkey: mkey(i), lab: hexToLab(COLORS[i].hex), fam: COLORS[i].fam }
+        }) || { i: i, mkey: mkey(i), code: COLORS[i].code, lab: hexToLab(COLORS[i].hex), fam: COLORS[i].fam }
       );
     }),
     list = all.filter(function (m) {
       return lockIdx.indexOf(m.i) < 0;
     }),
-    pool = moodPick(list, MOOD_KEYS.indexOf(mood) >= 0 ? mood : 'neutral', n, mLch).items,
+    md = MOOD_KEYS.indexOf(mood) >= 0 ? mood : 'neutral',
+    // (v308: the markers a new guide's Gradient would have left with Include as the Mood has it; asked for more colours
+    // than those have, the other clear ones too, as many as Palette says there are: rainbowWiden)
+    pool = rainbowWiden(inclPick(list, md, null, n).items, list, n),
     K = Math.min(n, pool.filter(notGreyM).length + pre.length);
   if (K < 1) return [];
-  const tier = gradTierPool(pool, K - pre.length),
-    loop = gradIsLoop(tier.concat(pre)),
-    picks = rainbowSpread(tier, K, loop, opt.seed > 0 ? seededRandom(opt.seed) : null, pre),
+  const tier = gradVividMood(md)
+      ? pool.filter(notGreyM)
+      : gradTierPool(pool.filter(notGreyM), K - pre.length),
+    loop = gradIsLoop(tier.concat(pre), true),
+    picks = rainbowSpread(tier, K, loop, opt.seed > 0 ? seededRandom(opt.seed) : null, pre, md),
     seq = gradSequence(picks, 1, loop),
     out = new Array(K).fill(-1);
   for (const p in locked) if (+p < K && locked[p] != null && out.indexOf(locked[p]) < 0) out[+p] = locked[p];
@@ -389,9 +729,28 @@ function rainbowPick(n, mood, idxs, opt) {
     return i >= 0;
   });
 }
+// (v308 debug: the other clear colours first, and Include's browns and fluorescents only when those still fall short:
+// Sketch 12 at 8 had taken E09 and lost its only yellow)
+function rainbowWiden(pool, list, n) {
+  if (pool.filter(notGreyM).length >= n) return pool;
+  const has = new Set(pool),
+    more = list.filter(function (m) {
+      return !has.has(m) && notGreyM(m);
+    }),
+    plain = more.filter(function (m) {
+      return !inclGroup(m);
+    }),
+    out = pool.concat(plain);
+  if (out.filter(notGreyM).length >= n) return out;
+  return out.concat(
+    more.filter(function (m) {
+      return inclGroup(m);
+    }),
+  );
+}
 // gradPickSpread's picking (the same targets, nearest 8 and costs), with the markers in `pre` already placed, each on
 // the free target hue nearest it, and never a marker within RAINBOW_NEED of one placed while one further off is near
-function rainbowSpread(src, K, loop, rnd, pre) {
+function rainbowSpread(src, K, loop, rnd, pre, lt) {
   const col = src.filter(notGreyM);
   if (!pre.length && col.length <= K) return src.slice(0, K);
   const n = col.length,
@@ -407,11 +766,16 @@ function rainbowSpread(src, K, loop, rnd, pre) {
         return a - b;
       }),
     Lmed = Ls[n >> 1],
+    rcW = lt ? GRAD_RC_W : 0,
+    rcMid = rcW ? gradRcMid(col) : 0,
     used = new Uint8Array(n),
     out = pre.slice(),
     th = [],
     free = [];
-  for (let k = 0; k < K; k++) th.push((h0 + (loop ? (360 * k) / K : K > 1 ? (span * k) / (K - 1) : 0)) % 360);
+  for (let k = 0; k < K; k++)
+    th.push(
+      lt && loop ? gradHueWarp(k, K) : (h0 + (loop ? (360 * k) / K : K > 1 ? (span * k) / (K - 1) : 0)) % 360,
+    );
   const taken = new Uint8Array(K);
   pre.forEach(function (m) {
     let b = -1;
@@ -459,9 +823,12 @@ function rainbowSpread(src, K, loop, rnd, pre) {
       if (f.length) near = f;
     }
     if (!near.length) break;
+    const LT = lt ? gradLtTarget(Lmed, th[k], lt) : Lmed;
     const cost = near.map(function (e) {
       const x = mLch(col[e[1]]);
-      return e[0] + Math.abs(x[0] - Lmed) * 0.8 - x[1] * 0.15;
+      return (
+        e[0] + Math.abs(x[0] - LT) * 0.8 - x[1] * 0.15 + (rcW ? rcW * Math.abs(gradRc(col[e[1]]) - rcMid) : 0)
+      );
     });
     let b = 0;
     for (let q = 1; q < near.length; q++) if (cost[q] < cost[b]) b = q;
@@ -642,22 +1009,22 @@ function gradPlan(src, N) {
     seq,
     shp = false;
   if (src.seeded) {
-    loop = gradIsLoop(pool);
+    loop = gradIsLoop(pool, gradV8());
     seq = gradSequence(pool, g, loop);
     if (seq.length > M) seq = evenPick(seq, M);
   } else {
-    const tier = gradTierPool(pool, M),
-      rnd = gradSeed > 0 ? seededRandom(gradSeed) : null;
-    loop = gradIsLoop(tier);
     // (shading-aware picks, v306: one marker to a band, with shading on as it's laid)
     shp = g === 1 && gradShpOn();
-    seq = gradSequence(
-      g === 1
-        ? gradPickSpread(tier, M, loop, loop ? null : rnd, shp ? zsh(zoneLive()) : null)
-        : gradPickField(tier, M, loop ? null : rnd),
+    const ps = gradPickSet(
+      pool,
+      M,
       g,
-      loop,
+      gradSeed > 0 ? seededRandom(gradSeed) : null,
+      shp ? zsh(zoneLive()) : null,
+      gradV8() ? emphasis : null,
     );
+    loop = ps.loop;
+    seq = gradSequence(ps.picks, g, loop);
   }
   // (base: the loop from its smoothest start, where its widest step falls at the two ends; nc: how many of it go
   // round; r: how far round the start is turned. The Start colour slider shows base and moves r.)
@@ -680,15 +1047,50 @@ function gradPlan(src, N) {
     nc: nc,
     r: r,
     reuse: cnt.reuse,
+    all: !!cnt.all,
     shp: shp,
   };
+}
+/* The Gradient's M markers from your markers (pool), for g to a band: { picks, loop }. rnd: a ramp's Shuffle; zs: the
+   zone's shading, for shading-aware picks; lt (v308): the Mood, when lightness follows hue. Before v308 (lt null): the
+   clearer ones (gradTierPool), one to a band spread round the hues (gradPickSpread) or several to a band
+   (gradPickField). Since: the markers left are the set (no tiers for Any and Bright: they're vivid already); all of
+   them at "all"; else greys (when Include has them) their share of M, spread through their lightness, and the
+   colours picked by hue as before. Shared by gradPlan, "Pick shadeable ones" (gradShadeOffer) and the tests. */
+function gradPickSet(pool, M, g, rnd, zs, lt) {
+  if (!lt) {
+    const tier = gradTierPool(pool, M),
+      loop = gradIsLoop(tier);
+    return {
+      loop: loop,
+      picks:
+        g === 1
+          ? gradPickSpread(tier, M, loop, loop ? null : rnd, zs)
+          : gradPickField(tier, M, loop ? null : rnd),
+    };
+  }
+  if (M >= pool.length) return { loop: gradIsLoop(pool, true), picks: pool.slice() };
+  const col = pool.filter(notGreyM),
+    gr = pool.filter(isGreyM);
+  let nG = gr.length ? Math.round((M * gr.length) / pool.length) : 0;
+  const nC = Math.min(col.length, M - nG);
+  nG = Math.min(gr.length, M - nC);
+  const tier = gradVividMood(lt) ? col : gradTierPool(col, nC),
+    loop = gradIsLoop(tier, true),
+    cp = !nC
+      ? []
+      : g === 1
+        ? gradPickSpread(tier, nC, loop, loop ? null : rnd, zs, lt)
+        : gradPickField(tier, nC, loop ? null : rnd);
+  return { loop: loop, picks: nG ? cp.concat(evenPick(gr.slice().sort(byLightFirst), nG)) : cp };
 }
 /* How many markers the Gradient lays: the marker count's worth, or fewer with fewer sections or markers. { M, reuse }.
    v306 (U6): with the count at all your markers on a page with more sections than your clear markers (chroma 20 or
    more, lightness 34 to 90: GRAD_TIERS' widest), it lays just the clear ones, some on two sections (reuse), instead of
    reaching for greys and browns; the Earthy, Soft, Deep and Pastel Moods (whose colours aren't clear ones) and a
    palette are laid as before. On Ben's 448-section mandala: 268 clear markers instead of 448 with 86 greys. */
-const GRAD_REUSE_MOODS = ['neutral', 'vivid'];
+const GRAD_REUSE_MOODS = ['neutral', 'vivid'],
+  GRAD_SPLIT_R = 2;
 function gradClearM(m) {
   const x = mLch(m),
     T = GRAD_TIERS[GRAD_TIERS.length - 1];
@@ -698,6 +1100,17 @@ function gradCount(src, N) {
   const pool = src.items;
   let M = Math.max(1, Math.min(limitN, N, pool.length)),
     reuse = false;
+  // (v308) "all" (the count at or over the smaller of the sections and the markers left): every marker left, used
+  // again where there are more sections; touching sections sharing one are split up while each is used about twice at
+  // most (GRAD_SPLIT_R), else it's laid as bands of them (on a big page, splitting gave confetti)
+  if (!src.seeded && gradV8()) {
+    const P = pool.length;
+    if (limitN >= Math.min(N, P)) {
+      if (P < N) return { M: Math.max(1, P), reuse: P >= 2 && N <= GRAD_SPLIT_R * P, all: true };
+      return { M: Math.max(1, N), reuse: false, all: true };
+    }
+    return { M: M, reuse: false };
+  }
   if (!src.seeded && GRAD_REUSE_MOODS.indexOf(emphasis) >= 0 && limitN >= sliderMax()) {
     let k = 0;
     for (let i = 0; i < pool.length; i++) if (gradClearM(pool[i])) k++;
@@ -922,7 +1335,7 @@ function buildGradient(cl) {
   // (gradCount's reuse) touching sections sharing one count as a clash; Natural and Scatter: only those split up
   // (v307: the Photo pattern before it has a photo, which lays the Gradient as Natural, has its repeats split up too)
   if (family === 'gradient' && scat === 0)
-    gradSmooth(order, M >= N, limitN >= src.items.length, plan.reuse ? 'reuse' : '');
+    gradSmooth(order, M >= N, gradV8() ? plan.all : limitN >= src.items.length, plan.reuse ? 'reuse' : '');
   else if (plan.reuse) gradSmooth(order, false, true, 'split');
   // (v307) markers used twice: what the smoothing left of touching sections sharing one is split up for good
   gradSameLast = null;
@@ -1089,7 +1502,8 @@ function gradScatAt(M) {
    one laid at any stop reopens as it was. */
 const GRAD_SCAT_LABEL = ['Polished', 'Natural', 'Textured', 'Sparkle', 'Confetti'];
 const GRAD_SCAT_DESC = [
-  '',
+  // (v308: Polished has its line too)
+  'Neat bands in flow order',
   'In flow order, with no clashes tidied away',
   'Light and dark of each colour mixed; bands stay crisp',
   'Textured, with flecks of the next colour along',
@@ -1552,11 +1966,13 @@ function gradRough(secs, A) {
   return out;
 }
 function gradFixCan() {
-  return limitN >= sliderMax();
+  return limitN >= (gradV8() ? Math.min(zoneList().length, sliderMax()) : sliderMax());
 }
-// (a palette's own markers; else your clear ones (gradClearM) in the Temperature and Mood)
+// (a palette's own markers; else your clear ones (gradClearM) in the Temperature and Mood; v308: the coloured ones of
+// the markers left, the same the Gradient picks from)
 function gradFixPool(src) {
-  return src.seeded ? src.items : src.items.filter(gradClearM);
+  if (src.seeded) return src.items;
+  return src.items.filter(gradV8() ? notGreyM : gradClearM);
 }
 // Smooth the rough spots among secs in A (changed in place) with markers from cands that no section uses (nor one of
 // their codes): theirs in A as it goes, and ext's ({ used, codes }: the guide's other sections'); fixed(l): a
@@ -2234,6 +2650,35 @@ function addAnchor(P) {
   });
   anchors.push({ x: P.x, y: P.y, mkey: best.mkey });
 }
+// (v308) The marker an anchor gives where it is: its colour's nearest in the markers Blend uses (with Warm and Pastel,
+// a vivid red anchor gives a pale pink, and its dot is drawn so). Kept until something they go by changes.
+let _anchOut = { key: '', m: {} };
+function anchorOut(m) {
+  if (!m || family !== 'blend') return m;
+  const key = [
+    zoneCur,
+    emphasis,
+    palette,
+    limitN,
+    paletteSource,
+    savedPalId,
+    expand,
+    coll.length,
+    planFilt(),
+  ].join('|');
+  if (_anchOut.key !== key) _anchOut = { key: key, m: {} };
+  if (!(m.mkey in _anchOut.m)) {
+    let o = m;
+    try {
+      const pool = activePool().filter(function (x) {
+        return x.lab;
+      });
+      if (pool.length && m.lab) o = nearestInPool(m.lab, pool);
+    } catch (_) {}
+    _anchOut.m[m.mkey] = o;
+  }
+  return _anchOut.m[m.mkey];
+}
 function blendAssign(cl, pool) {
   guideDirty = true;
   const byKey = {};
@@ -2443,13 +2888,33 @@ function genSize(h, n) {
 }
 // (reroll: Shuffle's, another of the same scheme. v306: a Rainbow is the Gradient's own unless it's asked for another,
 // as Palette's Generate does, so Shuffle gave the same Rainbow every time)
+// (v308) a new palette is the guide's own: a palette handed over from Palette (fromPal) is no longer the one in use
 function generatePalette(reroll) {
+  fromPal = null;
   if (GEN_HARMS.indexOf(genHarmony) < 0) genHarmony = 'analogous';
   // (the Colours tab's Mood goes to the generator, which keeps to it where it can)
   if (api.genPalette)
     genPal =
-      api.genPalette(genSize(genHarmony, limitN), genHarmony, { mood: emphasis, reroll: reroll === true }) ||
-      [];
+      api.genPalette(genSize(genHarmony, limitN), genHarmony, {
+        mood: emphasis,
+        reroll: reroll === true,
+        exclude: inclExclude(),
+      }) || [];
+}
+// (v308) a guide made since v308: the markers of the Include row's groups that are off (marker indexes), which a
+// generated palette leaves out (Surprise never brings greys while they're off); null before v308
+function inclExclude() {
+  if (gradIncl == null || typeof keyIdx !== 'function') return null;
+  const on = inclOn(gradIncl, emphasis),
+    out = new Set();
+  coll.forEach(function (m) {
+    const g = inclGroup(m);
+    if (g && !on[g]) {
+      const i = keyIdx(m.mkey);
+      if (i != null) out.add(i);
+    }
+  });
+  return out.size ? out : null;
 }
 function genPalKeys(a) {
   return (a || [])
@@ -2478,12 +2943,13 @@ function thinTo(pool, N) {
 // EXPAND_MOOD, was 2 on that scale and is scaled by the same (32/48)², so it leans as much as it did.)
 const EXPAND_CAP = 32,
   EXPAND_MOOD = 2 * (32 / 48) * (32 / 48);
-function expandToN(seed, N, c) {
+// (ok, v308: which markers it may add, the Include row's)
+function expandToN(seed, N, c, ok) {
   if (!seed.length || !coll.length) return seed;
   if (N <= seed.length) return thinTo(seed, N);
   const wAB = 1 + (1 - c) * 3,
     wL = 1 + c * 3,
-    mood = paletteSource === 'generate' ? emphasis : 'neutral',
+    mood = genMade() ? emphasis : 'neutral',
     chosen = [],
     seen = {};
   seed.forEach(function (m) {
@@ -2497,7 +2963,7 @@ function expandToN(seed, N, c) {
       arr = [];
     for (let i = 0; i < coll.length; i++) {
       const m = coll[i];
-      if (seen[m.mkey] || !m.lab) continue;
+      if (seen[m.mkey] || !m.lab || (ok && !ok(m))) continue;
       const part = de2000Split(sl, m.lab),
         de = Math.sqrt(part[0] + part[1]);
       if (de <= 0 || de > EXPAND_CAP) continue;
@@ -2530,6 +2996,11 @@ function expandToN(seed, N, c) {
 }
 // the saved or generated palette's markers (none when it has none); one is generated if there isn't one yet, unless
 // `peek` (for what the controls say, which mustn't change the guide)
+// (v308) a palette the guide generated, to follow its Mood (not one handed over from Palette: fromPal, used as it is,
+// as a saved one is)
+function genMade() {
+  return paletteSource === 'generate' && !fromPal;
+}
 function seedPool(peek) {
   if (paletteSource === 'saved') return palettePoolFromSaved();
   if (paletteSource === 'generate') {
@@ -2542,9 +3013,12 @@ function curSeedLen() {
   return seedPool().length;
 }
 function sliderMax() {
-  var ownedMax = Math.max(2, poolFor(palette).length);
+  // (v308: the markers left after the Include row)
+  var ownedMax = Math.max(2, gradV8() ? inclPool().items.length : poolFor(palette).length);
   if (paletteSource !== 'saved' && paletteSource !== 'generate') return ownedMax;
-  return expand ? ownedMax : Math.max(2, curSeedLen());
+  // (v308: no palette chosen, none saved say: your markers, as the guide uses; it gave 2, "all (1)")
+  const sn = seedPool(true).length;
+  return expand || !sn ? ownedMax : Math.max(2, sn);
 }
 // Where a pattern's markers come from, before it picks among them: { items, seeded, seed, widened }. A saved or
 // generated palette gives its own markers (seed of them), with nearby ones added when Expand is on; otherwise it's
@@ -2554,12 +3028,81 @@ function poolSource(need, peek) {
   if (paletteSource === 'saved' || paletteSource === 'generate') {
     const seed = seedPool(peek);
     if (seed.length) {
-      const items = expand && limitN > seed.length ? expandToN(seed, limitN, expandChar) : seed;
+      const items =
+        expand && limitN > seed.length ? expandToN(seed, limitN, expandChar, inclExpandOk()) : seed;
       return { items: items, seeded: true, seed: seed.length, widened: 0 };
     }
   }
+  if (gradV8()) {
+    const r = inclPool(need);
+    return { items: r.items, seeded: false, seed: 0, widened: r.widened };
+  }
   const r = moodPick(poolFor(palette), emphasis, need, mLch);
   return { items: r.items, seeded: false, seed: 0, widened: r.widened };
+}
+// (v308) the markers Expand may add to a palette in a Gradient, or to a generated one in any pattern (Surprise's): those
+// the Include row leaves (never greys while they're off, nor dull ones for Any and Bright: Surprise at "all" expanded
+// into greys); null before v308
+function inclExpandOk() {
+  if (gradIncl == null || (!gradV8() && (!genMade() || family === 'photo'))) return null;
+  const on = inclOn(gradIncl, emphasis);
+  // (a saved palette, or one handed over from Palette, is yours as it is: only the groups that are off are kept out)
+  if (!genMade())
+    return function (m) {
+      const g = inclGroup(m);
+      return !g || on[g];
+    };
+  return function (m) {
+    return inclKeep(m, emphasis, on);
+  };
+}
+// (v308) the Include row shows for a Gradient made since v308 that picks from your markers: Owned, or a palette with
+// Expand on (what it may add)
+function inclShow() {
+  if (!gradV8()) return false;
+  if (paletteSource === 'owned') return true;
+  return expand && seedPool(true).length > 0;
+}
+// The line under it: "130 of your markers · browns, greys, fluorescents off"; with few left (under INCL_HINT), what
+// turning one on would add ("Browns would add 9"); with too few for the Mood, how many came from outside it
+const INCL_HINT = 24;
+function inclStatus() {
+  const N = zoneList().length,
+    r = inclPool(Math.min(limitN, N)),
+    n = r.items.length,
+    on = inclOn(gradIncl, emphasis),
+    off = INCL_KEYS.filter(function (k) {
+      return !on[k];
+    }),
+    yours = isDemo() ? ' of the catalogue markers' : ' of your markers';
+  let t =
+    n +
+    yours +
+    (r.widened ? ' (' + r.widened + ' the nearest, as too few fit)' : '') +
+    (off.length
+      ? ' \u00b7 ' +
+        off
+          .map(function (k) {
+            return INCL_WORD[k];
+          })
+          .join(', ') +
+        ' off'
+      : '');
+  if (n < INCL_HINT && off.length) {
+    let best = null,
+      add = 0;
+    off.forEach(function (k) {
+      const o = Object.assign({}, gradIncl || {});
+      o[k] = true;
+      const d = inclPick(poolFor(palette), emphasis, o, Math.min(limitN, N)).items.length - n;
+      if (d > add) {
+        add = d;
+        best = k;
+      }
+    });
+    if (best) t += ' \u00b7 ' + INCL_LABEL[best].replace('&', '&amp;') + ' would add ' + add;
+  }
+  return t;
 }
 // the Gradient (and the Photo pattern before it has a photo) picks its own markers from the whole pool
 function gradFamily() {
@@ -2647,6 +3190,11 @@ function poolMsg() {
     one = grad && used >= N ? ': one per section' : '';
   if (src.seeded) {
     const saved = paletteSource === 'saved';
+    // (v308: a palette handed over from Palette is used as it is, as a saved one is)
+    if (!saved && fromPal)
+      return used >= n
+        ? 'All ' + n + ' of your palette\u2019s markers, as it is'
+        : 'From your palette\u2019s ' + n + ' markers' + one;
     if (n > src.seed)
       return (
         'From the palette\u2019s ' +
@@ -2691,11 +3239,12 @@ function poolMsg() {
   return head + one;
 }
 const LOOK_LABEL = { auto: 'Auto', smooth: 'Smooth', ltd: 'Light to dark' };
-// a saved palette the Gradient runs as a ramp (it doesn't go round the colour wheel): Shuffle has nothing to change
+// a saved palette (or one handed over from Palette, v308) the Gradient runs as a ramp (it doesn't go round the colour
+// wheel): Shuffle has nothing to change
 function savedRamp() {
-  if (paletteSource !== 'saved') return false;
+  if (paletteSource !== 'saved' && !(paletteSource === 'generate' && fromPal)) return false;
   const s = poolSource(limitN, true);
-  return s.seeded && !gradIsLoop(s.items);
+  return s.seeded && !gradIsLoop(s.items, gradV8());
 }
 // What Auto does (the note under Look): it goes by how many sections each marker covers
 function lookNote() {
@@ -2729,6 +3278,8 @@ function assignNow() {
 }
 // one pattern over the sections cl, from the live settings (a zone's, while zoneRun builds it)
 function assignOne(cl) {
+  // (laid again: the marker count says what it lays now, not what the guide opened with)
+  delete _mkOpened[zoneLive()];
   const pool = activePool();
   if (!pool.length) {
     note(
@@ -3119,8 +3670,23 @@ function setSavedSource(id) {
 // the saved palette a new guide will use: on the Guide screen's card and (v288) under Home's New colouring guide
 // Palette's Use in a guide › Recolour: the open guide's plan takes the palette and is laid again, from its Plan (from
 // Colour along it goes back to the Plan first; from Edit sections only with nothing edited: 'edits' otherwise)
+// (v308) `id` is a Library palette's id, or, for a palette not in the Library, the palette itself: { keys, name, h }
+// (Use in a guide had saved every palette it was given to the Library). Such a palette becomes the plan's own,
+// as Generate palette's (paletteSource 'generate', genPal its markers; its scheme the plan's when the plan has it).
+function palGiven(id) {
+  return !!id && typeof id === 'object' && Array.isArray(id.keys);
+}
+function useGivenPal(p) {
+  paletteSource = 'generate';
+  genPal = genPalKeys(p.keys.slice(0, 64));
+  if (GEN_HARMS.indexOf(p.h) >= 0) genHarmony = p.h;
+  // (and kept as it is until a new palette is asked for: Mood and Shuffle had made another, fromPal)
+  fromPal = { name: p.name || 'Palette', h: HARM[p.h] ? p.h : null };
+  palNote();
+  return true;
+}
 function recolourWith(id) {
-  if (!assignData) return setSavedSource(id);
+  if (!assignData) return palGiven(id) ? setNextPal(id) : setSavedSource(id);
   if (sfmode === 'review') {
     if (secEdPending()) return 'edits';
     edGoPlan();
@@ -3129,20 +3695,27 @@ function recolourWith(id) {
     exitColor();
   }
   if (sfmode !== 'guide') return false;
-  setSavedSource(id);
+  if (palGiven(id)) useGivenPal(id);
+  else setSavedSource(id);
   return reassign() !== false;
 }
 // A palette chosen for the next new guide while another is open (v288: Use in a guide › New guide with it) is held
 // here, apart from the open guide's plan, and becomes the new guide's when its photo is read (_loadImage).
 let _nextPal = null;
 function setNextPal(id) {
-  if (!assignData) return setSavedSource(id);
+  if (!assignData && !palGiven(id)) return setSavedSource(id);
   _nextPal = id;
   palNote();
   return true;
 }
 function takeNextPal() {
   if (_nextPal == null) return;
+  if (palGiven(_nextPal)) {
+    const p = _nextPal;
+    _nextPal = null;
+    useGivenPal(p);
+    return;
+  }
   // (only if it's still in the Library: deleted meanwhile, the new guide keeps the plan's own source)
   const id = _nextPal,
     there =
@@ -3170,7 +3743,8 @@ function palNote() {
   if (!el && !hm) return;
   var pl = null,
     pid = _nextPal != null ? _nextPal : paletteSource === 'saved' && !assignData ? savedPalId : null;
-  if (pid != null && api.listPalettes) {
+  if (palGiven(pid)) pl = pid;
+  else if (pid != null && api.listPalettes) {
     pl =
       api.listPalettes().filter(function (x) {
         return x.id === pid;
@@ -3211,7 +3785,12 @@ function surprise() {
   if (sfmode !== 'guide' || !labels) return;
   family = 'gradient';
   paletteSource = 'generate';
-  limitN = 8 + ((Math.random() * 16) | 0);
+  // (v308: the marker count is kept when it's 9 or more, "all" too; else 8 to 23 as before. Drawn either way, so the
+  // rest is drawn as it was. A guide saved before v308 gets the Include row, as the Mood has it: its expansion never
+  // brings greys while they're off)
+  const nDraw = 8 + ((Math.random() * 16) | 0);
+  if (!(limitN >= 9)) limitN = nDraw;
+  if (!gradIncl) gradIncl = {};
   var harms = ['analogous', 'analogous', 'split', 'split', 'complementary', 'triadic', 'tetradic'].filter(
       function (h) {
         return GEN_HARMS.indexOf(h) >= 0 && HARM_RANGE[h][0] <= limitN;
@@ -3227,6 +3806,8 @@ function surprise() {
   else if (ar < 0.72) shapes = ['vertical', 'serpentine', 'radial'];
   else shapes = ['radial', 'serpentine', 'radial', 'diagonal'];
   gradShape = shapes[(Math.random() * shapes.length) | 0];
+  // (v308: a mandala-like page goes Around, not Radial, whose rings cut across its petals)
+  if (gradShape === 'radial' && gradMandala()) gradShape = 'around';
   dir = Math.random() < 0.5 ? 1 : -1;
   gradSeed = Math.random();
   // a Mood and a Look, mostly Any and Auto

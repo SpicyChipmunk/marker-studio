@@ -196,11 +196,18 @@ test('Colour it keeps the plan’s Undo: Undo leaves the paper white again, Redo
   const m0 = await markers(page);
   await page.click('.sftabbtn[data-t="pattern"]');
   await idle(page);
-  await page.click('#sfVary');
-  await idle(page);
-  const m1 = await markers(page);
+  // (v308: a Shuffle of this page's 8 sections can now and then lay the same markers again, as it did once in WebKit
+  // on GitHub: Shuffle again until they differ; any Shuffle that changed nothing leaves the markers as m0, so one Undo
+  // after Colour it's still brings m0 back)
+  let m1 = m0;
+  for (let i = 0; i < 6 && JSON.stringify(m1) === JSON.stringify(m0); i++) {
+    await page.click('#sfVary');
+    await idle(page);
+    m1 = await markers(page);
+  }
   assert.notDeepEqual(m1, m0, 'shuffled');
-  assert.equal(await page.evaluate(() => __mstest.planCount), 1);
+  const k = await page.evaluate(() => __mstest.planCount);
+  assert.ok(k >= 1);
   await page.click('#sfFrameColour');
   await idle(page);
   const m2 = await markers(page);
@@ -208,7 +215,7 @@ test('Colour it keeps the plan’s Undo: Undo leaves the paper white again, Redo
   assert.deepEqual(without(m2, p), m1, 'the rest keep their markers');
   assert.equal(
     await page.evaluate(() => __mstest.planCount),
-    2,
+    k + 1,
     'the Shuffle step is kept, and Colour it is one more',
   );
   assert.equal(await live(page), STEP);

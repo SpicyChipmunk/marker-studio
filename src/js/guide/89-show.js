@@ -381,7 +381,18 @@ function showDrawPaper(g, M, L, src, k, at) {
   g.save();
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'high';
-  g.drawImage(src, cr.x * k, cr.y * k, cr.w * k, cr.h * k, A.x, A.y, A.w, A.h);
+  // (v308: from the screen's picture, the photo's debris painted out as the PDF and Save image leave it out: the
+  // part made once per showing, M.clean)
+  if (src === cv && M.clean === undefined) M.clean = outCleanPart(src, cr, k);
+  const cl = src === cv ? M.clean : null;
+  if (cl) {
+    const sx = A.w / cr.w,
+      sy = A.h / cr.h;
+    g.beginPath();
+    g.rect(A.x, A.y, A.w, A.h);
+    g.clip();
+    g.drawImage(cl.c, A.x + (cl.x - cr.x) * sx, A.y + (cl.y - cr.y) * sy, cl.w * sx, cl.h * sy);
+  } else g.drawImage(src, cr.x * k, cr.y * k, cr.w * k, cr.h * k, A.x, A.y, A.w, A.h);
   g.restore();
 }
 // the title, the line of what it took, the ribbon and the codes (ox, oy: where the caption's own canvas starts)
@@ -733,7 +744,7 @@ function shareCard() {
   const S = _show,
     send = function (blob) {
       if (!blob) {
-        note('Couldn’t make the image.');
+        note(errNote('Couldn’t make the image.', 'Reveal’s picture', 'it couldn’t be encoded'));
         return;
       }
       shareOrSave(blob, 'marker-studio-card.png', curName || 'My colouring', 'image', 'Image downloaded.');

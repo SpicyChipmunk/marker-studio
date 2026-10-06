@@ -78,7 +78,7 @@ test('each zone’s Roundness, Highlights and Shadows change its own sections on
   await page.selectOption('#sfHiStyle', 'paper'); await idle(page);
   assert.equal(await undoLabel(page), 'Undo: Bell: Highlights: Paper white');
   await slide(page, 'sfShLo', 90); await idle(page);
-  assert.equal(await undoLabel(page), 'Undo: Bell: Shadow changed');
+  assert.equal(await undoLabel(page), 'Undo: Bell: Shadow amount: 90%'); // (v308: as the slider is named)
   const m1 = await sec(page, mz), b1 = await sec(page, bz);
   assert.deepEqual(m1, m0, 'Main\'s section is as it was');
   assert.equal(b1.t.paper, true);

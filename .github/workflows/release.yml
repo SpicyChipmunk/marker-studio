@@ -1,0 +1,70 @@
+name: release
+# Puts a tested commit on the `release` branch, which GitHub Pages serves to testers (docs/RELEASING.md). Run it by
+# hand: Actions › release › Run workflow. It checks that the "tests" run for that exact commit passed (Chromium; the
+# WebKit job only reports) and that index.html is built from src/, then moves `release` to it. A move backwards (to an
+# older commit) is refused unless "Roll back" is ticked.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or commit to release
+        required: true
+        default: master
+      rollback:
+        description: Roll back (allow moving release to an older commit)
+        type: boolean
+        default: false
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    name: release ${{ inputs.ref }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Find the commit
+        id: commit
+        env:
+          REF: ${{ inputs.ref }}
+        run: |
+          sha=$(git rev-parse --verify --quiet "origin/$REF^{commit}" || git rev-parse --verify --quiet "$REF^{commit}" || true)
+          if [ -z "$sha" ]; then echo "::error::No branch or commit called $REF"; exit 1; fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Releasing $sha: $(git log -1 --format=%s "$sha")"
+      - name: Its tests passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          result=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/test.yml/runs?head_sha=$SHA&per_page=20" \
+            --jq '[.workflow_runs[] | select(.status == "completed") | .conclusion] | if index("success") then "success" elif length == 0 then "none" else .[0] end')
+          echo "tests for $SHA: $result"
+          if [ "$result" != "success" ]; then
+            echo "::error::The tests haven't passed for $SHA ($result). Wait for the tests run on that commit to finish green, then run this again."
+            exit 1
+          fi
+      - name: index.html is built from src/
+        run: |
+          git checkout --quiet "${{ steps.commit.outputs.sha }}"
+          node scripts/build.mjs --check
+      - name: Move release to it
+        env:
+          SHA: ${{ steps.commit.outputs.sha }}
+          ROLLBACK: ${{ inputs.rollback }}
+        run: |
+          if git rev-parse --verify --quiet origin/release >/dev/null; then
+            if ! git merge-base --is-ancestor origin/release "$SHA" && [ "$ROLLBACK" != "true" ]; then
+              echo "::error::release has commits that $SHA doesn't. To go back to an older commit on purpose, tick Roll back."
+              exit 1
+            fi
+          fi
+          git push --force origin "$SHA:refs/heads/release"
+          echo "### Released $(git log -1 --format='%h %s' "$SHA")" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub Pages now publishes it (Actions › pages build and deployment), usually within a few minutes." >> "$GITHUB_STEP_SUMMARY"

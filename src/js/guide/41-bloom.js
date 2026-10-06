@@ -13,18 +13,24 @@ let _bloom = null,
   // (the last one's setting-up time and frame times, for the tests)
   bloomLast = null;
 // A device that can't draw it smoothly doesn't get it: when setting up takes too long or the first frames come slowly,
-// the bloom ends there (the guide shows as usual) and stays off on this device from then on. (In the browser tests
-// only when a test asks: a test machine's speed says nothing about an iPad's.)
+// the bloom ends there (the guide shows as usual) and stays off until the app is next launched (v308: it had stayed off
+// for good, so one busy moment meant never seeing it again; a launch checks again). (In the browser tests only when a
+// test asks: a test machine's speed says nothing about an iPad's.)
 const BLOOM_SLOW_KEY = 'ms-bloom-slow';
+// (kept for this launch: a reload in the same tab is the same launch, a new one starts afresh)
 function bloomSlow() {
   try {
-    localStorage.setItem(BLOOM_SLOW_KEY, '1');
+    sessionStorage.setItem(BLOOM_SLOW_KEY, '1');
   } catch (_) {}
 }
+// (v308) the lasting "too slow" an earlier version kept is let go, so it's checked again
+try {
+  localStorage.removeItem(BLOOM_SLOW_KEY);
+} catch (_) {}
 function bloomWanted() {
   if (window.__MS_TEST && !window.__MS_BLOOM) return false;
   try {
-    if (localStorage.getItem(BLOOM_SLOW_KEY) === '1') return false;
+    if (sessionStorage.getItem(BLOOM_SLOW_KEY) === '1') return false;
   } catch (_) {}
   return !reducedMotion();
 }
@@ -194,7 +200,7 @@ function bloomStart() {
       if (now - last > 100) s0 += now - last - 17;
     }
     last = now;
-    // (the first frames come slowly, on average over 45 ms: not smooth here, so it ends now and stays off)
+    // (the first frames come slowly, on average over 45 ms: not smooth here, so it ends now and stays off this launch)
     if (B.frames.length === 6) {
       const avg = B.frames.slice(1).reduce((a, b) => a + b, 0) / 5;
       if (avg > (window.__MS_BLOOM_FRAME_MAX || (window.__MS_TEST ? Infinity : 45))) {
