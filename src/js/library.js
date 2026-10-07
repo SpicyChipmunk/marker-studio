@@ -626,7 +626,7 @@ function renderRecent() {
   var nb = document.getElementById('homeNew');
   // (beside the Continue card, a new guide is the second choice)
   if (nb) nb.classList.toggle('homenew2', !!cont);
-  // (v289: on an iPad, once Your guides shows with its All guides link, the Library card would be a third way there)
+  // (hasall: Your guides shows, with its All guides link; the Library card stays beside it, v308.1)
   var hub = document.querySelector('#homeView .homehub');
   if (hub) hub.classList.toggle('hasall', !!gs.length);
   if (!gs.length) {

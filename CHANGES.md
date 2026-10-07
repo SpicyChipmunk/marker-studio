@@ -508,3 +508,10 @@ Everything from the eight-reviewer beta-readiness review of v307 (all major, min
 **From v308's first GitHub run**
 - The ⋯ menu test expects the Help group without its heading. Leaving Focus mode on a finished page places the Page finished panel once more when the pinned picture has settled (it could be left under the picture: flaky in WebKit).
 - The release workflow and its docs name `main`, the repository's branch. WebKit on GitHub runs in 10 parts (a part of 8 reached its 30-minute limit); every file's time is from this run.
+
+# Changes — v308.1 (from the beta)
+
+- On an iPad, Home keeps its Library card beside Your guides. Since v289 it was hidden there once any guide was saved (All guides led to the Library instead), so restoring a backup made it vanish, and with it the way to palettes and backups.
+- On an iPad, a guide in progress makes Home's Continue card run across the page, its picture beside its words, with New colouring guide and the Markers, Palette and Library cards (three in a row) under it. Side by side, the tall picture had left an empty column beside the short cards. Phones, and Home before a guide is in progress, are as they were.
+- Tests: guide-frame's picture-size test allows a pixel either way (flaky once in WebKit on v308's run).
+- Cache bumped to `marker-studio-v308.1`.

@@ -212,9 +212,13 @@ test('v285: the Continue card is the newest guide part-way coloured — its pict
   assert.match(await page.getAttribute('#homeCont .hccard', 'aria-label'), new RegExp(`^Continue colouring .+: 7 of ${n} sections coloured, next .+$`));
   assert.equal(await page.evaluate(() => document.getElementById('homeNew').classList.contains('homenew2')), true, 'New colouring guide is the second choice beside it');
   assert.deepEqual(await page.$$eval('#sfRecent .sfRecName', (l) => l.map((x) => x.textContent)), ['Sample jellyfish'], 'Your guides: the others');
-  // iPad portrait: the Continue card on the left, the rest beside it
-  const c = await hrect(page, '#homeCont'), nb = await hrect(page, '#homeNew');
-  assert.ok(c.right <= nb.left + 1 && Math.abs(c.top - nb.top) < 4, 'side by side: ' + JSON.stringify([c, nb]));
+  // iPad portrait (v308.1): the Continue card across the page, its picture beside its words; New colouring guide and
+  // the cards under it, the cards three in a row
+  const c = await hrect(page, '#homeCont'), nb = await hrect(page, '#homeNew'), pic = await hrect(page, '#homeCont .hcpic'), body = await hrect(page, '#homeCont .hcbody');
+  assert.ok(nb.top >= c.bottom && Math.abs(nb.width - c.width) <= 1, 'New colouring guide under it, as wide: ' + JSON.stringify([c, nb]));
+  assert.ok(pic.right <= body.left + 1 && Math.abs(pic.top - body.top) < 2, 'its picture beside its words');
+  const cards = await page.$$eval('#homeView .homegrid .homecard', (l) => l.map((e) => Math.round(e.getBoundingClientRect().top)));
+  assert.equal(new Set(cards).size, 1, 'the cards in one row: ' + cards);
   // the marker to pick up: the one part-way done, lightest first
   const want = await page.evaluate(() => document.querySelector('#homeCont .hcmeta b').textContent);
   await page.click('#homeCont .hccard');

@@ -43,7 +43,9 @@ test('picture size: 55% shrinking with the scroll to 45% (40% under 780px tall);
     else assert.ok(tabsB + 76 <= barT + 1, 'room for the tabs and a row');
     assert.ok(tabsB <= barT, 'the tabs on the first screen');
     full = full0;
-    assert.deepEqual(await page.evaluate(() => [__mstest.geo.full, __mstest.geo.comp]), [full, floor]);
+    // (the measured picture within a pixel of the size the app worked out: a fraction can round either way, v308 run)
+    const geo = await page.evaluate(() => [__mstest.geo.full, __mstest.geo.comp]);
+    assert.ok(Math.abs(geo[0] - full) <= 1 && geo[1] === floor, `${w}×${h}: the app's sizes ${geo}, measured ${full}`);
     const top0 = await page.evaluate(() => document.getElementById('sfView').getBoundingClientRect().top + scrollY);
     // in step with the scroll: 30px past the block's top takes 30px off, with the picture's top kept at the screen top
     await scrollAt(page, Math.round(top0) + 30);

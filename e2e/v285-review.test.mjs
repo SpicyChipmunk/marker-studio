@@ -104,15 +104,17 @@ test('the marker sets’ caret stays a line icon as the list opens and closes', 
   assert.deepEqual(errors, []);
 });
 
-test('on an iPad Home uses the width: the Continue card and the cards side by side, not the phone’s 440px column', async () => {
+test('on an iPad Home uses the width: the Continue card across it, the cards three in a row under it, not the phone’s 440px column', async () => {
   for (const [w, h] of [[1194, 834], [834, 1194]]) {
     const { page, errors, ctx } = await openApp({ width: w, height: h });
     await sampleGuide(page); await saveGuide(page);
     await tickInCode(page, 0); await page.evaluate(() => __mstest.flushSave()); await idle(page);
     await page.click('#mHome'); await idle(page);
-    const g = await page.evaluate(() => { const r = (s) => document.querySelector(s).getBoundingClientRect(); return { hub: r('.homehub').width, cont: r('#homeCont').width, side: r('.homeside').left, contR: r('#homeCont').right }; });
+    // (v308.1: the Continue card across the page with the cards under it; side by side, its tall picture had left an
+    // empty column beside the short cards)
+    const g = await page.evaluate(() => { const r = (s) => document.querySelector(s).getBoundingClientRect(); return { hub: r('.homehub').width, cont: r('#homeCont').width, sideT: r('.homeside').top, contB: r('#homeCont').bottom, rows: new Set([...document.querySelectorAll('#homeView .homegrid .homecard')].map((e) => Math.round(e.getBoundingClientRect().top))).size }; });
     assert.ok(g.hub > 700, `${w}×${h}: Home is ${g.hub}px wide`);
-    assert.ok(g.cont > 380 && g.side >= g.contR, `${w}×${h}: the Continue card (${g.cont}px) with the cards beside it`);
+    assert.ok(g.cont > g.hub - 2 && g.sideT >= g.contB && g.rows === 1, `${w}×${h}: the Continue card (${g.cont}px) across, the cards in a row under it`);
     assert.deepEqual(errors, []);
     await ctx.close();
   }

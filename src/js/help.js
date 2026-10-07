@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v308.1',
+    t: 'Home on an iPad: the guide you’re colouring across the top, with Markers, Palette and Library in a row under it. The Library no longer disappears after restoring a backup.',
+  },
+  {
     v: 'v308',
     t: 'Gradients at “all” stay clear and bright: choose whether browns, greys and fluorescents join in, and set the count with − and +. Photographed pages straighten and tilt better, the printed key is easier to read, restoring a backup keeps your markers unless you say otherwise, and Send feedback is at the foot of Home.',
   },

@@ -7286,11 +7286,8 @@ button.sfSeeAll {
   font-size: var(--t-sm);
   line-height: 1.4;
 }
-@media (min-width: 700px) {
-  #homeView .homehub.hasall #homeLibCard {
-    display: none;
-  }
-}
+/* (v308.1: the Library card stays on an iPad beside Your guides; v289 hid it there, and it vanished as a restore brought
+   guides in. It's also the way to palettes and backups.) */
 .libstat {
   font-size: var(--t-sm);
   color: var(--sub);
@@ -7686,6 +7683,62 @@ button.hcpic:focus-visible {
   }
   .sfRecList .sfRecCard:nth-child(n + 4) {
     display: none;
+  }
+}
+/* (v308.1) a guide in progress on an iPad: the Continue card across the page, its picture beside its words, then New
+   colouring guide and the three cards in a row under it. Side by side, the picture's tall card had left an empty
+   column beside the short cards. (The start card, before a guide is in progress, keeps its two columns.) */
+@media (min-width: 700px) {
+  #homeView .homehub:not(.hasstart) .hometop {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #homeView .homehub:not(.hasstart) .hccard {
+    flex-direction: row;
+  }
+  #homeView .homehub:not(.hasstart) .hcpic {
+    width: 46%;
+    height: clamp(260px, 30vh, 360px);
+  }
+  #homeView .homehub:not(.hasstart) .hcbody {
+    justify-content: center;
+    gap: 10px;
+    padding: 24px clamp(20px, 3vw, 32px);
+  }
+  #homeView .homehub:not(.hasstart) .hcname {
+    font-size: var(--t-xl);
+  }
+  #homeView .homehub:not(.hasstart) .hcgo {
+    margin-top: 8px;
+  }
+  #homeView .homehub:not(.hasstart) .homegrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  /* (each card: its icon, then its name over its line, the two together in the card's middle) */
+  #homeView .homehub:not(.hasstart) .homecard {
+    display: grid;
+    grid-template-columns: auto minmax(0, max-content);
+    justify-content: center;
+    grid-template-rows: auto auto;
+    align-content: center;
+    column-gap: 12px;
+    row-gap: 2px;
+  }
+  #homeView .homehub:not(.hasstart) .homecard .hcicon {
+    grid-row: 1 / 3;
+    align-self: center;
+  }
+  #homeView .homehub:not(.hasstart) .homecard .hclabel,
+  #homeView .homehub:not(.hasstart) .homecard .hcsub {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #homeView .homehub:not(.hasstart) .homecard .hclabel {
+    align-self: end;
+  }
+  #homeView .homehub:not(.hasstart) .homecard .hcsub {
+    align-self: start;
   }
 }
 @media (min-width: 1000px) {
@@ -10380,7 +10433,7 @@ button.wrm {
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v308</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v308.1</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><button id="presetHdr" class="presethdr" aria-expanded="false"><span>Add a set you own</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><div id="presetBody" style="display:none"><div class="presethint">Tick the boxes for the marker sets you own, then add them all at once.</div><div id="presetList"></div><div class="presetfoot"><button id="presetAdd" class="btn-primary" disabled>Add markers</button><button id="presetReset">Clear collection</button></div></div><button id="scanOpen" class="presethdr scanopen"><span>Scan or type codes</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -16629,7 +16682,7 @@ function renderRecent() {
   var nb = document.getElementById('homeNew');
   // (beside the Continue card, a new guide is the second choice)
   if (nb) nb.classList.toggle('homenew2', !!cont);
-  // (v289: on an iPad, once Your guides shows with its All guides link, the Library card would be a third way there)
+  // (hasall: Your guides shows, with its All guides link; the Library card stays beside it, v308.1)
   var hub = document.querySelector('#homeView .homehub');
   if (hub) hub.classList.toggle('hasall', !!gs.length);
   if (!gs.length) {
@@ -65173,6 +65226,10 @@ function renderHomeNotes() {
 // newer than the version last seen (ms-last-ver), up to four (not on a fresh install); Help › About lists this
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v308.1',
+    t: 'Home on an iPad: the guide you’re colouring across the top, with Markers, Palette and Library in a row under it. The Library no longer disappears after restoring a backup.',
+  },
   {
     v: 'v308',
     t: 'Gradients at “all” stay clear and bright: choose whether browns, greys and fluorescents join in, and set the count with − and +. Photographed pages straighten and tilt better, the printed key is easier to read, restoring a backup keeps your markers unless you say otherwise, and Send feedback is at the foot of Home.',

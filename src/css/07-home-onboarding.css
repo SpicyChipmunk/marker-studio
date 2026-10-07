@@ -740,11 +740,8 @@ button.sfSeeAll {
   font-size: var(--t-sm);
   line-height: 1.4;
 }
-@media (min-width: 700px) {
-  #homeView .homehub.hasall #homeLibCard {
-    display: none;
-  }
-}
+/* (v308.1: the Library card stays on an iPad beside Your guides; v289 hid it there, and it vanished as a restore brought
+   guides in. It's also the way to palettes and backups.) */
 .libstat {
   font-size: var(--t-sm);
   color: var(--sub);
@@ -1140,6 +1137,62 @@ button.hcpic:focus-visible {
   }
   .sfRecList .sfRecCard:nth-child(n + 4) {
     display: none;
+  }
+}
+/* (v308.1) a guide in progress on an iPad: the Continue card across the page, its picture beside its words, then New
+   colouring guide and the three cards in a row under it. Side by side, the picture's tall card had left an empty
+   column beside the short cards. (The start card, before a guide is in progress, keeps its two columns.) */
+@media (min-width: 700px) {
+  #homeView .homehub:not(.hasstart) .hometop {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #homeView .homehub:not(.hasstart) .hccard {
+    flex-direction: row;
+  }
+  #homeView .homehub:not(.hasstart) .hcpic {
+    width: 46%;
+    height: clamp(260px, 30vh, 360px);
+  }
+  #homeView .homehub:not(.hasstart) .hcbody {
+    justify-content: center;
+    gap: 10px;
+    padding: 24px clamp(20px, 3vw, 32px);
+  }
+  #homeView .homehub:not(.hasstart) .hcname {
+    font-size: var(--t-xl);
+  }
+  #homeView .homehub:not(.hasstart) .hcgo {
+    margin-top: 8px;
+  }
+  #homeView .homehub:not(.hasstart) .homegrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  /* (each card: its icon, then its name over its line, the two together in the card's middle) */
+  #homeView .homehub:not(.hasstart) .homecard {
+    display: grid;
+    grid-template-columns: auto minmax(0, max-content);
+    justify-content: center;
+    grid-template-rows: auto auto;
+    align-content: center;
+    column-gap: 12px;
+    row-gap: 2px;
+  }
+  #homeView .homehub:not(.hasstart) .homecard .hcicon {
+    grid-row: 1 / 3;
+    align-self: center;
+  }
+  #homeView .homehub:not(.hasstart) .homecard .hclabel,
+  #homeView .homehub:not(.hasstart) .homecard .hcsub {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #homeView .homehub:not(.hasstart) .homecard .hclabel {
+    align-self: end;
+  }
+  #homeView .homehub:not(.hasstart) .homecard .hcsub {
+    align-self: start;
   }
 }
 @media (min-width: 1000px) {

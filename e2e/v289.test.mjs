@@ -256,7 +256,7 @@ test('Library: the line under the title fits what is there', async () => {
   assert.deepEqual(errors, []);
 });
 
-test('iPad Home: with Your guides showing, no Library card (All guides goes there); the backup card waits the usual 14 days', async () => {
+test('iPad Home: with Your guides showing, the Library card stays beside All guides (v308.1); the backup card waits the usual 14 days', async () => {
   const g = (id, d) => ({ id, type: 'guide', name: 'G' + id, keys: ['Ohuhu|R014', 'Ohuhu|Y111'], n: 40, done: d, ts: Date.now() - id });
   const st = (first) => ({ 'ms-onboarded': '1', 'ms-setup-tip': '1', 'ms-last-ver': 'v289', 'ms-first-use': String(Date.now() - first * 864e5), 'ohuhu-hb320-picker-v3': JSON.stringify({ mode: 'home', ownedSeedV: 2, copicAdd1: 1, libAdj1: 1, setFix1: 1, owned: ['Ohuhu|R014', 'Ohuhu|Y111'], saved: [g(1, 5), g(2, 9), g(3, 0)] }) });
   // (v304: in a Safari tab a guide's first coloured section brings the backup card at once (v304-persist); the
@@ -266,7 +266,8 @@ test('iPad Home: with Your guides showing, no Library card (All guides goes ther
     const { page, errors, ctx } = await openApp({ width: 834, height: 1194, storage: st(1), userAgent: CHROME });
     await idle(page);
     assert.equal(await page.isVisible('#sfRecent'), true);
-    assert.equal(await page.isVisible('#homeLibCard'), false, 'no Library card beside All guides');
+    // (v308.1: it had been hidden here since v289, so it vanished from Home once a restore brought guides in)
+    assert.equal(await page.isVisible('#homeLibCard'), true, 'the Library card beside All guides');
     assert.equal(await page.isVisible('#backupNudge'), false, 'no backup card on day one, however many guides');
     assert.deepEqual(errors, []);
     await ctx.close();
