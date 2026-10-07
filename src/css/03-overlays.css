@@ -16,6 +16,11 @@
 .overlay.on {
   display: flex;
 }
+/* (v308.1, layers.js) the page under an open dialog or the Library stays still */
+html.ms-ovl,
+html.ms-ovl body {
+  overflow: hidden;
+}
 .ocard {
   max-width: 100%;
   max-height: 100%;

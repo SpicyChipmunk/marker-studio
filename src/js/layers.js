@@ -52,6 +52,21 @@ function openDialog(el) {
 function closeDialog(el) {
   el.classList.remove('on');
 }
+// (v308.1) while a dialog or the Library is open, the page under it doesn't scroll: a swipe on the Library could
+// scroll Home behind it instead, and on an iPad that moved Safari's bars and showed a strip of Home at the foot.
+// Watches every overlay, however it opens, and the questions (askBox) added to the page and taken off it.
+(function () {
+  if (typeof MutationObserver !== 'function') return;
+  const sync = function () {
+    document.documentElement.classList.toggle('ms-ovl', dialogOpen());
+  };
+  const mo = new MutationObserver(sync);
+  document.querySelectorAll('.overlay').forEach(function (o) {
+    mo.observe(o, { attributes: true, attributeFilter: ['class'] });
+  });
+  if (document.body) mo.observe(document.body, { childList: true });
+  sync();
+})();
 // a dialog's Escape isn't stopped or marked used, as before this file: nothing further on listens for it
 addLayer({
   name: 'dialog',
