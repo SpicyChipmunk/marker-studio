@@ -1,4 +1,4 @@
-const CACHE='marker-studio-v308.4';
+const CACHE='marker-studio-v308.6';
 // (v308) the app is one page, stored once as ./index.html: every load of it (./, ./index.html, any query) is answered
 // from that copy, so an update downloads it once (it had been fetched and kept twice, as ./ and ./index.html)
 const CORE=['./index.html'];

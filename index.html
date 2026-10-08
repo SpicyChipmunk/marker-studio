@@ -10470,7 +10470,7 @@ button.wrm {
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v308.4</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v308.6</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><button id="presetHdr" class="presethdr" aria-expanded="false"><span>Add a set you own</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><div id="presetBody" style="display:none"><div class="presethint">Tick the boxes for the marker sets you own, then add them all at once.</div><div id="presetList"></div><div class="presetfoot"><button id="presetAdd" class="btn-primary" disabled>Add markers</button><button id="presetReset">Clear collection</button></div></div><button id="scanOpen" class="presethdr scanopen"><span>Scan or type codes</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -10724,6 +10724,18 @@ function errNote(words, where, err) {
   errLog(where, err);
   return words + errBtns();
 }
+// (v308.5) what Scan's box was sent, kept for Copy diagnostics: the last SCAN_TRACE_MAX events this visit (the event,
+// its kind, how much text, the first characters). Scan Text on an iPad stopped after the first cap with nothing to
+// see from here.
+const SCAN_TRACE_MAX = 120,
+  scanTrace = [];
+let scanTrace0 = 0;
+function scanTraceAdd(s) {
+  const now = Date.now();
+  if (!scanTrace0) scanTrace0 = now;
+  scanTrace.push(((now - scanTrace0) / 1000).toFixed(2) + ' ' + s);
+  if (scanTrace.length > SCAN_TRACE_MAX) scanTrace.splice(0, scanTrace.length - SCAN_TRACE_MAX);
+}
 function errDetails() {
   return diagHead()
     .concat(
@@ -10739,6 +10751,7 @@ function errDetails() {
         );
       }),
     )
+    .concat(scanTrace.length ? ['\nScan box, this visit:'].concat(scanTrace) : [])
     .join('\n');
 }
 // Send feedback's report: room to write first, then the details (the last few errors in a line each), kept short
@@ -63394,6 +63407,8 @@ function openScan() {
     if (pr && pr.catch) pr.catch(function () {});
   } catch (_) {}
   scanOpener = document.activeElement;
+  // (no Scan Text session can be open yet: a composition left marked open by an earlier visit is over)
+  scanIme = false;
   const auto = scanBrandAuto();
   if (!scanBrandChosen) scanBrand = auto;
   scanBrandButtons();
@@ -63412,12 +63427,19 @@ function openScan() {
 }
 // (v303) text still in the box, typed without Enter or just put in by Scan Text, is read before the box is let go of
 // (Add and Close had thrown it away)
+// (v308.6: Scan Text's text, a composition still open, is read but left for Scan Text to take out: see the box's set)
+let scanIme = false;
 function scanFlushBox(loud) {
   const bx = $('scBox');
   if (!bx || !bx.value.trim()) return;
   clearTimeout(scanStill);
   const v = bx.value;
   if (v !== scanText) scanHandle(v, loud);
+  if (scanIme) {
+    scanText = v;
+    scanRender();
+    return;
+  }
   scanText = '';
   bx.value = '';
   bx.dispatchEvent(new Event('scanreset'));
@@ -63629,6 +63651,28 @@ function scanAdd() {
       scanFocusBox();
     }
   });
+  // (v308.5) Copy diagnostics' trace of what the box is sent (safety.js scanTraceAdd)
+  const tr = function (what, e) {
+    if (typeof scanTraceAdd !== 'function') return;
+    const v = box.value || '';
+    scanTraceAdd(
+      what +
+        (e && e.inputType ? ' ' + e.inputType : '') +
+        (e && e.isComposing ? ' composing' : '') +
+        (e && typeof e.data === 'string' ? ' data:' + e.data.length : '') +
+        ' value:' +
+        v.length +
+        (v ? ' "' + v.slice(0, 18) + '"' : '') +
+        (document.activeElement === box ? '' : ' (box not focused)'),
+    );
+  };
+  ['beforeinput', 'compositionstart', 'compositionupdate', 'compositionend', 'focus', 'blur'].forEach(
+    function (k) {
+      box.addEventListener(k, function (e) {
+        tr(k, e);
+      });
+    },
+  );
   // sound can only start from a tap
   box.addEventListener('pointerdown', function () {
     try {
@@ -63652,10 +63696,25 @@ function scanAdd() {
   box.addEventListener('keydown', function () {
     keyAt = Date.now();
   });
+  // (v308.6) Scan Text on iPadOS 27 puts what it reads in as a composition (insertCompositionText) and takes it out
+  // itself (deleteCompositionText) when the cap leaves view. Clearing the box while that composition is open broke
+  // Scan Text for the rest of the visit: the camera went on reading, nothing more arrived. So the box is never cleared
+  // by the app during a composition; Scan Text clears its own text, and the next cap is read as it arrives.
+  box.addEventListener('compositionstart', function () {
+    scanIme = true;
+  });
+  box.addEventListener('compositionend', function () {
+    scanIme = false;
+  });
   const set = function (v) {
+    if (scanIme && v === '') {
+      if (typeof scanTraceAdd === 'function') scanTraceAdd('left for Scan Text to clear');
+      return;
+    }
     box.value = v;
     was = v;
     scanAddState();
+    if (typeof scanTraceAdd === 'function') scanTraceAdd('cleared by the app' + (v ? ' to ' + v.length : ''));
   };
   // (v299) pend: text read and about to be cleared; waiting: text arrived and waits to hold still
   let pend = '',
@@ -63666,7 +63725,8 @@ function scanAdd() {
     if (text !== scanText) {
       scanText = text;
       wasN = scanHandle(text, false);
-    }
+      if (typeof scanTraceAdd === 'function') scanTraceAdd('read: ' + wasN + ' found');
+    } else if (typeof scanTraceAdd === 'function') scanTraceAdd('held still, read already');
     pend = text;
     scanStill = setTimeout(
       function () {
@@ -63683,6 +63743,7 @@ function scanAdd() {
     waiting = false;
   });
   box.addEventListener('input', function (e) {
+    tr('input', e);
     clearTimeout(scanStill);
     // (Add reads text left in the box: on while there's some)
     scanAddState();
@@ -63707,6 +63768,12 @@ function scanAdd() {
     }
     pend = '';
     if (typed) return; // typing
+    if (e.inputType === 'deleteCompositionText' && !v) {
+      // (Scan Text took its text out: the next cap is read afresh)
+      pend = '';
+      scanText = '';
+      return;
+    }
     if (e.inputType && e.inputType.indexOf('delete') === 0) return;
     if (
       ANDROID &&
@@ -65833,6 +65900,14 @@ function renderHomeNotes() {
 // newer than the version last seen (ms-last-ver), up to four (not on a fresh install); Help › About lists this
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v308.6',
+    t: 'Fix: Scan Text reads cap after cap again on iPadOS 27, without closing and reopening Scan.',
+  },
+  {
+    v: 'v308.5',
+    t: 'Copy diagnostics (Help › About) now includes what Scan’s box received, to help track down a Scan Text problem.',
+  },
   {
     v: 'v308.4',
     t: 'Fix: Scan Text reads cap after cap again, without closing and reopening Scan.',

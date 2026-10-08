@@ -199,6 +199,18 @@ function errNote(words, where, err) {
   errLog(where, err);
   return words + errBtns();
 }
+// (v308.5) what Scan's box was sent, kept for Copy diagnostics: the last SCAN_TRACE_MAX events this visit (the event,
+// its kind, how much text, the first characters). Scan Text on an iPad stopped after the first cap with nothing to
+// see from here.
+const SCAN_TRACE_MAX = 120,
+  scanTrace = [];
+let scanTrace0 = 0;
+function scanTraceAdd(s) {
+  const now = Date.now();
+  if (!scanTrace0) scanTrace0 = now;
+  scanTrace.push(((now - scanTrace0) / 1000).toFixed(2) + ' ' + s);
+  if (scanTrace.length > SCAN_TRACE_MAX) scanTrace.splice(0, scanTrace.length - SCAN_TRACE_MAX);
+}
 function errDetails() {
   return diagHead()
     .concat(
@@ -214,6 +226,7 @@ function errDetails() {
         );
       }),
     )
+    .concat(scanTrace.length ? ['\nScan box, this visit:'].concat(scanTrace) : [])
     .join('\n');
 }
 // Send feedback's report: room to write first, then the details (the last few errors in a line each), kept short

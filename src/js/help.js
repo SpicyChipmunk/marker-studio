@@ -5,6 +5,14 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v308.6',
+    t: 'Fix: Scan Text reads cap after cap again on iPadOS 27, without closing and reopening Scan.',
+  },
+  {
+    v: 'v308.5',
+    t: 'Copy diagnostics (Help › About) now includes what Scan’s box received, to help track down a Scan Text problem.',
+  },
+  {
     v: 'v308.4',
     t: 'Fix: Scan Text reads cap after cap again, without closing and reopening Scan.',
   },

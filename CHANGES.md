@@ -548,3 +548,13 @@ Seven decisions, each pressure-tested with measurements first, built on three br
 
 - Scan Text reads cap after cap again. v308.1's page lock under an open dialog held the page while Scan's box had the keyboard; on an iPad, Scan Text then stopped after the first cap until Scan was closed and opened again. The lock now lets go while a box in a dialog is being typed in (Scan's, Match's, the Library's search) and holds again when it's let go of. New: `e2e/v3084` (2).
 - Cache bumped to `marker-studio-v308.4`.
+
+# Changes — v308.5 (finding Scan Text's stop)
+
+- v308.4 didn't fix Scan Text stopping after the first cap on Ben's iPad (Home Screen app: the camera stays open and reads, nothing more arrives in the box). Copy diagnostics now ends with a trace of what Scan's box was sent this visit (beforeinput, input with its kind, composition, focus and blur, each read and each clear by the app, with how much text), the last 120 events, to see what the iPad sends after the first cap. New: `e2e/v3085` (1).
+- Cache bumped to `marker-studio-v308.5`.
+
+# Changes — v308.6 (Scan Text on iPadOS 27)
+
+- Scan Text reads cap after cap again. Ben's log from a test page (the Scan Text Bench, outside the app) showed iPadOS 27's Scan Text puts each cap's text in as a composition (insertCompositionText) and takes it out itself (deleteCompositionText) when the cap leaves view. Scan cleared the box after reading, mid-composition, and that stopped Scan Text for the rest of the visit: the camera read on, nothing more arrived. Of four ways of handling the box, the two that never clear it mid-composition kept reading. Now the box is never cleared by the app while a composition is open (after a read, nor text with no code after 1.5 s, nor on Add); Scan Text clears its own text and the next cap is read as it arrives. Without a composition (older iPadOS, a paste, typing) the box clears as before. New: `e2e/v3086` (3), which replays Ben's log.
+- Cache bumped to `marker-studio-v308.6`.

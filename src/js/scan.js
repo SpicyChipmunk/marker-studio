@@ -1103,6 +1103,8 @@ function openScan() {
     if (pr && pr.catch) pr.catch(function () {});
   } catch (_) {}
   scanOpener = document.activeElement;
+  // (no Scan Text session can be open yet: a composition left marked open by an earlier visit is over)
+  scanIme = false;
   const auto = scanBrandAuto();
   if (!scanBrandChosen) scanBrand = auto;
   scanBrandButtons();
@@ -1121,12 +1123,19 @@ function openScan() {
 }
 // (v303) text still in the box, typed without Enter or just put in by Scan Text, is read before the box is let go of
 // (Add and Close had thrown it away)
+// (v308.6: Scan Text's text, a composition still open, is read but left for Scan Text to take out: see the box's set)
+let scanIme = false;
 function scanFlushBox(loud) {
   const bx = $('scBox');
   if (!bx || !bx.value.trim()) return;
   clearTimeout(scanStill);
   const v = bx.value;
   if (v !== scanText) scanHandle(v, loud);
+  if (scanIme) {
+    scanText = v;
+    scanRender();
+    return;
+  }
   scanText = '';
   bx.value = '';
   bx.dispatchEvent(new Event('scanreset'));
@@ -1338,6 +1347,28 @@ function scanAdd() {
       scanFocusBox();
     }
   });
+  // (v308.5) Copy diagnostics' trace of what the box is sent (safety.js scanTraceAdd)
+  const tr = function (what, e) {
+    if (typeof scanTraceAdd !== 'function') return;
+    const v = box.value || '';
+    scanTraceAdd(
+      what +
+        (e && e.inputType ? ' ' + e.inputType : '') +
+        (e && e.isComposing ? ' composing' : '') +
+        (e && typeof e.data === 'string' ? ' data:' + e.data.length : '') +
+        ' value:' +
+        v.length +
+        (v ? ' "' + v.slice(0, 18) + '"' : '') +
+        (document.activeElement === box ? '' : ' (box not focused)'),
+    );
+  };
+  ['beforeinput', 'compositionstart', 'compositionupdate', 'compositionend', 'focus', 'blur'].forEach(
+    function (k) {
+      box.addEventListener(k, function (e) {
+        tr(k, e);
+      });
+    },
+  );
   // sound can only start from a tap
   box.addEventListener('pointerdown', function () {
     try {
@@ -1361,10 +1392,25 @@ function scanAdd() {
   box.addEventListener('keydown', function () {
     keyAt = Date.now();
   });
+  // (v308.6) Scan Text on iPadOS 27 puts what it reads in as a composition (insertCompositionText) and takes it out
+  // itself (deleteCompositionText) when the cap leaves view. Clearing the box while that composition is open broke
+  // Scan Text for the rest of the visit: the camera went on reading, nothing more arrived. So the box is never cleared
+  // by the app during a composition; Scan Text clears its own text, and the next cap is read as it arrives.
+  box.addEventListener('compositionstart', function () {
+    scanIme = true;
+  });
+  box.addEventListener('compositionend', function () {
+    scanIme = false;
+  });
   const set = function (v) {
+    if (scanIme && v === '') {
+      if (typeof scanTraceAdd === 'function') scanTraceAdd('left for Scan Text to clear');
+      return;
+    }
     box.value = v;
     was = v;
     scanAddState();
+    if (typeof scanTraceAdd === 'function') scanTraceAdd('cleared by the app' + (v ? ' to ' + v.length : ''));
   };
   // (v299) pend: text read and about to be cleared; waiting: text arrived and waits to hold still
   let pend = '',
@@ -1375,7 +1421,8 @@ function scanAdd() {
     if (text !== scanText) {
       scanText = text;
       wasN = scanHandle(text, false);
-    }
+      if (typeof scanTraceAdd === 'function') scanTraceAdd('read: ' + wasN + ' found');
+    } else if (typeof scanTraceAdd === 'function') scanTraceAdd('held still, read already');
     pend = text;
     scanStill = setTimeout(
       function () {
@@ -1392,6 +1439,7 @@ function scanAdd() {
     waiting = false;
   });
   box.addEventListener('input', function (e) {
+    tr('input', e);
     clearTimeout(scanStill);
     // (Add reads text left in the box: on while there's some)
     scanAddState();
@@ -1416,6 +1464,12 @@ function scanAdd() {
     }
     pend = '';
     if (typed) return; // typing
+    if (e.inputType === 'deleteCompositionText' && !v) {
+      // (Scan Text took its text out: the next cap is read afresh)
+      pend = '';
+      scanText = '';
+      return;
+    }
     if (e.inputType && e.inputType.indexOf('delete') === 0) return;
     if (
       ANDROID &&
