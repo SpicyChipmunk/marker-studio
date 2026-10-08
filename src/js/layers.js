@@ -57,14 +57,34 @@ function closeDialog(el) {
 // Watches every overlay, however it opens, and the questions (askBox) added to the page and taken off it.
 (function () {
   if (typeof MutationObserver !== 'function') return;
+  // (v308.4: not while a box in the dialog is being typed in. On an iPad the keyboard, or Scan Text's camera in its
+  // place, needs the page free to bring the box into view: held, Scan Text stopped after the first cap it read)
+  const typing = function () {
+    const a = document.activeElement;
+    return (
+      !!a &&
+      !!a.closest &&
+      !!a.closest('.overlay.on') &&
+      (a.tagName === 'TEXTAREA' ||
+        (a.tagName === 'INPUT' && /^(text|search|number|email|url|tel|password)$/i.test(a.type || 'text')))
+    );
+  };
   const sync = function () {
-    document.documentElement.classList.toggle('ms-ovl', dialogOpen());
+    document.documentElement.classList.toggle('ms-ovl', dialogOpen() && !typing());
   };
   const mo = new MutationObserver(sync);
   document.querySelectorAll('.overlay').forEach(function (o) {
     mo.observe(o, { attributes: true, attributeFilter: ['class'] });
   });
   if (document.body) mo.observe(document.body, { childList: true });
+  document.addEventListener('focusin', sync, true);
+  document.addEventListener(
+    'focusout',
+    function () {
+      setTimeout(sync, 0);
+    },
+    true,
+  );
   sync();
 })();
 // a dialog's Escape isn't stopped or marked used, as before this file: nothing further on listens for it

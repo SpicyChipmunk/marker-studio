@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v308.4',
+    t: 'Fix: Scan Text reads cap after cap again, without closing and reopening Scan.',
+  },
+  {
     v: 'v308.3',
     t: 'Blend chooses its markers from the blend, so its colours stay true at any count. Gradients keep every colour family your markers have, a marker you add back is no longer marked dry, and Markers’ search finds colour families (“skin”).',
   },

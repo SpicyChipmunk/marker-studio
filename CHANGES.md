@@ -543,3 +543,8 @@ Seven decisions, each pressure-tested with measurements first, built on three br
 - Ohuhu V013's name is "Violet".
 - Focus mode: the 21 colour chips that neither dark nor white words read on at 4.5:1 (such as Ohuhu R413) get a soft outline round their words; the rest are unchanged.
 - Cache bumped to `marker-studio-v308.3`.
+
+# Changes — v308.4 (from the beta)
+
+- Scan Text reads cap after cap again. v308.1's page lock under an open dialog held the page while Scan's box had the keyboard; on an iPad, Scan Text then stopped after the first cap until Scan was closed and opened again. The lock now lets go while a box in a dialog is being typed in (Scan's, Match's, the Library's search) and holds again when it's let go of. New: `e2e/v3084` (2).
+- Cache bumped to `marker-studio-v308.4`.
