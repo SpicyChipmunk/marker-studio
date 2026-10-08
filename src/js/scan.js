@@ -59,6 +59,7 @@ function scanIndex() {
   if (_scanIx) return _scanIx;
   const byCode = new Map(),
     byOld = new Map(),
+    capOld = new Map(),
     names = [];
   const put = (m, k, i) => {
     if (!m.has(k)) m.set(k, []);
@@ -68,6 +69,9 @@ function scanIndex() {
     put(byCode, scanKey(c.code), i);
     if (c.old && scanKey(c.old) !== scanKey(c.code)) {
       put(byOld, scanKey(c.old), i);
+      // (v308.3) Copic's fluorescents by the code on their caps (FB2, FY1…): another brand's code to ask about when
+      // Ohuhu is chosen, as FB is. Only these: other old codes stay the brand's own ("R4" is noise, or Ohuhu's R412)
+      if (c.brand === 'Copic' && c.fam === 'Fluorescent') put(capOld, scanKey(c.old), i);
       // (v303: an old code with Ⅱ, "CGⅡ00", is printed in a font where it looks like two l's or 1's: read so too)
       if (/Ⅱ/.test(c.old)) ['LL', '11'].forEach((r) => put(byOld, scanKey(c.old.replace(/Ⅱ/g, r)), i));
     }
@@ -80,7 +84,7 @@ function scanIndex() {
       if (ws.indexOf('NO') > 0) names.push([n, i, ws.filter((w) => w !== 'NO')]);
     }
   });
-  return (_scanIx = { byCode: byCode, byOld: byOld, names: names });
+  return (_scanIx = { byCode: byCode, byOld: byOld, capOld: capOld, names: names });
 }
 const scanWords = (s) =>
   String(s)
@@ -330,7 +334,8 @@ function scanRead(text, brand) {
         !(ix.byCode.get(t) || []).some((i) => named.has(i))
       )
     ) {
-      const ex = ix.byCode.get(t) || [];
+      const ex =
+        ix.byCode.get(t) || (ix.byOld.has(t) && ix.byOld.get(t).some(chosen) ? [] : ix.capOld.get(t)) || [];
       // (not when the brand chosen has the same code and name: both brands' colourless blender, 0)
       const sameNamed = [...named].some((i) => chosen(i) && scanKey(COLORS[i].code) === t),
         otherNamed = sameNamed ? [] : [...named].filter((i) => !chosen(i) && scanKey(COLORS[i].code) === t);
@@ -1155,13 +1160,16 @@ function scanAdd() {
   const keys = fresh.map((e) => mkey(e.i)),
     wishWas = state.wish.slice();
   keys.forEach((k) => state.owned.add(k));
-  // (bought: off the To buy list, as its Bought button does)
+  // (bought: off the To buy list, as its Bought button does, and fresh: a Running low or Dry mark from before it was
+  // unticked goes, v308.3; Undo gives it back)
+  const ink = inkAddedOff(keys);
   state.wish = state.wish.filter((w) => keys.indexOf(w.k) < 0);
   const offList = wishWas.length - state.wish.length;
   if (
     !keep(function () {
       keys.forEach((k) => state.owned.delete(k));
       state.wish = wishWas;
+      inkPutBack(ink);
     })
   )
     return;
@@ -1175,7 +1183,7 @@ function scanAdd() {
   fullRender();
   if (typeof presetRelist === 'function') presetRelist();
   closeScan();
-  if (offList) wishChanged();
+  if (offList || Object.keys(ink).length) wishChanged();
   // (v308) the questions still to answer, and lines not read, are said, with Open to go back to them
   const left = scanAsks(),
     unread = scanUnread;
@@ -1195,6 +1203,8 @@ function scanAdd() {
     scanList = scanList.concat(listWas.filter((e) => !e.ask && !scanList.some((x) => x.i === e.i)));
     scanSaveList();
     keys.forEach((k) => state.owned.delete(k));
+    const inkNow = Object.assign({}, state.ink);
+    inkPutBack(ink);
     // (back on the To buy list, unless put back there since: v303, where they were in it, not at its end)
     const back = wishWas.filter((w) => keys.indexOf(w.k) >= 0 && !state.wish.some((x) => x.k === w.k));
     if (back.length) {
@@ -1209,6 +1219,7 @@ function scanAdd() {
       keep(function () {
         keys.forEach((k) => state.owned.add(k));
         state.wish = wishNow;
+        state.ink = inkNow;
       })
     ) {
       fullRender();

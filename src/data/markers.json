@@ -201,7 +201,7 @@
 {"code":"RV515","name":"Ripe Mulberry","hex":"#8b5277","old":"RV250","fam":"Red-Violet","brand":"Ohuhu"},
 {"code":"RV57","name":"Dark Lilac","hex":"#d8aed0","old":"V160","fam":"Red-Violet","brand":"Ohuhu"},
 {"code":"V010","name":"Faded Violet","hex":"#997bb5","old":"P4","fam":"Violet","brand":"Ohuhu"},
-{"code":"V013","name":"violet","hex":"#8a5c97","old":"V210","fam":"Violet","brand":"Ohuhu"},
+{"code":"V013","name":"Violet","hex":"#8a5c97","old":"V210","fam":"Violet","brand":"Ohuhu"},
 {"code":"V015","name":"Deep Violet","hex":"#8a7194","old":"V080","fam":"Violet","brand":"Ohuhu"},
 {"code":"V08","name":"Light Violet","hex":"#ae8fc0","old":"V050","fam":"Violet","brand":"Ohuhu"},
 {"code":"V112","name":"Vivid Violet","hex":"#ab6fad","old":"V070","fam":"Violet","brand":"Ohuhu"},

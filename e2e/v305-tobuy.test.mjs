@@ -2,6 +2,7 @@
 // it's marked Running low or dry (that entry is its replacement). Only the toast's Undo puts it back, in its old place;
 // unticking it later leaves the list alone. A marker you own that is on the list (from before, or from a backup) says
 // "already yours".
+// (v308.3: a marker added by hand loses its Running low or Dry mark first, so it leaves the list too.)
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { setup, teardown, openApp, idle } from './helpers.mjs';
@@ -66,14 +67,21 @@ test('To buy: ticking a marker in the grid takes it off the list; Undo puts it b
   assert.deepEqual(errors, []);
 });
 
-test('To buy: a marker you own marked Running low or dry stays on the list when ticked (it’s the replacement)', async () => {
-  // (a dry marker you had unticked: its ink mark is kept)
+test('To buy: a dry marker you had unticked, ticked again by hand, is fresh: its mark goes and it leaves the list; Undo puts both back', async () => {
+  // (v308.3, Ben's decision: ticking a marker back clears its Running low or Dry mark, so it leaves To buy as any added
+  // marker does. Before, the mark was kept and the entry stayed as its replacement. An owned marker marked dry still
+  // says why it's on the list.)
   const { page, errors } = await openApp({ width: 820, height: 1180, storage: onboarded({ [KEY]: appState({ ink: { 'Ohuhu|Y26': 'dry' } }) }) });
   await page.click('#mCollection'); await idle(page);
   await tapCell(page, 'Y26');
-  assert.equal(await toastText(page), 'Added Ohuhu Y26 to your collection');
+  assert.equal(await toastText(page), 'Added Ohuhu Y26 · taken off To buy');
+  assert.deepEqual(await wishKeys(page), ['Ohuhu|G43', 'Ohuhu|R28']);
+  assert.equal(await page.evaluate(() => state.ink['Ohuhu|Y26'] || ''), '');
+  await undo(page);
   assert.deepEqual(await wishKeys(page), ['Ohuhu|G43', 'Ohuhu|Y26', 'Ohuhu|R28']);
-  // its row says why it's there, not "already yours"
+  assert.equal(await page.evaluate(() => state.ink['Ohuhu|Y26']), 'dry');
+  // one you own, marked dry: its row says why it's there, not "already yours"
+  await page.evaluate(() => { state.owned.add('Ohuhu|Y26'); save(); });
   await page.click('#ownView [data-v="wish"]'); await idle(page);
   assert.match(await page.textContent('#wishView .wrow[data-k="Ohuhu|Y26"] .wwhy'), /· yours is dry$/);
   assert.deepEqual(errors, []);
@@ -92,15 +100,18 @@ test('To buy: Tick all shown takes the markers it adds off the list, says how ma
   const wish = ['Ohuhu|R210', 'Ohuhu|Y26', 'Ohuhu|R28', 'Ohuhu|R215'].map((k, j) => ({ k, why: 'from Match a colour', ts: j + 1 }));
   const { page, errors } = await openApp({ width: 820, height: 1180, storage: onboarded({ [KEY]: appState({ wish, ink: { 'Ohuhu|R28': 'low' } }) }) });
   await page.click('#mCollection'); await idle(page);
-  // shown: R210, R28 and R215 among others (R28 is marked low, so it stays); Y26 isn't shown
+  // shown: R210, R28 and R215 among others; Y26 isn't shown
+  // (v308.3: R28, unticked and marked low, is added by hand, so its mark goes and it comes off too; it had stayed)
   await page.fill('#q', 'R2'); await idle(page);
   const shown = await page.evaluate(() => shownMatches().map((i) => mkey(i)));
   assert.ok(['Ohuhu|R210', 'Ohuhu|R28', 'Ohuhu|R215'].every((k) => shown.includes(k)) && !shown.includes('Ohuhu|Y26'), shown.join(' '));
   await page.click('#ownAll'); await idle(page);
-  assert.match(await toastText(page), /^Added \d+ markers · 2 off To buy$/);
-  assert.deepEqual(await wishKeys(page), ['Ohuhu|Y26', 'Ohuhu|R28']);
-  assert.deepEqual((await stored(page)).wish, ['Ohuhu|Y26', 'Ohuhu|R28']);
+  assert.match(await toastText(page), /^Added \d+ markers · 3 off To buy$/);
+  assert.deepEqual(await wishKeys(page), ['Ohuhu|Y26']);
+  assert.deepEqual((await stored(page)).wish, ['Ohuhu|Y26']);
+  assert.equal(await page.evaluate(() => state.ink['Ohuhu|R28'] || ''), '');
   await undo(page);
+  assert.equal(await page.evaluate(() => state.ink['Ohuhu|R28']), 'low');
   assert.deepEqual(await wishKeys(page), ['Ohuhu|R210', 'Ohuhu|Y26', 'Ohuhu|R28', 'Ohuhu|R215']);
   assert.deepEqual((await stored(page)).wish, ['Ohuhu|R210', 'Ohuhu|Y26', 'Ohuhu|R28', 'Ohuhu|R215']);
   assert.ok(!(await stored(page)).owned.includes('Ohuhu|R210'));

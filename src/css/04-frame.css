@@ -304,10 +304,11 @@
   border-color: var(--ok);
   color: #dff5ee;
 }
-/* (Codes with nothing to show, a finished page in Colour along: off, and plainly not to be tapped, v302) */
+/* (Codes with nothing to show, a finished page in Colour along: off, and plainly not to be tapped, v302; greyed words
+   at 4.5:1, not faded to 1.8:1 with the button, as the app's other disabled buttons, v308.2) */
 #sfRoot .sftools .sfz:disabled,
 #sfRoot .sftools .sfz:disabled[aria-pressed='true'] {
-  opacity: 0.4;
+  opacity: 1;
   background: transparent;
   border-color: rgba(255, 255, 255, 0.12);
   color: var(--sub);

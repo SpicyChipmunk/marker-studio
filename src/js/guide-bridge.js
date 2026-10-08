@@ -1123,6 +1123,17 @@ function restoreUndo(snap) {
   fullRender();
   preRestoreRender();
   toast('Put back your ' + nWord(snap.owned.length, 'marker') + ' as they were before the restore.', 4000);
+  // (v308.2) the toast's Undo took the keyboard with it: back to the Library's Restore while the Library is open
+  const lib = document.getElementById('savedOverlay'),
+    rb = document.getElementById('guidesRestore');
+  if (
+    lib &&
+    lib.classList.contains('on') &&
+    !lib.contains(document.activeElement) &&
+    rb &&
+    rb.offsetParent !== null
+  )
+    rb.focus({ preventScroll: true });
   return true;
 }
 // a restore's toast, with "Undo marker change" when it changed your markers (r.undo: as they were)

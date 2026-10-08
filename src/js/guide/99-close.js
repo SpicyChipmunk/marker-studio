@@ -142,6 +142,8 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get focus() {
       return focus;
     },
+    // (v308.3: Focus mode's colour chips drawn again, for the halo test)
+    focusChips: renderFocusMarkers,
     get zoom() {
       return zoom;
     },
@@ -579,6 +581,8 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       inclPick: inclPick,
       inclPool: inclPool,
       vivid: gradVividM,
+      // (v308.3: the eight colour families the vivid set keeps)
+      fam8: gradFam8,
       lt: gradLt,
       ltTarget: gradLtTarget,
       hueWarp: gradHueWarp,
@@ -799,6 +803,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       planCommit: planCommit,
       // (v308: the marker an anchor gives; the shading's own markers)
       anchorOut: anchorOut,
+      anchorDot: anchorDot,
+      blendChoose: blendChoose,
+      blendAllN: blendAllN,
       shadeExtra: shadeExtra,
       planUndo: planUndo,
       planRedo: planRedo,

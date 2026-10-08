@@ -133,9 +133,10 @@ results.addEventListener('click', async (e) => {
     const c = COLORS[i],
       had = setOwned(i, !isOwned(i));
     if (had == null) return;
-    const off = setOwned.off;
+    const off = setOwned.off,
+      ink = setOwned.ink;
     toastAction(addedLine(had, c, off.length), 'Undo', function () {
-      setOwned(i, had, off);
+      setOwned(i, had, off, ink);
     });
   } else {
     const c = COLORS[i];
@@ -149,19 +150,29 @@ results.addEventListener('click', async (e) => {
 // (v305) Ticking it takes it off To buy unless it's marked Running low or dry (that entry is its replacement);
 // setOwned.off is what came off. `back` is given only by Undo: those entries go back where they were, and To buy is
 // otherwise left as it is (unticking a marker later never puts it back on the list).
-function setOwned(i, on, back) {
+// (v308.3) Ticked back by hand, its Running low or Dry mark goes first (inkAddedOff; setOwned.ink is what went, which
+// Undo gives back as `inkBack`). Undo of an untick (`back` given) keeps the mark as it was.
+function setOwned(i, on, back, inkBack) {
   const k = mkey(i),
     had = state.owned.has(k);
   if (on) state.owned.add(k);
   else state.owned.delete(k);
-  const off = on && !had && !back ? wishOwnedOff([k]) : [],
+  const inkOff = on && !had && !back ? inkAddedOff([k]) : {},
+    off = on && !had && !back ? wishOwnedOff([k]) : [],
     put = back && back.length ? back.slice() : [];
   wishPutBack(put);
+  inkPutBack(inkBack);
   setOwned.off = off;
+  setOwned.ink = inkOff;
   if (
     !keep(function () {
       if (had) state.owned.add(k);
       else state.owned.delete(k);
+      inkPutBack(inkOff);
+      if (inkBack)
+        Object.keys(inkBack).forEach(function (q) {
+          delete state.ink[q];
+        });
       wishPutBack(off);
       put.forEach(function (r) {
         const j = state.wish.indexOf(r.w);
@@ -189,11 +200,14 @@ function setOwned(i, on, back) {
   } finally {
     chrome.keepGrid = false;
   }
-  if (off.length || put.length) wishChanged();
+  // (the Running low list follows a mark that went or came back, v308.3)
+  if (off.length || put.length || Object.keys(inkOff).length || (inkBack && Object.keys(inkBack).length))
+    wishChanged();
   if (mkOpenIdx === i) mkFill(i);
   return had;
 }
 setOwned.off = [];
+setOwned.ink = {};
 // press and hold (or right-click) a marker for its details
 let mkHeld = false,
   mkT = 0,
@@ -296,9 +310,10 @@ $('mkOwn').addEventListener('change', (e) => {
     c = COLORS[i],
     had = setOwned(i, e.target.checked);
   if (had == null) return;
-  const off = setOwned.off;
+  const off = setOwned.off,
+    ink = setOwned.ink;
   toastAction(addedLine(had, c, off.length), 'Undo', function () {
-    setOwned(i, had, off);
+    setOwned(i, had, off, ink);
     if (mkOpenIdx === i) $('mkOwn').focus({ preventScroll: true });
   });
 });
@@ -353,7 +368,8 @@ exportBtn.addEventListener('click', async () => {
       if (!p.length) return;
       idxs = p;
     }
-    fn = 'marker-studio-palette.png';
+    // (v308.2: the file named for the palette, as its card is: "lagoon-kissed-rose.png")
+    fn = fileSlug(shownPaletteName(idxs), 'marker-studio-palette', 80).toLowerCase() + '.png';
   } else if (state.mode === 'random') {
     if (!state.drawn.length) return;
     idxs = state.drawn.slice().reverse();
@@ -1099,21 +1115,27 @@ ownAllBtn.addEventListener('click', () => {
     .map((i) => mkey(i))
     .filter((k) => !state.owned.has(k));
   add.forEach((k) => state.owned.add(k));
-  const off = wishOwnedOff(add);
+  // (v308.3: added by hand, so a Running low or Dry mark goes; Undo gives it back)
+  const ink = inkAddedOff(add),
+    off = wishOwnedOff(add);
   if (
     !keep(() => {
       add.forEach((k) => state.owned.delete(k));
+      inkPutBack(ink);
       wishPutBack(off);
     })
   )
     return;
   fullRender();
+  if (off.length || Object.keys(ink).length) wishChanged();
   if (add.length)
     toastAction(addedManyLine(add.length, off.length), 'Undo', () => {
       add.forEach((k) => state.owned.delete(k));
+      inkPutBack(ink);
       wishPutBack(off);
       save();
       fullRender();
+      if (off.length || Object.keys(ink).length) wishChanged();
     });
 });
 const OHUHU_SETS = {
@@ -1373,11 +1395,14 @@ let presetRelist = null;
           state.owned.add(k);
         });
       });
-      const off = wishOwnedOff(added);
+      // (v308.3: added by hand, so a Running low or Dry mark goes; Undo gives it back)
+      const ink = inkAddedOff(added),
+        off = wishOwnedOff(added);
       if (
         !keep(function () {
           state.owned = before;
           state.wish = wishWas;
+          inkPutBack(ink);
         })
       )
         return;
@@ -1385,6 +1410,7 @@ let presetRelist = null;
       // (it jumped to the bottom of the grid)
       const y = window.scrollY;
       fullRender();
+      if (off.length || Object.keys(ink).length) wishChanged();
       list.innerHTML = presetListHTML();
       upd();
       const stay = function () {
@@ -1405,15 +1431,19 @@ let presetRelist = null;
         added.forEach(function (k) {
           state.owned.delete(k);
         });
+        inkPutBack(ink);
         wishPutBack(off);
         save();
-        if (off.length) wishChanged();
+        if (off.length || Object.keys(ink).length) wishChanged();
         fullRender();
         relist();
       });
     });
+  // (v308.2: one timer, so an earlier tap's can't cancel a later "Tap again" early)
+  let rstT = null;
   if (rst)
     rst.addEventListener('click', function () {
+      clearTimeout(rstT);
       if (rst.dataset.arm === '1') {
         rst.dataset.arm = '';
         rst.textContent = 'Clear collection';
@@ -1445,7 +1475,7 @@ let presetRelist = null;
         rst.dataset.arm = '1';
         rst.textContent =
           'Clear all ' + state.owned.size + (state.owned.size === 1 ? ' marker' : ' markers') + '? Tap again';
-        setTimeout(function () {
+        rstT = setTimeout(function () {
           if (rst) {
             rst.dataset.arm = '';
             rst.textContent = 'Clear collection';

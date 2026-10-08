@@ -21,6 +21,7 @@ function resetForNewPicture() {
   // (v308: a new guide, the sample too, has the Include row, with the Mood's choices; a guide saved before has none)
   if (!gradIncl) gradIncl = {};
   _mkOpened = {};
+  _blendSel = {};
   relWake();
   const gen = ++loadGen;
   clearTimeout(autoT);

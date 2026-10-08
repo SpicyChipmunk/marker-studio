@@ -492,14 +492,92 @@ function inclKeep(m, mood, on) {
   if ((mood === 'muted' || mood === 'pastel' || mood === 'earthy') && x[0] < INCL_DARK) return false;
   return moodOff(mood, x) === 0;
 }
-// the markers left of `list`: { items, widened (taken in from outside as there were too few) }
+/* (v308.3) Every colour family the collection has stays in the vivid set. The vivid test judges each marker alone, so
+   a set whose markers of one family are all a little dark or soft lost that family (Honolulu 24 its violets, V010 and
+   V416; Ciao 12 its BV08 and V09). For Any and Bright, each of eight families (GRAD_FAM8: red, orange, yellow, green,
+   cyan, blue, violet, pink, by Oklab hue as Balance's families go, which keeps Copic's B29 a blue) that has colours in
+   `list` (no Include group, chroma over GRAD_FAM_C, inside the Mood) but none the test kept gets back its most vivid
+   (gradFamScore: strongest for its hue, lightness nearest its hue's), as many as a kept family has on average, 1 or 2.
+   With a Temperature chosen, only its own families count (GRAD_FAM_TEMP: Warm's one plum at its red-violet edge, Ben's
+   RV316, isn't a violet family). Browns, greys and fluorescents still go by the Include row. Ben's 451 have every
+   family: no change. */
+const GRAD_FAM8 = [
+    [3, 'red'],
+    [38, 'orange'],
+    [68, 'yellow'],
+    [113, 'green'],
+    [170, 'cyan'],
+    [215, 'blue'],
+    [282, 'violet'],
+    [330, 'pink'],
+  ],
+  GRAD_FAM_C = 20,
+  GRAD_FAM_TEMP = { warm: ['red', 'orange', 'yellow', 'pink'], cool: ['green', 'cyan', 'blue', 'violet'] };
+function gradFam8(m) {
+  const oh = balHue(m);
+  let f = 'pink';
+  for (let i = 0; i < GRAD_FAM8.length; i++) if (oh >= GRAD_FAM8[i][0]) f = GRAD_FAM8[i][1];
+  return f;
+}
+function gradFamScore(m) {
+  const x = mLch(m);
+  return x[1] / gradCmaxAt(x[2]) - Math.abs(x[0] - gradLt(x[2])) / 100;
+}
+// `items` (inclKeep's of `list`) with the lost families' markers put back, in list order (temp: the Temperature)
+function gradFamKeep(list, items, mood, temp) {
+  if (!gradVividMood(mood)) return items;
+  const only = GRAD_FAM_TEMP[temp] || null,
+    kept = {},
+    cand = {};
+  let nk = 0,
+    nf = 0;
+  items.forEach(function (m) {
+    if (inclGroup(m)) return;
+    const f = gradFam8(m);
+    if (!kept[f]) nf++;
+    kept[f] = (kept[f] || 0) + 1;
+    nk++;
+  });
+  const isIn = new Set(items);
+  list.forEach(function (m) {
+    if (isIn.has(m) || inclGroup(m)) return;
+    const x = mLch(m);
+    if (x[1] <= GRAD_FAM_C || (mood !== 'neutral' && moodOff(mood, x) > 0)) return;
+    const f = gradFam8(m);
+    if (!kept[f] && (!only || only.indexOf(f) >= 0)) (cand[f] = cand[f] || []).push(m);
+  });
+  const fams = Object.keys(cand);
+  if (!fams.length) return items;
+  const k = Math.max(1, Math.min(2, nf ? Math.round(nk / nf) : 1));
+  fams.forEach(function (f) {
+    cand[f]
+      .map(function (m) {
+        return [gradFamScore(m), m];
+      })
+      .sort(function (a, b) {
+        return b[0] - a[0];
+      })
+      .slice(0, k)
+      .forEach(function (s) {
+        isIn.add(s[1]);
+      });
+  });
+  return list.filter(function (m) {
+    return isIn.has(m);
+  });
+}
+// the markers left of `list`: { items, widened (taken in from outside as there were too few) } (temp: the
+// Temperature `list` is of, 'warm' or 'cool', if any)
 const GRAD_SET_MIN = 8;
-function inclPick(list, mood, inc, need) {
+function inclPick(list, mood, inc, need, temp) {
   const on = inclOn(inc, mood),
-    items = list.filter(function (m) {
+    kept = list.filter(function (m) {
       return inclKeep(m, mood, on);
-    });
-  if (items.length >= GRAD_SET_MIN || (items.length >= 2 && items.length >= need))
+    }),
+    // (v308.3: the lost families put back; whether too few were left goes by those the test kept, so a pastel set
+    // still widens to its clear markers as before, and keeps the families too)
+    items = gradFamKeep(list, kept, mood, temp);
+  if (kept.length >= GRAD_SET_MIN || (kept.length >= 2 && kept.length >= need))
     return { items: items, widened: 0 };
   const isIn = new Set(items),
     rest = list.filter(function (m) {
@@ -530,7 +608,7 @@ function gradV8() {
 }
 // the markers left for this zone's Gradient (from your markers: not a palette)
 function inclPool(need) {
-  return inclPick(poolFor(palette), emphasis, gradIncl, need == null ? 1 : need);
+  return inclPick(poolFor(palette), emphasis, gradIncl, need == null ? 1 : need, palette);
 }
 // How far a Mood lets lightness follow hue (1: fully; Pastel's narrow band of light colours hardly), and the
 // lightness a pick at hue th aims for, round the pool's middle lightness
@@ -689,7 +767,14 @@ const RAINBOW_NEED = 5;
 function rainbowPick(n, mood, idxs, opt) {
   opt = opt || {};
   const all = idxs.map(function (i) {
-      return { i: i, mkey: mkey(i), code: COLORS[i].code, lab: hexToLab(COLORS[i].hex), fam: COLORS[i].fam };
+      return {
+        i: i,
+        mkey: mkey(i),
+        code: COLORS[i].code,
+        hex: COLORS[i].hex,
+        lab: hexToLab(COLORS[i].hex),
+        fam: COLORS[i].fam,
+      };
     }),
     locked = opt.locked || {},
     lockIdx = [];
@@ -699,7 +784,14 @@ function rainbowPick(n, mood, idxs, opt) {
       return (
         all.find(function (m) {
           return m.i === i;
-        }) || { i: i, mkey: mkey(i), code: COLORS[i].code, lab: hexToLab(COLORS[i].hex), fam: COLORS[i].fam }
+        }) || {
+          i: i,
+          mkey: mkey(i),
+          code: COLORS[i].code,
+          hex: COLORS[i].hex,
+          lab: hexToLab(COLORS[i].hex),
+          fam: COLORS[i].fam,
+        }
       );
     }),
     list = all.filter(function (m) {
@@ -2651,12 +2743,13 @@ function addAnchor(P) {
   anchors.push({ x: P.x, y: P.y, mkey: best.mkey });
 }
 // (v308) The marker an anchor gives where it is: its colour's nearest in the markers Blend uses (with Warm and Pastel,
-// a vivid red anchor gives a pale pink, and its dot is drawn so). Kept until something they go by changes.
+// a vivid red anchor gives a pale pink, and its dot is drawn so). Kept until something they go by changes. (v308.3: the
+// markers Blend may use are all those allowed, and blendChoose always keeps this one among the count's worth; with
+// more anchors than the count, one it left out gives the nearest it kept, as on the page.)
 let _anchOut = { key: '', m: {} };
-function anchorOut(m) {
-  if (!m || family !== 'blend') return m;
-  const key = [
-    zoneCur,
+function blendPoolKey() {
+  return [
+    zoneLive(),
     emphasis,
     palette,
     limitN,
@@ -2666,6 +2759,10 @@ function anchorOut(m) {
     coll.length,
     planFilt(),
   ].join('|');
+}
+function anchorOut(m) {
+  if (!m || family !== 'blend') return m;
+  const key = blendPoolKey();
   if (_anchOut.key !== key) _anchOut = { key: key, m: {} };
   if (!(m.mkey in _anchOut.m)) {
     let o = m;
@@ -2677,23 +2774,243 @@ function anchorOut(m) {
     } catch (_) {}
     _anchOut.m[m.mkey] = o;
   }
-  return _anchOut.m[m.mkey];
+  const o = _anchOut.m[m.mkey],
+    s = blendSelNow();
+  return o && s && s.to[o.mkey] ? s.to[o.mkey] : o;
 }
-function blendAssign(cl, pool) {
-  guideDirty = true;
+// what blendChoose kept when the zone being edited was last laid, if nothing it went by has changed since
+function blendSelNow() {
+  const s = _blendSel[zoneCur];
+  return s && s.key === blendPoolKey() && s.anch === blendAnchSig() ? s : null;
+}
+// (v308.3) an anchor's dot in a guide as it opened (not laid since, so laid by the rules it was saved with): the
+// marker of the section under it, unless that one is pinned
+function anchorDot(a, m) {
+  if (family === 'blend' && _mkOpened[zoneCur] && !blendSelNow() && assignData && labels) {
+    const x = Math.round(a.x),
+      y = Math.round(a.y),
+      l = x >= 0 && y >= 0 && x < W && y < H ? labels[y * W + x] : 0,
+      t = l > 0 && locks[l] === undefined ? assignData.assign[l] : null;
+    if (t) return t;
+  }
+  return anchorOut(m);
+}
+/* (v308.3) Blend picks its markers from the blend itself. Each section's mixed colour (from the anchors, Spread and
+   Mix) is worked out first, with the marker it gets with every allowed marker to choose from: its ideal
+   (blendIdeal). The marker count is then the most markers the blend may use: blendChoose picks that many of the
+   ideals that best cover the sections (by area), each anchor's own marker always among them, and each section takes
+   the one of those nearest its ideal. When the blend needs fewer, it uses fewer. Before, the count was first spread
+   round the colour wheel (as Random's is) and the blend put onto that: on the sample with Ben's 451 markers, 16 gave
+   8 markers, each section about 27 (L*a*b*) from its ideal, and − and + often changed nothing. */
+// the markers blendChoose kept for each zone, as last laid (for anchorOut), and how many it lays at all (blendAllN)
+let _blendSel = {},
+  _blendIdl = {};
+function blendAnchSig() {
+  return anchors
+    .map(function (a) {
+      return Math.round(a.x * 10) + ',' + Math.round(a.y * 10) + ',' + a.mkey;
+    })
+    .join(';');
+}
+function blendAx() {
   const byKey = {};
   coll.forEach(function (m) {
     byKey[m.mkey] = m;
   });
-  const ax = anchors
-    .map(function (a) {
-      const m = byKey[a.mkey];
-      // (an anchor whose marker has gone is a mid grey)
-      return { x: a.x, y: a.y, lab: m ? m.lab : [50, 0, 0], hex: m ? m.hex : '#777777' };
-    })
-    .filter(function (a) {
-      return a.lab;
-    });
+  return anchors.map(function (a) {
+    const m = byKey[a.mkey];
+    // (an anchor whose marker has gone is a mid grey; it has no marker of its own to keep)
+    return { x: a.x, y: a.y, lab: m ? m.lab : [50, 0, 0], hex: m ? m.hex : '#777777', own: m || null };
+  });
+}
+// every section's ideal marker (its mixed colour's nearest in the pool); U: the ideals, each once (in the sections' order), wt: the area of
+// the sections each covers (a section kept as it is, pinned or with ink on the paper, counts for nothing), F: the
+// anchors' own markers (their colour's nearest in the pool, as anchorOut finds), added to U when no section has them
+function blendIdeal(cl, pool, ax) {
+  const mix = blendMixer(ax, blendMix),
+    fall = blendFall,
+    n = ax.length,
+    w = new Float64Array(n),
+    ideal = new Array(cl.length),
+    at = {},
+    U = [],
+    wts = [];
+  for (let k = 0; k < cl.length; k++) {
+    const l = cl[k],
+      cx = comps[l].cx,
+      cy = comps[l].cy;
+    for (let i = 0; i < n; i++) {
+      const d = Math.hypot(ax[i].x - cx, ax[i].y - cy) + 0.001;
+      w[i] = 1 / Math.pow(d, fall);
+    }
+    const m = nearestInPool(mix(w), pool);
+    ideal[k] = m;
+    if (!(m.mkey in at)) {
+      at[m.mkey] = U.length;
+      U.push(m);
+      wts.push(0);
+    }
+    if (locks[l] === undefined) wts[at[m.mkey]] += comps[l].area || 1;
+  }
+  const F = [];
+  ax.forEach(function (a) {
+    if (!a.own || !a.own.lab) return;
+    const m = nearestInPool(a.own.lab, pool);
+    if (!(m.mkey in at)) {
+      at[m.mkey] = U.length;
+      U.push(m);
+      wts.push(0);
+    }
+    if (F.indexOf(at[m.mkey]) < 0) F.push(at[m.mkey]);
+  });
+  return { ideal: ideal, U: U, wt: Float64Array.from(wts), F: F };
+}
+// The N of U that best cover the sections (weighted k-medoids by eye, CIEDE2000, among the ideals themselves): the
+// anchors' (F) first and kept; then, one at a time, the ideal that brings the sections' ideals closest to a chosen
+// marker overall; then each group's middle marker is chosen again (the one nearest all its group's ideals), until
+// nothing changes. All in a fixed order, ties to the first, so the same blend always picks the same markers.
+// Returns { pick: the chosen, near: for each of U, the chosen one nearest it }, as indices into U. A section then takes
+// the chosen marker nearest its ideal. (More anchors than N: the N of theirs spread furthest apart.)
+function blendChoose(U, wt, F, N) {
+  const u = U.length,
+    out = [],
+    near = new Int32Array(u);
+  if (u <= N) {
+    for (let i = 0; i < u; i++) {
+      out.push(i);
+      near[i] = i;
+    }
+    return { pick: out, near: near };
+  }
+  const D = new Float64Array(u * u);
+  for (let i = 0; i < u; i++)
+    for (let j = i + 1; j < u; j++) D[i * u + j] = D[j * u + i] = de2000(U[i].lab, U[j].lab);
+  const isC = new Uint8Array(u),
+    fixed = new Uint8Array(u),
+    cur = new Float64Array(u).fill(1e4);
+  function add(j) {
+    isC[j] = 1;
+    out.push(j);
+    for (let i = 0; i < u; i++) if (D[i * u + j] < cur[i]) cur[i] = D[i * u + j];
+  }
+  if (F.length >= N) {
+    add(F[0]);
+    while (out.length < N) {
+      let b = -1,
+        bd = -1;
+      F.forEach(function (j) {
+        if (!isC[j] && cur[j] > bd) {
+          bd = cur[j];
+          b = j;
+        }
+      });
+      add(b);
+    }
+    return blendNear(D, u, out, near);
+  }
+  F.forEach(function (j) {
+    fixed[j] = 1;
+    add(j);
+  });
+  while (out.length < N) {
+    let b = -1,
+      bg = 0;
+    for (let j = 0; j < u; j++) {
+      if (isC[j]) continue;
+      let g = 0;
+      for (let i = 0; i < u; i++) {
+        const d = cur[i] - D[i * u + j];
+        if (d > 0) g += wt[i] * d;
+      }
+      if (g > bg) {
+        bg = g;
+        b = j;
+      }
+    }
+    if (b < 0) break;
+    add(b);
+  }
+  // each group's middle again (the anchors' stay), until it settles
+  const grp = new Int32Array(u);
+  for (let it = 0; it < 12; it++) {
+    for (let i = 0; i < u; i++) {
+      let bc = 0,
+        bd = Infinity;
+      for (let c = 0; c < out.length; c++) {
+        const d = D[i * u + out[c]];
+        if (d < bd) {
+          bd = d;
+          bc = c;
+        }
+      }
+      grp[i] = bc;
+    }
+    let moved = false;
+    for (let c = 0; c < out.length; c++) {
+      if (fixed[out[c]]) continue;
+      let bm = out[c],
+        bs = Infinity;
+      for (let m = 0; m < u; m++) {
+        if (grp[m] !== c) continue;
+        let s = 0;
+        for (let i = 0; i < u; i++) if (grp[i] === c) s += wt[i] * D[i * u + m];
+        if (s < bs - 1e-9 || (Math.abs(s - bs) <= 1e-9 && m < bm)) {
+          bs = s;
+          bm = m;
+        }
+      }
+      if (bm !== out[c]) {
+        out[c] = bm;
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  return blendNear(D, u, out, near);
+}
+function blendNear(D, u, out, near) {
+  for (let i = 0; i < u; i++) {
+    let bc = out[0],
+      bd = Infinity;
+    for (let c = 0; c < out.length; c++) {
+      const d = D[i * u + out[c]];
+      if (d < bd) {
+        bd = d;
+        bc = out[c];
+      }
+    }
+    near[i] = bc;
+  }
+  return { pick: out, near: near };
+}
+// how many markers Blend lays at "all" in the zone being edited: its ideals, each once (the count's end, mkCap). Worked
+// out at "all", as the markers allowed can depend on the count (Expand adds up to it; a Mood with too few is widened
+// to it), and kept until something it goes by changes.
+function blendAllN() {
+  const cl = zoneList(),
+    was = limitN,
+    wasN = lastPoolN;
+  if (!anchors.length || !cl.length || (paletteSource === 'generate' && !genPal.length)) return 0;
+  limitN = MK_ALL;
+  try {
+    const key = blendPoolKey() + '#' + blendAnchSig() + '#' + blendFall + blendMix + '#' + cl.join(','),
+      c = _blendIdl[zoneCur];
+    if (c && c.key === key && c.comps === comps) return c.n;
+    let n = 0;
+    const pool = activePool();
+    if (pool.length) n = blendIdeal(cl, pool, blendAx()).U.length;
+    _blendIdl[zoneCur] = { key: key, comps: comps, n: n };
+    return n;
+  } catch (_) {
+    return 0;
+  } finally {
+    limitN = was;
+    lastPoolN = wasN;
+  }
+}
+function blendAssign(cl, pool) {
+  guideDirty = true;
+  const ax = blendAx();
   const assign = {},
     order = cl.slice();
   if (!ax.length) {
@@ -2702,19 +3019,14 @@ function blendAssign(cl, pool) {
     applyLocks();
     return;
   }
-  const fall = blendFall,
-    mix = blendMixer(ax, blendMix),
-    w = new Float64Array(ax.length);
-  for (let k = 0; k < cl.length; k++) {
-    const l = cl[k],
-      cx = comps[l].cx,
-      cy = comps[l].cy;
-    for (let i = 0; i < ax.length; i++) {
-      const d = Math.hypot(ax[i].x - cx, ax[i].y - cy) + 0.001;
-      w[i] = 1 / Math.pow(d, fall);
-    }
-    assign[l] = nearestInPool(mix(w), pool);
-  }
+  const r = blendIdeal(cl, pool, ax),
+    ch = blendChoose(r.U, r.wt, r.F, Math.max(1, limitN)),
+    to = {};
+  r.U.forEach(function (m, i) {
+    to[m.mkey] = r.U[ch.near[i]];
+  });
+  for (let k = 0; k < cl.length; k++) assign[cl[k]] = to[r.ideal[k].mkey];
+  _blendSel[zoneLive()] = { key: blendPoolKey(), anch: blendAnchSig(), to: to };
   assignData = { assign: assign, order: order, N: order.length, base: Object.assign({}, assign) };
   applyLocks();
 }
@@ -3013,8 +3325,14 @@ function curSeedLen() {
   return seedPool().length;
 }
 function sliderMax() {
-  // (v308: the markers left after the Include row)
-  var ownedMax = Math.max(2, gradV8() ? inclPool().items.length : poolFor(palette).length);
+  // (v308: the markers left after the Include row; asked for as many as there are sections, as "all" asks, so a
+  // small set that "all" widens ends where all does: Ciao 12 ended at 7, all laid 8, and 7 couldn't be chosen, v308.2)
+  var ownedMax = Math.max(
+    2,
+    gradV8()
+      ? inclPool(labels && comps ? Math.max(1, zoneList().length) : 1).items.length
+      : poolFor(palette).length,
+  );
   if (paletteSource !== 'saved' && paletteSource !== 'generate') return ownedMax;
   // (v308: no palette chosen, none saved say: your markers, as the guide uses; it gave 2, "all (1)")
   const sn = seedPool(true).length;
@@ -3094,7 +3412,7 @@ function inclStatus() {
     off.forEach(function (k) {
       const o = Object.assign({}, gradIncl || {});
       o[k] = true;
-      const d = inclPick(poolFor(palette), emphasis, o, Math.min(limitN, N)).items.length - n;
+      const d = inclPick(poolFor(palette), emphasis, o, Math.min(limitN, N), palette).items.length - n;
       if (d > add) {
         add = d;
         best = k;
@@ -3108,13 +3426,19 @@ function inclStatus() {
 function gradFamily() {
   return family === 'gradient' || family === 'photo';
 }
-// the markers the pattern may use: Random, Blend and Manual take the marker count's worth, spread round the colours
+// the markers the pattern may use: Random and Manual take the marker count's worth, spread round the colours; Blend
+// all of them (it picks its own count's worth: blendChoose)
 function activePool() {
   const grad = gradFamily(),
     src = poolSource(grad ? Math.min(limitN, zoneList().length) : limitN);
   if (grad) {
     lastPoolN =
       src.seeded && src.items.length > src.seed ? src.items.length : Math.min(limitN, src.items.length);
+    return src.items;
+  }
+  // (v308.3: Blend takes its count's worth from all of them, by what the blend needs: blendChoose)
+  if (family === 'blend') {
+    lastPoolN = Math.min(limitN, src.items.length);
     return src.items;
   }
   // (a palette you chose keeps its greys: thinned as before)

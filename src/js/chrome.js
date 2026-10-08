@@ -191,20 +191,7 @@ function chrome() {
   }
   [...ownView.children].forEach((b) => segOn(b, b.dataset.v === state.collView));
   gapWrap.style.display = col && state.collView === 'unowned' ? 'flex' : 'none';
-  {
-    // (v308) Owned's "Running low · 3", while any of yours are marked
-    const lw = $('lowWrap'),
-      lc = $('lowChip'),
-      lo = lowCount();
-    if (!lo.n) lowOnly = false;
-    const on = !!col && state.collView === 'owned' && lo.n > 0;
-    if (lw) lw.style.display = on ? 'flex' : 'none';
-    if (lc && on) {
-      lc.textContent = (lo.dry ? 'Running low or dry' : 'Running low') + ' \u00b7 ' + lo.n;
-      lc.dataset.sel = lowOnly ? '1' : '';
-      lc.setAttribute('aria-pressed', String(lowOnly));
-    }
-  }
+  lowChipSync(col);
   gapSort.value = state.gapSort;
   ownHint.style.display = col ? '' : 'none';
   mkJumpSync(col);
@@ -580,6 +567,9 @@ function headBrands() {
   if (el.textContent !== t) el.textContent = t;
 }
 function fullRender() {
+  // (the markers in play may have changed since: Markers, Brands I'd buy, another tab; v308.2: before the Colours row
+  // and Generate are drawn, which had shown no size chosen and Generate refusing the old one)
+  if (state.mode === 'palette') palSizeFit();
   chrome();
   syncModeA11y();
   headBrands();
@@ -587,8 +577,6 @@ function fullRender() {
   if (typeof buySumSync === 'function') buySumSync();
   palNoneShow(false);
   if (state.mode === 'palette') {
-    // (the markers in play may have changed since: Markers, Brands I'd buy, another tab)
-    palSizeFit();
     if (state.harmony === 'custom') showCustom();
     else if (palNone()) {
       clearPalette();
@@ -1151,3 +1139,19 @@ try {
   if (_pq.addEventListener) _pq.addEventListener('change', palFiltersPlace);
   else if (_pq.addListener) _pq.addListener(palFiltersPlace);
 } catch (_) {}
+
+// (v308) Owned's "Running low · 3", while any of yours are marked (v308.2: also straight after a marker's ink is set in
+// its details, setInk; it had waited for the next view change)
+function lowChipSync(col) {
+  const lw = $('lowWrap'),
+    lc = $('lowChip'),
+    lo = lowCount();
+  if (!lo.n) lowOnly = false;
+  const on = !!col && state.collView === 'owned' && lo.n > 0;
+  if (lw) lw.style.display = on ? 'flex' : 'none';
+  if (lc && on) {
+    lc.textContent = (lo.dry ? 'Running low or dry' : 'Running low') + ' \u00b7 ' + lo.n;
+    lc.dataset.sel = lowOnly ? '1' : '';
+    lc.setAttribute('aria-pressed', String(lowOnly));
+  }
+}

@@ -77,7 +77,8 @@ function removeWish(k, quiet) {
   return { w: w, j: j };
 }
 // Markers that have just become yours leave To buy (one with its ink marked stays: it's the replacement), v305.
-// Returns what came off, for wishPutBack (Undo, or storage full).
+// Returns what came off, for wishPutBack (Undo, or storage full). (v308.3: the hand actions that call this take a
+// marker's mark off first, inkAddedOff, so for them every added marker leaves To buy.)
 function wishOwnedOff(keys) {
   const out = [];
   keys.forEach(function (k) {
@@ -86,6 +87,26 @@ function wishOwnedOff(keys) {
     if (r) out.push(r);
   });
   return out;
+}
+// (v308.3) A marker added back by hand (ticked in Markers or its details, Tick all shown, Add a set, Scan's Add) is
+// a fresh one: its Running low or Dry mark goes, so it's in palettes and guides again (a dry one had been left out
+// without a word). Call it before wishOwnedOff, so the marker leaves To buy as any other added one does. Returns the
+// marks taken, {k: 'low'|'dry'}, for inkPutBack (Undo, or storage full). Undo of an untick, a restore and Bought
+// don't come here.
+function inkAddedOff(keys) {
+  const out = {};
+  keys.forEach(function (k) {
+    if (!state.ink[k]) return;
+    out[k] = state.ink[k];
+    delete state.ink[k];
+  });
+  return out;
+}
+function inkPutBack(m) {
+  if (m)
+    Object.keys(m).forEach(function (k) {
+      state.ink[k] = m[k];
+    });
 }
 function wishPutBack(rs) {
   for (let q = rs.length - 1; q >= 0; q--)
@@ -581,7 +602,10 @@ function setInk(i, v) {
     return false;
   inkCell(i);
   if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
-  if (state.mode === 'collection') wishChrome(true);
+  if (state.mode === 'collection') {
+    wishChrome(true);
+    lowChipSync(true);
+  }
   return true;
 }
 // the marker's cell on the Markers screen, drawn again with its ink badge

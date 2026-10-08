@@ -1807,7 +1807,7 @@ function firstSave(auto) {
   saveStatus();
   return _firstP;
 }
-// Save a copy: the open guide (its changes so far already in its entry) as a new Library entry named "<name> (copy)";
+// Save a copy: the open guide (its changes so far already in its entry) as a new Library entry named "<name> (2)" (or (3)…);
 // the copy is what stays open, the original keeps everything up to now
 function saveCopy() {
   const gen = _gTok;

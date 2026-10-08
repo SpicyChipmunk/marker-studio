@@ -161,12 +161,13 @@ function lowCount() {
   }
   return { n: n, dry: dry };
 }
-function finderMatches() {
+// fams (v308.3): a Set of family names, in place of the search: those families' markers in the view, as filtered
+function finderMatches(fams) {
   const view = state.mode === 'collection' ? state.collView : state.finderScope === 'owned' ? 'owned' : 'all';
   const out = [],
     low = view === 'owned' && state.mode === 'collection' && lowOnly;
   for (let i = 0; i < COLORS.length; i++) {
-    if (!avail(i)) continue;
+    if (fams ? !(passes(i) && fams.has(COLORS[i].fam)) : !avail(i)) continue;
     if (view === 'owned' && !isOwned(i)) continue;
     if (low && !state.ink[mkey(i)]) continue;
     if (view === 'unowned' && isOwned(i)) continue;
@@ -374,6 +375,72 @@ function searchListHTML() {
     '\u201d looks like a list of codes. Search finds one marker at a time; Scan or type codes takes a whole list.</div><div class="moreall"><button type="button" class="moreshow mkscanlist">Scan or type codes</button></div>'
   );
 }
+// (v308.3) Markers' search and the colour families. A search whose every word is one of a family's words ("skin",
+// "yellow grey", "red") names that family (sFold's spellings: "grey" is Gray's). Families are never searched as names
+// are ("red" would bring 191 markers, not 17), so: when the search finds no marker by name or code, the families it
+// names are shown, with a line saying so; when it does find some, one line offers those families (their filter on, the
+// search cleared). Counts are of the view and filters, as the results are. Not when the search is a list of codes
+// (the Scan hint wins), nor outside Markers.
+function searchFams() {
+  if (state.mode !== 'collection' || !searchStr || searchList()) return null;
+  const ws = sQueryOf(searchStr).words;
+  if (!ws.length) return null;
+  let names = families
+    .map((f) => f.name)
+    .filter((n) => {
+      const fw = sFold(n).split(/[^a-z0-9]+/);
+      return ws.every((w) => fw.indexOf(w) >= 0);
+    });
+  // (a search that is a family's whole name, "red" or "blue", names that family only: not Red-Violet and Yellow-Red /
+  // Orange, nor Blue-Green, Blue-Violet and Blue Grey too)
+  const whole = names.filter(
+    (n) =>
+      sFold(n)
+        .split(/[^a-z0-9]+/)
+        .filter(Boolean)
+        .join(' ') === ws.join(' '),
+  );
+  if (whole.length) names = whole;
+  if (!names.length) return null;
+  const list = finderMatches(new Set(names));
+  if (!list.length) return null;
+  // (only the families with markers here are named)
+  const shown = names.filter((n) => list.some((i) => COLORS[i].fam === n));
+  return { names: shown, list: list };
+}
+// "the Earth / Skin / Brown family (94)", "the Red, Red-Violet and Yellow-Red / Orange families (191)"; more than three
+// named briefly: "the Blue Grey, Cool Grey and 5 other families (87)"
+function famPhrase(sf) {
+  const ns = sf.names.map(esc),
+    n = ns.length,
+    named =
+      n === 1
+        ? ns[0] + ' family'
+        : n <= 3
+          ? ns.slice(0, -1).join(', ') + ' and ' + ns[n - 1] + ' families'
+          : ns.slice(0, 2).join(', ') + ' and ' + (n - 2) + ' other families';
+  return 'the ' + named + ' (' + sf.list.length + ')';
+}
+function famFallbackHTML(sf) {
+  return (
+    '<div class="famline">No names match \u201c' +
+    esc((searchInput.value || '').trim()) +
+    '\u201d \u00b7 showing ' +
+    famPhrase(sf) +
+    '</div>'
+  );
+}
+function famOfferHTML(sf) {
+  return (
+    '<div class="famline">Also: <button type="button" class="moreshow mkfamgo" data-fams="' +
+    esc(sf.names.join('|')) +
+    '">' +
+    famPhrase(sf) +
+    ' \u203a</button></div>'
+  );
+}
+// the line above the grid, from renderGrid: the fallback's or the offer's, or ''
+let gridFamLine = '';
 function renderResults(bySearch) {
   // (an armed Untick all shown counted what was shown then: a redraw disarms it, v304)
   if (ownNoneBtn.dataset.arm === '1') unownDisarm();
@@ -381,7 +448,9 @@ function renderResults(bySearch) {
   mkHintRender();
   qClearSync();
   const more = searchOutside();
+  gridFamLine = '';
   renderGrid(more);
+  if (gridFamLine) results.insertAdjacentHTML('afterbegin', gridFamLine);
   if (more.length && results.firstElementChild && !results.querySelector('.moreall'))
     results.insertAdjacentHTML('beforeend', moreInAllHTML(more.length, !results.querySelector('.cell')));
 }
@@ -399,7 +468,7 @@ function gridActs(list) {
   toPalette.disabled = !list.some((i) => !NOINK.has(i));
 }
 function renderGrid(more) {
-  const m = finderMatches();
+  let m = finderMatches();
   cellBt = brandsMixedIn(m);
   gridActs(m);
   matchHead(m.length, 'marker');
@@ -415,6 +484,15 @@ function renderGrid(more) {
     results.innerHTML = searchListHTML();
     return;
   }
+  // (v308.3) the families the search names: shown when nothing else is, else offered in a line
+  const sf = searchFams();
+  if (sf && !m.length) {
+    m = sf.list;
+    cellBt = brandsMixedIn(m);
+    gridActs(m);
+    matchHead(m.length, 'marker');
+    gridFamLine = famFallbackHTML(sf);
+  } else if (sf) gridFamLine = famOfferHTML(sf);
   if (!m.length) {
     // (in Owned only: elsewhere a search that found nothing had said the collection was empty, v304)
     results.innerHTML =
@@ -524,6 +602,19 @@ results.addEventListener('click', (e) => {
   const hx = e.target.closest('.mkhexgo');
   if (hx) {
     if (window.msMatchHex) window.msMatchHex(hx.dataset.hex);
+    return;
+  }
+  // (v308.3) "Also: the … family": its filter on, as its chip would, and the search cleared
+  const fg = e.target.closest('.mkfamgo');
+  if (fg) {
+    fg.dataset.fams.split('|').forEach((n) => {
+      if (families.some((f) => f.name === n) && !fgSel('fam', n)) fgTap('fam', n);
+    });
+    searchInput.value = '';
+    searchStr = '';
+    filterChanged();
+    if (typeof filterBar !== 'undefined' && filterBar && filterBar.offsetParent)
+      filterBar.focus({ preventScroll: true });
     return;
   }
   // (v308: the list searched for, read by Scan or type codes, where each is added or asked about)

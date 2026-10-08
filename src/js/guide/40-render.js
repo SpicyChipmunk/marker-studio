@@ -1247,8 +1247,9 @@ function renderGuide() {
       const rad = Math.max(9, W / 70);
       for (let i = 0; i < anchors.length; i++) {
         const a = anchors[i],
-          // (v308: in the marker it gives on the page, after Temperature, Mood and the count: anchorOut)
-          m = anchorOut(bk[a.mkey]),
+          // (v308: in the marker it gives on the page, after Temperature, Mood and the count: anchorOut; v308.3: in a
+          // guide as it opened, the marker under it: anchorDot)
+          m = anchorDot(a, bk[a.mkey]),
           rgb = m ? hexRgb(m.hex) : [128, 128, 128],
           sel = i === selAnchor,
           rr = sel ? rad * 1.35 : rad,

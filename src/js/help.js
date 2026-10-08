@@ -5,6 +5,14 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v308.3',
+    t: 'Blend chooses its markers from the blend, so its colours stay true at any count. Gradients keep every colour family your markers have, a marker you add back is no longer marked dry, and Markers’ search finds colour families (“skin”).',
+  },
+  {
+    v: 'v308.2',
+    t: 'Fixes: Running low shows straight away, small collections get marker counts and Rainbow sizes that fit, palette images are saved under their names, and Focus mode’s Undo works after you leave it.',
+  },
+  {
     v: 'v308.1',
     t: 'Home on an iPad: the guide you’re colouring across the top, with Markers, Palette and Library in a row under it. The Library no longer disappears after restoring a backup.',
   },

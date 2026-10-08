@@ -274,20 +274,21 @@ test('“all”: the slider ends at the smaller of the sections and the markers 
     assert.equal(t.grad.mkCountLabel(), 'all · 80');
   }
   // Honolulu 24's 12 vivid on 216 sections (more than twice as many): bands of all 12, not split up (confetti)
+  // (v308.3: 14, its two violets V010 and V416 kept so the set keeps its violet family)
   {
     const { t } = appWith(['Honolulu 24']);
     const cl = page(t, 18, 12);
     style(t, {});
-    assert.equal(t.grad.mkCap(), 12);
+    assert.equal(t.grad.mkCap(), 14);
     const c = t.grad.countNow();
-    assert.deepEqual([c.M, c.reuse], [12, false]);
+    assert.deepEqual([c.M, c.reuse], [14, false]);
     t.grad.build(cl);
-    assert.equal(usedMs(t).length, 12);
+    assert.equal(usedMs(t).length, 14);
     assert.ok(same(t) > 150, 'bands: neighbours share their band’s marker');
     // and the line under Include says what Browns would add
     assert.match(
       t.grad.inclStatus(),
-      /^12 of your markers · browns, greys, fluorescents off · .+ would add \d+$/,
+      /^14 of your markers · browns, greys, fluorescents off · .+ would add \d+$/,
     );
   }
 });

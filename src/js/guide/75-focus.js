@@ -295,7 +295,8 @@ function focusAllOfColour() {
     was = {},
     g = loadGen,
     at = focusPos,
-    mm = assignData.assign[l];
+    mm = assignData.assign[l],
+    K = comps.length;
   guideDirty = true;
   focusOrd.forEach(function (q) {
     if (assignData.assign[q].mkey === k && focusZoneOf(q) === z) {
@@ -313,7 +314,8 @@ function focusAllOfColour() {
   // finished the page, which says so instead)
   if (Object.keys(was).length && nx >= 0)
     toastActionHTML('Marked all ' + mcodeHTML(mm) + ' done', 'Undo', function () {
-      if (g !== loadGen || !assignData || !focus) return;
+      // (v308.2: Focus mode closed since, the toast still up, it undoes too: it had done nothing)
+      if (g !== loadGen || !assignData || comps.length !== K) return;
       const P = tp();
       for (const q in was) {
         if (!colored[q]) continue;
@@ -326,7 +328,8 @@ function focusAllOfColour() {
       normalizeTones();
       renderGuide();
       updateProgress();
-      goFocus(Math.min(at, focusOrd.length - 1), true, true);
+      if (focus) goFocus(Math.min(at, focusOrd.length - 1), true, true);
+      else sayLive('Ticks as they were for ' + msay(mm));
     });
 }
 // (v308: closing it goes back to Colour along, revClose; before, it left you on the Plan's Share tab)

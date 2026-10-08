@@ -17,9 +17,13 @@
   display: flex;
 }
 /* (v308.1, layers.js) the page under an open dialog or the Library stays still */
-html.ms-ovl,
-html.ms-ovl body {
+/* (v308.2: the page only, as for the guide's sheets: with overflow of its own the body would become the scroller the
+   pinned picture and the guide's bar stick to, and they jumped behind the dialog) */
+html.ms-ovl {
   overflow: hidden;
+}
+html.ms-ovl body {
+  overflow: visible;
 }
 .ocard {
   max-width: 100%;

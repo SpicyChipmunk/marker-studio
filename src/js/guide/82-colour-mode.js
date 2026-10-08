@@ -100,6 +100,8 @@ function markActive(done) {
         renderGuide();
         updateProgress();
         renderFocusMarkers();
+        // (v308.2: Focus mode opened since, the toast still up: its section's Done and Undo redrawn too)
+        if (focus && typeof renderFocusUI === 'function') renderFocusUI();
         sayLive((done ? 'Ticks as they were for ' : 'Ticks back for ') + msay(mk));
       },
     );
@@ -219,6 +221,8 @@ function renderFocusMarkers() {
         '<button class="focmk' +
         (act ? ' on' : '') +
         (full ? ' done' : '') +
+        // (v308.3: a colour neither text reads on at 4.5:1 gets a halo round its words, dark under white, light under dark)
+        (txtWeak(e.m.hex) ? ' fmhalo' + (tc === '#fff' ? '' : ' fmhalo-lt') : '') +
         '" data-k="' +
         esc(e.k) +
         '" style="background:' +

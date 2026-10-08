@@ -26,6 +26,13 @@ function darkText(hex) {
 function txt(hex) {
   return darkText(hex) ? '#141216' : '#fff';
 }
+// (v308.3) a colour that neither the dark text nor white reads on at 4.5:1 (21 of the 722 markers, at worst 4.32:1:
+// Ohuhu R014, V015, B315, R413…): Focus mode's colour chips give their words a soft halo in the other colour
+function txtWeak(hex) {
+  if (_darkTxtLum == null) _darkTxtLum = relLum('#141216');
+  const y = relLum(hex);
+  return Math.max((y + 0.05) / (_darkTxtLum + 0.05), 1.05 / (y + 0.05)) < 4.5;
+}
 function hsl(hex) {
   const [R, G, B] = rgb(hex),
     r = R / 255,

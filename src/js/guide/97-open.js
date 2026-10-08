@@ -397,6 +397,7 @@ function openDesignObj(d, id, resumed, quiet, col) {
       zoneSigSync();
       // (v308: each zone's marker count says its own markers until it's laid again: mkOwnCount, 51-controls-plan)
       _mkOpened = {};
+      _blendSel = {};
       zoneIds().forEach(function (id) {
         _mkOpened[id] = 1;
       });

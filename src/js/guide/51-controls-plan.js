@@ -107,6 +107,11 @@ const MK_ALL = 999;
 function mkCap() {
   const N = labels && comps ? zoneList().length : 0,
     p = sliderMax();
+  // (v308.3: Blend's ends at the markers its blend uses at all, so each step along it can change the picture)
+  if (family === 'blend' && N >= 2) {
+    const b = blendAllN();
+    if (b > 0) return Math.max(2, Math.min(N, p, b));
+  }
   return Math.max(2, N >= 2 ? Math.min(N, p) : p);
 }
 // how many markers the sections of the zone being edited have, while it's as it opened (not laid since); else -1

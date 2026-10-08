@@ -514,6 +514,8 @@
   if (photoBtn && fileIn)
     photoBtn.addEventListener('click', function () {
       stopCam();
+      // (v308.2: the same photo again, after "Couldn't read that image", is read again)
+      fileIn.value = '';
       fileIn.click();
     });
   {

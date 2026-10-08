@@ -516,3 +516,30 @@ Everything from the eight-reviewer beta-readiness review of v307 (all major, min
 - While the Library or any dialog is open, the page under it stays still. On an iPad a swipe on a short Library could scroll Home behind it, moving Safari's bars and showing a strip of Home's guides at the foot. New: `e2e/v308-1` (2).
 - Tests: guide-frame's picture-size test allows a pixel either way (flaky once in WebKit on v308's run).
 - Cache bumped to `marker-studio-v308.1`.
+
+# Changes — v308.2 (a debugging pass over v308.1)
+
+Four fresh reviewers (Home, Library and data; Markers and Palette; intake and the Plan; colouring and output), in both engines at iPad sizes and 390. Each fix has a test that fails on v308.1. New: `e2e/v3081-d1` (1), `v3081-d2` (4), `v3081-d4` (3), `v3082` (2); `test/v3081-d3` (1).
+
+- A dialog over a scrolled guide no longer moves the pinned picture and the bar under it (v308.1's page lock now holds only the page, as the guide's sheets do).
+- Marking a marker Running low or Dry shows Owned's "Running low" chip straight away, and its count follows.
+- Palette: Rainbow offers only the sizes your markers can fill (Ciao 12 had 14 and 16, with Generate greyed out); a size that no longer fits after the collection shrinks moves down before the controls are drawn. Save image's file takes the palette's name.
+- With a small collection the marker count ends where "all" does (Ciao 12 ended at 7 while all laid 8, so 7 couldn't be chosen).
+- Focus mode: "Mark all … done"'s Undo works after leaving Focus mode; the list's Mark all Undo redraws Focus mode if it's open. The finished page's Codes button and the colour chips' counts are readable (4.5:1 or better).
+- Match: a hex code pasted with spaces is read; the same photo can be picked again after "Couldn't read that image".
+- Restore's "Undo marker change" leaves the keyboard on the Library's Restore. Clear collection's "Tap again" keeps one timer.
+- Tests: Mixed's No repeats allows one repeat where the last unused marker looks the same as a neighbour's (as designed; flaky about 1 in 250).
+- Cache bumped to `marker-studio-v308.2`.
+
+# Changes — v308.3 (Ben's decisions from the v308.1 debugging pass)
+
+Seven decisions, each pressure-tested with measurements first, built on three branches. New: `test/v3083-blend` (2), `v3083-colour` (8), `v3083-data` (4); `e2e/v3083-blend` (6), `v3083-colour` (2), `v3083-data` (12). Each fails on v308.2.
+
+- **Blend picks its markers from the blend itself.** The count is the most markers a blend may use, chosen to match its colours, with each anchor's marker always among them; fewer when the blend needs fewer. On the sample with 451 markers at 16: 16 markers used (was 8), about ΔE 1 from the full blend (was 27). The slider ends where "all" does, so each step changes the picture; anchor dots show the marker they give. Saved Blend guides open as saved.
+- **Gradients keep every colour family your markers have** (Any and Bright): where the vivid filter dropped all of one family's markers, the most vivid one or two come back (Honolulu 24 keeps its violets V010 and V416: all · 14; Ciao 24 its violets and pinks). Palette's Rainbow too. Your 451 are as they were.
+- **A marker added back by hand loses its Running low or Dry mark** (a tick in Markers or its details, Tick all shown, Add a set, Scan's Add), so it's back in palettes and guides and off To buy; Undo puts the mark back. Restoring a backup and Bought are as before.
+- **Scan with Ohuhu chosen reads Copic's fluorescent cap codes** (FB2, FBG2, FYG2, FRV1, FV2, FY1, FYG1, FYR1) as another brand's markers to add. No other old code is opened up.
+- **Markers' search knows the colour families.** No name matches but every word is in a family ("skin"): that family is shown, with a line saying so. Names match too ("red"): one line offers the family, its whole name preferred ("the Red family (69)"); tapping it turns its filter on. The Scan hint for a list of codes still wins.
+- Ohuhu V013's name is "Violet".
+- Focus mode: the 21 colour chips that neither dark nor white words read on at 4.5:1 (such as Ohuhu R413) get a soft outline round their words; the rest are unchanged.
+- Cache bumped to `marker-studio-v308.3`.

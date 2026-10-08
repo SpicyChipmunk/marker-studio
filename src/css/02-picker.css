@@ -1253,6 +1253,24 @@ button:focus-visible {
 .empty + .moreall {
   margin-top: 0;
 }
+/* (v308.3) above a search's results: the families it names ("No names match … · showing the … family", or
+   "Also: the … family ›") */
+.famline {
+  display: flex;
+  align-items: center;
+  gap: 0 4px;
+  min-height: 44px;
+  margin: 0 2px 6px;
+  font-size: var(--t-base);
+  color: var(--sub);
+}
+/* (the link's words wrap beside "Also:" on a phone, rather than the whole link dropping under it) */
+.famline .moreshow {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0 2px;
+  text-align: left;
+}
 .moreshow {
   min-height: 44px;
   padding: 0 6px;

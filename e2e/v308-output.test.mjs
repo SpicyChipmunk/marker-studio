@@ -500,6 +500,10 @@ test('the Print sheet: a choice not taken is in the ink colour, not faded as if 
   await page.click('#sfPrint');
   await page.waitForSelector('#sfSheet.sfprsh');
   await idle(page);
+  // (once the sheet's buttons have finished their colour change: read mid-way, a colour came back 0.99 opaque, v308.1 run)
+  await page.waitForFunction(() =>
+    [...document.querySelectorAll('#sfSheet [data-plabels]')].every((e) => !e.getAnimations().some((a) => a.playState === 'running')),
+  );
   const r = await page.evaluate(() => {
     const on = document.querySelector('#sfSheet [data-plabels].on'),
       off = document.querySelector('#sfSheet [data-plabels]:not(.on):not(:disabled)'),

@@ -531,6 +531,17 @@
 .focmk.done {
   opacity: 0.5;
 }
+/* (v308.3) a colour neither text reads on at 4.5:1: a soft outline round the words in the other colour */
+.focmk.fmhalo {
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, 0.75),
+    0 0 1px rgba(0, 0, 0, 0.9);
+}
+.focmk.fmhalo-lt {
+  text-shadow:
+    0 0 2px rgba(255, 255, 255, 0.75),
+    0 0 1px rgba(255, 255, 255, 0.9);
+}
 .focmk .fmc {
   display: block;
   font-weight: 700;
@@ -540,7 +551,6 @@
   display: block;
   font-size: var(--t-sm);
   font-weight: 600;
-  opacity: 0.9;
   max-width: 9em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -549,7 +559,6 @@
 .focmk .fmn {
   display: block;
   font-size: var(--t-sm);
-  opacity: 0.85;
 }
 .sftag {
   color: var(--sub);

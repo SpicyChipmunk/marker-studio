@@ -499,7 +499,14 @@ const CAP_DE = 8,
   CAP_BIG = 160;
 function palCap(h) {
   const R = HARM_RANGE[h] || [2, 6];
-  if (h === 'custom' || h === 'photo' || h === 'rainbow') return R[1];
+  if (h === 'custom' || h === 'photo') return R[1];
+  // (v308.2) a Rainbow, up to the markers in play: with 12, 14 and 16 had been offered and Generate refused them
+  // ("Only 12 markers to choose from"). It may still stop short at the clear ones among them (closeNote).
+  if (h === 'rainbow') {
+    let n = 0;
+    for (let i = 0; i < COLORS.length && n < R[1]; i++) if (inPool(i)) n++;
+    return Math.max(R[0], n);
+  }
   const k = poolSig();
   if (k !== _capK) {
     _capK = k;
@@ -543,9 +550,11 @@ function palCap(h) {
 // a scheme's size within what the markers in play offer (palCap)
 function palSizeFit() {
   const h = state.harmony;
-  if (h === 'custom' || h === 'photo' || h === 'rainbow') return;
+  if (h === 'custom' || h === 'photo') return;
   const c = palCap(h);
-  if (state.palSize > c) state.palSize = c;
+  // (a Rainbow's sizes go in twos: the largest of them that fits)
+  if (state.palSize > c)
+    state.palSize = h === 'rainbow' ? Math.max(...RAINBOW_SIZES.filter((x) => x <= c)) : c;
 }
 // (v296) from a map made once: it's asked per marker in Library tiles, To buy and the swatch chart
 let _keyIdx = null;
