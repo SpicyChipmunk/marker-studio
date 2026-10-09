@@ -65,6 +65,10 @@ GitHub Actions runs both on every push to any branch but `release`
 
 `e2e/ci-parts.mjs` shares the files out so the parts take about as long
 (`e2e/ci-durations.json`), and each part lists its results on the run's page.
+Each job keeps its Playwright browser between runs (downloaded again only when
+Playwright changes), and each install is stopped after 5 minutes and tried
+again, up to 3 times (`e2e/ci-try.sh`), so one stalled download can't run a job
+out of time.
 `E2E_BROWSER=webkit npm run e2e` runs the browser tests on WebKit locally.
 Screenshots and PDFs from the browser tests land in `e2e/.artifacts/`
 (ignored by git) so you can look at what the tests saw.

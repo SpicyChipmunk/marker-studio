@@ -4,7 +4,7 @@
 // (the lookups, the mixes, the adjacency on made-up pictures) are unit-tested in test/colour-engines.test.mjs.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle, until, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, until, buildGo, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -93,7 +93,7 @@ test('Random on the sample: with “Keep touching sections clearly different”,
 
 test('Random on a drawing with thick lines: every touching pair is found, and kept clearly different (a fixed step across missed them all)', async () => {
   const { page, errors } = await openApp({ init: SEEDED });
-  await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
   // 8 × 6 boxes, 150 px, drawn with 24 px lines (a 50th of the picture across)
   const b64 = await page.evaluate(async () => {
     const c = document.createElement('canvas'), g = c.getContext('2d');

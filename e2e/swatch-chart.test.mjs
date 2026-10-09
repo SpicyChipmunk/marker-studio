@@ -60,10 +60,11 @@ test('the sheet opens from Markers and previews pages and markers for the collec
   const paper = await page.evaluate(() => localStorage.getItem('ms-paper') || SF.pdfKit.paper());
   assert.equal(await page.getAttribute(`#swOpts [data-k="paper"][data-v="${paper}"]`, 'aria-pressed'), 'true', 'the app’s paper choice');
   const owned = await page.evaluate(() => state.owned.size);
-  assert.equal(owned, 120);
+  // (v309.1: Honolulu 120 comes with its Colorless Blender, which has its box like any marker)
+  assert.equal(owned, 121);
   // Letter and A4 take 5 columns × 8 rows of boxes with names, 9 rows with codes only
   await pick(page, 'paper', 'letter');
-  assert.equal(await summary(page), '3 pages · 120 markers');
+  assert.equal(await summary(page), '4 pages · 121 markers');
   await pick(page, 'what', 'Copic');
   assert.equal(await summary(page), '9 pages · 358 markers');
   await pick(page, 'what', 'Ohuhu');
@@ -113,7 +114,7 @@ test('the download is a PDF with the pages the sheet promised, on the chosen pap
   let d = await download(page);
   let info = pdfInfo(d.bytes);
   assert.equal(info.head, '%PDF-');
-  assert.equal(info.pages, 3); assert.equal(info.count, 3);
+  assert.equal(info.pages, 4); assert.equal(info.count, 4); // (with the blender, v309.1)
   assert.deepEqual([info.w, info.h], [612, 792], 'Letter');
   assert.match(d.name, /^swatch-chart-my-collection-\d{4}-\d{2}-\d{2}\.pdf$/);
   await saveArtifact('swatch-chart-letter.pdf', d.bytes);

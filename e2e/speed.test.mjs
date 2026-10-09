@@ -3,7 +3,7 @@
 // per Done, no PNG re-encode on autosave, one-section zone markers) give the same answers as the slow ones.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, buildGo, ENGINE } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop, buildGo, ENGINE, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -69,7 +69,7 @@ test('a big phone photo is kept at working size, Done repaints one section, auto
     const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.9));
     return await new Promise((res) => { const f = new FileReader(); f.onload = () => res(f.result.split(',')[1]); f.readAsDataURL(blob); });
   });
-  await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#wcPhoto')]);
   await fc.setFiles({ name: 'photo.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(b64, 'base64') });
   await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 60000 });
@@ -207,7 +207,7 @@ test('a 48-megapixel photo loads, is scaled to working size, and builds', async 
     c.width = c.height = 1;
     return await new Promise((res) => { const f = new FileReader(); f.onload = () => res(f.result.split(',')[1]); f.readAsDataURL(blob); });
   });
-  await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
   const t0 = Date.now();
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#wcPhoto')]);
   await fc.setFiles({ name: 'big.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(b64, 'base64') });

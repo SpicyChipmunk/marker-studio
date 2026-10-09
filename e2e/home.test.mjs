@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
-import { setup, teardown, openApp, idle, sampleGuide, openAtScale, saveGuide, letterGuide, libItem } from './helpers.mjs';
+import { setup, teardown, openApp, idle, sampleGuide, openAtScale, saveGuide, letterGuide, libItem, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -11,7 +11,7 @@ after(teardown);
 // ---- From the review leftovers ----
 test('Home names the app once, and the header names the brands you own', async () => {
   const { page, errors } = await openApp();
-  await page.check('#wcSets input[data-i="0"]'); await page.click('#wcAdd'); await page.click('#wcLook'); await idle(page);
+  await haveSet(page); await page.check('#wcSets input[data-i="0"]'); await page.click('#wcAdd'); await page.click('#wcLook'); await idle(page);
   const count = await page.evaluate(() => [...document.querySelectorAll('body *')].filter((e) => e.offsetParent && e.children.length === 0 && /^Marker Studio$/.test(e.textContent.trim())).length);
   assert.equal(count, 1, '"Marker Studio" shows once');
   assert.equal(await page.textContent('.head .set'), 'Ohuhu · your collection');

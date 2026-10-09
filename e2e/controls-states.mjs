@@ -103,6 +103,8 @@ const tab = (page, t) => click(page, `.sftabbtn[data-t="${t}"]`);
 
 // the welcome's set 3 (Honolulu 120), then the sample guide or the photo button
 async function start(page, next = 'sample') {
+  // (v309: the welcome opens on three ways in; "I have a set" leads to the list)
+  await page.click('#wcHaveSet');
   await page.check('#wcSets input[data-i="3"]');
   await page.click('#wcAdd');
   if (next) await startGuide(page, next);

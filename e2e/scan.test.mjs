@@ -235,17 +235,19 @@ test('Escape closes it with focus back on its button; the list is kept until add
   assert.deepEqual(errors, []);
 });
 
-test('the welcome offers it for markers bought one at a time: Markers, with the dialog open and the box ready', async () => {
+// (v309: the welcome's "I bought them one by one" › Scan the caps opens it over the welcome, which then goes on)
+test('the welcome offers it for markers bought one at a time: the dialog over the welcome, the box ready; Add, and the welcome goes on', async () => {
   const { page, errors } = await openApp();
   assert.ok(await page.isVisible('#welcome'));
-  await page.click('#wcScan'); await idle(page);
-  assert.equal(await page.isVisible('#welcome'), false);
-  assert.equal(await page.evaluate(() => state.mode), 'collection');
+  await page.click('#wcOneByOne'); await page.click('#wcOneScan'); await idle(page);
+  assert.ok(await page.isVisible('#welcome'), 'the welcome stays under it');
   assert.ok(await page.isVisible('#scanOverlay'));
   assert.equal(await page.evaluate(() => document.activeElement.id), 'scBox');
   await type(page, 'B015');
   await page.click('#scAdd'); await idle(page);
   assert.deepEqual(await page.evaluate(() => [...state.owned]), ['Ohuhu|B015']);
+  assert.equal(await page.textContent('#wcT2'), '1 marker added');
+  await page.click('#wcLook'); await idle(page);
   // the welcome doesn't come back
   await page.reload(); await idle(page);
   assert.equal(await page.isVisible('#welcome'), false);

@@ -3,7 +3,7 @@
 // its Use button. The marker choice itself is unit-tested (test/photo-choice.test.mjs).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle, sectionPoint, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, idle, sectionPoint, notOnWebKit, WK, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -11,7 +11,7 @@ after(teardown);
 // the sample guide with marker set `set` (a welcome index), then the Photo pattern with a photo drawn by `code`
 // (canvas drawing on g, 600 × 800)
 async function photoGuide(page, set, code) {
-  await page.check(`#wcSets input[data-i="${set}"]`); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check(`#wcSets input[data-i="${set}"]`); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
   const b64 = await page.evaluate(async (code) => {
     const c = document.createElement('canvas'); c.width = 600; c.height = 800; const g = c.getContext('2d');
@@ -71,7 +71,7 @@ test('graded by eye in Match’s words: the summary, a tapped section’s tip, a
 
 test('a photo of the page coloured with 8 clearly different markers: “About 8 markers”, Use 8 gives back those 8, Undo goes back', notOnWebKit(WK.scale), async () => {
   const { page, errors } = await openApp();
-  await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
   // the guide's own sections painted with 8 markers from the collection (at least 10 apart by eye, none near white)
   const { b64, truth } = await page.evaluate(async () => {

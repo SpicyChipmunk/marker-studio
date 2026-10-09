@@ -34,7 +34,8 @@ test('Match: nearest by eye among your markers (not dry); markers to buy only wh
   // one of your markers has run dry: it's listed with the ones you could buy, not as yours
   const dry = E('COLORS.findIndex((c, i) => isOwned(i))');
   E(`state.ink[mkey(${dry})] = 'dry'`);
-  const usable = (i) => E(`isOwned(${i}) && !isDry(${i})`);
+  // (v309.1: Honolulu 48 comes with a Colorless Blender, which no colour is matched to: NOINK)
+  const usable = (i) => E(`isOwned(${i}) && !isDry(${i}) && !NOINK.has(${i})`);
   const use = [];
   for (let i = 0; i < N; i++) if (usable(i)) use.push(i);
   const rnd = seeded(5), nearest = E('matchNearest');

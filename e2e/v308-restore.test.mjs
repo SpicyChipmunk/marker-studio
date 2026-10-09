@@ -337,7 +337,7 @@ test('a restore of many guides says “Restoring 3 of 6…” and holds the Welc
       __seen.add(b.textContent);
       if (/Restoring/.test(b.textContent)) {
         __held.push(
-          ['wcAdd', 'wcSkip', 'wcScan'].every((id) => document.getElementById(id).disabled) &&
+          ['wcAdd', 'wcSkip', 'wcHaveSet', 'wcOneByOne', 'wcNotSure'].every((id) => document.getElementById(id).disabled) &&
             document.querySelector('#wcSets input').disabled,
         );
         // a second restore meanwhile is turned away

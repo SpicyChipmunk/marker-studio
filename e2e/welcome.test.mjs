@@ -4,7 +4,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { setup, teardown, openApp, welcome, shot, ROOT, idle, openAtScale } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, shot, ROOT, idle, openAtScale, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -37,6 +37,7 @@ test('the welcome dialog does not come back after the first run', async () => {
 // ---- From UX release 1 (v260) ----
 test('Welcome: the Copic tab jumps to the Copic sets', async () => {
   const { page, errors } = await openApp();
+  await haveSet(page); // (v309: the list is behind "I have a set")
   await page.click('.wcbrands [data-b="Copic"]'); await idle(page);
   const r = await page.evaluate(() => { const s = document.getElementById('wcSets'), h = [...s.querySelectorAll('.presetbrand')].find((x) => x.textContent === 'Copic'), a = h.getBoundingClientRect(), b = s.getBoundingClientRect(); return { top: a.top - b.top, on: document.querySelector('.wcbrands button.on').dataset.b }; });
   assert.ok(r.top >= -2 && r.top < 30, `Copic heading at the top of the list (${r.top})`);
@@ -47,7 +48,7 @@ test('Welcome: the Copic tab jumps to the Copic sets', async () => {
 // ---- From the fifth review (guide screen) ----
 test('after the welcome\'s Try the sample, focus is on the guide\'s name, not the page', async () => {
   const { page, errors } = await openApp();
-  await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
   await page.focus('#wcSample'); await page.keyboard.press('Enter');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData)); await idle(page);
   assert.equal(await page.evaluate(() => document.activeElement.id), 'sfGTitle');
@@ -66,14 +67,17 @@ for (const [w, h, scale] of [[844, 390, 1], [375, 667, 1.6], [360, 740, 1.6]]) {
   test(`Welcome at ${w}×${h}, ${scale}x: its buttons are on screen without scrolling; brands are a boxed group`, async () => {
     const { page, errors } = await openAtScale(scale, { width: w, height: h });
     await page.waitForSelector('#welcome.on');
-    const vis = await page.evaluate(() => { const card = document.querySelector('.wcard').getBoundingClientRect(); return ['wcAdd', 'wcSkip', 'wcRestore'].map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return { id, ok: r.top >= card.top && r.bottom <= card.bottom + 0.5 && r.bottom <= innerHeight && r.height > 0 }; }); });
-    for (const v of vis) assert.ok(v.ok, v.id + ' is visible');
+    // (v309: the first step's Skip and Restore; the set list's Add, behind "I have a set")
+    const onScreen = (ids) => page.evaluate((ids) => { const card = document.querySelector('.wcard').getBoundingClientRect(); return ids.map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return { id, ok: r.top >= card.top && r.bottom <= card.bottom + 0.5 && r.bottom <= innerHeight && r.height > 0 }; }); }, ids);
+    for (const v of await onScreen(['wcSkip', 'wcRestore'])) assert.ok(v.ok, v.id + ' is visible');
     assert.equal(await page.evaluate(() => document.querySelector('.wcard').scrollTop), 0);
     const st = await page.evaluate(() => { const g = getComputedStyle(document.querySelector('.wcbrands')), b = getComputedStyle(document.querySelector('.wcbrands button')); return { gb: g.borderTopWidth, bb: b.borderTopWidth, br: b.borderTopLeftRadius }; });
     assert.deepEqual(st, { gb: '1px', bb: '0px', br: '8px' }, 'like .segs');
     assert.match(await page.getAttribute('#wcFile', 'accept'), /\.txt/);
     await shotToDir(page, `welcome-${w}x${h}-${scale}x`);
     // the list scrolls above the pinned buttons
+    await haveSet(page);
+    for (const v of await onScreen(['wcAdd'])) assert.ok(v.ok, v.id + ' is visible');
     await page.check('#wcSets input[data-i="3"]');
     assert.match(await page.textContent('#wcAdd'), /^Add \d+ markers$/);
     assert.deepEqual(errors, []);

@@ -1284,6 +1284,32 @@ const MARKER_SETS = [
 function normCode(x) {
   return x.replace(/^([CW])(\d)/, '$1-$2');
 }
+// (v309.1) The Ohuhu sets that come with a Colorless Blender (0), as Ohuhu's pages for the Honolulu small and large sets
+// say ("+ 1 Colorless Blender"): added with the set. Not the 24 (sold only inside the 48) nor 24 Portrait, unconfirmed.
+// The blender isn't a colour: a set's size (presetSize) and what's said as added leave it out (NOINK, core.js).
+const OHUHU_BLENDER = new Set([
+  '48',
+  '72',
+  '104',
+  '120',
+  '168',
+  '216',
+  '320',
+  '48mid',
+  '36skin',
+  '36gray',
+  '48pastelS',
+  '48pastelB',
+]);
+function inkKeys(keys) {
+  return keys.filter(function (k) {
+    var i = keyIdx(k);
+    return i == null || !NOINK.has(i);
+  });
+}
+function presetSize(p) {
+  return inkKeys(presetMkeys(p)).length;
+}
 function presetMkeys(p) {
   var out = [];
   if (p.allbrand) {
@@ -1297,6 +1323,7 @@ function presetMkeys(p) {
     OHUHU_SETS[p.oh].split(' ').forEach(function (x) {
       w[x] = 1;
     });
+    if (OHUHU_BLENDER.has(p.oh)) w['0'] = 1;
     COLORS.forEach(function (c, i) {
       if (c.brand === 'Ohuhu' && w[c.code]) out.push(mkey(i));
     });
@@ -1311,6 +1338,86 @@ function presetMkeys(p) {
   });
   return out;
 }
+// (v309) "I'm not sure which set": the welcome asks the brand and about how many markers, then reads a few caps.
+// FIND_BUCKETS are its "about how many" answers. findSets ranks the brand's sets: those with every cap read first,
+// then those with the most; among them, sets whose size is in the answer's range, then the nearest size, then the
+// smaller. The count only ranks (a wrong guess still finds the set, further down), never rules a set out. Honolulu's
+// sets sit inside each other (all of the 24 is in the 72, and so on up), so caps alone can't tell them apart. Measured
+// over every set, 100 random picks of caps each: with the right count and 3 caps the set comes first 98% of the time
+// and in the first two always (1 cap: 84%, 99%); with the count one range off, it's in the first three 98% of the time.
+const FIND_BUCKETS = [
+  { lo: 1, hi: 30, t: 'Up to 30' },
+  { lo: 31, hi: 60, t: '31–60' },
+  { lo: 61, hi: 100, t: '61–100' },
+  { lo: 101, hi: 150, t: '101–150' },
+  { lo: 151, hi: 250, t: '151–250' },
+  { lo: 251, hi: 1e4, t: 'More than 250' },
+];
+// brand: 'Ohuhu' or 'Copic'; bucket: an index into FIND_BUCKETS (or -1, none); keys: the caps read, as marker keys.
+// Returns [{ i (index into MARKER_SETS), n (its markers), hits (how many of the caps it has), all (has every one),
+// of (how many caps counted), far }], best first; sets with none of the caps are left out (all of them, with no caps).
+// (v309.1) "All Copic markers" (allbrand) has every cap, so it had come first whenever no real set had all of them (caps
+// from two sets, one misread), even for "Up to 30": "Is this your set? … add these 358 markers". Unless its size is in
+// the range answered, it's far: last, after the sets with only some of the caps (still there, a tap or two away).
+// (v309.1) Caps in none of the brand's sets (Ohuhu's Colorless Blender 0, and a few colours sold on their own) say
+// nothing about which set it is: they don't count (of: how many caps did), unless none of the caps is in a set.
+function findSets(brand, bucket, keys) {
+  var b = FIND_BUCKETS[bucket],
+    out = [],
+    inSets = new Set();
+  MARKER_SETS.forEach(function (p) {
+    if (p.b === brand && !p.allbrand) presetMkeys(p).forEach((k) => inSets.add(k));
+  });
+  var counted = keys.filter((k) => inSets.has(k));
+  if (counted.length) keys = counted;
+  MARKER_SETS.forEach(function (p, i) {
+    if (p.b !== brand) return;
+    var ks = presetMkeys(p),
+      has = new Set(ks),
+      hits = 0;
+    keys.forEach(function (k) {
+      if (has.has(k)) hits++;
+    });
+    if (keys.length && !hits) return;
+    var n = inkKeys(ks).length,
+      off = b ? (n < b.lo ? b.lo - n : n > b.hi ? n - b.hi : 0) : 0;
+    out.push({
+      i: i,
+      n: n,
+      hits: hits,
+      all: hits === keys.length,
+      of: keys.length,
+      off: off,
+      far: !!p.allbrand && (off > 0 || !b),
+    });
+  });
+  out.sort(function (x, y) {
+    return (
+      (x.far ? 1 : 0) - (y.far ? 1 : 0) ||
+      y.hits - x.hits ||
+      (x.off ? 1 : 0) - (y.off ? 1 : 0) ||
+      x.off - y.off ||
+      x.n - y.n
+    );
+  });
+  return out.map(function (x) {
+    return { i: x.i, n: x.n, hits: x.hits, all: x.all, of: x.of, far: x.far };
+  });
+}
+// (v309.1) the matches to show, best first: the sets with every cap (a far one after them), or, when none has every
+// cap, all of them (findSets' order: the most caps first)
+function findList(r) {
+  var full = r.filter(function (x) {
+    return x.all && !x.far;
+  });
+  return full.length
+    ? full.concat(
+        r.filter(function (x) {
+          return x.far;
+        }),
+      )
+    : r;
+}
 function presetListHTML() {
   var html = '',
     lastB = '';
@@ -1319,7 +1426,8 @@ function presetListHTML() {
       html += '<div class="presetbrand">' + p.b + '</div>';
       lastB = p.b;
     }
-    var ks = presetMkeys(p),
+    // (v309.1: the colours: a set's blender neither counts in its size nor stops it showing as yours)
+    var ks = inkKeys(presetMkeys(p)),
       n = ks.length,
       own = 0;
     ks.forEach(function (k) {
@@ -1427,7 +1535,8 @@ let presetRelist = null;
         );
         return;
       }
-      toastAction(addedManyLine(added.length, off.length), 'Undo', function () {
+      // (v309.1: the colours added; a set's blender alone, if that's all that was new)
+      toastAction(addedManyLine(inkKeys(added).length || added.length, off.length), 'Undo', function () {
         added.forEach(function (k) {
           state.owned.delete(k);
         });

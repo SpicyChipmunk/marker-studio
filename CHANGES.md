@@ -558,3 +558,31 @@ Seven decisions, each pressure-tested with measurements first, built on three br
 
 - Scan Text reads cap after cap again. Ben's log from a test page (the Scan Text Bench, outside the app) showed iPadOS 27's Scan Text puts each cap's text in as a composition (insertCompositionText) and takes it out itself (deleteCompositionText) when the cap leaves view. Scan cleared the box after reading, mid-composition, and that stopped Scan Text for the rest of the visit: the camera read on, nothing more arrived. Of four ways of handling the box, the two that never clear it mid-composition kept reading. Now the box is never cleared by the app while a composition is open (after a read, nor text with no code after 1.5 s, nor on Add); Scan Text clears its own text and the next cap is read as it arrives. Without a composition (older iPadOS, a paste, typing) the box clears as before. New: `e2e/v3086` (3), which replays Ben's log.
 - Cache bumped to `marker-studio-v308.6`.
+
+# Changes — CI (after v308.6)
+
+- The test run keeps Playwright's Chromium and WebKit between runs (actions/cache, keyed on the Playwright version), so a run downloads a browser only when Playwright changes. The browser and its system libraries are now installed in two steps, each stopped after 5 minutes and tried again, up to 3 times (`e2e/ci-try.sh`, with a warning on the run's page for each stopped try). A WebKit part's install had once stalled for 38 minutes and run the part out of time; installs usually take 30–60 s. No change to the app. New: `test/ci-install` (4), whose workflow test fails on the old workflow.
+
+# Changes — v309 (a first collection without a set to tick)
+
+Ben's choices from the onboarding ideas (1, 2 and 3, with the count only ranking sets, "anything else?" after every set, and the chart in Markers too), mocked up first. New: `test/v309-collection` (5), `test/v309-d2` (3); `e2e/v309-collection` (7), `v309-1` (6), `v309-d1` (2), `v309-d2` (3), `v309-d3` (3).
+
+- **The welcome opens on three ways in:** I have a set (the set list, a step of its own with Back), I bought them one by one, and I'm not sure which set. I'll do this later and Restore a backup stay. The picture is beside the three on a landscape iPad, above them in portrait. Back, Escape or a tap beside the card go to the step before.
+- **I'm not sure which set:** the brand and about how many markers (6 ranges), then Scan reads a few caps ("Scan 3 caps", its own list, the brand fixed, a line saying which set they fit so far), and Find my set shows the best match with a strip of its colours and the caps it has, the other matches a tap away. The count only ranks sets: a wrong guess still finds the set further down. Measured over every set, 100 random picks of 3 caps each: with the right count the set is first 98% of the time and in the first two always; with the count one range off, in the first three 98%. Caps no set has can be added on their own. Scan's own list for Add is left as it was.
+- **I bought them one by one:** Scan the caps, Tick colours on a chart, or Type or paste codes, each over the welcome, which then goes on.
+- **After markers are added** the welcome says how many and asks: extra markers (one by one), another set (the list, or find it from 3 caps), or That's all.
+- **Tick colours on a chart** (new, also in Markers under Scan or type codes): a brand's markers as big swatches, one colour family at a time, yours ticked; Add, Remove or Save (+n −n) with Undo. Ticked here counts as added by hand: off To buy, and a Running low or Dry mark goes.
+- **Scan:** the number read is big; on a touch screen the three Scan Text steps are boxes side by side in place of the paragraph.
+- Existing tests that ticked the set list first open "I have a set" (`haveSet` in e2e/helpers.mjs); the welcome's layout tests follow the new first step.
+- Cache bumped to `marker-studio-v309`.
+- **From the pressure test** (three fresh reviewers, then follow-ups), before release:
+  - Back puts the keyboard back on what led on, from any step (it fell to the page from "Anything else?" and the result).
+  - A set already yours says so ("Nothing new to add"), not "0 more markers added".
+  - The toast's Undo after an Add from the welcome (Scan or the chart) takes the welcome back to the ways to add; it had gone on saying "2 markers added". The chart's unticks are said as removed.
+  - Finding a set: "All Copic markers" no longer comes first whenever no real set has every cap (it had offered 358 markers for "Up to 30"); a set with only some caps says "Has 2 of the 3 caps", not "Also matches"; a cap in no set (Ohuhu's Colorless Blender 0, a few colours sold singly) doesn't count against the sets, and the caps a set hasn't are named and added with it ("Yes, add these 120 markers and the other cap"); the strip's greys run light to dark.
+  - Scan's "Fits so far" line is above the list (on a phone it was below, behind the pinned button).
+  - The chart on a phone on its side keeps Save in the card; the chosen family's chip is in view after a brand switch or opening again; each family's dot is a colour of its own (Copic's Cool Grey was white).
+- **Ben's answers after the pressure test:**
+  - The Ohuhu sets come with a Colorless Blender (0), as Ohuhu's pages for the Honolulu small and large sets say: it's added with the set (48, 72, 104, 120, 168, 216, 320, Mid-tone, Pastels, Skin and Gray Tones; not the 24, sold only inside the 48, nor 24 Portrait). A set's size is its colours ("Add 120 markers", "120 markers and a Colorless Blender"), and the set shows as yours with all its colours, blender or not. The guide card's "Built from the N markers you own" counts colours; Home's count and the swatch chart include the blender, as they do a Copic one. Existing collections are left as they are: tick the blender in Markers if you have it.
+  - Adding a set from the welcome (the list, or "Yes, add these") has Undo on its toast, as Markers' Add a set has; it takes the welcome back to where the set was added from.
+  - "Is this your set?" fits a phone on its side: a wider card, no steps bar, Yes and No side by side.

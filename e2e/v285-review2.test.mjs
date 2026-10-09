@@ -4,7 +4,7 @@
 // Reveal gives the keyboard back; the Library's backup line; the welcome on a landscape phone; singular wording.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle, saveGuide, sectionPoint, scrollTop } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, saveGuide, sectionPoint, scrollTop, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -170,7 +170,7 @@ test('the welcome on a landscape phone: the marker sets are in the one scrolling
   await page.waitForSelector('#welcome.on');
   const g = await page.evaluate(() => { const s = document.getElementById('wcSets'); return { inner: s.scrollHeight - s.clientHeight }; });
   assert.ok(g.inner <= 1, 'the list doesn’t scroll inside another (' + g.inner + ')');
-  await page.check('#wcSets input[data-i="3"]');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]');
   assert.ok(await page.isEnabled('#wcAdd'));
   assert.deepEqual(errors, []);
   await ctx.close();

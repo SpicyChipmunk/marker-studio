@@ -184,7 +184,7 @@ document.addEventListener('keydown', function (e) {
   var sets = $('wcSets'),
     add = $('wcAdd');
   sets.innerHTML = presetListHTML();
-  // (v306) the first step's picture: the sample page, its colour flooding down it from the bell, held, then back to the
+  // (v306) the first step's picture (v309: on the three ways in): the sample page, its colour flooding down it from the bell, held, then back to the
   // page; three times (11 s), then it stays coloured (07-home-onboarding.css: all of it CSS, nothing on a timer). On a
   // portrait screen it lies on its side above the heading; on a landscape iPad it stands beside the list. Not on a short
   // screen (under 761 px), and only built for a first run. WC_ANIM 'fade' cross-fades instead: less to draw each frame,
@@ -206,7 +206,7 @@ document.addEventListener('keydown', function (e) {
     pin.appendChild(sp.line);
     pin.appendChild(pfl);
     pic.appendChild(pin);
-    $('wcStep1').insertBefore(pic, $('wcStep1').firstChild);
+    $('wcStep0').insertBefore(pic, $('wcStep0').firstChild);
     ov.querySelector('.wcard').classList.add('haspic');
     // (not blurring the page behind while it moves: Safari's engine blurred it afresh every frame, ~1 s a frame
     // headless, whichever way the picture moved)
@@ -221,9 +221,9 @@ document.addEventListener('keydown', function (e) {
       });
     });
     add.disabled = !ch.length;
-    add.textContent = ch.length
-      ? 'Add ' + ks.size + ' marker' + (ks.size === 1 ? '' : 's')
-      : 'Tick a set above';
+    // (v309.1: the colours; a set's blender comes with it, uncounted)
+    var n = inkKeys([...ks]).length;
+    add.textContent = ch.length ? 'Add ' + n + ' marker' + (n === 1 ? '' : 's') : 'Tick a set above';
   }
   sets.addEventListener('change', upd);
   // Ohuhu / Copic: jump the list to that brand's sets (Copic's are below the fold otherwise), and show which is in view
@@ -284,13 +284,58 @@ document.addEventListener('keydown', function (e) {
     }
     f.innerHTML = h;
   }
-  function step2(msg, title, keys) {
+  // (v309) The steps: 0, three ways in (I have a set, one by one, not sure which); 1, the set list; Find, brand and
+  // about how many, then Scan reads a few caps over the welcome; Res, the set they fit; One, the ways to add markers
+  // one by one (Scan, the colour chart, typing), each over the welcome; 2, what was added, and anything else (extra
+  // markers, another set), or what Skip gives. Back (and Escape, a tap on the backdrop) goes to the step before.
+  var trail = [],
+    cur = 'wcStep0';
+  ov.querySelector('.wcard').dataset.step = cur;
+  // (v309.1: each step in the trail with what led on from it — the button, else what had the keyboard — so Back puts
+  // the keyboard back there, wherever the step was reached from; Safari doesn't focus a button that's tapped)
+  function show(id, back, from) {
+    if (id === cur) return;
+    if (!back) trail.push({ id: cur, el: from || document.activeElement });
+    $(cur).style.display = 'none';
+    $(id).style.display = '';
+    cur = id;
+    ov.querySelector('.wcard').dataset.step = id;
+    // (the picture's flood stops being drawn once its step is left: the page behind blurs as other dialogs do)
+    if (id !== 'wcStep0') ov.classList.remove('wcplain');
+    var sc = $(id).querySelector('.wcscroll');
+    if (sc) sc.scrollTop = 0;
+    $(id).scrollTop = 0;
+  }
+  function back() {
+    if (!trail.length) return false;
+    var t = trail.pop();
+    show(t.id, true);
+    // (the keyboard back on what led to the step just left, else the step's heading or its first button)
+    var step = $(cur),
+      ok = function (el) {
+        return !!el && step.contains(el) && el.getClientRects().length > 0;
+      },
+      el = [
+        t.el,
+        step.querySelector('.wctitle[tabindex]'),
+        step.querySelector('button:not([disabled])'),
+      ].find(ok);
+    if (el) el.focus({ preventScroll: true });
+    return true;
+  }
+  ov.addEventListener('click', function (e) {
+    if (e.target === ov) back();
+    else if (e.target.closest && e.target.closest('.wcback')) back();
+  });
+  // (v306) the fan of markers on step 2
+  function step2(msg, title, keys, more) {
     if (keys) fan(keys);
-    $('wcT2').textContent = title || 'You\u2019re all set';
-    $('wcStep1').style.display = 'none';
-    $('wcStep2').style.display = '';
-    ov.classList.remove('wcplain');
+    $('wcT2').textContent = title || 'You’re all set';
     $('wcDone').textContent = msg;
+    $('wcMore').style.display = more ? '' : 'none';
+    $('wcSample').textContent = more ? 'That’s all: try the sample' : 'Try the sample';
+    trail = [];
+    show('wcStep2', true);
     var b = $('wcSample');
     if (b) b.focus();
   }
@@ -298,27 +343,101 @@ document.addEventListener('keydown', function (e) {
     closeDialog(ov);
     markDone();
   }
-  add.addEventListener('click', function () {
-    const before = new Set(state.owned),
-      got = new Set();
-    sets.querySelectorAll('input:checked').forEach(function (x) {
-      presetMkeys(MARKER_SETS[+x.dataset.i]).forEach(function (k) {
-        state.owned.add(k);
-        got.add(k);
-      });
+  // a list of set names: "Honolulu 120", "Honolulu 120 and 36 Skin Tones", "3 sets"
+  function setNames(ns) {
+    return ns.length === 1 ? ns[0] : ns.length === 2 ? ns[0] + ' and ' + ns[1] : ns.length + ' sets';
+  }
+  // markers added: step 2 says how many, and asks if there's anything else
+  // (v309.1: none new, a set or caps already yours, says so, not "0 more markers added")
+  function added(n, names, del) {
+    var all = state.owned.size,
+      // (the first markers: all the colours owned are these; a set's blender aside)
+      first = inkKeys([...state.owned]).length === n;
+    snap = { id: cur, trail: trail.slice() };
+    step2(
+      (names
+        ? setNames(names) +
+          (names.length === 1 ? (n ? ' is' : ' was already') : n ? ' are' : ' were already') +
+          ' in your collection.'
+        : n || del
+          ? all + ' marker' + (all === 1 ? ' is' : 's are') + ' in your collection.'
+          : 'They were already in your collection.') + ' Anything else?',
+      // (v309.1: the chart can untick too)
+      n
+        ? n +
+            (first ? '' : ' more') +
+            ' marker' +
+            (n === 1 ? '' : 's') +
+            ' added' +
+            (del ? ', ' + del + ' removed' : '')
+        : del
+          ? del + ' marker' + (del === 1 ? '' : 's') + ' removed'
+          : 'Nothing new to add',
+      [...state.owned],
+      true,
+    );
+  }
+  // add markers (a set, a set found, the caps read) with Undo through keep; how many were new
+  // (v309.1: the colours new to the collection are counted, a set's blender not; and the toast's Undo, as Markers' Add
+  // a set has, takes them back out and the welcome back to where they were added from)
+  function own(keys) {
+    var before = new Set(state.owned),
+      fresh = [];
+    keys.forEach(function (k) {
+      if (!state.owned.has(k) && fresh.indexOf(k) < 0) fresh.push(k);
+      state.owned.add(k);
     });
     if (
       !keep(function () {
         state.owned = before;
       })
     )
-      return;
+      return -1;
     fullRender();
-    step2(
-      state.owned.size + ' markers are in your collection. Fine-tune single markers any time in Markers.',
-      '',
-      [...got],
-    );
+    if (typeof presetRelist === 'function') presetRelist();
+    var n = inkKeys(fresh).length;
+    if (fresh.length)
+      toastAction(addedManyLine(n || fresh.length, 0), 'Undo', function () {
+        fresh.forEach(function (k) {
+          state.owned.delete(k);
+        });
+        save();
+        fullRender();
+        if (typeof presetRelist === 'function') presetRelist();
+        sets.innerHTML = presetListHTML();
+        upd();
+        undoneBack();
+      });
+    return n;
+  }
+  // where the markers were added from (the step, and the steps before it), for the toast's Undo
+  var snap = null;
+  function undoneBack() {
+    if (cur !== 'wcStep2' || !snap) return;
+    trail = snap.trail;
+    show(snap.id, true);
+    var h = $(cur).querySelector('.wctitle[tabindex]');
+    if (h) h.focus({ preventScroll: true });
+  }
+  $('wcHaveSet').addEventListener('click', function () {
+    show('wcStep1', false, this);
+    $('wcT1').focus({ preventScroll: true });
+  });
+  add.addEventListener('click', function () {
+    var keys = [],
+      names = [];
+    sets.querySelectorAll('input:checked').forEach(function (x) {
+      var p = MARKER_SETS[+x.dataset.i];
+      names.push(p.n);
+      keys = keys.concat(presetMkeys(p));
+    });
+    var n = own(keys);
+    if (n < 0) return;
+    sets.querySelectorAll('input:checked').forEach(function (x) {
+      x.checked = false;
+    });
+    upd();
+    added(n, names);
   });
   $('wcSkip').addEventListener('click', function () {
     step2(
@@ -327,7 +446,211 @@ document.addEventListener('keydown', function (e) {
       COLORS.map(function (c, i) {
         return mkey(i);
       }),
+      false,
     );
+  });
+  // --- "I'm not sure which set": the brand, about how many, then Scan reads a few caps (findSets, events.js) ---
+  var fBrand = 'Ohuhu',
+    fBucket = -1,
+    fKeys = [],
+    fRes = [],
+    fAt = 0;
+  $('wcFCount').innerHTML = FIND_BUCKETS.map(function (b, i) {
+    return '<button type="button" data-n="' + i + '" aria-pressed="false">' + b.t + '</button>';
+  }).join('');
+  function press(group, el) {
+    group.querySelectorAll('button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b === el));
+    });
+  }
+  function toFind() {
+    show('wcStepFind', false, this);
+    $('wcTF').focus({ preventScroll: true });
+  }
+  $('wcNotSure').addEventListener('click', toFind);
+  $('wcToFind').addEventListener('click', toFind);
+  $('wcFBrand').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    fBrand = b.dataset.b;
+    press($('wcFBrand'), b);
+  });
+  $('wcFCount').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    fBucket = +b.dataset.n;
+    press($('wcFCount'), b);
+    $('wcFindNext').disabled = false;
+  });
+  $('wcFindNext').addEventListener('click', function () {
+    if (fBucket < 0 || typeof openScan !== 'function') return;
+    openScan({
+      find: {
+        brand: fBrand,
+        bucket: fBucket,
+        done: function (keys) {
+          // (in the order read: Scan's list has the latest first)
+          fKeys = keys.slice().reverse();
+          fRes = findSets(fBrand, fBucket, keys);
+          fAt = 0;
+          result();
+          show('wcStepRes', false, $('wcFindNext'));
+          var y = $('wcFindYes');
+          if (y) y.focus({ preventScroll: true });
+        },
+      },
+    });
+  });
+  function codes(keys) {
+    return keys
+      .map(function (k) {
+        return k.split('|')[1];
+      })
+      .join(', ');
+  }
+  // the set found (fRes[fAt]), its colours in a strip, and which caps it has
+  function result() {
+    var list = findList(fRes),
+      r = list[fAt],
+      box = $('wcRes'),
+      yes = $('wcFindYes'),
+      other = $('wcFindOther');
+    if (!r) {
+      $('wcTR').textContent = 'No set found';
+      box.innerHTML =
+        '<div class="wcsub">None of the ' +
+        esc(fBrand) +
+        ' sets has ' +
+        (fKeys.length === 1 ? 'that cap' : 'these caps') +
+        ': ' +
+        esc(codes(fKeys)) +
+        '.</div>';
+      yes.textContent =
+        'Add the ' + (fKeys.length === 1 ? 'marker' : fKeys.length + ' markers') + ' you scanned';
+      other.style.display = 'none';
+      return;
+    }
+    var p = MARKER_SETS[r.i],
+      ks = presetMkeys(p),
+      ix = inkKeys(ks)
+        .map(function (k) {
+          return keyIdx(k);
+        })
+        .filter(function (i) {
+          return i != null;
+        })
+        .sort(function (a, b) {
+          var na = HS[a].c < 0.12,
+            nb = HS[b].c < 0.12;
+          // (v309.1: the greys light to dark; by hue, near-greys' noisy hue jumbled a Gray Tones set's strip)
+          return na - nb || (na ? HS[b].l - HS[a].l : HS[a].h - HS[b].h || HS[b].l - HS[a].l);
+        }),
+      step = Math.max(1, Math.ceil(ix.length / 40)),
+      strip = '';
+    for (var j = 0; j < ix.length; j += step) strip += '<i style="background:' + COLORS[ix[j]].hex + '"></i>';
+    $('wcTR').textContent = r.all ? 'Is this your set?' : 'The closest set';
+    box.innerHTML =
+      '<div class="wcrest">' +
+      // (v309.1: a set further down with only some of the caps had said "Also matches")
+      (!r.all ? 'Has ' + r.hits + ' of the ' + r.of + ' caps' : fAt ? 'Also matches' : 'Best match') +
+      '</div><div class="wcresn">' +
+      // ("All Copic markers", not "Copic All Copic markers")
+      esc(p.allbrand ? p.n : p.b + ' ' + p.n) +
+      '</div><div class="wcress">' +
+      presetSize(p) +
+      ' markers' +
+      (ks.length > presetSize(p) ? ' and a Colorless Blender' : '') +
+      '</div><div class="wcstrip" aria-hidden="true">' +
+      strip +
+      '</div><div class="wcress">' +
+      (r.all
+        ? 'Has ' + (r.of === 1 ? 'the cap' : 'all ' + r.of + ' caps') + ' you scanned: '
+        : 'Of the caps you scanned, it has ' + r.hits + ': ') +
+      '<b>' +
+      esc(
+        codes(
+          fKeys.filter(function (k) {
+            return ks.indexOf(k) >= 0;
+          }),
+        ),
+      ) +
+      '</b>.</div>';
+    // (v309.1) the caps it hasn't (a cap in no set, a colour from another set) are added too: said, on the button
+    var extra = fKeys.filter(function (k) {
+      return ks.indexOf(k) < 0;
+    }).length;
+    if (extra)
+      box.innerHTML +=
+        '<div class="wcress">' +
+        esc(
+          codes(
+            fKeys.filter(function (k) {
+              return ks.indexOf(k) < 0;
+            }),
+          ),
+        ) +
+        (extra === 1 ? ' isn’t' : ' aren’t') +
+        ' in it: added as well.</div>';
+    yes.textContent =
+      'Yes, add these ' +
+      presetSize(p) +
+      ' markers' +
+      (extra ? ' and ' + (extra === 1 ? 'the other cap' : 'the ' + extra + ' other caps') : '');
+    var nx = list[fAt + 1] || (fAt ? list[0] : null);
+    other.style.display = nx ? '' : 'none';
+    if (nx)
+      other.textContent =
+        (fAt + 1 < list.length ? 'No: show ' : 'Back to ') +
+        MARKER_SETS[nx.i].n +
+        (fAt + 1 < list.length && nx.all ? ' (also matches)' : '');
+  }
+  $('wcFindOther').addEventListener('click', function () {
+    var list = findList(fRes);
+    fAt = fAt + 1 < list.length ? fAt + 1 : 0;
+    result();
+  });
+  $('wcFindYes').addEventListener('click', function () {
+    var list = findList(fRes),
+      r = list[fAt],
+      keys = fKeys.slice(),
+      names = null;
+    if (r) {
+      keys = presetMkeys(MARKER_SETS[r.i]).concat(keys);
+      names = [MARKER_SETS[r.i].n];
+    }
+    var n = own(keys);
+    if (n < 0) return;
+    added(n, names);
+  });
+  // --- one by one: Scan, the colour chart (chart.js), typing (Scan's box takes typing and pastes too) ---
+  function toOne() {
+    show('wcStepOne', false, this);
+    $('wcTO').focus({ preventScroll: true });
+  }
+  $('wcOneByOne').addEventListener('click', toOne);
+  $('wcFindNone').addEventListener('click', toOne);
+  $('wcMoreExtra').addEventListener('click', toOne);
+  $('wcMoreSet').addEventListener('click', function () {
+    sets.innerHTML = presetListHTML();
+    upd();
+    show('wcStep1', false, this);
+    $('wcT1').focus({ preventScroll: true });
+  });
+  function oneAdded(n, del) {
+    if (n > 0 || del > 0) added(n, null, del || 0);
+  }
+  // (v309.1) Scan's or the chart's Undo took them back out: the welcome back where they were added from (it had gone
+  // on saying "2 markers added")
+  function oneUndone() {
+    undoneBack();
+  }
+  ['wcOneScan', 'wcOneType'].forEach(function (id) {
+    $(id).addEventListener('click', function () {
+      if (typeof openScan === 'function') openScan({ added: oneAdded, undone: oneUndone });
+    });
+  });
+  $('wcOneChart').addEventListener('click', function () {
+    if (typeof openChart === 'function') openChart({ added: oneAdded, undone: oneUndone });
   });
   // Restore a backup: the file picker opens in the same tap (an iPhone allows it only then). The welcome stays until a
   // restore worked; a problem is said just above the buttons (pinned to the card's bottom edge) until the next file is
@@ -379,12 +702,6 @@ document.addEventListener('keydown', function (e) {
     if (SF.pickPhoto) SF.pickPhoto();
   });
   $('wcLook').addEventListener('click', close);
-  // (v296) markers bought one at a time: Markers, with Scan or type codes open
-  $('wcScan').addEventListener('click', function () {
-    close();
-    if (state.mode !== 'collection') setMode('collection');
-    if (typeof openScan === 'function') openScan();
-  });
   if (!done) openDialog(ov);
 })();
 // The phone's text size can change while the app is in the background (iOS Dynamic Type, Android font size). The

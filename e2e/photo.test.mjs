@@ -3,7 +3,7 @@
 // photo and its placement are saved with the guide (also when it loads late, or the guide switched pattern).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, idle, scrollTop, sampleGuide, saveGuide } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, idle, scrollTop, sampleGuide, saveGuide, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -18,7 +18,7 @@ const twoTone = (page) => page.evaluate(async () => {
 
 async function photoGuide(page) {
   // a big collection (Honolulu 320) so there are clear blues and reds to match
-  await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
   const b64 = await twoTone(page);
   await page.click('.sftabbtn[data-t="pattern"]');
@@ -167,7 +167,7 @@ const photoOf = (page, draw) => page.evaluate(async (draw) => {
   return await new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result.split(',')[1]); f.readAsDataURL(blob); });
 }, draw);
 async function guideWithPhoto(page, setIndex, draw) {
-  await page.check(`#wcSets input[data-i="${setIndex}"]`); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check(`#wcSets input[data-i="${setIndex}"]`); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
   const b64 = await photoOf(page, draw);
   await page.click('.sftabbtn[data-t="pattern"]');
@@ -309,7 +309,7 @@ test('the Photo button under the picture compares; Photo sits before Manual', as
 const READABLE = 137;
 test('a coloured version of the page lines itself up (turned, shrunk, off-centre); an unrelated photo does not', async () => {
   const { page, errors } = await openApp();
-  await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
   await page.click('#sfCodes'); // marker codes off (tool row)
   assert.equal(await page.getAttribute('#sfCodes', 'aria-pressed'), 'false');
@@ -356,7 +356,7 @@ test('a coloured version of the page lines itself up (turned, shrunk, off-centre
 
 test('a coloured version of the page photographed in warm, dim light lines up and is corrected from its own paper', async () => {
   const { page, errors } = await openApp();
-  await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
   await page.click('#sfCodes');
   // the coloured guide on a sheet, then the whole "photo" darkened and warmed (in linear light, like a lamp would)
@@ -418,7 +418,7 @@ const openSaved = async (page, id) => { await page.evaluate((id) => loadGuide({ 
 
 test('a guide that switched away from Photo keeps its photo when reopened (a shared file leaves it out)', async () => {
   const { page, errors } = await openApp();
-  await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
   const b64 = await page.evaluate(async () => { const c = document.createElement('canvas'); c.width = 600; c.height = 800; const g = c.getContext('2d'); g.fillStyle = '#2350c8'; g.fillRect(0, 0, 600, 400); g.fillStyle = '#d0282c'; g.fillRect(0, 400, 600, 400); const blob = await new Promise((r) => c.toBlob(r, 'image/png')); return await new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result.split(',')[1]); f.readAsDataURL(blob); }); });
   await tab(page, 'pattern');

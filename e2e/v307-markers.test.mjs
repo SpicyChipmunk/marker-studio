@@ -8,7 +8,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { join, extname, normalize } from 'node:path';
 import * as pw from 'playwright';
-import { setup, teardown, openApp, idle, until, welcome, sampleGuide, ENGINE, ROOT } from './helpers.mjs';
+import { setup, teardown, openApp, idle, until, welcome, sampleGuide, ENGINE, ROOT, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -222,7 +222,7 @@ async function yourData(page) {
 test('Help › Your data: for an iPhone or iPad, the Home Screen app’s own storage, Library › Restore, and whether Safari keeps your data', async () => {
   // Safari agreed to keep it, when the welcome asked
   const a = await openApp({ width: 820, height: 1180, userAgent: IPAD, init: `(${storageIs})(true)` });
-  await a.page.check('#wcSets input[data-i="3"]');
+  await haveSet(a.page); await a.page.check('#wcSets input[data-i="3"]');
   await a.page.click('#wcAdd');
   await idle(a.page);
   assert.equal(await a.page.evaluate(() => localStorage.getItem('ms-persisted')), '1', 'the answer is kept');
@@ -238,7 +238,7 @@ test('Help › Your data: for an iPhone or iPad, the Home Screen app’s own sto
   assert.equal(await a.page.textContent('#helpKeep'), 'Safari has agreed to keep your data on this device.');
   // Safari said no
   const b = await openApp({ width: 820, height: 1180, userAgent: IPAD, init: `(${storageIs})(false)` });
-  await b.page.check('#wcSets input[data-i="3"]');
+  await haveSet(b.page); await b.page.check('#wcSets input[data-i="3"]');
   await b.page.click('#wcAdd');
   await idle(b.page);
   assert.equal(await b.page.evaluate(() => localStorage.getItem('ms-persisted')), '0');
@@ -326,7 +326,7 @@ test('contrast 4.5:1: "Tick a set above" and Scan’s Add on their disabled butt
   const r1 = await contrastOf(page, '#wcAdd');
   assert.ok(r1 >= 4.5, 'Tick a set above: ' + r1.toFixed(2) + ':1 (v306: 2.5)');
   const off = await look('#wcAdd');
-  await page.check('#wcSets input[data-i="3"]');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]');
   await idle(page);
   const on = await look('#wcAdd');
   assert.notEqual(off.bg, on.bg, 'disabled has its own, paler fill');

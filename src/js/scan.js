@@ -548,7 +548,16 @@ try {
   scanBrand = sb || '';
   scanBrandChosen = sb != null;
 } catch (_) {}
+// (v309) the welcome's two ways in. find: "I'm not sure which set" — Scan reads a few caps into a list of its own (the
+// list kept for Add waits in scanKept), the brand fixed to the one chosen, and Find my set in Add's place hands the
+// caps back ({ brand, bucket, done(keys) }). added: after Add, the welcome goes on ("one by one").
+let scanFind = null,
+  scanKept = null,
+  scanAfter = null,
+  // (v309.1) and after the toast's Undo of that Add: the welcome goes back
+  scanUndone = null;
 function scanSaveList() {
+  if (scanFind) return;
   try {
     if (!scanList.length) localStorage.removeItem(SCAN_LIST_KEY);
     else
@@ -1047,19 +1056,23 @@ function scanRender() {
     })
     .join('');
   $('scEmpty').hidden = scanList.length > 0;
-  $('scCount').textContent = scanList.length
+  // (v309: the number of markers read big, to see it go up cap after cap from across the table)
+  $('scCount').innerHTML = scanList.length
     ? // (each part kept on one line: "2 to / choose" had broken in two on a phone, v300)
-      (marks ? marks + (marks === 1 ? '\u00a0marker' : '\u00a0markers') : '') +
-      (fresh < marks ? ' · ' + fresh + '\u00a0new' : '') +
+      (marks ? '<b>' + marks + '</b>' + (marks === 1 ? '\u00a0marker' : '\u00a0markers') : '') +
+      (!scanFind && fresh < marks ? ' · ' + fresh + '\u00a0new' : '') +
       (asks ? (marks ? ' · ' : '') + asks + '\u00a0to\u00a0choose' : '')
     : '';
   const add = $('scAdd');
   scanAddState();
-  add.textContent = fresh
-    ? 'Add ' + fresh + ' to my collection'
-    : marks
-      ? 'All already in your collection'
-      : 'Add to my collection';
+  add.textContent = scanFind
+    ? 'Find my set'
+    : fresh
+      ? 'Add ' + fresh + ' to my collection'
+      : marks
+        ? 'All already in your collection'
+        : 'Add to my collection';
+  scanFindNote(marks);
   $('scClear').hidden = !scanList.length;
   scanSaveList();
 }
@@ -1067,7 +1080,41 @@ function scanRender() {
 function scanAddState() {
   const add = $('scAdd'),
     bx = $('scBox');
-  if (add) add.disabled = !scanNew().length && !(bx && bx.value.trim());
+  if (add)
+    add.disabled = !(scanFind ? scanList.some((e) => !e.ask) : scanNew().length) && !(bx && bx.value.trim());
+}
+// (v309) Find mode's line under the list: which set the caps read so far fit, best first (findSets, events.js)
+function scanFindNote(marks) {
+  const el = $('scFind');
+  if (!el) return;
+  el.hidden = !scanFind;
+  if (!scanFind) return;
+  const keys = scanList.filter((e) => !e.ask).map((e) => mkey(e.i));
+  if (!keys.length) {
+    el.innerHTML = 'Each cap narrows it down. Different colours tell sets apart best.';
+    return;
+  }
+  // (v309.1: not "Fits so far: All Copic markers" for caps from two sets, unless more than 250 was answered)
+  const r = findSets(scanFind.brand, scanFind.bucket, keys),
+    full = r.filter((x) => x.all && !x.far);
+  const more = marks < 3 ? ' One more cap to be sure.' : '';
+  if (!full.length) {
+    el.innerHTML = r.length
+      ? '<b>No set has all of these.</b> Check the last code read, or take it off the list.'
+      : '<b>No ' + esc(scanFind.brand) + ' set has these.</b> You can add them one by one instead.';
+    return;
+  }
+  const nm = (x) => esc(MARKER_SETS[x.i].n);
+  el.innerHTML =
+    '<b>Fits so far: ' +
+    nm(full[0]) +
+    '.</b>' +
+    (full.length === 2
+      ? ' ' + nm(full[1]) + ' has these too.'
+      : full.length > 2
+        ? ' ' + (full.length - 1) + ' other sets have these too.'
+        : '') +
+    more;
 }
 function scanFocusBox() {
   const b = $('scBox');
@@ -1093,9 +1140,22 @@ function scanBrandButtons() {
     .querySelectorAll('button')
     .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.b === scanBrand)));
 }
-function openScan() {
+function openScan(opts) {
   const ov = $('scanOverlay');
   if (!ov) return;
+  // (v309: from the welcome; a tap on Markers' Scan or type codes passes its click, which is neither)
+  const o = opts && !opts.type ? opts : {};
+  scanAfter = o.added || null;
+  scanUndone = o.undone || null;
+  if (o.find && !scanFind) {
+    scanKept = { list: scanList, brand: scanBrand, last: scanLast };
+    scanList = [];
+    scanLast = { i: -1, at: 0 };
+    scanBrand = o.find.brand;
+    scanFind = o.find;
+  }
+  ov.classList.toggle('scfind', !!scanFind);
+  $('scTitle').textContent = scanFind ? 'Scan 3 caps' : 'Scan or type codes';
   // (v303: sound can only start from a tap; the one that opened this counts, not only a tap in the box)
   try {
     if (!scanAudio) scanAudio = new (window.AudioContext || window.webkitAudioContext)();
@@ -1105,15 +1165,17 @@ function openScan() {
   scanOpener = document.activeElement;
   // (no Scan Text session can be open yet: a composition left marked open by an earlier visit is over)
   scanIme = false;
-  const auto = scanBrandAuto();
-  if (!scanBrandChosen) scanBrand = auto;
+  const auto = scanFind ? '' : scanBrandAuto();
+  if (!scanFind && !scanBrandChosen) scanBrand = auto;
   scanBrandButtons();
   scanSay(
     '',
     'Ready',
-    auto
-      ? 'Set to ' + auto + ', the brand of all your markers · Either brand reads both'
-      : 'Each marker read shows here, with a sound',
+    scanFind
+      ? 'Any 3 ' + scanFind.brand + ' markers from the set'
+      : auto
+        ? 'Set to ' + auto + ', the brand of all your markers · Either brand reads both'
+        : 'Each marker read shows here, with a sound',
     -1,
   );
   scanRender();
@@ -1156,10 +1218,38 @@ function closeScan() {
   const bx = $('scBox');
   bx.value = '';
   bx.dispatchEvent(new Event('scanreset'));
+  scanAfter = null;
+  scanUndone = null;
+  if (scanFind) {
+    // (v309) Find mode over: the list kept for Add, and its brand, come back
+    scanFind = null;
+    scanList = scanKept.list;
+    scanBrand = scanKept.brand;
+    scanLast = scanKept.last;
+    scanKept = null;
+    scanUnread = 0;
+    ov.classList.remove('scfind');
+    $('scTitle').textContent = 'Scan or type codes';
+    scanRender();
+  }
   if (scanOpener && scanOpener.isConnected) scanOpener.focus({ preventScroll: true });
   scanOpener = null;
 }
+// (v309) Find my set: the caps read (with any left in the box) go back to the welcome
+function scanFindDone() {
+  const asks0 = scanAsks();
+  scanFlushBox(true);
+  if (scanAsks() > asks0) return;
+  const keys = scanList.filter((e) => !e.ask).map((e) => mkey(e.i));
+  if (!keys.length) return;
+  const f = scanFind;
+  closeScan();
+  f.done(keys);
+}
 function scanAdd() {
+  if (scanFind) return scanFindDone();
+  const after = scanAfter,
+    undone = scanUndone;
   const asks0 = scanAsks();
   scanFlushBox(true);
   const fresh = scanNew();
@@ -1206,6 +1296,7 @@ function scanAdd() {
     [{ label: 'Undo', fn: scanUndoAdd }].concat(left ? [{ label: 'Open', fn: openScan }] : []),
     left || unread ? 10000 : 8000,
   );
+  if (after) after(keys.length);
   function scanUndoAdd() {
     const wishNow = state.wish.slice();
     // (v303: the markers it added back on the list, once each; its questions are as they are now)
@@ -1234,6 +1325,7 @@ function scanAdd() {
       fullRender();
       if (typeof presetRelist === 'function') presetRelist();
       wishChanged();
+      if (undone) undone();
     }
   }
 }

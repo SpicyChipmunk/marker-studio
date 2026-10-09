@@ -4,7 +4,7 @@
 // the text (controls up to 1.3x, reading text up to 1.6x) without sideways scrolling or text cut off at the edge.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, sampleGuide, idle, openAtScale, menuItem, openMenu, sectionPoint, longPress, scrollTop, saveGuide } from './helpers.mjs';
+import { setup, teardown, sampleGuide, idle, openAtScale, menuItem, openMenu, sectionPoint, longPress, scrollTop, saveGuide, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -227,7 +227,9 @@ test('coming back to the app after the text size changed re-runs the layout, as 
 test('large text: Match tabs and the You/Marker labels fit; the welcome shows several sets; Random’s buttons look enabled', async () => {
   const { page, errors } = await openAtScale(1.6, { width: 375, height: 667 });
   await page.waitForSelector('#welcome.on');
+  await haveSet(page); // (v309: the set list is behind "I have a set")
   assert.ok(await page.evaluate(() => document.getElementById('wcSets').clientHeight) >= 140, 'room for several sets');
+  await page.click('#wcStep1 .wcback');
   await page.click('#wcSkip'); await page.click('#wcLook');
   await page.click('#mCollection'); await page.click('#mkMatchBtn');
   await page.evaluate(() => window.msMatchHex('#3a7bd5')); await idle(page);

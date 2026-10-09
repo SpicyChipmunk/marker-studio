@@ -8,7 +8,7 @@
 // marker count follow Undo.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle, letterGuide, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, idle, letterGuide, notOnWebKit, WK, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -63,12 +63,12 @@ const lib = () => {
 
 async function letter(page) {
   // Honolulu 320, a page downloaded at 850 x 1100 (enlarged before its sections are found)
-  await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcLook'); await idle(page);
+  await haveSet(page); await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcLook'); await idle(page);
   await letterGuide(page);
   await page.evaluate(lib);
 }
 async function sample(page) {
-  await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData)); await idle(page);
   await page.evaluate(lib);
 }
@@ -290,7 +290,7 @@ test('Palette › From photo: of two quick picks, the newer one is used even whe
       };
     },
   });
-  await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData)); await idle(page);
   const red = await png(page, 60, 40, '#c8281e'), blue = await png(page, 60, 40, '#2350c8');
   await page.setInputFiles('#photoFile', { name: 'slow.png', mimeType: 'image/png', buffer: Buffer.from(red, 'base64') });
@@ -443,7 +443,7 @@ test('Undo from a photo with no colour back to a coloured one takes the no-colou
 
 test('Use N, a change of marker count, then Undo: the suggestion to use N doesn’t come back', notOnWebKit(WK.scale), async () => {
   const { page, errors, ctx } = await openApp({ width: 1180, height: 820 });
-  await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData)); await idle(page);
   // the guide's own sections painted with 8 markers from the collection (as e2e/photo-choice.test.mjs)
   const b64 = await page.evaluate(async () => {

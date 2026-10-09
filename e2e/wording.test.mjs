@@ -2,7 +2,7 @@
 // Library's caption, labels).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle } from './helpers.mjs';
+import { setup, teardown, openApp, idle, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -11,7 +11,7 @@ after(teardown);
 test('one word per idea', async () => {
   const { page, errors } = await openApp();
   assert.equal(await page.textContent('#wcAdd'), 'Tick a set above');
-  await page.check('#wcSets input[data-i="0"]');
+  await haveSet(page); await page.check('#wcSets input[data-i="0"]');
   assert.equal(await page.textContent('#wcAdd'), 'Add 24 markers');
   await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));

@@ -4,7 +4,7 @@
 // areas of small controls, and disabled buttons that look disabled.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, openAtScale, idle, openMenu, welcome, sampleGuide, saveGuide, answerAsks } from './helpers.mjs';
+import { setup, teardown, openApp, openAtScale, idle, openMenu, welcome, sampleGuide, saveGuide, answerAsks, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -23,7 +23,8 @@ const init = () => { Object.defineProperty(Navigator.prototype, 'standalone', { 
 const TAB = '.modes button,.sftabbtn';
 // (v288: a palette band's own button fills the band; the Print sheet's choices with a drawing over the word)
 // (v306: Home's latest piece's picture)
-const BIG = '.homecard,.sopen,.mdrop,.hlphiw,.sfRecCard,.sfah,.sfinfo,.focmk,.bhit,.sfprsh .segs button:has(.sfprpv),.hhpic';
+// (v309: the welcome's ways in and its two-line choices, the colour chart's swatches)
+const BIG = '.homecard,.sopen,.mdrop,.hlphiw,.sfRecCard,.sfah,.sfinfo,.focmk,.bhit,.sfprsh .segs button:has(.sfprpv),.hhpic,.wcc,.wcseg button,.wccount button,.chsw';
 const CHOICE = '.segs button,.chip,.msrc button,.wcbrands button,#sfRoot .sfedit';
 // a link inside a sentence; the guide's tool-row icons and Save pill, whose tap areas stop at the picture's edge,
 // and ✎, whose lower edge the Save pill under it shares
@@ -99,6 +100,8 @@ async function walk(page, big) {
   await page.click('#mkMore'); await check(page, 'Markers: ⋯ menu', big); await page.click('#mkMore');
   await page.evaluate(() => openBackup()); await page.waitForSelector('#backupOverlay.on'); await check(page, 'Back up & restore', big); await close(page);
   await page.click('#swatchBtn'); await page.waitForSelector('#swOverlay.on'); await check(page, 'swatch chart', big); await close(page);
+  // (v309) Tick colours on a chart
+  await page.click('#chartOpen'); await page.waitForSelector('#chartOverlay.on'); await check(page, 'colour chart', big); await close(page);
   await page.click('#mkMatchBtn'); await check(page, 'Match: Photo', big);
   await page.click('#matchOverlay .msrc [data-src="hex"]'); await page.fill('#matchHex', '#3a7bd5'); await check(page, 'Match: Hex code', big); await close(page);
   await page.click('#mkDrawBtn'); await idle(page); await check(page, 'Markers: Random', big);
@@ -127,8 +130,15 @@ test('one button height: 44px actions, 40px choices, 44px tap areas, on every sc
 
 test('Welcome and the guide keep the rule: 44px actions, 40px choices, a 44px Focus bar', async () => {
   const { page, errors } = await openApp();
-  const w = await check(page, 'Welcome', false);
-  assert.deepEqual([h(w, '#wcAdd'), h(w, '#wcSkip')], [44, 44]);
+  // (v309: the three ways in, then the set list, the find step and one by one, each a step of its own)
+  const w0 = await check(page, 'Welcome', false);
+  assert.deepEqual([h(w0, '#wcSkip'), h(w0, '#wcRestore')], [44, 44]);
+  await page.click('#wcNotSure'); await check(page, 'Welcome: find my set', false);
+  await page.click('#wcStepFind .wcback'); await page.click('#wcOneByOne'); await check(page, 'Welcome: one by one', false);
+  await page.click('#wcStepOne .wcback');
+  await haveSet(page);
+  const w = await check(page, 'Welcome: the set list', false);
+  assert.deepEqual([h(w, '#wcAdd')], [44]);
   assert.deepEqual([...new Set(w.filter((x) => x.kind === 'choice').map((x) => x.h))], [40], 'brand tabs: 40px');
   await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd'); await idle(page);
   await check(page, 'Welcome: next steps', false);

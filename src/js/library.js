@@ -553,7 +553,8 @@ function renderRecent() {
           '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a photo of a colouring page into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a photo</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button></div></div>';
       }
       var own = cel.querySelector('.hcown'),
-        nOwn = state.owned.size;
+        // (v309.1: the colours; a set's Colorless Blender builds nothing)
+        nOwn = inkKeys([...state.owned]).length;
       if (own)
         own.textContent =
           (nOwn

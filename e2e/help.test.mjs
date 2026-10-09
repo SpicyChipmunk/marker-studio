@@ -6,7 +6,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { setup, teardown, openApp, sampleGuide, welcome, idle, shot, ROOT, ARTIFACTS, menuItem, pause, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, welcome, idle, shot, ROOT, ARTIFACTS, menuItem, pause, buildGo, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -21,7 +21,7 @@ test('How it works shows once, the first time the guide opens the sample, never 
   const { page, errors } = await openApp();
   await autoHelp(page);
   assert.ok(await page.isVisible('#welcome'), 'welcome first');
-  await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd'); await idle(page);
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd'); await idle(page);
   assert.equal(await on(page, 'hiwOverlay'), false, 'not over the welcome');
   await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
@@ -105,7 +105,7 @@ test('How it works: a pause while a card glides into view keeps the dots on the 
 test('How it works also shows the first time a photo is chosen, over the sections editor, and the ⋯ is there too', async () => {
   const { page, errors } = await openApp();
   await autoHelp(page);
-  await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#wcPhoto')]);
   await fc.setFiles(join(ROOT, 'src', 'assets', 'sample-jellyfish.png'));
   await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 60000 });

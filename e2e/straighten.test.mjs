@@ -3,7 +3,7 @@
 // Undo and Adjust corners work, the lens's focal length is read from the photo, and the page's shape comes out right.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle, scrollTop, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, idle, scrollTop, buildGo, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -41,7 +41,7 @@ async function pick(page, ph, name = 'page.jpg') {
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#wcPhoto')]);
   await fc.setFiles({ name, mimeType: 'image/jpeg', buffer: Buffer.from(ph.b64, 'base64') });
 }
-async function fresh() { const a = await openApp(); await a.page.check('#wcSets input[data-i="3"]'); await a.page.click('#wcAdd'); return a; }
+async function fresh() { const a = await openApp(); await haveSet(a.page); await a.page.check('#wcSets input[data-i="3"]'); await a.page.click('#wcAdd'); return a; }
 const sections = (page) => page.waitForSelector('#sfBuild', { state: 'visible', timeout: 40000 });
 const info = (page) => page.evaluate(() => { const t = __mstest; return { W: t.W, H: t.H, line: document.querySelector('.sfpgline') ? document.querySelector('.sfpgline').textContent : '', q: t.pgQ, src: t.srcSize }; });
 
@@ -156,7 +156,7 @@ test('the lens is read from the photo, and with it the page’s shape is measure
 
 test('Photo colour pattern: a coloured version photographed at an angle is straightened, turned and lined up by itself', async () => {
   const { page, errors } = await openApp();
-  await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd');
+  await haveSet(page); await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd');
   const scan = await photo(page, { scan: 1, bleed: 1 });
   await pick(page, scan); await sections(page);
   await buildGo(page); await page.waitForFunction(() => __mstest.assignData, null, { timeout: 60000 }); await idle(page);

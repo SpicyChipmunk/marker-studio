@@ -2,7 +2,7 @@
 // times, then it stays coloured) and "You're all set"'s fan of the markers just added.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, openAtScale, idle } from './helpers.mjs';
+import { setup, teardown, openApp, openAtScale, idle, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -57,7 +57,7 @@ test('the picture is hidden from screen readers and has nothing to focus; nor ha
       false,
     );
   }
-  await page.check('#wcSets input[data-i="3"]');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]');
   await page.click('#wcAdd');
   await idle(page);
   const f = await page.evaluate(() => {
@@ -113,7 +113,7 @@ test('reduced motion: nothing moves, and the picture shows coloured', async () =
   assert.ok(c.covers, 'the guide lies over the whole picture');
   assert.ok(c.ok, 'the coloured picture loaded');
   assert.ok((await picBox(page)).shown);
-  await page.check('#wcSets input[data-i="3"]');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]');
   await page.click('#wcAdd');
   assert.deepEqual(
     (await anims(page)).filter((x) => x.pic || x.fan),
@@ -158,7 +158,7 @@ test('the picture’s animation ends within 15 s, and stops when Add moves on', 
   assert.ok(mid.still < 0.5, 'the guide doesn’t move (' + mid.still + ')');
   const end = await at(11000);
   assert.ok(end.edge >= 1 && end.still < 0.5 && end.op === 1, 'it rests coloured');
-  await page.check('#wcSets input[data-i="3"]');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]');
   await page.click('#wcAdd');
   const b = await anims(page);
   assert.equal(b.filter((x) => x.pic).length, 0, 'nothing of the picture runs on "You’re all set"');
@@ -188,14 +188,15 @@ test('no picture on a short screen: a landscape phone, a small phone at a large 
       0,
       'nothing drawn there',
     );
-    await page.check('#wcSets input[data-i="3"]');
+    await haveSet(page); await page.check('#wcSets input[data-i="3"]');
     assert.ok(await page.isEnabled('#wcAdd'));
     assert.deepEqual(errors, []);
     await ctx.close();
   }
 });
 
-test('with the picture, the set list doesn’t scroll inside another, and keeps room for its rows', async () => {
+// (v309: the picture is on the first step, the three ways in; the set list is a step of its own behind "I have a set")
+test('with the picture, the first step doesn’t scroll; the set list keeps room for its rows and scrolls on its own', async () => {
   for (const [w, h] of [
     [1180, 820],
     [390, 844],
@@ -205,21 +206,21 @@ test('with the picture, the set list doesn’t scroll inside another, and keeps 
     await page.waitForSelector('#welcome.on');
     await idle(page);
     assert.ok((await picBox(page)).shown, w + '×' + h + ': the picture shows');
+    const first = await page.evaluate(() => {
+      const sc = document.querySelector('#wcStep0 .wcscroll'),
+        c = document.querySelector('.wcard').getBoundingClientRect(),
+        sk = document.getElementById('wcSkip').getBoundingClientRect();
+      return { outer: sc.scrollHeight - sc.clientHeight, cardB: c.bottom, skipB: sk.bottom, vh: innerHeight };
+    });
+    assert.ok(first.outer <= 1, w + '×' + h + ': the three ways in don’t scroll (' + first.outer + ')');
+    assert.ok(first.cardB <= first.vh && first.skipB <= first.cardB, 'the card and Skip are on the screen');
+    await haveSet(page);
     const m = await page.evaluate(() => {
-      const sc = document.querySelector('.wcscroll'),
-        s = document.getElementById('wcSets'),
+      const s = document.getElementById('wcSets'),
         c = document.querySelector('.wcard').getBoundingClientRect(),
         add = document.getElementById('wcAdd').getBoundingClientRect();
-      return {
-        outer: sc.scrollHeight - sc.clientHeight,
-        list: s.clientHeight,
-        inner: s.scrollHeight - s.clientHeight,
-        cardB: c.bottom,
-        addB: add.bottom,
-        vh: innerHeight,
-      };
+      return { list: s.clientHeight, inner: s.scrollHeight - s.clientHeight, cardB: c.bottom, addB: add.bottom, vh: innerHeight };
     });
-    assert.ok(m.outer <= 1, w + '×' + h + ': the heading and list don’t scroll (' + m.outer + ')');
     assert.ok(m.list >= 180, w + '×' + h + ': the list keeps 180 px (' + m.list + ')');
     assert.ok(m.inner > 0, 'the list scrolls on its own');
     assert.ok(m.cardB <= m.vh && m.addB <= m.cardB, 'the card and Add are on the screen');
@@ -234,16 +235,20 @@ test('a landscape iPad: the picture stands beside the list in a wider card; port
     await page.waitForSelector('#welcome.on');
     await idle(page);
     const p = await picBox(page);
+    // (v309: beside the three ways in; the steps after it are the usual width)
     const g = await page.evaluate(() => {
       const r = (s) => document.querySelector(s).getBoundingClientRect().toJSON();
-      return { card: r('#welcome .wcard'), title: r('#wcTitle'), sets: r('#wcSets'), add: r('#wcAdd') };
+      return { card: r('#welcome .wcard'), title: r('#wcTitle'), ways: r('#wcStep0 .wcch'), skip: r('#wcSkip') };
     });
     assert.ok(p.h > p.w * 2, 'upright (' + p.w + '×' + p.h + ')');
     assert.ok(Math.abs(g.card.width - 760) <= 1, 'the card is 760 px wide (' + g.card.width + ')');
-    for (const k of ['title', 'sets', 'add'])
+    for (const k of ['title', 'ways', 'skip'])
       assert.ok(g[k].left >= p.r + 16, k + ' is to the right of the picture');
-    assert.ok(p.y < g.sets.bottom && p.b > g.sets.top, 'side by side with the list');
+    assert.ok(p.y < g.ways.bottom && p.b > g.ways.top, 'side by side with the ways in');
     assert.ok(p.h >= 600, 'it uses the height (' + p.h + ')');
+    await haveSet(page);
+    const cw1 = await page.evaluate(() => document.querySelector('#welcome .wcard').getBoundingClientRect().width);
+    assert.ok(Math.abs(cw1 - 440) <= 1, 'the set list in the usual card (' + cw1 + ')');
     assert.deepEqual(errors, []);
     await ctx.close();
   }
@@ -289,7 +294,7 @@ test('“You’re all set” fans out 28 of the markers added, in hue order, ope
   {
     const { page, errors, ctx } = await openApp({ width: 820, height: 1180 });
     await page.waitForSelector('#welcome.on');
-    await page.check('#wcSets input[data-i="0"]');
+    await haveSet(page); await page.check('#wcSets input[data-i="0"]');
     await page.click('#wcAdd');
     const s = await strips(page);
     // (the greys left out: a fan in hue order)
@@ -300,7 +305,7 @@ test('“You’re all set” fans out 28 of the markers added, in hue order, ope
   {
     const { page, errors, ctx } = await openApp({ width: 820, height: 1180 });
     await page.waitForSelector('#welcome.on');
-    await page.check('#wcSets input[data-i="3"]');
+    await haveSet(page); await page.check('#wcSets input[data-i="3"]');
     await page.click('#wcAdd');
     const s = await strips(page);
     assert.equal(s.length, 28);
@@ -313,7 +318,8 @@ test('“You’re all set” fans out 28 of the markers added, in hue order, ope
     const owned = await page.evaluate(() => [...state.owned].map((k) => COLORS[keyIdx(k)].hex.toLowerCase()));
     const hex = (c) => '#' + c.map((x) => x.toString(16).padStart(2, '0')).join('');
     for (const x of s) assert.ok(owned.includes(hex(x.rgb)), hex(x.rgb) + ' is one of the markers added');
-    assert.equal(await page.textContent('#wcT2'), 'You’re all set');
+    // (v309: says what was added, and asks for anything else)
+    assert.equal(await page.textContent('#wcT2'), '120 markers added');
     assert.equal(await page.locator('#wcStep2 .wcsub').count(), 1, 'no caption of its own');
     assert.deepEqual(errors, []);
     await ctx.close();

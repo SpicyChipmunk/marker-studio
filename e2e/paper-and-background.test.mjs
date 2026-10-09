@@ -2,7 +2,7 @@
 // are background, and a drawn frame isn't taken for the page's edge.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle } from './helpers.mjs';
+import { setup, teardown, openApp, idle, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -21,7 +21,7 @@ for(let i=0;i<9;i++){g.beginPath();g.arc(W*0.3+r()*W*0.4,H*0.3+r()*H*0.4,60+r()*
 async function fromPage(o) {
   const { page, errors } = await openApp();
   const b64 = await page.evaluate(async ([src, o]) => { const W = 1500, H = 2000, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); new Function('g', 'W', 'H', 'o', src)(g, W, H, o); const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.85)); return await new Promise((res) => { const f = new FileReader(); f.onload = () => res(f.result.split(',')[1]); f.readAsDataURL(blob); }); }, [PAGE, o]);
-  await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#wcPhoto')]);
   await fc.setFiles({ name: 'p.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(b64, 'base64') });
   await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 60000 }); await idle(page);

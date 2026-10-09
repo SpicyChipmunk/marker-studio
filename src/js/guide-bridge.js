@@ -1497,7 +1497,10 @@ const RESTORE_LOCKS = [
   'wcAdd',
   'wcSkip',
   'wcRestore',
-  'wcScan',
+  // (v309: the welcome's three ways in)
+  'wcHaveSet',
+  'wcOneByOne',
+  'wcNotSure',
   'wcSample',
   'wcPhoto',
   'wcLook',

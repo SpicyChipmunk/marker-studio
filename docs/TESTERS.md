@@ -55,7 +55,7 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
 
 ## What to try
 
-- Add your markers: tick the sets you own, or **Scan or type codes** for ones you bought singly.
+- Add your markers: the welcome asks how you got them. Pick your set, scan the caps or tick colours on a chart for ones you bought singly, or scan 3 caps to find a set you can’t remember (also in Markers: **Scan or type codes**, **Tick colours on a chart**).
 - Make a guide from a page you would really colour.
 - Change the plan: try the Pattern (Gradient, Random, Blend, Photo, Manual), Colours and Shading tabs, and ✨ Surprise.
 - Tap **Colour along**, then tick sections off as you colour them on paper. Try **Focus mode**.

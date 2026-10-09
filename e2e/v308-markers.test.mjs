@@ -4,7 +4,7 @@
 // greys; Random's empty pile and the small links are easy to read and tap.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, idle } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, idle, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -172,8 +172,8 @@ test('a search that is a list of codes points to Scan or type codes, which reads
 
 test('Unowned › Fill the biggest gaps for an Ohuhu-only collection: Ohuhu first; the BGY and YGY greys are Blue Grey and Yellow Grey, with the greys', async () => {
   const { page, errors } = await openApp({ width: 1180, height: 820 });
-  await page.check('#wcSets input[data-i="0"]');
-  await page.check('#wcSets input[data-i="1"]');
+  await haveSet(page); await page.check('#wcSets input[data-i="0"]');
+  await haveSet(page); await page.check('#wcSets input[data-i="1"]');
   await page.click('#wcAdd');
   await page.click('#wcLook');
   await idle(page);
@@ -205,7 +205,9 @@ test('Unowned › Fill the biggest gaps for an Ohuhu-only collection: Ohuhu firs
 test('Random’s empty pile reads across the grid; the welcome’s Scan link and Hide text are at least 24px to tap', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   const h = (sel) => page.$eval(sel, (e) => e.getBoundingClientRect().height);
-  assert.ok((await h('#wcScan')) >= 24, 'Scan or type their codes: ' + (await h('#wcScan')));
+  // (v309: the link in the set list is "Not sure which? Find it from 3 caps")
+  await haveSet(page);
+  assert.ok((await h('#wcToFind')) >= 24, 'Find it from 3 caps: ' + (await h('#wcToFind')));
   await welcome(page, 'look');
   await idle(page);
   await page.evaluate(() => setMode('random'));

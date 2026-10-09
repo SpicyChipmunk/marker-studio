@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { setup, teardown, openApp, welcome, sampleGuide, idle, shot, saveGuide, answerAsks } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, sampleGuide, idle, shot, saveGuide, answerAsks, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -248,7 +248,7 @@ const photoOf = (page, draw) => page.evaluate(async (draw) => {
 test('the photo pattern’s “Closer with” markers can go on the list', async () => {
   const { page, errors } = await openApp();
   // Honolulu 24 and a photo in colours it can't match well
-  await page.check('#wcSets input[data-i="0"]'); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check('#wcSets input[data-i="0"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
   const b64 = await photoOf(page, "const gr=g.createLinearGradient(0,0,600,800);gr.addColorStop(0,'#0bd6c8');gr.addColorStop(0.5,'#8a2be2');gr.addColorStop(1,'#39ff14');g.fillStyle=gr;g.fillRect(0,0,600,800);");
   await page.click('.sftabbtn[data-t="pattern"]');

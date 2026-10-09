@@ -340,9 +340,191 @@ button.sfSeeAll {
   min-height: 0;
   flex: 0 1 auto;
 }
-#wcStep2 {
+#wcStep2,
+#wcStepOne {
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+/* (v309) The welcome's choices: a row each, an icon, a title and a line under it, a chevron */
+.wcch {
+  display: grid;
+  gap: 10px;
+}
+.wcc {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 18px;
+  gap: 14px;
+  align-items: center;
+  min-height: 72px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--glass);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.wcc:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.wci {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(124, 92, 255, 0.16);
+  color: #b9a6ff;
+}
+.wci .ic {
+  width: 22px;
+  height: 22px;
+}
+.wct b {
+  display: block;
+  font-size: var(--t-lg);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.wct span {
+  display: block;
+  color: var(--sub);
+  font-size: var(--t-base);
+  line-height: 1.35;
+}
+.wcchev {
+  color: var(--sub);
+  display: grid;
+}
+.wcchev .ic {
+  width: 18px;
+  height: 18px;
+}
+.wcback {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  margin: -10px 0 -6px -6px;
+  padding: 0 8px 0 2px;
+  border: none;
+  background: none;
+  color: var(--sub);
+  font: inherit;
+  font-size: var(--t-md);
+  cursor: pointer;
+}
+.wcback .ic {
+  width: 18px;
+  height: 18px;
+  transform: scaleX(-1);
+}
+.wctitle:focus {
+  outline: none;
+}
+/* the three steps of finding a set */
+.wcsteps {
+  display: flex;
+  gap: 6px;
+}
+.wcsteps i {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+}
+.wcsteps i.on {
+  background: var(--accent);
+}
+.wclbl {
+  margin-top: 4px;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sub);
+}
+.wcseg,
+.wccount {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.wccount {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.wcseg button,
+.wccount button {
+  min-height: 52px;
+  padding: 6px 8px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--glass);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+.wcseg small {
+  display: block;
+  color: var(--sub);
+  font-size: var(--t-sm);
+  font-weight: 400;
+}
+.wcseg button[aria-pressed='true'],
+.wccount button[aria-pressed='true'] {
+  background: rgba(120, 200, 180, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(143, 214, 180, 0.6);
+}
+.wcnote {
+  font-size: var(--t-base);
+}
+/* the set found */
+.wcres {
+  border: 1px solid var(--ok);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: rgba(var(--ok-rgb), 0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wcrest {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ok);
+}
+.wcresn {
+  font-family: Fraunces, Georgia, serif;
+  font-size: var(--t-2xl);
+  line-height: 1.15;
+}
+.wcress {
+  color: var(--sub);
+  font-size: var(--t-base);
+  line-height: 1.4;
+}
+.wcress b {
+  color: var(--ink);
+}
+.wcstrip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  height: 32px;
+  margin: 8px 0 6px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+#wcStepRes .wcacts .obSecond,
+#wcStepRes .wcacts .btn-primary {
+  width: 100%;
+  min-height: 48px;
 }
 .wcscroll {
   flex: 0 1 auto;
@@ -537,22 +719,15 @@ button.sfSeeAll {
   .wcpic {
     display: block;
   }
-  /* the list gives way to the picture, down to its least height (not the heading and intro), so it isn't a list
-     scrolling inside another */
-  .wcard.haspic .wcscroll > * {
-    flex-shrink: 0;
-  }
-  .wcard.haspic .wcsets {
-    flex: 0 1 auto;
-  }
 }
 /* a landscape iPad: the picture upright in a column of its own, beside the list, in a wider card */
 @media (min-height: 761px) and (min-width: 900px) and (orientation: landscape) {
-  .wcard.haspic {
+  /* (v309: the picture is on the first step, the three ways in; the steps after it are the usual width) */
+  .wcard.haspic[data-step='wcStep0'] {
     max-width: 760px;
     --wcpw: min(250px, calc((100vh - 150px) * 340 / 898));
   }
-  .wcard.haspic #wcStep1 {
+  .wcard.haspic #wcStep0 {
     display: grid;
     grid-template-columns: var(--wcpw) minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
@@ -571,12 +746,9 @@ button.sfSeeAll {
     height: 100%;
     transform: none;
   }
-  .wcard.haspic .wcscroll {
+  .wcard.haspic #wcStep0 .wcscroll {
     min-height: 0;
-  }
-  .wcard.haspic .wcsets {
-    flex: 1 1 0;
-    max-height: none;
+    align-self: center;
   }
 }
 /* (v306) "You're all set": the markers fanned out like swatches (boot.js). Open as it stands; wcfan only swings it open */
@@ -1398,5 +1570,59 @@ button.hcpic:focus-visible {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 12px;
+  }
+}
+/* (v309.1) A phone on its side (under 500 px of height): "Is this your set?" in a wider card, without the steps bar,
+   the set's box tighter, Yes and No side by side, and the whole step scrolling as one if it must. The box had been
+   squeezed to a sliver between the heading and three buttons stacked. */
+@media (max-height: 500px) {
+  .wcard[data-step='wcStepRes'] {
+    max-width: min(680px, 100%);
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  #wcStepRes {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    gap: 8px;
+  }
+  #wcStepRes .wcscroll {
+    flex: none;
+    overflow: visible;
+    gap: 8px;
+  }
+  #wcStepRes .wcback {
+    margin-top: -6px;
+    margin-bottom: -10px;
+  }
+  #wcStepRes .wcsteps {
+    display: none;
+  }
+  #wcStepRes .wctitle {
+    font-size: var(--t-xl);
+  }
+  #wcStepRes .wcres {
+    padding: 10px 14px;
+    gap: 2px;
+  }
+  #wcStepRes .wcresn {
+    font-size: var(--t-xl);
+  }
+  #wcStepRes .wcstrip {
+    height: 18px;
+    margin: 4px 0;
+  }
+  #wcStepRes .wcacts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  #wcStepRes .wcacts .obGhost {
+    grid-column: 1 / -1;
+    min-height: 44px;
+  }
+  #wcStepRes .wcacts > [style*='display: none'] ~ .obGhost,
+  #wcStepRes .wcacts .btn-primary:only-child {
+    grid-column: 1 / -1;
   }
 }

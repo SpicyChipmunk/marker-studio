@@ -3,7 +3,7 @@
 // photo in a Photo guide; tones while colouring along. All saved with the guide.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, shot, scrollTop, until, saveGuide } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, shot, scrollTop, until, saveGuide, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -227,7 +227,7 @@ test('sections can be left flat, and that is saved with the guide', async () => 
 
 test('in a Photo guide the light comes from the photo (no sun), and can be switched back to the sun', async () => {
   const { page, errors } = await openApp();
-  await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
   // left half light, right half dark, same hue
   const b64 = await page.evaluate(async () => { const c = document.createElement('canvas'); c.width = 600; c.height = 800; const g = c.getContext('2d'); g.fillStyle = '#e8a37c'; g.fillRect(0, 0, 300, 800); g.fillStyle = '#7a3f22'; g.fillRect(300, 0, 300, 800); const blob = await new Promise((r) => c.toBlob(r, 'image/png')); return await new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result.split(',')[1]); f.readAsDataURL(blob); }); });
@@ -300,7 +300,7 @@ const pngB64 = (page, draw, w = 600, h = 800) => page.evaluate(async ([draw, w, 
 
 test('reopening a guide lit from its photo draws the photo light (no sun) once the photo loads', async () => {
   const { page, errors } = await openApp();
-  await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
+  await haveSet(page); await page.check('#wcSets input[data-i="6"]'); await page.click('#wcAdd'); await page.click('#wcSample');
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
   const b64 = await pngB64(page, "g.fillStyle='#e8a37c';g.fillRect(0,0,300,800);g.fillStyle='#7a3f22';g.fillRect(300,0,300,800);");
   await page.click('.sftabbtn[data-t="pattern"]');

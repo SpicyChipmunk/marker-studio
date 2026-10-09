@@ -342,3 +342,72 @@
 .buycard .buymode button {
   flex: 1;
 }
+/* (v309) The number of markers read, big: seen going up cap after cap from across the table */
+.sccount b {
+  font-family: Fraunces, Georgia, serif;
+  font-size: calc(26 * var(--tpx));
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1;
+  margin-right: 2px;
+  vertical-align: -3px;
+}
+/* (v309) On a touch screen, Scan Text's three steps in boxes side by side, in place of the paragraph (which a mouse and
+   keyboard keep: type or paste, then Enter) */
+.schow {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  counter-reset: schow;
+}
+.schow li {
+  counter-increment: schow;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 9px 10px;
+  font-size: var(--t-sm);
+  line-height: 1.35;
+  color: var(--sub);
+}
+.schow b {
+  display: block;
+  color: var(--ink);
+  font-size: var(--t-base);
+  margin-bottom: 3px;
+}
+.schow b::before {
+  content: counter(schow) ' \00b7  ';
+}
+@media (pointer: coarse) {
+  .schow {
+    display: grid;
+  }
+  .schint {
+    display: none;
+  }
+}
+@media (pointer: coarse) and (max-width: 560px) {
+  .schow {
+    grid-template-columns: 1fr;
+  }
+}
+/* (v309) Find my set (the welcome's "I'm not sure which set"): the brand is the one chosen there, and the list's Clear
+   stays; a line says which set the caps fit */
+.scfind #scBrand {
+  display: none;
+}
+.scfindnote {
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--glass);
+  color: var(--sub);
+  font-size: var(--t-base);
+  line-height: 1.4;
+}
+.scfindnote b {
+  color: var(--ink);
+}

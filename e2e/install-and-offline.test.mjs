@@ -2,7 +2,7 @@
 // asking for persistent storage, and fonts served from the app itself.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle, notOnWebKit, WK } from './helpers.mjs';
+import { setup, teardown, openApp, idle, notOnWebKit, WK, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -96,7 +96,7 @@ test('Chrome: beforeinstallprompt shows Install app, which opens the browser pro
 
 test('persistent storage is asked for when the collection is set up in the welcome, and on a first palette save', notOnWebKit(WK.storage), async () => {
   const { page, errors } = await openApp({ init: stubPersist });
-  await page.check('#wcSets input[data-i="3"]'); await idle(page);
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]'); await idle(page);
   assert.equal(await page.evaluate(() => window.__persist), 0, 'not for ticking a set');
   assert.equal(await page.evaluate(() => localStorage.getItem('ms-first-use')), null);
   await page.click('#wcAdd'); await idle(page);

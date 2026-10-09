@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v309',
+    t: 'Setting up your markers: the welcome asks how you got them. Have a set? Pick it. Bought them one by one? Scan the caps or tick colours on a new chart (in Markers too). Not sure which set? Scan 3 caps and Marker Studio works it out.',
+  },
+  {
     v: 'v308.6',
     t: 'Fix: Scan Text reads cap after cap again on iPadOS 27, without closing and reopening Scan.',
   },

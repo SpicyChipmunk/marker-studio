@@ -3,7 +3,7 @@
 // made with its pen, a small ring, a word, hatching and a dotted line. The page is drawn here in code.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle } from './helpers.mjs';
+import { setup, teardown, openApp, idle, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -47,7 +47,7 @@ async function makePage() {
 
 test('specks of grain on the paper are left out of what’s printed and saved; the drawing’s small details stay', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
-  await page.check('#wcSets input[data-i="3"]');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]');
   await page.click('#wcAdd');
   const pg = await page.evaluate(async (src) => {
     eval(src);

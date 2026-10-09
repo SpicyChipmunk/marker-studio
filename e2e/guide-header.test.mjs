@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { setup, teardown, openApp, sampleGuide, idle, openMenu, menuItem, ROOT, rename, sectionPoint, scrollTop, openAtScale, guideName, until, saveGuide, answerAsks, buildGo } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, openMenu, menuItem, ROOT, rename, sectionPoint, scrollTop, openAtScale, guideName, until, saveGuide, answerAsks, buildGo, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -45,7 +45,7 @@ test('header row: name ✎ over where it is saved, ✨ Surprise in Plan only, an
 
 test('a new photo is "New guide" in Edit sections, and goes into the Library by itself once built', async () => {
   const { page, errors } = await openApp();
-  await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd');
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#wcPhoto')]);
   await fc.setFiles(join(ROOT, 'src', 'assets', 'sample-jellyfish.png'));
   await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 60000 }); await idle(page);

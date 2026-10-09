@@ -5,7 +5,7 @@
 // brought into one place (src/js/layers.js), so each test says what the app did then.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, sampleGuide, idle, pause, libItem } from './helpers.mjs';
+import { setup, teardown, openApp, sampleGuide, idle, pause, libItem, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -155,7 +155,7 @@ test('the welcome: Escape leaves it open', async () => {
   assert.deepEqual(await dialogs(page), ['welcome']);
   await esc(page);
   assert.deepEqual(await dialogs(page), ['welcome']);
-  await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd'); await idle(page);
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]'); await page.click('#wcAdd'); await idle(page);
   await esc(page);
   assert.deepEqual(await dialogs(page), ['welcome'], 'nor on its second step');
   await page.click('#wcLook'); await idle(page);

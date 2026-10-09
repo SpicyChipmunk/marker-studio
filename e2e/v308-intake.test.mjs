@@ -8,14 +8,14 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { setup, teardown, openApp, idle, sectionPoint, ROOT } from './helpers.mjs';
+import { setup, teardown, openApp, idle, sectionPoint, ROOT, haveSet } from './helpers.mjs';
 
 before(setup);
 after(teardown);
 
 async function fresh(opts = {}) {
   const a = await openApp({ width: 820, height: 1180, ...opts });
-  await a.page.check('#wcSets input[data-i="3"]');
+  await haveSet(a.page); await a.page.check('#wcSets input[data-i="3"]');
   await a.page.click('#wcAdd');
   return a;
 }
@@ -306,7 +306,7 @@ test('a page coloured in already gets a warning', async () => {
 
 test('a file that won’t open is said once; a PDF is told to screenshot the page; the start card says so too', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
-  await page.check('#wcSets input[data-i="3"]');
+  await haveSet(page); await page.check('#wcSets input[data-i="3"]');
   await page.click('#wcAdd');
   await page.click('#wcLook');
   await idle(page);

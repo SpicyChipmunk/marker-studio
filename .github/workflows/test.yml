@@ -6,7 +6,7 @@ on:
     branches-ignore: [release]
   pull_request:
 # The runners are pinned to Ubuntu 24.04: ubuntu-latest moves to Ubuntu 26 from 19 October 2026, and the browsers our
-# Playwright version installs (npx playwright install --with-deps) are built for 24.04. Move on when Playwright is
+# Playwright version installs (npx playwright install and install-deps) are built for 24.04. Move on when Playwright is
 # upgraded to a version that lists Ubuntu 26.
 jobs:
   # Unit tests, then the browser tests on Chromium in 2 parts side by side, so the results come in about half the time:
@@ -40,7 +40,22 @@ jobs:
       - name: Summary (unit tests)
         if: always() && matrix.part == 1
         run: node e2e/ci-summary.mjs e2e/.artifacts/unit-results.jsonl "Unit tests" all test
-      - run: npx playwright install --with-deps chromium
+      # Playwright's Chromium is kept between runs (keyed on the Playwright version), so it's downloaded only when Playwright
+      # changes; the system libraries it needs come from apt each run. Each install is stopped after 5 minutes and
+      # tried again, up to 3 times (e2e/ci-try.sh): now and then a download stalls (once for 38 minutes).
+      - name: Playwright version
+        id: pw
+        run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Keep Chromium between runs
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-24.04-chromium-${{ steps.pw.outputs.v }}
+      # (run even when kept: it then only checks, in a second, and fetches again one that was kept half-installed)
+      - name: Install Chromium
+        run: bash e2e/ci-try.sh 3 300 npx playwright install chromium
+      - name: Install Chromium's system libraries
+        run: bash e2e/ci-try.sh 3 300 npx playwright install-deps chromium
       - name: Browser tests (Chromium, part ${{ matrix.part }} of 2)
         run: >-
           mkdir -p e2e/.artifacts &&
@@ -83,7 +98,22 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps webkit
+      # Playwright's WebKit is kept between runs (keyed on the Playwright version), so it's downloaded only when Playwright
+      # changes; the system libraries it needs come from apt each run. Each install is stopped after 5 minutes and
+      # tried again, up to 3 times (e2e/ci-try.sh): now and then a download stalls (once for 38 minutes).
+      - name: Playwright version
+        id: pw
+        run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Keep WebKit between runs
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-24.04-webkit-${{ steps.pw.outputs.v }}
+      # (run even when kept: it then only checks, in a second, and fetches again one that was kept half-installed)
+      - name: Install WebKit
+        run: bash e2e/ci-try.sh 3 300 npx playwright install webkit
+      - name: Install WebKit's system libraries
+        run: bash e2e/ci-try.sh 3 300 npx playwright install-deps webkit
       # (a diagnostic, part 1 only: how fast this WebKit runs plain JavaScript; about 180 ms with its JIT on a laptop)
       - name: WebKit speed check
         if: matrix.part == 1
