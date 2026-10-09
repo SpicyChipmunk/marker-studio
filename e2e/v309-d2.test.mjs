@@ -46,8 +46,8 @@ test('Copic caps from two sets, up to 30: the closest set, not all 358; All Copi
     seen.join('\n'),
   );
   assert.match(seen.at(-1), /^ALSO MATCHES \/ All Copic markers$/i, 'last, by its own name');
-  // (v309.1: a set's size is its colours: Copic's Colorless Blender 0 is said beside them)
-  assert.equal(await page.textContent('#wcFindYes'), 'Yes, add these 357 markers');
+  // (v309.1: Copic counts its blender in a set's size, as its sets do; only Ohuhu's comes with a set uncounted)
+  assert.equal(await page.textContent('#wcFindYes'), 'Yes, add these 358 markers');
   assert.deepEqual(errors, []);
 });
 
@@ -58,7 +58,7 @@ test('Copic, more than 250: All Copic markers is the best match', async () => {
   await page.click('#scAdd');
   await idle(page);
   assert.equal(await page.textContent('#wcTR'), 'Is this your set?');
-  assert.match(await page.innerText('#wcRes'), /^BEST MATCH\nAll Copic markers\n357 markers and a Colorless Blender/i);
+  assert.match(await page.innerText('#wcRes'), /^BEST MATCH\nAll Copic markers\n358 markers\n/i);
   assert.deepEqual(errors, []);
 });
 

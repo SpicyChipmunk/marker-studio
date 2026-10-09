@@ -274,6 +274,15 @@
   width: 20px;
   height: 20px;
 }
+/* (v309.2) the chip's words wrap as one line, "already yours" with them */
+.scchtx {
+  min-width: 0;
+}
+.scchtx i {
+  font-style: normal;
+  color: var(--warn);
+  white-space: nowrap;
+}
 /* Add stays in reach as the list grows */
 .sccard .scadd {
   position: sticky;

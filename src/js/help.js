@@ -5,8 +5,16 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v309.2',
+    t: 'Save image names the file after your guide. A very small picture now says it’s too small, rather than suggesting settings. Smaller fixes for the keyboard and larger text.',
+  },
+  {
+    v: 'v309.1',
+    t: 'Ohuhu sets now come with their Colorless Blender. If you have one, tick it in Markers (code 0). Plus fixes from a full check of the app.',
+  },
+  {
     v: 'v309',
-    t: 'Setting up your markers: the welcome asks how you got them. Have a set? Pick it. Bought them one by one? Scan the caps or tick colours on a new chart (in Markers too). Not sure which set? Scan 3 caps and Marker Studio works it out.',
+    t: 'New in Markers: Tick colours on a chart, for markers bought one by one. New testers get a simpler welcome that can work out which set they have from 3 caps.',
   },
   {
     v: 'v308.6',

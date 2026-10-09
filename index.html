@@ -7062,6 +7062,10 @@ button.sfSeeAll {
   background: rgba(120, 200, 180, 0.22);
   box-shadow: inset 0 0 0 1px rgba(143, 214, 180, 0.6);
 }
+/* (v309.1: on the chosen brand's tint, --sub's small print read at 4.3:1) */
+.wcseg button[aria-pressed='true'] small {
+  color: rgba(244, 242, 236, 0.66);
+}
 .wcnote {
   font-size: var(--t-base);
 }
@@ -10564,6 +10568,15 @@ button.wrm {
   width: 20px;
   height: 20px;
 }
+/* (v309.2) the chip's words wrap as one line, "already yours" with them */
+.scchtx {
+  min-width: 0;
+}
+.scchtx i {
+  font-style: normal;
+  color: var(--warn);
+  white-space: nowrap;
+}
 /* Add stays in reach as the list grows */
 .sccard .scadd {
   position: sticky;
@@ -10955,7 +10968,7 @@ button.wrm {
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v309</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v309.2</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><button id="presetHdr" class="presethdr" aria-expanded="false"><span>Add a set you own</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><div id="presetBody" style="display:none"><div class="presethint">Tick the boxes for the marker sets you own, then add them all at once.</div><div id="presetList"></div><div class="presetfoot"><button id="presetAdd" class="btn-primary" disabled>Add markers</button><button id="presetReset">Clear collection</button></div></div><button id="scanOpen" class="presethdr scanopen"><span>Scan or type codes</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button id="chartOpen" class="presethdr scanopen"><span>Tick colours on a chart</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -10997,7 +11010,7 @@ button.wrm {
 <div class="overlay" id="backupOverlay" role="dialog" aria-modal="true" aria-labelledby="bkTitle"><div class="ocard dcard"><div class="mhead"><h2 class="mtitle" id="bkTitle">Back up &amp; restore</h2><button id="backupClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">One file with your markers, saved palettes and guides. Keep it somewhere safe — restore it on a new phone or after clearing the browser. Older backup files (collection or guides) restore here too.</div><div class="drow"><button id="backupDownload" class="btn-primary">Back up</button><button id="backupImport">Restore a file</button></div><div class="dsub" id="backupCap" role="status"></div><button id="bkPreRestore" class="sflink bkundo" hidden></button><button id="backupShow" class="sflink bkshow" aria-expanded="false">Markers &amp; palettes as text (copy / paste)</button><div id="backupTextWrap" class="bktextwrap" style="display:none"><textarea id="backupText" class="bktext" spellcheck="false" aria-label="Backup text"></textarea><div class="drow"><button id="backupCopy">Copy</button><button id="backupRestore">Restore from text</button></div></div><input type="file" id="backupFile" class="fileinput" accept=".txt,application/json,text/plain"></div></div>
 <div class="overlay" id="swOverlay" role="dialog" aria-modal="true" aria-labelledby="swTitle"><div class="ocard dcard swcard"><div class="mhead"><h2 class="mtitle" id="swTitle">Swatch chart</h2><button id="swClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Print it, colour each box with the real marker and pin it up. The strip beside each box is the colour shown on screen, which is only an approximation: the chart shows how your markers really look.</div><div id="swOpts" class="swopts"></div><div id="swSum" class="swsum" role="status" aria-live="polite"></div><button id="swGo" class="btn-primary swgo">Download PDF</button></div></div>
 <div class="overlay" id="sfPlanOverlay" role="dialog" aria-modal="true" aria-labelledby="planTitle"><div class="ocard dcard plancard"><div class="mhead"><h2 class="mtitle" id="planTitle">Blend plan</h2><button id="sfPlanClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Every colour in this guide with a lighter and darker shade from your markers. Amber outline: a marker you don’t own yet.</div><div id="sfPlanBuy"></div><div id="sfPlanList" class="planlist"></div></div></div>
-<div class="overlay" id="welcome" role="dialog" aria-modal="true" aria-labelledby="wcTitle"><div class="ocard wcard"><div id="wcStep0" class="wcstep"><div class="wcscroll"><div class="wctitle" id="wcTitle">Welcome to Marker Studio</div><div class="wcsub">Guides and palettes are built from the markers you own. How did you get yours?</div><div class="wcch"><button type="button" id="wcHaveSet" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>I have a set</b><span>Pick it from the list: Ohuhu Honolulu, Copic Ciao, Sketch and more.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneByOne" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>I bought them one by one</b><span>Scan the caps, tick colours on a chart, or type the codes.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcNotSure" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></span><span class="wct"><b>I’m not sure which set</b><span>Scan 3 caps and we’ll work out which set you have.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div></div><div class="wcacts"><div id="wcErr" role="alert" style="display:none"></div><div class="wcrow"><button id="wcSkip" class="obGhost">I’ll do this later</button><button id="wcRestore" class="obGhost">Restore a backup</button></div><div class="wcpriv">Works offline. Nothing you add leaves this device; the camera is used only to Scan caps or Match a colour.</div></div><input type="file" id="wcFile" class="fileinput" accept=".json,.txt,application/json,text/plain"></div><div id="wcStep1" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcT1" tabindex="-1">Which sets do you have?</div><div class="wcsub">Tick each set you have. Not sure which? <button type="button" id="wcToFind" class="sflink wcscan">Find it from 3 caps</button></div><div class="wcbrands" role="group" aria-label="Jump to a brand"><button type="button" data-b="Ohuhu" class="on" data-first>Ohuhu</button><button type="button" data-b="Copic">Copic</button></div><div id="wcSets" class="wcsets"></div></div><div class="wcacts"><button id="wcAdd" class="btn-primary" disabled>Tick a set above</button></div></div><div id="wcStepFind" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wcsteps" aria-hidden="true"><i class="on"></i><i></i><i></i></div><div class="wctitle" id="wcTF" tabindex="-1">Let’s find your set</div><div class="wcsub">Two quick questions, then 3 caps.</div><div class="wclbl" id="wcFBl">Which brand?</div><div class="wcseg" id="wcFBrand" role="group" aria-labelledby="wcFBl"><button type="button" data-b="Ohuhu" aria-pressed="true">Ohuhu<small>codes like R014, Y28</small></button><button type="button" data-b="Copic" aria-pressed="false">Copic<small>codes like R29, E00</small></button></div><div class="wclbl" id="wcFCl">About how many markers?</div><div class="wccount" id="wcFCount" role="group" aria-labelledby="wcFCl"></div><div class="wcsub wcnote">A guess is fine: it tells apart sets that share colours.</div></div><div class="wcacts"><button id="wcFindNext" class="btn-primary" disabled>Next: scan 3 caps</button></div></div><div id="wcStepRes" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wcsteps" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></div><div class="wctitle" id="wcTR" tabindex="-1">Is this your set?</div><div id="wcRes" class="wcres"></div></div><div class="wcacts"><button id="wcFindYes" class="btn-primary">Yes, add these</button><button id="wcFindOther" class="obSecond"></button><button id="wcFindNone" class="obGhost">None of these: I’ll add them one by one</button></div></div><div id="wcStepOne" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcTO" tabindex="-1">Add your markers one by one</div><div class="wcsub">Pick whichever suits you. You can mix them, and add more any time in Markers.</div><div class="wcch"><button type="button" id="wcOneScan" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>Scan the caps</b><span>On an iPad: hold up each cap to the camera in turn, and each is read as its code shows.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneChart" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>Tick colours on a chart</b><span>Big swatches by colour family. Tap the ones you have.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneType" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-pencil"/></svg></span><span class="wct"><b>Type or paste codes</b><span>From a receipt or an order email: R014 Y28 BG314…</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="wcsub wcnote">Tip: Markers › Print a swatch chart puts every code on paper, to tick off at the table.</div></div></div><div id="wcStep2" class="wcstep" style="display:none"><div class="wctitle" id="wcT2" tabindex="-1">You’re all set</div><div class="wcsub" id="wcDone"></div><div class="wcch" id="wcMore"><button type="button" id="wcMoreExtra" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>I have extra markers</b><span>Bought on their own? Scan their caps or tick them.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcMoreSet" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>I have another set</b><span>Add it from the list, or find it from 3 caps.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><button id="wcSample" class="btn-primary">Try the sample</button><button id="wcPhoto" class="obSecond">Make a guide from my photo</button><button id="wcLook" class="obGhost">Look around first</button></div></div></div>
+<div class="overlay" id="welcome" role="dialog" aria-modal="true" aria-labelledby="wcTitle"><div class="ocard wcard"><div id="wcStep0" class="wcstep"><div class="wcscroll"><div class="wctitle" id="wcTitle">Welcome to Marker Studio</div><div class="wcsub">Guides and palettes are built from the markers you own. How did you get yours?</div><div class="wcch"><button type="button" id="wcHaveSet" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>I have a set</b><span>Pick it from the list: Ohuhu Honolulu, Copic Ciao, Sketch and more.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneByOne" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>I bought them one by one</b><span>Scan the caps, tick colours on a chart, or type the codes.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcNotSure" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></span><span class="wct"><b>I’m not sure which set</b><span>Scan 3 caps and we’ll work out which set you have.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div></div><div class="wcacts"><div id="wcErr" role="alert" style="display:none"></div><div class="wcrow"><button id="wcSkip" class="obGhost">I’ll do this later</button><button id="wcRestore" class="obGhost">Restore a backup</button></div><div class="wcpriv">Works offline. Nothing you add leaves this device; the camera is used only to Scan caps or Match a colour.</div></div><input type="file" id="wcFile" class="fileinput" accept=".json,.txt,application/json,text/plain"></div><div id="wcStep1" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcT1" tabindex="-1">Which sets do you have?</div><div class="wcsub">Tick each set you have. Not sure which? <button type="button" id="wcToFind" class="sflink wcscan">Find it from 3 caps</button></div><div class="wcbrands" role="group" aria-label="Jump to a brand"><button type="button" data-b="Ohuhu" class="on" data-first>Ohuhu</button><button type="button" data-b="Copic">Copic</button></div><div id="wcSets" class="wcsets"></div></div><div class="wcacts"><button id="wcAdd" class="btn-primary" disabled>Tick a set above</button></div></div><div id="wcStepFind" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wcsteps" aria-hidden="true"><i class="on"></i><i></i><i></i></div><div class="wctitle" id="wcTF" tabindex="-1">Let’s find your set</div><div class="wcsub">Two quick questions, then 3 caps.</div><div class="wclbl" id="wcFBl">Which brand?</div><div class="wcseg" id="wcFBrand" role="group" aria-labelledby="wcFBl"><button type="button" data-b="Ohuhu" aria-pressed="true">Ohuhu<small>codes like R014, Y28</small></button><button type="button" data-b="Copic" aria-pressed="false">Copic<small>codes like R29, E00</small></button></div><div class="wclbl" id="wcFCl">About how many markers?</div><div class="wccount" id="wcFCount" role="group" aria-labelledby="wcFCl"></div><div class="wcsub wcnote">A guess is fine: it tells apart sets that share colours.</div></div><div class="wcacts"><button id="wcFindNext" class="btn-primary" disabled>Next: scan 3 caps</button></div></div><div id="wcStepRes" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wcsteps" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></div><div class="wctitle" id="wcTR" tabindex="-1">Is this your set?</div><div id="wcRes" class="wcres"></div></div><div class="wcacts"><button id="wcFindYes" class="btn-primary">Yes, add these</button><button id="wcFindOther" class="obSecond"></button><button id="wcFindNone" class="obGhost">None of these: I’ll add them one by one</button></div></div><div id="wcStepOne" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcTO" tabindex="-1">Add your markers one by one</div><div class="wcsub">Pick whichever suits you. You can mix them, and add more any time in Markers.</div><div class="wcch"><button type="button" id="wcOneScan" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>Scan the caps</b><span>On an iPad: hold up each cap to the camera in turn, and each is read as its code shows.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneChart" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>Tick colours on a chart</b><span>Big swatches by colour family. Tap the ones you have.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneType" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-pencil"/></svg></span><span class="wct"><b>Type or paste codes</b><span>From a receipt or an order email: R014 Y28 BG314…</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="wcsub wcnote">Tip: Markers › Print a swatch chart puts every code on paper, to tick off at the table.</div></div></div><div id="wcStep2" class="wcstep" style="display:none"><button type="button" class="wcback" id="wcBack2" style="display:none"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcT2" tabindex="-1">You’re all set</div><div class="wcsub" id="wcDone"></div><div class="wcch" id="wcMore"><button type="button" id="wcMoreExtra" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>I have extra markers</b><span>Bought on their own? Scan their caps or tick them.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcMoreSet" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>I have another set</b><span>Add it from the list, or find it from 3 caps.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><button id="wcSample" class="btn-primary">Try the sample</button><button id="wcPhoto" class="obSecond">Make a guide from my photo</button><button id="wcLook" class="obGhost">Look around first</button></div></div></div>
 <div class="overlay" id="scanOverlay" role="dialog" aria-modal="true" aria-labelledby="scTitle"><div class="ocard dcard sccard"><div class="mhead"><h2 class="mtitle" id="scTitle">Scan or type codes</h2><button id="scClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub schint">Type or paste codes, then press Enter. On an iPad or iPhone, tap the box, then <b>AutoFill › Scan Text</b>, and hold each marker’s cap in view until it beeps: no need to tap Insert.</div><ol class="schow" aria-label="How to scan"><li><b>Tap the box</b>The keyboard opens. To type a code, tap return after it.</li><li><b>AutoFill › Scan Text</b>The camera opens where the keyboard was.</li><li><b>Cap after cap</b>Each code is read as it shows, with a beep: no need to tap Insert.</li></ol><div class="segs wide scbrand" id="scBrand" role="group" aria-label="Brand"></div><input id="scBox" class="search scbox" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" placeholder="Scan or type a code" aria-label="Marker codes"><div id="scStat" class="scstat" role="status" aria-live="polite"></div><div id="scFind" class="scfindnote" role="status" hidden></div><div class="schead"><span class="lbl">Read so far</span><span id="scCount" class="sccount"></span><button type="button" id="scClear" class="sflink" hidden>Clear list</button></div><ul id="scList" class="sclist"></ul><div id="scEmpty" class="scempty">Nothing yet. Each marker read joins this list, to check before adding.</div><button id="scAdd" class="btn-primary scadd" disabled>Add to my collection</button></div></div>
 <div class="overlay" id="chartOverlay" role="dialog" aria-modal="true" aria-labelledby="chTitle"><div class="ocard dcard chcard"><div class="mhead"><h2 class="mtitle" id="chTitle">Tick the colours you have</h2><button id="chClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="segs wide" id="chBrand" role="group" aria-label="Brand"></div><div class="chfams" id="chFams" role="group" aria-label="Colour family"></div><div class="lbl chlbl" id="chFamLbl" aria-live="polite"></div><div class="chgrid" id="chGrid" role="group" aria-labelledby="chFamLbl"></div><div class="chbar"><span id="chSum" class="chsum"></span><button id="chSave" class="btn-primary" disabled>Tick your colours</button></div></div></div>
 
@@ -17196,12 +17209,13 @@ function renderRecent() {
           '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a photo of a colouring page into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a photo</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button></div></div>';
       }
       var own = cel.querySelector('.hcown'),
-        // (v309.1: the colours; a set's Colorless Blender builds nothing)
+        // (v309.1: the colours; a set's Colorless Blender builds nothing. v309.2: said as colours, as Home counts
+        // the blender among your markers)
         nOwn = inkKeys([...state.owned]).length;
       if (own)
         own.textContent =
           (nOwn
-            ? 'Built from the ' + nOwn + ' marker' + (nOwn === 1 ? '' : 's') + ' you own. '
+            ? 'Built from your ' + nOwn + ' colour' + (nOwn === 1 ? '' : 's') + '. '
             : 'Built from the markers you own: add yours in Markers. ') +
           'Lay the page flat in even light, and get all of it in the frame.';
       cel.style.display = '';
@@ -19559,12 +19573,18 @@ palNoneEl.style.display = 'none';
 palette.appendChild(palNoneEl);
 function palNoneShow(on) {
   if (on) {
+    // (v309.2) no filter on and still none: your markers are a Colorless Blender or dry ("Clear filters" did nothing)
     const sel = !!state.pool,
+      mine = !sel && ['brand', 'tone', 'sat', 'fam'].every(fgIsAll),
       h =
         '<span>' +
-        (sel ? 'No markers in this selection' : 'No markers match these filters') +
+        (sel
+          ? 'No markers in this selection'
+          : mine
+            ? 'None of your markers lays down colour (a blender, or dry)'
+            : 'No markers match these filters') +
         '</span><span aria-hidden="true"> \u00b7 </span><button type="button" class="sflink" id="palNoneClear">' +
-        (sel ? 'Clear selection' : 'Clear filters') +
+        (sel ? 'Clear selection' : mine ? 'Add markers' : 'Clear filters') +
         '</button>';
     if (palNoneEl.innerHTML !== h) palNoneEl.innerHTML = h;
   }
@@ -19572,6 +19592,10 @@ function palNoneShow(on) {
 }
 palNoneEl.addEventListener('click', (e) => {
   if (!e.target.closest('#palNoneClear')) return;
+  if (!state.pool && ['brand', 'tone', 'sat', 'fam'].every(fgIsAll)) {
+    setMode('collection');
+    return;
+  }
   if (state.pool) setPool(null);
   else ['brand', 'tone', 'sat', 'fam'].forEach(fgClear);
   filterChanged();
@@ -21409,8 +21433,15 @@ function inkKeys(keys) {
     return i == null || !NOINK.has(i);
   });
 }
+// (v309.2) a set's markers as its name counts them: the Colorless Blender an Ohuhu set comes with aside. A Copic set's
+// blender (Ciao 36 Set B's 0) is one of the 36, so it counts: inkKeys had made that set 35 and All Copic markers 357.
+function setKeys(keys) {
+  return keys.filter(function (k) {
+    return k !== 'Ohuhu|0';
+  });
+}
 function presetSize(p) {
-  return inkKeys(presetMkeys(p)).length;
+  return setKeys(presetMkeys(p)).length;
 }
 function presetMkeys(p) {
   var out = [];
@@ -21481,7 +21512,7 @@ function findSets(brand, bucket, keys) {
       if (has.has(k)) hits++;
     });
     if (keys.length && !hits) return;
-    var n = inkKeys(ks).length,
+    var n = setKeys(ks).length,
       off = b ? (n < b.lo ? b.lo - n : n > b.hi ? n - b.hi : 0) : 0;
     out.push({
       i: i,
@@ -21529,7 +21560,7 @@ function presetListHTML() {
       lastB = p.b;
     }
     // (v309.1: the colours: a set's blender neither counts in its size nor stops it showing as yours)
-    var ks = inkKeys(presetMkeys(p)),
+    var ks = setKeys(presetMkeys(p)),
       n = ks.length,
       own = 0;
     ks.forEach(function (k) {
@@ -21638,7 +21669,7 @@ let presetRelist = null;
         return;
       }
       // (v309.1: the colours added; a set's blender alone, if that's all that was new)
-      toastAction(addedManyLine(inkKeys(added).length || added.length, off.length), 'Undo', function () {
+      toastAction(addedManyLine(setKeys(added).length || added.length, off.length), 'Undo', function () {
         added.forEach(function (k) {
           state.owned.delete(k);
         });
@@ -24246,6 +24277,9 @@ let srcUp = false; // a picture of the person's own, enlarged to UPSIDE if small
 // (despeckle) are measured on the picture as it came, so enlarging it finds the shapes its lines ran together
 // over, not specks too small to colour. Saved with the guide (upk). written by: 20-image-input, 65-edit, 97-open
 let srcK = 1;
+// (v309.2) the picture's size as it came in (before it's enlarged), for segQuality's too-small warning: only for a
+// picture just picked (null otherwise). written by: 20-image-input
+let srcDims = null;
 let enhance = true; // written by: 20-image-input, 50-controls, 99-close (test)
 let adaptC = 9; // written by: 20-image-input, 22-straighten, 50-controls
 // (v308) a straightened photo's Sensitivity: 7 (adaptC 6), where a picture as it came is 5 (9)
@@ -26018,8 +26052,25 @@ function colourShare(d, n) {
   }
   return m ? c / m : null;
 }
+// (v309.2) The least picture, on its shorter side as it came (before it's enlarged), that's worth finding sections in.
+// A page scaled down to a short side of 24–48 px gave 0–11 sections of the 125 it has at full size; 64 px, 24; 80, 55;
+// 120, 70 (e2e/fixtures/letter-page.png; a photo of a page went the same way). Under it, the warning says the picture is
+// too small: the fragments warning it had got told you to raise Min section size, which left 0 sections. Under
+// SMALLISH_PIC, a picture that would get the fragments warning gets this one instead: Safari's own scaling down left
+// the same page at 120 px in fragments.
+const SMALL_PIC = 100,
+  SMALLISH_PIC = 200;
 function segQuality() {
   if (!labels || !comps) return { ok: true };
+  var w0 = srcDims ? srcDims.w : 0,
+    h0 = srcDims ? srcDims.h : 0,
+    tooSmall = {
+      ok: false,
+      code: 'small',
+      msg: 'This picture is very small (' + w0 + ' \u00d7 ' + h0 + ' pixels).',
+      tip: 'Find a bigger copy of the page: a saved thumbnail is often this size. A photo of the printed page works too.',
+    };
+  if (srcDims && Math.min(w0, h0) < SMALL_PIC) return tooSmall;
   var px = W * H,
     ink = 0;
   for (var i = 0; i < px; i++) if (labels[i] === -1) ink++;
@@ -26080,13 +26131,15 @@ function segQuality() {
     };
   // (v303: only when the fragments are in the guide, not just left out by Min section size: a clean page with a
   // scanner's specks, all left out, had been told it was a photo or textured image)
-  if (tinyFrac > 0.8 && (kept === 0 || keptTiny > 0.3 * kept))
+  if (tinyFrac > 0.8 && (kept === 0 || keptTiny > 0.3 * kept)) {
+    if (srcDims && Math.min(w0, h0) < SMALLISH_PIC) return tooSmall;
     return {
       ok: false,
       code: 'noisy',
       msg: 'Found a lot of tiny fragments \u2014 usually a photo or textured image rather than clean line art.',
       tip: 'Use line art with solid outlines, or raise Min section size in Edit sections.',
     };
+  }
   // (v308) hatching or shading lines: 200 sections or more, over half of them under 3x Min section size (a
   // hatched page 72%; the most of any real page tried, 29%)
   if (kept >= 200 && keptSmall > 0.5 * kept)
@@ -26328,6 +26381,7 @@ function resetForNewPicture() {
   alDoneOpen = false;
   blendOpen = {};
   srcK = 1;
+  srcDims = null;
   _origKeys = {};
   _lostKeys = {};
   _openEmpty = false;
@@ -26830,6 +26884,7 @@ function processSrc() {
   H = ch;
   gray = g0;
   srcK = 1;
+  srcDims = { w: cw, h: ch };
   if (up > 1.05) {
     W = Math.round(cw * up);
     H = Math.round(ch * up);
@@ -51527,6 +51582,10 @@ function zoneEditStart(id, kb) {
 // close the editor (a zone that got no sections goes); quiet: leave the screen to whoever called (a new picture)
 function zoneEditEnd(quiet) {
   if (!zoneEdit) return;
+  // (v309.1) the keyboard on one of the editor's own controls (Done, Delete zone, its name), or on nothing (Escape in
+  // the name field lets go of it): those are drawn again as it closes, so it goes to the zone's chip, or ＋ Zone
+  const _ae = document.activeElement,
+    _kbBack = !_ae || _ae === document.body || !!(_ae.closest && _ae.closest('#sfPanel-pattern'));
   zoneEdit = false;
   if (zoneS) zoneStrokeEnd(false);
   const z = zoneById(zoneCur);
@@ -51544,6 +51603,15 @@ function zoneEditEnd(quiet) {
   renderControls();
   renderGuide();
   zoneKbSync();
+  const _now = document.activeElement;
+  // (not when another tab closed it: that tab is where the person went)
+  if (_kbBack && gTab === 'pattern' && (!_now || _now === document.body)) {
+    const b = zoneChipEl(zoneCur) || document.getElementById('sfZoneAdd');
+    if (b)
+      try {
+        b.focus({ preventScroll: true });
+      } catch (_) {}
+  }
 }
 
 // ---- the chips ----
@@ -52151,6 +52219,13 @@ function showRevealBar(mode) {
   b.setAttribute('data-mode', mode);
   if (mode === 'anim') {
     b.innerHTML = '<div class="rvmsg">Revealing\u2026</div>';
+    // (v309.2) the keyboard on the ✕ while it plays (it had been on the page: Tab started behind Reveal); Share takes
+    // it at the end, as before
+    var x = document.getElementById('sfRevX');
+    if (x && document.activeElement !== x)
+      try {
+        x.focus({ preventScroll: true });
+      } catch (_) {}
   } else {
     var clip = revMime && revBlob ? '<button id="revClip">Save clip</button>' : '';
     b.innerHTML =
@@ -52299,6 +52374,13 @@ function startReveal() {
   if (rt) rt.classList.add('sfrev');
   revCloseEl();
   revModal(true);
+  // (v309.2: the keyboard on the ✕ at once, as the button that opened Reveal goes inert behind it; Share takes it at
+  // the end)
+  var rx = document.getElementById('sfRevX');
+  if (rx)
+    try {
+      rx.focus({ preventScroll: true });
+    } catch (_) {}
   requestAnimationFrame(function () {
     // (v308: not if it was closed before this frame: Escape straight away left the show up over the guide)
     if (rt && !rt.classList.contains('sfrev')) return;
@@ -54101,20 +54183,26 @@ function lowFind(w, raw) {
       .toUpperCase();
   if (!q) return;
   const found = [];
-  let known = false;
+  let known = false,
+    blender = false;
   COLORS.forEach(function (c, i) {
     if (codeNorm(c.code) !== q) return;
     known = true;
     const k = mkey(i);
     if (api.lowInk(k) != null) found.push(k);
+    // (v309.1: a Colorless Blender of yours isn't asked about here, as it lays down no colour; it had been said as
+    // not one of your markers)
+    else if (NOINK.has(i) && isOwned(i)) blender = true;
   });
   found.forEach(function (k) {
     if (st.extra.indexOf(k) < 0) st.extra.push(k);
   });
   st.line[w] = !found.length
-    ? known
-      ? up + ' isn’t one of your markers'
-      : 'No marker ' + up
+    ? blender
+      ? up + ' is your Colorless Blender: mark it in Markers'
+      : known
+        ? up + ' isn’t one of your markers'
+        : 'No marker ' + up
     : found.length > 1
       ? 'Two ' + up + 's: which is in your hand?'
       : '';
@@ -58529,9 +58617,11 @@ function exportImage() {
         note(errNote('Couldn’t export the image.', 'Saving the image', 'it couldn’t be encoded'));
         return;
       }
+      // (v309.2: named after the guide, as its PDF is: several saved to Files were colour-guide (1).png, (2)…)
+      const base = fileSlug(curName, 'colour-guide', 80).toLowerCase();
       shareOrSave(
         blob,
-        codes ? 'colour-guide.png' : 'marker-studio-picture.png',
+        codes ? base + '.png' : base + '-picture.png',
         curName || (codes ? 'Colouring guide' : 'My colouring'),
         'image',
         'Image downloaded.',
@@ -63919,13 +64009,14 @@ function scanRender() {
                 esc(o.how) +
                 '"><span class="scsw" style="background:' +
                 COLORS[o.i].hex +
-                '"></span>' +
+                // (v309.2: the words in one span, wrapping as a line: "already yours" had become a column of its own)
+                '"></span><span class="scchtx">' +
                 esc(scanName(o.i)) +
                 ' · ' +
                 esc(COLORS[o.i].brand) +
                 // (v305: which of the answers you have)
                 (state.owned.has(mkey(o.i)) ? ' · <i>already yours</i>' : '') +
-                '</button>',
+                '</span></button>',
             )
             .join('') +
           '</span></span>' +
@@ -64196,7 +64287,10 @@ function scanAdd() {
     (unread ? ' \u00b7 ' + unread + (unread === 1 ? ' line' : ' lines') + ' not read' : '');
   toastActions(
     said,
-    [{ label: 'Undo', fn: scanUndoAdd }].concat(left ? [{ label: 'Open', fn: openScan }] : []),
+    // (v309.1: Open from the welcome's Scan is the welcome's again: what's added then is counted there)
+    [{ label: 'Undo', fn: scanUndoAdd }].concat(
+      left ? [{ label: 'Open', fn: () => openScan({ added: after, undone: undone }) }] : [],
+    ),
     left || unread ? 10000 : 8000,
   );
   if (after) after(keys.length);
@@ -64986,6 +65080,15 @@ document.addEventListener('keydown', function (e) {
   }
   var sets = $('wcSets'),
     add = $('wcAdd');
+  // (v309.2) storage blocked: the page's banner is under the welcome, so it's said here too, before anything is added
+  if (typeof STORE_BLOCKED !== 'undefined' && STORE_BLOCKED) {
+    var sub0 = ov.querySelector('#wcStep0 .wcsub');
+    if (sub0)
+      sub0.insertAdjacentHTML(
+        'afterend',
+        '<div class="msblocked wcblocked" role="alert"><b>This browser isn\u2019t letting Marker Studio save \u2014 nothing will be kept.</b> <span>Allow this site to store data (or leave private browsing), then reload.</span></div>',
+      );
+  }
   sets.innerHTML = presetListHTML();
   // (v306) the first step's picture (v309: on the three ways in): the sample page, its colour flooding down it from the bell, held, then back to the
   // page; three times (11 s), then it stays coloured (07-home-onboarding.css: all of it CSS, nothing on a timer). On a
@@ -65025,7 +65128,7 @@ document.addEventListener('keydown', function (e) {
     });
     add.disabled = !ch.length;
     // (v309.1: the colours; a set's blender comes with it, uncounted)
-    var n = inkKeys([...ks]).length;
+    var n = setKeys([...ks]).length;
     add.textContent = ch.length ? 'Add ' + n + ' marker' + (n === 1 ? '' : 's') : 'Tick a set above';
   }
   sets.addEventListener('change', upd);
@@ -65136,6 +65239,8 @@ document.addEventListener('keydown', function (e) {
     $('wcT2').textContent = title || 'You’re all set';
     $('wcDone').textContent = msg;
     $('wcMore').style.display = more ? '' : 'none';
+    // (v309.2: Back only after "I'll do this later", below)
+    $('wcBack2').style.display = 'none';
     $('wcSample').textContent = more ? 'That’s all: try the sample' : 'Try the sample';
     trail = [];
     show('wcStep2', true);
@@ -65155,13 +65260,26 @@ document.addEventListener('keydown', function (e) {
   function added(n, names, del) {
     var all = state.owned.size,
       // (the first markers: all the colours owned are these; a set's blender aside)
-      first = inkKeys([...state.owned]).length === n;
-    snap = { id: cur, trail: trail.slice() };
+      first = setKeys([...state.owned]).length === n;
+    // (v309.1: added on "Anything else?" itself (Scan's toast Open): what it said, for Undo to put back)
+    snap =
+      cur === 'wcStep2'
+        ? { id: cur, t2: $('wcT2').textContent, msg: $('wcDone').textContent, was: snap }
+        : { id: cur, trail: trail.slice() };
+    // (v309.2: the Colorless Blender a set brought is said, so Home's count, which includes it, adds up)
+    var bl = names && ownBlender;
     step2(
       (names
-        ? setNames(names) +
-          (names.length === 1 ? (n ? ' is' : ' was already') : n ? ' are' : ' were already') +
-          ' in your collection.'
+        ? bl && !n
+          ? setNames(names) +
+            (names.length === 1 ? ' was' : ' were') +
+            ' already in your collection; its Colorless Blender is now too.'
+          : bl && names.length === 1
+            ? names[0] + ' and its Colorless Blender are in your collection.'
+            : setNames(names) +
+              (names.length === 1 ? (n ? ' is' : ' was already') : n ? ' are' : ' were already') +
+              ' in your collection' +
+              (bl ? ', with a Colorless Blender.' : '.')
         : n || del
           ? all + ' marker' + (all === 1 ? ' is' : 's are') + ' in your collection.'
           : 'They were already in your collection.') + ' Anything else?',
@@ -65175,7 +65293,9 @@ document.addEventListener('keydown', function (e) {
             (del ? ', ' + del + ' removed' : '')
         : del
           ? del + ' marker' + (del === 1 ? '' : 's') + ' removed'
-          : 'Nothing new to add',
+          : bl
+            ? 'Colorless Blender added'
+            : 'Nothing new to add',
       [...state.owned],
       true,
     );
@@ -65183,27 +65303,40 @@ document.addEventListener('keydown', function (e) {
   // add markers (a set, a set found, the caps read) with Undo through keep; how many were new
   // (v309.1: the colours new to the collection are counted, a set's blender not; and the toast's Undo, as Markers' Add
   // a set has, takes them back out and the welcome back to where they were added from)
+  // (v309.2: as Markers' Add a set: what's added comes off To buy and loses a Running low or Dry mark; Undo gives
+  // both back. And whether an Ohuhu set's Colorless Blender came with it, ownBlender, for step 2 to say so)
+  var ownBlender = false;
   function own(keys) {
     var before = new Set(state.owned),
+      wishWas = state.wish.slice(),
       fresh = [];
     keys.forEach(function (k) {
       if (!state.owned.has(k) && fresh.indexOf(k) < 0) fresh.push(k);
       state.owned.add(k);
     });
+    var ink = inkAddedOff(fresh),
+      off = wishOwnedOff(fresh);
     if (
       !keep(function () {
         state.owned = before;
+        state.wish = wishWas;
+        inkPutBack(ink);
       })
     )
       return -1;
     fullRender();
     if (typeof presetRelist === 'function') presetRelist();
-    var n = inkKeys(fresh).length;
+    if (off.length || Object.keys(ink).length) wishChanged();
+    ownBlender = fresh.indexOf('Ohuhu|0') >= 0;
+    var n = setKeys(fresh).length;
     if (fresh.length)
-      toastAction(addedManyLine(n || fresh.length, 0), 'Undo', function () {
+      toastAction(addedManyLine(n || fresh.length, off.length), 'Undo', function () {
         fresh.forEach(function (k) {
           state.owned.delete(k);
         });
+        inkPutBack(ink);
+        wishPutBack(off);
+        if (off.length || Object.keys(ink).length) wishChanged();
         save();
         fullRender();
         if (typeof presetRelist === 'function') presetRelist();
@@ -65216,9 +65349,27 @@ document.addEventListener('keydown', function (e) {
   // where the markers were added from (the step, and the steps before it), for the toast's Undo
   var snap = null;
   function undoneBack() {
-    if (cur !== 'wcStep2' || !snap) return;
-    trail = snap.trail;
-    show(snap.id, true);
+    if (!snap) return;
+    if (snap.id === 'wcStep2') {
+      // (added on "Anything else?" itself: it says again what it said before, wherever the welcome is now)
+      $('wcT2').textContent = snap.t2;
+      $('wcDone').textContent = snap.msg;
+      fan([...state.owned]);
+      snap = snap.was;
+      if (cur !== 'wcStep2') return;
+    } else if (cur === 'wcStep2') {
+      trail = snap.trail;
+      show(snap.id, true);
+    } else {
+      // (v309.1: the welcome had gone on from "N markers added" (another set, extra markers) before the toast's Undo:
+      // it stays where it is, but Back no longer leads to that step, which would still say they were added)
+      var at = trail.findIndex(function (t) {
+        return t.id === 'wcStep2';
+      });
+      if (at < 0) return;
+      trail = snap.trail.concat(trail.slice(at + 1));
+    }
+    // (the toast's Undo has gone: the keyboard to the step's heading)
     var h = $(cur).querySelector('.wctitle[tabindex]');
     if (h) h.focus({ preventScroll: true });
   }
@@ -65251,6 +65402,10 @@ document.addEventListener('keydown', function (e) {
       }),
       false,
     );
+    // (v309.2) Back to the three ways in: a tap on "later" by mistake had no way back, and "I'm not sure which set"
+    // is only here
+    trail = [{ id: 'wcStep0', el: $('wcSkip') }];
+    $('wcBack2').style.display = '';
   });
   // --- "I'm not sure which set": the brand, about how many, then Scan reads a few caps (findSets, events.js) ---
   var fBrand = 'Ohuhu',
@@ -67192,8 +67347,16 @@ function renderHomeNotes() {
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v309.2',
+    t: 'Save image names the file after your guide. A very small picture now says it’s too small, rather than suggesting settings. Smaller fixes for the keyboard and larger text.',
+  },
+  {
+    v: 'v309.1',
+    t: 'Ohuhu sets now come with their Colorless Blender. If you have one, tick it in Markers (code 0). Plus fixes from a full check of the app.',
+  },
+  {
     v: 'v309',
-    t: 'Setting up your markers: the welcome asks how you got them. Have a set? Pick it. Bought them one by one? Scan the caps or tick colours on a new chart (in Markers too). Not sure which set? Scan 3 caps and Marker Studio works it out.',
+    t: 'New in Markers: Tick colours on a chart, for markers bought one by one. New testers get a simpler welcome that can work out which set they have from 3 caps.',
   },
   {
     v: 'v308.6',

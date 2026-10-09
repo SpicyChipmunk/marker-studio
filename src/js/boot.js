@@ -183,6 +183,15 @@ document.addEventListener('keydown', function (e) {
   }
   var sets = $('wcSets'),
     add = $('wcAdd');
+  // (v309.2) storage blocked: the page's banner is under the welcome, so it's said here too, before anything is added
+  if (typeof STORE_BLOCKED !== 'undefined' && STORE_BLOCKED) {
+    var sub0 = ov.querySelector('#wcStep0 .wcsub');
+    if (sub0)
+      sub0.insertAdjacentHTML(
+        'afterend',
+        '<div class="msblocked wcblocked" role="alert"><b>This browser isn\u2019t letting Marker Studio save \u2014 nothing will be kept.</b> <span>Allow this site to store data (or leave private browsing), then reload.</span></div>',
+      );
+  }
   sets.innerHTML = presetListHTML();
   // (v306) the first step's picture (v309: on the three ways in): the sample page, its colour flooding down it from the bell, held, then back to the
   // page; three times (11 s), then it stays coloured (07-home-onboarding.css: all of it CSS, nothing on a timer). On a
@@ -222,7 +231,7 @@ document.addEventListener('keydown', function (e) {
     });
     add.disabled = !ch.length;
     // (v309.1: the colours; a set's blender comes with it, uncounted)
-    var n = inkKeys([...ks]).length;
+    var n = setKeys([...ks]).length;
     add.textContent = ch.length ? 'Add ' + n + ' marker' + (n === 1 ? '' : 's') : 'Tick a set above';
   }
   sets.addEventListener('change', upd);
@@ -333,6 +342,8 @@ document.addEventListener('keydown', function (e) {
     $('wcT2').textContent = title || 'You’re all set';
     $('wcDone').textContent = msg;
     $('wcMore').style.display = more ? '' : 'none';
+    // (v309.2: Back only after "I'll do this later", below)
+    $('wcBack2').style.display = 'none';
     $('wcSample').textContent = more ? 'That’s all: try the sample' : 'Try the sample';
     trail = [];
     show('wcStep2', true);
@@ -352,13 +363,26 @@ document.addEventListener('keydown', function (e) {
   function added(n, names, del) {
     var all = state.owned.size,
       // (the first markers: all the colours owned are these; a set's blender aside)
-      first = inkKeys([...state.owned]).length === n;
-    snap = { id: cur, trail: trail.slice() };
+      first = setKeys([...state.owned]).length === n;
+    // (v309.1: added on "Anything else?" itself (Scan's toast Open): what it said, for Undo to put back)
+    snap =
+      cur === 'wcStep2'
+        ? { id: cur, t2: $('wcT2').textContent, msg: $('wcDone').textContent, was: snap }
+        : { id: cur, trail: trail.slice() };
+    // (v309.2: the Colorless Blender a set brought is said, so Home's count, which includes it, adds up)
+    var bl = names && ownBlender;
     step2(
       (names
-        ? setNames(names) +
-          (names.length === 1 ? (n ? ' is' : ' was already') : n ? ' are' : ' were already') +
-          ' in your collection.'
+        ? bl && !n
+          ? setNames(names) +
+            (names.length === 1 ? ' was' : ' were') +
+            ' already in your collection; its Colorless Blender is now too.'
+          : bl && names.length === 1
+            ? names[0] + ' and its Colorless Blender are in your collection.'
+            : setNames(names) +
+              (names.length === 1 ? (n ? ' is' : ' was already') : n ? ' are' : ' were already') +
+              ' in your collection' +
+              (bl ? ', with a Colorless Blender.' : '.')
         : n || del
           ? all + ' marker' + (all === 1 ? ' is' : 's are') + ' in your collection.'
           : 'They were already in your collection.') + ' Anything else?',
@@ -372,7 +396,9 @@ document.addEventListener('keydown', function (e) {
             (del ? ', ' + del + ' removed' : '')
         : del
           ? del + ' marker' + (del === 1 ? '' : 's') + ' removed'
-          : 'Nothing new to add',
+          : bl
+            ? 'Colorless Blender added'
+            : 'Nothing new to add',
       [...state.owned],
       true,
     );
@@ -380,27 +406,40 @@ document.addEventListener('keydown', function (e) {
   // add markers (a set, a set found, the caps read) with Undo through keep; how many were new
   // (v309.1: the colours new to the collection are counted, a set's blender not; and the toast's Undo, as Markers' Add
   // a set has, takes them back out and the welcome back to where they were added from)
+  // (v309.2: as Markers' Add a set: what's added comes off To buy and loses a Running low or Dry mark; Undo gives
+  // both back. And whether an Ohuhu set's Colorless Blender came with it, ownBlender, for step 2 to say so)
+  var ownBlender = false;
   function own(keys) {
     var before = new Set(state.owned),
+      wishWas = state.wish.slice(),
       fresh = [];
     keys.forEach(function (k) {
       if (!state.owned.has(k) && fresh.indexOf(k) < 0) fresh.push(k);
       state.owned.add(k);
     });
+    var ink = inkAddedOff(fresh),
+      off = wishOwnedOff(fresh);
     if (
       !keep(function () {
         state.owned = before;
+        state.wish = wishWas;
+        inkPutBack(ink);
       })
     )
       return -1;
     fullRender();
     if (typeof presetRelist === 'function') presetRelist();
-    var n = inkKeys(fresh).length;
+    if (off.length || Object.keys(ink).length) wishChanged();
+    ownBlender = fresh.indexOf('Ohuhu|0') >= 0;
+    var n = setKeys(fresh).length;
     if (fresh.length)
-      toastAction(addedManyLine(n || fresh.length, 0), 'Undo', function () {
+      toastAction(addedManyLine(n || fresh.length, off.length), 'Undo', function () {
         fresh.forEach(function (k) {
           state.owned.delete(k);
         });
+        inkPutBack(ink);
+        wishPutBack(off);
+        if (off.length || Object.keys(ink).length) wishChanged();
         save();
         fullRender();
         if (typeof presetRelist === 'function') presetRelist();
@@ -413,9 +452,27 @@ document.addEventListener('keydown', function (e) {
   // where the markers were added from (the step, and the steps before it), for the toast's Undo
   var snap = null;
   function undoneBack() {
-    if (cur !== 'wcStep2' || !snap) return;
-    trail = snap.trail;
-    show(snap.id, true);
+    if (!snap) return;
+    if (snap.id === 'wcStep2') {
+      // (added on "Anything else?" itself: it says again what it said before, wherever the welcome is now)
+      $('wcT2').textContent = snap.t2;
+      $('wcDone').textContent = snap.msg;
+      fan([...state.owned]);
+      snap = snap.was;
+      if (cur !== 'wcStep2') return;
+    } else if (cur === 'wcStep2') {
+      trail = snap.trail;
+      show(snap.id, true);
+    } else {
+      // (v309.1: the welcome had gone on from "N markers added" (another set, extra markers) before the toast's Undo:
+      // it stays where it is, but Back no longer leads to that step, which would still say they were added)
+      var at = trail.findIndex(function (t) {
+        return t.id === 'wcStep2';
+      });
+      if (at < 0) return;
+      trail = snap.trail.concat(trail.slice(at + 1));
+    }
+    // (the toast's Undo has gone: the keyboard to the step's heading)
     var h = $(cur).querySelector('.wctitle[tabindex]');
     if (h) h.focus({ preventScroll: true });
   }
@@ -448,6 +505,10 @@ document.addEventListener('keydown', function (e) {
       }),
       false,
     );
+    // (v309.2) Back to the three ways in: a tap on "later" by mistake had no way back, and "I'm not sure which set"
+    // is only here
+    trail = [{ id: 'wcStep0', el: $('wcSkip') }];
+    $('wcBack2').style.display = '';
   });
   // --- "I'm not sure which set": the brand, about how many, then Scan reads a few caps (findSets, events.js) ---
   var fBrand = 'Ohuhu',

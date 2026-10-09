@@ -620,20 +620,26 @@ function lowFind(w, raw) {
       .toUpperCase();
   if (!q) return;
   const found = [];
-  let known = false;
+  let known = false,
+    blender = false;
   COLORS.forEach(function (c, i) {
     if (codeNorm(c.code) !== q) return;
     known = true;
     const k = mkey(i);
     if (api.lowInk(k) != null) found.push(k);
+    // (v309.1: a Colorless Blender of yours isn't asked about here, as it lays down no colour; it had been said as
+    // not one of your markers)
+    else if (NOINK.has(i) && isOwned(i)) blender = true;
   });
   found.forEach(function (k) {
     if (st.extra.indexOf(k) < 0) st.extra.push(k);
   });
   st.line[w] = !found.length
-    ? known
-      ? up + ' isn’t one of your markers'
-      : 'No marker ' + up
+    ? blender
+      ? up + ' is your Colorless Blender: mark it in Markers'
+      : known
+        ? up + ' isn’t one of your markers'
+        : 'No marker ' + up
     : found.length > 1
       ? 'Two ' + up + 's: which is in your hand?'
       : '';

@@ -56,6 +56,10 @@ function zoneEditStart(id, kb) {
 // close the editor (a zone that got no sections goes); quiet: leave the screen to whoever called (a new picture)
 function zoneEditEnd(quiet) {
   if (!zoneEdit) return;
+  // (v309.1) the keyboard on one of the editor's own controls (Done, Delete zone, its name), or on nothing (Escape in
+  // the name field lets go of it): those are drawn again as it closes, so it goes to the zone's chip, or ＋ Zone
+  const _ae = document.activeElement,
+    _kbBack = !_ae || _ae === document.body || !!(_ae.closest && _ae.closest('#sfPanel-pattern'));
   zoneEdit = false;
   if (zoneS) zoneStrokeEnd(false);
   const z = zoneById(zoneCur);
@@ -73,6 +77,15 @@ function zoneEditEnd(quiet) {
   renderControls();
   renderGuide();
   zoneKbSync();
+  const _now = document.activeElement;
+  // (not when another tab closed it: that tab is where the person went)
+  if (_kbBack && gTab === 'pattern' && (!_now || _now === document.body)) {
+    const b = zoneChipEl(zoneCur) || document.getElementById('sfZoneAdd');
+    if (b)
+      try {
+        b.focus({ preventScroll: true });
+      } catch (_) {}
+  }
 }
 
 // ---- the chips ----

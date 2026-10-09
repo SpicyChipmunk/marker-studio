@@ -3541,9 +3541,11 @@ function exportImage() {
         note(errNote('Couldn’t export the image.', 'Saving the image', 'it couldn’t be encoded'));
         return;
       }
+      // (v309.2: named after the guide, as its PDF is: several saved to Files were colour-guide (1).png, (2)…)
+      const base = fileSlug(curName, 'colour-guide', 80).toLowerCase();
       shareOrSave(
         blob,
-        codes ? 'colour-guide.png' : 'marker-studio-picture.png',
+        codes ? base + '.png' : base + '-picture.png',
         curName || (codes ? 'Colouring guide' : 'My colouring'),
         'image',
         'Image downloaded.',

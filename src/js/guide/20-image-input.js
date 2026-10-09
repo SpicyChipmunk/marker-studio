@@ -38,6 +38,7 @@ function resetForNewPicture() {
   alDoneOpen = false;
   blendOpen = {};
   srcK = 1;
+  srcDims = null;
   _origKeys = {};
   _lostKeys = {};
   _openEmpty = false;
@@ -540,6 +541,7 @@ function processSrc() {
   H = ch;
   gray = g0;
   srcK = 1;
+  srcDims = { w: cw, h: ch };
   if (up > 1.05) {
     W = Math.round(cw * up);
     H = Math.round(ch * up);

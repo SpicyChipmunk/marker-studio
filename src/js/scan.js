@@ -1016,13 +1016,14 @@ function scanRender() {
                 esc(o.how) +
                 '"><span class="scsw" style="background:' +
                 COLORS[o.i].hex +
-                '"></span>' +
+                // (v309.2: the words in one span, wrapping as a line: "already yours" had become a column of its own)
+                '"></span><span class="scchtx">' +
                 esc(scanName(o.i)) +
                 ' · ' +
                 esc(COLORS[o.i].brand) +
                 // (v305: which of the answers you have)
                 (state.owned.has(mkey(o.i)) ? ' · <i>already yours</i>' : '') +
-                '</button>',
+                '</span></button>',
             )
             .join('') +
           '</span></span>' +
@@ -1293,7 +1294,10 @@ function scanAdd() {
     (unread ? ' \u00b7 ' + unread + (unread === 1 ? ' line' : ' lines') + ' not read' : '');
   toastActions(
     said,
-    [{ label: 'Undo', fn: scanUndoAdd }].concat(left ? [{ label: 'Open', fn: openScan }] : []),
+    // (v309.1: Open from the welcome's Scan is the welcome's again: what's added then is counted there)
+    [{ label: 'Undo', fn: scanUndoAdd }].concat(
+      left ? [{ label: 'Open', fn: () => openScan({ added: after, undone: undone }) }] : [],
+    ),
     left || unread ? 10000 : 8000,
   );
   if (after) after(keys.length);

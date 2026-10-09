@@ -614,12 +614,18 @@ palNoneEl.style.display = 'none';
 palette.appendChild(palNoneEl);
 function palNoneShow(on) {
   if (on) {
+    // (v309.2) no filter on and still none: your markers are a Colorless Blender or dry ("Clear filters" did nothing)
     const sel = !!state.pool,
+      mine = !sel && ['brand', 'tone', 'sat', 'fam'].every(fgIsAll),
       h =
         '<span>' +
-        (sel ? 'No markers in this selection' : 'No markers match these filters') +
+        (sel
+          ? 'No markers in this selection'
+          : mine
+            ? 'None of your markers lays down colour (a blender, or dry)'
+            : 'No markers match these filters') +
         '</span><span aria-hidden="true"> \u00b7 </span><button type="button" class="sflink" id="palNoneClear">' +
-        (sel ? 'Clear selection' : 'Clear filters') +
+        (sel ? 'Clear selection' : mine ? 'Add markers' : 'Clear filters') +
         '</button>';
     if (palNoneEl.innerHTML !== h) palNoneEl.innerHTML = h;
   }
@@ -627,6 +633,10 @@ function palNoneShow(on) {
 }
 palNoneEl.addEventListener('click', (e) => {
   if (!e.target.closest('#palNoneClear')) return;
+  if (!state.pool && ['brand', 'tone', 'sat', 'fam'].every(fgIsAll)) {
+    setMode('collection');
+    return;
+  }
   if (state.pool) setPool(null);
   else ['brand', 'tone', 'sat', 'fam'].forEach(fgClear);
   filterChanged();

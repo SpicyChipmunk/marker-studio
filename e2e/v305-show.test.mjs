@@ -400,7 +400,12 @@ test('Save image: codes on until the page is finished, then the picture framed a
     page.waitForEvent('download', { timeout: 30000 }),
     page.click('#sfExport'),
   ]);
-  assert.equal(dl.suggestedFilename(), 'marker-studio-picture.png');
+  // (v309.2: named after the guide, as its PDF is)
+  const slug = await page.evaluate(() =>
+    fileSlug(document.getElementById('sfGTitle').textContent.trim(), 'colour-guide', 80).toLowerCase(),
+  );
+  assert.ok(slug && slug !== 'colour-guide', slug);
+  assert.equal(dl.suggestedFilename(), slug + '-picture.png');
   assert.deepEqual(
     pngSize(await readFile(await dl.path())),
     [2160, 2700],
@@ -421,7 +426,7 @@ test('Save image: codes on until the page is finished, then the picture framed a
     page.waitForEvent('download', { timeout: 30000 }),
     page.click('#sfExport'),
   ]);
-  assert.equal(dl2.suggestedFilename(), 'colour-guide.png', 'the guide with its codes and key');
+  assert.equal(dl2.suggestedFilename(), slug + '.png', 'the guide with its codes and key');
   assert.deepEqual(errors, []);
 });
 

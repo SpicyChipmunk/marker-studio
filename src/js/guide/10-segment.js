@@ -585,8 +585,25 @@ function colourShare(d, n) {
   }
   return m ? c / m : null;
 }
+// (v309.2) The least picture, on its shorter side as it came (before it's enlarged), that's worth finding sections in.
+// A page scaled down to a short side of 24–48 px gave 0–11 sections of the 125 it has at full size; 64 px, 24; 80, 55;
+// 120, 70 (e2e/fixtures/letter-page.png; a photo of a page went the same way). Under it, the warning says the picture is
+// too small: the fragments warning it had got told you to raise Min section size, which left 0 sections. Under
+// SMALLISH_PIC, a picture that would get the fragments warning gets this one instead: Safari's own scaling down left
+// the same page at 120 px in fragments.
+const SMALL_PIC = 100,
+  SMALLISH_PIC = 200;
 function segQuality() {
   if (!labels || !comps) return { ok: true };
+  var w0 = srcDims ? srcDims.w : 0,
+    h0 = srcDims ? srcDims.h : 0,
+    tooSmall = {
+      ok: false,
+      code: 'small',
+      msg: 'This picture is very small (' + w0 + ' \u00d7 ' + h0 + ' pixels).',
+      tip: 'Find a bigger copy of the page: a saved thumbnail is often this size. A photo of the printed page works too.',
+    };
+  if (srcDims && Math.min(w0, h0) < SMALL_PIC) return tooSmall;
   var px = W * H,
     ink = 0;
   for (var i = 0; i < px; i++) if (labels[i] === -1) ink++;
@@ -647,13 +664,15 @@ function segQuality() {
     };
   // (v303: only when the fragments are in the guide, not just left out by Min section size: a clean page with a
   // scanner's specks, all left out, had been told it was a photo or textured image)
-  if (tinyFrac > 0.8 && (kept === 0 || keptTiny > 0.3 * kept))
+  if (tinyFrac > 0.8 && (kept === 0 || keptTiny > 0.3 * kept)) {
+    if (srcDims && Math.min(w0, h0) < SMALLISH_PIC) return tooSmall;
     return {
       ok: false,
       code: 'noisy',
       msg: 'Found a lot of tiny fragments \u2014 usually a photo or textured image rather than clean line art.',
       tip: 'Use line art with solid outlines, or raise Min section size in Edit sections.',
     };
+  }
   // (v308) hatching or shading lines: 200 sections or more, over half of them under 3x Min section size (a
   // hatched page 72%; the most of any real page tried, 29%)
   if (kept >= 200 && keptSmall > 0.5 * kept)

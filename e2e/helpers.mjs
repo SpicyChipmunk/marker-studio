@@ -80,11 +80,18 @@ export async function openApp({ width = 390, height = 844, storage = null, userA
 
 // First run: pick "Honolulu 120" in the welcome dialog, then choose how to continue.
 // (v309) the welcome opens on three ways in: "I have a set" leads to the set list. Nothing when the list is showing.
-export const haveSet = (page) =>
-  page.evaluate(() => {
+// (v309.2: waits for the welcome to be up first: on a busy machine it could still be opening, and the list never came)
+export const haveSet = async (page) => {
+  await page.waitForFunction(() => {
+    const b = document.getElementById('wcHaveSet'),
+      l = document.getElementById('wcStep1');
+    return (b && b.offsetParent) || (l && l.offsetParent);
+  });
+  await page.evaluate(() => {
     const b = document.getElementById('wcHaveSet');
     if (b && b.offsetParent) b.click();
   });
+};
 export async function welcome(page, next = 'sample') {
   await haveSet(page);
   await page.check('#wcSets input[data-i="3"]');

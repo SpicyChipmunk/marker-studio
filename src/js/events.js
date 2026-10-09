@@ -1307,8 +1307,15 @@ function inkKeys(keys) {
     return i == null || !NOINK.has(i);
   });
 }
+// (v309.2) a set's markers as its name counts them: the Colorless Blender an Ohuhu set comes with aside. A Copic set's
+// blender (Ciao 36 Set B's 0) is one of the 36, so it counts: inkKeys had made that set 35 and All Copic markers 357.
+function setKeys(keys) {
+  return keys.filter(function (k) {
+    return k !== 'Ohuhu|0';
+  });
+}
 function presetSize(p) {
-  return inkKeys(presetMkeys(p)).length;
+  return setKeys(presetMkeys(p)).length;
 }
 function presetMkeys(p) {
   var out = [];
@@ -1379,7 +1386,7 @@ function findSets(brand, bucket, keys) {
       if (has.has(k)) hits++;
     });
     if (keys.length && !hits) return;
-    var n = inkKeys(ks).length,
+    var n = setKeys(ks).length,
       off = b ? (n < b.lo ? b.lo - n : n > b.hi ? n - b.hi : 0) : 0;
     out.push({
       i: i,
@@ -1427,7 +1434,7 @@ function presetListHTML() {
       lastB = p.b;
     }
     // (v309.1: the colours: a set's blender neither counts in its size nor stops it showing as yours)
-    var ks = inkKeys(presetMkeys(p)),
+    var ks = setKeys(presetMkeys(p)),
       n = ks.length,
       own = 0;
     ks.forEach(function (k) {
@@ -1536,7 +1543,7 @@ let presetRelist = null;
         return;
       }
       // (v309.1: the colours added; a set's blender alone, if that's all that was new)
-      toastAction(addedManyLine(inkKeys(added).length || added.length, off.length), 'Undo', function () {
+      toastAction(addedManyLine(setKeys(added).length || added.length, off.length), 'Undo', function () {
         added.forEach(function (k) {
           state.owned.delete(k);
         });

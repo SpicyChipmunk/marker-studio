@@ -586,3 +586,32 @@ Ben's choices from the onboarding ideas (1, 2 and 3, with the count only ranking
   - The Ohuhu sets come with a Colorless Blender (0), as Ohuhu's pages for the Honolulu small and large sets say: it's added with the set (48, 72, 104, 120, 168, 216, 320, Mid-tone, Pastels, Skin and Gray Tones; not the 24, sold only inside the 48, nor 24 Portrait). A set's size is its colours ("Add 120 markers", "120 markers and a Colorless Blender"), and the set shows as yours with all its colours, blender or not. The guide card's "Built from the N markers you own" counts colours; Home's count and the swatch chart include the blender, as they do a Copic one. Existing collections are left as they are: tick the blender in Markers if you have it.
   - Adding a set from the welcome (the list, or "Yes, add these") has Undo on its toast, as Markers' Add a set has; it takes the welcome back to where the set was added from.
   - "Is this your set?" fits a phone on its side: a wider card, no steps bar, Yes and No side by side.
+
+# Changes — v309.1 (a full fresh-eyes debugging pass)
+
+Four fresh reviewers, each a part of the app (making a guide; colouring, output and the Library; Markers and Palette; Home, the first run and the app as a whole, v309 hardest). New: `test/v3091-d3` (1); `e2e/v3091-d1` (1), `v3091-d2` (1), `v3091-d3` (2), `v3091-d4` (3). Each fails on v309.
+
+- **A Copic set's Colorless Blender counts in its size again** (Ciao 36 Set B is 36, All Copic markers 358): v309 had left every blender out; only the blender an Ohuhu set comes with is uncounted (`setKeys`).
+- **Palette with only a blender or dry markers** said "No markers match these filters · Clear filters" with no filter on (a dead end): it now says none of your markers lays down colour, with Add markers.
+- **The welcome's Undo after it had moved on** (I have another set, Find it from 3 caps) left a stale "120 markers added" step behind Back and the keyboard on the page; and Scan's toast Open from the welcome now adds as the welcome's Scan, so "Anything else?" counts it. The chosen brand's small print on "Let's find your set" is 4.5:1.
+- **Did any run low? › Another…** said "0 isn't one of your markers" for your Colorless Blender: it now says it's your blender, to mark in Markers.
+- **The zone editor closed by Escape** from its own controls gives the keyboard to the zone's chip (or + Zone), not the page.
+- Version v309.1; cache `marker-studio-v309.1`.
+
+# Changes — v309.2 (Ben's decisions from the v309.1 pass)
+
+Each pressure-tested one by one first. New: `e2e/v3092` (8), each failing on v309.1.
+
+- **The blender a set brings is said:** "Honolulu 120 and its Colorless Blender are in your collection", so Home's count, which includes it (121), adds up; all of a set's colours already yours but not its blender: "Colorless Blender added". Home's guide card counts colours: "Built from your 120 colours."
+- **What's new** for returning testers: v309 leads with the chart in Markers (they never see the welcome); v309.1 tells them the Ohuhu sets now come with their blender, to tick it if they have one.
+- **Storage blocked:** the welcome says nothing will be kept (the page's banner is under it), before anything is added.
+- **Back after "I'll do this later"** (and Escape), to the three ways in: "I'm not sure which set" is only there. (Find my set in Markers is noted for a later pass.)
+- **The welcome's adds come off To buy and lose a Running low or Dry mark,** as Markers' Add a set; Undo puts both back.
+- **Save image is named after the guide**, as its PDF: "sample-jellyfish.png", "sample-jellyfish-picture.png" without codes (it was always colour-guide.png).
+- **Reveal:** the keyboard on its ✕ while it plays (it was on the page), then Share as before.
+- **A very small picture** (under 100 px on its shorter side as it came, or under 200 px when it would otherwise get the fragments warning: Safari's own scaling down left a page at 120 px in fragments) is said to be too small, with what to do; it had been told to raise Min section size, which left 0 sections. Measured on a page scaled down: 24–48 px gave 0–11 sections of 125; 64, 24; 80, 55; 120, 70.
+- Tests: the welcome helper `haveSet` waits for the welcome to be up (on a busy machine WebKit could still be opening it).
+- **Scan's answer chips** wrap as one line, "already yours" with the words (it had become a column of its own at large text).
+- Left as it is, by decision: the sample's first ticks on a force-quit within ~3 s.
+- Version v309.2; cache `marker-studio-v309.2`.
+

@@ -96,7 +96,11 @@ test('not sure which set: about how many and 3 caps find Honolulu 120; the other
   await idle(page);
   assert.equal(await owned(page), 121, "120 colours and the blender that comes with them (v309.1)");
   assert.equal(await page.textContent('#wcT2'), '120 markers added');
-  assert.equal(await page.textContent('#wcDone'), 'Honolulu 120 is in your collection. Anything else?');
+  // (v309.2: the blender that comes with the set is said)
+  assert.equal(
+    await page.textContent('#wcDone'),
+    'Honolulu 120 and its Colorless Blender are in your collection. Anything else?',
+  );
   assert.ok(await shown(page, 'wcMoreExtra'));
   assert.ok(await shown(page, 'wcMoreSet'));
   assert.equal(await page.textContent('#wcSample'), 'That’s all: try the sample');

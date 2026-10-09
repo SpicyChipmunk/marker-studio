@@ -95,6 +95,13 @@ function showRevealBar(mode) {
   b.setAttribute('data-mode', mode);
   if (mode === 'anim') {
     b.innerHTML = '<div class="rvmsg">Revealing\u2026</div>';
+    // (v309.2) the keyboard on the ✕ while it plays (it had been on the page: Tab started behind Reveal); Share takes
+    // it at the end, as before
+    var x = document.getElementById('sfRevX');
+    if (x && document.activeElement !== x)
+      try {
+        x.focus({ preventScroll: true });
+      } catch (_) {}
   } else {
     var clip = revMime && revBlob ? '<button id="revClip">Save clip</button>' : '';
     b.innerHTML =
@@ -243,6 +250,13 @@ function startReveal() {
   if (rt) rt.classList.add('sfrev');
   revCloseEl();
   revModal(true);
+  // (v309.2: the keyboard on the ✕ at once, as the button that opened Reveal goes inert behind it; Share takes it at
+  // the end)
+  var rx = document.getElementById('sfRevX');
+  if (rx)
+    try {
+      rx.focus({ preventScroll: true });
+    } catch (_) {}
   requestAnimationFrame(function () {
     // (v308: not if it was closed before this frame: Escape straight away left the show up over the guide)
     if (rt && !rt.classList.contains('sfrev')) return;

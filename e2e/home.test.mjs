@@ -241,7 +241,8 @@ test('v285: with no guides, Home is the intro line, New colouring guide and the 
   assert.equal(await page.isVisible('#homeNew'), false);
   const c = await hrect(page, '#homeCont'), g = await hrect(page, '.homegrid');
   assert.ok(c.right <= g.left + 1 && Math.abs(c.top - g.top) < 24, 'side by side: ' + JSON.stringify([c, g]));
-  assert.match(await page.textContent('#homeCont .hcstart'), /Built from the \d+ markers you own/);
+  // (v309.2: the colours, as a set's Colorless Blender builds nothing and Home's count includes it)
+  assert.match(await page.textContent('#homeCont .hcstart'), /Built from your \d+ colours\./);
   // the whole sample page in the picture, not cut off
   const fit = await page.evaluate(() => { const i = document.querySelector('#homeCont .hcstart img'), b = i.parentElement.getBoundingClientRect(), r = i.getBoundingClientRect(); return r.top >= b.top - 1 && r.bottom <= b.bottom + 1 && i.complete; });
   assert.ok(fit);

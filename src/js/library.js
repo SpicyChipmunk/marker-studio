@@ -553,12 +553,13 @@ function renderRecent() {
           '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a photo of a colouring page into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a photo</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button></div></div>';
       }
       var own = cel.querySelector('.hcown'),
-        // (v309.1: the colours; a set's Colorless Blender builds nothing)
+        // (v309.1: the colours; a set's Colorless Blender builds nothing. v309.2: said as colours, as Home counts
+        // the blender among your markers)
         nOwn = inkKeys([...state.owned]).length;
       if (own)
         own.textContent =
           (nOwn
-            ? 'Built from the ' + nOwn + ' marker' + (nOwn === 1 ? '' : 's') + ' you own. '
+            ? 'Built from your ' + nOwn + ' colour' + (nOwn === 1 ? '' : 's') + '. '
             : 'Built from the markers you own: add yours in Markers. ') +
           'Lay the page flat in even light, and get all of it in the frame.';
       cel.style.display = '';

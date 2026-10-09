@@ -35,6 +35,9 @@ let srcUp = false; // a picture of the person's own, enlarged to UPSIDE if small
 // (despeckle) are measured on the picture as it came, so enlarging it finds the shapes its lines ran together
 // over, not specks too small to colour. Saved with the guide (upk). written by: 20-image-input, 65-edit, 97-open
 let srcK = 1;
+// (v309.2) the picture's size as it came in (before it's enlarged), for segQuality's too-small warning: only for a
+// picture just picked (null otherwise). written by: 20-image-input
+let srcDims = null;
 let enhance = true; // written by: 20-image-input, 50-controls, 99-close (test)
 let adaptC = 9; // written by: 20-image-input, 22-straighten, 50-controls
 // (v308) a straightened photo's Sensitivity: 7 (adaptC 6), where a picture as it came is 5 (9)
