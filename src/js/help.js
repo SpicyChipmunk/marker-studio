@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v312',
+    t: 'For testers: Tester tasks, at the foot of Home, has six things to try. Answer each as you go, then tap Send results. Send feedback now sends what you write straight from the app.',
+  },
+  {
     v: 'v311.1',
     t: 'Shuffle on a Gradient always changes it now (about 1 in 12 did nothing). On an iPad in landscape, Mood’s pictures are one row of six again, so the Colours tab fits on the screen.',
   },
@@ -618,7 +622,7 @@ const WHATS_NEW = [
         card.innerHTML =
           '<div class="wnhead"><h2 id="btTitle">Thanks for testing Marker Studio</h2><button id="btClose" class="wnx" aria-label="Dismiss thanks for testing">' +
           ic('x') +
-          '</button></div><p>It’s a beta, so back up once a week (<b>Library › Back up</b>). Tell us what goes wrong, and what you’d like: <b>Send feedback</b> is at the foot of Home, and in the guide’s ⋯ menu.</p><div class="nrow"><button type="button" id="btGuide" class="nb1">Tester guide</button><button type="button" id="btFeedback" data-feedback>Send feedback</button></div>';
+          '</button></div><p>It’s a beta, so back up once a week (<b>Library › Back up</b>). <b>Tester tasks</b> has six things to try, with a way to send us your answers. Tell us what goes wrong, and what you’d like: <b>Send feedback</b> is at the foot of Home, and in the guide’s ⋯ menu.</p><div class="nrow"><button type="button" id="btTasks" class="nb1" data-tasks>Tester tasks</button><button type="button" id="btGuide">Tester guide</button><button type="button" id="btFeedback" data-feedback>Send feedback</button></div>';
         const after = D.getElementById('backupNudge') || D.querySelector('#homeView .homegrid');
         if (after) after.insertAdjacentElement('afterend', card);
         else if (av) av.insertAdjacentElement('beforebegin', card);
@@ -630,6 +634,8 @@ const WHATS_NEW = [
         };
         card.querySelector('#btClose').addEventListener('click', gone);
         card.querySelector('#btFeedback').addEventListener('click', gone);
+        // (v312: Tester tasks opens from [data-tasks], tester.js; the card goes, the foot of Home keeps the way in)
+        card.querySelector('#btTasks').addEventListener('click', gone);
         card.querySelector('#btGuide').addEventListener('click', function () {
           gone();
           openSheet();

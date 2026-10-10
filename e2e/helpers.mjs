@@ -62,6 +62,9 @@ export async function teardown() {
 export async function openApp({ width = 390, height = 844, storage = null, userAgent = undefined, init = null } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2, serviceWorkers: 'block', acceptDownloads: true, hasTouch: false, ...(userAgent ? { userAgent } : {}) });
   await trackIdle(ctx);
+  // (v312) no Google Form under test: Send results and Send feedback share, as without one. A test's own init that sets
+  // window.__MS_RESULTS_FORM (to a made-up form) comes after this, so it wins
+  await ctx.addInitScript(() => { window.__MS_RESULTS_FORM = ''; });
   if (init) await ctx.addInitScript(init);
   await ctx.addInitScript((st) => {
     window.__MS_TEST = true;

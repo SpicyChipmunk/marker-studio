@@ -79,3 +79,251 @@
 .mkhint .sfinfo.open {
   align-items: flex-start;
 }
+/* ===== Tester tasks and Send feedback's dialog (v312, tester.js) ===== */
+.ttcard,
+.fbcard {
+  max-width: 560px;
+  align-items: stretch;
+}
+.ttprog {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+.ttbar {
+  flex: 1 1 80px;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.ttbar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 99px;
+  background: var(--ok);
+  transition: width 0.25s;
+}
+.ttcount {
+  font-weight: 600;
+  white-space: nowrap;
+}
+button.ttsend {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 92, 255, 0.55);
+  background: rgba(124, 92, 255, 0.16);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+}
+.ttsaid {
+  color: var(--ok);
+  font-size: var(--t-sm);
+  line-height: 1.4;
+}
+.ttsaid:empty {
+  display: none;
+}
+.tth {
+  margin: 8px 2px 0;
+  font-size: var(--t-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sub);
+  font-weight: 700;
+}
+#ttList,
+#ttExtras,
+#ttQs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ttrow {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+.ttrow.open {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+button.tttop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  border-radius: var(--r-md);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+.ttn {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  background: rgba(124, 92, 255, 0.18);
+  color: #c9bcff;
+}
+.ttn.ok {
+  background: var(--ok);
+  color: #0b0b0e;
+}
+.ttt {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+.ttt small {
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+.ttchip {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgba(120, 200, 180, 0.18);
+  color: #bfe9d6;
+  font-size: var(--t-sm);
+  white-space: nowrap;
+}
+.ttcar {
+  flex: none;
+  opacity: 0.55;
+}
+.ttbody {
+  padding: 0 12px 12px 52px;
+  line-height: 1.45;
+}
+.ttbody[hidden] {
+  display: none;
+}
+.ttbody p {
+  margin: 0 0 8px;
+}
+.ttbody ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  color: var(--sub);
+}
+.ttrate {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ttrate.ttnext {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.ttrate button {
+  min-height: 40px;
+  padding: 0 4px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+}
+.ttrate button.on {
+  background: rgba(120, 200, 180, 0.22);
+  border-color: rgba(143, 214, 180, 0.6);
+}
+.ttnote,
+.ttinput {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  font: inherit;
+  padding: 10px;
+}
+.ttnote {
+  min-height: 64px;
+  resize: vertical;
+}
+.ttinput {
+  min-height: 44px;
+}
+.ttq {
+  display: block;
+}
+.ttql {
+  display: block;
+  margin: 0 2px 6px;
+  font-weight: 600;
+}
+.ttql i {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--sub);
+}
+.ttfoot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.ttfoot .btn-primary {
+  width: 100%;
+}
+button.ttcopy {
+  min-height: 44px;
+}
+.ttwhat {
+  margin: 0 2px;
+  color: var(--sub);
+  font-size: var(--t-sm);
+  line-height: 1.4;
+}
+/* Home's foot: "Tester tasks · ready to send" stands out a little */
+button.hlplink.ttready {
+  color: var(--ok);
+}
+.homehelp.tttasksrow {
+  margin-top: 2px;
+}
+@media (max-width: 480px) {
+  .ttbody {
+    padding-left: 12px;
+  }
+}
+/* Help › Beta tester guide: the way in, at its top */
+.hlptasks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.hlptasks .nb1 {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(124, 92, 255, 0.6);
+  background: rgba(124, 92, 255, 0.22);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+}

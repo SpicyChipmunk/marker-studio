@@ -10134,6 +10134,254 @@ button.wnx::after,
 .mkhint .sfinfo.open {
   align-items: flex-start;
 }
+/* ===== Tester tasks and Send feedback's dialog (v312, tester.js) ===== */
+.ttcard,
+.fbcard {
+  max-width: 560px;
+  align-items: stretch;
+}
+.ttprog {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+.ttbar {
+  flex: 1 1 80px;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.ttbar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 99px;
+  background: var(--ok);
+  transition: width 0.25s;
+}
+.ttcount {
+  font-weight: 600;
+  white-space: nowrap;
+}
+button.ttsend {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 92, 255, 0.55);
+  background: rgba(124, 92, 255, 0.16);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+}
+.ttsaid {
+  color: var(--ok);
+  font-size: var(--t-sm);
+  line-height: 1.4;
+}
+.ttsaid:empty {
+  display: none;
+}
+.tth {
+  margin: 8px 2px 0;
+  font-size: var(--t-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sub);
+  font-weight: 700;
+}
+#ttList,
+#ttExtras,
+#ttQs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ttrow {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+.ttrow.open {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+button.tttop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  border-radius: var(--r-md);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+.ttn {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  background: rgba(124, 92, 255, 0.18);
+  color: #c9bcff;
+}
+.ttn.ok {
+  background: var(--ok);
+  color: #0b0b0e;
+}
+.ttt {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+.ttt small {
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+.ttchip {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgba(120, 200, 180, 0.18);
+  color: #bfe9d6;
+  font-size: var(--t-sm);
+  white-space: nowrap;
+}
+.ttcar {
+  flex: none;
+  opacity: 0.55;
+}
+.ttbody {
+  padding: 0 12px 12px 52px;
+  line-height: 1.45;
+}
+.ttbody[hidden] {
+  display: none;
+}
+.ttbody p {
+  margin: 0 0 8px;
+}
+.ttbody ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  color: var(--sub);
+}
+.ttrate {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ttrate.ttnext {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.ttrate button {
+  min-height: 40px;
+  padding: 0 4px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+}
+.ttrate button.on {
+  background: rgba(120, 200, 180, 0.22);
+  border-color: rgba(143, 214, 180, 0.6);
+}
+.ttnote,
+.ttinput {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  font: inherit;
+  padding: 10px;
+}
+.ttnote {
+  min-height: 64px;
+  resize: vertical;
+}
+.ttinput {
+  min-height: 44px;
+}
+.ttq {
+  display: block;
+}
+.ttql {
+  display: block;
+  margin: 0 2px 6px;
+  font-weight: 600;
+}
+.ttql i {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--sub);
+}
+.ttfoot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.ttfoot .btn-primary {
+  width: 100%;
+}
+button.ttcopy {
+  min-height: 44px;
+}
+.ttwhat {
+  margin: 0 2px;
+  color: var(--sub);
+  font-size: var(--t-sm);
+  line-height: 1.4;
+}
+/* Home's foot: "Tester tasks · ready to send" stands out a little */
+button.hlplink.ttready {
+  color: var(--ok);
+}
+.homehelp.tttasksrow {
+  margin-top: 2px;
+}
+@media (max-width: 480px) {
+  .ttbody {
+    padding-left: 12px;
+  }
+}
+/* Help › Beta tester guide: the way in, at its top */
+.hlptasks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.hlptasks .nb1 {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(124, 92, 255, 0.6);
+  background: rgba(124, 92, 255, 0.22);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+}
 /* shopping list: add-to-list buttons, the To buy view, ink badges and the marker sheet's ink control */
 /* where the list is, in the toast after an add */
 .wishwhere {
@@ -11128,7 +11376,7 @@ button.wrm {
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v311.1</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v312</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -11178,8 +11426,8 @@ button.wrm {
 <div class="overlay" id="matchOverlay" role="dialog" aria-modal="true" aria-labelledby="mtTitle"><div class="mcard"><div class="mhead"><h2 class="mtitle" id="mtTitle">Match a colour</h2><button id="matchClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="msub">Find the closest markers you own to any colour.</div><div class="msrc" role="group" aria-label="Colour source"><button type="button" data-src="photo" class="on" aria-pressed="true">Photo</button><button type="button" data-src="camera" id="matchCamBtn" aria-pressed="false" style="display:none">Camera</button><button type="button" data-src="hex" aria-pressed="false" aria-label="Hex code">Hex</button><button type="button" data-src="screen" id="matchEye" aria-pressed="false" style="display:none">Screen</button></div><div class="mpane" data-pane="photo"><button id="matchPhotoBtn" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10.5" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg><b>Choose a photo</b><span>Then tap or drag on it to sample a colour</span></button><input type="file" id="matchFile" class="fileinput" accept="image/*"><div id="matchPhotoWrap" class="mstage" style="display:none"><canvas id="matchCanvas"></canvas><div id="matchRing" class="mring" style="display:none"></div></div><div class="mhint" id="mPhotoHint" style="display:none">Tap or drag on the photo to sample. <button class="sflink" id="matchPhotoChange">Change photo</button></div><div class="paperrow" id="matchPaperRow" style="display:none"><button id="matchPaper" class="paperbtn" aria-pressed="false" title="Correct the photo’s lighting from something white in it">Tap something white</button><button id="matchLight" class="lightchip" style="display:none" aria-label="Lighting corrected: remove the correction">Lighting corrected <svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="papernote" id="matchPaperNote" role="status"></div></div><div class="mpane" data-pane="camera" style="display:none"><button id="matchCamOff" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><b>Start camera</b><span>Point the ring at a colour to match it live</span></button><div id="matchCamWrap" style="display:none"><div id="matchVideoBox" class="mstage"><video id="matchVideo" playsinline autoplay muted></video><div id="matchReticle" class="mring" style="left:50%;top:50%"></div><div class="mbadge" id="matchLive"><i></i>LIVE</div><div class="mcamctl"><button id="matchTorch" class="mpill" style="display:none">Light</button><button id="matchFreeze" class="mpill primary">Freeze</button></div></div><div class="mhint">Drag the ring onto a colour · pinch to zoom · <button class="sflink" id="matchCamStop">Stop camera</button></div></div><div class="mhint" id="matchCamTip">For the truest match, take a photo and tap something white.</div></div><div class="mpane" data-pane="hex" style="display:none"><div class="mhexrow"><label class="mpick empty" title="Open colour picker" aria-label="Open colour picker"><input type="color" id="matchPicker" value="#7c5cff"></label><input type="text" id="matchHex" placeholder="#RRGGBB" maxlength="12" autocomplete="off" spellcheck="false" aria-label="Hex colour code"></div></div><div class="mpane" data-pane="screen" style="display:none"><button id="matchEyeGo" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5M17 7l-9.5 9.5L5 19l2.5-2.5"/><path d="M13 6l5 5"/></svg><b>Pick from the screen</b><span>Click anywhere on your screen to sample it</span></button></div><div id="matchResult"></div><div id="matchSay" class="hlpsr" aria-live="polite"></div></div></div>
 
 <div class="overlay" id="buyOverlay" role="dialog" aria-modal="true" aria-labelledby="buyTitle"><div class="ocard dcard buycard"><div class="mhead"><h2 class="mtitle" id="buyTitle">Brands I’d buy</h2><button id="buyClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Where a marker you don’t have would match better, it’s suggested from the brands you choose here: in <b>Match a colour</b>, a guide’s shading and blend plan, and the <b>Photo</b> pattern.</div><div class="segs wide buymode" id="buyMode" role="group" aria-label="Suggest from"><button type="button" data-m="auto">Your brands first</button><button type="button" data-m="pick">Only these brands</button></div><div class="fams buychips" id="buyChips" role="group" aria-label="Brands"></div><div class="buynote" id="buyNote" aria-live="polite"></div><button id="buyDone" class="btn-primary">Done</button></div></div>
-<div class="overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="ocard dcard hlpcard"><div class="mhead"><h2 class="mtitle" id="helpTitle">Help</h2><button id="helpClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><button id="helpHiw" class="btn-soft hlphiw" data-help="hiw"><span>How it works</span><span class="hlphiwsub">3 quick steps</span></button><details class="hlpsec" id="helpBeta"><summary>Beta tester guide</summary><div class="hlpbody"><p class="hlpbt">Before you start</p><ul><li>On an iPad or iPhone, open the link in Safari and add it to your Home Screen (Share&nbsp;› Add to Home Screen) <b>before</b> you set up your markers. The Home Screen app has its own storage: what you add in a Safari tab stays in the tab. Set up in a tab already? Back up there, then restore the file in the Home Screen app.</li><li>Back up once a week: <b>Library › Back up</b>. It’s a beta, and a backup file brings everything back.</li></ul><p class="hlpbt">What it covers</p><ul><li>Ohuhu and Copic markers only. <span id="helpRanges">Ohuhu: 364 markers, among them every colour in the Honolulu sets (24 up to the complete 320) and in the 48 Mid-tone, 104 Colors, 36 Skin Tones, 36 Gray Tones, 48 Pastel and 24 Portrait sets. Other Ohuhu markers with these codes work too. Copic: all 358 markers, by the codes Sketch, Ciao and Classic share.</span></li><li>Colours on screen are approximate: screens and inks differ. <b>Markers › Print a swatch chart</b> makes a page to colour in and compare.</li></ul><p class="hlpbt">Pictures</p><ul><li>Clear, closed lines work best: a downloaded colouring page, a scan, or a flat, evenly lit photo of a page (<b>Photographing a page</b>, below).</li><li>A page that came as a PDF: open it, screenshot the page, and choose the screenshot.</li></ul><p class="hlpbt">Known limits</p><ul><li>No account or sync: each device, and the Home Screen app, keeps its own data. Move it with <b>Back up</b> and <b>Restore</b>.</li><li>Very detailed, hatched or already-coloured pages, and faint or broken lines, give poor sections. <b>← Edit sections</b> can merge, split or add them.</li><li>Picking one section on the picture needs touch or a mouse.</li></ul><p class="hlpbt">What to try</p><ul><li>Make a guide from a page you’d really colour. Try the Plan’s Pattern, Colours and Shading, then <b>Colour along</b> and tick sections off.</li><li>Print it or <b>Save image</b>, and try <b>Reveal &amp; share</b> when you finish.</li></ul><p class="hlpbt">How to report</p><ul><li>Tap <b>Send feedback</b> (at the foot of Home, in the guide’s <b>⋯</b> menu, or in <b>About</b>, below). It adds your device and any recent errors; write what happened, and add a screenshot if you can.</li><li>When something goes wrong, <b>Copy details</b> beside the message copies what’s needed.</li></ul></div></details><details class="hlpsec" id="helpPhoto"><summary>Photographing a page</summary><div class="hlpbody"><ul><li>Lay the page flat on a table. Smooth out any curl.</li><li>Use even light: daylight near a window, or a bright room. Keep your shadow and your hand off the page, and avoid shiny glare.</li><li>Hold your phone or iPad above the page and get all of it in the frame. A bit of table around it is fine.</li><li>Taken at an angle? The app finds the page and straightens it. If it isn’t sure, drag the corners, then tap <b>Straighten</b>.</li><li>Clear, dark lines work best. If sections come out wrong, <b>← Edit sections</b> lets you merge, split or add them.</li><li>Scans and screenshots work too. A colouring page that came as a PDF: open it, take a screenshot of the page, and choose the screenshot.</li></ul></div></details><details class="hlpsec" id="helpGloss"><summary>Glossary</summary><div class="hlpbody"><dl class="hlpgl"><dt>Section</dt><dd>One area of the picture, closed in by lines, that you colour with one marker. Its marker code is printed on it.</dd><dt>Background / left out</dt><dd>Parts that stay white. The background is the paper around the drawing. Left-out sections are ones you’ve tapped with <b>Leave out</b> in <b>Edit sections</b>; tap one there again to bring it back.</dd><dt>Colour pattern</dt><dd>How markers are spread over the page, in <b>Pattern</b>:<ul><li><b>Gradient</b>: colours flow across the page along a path (serpentine, vertical, diagonal or radial).</li><li><b>Random</b>: markers scattered over the sections. <b>Main colour</b> gives one colour about 60% of the picture, a second 30% and an accent 10% (tap the bar to choose them); <b>Mixed</b> treats every marker alike, and <b>No repeats</b> gives each section its own.</li><li><b>Blend</b>: tap to drop colour anchors; colours blend between them.</li><li><b>Photo</b>: colours taken from a photo you lay over the page.</li><li><b>Manual</b>: you pick every section’s marker.</li></ul></dd><dt>Flow</dt><dd>The path a <b>Gradient</b>’s colours follow across the page (<b>Pattern › Flow</b>): <b>Serpentine</b> (in rows, back and forth), <b>Vertical</b>, <b>Diagonal</b>, <b>Radial</b> (rings out from a centre) or <b>Around</b> (round a centre, like a clock’s hand; good for mandalas).</dd><dt>Look</dt><dd>How a <b>Gradient</b> lays its markers along the flow (<b>Pattern › Look</b>): <b>Smooth</b> runs each colour gently into the next; <b>Light to dark</b> lays them in bands, light to dark within each; <b>Auto</b> chooses for the page and says which.</dd><dt>Scatter</dt><dd>How neatly a <b>Gradient</b>’s colours sit (<b>Pattern › Scatter</b>). <b>Polished</b> lays neat bands in flow order; <b>Natural</b>, <b>Textured</b>, <b>Sparkle</b> and <b>Confetti</b> mix them more and more, until it’s confetti close up and a rainbow from afar.</dd><dt>Rough spots</dt><dd>Touching sections of a <b>Gradient</b> whose colours jump. A line under the tabs counts them; <b>Smooth them</b> gives one of each pair a marker the guide isn’t using.</dd><dt>Mood</dt><dd>Which of your markers a palette or a <b>Gradient</b> draws on (<b>Colours › Mood</b>): <b>Any</b>, <b>Bright</b>, <b>Soft</b>, <b>Pastel</b>, <b>Deep</b> or <b>Earthy</b>.</dd><dt>Include</dt><dd>For a <b>Gradient</b> (<b>Colours › Include</b>): whether browns, greys and black, and fluorescents may be used. Each guide, and each zone, keeps its own choice.</dd><dt>Surprise</dt><dd>The <b>✨</b> button by the guide’s name: new colours and a new style in one tap (flow, mood, look, sometimes Random). <b>Undo</b> brings back what you had.</dd><dt>Zone</dt><dd>A part of the picture with its own pattern and colours, like a flower against the background around it. In <b>Pattern</b>, tap <b><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg> Zone</b>, then tap or drag across sections to add them. The chips at the top of <b>Pattern</b> and <b>Colours</b> choose which zone those tabs change; <b>Main</b> is the rest of the picture. With shading on, each zone can be shaded or left flat, with its own roundness, highlights and shadows (<b>Shading</b>, under its chips); the light is the whole picture’s.</dd><dt>Pin</dt><dd>Keeps a section’s marker when you shuffle or change the pattern; a pinned section has a ring around its label. Tap a section, then <b>Pin</b>. Changing a section’s colour pins it too (<b>Unpin</b> lets the plan choose again).</dd><dt>Kept</dt><dd>A section you’ve coloured keeps its marker, whatever you change in the plan: it’s on your paper already. Kept sections have no ring; untick one and the plan can colour it again.</dd><dt>Blend companions</dt><dd>A lighter and a darker marker for each colour, listed in the printed key, for blending.</dd><dt>Shading</dt><dd>Adds light and shadow with lighter and darker markers you own. Drag the sun to move the light, or, with the Photo pattern, take the light from your photo (<b>Light from</b>).</dd><dt>Highlight / Base / Shadow (H/B/S)</dt><dd>The tones of a shaded section. <b>B</b> is its main marker. <b>H</b> is a lighter one on the side facing the light (or a warmer one, or the paper left white: <b>Shading › Highlights</b>), <b>S</b> a darker one on the far side (or a cooler or grey one laid over the base: <b>Shading › Shadows</b>). “2nd coat” means going over the base again.</dd><dt>Greyscale</dt><dd>The button with three grey bars under the picture (once called Values). It shows your guide in greys, so you can judge its values: where it’s light and dark, without the colours. It only changes the view.</dd><dt>Colour along</dt><dd>Where you colour your page: the markers are listed lightest first, and you tick off each section as you colour it. Your progress saves itself.</dd><dt>Focus mode</dt><dd>In <b>Colour along</b>. It zooms to one section at a time, colour by colour. Tap <b>✓ Done</b> (or the section) to move on.</dd><dt>Reveal</dt><dd>In <b>Share</b>. Plays your page filling with colour, to share as a picture or a clip.</dd></dl></div></details><details class="hlpsec" id="helpKeys"><summary>Keyboard and screen readers</summary><div class="hlpbody"><ul><li>Picking a single section on the picture needs touch or a mouse: <b>Change colour</b>, <b>Pin</b>, <b>Paint</b> and ticking off one section.</li><li>By keyboard, use <b>Colour along</b>’s list instead: open a marker, then <b>Mark all coloured</b> or <b>Find next</b>. <b>Focus mode</b> and everything else work by keyboard too.</li><li>In <b>Markers</b>, press <b>Shift+F10</b> on a marker to open its details.</li><li>In <b>Change colour</b>, <b>Tab</b> moves from one row or group of markers to the next, and the arrow keys within it.</li><li>A zone’s sections can be chosen by keyboard: in the zone’s editor, Tab to <b>Choose sections with the keys</b>. The arrow keys then move a ring from section to section, and Space adds the ringed one to the zone or takes it out.</li></ul></div></details><details class="hlpsec" id="helpData"><summary>Your data</summary><div class="hlpbody"><ul><li>Your markers, palettes, guides and photos stay on this device. Nothing is uploaded.</li><li>There’s no account, no ads and no tracking. The app works offline.</li><li>On iPhone and iPad, Safari deletes a site’s data after about seven days without opening it. On your Home Screen (Share&nbsp;› Add to Home Screen) Marker Studio isn’t cleared like that, but it has its own storage: back up here first, then restore the file there.</li><li id="helpKeep"></li><li>Back up now and then: <b>Library › Back up</b> saves one file with everything. <b>Library › Restore</b> brings it back on any iPhone, iPad or computer.</li><li>A guide missing from your Library may still be stored on this device. <b>Find lost guides</b> looks for any and can add them back.</li></ul><div class="hlplost"><button type="button" id="helpLost" class="btn-soft">Find lost guides</button><div id="helpLostRes" class="hlplostres" role="status"></div></div><p class="hlpwipeh">Leaving the app, or starting again? <b>Delete all my data</b> removes your markers, palettes, guides and photos from this device.</p><button type="button" id="helpWipe" class="btn-soft hlpwipe">Delete all my data</button></div></details><details class="hlpsec" id="helpAbout"><summary>About</summary><div class="hlpbody"><p class="hlpapp"><b>Marker Studio</b> <span id="helpVer" class="hlpver"></span></p><p>Turns a photo of a colouring page into a marker-by-number guide, using the Ohuhu and Copic markers you own.</p><div class="hlpwn"><p class="hlpwnt">What’s new in <span id="helpWnVer"></span></p><ul id="helpWnList"></ul></div><p>Nothing you add leaves this device. There are no accounts, ads or analytics. It works offline, and the camera is used only when you <b>Scan</b> caps or <b>Match</b> a colour.</p><p>Ohuhu and Copic are trademarks of their owners. Marker Studio isn’t affiliated with or endorsed by Ohuhu or Copic. Colours on screen are approximate — compare with your own swatches. <b>Markers › Print a swatch chart</b> makes a page to colour in.</p><p>Fonts: Fraunces and Hanken Grotesk, under the SIL Open Font License. Icons: Lucide (ISC License), some from Feather (MIT License).</p><p>© 2026 SpicyChipmunk. All rights reserved.</p><div class="hlpfbrow"><button type="button" id="helpFeedback" class="btn-soft hlpfb" data-feedback>Send feedback</button><button type="button" id="helpDiag" class="btn-soft hlpfb" data-diag>Copy diagnostics</button></div></div></details></div></div>
-<div class="overlay" id="hiwOverlay" role="dialog" aria-modal="true" aria-labelledby="hiwTitle"><div class="ocard dcard hiwcard"><div class="mhead"><h2 class="mtitle" id="hiwTitle">How it works</h2><button id="hiwClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="hiwtrack" id="hiwTrack"><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH1"><div class="hiwart" data-art="1"></div><div class="hiwstep">Step 1 of 3</div><h3 id="hiwH1">Photograph a colouring page</h3><p>Choose a photo of a line-art page, or try the sample.</p><ul class="hiwtips"><li>Lay the page flat, in even light.</li><li>Get the whole page in the frame.</li><li>Taken at an angle? The app straightens it.</li></ul></section><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH2" aria-hidden="true"><div class="hiwart" data-art="2"></div><div class="hiwstep">Step 2 of 3</div><h3 id="hiwH2">Sections and colours</h3><p>The app finds the sections — the areas you’ll colour — and picks a marker for each, from the markers you own.</p><ul class="hiwtips"><li>Tap a section to change its colour or pin it.</li><li>Try patterns and shading in the Pattern and Shading tabs.</li></ul></section><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH3" aria-hidden="true"><div class="hiwart" data-art="3"></div><div class="hiwstep">Step 3 of 3</div><h3 id="hiwH3">Colour along</h3><p>Tap Colour along and tick sections off as you colour them.</p><ul class="hiwtips"><li>Focus mode zooms to one section at a time and walks you through.</li><li>Finished? Reveal &amp; share shows your page filling with colour.</li></ul></section></div><div class="hlpsr" id="hiwLive" aria-live="polite"></div><div class="hiwnav"><button id="hiwBack" class="hiwback" style="visibility:hidden">Back</button><div class="hiwdots" id="hiwDots" role="group" aria-label="Steps"><button class="hiwdot on" data-i="0" aria-label="Step 1: Photograph a colouring page" aria-current="step"></button><button class="hiwdot" data-i="1" aria-label="Step 2: Sections and colours"></button><button class="hiwdot" data-i="2" aria-label="Step 3: Colour along"></button></div><button data-first id="hiwNext" class="btn-primary hiwnext">Next</button></div></div></div>
+<div class="overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="ocard dcard hlpcard"><div class="mhead"><h2 class="mtitle" id="helpTitle">Help</h2><button id="helpClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><button id="helpHiw" class="btn-soft hlphiw" data-help="hiw"><span>How it works</span><span class="hlphiwsub">3 quick steps</span></button><details class="hlpsec" id="helpBeta"><summary>Beta tester guide</summary><div class="hlpbody"><p class="hlptasks"><button type="button" class="nb1" id="helpTasks" data-tasks>Tester tasks</button><span>Six things to try, then <b>Send results</b>. Also at the foot of Home.</span></p><p class="hlpbt">Before you start</p><ul><li>On an iPad or iPhone, open the link in Safari and add it to your Home Screen (Share&nbsp;› Add to Home Screen) <b>before</b> you set up your markers. The Home Screen app has its own storage: what you add in a Safari tab stays in the tab. Set up in a tab already? Back up there, then restore the file in the Home Screen app.</li><li>Back up once a week: <b>Library › Back up</b>. It’s a beta, and a backup file brings everything back.</li></ul><p class="hlpbt">What it covers</p><ul><li>Ohuhu and Copic markers only. <span id="helpRanges">Ohuhu: 364 markers, among them every colour in the Honolulu sets (24 up to the complete 320) and in the 48 Mid-tone, 104 Colors, 36 Skin Tones, 36 Gray Tones, 48 Pastel and 24 Portrait sets. Other Ohuhu markers with these codes work too. Copic: all 358 markers, by the codes Sketch, Ciao and Classic share.</span></li><li>Colours on screen are approximate: screens and inks differ. <b>Markers › Print a swatch chart</b> makes a page to colour in and compare.</li></ul><p class="hlpbt">Pictures</p><ul><li>Clear, closed lines work best: a downloaded colouring page, a scan, or a flat, evenly lit photo of a page (<b>Photographing a page</b>, below).</li><li>A page that came as a PDF: open it, screenshot the page, and choose the screenshot.</li></ul><p class="hlpbt">Known limits</p><ul><li>No account or sync: each device, and the Home Screen app, keeps its own data. Move it with <b>Back up</b> and <b>Restore</b>.</li><li>Very detailed, hatched or already-coloured pages, and faint or broken lines, give poor sections. <b>← Edit sections</b> can merge, split or add them.</li><li>Picking one section on the picture needs touch or a mouse.</li></ul><p class="hlpbt">What to try</p><ul><li><b>Tester tasks</b> (above, and at the foot of Home): six things to try, each answered Easy, OK, Hard or Didn’t try, with a note if you like. Your answers stay on this device until you tap <b>Send results</b>; you can send again later.</li></ul><p class="hlpbt">How to report</p><ul><li>Tap <b>Send feedback</b> (at the foot of Home, in the guide’s <b>⋯</b> menu, or in <b>About</b>, below). It adds your device and any recent errors; write what happened. To add a screenshot, use <b>Share it instead</b>.</li><li>When something goes wrong, <b>Copy details</b> beside the message copies what’s needed.</li></ul></div></details><details class="hlpsec" id="helpPhoto"><summary>Photographing a page</summary><div class="hlpbody"><ul><li>Lay the page flat on a table. Smooth out any curl.</li><li>Use even light: daylight near a window, or a bright room. Keep your shadow and your hand off the page, and avoid shiny glare.</li><li>Hold your phone or iPad above the page and get all of it in the frame. A bit of table around it is fine.</li><li>Taken at an angle? The app finds the page and straightens it. If it isn’t sure, drag the corners, then tap <b>Straighten</b>.</li><li>Clear, dark lines work best. If sections come out wrong, <b>← Edit sections</b> lets you merge, split or add them.</li><li>Scans and screenshots work too. A colouring page that came as a PDF: open it, take a screenshot of the page, and choose the screenshot.</li></ul></div></details><details class="hlpsec" id="helpGloss"><summary>Glossary</summary><div class="hlpbody"><dl class="hlpgl"><dt>Section</dt><dd>One area of the picture, closed in by lines, that you colour with one marker. Its marker code is printed on it.</dd><dt>Background / left out</dt><dd>Parts that stay white. The background is the paper around the drawing. Left-out sections are ones you’ve tapped with <b>Leave out</b> in <b>Edit sections</b>; tap one there again to bring it back.</dd><dt>Colour pattern</dt><dd>How markers are spread over the page, in <b>Pattern</b>:<ul><li><b>Gradient</b>: colours flow across the page along a path (serpentine, vertical, diagonal or radial).</li><li><b>Random</b>: markers scattered over the sections. <b>Main colour</b> gives one colour about 60% of the picture, a second 30% and an accent 10% (tap the bar to choose them); <b>Mixed</b> treats every marker alike, and <b>No repeats</b> gives each section its own.</li><li><b>Blend</b>: tap to drop colour anchors; colours blend between them.</li><li><b>Photo</b>: colours taken from a photo you lay over the page.</li><li><b>Manual</b>: you pick every section’s marker.</li></ul></dd><dt>Flow</dt><dd>The path a <b>Gradient</b>’s colours follow across the page (<b>Pattern › Flow</b>): <b>Serpentine</b> (in rows, back and forth), <b>Vertical</b>, <b>Diagonal</b>, <b>Radial</b> (rings out from a centre) or <b>Around</b> (round a centre, like a clock’s hand; good for mandalas).</dd><dt>Look</dt><dd>How a <b>Gradient</b> lays its markers along the flow (<b>Pattern › Look</b>): <b>Smooth</b> runs each colour gently into the next; <b>Light to dark</b> lays them in bands, light to dark within each; <b>Auto</b> chooses for the page and says which.</dd><dt>Scatter</dt><dd>How neatly a <b>Gradient</b>’s colours sit (<b>Pattern › Scatter</b>). <b>Polished</b> lays neat bands in flow order; <b>Natural</b>, <b>Textured</b>, <b>Sparkle</b> and <b>Confetti</b> mix them more and more, until it’s confetti close up and a rainbow from afar.</dd><dt>Rough spots</dt><dd>Touching sections of a <b>Gradient</b> whose colours jump. A line under the tabs counts them; <b>Smooth them</b> gives one of each pair a marker the guide isn’t using.</dd><dt>Mood</dt><dd>Which of your markers a palette or a <b>Gradient</b> draws on (<b>Colours › Mood</b>): <b>Any</b>, <b>Bright</b>, <b>Soft</b>, <b>Pastel</b>, <b>Deep</b> or <b>Earthy</b>.</dd><dt>Include</dt><dd>For a <b>Gradient</b> (<b>Colours › Include</b>): whether browns, greys and black, and fluorescents may be used. Each guide, and each zone, keeps its own choice.</dd><dt>Surprise</dt><dd>The <b>✨</b> button by the guide’s name: new colours and a new style in one tap (flow, mood, look, sometimes Random). <b>Undo</b> brings back what you had.</dd><dt>Zone</dt><dd>A part of the picture with its own pattern and colours, like a flower against the background around it. In <b>Pattern</b>, tap <b><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg> Zone</b>, then tap or drag across sections to add them. The chips at the top of <b>Pattern</b> and <b>Colours</b> choose which zone those tabs change; <b>Main</b> is the rest of the picture. With shading on, each zone can be shaded or left flat, with its own roundness, highlights and shadows (<b>Shading</b>, under its chips); the light is the whole picture’s.</dd><dt>Pin</dt><dd>Keeps a section’s marker when you shuffle or change the pattern; a pinned section has a ring around its label. Tap a section, then <b>Pin</b>. Changing a section’s colour pins it too (<b>Unpin</b> lets the plan choose again).</dd><dt>Kept</dt><dd>A section you’ve coloured keeps its marker, whatever you change in the plan: it’s on your paper already. Kept sections have no ring; untick one and the plan can colour it again.</dd><dt>Blend companions</dt><dd>A lighter and a darker marker for each colour, listed in the printed key, for blending.</dd><dt>Shading</dt><dd>Adds light and shadow with lighter and darker markers you own. Drag the sun to move the light, or, with the Photo pattern, take the light from your photo (<b>Light from</b>).</dd><dt>Highlight / Base / Shadow (H/B/S)</dt><dd>The tones of a shaded section. <b>B</b> is its main marker. <b>H</b> is a lighter one on the side facing the light (or a warmer one, or the paper left white: <b>Shading › Highlights</b>), <b>S</b> a darker one on the far side (or a cooler or grey one laid over the base: <b>Shading › Shadows</b>). “2nd coat” means going over the base again.</dd><dt>Greyscale</dt><dd>The button with three grey bars under the picture (once called Values). It shows your guide in greys, so you can judge its values: where it’s light and dark, without the colours. It only changes the view.</dd><dt>Colour along</dt><dd>Where you colour your page: the markers are listed lightest first, and you tick off each section as you colour it. Your progress saves itself.</dd><dt>Focus mode</dt><dd>In <b>Colour along</b>. It zooms to one section at a time, colour by colour. Tap <b>✓ Done</b> (or the section) to move on.</dd><dt>Reveal</dt><dd>In <b>Share</b>. Plays your page filling with colour, to share as a picture or a clip.</dd></dl></div></details><details class="hlpsec" id="helpKeys"><summary>Keyboard and screen readers</summary><div class="hlpbody"><ul><li>Picking a single section on the picture needs touch or a mouse: <b>Change colour</b>, <b>Pin</b>, <b>Paint</b> and ticking off one section.</li><li>By keyboard, use <b>Colour along</b>’s list instead: open a marker, then <b>Mark all coloured</b> or <b>Find next</b>. <b>Focus mode</b> and everything else work by keyboard too.</li><li>In <b>Markers</b>, press <b>Shift+F10</b> on a marker to open its details.</li><li>In <b>Change colour</b>, <b>Tab</b> moves from one row or group of markers to the next, and the arrow keys within it.</li><li>A zone’s sections can be chosen by keyboard: in the zone’s editor, Tab to <b>Choose sections with the keys</b>. The arrow keys then move a ring from section to section, and Space adds the ringed one to the zone or takes it out.</li></ul></div></details><details class="hlpsec" id="helpData"><summary>Your data</summary><div class="hlpbody"><ul><li>Your markers, palettes, guides and photos stay on this device. Nothing is uploaded. (In the beta, <b>Send results</b> and <b>Send feedback</b> send what you write, with your device and the app’s version, when you tap them.)</li><li>There’s no account, no ads and no tracking. The app works offline.</li><li>On iPhone and iPad, Safari deletes a site’s data after about seven days without opening it. On your Home Screen (Share&nbsp;› Add to Home Screen) Marker Studio isn’t cleared like that, but it has its own storage: back up here first, then restore the file there.</li><li id="helpKeep"></li><li>Back up now and then: <b>Library › Back up</b> saves one file with everything. <b>Library › Restore</b> brings it back on any iPhone, iPad or computer.</li><li>A guide missing from your Library may still be stored on this device. <b>Find lost guides</b> looks for any and can add them back.</li></ul><div class="hlplost"><button type="button" id="helpLost" class="btn-soft">Find lost guides</button><div id="helpLostRes" class="hlplostres" role="status"></div></div><p class="hlpwipeh">Leaving the app, or starting again? <b>Delete all my data</b> removes your markers, palettes, guides and photos from this device.</p><button type="button" id="helpWipe" class="btn-soft hlpwipe">Delete all my data</button></div></details><details class="hlpsec" id="helpAbout"><summary>About</summary><div class="hlpbody"><p class="hlpapp"><b>Marker Studio</b> <span id="helpVer" class="hlpver"></span></p><p>Turns a photo of a colouring page into a marker-by-number guide, using the Ohuhu and Copic markers you own.</p><div class="hlpwn"><p class="hlpwnt">What’s new in <span id="helpWnVer"></span></p><ul id="helpWnList"></ul></div><p>Nothing you add leaves this device. There are no accounts, ads or analytics. It works offline, and the camera is used only when you <b>Scan</b> caps or <b>Match</b> a colour.</p><p>Ohuhu and Copic are trademarks of their owners. Marker Studio isn’t affiliated with or endorsed by Ohuhu or Copic. Colours on screen are approximate — compare with your own swatches. <b>Markers › Print a swatch chart</b> makes a page to colour in.</p><p>Fonts: Fraunces and Hanken Grotesk, under the SIL Open Font License. Icons: Lucide (ISC License), some from Feather (MIT License).</p><p>© 2026 SpicyChipmunk. All rights reserved.</p><div class="hlpfbrow"><button type="button" id="helpFeedback" class="btn-soft hlpfb" data-feedback>Send feedback</button><button type="button" id="helpDiag" class="btn-soft hlpfb" data-diag>Copy diagnostics</button></div></div></details></div></div>
+<div class="overlay" id="hiwOverlay" role="dialog" aria-modal="true" aria-labelledby="hiwTitle"><div class="ocard dcard hiwcard"><div class="mhead"><h2 class="mtitle" id="hiwTitle">How it works</h2><button id="hiwClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="hiwtrack" id="hiwTrack"><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH1"><div class="hiwart" data-art="1"></div><div class="hiwstep">Step 1 of 3</div><h3 id="hiwH1">Photograph a colouring page</h3><p>Choose a photo of a line-art page, or try the sample.</p><ul class="hiwtips"><li>Lay the page flat, in even light.</li><li>Get the whole page in the frame.</li><li>Taken at an angle? The app straightens it.</li></ul></section><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH2" aria-hidden="true"><div class="hiwart" data-art="2"></div><div class="hiwstep">Step 2 of 3</div><h3 id="hiwH2">Sections and colours</h3><p>The app finds the sections — the areas you’ll colour — and picks a marker for each, from the markers you own.</p><ul class="hiwtips"><li>Tap a section to change its colour or pin it.</li><li>Try patterns and shading in the Pattern and Shading tabs.</li></ul></section><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH3" aria-hidden="true"><div class="hiwart" data-art="3"></div><div class="hiwstep">Step 3 of 3</div><h3 id="hiwH3">Colour along</h3><p>Tap Colour along and tick sections off as you colour them.</p><ul class="hiwtips"><li>Focus mode zooms to one section at a time and walks you through.</li><li>Finished? Reveal &amp; share shows your page filling with colour.</li></ul></section></div><div class="hlpsr" id="hiwLive" aria-live="polite"></div><div class="hiwnav"><button id="hiwBack" class="hiwback" style="visibility:hidden">Back</button><div class="hiwdots" id="hiwDots" role="group" aria-label="Steps"><button class="hiwdot on" data-i="0" aria-label="Step 1: Photograph a colouring page" aria-current="step"></button><button class="hiwdot" data-i="1" aria-label="Step 2: Sections and colours"></button><button class="hiwdot" data-i="2" aria-label="Step 3: Colour along"></button></div><button data-first id="hiwNext" class="btn-primary hiwnext">Next</button></div></div></div><div class="overlay" id="ttOverlay" role="dialog" aria-modal="true" aria-labelledby="ttTitle"><div class="ocard dcard ttcard"><div class="mhead"><h2 class="mtitle" id="ttTitle" tabindex="-1">Tester tasks</h2><button id="ttClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Six things to try, in your own time. Answer each as you go: your answers stay on this device until you tap Send results.</div><div class="ttprog"><div class="ttbar" aria-hidden="true"><i id="ttBarFill"></i></div><span id="ttCount" class="ttcount"></span><button type="button" id="ttSendTop" class="ttsend">Send results</button></div><div id="ttSaid" class="ttsaid" role="status" aria-live="polite"></div><div id="ttList"></div><h3 class="tth">If you have time</h3><div id="ttExtras"></div><h3 class="tth">Last questions</h3><div id="ttQs"></div><label class="ttq"><span class="ttql">Your name <i>(optional, so we know who to thank)</i></span><input id="ttName" class="ttinput" type="text" maxlength="60" autocomplete="name"></label><div class="ttfoot"><button type="button" id="ttSend" class="btn-primary">Send results</button><button type="button" id="ttCopy" class="sflink ttcopy">Copy my answers instead</button></div><p class="ttwhat" id="ttWhat"></p></div></div><div class="overlay" id="fbOverlay" role="dialog" aria-modal="true" aria-labelledby="fbTitle"><div class="ocard dcard fbcard"><div class="mhead"><h2 class="mtitle" id="fbTitle">Send feedback</h2><button id="fbClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><label class="ttq"><span class="ttql">What happened, or what would you like?</span><textarea id="fbText" class="ttnote fbtext" maxlength="3000" rows="6"></textarea></label><div id="fbSaid" class="ttsaid" role="status" aria-live="polite"></div><div class="ttfoot"><button type="button" id="fbSend" class="btn-primary">Send</button><button type="button" id="fbShare" class="sflink ttcopy">Add a screenshot? Share it instead</button></div><p class="ttwhat">Sent with your device, the app’s version and its last few errors, to help find what went wrong. Nothing else.</p></div></div>
 <script>
 const COLORS=[{"code":"120","name":"Black","hex":"#2b2c2b","old":"120","fam":"Neutral / Black","brand":"Ohuhu"},{"code":"B015","name":"Celadon Blue","hex":"#167aa8","old":"B090","fam":"Blue","brand":"Ohuhu"},{"code":"B02","name":"Light Minty Blue","hex":"#c8e8eb","old":"BG4","fam":"Blue","brand":"Ohuhu"},{"code":"B03","name":"Frost","hex":"#c9e1e8","old":"B030","fam":"Blue","brand":"Ohuhu"},{"code":"B05","name":"Robin Egg Blue","hex":"#b5dde9","old":"B050","fam":"Blue","brand":"Ohuhu"},{"code":"B06","name":"Light Cerulean","hex":"#94d5e8","old":"B110","fam":"Blue","brand":"Ohuhu"},{"code":"B08","name":"Cotton Candy Blue","hex":"#88cfdf","old":"PB7","fam":"Blue","brand":"Ohuhu"},{"code":"B09","name":"Tahitian Blue","hex":"#5fbdd8","old":"B070","fam":"Blue","brand":"Ohuhu"},{"code":"B111","name":"Pool Blue","hex":"#1fa3d9","old":"PB8","fam":"Blue","brand":"Ohuhu"},{"code":"B112","name":"Process Blue","hex":"#1e97c8","old":"B080","fam":"Blue","brand":"Ohuhu"},{"code":"B114","name":"Cerulean Blue","hex":"#1d7b9f","old":"B64","fam":"Blue","brand":"Ohuhu"},{"code":"B115","name":"Classic Blue","hex":"#14629d","old":"PB6","fam":"Blue","brand":"Ohuhu"},{"code":"B21","name":"Porcelain Blue","hex":"#e5f2f2","old":"MG020","fam":"Blue","brand":"Ohuhu"},{"code":"B27","name":"Fog Blue","hex":"#c7d8e4","old":"MG030","fam":"Blue","brand":"Ohuhu"},{"code":"B28","name":"Smoke Blue","hex":"#b0d3e4","old":"B250","fam":"Blue","brand":"Ohuhu"},{"code":"B310","name":"Blue Dusk","hex":"#b1c8d1","old":"BGⅡ03","fam":"Blue","brand":"Ohuhu"},{"code":"B311","name":"Stone Blue","hex":"#96bcc9","old":"MG060","fam":"Blue","brand":"Ohuhu"},{"code":"B315","name":"Deep Cerulean","hex":"#508094","old":"PB11","fam":"Blue","brand":"Ohuhu"},{"code":"B411","name":"Rich Slate Blue","hex":"#7b99a8","old":"BGⅡ05","fam":"Blue","brand":"Ohuhu"},{"code":"B412","name":"Gunmetal Blue","hex":"#628391","old":"MG100","fam":"Blue","brand":"Ohuhu"},{"code":"B415","name":"Stormy Night","hex":"#4c5c66","old":"BGⅡ09","fam":"Blue","brand":"Ohuhu"},{"code":"BG011","name":"Teal","hex":"#1db2b7","old":"G500","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG04","name":"Sea Spray","hex":"#bce1e4","old":"G322","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG05","name":"Light Sea Blue","hex":"#aadbde","old":"BG68","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG09","name":"Aquamarine","hex":"#8ed0cf","old":"G326","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG114","name":"Faded Teal","hex":"#5fbcc3","old":"PB9","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG19","name":"Sea Blue","hex":"#92d1d2","old":"G324","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG21","name":"Mint Whisp","hex":"#ebf4ed","old":"G320","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG211","name":"Spearmint","hex":"#7dc7ac","old":"G360","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG212","name":"Bright Pine Green","hex":"#35b392","old":"G4","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG215","name":"Dark Pine Green","hex":"#24917a","old":"BG8","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG24","name":"Sea Glass Blue","hex":"#c9e4d1","old":"G420","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG310","name":"Seafoam Green","hex":"#b2ddd5","old":"G340","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG311","name":"Turquoise","hex":"#4fbca9","old":"PB10","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG314","name":"Peacock Green","hex":"#22918a","old":"BG6","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BG315","name":"Castleton Green","hex":"#33867c","old":"BG7","fam":"Blue-Green","brand":"Ohuhu"},{"code":"BGY00","name":"Cashmere Grey","hex":"#d9dfdf","old":"BG050","fam":"Blue Grey","brand":"Ohuhu"},{"code":"BGY02","name":"Pigeon Grey","hex":"#bbc4c8","old":"BG9","fam":"Blue Grey","brand":"Ohuhu"},{"code":"BGY13","name":"Seagull Grey","hex":"#a2a9ac","old":"GG060","fam":"Blue Grey","brand":"Ohuhu"},{"code":"BGY15","name":"Blue Steel Grey","hex":"#95a1a5","old":"GG5","fam":"Blue Grey","brand":"Ohuhu"},{"code":"BGY18","name":"Graphite Grey","hex":"#727b7d","old":"GG9","fam":"Blue Grey","brand":"Ohuhu"},{"code":"BGY24","name":"Storm Grey","hex":"#74838b","old":"CGⅡ07","fam":"Blue Grey","brand":"Ohuhu"},{"code":"BGY25","name":"Cracked Pepper","hex":"#6c777e","old":"CGⅡ08","fam":"Blue Grey","brand":"Ohuhu"},{"code":"BGY35","name":"Iron Grey","hex":"#666c75","old":"CGⅡ09","fam":"Blue Grey","brand":"Ohuhu"},{"code":"BGY38","name":"Charcoal Grey","hex":"#52555a","old":"NG09","fam":"Blue Grey","brand":"Ohuhu"},{"code":"BV013","name":"French Ultramarine","hex":"#425eaa","old":"B380","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV015","name":"Deep Ultramarine","hex":"#4b56a4","old":"B440","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV05","name":"Cornflower","hex":"#a9c7e9","old":"B340","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV08","name":"Havelock Blue","hex":"#88aad7","old":"B350","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV115","name":"Shadow Blue","hex":"#737496","old":"V450","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV15","name":"Dusty Periwinkle","hex":"#c4c8dc","old":"V340","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV210","name":"Blueberry","hex":"#5761a8","old":"V390","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV26","name":"Pale Blue Violet","hex":"#b9bade","old":"R25","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV28","name":"Bluebonnet","hex":"#7082c1","old":"V370","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV29","name":"Iris","hex":"#6675aa","old":"R13","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV31","name":"Cloud Blue","hex":"#e5eaee","old":"BG3","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV310","name":"Brilliant Blue","hex":"#578ac3","old":"PB2","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV311","name":"Royal Blue","hex":"#206ab4","old":"B180","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV312","name":"Deep Royal Blue","hex":"#2168b3","old":"B190","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV314","name":"Lapis Lazuli","hex":"#4c72a7","old":"PB3","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV315","name":"Cobalt Blue","hex":"#396b98","old":"PB4","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV32","name":"Pale Sky Blue","hex":"#deecf3","old":"B220","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV35","name":"Arctic Blue","hex":"#bcdbed","old":"B120","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV38","name":"Sky Blue","hex":"#92bae0","old":"PB1","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV414","name":"Denim Blue","hex":"#7198bb","old":"B270","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV415","name":"Antwerp Blue","hex":"#4687ab","old":"B290","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV48","name":"Distressed Denim","hex":"#a0bbd3","old":"B260","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV514","name":"Vintage Navy","hex":"#546e9b","old":"PB5","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV58","name":"Crystal Blue","hex":"#8fc8ea","old":"B140","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"CG01","name":"Cloud Grey","hex":"#eeefee","old":"CG020","fam":"Cool Grey","brand":"Ohuhu"},{"code":"CG02","name":"Light Grey","hex":"#e8ebea","old":"CG030","fam":"Cool Grey","brand":"Ohuhu"},{"code":"CG17","name":"Cool Grey","hex":"#a3a8ae","old":"CG5","fam":"Cool Grey","brand":"Ohuhu"},{"code":"CG18","name":"Icy Grey","hex":"#9ea7af","old":"CGⅡ04","fam":"Cool Grey","brand":"Ohuhu"},{"code":"CG24","name":"Grey","hex":"#bdc1c0","old":"CG050","fam":"Cool Grey","brand":"Ohuhu"},{"code":"CG25","name":"Deep Grey","hex":"#a9acac","old":"NG03","fam":"Cool Grey","brand":"Ohuhu"},{"code":"CG28","name":"Web Grey","hex":"#7e8488","old":"CG070","fam":"Cool Grey","brand":"Ohuhu"},{"code":"E011","name":"Pale Camo Green","hex":"#aeaa97","old":"E434","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E05","name":"Pale Moss","hex":"#e5e8d1","old":"G220","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E06","name":"Bog Mist Green","hex":"#dcd8c2","old":"E432","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E14","name":"Khaki Beige","hex":"#dcd3c1","old":"YG040","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E17","name":"Sage Grey","hex":"#dbceaa","old":"Y250","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E19","name":"Dried Sage","hex":"#d0c6ab","old":"YG080","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E211","name":"Light Elm Wood","hex":"#d5ba8a","old":"E440","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E212","name":"Dusty Olive","hex":"#c0ad79","old":"Y7","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E22","name":"Lime Juice","hex":"#f2e8c8","old":"GY173","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E26","name":"Pale Celery","hex":"#ead9b1","old":"Y230","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E311","name":"Sandbar Brown","hex":"#bda486","old":"E300","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E313","name":"Swamp Mud","hex":"#907b5f","old":"E450","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E314","name":"Military Olive","hex":"#7a6657","old":"E460","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E413","name":"Dark Brown","hex":"#9e7f6a","old":"E310","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E415","name":"Cedar brown","hex":"#906e59","old":"BR1","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E44","name":"Soft Sand","hex":"#f6daba","old":"E160","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E46","name":"Coral Sand","hex":"#edbe97","old":"E220","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E511","name":"Chocolate Mocha","hex":"#996e62","old":"Y12","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E515","name":"Black Brown","hex":"#635453","old":"Y13","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E58","name":"Fawn Brown","hex":"#c99e84","old":"E170","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E610","name":"Light Mahogany","hex":"#c17466","old":"E060","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E614","name":"Maple Syrup","hex":"#906256","old":"E130","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E69","name":"Russet brown","hex":"#b77a67","old":"E120","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E713","name":"Red Bean","hex":"#9a5f5f","old":"R284","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E85","name":"Cherry Taupe","hex":"#e9c5c3","old":"E050","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E914","name":"Bark Brown","hex":"#826560","old":"E430","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E92","name":"Ash Rose","hex":"#e4d4cc","old":"E380","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E97","name":"Deep Rose Grey","hex":"#c3a79c","old":"E400","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"FY00","name":"Fluorescent Yellow","hex":"#eae853","old":"FY010","fam":"Fluorescent","brand":"Ohuhu"},{"code":"FY01","name":"Fluorescent Orange","hex":"#f2913f","old":"FY020","fam":"Fluorescent","brand":"Ohuhu"},{"code":"FY02","name":"Fluorescent Red","hex":"#ec6a67","old":"FY030","fam":"Fluorescent","brand":"Ohuhu"},{"code":"FY04","name":"Fluorescent Violet","hex":"#7e82be","old":"FY050","fam":"Fluorescent","brand":"Ohuhu"},{"code":"G012","name":"Mineral Green","hex":"#a2c5b9","old":"G330","fam":"Green","brand":"Ohuhu"},{"code":"G013","name":"Muted Turquoise","hex":"#82b4b3","old":"BG5","fam":"Green","brand":"Ohuhu"},{"code":"G112","name":"Pale Cobalt Green","hex":"#96bdad","old":"G9","fam":"Green","brand":"Ohuhu"},{"code":"G113","name":"Dusty Jade Green","hex":"#72a897","old":"G6","fam":"Green","brand":"Ohuhu"},{"code":"G114","name":"Aged Pine Green","hex":"#66998a","old":"G5","fam":"Green","brand":"Ohuhu"},{"code":"G210","name":"Sea Green","hex":"#81bb9b","old":"G490","fam":"Green","brand":"Ohuhu"},{"code":"G24","name":"Celadon","hex":"#c7d6c5","old":"G410","fam":"Green","brand":"Ohuhu"},{"code":"G310","name":"Shamrock Green","hex":"#6ab178","old":"G2","fam":"Green","brand":"Ohuhu"},{"code":"G311","name":"Jade Green","hex":"#61bb85","old":"G3","fam":"Green","brand":"Ohuhu"},{"code":"G312","name":"Emerald Green","hex":"#299a73","old":"G1","fam":"Green","brand":"Ohuhu"},{"code":"G313","name":"Green","hex":"#2b8761","old":"G390","fam":"Green","brand":"Ohuhu"},{"code":"G315","name":"Dark Emerald","hex":"#237f6c","old":"BG1","fam":"Green","brand":"Ohuhu"},{"code":"G316","name":"Deep Jade Green","hex":"#307365","old":"BG2","fam":"Green","brand":"Ohuhu"},{"code":"G34","name":"Pale Green","hex":"#d3e9cd","old":"G120","fam":"Green","brand":"Ohuhu"},{"code":"G36","name":"Glass Green","hex":"#96cc9d","old":"G8","fam":"Green","brand":"Ohuhu"},{"code":"G41","name":"Peppermint","hex":"#dcedd2","old":"G110","fam":"Green","brand":"Ohuhu"},{"code":"G410","name":"Grass Green","hex":"#96bd6b","old":"GY2","fam":"Green","brand":"Ohuhu"},{"code":"G43","name":"Vintage Pale Green","hex":"#dfebd1","old":"GY172","fam":"Green","brand":"Ohuhu"},{"code":"G44","name":"Sea Glass Green","hex":"#c3e1bc","old":"G440","fam":"Green","brand":"Ohuhu"},{"code":"G47","name":"Spring Green","hex":"#acd496","old":"G140","fam":"Green","brand":"Ohuhu"},{"code":"G49","name":"Sour Apple","hex":"#b2d192","old":"GY1","fam":"Green","brand":"Ohuhu"},{"code":"GG03","name":"Silver Cloud","hex":"#d7e0dd","old":"GG1","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG05","name":"Evergreen Fog","hex":"#9cafaa","old":"GG3","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG07","name":"Steel Grey","hex":"#898c8c","old":"GG110","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG10","name":"Soft Cool Grey","hex":"#d6d8d8","old":"CG2","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG11","name":"Fog Grey","hex":"#bdc0c3","old":"BG060","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG12","name":"Pastel Icy Grey","hex":"#b1bdc3","old":"BG070","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG15","name":"Dark Neutral Grey","hex":"#60666a","old":"NG07","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG16","name":"Dark Anchor Grey","hex":"#686e73","old":"NG06","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG24","name":"Wispy Grey","hex":"#d2d7cf","old":"GG020","fam":"Green Grey","brand":"Ohuhu"},{"code":"GG25","name":"Pilgrim Haze","hex":"#bbc7c1","old":"GG040","fam":"Green Grey","brand":"Ohuhu"},{"code":"R012","name":"Fruit Punch","hex":"#e36157","old":"R070","fam":"Red","brand":"Ohuhu"},{"code":"R013","name":"Tomato","hex":"#dd6c5a","old":"Y5","fam":"Red","brand":"Ohuhu"},{"code":"R014","name":"Deep Vermilion","hex":"#c8554e","old":"R2","fam":"Red","brand":"Ohuhu"},{"code":"R015","name":"Crimson","hex":"#b2484f","old":"R3","fam":"Red","brand":"Ohuhu"},{"code":"R016","name":"Chili Red","hex":"#b03f39","old":"R180","fam":"Red","brand":"Ohuhu"},{"code":"R112","name":"Reddish Pink","hex":"#e66d73","old":"R150","fam":"Red","brand":"Ohuhu"},{"code":"R15","name":"Lychee Juice","hex":"#f8c6c2","old":"R110","fam":"Red","brand":"Ohuhu"},{"code":"R16","name":"Light Salmon","hex":"#f8caca","old":"R21","fam":"Red","brand":"Ohuhu"},{"code":"R210","name":"Deep Blush","hex":"#de859b","old":"R1","fam":"Red","brand":"Ohuhu"},{"code":"R211","name":"Ruby","hex":"#b4516c","old":"R230","fam":"Red","brand":"Ohuhu"},{"code":"R212","name":"Mulberry","hex":"#bd5071","old":"R170","fam":"Red","brand":"Ohuhu"},{"code":"R213","name":"Pomegranate","hex":"#bb5164","old":"R6","fam":"Red","brand":"Ohuhu"},{"code":"R215","name":"Morello Cherry","hex":"#984f56","old":"R8","fam":"Red","brand":"Ohuhu"},{"code":"R22","name":"Ballet Pink","hex":"#fce6ea","old":"RV260","fam":"Red","brand":"Ohuhu"},{"code":"R23","name":"Sakura","hex":"#fadbe2","old":"RV270","fam":"Red","brand":"Ohuhu"},{"code":"R25","name":"Tender Pink","hex":"#f5b1c4","old":"RV300","fam":"Red","brand":"Ohuhu"},{"code":"R26","name":"Valentine Pink","hex":"#eca7bb","old":"R190","fam":"Red","brand":"Ohuhu"},{"code":"R27","name":"Pink Satin","hex":"#e493ac","old":"R120","fam":"Red","brand":"Ohuhu"},{"code":"R28","name":"Pink Carnation","hex":"#ed9db6","old":"R9","fam":"Red","brand":"Ohuhu"},{"code":"R310","name":"Purplish Pink","hex":"#cf7297","old":"RV330","fam":"Red","brand":"Ohuhu"},{"code":"R312","name":"Magenta","hex":"#be5675","old":"RV350","fam":"Red","brand":"Ohuhu"},{"code":"R38","name":"Rose Pink","hex":"#e590ae","old":"R23","fam":"Red","brand":"Ohuhu"},{"code":"R410","name":"Raspberry","hex":"#d86877","old":"R160","fam":"Red","brand":"Ohuhu"},{"code":"R412","name":"Cerise","hex":"#ce506a","old":"R4","fam":"Red","brand":"Ohuhu"},{"code":"R413","name":"Amaranth","hex":"#c3546f","old":"R5","fam":"Red","brand":"Ohuhu"},{"code":"R46","name":"Old Rose","hex":"#dd8d92","old":"R12","fam":"Red","brand":"Ohuhu"},{"code":"R48","name":"Cherry Rose","hex":"#df7384","old":"R200","fam":"Red","brand":"Ohuhu"},{"code":"R50","name":"Orchid Wisp","hex":"#f8ebef","old":"R242","fam":"Red","brand":"Ohuhu"},{"code":"R513","name":"Deep Wine","hex":"#955561","old":"R290","fam":"Red","brand":"Ohuhu"},{"code":"R514","name":"Prune Juice","hex":"#915264","old":"R7","fam":"Red","brand":"Ohuhu"},{"code":"R54","name":"Lavender Fog","hex":"#e4cad5","old":"R250","fam":"Red","brand":"Ohuhu"},{"code":"R56","name":"Puce","hex":"#d6b4bf","old":"R270","fam":"Red","brand":"Ohuhu"},{"code":"R57","name":"Rose Dust","hex":"#c68b9f","old":"R280","fam":"Red","brand":"Ohuhu"},{"code":"R59","name":"Wine Berry","hex":"#9c576a","old":"R240","fam":"Red","brand":"Ohuhu"},{"code":"R612","name":"Raisin","hex":"#825e69","old":"R340","fam":"Red","brand":"Ohuhu"},{"code":"R615","name":"Black Grape","hex":"#6c5c64","old":"R350","fam":"Red","brand":"Ohuhu"},{"code":"R69","name":"Dark Mauve","hex":"#a0777b","old":"R282","fam":"Red","brand":"Ohuhu"},{"code":"RV01","name":"Water Lily","hex":"#fdf4f9","old":"RV010","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV04","name":"Light Orchid","hex":"#f4c6dd","old":"RV030","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV05","name":"Pink Pearl","hex":"#f6c1d7","old":"RV280","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV08","name":"Pastel Pink","hex":"#ed9bc0","old":"R10","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV09","name":"Disco Pink","hex":"#ee86b3","old":"RV070","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV111","name":"Hot Pink","hex":"#e6549a","old":"RP6","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV17","name":"Pink","hex":"#f3acc0","old":"R22","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV18","name":"Bubblegum","hex":"#f19bb9","old":"R14","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV19","name":"Dahlia Pink","hex":"#ee91b9","old":"R15","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV212","name":"Rich Raspberry","hex":"#e13187","old":"RP1","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV23","name":"Pink Wisp","hex":"#f8dfeb","old":"RV130","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV25","name":"Rosy Lilac","hex":"#ecbbd4","old":"RV180","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV28","name":"Hibiscus Pink","hex":"#d58dae","old":"RV200","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV29","name":"Plum Pink","hex":"#d378a3","old":"RV320","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV310","name":"Fuchsia","hex":"#d55e9d","old":"RV100","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV311","name":"Pansy","hex":"#c64994","old":"P2","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV314","name":"Grape Juice","hex":"#9d4574","old":"P1","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV316","name":"Grape Jelly","hex":"#7e447e","old":"R16","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV33","name":"Thistle","hex":"#efd4e7","old":"RV160","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV34","name":"Faded Lilac","hex":"#efd4e7","old":"V020","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV35","name":"Bright Lilac","hex":"#e6c9df","old":"V150","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV39","name":"Bright Fuchsia","hex":"#e176aa","old":"RV080","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV514","name":"Violet Merlot","hex":"#96637e","old":"RV240","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV515","name":"Ripe Mulberry","hex":"#8b5277","old":"RV250","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV57","name":"Dark Lilac","hex":"#d8aed0","old":"V160","fam":"Red-Violet","brand":"Ohuhu"},{"code":"V010","name":"Faded Violet","hex":"#997bb5","old":"P4","fam":"Violet","brand":"Ohuhu"},{"code":"V013","name":"Violet","hex":"#8a5c97","old":"V210","fam":"Violet","brand":"Ohuhu"},{"code":"V015","name":"Deep Violet","hex":"#8a7194","old":"V080","fam":"Violet","brand":"Ohuhu"},{"code":"V08","name":"Light Violet","hex":"#ae8fc0","old":"V050","fam":"Violet","brand":"Ohuhu"},{"code":"V112","name":"Vivid Violet","hex":"#ab6fad","old":"V070","fam":"Violet","brand":"Ohuhu"},{"code":"V13","name":"Greyed Lavender","hex":"#e1d7e8","old":"R11","fam":"Violet","brand":"Ohuhu"},{"code":"V14","name":"Pale Purple","hex":"#d4bad9","old":"V030","fam":"Violet","brand":"Ohuhu"},{"code":"V18","name":"Bright Lavender","hex":"#dbb5d5","old":"P3","fam":"Violet","brand":"Ohuhu"},{"code":"V216","name":"Morning Glory","hex":"#60509f","old":"R17","fam":"Violet","brand":"Ohuhu"},{"code":"V22","name":"Lavender Wisp","hex":"#e1d4e9","old":"V230","fam":"Violet","brand":"Ohuhu"},{"code":"V29","name":"Dull Violet","hex":"#9889b7","old":"V060","fam":"Violet","brand":"Ohuhu"},{"code":"V32","name":"Icy Periwinkle","hex":"#e2e8f4","old":"V322","fam":"Violet","brand":"Ohuhu"},{"code":"V34","name":"Periwinkle","hex":"#deddef","old":"V330","fam":"Violet","brand":"Ohuhu"},{"code":"V38","name":"Deep Periwinkle","hex":"#b2b2d9","old":"R24","fam":"Violet","brand":"Ohuhu"},{"code":"V412","name":"Lobelia","hex":"#a291c2","old":"V270","fam":"Violet","brand":"Ohuhu"},{"code":"V414","name":"Electric Indigo","hex":"#6d64a5","old":"V320","fam":"Violet","brand":"Ohuhu"},{"code":"V416","name":"Deep Purple","hex":"#4e4389","old":"P5","fam":"Violet","brand":"Ohuhu"},{"code":"V46","name":"Lavender","hex":"#b4a9d3","old":"V250","fam":"Violet","brand":"Ohuhu"},{"code":"WG01","name":"Lite Lavender","hex":"#e0d8dd","old":"RG110","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG04","name":"Icy Lavender","hex":"#dbd4d7","old":"RG120","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG06","name":"Star Dust","hex":"#b4aab0","old":"RG150","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG08","name":"Heathered Grape","hex":"#92888e","old":"RG080","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG10","name":"Porcelain","hex":"#f6f7f5","old":"CGⅡ00","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG26","name":"Silver Grey","hex":"#bfb6b4","old":"WG3","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG27","name":"Antique Silver","hex":"#aba5a2","old":"WG4","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG37","name":"Dark Charcoal","hex":"#646163","old":"WG09","fam":"Warm Grey","brand":"Ohuhu"},{"code":"WG38","name":"Caviar","hex":"#555656","old":"WG130","fam":"Warm Grey","brand":"Ohuhu"},{"code":"Y00","name":"Lemon Mist","hex":"#fcfcef","old":"Y010","fam":"Yellow","brand":"Ohuhu"},{"code":"Y02","name":"Lemon Chiffon","hex":"#f7f0c0","old":"Y030","fam":"Yellow","brand":"Ohuhu"},{"code":"Y03","name":"Pastel Yellow","hex":"#f7f4c9","old":"G030","fam":"Yellow","brand":"Ohuhu"},{"code":"Y06","name":"Butter","hex":"#f7eb92","old":"Y040","fam":"Yellow","brand":"Ohuhu"},{"code":"Y07","name":"Banana Cream","hex":"#f0dc89","old":"GY6","fam":"Yellow","brand":"Ohuhu"},{"code":"Y09","name":"Summer Lemon","hex":"#edd571","old":"Y050","fam":"Yellow","brand":"Ohuhu"},{"code":"Y111","name":"Mustard","hex":"#f0b52e","old":"Y2","fam":"Yellow","brand":"Ohuhu"},{"code":"Y14","name":"Pale Lemon Yellow","hex":"#f2f2a3","old":"G020","fam":"Yellow","brand":"Ohuhu"},{"code":"Y17","name":"Bright Lemon Yellow","hex":"#f4e668","old":"Y080","fam":"Yellow","brand":"Ohuhu"},{"code":"Y19","name":"Canary","hex":"#f5d532","old":"Y070","fam":"Yellow","brand":"Ohuhu"},{"code":"Y213","name":"Dark Marigold","hex":"#e39442","old":"YR2","fam":"Yellow","brand":"Ohuhu"},{"code":"Y215","name":"Toffee","hex":"#d48a45","old":"Y180","fam":"Yellow","brand":"Ohuhu"},{"code":"Y216","name":"Caramel","hex":"#ca9349","old":"YR1","fam":"Yellow","brand":"Ohuhu"},{"code":"Y26","name":"Light Gold","hex":"#f0cb6e","old":"Y3","fam":"Yellow","brand":"Ohuhu"},{"code":"Y27","name":"Sunflower","hex":"#eec25e","old":"Y1","fam":"Yellow","brand":"Ohuhu"},{"code":"Y28","name":"Corn Yellow","hex":"#e3be54","old":"Y6","fam":"Yellow","brand":"Ohuhu"},{"code":"Y29","name":"Melon Yellow","hex":"#eda63c","old":"YR33","fam":"Yellow","brand":"Ohuhu"},{"code":"Y311","name":"Termite Beige","hex":"#d9b56e","old":"Y270","fam":"Yellow","brand":"Ohuhu"},{"code":"Y315","name":"Olive Yellow","hex":"#c1944b","old":"Y8","fam":"Yellow","brand":"Ohuhu"},{"code":"Y34","name":"Eggnog yellow","hex":"#fcf4df","old":"Y121","fam":"Yellow","brand":"Ohuhu"},{"code":"Y39","name":"Straw","hex":"#ebc786","old":"Y260","fam":"Yellow","brand":"Ohuhu"},{"code":"Y410","name":"Goldenrod","hex":"#ecb56d","old":"YR260","fam":"Yellow","brand":"Ohuhu"},{"code":"Y412","name":"Apple Cider","hex":"#e6af83","old":"E490","fam":"Yellow","brand":"Ohuhu"},{"code":"Y413","name":"Fawn","hex":"#d8a77b","old":"E240","fam":"Yellow","brand":"Ohuhu"},{"code":"Y415","name":"Sand Storm","hex":"#ca965f","old":"Y9","fam":"Yellow","brand":"Ohuhu"},{"code":"Y416","name":"Golden Brown","hex":"#b0794b","old":"Y210","fam":"Yellow","brand":"Ohuhu"},{"code":"Y42","name":"Warm Ivory","hex":"#fae6cc","old":"Y110","fam":"Yellow","brand":"Ohuhu"},{"code":"Y45","name":"Cream","hex":"#f2cba1","old":"YR240","fam":"Yellow","brand":"Ohuhu"},{"code":"Y46","name":"Peach Yogurt","hex":"#f2bc82","old":"YR250","fam":"Yellow","brand":"Ohuhu"},{"code":"Y49","name":"Autumn Leaf","hex":"#ecb668","old":"Y140","fam":"Yellow","brand":"Ohuhu"},{"code":"Y515","name":"Light Walnut","hex":"#b98969","old":"E370","fam":"Yellow","brand":"Ohuhu"},{"code":"Y55","name":"Golden Champagne","hex":"#fbe7c4","old":"Y120","fam":"Yellow","brand":"Ohuhu"},{"code":"Y59","name":"Marigold Yellow","hex":"#e9bf7f","old":"Y130","fam":"Yellow","brand":"Ohuhu"},{"code":"Y611","name":"Dark Sand","hex":"#d1ac82","old":"Y11","fam":"Yellow","brand":"Ohuhu"},{"code":"Y62","name":"Sandy Beige","hex":"#f8eadb","old":"E280","fam":"Yellow","brand":"Ohuhu"},{"code":"Y69","name":"Milk Tea","hex":"#e5caab","old":"E210","fam":"Yellow","brand":"Ohuhu"},{"code":"YG012","name":"Yellow Green","hex":"#d1d376","old":"GY4","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG015","name":"Dark Olive","hex":"#8f8c52","old":"GY42","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG06","name":"Sugarcane","hex":"#e1e6a9","old":"GY7","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG07","name":"Honeydew Melon","hex":"#dee091","old":"G050","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG111","name":"Celery","hex":"#e7de8e","old":"G060","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG112","name":"Lemon Lime","hex":"#e6da6f","old":"G070","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG113","name":"Pear Green","hex":"#d8cc50","old":"G080","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG211","name":"Edamame","hex":"#b3bc54","old":"GY5","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG212","name":"Guacamole","hex":"#a29650","old":"GY8","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG215","name":"Thatch Green","hex":"#8f8869","old":"G300","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG29","name":"Apple Green","hex":"#bcc77c","old":"G260","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG312","name":"Artichoke Green","hex":"#aebf87","old":"G270","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG36","name":"Beige Green","hex":"#becaa7","old":"G240","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG413","name":"Fern Green","hex":"#7ca16e","old":"G470","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG414","name":"Dark Fern Green","hex":"#6d8c68","old":"GY43","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG415","name":"Cascade Green","hex":"#5f7566","old":"G7","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG510","name":"Bud Green","hex":"#b1c763","old":"GY3","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG610","name":"Bright Lime","hex":"#9ecc5a","old":"G170","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG611","name":"Mantis Green","hex":"#93c05c","old":"G190","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YG66","name":"Fresh Green","hex":"#d5e7af","old":"G130","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YGY02","name":"Abalone Grey","hex":"#e8e2da","old":"RG030","fam":"Yellow Grey","brand":"Ohuhu"},{"code":"YGY05","name":"Dovetail Grey","hex":"#c2b6b4","old":"RG050","fam":"Yellow Grey","brand":"Ohuhu"},{"code":"YGY11","name":"Collingwood Grey","hex":"#dad1c4","old":"WG01","fam":"Yellow Grey","brand":"Ohuhu"},{"code":"YGY13","name":"Oyster Grey","hex":"#dddbce","old":"WG050","fam":"Yellow Grey","brand":"Ohuhu"},{"code":"YGY17","name":"Platinum Grey","hex":"#c5b9af","old":"WG070","fam":"Yellow Grey","brand":"Ohuhu"},{"code":"YGY18","name":"Stone Grey","hex":"#968c85","old":"WG090","fam":"Yellow Grey","brand":"Ohuhu"},{"code":"YR00","name":"Barely Blush","hex":"#fceedf","old":"E010","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR015","name":"Burnt Orange","hex":"#dc834a","old":"YR172","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR03","name":"Pastel Blush","hex":"#fdebdb","old":"YR220","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR04","name":"Pastel Peach","hex":"#fae8d6","old":"R18","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR06","name":"Raw Cashew","hex":"#f9dbc2","old":"E090","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR07","name":"Salmon Orange","hex":"#f9c19f","old":"YR4","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR11","name":"Peachy Blush","hex":"#fde2d3","old":"YR110","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR111","name":"Persimmon","hex":"#f08f43","old":"Y10","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR112","name":"Orange","hex":"#f0873d","old":"YR3","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR17","name":"Sunset Orange","hex":"#f6bb8a","old":"Y4","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR19","name":"Marigold Orange","hex":"#f6b35d","old":"YR170","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR213","name":"Squash Orange","hex":"#e67d56","old":"YR180","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR215","name":"Aged Cherry Wood","hex":"#bb6151","old":"E080","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR312","name":"Light Earth Brown","hex":"#d19271","old":"E110","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR313","name":"Potato Brown","hex":"#bd7d59","old":"BR2","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR314","name":"Sandalwood","hex":"#ae7054","old":"E260","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR33","name":"Rose Cream","hex":"#fae1d3","old":"R19","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR34","name":"Peach Cream","hex":"#f9cfc0","old":"R20","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR39","name":"Cinnamon","hex":"#e7a688","old":"BR3","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR43","name":"Pale Cherry Pink","hex":"#fde2d7","old":"R080","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR45","name":"Rosewater","hex":"#f5cfc1","old":"E030","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR47","name":"Dusty Peach","hex":"#f7cdbf","old":"R29","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR511","name":"Pale Coral","hex":"#f2a183","old":"YR090","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR513","name":"Papaya","hex":"#ee7d56","old":"YR190","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR515","name":"Burnt Sienna","hex":"#cc795a","old":"YR5","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR52","name":"Cameo Rose","hex":"#fbe6de","old":"YR030","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR55","name":"Pink Lemonade","hex":"#f3ccc1","old":"E470","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR57","name":"Tropical Peach","hex":"#f7bca8","old":"BR208","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR58","name":"Pink Sand","hex":"#f9c4b7","old":"R050","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR59","name":"Cantaloupe","hex":"#f6b79e","old":"YR070","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"E111","name":"Pewter Green","hex":"#bdad96","old":"YG100","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"YR56","name":"Light Apricot Pink","hex":"#f7d1c3","old":"R090","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"0","name":"Colorless Blender","hex":"#ffffff","old":"","fam":"Neutral / Black","brand":"Copic"},{"code":"100","name":"Black","hex":"#1e1d22","old":"","fam":"Neutral / Black","brand":"Copic"},{"code":"110","name":"Special Black","hex":"#201b1d","old":"","fam":"Neutral / Black","brand":"Copic"},{"code":"B00","name":"Frost Blue","hex":"#c4fafe","old":"","fam":"Blue","brand":"Copic"},{"code":"B000","name":"Pale Porcelain Blue","hex":"#defefe","old":"","fam":"Blue","brand":"Copic"},{"code":"B0000","name":"Pale Celestine","hex":"#eefefe","old":"","fam":"Blue","brand":"Copic"},{"code":"B01","name":"Mint Blue","hex":"#a5f0fc","old":"","fam":"Blue","brand":"Copic"},{"code":"B02","name":"Robin's Egg Blue","hex":"#82d4fd","old":"","fam":"Blue","brand":"Copic"},{"code":"B04","name":"Tahitian Blue","hex":"#43b3f3","old":"","fam":"Blue","brand":"Copic"},{"code":"B05","name":"Process Blue","hex":"#3196ea","old":"","fam":"Blue","brand":"Copic"},{"code":"B06","name":"Peacock Blue","hex":"#1f7ed7","old":"","fam":"Blue","brand":"Copic"},{"code":"B12","name":"Ice Blue","hex":"#9edafd","old":"","fam":"Blue","brand":"Copic"},{"code":"B14","name":"Light Blue","hex":"#56a1dc","old":"","fam":"Blue","brand":"Copic"},{"code":"B16","name":"Cyanine Blue","hex":"#2c87e2","old":"","fam":"Blue","brand":"Copic"},{"code":"B18","name":"Lapis Lazuli","hex":"#2055c9","old":"","fam":"Blue","brand":"Copic"},{"code":"B21","name":"Baby Blue","hex":"#badefd","old":"","fam":"Blue","brand":"Copic"},{"code":"B23","name":"Phthalo Blue","hex":"#749de7","old":"","fam":"Blue","brand":"Copic"},{"code":"B24","name":"Sky","hex":"#6da6f9","old":"","fam":"Blue","brand":"Copic"},{"code":"B26","name":"Cobalt Blue","hex":"#386cce","old":"","fam":"Blue","brand":"Copic"},{"code":"B28","name":"Royal Blue","hex":"#1a51d9","old":"","fam":"Blue","brand":"Copic"},{"code":"B29","name":"Ultramarine","hex":"#1643d6","old":"","fam":"Blue","brand":"Copic"},{"code":"B32","name":"Pale Blue","hex":"#aad4fe","old":"","fam":"Blue","brand":"Copic"},{"code":"B34","name":"Manganese Blue","hex":"#6687bf","old":"","fam":"Blue","brand":"Copic"},{"code":"B37","name":"Antwerp Blue","hex":"#225292","old":"","fam":"Blue","brand":"Copic"},{"code":"B39","name":"Prussian Blue","hex":"#1e397b","old":"","fam":"Blue","brand":"Copic"},{"code":"B41","name":"Powder Blue","hex":"#c6e2fb","old":"","fam":"Blue","brand":"Copic"},{"code":"B45","name":"Smoky Blue","hex":"#759bd3","old":"","fam":"Blue","brand":"Copic"},{"code":"B52","name":"Soft Greenish Blue","hex":"#98c6dd","old":"","fam":"Blue","brand":"Copic"},{"code":"B60","name":"Pale Blue Gray","hex":"#efedfd","old":"","fam":"Blue","brand":"Copic"},{"code":"B63","name":"Light Hydrangea","hex":"#babff6","old":"","fam":"Blue","brand":"Copic"},{"code":"B66","name":"Clematis","hex":"#5b67cf","old":"","fam":"Blue","brand":"Copic"},{"code":"B69","name":"Stratospheric Blue","hex":"#2336c2","old":"","fam":"Blue","brand":"Copic"},{"code":"B79","name":"Iris","hex":"#1d27a2","old":"","fam":"Blue","brand":"Copic"},{"code":"B91","name":"Pale Grayish Blue","hex":"#bed1e6","old":"","fam":"Blue","brand":"Copic"},{"code":"B93","name":"Light Crockery Blue","hex":"#9dbbdc","old":"","fam":"Blue","brand":"Copic"},{"code":"B95","name":"Light Grayish Cobalt","hex":"#80a2ce","old":"","fam":"Blue","brand":"Copic"},{"code":"B97","name":"Night Blue","hex":"#456795","old":"","fam":"Blue","brand":"Copic"},{"code":"B99","name":"Agate","hex":"#344668","old":"","fam":"Blue","brand":"Copic"},{"code":"BG000","name":"Pale Aqua","hex":"#d8fef7","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG0000","name":"Snow Green","hex":"#ecfef8","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG01","name":"Aqua Blue","hex":"#91f2f8","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG02","name":"New Blue","hex":"#72daef","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG05","name":"Holiday Blue","hex":"#3baac0","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG07","name":"Petroleum Blue","hex":"#218d9d","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG09","name":"Blue Green","hex":"#1d8088","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG10","name":"Cool Shadow","hex":"#defdf2","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG11","name":"Moon White","hex":"#d2fcf0","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG13","name":"Mint Green","hex":"#70d6c1","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG15","name":"Aqua","hex":"#39ac8f","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG18","name":"Teal Blue","hex":"#41847b","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG23","name":"Coral Sea","hex":"#89e2c5","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG32","name":"Aqua Mint","hex":"#95e8cd","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG34","name":"Horizon Green","hex":"#8ae1b8","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG45","name":"Nile Blue","hex":"#68cbc3","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG49","name":"Duck Blue","hex":"#0c8174","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG53","name":"Ice Mint","hex":"#8ad7db","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG57","name":"Jasper","hex":"#59acaf","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG70","name":"Ocean Mist","hex":"#e9efef","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG72","name":"Ice Ocean","hex":"#9bc2c4","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG75","name":"Abyss Green","hex":"#4c777a","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG78","name":"Bronze","hex":"#3c6b6e","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG90","name":"Gray Sky","hex":"#dfe2d2","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG93","name":"Green Gray","hex":"#a6aa88","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG96","name":"Bush","hex":"#636d50","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BG99","name":"Flagstone Blue","hex":"#626242","old":"","fam":"Blue-Green","brand":"Copic"},{"code":"BV00","name":"Mauve Shadow","hex":"#dfc4e9","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV000","name":"Iridescent Mauve","hex":"#e9d2f0","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV0000","name":"Pale Thistle","hex":"#eee8f2","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV01","name":"Viola","hex":"#b8afe5","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV02","name":"Prune","hex":"#a199e2","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV04","name":"Blue Berry","hex":"#4f5aa8","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV08","name":"Blue Violet","hex":"#433470","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV11","name":"Soft Violet","hex":"#b6a4d3","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV13","name":"Hydrangea Blue","hex":"#7c82d3","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV17","name":"Deep Reddish Blue","hex":"#4b458b","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV20","name":"Dull Lavender","hex":"#b8bbd4","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV23","name":"Grayish Lavender","hex":"#868397","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV25","name":"Grayish Violet","hex":"#676476","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV29","name":"Slate","hex":"#22212d","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV31","name":"Pale Lavender","hex":"#cecae7","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"BV34","name":"Bluebell","hex":"#8487b5","old":"","fam":"Blue-Violet","brand":"Copic"},{"code":"C-0","name":"Cool Gray No.0","hex":"#f2f6fb","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-00","name":"Cool Gray No.00","hex":"#fbfcfe","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-1","name":"Cool Gray No.1","hex":"#e4ebf3","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-10","name":"Cool Gray No.10","hex":"#25222c","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-2","name":"Cool Gray No.2","hex":"#d4dfe7","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-3","name":"Cool Gray No.3","hex":"#b6c1cd","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-4","name":"Cool Gray No.4","hex":"#99a4b1","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-5","name":"Cool Gray No.5","hex":"#828d98","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-6","name":"Cool Gray No.6","hex":"#656e7a","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-7","name":"Cool Gray No.7","hex":"#4c555f","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-8","name":"Cool Gray No.8","hex":"#363c44","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"C-9","name":"Cool Gray No.9","hex":"#2e2c37","old":"","fam":"Cool Grey","brand":"Copic"},{"code":"E00","name":"Cotton Pearl","hex":"#fee8ca","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E000","name":"Pale Fruit Pink","hex":"#fef3df","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E0000","name":"Floral White","hex":"#fdf8ef","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E01","name":"Pink Flamingo","hex":"#fedbbc","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E02","name":"Fruit Pink","hex":"#fec59f","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E04","name":"Lipstick Rose","hex":"#a37072","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E07","name":"Light Mahogany","hex":"#933e3a","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E08","name":"Brown","hex":"#a8482a","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E09","name":"Burnt Sienna","hex":"#954021","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E11","name":"Barley Beige","hex":"#e1bc9e","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E13","name":"Desert Sand","hex":"#d39b71","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E15","name":"Earthenware","hex":"#ae6d43","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E17","name":"Reddish Brass","hex":"#994f34","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E18","name":"Copper","hex":"#672d1f","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E19","name":"Redwood","hex":"#843419","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E21","name":"Soft Sun","hex":"#fed4a3","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E23","name":"Hazelnut","hex":"#bf7b54","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E25","name":"Caribe Cocoa","hex":"#a76850","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E27","name":"Milk Chocolate","hex":"#92543d","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E29","name":"Burnt Umber","hex":"#783222","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E30","name":"Bisque","hex":"#fee9c0","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E31","name":"Brick Beige","hex":"#f0cc99","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E33","name":"Sand","hex":"#e29b6a","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E34","name":"Toast","hex":"#df9e6c","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E35","name":"Chamois","hex":"#cc8b52","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E37","name":"Sepia","hex":"#89501e","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E39","name":"Leather","hex":"#955116","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E40","name":"Brick White","hex":"#f3e8d8","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E41","name":"Pearl White","hex":"#f9e3be","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E42","name":"Sand White","hex":"#ecd1ad","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E43","name":"Dull Ivory","hex":"#c2a178","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E44","name":"Clay","hex":"#936f4d","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E47","name":"Dark Brown","hex":"#734b37","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E49","name":"Dark Bark","hex":"#3d281e","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E50","name":"Egg Shell","hex":"#fef2cf","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E51","name":"Milky White","hex":"#feebbe","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E53","name":"Raw Silk","hex":"#f9c692","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E55","name":"Light Camel","hex":"#d2a56b","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E57","name":"Light Walnut","hex":"#7e5430","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E59","name":"Walnut","hex":"#5e3f22","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E70","name":"Ash Rose","hex":"#ddc6bf","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E71","name":"Champagne","hex":"#b3928c","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E74","name":"Cocoa Brown","hex":"#906d67","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E77","name":"Maroon","hex":"#66413b","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E79","name":"Cashew","hex":"#4c2f29","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E81","name":"Ivory","hex":"#e8e0b9","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E84","name":"Khaki","hex":"#b19b61","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E87","name":"Fig","hex":"#68562b","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E89","name":"Pecan","hex":"#4c3c1e","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E93","name":"Tea Rose","hex":"#febda4","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E95","name":"Tea Orange","hex":"#fec196","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E97","name":"Deep Orange","hex":"#fc9462","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"E99","name":"Baked Clay","hex":"#a76226","old":"","fam":"Earth / Skin / Brown","brand":"Copic"},{"code":"FB","name":"Fluorescent Blue","hex":"#4480f9","old":"FB2","fam":"Fluorescent","brand":"Copic"},{"code":"FBG","name":"Fluorescent Blue Green","hex":"#6ccaea","old":"FBG2","fam":"Fluorescent","brand":"Copic"},{"code":"FG","name":"Fluorescent Green","hex":"#60bb49","old":"FYG2","fam":"Fluorescent","brand":"Copic"},{"code":"FRV","name":"Fluorescent Pink","hex":"#fe8ed4","old":"FRV1","fam":"Fluorescent","brand":"Copic"},{"code":"FV","name":"Fluorescent Violet","hex":"#734be0","old":"FV2","fam":"Fluorescent","brand":"Copic"},{"code":"FY","name":"Fluorescent Yellow","hex":"#fee27f","old":"FY1","fam":"Fluorescent","brand":"Copic"},{"code":"FYG","name":"Fluorescent Yellow Green","hex":"#f2fe84","old":"FYG1","fam":"Fluorescent","brand":"Copic"},{"code":"FYR","name":"Fluorescent Orange","hex":"#fec378","old":"FYR1","fam":"Fluorescent","brand":"Copic"},{"code":"G00","name":"Jade Green","hex":"#cbfae1","old":"","fam":"Green","brand":"Copic"},{"code":"G000","name":"Pale Green","hex":"#e3feed","old":"","fam":"Green","brand":"Copic"},{"code":"G0000","name":"Crystal Opal","hex":"#f0fef8","old":"","fam":"Green","brand":"Copic"},{"code":"G02","name":"Spectrum Green","hex":"#85dd90","old":"","fam":"Green","brand":"Copic"},{"code":"G03","name":"Meadow Green","hex":"#73d47c","old":"","fam":"Green","brand":"Copic"},{"code":"G05","name":"Emerald Green","hex":"#41ac4d","old":"","fam":"Green","brand":"Copic"},{"code":"G07","name":"Nile Green","hex":"#3f9439","old":"","fam":"Green","brand":"Copic"},{"code":"G09","name":"Veronese Green","hex":"#3ba54e","old":"","fam":"Green","brand":"Copic"},{"code":"G12","name":"Sea Green","hex":"#c0e2aa","old":"","fam":"Green","brand":"Copic"},{"code":"G14","name":"Apple Green","hex":"#6cc157","old":"","fam":"Green","brand":"Copic"},{"code":"G16","name":"Malachite","hex":"#298f57","old":"","fam":"Green","brand":"Copic"},{"code":"G17","name":"Forest Green","hex":"#379352","old":"","fam":"Green","brand":"Copic"},{"code":"G19","name":"Bright Parrot Green","hex":"#268d47","old":"","fam":"Green","brand":"Copic"},{"code":"G20","name":"Wax White","hex":"#f5fbc4","old":"","fam":"Green","brand":"Copic"},{"code":"G21","name":"Lime Green","hex":"#b4d192","old":"","fam":"Green","brand":"Copic"},{"code":"G24","name":"Willow","hex":"#98bd79","old":"","fam":"Green","brand":"Copic"},{"code":"G28","name":"Ocean Green","hex":"#2f673d","old":"","fam":"Green","brand":"Copic"},{"code":"G29","name":"Pine Tree Green","hex":"#235938","old":"","fam":"Green","brand":"Copic"},{"code":"G40","name":"Dim Green","hex":"#e3f8c2","old":"","fam":"Green","brand":"Copic"},{"code":"G43","name":"Pistachio","hex":"#abcc79","old":"","fam":"Green","brand":"Copic"},{"code":"G46","name":"Mistletoe","hex":"#5b8855","old":"","fam":"Green","brand":"Copic"},{"code":"G82","name":"Spring Dim Green","hex":"#a9c476","old":"","fam":"Green","brand":"Copic"},{"code":"G85","name":"Verdigris","hex":"#7b8256","old":"","fam":"Green","brand":"Copic"},{"code":"G94","name":"Grayish Olive","hex":"#819760","old":"","fam":"Green","brand":"Copic"},{"code":"G99","name":"Olive","hex":"#575f24","old":"","fam":"Green","brand":"Copic"},{"code":"N-0","name":"Neutral Gray No.0","hex":"#eaedee","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-1","name":"Neutral Gray No.1","hex":"#dedede","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-10","name":"Neutral Gray No.10","hex":"#1b1c1d","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-2","name":"Neutral Gray No.2","hex":"#b1b5bb","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-3","name":"Neutral Gray No.3","hex":"#9b9fa6","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-4","name":"Neutral Gray No.4","hex":"#7d8289","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-5","name":"Neutral Gray No.5","hex":"#65686b","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-6","name":"Neutral Gray No.6","hex":"#484b52","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-7","name":"Neutral Gray No.7","hex":"#2c3136","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-8","name":"Neutral Gray No.8","hex":"#2b2c30","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"N-9","name":"Neutral Gray No.9","hex":"#232524","old":"","fam":"Neutral Grey","brand":"Copic"},{"code":"R00","name":"Pinkish White","hex":"#fbe2d2","old":"","fam":"Red","brand":"Copic"},{"code":"R000","name":"Cherry White","hex":"#fef7e9","old":"","fam":"Red","brand":"Copic"},{"code":"R0000","name":"Pink Beryl","hex":"#fdfbf2","old":"","fam":"Red","brand":"Copic"},{"code":"R01","name":"Pinkish Vanilla","hex":"#fee0c8","old":"","fam":"Red","brand":"Copic"},{"code":"R02","name":"Rose Salmon","hex":"#feba92","old":"","fam":"Red","brand":"Copic"},{"code":"R05","name":"Salmon Red","hex":"#f74929","old":"","fam":"Red","brand":"Copic"},{"code":"R08","name":"Vermilion","hex":"#bc3828","old":"","fam":"Red","brand":"Copic"},{"code":"R11","name":"Pale Cherry Pink","hex":"#fed2be","old":"","fam":"Red","brand":"Copic"},{"code":"R12","name":"Light Tea Rose","hex":"#fecba6","old":"","fam":"Red","brand":"Copic"},{"code":"R14","name":"Light Rouge","hex":"#fe6a5e","old":"","fam":"Red","brand":"Copic"},{"code":"R17","name":"Lipstick Orange","hex":"#cc423a","old":"","fam":"Red","brand":"Copic"},{"code":"R20","name":"Blush","hex":"#fec9b9","old":"","fam":"Red","brand":"Copic"},{"code":"R21","name":"Sardonyx","hex":"#febaa8","old":"","fam":"Red","brand":"Copic"},{"code":"R22","name":"Light Prawn","hex":"#fe857b","old":"","fam":"Red","brand":"Copic"},{"code":"R24","name":"Prawn","hex":"#dd4a48","old":"","fam":"Red","brand":"Copic"},{"code":"R27","name":"Cadmium Red","hex":"#a3131a","old":"","fam":"Red","brand":"Copic"},{"code":"R29","name":"Lipstick Red","hex":"#9c0917","old":"","fam":"Red","brand":"Copic"},{"code":"R30","name":"Pale Yellowish Pink","hex":"#fedbc4","old":"","fam":"Red","brand":"Copic"},{"code":"R32","name":"Peach","hex":"#fe9f97","old":"","fam":"Red","brand":"Copic"},{"code":"R35","name":"Coral","hex":"#fd4d5f","old":"","fam":"Red","brand":"Copic"},{"code":"R37","name":"Carmine","hex":"#b0253e","old":"","fam":"Red","brand":"Copic"},{"code":"R39","name":"Garnet","hex":"#a32342","old":"","fam":"Red","brand":"Copic"},{"code":"R43","name":"Bougainvillaea","hex":"#fd7185","old":"","fam":"Red","brand":"Copic"},{"code":"R46","name":"Strong Red","hex":"#df2c4c","old":"","fam":"Red","brand":"Copic"},{"code":"R56","name":"Currant","hex":"#b05264","old":"","fam":"Red","brand":"Copic"},{"code":"R59","name":"Cardinal","hex":"#871b2b","old":"","fam":"Red","brand":"Copic"},{"code":"R81","name":"Rose Pink","hex":"#fbc2d7","old":"","fam":"Red","brand":"Copic"},{"code":"R83","name":"Rose Mist","hex":"#f095b2","old":"","fam":"Red","brand":"Copic"},{"code":"R85","name":"Rose Red","hex":"#e16c8c","old":"","fam":"Red","brand":"Copic"},{"code":"R89","name":"Dark Red","hex":"#7c1623","old":"","fam":"Red","brand":"Copic"},{"code":"RV00","name":"Water Lily","hex":"#fee4e7","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV000","name":"Pale Purple","hex":"#feeff3","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV0000","name":"Evening Primrose","hex":"#fcf4f5","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV02","name":"Sugared Almond Pink","hex":"#fec8e2","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV04","name":"Shock Pink","hex":"#fd50a5","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV06","name":"Cerise","hex":"#fd3ec9","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV09","name":"Fuchsia","hex":"#b7286d","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV10","name":"Pale Pink","hex":"#fdd7e1","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV11","name":"Pink","hex":"#dfb0bb","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV13","name":"Tender Pink","hex":"#fe83ac","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV14","name":"Begonia Pink","hex":"#fc3f71","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV17","name":"Deep Magenta","hex":"#c82a76","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV19","name":"Red Violet","hex":"#891c48","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV21","name":"Light Pink","hex":"#febbc2","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV23","name":"Pure Pink","hex":"#fea0bd","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV25","name":"Dog Rose Flower","hex":"#bf41b7","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV29","name":"Crimson","hex":"#9d112b","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV32","name":"Shadow Pink","hex":"#fbb4bf","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV34","name":"Dark Pink","hex":"#f286ad","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV42","name":"Salmon Pink","hex":"#feb9a8","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV52","name":"Cotton Candy","hex":"#dbb8d5","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV55","name":"Hollyhock","hex":"#cc78ab","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV63","name":"Begonia","hex":"#cd9cc1","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV66","name":"Raspberry","hex":"#8c4477","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV69","name":"Peony","hex":"#550e2a","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV91","name":"Grayish Cherry","hex":"#f4e1ec","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV93","name":"Smoky Purple","hex":"#deb5c6","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV95","name":"Baby Blossoms","hex":"#bd8da2","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"RV99","name":"Argyle Purple","hex":"#391a26","old":"","fam":"Red-Violet","brand":"Copic"},{"code":"T-0","name":"Toner Gray No.0","hex":"#e3e4e2","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-1","name":"Toner Gray No.1","hex":"#cfcfcd","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-10","name":"Toner Gray No.10","hex":"#232124","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-2","name":"Toner Gray No.2","hex":"#b9b9b6","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-3","name":"Toner Gray No.3","hex":"#a1a2a0","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-4","name":"Toner Gray No.4","hex":"#80817e","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-5","name":"Toner Gray No.5","hex":"#6a6f69","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-6","name":"Toner Gray No.6","hex":"#505754","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-7","name":"Toner Gray No.7","hex":"#39413e","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-8","name":"Toner Gray No.8","hex":"#2c3532","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"T-9","name":"Toner Gray No.9","hex":"#2a2c2e","old":"","fam":"Toner Grey","brand":"Copic"},{"code":"V000","name":"Pale Heath","hex":"#fee3f6","old":"","fam":"Violet","brand":"Copic"},{"code":"V0000","name":"Rose Quartz","hex":"#fef4fb","old":"","fam":"Violet","brand":"Copic"},{"code":"V01","name":"Heath","hex":"#f4acdf","old":"","fam":"Violet","brand":"Copic"},{"code":"V04","name":"Lilac","hex":"#e670f5","old":"","fam":"Violet","brand":"Copic"},{"code":"V05","name":"Azalea","hex":"#de6ebd","old":"","fam":"Violet","brand":"Copic"},{"code":"V06","name":"Lavender","hex":"#b44ea2","old":"","fam":"Violet","brand":"Copic"},{"code":"V09","name":"Violet","hex":"#401a76","old":"","fam":"Violet","brand":"Copic"},{"code":"V12","name":"Pale Lilac","hex":"#eaa8e3","old":"","fam":"Violet","brand":"Copic"},{"code":"V15","name":"Mallow","hex":"#b979c4","old":"","fam":"Violet","brand":"Copic"},{"code":"V17","name":"Amethyst","hex":"#543976","old":"","fam":"Violet","brand":"Copic"},{"code":"V20","name":"Wisteria","hex":"#d9d4e0","old":"","fam":"Violet","brand":"Copic"},{"code":"V22","name":"Ash Lavender","hex":"#b8b2c6","old":"","fam":"Violet","brand":"Copic"},{"code":"V25","name":"Pale Blackberry","hex":"#8c8197","old":"","fam":"Violet","brand":"Copic"},{"code":"V28","name":"Eggplant","hex":"#605e68","old":"","fam":"Violet","brand":"Copic"},{"code":"V91","name":"Pale Grape","hex":"#e3d0db","old":"","fam":"Violet","brand":"Copic"},{"code":"V93","name":"Early Grape","hex":"#d3bfcc","old":"","fam":"Violet","brand":"Copic"},{"code":"V95","name":"Light Grape","hex":"#af8fa2","old":"","fam":"Violet","brand":"Copic"},{"code":"V99","name":"Aubergine","hex":"#4a3745","old":"","fam":"Violet","brand":"Copic"},{"code":"W-0","name":"Warm Gray No.0","hex":"#efeae1","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-00","name":"Warm Gray No.00","hex":"#f1f0eb","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-1","name":"Warm Gray No.1","hex":"#e3ddd3","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-10","name":"Warm Gray No.10","hex":"#332f29","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-2","name":"Warm Gray No.2","hex":"#d3cabe","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-3","name":"Warm Gray No.3","hex":"#bfb4a5","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-4","name":"Warm Gray No.4","hex":"#aa9f91","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-5","name":"Warm Gray No.5","hex":"#908274","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-6","name":"Warm Gray No.6","hex":"#796d5f","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-7","name":"Warm Gray No.7","hex":"#4d4539","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-8","name":"Warm Gray No.8","hex":"#443d34","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"W-9","name":"Warm Gray No.9","hex":"#363129","old":"","fam":"Warm Grey","brand":"Copic"},{"code":"Y00","name":"Barium Yellow","hex":"#fffeaf","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y000","name":"Pale Lemon","hex":"#fefed8","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y0000","name":"Yellow Fluorite","hex":"#fefee1","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y02","name":"Canary Yellow","hex":"#fefa65","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y04","name":"Acacia","hex":"#fefd5b","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y06","name":"Yellow","hex":"#fffe38","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y08","name":"Acid Yellow","hex":"#fede31","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y11","name":"Pale Yellow","hex":"#feed84","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y13","name":"Lemon Yellow","hex":"#fee667","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y15","name":"Cadmium Yellow","hex":"#fcce33","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y17","name":"Golden Yellow","hex":"#feaa23","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y18","name":"Lightning Yellow","hex":"#fec116","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y19","name":"Napoli Yellow","hex":"#feb10a","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y21","name":"Buttercup Yellow","hex":"#faca6e","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y23","name":"Yellowish Beige","hex":"#fbcd7e","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y26","name":"Mustard","hex":"#bd891c","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y28","name":"Lionet Gold","hex":"#bfa264","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y32","name":"Cashmere","hex":"#fed995","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y35","name":"Maize","hex":"#febd49","old":"","fam":"Yellow","brand":"Copic"},{"code":"Y38","name":"Honey","hex":"#fe9c1f","old":"","fam":"Yellow","brand":"Copic"},{"code":"YG00","name":"Mimosa Yellow","hex":"#e0e37d","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG0000","name":"Lily White","hex":"#f2f2c0","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG01","name":"Green Bice","hex":"#cde75f","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG03","name":"Yellow Green","hex":"#a5c354","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG05","name":"Salad","hex":"#9eeb4b","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG06","name":"Yellowish Green","hex":"#97ea5b","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG07","name":"Acid Green","hex":"#6ec53d","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG09","name":"Lettuce Green","hex":"#4ab139","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG11","name":"Mignonette","hex":"#d7faa6","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG13","name":"Chartreuse","hex":"#b1d453","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG17","name":"Grass Green","hex":"#72a13b","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG21","name":"Anise","hex":"#fcfc7a","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG23","name":"New Leaf","hex":"#bdd74f","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG25","name":"Celadon Green","hex":"#9fd042","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG41","name":"Pale Cobalt Green","hex":"#bef5ac","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG45","name":"Cobalt Green","hex":"#77a96d","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG61","name":"Pale Moss","hex":"#c1d29e","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG63","name":"Pea Green","hex":"#99b16f","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG67","name":"Moss","hex":"#4e7033","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG91","name":"Putty","hex":"#ded0a1","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG93","name":"Grayish Yellow","hex":"#b8b770","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG95","name":"Pale Olive","hex":"#a29835","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG97","name":"Spanish Olive","hex":"#6d6a1f","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YG99","name":"Marine Green","hex":"#4f4d1a","old":"","fam":"Yellow-Green","brand":"Copic"},{"code":"YR00","name":"Powder Pink","hex":"#fed7a7","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR000","name":"Silk","hex":"#fee5cb","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR0000","name":"Pale Chiffon","hex":"#f8ecde","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR01","name":"Peach Puff","hex":"#fed09c","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR02","name":"Light Orange","hex":"#fea462","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR04","name":"Chrome Orange","hex":"#fea132","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR07","name":"Cadmium Orange","hex":"#fe7327","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR09","name":"Chinese Orange","hex":"#c1492c","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR12","name":"Loquat","hex":"#feb358","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR14","name":"Caramel","hex":"#fd9938","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR15","name":"Pumpkin Yellow","hex":"#fea435","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR16","name":"Apricot","hex":"#fe9323","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR18","name":"Sanguine","hex":"#cc5322","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR20","name":"Yellowish Shade","hex":"#fee3a5","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR21","name":"Cream","hex":"#fed16e","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR23","name":"Yellow Ochre","hex":"#eca739","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR24","name":"Pale Sepia","hex":"#f09f28","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR27","name":"Tuscan Orange","hex":"#ac6214","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR30","name":"Macadamia Nut","hex":"#fefbdf","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR31","name":"Light Reddish Yellow","hex":"#fedd7d","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR61","name":"Spring Orange","hex":"#fec194","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR65","name":"Atoll","hex":"#feaa67","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR68","name":"Orange","hex":"#fd6e20","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"YR82","name":"Mellow Peach","hex":"#fed3a3","old":"","fam":"Yellow-Red / Orange","brand":"Copic"},{"code":"B04","name":"Pale Cyan","hex":"#bedfe9","old":"B040","fam":"Blue","brand":"Ohuhu"},{"code":"BV18","name":"Hydrangea Blue","hex":"#adaed2","old":"V350","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV39","name":"Pale Cerulean Blue","hex":"#6b96cc","old":"B170","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV45","name":"Pale Hyacinth","hex":"#a1c4e5","old":"B150","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"BV515","name":"Navy","hex":"#4c688d","old":"B300","fam":"Blue-Violet","brand":"Ohuhu"},{"code":"E47","name":"Camel","hex":"#e0b892","old":"YR209","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E49","name":"Honey Brown","hex":"#dbae93","old":"Y145","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E513","name":"Taupe Brown","hex":"#827167","old":"YR95","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E514","name":"Dark Chocolate","hex":"#7a665e","old":"YR92","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E59","name":"Chestnut","hex":"#af7b65","old":"YR9","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E612","name":"Brick Brown","hex":"#a6796a","old":"YR10","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E615","name":"Cherry Cola","hex":"#7f5449","old":"YR91","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E66","name":"Light Fawn","hex":"#cda692","old":"YR148","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E711","name":"Old Mahogany","hex":"#ad7f74","old":"R27","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E75","name":"Light Rose Taupe","hex":"#e7b8ae","old":"R26","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E81","name":"Spanish Pink","hex":"#f6ddd8","old":"R30","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"E814","name":"Caput Mortuum","hex":"#826965","old":"R28","fam":"Earth / Skin / Brown","brand":"Ohuhu"},{"code":"G48","name":"Lettuce","hex":"#8ec581","old":"G150","fam":"Green","brand":"Ohuhu"},{"code":"R12","name":"Pale Coral Pink","hex":"#fad9d2","old":"R100","fam":"Red","brand":"Ohuhu"},{"code":"R14","name":"Sheer Peach","hex":"#f8c4bd","old":"YR050","fam":"Red","brand":"Ohuhu"},{"code":"RV02","name":"Pale Pink Rose","hex":"#fcecf3","old":"RV120","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV07","name":"Light Disco Pink","hex":"#efa9c9","old":"RV050","fam":"Red-Violet","brand":"Ohuhu"},{"code":"RV32","name":"Lilac Blush","hex":"#f8e4f1","old":"V140","fam":"Red-Violet","brand":"Ohuhu"},{"code":"V016","name":"Eggplant","hex":"#765a82","old":"V090","fam":"Violet","brand":"Ohuhu"},{"code":"Y110","name":"Honeybee Yellow","hex":"#f4c248","old":"Y090","fam":"Yellow","brand":"Ohuhu"},{"code":"Y210","name":"Pumpkin Yellow","hex":"#e8a046","old":"YR34","fam":"Yellow","brand":"Ohuhu"},{"code":"Y212","name":"Golden Yellow","hex":"#dfa045","old":"Y150","fam":"Yellow","brand":"Ohuhu"},{"code":"Y43","name":"Warm Beige","hex":"#f7e5c6","old":"YR212","fam":"Yellow","brand":"Ohuhu"},{"code":"Y48","name":"Light Apricot","hex":"#ecbb7b","old":"YR6","fam":"Yellow","brand":"Ohuhu"},{"code":"Y56","name":"Milkshake","hex":"#f8d395","old":"YR230","fam":"Yellow","brand":"Ohuhu"},{"code":"YG35","name":"Fog Green","hex":"#c4d1af","old":"G230","fam":"Yellow-Green","brand":"Ohuhu"},{"code":"YR01","name":"Milk White","hex":"#fbf0e2","old":"E330","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR02","name":"Peach Silk","hex":"#fceddd","old":"WG0.5","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR05","name":"Cotton Pearl","hex":"#fbe4d5","old":"E020","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR09","name":"Sandstone","hex":"#f4a770","old":"YR7","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR214","name":"Terracotta","hex":"#e1886e","old":"E070","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR25","name":"Powder Orange","hex":"#f6b799","old":"YR205","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR29","name":"Grapefruit","hex":"#f29873","old":"YR8","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR37","name":"Roasted Cashew","hex":"#f1b88e","old":"YR20","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR38","name":"Burnt Ochre","hex":"#e6ab82","old":"YR107","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"YR54","name":"Pink Frost","hex":"#fbddd2","old":"R030","fam":"Yellow-Red / Orange","brand":"Ohuhu"},{"code":"0","name":"Colorless Blender","hex":"#ffffff","old":"","fam":"Neutral / Black","brand":"Ohuhu"}];
 /* ===== Keeping work safe: a net for unexpected errors, installing to the Home Screen, keeping storage ===== */
@@ -11193,6 +11441,11 @@ const APP_BETA = true;
 // (v308) Where "Send feedback" goes. Empty: the report opens the share sheet (Messages, Mail and so on), or is copied
 // where there is no share sheet. An email address ("beta@example.com") makes it an email to that address instead.
 const FEEDBACK_EMAIL = '';
+// (v312) The Google Form that Send results (Tester tasks) and Send feedback post to: its pre-filled link, as
+// docs/tester-form-setup.gs logs it (every field "x", in the order tester.js's FIELDS has them). Empty: Send results
+// and Send feedback open the share sheet (or copy) instead.
+const RESULTS_FORM =
+  'https://docs.google.com/forms/d/e/1FAIpQLSc4V4fb4-FbDWEqpKsv7ZGh05d04qta_rmZBGu9Gw-XrUkFww/viewform?usp=pp_url&entry.154335765=x&entry.1458459355=x&entry.4498281=x&entry.948816975=x&entry.757643837=x&entry.1053318030=x&entry.593081015=x&entry.990370073=x&entry.882586814=x&entry.40761276=x&entry.2032943376=x&entry.1318595819=x&entry.871716211=x&entry.1555463495=x&entry.262103555=x&entry.139153216=x&entry.2050720170=x&entry.1122665941=x&entry.712017838=x&entry.976242040=x&entry.304256101=x&entry.1426842893=x&entry.2019164931=x&entry.797027600=x&entry.1643258516=x&entry.1615734485=x&entry.594365445=x';
 // (v308) the last ERR_MAX errors, kept across reloads (ERR_KEY) for Copy details, Copy diagnostics and Send feedback:
 // caught failures (errLog: opening a guide, a photo, a PDF or image, the worker, a backup) and unexpected ones
 const ERR_KEY = 'ms-errors',
@@ -11413,10 +11666,13 @@ function errDetails() {
     .concat(scanTrace.length ? ['\nScan box, this visit:'].concat(scanTrace) : [])
     .join('\n');
 }
-// Send feedback's report: room to write first, then the details (the last few errors in a line each), kept short
-// enough for a message or an email link
-function feedbackReport() {
-  const errs = errAll()
+// the last few errors, a line each (Send feedback's report, and the form's Message)
+function feedbackErrLines() {
+  const errs = feedbackErrs();
+  return errs.length ? 'Last errors:\n' + errs.join('\n') : 'No errors recorded.';
+}
+function feedbackErrs() {
+  return errAll()
     .slice(-3)
     .map(function (x) {
       return (
@@ -11427,13 +11683,17 @@ function feedbackReport() {
         x.msg.slice(0, 160)
       );
     });
+}
+// Send feedback's report: room to write first, then the details, kept short enough for a message or an email link.
+// (v312: msg, what was written in Send feedback's dialog, goes first in place of the question)
+function feedbackReport(msg) {
   const head = diagHead();
   return (
-    'What happened, or what would you like? (A screenshot helps.)\n\n\n\n' +
+    (msg ? msg + '\n\n' : 'What happened, or what would you like? (A screenshot helps.)\n\n\n\n') +
     '— Details for Marker Studio’s maker (please keep) —\n' +
     head.join('\n').slice(0, 900) +
     '\n' +
-    (errs.length ? 'Last errors:\n' + errs.join('\n') : 'No errors recorded.')
+    feedbackErrLines()
   );
 }
 function feedbackCopy(text) {
@@ -11460,8 +11720,8 @@ function feedbackMailto(to, subj, text) {
 }
 // Send feedback: an email when FEEDBACK_EMAIL is set; else the share sheet, or the clipboard where there is none.
 // Resolves 'mail', 'share', 'cancel', 'copy' or false.
-function sendFeedback() {
-  const text = feedbackReport(),
+function sendFeedback(msg) {
+  const text = feedbackReport(msg),
     subj = 'Marker Studio ' + appVerWords() + ' feedback';
   if (FEEDBACK_EMAIL) {
     location.href = feedbackMailto(FEEDBACK_EMAIL, subj, text);
@@ -11491,7 +11751,9 @@ document.addEventListener('click', function (e) {
   if (!b) return;
   e.preventDefault();
   if (b.hasAttribute('data-feedback')) {
-    sendFeedback();
+    // (v312: the dialog that posts to the form, when there is one: tester.js)
+    if (typeof window.openFeedback === 'function') window.openFeedback();
+    else sendFeedback();
     return;
   }
   const diag = b.hasAttribute('data-diag');
@@ -68604,6 +68866,10 @@ function renderHomeNotes() {
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v312',
+    t: 'For testers: Tester tasks, at the foot of Home, has six things to try. Answer each as you go, then tap Send results. Send feedback now sends what you write straight from the app.',
+  },
+  {
     v: 'v311.1',
     t: 'Shuffle on a Gradient always changes it now (about 1 in 12 did nothing). On an iPad in landscape, Mood’s pictures are one row of six again, so the Colours tab fits on the screen.',
   },
@@ -69217,7 +69483,7 @@ const WHATS_NEW = [
         card.innerHTML =
           '<div class="wnhead"><h2 id="btTitle">Thanks for testing Marker Studio</h2><button id="btClose" class="wnx" aria-label="Dismiss thanks for testing">' +
           ic('x') +
-          '</button></div><p>It’s a beta, so back up once a week (<b>Library › Back up</b>). Tell us what goes wrong, and what you’d like: <b>Send feedback</b> is at the foot of Home, and in the guide’s ⋯ menu.</p><div class="nrow"><button type="button" id="btGuide" class="nb1">Tester guide</button><button type="button" id="btFeedback" data-feedback>Send feedback</button></div>';
+          '</button></div><p>It’s a beta, so back up once a week (<b>Library › Back up</b>). <b>Tester tasks</b> has six things to try, with a way to send us your answers. Tell us what goes wrong, and what you’d like: <b>Send feedback</b> is at the foot of Home, and in the guide’s ⋯ menu.</p><div class="nrow"><button type="button" id="btTasks" class="nb1" data-tasks>Tester tasks</button><button type="button" id="btGuide">Tester guide</button><button type="button" id="btFeedback" data-feedback>Send feedback</button></div>';
         const after = D.getElementById('backupNudge') || D.querySelector('#homeView .homegrid');
         if (after) after.insertAdjacentElement('afterend', card);
         else if (av) av.insertAdjacentElement('beforebegin', card);
@@ -69229,6 +69495,8 @@ const WHATS_NEW = [
         };
         card.querySelector('#btClose').addEventListener('click', gone);
         card.querySelector('#btFeedback').addEventListener('click', gone);
+        // (v312: Tester tasks opens from [data-tasks], tester.js; the card goes, the foot of Home keeps the way in)
+        card.querySelector('#btTasks').addEventListener('click', gone);
         card.querySelector('#btGuide').addEventListener('click', function () {
           gone();
           openSheet();
@@ -69313,6 +69581,638 @@ const WHATS_NEW = [
     }
   } catch (e) {
     if (window.console) console.warn('help', e);
+  }
+})();</script><script>/* ===== Tester tasks, and Send feedback's form (v312) =====
+   In the beta only (APP_BETA, safety.js). Tester tasks: six things to try, each answered Easy / OK / Hard / Didn't try
+   with a note, three more if there's time, and four last questions. The answers stay on this device (TT_KEY) until
+   Send results. Ways in: the foot of Home ("Tester tasks · 2 of 6", "ready to send" once all six are answered and not
+   sent), the thanks card and Help's Beta tester guide ([data-tasks]).
+   Where answers go: the Google Form in RESULTS_FORM (safety.js; docs/tester-form-setup.gs makes it, with a sheet that
+   gets a row per send). Send results posts to it, and so does Send feedback, from its own small dialog (Kind tells them
+   apart). Posting is no-cors: the app can't read Google's answer, only whether it got through to the network. Offline,
+   nothing is lost: the answers stay, the sheet says so, and Copy my answers (or Share, for feedback) is there instead.
+   Without a form both fall back to the share sheet, or copying, as Send feedback did before. */
+(function () {
+  if (typeof APP_BETA === 'undefined' || !APP_BETA) return;
+  const D = document,
+    TT_KEY = 'ms-tester';
+  // the form's fields, in the order docs/tester-form-setup.gs makes them (its pre-filled link lists them in this order)
+  const FIELDS = [
+    'Kind',
+    'Tester',
+    'Name',
+    'Send',
+    'Version',
+    'Device',
+    'App or tab',
+    'Markers',
+    'Use so far',
+    '1 Add your markers',
+    '1 Note',
+    '2 Make a guide',
+    '2 Note',
+    '3 Make the plan yours',
+    '3 Note',
+    '4 Colour along',
+    '4 Note',
+    '5 Come back to it',
+    '5 Note',
+    '6 Share or print',
+    '6 Note',
+    'Extras',
+    'Confused most',
+    'Change first',
+    'Colours matched',
+    'Next page',
+    'Message',
+  ];
+  const TASKS = [
+    {
+      k: 'add',
+      t: 'Add your markers',
+      s: 'You did this in the welcome: how did it go?',
+      d: 'However suits how you got them: a set, scanning caps, ticking colours on a chart, or finding your set from 3 caps. There are more ways in <b>Markers › + Add markers</b>.',
+      p: ['Was the way that suits you easy to find?', 'Anything go wrong?'],
+    },
+    {
+      k: 'guide',
+      t: 'Make a guide',
+      s: 'From a page you’d really colour',
+      d: 'Choose a photo of a page you’d like to colour, or one you downloaded (not the sample). Check its sections, then <b>Build guide</b>.',
+      p: ['Did the sections match the drawing?', 'Anything go wrong?'],
+    },
+    {
+      k: 'plan',
+      t: 'Make the plan yours',
+      s: 'Mood, Pattern, Shuffle, Surprise',
+      d: 'Try <b>Mood</b>, a different <b>Pattern</b>, <b>Shuffle</b> or <b>Surprise</b> until it’s a plan you’d colour.',
+      p: ['Anything you expected that didn’t happen?', 'Anything go wrong?'],
+    },
+    {
+      k: 'along',
+      t: 'Colour along',
+      s: 'Colour 10 sections on paper, ticking them off',
+      d: 'Tap <b>Colour along</b> and colour at least 10 sections on paper, ticking each off as you go. Try <b>Focus mode</b> too. It’s fine to spread this over a few days: your answers are kept.',
+      p: ['Was it easy to find the next section?', 'Anything go wrong?'],
+    },
+    {
+      k: 'back',
+      t: 'Come back to it',
+      s: 'Close the app, reopen it, back up',
+      d: 'Close the app, open it again and carry on where you were. Then back up: <b>Library › Back up</b>.',
+      p: ['Was everything where you left it?', 'Anything go wrong?'],
+    },
+    {
+      k: 'share',
+      t: 'Share or print',
+      s: 'Print, Save image or Reveal',
+      d: 'Print your guide (<b>Share › Print…</b>), save an image of it, or finish a page and try <b>Reveal &amp; share</b>.',
+      p: ['Did it look right?', 'Anything go wrong?'],
+    },
+  ];
+  const EXTRAS = [
+    {
+      k: 'palette',
+      t: 'Palette',
+      s: 'Make a palette and use it in a guide',
+      d: 'In <b>Palette</b>, make a palette you like, then tap <b>Use in a guide</b>.',
+      p: ['Anything go wrong?'],
+    },
+    {
+      k: 'match',
+      t: 'Match a colour',
+      s: 'Point the camera at something colourful',
+      d: 'In <b>Markers</b>, tap <b>Match a colour</b> and find the marker closest to something around you.',
+      p: ['Was the closest marker a good match?'],
+    },
+    {
+      k: 'low',
+      t: 'Running low and To buy',
+      s: 'Mark a marker running low, then see your list',
+      d: 'In <b>Markers</b>, press and hold one of your markers and mark it running low. Then look at <b>To buy</b>.',
+      p: ['Anything go wrong?'],
+    },
+  ];
+  const RATES = [
+    ['easy', 'Easy'],
+    ['ok', 'OK'],
+    ['hard', 'Hard'],
+    ['skip', 'Didn’t try'],
+  ];
+  const QS = [
+    ['confused', 'What confused you most?'],
+    ['change', 'What would you change first?'],
+    ['colours', 'Did the colours on paper match the screen well enough?'],
+  ];
+  const NEXT = [
+    ['yes', 'Yes'],
+    ['maybe', 'Maybe'],
+    ['no', 'No'],
+  ];
+  const rateWord = function (r) {
+    const x = RATES.find(function (y) {
+      return y[0] === r;
+    });
+    return x ? x[1] : '';
+  };
+
+  // --- the answers, kept on this device ---
+  function fresh() {
+    return {
+      id: 'T' + Math.random().toString(36).slice(2, 8).toUpperCase(),
+      name: '',
+      t: {},
+      q: {},
+      sends: 0,
+      sig: '',
+    };
+  }
+  let st = null;
+  function load() {
+    if (st) return st;
+    try {
+      const o = JSON.parse(localStorage.getItem(TT_KEY) || 'null');
+      st = o && typeof o === 'object' && typeof o.id === 'string' ? o : fresh();
+    } catch (e) {
+      st = fresh();
+    }
+    st.t = st.t && typeof st.t === 'object' ? st.t : {};
+    st.q = st.q && typeof st.q === 'object' ? st.q : {};
+    return st;
+  }
+  function save() {
+    try {
+      localStorage.setItem(TT_KEY, JSON.stringify(st));
+    } catch (e) {}
+    footSync();
+  }
+  // what's been answered, to tell a change since the last send
+  function sig() {
+    return JSON.stringify([st.t, st.q, st.name]);
+  }
+  function answered() {
+    load();
+    return TASKS.filter(function (x) {
+      return st.t[x.k] && st.t[x.k].r;
+    }).length;
+  }
+  const ver = function () {
+    return typeof appVerShown === 'function' ? appVerShown() : '';
+  };
+
+  // --- the form ---
+  // RESULTS_FORM's pre-filled link: the form's id, and its fields' entry numbers in order. null if it isn't set, or
+  // doesn't have the fields this version sends. (window.__MS_RESULTS_FORM: the browser tests' own)
+  function formTarget() {
+    const u = String(
+      window.__MS_RESULTS_FORM != null
+        ? window.__MS_RESULTS_FORM
+        : typeof RESULTS_FORM === 'string'
+          ? RESULTS_FORM
+          : '',
+    );
+    const m = /\/forms\/d\/e\/([\w-]+)\//.exec(u);
+    if (!m) return null;
+    const ids = [];
+    u.replace(/[?&]entry\.(\d+)=/g, function (_, d) {
+      ids.push(d);
+      return _;
+    });
+    if (ids.length !== FIELDS.length) return null;
+    return { action: 'https://docs.google.com/forms/d/e/' + m[1] + '/formResponse', ids: ids };
+  }
+  // posts the values ({field: text}); resolves true once it got through, false offline or on a network error
+  function post(values) {
+    const t = formTarget();
+    if (!t) return Promise.resolve(false);
+    if (navigator.onLine === false) return Promise.resolve(false);
+    const body = new URLSearchParams();
+    FIELDS.forEach(function (f, i) {
+      body.append('entry.' + t.ids[i], String(values[f] == null ? '' : values[f]).slice(0, 4000));
+    });
+    try {
+      return fetch(t.action, { method: 'POST', mode: 'no-cors', body: body }).then(
+        function () {
+          return true;
+        },
+        function () {
+          return false;
+        },
+      );
+    } catch (e) {
+      return Promise.resolve(false);
+    }
+  }
+  // markers by brand: "Ohuhu 120, Copic 4"
+  function markerWords() {
+    try {
+      const n = {};
+      state.owned.forEach(function (k) {
+        const b = String(k).split('|')[0];
+        n[b] = (n[b] || 0) + 1;
+      });
+      const w = Object.keys(n).map(function (b) {
+        return b + ' ' + n[b];
+      });
+      return w.length ? w.join(', ') : 'none yet';
+    } catch (e) {
+      return '';
+    }
+  }
+  function context(kind) {
+    load();
+    return {
+      Kind: kind,
+      Tester: st.id,
+      Name: st.name || '',
+      Version: typeof appVerWords === 'function' ? appVerWords() : ver(),
+      Device: typeof deviceWords === 'function' ? deviceWords() : '',
+      'App or tab':
+        typeof isStandalone === 'function' ? (isStandalone() ? 'Home Screen app' : 'browser tab') : '',
+      Markers: markerWords(),
+      'Use so far': (typeof countWords === 'function' && countWords()) || 'nothing saved yet',
+    };
+  }
+  // one answer as the sheet shows it: "OK", with the version it was given on when that's not this one
+  function answerWord(a) {
+    if (!a || !a.r) return '';
+    return rateWord(a.r) + (a.v && a.v !== ver() ? ' (on ' + a.v + ')' : '');
+  }
+  function resultValues() {
+    const v = context('Results');
+    v.Send = st.sends ? st.sends + 1 + ' (an update)' : '1';
+    TASKS.forEach(function (x, i) {
+      const a = st.t[x.k];
+      v[FIELDS[9 + i * 2]] = answerWord(a) || 'not yet';
+      v[i + 1 + ' Note'] = (a && a.n) || '';
+    });
+    v.Extras = EXTRAS.filter(function (x) {
+      return st.t[x.k] && (st.t[x.k].r || st.t[x.k].n);
+    })
+      .map(function (x) {
+        const a = st.t[x.k];
+        return x.t + ': ' + (answerWord(a) || '–') + (a.n ? '. ' + a.n : '');
+      })
+      .join('\n');
+    v['Confused most'] = st.q.confused || '';
+    v['Change first'] = st.q.change || '';
+    v['Colours matched'] = st.q.colours || '';
+    v['Next page'] = (NEXT.find((y) => y[0] === st.q.next) || ['', ''])[1];
+    return v;
+  }
+  // the same as text, to copy (or share) when there's no form or no network
+  function resultText() {
+    const v = resultValues();
+    return FIELDS.filter(function (f) {
+      return f !== 'Message' && v[f];
+    })
+      .map(function (f) {
+        return f + ': ' + v[f];
+      })
+      .join('\n');
+  }
+
+  // --- the sheet ---
+  const ov = D.getElementById('ttOverlay');
+  if (!ov) return;
+  let openK = null;
+  function rowHTML(x, n) {
+    const a = st.t[x.k] || {},
+      on = openK === x.k,
+      done = !!a.r,
+      mark = done ? (a.r === 'skip' ? '–' : '✓') : n;
+    return (
+      '<div class="ttrow' +
+      (on ? ' open' : '') +
+      '" data-k="' +
+      x.k +
+      '"><button type="button" class="tttop" aria-expanded="' +
+      on +
+      '" aria-controls="ttBody-' +
+      x.k +
+      '" id="ttTop-' +
+      x.k +
+      '"><span class="ttn' +
+      (done ? ' ok' : '') +
+      '" aria-hidden="true">' +
+      mark +
+      '</span><span class="ttt">' +
+      esc(x.t) +
+      '<small>' +
+      esc(x.s) +
+      '</small></span>' +
+      (done ? '<span class="ttchip">' + esc(rateWord(a.r)) + '</span>' : '') +
+      '<span class="ttcar" aria-hidden="true">' +
+      ic(on ? 'chevron-down' : 'chevron-right') +
+      '</span></button><div class="ttbody" id="ttBody-' +
+      x.k +
+      '"' +
+      (on ? '' : ' hidden') +
+      '><p>' +
+      x.d +
+      '</p><ul>' +
+      x.p
+        .map(function (q) {
+          return '<li>' + esc(q) + '</li>';
+        })
+        .join('') +
+      '</ul><div class="ttrate" role="group" aria-label="How was “' +
+      esc(x.t) +
+      '”?">' +
+      RATES.map(function (r) {
+        return (
+          '<button type="button" data-r="' +
+          r[0] +
+          '" aria-pressed="' +
+          (a.r === r[0]) +
+          '"' +
+          (a.r === r[0] ? ' class="on"' : '') +
+          '>' +
+          r[1] +
+          '</button>'
+        );
+      }).join('') +
+      '</div><textarea class="ttnote" data-note="' +
+      x.k +
+      '" maxlength="1000" rows="2" placeholder="A note (optional)" aria-label="A note on “' +
+      esc(x.t) +
+      '” (optional)">' +
+      esc(a.n || '') +
+      '</textarea></div></div>'
+    );
+  }
+  function render() {
+    load();
+    D.getElementById('ttList').innerHTML = TASKS.map(function (x, i) {
+      return rowHTML(x, i + 1);
+    }).join('');
+    D.getElementById('ttExtras').innerHTML = EXTRAS.map(function (x) {
+      return rowHTML(x, '+');
+    }).join('');
+    D.getElementById('ttQs').innerHTML =
+      QS.map(function (q) {
+        return (
+          '<label class="ttq"><span class="ttql">' +
+          esc(q[1]) +
+          '</span><textarea class="ttnote" data-q="' +
+          q[0] +
+          '" maxlength="1500" rows="2">' +
+          esc(st.q[q[0]] || '') +
+          '</textarea></label>'
+        );
+      }).join('') +
+      '<div class="ttq"><span class="ttql" id="ttNextL">Would you use it for your next page?</span><div class="ttrate ttnext" role="group" aria-labelledby="ttNextL">' +
+      NEXT.map(function (r) {
+        return (
+          '<button type="button" data-next="' +
+          r[0] +
+          '" aria-pressed="' +
+          (st.q.next === r[0]) +
+          '"' +
+          (st.q.next === r[0] ? ' class="on"' : '') +
+          '>' +
+          r[1] +
+          '</button>'
+        );
+      }).join('') +
+      '</div></div>';
+    D.getElementById('ttName').value = st.name || '';
+    progress();
+  }
+  function progress() {
+    const n = answered();
+    D.getElementById('ttCount').textContent = n + ' of ' + TASKS.length + ' answered';
+    D.getElementById('ttBarFill').style.width = Math.round((n / TASKS.length) * 100) + '%';
+    const t = formTarget();
+    D.getElementById('ttWhat').textContent = t
+      ? 'Send results sends your answers, your name if you give it, and a few details (the app’s version, your device, how many markers of each brand, and how many guides and palettes you’ve saved) to Marker Studio’s maker. Nothing else, and nothing until you tap it.'
+      : 'Send results opens the share sheet with your answers and a few details (the app’s version and your device), for you to send to Marker Studio’s maker.';
+  }
+  function said(t) {
+    D.getElementById('ttSaid').textContent = t || '';
+  }
+  function openTasks() {
+    load();
+    said(
+      st.sends && st.sig === sig()
+        ? 'Sent. Thank you! Change anything and you can send it again.'
+        : st.sends
+          ? 'You’ve changed things since you last sent them.'
+          : '',
+    );
+    // the first one still to answer, open
+    if (openK == null) {
+      const f = TASKS.find(function (x) {
+        return !(st.t[x.k] && st.t[x.k].r);
+      });
+      openK = f ? f.k : null;
+    }
+    render();
+    openDialog(ov);
+    const h = D.getElementById('ttTitle');
+    if (h)
+      setTimeout(function () {
+        if (ov.classList.contains('on') && !ov.contains(D.activeElement)) h.focus({ preventScroll: true });
+      }, 0);
+  }
+  window.openTesterTasks = openTasks;
+  function closeTasks() {
+    closeDialog(ov);
+  }
+  function refocus(sel) {
+    const el = ov.querySelector(sel);
+    if (el) el.focus({ preventScroll: true });
+  }
+  ov.addEventListener('click', function (e) {
+    if (e.target === ov) return closeTasks();
+    const t = e.target.closest ? e.target.closest('button') : null;
+    if (!t || !ov.contains(t)) return;
+    if (t.id === 'ttClose') return closeTasks();
+    if (t.id === 'ttSend' || t.id === 'ttSendTop') return sendResults(t);
+    if (t.id === 'ttCopy') return copyResults();
+    const row = t.closest('.ttrow');
+    if (t.classList.contains('tttop') && row) {
+      const k = row.dataset.k;
+      openK = openK === k ? null : k;
+      render();
+      refocus('#ttTop-' + k);
+      return;
+    }
+    if (t.dataset.r && row) {
+      const k = row.dataset.k,
+        a = st.t[k] || (st.t[k] = {});
+      // (tapping the chosen answer again takes it back)
+      a.r = a.r === t.dataset.r ? '' : t.dataset.r;
+      a.v = ver();
+      save();
+      render();
+      refocus('.ttrow[data-k="' + k + '"] [data-r="' + t.dataset.r + '"]');
+      return;
+    }
+    if (t.dataset.next) {
+      st.q.next = st.q.next === t.dataset.next ? '' : t.dataset.next;
+      save();
+      render();
+      refocus('[data-next="' + t.dataset.next + '"]');
+    }
+  });
+  ov.addEventListener('input', function (e) {
+    const el = e.target;
+    load();
+    if (el.dataset.note) {
+      const a = st.t[el.dataset.note] || (st.t[el.dataset.note] = {});
+      a.n = el.value;
+    } else if (el.dataset.q) st.q[el.dataset.q] = el.value;
+    else if (el.id === 'ttName') st.name = el.value.trim();
+    else return;
+    save();
+  });
+  function sendResults(btn) {
+    load();
+    if (!formTarget()) return shareResults();
+    btn.disabled = true;
+    said('Sending…');
+    post(resultValues()).then(function (ok) {
+      btn.disabled = false;
+      if (ok) {
+        st.sends = (st.sends || 0) + 1;
+        st.sig = sig();
+        save();
+        said('Sent. Thank you! Change anything and you can send it again.');
+      } else
+        said(
+          'Couldn’t send: you seem to be offline. Your answers are kept here: try again when you’re online, or copy them instead.',
+        );
+    });
+  }
+  // no form: the share sheet, or the clipboard
+  function shareResults() {
+    const text = resultText(),
+      subj = 'Marker Studio tester results';
+    if (navigator.share) {
+      let p;
+      try {
+        p = Promise.resolve(navigator.share({ title: subj, text: text }));
+      } catch (e) {
+        p = Promise.reject(e);
+      }
+      return p.then(
+        function () {
+          st.sends = (st.sends || 0) + 1;
+          st.sig = sig();
+          save();
+          said('Shared. Thank you!');
+        },
+        function (e) {
+          if (!(e && e.name === 'AbortError')) copyResults();
+        },
+      );
+    }
+    return copyResults();
+  }
+  function copyResults() {
+    return copyText(resultText()).then(function (ok) {
+      said(
+        ok
+          ? 'Copied. Paste your answers into a message to Marker Studio’s maker.'
+          : 'Couldn’t copy them here.',
+      );
+    });
+  }
+
+  // --- the ways in ---
+  D.addEventListener('click', function (e) {
+    const b = e.target && e.target.closest && e.target.closest('[data-tasks]');
+    if (!b) return;
+    e.preventDefault();
+    openTasks();
+  });
+  // (a line of its own under How it works · Help · Send feedback: four links wrapped badly on a small phone)
+  const foot = D.querySelector('.homehelp');
+  let footBtn = null;
+  if (foot) {
+    const row = D.createElement('div');
+    row.className = 'homehelp tttasksrow';
+    footBtn = D.createElement('button');
+    footBtn.type = 'button';
+    footBtn.id = 'homeTasks';
+    footBtn.className = 'hlplink';
+    footBtn.setAttribute('data-tasks', '');
+    row.appendChild(footBtn);
+    foot.insertAdjacentElement('afterend', row);
+  }
+  // "Tester tasks · 2 of 6"; "ready to send" once all six are answered and not sent as they are; "sent" after
+  function footSync() {
+    if (!footBtn) return;
+    load();
+    const n = answered(),
+      all = n === TASKS.length,
+      sent = st.sends > 0 && st.sig === sig();
+    footBtn.textContent =
+      'Tester tasks · ' + (sent ? 'sent' : all ? 'ready to send' : n + ' of ' + TASKS.length);
+    footBtn.classList.toggle('ttready', all && !sent);
+  }
+  footSync();
+
+  // --- Send feedback, to the form ---
+  const fov = D.getElementById('fbOverlay');
+  function fbSaid(t) {
+    D.getElementById('fbSaid').textContent = t || '';
+  }
+  // Send feedback's buttons (safety.js): this dialog when there's a form, else the share sheet as before
+  window.openFeedback = function () {
+    if (!fov || !formTarget()) return sendFeedback();
+    fbSaid('');
+    openDialog(fov);
+    setTimeout(function () {
+      const t = D.getElementById('fbText');
+      if (t && fov.classList.contains('on')) t.focus({ preventScroll: true });
+    }, 0);
+    return Promise.resolve('dialog');
+  };
+  if (fov) {
+    const close = function () {
+      closeDialog(fov);
+    };
+    fov.addEventListener('click', function (e) {
+      if (e.target === fov) return close();
+      const t = e.target.closest ? e.target.closest('button') : null;
+      if (!t) return;
+      if (t.id === 'fbClose') return close();
+      const box = D.getElementById('fbText'),
+        text = box.value.trim();
+      if (t.id === 'fbShare') {
+        close();
+        sendFeedback(text);
+        return;
+      }
+      if (t.id !== 'fbSend') return;
+      if (!text) {
+        fbSaid('Write a line first: what happened, or what you’d like.');
+        box.focus();
+        return;
+      }
+      const v = context('Feedback');
+      v.Message =
+        text +
+        '\n\n' +
+        (typeof feedbackErrLines === 'function' ? feedbackErrLines() : '') +
+        '\nScreen: ' +
+        (typeof screenWords === 'function' ? screenWords() : '');
+      t.disabled = true;
+      fbSaid('Sending…');
+      post(v).then(function (ok) {
+        t.disabled = false;
+        if (ok) {
+          box.value = '';
+          close();
+          toast('Sent. Thank you!');
+        } else
+          fbSaid(
+            'Couldn’t send: you seem to be offline. Your words are kept here: try again when you’re online, or Share it instead.',
+          );
+      });
+    });
   }
 })();</script><script>// an installed app can stay open for days: each time it comes back to the screen it checks for a new version
 if ('serviceWorker' in navigator) {

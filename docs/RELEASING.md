@@ -70,3 +70,7 @@ older commit going out by mistake.
   `ohuhu-hb320-picker-v3`), and Help › Your data › **Delete all my data** removes only those. Moving to another address
   later would leave testers' data behind: they would need to back up and restore.
 - `docs/TESTERS.md` is the page to send testers. `docs/DEVICE-TEST.md` is your own pre-release checklist.
+- **Where Send results and Send feedback go** (v312): the Google Form whose pre-filled link is `RESULTS_FORM` in
+  `src/js/safety.js`. `docs/tester-form-setup.gs` makes the form and its results sheet (run it once at
+  script.google.com, signed in to the account that should own them; it logs the link). With `RESULTS_FORM` empty,
+  both open the share sheet instead. A form made again (or another account's) only needs the new link there.

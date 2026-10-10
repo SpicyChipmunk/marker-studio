@@ -31,7 +31,9 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
 - **Colours on screen are approximate.** Screens and inks differ. **Markers › Print a swatch chart** makes a page
   you can colour in to compare.
 - **Your data stays on your device.** There's no account, no ads and no tracking, and nothing you add is uploaded.
-  It works offline. The camera is used only when you scan caps (**Markers › Scan or type codes**) or match a colour.
+  The only things that leave it are what you choose to send with **Send results** and **Send feedback**. It works
+  offline. The camera is used only when you scan caps (**Markers › + Add markers › Scan or type codes**) or match a
+  colour.
 
 ## Getting a picture in
 
@@ -53,23 +55,26 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
 - **Picking one section on the picture needs touch or a mouse.** With a keyboard, use Colour along's list instead.
 - **It's tuned for the iPad** (portrait and landscape). Phones and computers work, but have had less testing.
 
-## What to try
+## What to try: Tester tasks
 
-- Add your markers: the welcome asks how you got them. Pick your set, scan the caps or tick colours on a chart for ones you bought singly, or scan 3 caps to find a set you can’t remember (also in Markers: **Scan or type codes**, **Tick colours on a chart**).
-- Make a guide from a page you would really colour.
-- Change the plan: try the Pattern (Gradient, Random, Blend, Photo, Manual), Colours and Shading tabs, and ✨ Surprise.
-- Tap **Colour along**, then tick sections off as you colour them on paper. Try **Focus mode**.
-- Print the guide, or **Save image**, and try **Reveal & share** when you finish.
+**Tester tasks** (at the foot of Home, and in **Help › Beta tester guide**) has six things to try, in your own time:
+add your markers, make a guide, make the plan yours, colour along, come back to it, and share or print. Three more are
+there if you have time, then four last questions.
 
-## How to report
+- Answer each one **Easy**, **OK**, **Hard** or **Didn't try**, and add a note if you like. Your answers stay on your
+  device until you send them, so it's fine to spread them over a few days.
+- When you're ready, tap **Send results**. You can send again later: it's sent as an update.
+- Ideas and "this was confusing" are as useful as bugs. Write them in the notes.
 
-- **Send feedback** is at the foot of Home, in the guide's **⋯** menu, and in **Help › About**. It opens a message
-  with your device and any recent errors filled in (or copies them, where there's no share sheet). Write what you did,
-  what happened and what you expected. Add a screenshot if you can.
+## How to report a problem
+
+- **Send feedback** is at the foot of Home, in the guide's **⋯** menu, and in **Help › About**. Write what you did, what
+  happened and what you expected, then tap **Send**. Your device, the app's version and any recent errors go with it.
+- **To add a screenshot,** tap **Share it instead**: it opens a message with the same details, and you can attach the
+  screenshot there.
 - When something goes wrong, the message has **Copy details** beside it. **Help › About › Copy diagnostics** copies
   the same any time.
 - A guide that misbehaves: **Share › Guide file** saves it as a file you can send with your report.
-- Ideas and "this was confusing" are as useful as bugs.
 
 ## Leaving the beta
 

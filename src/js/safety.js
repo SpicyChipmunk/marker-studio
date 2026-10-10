@@ -9,6 +9,11 @@ const APP_BETA = true;
 // (v308) Where "Send feedback" goes. Empty: the report opens the share sheet (Messages, Mail and so on), or is copied
 // where there is no share sheet. An email address ("beta@example.com") makes it an email to that address instead.
 const FEEDBACK_EMAIL = '';
+// (v312) The Google Form that Send results (Tester tasks) and Send feedback post to: its pre-filled link, as
+// docs/tester-form-setup.gs logs it (every field "x", in the order tester.js's FIELDS has them). Empty: Send results
+// and Send feedback open the share sheet (or copy) instead.
+const RESULTS_FORM =
+  'https://docs.google.com/forms/d/e/1FAIpQLSc4V4fb4-FbDWEqpKsv7ZGh05d04qta_rmZBGu9Gw-XrUkFww/viewform?usp=pp_url&entry.154335765=x&entry.1458459355=x&entry.4498281=x&entry.948816975=x&entry.757643837=x&entry.1053318030=x&entry.593081015=x&entry.990370073=x&entry.882586814=x&entry.40761276=x&entry.2032943376=x&entry.1318595819=x&entry.871716211=x&entry.1555463495=x&entry.262103555=x&entry.139153216=x&entry.2050720170=x&entry.1122665941=x&entry.712017838=x&entry.976242040=x&entry.304256101=x&entry.1426842893=x&entry.2019164931=x&entry.797027600=x&entry.1643258516=x&entry.1615734485=x&entry.594365445=x';
 // (v308) the last ERR_MAX errors, kept across reloads (ERR_KEY) for Copy details, Copy diagnostics and Send feedback:
 // caught failures (errLog: opening a guide, a photo, a PDF or image, the worker, a backup) and unexpected ones
 const ERR_KEY = 'ms-errors',
@@ -229,10 +234,13 @@ function errDetails() {
     .concat(scanTrace.length ? ['\nScan box, this visit:'].concat(scanTrace) : [])
     .join('\n');
 }
-// Send feedback's report: room to write first, then the details (the last few errors in a line each), kept short
-// enough for a message or an email link
-function feedbackReport() {
-  const errs = errAll()
+// the last few errors, a line each (Send feedback's report, and the form's Message)
+function feedbackErrLines() {
+  const errs = feedbackErrs();
+  return errs.length ? 'Last errors:\n' + errs.join('\n') : 'No errors recorded.';
+}
+function feedbackErrs() {
+  return errAll()
     .slice(-3)
     .map(function (x) {
       return (
@@ -243,13 +251,17 @@ function feedbackReport() {
         x.msg.slice(0, 160)
       );
     });
+}
+// Send feedback's report: room to write first, then the details, kept short enough for a message or an email link.
+// (v312: msg, what was written in Send feedback's dialog, goes first in place of the question)
+function feedbackReport(msg) {
   const head = diagHead();
   return (
-    'What happened, or what would you like? (A screenshot helps.)\n\n\n\n' +
+    (msg ? msg + '\n\n' : 'What happened, or what would you like? (A screenshot helps.)\n\n\n\n') +
     '— Details for Marker Studio’s maker (please keep) —\n' +
     head.join('\n').slice(0, 900) +
     '\n' +
-    (errs.length ? 'Last errors:\n' + errs.join('\n') : 'No errors recorded.')
+    feedbackErrLines()
   );
 }
 function feedbackCopy(text) {
@@ -276,8 +288,8 @@ function feedbackMailto(to, subj, text) {
 }
 // Send feedback: an email when FEEDBACK_EMAIL is set; else the share sheet, or the clipboard where there is none.
 // Resolves 'mail', 'share', 'cancel', 'copy' or false.
-function sendFeedback() {
-  const text = feedbackReport(),
+function sendFeedback(msg) {
+  const text = feedbackReport(msg),
     subj = 'Marker Studio ' + appVerWords() + ' feedback';
   if (FEEDBACK_EMAIL) {
     location.href = feedbackMailto(FEEDBACK_EMAIL, subj, text);
@@ -307,7 +319,9 @@ document.addEventListener('click', function (e) {
   if (!b) return;
   e.preventDefault();
   if (b.hasAttribute('data-feedback')) {
-    sendFeedback();
+    // (v312: the dialog that posts to the form, when there is one: tester.js)
+    if (typeof window.openFeedback === 'function') window.openFeedback();
+    else sendFeedback();
     return;
   }
   const diag = b.hasAttribute('data-diag');

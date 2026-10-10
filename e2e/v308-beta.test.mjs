@@ -44,8 +44,9 @@ test('Send feedback from Home’s foot: the share sheet with the version, device
   const ver = (await page.textContent('#appVer')).trim();
   assert.match(ver, /^v\d+(\.\d+)?$/, 'the version itself is unchanged');
   assert.equal(await after_(page, '#appVer'), '" · Beta"');
+  // (v312: Tester tasks on a line of its own under them)
   const links = await page.$$eval('.homehelp button', (b) => b.map((x) => x.textContent));
-  assert.deepEqual(links, ['How it works', 'Help', 'Send feedback']);
+  assert.deepEqual(links, ['How it works', 'Help', 'Send feedback', 'Tester tasks · 0 of 6']);
   await page.click('#homeFeedback');
   await until(page, () => window.__shared.length === 1, null, 'shared');
   const [s] = await shared(page);

@@ -681,3 +681,36 @@ Item 1 of the list (Find my set from 3 caps in Markers) grew, by decision, into 
 - **Mood's pictures in iPad landscape** are one row of six again, as on a phone and an iPad held upright (Ben's choice). v310.1's three bigger ones a row made the Colours tab longer than the screen on both the 11" and 13" iPads, the only tab to scroll, and the page moved switching tabs (`guide-frame-2` caught it; it wasn't run for v310.1). `v3101-me` changed on purpose, and now checks the 13" too.
 - `v306-dbg-along`'s run-low test waits for the sample's first save before marking ink: on GitHub's WebKit, the save's "Saved in your Library" came after the ink's line, in the same live region, and was read instead.
 - Version v311.1; cache `marker-studio-v311.1`.
+
+# Changes — v312 (Tester tasks; Send feedback to a form; a new device checklist)
+
+Ben's decisions: testers get tasks in the app, not a checklist (D1–D4); results go to a Google Form and its sheet.
+
+- **Tester tasks** (beta only, `src/js/tester.js`): six things to try in the order people use the app (add your
+  markers, make a guide, make the plan yours, colour along, come back to it, share or print), three more if there's
+  time (Palette, Match a colour, Running low and To buy), and four last questions (what confused you, what you'd change
+  first, whether colours on paper matched, whether you'd use it for your next page), with an optional name.
+  - Each task: what to do, prompts that don't lead (always "Anything go wrong?"), **Easy / OK / Hard / Didn't try**
+    and a note. A rating answers it; tapping it again takes it back. The first task still to answer opens.
+  - Answers stay on the device (`ms-tester`) until **Send results**, at the top and the end. A send after a change is
+    marked "2 (an update)" with the same tester code, so a tester can send at 3 of 6 and again later. Each answer
+    keeps the version it was given on, said in the sheet when it isn't the current one.
+  - Ways in: Home's foot, on a line of its own ("Tester tasks · 2 of 6", "ready to send" once all six are answered,
+    "sent" after), the thanks card's **Tester tasks**, and the top of Help › Beta tester guide.
+- **Where answers go:** a Google Form (`RESULTS_FORM` in `safety.js`, its pre-filled link), posted from the app with
+  no sign-in; each send is a row in the form's sheet. `docs/tester-form-setup.gs` makes both in one run. With the form
+  set, **Send feedback** opens a small dialog: what you write, sent with the device, version and last errors (Kind:
+  Feedback), or **Share it instead** for a screenshot (the share sheet as before, with what was written first).
+  Offline, nothing is lost: it says so, and Copy my answers (or Share) is there. With `RESULTS_FORM` empty, both use
+  the share sheet (or copy) as Send feedback did. Help › Your data and the tester guide say what leaves the device.
+- **The device checklist, rewritten** (`docs/DEVICE-TEST.md`): a 20-minute iPad pass of what GitHub's tests can't
+  check (touch, camera, Safari and the Home Screen app, real photos, the share sheet, paper, feel), its ★ lines the
+  10-minute pass for every release, and one "New in this release" section replaced each release. The old one, release
+  by release since v264, is `docs/DEVICE-TEST-archive.md`.
+- `docs/TESTERS.md`: "What to try" points to Tester tasks; reporting describes Send and Share it instead; the Scan path
+  is Markers › + Add markers.
+- `RESULTS_FORM` is set to Ben's form (made with `docs/tester-form-setup.gs`, which also keeps the link in the results
+  sheet's Setup tab). Under test it's switched off (`e2e/helpers.mjs` sets `window.__MS_RESULTS_FORM` to '' unless a
+  test sets its own), so no test posts to it; one test checks the shipped link has every field and catches its post.
+- New: `e2e/v312-tester` (8).
+- Version v312; cache `marker-studio-v312`.
