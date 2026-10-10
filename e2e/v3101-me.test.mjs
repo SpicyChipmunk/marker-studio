@@ -25,14 +25,17 @@ test('unreadable saved data at v310’s first start: the section step isn’t de
   assert.deepEqual(errors, []);
 });
 
-test('Mood pictures: three a row in iPad landscape’s column; one row of six on a phone on its side', async () => {
+// (v311: one row of six in iPad landscape's column too, as Ben chose: v310.1's three a row made the Colours tab longer
+// than the screen there, the only tab to scroll; e2e/guide-frame-2)
+test('Mood pictures: one row of six in iPad landscape’s column and on a phone on its side', async () => {
   for (const [w, h, rows, tall] of [
-    [1180, 820, 2, 112],
+    [1180, 820, 1, 60],
+    [1366, 1024, 1, 60],
     [932, 430, 1, 60],
   ]) {
     const { page, errors, ctx } = await openApp({ width: w, height: h });
     await sampleGuide(page);
-    if (w === 1180) await letterGuide(page);
+    if (w > 1000) await letterGuide(page);
     await page.click('#sfTab-colours');
     await idle(page);
     const r = await page.evaluate(() => {

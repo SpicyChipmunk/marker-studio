@@ -122,6 +122,12 @@ test('run low: a code you own in both brands is named with its brand in the toas
     t.updateProgress();
   });
   await idle(page);
+  // (v311: the sample, now coloured, saves itself into the Library first, its "Saved in your Library" said in the same
+  // live line; on GitHub's WebKit that came after the ink's, and was read instead)
+  await page.waitForFunction(() => {
+    const el = document.getElementById('sfSaveSt');
+    return !!el && el.style.display !== 'none' && /✓$/.test(el.textContent);
+  }, null, { timeout: 30000 });
   // Another… Y26: both brands' chips, "Ohuhu Y26" and "Copic Y26"
   await page.click('#sfLowA [data-lmore]');
   await page.fill('#sfLowInA', 'Y26');

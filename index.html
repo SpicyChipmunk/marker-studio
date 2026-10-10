@@ -6657,8 +6657,9 @@ html.sfsheetsd .mstoast {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
-/* (a phone: one row of six small ones, so the Colours tab is hardly longer than with Mood's buttons; in ems, so with
-   larger text it's two rows of three, and iPad landscape's column, a little narrower, has three bigger ones a row) */
+/* (a phone, and iPad landscape's column: one row of six small ones, so the Colours tab is hardly longer than with
+   Mood's buttons; in ems, so with larger text it's two rows of three. v311: v310.1's three bigger ones a row in iPad
+   landscape made the Colours tab longer than the screen, the only tab to scroll) */
 @container (min-width: 20em) {
   #sfRoot .sfmoodpics {
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -6755,25 +6756,6 @@ html.sfsheetsd .mstoast {
   }
   #sfRoot .sfmpname {
     font-size: var(--t-sm);
-  }
-}
-/* (v310.1: iPad landscape's column is about a phone's width, but there's room: three a row, the bigger pictures) */
-@media (min-width: 900px) and (min-height: 600px) {
-  @container (max-width: 559px) {
-    #sfRoot .sfmoodpics {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-    }
-    #sfRoot .sfmp {
-      padding: 5px 5px 7px;
-      gap: 5px;
-    }
-    #sfRoot .sfmp canvas {
-      height: 112px;
-    }
-    #sfRoot .sfmpname {
-      font-size: var(--t-base);
-    }
   }
 }
 #presetWrap.bottom {
@@ -11146,7 +11128,7 @@ button.wrm {
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v311</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v311.1</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -43257,8 +43239,7 @@ function ctlWirePatternOptions() {
         reassign();
       }
     });
-  // Shuffle: a Gradient that loops round the colour wheel turns its start by 10–90% (never almost where it was, which
-  // changed only a few sections); a ramp of your markers picks others where there is a near choice (gradPlan); a
+  // Shuffle: a Gradient that loops round the colour wheel starts at another of its markers (never where it was); a ramp of your markers picks others where there is a near choice (gradPlan); a
   // generated palette is made again
   // Scatter (v306): the name and its line follow the drag; the guide is laid again when it's let go
   var _gsc = document.getElementById('sfGradScat');
@@ -43287,7 +43268,13 @@ function ctlWirePatternOptions() {
     }
     // (v308: not a palette handed over from Palette: its order or start changes, as a saved one's does)
     if (genMade()) generatePalette(true);
-    if (family === 'gradient') gradSeed = (((gradSeed || 0) % 1) + 1.1 + Math.random() * 0.8) % 1;
+    if (family === 'gradient') {
+      // (v311: a loop starts at another of its markers, picked at random. Turning it 10–90% of the way round could
+      // land on the same one: with 6 markers from the smoothest start, 1 Shuffle in 12 changed nothing)
+      var gs = gradStartInfo();
+      if (gs) gradStartSet((gs.r + 1 + Math.floor(Math.random() * (gs.n - 1))) % gs.n, gs.n);
+      else gradSeed = (((gradSeed || 0) % 1) + 1.1 + Math.random() * 0.8) % 1;
+    }
     reassign();
   }
   var _sh = document.getElementById('sfShuffle');
@@ -68616,6 +68603,10 @@ function renderHomeNotes() {
 // newer than the version last seen (ms-last-ver), up to four (not on a fresh install); Help › About lists this
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v311.1',
+    t: 'Shuffle on a Gradient always changes it now (about 1 in 12 did nothing). On an iPad in landscape, Mood’s pictures are one row of six again, so the Colours tab fits on the screen.',
+  },
   {
     v: 'v311',
     t: 'Markers has one Add markers button at the top: add a set you own, scan or type codes, tick colours on a chart, or find which set you have from 3 caps. Clear collection is now in ⋯. Edit sections has Redo.',

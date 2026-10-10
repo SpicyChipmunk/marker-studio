@@ -652,8 +652,8 @@
   }
  },
  "shuffle": {
-  "sha256": "9e7ba5ba0547ef96a38ba6616d893e5b7e69cb79bcc952d9181f4cdbd8fd61c0",
-  "bytes": 4293,
+  "sha256": "cc48ff1a0de98f90957a4fa64932be37b5623a77c3894c5c65d2b94a1ba9de7f",
+  "bytes": 4279,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -670,7 +670,7 @@
    "balA": "auto",
    "balSeed": 0,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 2,
    "blendVivid": false,
    "blendMix": "soft",
@@ -712,8 +712,8 @@
   }
  },
  "look": {
-  "sha256": "7f75bd02d4a23e741a0eb13e9b3847c2743e92e527471f7a853b170dec0e5aa3",
-  "bytes": 4274,
+  "sha256": "aa2b4ca5dc64e417af62e705a330a470fcc79a7272485d48018da85f3b359656",
+  "bytes": 4260,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -730,7 +730,7 @@
    "balA": "auto",
    "balSeed": 0,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 2,
    "blendVivid": false,
    "blendMix": "soft",
@@ -772,8 +772,8 @@
   }
  },
  "look-auto": {
-  "sha256": "9e7ba5ba0547ef96a38ba6616d893e5b7e69cb79bcc952d9181f4cdbd8fd61c0",
-  "bytes": 4293,
+  "sha256": "cc48ff1a0de98f90957a4fa64932be37b5623a77c3894c5c65d2b94a1ba9de7f",
+  "bytes": 4279,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -790,7 +790,7 @@
    "balA": "auto",
    "balSeed": 0,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 2,
    "blendVivid": false,
    "blendMix": "soft",
@@ -832,8 +832,8 @@
   }
  },
  "random": {
-  "sha256": "7fc6788b3409399a7d6c1e812bf0297d3dfd76c555eaf8f2b413269d813ed692",
-  "bytes": 4327,
+  "sha256": "ce2037f7d9b2f4353b3ac7a2f6572007b9acc3f99fc93af2e16046d3e8b0089f",
+  "bytes": 4313,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -850,7 +850,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 2,
    "blendVivid": false,
    "blendMix": "soft",
@@ -892,8 +892,8 @@
   }
  },
  "random-shuffle": {
-  "sha256": "7b45fe0cd4c1d40301f28f0541b0363954a5833dcbec6ddbfb6e6d1bd8a27842",
-  "bytes": 4328,
+  "sha256": "9fc8801fa8dc713fc8264e8691c77143e7ccc880c915783c3c19f9dd8e07f4d7",
+  "bytes": 4314,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -910,7 +910,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 2,
    "blendVivid": false,
    "blendMix": "soft",
@@ -952,8 +952,8 @@
   }
  },
  "noAdj": {
-  "sha256": "0f6ab8dbee98984fe997d8c9ff71ddca3312faa517132a885b6d9a2c680d0864",
-  "bytes": 4325,
+  "sha256": "ad0e25e91d8492961a4cecce6232fc166a30514463291e6d9872599449512e2d",
+  "bytes": 4311,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -970,7 +970,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 2,
    "blendVivid": false,
    "blendMix": "soft",
@@ -1012,8 +1012,8 @@
   }
  },
  "blend": {
-  "sha256": "a37cdf6c97eab76668414fe22142bd8fae4c9ccac4a7cc98b02f7eeef2476c87",
-  "bytes": 4363,
+  "sha256": "2409d71e139046f6cb185652ea9ce6d356def31b2fe80d4cb783ba5133116d8c",
+  "bytes": 4349,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1030,7 +1030,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 2,
    "blendVivid": false,
    "blendMix": "soft",
@@ -1072,8 +1072,8 @@
   }
  },
  "blendFall": {
-  "sha256": "b2f664ecac2c582953494e2bacf37b826addc5eb6c9d1f0156f16ecfed3663de",
-  "bytes": 4374,
+  "sha256": "1488fedab415f9fcff77993a45b16d5d762f39d1fdc11b79eb72e35446c74644",
+  "bytes": 4360,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1090,7 +1090,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": false,
    "blendMix": "soft",
@@ -1132,8 +1132,8 @@
   }
  },
  "blendMix-paint": {
-  "sha256": "02ebbe45b8d2b6ecb3665b6ef34ac7aa86b09fba9d40afa5ee26191aef2a6f04",
-  "bytes": 4374,
+  "sha256": "6403f0c31b0339894cf3e9f8bad71a0122b052e99c44b6270ca89919d50a9e35",
+  "bytes": 4360,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1150,7 +1150,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": false,
    "blendMix": "paint",
@@ -1192,8 +1192,8 @@
   }
  },
  "blendMix": {
-  "sha256": "fa6f76489c56a9fed2502203a4bfd140efc125c38562474f9291a4e60abcd0c9",
-  "bytes": 4366,
+  "sha256": "ca68d7730b1d1ec75bcdaec7e3b43776cc8b6012fb9a33f49ea38bd457d079ad",
+  "bytes": 4352,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1210,7 +1210,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1252,8 +1252,8 @@
   }
  },
  "shadeMode": {
-  "sha256": "447baa1f1141b11f94d0439f4237b5475e70ee844447c1261d7c6829567f3a50",
-  "bytes": 4367,
+  "sha256": "1e9b52c2453b28d7c6f93b0e644a6ed690e8b15c2ce6803db888b0c76f30489f",
+  "bytes": 4353,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1270,7 +1270,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1312,8 +1312,8 @@
   }
  },
  "shadeHi": {
-  "sha256": "13d63b989094cff1fe63825583ace1e1eb581e51b2f5af96ef0c84390248a139",
-  "bytes": 4367,
+  "sha256": "0fac5aadb62ae4ca918cfd8607993a76a13bfde1d2b92cd26432c4843ec4cf44",
+  "bytes": 4353,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1330,7 +1330,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1372,8 +1372,8 @@
   }
  },
  "shadeLo": {
-  "sha256": "018c9cd6d65bef6b37df0c89b0b4bdd38d99ee853792441ee16116cf657350c1",
-  "bytes": 4367,
+  "sha256": "286ef97bcdeb1b4079f90ddb6592d1133e9a9fdd0251005c4e8e699c9a0d415e",
+  "bytes": 4353,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1390,7 +1390,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1432,8 +1432,8 @@
   }
  },
  "shadeRound": {
-  "sha256": "0254868a03e5ed5de988bba703130fb52b71a310eea639fdff30e23ea585c417",
-  "bytes": 4367,
+  "sha256": "8d31a693d2747a4b344e57179eedac1bad7a64bc84a86006d1dde7451730ec52",
+  "bytes": 4353,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1450,7 +1450,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1492,8 +1492,8 @@
   }
  },
  "shadeLines": {
-  "sha256": "4a9f11fbe224d2d47254438191cac9f94fc1acdf9b602315a7970db7dcfffd7c",
-  "bytes": 4368,
+  "sha256": "fd9ca1fc4103de3cac5a6ea547f7d0e01d6ed692822f39927764aac1de8a5df1",
+  "bytes": 4354,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1510,7 +1510,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1552,8 +1552,8 @@
   }
  },
  "shadeHilite": {
-  "sha256": "1e76f7137437b45f542f72b06384feb24bf30e29447623197c4a4a7fd48375c3",
-  "bytes": 4368,
+  "sha256": "4a6aa5fc2650183cacbe9d2a7f22a9619efc7e3c88fc10572ba7a898bf974ecc",
+  "bytes": 4354,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1570,7 +1570,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1612,8 +1612,8 @@
   }
  },
  "shadeShadow": {
-  "sha256": "f6ab534a461b5c8abd9a9ff68d1d9f1ab4bfa32020d33c55c5596ab3a366395e",
-  "bytes": 4368,
+  "sha256": "88042fd19ddb05284ec5ecaa2725002e2b544d599978b50bed4cb51e2f0ff992",
+  "bytes": 4354,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1630,7 +1630,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1672,8 +1672,8 @@
   }
  },
  "shadeSunFlat": {
-  "sha256": "792287dacd0ce921f1b701347ee04fef22ab284da131a4894f90b7d299e451d2",
-  "bytes": 4370,
+  "sha256": "4786428917fd6141f363c507c26d80968c662a8a24327427531cd8ba27701538",
+  "bytes": 4356,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1690,7 +1690,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1735,8 +1735,8 @@
   }
  },
  "texAmt": {
-  "sha256": "416f248c6abb150b6f373f495ca1e4630411fb972cd98dd927c51f2b10f0cb6e",
-  "bytes": 4371,
+  "sha256": "601a3f27cd8b13015047181d0619499b358b8140fe90f54fc28f13fa332e6efc",
+  "bytes": 4357,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1753,7 +1753,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1798,8 +1798,8 @@
   }
  },
  "texAmt-share": {
-  "sha256": "416f248c6abb150b6f373f495ca1e4630411fb972cd98dd927c51f2b10f0cb6e",
-  "bytes": 4371,
+  "sha256": "601a3f27cd8b13015047181d0619499b358b8140fe90f54fc28f13fa332e6efc",
+  "bytes": 4357,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1816,7 +1816,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1861,8 +1861,8 @@
   }
  },
  "manual": {
-  "sha256": "ef1ffad3ea7699e999ede8720d9c1f61a62ba716f5b2925da407e2f52d445850",
-  "bytes": 4372,
+  "sha256": "0aa3d6f1b7c01924d4615067a92ece0f6b566e0e080b11458b5200d8cf8baf26",
+  "bytes": 4358,
   "style": {
    "family": "manual",
    "palette": "warm",
@@ -1879,7 +1879,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1924,8 +1924,8 @@
   }
  },
  "gradient": {
-  "sha256": "18ef8e930d14bc53c6da798b20f7b5f694040d8e7cd2722cff88a167991c307f",
-  "bytes": 4436,
+  "sha256": "3ccc793642c476eb55ff99f5022d3c141e47f828a87fabc68f00eb061a4e3e48",
+  "bytes": 4422,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -1942,7 +1942,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",
@@ -1987,8 +1987,8 @@
   }
  },
  "pins": {
-  "sha256": "fc57418b3dcf8e117e502466f99187ab1caf1be2e9cdb1e020fc02e3a92a6be1",
-  "bytes": 4474,
+  "sha256": "ea4b5448421df32f6005bdd36415ef82cbeff010e0ac9d1b066315857eac13bd",
+  "bytes": 4460,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2005,7 +2005,7 @@
    "balA": "auto",
    "balSeed": 0.4480622271411121,
    "noRep": false,
-   "gradSeed": 0.7074760721996429,
+   "gradSeed": 0.75,
    "blendFall": 3,
    "blendVivid": true,
    "blendMix": "vivid",

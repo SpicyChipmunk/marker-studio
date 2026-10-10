@@ -328,8 +328,7 @@ function ctlWirePatternOptions() {
         reassign();
       }
     });
-  // Shuffle: a Gradient that loops round the colour wheel turns its start by 10–90% (never almost where it was, which
-  // changed only a few sections); a ramp of your markers picks others where there is a near choice (gradPlan); a
+  // Shuffle: a Gradient that loops round the colour wheel starts at another of its markers (never where it was); a ramp of your markers picks others where there is a near choice (gradPlan); a
   // generated palette is made again
   // Scatter (v306): the name and its line follow the drag; the guide is laid again when it's let go
   var _gsc = document.getElementById('sfGradScat');
@@ -358,7 +357,13 @@ function ctlWirePatternOptions() {
     }
     // (v308: not a palette handed over from Palette: its order or start changes, as a saved one's does)
     if (genMade()) generatePalette(true);
-    if (family === 'gradient') gradSeed = (((gradSeed || 0) % 1) + 1.1 + Math.random() * 0.8) % 1;
+    if (family === 'gradient') {
+      // (v311: a loop starts at another of its markers, picked at random. Turning it 10–90% of the way round could
+      // land on the same one: with 6 markers from the smoothest start, 1 Shuffle in 12 changed nothing)
+      var gs = gradStartInfo();
+      if (gs) gradStartSet((gs.r + 1 + Math.floor(Math.random() * (gs.n - 1))) % gs.n, gs.n);
+      else gradSeed = (((gradSeed || 0) % 1) + 1.1 + Math.random() * 0.8) % 1;
+    }
     reassign();
   }
   var _sh = document.getElementById('sfShuffle');

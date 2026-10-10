@@ -674,3 +674,10 @@ Item 1 of the list (Find my set from 3 caps in Markers) grew, by decision, into 
 - **Focus mode's Mark all … done:** its Undo is the list's (shading kept, list redrawn).
 - Tests changed on purpose: the ways in are reached through `addFromMarkers` / `scanFromMarkers` / `chartFromMarkers` / `clearCollection` (`e2e/helpers.mjs`) in 20-odd files; the welcome's toast with the blender (`v3092`); `v3101-d4` accepts any later version (it named v310, so it failed from v310.1 on); `buttons` counts Mood's pictures (`.sfmp`, 44px+) as large by design (it failed from v310).
 - Version v311; cache `marker-studio-v311`.
+
+# Changes — v311.1 (from v311's run on GitHub)
+
+- **Shuffle on a Gradient that loops round the colour wheel** always starts it at another of its markers. It turned the start 10–90% of the way round, which with 6 markers from the smoothest start landed on the same one about 1 Shuffle in 12, and nothing changed (since v306). `v308-handover` failed on it on GitHub (1 run in 6 locally). The style golden file follows: only Shuffle's saved start changed (`e2e/fixtures/style-golden.json`).
+- **Mood's pictures in iPad landscape** are one row of six again, as on a phone and an iPad held upright (Ben's choice). v310.1's three bigger ones a row made the Colours tab longer than the screen on both the 11" and 13" iPads, the only tab to scroll, and the page moved switching tabs (`guide-frame-2` caught it; it wasn't run for v310.1). `v3101-me` changed on purpose, and now checks the 13" too.
+- `v306-dbg-along`'s run-low test waits for the sample's first save before marking ink: on GitHub's WebKit, the save's "Saved in your Library" came after the ink's line, in the same live region, and was read instead.
+- Version v311.1; cache `marker-studio-v311.1`.

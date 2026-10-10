@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v311.1',
+    t: 'Shuffle on a Gradient always changes it now (about 1 in 12 did nothing). On an iPad in landscape, Mood’s pictures are one row of six again, so the Colours tab fits on the screen.',
+  },
+  {
     v: 'v311',
     t: 'Markers has one Add markers button at the top: add a set you own, scan or type codes, tick colours on a chart, or find which set you have from 3 caps. Clear collection is now in ⋯. Edit sections has Redo.',
   },
