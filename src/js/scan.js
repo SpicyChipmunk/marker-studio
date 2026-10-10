@@ -1233,7 +1233,7 @@ function closeScan() {
     $('scTitle').textContent = 'Scan or type codes';
     scanRender();
   }
-  if (scanOpener && scanOpener.isConnected) scanOpener.focus({ preventScroll: true });
+  openerBack(scanOpener);
   scanOpener = null;
 }
 // (v309) Find my set: the caps read (with any left in the box) go back to the welcome
@@ -1335,10 +1335,9 @@ function scanAdd() {
 }
 (function () {
   const ov = $('scanOverlay'),
-    box = $('scBox'),
-    go = $('scanOpen');
-  if (!ov || !box || !go) return;
-  go.addEventListener('click', openScan);
+    box = $('scBox');
+  if (!ov || !box) return;
+  // (v311: opened from Markers' Add markers, events.js addWay; no button of its own on the page)
   $('scClose').addEventListener('click', closeScan);
   $('scAdd').addEventListener('click', scanAdd);
   $('scClear').addEventListener('click', function () {

@@ -5,6 +5,22 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v311',
+    t: 'Markers has one Add markers button at the top: add a set you own, scan or type codes, tick colours on a chart, or find which set you have from 3 caps. Clear collection is now in ⋯. Edit sections has Redo.',
+  },
+  {
+    v: 'v310.2',
+    t: 'A guide you have open now follows a marker you mark dry or untick in Markers: sections still to colour show the closest you own, as reopening it does. Palette unlocks a locked colour you can no longer use, and says so.',
+  },
+  {
+    v: 'v310.1',
+    t: 'Fixes from a full check of the app. Add a set now says when it adds the set’s Colorless Blender, and its list keeps up as you tick markers. Reveal’s clip is named after your guide.',
+  },
+  {
+    v: 'v310',
+    t: 'Mood, in a guide’s Colours tab, is now six small pictures of your page, one per mood: tap the one you like. New testers check a page’s sections with one question, “Looks right?”, with the tools behind Fix sections.',
+  },
+  {
     v: 'v309.2',
     t: 'Save image names the file after your guide. A very small picture now says it’s too small, rather than suggesting settings. Smaller fixes for the keyboard and larger text.',
   },

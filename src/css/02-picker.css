@@ -1536,3 +1536,58 @@ button:focus-visible {
 .noanim .rgroup {
   animation: none;
 }
+/* (v311) Markers' Add markers: the button at the top (with a collection), and the card of ways to add there while
+   there are no markers yet (the same rows as the Add markers sheet, the welcome's .wcc) */
+.mkaddbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0 2px 10px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 92, 255, 0.55);
+  background: rgba(124, 92, 255, 0.16);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+.mkaddbtn .ic {
+  width: 16px;
+  height: 16px;
+}
+@media (min-width: 700px) {
+  .wrap.mkmode #mkAddBtn {
+    flex: none;
+  }
+}
+.mkaddcard {
+  margin: 4px 0 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.mkaddh {
+  margin: 0 0 4px;
+  font-size: var(--t-lg);
+  font-weight: 600;
+}
+.mkaddp {
+  margin: 0 0 12px;
+  color: var(--sub);
+  font-size: var(--t-base);
+  line-height: 1.4;
+}
+.mkfind {
+  margin: 14px 0 2px;
+  color: var(--sub);
+  font-size: var(--t-base);
+  line-height: 1.5;
+}
+/* (in the sheet, room under the link for its 44px tap area, which the scrolling list would otherwise cut off) */
+#wcAddWays .mkfind {
+  padding-bottom: 12px;
+}

@@ -160,6 +160,9 @@ function chrome() {
   if (_mm) _mm.style.display = col ? '' : 'none';
   if (ownAllBtn) ownAllBtn.style.display = col && state.collView !== 'owned' ? '' : 'none';
   if (ownNoneBtn) ownNoneBtn.style.display = col && state.collView !== 'unowned' ? '' : 'none';
+  // (v311: Clear collection, in ⋯ too, while there's something to clear)
+  var _cb = document.getElementById('mkClear');
+  if (_cb) _cb.style.display = col && state.owned.size ? '' : 'none';
   var _bw = document.getElementById('backupWrap');
   if (_bw) _bw.style.display = col ? '' : 'none';
   var _pw = document.getElementById('presetWrap');
@@ -176,17 +179,13 @@ function chrome() {
     } else if (!_top && _bw && _pw.nextElementSibling !== _bw) {
       _bw.parentNode.insertBefore(_pw, _bw);
       _pw.classList.add('bottom');
-      const _pb = $('presetBody'),
-        _ph = $('presetHdr');
-      if (_pb && _pb.style.display !== 'none' && _ph) _ph.click();
     }
-  }
-  if (col && !state.owned.size && !chrome._setsOpened) {
-    chrome._setsOpened = 1;
-    const _pb = $('presetBody');
-    if (_pb && _pb.style.display === 'none') {
-      const _ph = $('presetHdr');
-      if (_ph) _ph.click();
+    // (v311) no markers yet: the ways to add, at the top (with a collection, they're Add markers' sheet: finder.js)
+    const _ac = $('mkAddCard');
+    if (_ac) {
+      _ac.style.display = _top ? '' : 'none';
+      const _aw = $('mkAddWays');
+      if (_top && _aw && !_aw.firstChild) _aw.innerHTML = addWaysHTML('mkc');
     }
   }
   [...ownView.children].forEach((b) => segOn(b, b.dataset.v === state.collView));
@@ -877,10 +876,50 @@ function toggleLock(k) {
     bandLabel(b, idx);
   }
 }
+// (v310.2) A locked colour is kept by Generate whatever the filters say, but not once it can't be used: marked dry, no
+// longer in your collection, or outside a selection (as Generate's starting colour, paletteOpts). The lock goes, and
+// a word says so. The palette on screen stays as it was until the next one is made.
+function locksUsable() {
+  const out = { dry: [], gone: [], sel: [] };
+  state.locked = state.locked.filter(function (i) {
+    if (!COLORS[i]) return false;
+    const own = isOwned(i),
+      ok = NOINK.has(i)
+        ? false
+        : state.pool
+          ? poolSet.has(i) && !(own && isDry(i))
+          : state.owned.size
+            ? own && !isDry(i)
+            : buyOk(i);
+    if (ok) return true;
+    (own && isDry(i) ? out.dry : state.pool ? out.sel : out.gone).push(COLORS[i].code);
+    return false;
+  });
+  const all = out.dry.concat(out.gone, out.sel);
+  if (!all.length) return;
+  const one = all.length === 1,
+    list = all.length > 1 ? all.slice(0, -1).join(', ') + ' and ' + all[all.length - 1] : all[0],
+    why =
+      out.dry.length === all.length
+        ? one
+          ? 'it’s marked dry'
+          : 'they’re marked dry'
+        : out.gone.length === all.length
+          ? one
+            ? 'it’s no longer in your collection'
+            : 'they’re no longer in your collection'
+          : out.sel.length === all.length
+            ? one
+              ? 'it’s not in your selection'
+              : 'they’re not in your selection'
+            : 'they can’t be used now';
+  toast('Unlocked ' + list + ': ' + why + '.', 4500);
+}
 function doGenerate() {
   if (rolling || state.harmony === 'custom') return;
   disarm();
   palSizeFit();
+  locksUsable();
   // (v306: Rainbow rolls another from a new seed; a scheme or size change makes the Gradient's own, regenReplace)
   const pal = genPalette(state.palSize, state.harmony, Object.assign(paletteOpts(), { reroll: true }));
   if (!pal) {
@@ -1014,6 +1053,7 @@ function regenReplace() {
     regenLater = true;
     return;
   }
+  locksUsable();
   const pal = genPalette(state.palSize, state.harmony, paletteOpts());
   if (!pal) {
     if (!palNone()) palFailToast();

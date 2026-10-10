@@ -56,8 +56,8 @@ function zoneEditStart(id, kb) {
 // close the editor (a zone that got no sections goes); quiet: leave the screen to whoever called (a new picture)
 function zoneEditEnd(quiet) {
   if (!zoneEdit) return;
-  // (v309.1) the keyboard on one of the editor's own controls (Done, Delete zone, its name), or on nothing (Escape in
-  // the name field lets go of it): those are drawn again as it closes, so it goes to the zone's chip, or ＋ Zone
+  // (v309.1) the keyboard on one of the editor's own controls (Done, Delete zone, its name), or on nothing: those are
+  // drawn again as it closes, so it goes to the zone's chip, or ＋ Zone
   const _ae = document.activeElement,
     _kbBack = !_ae || _ae === document.body || !!(_ae.closest && _ae.closest('#sfPanel-pattern'));
   zoneEdit = false;
@@ -237,11 +237,29 @@ function zoneWire() {
         e.preventDefault();
         nm.blur();
       } else if (e.key === 'Escape') {
-        // (Escape in the field puts the name back, as it does in the guide's name)
+        // (Escape in the field puts the name back, as it does in the guide's name; v311: and the keyboard stays in
+        // the field, its text chosen to type over (it had been let go to the page). A second Escape in a row, with
+        // nothing more to put back, closes the editor as Escape from its other controls does: to the zone's chip.)
+        e.preventDefault();
+        e.stopPropagation();
+        if (nm._esc) {
+          zoneNameCommit();
+          zoneEditEnd();
+          return;
+        }
         const z = zoneById(zoneCur);
         if (z) nm.value = z.name;
-        nm.blur();
+        nm._esc = 1;
+        try {
+          nm.select();
+        } catch (_) {}
       }
+    });
+    // (typing again, or coming back to the field: the next Escape puts the name back first)
+    ['input', 'focus'].forEach(function (ev) {
+      nm.addEventListener(ev, function () {
+        nm._esc = 0;
+      });
     });
     nm.addEventListener('change', zoneNameCommit);
   }

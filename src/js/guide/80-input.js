@@ -147,6 +147,12 @@ function editTapAt(P) {
     return;
   }
   if (sfmode !== 'review') return;
+  // (v310: the quick check changes nothing on a tap; the tools are behind Fix sections)
+  // (what shows decides: the tools may have been opened in another tab meanwhile)
+  if (document.getElementById('sfQuick')) {
+    if (l > 0) toast('To change the sections, tap Fix sections.', 2600);
+    return;
+  }
   if (editMode === 'merge') {
     if (l > 0) {
       // (v308) the background isn't merged with: a section merged into it went white with no word, or, brought back
@@ -319,7 +325,11 @@ function onDown(e) {
       }, 480);
     return;
   }
-  if (sfmode === 'review' && (editMode === 'split' || editMode === 'add')) {
+  if (
+    sfmode === 'review' &&
+    (editMode === 'split' || editMode === 'add') &&
+    !document.getElementById('sfQuick')
+  ) {
     const P = evPt(e);
     // (v304: also from on a line, where a stroke drawn from edge to edge starts; which section it cuts is found when
     // it ends, strokeSection)

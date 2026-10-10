@@ -82,6 +82,24 @@ On a guide, open **Style** and set **Shading** to **Light & shadow**.
 - [ ] **Blend:** a tap still adds an anchor; press and hold a section shows Change colour / Pin. **Manual:** a tap opens the picker.
 - [ ] **Style → Pin colours:** taps pin and unpin sections directly.
 
+## 3m. v311 on the iPad (6 min)
+
+- [ ] **Markers › + Add markers** (top, beside To buy's row): the sheet lists Add a set you own, Scan or type codes, Tick colours on a chart, and Find it from 3 caps. Add a set you don't have: the sheet closes, the toast says how many, Undo takes them out.
+- [ ] **Find it from 3 caps** from the sheet with Scan Text: it reads cap after cap; Yes adds the set and closes; None of these goes back to the ways.
+- [ ] Scan or the chart from the sheet, then ✕: you're back on Markers with + Add markers highlighted for the keyboard (with a keyboard attached).
+- [ ] In a Safari **Private** tab: Markers shows the "Add your markers" card at the top; add a set: the top of your collection stays in view.
+- [ ] **⋯ › Clear collection**: first tap asks, second clears, Undo puts everything back.
+- [ ] **Edit sections:** Leave out a section, ↶, then ↷: it's left out again.
+
+## 3l. v310 on the iPad (8 min)
+
+- [ ] **Mood pictures:** open a guide, Colours tab. Under "Mood", six small pictures of your page fill in a moment after the Plan settles (one row on the iPad, two rows of three in Slide Over). Scrolling and tapping stay smooth while they fill in.
+- [ ] Tap **Bright**: the guide changes to exactly what its small picture showed; ↶ Undo says "Mood: Bright". Do the same with Pattern › Random and with Colours from › Generate palette.
+- [ ] Random: Bright → Any → Bright again gives a different Bright (the pictures are made afresh after each change).
+- [ ] With a zone, or a saved palette used as it is, Mood is the row of buttons as before.
+- [ ] **Quick section check:** only someone new sees it. To try it without touching your own copy, open the app's web address in a Safari **Private** tab, add a set, and pick a page photo: only "Looks right?" with **Fix sections** and **Build guide** shows; a tap on the picture says to tap Fix sections. Fix sections opens the tools, and every later picture in that tab shows them.
+- [ ] Your own copy (with guides in the Library) shows **Check the sections** as before.
+
 ## 3k. v308 on the iPad (12 min)
 
 - [ ] **Home:** "v308 · Beta"; **Send feedback** at the foot opens the share sheet with a short report.

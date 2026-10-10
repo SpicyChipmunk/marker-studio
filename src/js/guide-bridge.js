@@ -1732,6 +1732,12 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
         liveSay(t);
       }
     };
+    // (v310.1) guides from a backup made before v310 into a Library with none: someone who used the app before (a new
+    // iPad, or after starting again) keeps the full Check the sections step, as the first start of v310 gave anyone
+    // with a guide. (Not a v310 backup: a new tester moving from a Safari tab to the Home Screen app keeps the quick one.)
+    var hadGuide = state.saved.some(function (s) {
+      return s.type === 'guide';
+    });
     // guides already here aren't counted as restored; ones storage had no room for are said as a failure, by the button
     restoreGuideList(
       guides,
@@ -1739,6 +1745,10 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
       function (ok, copies, x) {
         x = x || {};
         fin();
+        if (ok && !hadGuide && verNum(d && d.app) < 310)
+          try {
+            localStorage.setItem('ms-sec-tools', '1');
+          } catch (_) {}
         liveSay('');
         _btnFlash(
           bid,

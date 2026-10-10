@@ -300,7 +300,7 @@ function focusAllOfColour() {
   guideDirty = true;
   focusOrd.forEach(function (q) {
     if (assignData.assign[q].mkey === k && focusZoneOf(q) === z) {
-      if (!colored[q] && !was[q]) was[q] = [colored[q], tp()[q]];
+      if (!colored[q] && !was[q]) was[q] = [colored[q], tp()[q], heldSh[q] || null];
       colored[q] = 1;
       tp()[q] = 0;
     }
@@ -316,18 +316,11 @@ function focusAllOfColour() {
     toastActionHTML('Marked all ' + mcodeHTML(mm) + ' done', 'Undo', function () {
       // (v308.2: Focus mode closed since, the toast still up, it undoes too: it had done nothing)
       if (g !== loadGen || !assignData || comps.length !== K) return;
-      const P = tp();
-      for (const q in was) {
-        if (!colored[q]) continue;
-        colored[q] = was[q][0];
-        P[q] = was[q][1];
-      }
-      guideDirty = true;
-      // (no longer finished: finishing it again celebrates again)
-      celebrated = false;
-      normalizeTones();
+      // (as the list's Undo does, kept shading too: 82-colour-mode)
+      markBack(was, true);
       renderGuide();
       updateProgress();
+      renderFocusMarkers();
       if (focus) goFocus(Math.min(at, focusOrd.length - 1), true, true);
       else sayLive('Ticks as they were for ' + msay(mm));
     });

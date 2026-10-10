@@ -255,6 +255,20 @@ if (!['code', 'gap', 'complete', 'ramps'].includes(state.gapSort)) state.gapSort
 if (!Array.isArray(state.customPal)) state.customPal = [];
 if (!Array.isArray(state.saved)) state.saved = [];
 state.saved = state.saved.map(cleanSaved).filter(Boolean);
+// (v310) the quick section check (53-controls-stages) is for people new to the app: at the first start of v310, anyone
+// with a guide in their Library keeps the full Check the sections step
+try {
+  // (not while saves are held for unreadable data, v310.1: decided at the first start the Library can be read)
+  if (!_saveHold && localStorage.getItem('ms-sec-tools') == null)
+    localStorage.setItem(
+      'ms-sec-tools',
+      state.saved.some(function (s) {
+        return s && s.type === 'guide';
+      })
+        ? '1'
+        : '0',
+    );
+} catch (_) {}
 if (!state.scopeFlipped) {
   state.finderScope = 'owned';
   state.scopeFlipped = true;

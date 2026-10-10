@@ -115,11 +115,15 @@ test('Mood: six choices in two rows, in order; filters your markers; old guidesâ
   await tab(page, 'colours');
   assert.equal(await page.$('#sfEmph'), null, 'Intensity is gone');
   assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#sfMood button')].map((b) => b.textContent)), ['Any', 'Bright', 'Soft', 'Pastel', 'Deep', 'Earthy']);
-  // one even row where every label fits, else two even rows of three
-  const rows = () => page.evaluate(() => [...document.querySelectorAll('#sfMood button')].map((b) => [Math.round(b.getBoundingClientRect().top), Math.round(b.getBoundingClientRect().width), b.scrollWidth <= b.clientWidth + 1]));
+  // one even row where every label fits, else two even rows of three (v310: Mood is pictures, e2e/v310-moodpics: also
+  // one row of six on an iPad)
+  // (a picture's label is its name: the chosen one's âœ“ sits over the edge on purpose)
+  const rows = () => page.evaluate(() => [...document.querySelectorAll('#sfMood button')].map((b) => { const n = b.querySelector('.sfmpname') || b; return [Math.round(b.getBoundingClientRect().top), Math.round(b.getBoundingClientRect().width), n.scrollWidth <= n.clientWidth + 1]; }));
   let r = await rows();
   assert.equal(new Set(r.map((x) => x[0])).size, 1, 'one row at 390 wide');
   assert.equal(new Set(r.map((x) => x[1])).size, 1, 'even widths');
+  await page.setViewportSize({ width: 820, height: 1180 }); await idle(page);
+  assert.equal(new Set((await rows()).map((x) => x[0])).size, 1, 'one row of six on an iPad');
   await page.setViewportSize({ width: 300, height: 844 }); await idle(page);
   r = await rows();
   assert.deepEqual([new Set(r.slice(0, 3).map((x) => x[0])).size, new Set(r.slice(3).map((x) => x[0])).size], [1, 1]);

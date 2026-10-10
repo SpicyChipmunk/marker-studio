@@ -73,8 +73,12 @@ function ctlCrop() {
 // Edit sections bar (v288): a new picture, Build guide; a guide already built and nothing edited, ← Plan (back to it
 // as it is, nothing rebuilt); once something is edited, ← Plan (which asks: Build again, Discard, Cancel) and Build
 // again, with a line that the colouring is kept when there is some
-function edBarHTML() {
-  return '<div class="sfbar sfedbar"><button id="sfToPlan" class="sfghost" style="display:none" aria-label="Back to the Plan">\u2190 Plan</button><button id="sfBuild" class="sfprimary" aria-label="Build guide">Build guide \u2192</button></div>';
+function edBarHTML(quick) {
+  return (
+    '<div class="sfbar sfedbar">' +
+    (quick ? '<button type="button" id="sfFix" class="sfghost">Fix sections</button>' : '') +
+    '<button id="sfToPlan" class="sfghost" style="display:none" aria-label="Back to the Plan">\u2190 Plan</button><button id="sfBuild" class="sfprimary" aria-label="Build guide">Build guide \u2192</button></div>'
+  );
 }
 function edBarSync() {
   const tp = document.getElementById('sfToPlan'),
@@ -145,6 +149,8 @@ function edToPlan(newGuide) {
 function edGoPlan() {
   stageGo();
   sfmode = 'guide';
+  // (v311: Redo of section edits is for the step: the Plan has its own)
+  secFwdEnd();
   renderControls();
   renderGuide();
 }
@@ -227,8 +233,9 @@ function denseAsk(go) {
     each = Math.max(1, Math.round(Math.sqrt((W * H) / Math.max(1, d.cnt)) * k)),
     under = Math.max(1, Math.round(Math.sqrt(minPx(m.pos)) * k)),
     n = stop ? d.kept : d.cnt,
-    // (a page of sections all much the same size: no Min section size leaves fewer, so it isn't offered)
-    less = m.d.cnt < d.cnt,
+    // (a page of sections all much the same size: no Min section size leaves fewer, so it isn't offered; v310.1: nor
+    // one that leaves none, as a grid of even squares jumps from all to none)
+    less = m.d.cnt > 0 && m.d.cnt < d.cnt,
     // (a size under 3 px on this screen means nothing to read: the smallest, then)
     keep = less
       ? under < 3
@@ -269,6 +276,11 @@ function denseAsk(go) {
 // back the sections without drawing the controls again, so a warning stayed or never showed)
 function segWarnSync() {
   if (sfmode !== 'review' || !ctlEl) return;
+  // (v310: the quick check gives way to the full step when a warning comes)
+  if (document.getElementById('sfQuick')) {
+    if (!secQuick()) renderControls();
+    return;
+  }
   const el = ctlEl.querySelector('.sfc-segwarn'),
     h = segWarnHTML();
   if (el) el.outerHTML = h;
@@ -340,6 +352,11 @@ function faintLineSync() {
     else if (!!document.getElementById('sfFaint').checked === !!faintCut) return;
     else el.outerHTML = h;
   } else if (h) {
+    // (v310: offered while the quick check shows: drawn again, the line where it shows there)
+    if (document.getElementById('sfQuick')) {
+      renderControls();
+      return;
+    }
     const at = ctlEl.querySelector('.sfc-segwarn') || document.getElementById('sfEdit');
     if (!at) return;
     at.insertAdjacentHTML('beforebegin', h);
@@ -356,7 +373,8 @@ function frameColour() {
     hasEdits = true;
     render();
     frameLineSync();
-    ctlRefocus('#sfEmToggle');
+    // (v310.1: the quick check's tools are hidden: Build guide, its next step)
+    ctlRefocus(document.getElementById('sfQuick') ? '#sfBuild' : '#sfEmToggle');
     sayLive('Paper round the drawing is a section');
     return;
   }
@@ -378,11 +396,105 @@ function frameColour() {
   planCommit(FRAME_STEP, false, { frame: { l: l, was: was } });
   ctlRefocus('#sfTab-' + gTab);
 }
+/* (v310) The quick check: a new picture's first Build, when the sections found raise no warning, asks only "Looks
+   right?" with Build guide, the tools behind Fix sections (the same markup, hidden, so every line kept in step
+   still finds its place). Once Fix sections is tapped, the full step stays on this device ('ms-sec-tools', set at
+   the first start of v310 for anyone with a guide in their Library: the step they know stays as it was). Lines that
+   need a choice (straightened, the paper round the drawing, faint grey marks) show in both. */
+let _secTools = null;
+function secToolsOn() {
+  if (_secTools != null) return _secTools;
+  try {
+    return localStorage.getItem('ms-sec-tools') === '1';
+  } catch (_) {
+    return false;
+  }
+}
+function secToolsSet() {
+  _secTools = true;
+  try {
+    localStorage.setItem('ms-sec-tools', '1');
+  } catch (_) {}
+}
+// the quick check is what's showing (not again for a picture a warning brought the full step for: the tools in use
+// stayed, but went at the next drawing of the step once the warning had gone)
+let _secFullAt = -1;
+function secQuick() {
+  return (
+    sfmode === 'review' &&
+    !assignData &&
+    !!srcImg &&
+    !!labels &&
+    !(segWarn && !segWarn.ok) &&
+    !secToolsOn() &&
+    _secFullAt !== loadGen
+  );
+}
+// Fix sections: the tools open now, and from now on
+function secFix() {
+  secToolsSet();
+  renderControls();
+  ctlRefocus('#sfEmToggle');
+  sayLive('Section tools open');
+}
+// (v310.1: said once for each picture, as the page comes to the check with the keyboard on nothing in particular: a
+// screen reader had heard nothing once the sections were found)
+// (v311: the full step too, and the step's heading gets the keyboard when nothing else has it, as a guide opened gets
+// its name: focusOpened. One the person has put somewhere on screen stays there.)
+let _secQuickSaid = -1;
+function secQuickN() {
+  const q = document.getElementById('sfQuickN');
+  if (q && countEl) q.textContent = countEl.textContent;
+  // (the full step with a warning is said with it, sections found or not)
+  const warn = !q && segWarn && !segWarn.ok ? segWarn.msg + ' ' : '';
+  if (
+    _secQuickSaid === loadGen ||
+    !countEl ||
+    !(warn || /^[1-9]/.test(countEl.textContent)) ||
+    sfmode !== 'review' ||
+    assignData ||
+    pgMode ||
+    cropMode ||
+    !ctlEl
+  )
+    return;
+  const h = q ? document.getElementById('sfQuickHead') : document.getElementById('sfSecHead');
+  if (!h || h.hidden || !workEl || workEl.offsetParent === null) return;
+  _secQuickSaid = loadGen;
+  sayLive(
+    q
+      ? 'Looks right? We found ' + countEl.textContent + ' to colour. Build guide, or Fix sections.'
+      : 'Check the sections. ' +
+          warn +
+          'We found ' +
+          countEl.textContent +
+          ' to colour.' +
+          (/^([2-9]|1\d)/.test(countEl.textContent) ? ' Build guide when they look right.' : ''),
+  );
+  const a = document.activeElement;
+  if (a && a !== document.body && a.isConnected && a.getClientRects().length) return;
+  try {
+    h.focus({ preventScroll: true });
+  } catch (_) {}
+}
 function ctlSections() {
+  if (sfmode === 'review' && !assignData && segWarn && !segWarn.ok) _secFullAt = loadGen;
   const mv = minPos,
+    quick = secQuick(),
+    // (the count as it was, so the line and the status bar don't read 0 until the sections are drawn again)
+    cntTxt = countEl ? countEl.textContent : '',
     // (v288) what this step is for, and the tools first; Adjust photo after the sliders
     head =
-      '<h3 class="sfedhead">Check the sections</h3><div class="sfc-note sfedline">Tap a section to leave it out or bring it back. Merge, split or add where the lines didn\u2019t come out right.</div>',
+      (quick
+        ? '<div id="sfQuick" class="sfquick"><h3 class="sfedhead" id="sfQuickHead" tabindex="-1">Looks right?</h3><div class="sfc-note sfedline">We found <b id="sfQuickN">' +
+          esc(cntTxt) +
+          '</b> to colour, shown in pale colours. The teal <span class="sfc-sw sfc-sw-bg"></span> is background: it stays white.</div></div>'
+        : '') +
+      '<h3 class="sfedhead" id="sfSecHead" tabindex="-1"' +
+      (quick ? ' hidden' : '') +
+      '>Check the sections</h3><div class="sfc-note sfedline"' +
+      (quick ? ' hidden' : '') +
+      '>Tap a section to leave it out or bring it back. Merge, split or add where the lines didn\u2019t come out right.</div>',
     adjust =
       '<button id="sfAdjToggle" class="sfexp sfc-mt12" aria-expanded="' +
       !!showAdjust +
@@ -425,15 +537,19 @@ function ctlSections() {
     head +
     faintLineHTML() +
     segWarnHTML() +
-    '<div id="sfEdit" role="group" aria-label="Edit tool" class="sfc-segs sfc-mt8"><button type="button" id="sfEmToggle" data-m="toggle" class="sfedit">Leave out</button><button type="button" id="sfEmMerge" data-m="merge" class="sfedit">Merge</button><button type="button" id="sfEmSplit" data-m="split" class="sfedit">Split</button><button type="button" id="sfEmAdd" data-m="add" class="sfedit">Add</button></div><label id="sfAutoCloseWrap" class="sfc-autoclose" style="display:none"><input type="checkbox" id="sfAutoClose"> Join the ends of a loop for me</label><div id="sfHint" class="sfc-note sfc-mt8"></div><div class="sfc-key"><span><span class="sfc-sw sfc-sw-sec"></span>section</span><span><span class="sfc-sw sfc-sw-bg"></span>background</span><span><span class="sfc-sw sfc-sw-ex"></span>left out</span></div>' +
+    '<div class="sfedtools"' +
+    (quick ? ' hidden' : '') +
+    '><div id="sfEdit" role="group" aria-label="Edit tool" class="sfc-segs sfc-mt8"><button type="button" id="sfEmToggle" data-m="toggle" class="sfedit">Leave out</button><button type="button" id="sfEmMerge" data-m="merge" class="sfedit">Merge</button><button type="button" id="sfEmSplit" data-m="split" class="sfedit">Split</button><button type="button" id="sfEmAdd" data-m="add" class="sfedit">Add</button></div><label id="sfAutoCloseWrap" class="sfc-autoclose" style="display:none"><input type="checkbox" id="sfAutoClose"> Join the ends of a loop for me</label><div id="sfHint" class="sfc-note sfc-mt8"></div><div class="sfc-key"><span><span class="sfc-sw sfc-sw-sec"></span>section</span><span><span class="sfc-sw sfc-sw-bg"></span>background</span><span><span class="sfc-sw sfc-sw-ex"></span>left out</span></div>' +
     '<label class="sfrng sfc-mt12">Min section size<input type="range" id="sfMin" min="0" max="100" value="' +
     mv +
-    '" aria-describedby="sfMinHint"></label><div id="sfMinHint" class="sfrnghint">Higher: small specks left out of the guide</div><span id="sfCount" hidden>0 sections</span><label class="sfrng">Background trim<input type="range" id="sfBg" min="0" max="100" value="' +
+    '" aria-describedby="sfMinHint"></label><div id="sfMinHint" class="sfrnghint">Higher: small specks left out of the guide</div><span id="sfCount" hidden>' +
+    esc(cntTxt || '0 sections') +
+    '</span><label class="sfrng">Background trim<input type="range" id="sfBg" min="0" max="100" value="' +
     bgTrim +
     '" aria-describedby="sfBgHint"></label><div id="sfBgHint" class="sfrnghint">Higher: more of what touches the edges counts as background</div>' +
     adjust +
-    '<div id="sfKeepLine" class="sfc-note sfc-mt10" style="display:none"></div></div>' +
-    edBarHTML();
+    '</div><div id="sfKeepLine" class="sfc-note sfc-mt10" style="display:none"></div></div>' +
+    edBarHTML(quick);
   minEl = document.getElementById('sfMin');
   countEl = document.getElementById('sfCount');
   // (the warning about tiny fragments counts those in the guide, so it's checked again once the slider is let go, v303)
@@ -514,6 +630,8 @@ function ctlSections() {
       });
     });
   }); // show "Building…" before the work starts
+  var _fx = document.getElementById('sfFix');
+  if (_fx) _fx.addEventListener('click', secFix);
   var _tp = document.getElementById('sfToPlan');
   // (not edToPlan itself: the click would come in as newGuide, and Discard would open the photo picker, v296)
   if (_tp)

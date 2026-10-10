@@ -316,7 +316,11 @@ document.addEventListener('keydown', function (e) {
     $(id).scrollTop = 0;
   }
   function back() {
-    if (!trail.length) return false;
+    if (!trail.length) {
+      // (v311: Markers' Add markers sheet: Back, Escape or the backdrop from where it opened closes it)
+      if (mk) mkClose();
+      return mk;
+    }
     var t = trail.pop();
     show(t.id, true);
     // (the keyboard back on what led to the step just left, else the step's heading or its first button)
@@ -408,7 +412,8 @@ document.addEventListener('keydown', function (e) {
   // a set has, takes them back out and the welcome back to where they were added from)
   // (v309.2: as Markers' Add a set: what's added comes off To buy and loses a Running low or Dry mark; Undo gives
   // both back. And whether an Ohuhu set's Colorless Blender came with it, ownBlender, for step 2 to say so)
-  var ownBlender = false;
+  var ownBlender = false,
+    ownFresh = 0;
   function own(keys) {
     var before = new Set(state.owned),
       wishWas = state.wish.slice(),
@@ -431,9 +436,11 @@ document.addEventListener('keydown', function (e) {
     if (typeof presetRelist === 'function') presetRelist();
     if (off.length || Object.keys(ink).length) wishChanged();
     ownBlender = fresh.indexOf('Ohuhu|0') >= 0;
+    ownFresh = fresh.length;
     var n = setKeys(fresh).length;
+    // (v311: the Colorless Blender a set brought, said as Markers' Add a set says it, v310.1)
     if (fresh.length)
-      toastAction(addedManyLine(n || fresh.length, off.length), 'Undo', function () {
+      toastAction(addedManyLine(n || fresh.length, off.length, ownBlender && n > 0), 'Undo', function () {
         fresh.forEach(function (k) {
           state.owned.delete(k);
         });
@@ -494,7 +501,8 @@ document.addEventListener('keydown', function (e) {
       x.checked = false;
     });
     upd();
-    added(n, names);
+    if (mk) mkAdded(names);
+    else added(n, names);
   });
   $('wcSkip').addEventListener('click', function () {
     step2(
@@ -681,7 +689,8 @@ document.addEventListener('keydown', function (e) {
     }
     var n = own(keys);
     if (n < 0) return;
-    added(n, names);
+    if (mk) mkAdded(names);
+    else added(n, names);
   });
   // --- one by one: Scan, the colour chart (chart.js), typing (Scan's box takes typing and pastes too) ---
   function toOne() {
@@ -689,7 +698,21 @@ document.addEventListener('keydown', function (e) {
     $('wcTO').focus({ preventScroll: true });
   }
   $('wcOneByOne').addEventListener('click', toOne);
-  $('wcFindNone').addEventListener('click', toOne);
+  $('wcFindNone').addEventListener('click', function () {
+    // (v311: in Markers' sheet, its ways to add: back to them, or to them afresh when Find was opened on its own)
+    if (!mk) return toOne.call(this);
+    var at = trail.findIndex(function (t) {
+      return t.id === 'wcStepAdd';
+    });
+    if (at >= 0) {
+      trail = trail.slice(0, at + 1);
+      back();
+    } else {
+      trail = [];
+      show('wcStepAdd', true);
+      $('wcTA').focus({ preventScroll: true });
+    }
+  });
   $('wcMoreExtra').addEventListener('click', toOne);
   $('wcMoreSet').addEventListener('click', function () {
     sets.innerHTML = presetListHTML();
@@ -751,6 +774,97 @@ document.addEventListener('keydown', function (e) {
       restoreToast(sm.text, sm.long ? 7000 : 4000, r);
     });
   });
+  /* (v311) Markers' Add markers: this card as a sheet over Markers, from its + Add markers (or, with no markers yet,
+     the card at its top: finder.js, chrome.js). Its own first step (wcStepAdd: a set, Scan, the chart, Find), or the
+     sets list or Find straight away; the welcome's picture and first-run lines aren't shown (.wcmk). Adding a set, or
+     a set found, closes it with the usual message and Undo (no "Anything else?"); Scan and the chart open as they
+     always have, the sheet closed first. Back from the step it opened at closes it. */
+  var mk = false,
+    mkFrom = null;
+  function mkOpen(step) {
+    mk = true;
+    mkFrom = document.activeElement;
+    snap = null;
+    trail = [];
+    ov.classList.add('wcmk');
+    ov.classList.remove('wcplain');
+    sets.innerHTML = presetListHTML();
+    upd();
+    $('wcAddWays').innerHTML = addWaysHTML('mka');
+    $('wcFindNone').textContent = 'None of these: other ways to add';
+    ov.querySelectorAll('.wcstep').forEach(function (e) {
+      e.style.display = 'none';
+    });
+    cur = step === 'set' ? 'wcStep1' : step === 'find' ? 'wcStepFind' : 'wcStepAdd';
+    $(cur).style.display = '';
+    ov.querySelector('.wcard').dataset.step = cur;
+    openDialog(ov);
+    var h = $(cur).querySelector('.wctitle[tabindex]');
+    if (h) h.focus({ preventScroll: true });
+  }
+  // (handing on: Scan or the chart opens next and takes the keyboard from where the sheet was opened)
+  function mkClose(handing) {
+    if (!mk) return;
+    mk = false;
+    trail = [];
+    closeDialog(ov);
+    ov.classList.remove('wcmk');
+    $('wcFindNone').textContent = 'None of these: I\u2019ll add them one by one';
+    // (the keyboard back where the sheet was opened from; the card at the top goes once there are markers, so then on
+    // Add markers, at the top of the collection)
+    var from = mkFrom;
+    mkFrom = null;
+    if (handing) return;
+    setTimeout(function () {
+      var to = from && from.isConnected && from.getClientRects().length ? from : $('mkAddBtn');
+      if (to && to.getClientRects().length) {
+        if (to !== from) window.scrollTo(0, 0);
+        to.focus({ preventScroll: true });
+      }
+    }, 0);
+  }
+  // a set added (or found) from the sheet: closed, the message with Undo said by own(); nothing new, said so
+  function mkAdded(names) {
+    mkClose();
+    if (!ownFresh)
+      toast(
+        names && names.length
+          ? setNames(names) + (names.length === 1 ? ' is' : ' are') + ' already in your collection.'
+          : 'They were already in your collection.',
+        3200,
+      );
+  }
+  $('wcAddWays').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-add]');
+    if (!b) return;
+    var a = b.dataset.add;
+    if (a === 'set') {
+      sets.innerHTML = presetListHTML();
+      upd();
+      show('wcStep1', false, b);
+      $('wcT1').focus({ preventScroll: true });
+    } else if (a === 'find') toFind.call(b);
+    else {
+      var from = mkFrom;
+      mkClose(true);
+      addWay(a, from && from.isConnected && from.getClientRects().length ? from : $('mkAddBtn'));
+    }
+  });
+  window.openAddMarkers = mkOpen;
+  // (the sets' ticks and counts, while the list is open: Scan's toast, another tab; the boxes ticked stay ticked)
+  presetRelist = function () {
+    var on = [].map.call(sets.querySelectorAll('input:checked'), function (x) {
+      return x.getAttribute('data-i');
+    });
+    var h = presetListHTML();
+    if (sets.innerHTML === h && !on.length) return;
+    sets.innerHTML = h;
+    on.forEach(function (i) {
+      var x = sets.querySelector('input[data-i="' + i + '"]');
+      if (x) x.checked = true;
+    });
+    upd();
+  };
   $('wcSample').addEventListener('click', function () {
     close();
     setMode('sections');

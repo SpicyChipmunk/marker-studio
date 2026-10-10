@@ -1709,3 +1709,143 @@ html.sfsheetsd .mstoast {
 #sfRoot [data-tab='share'] .sfinfo[data-hint='tap'] {
   visibility: hidden;
 }
+
+/* v310: the quick section check: only "Looks right?" until Fix sections (53-controls-stages) */
+#sfRoot #sfCtl .sfedtools[hidden],
+#sfRoot #sfCtl .sfedhead[hidden],
+#sfRoot #sfCtl .sfedline[hidden] {
+  display: none;
+}
+#sfRoot .sfquick .sfc-sw {
+  vertical-align: -1px;
+}
+
+/* v310: Mood as pictures of the page (32-mood-pics): six across where there's room, else two rows of three */
+#sfRoot .sfmpwrap {
+  container-type: inline-size;
+  margin-bottom: 6px;
+}
+#sfRoot .sfmoodpics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+/* (a phone: one row of six small ones, so the Colours tab is hardly longer than with Mood's buttons; in ems, so with
+   larger text it's two rows of three, and iPad landscape's column, a little narrower, has three bigger ones a row) */
+@container (min-width: 20em) {
+  #sfRoot .sfmoodpics {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+  }
+}
+@container (min-width: 560px) {
+  #sfRoot .sfmoodpics {
+    gap: 8px;
+  }
+}
+#sfRoot .sfmp {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  min-width: 0;
+  padding: 5px 5px 7px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+#sfRoot .sfmp canvas {
+  display: block;
+  width: 100%;
+  height: 112px;
+  object-fit: contain;
+  border-radius: 6px;
+  transition: opacity 0.25s;
+}
+#sfRoot .sfmp.sfmpwait canvas {
+  opacity: 0.45;
+}
+#sfRoot .sfmp.sfmpnone canvas {
+  opacity: 0.3;
+}
+#sfRoot .sfmpname {
+  font-size: var(--t-base);
+  font-weight: 600;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+#sfRoot .sfmpsub {
+  font-size: var(--t-sm);
+  color: var(--sub);
+  text-align: center;
+  line-height: 1.2;
+}
+#sfRoot .sfmpsub:empty {
+  display: none;
+}
+#sfRoot .sfmp.on {
+  background: rgba(120, 200, 180, 0.22);
+  border-color: rgba(143, 214, 180, 0.75);
+}
+#sfRoot .sfmp.on::after {
+  /* (not read out: the button says it's chosen, aria-pressed; the plain one for a browser without alt text) */
+  content: '✓';
+  content: '✓' / '';
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ok);
+  color: #0b0b0e;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+#sfRoot .sfmp:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+@media (max-height: 500px) {
+  #sfRoot .sfmp canvas {
+    height: 72px;
+  }
+}
+/* (a phone's one row of six, smaller: after the rules above, which it takes the place of) */
+@container (min-width: 20em) and (max-width: 559px) {
+  #sfRoot .sfmp {
+    padding: 4px 3px 5px;
+    gap: 3px;
+  }
+  #sfRoot .sfmp canvas {
+    height: 60px;
+  }
+  #sfRoot .sfmpname {
+    font-size: var(--t-sm);
+  }
+}
+/* (v310.1: iPad landscape's column is about a phone's width, but there's room: three a row, the bigger pictures) */
+@media (min-width: 900px) and (min-height: 600px) {
+  @container (max-width: 559px) {
+    #sfRoot .sfmoodpics {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    #sfRoot .sfmp {
+      padding: 5px 5px 7px;
+      gap: 5px;
+    }
+    #sfRoot .sfmp canvas {
+      height: 112px;
+    }
+    #sfRoot .sfmpname {
+      font-size: var(--t-base);
+    }
+  }
+}

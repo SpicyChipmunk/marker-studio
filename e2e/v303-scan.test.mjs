@@ -3,7 +3,7 @@
 // gets the code over its name, Add leaves focus where it was opened from and the sets' ticks follow.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, idle } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, idle, scanFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -14,7 +14,7 @@ async function opened(o = {}) {
   const a = await openApp({ storage: { 'ms-scan-brand': '' }, ...o });
   await welcome(a.page, 'look'); await idle(a.page);
   await a.page.click('#mCollection'); await idle(a.page);
-  await a.page.click('#scanOpen'); await idle(a.page);
+  await scanFromMarkers(a.page); await idle(a.page);
   return a;
 }
 const type = async (page, text) => { await page.fill('#scBox', text); await page.press('#scBox', 'Enter'); await idle(page); };
@@ -29,7 +29,7 @@ test('Add reads what’s still in the box (typed without Enter); a card’s Add 
   await page.click('#scAdd'); await idle(page);
   assert.ok(await page.evaluate(() => state.owned.has(mkey(COLORS.findIndex((c) => c.brand === 'Ohuhu' && c.code === 'B015')))), 'B015 added');
   // a name only: a card with Add; after it, the box is clear for the next code
-  await page.click('#scanOpen'); await idle(page);
+  await scanFromMarkers(page); await idle(page);
   await type(page, 'Honey Brown');
   assert.equal(await page.inputValue('#scBox'), 'Honey Brown', 'kept, nothing in it to clear the box for');
   await page.click('#scStat .scpick button'); await idle(page);
@@ -63,7 +63,7 @@ test('the list outlasts a reload (Safari reloading a tab put away mid-sweep)', a
   await type(page, 'B04');
   await page.reload(); await idle(page);
   await page.click('#mCollection'); await idle(page);
-  await page.click('#scanOpen'); await idle(page);
+  await scanFromMarkers(page); await idle(page);
   assert.deepEqual(await list(page), ['?', 'E19']);
   assert.equal(await page.textContent('#scAdd'), 'Add 1 to my collection');
   // emptied by Add
@@ -89,10 +89,11 @@ test('Add into an empty collection: focus goes back to the button it was opened 
   await welcome(page, 'look'); await idle(page);
   await page.evaluate(() => { state.owned.clear(); save(); });
   await page.click('#mCollection'); await idle(page);
-  await page.click('#scanOpen'); await idle(page);
+  await scanFromMarkers(page); await idle(page);
   await type(page, 'E19 Dried Sage');
   await page.click('#scAdd'); await idle(page); await page.waitForTimeout(100);
-  assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'scanOpen');
+  // (v311: what opened it on Markers: + Add markers, or the empty collection's card)
+  assert.ok(['mkAddBtn', 'mkcScan'].includes(await page.evaluate(() => document.activeElement && document.activeElement.id)));
   assert.deepEqual(errors, []);
 });
 

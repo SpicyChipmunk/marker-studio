@@ -3,7 +3,7 @@
 // match, and the caps a set hasn't are said and named on its button; Scan's "Fits so far" line is above the list.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle } from './helpers.mjs';
+import { setup, teardown, openApp, idle, addFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -137,25 +137,21 @@ test('Markers › Add a set you own: the blender comes with the set; the toast c
     },
   });
   await idle(page);
-  // (with no markers yet the list is open already)
-  if ((await page.getAttribute('#presetHdr', 'aria-expanded')) !== 'true') await page.click('#presetHdr');
-  await page.check('#presetList input[data-i="1"]');
-  await page.click('#presetAdd');
+  // (v311: from the card of ways to add, at the top while there are no markers)
+  await addFromMarkers(page, 'set');
+  await page.check('#wcSets input[data-i="1"]');
+  await page.click('#wcAdd');
   await idle(page);
   assert.ok(await page.evaluate(() => state.owned.has('Ohuhu|0') && state.owned.size === 49));
   assert.match(await page.textContent('#msToast'), /^Added 48 markers/);
   // the set shows as yours (its colours), also for someone who has them all but not the blender
-  await page.evaluate(() => {
-    state.owned.delete('Ohuhu|0');
-    presetRelist();
-  });
   assert.ok(
-    await page.evaluate(() =>
-      document
-        .querySelector('#presetList input[data-i="1"]')
-        .closest('.presetrow')
-        .classList.contains('have'),
-    ),
+    await page.evaluate(() => {
+      state.owned.delete('Ohuhu|0');
+      const d = document.createElement('div');
+      d.innerHTML = presetListHTML();
+      return d.querySelector('input[data-i="1"]').closest('.presetrow').classList.contains('have');
+    }),
   );
   assert.deepEqual(errors, []);
 });

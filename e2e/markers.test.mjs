@@ -216,30 +216,33 @@ test('Markers › All: markers you don’t own keep their true colour, with a da
   assert.deepEqual(errors, []);
 });
 
-test('Markers: a link near the top goes down to Sets & swatch chart; the bulk buttons stand clear, Untick in ⋯ at full contrast', async () => {
+// (v311: Add markers at the top; the link goes down to Brands I'd buy and Print a swatch chart)
+test('Markers: Add markers and a link to the swatch chart near the top; the bulk buttons stand clear, Untick in ⋯ at full contrast', async () => {
   const { page, errors } = await openApp({ storage: onboardedV265({ [KEY]: appState({ collView: 'all' }) }) });
   await page.click('#mCollection'); await idle(page);
-  assert.equal((await page.textContent('#mkJump')).trim(), 'Sets & swatch chart↓');
+  assert.ok((await page.locator('#mkAddBtn').boundingBox()).y < 844, 'Add markers on the first screen');
+  assert.equal((await page.textContent('#mkJump')).trim(), 'Swatch chart↓');
   assert.ok((await page.locator('#mkJump').boundingBox()).y < 844, 'on the first screen');
   assert.ok(await page.evaluate(() => document.getElementById('presetWrap').getBoundingClientRect().top > 3000), 'the tools are far down');
   await page.click('#mkJump'); await idle(page);
   const inView = (sel) => page.$eval(sel, (e) => { const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; });
   // (the scroll is smooth: Safari's engine can still be on its way when the page is otherwise idle)
   await page.waitForFunction(() => { const r = document.getElementById('swatchBtn').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }, null, { timeout: 5000 }).catch(() => {});
-  for (const sel of ['#presetHdr', '#swatchBtn']) assert.ok(await inView(sel), sel + ' in view');
-  assert.equal(await page.isVisible('#presetBody'), false, 'the sets list stays closed, so the other two stay in view');
-  assert.equal(await page.evaluate(() => document.activeElement.id), 'presetHdr', 'focus on the first of them');
+  for (const sel of ['#buyOpen', '#swatchBtn']) assert.ok(await inView(sel), sel + ' in view');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'swatchBtn', 'focus on Print a swatch chart');
   // Tick / Untick all shown: clear of the last swatch, and Untick not faint
   const gap = await page.evaluate(() => { const c = [...document.querySelectorAll('#results .cell')].pop().getBoundingClientRect(); return document.getElementById('ownStateWrap').getBoundingClientRect().top - c.bottom; });
   assert.ok(gap >= 20, 'space above the bulk buttons: ' + gap);
   await page.click('#mkMore');
   const un = await page.$eval('#ownNone', (b) => ({ op: +getComputedStyle(b).opacity, c: getComputedStyle(b).color }));
   assert.deepEqual(un, { op: 1, c: await inkOf(page) });
-  // not on other screens; with no markers yet the sets are at the top already, so the link names the other two
+  // not on other screens; with no markers yet, the ways to add are in a card at the top, and no Add markers
   await page.click('#mPalette');
   assert.equal(await page.isVisible('#mkJump'), false);
   await page.evaluate(() => { state.owned.clear(); save(); }); await page.click('#mCollection'); await idle(page);
   assert.equal((await page.textContent('#mkJump')).trim(), 'Swatch chart↓');
+  assert.equal(await page.isVisible('#mkAddBtn'), false);
+  assert.ok(await page.isVisible('#mkAddCard'));
   await page.click('#mkJump'); await idle(page);
   await page.waitForFunction(() => { const r = document.getElementById('swatchBtn').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }, null, { timeout: 5000 }).catch(() => {});
   assert.ok(await inView('#swatchBtn'));

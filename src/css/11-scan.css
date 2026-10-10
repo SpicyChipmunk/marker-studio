@@ -293,7 +293,8 @@
     0 18px 0 10px var(--bg);
 }
 /* the welcome's way here, for markers bought one at a time: a link in the sentence, with a 44px tap area */
-.wcsub .wcscan {
+.wcsub .wcscan,
+.mkfind .wcscan {
   position: relative;
   display: inline-block;
   white-space: nowrap;
@@ -305,7 +306,8 @@
   min-height: 0;
   text-align: left;
 }
-.wcsub .wcscan::after {
+.wcsub .wcscan::after,
+.mkfind .wcscan::after {
   content: '';
   position: absolute;
   left: -4px;

@@ -322,7 +322,14 @@ function distinctMk() {
 // (the shared image, its layout and Reveal's celebration: 89-show.js)
 function downloadClip() {
   if (!revBlob) return;
-  handOver(revBlob, 'marker-studio-reveal.' + (revMime.indexOf('mp4') >= 0 ? 'mp4' : 'webm'), {
-    preferShare: false,
-  });
+  // (v310.1: named after the guide, as Save image and the PDF are)
+  handOver(
+    revBlob,
+    fileSlug(curName, 'colour-guide', 80).toLowerCase() +
+      '-reveal.' +
+      (revMime.indexOf('mp4') >= 0 ? 'mp4' : 'webm'),
+    {
+      preferShare: false,
+    },
+  );
 }

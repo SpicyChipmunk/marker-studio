@@ -5,7 +5,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
-import { setup, teardown, openApp, idle } from './helpers.mjs';
+import { setup, teardown, openApp, idle, scanFromMarkers, addFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -171,10 +171,9 @@ test('Add a set: an unticked dry marker in it comes back fresh and off To buy; i
   const { page, errors } = await openApp({ width: 820, height: 1180, storage: st });
   await page.click('#mCollection');
   await idle(page);
-  await page.click('#presetHdr');
-  await page.check('#presetList input[data-i="0"]'); // Honolulu 24 (has Y26)
-  await page.locator('#presetAdd').scrollIntoViewIfNeeded();
-  await page.click('#presetAdd');
+  await addFromMarkers(page, 'set');
+  await page.check('#wcSets input[data-i="0"]'); // Honolulu 24 (has Y26)
+  await page.click('#wcAdd');
   await idle(page);
   assert.match(await toastText(page), /^Added \d+ markers · 1 off To buy$/);
   const w = await where(page, Y26);
@@ -193,7 +192,7 @@ test('Scan’s Add: an unticked dry marker comes back fresh; its Undo puts the m
   const { page, errors } = await openApp({ width: 820, height: 1180, storage: st });
   await page.click('#mCollection');
   await idle(page);
-  await page.click('#scanOpen');
+  await scanFromMarkers(page);
   await idle(page);
   await page.click('#scBrand button[data-b="Ohuhu"]');
   await page.fill('#scBox', 'Y26');
@@ -256,7 +255,7 @@ async function scanOhuhu() {
   });
   await a.page.click('#mCollection');
   await idle(a.page);
-  await a.page.click('#scanOpen');
+  await scanFromMarkers(a.page);
   await idle(a.page);
   assert.equal(await a.page.getAttribute('#scBrand button[data-b="Ohuhu"]', 'aria-pressed'), 'true');
   return a;

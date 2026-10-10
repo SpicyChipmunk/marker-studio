@@ -874,6 +874,8 @@ function photoSuggest(targets0, pool0) {
 }
 // after a rebuild: work out the suggestion for these colours and markers, unless it is already known or on its way
 function photoSugPlan(targets0, pool0) {
+  // (v310: not for a Mood picture, 32-mood-pics, which never lays the Photo pattern: kept out all the same)
+  if (_mpQuiet) return;
   const key = [
     photoPaper ? 1 : 0,
     pool0

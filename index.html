@@ -1983,6 +1983,61 @@ button:focus-visible {
 .noanim .rgroup {
   animation: none;
 }
+/* (v311) Markers' Add markers: the button at the top (with a collection), and the card of ways to add there while
+   there are no markers yet (the same rows as the Add markers sheet, the welcome's .wcc) */
+.mkaddbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0 2px 10px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 92, 255, 0.55);
+  background: rgba(124, 92, 255, 0.16);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+.mkaddbtn .ic {
+  width: 16px;
+  height: 16px;
+}
+@media (min-width: 700px) {
+  .wrap.mkmode #mkAddBtn {
+    flex: none;
+  }
+}
+.mkaddcard {
+  margin: 4px 0 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.mkaddh {
+  margin: 0 0 4px;
+  font-size: var(--t-lg);
+  font-weight: 600;
+}
+.mkaddp {
+  margin: 0 0 12px;
+  color: var(--sub);
+  font-size: var(--t-base);
+  line-height: 1.4;
+}
+.mkfind {
+  margin: 14px 0 2px;
+  color: var(--sub);
+  font-size: var(--t-base);
+  line-height: 1.5;
+}
+/* (in the sheet, room under the link for its 44px tap area, which the scrolling list would otherwise cut off) */
+#wcAddWays .mkfind {
+  padding-bottom: 12px;
+}
 .overlay {
   position: fixed;
   inset: 0;
@@ -6581,6 +6636,146 @@ html.sfsheetsd .mstoast {
 #sfRoot [data-tab='share'] .sfinfo[data-hint='tap'] {
   visibility: hidden;
 }
+
+/* v310: the quick section check: only "Looks right?" until Fix sections (53-controls-stages) */
+#sfRoot #sfCtl .sfedtools[hidden],
+#sfRoot #sfCtl .sfedhead[hidden],
+#sfRoot #sfCtl .sfedline[hidden] {
+  display: none;
+}
+#sfRoot .sfquick .sfc-sw {
+  vertical-align: -1px;
+}
+
+/* v310: Mood as pictures of the page (32-mood-pics): six across where there's room, else two rows of three */
+#sfRoot .sfmpwrap {
+  container-type: inline-size;
+  margin-bottom: 6px;
+}
+#sfRoot .sfmoodpics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+/* (a phone: one row of six small ones, so the Colours tab is hardly longer than with Mood's buttons; in ems, so with
+   larger text it's two rows of three, and iPad landscape's column, a little narrower, has three bigger ones a row) */
+@container (min-width: 20em) {
+  #sfRoot .sfmoodpics {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+  }
+}
+@container (min-width: 560px) {
+  #sfRoot .sfmoodpics {
+    gap: 8px;
+  }
+}
+#sfRoot .sfmp {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  min-width: 0;
+  padding: 5px 5px 7px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+#sfRoot .sfmp canvas {
+  display: block;
+  width: 100%;
+  height: 112px;
+  object-fit: contain;
+  border-radius: 6px;
+  transition: opacity 0.25s;
+}
+#sfRoot .sfmp.sfmpwait canvas {
+  opacity: 0.45;
+}
+#sfRoot .sfmp.sfmpnone canvas {
+  opacity: 0.3;
+}
+#sfRoot .sfmpname {
+  font-size: var(--t-base);
+  font-weight: 600;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+#sfRoot .sfmpsub {
+  font-size: var(--t-sm);
+  color: var(--sub);
+  text-align: center;
+  line-height: 1.2;
+}
+#sfRoot .sfmpsub:empty {
+  display: none;
+}
+#sfRoot .sfmp.on {
+  background: rgba(120, 200, 180, 0.22);
+  border-color: rgba(143, 214, 180, 0.75);
+}
+#sfRoot .sfmp.on::after {
+  /* (not read out: the button says it's chosen, aria-pressed; the plain one for a browser without alt text) */
+  content: '✓';
+  content: '✓' / '';
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ok);
+  color: #0b0b0e;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+#sfRoot .sfmp:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+@media (max-height: 500px) {
+  #sfRoot .sfmp canvas {
+    height: 72px;
+  }
+}
+/* (a phone's one row of six, smaller: after the rules above, which it takes the place of) */
+@container (min-width: 20em) and (max-width: 559px) {
+  #sfRoot .sfmp {
+    padding: 4px 3px 5px;
+    gap: 3px;
+  }
+  #sfRoot .sfmp canvas {
+    height: 60px;
+  }
+  #sfRoot .sfmpname {
+    font-size: var(--t-sm);
+  }
+}
+/* (v310.1: iPad landscape's column is about a phone's width, but there's room: three a row, the bigger pictures) */
+@media (min-width: 900px) and (min-height: 600px) {
+  @container (max-width: 559px) {
+    #sfRoot .sfmoodpics {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    #sfRoot .sfmp {
+      padding: 5px 5px 7px;
+      gap: 5px;
+    }
+    #sfRoot .sfmp canvas {
+      height: 112px;
+    }
+    #sfRoot .sfmpname {
+      font-size: var(--t-base);
+    }
+  }
+}
 #presetWrap.bottom {
   margin: 26px 2px 0;
   padding-top: 18px;
@@ -6648,25 +6843,6 @@ html.sfsheetsd .mstoast {
   color: var(--sub);
   font-size: var(--t-base);
   flex: none;
-}
-.presetfoot {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-}
-#presetAdd {
-  flex: 1;
-  padding: 4px 12px;
-}
-#presetReset {
-  padding: 4px 15px;
-  border-radius: var(--r-md);
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--sub);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
 }
 #backupWrap {
   margin: 22px 2px 6px;
@@ -10587,7 +10763,8 @@ button.wrm {
     0 18px 0 10px var(--bg);
 }
 /* the welcome's way here, for markers bought one at a time: a link in the sentence, with a 44px tap area */
-.wcsub .wcscan {
+.wcsub .wcscan,
+.mkfind .wcscan {
   position: relative;
   display: inline-block;
   white-space: nowrap;
@@ -10599,7 +10776,8 @@ button.wrm {
   min-height: 0;
   text-align: left;
 }
-.wcsub .wcscan::after {
+.wcsub .wcscan::after,
+.mkfind .wcscan::after {
   content: '';
   position: absolute;
   left: -4px;
@@ -10968,8 +11146,8 @@ button.wrm {
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v309.2</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
-  <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><button id="presetHdr" class="presethdr" aria-expanded="false"><span>Add a set you own</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><div id="presetBody" style="display:none"><div class="presethint">Tick the boxes for the marker sets you own, then add them all at once.</div><div id="presetList"></div><div class="presetfoot"><button id="presetAdd" class="btn-primary" disabled>Add markers</button><button id="presetReset">Clear collection</button></div></div><button id="scanOpen" class="presethdr scanopen"><span>Scan or type codes</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button id="chartOpen" class="presethdr scanopen"><span>Tick colours on a chart</span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v311</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+  <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
   <div class="segs" id="segs" role="group" aria-labelledby="segsLbl"><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button><button data-n="5">5</button><button data-n="6">6</button><button data-n="7">7</button><button data-n="8">8</button><button data-n="9">9</button><button data-n="10">10</button><button data-n="11">11</button><button data-n="12">12</button><button data-n="14">14</button><button data-n="16">16</button></div></div><div class="optrow" id="seedWrap" style="display:none"><span class="szlbl">Start from</span>
@@ -11010,7 +11188,7 @@ button.wrm {
 <div class="overlay" id="backupOverlay" role="dialog" aria-modal="true" aria-labelledby="bkTitle"><div class="ocard dcard"><div class="mhead"><h2 class="mtitle" id="bkTitle">Back up &amp; restore</h2><button id="backupClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">One file with your markers, saved palettes and guides. Keep it somewhere safe — restore it on a new phone or after clearing the browser. Older backup files (collection or guides) restore here too.</div><div class="drow"><button id="backupDownload" class="btn-primary">Back up</button><button id="backupImport">Restore a file</button></div><div class="dsub" id="backupCap" role="status"></div><button id="bkPreRestore" class="sflink bkundo" hidden></button><button id="backupShow" class="sflink bkshow" aria-expanded="false">Markers &amp; palettes as text (copy / paste)</button><div id="backupTextWrap" class="bktextwrap" style="display:none"><textarea id="backupText" class="bktext" spellcheck="false" aria-label="Backup text"></textarea><div class="drow"><button id="backupCopy">Copy</button><button id="backupRestore">Restore from text</button></div></div><input type="file" id="backupFile" class="fileinput" accept=".txt,application/json,text/plain"></div></div>
 <div class="overlay" id="swOverlay" role="dialog" aria-modal="true" aria-labelledby="swTitle"><div class="ocard dcard swcard"><div class="mhead"><h2 class="mtitle" id="swTitle">Swatch chart</h2><button id="swClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Print it, colour each box with the real marker and pin it up. The strip beside each box is the colour shown on screen, which is only an approximation: the chart shows how your markers really look.</div><div id="swOpts" class="swopts"></div><div id="swSum" class="swsum" role="status" aria-live="polite"></div><button id="swGo" class="btn-primary swgo">Download PDF</button></div></div>
 <div class="overlay" id="sfPlanOverlay" role="dialog" aria-modal="true" aria-labelledby="planTitle"><div class="ocard dcard plancard"><div class="mhead"><h2 class="mtitle" id="planTitle">Blend plan</h2><button id="sfPlanClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Every colour in this guide with a lighter and darker shade from your markers. Amber outline: a marker you don’t own yet.</div><div id="sfPlanBuy"></div><div id="sfPlanList" class="planlist"></div></div></div>
-<div class="overlay" id="welcome" role="dialog" aria-modal="true" aria-labelledby="wcTitle"><div class="ocard wcard"><div id="wcStep0" class="wcstep"><div class="wcscroll"><div class="wctitle" id="wcTitle">Welcome to Marker Studio</div><div class="wcsub">Guides and palettes are built from the markers you own. How did you get yours?</div><div class="wcch"><button type="button" id="wcHaveSet" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>I have a set</b><span>Pick it from the list: Ohuhu Honolulu, Copic Ciao, Sketch and more.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneByOne" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>I bought them one by one</b><span>Scan the caps, tick colours on a chart, or type the codes.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcNotSure" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></span><span class="wct"><b>I’m not sure which set</b><span>Scan 3 caps and we’ll work out which set you have.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div></div><div class="wcacts"><div id="wcErr" role="alert" style="display:none"></div><div class="wcrow"><button id="wcSkip" class="obGhost">I’ll do this later</button><button id="wcRestore" class="obGhost">Restore a backup</button></div><div class="wcpriv">Works offline. Nothing you add leaves this device; the camera is used only to Scan caps or Match a colour.</div></div><input type="file" id="wcFile" class="fileinput" accept=".json,.txt,application/json,text/plain"></div><div id="wcStep1" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcT1" tabindex="-1">Which sets do you have?</div><div class="wcsub">Tick each set you have. Not sure which? <button type="button" id="wcToFind" class="sflink wcscan">Find it from 3 caps</button></div><div class="wcbrands" role="group" aria-label="Jump to a brand"><button type="button" data-b="Ohuhu" class="on" data-first>Ohuhu</button><button type="button" data-b="Copic">Copic</button></div><div id="wcSets" class="wcsets"></div></div><div class="wcacts"><button id="wcAdd" class="btn-primary" disabled>Tick a set above</button></div></div><div id="wcStepFind" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wcsteps" aria-hidden="true"><i class="on"></i><i></i><i></i></div><div class="wctitle" id="wcTF" tabindex="-1">Let’s find your set</div><div class="wcsub">Two quick questions, then 3 caps.</div><div class="wclbl" id="wcFBl">Which brand?</div><div class="wcseg" id="wcFBrand" role="group" aria-labelledby="wcFBl"><button type="button" data-b="Ohuhu" aria-pressed="true">Ohuhu<small>codes like R014, Y28</small></button><button type="button" data-b="Copic" aria-pressed="false">Copic<small>codes like R29, E00</small></button></div><div class="wclbl" id="wcFCl">About how many markers?</div><div class="wccount" id="wcFCount" role="group" aria-labelledby="wcFCl"></div><div class="wcsub wcnote">A guess is fine: it tells apart sets that share colours.</div></div><div class="wcacts"><button id="wcFindNext" class="btn-primary" disabled>Next: scan 3 caps</button></div></div><div id="wcStepRes" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wcsteps" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></div><div class="wctitle" id="wcTR" tabindex="-1">Is this your set?</div><div id="wcRes" class="wcres"></div></div><div class="wcacts"><button id="wcFindYes" class="btn-primary">Yes, add these</button><button id="wcFindOther" class="obSecond"></button><button id="wcFindNone" class="obGhost">None of these: I’ll add them one by one</button></div></div><div id="wcStepOne" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcTO" tabindex="-1">Add your markers one by one</div><div class="wcsub">Pick whichever suits you. You can mix them, and add more any time in Markers.</div><div class="wcch"><button type="button" id="wcOneScan" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>Scan the caps</b><span>On an iPad: hold up each cap to the camera in turn, and each is read as its code shows.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneChart" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>Tick colours on a chart</b><span>Big swatches by colour family. Tap the ones you have.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneType" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-pencil"/></svg></span><span class="wct"><b>Type or paste codes</b><span>From a receipt or an order email: R014 Y28 BG314…</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="wcsub wcnote">Tip: Markers › Print a swatch chart puts every code on paper, to tick off at the table.</div></div></div><div id="wcStep2" class="wcstep" style="display:none"><button type="button" class="wcback" id="wcBack2" style="display:none"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcT2" tabindex="-1">You’re all set</div><div class="wcsub" id="wcDone"></div><div class="wcch" id="wcMore"><button type="button" id="wcMoreExtra" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>I have extra markers</b><span>Bought on their own? Scan their caps or tick them.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcMoreSet" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>I have another set</b><span>Add it from the list, or find it from 3 caps.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><button id="wcSample" class="btn-primary">Try the sample</button><button id="wcPhoto" class="obSecond">Make a guide from my photo</button><button id="wcLook" class="obGhost">Look around first</button></div></div></div>
+<div class="overlay" id="welcome" role="dialog" aria-modal="true" aria-labelledby="wcTitle"><div class="ocard wcard"><div id="wcStep0" class="wcstep"><div class="wcscroll"><div class="wctitle" id="wcTitle">Welcome to Marker Studio</div><div class="wcsub">Guides and palettes are built from the markers you own. How did you get yours?</div><div class="wcch"><button type="button" id="wcHaveSet" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>I have a set</b><span>Pick it from the list: Ohuhu Honolulu, Copic Ciao, Sketch and more.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneByOne" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>I bought them one by one</b><span>Scan the caps, tick colours on a chart, or type the codes.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcNotSure" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></span><span class="wct"><b>I’m not sure which set</b><span>Scan 3 caps and we’ll work out which set you have.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div></div><div class="wcacts"><div id="wcErr" role="alert" style="display:none"></div><div class="wcrow"><button id="wcSkip" class="obGhost">I’ll do this later</button><button id="wcRestore" class="obGhost">Restore a backup</button></div><div class="wcpriv">Works offline. Nothing you add leaves this device; the camera is used only to Scan caps or Match a colour.</div></div><input type="file" id="wcFile" class="fileinput" accept=".json,.txt,application/json,text/plain"></div><div id="wcStepAdd" class="wcstep" style="display:none"><div class="wcscroll"><div class="wctitle" id="wcTA" tabindex="-1">Add markers</div><div class="wcsub">Each adds to your collection, with Undo.</div><div id="wcAddWays"></div></div></div><div id="wcStep1" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcT1" tabindex="-1">Which sets do you have?</div><div class="wcsub">Tick each set you have. Not sure which? <button type="button" id="wcToFind" class="sflink wcscan">Find it from 3 caps</button></div><div class="wcbrands" role="group" aria-label="Jump to a brand"><button type="button" data-b="Ohuhu" class="on" data-first>Ohuhu</button><button type="button" data-b="Copic">Copic</button></div><div id="wcSets" class="wcsets"></div></div><div class="wcacts"><button id="wcAdd" class="btn-primary" disabled>Tick a set above</button></div></div><div id="wcStepFind" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wcsteps" aria-hidden="true"><i class="on"></i><i></i><i></i></div><div class="wctitle" id="wcTF" tabindex="-1">Let’s find your set</div><div class="wcsub">Two quick questions, then 3 caps.</div><div class="wclbl" id="wcFBl">Which brand?</div><div class="wcseg" id="wcFBrand" role="group" aria-labelledby="wcFBl"><button type="button" data-b="Ohuhu" aria-pressed="true">Ohuhu<small>codes like R014, Y28</small></button><button type="button" data-b="Copic" aria-pressed="false">Copic<small>codes like R29, E00</small></button></div><div class="wclbl" id="wcFCl">About how many markers?</div><div class="wccount" id="wcFCount" role="group" aria-labelledby="wcFCl"></div><div class="wcsub wcnote">A guess is fine: it tells apart sets that share colours.</div></div><div class="wcacts"><button id="wcFindNext" class="btn-primary" disabled>Next: scan 3 caps</button></div></div><div id="wcStepRes" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wcsteps" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></div><div class="wctitle" id="wcTR" tabindex="-1">Is this your set?</div><div id="wcRes" class="wcres"></div></div><div class="wcacts"><button id="wcFindYes" class="btn-primary">Yes, add these</button><button id="wcFindOther" class="obSecond"></button><button id="wcFindNone" class="obGhost">None of these: I’ll add them one by one</button></div></div><div id="wcStepOne" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcTO" tabindex="-1">Add your markers one by one</div><div class="wcsub">Pick whichever suits you. You can mix them, and add more any time in Markers.</div><div class="wcch"><button type="button" id="wcOneScan" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>Scan the caps</b><span>On an iPad: hold up each cap to the camera in turn, and each is read as its code shows.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneChart" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>Tick colours on a chart</b><span>Big swatches by colour family. Tap the ones you have.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneType" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-pencil"/></svg></span><span class="wct"><b>Type or paste codes</b><span>From a receipt or an order email: R014 Y28 BG314…</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="wcsub wcnote">Tip: Markers › Print a swatch chart puts every code on paper, to tick off at the table.</div></div></div><div id="wcStep2" class="wcstep" style="display:none"><button type="button" class="wcback" id="wcBack2" style="display:none"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcT2" tabindex="-1">You’re all set</div><div class="wcsub" id="wcDone"></div><div class="wcch" id="wcMore"><button type="button" id="wcMoreExtra" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>I have extra markers</b><span>Bought on their own? Scan their caps or tick them.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcMoreSet" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>I have another set</b><span>Add it from the list, or find it from 3 caps.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><button id="wcSample" class="btn-primary">Try the sample</button><button id="wcPhoto" class="obSecond">Make a guide from my photo</button><button id="wcLook" class="obGhost">Look around first</button></div></div></div>
 <div class="overlay" id="scanOverlay" role="dialog" aria-modal="true" aria-labelledby="scTitle"><div class="ocard dcard sccard"><div class="mhead"><h2 class="mtitle" id="scTitle">Scan or type codes</h2><button id="scClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub schint">Type or paste codes, then press Enter. On an iPad or iPhone, tap the box, then <b>AutoFill › Scan Text</b>, and hold each marker’s cap in view until it beeps: no need to tap Insert.</div><ol class="schow" aria-label="How to scan"><li><b>Tap the box</b>The keyboard opens. To type a code, tap return after it.</li><li><b>AutoFill › Scan Text</b>The camera opens where the keyboard was.</li><li><b>Cap after cap</b>Each code is read as it shows, with a beep: no need to tap Insert.</li></ol><div class="segs wide scbrand" id="scBrand" role="group" aria-label="Brand"></div><input id="scBox" class="search scbox" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" placeholder="Scan or type a code" aria-label="Marker codes"><div id="scStat" class="scstat" role="status" aria-live="polite"></div><div id="scFind" class="scfindnote" role="status" hidden></div><div class="schead"><span class="lbl">Read so far</span><span id="scCount" class="sccount"></span><button type="button" id="scClear" class="sflink" hidden>Clear list</button></div><ul id="scList" class="sclist"></ul><div id="scEmpty" class="scempty">Nothing yet. Each marker read joins this list, to check before adding.</div><button id="scAdd" class="btn-primary scadd" disabled>Add to my collection</button></div></div>
 <div class="overlay" id="chartOverlay" role="dialog" aria-modal="true" aria-labelledby="chTitle"><div class="ocard dcard chcard"><div class="mhead"><h2 class="mtitle" id="chTitle">Tick the colours you have</h2><button id="chClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="segs wide" id="chBrand" role="group" aria-label="Brand"></div><div class="chfams" id="chFams" role="group" aria-label="Colour family"></div><div class="lbl chlbl" id="chFamLbl" aria-live="polite"></div><div class="chgrid" id="chGrid" role="group" aria-labelledby="chFamLbl"></div><div class="chbar"><span id="chSum" class="chsum"></span><button id="chSave" class="btn-primary" disabled>Tick your colours</button></div></div></div>
 
@@ -14489,6 +14667,20 @@ if (!['code', 'gap', 'complete', 'ramps'].includes(state.gapSort)) state.gapSort
 if (!Array.isArray(state.customPal)) state.customPal = [];
 if (!Array.isArray(state.saved)) state.saved = [];
 state.saved = state.saved.map(cleanSaved).filter(Boolean);
+// (v310) the quick section check (53-controls-stages) is for people new to the app: at the first start of v310, anyone
+// with a guide in their Library keeps the full Check the sections step
+try {
+  // (not while saves are held for unreadable data, v310.1: decided at the first start the Library can be read)
+  if (!_saveHold && localStorage.getItem('ms-sec-tools') == null)
+    localStorage.setItem(
+      'ms-sec-tools',
+      state.saved.some(function (s) {
+        return s && s.type === 'guide';
+      })
+        ? '1'
+        : '0',
+    );
+} catch (_) {}
 if (!state.scopeFlipped) {
   state.finderScope = 'owned';
   state.scopeFlipped = true;
@@ -17211,12 +17403,25 @@ function renderRecent() {
       var own = cel.querySelector('.hcown'),
         // (v309.1: the colours; a set's Colorless Blender builds nothing. v309.2: said as colours, as Home counts
         // the blender among your markers)
-        nOwn = inkKeys([...state.owned]).length;
+        // (v310.2: what guides use: not those marked dry, said as left out)
+        ink = inkKeys([...state.owned]),
+        nDry = ink.filter(function (k) {
+          const i = keyIdx(k);
+          return i != null && isDry(i);
+        }).length,
+        nOwn = ink.length - nDry;
       if (own)
         own.textContent =
           (nOwn
-            ? 'Built from your ' + nOwn + ' colour' + (nOwn === 1 ? '' : 's') + '. '
-            : 'Built from the markers you own: add yours in Markers. ') +
+            ? 'Built from your ' +
+              nOwn +
+              ' colour' +
+              (nOwn === 1 ? '' : 's') +
+              (nDry ? ' (' + nDry + ' marked dry ' + (nDry === 1 ? 'is' : 'are') + ' left out)' : '') +
+              '. '
+            : ink.length
+              ? 'Every marker you own is marked dry: unmark the ones you’ve refilled or replaced in Markers. '
+              : 'Built from the markers you own: add yours in Markers. ') +
           'Lay the page flat in even light, and get all of it in the frame.';
       cel.style.display = '';
     } else if (
@@ -18572,7 +18777,7 @@ function renderGrid(more) {
     // (in Owned only: elsewhere a search that found nothing had said the collection was empty, v304)
     results.innerHTML =
       state.mode === 'collection' && !state.owned.size && state.collView === 'owned'
-        ? '<div class="empty">Your collection is empty. Tick the sets you own under <b>Add a set you own</b>, or switch to <b>All</b> to add single markers.</div>'
+        ? '<div class="empty">Your collection is empty. Add your markers above, or switch to <b>All</b> to tick single markers.</div>'
         : '<div class="empty">' +
           (searchStr
             ? 'No markers match \u201c' + esc(searchStr) + '\u201d with the current filters.'
@@ -18711,26 +18916,41 @@ results.addEventListener('click', (e) => {
   const a = ownView.querySelector('[data-v="all"]');
   if (a) a.focus({ preventScroll: true });
 });
-// Markers' tools (Add a set you own, Back up & restore, Print a swatch chart) stay under the grid, where Home's backup
-// card points; a link near the top goes down to them. It scrolls them into view and leaves the sets list closed (open,
-// it is about 1,500px tall and would push the other two out of sight); focus goes to the first of them.
+// (v311) Add markers, at the top: the ways to add in a sheet (the welcome's card: boot.js openAddMarkers). With no
+// markers yet they're in a card at the top instead (chrome.js), so it shows only with a collection. And a link down
+// to Brands I'd buy and Print a swatch chart, below the grid (as v300's link to the sets and the chart, which the
+// sheet has now taken the sets from).
+const mkAddBtn = document.createElement('button');
+mkAddBtn.type = 'button';
+mkAddBtn.id = 'mkAddBtn';
+mkAddBtn.className = 'mkaddbtn';
+mkAddBtn.innerHTML = ic('plus') + 'Add markers';
+mkAddBtn.style.display = 'none';
+ownHint.insertAdjacentElement('afterend', mkAddBtn);
+mkAddBtn.addEventListener('click', function () {
+  addWay('add', mkAddBtn);
+});
+// (the same ways in the card at the top while there are no markers: a set or Find opens the sheet at that step)
+{
+  const aw = $('mkAddWays');
+  if (aw)
+    aw.addEventListener('click', function (e) {
+      const b = e.target.closest('[data-add]');
+      if (b) addWay(b.dataset.add, b);
+    });
+}
 const mkJump = document.createElement('button');
 mkJump.type = 'button';
 mkJump.id = 'mkJump';
 mkJump.className = 'mkjump';
 mkJump.style.display = 'none';
-ownHint.insertAdjacentElement('afterend', mkJump);
+mkJump.innerHTML = 'Swatch chart<span aria-hidden="true">\u2193</span>';
+mkAddBtn.insertAdjacentElement('afterend', mkJump);
 function mkJumpSync(col) {
-  // (not in To buy: its sets aren't there, and Print a swatch chart is just under it, v300)
+  // (not in To buy: Print a swatch chart is just under it there, v300)
   col = col && state.collView !== 'wish';
   mkJump.style.display = col ? '' : 'none';
-  if (!col) return;
-  // with an empty collection the sets are at the top already (chrome.js), so the link names the other two
-  const t = state.owned.size ? 'Sets & swatch chart' : 'Swatch chart';
-  if (mkJump.dataset.t !== t) {
-    mkJump.dataset.t = t;
-    mkJump.innerHTML = esc(t) + '<span aria-hidden="true">\u2193</span>';
-  }
+  mkAddBtn.style.display = col && state.owned.size ? '' : 'none';
 }
 mkJump.addEventListener('click', () => {
   const pw = $('presetWrap'),
@@ -18738,7 +18958,7 @@ mkJump.addEventListener('click', () => {
     to = bottom ? pw : $('backupWrap');
   if (!to) return;
   to.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
-  const f = bottom ? $('presetHdr') : $('swatchBtn');
+  const f = $('swatchBtn');
   if (f) f.focus({ preventScroll: true });
 });
 let copyT = null;
@@ -19119,6 +19339,9 @@ function chrome() {
   if (_mm) _mm.style.display = col ? '' : 'none';
   if (ownAllBtn) ownAllBtn.style.display = col && state.collView !== 'owned' ? '' : 'none';
   if (ownNoneBtn) ownNoneBtn.style.display = col && state.collView !== 'unowned' ? '' : 'none';
+  // (v311: Clear collection, in ⋯ too, while there's something to clear)
+  var _cb = document.getElementById('mkClear');
+  if (_cb) _cb.style.display = col && state.owned.size ? '' : 'none';
   var _bw = document.getElementById('backupWrap');
   if (_bw) _bw.style.display = col ? '' : 'none';
   var _pw = document.getElementById('presetWrap');
@@ -19135,17 +19358,13 @@ function chrome() {
     } else if (!_top && _bw && _pw.nextElementSibling !== _bw) {
       _bw.parentNode.insertBefore(_pw, _bw);
       _pw.classList.add('bottom');
-      const _pb = $('presetBody'),
-        _ph = $('presetHdr');
-      if (_pb && _pb.style.display !== 'none' && _ph) _ph.click();
     }
-  }
-  if (col && !state.owned.size && !chrome._setsOpened) {
-    chrome._setsOpened = 1;
-    const _pb = $('presetBody');
-    if (_pb && _pb.style.display === 'none') {
-      const _ph = $('presetHdr');
-      if (_ph) _ph.click();
+    // (v311) no markers yet: the ways to add, at the top (with a collection, they're Add markers' sheet: finder.js)
+    const _ac = $('mkAddCard');
+    if (_ac) {
+      _ac.style.display = _top ? '' : 'none';
+      const _aw = $('mkAddWays');
+      if (_top && _aw && !_aw.firstChild) _aw.innerHTML = addWaysHTML('mkc');
     }
   }
   [...ownView.children].forEach((b) => segOn(b, b.dataset.v === state.collView));
@@ -19836,10 +20055,50 @@ function toggleLock(k) {
     bandLabel(b, idx);
   }
 }
+// (v310.2) A locked colour is kept by Generate whatever the filters say, but not once it can't be used: marked dry, no
+// longer in your collection, or outside a selection (as Generate's starting colour, paletteOpts). The lock goes, and
+// a word says so. The palette on screen stays as it was until the next one is made.
+function locksUsable() {
+  const out = { dry: [], gone: [], sel: [] };
+  state.locked = state.locked.filter(function (i) {
+    if (!COLORS[i]) return false;
+    const own = isOwned(i),
+      ok = NOINK.has(i)
+        ? false
+        : state.pool
+          ? poolSet.has(i) && !(own && isDry(i))
+          : state.owned.size
+            ? own && !isDry(i)
+            : buyOk(i);
+    if (ok) return true;
+    (own && isDry(i) ? out.dry : state.pool ? out.sel : out.gone).push(COLORS[i].code);
+    return false;
+  });
+  const all = out.dry.concat(out.gone, out.sel);
+  if (!all.length) return;
+  const one = all.length === 1,
+    list = all.length > 1 ? all.slice(0, -1).join(', ') + ' and ' + all[all.length - 1] : all[0],
+    why =
+      out.dry.length === all.length
+        ? one
+          ? 'it’s marked dry'
+          : 'they’re marked dry'
+        : out.gone.length === all.length
+          ? one
+            ? 'it’s no longer in your collection'
+            : 'they’re no longer in your collection'
+          : out.sel.length === all.length
+            ? one
+              ? 'it’s not in your selection'
+              : 'they’re not in your selection'
+            : 'they can’t be used now';
+  toast('Unlocked ' + list + ': ' + why + '.', 4500);
+}
 function doGenerate() {
   if (rolling || state.harmony === 'custom') return;
   disarm();
   palSizeFit();
+  locksUsable();
   // (v306: Rainbow rolls another from a new seed; a scheme or size change makes the Gradient's own, regenReplace)
   const pal = genPalette(state.palSize, state.harmony, Object.assign(paletteOpts(), { reroll: true }));
   if (!pal) {
@@ -19973,6 +20232,7 @@ function regenReplace() {
     regenLater = true;
     return;
   }
+  locksUsable();
   const pal = genPalette(state.palSize, state.harmony, paletteOpts());
   if (!pal) {
     if (!palNone()) palFailToast();
@@ -20238,13 +20498,17 @@ function addedLine(had, c, off) {
   return 'Added ' + name + (off ? ' \u00b7 taken off To buy' : ' to your collection');
 }
 // and for several (Tick all shown, Scan's Add): "Added 12 markers · 3 off To buy"
-function addedManyLine(n, off) {
+// (v310.1) bl: an Ohuhu set's Colorless Blender came too, besides the n colours ("Added 120 markers and a Colorless
+// Blender")
+function addedManyLine(n, off, bl) {
   return (
     'Added ' +
     n +
     ' marker' +
     (n === 1 ? '' : 's') +
-    (off ? ' \u00b7 ' + off + ' off To buy' : ' to your collection')
+    (bl ? ' and a Colorless Blender' : '') +
+    // (that longer line wraps on a phone: "1 off To buy" kept together, not "To" and "buy" apart)
+    (off ? ' \u00b7 ' + off + (bl ? '\u00a0off\u00a0To\u00a0buy' : ' off To buy') : ' to your collection')
   );
 }
 results.addEventListener('click', async (e) => {
@@ -21110,11 +21374,6 @@ function setMode(m) {
   unownDisarm();
   state.mode = m;
   save(true);
-  if (m === 'collection' && state.owned.size) {
-    const _pb = $('presetBody'),
-      _ph = $('presetHdr');
-    if (_pb && _pb.style.display !== 'none' && _ph) _ph.click();
-  }
   fullRender();
   if (!reduce) {
     const c = document.querySelector('.wrap');
@@ -21580,152 +21839,131 @@ function presetListHTML() {
   });
   return html;
 }
-// (v303) the sets' ticks and counts drawn again from outside (Scan or type codes' Add and its Undo), set by initPresets
+// (v303) the sets' ticks and counts drawn again from outside (Scan's Add and its Undo, the chart, a marker ticked):
+// (v311) the list is the welcome's, in the Add markers sheet (boot.js sets this)
 let presetRelist = null;
-(function initPresets() {
-  var list = document.getElementById('presetList');
-  if (list) {
-    list.innerHTML = presetListHTML();
+/* (v311) Markers' ways to add, in one place: the Add markers sheet (the welcome's card, boot.js openAddMarkers) and,
+   with no markers yet, a card at the top of Markers (chrome.js). Add a set you own (the sets list), Scan or type
+   codes, Tick colours on a chart, and "Not sure which set? Find it from 3 caps" (the welcome's Find). */
+function addWaysHTML(where) {
+  const row = function (a, icon, b, t) {
+    return (
+      '<button type="button" class="wcc" data-add="' +
+      a +
+      '" id="' +
+      where +
+      a.charAt(0).toUpperCase() +
+      a.slice(1) +
+      '"><span class="wci" aria-hidden="true">' +
+      ic(icon) +
+      '</span><span class="wct"><b>' +
+      b +
+      '</b><span>' +
+      t +
+      '</span></span><span class="wcchev" aria-hidden="true">' +
+      ic('chevron-right') +
+      '</span></button>'
+    );
+  };
+  return (
+    '<div class="wcch">' +
+    row(
+      'set',
+      'swatch-book',
+      'Add a set you own',
+      'Pick it from the list: Ohuhu Honolulu, Copic Ciao, Sketch and more.',
+    ) +
+    row(
+      'scan',
+      'crosshair',
+      'Scan or type codes',
+      'Hold up each cap to the camera, or type codes from a receipt.',
+    ) +
+    row(
+      'chart',
+      'palette',
+      'Tick colours on a chart',
+      'Big swatches by colour family. Tap the ones you have.',
+    ) +
+    '</div><div class="mkfind">Not sure which set you have? <button type="button" class="sflink wcscan" data-add="find" id="' +
+    where +
+    'Find">Find it from 3 caps</button></div>'
+  );
+}
+// the keyboard back on what opened Scan or the chart; (v311) the card of ways to add goes once there are markers
+// (the first ones just added), so then on Add markers, which takes its place
+function openerBack(el) {
+  const vis = function (e) {
+    return !!e && e.isConnected && e.getClientRects().length > 0;
+  };
+  const to = vis(el)
+    ? el
+    : el && el.closest && el.closest('#mkAddCard') && vis($('mkAddBtn'))
+      ? $('mkAddBtn')
+      : null;
+  if (to) to.focus({ preventScroll: true });
+  else if (el && el.isConnected) el.focus({ preventScroll: true });
+}
+// one of the ways: Scan and the chart open as they always have (the keyboard, after, on `from`); a set or Find in the
+// sheet, at that step
+function addWay(a, from) {
+  if (from && from.isConnected && from.getClientRects().length) from.focus({ preventScroll: true });
+  if (a === 'scan') {
+    if (typeof openScan === 'function') openScan();
+  } else if (a === 'chart') {
+    if (typeof openChart === 'function') openChart();
+  } else if (typeof window.openAddMarkers === 'function') window.openAddMarkers(a === 'add' ? null : a);
+}
+// Clear collection (v311: in Markers' ⋯, beside Untick all shown; asks with a second tap, then Undo)
+const clearBtn = document.createElement('button');
+clearBtn.type = 'button';
+clearBtn.id = 'mkClear';
+clearBtn.textContent = 'Clear collection';
+let clearT = null,
+  clearAt = 0;
+function clearDisarm() {
+  clearTimeout(clearT);
+  clearT = null;
+  clearBtn.dataset.arm = '';
+  clearBtn.textContent = 'Clear collection';
+}
+clearBtn.addEventListener('click', function () {
+  // (the second tap of a double tap isn't the confirming one, as Untick all shown)
+  if (clearBtn.dataset.arm === '1' && Date.now() - clearAt < 400) return;
+  clearTimeout(clearT);
+  if (clearBtn.dataset.arm === '1') {
+    clearDisarm();
+    const prev = [...state.owned];
+    state.owned = new Set();
+    if (
+      !keep(function () {
+        state.owned = new Set(prev);
+      })
+    )
+      return;
+    fullRender();
+    if (typeof presetRelist === 'function') presetRelist();
+    if (prev.length)
+      toastAction(
+        'Cleared ' + prev.length + ' marker' + (prev.length === 1 ? '' : 's') + ' from your collection',
+        'Undo',
+        function () {
+          prev.forEach(function (k) {
+            state.owned.add(k);
+          });
+          save();
+          fullRender();
+          if (typeof presetRelist === 'function') presetRelist();
+        },
+      );
+    return;
   }
-  var hdr = document.getElementById('presetHdr'),
-    body = document.getElementById('presetBody'),
-    add = document.getElementById('presetAdd'),
-    rst = document.getElementById('presetReset');
-  if (hdr && body)
-    hdr.addEventListener('click', function () {
-      var open = body.style.display !== 'none';
-      if (!open && list) {
-        list.innerHTML = presetListHTML();
-        upd();
-      }
-      body.style.display = open ? 'none' : 'block';
-      hdr.setAttribute('aria-expanded', open ? 'false' : 'true');
-      var car = hdr.querySelector('.presetcar');
-      if (car) car.innerHTML = ic(open ? 'chevron-right' : 'chevron-down');
-    });
-  function upd() {
-    var n = list ? list.querySelectorAll('input:checked').length : 0;
-    if (add) {
-      add.disabled = !n;
-      add.textContent = n ? 'Add ' + n + ' set' + (n > 1 ? 's' : '') : 'Add markers';
-    }
-  }
-  function relist() {
-    if (!list) return;
-    // (the boxes ticked stay ticked)
-    const on = [...list.querySelectorAll('input:checked')].map((x) => x.getAttribute('data-i'));
-    list.innerHTML = presetListHTML();
-    on.forEach((i) => {
-      const x = list.querySelector('input[data-i="' + i + '"]');
-      if (x) x.checked = true;
-    });
-    upd();
-  }
-  presetRelist = relist;
-  if (list) list.addEventListener('change', upd);
-  if (add)
-    add.addEventListener('click', function () {
-      var ch = list.querySelectorAll('input:checked');
-      if (!ch.length) return;
-      const before = new Set(state.owned),
-        wishWas = state.wish.slice(),
-        added = [];
-      ch.forEach(function (x) {
-        presetMkeys(MARKER_SETS[+x.getAttribute('data-i')]).forEach(function (k) {
-          if (!state.owned.has(k)) added.push(k);
-          state.owned.add(k);
-        });
-      });
-      // (v308.3: added by hand, so a Running low or Dry mark goes; Undo gives it back)
-      const ink = inkAddedOff(added),
-        off = wishOwnedOff(added);
-      if (
-        !keep(function () {
-          state.owned = before;
-          state.wish = wishWas;
-          inkPutBack(ink);
-        })
-      )
-        return;
-      // (v308) said, with Undo (the markers and the To buy entries they took off), and the page stays where it was
-      // (it jumped to the bottom of the grid)
-      const y = window.scrollY;
-      fullRender();
-      if (off.length || Object.keys(ink).length) wishChanged();
-      list.innerHTML = presetListHTML();
-      upd();
-      const stay = function () {
-        if (Math.abs(window.scrollY - y) > 1) window.scrollTo(0, y);
-      };
-      stay();
-      requestAnimationFrame(stay);
-      if (!added.length) {
-        toast(
-          ch.length > 1
-            ? 'Those sets are all in your collection already.'
-            : 'That set is all in your collection already.',
-          3200,
-        );
-        return;
-      }
-      // (v309.1: the colours added; a set's blender alone, if that's all that was new)
-      toastAction(addedManyLine(setKeys(added).length || added.length, off.length), 'Undo', function () {
-        added.forEach(function (k) {
-          state.owned.delete(k);
-        });
-        inkPutBack(ink);
-        wishPutBack(off);
-        save();
-        if (off.length || Object.keys(ink).length) wishChanged();
-        fullRender();
-        relist();
-      });
-    });
-  // (v308.2: one timer, so an earlier tap's can't cancel a later "Tap again" early)
-  let rstT = null;
-  if (rst)
-    rst.addEventListener('click', function () {
-      clearTimeout(rstT);
-      if (rst.dataset.arm === '1') {
-        rst.dataset.arm = '';
-        rst.textContent = 'Clear collection';
-        const prev = [...state.owned];
-        state.owned = new Set();
-        if (
-          !keep(function () {
-            state.owned = new Set(prev);
-          })
-        )
-          return;
-        fullRender();
-        // (the sets' "in your collection" marks follow, v298)
-        relist();
-        if (prev.length)
-          toastAction(
-            'Cleared ' + prev.length + ' marker' + (prev.length === 1 ? '' : 's') + ' from your collection',
-            'Undo',
-            function () {
-              prev.forEach(function (k) {
-                state.owned.add(k);
-              });
-              save();
-              fullRender();
-              relist();
-            },
-          );
-      } else {
-        rst.dataset.arm = '1';
-        rst.textContent =
-          'Clear all ' + state.owned.size + (state.owned.size === 1 ? ' marker' : ' markers') + '? Tap again';
-        rstT = setTimeout(function () {
-          if (rst) {
-            rst.dataset.arm = '';
-            rst.textContent = 'Clear collection';
-          }
-        }, 2500);
-      }
-    });
-})();
+  clearBtn.dataset.arm = '1';
+  clearAt = Date.now();
+  clearBtn.textContent =
+    'Clear all ' + state.owned.size + (state.owned.size === 1 ? ' marker' : ' markers') + '? Tap again';
+  clearT = setTimeout(clearDisarm, 2500);
+});
 let unownT = null;
 function unownDisarm() {
   if (unownT) {
@@ -21772,7 +22010,7 @@ const mkMore = document.createElement('button'),
 mkMoreWrap.className = 'libmore mkmore';
 mkMore.type = 'button';
 mkMore.id = 'mkMore';
-mkMore.setAttribute('aria-label', 'More: Untick all shown, Back up & restore');
+mkMore.setAttribute('aria-label', 'More: Untick all shown, Clear collection, Back up & restore');
 mkMore.setAttribute('aria-haspopup', 'menu');
 mkMore.setAttribute('aria-expanded', 'false');
 mkMore.setAttribute('aria-controls', 'mkMenu');
@@ -21783,7 +22021,7 @@ mkMenu.setAttribute('role', 'menu');
 mkMenu.setAttribute('aria-label', 'More');
 mkMenu.hidden = true;
 backupBtn.innerHTML = 'Back up &amp; restore <span class="mkmsub">(in the Library)</span>';
-[ownNoneBtn, backupBtn].forEach((b) => {
+[ownNoneBtn, clearBtn, backupBtn].forEach((b) => {
   b.setAttribute('role', 'menuitem');
   b.tabIndex = -1;
   mkMenu.appendChild(b);
@@ -21799,6 +22037,7 @@ function mkMenuOpen(on, focusFirst) {
   mkMore.setAttribute('aria-expanded', on ? 'true' : 'false');
   if (!on) {
     if (ownNoneBtn.dataset.arm === '1') unownDisarm();
+    if (clearBtn.dataset.arm === '1') clearDisarm();
     return;
   }
   const it = mkItems();
@@ -21813,6 +22052,8 @@ mkMenu.addEventListener(
     const b = e.target.closest('button');
     // (Untick's first tap asks in place; a second within 400 ms is a double tap's, ignored there too, so it stays open)
     if (!b || (b === ownNoneBtn && (ownNoneBtn.dataset.arm !== '1' || Date.now() - unownAt < 400))) return;
+    // (v311: Clear collection's first tap asks in place too; the second clears, and the menu closes)
+    if (b === clearBtn && (clearBtn.dataset.arm !== '1' || Date.now() - clearAt < 400)) return;
     mkMenu.hidden = true;
     mkMore.setAttribute('aria-expanded', 'false');
     mkMore.focus({ preventScroll: true });
@@ -21858,20 +22099,14 @@ function libBackupGo() {
     b.focus({ preventScroll: true });
   }, 40);
 }
-function openSetsPanel() {
-  const b = $('presetBody'),
-    h = $('presetHdr');
-  if (b && b.style.display === 'none' && h) h.click();
-  const w = $('presetWrap');
-  if (w && w.scrollIntoView)
-    setTimeout(() => w.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }), 60);
-}
+// (v311) "Add yours" from elsewhere (the Guide's demo note, Home, the empty-collection banner): Markers, and the Add
+// markers sheet over it
 function goMarkers() {
   if (state.mode !== 'collection') {
     state.collView = 'owned';
     setMode('collection');
   }
-  openSetsPanel();
+  addWay('add', $('mkAddBtn'));
 }
 function openBackup() {
   backupText.value = JSON.stringify({
@@ -23711,6 +23946,12 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
         liveSay(t);
       }
     };
+    // (v310.1) guides from a backup made before v310 into a Library with none: someone who used the app before (a new
+    // iPad, or after starting again) keeps the full Check the sections step, as the first start of v310 gave anyone
+    // with a guide. (Not a v310 backup: a new tester moving from a Safari tab to the Home Screen app keeps the quick one.)
+    var hadGuide = state.saved.some(function (s) {
+      return s.type === 'guide';
+    });
     // guides already here aren't counted as restored; ones storage had no room for are said as a failure, by the button
     restoreGuideList(
       guides,
@@ -23718,6 +23959,10 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
       function (ok, copies, x) {
         x = x || {};
         fin();
+        if (ok && !hadGuide && verNum(d && d.app) < 310)
+          try {
+            localStorage.setItem('ms-sec-tools', '1');
+          } catch (_) {}
         liveSay('');
         _btnFlash(
           bid,
@@ -26330,6 +26575,7 @@ function render() {
   }
   ctx.putImageData(imgData, 0, 0);
   countEl.textContent = cnt + ' section' + (cnt === 1 ? '' : 's');
+  secQuickN();
   renderTools();
   {
     const bb = document.getElementById('sfBuild');
@@ -26449,6 +26695,8 @@ function resetForNewPicture() {
   return gen;
 }
 function note(m) {
+  // (v310: not while a Mood picture is made, 32-mood-pics: the guide on screen hasn't changed)
+  if (_mpQuiet) return;
   const _plain = typeof m === 'string' ? m.replace(/<[^>]*>/g, '') : '',
     _prog = /(\u2026|\.\.\.)\s*$/.test(_plain);
   if (metaEl) metaEl.innerHTML = m;
@@ -26965,7 +27213,17 @@ function reFrom() {
 function keepSnap(geo) {
   if (!labels || !comps) return null;
   const top = undoStack[undoStack.length - 1];
-  if (!geo && top && top.reseg && !top.sealed) return null;
+  if (!geo && top && top.reseg && !top.sealed) {
+    // (still a new edit: Redo no longer follows on, v311)
+    secFwd = [];
+    return null;
+  }
+  const s = keepObj(geo);
+  pushUndo(s);
+  return s;
+}
+// the step keepSnap keeps: the sections and all that hangs on them as they are now (also for Redo, 65-edit secNow)
+function keepObj(geo) {
   const ad = assignData
     ? {
         assign: Object.assign({}, assignData.assign),
@@ -27052,7 +27310,6 @@ function keepSnap(geo) {
           : null,
     },
   };
-  pushUndo(s);
   return s;
 }
 // anything of the guide's own that redrawing the sections would clear
@@ -27093,7 +27350,8 @@ function okGeom(go) {
 }
 // okGeom said yes but nothing changed after all: its Undo step goes again
 function geoCancel() {
-  if (_geoSnap && undoStack[undoStack.length - 1] === _geoSnap) popUndo();
+  // (and Redo as it was before it, v311)
+  if (_geoSnap && undoStack[undoStack.length - 1] === _geoSnap) popUndo(true);
   _geoSnap = null;
 }
 // the picture changed: an Undo step from okGeom leads back to it; without one the older steps no longer fit the picture
@@ -28246,6 +28504,9 @@ function pgUndo() {
   okGeom(function () {
     srcImg = pgOrig;
     pgQ = null;
+    // (v310.2: "Page kept as photographed · Straighten", as after Cancel: the way back to it is one tap, also on the
+    // quick check, whose Adjust photo is behind Fix sections)
+    pgHint = 'kept';
     if (!sensUser) adaptC = 9;
     pgProceed('Back to the photo as taken.');
   });
@@ -28779,7 +29040,10 @@ function applyLocks() {
   });
   for (const l in locks) {
     if (assignData.assign[l] !== undefined) {
-      const m = bk[locks[l]];
+      // (v310.2: a section with ink on the paper keeps its marker even when it's no longer one you can use, dry or
+      // unticked since: it's coloured with it. It had been laid afresh, as a pin for a marker not in the collection)
+      const m =
+        bk[locks[l]] || (_heldObj && _heldObj[l] && _heldObj[l].mkey === locks[l] ? _heldObj[l] : null);
       if (m) assignData.assign[l] = m;
     }
   }
@@ -32340,6 +32604,8 @@ function buildGuide(keepPlan) {
   // an Undo step kept from re-detecting or turning the picture starts a new one from here on
   const _t = undoStack[undoStack.length - 1];
   if (_t) _t.sealed = true;
+  // (and what was undone in Edit sections is no longer there to redo, v311)
+  secFwdEnd();
   const now = same ? planSnap() : null,
     unchanged = !!(was && now && planSame(was, now, true));
   guideDirty = unchanged ? wasDirty : true;
@@ -32457,7 +32723,9 @@ function zoneSigSync() {
    laying out, for that line. */
 let _holdOff = false,
   _heldRun = null,
-  _heldTold = 0;
+  _heldTold = 0,
+  // (the markers of the sections held by the laying under way, themselves: one no longer in the collection kept too)
+  _heldObj = null;
 function holdOn(run, extra) {
   _heldRun = null;
   if (!assignData) return null;
@@ -32469,6 +32737,7 @@ function holdOn(run, extra) {
       const m = assignData.assign[l];
       if (!m || tmp[l] !== undefined || !inkOn(l) || (zones.length && run.indexOf(zoneOf(l)) < 0)) return;
       tmp[l] = m.mkey;
+      (_heldObj || (_heldObj = {}))[l] = m;
       kept.push(l);
     });
   // (sections keeping their markers anyway, as a Random zone's that stayed put: laid as pinned for the moment, so the
@@ -32488,11 +32757,13 @@ function holdOn(run, extra) {
 // lay the zones ids with fn, sections with ink on the paper held (holdOn): every re-laying of the plan goes through
 // here (reassign; the sun moved under a light-to-dark Gradient; Blend's anchors; the Photo pattern's photo)
 function holdRun(ids, fn, extra) {
+  _heldObj = null;
   const was = holdOn(ids, extra);
   try {
     return zoneRun(ids, fn);
   } finally {
     if (was) locks = was;
+    _heldObj = null;
   }
 }
 // { section: marker key } of a zoneStayRandom result (null for none)
@@ -32502,8 +32773,27 @@ function stayKeys(stay) {
   for (const l in stay) o[l] = stay[l].m.mkey;
   return o;
 }
-function reassign(ids, moved) {
+// how (v310): { before, seed } — before() runs just before the plan is laid (Mood's generated palette), and both with
+// Math.random drawn from seed when there is one (a Mood picture's, 32-mood-pics): the drawing and the Undo step after
+// it get the true Math.random
+function reassign(ids, moved, how) {
   if (!labels || sfmode !== 'guide') return;
+  const lay = function () {
+    if (how && how.before) how.before();
+    return layPlan(ids, moved);
+  };
+  if ((how && how.seed != null ? mpSeeded(how.seed, lay) : lay()) === false) return false;
+  // (a section that changed zone may be shaded differently now, or not at all: part-done tones brought in line)
+  normalizeTones();
+  renderGuide();
+  renderControls();
+  if (tipL >= 0) showTip(tipL, tipBtns, true);
+  planCommit();
+  return true;
+}
+// The plan laid again, as reassign does it, without drawing it or making it an Undo step: false when it couldn't be
+// (v310: apart, so the Mood pictures, 32-mood-pics, lay a mood by exactly the steps a tap on it takes)
+function layPlan(ids, moved) {
   if (!Array.isArray(ids)) ids = null;
   guideDirty = true;
   selAnchor = -1;
@@ -32522,12 +32812,6 @@ function reassign(ids, moved) {
   // (a Gradient elsewhere whose bands faced a light that has since changed by itself: Main's pattern to or from Photo
   // under Light from's auto, or the only Photo zone gone)
   gradFollowLight();
-  // (a section that changed zone may be shaded differently now, or not at all: part-done tones brought in line)
-  normalizeTones();
-  renderGuide();
-  renderControls();
-  if (tipL >= 0) showTip(tipL, tipBtns, true);
-  planCommit();
   return true;
 }
 // (no "are you sure": the change is one Undo step, and coloured sections keep their markers)
@@ -34138,6 +34422,504 @@ function surpriseRoles() {
       : '')
   );
 }
+/* ---- Mood pictures (v310) ----
+   The Colours tab's Mood as six small pictures of the page, each laid in that mood with your markers: you see what a
+   mood does before you tap it. The current mood's picture is the guide itself. Shown where Mood can change the guide
+   by itself: not with zones, the Photo or Manual pattern, or a palette used as it is (where Mood is the row of buttons
+   it was, in its place, greyed out as before).
+
+   How a picture is made, while nothing else is going on (mpStep): everything laying the plan can change is kept
+   (mpSave), the mood is laid by exactly the steps a tap takes (Mood's handler: generatePalette when the palette is
+   generated, then layPlan, 30-palette-assign) with Math.random drawn from a seed, its colours read, and everything put
+   back (mpRestore) — all in one go, so nothing draws in between. Then a check: the plan as Undo sees it, and every
+   value kept, must be as before; if not, it is put back as Undo would and the pictures stop for this visit (in the
+   tests, an error). A tap on a mood whose picture was made from the guide as it is now lays it with that picture's
+   seed, so it comes out as the picture showed; the pictures are made again, with new seeds, after every change, so a
+   mood left and come back to is a new roll, as a tap on it was before. Nothing here is saved or is an Undo step. */
+const MP_WAIT = 600, // after the Plan last changed or was drawn
+  MP_GAP = 30, // between one mood's picture and the next
+  MP_MAX = 220; // a picture's longer side, in pixels
+let _mp = { key: '', pics: {}, seeds: {}, sigs: {}, t: 0, off: false },
+  _mpQuiet = false,
+  _mpBins = null;
+// the fingers (or the mouse button) down: no picture is made meanwhile, the page stays as it is under them
+const _mpPtrs = new Set();
+
+// the row is pictures (else Mood's buttons, as before)
+function mpShow() {
+  return (
+    !!labels &&
+    !!assignData &&
+    family !== 'photo' &&
+    family !== 'manual' &&
+    !zones.length &&
+    !((paletteSource === 'saved' || (paletteSource === 'generate' && !!fromPal)) && curSeedLen() > 0)
+  );
+}
+// the pictures are made (the tests turn them on where they look at them: they take a moment after each change)
+function mpOn() {
+  if (_mp.off) return false;
+  if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
+    try {
+      return localStorage.getItem('ms-test-moodpics') === '1';
+    } catch (_) {
+      return false;
+    }
+  }
+  return true;
+}
+// what the pictures were made from: the plan as Undo keeps it, the filters, the markers to use and what's coloured
+// (sections with ink keep their markers when a plan is laid again)
+function mpKey() {
+  const p = planSnap();
+  if (!p) return '';
+  let ink = '';
+  if (colored) for (let l = 1; l < comps.length; l++) if (inkOn(l)) ink += l + ',';
+  return (
+    p.js +
+    '|' +
+    p.filt +
+    '|' +
+    coll
+      .map(function (m) {
+        return m.mkey;
+      })
+      .join(',') +
+    '|' +
+    ink
+  );
+}
+// Math.random drawn from `seed` while fn runs (a mulberry32), and given back after
+function mpSeeded(seed, fn) {
+  const was = Math.random;
+  let a = seed >>> 0;
+  Math.random = function () {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  try {
+    return fn();
+  } finally {
+    Math.random = was;
+  }
+}
+// what laying a plan can change, kept: the values as they are (objects changed in place, as copies). From the audit
+// of v310: assignData and the style values are replaced, never changed in place, when a plan is laid.
+function mpSave() {
+  const st = {};
+  ZONE_KEYS.forEach(function (k) {
+    st[k] = STYLE_VAR[k];
+  });
+  return {
+    st: st,
+    radC: radC,
+    assignData: assignData,
+    locks: locks,
+    anchors: anchors,
+    zSig: _zSig,
+    origKeys: _origKeys,
+    origCopy: Object.assign({}, _origKeys),
+    selAnchor: selAnchor,
+    guideDirty: guideDirty,
+    lastPoolN: lastPoolN,
+    heldRun: _heldRun,
+    mk: _mkOpened,
+    mkCopy: Object.assign({}, _mkOpened),
+    bs: _blendSel,
+    bsCopy: Object.assign({}, _blendSel),
+    bst: balStat,
+    bstCopy: Object.assign({}, balStat),
+    held: heldSh,
+    heldCopy: Object.assign({}, heldSh),
+    heldVer: _heldVer,
+    phNone: _phNone,
+    phNoneCopy: Object.assign({}, _phNone),
+    phErr: _phErr,
+    phStats: _phStats,
+    phCol: _phCol,
+    phSug: _phSug,
+    tests: [gradScatLast, gradSmoothLast, gradFixLast, gradSameLast, gradTourWork],
+    planLast: planLast,
+    planN: planStack.length,
+    planFwdN: planFwd.length,
+  };
+}
+// everything mpSave kept, back as it was
+function mpRestore(s) {
+  ZONE_KEYS.forEach(function (k) {
+    if (k !== 'radC') STYLE_VAR[k] = s.st[k];
+  });
+  // (radC's setter makes a copy: the very value, back)
+  radC = s.radC;
+  assignData = s.assignData;
+  locks = s.locks;
+  anchors = s.anchors;
+  _zSig = s.zSig;
+  // (the same objects, their contents as they were: other code may hold them)
+  mpRefill(s.origKeys, s.origCopy);
+  _origKeys = s.origKeys;
+  selAnchor = s.selAnchor;
+  guideDirty = s.guideDirty;
+  lastPoolN = s.lastPoolN;
+  _heldRun = s.heldRun;
+  mpRefill(s.mk, s.mkCopy);
+  _mkOpened = s.mk;
+  mpRefill(s.bs, s.bsCopy);
+  _blendSel = s.bs;
+  mpRefill(s.bst, s.bstCopy);
+  balStat = s.bst;
+  // (the held shading only through heldReset, whose count the caches go by: a count never goes back, v304)
+  if (_heldVer !== s.heldVer || heldSh !== s.held) heldReset(s.heldCopy);
+  mpRefill(s.phNone, s.phNoneCopy);
+  _phNone = s.phNone;
+  _phErr = s.phErr;
+  _phStats = s.phStats;
+  _phCol = s.phCol;
+  if (_phSug !== s.phSug) {
+    if (_phSug && _phSug.timer) clearTimeout(_phSug.timer);
+    _phSug = s.phSug;
+  }
+  gradScatLast = s.tests[0];
+  gradSmoothLast = s.tests[1];
+  gradFixLast = s.tests[2];
+  gradSameLast = s.tests[3];
+  gradTourWork = s.tests[4];
+}
+function mpRefill(o, copy) {
+  for (const k in o) if (!(k in copy)) delete o[k];
+  for (const k in copy) o[k] = copy[k];
+}
+// what's different from what mpSave kept (empty: nothing)
+function mpDiff(s, js) {
+  const d = [];
+  ZONE_KEYS.forEach(function (k) {
+    if (k !== 'radC' && STYLE_VAR[k] !== s.st[k]) d.push(k);
+  });
+  if (radC !== s.radC) d.push('radC');
+  if (assignData !== s.assignData) d.push('assignData');
+  if (locks !== s.locks) d.push('locks');
+  if (anchors !== s.anchors) d.push('anchors');
+  if (_zSig !== s.zSig) d.push('_zSig');
+  if (selAnchor !== s.selAnchor) d.push('selAnchor');
+  if (guideDirty !== s.guideDirty) d.push('guideDirty');
+  if (lastPoolN !== s.lastPoolN) d.push('lastPoolN');
+  if (_heldRun !== s.heldRun) d.push('_heldRun');
+  if (planLast !== s.planLast || planStack.length !== s.planN || planFwd.length !== s.planFwdN)
+    d.push('undo');
+  if (JSON.stringify(_mkOpened) !== JSON.stringify(s.mkCopy)) d.push('_mkOpened');
+  if (JSON.stringify(_origKeys) !== JSON.stringify(s.origCopy)) d.push('_origKeys');
+  const p = planSnap();
+  if (!p || p.js !== js) d.push('plan');
+  return d;
+}
+// one mood laid from the guide as it is, with `seed`: its colours, section by section ({ l: hex }), or null when the
+// plan couldn't be laid in it. The guide is left exactly as it was.
+function mpLay(k, seed) {
+  const before = planSnap();
+  if (!before) return null;
+  const s = mpSave();
+  let out = null,
+    err = null;
+  _mpQuiet = true;
+  try {
+    // (the same steps, in the same order, as a tap on it: mpTap, reassign's `how`)
+    emphasis = k;
+    if (
+      mpSeeded(seed, function () {
+        if (genMade()) generatePalette();
+        return layPlan();
+      }) !== false &&
+      assignData
+    ) {
+      out = {};
+      for (const l in assignData.assign) out[l] = assignData.assign[l].hex;
+      if (assignData.paper) for (const l in assignData.paper) delete out[l];
+    }
+  } catch (e) {
+    err = e;
+  } finally {
+    _mpQuiet = false;
+    mpRestore(s);
+  }
+  // (checked however the laying ended: something it changed that wasn't kept, or an error part way, and the guide is
+  // put back as Undo would, with no more pictures this visit)
+  const d = mpDiff(s, before.js);
+  if (d.length || err) {
+    _mp.off = true;
+    if (d.length)
+      try {
+        planRestore(before, true);
+      } catch (_) {}
+    if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST)
+      throw err || new Error('Mood picture left the guide changed: ' + d.join(', '));
+    return null;
+  }
+  return out;
+}
+// a picture's colours, as a short signature (to check a tap laid what its picture showed)
+function mpSig(cols) {
+  if (!cols) return '';
+  let s = '';
+  for (const l in cols) s += l + cols[l] + ';';
+  return s;
+}
+function mpSigNow() {
+  if (!assignData) return '';
+  const cols = {};
+  for (const l in assignData.assign) cols[l] = assignData.assign[l].hex;
+  if (assignData.paper) for (const l in assignData.paper) delete cols[l];
+  return mpSig(cols);
+}
+
+/* ---- Drawing: the page small, its lines and each section's colour (no codes, shading or texture) ---- */
+function mpSize() {
+  const k = MP_MAX / Math.max(W, H);
+  return { w: Math.max(1, Math.round(W * k)), h: Math.max(1, Math.round(H * k)) };
+}
+// which small pixel each pixel of the page falls in, worked out once for the page (labels: the sections map)
+function mpBins() {
+  if (_mpBins && _mpBins.labels === labels && _mpBins.W === W && _mpBins.H === H) return _mpBins;
+  const sz = mpSize(),
+    // (every pixel at most 2 apart counted: enough for the lines to show, quick on a big page)
+    step = Math.max(1, Math.floor(Math.min(W / sz.w, H / sz.h) / 3)),
+    px = [],
+    bin = [];
+  for (let y = 0; y < H; y += step) {
+    const by = Math.min(sz.h - 1, ((y * sz.h) / H) | 0);
+    for (let x = 0; x < W; x += step) {
+      px.push(y * W + x);
+      bin.push(by * sz.w + Math.min(sz.w - 1, ((x * sz.w) / W) | 0));
+    }
+  }
+  _mpBins = {
+    labels: labels,
+    W: W,
+    H: H,
+    w: sz.w,
+    h: sz.h,
+    px: Int32Array.from(px),
+    bin: Int32Array.from(bin),
+  };
+  return _mpBins;
+}
+// the picture's pixels, from each section's colour (cols: { l: hex }; null: the lines only, for a picture to come)
+function mpImage(cols) {
+  const b = mpBins(),
+    n = b.w * b.h,
+    r = new Float32Array(n),
+    g = new Float32Array(n),
+    bl = new Float32Array(n),
+    c = new Uint16Array(n),
+    rgb = {};
+  for (let i = 0; i < b.px.length; i++) {
+    const l = labels[b.px[i]],
+      o = b.bin[i];
+    let col;
+    if (l === -1) col = cols ? LINE : [150, 154, 152];
+    else if (cols && cols[l]) col = rgb[l] || (rgb[l] = hexRgb(cols[l]));
+    else col = PAPER;
+    r[o] += col[0];
+    g[o] += col[1];
+    bl[o] += col[2];
+    c[o]++;
+  }
+  const im = new ImageData(b.w, b.h),
+    d = im.data;
+  for (let o = 0, j = 0; o < n; o++, j += 4) {
+    const k = c[o] || 1;
+    d[j] = c[o] ? r[o] / k : PAPER[0];
+    d[j + 1] = c[o] ? g[o] / k : PAPER[1];
+    d[j + 2] = c[o] ? bl[o] / k : PAPER[2];
+    d[j + 3] = 255;
+  }
+  return im;
+}
+function mpNowCols() {
+  if (!assignData) return null;
+  const cols = {};
+  for (const l in assignData.assign) cols[l] = assignData.assign[l].hex;
+  if (assignData.paper) for (const l in assignData.paper) delete cols[l];
+  return cols;
+}
+// each card's picture: the guide for the mood it's in, a picture made for the others, the lines while one is to come
+function mpPaint() {
+  const row = document.getElementById('sfMood');
+  if (!row || !row.classList.contains('sfmoodpics') || !labels) return;
+  const fresh = mpOn() && !!_mp.key && _mp.key === mpKeyCached();
+  row.querySelectorAll('.sfmp').forEach(function (bt) {
+    const k = bt.dataset.v,
+      cv = bt.querySelector('canvas');
+    if (!cv) return;
+    let im;
+    if (k === emphasis) im = mpNowImage();
+    else if (_mp.pics[k] && _mp.pics[k].im) im = _mp.pics[k].im;
+    if (!im) im = mpLinesImage();
+    if (cv.width !== im.width) cv.width = im.width;
+    if (cv.height !== im.height) cv.height = im.height;
+    cv.getContext('2d').putImageData(im, 0, 0);
+    const p = _mp.pics[k];
+    bt.classList.toggle('sfmpwait', k !== emphasis && !(p && p.im && fresh));
+    const none = !!(p && p.none && fresh);
+    bt.classList.toggle('sfmpnone', none);
+    const sub = bt.querySelector('.sfmpsub');
+    if (sub) sub.textContent = none ? 'Too few markers' : '';
+  });
+}
+// (the key is worked out once per drawing of the Plan: planSnap goes through every section)
+let _mpKeyAt = null;
+function mpKeyCached() {
+  if (!_mpKeyAt || _mpKeyAt.a !== assignData || _mpKeyAt.v !== _mpVer)
+    _mpKeyAt = { a: assignData, v: _mpVer, k: mpKey() };
+  return _mpKeyAt.k;
+}
+// goes up whenever the Plan is drawn (a change to anything the key reads draws it again)
+let _mpVer = 0;
+let _mpNowAt = null,
+  _mpLinesAt = null;
+// (v310.1: by the colours, not the plan's object: Change colour, Unpin and Fill change a section's marker in place)
+function mpNowImage() {
+  const sig = mpSigNow();
+  if (!_mpNowAt || _mpNowAt.s !== sig || _mpNowAt.l !== labels)
+    _mpNowAt = { s: sig, l: labels, im: mpImage(mpNowCols()) };
+  return _mpNowAt.im;
+}
+function mpLinesImage() {
+  if (!_mpLinesAt || _mpLinesAt.l !== labels) _mpLinesAt = { l: labels, im: mpImage(null) };
+  return _mpLinesAt.im;
+}
+
+/* ---- When: one mood at a time, once nothing has happened for a moment and the row is in view ---- */
+function mpSchedule(wait) {
+  clearTimeout(_mp.t);
+  _mp.t = 0;
+  if (!mpOn() || sfmode !== 'guide' || !mpShow()) return;
+  if (!MOOD_KEYS.some(mpWanted)) return;
+  _mp.t = setTimeout(mpStep, wait == null ? MP_WAIT : wait);
+}
+// a mood whose picture is still to be made, for the guide as it is
+function mpWanted(k) {
+  return k !== emphasis && (_mp.key !== mpKeyCached() || !(k in _mp.pics));
+}
+function mpReady() {
+  if (sfmode !== 'guide' || !labels || !assignData || gTab !== 'colours' || focus) return false;
+  if (planDrag || popOpen() || paintOn || photoAlign || _mpPtrs.size) return false;
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return false;
+  // (not while the first Build's bloom shows, 41-bloom: its frames are kept clear of other work; looked at again once
+  // it's over)
+  if (_bloom) {
+    bloomAfter(mpWake);
+    return false;
+  }
+  const row = document.getElementById('sfMood');
+  if (!row || !row.classList.contains('sfmoodpics')) return false;
+  const r = row.getBoundingClientRect();
+  return r.width > 0 && r.bottom > 0 && r.top < (window.innerHeight || document.documentElement.clientHeight);
+}
+function mpStep() {
+  _mp.t = 0;
+  if (!mpOn() || !mpShow()) return;
+  if (!mpReady()) {
+    // (in view later, or once the finger is up: looked at again then, mpWake)
+    return;
+  }
+  // (worked out afresh: a picture is only ever filed under the guide it was made from)
+  const key = mpKey();
+  if (key !== _mp.key) _mp = { key: key, pics: {}, seeds: {}, sigs: {}, t: 0, off: _mp.off };
+  const k = MOOD_KEYS.find(function (m) {
+    return m !== emphasis && !(m in _mp.pics);
+  });
+  if (!k) return;
+  const seed = (Math.random() * 4294967296) >>> 0,
+    t0 = Date.now();
+  let cols = null;
+  try {
+    cols = mpLay(k, seed);
+  } catch (e) {
+    _mp.off = true;
+    throw e;
+  }
+  if (_mp.off) return;
+  _mp.seeds[k] = seed;
+  _mp.sigs[k] = mpSig(cols);
+  _mp.pics[k] = cols ? { im: mpImage(cols) } : { none: true };
+  mpPaint();
+  // (v310.1: a slow one, as Random on a page of thousands of sections, leaves twice its time free before the next,
+  // so taps and scrolling meanwhile aren't kept waiting)
+  const took = Date.now() - t0;
+  if (MOOD_KEYS.some(mpWanted)) _mp.t = setTimeout(mpStep, took > 120 ? 2 * took : MP_GAP);
+}
+// looked at again when the row may have come into view, or a finger was lifted
+function mpWake() {
+  if (!_mp.t && mpOn() && sfmode === 'guide' && mpShow() && MOOD_KEYS.some(mpWanted)) mpSchedule(MP_WAIT);
+}
+// Mood's tap: as before, with the seed of the mood's picture when it was made from the guide as it is now (so it lays
+// as the picture showed). In the tests, a check that it did.
+function mpTap(k) {
+  const fresh = mpOn() && _mp.key && _mp.key === mpKey() && k in _mp.seeds && _mp.pics[k] && _mp.pics[k].im,
+    before = function () {
+      if (genMade()) generatePalette();
+    };
+  emphasis = k;
+  if (!fresh) return reassign(null, null, { before: before });
+  const want = _mp.sigs[k],
+    r = reassign(null, null, { before: before, seed: _mp.seeds[k] });
+  if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST && r !== false && mpSigNow() !== want)
+    throw new Error('Mood ' + k + ' laid differently from its picture');
+  return r;
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener(
+    'pointerdown',
+    function (e) {
+      _mpPtrs.add(e.pointerId);
+    },
+    true,
+  );
+  const up = function (e) {
+    _mpPtrs.delete(e.pointerId);
+    if (!_mpPtrs.size) mpWake();
+  };
+  document.addEventListener('pointerup', up, true);
+  document.addEventListener('pointercancel', up, true);
+  // (a finger whose lifting was never heard, as when the app went to the background: not held down for ever)
+  document.addEventListener('visibilitychange', function () {
+    _mpPtrs.clear();
+    if (document.visibilityState === 'visible') mpWake();
+  });
+  window.addEventListener('blur', function () {
+    _mpPtrs.clear();
+  });
+  window.addEventListener('scroll', mpWake, { passive: true, capture: true });
+}
+// the Mood row: the six pictures (or Mood's buttons as before, where the pictures aren't shown: mpShow)
+function moodPicsHTML() {
+  return (
+    '<div class="sfsublbl" id="sfMoodLbl">Mood</div><div class="sfmpwrap"><div id="sfMood" role="group" aria-labelledby="sfMoodLbl" class="sfmoodpics">' +
+    MOOD_KEYS.map(function (k) {
+      const on = emphasis === k;
+      return (
+        '<button type="button" class="sfmp' +
+        (on ? ' on' : '') +
+        '" data-v="' +
+        k +
+        '" aria-pressed="' +
+        on +
+        '"><canvas aria-hidden="true"></canvas><span class="sfmpname">' +
+        MOODS[k].label +
+        '</span><span class="sfmpsub"></span></button>'
+      );
+    }).join('') +
+    '</div></div>'
+  );
+}
+// after the Plan is drawn: the pictures in, and the next to make asked for
+function mpAfterPlan() {
+  _mpVer++;
+  mpPaint();
+  mpSchedule();
+}
 /* ---- zones: parts of the picture with their own pattern and colours ----
     A zone is a set of sections with its own Pattern and Colours settings (ZONE_KEYS: the pattern, its flow and look,
     the start colour, Blend's spread, mix and anchors, the marker count, Mood, Temperature and where the colours come
@@ -35656,6 +36438,8 @@ function positionTip() {
 }
 // said by screen readers (an aria-live region made in mount)
 function sayLive(t) {
+  // (v310: not while a Mood picture is made, 32-mood-pics)
+  if (_mpQuiet) return;
   const el = document.getElementById('sfLive');
   if (!el) return;
   sayLive.at = Date.now();
@@ -39834,6 +40618,8 @@ function photoSuggest(targets0, pool0) {
 }
 // after a rebuild: work out the suggestion for these colours and markers, unless it is already known or on its way
 function photoSugPlan(targets0, pool0) {
+  // (v310: not for a Mood picture, 32-mood-pics, which never lays the Photo pattern: kept out all the same)
+  if (_mpQuiet) return;
   const key = [
     photoPaper ? 1 : 0,
     pool0
@@ -41180,6 +41966,8 @@ try {
 function planTab(t) {
   if (!isPlanTab(t)) return;
   switchTab(t);
+  // (v310: the Mood pictures, made while Colours is showing)
+  if (t === 'colours') mpWake();
   try {
     localStorage.setItem(PTAB_KEY, t);
   } catch (_) {}
@@ -41191,7 +41979,17 @@ function renderControls() {
     return;
   }
   const ae = document.activeElement,
-    fid = ae && ae.id && ctlEl.contains(ae) ? ae.id : null;
+    fid = ae && ae.id && ctlEl.contains(ae) ? ae.id : null,
+    // (v310.1) a choice with no id of its own (a Mood picture, Pattern's buttons) is found again by its group's id
+    // and its value: Ctrl+Z from one had left the keyboard on the page
+    grp =
+      !fid && ae && ae.dataset && ae.dataset.v != null && ctlEl.contains(ae)
+        ? ae.parentElement.closest('[id]')
+        : null,
+    fsel =
+      grp && ctlEl.contains(grp)
+        ? '#' + CSS.escape(grp.id) + ' [data-v="' + CSS.escape(ae.dataset.v) + '"]'
+        : null;
   _renderControls();
   dockBar();
   renderHead();
@@ -41201,8 +41999,8 @@ function renderControls() {
   paneMin();
   touchRule();
   stageCheck();
-  if (fid) {
-    const el = document.getElementById(fid);
+  if (fid || fsel) {
+    const el = fid ? document.getElementById(fid) : ctlEl.querySelector(fsel);
     if (el && el !== document.activeElement && ctlEl.contains(el))
       try {
         el.focus({ preventScroll: true });
@@ -41297,6 +42095,7 @@ function ctlPlan() {
   ctlPlanWire();
   frameLineWire();
   ctlEl.setAttribute('data-tab', gTab);
+  mpAfterPlan();
   heldNoteWire();
   pinNoteWire();
   sampleNoteWire();
@@ -41435,6 +42234,9 @@ function mkCountCtl(off) {
 // the filters for Owned), then Temperature and Mood
 function ctlPlanColours() {
   let html = '<div class="sftab" data-tab="colours"' + ctlTabAttrs('colours') + '>' + zoneChipsHTML();
+  // (v310) Mood as pictures of the page, first: 32-mood-pics (where they aren't shown, Mood's buttons as before)
+  const _mpics = mpShow();
+  if (_mpics) html += moodPicsHTML();
   var _mkH = '',
     _expH = '';
   if (family !== 'manual') {
@@ -41595,7 +42397,7 @@ function ctlPlanColours() {
       (_tOff
         ? '<div class="sfc-note sfc-mt6">Main colour sets this: its colours are chosen (Pattern).</div>'
         : '');
-  if (_iShow)
+  if (_iShow && !_mpics)
     html +=
       '<div class="sfsublbl' +
       (_mOff ? ' sfoff' : '') +
@@ -42331,10 +43133,10 @@ function ctlWireColours() {
   if (_mood)
     _mood.addEventListener('click', function (e) {
       var b = e.target.closest('button');
+      // (v310: laid as its picture showed, when there is one: 32-mood-pics)
       if (b && !b.disabled && b.dataset.v !== emphasis) {
-        emphasis = b.dataset.v;
-        if (genMade()) generatePalette();
-        reassign();
+        mpTap(b.dataset.v);
+        ctlRefocus('#sfMood [data-v="' + b.dataset.v + '"]');
       }
     });
   // (v308) Include: a chip turns its group on or off (one Undo step)
@@ -42963,8 +43765,12 @@ function ctlCrop() {
 // Edit sections bar (v288): a new picture, Build guide; a guide already built and nothing edited, ← Plan (back to it
 // as it is, nothing rebuilt); once something is edited, ← Plan (which asks: Build again, Discard, Cancel) and Build
 // again, with a line that the colouring is kept when there is some
-function edBarHTML() {
-  return '<div class="sfbar sfedbar"><button id="sfToPlan" class="sfghost" style="display:none" aria-label="Back to the Plan">\u2190 Plan</button><button id="sfBuild" class="sfprimary" aria-label="Build guide">Build guide \u2192</button></div>';
+function edBarHTML(quick) {
+  return (
+    '<div class="sfbar sfedbar">' +
+    (quick ? '<button type="button" id="sfFix" class="sfghost">Fix sections</button>' : '') +
+    '<button id="sfToPlan" class="sfghost" style="display:none" aria-label="Back to the Plan">\u2190 Plan</button><button id="sfBuild" class="sfprimary" aria-label="Build guide">Build guide \u2192</button></div>'
+  );
 }
 function edBarSync() {
   const tp = document.getElementById('sfToPlan'),
@@ -43035,6 +43841,8 @@ function edToPlan(newGuide) {
 function edGoPlan() {
   stageGo();
   sfmode = 'guide';
+  // (v311: Redo of section edits is for the step: the Plan has its own)
+  secFwdEnd();
   renderControls();
   renderGuide();
 }
@@ -43117,8 +43925,9 @@ function denseAsk(go) {
     each = Math.max(1, Math.round(Math.sqrt((W * H) / Math.max(1, d.cnt)) * k)),
     under = Math.max(1, Math.round(Math.sqrt(minPx(m.pos)) * k)),
     n = stop ? d.kept : d.cnt,
-    // (a page of sections all much the same size: no Min section size leaves fewer, so it isn't offered)
-    less = m.d.cnt < d.cnt,
+    // (a page of sections all much the same size: no Min section size leaves fewer, so it isn't offered; v310.1: nor
+    // one that leaves none, as a grid of even squares jumps from all to none)
+    less = m.d.cnt > 0 && m.d.cnt < d.cnt,
     // (a size under 3 px on this screen means nothing to read: the smallest, then)
     keep = less
       ? under < 3
@@ -43159,6 +43968,11 @@ function denseAsk(go) {
 // back the sections without drawing the controls again, so a warning stayed or never showed)
 function segWarnSync() {
   if (sfmode !== 'review' || !ctlEl) return;
+  // (v310: the quick check gives way to the full step when a warning comes)
+  if (document.getElementById('sfQuick')) {
+    if (!secQuick()) renderControls();
+    return;
+  }
   const el = ctlEl.querySelector('.sfc-segwarn'),
     h = segWarnHTML();
   if (el) el.outerHTML = h;
@@ -43230,6 +44044,11 @@ function faintLineSync() {
     else if (!!document.getElementById('sfFaint').checked === !!faintCut) return;
     else el.outerHTML = h;
   } else if (h) {
+    // (v310: offered while the quick check shows: drawn again, the line where it shows there)
+    if (document.getElementById('sfQuick')) {
+      renderControls();
+      return;
+    }
     const at = ctlEl.querySelector('.sfc-segwarn') || document.getElementById('sfEdit');
     if (!at) return;
     at.insertAdjacentHTML('beforebegin', h);
@@ -43246,7 +44065,8 @@ function frameColour() {
     hasEdits = true;
     render();
     frameLineSync();
-    ctlRefocus('#sfEmToggle');
+    // (v310.1: the quick check's tools are hidden: Build guide, its next step)
+    ctlRefocus(document.getElementById('sfQuick') ? '#sfBuild' : '#sfEmToggle');
     sayLive('Paper round the drawing is a section');
     return;
   }
@@ -43268,11 +44088,105 @@ function frameColour() {
   planCommit(FRAME_STEP, false, { frame: { l: l, was: was } });
   ctlRefocus('#sfTab-' + gTab);
 }
+/* (v310) The quick check: a new picture's first Build, when the sections found raise no warning, asks only "Looks
+   right?" with Build guide, the tools behind Fix sections (the same markup, hidden, so every line kept in step
+   still finds its place). Once Fix sections is tapped, the full step stays on this device ('ms-sec-tools', set at
+   the first start of v310 for anyone with a guide in their Library: the step they know stays as it was). Lines that
+   need a choice (straightened, the paper round the drawing, faint grey marks) show in both. */
+let _secTools = null;
+function secToolsOn() {
+  if (_secTools != null) return _secTools;
+  try {
+    return localStorage.getItem('ms-sec-tools') === '1';
+  } catch (_) {
+    return false;
+  }
+}
+function secToolsSet() {
+  _secTools = true;
+  try {
+    localStorage.setItem('ms-sec-tools', '1');
+  } catch (_) {}
+}
+// the quick check is what's showing (not again for a picture a warning brought the full step for: the tools in use
+// stayed, but went at the next drawing of the step once the warning had gone)
+let _secFullAt = -1;
+function secQuick() {
+  return (
+    sfmode === 'review' &&
+    !assignData &&
+    !!srcImg &&
+    !!labels &&
+    !(segWarn && !segWarn.ok) &&
+    !secToolsOn() &&
+    _secFullAt !== loadGen
+  );
+}
+// Fix sections: the tools open now, and from now on
+function secFix() {
+  secToolsSet();
+  renderControls();
+  ctlRefocus('#sfEmToggle');
+  sayLive('Section tools open');
+}
+// (v310.1: said once for each picture, as the page comes to the check with the keyboard on nothing in particular: a
+// screen reader had heard nothing once the sections were found)
+// (v311: the full step too, and the step's heading gets the keyboard when nothing else has it, as a guide opened gets
+// its name: focusOpened. One the person has put somewhere on screen stays there.)
+let _secQuickSaid = -1;
+function secQuickN() {
+  const q = document.getElementById('sfQuickN');
+  if (q && countEl) q.textContent = countEl.textContent;
+  // (the full step with a warning is said with it, sections found or not)
+  const warn = !q && segWarn && !segWarn.ok ? segWarn.msg + ' ' : '';
+  if (
+    _secQuickSaid === loadGen ||
+    !countEl ||
+    !(warn || /^[1-9]/.test(countEl.textContent)) ||
+    sfmode !== 'review' ||
+    assignData ||
+    pgMode ||
+    cropMode ||
+    !ctlEl
+  )
+    return;
+  const h = q ? document.getElementById('sfQuickHead') : document.getElementById('sfSecHead');
+  if (!h || h.hidden || !workEl || workEl.offsetParent === null) return;
+  _secQuickSaid = loadGen;
+  sayLive(
+    q
+      ? 'Looks right? We found ' + countEl.textContent + ' to colour. Build guide, or Fix sections.'
+      : 'Check the sections. ' +
+          warn +
+          'We found ' +
+          countEl.textContent +
+          ' to colour.' +
+          (/^([2-9]|1\d)/.test(countEl.textContent) ? ' Build guide when they look right.' : ''),
+  );
+  const a = document.activeElement;
+  if (a && a !== document.body && a.isConnected && a.getClientRects().length) return;
+  try {
+    h.focus({ preventScroll: true });
+  } catch (_) {}
+}
 function ctlSections() {
+  if (sfmode === 'review' && !assignData && segWarn && !segWarn.ok) _secFullAt = loadGen;
   const mv = minPos,
+    quick = secQuick(),
+    // (the count as it was, so the line and the status bar don't read 0 until the sections are drawn again)
+    cntTxt = countEl ? countEl.textContent : '',
     // (v288) what this step is for, and the tools first; Adjust photo after the sliders
     head =
-      '<h3 class="sfedhead">Check the sections</h3><div class="sfc-note sfedline">Tap a section to leave it out or bring it back. Merge, split or add where the lines didn\u2019t come out right.</div>',
+      (quick
+        ? '<div id="sfQuick" class="sfquick"><h3 class="sfedhead" id="sfQuickHead" tabindex="-1">Looks right?</h3><div class="sfc-note sfedline">We found <b id="sfQuickN">' +
+          esc(cntTxt) +
+          '</b> to colour, shown in pale colours. The teal <span class="sfc-sw sfc-sw-bg"></span> is background: it stays white.</div></div>'
+        : '') +
+      '<h3 class="sfedhead" id="sfSecHead" tabindex="-1"' +
+      (quick ? ' hidden' : '') +
+      '>Check the sections</h3><div class="sfc-note sfedline"' +
+      (quick ? ' hidden' : '') +
+      '>Tap a section to leave it out or bring it back. Merge, split or add where the lines didn\u2019t come out right.</div>',
     adjust =
       '<button id="sfAdjToggle" class="sfexp sfc-mt12" aria-expanded="' +
       !!showAdjust +
@@ -43315,15 +44229,19 @@ function ctlSections() {
     head +
     faintLineHTML() +
     segWarnHTML() +
-    '<div id="sfEdit" role="group" aria-label="Edit tool" class="sfc-segs sfc-mt8"><button type="button" id="sfEmToggle" data-m="toggle" class="sfedit">Leave out</button><button type="button" id="sfEmMerge" data-m="merge" class="sfedit">Merge</button><button type="button" id="sfEmSplit" data-m="split" class="sfedit">Split</button><button type="button" id="sfEmAdd" data-m="add" class="sfedit">Add</button></div><label id="sfAutoCloseWrap" class="sfc-autoclose" style="display:none"><input type="checkbox" id="sfAutoClose"> Join the ends of a loop for me</label><div id="sfHint" class="sfc-note sfc-mt8"></div><div class="sfc-key"><span><span class="sfc-sw sfc-sw-sec"></span>section</span><span><span class="sfc-sw sfc-sw-bg"></span>background</span><span><span class="sfc-sw sfc-sw-ex"></span>left out</span></div>' +
+    '<div class="sfedtools"' +
+    (quick ? ' hidden' : '') +
+    '><div id="sfEdit" role="group" aria-label="Edit tool" class="sfc-segs sfc-mt8"><button type="button" id="sfEmToggle" data-m="toggle" class="sfedit">Leave out</button><button type="button" id="sfEmMerge" data-m="merge" class="sfedit">Merge</button><button type="button" id="sfEmSplit" data-m="split" class="sfedit">Split</button><button type="button" id="sfEmAdd" data-m="add" class="sfedit">Add</button></div><label id="sfAutoCloseWrap" class="sfc-autoclose" style="display:none"><input type="checkbox" id="sfAutoClose"> Join the ends of a loop for me</label><div id="sfHint" class="sfc-note sfc-mt8"></div><div class="sfc-key"><span><span class="sfc-sw sfc-sw-sec"></span>section</span><span><span class="sfc-sw sfc-sw-bg"></span>background</span><span><span class="sfc-sw sfc-sw-ex"></span>left out</span></div>' +
     '<label class="sfrng sfc-mt12">Min section size<input type="range" id="sfMin" min="0" max="100" value="' +
     mv +
-    '" aria-describedby="sfMinHint"></label><div id="sfMinHint" class="sfrnghint">Higher: small specks left out of the guide</div><span id="sfCount" hidden>0 sections</span><label class="sfrng">Background trim<input type="range" id="sfBg" min="0" max="100" value="' +
+    '" aria-describedby="sfMinHint"></label><div id="sfMinHint" class="sfrnghint">Higher: small specks left out of the guide</div><span id="sfCount" hidden>' +
+    esc(cntTxt || '0 sections') +
+    '</span><label class="sfrng">Background trim<input type="range" id="sfBg" min="0" max="100" value="' +
     bgTrim +
     '" aria-describedby="sfBgHint"></label><div id="sfBgHint" class="sfrnghint">Higher: more of what touches the edges counts as background</div>' +
     adjust +
-    '<div id="sfKeepLine" class="sfc-note sfc-mt10" style="display:none"></div></div>' +
-    edBarHTML();
+    '</div><div id="sfKeepLine" class="sfc-note sfc-mt10" style="display:none"></div></div>' +
+    edBarHTML(quick);
   minEl = document.getElementById('sfMin');
   countEl = document.getElementById('sfCount');
   // (the warning about tiny fragments counts those in the guide, so it's checked again once the slider is let go, v303)
@@ -43404,6 +44322,8 @@ function ctlSections() {
       });
     });
   }); // show "Building…" before the work starts
+  var _fx = document.getElementById('sfFix');
+  if (_fx) _fx.addEventListener('click', secFix);
   var _tp = document.getElementById('sfToPlan');
   // (not edToPlan itself: the click would come in as newGuide, and Discard would open the photo picker, v296)
   if (_tp)
@@ -45412,8 +46332,21 @@ function snapBytes(s) {
       ? s.d.length
       : 0;
 }
-function pushUndo(s) {
+// Redo in Edit sections (v311), as the Plan has it (87-undo planRedo): the edits Undo took back, newest last, each the
+// sections as that edit had left them (a snapshot of the same kind as its Undo step, sealed as that was). A new edit
+// clears it, as does leaving the step (Build, \u2190 Plan: secFwdEnd) or another picture (clearUndo). Every entry came
+// off undoStack, so the two together keep to about what Undo alone did.
+let secFwd = [];
+// redo: the step Redo puts back on (it keeps what's left to redo)
+function pushUndo(s, redo) {
   s._b = snapBytes(s);
+  // (Redo as it was before this edit, kept with it while it's the newest, should it be taken back unmade: popUndo)
+  const t = undoStack[undoStack.length - 1];
+  if (t) delete t._fwd;
+  if (!redo) {
+    if (secFwd.length) s._fwd = secFwd;
+    secFwd = [];
+  }
   undoStack.push(s);
   undoBytes += s._b;
   while (undoStack.length > 1 && (undoStack.length > MAXUNDO || undoBytes > UNDOBUDGET)) {
@@ -45422,22 +46355,34 @@ function pushUndo(s) {
   }
   updateUndoUI();
 }
-function popUndo() {
+// unmade: the edit came to nothing after all (a Split that didn't divide, a turn or crop cancelled): Redo is back
+function popUndo(unmade) {
   const s = undoStack.pop();
-  if (s) undoBytes -= s._b;
+  if (s) {
+    undoBytes -= s._b;
+    if (unmade && s._fwd) secFwd = s._fwd;
+    delete s._fwd;
+  }
   updateUndoUI();
   return s;
 }
 function clearUndo() {
   undoStack.length = 0;
   undoBytes = 0;
+  secFwd = [];
+  updateUndoUI();
+}
+// the step is left (Build, \u2190 Plan): what was undone in it can't be redone from the Plan or a later visit
+function secFwdEnd() {
+  if (!secFwd.length) return;
+  secFwd = [];
   updateUndoUI();
 }
 function updateUndoUI() {
   planBtn();
 }
-function snapshotSeg() {
-  pushUndo({
+function segObj() {
+  return {
     t: 'seg',
     labels: packLabels(labels),
     comps: comps.map(function (c) {
@@ -45466,11 +46411,48 @@ function snapshotSeg() {
     sec: secColor.slice(),
     ov: secState.slice(),
     col: colored.slice(),
-  });
+  };
+}
+function snapshotSeg() {
+  pushUndo(segObj());
+}
+// the sections as they are now, as a step of the same kind as u (for Redo, or for Undo after a Redo)
+function secNow(u) {
+  let s;
+  if (u.t === 'ov') s = { t: 'ov', d: secState.slice() };
+  else if (u.keep) s = keepObj(!!u.keep.geo);
+  else {
+    s = segObj();
+    // (the ticks as they are: Undo of a merge brings back those a build took off for it, tickBack; Redo takes them
+    // off again)
+    s.tk = {
+      col: colored.slice(),
+      tones: tonePart && tonePart._c === colored ? tonePart.slice() : null,
+      held: JSON.parse(JSON.stringify(_tickHeld)),
+    };
+  }
+  if (u.sealed) s.sealed = true;
+  return s;
 }
 function doUndo() {
   const u = popUndo();
   if (!u) return;
+  // (v311: the sections as they are, for Redo; none with a tilt still waiting, whose picture was never made)
+  if (_imgT) secFwd = [];
+  else secFwd.push(secNow(u));
+  secApply(u, false);
+}
+// Redo: the edit the last Undo took back, the sections as it left them; Undo takes it back again. Not while a change
+// to the detection waits to be made (it is a new edit: Redo goes with it)
+function secRedo() {
+  if (sfmode !== 'review' || !labels || !secFwd.length || pgMode || cropMode || _reFrom || _imgT) return;
+  const r = secFwd.pop();
+  pushUndo(secNow(r), true);
+  secApply(r, true);
+  planBtn();
+}
+// the sections back as step u has them (Undo; Redo, redo)
+function secApply(u, redo) {
   // (a tilt still waiting would redo the picture over what Undo puts back, and clear the steps before it, v304)
   imgCancel();
   if (u.t === 'ov') {
@@ -45523,7 +46505,20 @@ function doUndo() {
       }
       if (u.keep.progAt) progAt = Object.assign({}, u.keep.progAt);
       if (u.keep.held) heldReset(u.keep.held);
-    } else keepProgress(u.col);
+    } else {
+      keepProgress(u.col);
+      // (Redo: the ticks as they were before its Undo)
+      if (u.tk && colored) {
+        const c = new Uint8Array(comps.length);
+        c.set(u.tk.col.subarray(0, Math.min(u.tk.col.length, c.length)));
+        setColored(c);
+        if (u.tk.tones) {
+          const P = tp();
+          P.set(u.tk.tones.subarray(0, Math.min(u.tk.tones.length, P.length)));
+        }
+        _tickHeld = u.tk.held;
+      }
+    }
     if (u.keep) {
       locks = u.keep.locks;
       shadeFlat = u.keep.flat;
@@ -45562,7 +46557,7 @@ function doUndo() {
     if (g || (u.keep && u.keep.det)) renderControls();
     else segWarnSync();
     if (g) {
-      note('Back to the picture as it was.');
+      note(redo ? 'The change to the picture is back.' : 'Back to the picture as it was.');
     }
   }
 }
@@ -45862,7 +46857,7 @@ function edgeCut(startL, pts) {
   return 1;
 }
 function restoreSnap() {
-  const s = popUndo();
+  const s = popUndo(true);
   if (!s) return;
   labels = unpackLabels(s.labels);
   comps = s.comps;
@@ -47649,7 +48644,7 @@ function focusAllOfColour() {
   guideDirty = true;
   focusOrd.forEach(function (q) {
     if (assignData.assign[q].mkey === k && focusZoneOf(q) === z) {
-      if (!colored[q] && !was[q]) was[q] = [colored[q], tp()[q]];
+      if (!colored[q] && !was[q]) was[q] = [colored[q], tp()[q], heldSh[q] || null];
       colored[q] = 1;
       tp()[q] = 0;
     }
@@ -47665,18 +48660,11 @@ function focusAllOfColour() {
     toastActionHTML('Marked all ' + mcodeHTML(mm) + ' done', 'Undo', function () {
       // (v308.2: Focus mode closed since, the toast still up, it undoes too: it had done nothing)
       if (g !== loadGen || !assignData || comps.length !== K) return;
-      const P = tp();
-      for (const q in was) {
-        if (!colored[q]) continue;
-        colored[q] = was[q][0];
-        P[q] = was[q][1];
-      }
-      guideDirty = true;
-      // (no longer finished: finishing it again celebrates again)
-      celebrated = false;
-      normalizeTones();
+      // (as the list's Undo does, kept shading too: 82-colour-mode)
+      markBack(was, true);
       renderGuide();
       updateProgress();
+      renderFocusMarkers();
       if (focus) goFocus(Math.min(at, focusOrd.length - 1), true, true);
       else sayLive('Ticks as they were for ' + msay(mm));
     });
@@ -48130,6 +49118,12 @@ function editTapAt(P) {
     return;
   }
   if (sfmode !== 'review') return;
+  // (v310: the quick check changes nothing on a tap; the tools are behind Fix sections)
+  // (what shows decides: the tools may have been opened in another tab meanwhile)
+  if (document.getElementById('sfQuick')) {
+    if (l > 0) toast('To change the sections, tap Fix sections.', 2600);
+    return;
+  }
   if (editMode === 'merge') {
     if (l > 0) {
       // (v308) the background isn't merged with: a section merged into it went white with no word, or, brought back
@@ -48302,7 +49296,11 @@ function onDown(e) {
       }, 480);
     return;
   }
-  if (sfmode === 'review' && (editMode === 'split' || editMode === 'add')) {
+  if (
+    sfmode === 'review' &&
+    (editMode === 'split' || editMode === 'add') &&
+    !document.getElementById('sfQuick')
+  ) {
     const P = evPt(e);
     // (v304: also from on a line, where a stroke drawn from edge to edge starts; which section it cuts is found when
     // it ends, strokeSection)
@@ -48839,18 +49837,7 @@ function markActive(done) {
       'Undo',
       function () {
         if (g !== loadGen || !assignData || comps.length !== K) return;
-        const P = tp();
-        for (const l in was) {
-          if (!assignData.assign[l] || (done ? !colored[l] : colored[l])) continue;
-          colored[l] = was[l][0];
-          P[l] = was[l][1];
-          // (with the shading they were coloured with: 34-zones)
-          if (was[l][2]) heldSet(l, was[l][2]);
-          else if (done) heldSet(l, null);
-        }
-        guideDirty = true;
-        if (done) celebrated = false;
-        normalizeTones();
+        markBack(was, done);
         renderGuide();
         updateProgress();
         renderFocusMarkers();
@@ -48859,6 +49846,23 @@ function markActive(done) {
         sayLive((done ? 'Ticks as they were for ' : 'Ticks back for ') + msay(mk));
       },
     );
+}
+// Undo of Mark all (or Clear), here and in Focus mode (75-focus focusAllOfColour, v311: its own had left the kept
+// shading as Mark all made it): the ticks and part-done tones as they were, with the shading they were coloured with
+// (34-zones), keeping any ticked (or, after Clear, unticked) since. was: { section: [tick, tones, kept shading] }
+function markBack(was, done) {
+  const P = tp();
+  for (const l in was) {
+    if (!assignData.assign[l] || (done ? !colored[l] : colored[l])) continue;
+    colored[l] = was[l][0];
+    P[l] = was[l][1];
+    if (was[l][2]) heldSet(l, was[l][2]);
+    else if (done) heldSet(l, null);
+  }
+  guideDirty = true;
+  // (no longer finished: finishing it again celebrates again)
+  if (done) celebrated = false;
+  normalizeTones();
 }
 // how many sections are ticked, or part-way done (a tone ticked): what Reset progress would clear
 function progressCount() {
@@ -51582,8 +52586,8 @@ function zoneEditStart(id, kb) {
 // close the editor (a zone that got no sections goes); quiet: leave the screen to whoever called (a new picture)
 function zoneEditEnd(quiet) {
   if (!zoneEdit) return;
-  // (v309.1) the keyboard on one of the editor's own controls (Done, Delete zone, its name), or on nothing (Escape in
-  // the name field lets go of it): those are drawn again as it closes, so it goes to the zone's chip, or ＋ Zone
+  // (v309.1) the keyboard on one of the editor's own controls (Done, Delete zone, its name), or on nothing: those are
+  // drawn again as it closes, so it goes to the zone's chip, or ＋ Zone
   const _ae = document.activeElement,
     _kbBack = !_ae || _ae === document.body || !!(_ae.closest && _ae.closest('#sfPanel-pattern'));
   zoneEdit = false;
@@ -51763,11 +52767,29 @@ function zoneWire() {
         e.preventDefault();
         nm.blur();
       } else if (e.key === 'Escape') {
-        // (Escape in the field puts the name back, as it does in the guide's name)
+        // (Escape in the field puts the name back, as it does in the guide's name; v311: and the keyboard stays in
+        // the field, its text chosen to type over (it had been let go to the page). A second Escape in a row, with
+        // nothing more to put back, closes the editor as Escape from its other controls does: to the zone's chip.)
+        e.preventDefault();
+        e.stopPropagation();
+        if (nm._esc) {
+          zoneNameCommit();
+          zoneEditEnd();
+          return;
+        }
         const z = zoneById(zoneCur);
         if (z) nm.value = z.name;
-        nm.blur();
+        nm._esc = 1;
+        try {
+          nm.select();
+        } catch (_) {}
       }
+    });
+    // (typing again, or coming back to the field: the next Escape puts the name back first)
+    ['input', 'focus'].forEach(function (ev) {
+      nm.addEventListener(ev, function () {
+        nm._esc = 0;
+      });
     });
     nm.addEventListener('change', zoneNameCommit);
   }
@@ -52446,9 +53468,16 @@ function distinctMk() {
 // (the shared image, its layout and Reveal's celebration: 89-show.js)
 function downloadClip() {
   if (!revBlob) return;
-  handOver(revBlob, 'marker-studio-reveal.' + (revMime.indexOf('mp4') >= 0 ? 'mp4' : 'webm'), {
-    preferShare: false,
-  });
+  // (v310.1: named after the guide, as Save image and the PDF are)
+  handOver(
+    revBlob,
+    fileSlug(curName, 'colour-guide', 80).toLowerCase() +
+      '-reveal.' +
+      (revMime.indexOf('mp4') >= 0 ? 'mp4' : 'webm'),
+    {
+      preferShare: false,
+    },
+  );
 }
 /* ---- undo for the guide ----
     Everything that decides how the guide looks (Shuffle, Surprise, pattern, markers, filters, pins, section colours,
@@ -52550,6 +53579,9 @@ function planSnap() {
     none: Object.assign({}, _phNone),
     shp: shp,
     shps: shps,
+    // (v310.2) the markers sections show a stand-in for (dry, or no longer yours: 97-open), beside the plan: Undo
+    // back to a plan with stand-ins brings back what the guide keeps for them
+    ok: Object.keys(_origKeys).length ? JSON.parse(JSON.stringify(_origKeys)) : null,
   };
 }
 function planSame(p, q, noFilt) {
@@ -53300,6 +54332,7 @@ function planRestore(e, noFilt) {
     assignData.paper = pp;
   }
   locks = Object.assign({}, s.locks);
+  _origKeys = e.ok ? JSON.parse(JSON.stringify(e.ok)) : {};
   anchors = s.anchors.map(function (x) {
     return { x: x.x, y: x.y, mkey: x.mkey };
   });
@@ -53460,16 +54493,25 @@ function planBtn() {
     b.setAttribute('aria-label', l);
     b.title = l;
   }
+  // (v311: and in Edit sections, the section edit Undo took back)
   const r = document.getElementById('sfPlanRedo'),
-    ron = sfmode === 'guide' && !!assignData && planFwd.length > 0 && !pgMode && !cropMode && !popOpen();
+    rrev = sfmode === 'review' && !!labels && secFwd.length > 0 && !pgMode && !cropMode,
+    ron =
+      rrev ||
+      (sfmode === 'guide' && !!assignData && planFwd.length > 0 && !pgMode && !cropMode && !popOpen());
   if (r) {
     r.style.display = ron ? '' : 'none';
     if (ron) {
-      const l2 = 'Redo: ' + planFwd[planFwd.length - 1].back.label;
+      const l2 = rrev ? 'Redo the section edit' : 'Redo: ' + planFwd[planFwd.length - 1].back.label;
       r.setAttribute('aria-label', l2);
       r.title = l2;
     }
   }
+  // (v311: the last Undo or Redo taken by the keyboard hides its button: the keyboard goes to the other, rather than
+  // to the page)
+  const ae = document.activeElement;
+  if (r && ae === b && !on && ron) r.focus({ preventScroll: true });
+  else if (r && ae === r && !ron && on) b.focus({ preventScroll: true });
   planFit();
 }
 function toolUndo() {
@@ -53477,6 +54519,10 @@ function toolUndo() {
     doUndo();
     planBtn();
   } else planUndo();
+}
+function toolRedo() {
+  if (sfmode === 'review') secRedo();
+  else planRedo();
 }
 // on a narrow row the status's second part goes first ("· 16 markers"), then the word "Undo" (the icon stays), then
 // the rest of the status, then the buttons narrow a little; parts go whole, never cut mid-number. Side by side the
@@ -53506,7 +54552,7 @@ function planInit() {
   const b = document.getElementById('sfPlanUndo');
   if (b) b.addEventListener('click', toolUndo);
   const rb = document.getElementById('sfPlanRedo');
-  if (rb) rb.addEventListener('click', planRedo);
+  if (rb) rb.addEventListener('click', toolRedo);
   if (ctlEl) {
     ctlEl.addEventListener(
       'pointerdown',
@@ -53537,7 +54583,8 @@ function planInit() {
   window.addEventListener('resize', function () {
     requestAnimationFrame(planFit);
   });
-  // Ctrl+Z / Cmd+Z in Plan and in Edit sections (as ↶ Undo in the tool row), except while typing
+  // Ctrl+Z / Cmd+Z in Plan and in Edit sections (as ↶ Undo in the tool row), and Ctrl+Shift+Z / Cmd+Shift+Z / Ctrl+Y
+  // (as ↷ Redo), except while typing
   document.addEventListener('keydown', function (e) {
     const k = String(e.key).toLowerCase(),
       redo = (k === 'z' && e.shiftKey) || (k === 'y' && e.ctrlKey && !e.metaKey && !e.shiftKey);
@@ -53555,10 +54602,9 @@ function planInit() {
       return;
     if (dialogOpen() || sheetOpen()) return;
     e.preventDefault();
-    // (Redo: in the plan only; Edit sections has no Redo)
-    if (redo) {
-      if (sfmode === 'guide') planRedo();
-    } else toolUndo();
+    // (Redo: in the plan, and in Edit sections since v311)
+    if (redo) toolRedo();
+    else toolUndo();
   });
 }
 function updateProgress() {
@@ -59585,6 +60631,8 @@ function enter() {
   else {
     if (metaEl) metaEl.innerHTML = metaText();
     renderControls();
+    // (v310.2: markers marked dry or unticked meanwhile, their sections' stand-ins drawn and said: 97-open)
+    if (_standDraw || _standSay) standInsShow();
   }
   palNote();
   if (planLast) planLast.filt = planFilt();
@@ -60128,26 +61176,14 @@ function openDesignObj(d, id, resumed, quiet, col) {
             ' this app doesn\u2019t know, so ' +
             (nlost === 1 ? 'it stays' : 'they stay') +
             ' white.'
-          : '',
-        pl = function (k, w) {
-          return k + ' marker' + (k > 1 ? 's' : '') + ' ' + w;
-        };
+          : '';
       note(
         _edResumed
           ? 'Your section edits are back \u2014 Build again to keep them.'
           : _openEmpty
             ? 'None of this guide\u2019s markers could be shown, so it won\u2019t be saved over. Check your collection, then open it again.'
             : nd || ng
-              ? [
-                  nd ? pl(nd, nd > 1 ? 'are dry' : 'is dry') : '',
-                  ng ? pl(ng, 'no longer in your collection') : '',
-                ]
-                  .filter(Boolean)
-                  .join(' and ') +
-                ' \u2014 sections still to colour show the closest you own. The guide keeps ' +
-                (nd + ng > 1 ? 'them' : 'it') +
-                ' until you change those sections.' +
-                (lostTxt ? ' ' + lostTxt : '')
+              ? standInSay(nd, ng) + (lostTxt ? ' ' + lostTxt : '')
               : lostTxt || metaText(),
       );
       // reloaded in place while colouring along (col): it stays in Colour along; from Home's Continue, at the marker
@@ -60385,6 +61421,7 @@ function openDesign(id, cont) {
   ) {
     if (sfmode === 'review') {
       sfmode = 'guide';
+      secFwdEnd();
       renderControls();
       renderGuide();
     }
@@ -60460,12 +61497,128 @@ function setCollection(list) {
   if (metaEl) metaEl.innerHTML = metaText();
   // (a finished page's "Did any run low?" chips follow a marker's ink or a marker no longer yours, v306)
   lowRefresh();
+  // (v310.2) an open guide follows at once, as opening it again would
+  standInsSync();
+}
+// What opening a guide says of markers now dry or no longer yours (nd, ng: how many of each)
+function standInSay(nd, ng) {
+  const pl = function (k, w) {
+    return k + ' marker' + (k > 1 ? 's' : '') + ' ' + w;
+  };
+  return (
+    [
+      nd ? pl(nd, nd > 1 ? 'are dry' : 'is dry') : '',
+      ng ? pl(ng, (ng > 1 ? 'are' : 'is') + ' no longer in your collection') : '',
+    ]
+      .filter(Boolean)
+      .join(' and ') +
+    ' \u2014 sections still to colour show the closest you own. The guide keeps ' +
+    (nd + ng > 1 ? 'them' : 'it') +
+    ' until you change those sections.'
+  );
+}
+/* (v310.2) The collection changed while a guide is open (a marker marked dry, or unticked, in Markers): its sections
+   still to colour show the closest marker you own, as opening it again would (97-open's stand-ins: the guide keeps the
+   marker it had, _origKeys, until those sections are changed); coloured sections keep theirs. A marker back in the
+   collection (ticked again, or the change undone) is back in its sections. Not an Undo step: the plan's Undo baseline
+   follows, so the next change isn't taken for one. Said once the guide shows. */
+let _standSay = null,
+  _standDraw = false;
+function standInsSync() {
+  if (!assignData || !assignData.assign || !labels || !coll.length) return;
+  const byKey = Object.create(null),
+    assign = assignData.assign,
+    dryK = {},
+    goneK = {},
+    near = {};
+  coll.forEach(function (m) {
+    byKey[m.mkey] = m;
+  });
+  let changed = false;
+  for (const ls in assign) {
+    const l = +ls,
+      m = assign[ls],
+      o = _origKeys[l],
+      k = o ? o.k : m && m.mkey;
+    if (!m || !k) continue;
+    if (byKey[k]) {
+      // (yours again: the marker it had, back)
+      if (o) {
+        if (o.s.indexOf(m.mkey) >= 0 && m.mkey !== k) {
+          assign[ls] = byKey[k];
+          changed = true;
+        }
+        if (o.s.indexOf(m.mkey) >= 0 || m.mkey === k) delete _origKeys[l];
+      }
+      continue;
+    }
+    // (coloured, already showing a stand-in, or changed since by hand: left as it is)
+    if (inkOn(l) || (o && o.s.indexOf(m.mkey) < 0) || (o && m.mkey !== k)) continue;
+    if (noInkOwned(k)) continue;
+    const c = catMarker(k);
+    if (!c) continue;
+    if (!(k in near)) near[k] = c.lab ? nearestInPool(c.lab, coll) : null;
+    const rep = near[k];
+    if (!rep) continue;
+    assign[ls] = rep;
+    _origKeys[l] = { k: k, s: [c.mkey, rep.mkey] };
+    (markerDry(k) ? dryK : goneK)[k] = 1;
+    changed = true;
+  }
+  if (!changed) return;
+  _rg = null;
+  // (the plan as it now is, the baseline the next change is measured from: not an Undo step of its own)
+  if (planLast) {
+    const cur = planSnap();
+    if (cur) planLast = cur;
+  }
+  const nd = Object.keys(dryK).length,
+    ng = Object.keys(goneK).length;
+  if (nd || ng) _standSay = standInSay(nd, ng);
+  if (document.getElementById('sfPick') && root.style.display !== 'none') standInsShow();
+  else _standDraw = true;
+}
+// the guide drawn with them, and said, once it shows
+function standInsShow() {
+  _standDraw = false;
+  if (!assignData) return;
+  if (sfmode === 'guide' || sfmode === 'color') {
+    renderGuide();
+    renderControls();
+    if (sfmode === 'color') updateProgress();
+  }
+  if (_standSay) {
+    note(_standSay);
+    _standSay = null;
+  }
 }
 function configure(a) {
   api = a || {};
 }
 if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
   globalThis.__mstest = {
+    // (v310: the Mood pictures, 32-mood-pics)
+    mpLay: mpLay,
+    mpKey: mpKey,
+    mpShow: mpShow,
+    mpSave: mpSave,
+    mpDiff: mpDiff,
+    mpSigNow: mpSigNow,
+    mpSig: mpSig,
+    planSnap: planSnap,
+    layPlan: layPlan,
+    get mp() {
+      return _mp;
+    },
+    get mpPtrs() {
+      return _mpPtrs;
+    },
+    get emphasis() {
+      return emphasis;
+    },
+    get planStack() {
+      return planStack;
+    },
     segment: segment,
     labelCells: labelCells,
     applyBg: applyBg,
@@ -60751,6 +61904,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     // (v304 tests: the tone lines drawn into a buffer; a held shading put back as Undo does; the brand letters in print)
     shadeLinesDraw: shadeLinesDraw,
     heldSet: heldSet,
+    get heldSh() {
+      return heldSh;
+    },
     guideMixed: guideMixed,
     shadePick: shadePick,
     shadeStylePick: shadeStylePick,
@@ -60903,6 +62059,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     get undoCount() {
       return undoStack.length;
+    },
+    get redoCount() {
+      return secFwd.length;
     },
     get planCount() {
       return planStack.length;
@@ -64226,7 +65385,7 @@ function closeScan() {
     $('scTitle').textContent = 'Scan or type codes';
     scanRender();
   }
-  if (scanOpener && scanOpener.isConnected) scanOpener.focus({ preventScroll: true });
+  openerBack(scanOpener);
   scanOpener = null;
 }
 // (v309) Find my set: the caps read (with any left in the box) go back to the welcome
@@ -64328,10 +65487,9 @@ function scanAdd() {
 }
 (function () {
   const ov = $('scanOverlay'),
-    box = $('scBox'),
-    go = $('scanOpen');
-  if (!ov || !box || !go) return;
-  go.addEventListener('click', openScan);
+    box = $('scBox');
+  if (!ov || !box) return;
+  // (v311: opened from Markers' Add markers, events.js addWay; no button of its own on the page)
   $('scClose').addEventListener('click', closeScan);
   $('scAdd').addEventListener('click', scanAdd);
   $('scClear').addEventListener('click', function () {
@@ -64790,7 +65948,7 @@ function closeChart() {
   closeDialog(ov);
   chartAfter = null;
   chartUndone = null;
-  if (chartOpener && chartOpener.isConnected) chartOpener.focus({ preventScroll: true });
+  openerBack(chartOpener);
   chartOpener = null;
 }
 function chartSave() {
@@ -64834,10 +65992,8 @@ function chartSave() {
   if (after) after(ch.add.length, ch.del.length);
 }
 (function () {
-  const ov = $('chartOverlay'),
-    go = $('chartOpen');
+  const ov = $('chartOverlay');
   if (!ov) return;
-  if (go) go.addEventListener('click', openChart);
   $('chClose').addEventListener('click', closeChart);
   $('chSave').addEventListener('click', chartSave);
   ov.addEventListener('click', function (e) {
@@ -65213,7 +66369,11 @@ document.addEventListener('keydown', function (e) {
     $(id).scrollTop = 0;
   }
   function back() {
-    if (!trail.length) return false;
+    if (!trail.length) {
+      // (v311: Markers' Add markers sheet: Back, Escape or the backdrop from where it opened closes it)
+      if (mk) mkClose();
+      return mk;
+    }
     var t = trail.pop();
     show(t.id, true);
     // (the keyboard back on what led to the step just left, else the step's heading or its first button)
@@ -65305,7 +66465,8 @@ document.addEventListener('keydown', function (e) {
   // a set has, takes them back out and the welcome back to where they were added from)
   // (v309.2: as Markers' Add a set: what's added comes off To buy and loses a Running low or Dry mark; Undo gives
   // both back. And whether an Ohuhu set's Colorless Blender came with it, ownBlender, for step 2 to say so)
-  var ownBlender = false;
+  var ownBlender = false,
+    ownFresh = 0;
   function own(keys) {
     var before = new Set(state.owned),
       wishWas = state.wish.slice(),
@@ -65328,9 +66489,11 @@ document.addEventListener('keydown', function (e) {
     if (typeof presetRelist === 'function') presetRelist();
     if (off.length || Object.keys(ink).length) wishChanged();
     ownBlender = fresh.indexOf('Ohuhu|0') >= 0;
+    ownFresh = fresh.length;
     var n = setKeys(fresh).length;
+    // (v311: the Colorless Blender a set brought, said as Markers' Add a set says it, v310.1)
     if (fresh.length)
-      toastAction(addedManyLine(n || fresh.length, off.length), 'Undo', function () {
+      toastAction(addedManyLine(n || fresh.length, off.length, ownBlender && n > 0), 'Undo', function () {
         fresh.forEach(function (k) {
           state.owned.delete(k);
         });
@@ -65391,7 +66554,8 @@ document.addEventListener('keydown', function (e) {
       x.checked = false;
     });
     upd();
-    added(n, names);
+    if (mk) mkAdded(names);
+    else added(n, names);
   });
   $('wcSkip').addEventListener('click', function () {
     step2(
@@ -65578,7 +66742,8 @@ document.addEventListener('keydown', function (e) {
     }
     var n = own(keys);
     if (n < 0) return;
-    added(n, names);
+    if (mk) mkAdded(names);
+    else added(n, names);
   });
   // --- one by one: Scan, the colour chart (chart.js), typing (Scan's box takes typing and pastes too) ---
   function toOne() {
@@ -65586,7 +66751,21 @@ document.addEventListener('keydown', function (e) {
     $('wcTO').focus({ preventScroll: true });
   }
   $('wcOneByOne').addEventListener('click', toOne);
-  $('wcFindNone').addEventListener('click', toOne);
+  $('wcFindNone').addEventListener('click', function () {
+    // (v311: in Markers' sheet, its ways to add: back to them, or to them afresh when Find was opened on its own)
+    if (!mk) return toOne.call(this);
+    var at = trail.findIndex(function (t) {
+      return t.id === 'wcStepAdd';
+    });
+    if (at >= 0) {
+      trail = trail.slice(0, at + 1);
+      back();
+    } else {
+      trail = [];
+      show('wcStepAdd', true);
+      $('wcTA').focus({ preventScroll: true });
+    }
+  });
   $('wcMoreExtra').addEventListener('click', toOne);
   $('wcMoreSet').addEventListener('click', function () {
     sets.innerHTML = presetListHTML();
@@ -65648,6 +66827,97 @@ document.addEventListener('keydown', function (e) {
       restoreToast(sm.text, sm.long ? 7000 : 4000, r);
     });
   });
+  /* (v311) Markers' Add markers: this card as a sheet over Markers, from its + Add markers (or, with no markers yet,
+     the card at its top: finder.js, chrome.js). Its own first step (wcStepAdd: a set, Scan, the chart, Find), or the
+     sets list or Find straight away; the welcome's picture and first-run lines aren't shown (.wcmk). Adding a set, or
+     a set found, closes it with the usual message and Undo (no "Anything else?"); Scan and the chart open as they
+     always have, the sheet closed first. Back from the step it opened at closes it. */
+  var mk = false,
+    mkFrom = null;
+  function mkOpen(step) {
+    mk = true;
+    mkFrom = document.activeElement;
+    snap = null;
+    trail = [];
+    ov.classList.add('wcmk');
+    ov.classList.remove('wcplain');
+    sets.innerHTML = presetListHTML();
+    upd();
+    $('wcAddWays').innerHTML = addWaysHTML('mka');
+    $('wcFindNone').textContent = 'None of these: other ways to add';
+    ov.querySelectorAll('.wcstep').forEach(function (e) {
+      e.style.display = 'none';
+    });
+    cur = step === 'set' ? 'wcStep1' : step === 'find' ? 'wcStepFind' : 'wcStepAdd';
+    $(cur).style.display = '';
+    ov.querySelector('.wcard').dataset.step = cur;
+    openDialog(ov);
+    var h = $(cur).querySelector('.wctitle[tabindex]');
+    if (h) h.focus({ preventScroll: true });
+  }
+  // (handing on: Scan or the chart opens next and takes the keyboard from where the sheet was opened)
+  function mkClose(handing) {
+    if (!mk) return;
+    mk = false;
+    trail = [];
+    closeDialog(ov);
+    ov.classList.remove('wcmk');
+    $('wcFindNone').textContent = 'None of these: I\u2019ll add them one by one';
+    // (the keyboard back where the sheet was opened from; the card at the top goes once there are markers, so then on
+    // Add markers, at the top of the collection)
+    var from = mkFrom;
+    mkFrom = null;
+    if (handing) return;
+    setTimeout(function () {
+      var to = from && from.isConnected && from.getClientRects().length ? from : $('mkAddBtn');
+      if (to && to.getClientRects().length) {
+        if (to !== from) window.scrollTo(0, 0);
+        to.focus({ preventScroll: true });
+      }
+    }, 0);
+  }
+  // a set added (or found) from the sheet: closed, the message with Undo said by own(); nothing new, said so
+  function mkAdded(names) {
+    mkClose();
+    if (!ownFresh)
+      toast(
+        names && names.length
+          ? setNames(names) + (names.length === 1 ? ' is' : ' are') + ' already in your collection.'
+          : 'They were already in your collection.',
+        3200,
+      );
+  }
+  $('wcAddWays').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-add]');
+    if (!b) return;
+    var a = b.dataset.add;
+    if (a === 'set') {
+      sets.innerHTML = presetListHTML();
+      upd();
+      show('wcStep1', false, b);
+      $('wcT1').focus({ preventScroll: true });
+    } else if (a === 'find') toFind.call(b);
+    else {
+      var from = mkFrom;
+      mkClose(true);
+      addWay(a, from && from.isConnected && from.getClientRects().length ? from : $('mkAddBtn'));
+    }
+  });
+  window.openAddMarkers = mkOpen;
+  // (the sets' ticks and counts, while the list is open: Scan's toast, another tab; the boxes ticked stay ticked)
+  presetRelist = function () {
+    var on = [].map.call(sets.querySelectorAll('input:checked'), function (x) {
+      return x.getAttribute('data-i');
+    });
+    var h = presetListHTML();
+    if (sets.innerHTML === h && !on.length) return;
+    sets.innerHTML = h;
+    on.forEach(function (i) {
+      var x = sets.querySelector('input[data-i="' + i + '"]');
+      if (x) x.checked = true;
+    });
+    upd();
+  };
   $('wcSample').addEventListener('click', function () {
     close();
     setMode('sections');
@@ -67346,6 +68616,22 @@ function renderHomeNotes() {
 // newer than the version last seen (ms-last-ver), up to four (not on a fresh install); Help › About lists this
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v311',
+    t: 'Markers has one Add markers button at the top: add a set you own, scan or type codes, tick colours on a chart, or find which set you have from 3 caps. Clear collection is now in ⋯. Edit sections has Redo.',
+  },
+  {
+    v: 'v310.2',
+    t: 'A guide you have open now follows a marker you mark dry or untick in Markers: sections still to colour show the closest you own, as reopening it does. Palette unlocks a locked colour you can no longer use, and says so.',
+  },
+  {
+    v: 'v310.1',
+    t: 'Fixes from a full check of the app. Add a set now says when it adds the set’s Colorless Blender, and its list keeps up as you tick markers. Reveal’s clip is named after your guide.',
+  },
+  {
+    v: 'v310',
+    t: 'Mood, in a guide’s Colours tab, is now six small pictures of your page, one per mood: tap the one you like. New testers check a page’s sections with one question, “Looks right?”, with the tools behind Fix sections.',
+  },
   {
     v: 'v309.2',
     t: 'Save image names the file after your guide. A very small picture now says it’s too small, rather than suggesting settings. Smaller fixes for the keyboard and larger text.',

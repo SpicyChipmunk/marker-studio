@@ -3,7 +3,7 @@
 // brand was ever chosen and Brands I'd buy is that brand too (or automatic), and the choices say which are yours.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle, openBackupDialog } from './helpers.mjs';
+import { setup, teardown, openApp, idle, openBackupDialog, scanFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -44,7 +44,7 @@ test('Match a colour: a hex code part-typed greys the last result; Enter on 1 to
   assert.deepEqual(errors, []);
 });
 
-const scanOpen = async (page) => { await page.click('#mCollection'); await idle(page); await page.click('#scanOpen'); await idle(page); };
+const scanOpen = async (page) => { await page.click('#mCollection'); await idle(page); await scanFromMarkers(page); await idle(page); };
 const pressed = (page) => page.$eval('#scBrand button[aria-pressed="true"]', (b) => b.dataset.b);
 const type = async (page, text) => { await page.fill('#scBox', text); await page.press('#scBox', 'Enter'); await idle(page); };
 
@@ -61,7 +61,7 @@ test('Scan: an all-Ohuhu collection starts on Ohuhu, shown and said, until a bra
   await page.click('#scBrand button[data-b=""]'); await idle(page);
   assert.equal(await page.evaluate(() => localStorage.getItem('ms-scan-brand')), '');
   await page.click('#scClose'); await idle(page);
-  await page.click('#scanOpen'); await idle(page);
+  await scanFromMarkers(page); await idle(page);
   assert.equal(await pressed(page), '');
   assert.match(await page.textContent('#scStat'), /Each marker read shows here/);
   assert.deepEqual(errors, []);

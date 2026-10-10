@@ -66,25 +66,6 @@
   font-size: var(--t-base);
   flex: none;
 }
-.presetfoot {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-}
-#presetAdd {
-  flex: 1;
-  padding: 4px 12px;
-}
-#presetReset {
-  padding: 4px 15px;
-  border-radius: var(--r-md);
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--sub);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
 #backupWrap {
   margin: 22px 2px 6px;
   padding-top: 18px;

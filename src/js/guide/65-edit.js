@@ -43,8 +43,21 @@ function snapBytes(s) {
       ? s.d.length
       : 0;
 }
-function pushUndo(s) {
+// Redo in Edit sections (v311), as the Plan has it (87-undo planRedo): the edits Undo took back, newest last, each the
+// sections as that edit had left them (a snapshot of the same kind as its Undo step, sealed as that was). A new edit
+// clears it, as does leaving the step (Build, \u2190 Plan: secFwdEnd) or another picture (clearUndo). Every entry came
+// off undoStack, so the two together keep to about what Undo alone did.
+let secFwd = [];
+// redo: the step Redo puts back on (it keeps what's left to redo)
+function pushUndo(s, redo) {
   s._b = snapBytes(s);
+  // (Redo as it was before this edit, kept with it while it's the newest, should it be taken back unmade: popUndo)
+  const t = undoStack[undoStack.length - 1];
+  if (t) delete t._fwd;
+  if (!redo) {
+    if (secFwd.length) s._fwd = secFwd;
+    secFwd = [];
+  }
   undoStack.push(s);
   undoBytes += s._b;
   while (undoStack.length > 1 && (undoStack.length > MAXUNDO || undoBytes > UNDOBUDGET)) {
@@ -53,22 +66,34 @@ function pushUndo(s) {
   }
   updateUndoUI();
 }
-function popUndo() {
+// unmade: the edit came to nothing after all (a Split that didn't divide, a turn or crop cancelled): Redo is back
+function popUndo(unmade) {
   const s = undoStack.pop();
-  if (s) undoBytes -= s._b;
+  if (s) {
+    undoBytes -= s._b;
+    if (unmade && s._fwd) secFwd = s._fwd;
+    delete s._fwd;
+  }
   updateUndoUI();
   return s;
 }
 function clearUndo() {
   undoStack.length = 0;
   undoBytes = 0;
+  secFwd = [];
+  updateUndoUI();
+}
+// the step is left (Build, \u2190 Plan): what was undone in it can't be redone from the Plan or a later visit
+function secFwdEnd() {
+  if (!secFwd.length) return;
+  secFwd = [];
   updateUndoUI();
 }
 function updateUndoUI() {
   planBtn();
 }
-function snapshotSeg() {
-  pushUndo({
+function segObj() {
+  return {
     t: 'seg',
     labels: packLabels(labels),
     comps: comps.map(function (c) {
@@ -97,11 +122,48 @@ function snapshotSeg() {
     sec: secColor.slice(),
     ov: secState.slice(),
     col: colored.slice(),
-  });
+  };
+}
+function snapshotSeg() {
+  pushUndo(segObj());
+}
+// the sections as they are now, as a step of the same kind as u (for Redo, or for Undo after a Redo)
+function secNow(u) {
+  let s;
+  if (u.t === 'ov') s = { t: 'ov', d: secState.slice() };
+  else if (u.keep) s = keepObj(!!u.keep.geo);
+  else {
+    s = segObj();
+    // (the ticks as they are: Undo of a merge brings back those a build took off for it, tickBack; Redo takes them
+    // off again)
+    s.tk = {
+      col: colored.slice(),
+      tones: tonePart && tonePart._c === colored ? tonePart.slice() : null,
+      held: JSON.parse(JSON.stringify(_tickHeld)),
+    };
+  }
+  if (u.sealed) s.sealed = true;
+  return s;
 }
 function doUndo() {
   const u = popUndo();
   if (!u) return;
+  // (v311: the sections as they are, for Redo; none with a tilt still waiting, whose picture was never made)
+  if (_imgT) secFwd = [];
+  else secFwd.push(secNow(u));
+  secApply(u, false);
+}
+// Redo: the edit the last Undo took back, the sections as it left them; Undo takes it back again. Not while a change
+// to the detection waits to be made (it is a new edit: Redo goes with it)
+function secRedo() {
+  if (sfmode !== 'review' || !labels || !secFwd.length || pgMode || cropMode || _reFrom || _imgT) return;
+  const r = secFwd.pop();
+  pushUndo(secNow(r), true);
+  secApply(r, true);
+  planBtn();
+}
+// the sections back as step u has them (Undo; Redo, redo)
+function secApply(u, redo) {
   // (a tilt still waiting would redo the picture over what Undo puts back, and clear the steps before it, v304)
   imgCancel();
   if (u.t === 'ov') {
@@ -154,7 +216,20 @@ function doUndo() {
       }
       if (u.keep.progAt) progAt = Object.assign({}, u.keep.progAt);
       if (u.keep.held) heldReset(u.keep.held);
-    } else keepProgress(u.col);
+    } else {
+      keepProgress(u.col);
+      // (Redo: the ticks as they were before its Undo)
+      if (u.tk && colored) {
+        const c = new Uint8Array(comps.length);
+        c.set(u.tk.col.subarray(0, Math.min(u.tk.col.length, c.length)));
+        setColored(c);
+        if (u.tk.tones) {
+          const P = tp();
+          P.set(u.tk.tones.subarray(0, Math.min(u.tk.tones.length, P.length)));
+        }
+        _tickHeld = u.tk.held;
+      }
+    }
     if (u.keep) {
       locks = u.keep.locks;
       shadeFlat = u.keep.flat;
@@ -193,7 +268,7 @@ function doUndo() {
     if (g || (u.keep && u.keep.det)) renderControls();
     else segWarnSync();
     if (g) {
-      note('Back to the picture as it was.');
+      note(redo ? 'The change to the picture is back.' : 'Back to the picture as it was.');
     }
   }
 }
@@ -493,7 +568,7 @@ function edgeCut(startL, pts) {
   return 1;
 }
 function restoreSnap() {
-  const s = popUndo();
+  const s = popUndo(true);
   if (!s) return;
   labels = unpackLabels(s.labels);
   comps = s.comps;

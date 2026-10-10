@@ -178,7 +178,7 @@ function closeChart() {
   closeDialog(ov);
   chartAfter = null;
   chartUndone = null;
-  if (chartOpener && chartOpener.isConnected) chartOpener.focus({ preventScroll: true });
+  openerBack(chartOpener);
   chartOpener = null;
 }
 function chartSave() {
@@ -222,10 +222,8 @@ function chartSave() {
   if (after) after(ch.add.length, ch.del.length);
 }
 (function () {
-  const ov = $('chartOverlay'),
-    go = $('chartOpen');
+  const ov = $('chartOverlay');
   if (!ov) return;
-  if (go) go.addEventListener('click', openChart);
   $('chClose').addEventListener('click', closeChart);
   $('chSave').addEventListener('click', chartSave);
   ov.addEventListener('click', function (e) {

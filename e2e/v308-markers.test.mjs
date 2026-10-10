@@ -4,7 +4,7 @@
 // greys; Random's empty pile and the small links are easy to read and tap.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, idle, haveSet } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, idle, haveSet, scanFromMarkers, addFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -57,12 +57,15 @@ test('Add a set: a toast with Undo that takes the markers out and puts their To 
       }),
     }),
   });
-  await page.click('#presetHdr');
-  await page.check('#presetList input[data-i="0"]'); // Honolulu 24 (has Y26)
-  await page.locator('#presetAdd').scrollIntoViewIfNeeded();
-  const y0 = await page.evaluate(() => scrollY);
-  await page.click('#presetAdd');
+  // (v311: from Add markers' sheet, which closes once the set is added)
+  await page.click('#mCollection');
   await idle(page);
+  const y0 = await page.evaluate(() => scrollY);
+  await addFromMarkers(page, 'set');
+  await page.check('#wcSets input[data-i="0"]'); // Honolulu 24 (has Y26)
+  await page.click('#wcAdd');
+  await idle(page);
+  assert.equal(await page.isVisible('#welcome'), false, 'the sheet closed');
   assert.ok(
     Math.abs((await page.evaluate(() => scrollY)) - y0) <= 2,
     'stayed: ' + y0 + ' → ' + (await page.evaluate(() => scrollY)),
@@ -79,13 +82,13 @@ test('Add a set: a toast with Undo that takes the markers out and puts their To 
     'back where it was',
   );
   // a set you have already: said so
-  await page.check('#presetList input[data-i="0"]');
-  await page.click('#presetAdd');
-  await idle(page);
-  await page.check('#presetList input[data-i="0"]');
-  await page.click('#presetAdd');
-  await idle(page);
-  assert.equal(await toastText(page), 'That set is all in your collection already.');
+  for (let i = 0; i < 2; i++) {
+    await addFromMarkers(page, 'set');
+    await page.check('#wcSets input[data-i="0"]');
+    await page.click('#wcAdd');
+    await idle(page);
+  }
+  assert.equal(await toastText(page), 'Honolulu 24 is already in your collection.');
   assert.deepEqual(errors, []);
 });
 
@@ -134,7 +137,7 @@ test('Scan: Add says what’s still to choose and the lines it couldn’t read, 
     height: 1180,
     storage: onboarded({ [KEY]: appState() }),
   });
-  await page.click('#scanOpen');
+  await scanFromMarkers(page);
   await idle(page);
   await paste(page, 'B015\nR14\nfoo bar\nBGY24');
   await idle(page);

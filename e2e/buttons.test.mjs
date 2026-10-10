@@ -4,7 +4,7 @@
 // areas of small controls, and disabled buttons that look disabled.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, openAtScale, idle, openMenu, welcome, sampleGuide, saveGuide, answerAsks, haveSet } from './helpers.mjs';
+import { setup, teardown, openApp, openAtScale, idle, openMenu, welcome, sampleGuide, saveGuide, answerAsks, haveSet, chartFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -23,8 +23,8 @@ const init = () => { Object.defineProperty(Navigator.prototype, 'standalone', { 
 const TAB = '.modes button,.sftabbtn';
 // (v288: a palette band's own button fills the band; the Print sheet's choices with a drawing over the word)
 // (v306: Home's latest piece's picture)
-// (v309: the welcome's ways in and its two-line choices, the colour chart's swatches)
-const BIG = '.homecard,.sopen,.mdrop,.hlphiw,.sfRecCard,.sfah,.sfinfo,.focmk,.bhit,.sfprsh .segs button:has(.sfprpv),.hhpic,.wcc,.wcseg button,.wccount button,.chsw';
+// (v309: the welcome's ways in and its two-line choices, the colour chart's swatches; v310: Mood's pictures)
+const BIG = '.homecard,.sopen,.mdrop,.hlphiw,.sfRecCard,.sfah,.sfinfo,.focmk,.bhit,.sfprsh .segs button:has(.sfprpv),.hhpic,.wcc,.wcseg button,.wccount button,.chsw,.sfmp';
 const CHOICE = '.segs button,.chip,.msrc button,.wcbrands button,#sfRoot .sfedit';
 // a link inside a sentence; the guide's tool-row icons and Save pill, whose tap areas stop at the picture's edge,
 // and ✎, whose lower edge the Save pill under it shares
@@ -89,19 +89,21 @@ async function walk(page, big) {
   await page.click('#mCollection'); await idle(page);
   const mk = await check(page, 'Markers', big);
   if (!big) {
-    for (const id of ['#mkDrawBtn', '#mkMatchBtn', '#toPalette', '#presetHdr', '#mkMore', '#swatchBtn']) assert.equal(h(mk, id), 44, id);
+    for (const id of ['#mkDrawBtn', '#mkMatchBtn', '#toPalette', '#mkAddBtn', '#mkMore', '#swatchBtn']) assert.equal(h(mk, id), 44, id);
     assert.deepEqual([...new Set(mk.filter((x) => /ownView|segs/.test(x.b) || x.kind === 'choice').map((x) => x.h))], [40], 'Owned / Unowned / All / To buy: 40px');
   }
   await page.click('#ownView [data-v="wish"]'); await check(page, 'Markers: To buy', big);
   await page.click('#ownView [data-v="all"]'); await check(page, 'Markers: All', big);
   await page.click('#ownView [data-v="owned"]'); await idle(page);
-  await page.click('#presetHdr'); await check(page, 'Markers: Add a set you own', big); await page.click('#presetHdr');
+  // (v311) Add markers' sheet, and its sets list
+  await page.click('#mkAddBtn'); await check(page, 'Markers: Add markers', big);
+  await page.click('#mkaSet'); await check(page, 'Markers: Add a set you own', big); await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await idle(page);
   await page.click('#filterBar'); await check(page, 'Markers: filters', big); await page.click('#filterBar');
   await page.click('#mkMore'); await check(page, 'Markers: ⋯ menu', big); await page.click('#mkMore');
   await page.evaluate(() => openBackup()); await page.waitForSelector('#backupOverlay.on'); await check(page, 'Back up & restore', big); await close(page);
   await page.click('#swatchBtn'); await page.waitForSelector('#swOverlay.on'); await check(page, 'swatch chart', big); await close(page);
   // (v309) Tick colours on a chart
-  await page.click('#chartOpen'); await page.waitForSelector('#chartOverlay.on'); await check(page, 'colour chart', big); await close(page);
+  await chartFromMarkers(page); await page.waitForSelector('#chartOverlay.on'); await check(page, 'colour chart', big); await close(page);
   await page.click('#mkMatchBtn'); await check(page, 'Match: Photo', big);
   await page.click('#matchOverlay .msrc [data-src="hex"]'); await page.fill('#matchHex', '#3a7bd5'); await check(page, 'Match: Hex code', big); await close(page);
   await page.click('#mkDrawBtn'); await idle(page); await check(page, 'Markers: Random', big);

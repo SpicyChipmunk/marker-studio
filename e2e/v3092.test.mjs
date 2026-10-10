@@ -6,7 +6,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { setup, teardown, openApp, idle, sampleGuide, welcome, ROOT } from './helpers.mjs';
+import { setup, teardown, openApp, idle, sampleGuide, welcome, ROOT, scanFromMarkers } from './helpers.mjs';
 import { join } from 'node:path';
 
 before(setup);
@@ -121,7 +121,8 @@ test('a set added in the welcome comes off To buy and loses its Running low mark
     ]),
     [true, 0, null],
   );
-  assert.match(await page.textContent('#msToast'), /^Added 120 markers · 1 off To buy/);
+  // (v311: the Colorless Blender the set brings is said, as Markers' Add a set says it)
+  assert.match(await page.textContent('#msToast'), /^Added 120 markers and a Colorless Blender\s·\s1\soff\sTo\sbuy/);
   await page.click('#toastAct');
   await idle(page);
   assert.deepEqual(
@@ -204,7 +205,7 @@ test('Scan’s answer chips: the words wrap as one line, "already yours" with th
     },
   });
   await idle(page);
-  await page.click('#scanOpen');
+  await scanFromMarkers(page);
   await page.fill('#scBox', 'R16');
   await page.press('#scBox', 'Enter');
   await idle(page);

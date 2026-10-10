@@ -23,6 +23,8 @@ try {
 function planTab(t) {
   if (!isPlanTab(t)) return;
   switchTab(t);
+  // (v310: the Mood pictures, made while Colours is showing)
+  if (t === 'colours') mpWake();
   try {
     localStorage.setItem(PTAB_KEY, t);
   } catch (_) {}
@@ -34,7 +36,17 @@ function renderControls() {
     return;
   }
   const ae = document.activeElement,
-    fid = ae && ae.id && ctlEl.contains(ae) ? ae.id : null;
+    fid = ae && ae.id && ctlEl.contains(ae) ? ae.id : null,
+    // (v310.1) a choice with no id of its own (a Mood picture, Pattern's buttons) is found again by its group's id
+    // and its value: Ctrl+Z from one had left the keyboard on the page
+    grp =
+      !fid && ae && ae.dataset && ae.dataset.v != null && ctlEl.contains(ae)
+        ? ae.parentElement.closest('[id]')
+        : null,
+    fsel =
+      grp && ctlEl.contains(grp)
+        ? '#' + CSS.escape(grp.id) + ' [data-v="' + CSS.escape(ae.dataset.v) + '"]'
+        : null;
   _renderControls();
   dockBar();
   renderHead();
@@ -44,8 +56,8 @@ function renderControls() {
   paneMin();
   touchRule();
   stageCheck();
-  if (fid) {
-    const el = document.getElementById(fid);
+  if (fid || fsel) {
+    const el = fid ? document.getElementById(fid) : ctlEl.querySelector(fsel);
     if (el && el !== document.activeElement && ctlEl.contains(el))
       try {
         el.focus({ preventScroll: true });

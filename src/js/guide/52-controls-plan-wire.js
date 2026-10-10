@@ -204,10 +204,10 @@ function ctlWireColours() {
   if (_mood)
     _mood.addEventListener('click', function (e) {
       var b = e.target.closest('button');
+      // (v310: laid as its picture showed, when there is one: 32-mood-pics)
       if (b && !b.disabled && b.dataset.v !== emphasis) {
-        emphasis = b.dataset.v;
-        if (genMade()) generatePalette();
-        reassign();
+        mpTap(b.dataset.v);
+        ctlRefocus('#sfMood [data-v="' + b.dataset.v + '"]');
       }
     });
   // (v308) Include: a chip turns its group on or off (one Undo step)

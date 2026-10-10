@@ -65,8 +65,15 @@ export async function openApp({ width = 390, height = 844, storage = null, userA
   if (init) await ctx.addInitScript(init);
   await ctx.addInitScript((st) => {
     window.__MS_TEST = true;
-    if (st && !sessionStorage.getItem('__seeded')) { for (const [k, v] of Object.entries(st)) localStorage.setItem(k, v); sessionStorage.setItem('__seeded', '1'); }
+    if (st && !sessionStorage.getItem('__seeded')) { for (const [k, v] of Object.entries(st)) if (v != null) localStorage.setItem(k, v); sessionStorage.setItem('__seeded', '1'); }
+    // (v310) the full Check the sections step, as the tests were written for, unless a test asks for the quick check
+    // ('ms-sec-tools': '0' in its storage) or for none set at all (null: the first start of v310 sets it)
+    try { if (!(st && 'ms-sec-tools' in st) && localStorage.getItem('ms-sec-tools') == null) localStorage.setItem('ms-sec-tools', '1'); } catch (_) {}
   }, storage);
+  // (v310) E2E_MOODPICS=1: the Mood pictures made in every test (off in the tests unless asked for: they take a moment
+  // after each change). Each one checks it left the guide as it was, and a tap that it laid what its picture showed,
+  // and says so as an error in the page.
+  if (process.env.E2E_MOODPICS) await ctx.addInitScript(() => { try { localStorage.setItem('ms-test-moodpics', '1'); } catch (_) {} });
   // keep tests offline: fonts and anything else off-origin are dropped
   // (blob: and data: addresses are the page's own: Playwright's WebKit sends blob: ones through this too, and stopping
   // them kept every photo from opening there — the photo tests were left out on WebKit for it until v294)
@@ -76,6 +83,31 @@ export async function openApp({ width = 390, height = 844, storage = null, userA
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(server.url);
   return { ctx, page, errors };
+}
+
+// (v311) Markers' ways to add: + Add markers' sheet (with a collection), or the card at the top (none yet). `way`: 'scan',
+// 'chart', 'set' (the sets list: #wcSets, Add: #wcAdd) or 'find'. On Markers already, or taken there.
+export async function addFromMarkers(page, way) {
+  if (!(await page.evaluate(() => state.mode === 'collection'))) {
+    await page.click('#mCollection');
+    await idle(page);
+  }
+  const W = way.charAt(0).toUpperCase() + way.slice(1);
+  if (await page.isVisible('#mkAddBtn')) {
+    await page.click('#mkAddBtn');
+    await page.click('#mka' + W);
+  } else await page.click('#mkc' + W);
+  await idle(page);
+}
+export const scanFromMarkers = (page) => addFromMarkers(page, 'scan');
+export const chartFromMarkers = (page) => addFromMarkers(page, 'chart');
+// Markers' Clear collection (v311: in ⋯), both taps
+export async function clearCollection(page) {
+  await page.click('#mkMore');
+  await page.click('#mkClear');
+  await pause(page, 450, 'its second tap is not a double tap');
+  await page.click('#mkClear');
+  await idle(page);
 }
 
 // First run: pick "Honolulu 120" in the welcome dialog, then choose how to continue.

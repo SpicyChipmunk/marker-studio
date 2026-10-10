@@ -170,7 +170,8 @@ test('Home, Markers and the shell: emoji and arrows are not read out', async () 
   assert.equal(await page.$$eval('.hcicon', (l) => l.every((x) => x.getAttribute('aria-hidden') === 'true')), true);
   await page.click('#mCollection');
   assert.equal(await page.getByRole('button', { name: 'Match a colour', exact: true }).count(), 1);
-  assert.equal(await page.getByRole('button', { name: 'Add a set you own', exact: true }).count(), 1);
+  // (v311: + Add markers, its + not read out)
+  assert.equal(await page.getByRole('button', { name: 'Add markers', exact: true }).count(), 1);
   await page.click('#mkDrawBtn');
   assert.equal(await page.getByRole('button', { name: 'Markers', exact: true }).count(), 2, 'the tab and ← Markers');
   assert.deepEqual(errors, []);

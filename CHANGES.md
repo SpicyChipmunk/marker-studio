@@ -615,3 +615,62 @@ Each pressure-tested one by one first. New: `e2e/v3092` (8), each failing on v30
 - Left as it is, by decision: the sample's first ticks on a force-quit within ~3 s.
 - Version v309.2; cache `marker-studio-v309.2`.
 
+
+# Changes — v310 (a simpler first guide, and Mood as pictures)
+
+Pressure-tested first (30 real pages and photos to the section check: none raised a warning, and all looked right; laying a mood measured at 50–135 ms in desktop Chromium, 7–21 ms on a 1,423-section page laid alone), then built, then a fresh adversarial review. New: `e2e/v310-quick` (5), `e2e/v310-moodpics` (11), `e2e/v310-rv` (2).
+
+- **The quick section check:** a new picture's first Build, when the sections raise no warning, asks only "Looks right?" ("We found 37 sections to colour, shown in pale colours. The teal is background: it stays white.") with **Fix sections** and **Build guide**. The lines that need a choice stay (Page straightened · Undo · Adjust corners, the paper round the drawing, Ignore faint grey marks), and so does the dense-page question on Build. A tap on the picture says to tap Fix sections. Fix sections opens the tools, and they stay from then on (`ms-sec-tools`). A warning brings the full step, which then stays for that picture; the Plan's ← Edit sections always opens the tools. At the first start of v310 anyone with a guide in their Library keeps the full step, so returning testers see no change. The tests start with the full step unless one asks (`'ms-sec-tools': '0'`).
+- **Mood is six pictures of your page** (Any, Bright, Soft, Pastel, Deep, Earthy), first in the Colours tab: one row on an iPad, three a row in landscape's column, one row of six small ones on a phone (two rows of three when narrower or with larger text). The one in use is the guide itself; the others are made one at a time while nothing else is going on and the row is in view (not during a drag, a finger down, the first Build's bloom, a popover, Paint or Focus mode).
+  - How (`js/guide/32-mood-pics.js`): the mood is laid from the guide as it is by exactly the steps a tap takes (`layPlan`, reassign's laying, now apart; `reassign`'s `how`), Math.random drawn from a seed, and everything laying can change put back. Then a check: the plan as Undo sees it and every value kept must be as before; if not, or if laying failed part way, the guide is put back as Undo would and no more pictures are made that visit (an error in the tests). Nothing is said, saved or made an Undo step meanwhile.
+  - A tap lays what its picture showed (its seed), so Random and generated palettes give the picture you chose; ↶ Undo says "Mood: Bright" as before. The pictures are made again, with new seeds, after every change, so a mood left and come back to is a new roll, as before.
+  - Where Mood stays as its buttons: zones, the Photo and Manual patterns (no Mood), a palette used as it is (greyed out, as before).
+  - The tests make the pictures only where they look at them (`ms-test-moodpics`); `E2E_MOODPICS=1` makes them in every test, each checking itself (run on 22 files that use the Plan).
+- **From the review:** no picture made during the first Build's bloom; a warning's full step no longer folds back to the quick check once the warning clears; the tick on the chosen picture isn't read out.
+- Tests changed on purpose: Mood leads Colours, then the marker count (`e2e/tabs`); the Colours tab on a phone is allowed 56px more for the pictures (51px measured); Mood's layout check in `e2e/gradient` reads the pictures' names.
+- `docs/DEVICE-TEST.md`: a v310 section for the iPad.
+- Version v310; cache `marker-studio-v310`.
+
+# Changes — v310.1 (an extra comprehensive fresh-eyes debugging pass)
+
+Four fresh reviewers, each a part of the app (making a guide, v310 hardest; colouring, output and saved work, with a random-sequence check of 175 steps comparing the stored guide with what's open after each; Markers and Palette; the first run, Home and the app as a whole). New: `e2e/v3101-d1` (3), `v3101-d3` (2), `v3101-d4` (3), `v3101-me` (2), each failing on v310. Run with the Mood pictures on in every test (`E2E_MOODPICS=1`) on 28 more files: all passed.
+
+- **The Mood picture in use** follows Change colour, Unpin and Fill (it was kept by the plan, which those change in place).
+- **The dense-page question** never offers to leave out every section: a page of thousands of sections all much the same size had "Leave out the small ones" keep 0, leaving "We found 0 sections".
+- **The quick check:** Colour it (the paper round the drawing) keeps the keyboard, on Build guide; the check is said to a screen reader once the sections are found ("Looks right? We found 122 sections to colour. Build guide, or Fix sections.").
+- **A returning tester restoring a backup made before v310** on a new device keeps the full section step (the first start had found an empty Library); a v310 backup changes nothing, as for a new tester moving from a Safari tab to the Home Screen app. Unreadable saved data at the first start no longer decides it either.
+- **Ctrl+Z from a Mood picture** (or another button without an id) keeps the keyboard there.
+- **Mood pictures:** three a row, the bigger ones, in iPad landscape's column (v310 gave a phone's six small ones there); a picture slow to make (Random on a page of thousands of sections: 165–380 ms) leaves twice its time before the next.
+- **Add a set you own** keeps up while open as markers are ticked or unticked (its counts and ✓ had waited for it to be opened again), and its toast says the Colorless Blender it brings ("Added 73 markers and a Colorless Blender · 1 off To buy"), so the count adds up; "1 off To buy" stays together on a phone.
+- **Reveal's clip** is named after the guide ("sample-jellyfish-reveal.mp4"), as Save image and the PDF are.
+- Version v310.1; cache `marker-studio-v310.1`.
+
+# Changes — v310.2 (Ben's decisions from the v310.1 pass)
+
+Each recommendation pressure-tested, then taken one by one. New: `e2e/v3102` (6): five fail on v310.1; the sixth checks a lock on a marker you can use stays.
+
+- **An open guide follows Markers:** a marker marked dry, or unticked, while a guide is open does what opening the guide again does: sections still to colour show the closest marker you own, coloured ones keep theirs, the guide keeps the marker for them (saved as it was), and it's said once the guide shows ("1 marker is dry — sections still to colour show the closest you own…"). Ticked again, or the change undone, the marker is back in its sections. Not an Undo step: the plan's Undo baseline follows. Undo now keeps which sections show a stand-in, so going back to a plan with stand-ins keeps the markers the guide had for them (a re-laid plan had lost them, also for a guide reopened with stand-ins). "1 marker is no longer in your collection" (it lacked its "is"). Found on the way: **a coloured section kept its marker through a plan change only while that marker was in your collection**; one coloured with a marker since marked dry or unticked was laid afresh at the next change (Mood, pattern, count…). It now keeps it, as it's on the paper.
+- **Palette:** a locked colour that can't be used (marked dry, no longer in your collection, or outside a selection) is unlocked on the next Generate, or a new scheme or size, with a word ("Unlocked YG113: it's marked dry."), as Generate's starting colour already was; a lock on a marker you have stays, whatever the filters.
+- **Undo on "Page straightened"** leaves "Page kept as photographed · Straighten", as Cancel does, on the quick check and the full step (`e2e/straighten` changed on purpose).
+- **Home's guide card** counts the colours guides use: "Built from your 118 colours (2 marked dry are left out)."; with every marker marked dry it says so.
+- Left as they are, by decision: two tabs on the same guide both changing within 1.5 s (needs both on screen; switching tabs saves at once); the last 1.5 s of ticks of a guide deleted while open, then another opened, then Undo.
+- Version v310.2; cache `marker-studio-v310.2`.
+
+# Changes — v311 (one way to add markers; Redo in Edit sections)
+
+Item 1 of the list (Find my set from 3 caps in Markers) grew, by decision, into one **Add markers** entry for all four ways, after a pressure test of the whole Markers screen. Items 6–10 are the smaller fixes. New: `e2e/v311-markers` (8) and `e2e/v311-fx` (8).
+
+- **Add markers** (Markers): one button, **+ Add markers**, on the first screen beside Owned / Unowned / All / To buy (not in To buy, nor with no markers). It opens a sheet with the ways to add, each with Undo: **Add a set you own** (the sets list), **Scan or type codes**, **Tick colours on a chart**, and under them "Not sure which set you have? **Find it from 3 caps**". The sets list, Scan and the chart are the ones the welcome already uses; no second copy. The collapsible "Add a set you own" and the Scan and chart buttons at the foot of Markers are gone; **Brands I'd buy** stays there.
+  - A set added, or a set found from 3 caps and taken, closes the sheet with the toast and Undo ("Added 24 markers to your collection", the Colorless Blender said when it comes too), and the keyboard goes back to + Add markers. A set you already have: "Honolulu 24 is already in your collection."
+  - **None of these: other ways to add** (after 3 caps) goes back to the ways. Back from a first step, or Escape, goes back to the ways, then closes the sheet.
+  - Scan or the chart, from the sheet, closes the sheet and opens over Markers; closing them gives the keyboard back to what opened them, or to + Add markers once the card it was on has gone.
+  - **No markers yet:** a card at the top of Markers, "Add your markers", says that guides and palettes use every Ohuhu and Copic marker until you add yours, with the same ways in it. The first set added puts the collection's top in view, + Add markers keyboard-focused. The empty Owned list says "Add your markers above, or switch to All to tick single markers."
+  - Markers' jump link is now "Swatch chart↓" whenever it shows.
+- **Clear collection** moved into Markers' ⋯ menu (with Untick all shown and Back up & restore), shown while you have markers. It still takes a second tap ("Clear all 140 markers? Tap again", for 2.5 s; a double tap doesn't count), the menu staying open in between, and the toast has Undo.
+- The welcome's set toast names the Colorless Blender too ("Added 120 markers and a Colorless Blender · 1 off To buy"), as Markers' does.
+- **Redo in Edit sections:** ↷ beside ↶, and Ctrl+Shift+Z / Cmd+Shift+Z / Ctrl+Y, as in the Plan, for every kind of edit Undo takes back. A new edit clears it; Build, ← Plan and Discard end it. The last Undo or Redo by keyboard moves the keyboard to the other button.
+- **A zone's name:** Escape puts the name back and keeps the keyboard in the field; a second Escape closes the editor.
+- **The section step:** its heading gets the keyboard once per picture, and the whole step is said, as the quick check is.
+- **Focus mode's Mark all … done:** its Undo is the list's (shading kept, list redrawn).
+- Tests changed on purpose: the ways in are reached through `addFromMarkers` / `scanFromMarkers` / `chartFromMarkers` / `clearCollection` (`e2e/helpers.mjs`) in 20-odd files; the welcome's toast with the blender (`v3092`); `v3101-d4` accepts any later version (it named v310, so it failed from v310.1 on); `buttons` counts Mood's pictures (`.sfmp`, 44px+) as large by design (it failed from v310).
+- Version v311; cache `marker-studio-v311`.

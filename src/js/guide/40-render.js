@@ -545,6 +545,8 @@ function positionTip() {
 }
 // said by screen readers (an aria-live region made in mount)
 function sayLive(t) {
+  // (v310: not while a Mood picture is made, 32-mood-pics)
+  if (_mpQuiet) return;
   const el = document.getElementById('sfLive');
   if (!el) return;
   sayLive.at = Date.now();

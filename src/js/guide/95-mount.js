@@ -621,6 +621,8 @@ function enter() {
   else {
     if (metaEl) metaEl.innerHTML = metaText();
     renderControls();
+    // (v310.2: markers marked dry or unticked meanwhile, their sections' stand-ins drawn and said: 97-open)
+    if (_standDraw || _standSay) standInsShow();
   }
   palNote();
   if (planLast) planLast.filt = planFilt();

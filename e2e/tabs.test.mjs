@@ -250,7 +250,9 @@ test('each tab stays within about one and a half screens of room at 390×844, wi
       // (v306, deliberately: Pattern has the Gradient's Scatter slider too, one compact line, 49px and its margin)
       // (v308, deliberately: Scatter's line at Polished, "Neat bands in flow order", 24px with its margin;
       //  and Colours' 120px more, the marker count's 44px − and + and Include's row of chips, which Ben asked for)
-      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 + 120 : 0) + (tb === 'pattern' ? 74 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
+      // (v310, deliberately: Mood as pictures of the page, one row of six small ones on a phone, 51px more than its
+      //  buttons; 56 allowed)
+      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 + 120 + 56 : 0) + (tb === 'pattern' ? 74 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
     }
   }
   t.diagnostic(JSON.stringify(out));
@@ -258,11 +260,12 @@ test('each tab stays within about one and a half screens of room at 390×844, wi
 });
 
 // ---- From the UX polish pass ----
-test('Shading leads its tab, the marker count leads Colours, and filters say what they do', async () => {
+test('Shading leads its tab, Mood’s pictures then the marker count lead Colours, and filters say what they do', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  const firstColours = await page.evaluate(() => document.querySelector('.sftab[data-tab="colours"]').firstElementChild.className);
-  assert.match(firstColours, /sfmkcount/);
+  // (v310: Mood as pictures first, e2e/v310-moodpics; the marker count next)
+  const firstColours = await page.evaluate(() => [...document.querySelector('.sftab[data-tab="colours"]').children].slice(0, 3).map((e) => e.id || e.className));
+  assert.deepEqual(firstColours.map((c) => (/sfMoodLbl|sfmpwrap|sfmkcount/.exec(c) || [c])[0]), ['sfMoodLbl', 'sfmpwrap', 'sfmkcount']);
   await page.click('.sftabbtn[data-t="shading"]');
   const firstStyle = await page.evaluate(() => document.querySelector('.sftab[data-tab="shading"]').firstElementChild.className);
   assert.match(firstStyle, /sfshade/);

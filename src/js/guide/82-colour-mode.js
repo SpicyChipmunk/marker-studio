@@ -85,18 +85,7 @@ function markActive(done) {
       'Undo',
       function () {
         if (g !== loadGen || !assignData || comps.length !== K) return;
-        const P = tp();
-        for (const l in was) {
-          if (!assignData.assign[l] || (done ? !colored[l] : colored[l])) continue;
-          colored[l] = was[l][0];
-          P[l] = was[l][1];
-          // (with the shading they were coloured with: 34-zones)
-          if (was[l][2]) heldSet(l, was[l][2]);
-          else if (done) heldSet(l, null);
-        }
-        guideDirty = true;
-        if (done) celebrated = false;
-        normalizeTones();
+        markBack(was, done);
         renderGuide();
         updateProgress();
         renderFocusMarkers();
@@ -105,6 +94,23 @@ function markActive(done) {
         sayLive((done ? 'Ticks as they were for ' : 'Ticks back for ') + msay(mk));
       },
     );
+}
+// Undo of Mark all (or Clear), here and in Focus mode (75-focus focusAllOfColour, v311: its own had left the kept
+// shading as Mark all made it): the ticks and part-done tones as they were, with the shading they were coloured with
+// (34-zones), keeping any ticked (or, after Clear, unticked) since. was: { section: [tick, tones, kept shading] }
+function markBack(was, done) {
+  const P = tp();
+  for (const l in was) {
+    if (!assignData.assign[l] || (done ? !colored[l] : colored[l])) continue;
+    colored[l] = was[l][0];
+    P[l] = was[l][1];
+    if (was[l][2]) heldSet(l, was[l][2]);
+    else if (done) heldSet(l, null);
+  }
+  guideDirty = true;
+  // (no longer finished: finishing it again celebrates again)
+  if (done) celebrated = false;
+  normalizeTones();
 }
 // how many sections are ticked, or part-way done (a tone ticked): what Reset progress would clear
 function progressCount() {

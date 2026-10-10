@@ -3,7 +3,7 @@
 // cap it read, until Scan was closed and opened again.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, idle } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, idle, scanFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -22,7 +22,7 @@ test('Scan: the page is not held while its box has the keyboard, cap after cap; 
   await idle(page);
   await page.click('#mCollection');
   await idle(page);
-  await page.click('#scanOpen');
+  await scanFromMarkers(page);
   await idle(page);
   assert.equal(await page.evaluate(() => document.activeElement.id), 'scBox', 'straight into the box');
   assert.equal(await held(page), false, 'not held while the box has the keyboard');

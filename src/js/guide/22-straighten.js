@@ -898,6 +898,9 @@ function pgUndo() {
   okGeom(function () {
     srcImg = pgOrig;
     pgQ = null;
+    // (v310.2: "Page kept as photographed · Straighten", as after Cancel: the way back to it is one tap, also on the
+    // quick check, whose Adjust photo is behind Fix sections)
+    pgHint = 'kept';
     if (!sensUser) adaptC = 9;
     pgProceed('Back to the photo as taken.');
   });

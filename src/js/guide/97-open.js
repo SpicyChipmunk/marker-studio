@@ -485,26 +485,14 @@ function openDesignObj(d, id, resumed, quiet, col) {
             ' this app doesn\u2019t know, so ' +
             (nlost === 1 ? 'it stays' : 'they stay') +
             ' white.'
-          : '',
-        pl = function (k, w) {
-          return k + ' marker' + (k > 1 ? 's' : '') + ' ' + w;
-        };
+          : '';
       note(
         _edResumed
           ? 'Your section edits are back \u2014 Build again to keep them.'
           : _openEmpty
             ? 'None of this guide\u2019s markers could be shown, so it won\u2019t be saved over. Check your collection, then open it again.'
             : nd || ng
-              ? [
-                  nd ? pl(nd, nd > 1 ? 'are dry' : 'is dry') : '',
-                  ng ? pl(ng, 'no longer in your collection') : '',
-                ]
-                  .filter(Boolean)
-                  .join(' and ') +
-                ' \u2014 sections still to colour show the closest you own. The guide keeps ' +
-                (nd + ng > 1 ? 'them' : 'it') +
-                ' until you change those sections.' +
-                (lostTxt ? ' ' + lostTxt : '')
+              ? standInSay(nd, ng) + (lostTxt ? ' ' + lostTxt : '')
               : lostTxt || metaText(),
       );
       // reloaded in place while colouring along (col): it stays in Colour along; from Home's Continue, at the marker
@@ -742,6 +730,7 @@ function openDesign(id, cont) {
   ) {
     if (sfmode === 'review') {
       sfmode = 'guide';
+      secFwdEnd();
       renderControls();
       renderGuide();
     }
@@ -817,6 +806,100 @@ function setCollection(list) {
   if (metaEl) metaEl.innerHTML = metaText();
   // (a finished page's "Did any run low?" chips follow a marker's ink or a marker no longer yours, v306)
   lowRefresh();
+  // (v310.2) an open guide follows at once, as opening it again would
+  standInsSync();
+}
+// What opening a guide says of markers now dry or no longer yours (nd, ng: how many of each)
+function standInSay(nd, ng) {
+  const pl = function (k, w) {
+    return k + ' marker' + (k > 1 ? 's' : '') + ' ' + w;
+  };
+  return (
+    [
+      nd ? pl(nd, nd > 1 ? 'are dry' : 'is dry') : '',
+      ng ? pl(ng, (ng > 1 ? 'are' : 'is') + ' no longer in your collection') : '',
+    ]
+      .filter(Boolean)
+      .join(' and ') +
+    ' \u2014 sections still to colour show the closest you own. The guide keeps ' +
+    (nd + ng > 1 ? 'them' : 'it') +
+    ' until you change those sections.'
+  );
+}
+/* (v310.2) The collection changed while a guide is open (a marker marked dry, or unticked, in Markers): its sections
+   still to colour show the closest marker you own, as opening it again would (97-open's stand-ins: the guide keeps the
+   marker it had, _origKeys, until those sections are changed); coloured sections keep theirs. A marker back in the
+   collection (ticked again, or the change undone) is back in its sections. Not an Undo step: the plan's Undo baseline
+   follows, so the next change isn't taken for one. Said once the guide shows. */
+let _standSay = null,
+  _standDraw = false;
+function standInsSync() {
+  if (!assignData || !assignData.assign || !labels || !coll.length) return;
+  const byKey = Object.create(null),
+    assign = assignData.assign,
+    dryK = {},
+    goneK = {},
+    near = {};
+  coll.forEach(function (m) {
+    byKey[m.mkey] = m;
+  });
+  let changed = false;
+  for (const ls in assign) {
+    const l = +ls,
+      m = assign[ls],
+      o = _origKeys[l],
+      k = o ? o.k : m && m.mkey;
+    if (!m || !k) continue;
+    if (byKey[k]) {
+      // (yours again: the marker it had, back)
+      if (o) {
+        if (o.s.indexOf(m.mkey) >= 0 && m.mkey !== k) {
+          assign[ls] = byKey[k];
+          changed = true;
+        }
+        if (o.s.indexOf(m.mkey) >= 0 || m.mkey === k) delete _origKeys[l];
+      }
+      continue;
+    }
+    // (coloured, already showing a stand-in, or changed since by hand: left as it is)
+    if (inkOn(l) || (o && o.s.indexOf(m.mkey) < 0) || (o && m.mkey !== k)) continue;
+    if (noInkOwned(k)) continue;
+    const c = catMarker(k);
+    if (!c) continue;
+    if (!(k in near)) near[k] = c.lab ? nearestInPool(c.lab, coll) : null;
+    const rep = near[k];
+    if (!rep) continue;
+    assign[ls] = rep;
+    _origKeys[l] = { k: k, s: [c.mkey, rep.mkey] };
+    (markerDry(k) ? dryK : goneK)[k] = 1;
+    changed = true;
+  }
+  if (!changed) return;
+  _rg = null;
+  // (the plan as it now is, the baseline the next change is measured from: not an Undo step of its own)
+  if (planLast) {
+    const cur = planSnap();
+    if (cur) planLast = cur;
+  }
+  const nd = Object.keys(dryK).length,
+    ng = Object.keys(goneK).length;
+  if (nd || ng) _standSay = standInSay(nd, ng);
+  if (document.getElementById('sfPick') && root.style.display !== 'none') standInsShow();
+  else _standDraw = true;
+}
+// the guide drawn with them, and said, once it shows
+function standInsShow() {
+  _standDraw = false;
+  if (!assignData) return;
+  if (sfmode === 'guide' || sfmode === 'color') {
+    renderGuide();
+    renderControls();
+    if (sfmode === 'color') updateProgress();
+  }
+  if (_standSay) {
+    note(_standSay);
+    _standSay = null;
+  }
 }
 function configure(a) {
   api = a || {};

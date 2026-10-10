@@ -5,7 +5,7 @@
 // Scan's paste, typing and Clear list, Match's announcements, Random with nothing to draw.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, sampleGuide, saveGuide, idle, buildGo, scrollTop, sectionPoint } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, sampleGuide, saveGuide, idle, buildGo, scrollTop, sectionPoint, scanFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -219,7 +219,7 @@ async function scanOpened(opts) {
   const a = await openApp({ storage: { 'ms-scan-brand': '' }, ...opts });
   await welcome(a.page, 'look'); await idle(a.page);
   await a.page.click('#mCollection'); await idle(a.page);
-  await a.page.click('#scanOpen'); await idle(a.page);
+  await scanFromMarkers(a.page); await idle(a.page);
   return a;
 }
 const scanText = (page, text) => page.evaluate((t) => { const b = document.getElementById('scBox'); b.value = t; b.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertReplacementText' })); }, text);

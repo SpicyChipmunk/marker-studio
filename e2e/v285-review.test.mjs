@@ -96,11 +96,9 @@ test('Home’s Continue card follows a Library rename, and leaves its picture al
 test('the marker sets’ caret stays a line icon as the list opens and closes', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  for (let i = 0; i < 2; i++) {
-    await page.evaluate(() => document.getElementById('presetHdr').click());
-    const c = await page.evaluate(() => { const e = document.querySelector('.presetcar'); return { svg: !!e.querySelector('svg.ic'), text: e.textContent.trim() }; });
-    assert.deepEqual(c, { svg: true, text: '' });
-  }
+  // (v311: the sets list is in Add markers' sheet now; Brands I'd buy keeps its caret)
+  const c = await page.evaluate(() => { const e = document.querySelector('#buyOpen .presetcar'); return { svg: !!e.querySelector('svg.ic'), text: e.textContent.trim() }; });
+  assert.deepEqual(c, { svg: true, text: '' });
   assert.deepEqual(errors, []);
 });
 

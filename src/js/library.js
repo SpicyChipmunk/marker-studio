@@ -555,12 +555,25 @@ function renderRecent() {
       var own = cel.querySelector('.hcown'),
         // (v309.1: the colours; a set's Colorless Blender builds nothing. v309.2: said as colours, as Home counts
         // the blender among your markers)
-        nOwn = inkKeys([...state.owned]).length;
+        // (v310.2: what guides use: not those marked dry, said as left out)
+        ink = inkKeys([...state.owned]),
+        nDry = ink.filter(function (k) {
+          const i = keyIdx(k);
+          return i != null && isDry(i);
+        }).length,
+        nOwn = ink.length - nDry;
       if (own)
         own.textContent =
           (nOwn
-            ? 'Built from your ' + nOwn + ' colour' + (nOwn === 1 ? '' : 's') + '. '
-            : 'Built from the markers you own: add yours in Markers. ') +
+            ? 'Built from your ' +
+              nOwn +
+              ' colour' +
+              (nOwn === 1 ? '' : 's') +
+              (nDry ? ' (' + nDry + ' marked dry ' + (nDry === 1 ? 'is' : 'are') + ' left out)' : '') +
+              '. '
+            : ink.length
+              ? 'Every marker you own is marked dry: unmark the ones you’ve refilled or replaced in Markers. '
+              : 'Built from the markers you own: add yours in Markers. ') +
           'Lay the page flat in even light, and get all of it in the frame.';
       cel.style.display = '';
     } else if (

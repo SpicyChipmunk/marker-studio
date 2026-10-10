@@ -3,7 +3,7 @@
 // first cap. Now the box is left alone during a composition; each cap is read as it arrives.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, idle } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, idle, scanFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -14,7 +14,7 @@ async function opened() {
   await idle(a.page);
   await a.page.click('#mCollection');
   await idle(a.page);
-  await a.page.click('#scanOpen');
+  await scanFromMarkers(a.page);
   await idle(a.page);
   return a;
 }
@@ -83,7 +83,7 @@ test('Add while Scan Text’s text is still in the box: it is read and added (Ad
   assert.equal(await page.evaluate(() => state.owned.has('Ohuhu|YR58')), true);
   assert.equal(await page.isVisible('#scanOverlay'), false);
   // opened again: a new Scan Text session, read as usual
-  await page.click('#scanOpen');
+  await scanFromMarkers(page);
   await idle(page);
   await capIn(page, 'YR59 Cantaloupe');
   await page.waitForTimeout(900);

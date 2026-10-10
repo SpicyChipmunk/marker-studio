@@ -863,6 +863,7 @@ function render() {
   }
   ctx.putImageData(imgData, 0, 0);
   countEl.textContent = cnt + ' section' + (cnt === 1 ? '' : 's');
+  secQuickN();
   renderTools();
   {
     const bb = document.getElementById('sfBuild');

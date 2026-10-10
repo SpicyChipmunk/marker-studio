@@ -98,6 +98,9 @@ function planSnap() {
     none: Object.assign({}, _phNone),
     shp: shp,
     shps: shps,
+    // (v310.2) the markers sections show a stand-in for (dry, or no longer yours: 97-open), beside the plan: Undo
+    // back to a plan with stand-ins brings back what the guide keeps for them
+    ok: Object.keys(_origKeys).length ? JSON.parse(JSON.stringify(_origKeys)) : null,
   };
 }
 function planSame(p, q, noFilt) {
@@ -848,6 +851,7 @@ function planRestore(e, noFilt) {
     assignData.paper = pp;
   }
   locks = Object.assign({}, s.locks);
+  _origKeys = e.ok ? JSON.parse(JSON.stringify(e.ok)) : {};
   anchors = s.anchors.map(function (x) {
     return { x: x.x, y: x.y, mkey: x.mkey };
   });
@@ -1008,16 +1012,25 @@ function planBtn() {
     b.setAttribute('aria-label', l);
     b.title = l;
   }
+  // (v311: and in Edit sections, the section edit Undo took back)
   const r = document.getElementById('sfPlanRedo'),
-    ron = sfmode === 'guide' && !!assignData && planFwd.length > 0 && !pgMode && !cropMode && !popOpen();
+    rrev = sfmode === 'review' && !!labels && secFwd.length > 0 && !pgMode && !cropMode,
+    ron =
+      rrev ||
+      (sfmode === 'guide' && !!assignData && planFwd.length > 0 && !pgMode && !cropMode && !popOpen());
   if (r) {
     r.style.display = ron ? '' : 'none';
     if (ron) {
-      const l2 = 'Redo: ' + planFwd[planFwd.length - 1].back.label;
+      const l2 = rrev ? 'Redo the section edit' : 'Redo: ' + planFwd[planFwd.length - 1].back.label;
       r.setAttribute('aria-label', l2);
       r.title = l2;
     }
   }
+  // (v311: the last Undo or Redo taken by the keyboard hides its button: the keyboard goes to the other, rather than
+  // to the page)
+  const ae = document.activeElement;
+  if (r && ae === b && !on && ron) r.focus({ preventScroll: true });
+  else if (r && ae === r && !ron && on) b.focus({ preventScroll: true });
   planFit();
 }
 function toolUndo() {
@@ -1025,6 +1038,10 @@ function toolUndo() {
     doUndo();
     planBtn();
   } else planUndo();
+}
+function toolRedo() {
+  if (sfmode === 'review') secRedo();
+  else planRedo();
 }
 // on a narrow row the status's second part goes first ("· 16 markers"), then the word "Undo" (the icon stays), then
 // the rest of the status, then the buttons narrow a little; parts go whole, never cut mid-number. Side by side the
@@ -1054,7 +1071,7 @@ function planInit() {
   const b = document.getElementById('sfPlanUndo');
   if (b) b.addEventListener('click', toolUndo);
   const rb = document.getElementById('sfPlanRedo');
-  if (rb) rb.addEventListener('click', planRedo);
+  if (rb) rb.addEventListener('click', toolRedo);
   if (ctlEl) {
     ctlEl.addEventListener(
       'pointerdown',
@@ -1085,7 +1102,8 @@ function planInit() {
   window.addEventListener('resize', function () {
     requestAnimationFrame(planFit);
   });
-  // Ctrl+Z / Cmd+Z in Plan and in Edit sections (as ↶ Undo in the tool row), except while typing
+  // Ctrl+Z / Cmd+Z in Plan and in Edit sections (as ↶ Undo in the tool row), and Ctrl+Shift+Z / Cmd+Shift+Z / Ctrl+Y
+  // (as ↷ Redo), except while typing
   document.addEventListener('keydown', function (e) {
     const k = String(e.key).toLowerCase(),
       redo = (k === 'z' && e.shiftKey) || (k === 'y' && e.ctrlKey && !e.metaKey && !e.shiftKey);
@@ -1103,9 +1121,8 @@ function planInit() {
       return;
     if (dialogOpen() || sheetOpen()) return;
     e.preventDefault();
-    // (Redo: in the plan only; Edit sections has no Redo)
-    if (redo) {
-      if (sfmode === 'guide') planRedo();
-    } else toolUndo();
+    // (Redo: in the plan, and in Edit sections since v311)
+    if (redo) toolRedo();
+    else toolUndo();
   });
 }

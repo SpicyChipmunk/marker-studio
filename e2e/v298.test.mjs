@@ -4,7 +4,7 @@
 // again is read, letters composed by an Android keyboard wait for Enter, and a card isn't repeated while held.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, sampleGuide, idle, buildGo, scrollTop, sectionPoint } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, sampleGuide, idle, buildGo, scrollTop, sectionPoint, scanFromMarkers, addFromMarkers, clearCollection } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -116,12 +116,17 @@ test('Markers › Add a set: the sets you have are unmarked by Clear collection,
   const { page, errors } = await openApp();
   await welcome(page, 'look');
   await page.click('#mCollection'); await idle(page);
-  await page.click('#presetHdr'); await idle(page);
-  const have = () => page.$$eval('#presetList .presetrow.have', (r) => r.length);
+  // (v311: the sets list is Add markers' sheet's; Clear collection is in ⋯)
+  const have = async () => {
+    await addFromMarkers(page, 'set');
+    const n = await page.$$eval('#wcSets .presetrow.have', (r) => r.length);
+    await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await idle(page);
+    return n;
+  };
   const n0 = await have();
   assert.ok(n0 >= 1);
-  await page.click('#presetReset'); await page.click('#presetReset'); await idle(page);
-  assert.equal(await have(), 0);
+  await clearCollection(page);
+  assert.equal(await page.evaluate(() => (presetListHTML().match(/presetrow have/g) || []).length), 0);
   await page.click('#toastAct'); await idle(page);
   assert.equal(await have(), n0);
   assert.deepEqual(errors, []);
@@ -149,7 +154,7 @@ async function scanOpened(opts) {
   const a = await openApp(opts);
   await welcome(a.page, 'look'); await idle(a.page);
   await a.page.click('#mCollection'); await idle(a.page);
-  await a.page.click('#scanOpen'); await idle(a.page);
+  await scanFromMarkers(a.page); await idle(a.page);
   return a;
 }
 const scanText = (page, text) => page.evaluate((t) => { const b = document.getElementById('scBox'); b.value = t; b.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertReplacementText' })); }, text);

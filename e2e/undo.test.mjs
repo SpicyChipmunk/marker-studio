@@ -214,9 +214,12 @@ test('Clear collection keeps its second tap and then offers Undo', async () => {
   await welcome(page, 'look');
   await page.click('#mCollection'); await idle(page);
   const own0 = await page.evaluate(() => [...state.owned].sort());
-  await page.click('#presetHdr'); await page.click('#presetReset'); await idle(page);
+  // (v311: in Markers' ⋯)
+  await page.click('#mkMore'); await page.click('#mkClear'); await idle(page);
   assert.equal(await page.evaluate(() => state.owned.size), own0.length, 'the first tap only asks');
-  await page.click('#presetReset'); await idle(page);
+  assert.equal(await page.isVisible('#mkMenu'), true, 'the menu stays open for the second');
+  await pause(page, 450, 'not a double tap');
+  await page.click('#mkClear'); await idle(page);
   assert.equal(await page.evaluate(() => state.owned.size), 0);
   assert.match(await toastText(page), new RegExp(`Cleared ${own0.length} markers`));
   await page.click('#toastAct'); await idle(page);

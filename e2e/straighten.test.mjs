@@ -124,12 +124,13 @@ test('the corner editor: drag a corner, straighten, undo, adjust again', async (
   assert.ok(Math.abs(r.W / r.H - 8.5 / 11) < 0.01, 'Letter, as chosen');
   await page.click('#sfPgUndo'); await sections(page); await idle(page);
   r = await info(page);
-  assert.equal(r.line, ''); assert.deepEqual(r.src, [ph.W, ph.H], 'back to the photo as taken');
+  // (v310.2, deliberately: the way back stays one tap away, as after Cancel)
+  assert.match(r.line, /Page kept as photographed · Straighten/); assert.deepEqual(r.src, [ph.W, ph.H], 'back to the photo as taken');
   // Adjust photo -> Straighten page opens the handles again; Cancel leaves things as they were
   await page.click('#sfAdjToggle'); await page.click('#sfPgOpen'); await page.waitForSelector('#sfPgGo');
   assert.equal(await page.textContent('#sfPgNo'), 'Cancel');
   await page.click('#sfPgNo'); await sections(page);
-  assert.equal((await info(page)).line, '');
+  assert.match((await info(page)).line, /Page kept as photographed/);
   assert.deepEqual(errors, []);
 });
 

@@ -112,13 +112,17 @@ function addedLine(had, c, off) {
   return 'Added ' + name + (off ? ' \u00b7 taken off To buy' : ' to your collection');
 }
 // and for several (Tick all shown, Scan's Add): "Added 12 markers · 3 off To buy"
-function addedManyLine(n, off) {
+// (v310.1) bl: an Ohuhu set's Colorless Blender came too, besides the n colours ("Added 120 markers and a Colorless
+// Blender")
+function addedManyLine(n, off, bl) {
   return (
     'Added ' +
     n +
     ' marker' +
     (n === 1 ? '' : 's') +
-    (off ? ' \u00b7 ' + off + ' off To buy' : ' to your collection')
+    (bl ? ' and a Colorless Blender' : '') +
+    // (that longer line wraps on a phone: "1 off To buy" kept together, not "To" and "buy" apart)
+    (off ? ' \u00b7 ' + off + (bl ? '\u00a0off\u00a0To\u00a0buy' : ' off To buy') : ' to your collection')
   );
 }
 results.addEventListener('click', async (e) => {
@@ -984,11 +988,6 @@ function setMode(m) {
   unownDisarm();
   state.mode = m;
   save(true);
-  if (m === 'collection' && state.owned.size) {
-    const _pb = $('presetBody'),
-      _ph = $('presetHdr');
-    if (_pb && _pb.style.display !== 'none' && _ph) _ph.click();
-  }
   fullRender();
   if (!reduce) {
     const c = document.querySelector('.wrap');
@@ -1454,152 +1453,131 @@ function presetListHTML() {
   });
   return html;
 }
-// (v303) the sets' ticks and counts drawn again from outside (Scan or type codes' Add and its Undo), set by initPresets
+// (v303) the sets' ticks and counts drawn again from outside (Scan's Add and its Undo, the chart, a marker ticked):
+// (v311) the list is the welcome's, in the Add markers sheet (boot.js sets this)
 let presetRelist = null;
-(function initPresets() {
-  var list = document.getElementById('presetList');
-  if (list) {
-    list.innerHTML = presetListHTML();
+/* (v311) Markers' ways to add, in one place: the Add markers sheet (the welcome's card, boot.js openAddMarkers) and,
+   with no markers yet, a card at the top of Markers (chrome.js). Add a set you own (the sets list), Scan or type
+   codes, Tick colours on a chart, and "Not sure which set? Find it from 3 caps" (the welcome's Find). */
+function addWaysHTML(where) {
+  const row = function (a, icon, b, t) {
+    return (
+      '<button type="button" class="wcc" data-add="' +
+      a +
+      '" id="' +
+      where +
+      a.charAt(0).toUpperCase() +
+      a.slice(1) +
+      '"><span class="wci" aria-hidden="true">' +
+      ic(icon) +
+      '</span><span class="wct"><b>' +
+      b +
+      '</b><span>' +
+      t +
+      '</span></span><span class="wcchev" aria-hidden="true">' +
+      ic('chevron-right') +
+      '</span></button>'
+    );
+  };
+  return (
+    '<div class="wcch">' +
+    row(
+      'set',
+      'swatch-book',
+      'Add a set you own',
+      'Pick it from the list: Ohuhu Honolulu, Copic Ciao, Sketch and more.',
+    ) +
+    row(
+      'scan',
+      'crosshair',
+      'Scan or type codes',
+      'Hold up each cap to the camera, or type codes from a receipt.',
+    ) +
+    row(
+      'chart',
+      'palette',
+      'Tick colours on a chart',
+      'Big swatches by colour family. Tap the ones you have.',
+    ) +
+    '</div><div class="mkfind">Not sure which set you have? <button type="button" class="sflink wcscan" data-add="find" id="' +
+    where +
+    'Find">Find it from 3 caps</button></div>'
+  );
+}
+// the keyboard back on what opened Scan or the chart; (v311) the card of ways to add goes once there are markers
+// (the first ones just added), so then on Add markers, which takes its place
+function openerBack(el) {
+  const vis = function (e) {
+    return !!e && e.isConnected && e.getClientRects().length > 0;
+  };
+  const to = vis(el)
+    ? el
+    : el && el.closest && el.closest('#mkAddCard') && vis($('mkAddBtn'))
+      ? $('mkAddBtn')
+      : null;
+  if (to) to.focus({ preventScroll: true });
+  else if (el && el.isConnected) el.focus({ preventScroll: true });
+}
+// one of the ways: Scan and the chart open as they always have (the keyboard, after, on `from`); a set or Find in the
+// sheet, at that step
+function addWay(a, from) {
+  if (from && from.isConnected && from.getClientRects().length) from.focus({ preventScroll: true });
+  if (a === 'scan') {
+    if (typeof openScan === 'function') openScan();
+  } else if (a === 'chart') {
+    if (typeof openChart === 'function') openChart();
+  } else if (typeof window.openAddMarkers === 'function') window.openAddMarkers(a === 'add' ? null : a);
+}
+// Clear collection (v311: in Markers' ⋯, beside Untick all shown; asks with a second tap, then Undo)
+const clearBtn = document.createElement('button');
+clearBtn.type = 'button';
+clearBtn.id = 'mkClear';
+clearBtn.textContent = 'Clear collection';
+let clearT = null,
+  clearAt = 0;
+function clearDisarm() {
+  clearTimeout(clearT);
+  clearT = null;
+  clearBtn.dataset.arm = '';
+  clearBtn.textContent = 'Clear collection';
+}
+clearBtn.addEventListener('click', function () {
+  // (the second tap of a double tap isn't the confirming one, as Untick all shown)
+  if (clearBtn.dataset.arm === '1' && Date.now() - clearAt < 400) return;
+  clearTimeout(clearT);
+  if (clearBtn.dataset.arm === '1') {
+    clearDisarm();
+    const prev = [...state.owned];
+    state.owned = new Set();
+    if (
+      !keep(function () {
+        state.owned = new Set(prev);
+      })
+    )
+      return;
+    fullRender();
+    if (typeof presetRelist === 'function') presetRelist();
+    if (prev.length)
+      toastAction(
+        'Cleared ' + prev.length + ' marker' + (prev.length === 1 ? '' : 's') + ' from your collection',
+        'Undo',
+        function () {
+          prev.forEach(function (k) {
+            state.owned.add(k);
+          });
+          save();
+          fullRender();
+          if (typeof presetRelist === 'function') presetRelist();
+        },
+      );
+    return;
   }
-  var hdr = document.getElementById('presetHdr'),
-    body = document.getElementById('presetBody'),
-    add = document.getElementById('presetAdd'),
-    rst = document.getElementById('presetReset');
-  if (hdr && body)
-    hdr.addEventListener('click', function () {
-      var open = body.style.display !== 'none';
-      if (!open && list) {
-        list.innerHTML = presetListHTML();
-        upd();
-      }
-      body.style.display = open ? 'none' : 'block';
-      hdr.setAttribute('aria-expanded', open ? 'false' : 'true');
-      var car = hdr.querySelector('.presetcar');
-      if (car) car.innerHTML = ic(open ? 'chevron-right' : 'chevron-down');
-    });
-  function upd() {
-    var n = list ? list.querySelectorAll('input:checked').length : 0;
-    if (add) {
-      add.disabled = !n;
-      add.textContent = n ? 'Add ' + n + ' set' + (n > 1 ? 's' : '') : 'Add markers';
-    }
-  }
-  function relist() {
-    if (!list) return;
-    // (the boxes ticked stay ticked)
-    const on = [...list.querySelectorAll('input:checked')].map((x) => x.getAttribute('data-i'));
-    list.innerHTML = presetListHTML();
-    on.forEach((i) => {
-      const x = list.querySelector('input[data-i="' + i + '"]');
-      if (x) x.checked = true;
-    });
-    upd();
-  }
-  presetRelist = relist;
-  if (list) list.addEventListener('change', upd);
-  if (add)
-    add.addEventListener('click', function () {
-      var ch = list.querySelectorAll('input:checked');
-      if (!ch.length) return;
-      const before = new Set(state.owned),
-        wishWas = state.wish.slice(),
-        added = [];
-      ch.forEach(function (x) {
-        presetMkeys(MARKER_SETS[+x.getAttribute('data-i')]).forEach(function (k) {
-          if (!state.owned.has(k)) added.push(k);
-          state.owned.add(k);
-        });
-      });
-      // (v308.3: added by hand, so a Running low or Dry mark goes; Undo gives it back)
-      const ink = inkAddedOff(added),
-        off = wishOwnedOff(added);
-      if (
-        !keep(function () {
-          state.owned = before;
-          state.wish = wishWas;
-          inkPutBack(ink);
-        })
-      )
-        return;
-      // (v308) said, with Undo (the markers and the To buy entries they took off), and the page stays where it was
-      // (it jumped to the bottom of the grid)
-      const y = window.scrollY;
-      fullRender();
-      if (off.length || Object.keys(ink).length) wishChanged();
-      list.innerHTML = presetListHTML();
-      upd();
-      const stay = function () {
-        if (Math.abs(window.scrollY - y) > 1) window.scrollTo(0, y);
-      };
-      stay();
-      requestAnimationFrame(stay);
-      if (!added.length) {
-        toast(
-          ch.length > 1
-            ? 'Those sets are all in your collection already.'
-            : 'That set is all in your collection already.',
-          3200,
-        );
-        return;
-      }
-      // (v309.1: the colours added; a set's blender alone, if that's all that was new)
-      toastAction(addedManyLine(setKeys(added).length || added.length, off.length), 'Undo', function () {
-        added.forEach(function (k) {
-          state.owned.delete(k);
-        });
-        inkPutBack(ink);
-        wishPutBack(off);
-        save();
-        if (off.length || Object.keys(ink).length) wishChanged();
-        fullRender();
-        relist();
-      });
-    });
-  // (v308.2: one timer, so an earlier tap's can't cancel a later "Tap again" early)
-  let rstT = null;
-  if (rst)
-    rst.addEventListener('click', function () {
-      clearTimeout(rstT);
-      if (rst.dataset.arm === '1') {
-        rst.dataset.arm = '';
-        rst.textContent = 'Clear collection';
-        const prev = [...state.owned];
-        state.owned = new Set();
-        if (
-          !keep(function () {
-            state.owned = new Set(prev);
-          })
-        )
-          return;
-        fullRender();
-        // (the sets' "in your collection" marks follow, v298)
-        relist();
-        if (prev.length)
-          toastAction(
-            'Cleared ' + prev.length + ' marker' + (prev.length === 1 ? '' : 's') + ' from your collection',
-            'Undo',
-            function () {
-              prev.forEach(function (k) {
-                state.owned.add(k);
-              });
-              save();
-              fullRender();
-              relist();
-            },
-          );
-      } else {
-        rst.dataset.arm = '1';
-        rst.textContent =
-          'Clear all ' + state.owned.size + (state.owned.size === 1 ? ' marker' : ' markers') + '? Tap again';
-        rstT = setTimeout(function () {
-          if (rst) {
-            rst.dataset.arm = '';
-            rst.textContent = 'Clear collection';
-          }
-        }, 2500);
-      }
-    });
-})();
+  clearBtn.dataset.arm = '1';
+  clearAt = Date.now();
+  clearBtn.textContent =
+    'Clear all ' + state.owned.size + (state.owned.size === 1 ? ' marker' : ' markers') + '? Tap again';
+  clearT = setTimeout(clearDisarm, 2500);
+});
 let unownT = null;
 function unownDisarm() {
   if (unownT) {
@@ -1646,7 +1624,7 @@ const mkMore = document.createElement('button'),
 mkMoreWrap.className = 'libmore mkmore';
 mkMore.type = 'button';
 mkMore.id = 'mkMore';
-mkMore.setAttribute('aria-label', 'More: Untick all shown, Back up & restore');
+mkMore.setAttribute('aria-label', 'More: Untick all shown, Clear collection, Back up & restore');
 mkMore.setAttribute('aria-haspopup', 'menu');
 mkMore.setAttribute('aria-expanded', 'false');
 mkMore.setAttribute('aria-controls', 'mkMenu');
@@ -1657,7 +1635,7 @@ mkMenu.setAttribute('role', 'menu');
 mkMenu.setAttribute('aria-label', 'More');
 mkMenu.hidden = true;
 backupBtn.innerHTML = 'Back up &amp; restore <span class="mkmsub">(in the Library)</span>';
-[ownNoneBtn, backupBtn].forEach((b) => {
+[ownNoneBtn, clearBtn, backupBtn].forEach((b) => {
   b.setAttribute('role', 'menuitem');
   b.tabIndex = -1;
   mkMenu.appendChild(b);
@@ -1673,6 +1651,7 @@ function mkMenuOpen(on, focusFirst) {
   mkMore.setAttribute('aria-expanded', on ? 'true' : 'false');
   if (!on) {
     if (ownNoneBtn.dataset.arm === '1') unownDisarm();
+    if (clearBtn.dataset.arm === '1') clearDisarm();
     return;
   }
   const it = mkItems();
@@ -1687,6 +1666,8 @@ mkMenu.addEventListener(
     const b = e.target.closest('button');
     // (Untick's first tap asks in place; a second within 400 ms is a double tap's, ignored there too, so it stays open)
     if (!b || (b === ownNoneBtn && (ownNoneBtn.dataset.arm !== '1' || Date.now() - unownAt < 400))) return;
+    // (v311: Clear collection's first tap asks in place too; the second clears, and the menu closes)
+    if (b === clearBtn && (clearBtn.dataset.arm !== '1' || Date.now() - clearAt < 400)) return;
     mkMenu.hidden = true;
     mkMore.setAttribute('aria-expanded', 'false');
     mkMore.focus({ preventScroll: true });
@@ -1732,20 +1713,14 @@ function libBackupGo() {
     b.focus({ preventScroll: true });
   }, 40);
 }
-function openSetsPanel() {
-  const b = $('presetBody'),
-    h = $('presetHdr');
-  if (b && b.style.display === 'none' && h) h.click();
-  const w = $('presetWrap');
-  if (w && w.scrollIntoView)
-    setTimeout(() => w.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }), 60);
-}
+// (v311) "Add yours" from elsewhere (the Guide's demo note, Home, the empty-collection banner): Markers, and the Add
+// markers sheet over it
 function goMarkers() {
   if (state.mode !== 'collection') {
     state.collView = 'owned';
     setMode('collection');
   }
-  openSetsPanel();
+  addWay('add', $('mkAddBtn'));
 }
 function openBackup() {
   backupText.value = JSON.stringify({

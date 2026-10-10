@@ -106,6 +106,8 @@ function resetForNewPicture() {
   return gen;
 }
 function note(m) {
+  // (v310: not while a Mood picture is made, 32-mood-pics: the guide on screen hasn't changed)
+  if (_mpQuiet) return;
   const _plain = typeof m === 'string' ? m.replace(/<[^>]*>/g, '') : '',
     _prog = /(\u2026|\.\.\.)\s*$/.test(_plain);
   if (metaEl) metaEl.innerHTML = m;
@@ -622,7 +624,17 @@ function reFrom() {
 function keepSnap(geo) {
   if (!labels || !comps) return null;
   const top = undoStack[undoStack.length - 1];
-  if (!geo && top && top.reseg && !top.sealed) return null;
+  if (!geo && top && top.reseg && !top.sealed) {
+    // (still a new edit: Redo no longer follows on, v311)
+    secFwd = [];
+    return null;
+  }
+  const s = keepObj(geo);
+  pushUndo(s);
+  return s;
+}
+// the step keepSnap keeps: the sections and all that hangs on them as they are now (also for Redo, 65-edit secNow)
+function keepObj(geo) {
   const ad = assignData
     ? {
         assign: Object.assign({}, assignData.assign),
@@ -709,7 +721,6 @@ function keepSnap(geo) {
           : null,
     },
   };
-  pushUndo(s);
   return s;
 }
 // anything of the guide's own that redrawing the sections would clear
@@ -750,7 +761,8 @@ function okGeom(go) {
 }
 // okGeom said yes but nothing changed after all: its Undo step goes again
 function geoCancel() {
-  if (_geoSnap && undoStack[undoStack.length - 1] === _geoSnap) popUndo();
+  // (and Redo as it was before it, v311)
+  if (_geoSnap && undoStack[undoStack.length - 1] === _geoSnap) popUndo(true);
   _geoSnap = null;
 }
 // the picture changed: an Undo step from okGeom leads back to it; without one the older steps no longer fit the picture

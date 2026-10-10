@@ -1,5 +1,27 @@
 if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
   globalThis.__mstest = {
+    // (v310: the Mood pictures, 32-mood-pics)
+    mpLay: mpLay,
+    mpKey: mpKey,
+    mpShow: mpShow,
+    mpSave: mpSave,
+    mpDiff: mpDiff,
+    mpSigNow: mpSigNow,
+    mpSig: mpSig,
+    planSnap: planSnap,
+    layPlan: layPlan,
+    get mp() {
+      return _mp;
+    },
+    get mpPtrs() {
+      return _mpPtrs;
+    },
+    get emphasis() {
+      return emphasis;
+    },
+    get planStack() {
+      return planStack;
+    },
     segment: segment,
     labelCells: labelCells,
     applyBg: applyBg,
@@ -285,6 +307,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     // (v304 tests: the tone lines drawn into a buffer; a held shading put back as Undo does; the brand letters in print)
     shadeLinesDraw: shadeLinesDraw,
     heldSet: heldSet,
+    get heldSh() {
+      return heldSh;
+    },
     guideMixed: guideMixed,
     shadePick: shadePick,
     shadeStylePick: shadeStylePick,
@@ -437,6 +462,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     get undoCount() {
       return undoStack.length;
+    },
+    get redoCount() {
+      return secFwd.length;
     },
     get planCount() {
       return planStack.length;

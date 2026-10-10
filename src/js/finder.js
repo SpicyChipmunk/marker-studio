@@ -497,7 +497,7 @@ function renderGrid(more) {
     // (in Owned only: elsewhere a search that found nothing had said the collection was empty, v304)
     results.innerHTML =
       state.mode === 'collection' && !state.owned.size && state.collView === 'owned'
-        ? '<div class="empty">Your collection is empty. Tick the sets you own under <b>Add a set you own</b>, or switch to <b>All</b> to add single markers.</div>'
+        ? '<div class="empty">Your collection is empty. Add your markers above, or switch to <b>All</b> to tick single markers.</div>'
         : '<div class="empty">' +
           (searchStr
             ? 'No markers match \u201c' + esc(searchStr) + '\u201d with the current filters.'
@@ -636,26 +636,41 @@ results.addEventListener('click', (e) => {
   const a = ownView.querySelector('[data-v="all"]');
   if (a) a.focus({ preventScroll: true });
 });
-// Markers' tools (Add a set you own, Back up & restore, Print a swatch chart) stay under the grid, where Home's backup
-// card points; a link near the top goes down to them. It scrolls them into view and leaves the sets list closed (open,
-// it is about 1,500px tall and would push the other two out of sight); focus goes to the first of them.
+// (v311) Add markers, at the top: the ways to add in a sheet (the welcome's card: boot.js openAddMarkers). With no
+// markers yet they're in a card at the top instead (chrome.js), so it shows only with a collection. And a link down
+// to Brands I'd buy and Print a swatch chart, below the grid (as v300's link to the sets and the chart, which the
+// sheet has now taken the sets from).
+const mkAddBtn = document.createElement('button');
+mkAddBtn.type = 'button';
+mkAddBtn.id = 'mkAddBtn';
+mkAddBtn.className = 'mkaddbtn';
+mkAddBtn.innerHTML = ic('plus') + 'Add markers';
+mkAddBtn.style.display = 'none';
+ownHint.insertAdjacentElement('afterend', mkAddBtn);
+mkAddBtn.addEventListener('click', function () {
+  addWay('add', mkAddBtn);
+});
+// (the same ways in the card at the top while there are no markers: a set or Find opens the sheet at that step)
+{
+  const aw = $('mkAddWays');
+  if (aw)
+    aw.addEventListener('click', function (e) {
+      const b = e.target.closest('[data-add]');
+      if (b) addWay(b.dataset.add, b);
+    });
+}
 const mkJump = document.createElement('button');
 mkJump.type = 'button';
 mkJump.id = 'mkJump';
 mkJump.className = 'mkjump';
 mkJump.style.display = 'none';
-ownHint.insertAdjacentElement('afterend', mkJump);
+mkJump.innerHTML = 'Swatch chart<span aria-hidden="true">\u2193</span>';
+mkAddBtn.insertAdjacentElement('afterend', mkJump);
 function mkJumpSync(col) {
-  // (not in To buy: its sets aren't there, and Print a swatch chart is just under it, v300)
+  // (not in To buy: Print a swatch chart is just under it there, v300)
   col = col && state.collView !== 'wish';
   mkJump.style.display = col ? '' : 'none';
-  if (!col) return;
-  // with an empty collection the sets are at the top already (chrome.js), so the link names the other two
-  const t = state.owned.size ? 'Sets & swatch chart' : 'Swatch chart';
-  if (mkJump.dataset.t !== t) {
-    mkJump.dataset.t = t;
-    mkJump.innerHTML = esc(t) + '<span aria-hidden="true">\u2193</span>';
-  }
+  mkAddBtn.style.display = col && state.owned.size ? '' : 'none';
 }
 mkJump.addEventListener('click', () => {
   const pw = $('presetWrap'),
@@ -663,7 +678,7 @@ mkJump.addEventListener('click', () => {
     to = bottom ? pw : $('backupWrap');
   if (!to) return;
   to.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
-  const f = bottom ? $('presetHdr') : $('swatchBtn');
+  const f = $('swatchBtn');
   if (f) f.focus({ preventScroll: true });
 });
 let copyT = null;

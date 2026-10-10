@@ -2,7 +2,7 @@
 // the first cap; the trace shows what the iPad sends).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, idle } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, idle, scanFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -13,7 +13,7 @@ test('Scan’s box events are kept for Copy diagnostics: input, the read and the
   await idle(page);
   await page.click('#mCollection');
   await idle(page);
-  await page.click('#scanOpen');
+  await scanFromMarkers(page);
   await idle(page);
   await page.evaluate(() => {
     const b = document.getElementById('scBox');

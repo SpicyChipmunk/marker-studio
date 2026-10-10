@@ -2,7 +2,7 @@
 // list to check, and Add puts the new ones in the collection.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, idle } from './helpers.mjs';
+import { setup, teardown, openApp, welcome, idle, scanFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -13,7 +13,7 @@ async function opened() {
   const a = await openApp({ storage: { 'ms-scan-brand': '' } });
   await welcome(a.page, 'look'); await idle(a.page);
   await a.page.click('#mCollection'); await idle(a.page);
-  await a.page.click('#scanOpen'); await idle(a.page);
+  await scanFromMarkers(a.page); await idle(a.page);
   return a;
 }
 const type = async (page, text) => { await page.fill('#scBox', text); await page.press('#scBox', 'Enter'); await idle(page); };
@@ -69,11 +69,11 @@ test('typed codes and a pasted list collect in a list to check; Add puts the new
   assert.equal(await owns(page, 'Ohuhu|B015'), false);
   assert.equal(await owns(page, 'Ohuhu|R014'), true, 'Undo leaves what was there before');
   // Undo brings the list back too, to put right and add again
-  await page.click('#scanOpen'); await idle(page);
+  await scanFromMarkers(page); await idle(page);
   assert.deepEqual(await list(page), ['E19', 'R014 (mine)', 'B015']);
   // Add empties it
   await page.click('#scAdd'); await idle(page);
-  await page.click('#scanOpen'); await idle(page);
+  await scanFromMarkers(page); await idle(page);
   assert.deepEqual(await list(page), []);
   assert.deepEqual(errors, []);
 });
@@ -143,7 +143,7 @@ test('asks when it cannot be sure, in the list (sweeping on loses no question); 
   await page.keyboard.press('Escape'); await idle(page);
   await page.reload(); await idle(page);
   await page.click('#mCollection'); await idle(page);
-  await page.click('#scanOpen'); await idle(page);
+  await scanFromMarkers(page); await idle(page);
   assert.equal(await page.getAttribute('#scBrand button[data-b="Ohuhu"]', 'aria-pressed'), 'true');
   assert.deepEqual(errors, []);
 });
@@ -226,8 +226,9 @@ test('Escape closes it with focus back on its button; the list is kept until add
   await type(page, 'B015');
   await page.keyboard.press('Escape'); await idle(page);
   assert.equal(await page.isVisible('#scanOverlay'), false);
-  assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'scanOpen');
-  await page.click('#scanOpen'); await idle(page);
+  // (v311: what opened it on Markers: + Add markers, or the empty collection's card)
+  assert.ok(['mkAddBtn', 'mkcScan'].includes(await page.evaluate(() => document.activeElement && document.activeElement.id)));
+  await scanFromMarkers(page); await idle(page);
   assert.deepEqual(await list(page), ['B015']);
   // a tap outside the card closes it too
   await page.mouse.click(5, 830); await idle(page);

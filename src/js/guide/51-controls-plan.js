@@ -34,6 +34,7 @@ function ctlPlan() {
   ctlPlanWire();
   frameLineWire();
   ctlEl.setAttribute('data-tab', gTab);
+  mpAfterPlan();
   heldNoteWire();
   pinNoteWire();
   sampleNoteWire();
@@ -172,6 +173,9 @@ function mkCountCtl(off) {
 // the filters for Owned), then Temperature and Mood
 function ctlPlanColours() {
   let html = '<div class="sftab" data-tab="colours"' + ctlTabAttrs('colours') + '>' + zoneChipsHTML();
+  // (v310) Mood as pictures of the page, first: 32-mood-pics (where they aren't shown, Mood's buttons as before)
+  const _mpics = mpShow();
+  if (_mpics) html += moodPicsHTML();
   var _mkH = '',
     _expH = '';
   if (family !== 'manual') {
@@ -332,7 +336,7 @@ function ctlPlanColours() {
       (_tOff
         ? '<div class="sfc-note sfc-mt6">Main colour sets this: its colours are chosen (Pattern).</div>'
         : '');
-  if (_iShow)
+  if (_iShow && !_mpics)
     html +=
       '<div class="sfsublbl' +
       (_mOff ? ' sfoff' : '') +

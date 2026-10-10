@@ -233,7 +233,10 @@ function applyLocks() {
   });
   for (const l in locks) {
     if (assignData.assign[l] !== undefined) {
-      const m = bk[locks[l]];
+      // (v310.2: a section with ink on the paper keeps its marker even when it's no longer one you can use, dry or
+      // unticked since: it's coloured with it. It had been laid afresh, as a pin for a marker not in the collection)
+      const m =
+        bk[locks[l]] || (_heldObj && _heldObj[l] && _heldObj[l].mkey === locks[l] ? _heldObj[l] : null);
       if (m) assignData.assign[l] = m;
     }
   }
@@ -3794,6 +3797,8 @@ function buildGuide(keepPlan) {
   // an Undo step kept from re-detecting or turning the picture starts a new one from here on
   const _t = undoStack[undoStack.length - 1];
   if (_t) _t.sealed = true;
+  // (and what was undone in Edit sections is no longer there to redo, v311)
+  secFwdEnd();
   const now = same ? planSnap() : null,
     unchanged = !!(was && now && planSame(was, now, true));
   guideDirty = unchanged ? wasDirty : true;
@@ -3911,7 +3916,9 @@ function zoneSigSync() {
    laying out, for that line. */
 let _holdOff = false,
   _heldRun = null,
-  _heldTold = 0;
+  _heldTold = 0,
+  // (the markers of the sections held by the laying under way, themselves: one no longer in the collection kept too)
+  _heldObj = null;
 function holdOn(run, extra) {
   _heldRun = null;
   if (!assignData) return null;
@@ -3923,6 +3930,7 @@ function holdOn(run, extra) {
       const m = assignData.assign[l];
       if (!m || tmp[l] !== undefined || !inkOn(l) || (zones.length && run.indexOf(zoneOf(l)) < 0)) return;
       tmp[l] = m.mkey;
+      (_heldObj || (_heldObj = {}))[l] = m;
       kept.push(l);
     });
   // (sections keeping their markers anyway, as a Random zone's that stayed put: laid as pinned for the moment, so the
@@ -3942,11 +3950,13 @@ function holdOn(run, extra) {
 // lay the zones ids with fn, sections with ink on the paper held (holdOn): every re-laying of the plan goes through
 // here (reassign; the sun moved under a light-to-dark Gradient; Blend's anchors; the Photo pattern's photo)
 function holdRun(ids, fn, extra) {
+  _heldObj = null;
   const was = holdOn(ids, extra);
   try {
     return zoneRun(ids, fn);
   } finally {
     if (was) locks = was;
+    _heldObj = null;
   }
 }
 // { section: marker key } of a zoneStayRandom result (null for none)
@@ -3956,8 +3966,27 @@ function stayKeys(stay) {
   for (const l in stay) o[l] = stay[l].m.mkey;
   return o;
 }
-function reassign(ids, moved) {
+// how (v310): { before, seed } — before() runs just before the plan is laid (Mood's generated palette), and both with
+// Math.random drawn from seed when there is one (a Mood picture's, 32-mood-pics): the drawing and the Undo step after
+// it get the true Math.random
+function reassign(ids, moved, how) {
   if (!labels || sfmode !== 'guide') return;
+  const lay = function () {
+    if (how && how.before) how.before();
+    return layPlan(ids, moved);
+  };
+  if ((how && how.seed != null ? mpSeeded(how.seed, lay) : lay()) === false) return false;
+  // (a section that changed zone may be shaded differently now, or not at all: part-done tones brought in line)
+  normalizeTones();
+  renderGuide();
+  renderControls();
+  if (tipL >= 0) showTip(tipL, tipBtns, true);
+  planCommit();
+  return true;
+}
+// The plan laid again, as reassign does it, without drawing it or making it an Undo step: false when it couldn't be
+// (v310: apart, so the Mood pictures, 32-mood-pics, lay a mood by exactly the steps a tap on it takes)
+function layPlan(ids, moved) {
   if (!Array.isArray(ids)) ids = null;
   guideDirty = true;
   selAnchor = -1;
@@ -3976,12 +4005,6 @@ function reassign(ids, moved) {
   // (a Gradient elsewhere whose bands faced a light that has since changed by itself: Main's pattern to or from Photo
   // under Light from's auto, or the only Photo zone gone)
   gradFollowLight();
-  // (a section that changed zone may be shaded differently now, or not at all: part-done tones brought in line)
-  normalizeTones();
-  renderGuide();
-  renderControls();
-  if (tipL >= 0) showTip(tipL, tipBtns, true);
-  planCommit();
   return true;
 }
 // (no "are you sure": the change is one Undo step, and coloured sections keep their markers)

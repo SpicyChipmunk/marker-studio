@@ -3,7 +3,7 @@
 // own, not a pale tint (Copic's Cool Grey was white, its Green cream).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle } from './helpers.mjs';
+import { setup, teardown, openApp, idle, chartFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -25,7 +25,7 @@ const ST = (owned) => ({
 test('a phone on its side (844×390): Save stays in the card while the swatches scroll, and saves', async () => {
   const { page, errors } = await openApp({ width: 844, height: 390, storage: ST(['Ohuhu|R014']) });
   await idle(page);
-  await page.click('#chartOpen');
+  await chartFromMarkers(page);
   await idle(page);
   const inCard = () =>
     page.evaluate(() => {
@@ -55,7 +55,7 @@ test('a phone on its side (844×390): Save stays in the card while the swatches 
 test('the chosen family’s chip is in view after a brand switch and when the chart opens again', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180, storage: ST(['Ohuhu|R014']) });
   await idle(page);
-  await page.click('#chartOpen');
+  await chartFromMarkers(page);
   await idle(page);
   const chip = () =>
     page.evaluate(() => {
@@ -78,7 +78,7 @@ test('the chosen family’s chip is in view after a brand switch and when the ch
   await page.click('#chFams .chfam >> nth=-1');
   await page.keyboard.press('Escape');
   await idle(page);
-  await page.click('#chartOpen');
+  await chartFromMarkers(page);
   await idle(page);
   assert.deepEqual(await chip(), { f: 'Red', seen: true }, 'opened again: Red, in view');
   assert.deepEqual(errors, []);

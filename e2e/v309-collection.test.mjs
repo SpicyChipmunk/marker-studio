@@ -4,7 +4,7 @@
 // whether there's anything else.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, idle } from './helpers.mjs';
+import { setup, teardown, openApp, idle, chartFromMarkers } from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -227,7 +227,7 @@ test('Markers › Tick colours on a chart: yours ticked; untick one and tick two
     },
   });
   await idle(page);
-  await page.click('#chartOpen');
+  await chartFromMarkers(page);
   await idle(page);
   assert.equal(
     await page.getAttribute('#chBrand [data-b="Copic"]', 'aria-pressed'),
@@ -260,6 +260,7 @@ test('Markers › Tick colours on a chart: yours ticked; untick one and tick two
     'Copic|E11',
     'Ohuhu|R014',
   ]);
-  assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'chartOpen');
+  // (v311: what opened it on Markers: + Add markers, or the empty collection's card)
+  assert.ok(['mkAddBtn', 'mkcChart'].includes(await page.evaluate(() => document.activeElement && document.activeElement.id)));
   assert.deepEqual(errors, []);
 });
