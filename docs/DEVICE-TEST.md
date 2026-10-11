@@ -101,17 +101,16 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v312
+## New in this release: v312.1 (and v312's, if not checked yet)
 
-- [ ] **Home's foot:** "Tester tasks · 0 of 6" on a line of its own. Open it, answer a task (Easy) with a note →
-      "1 of 6 answered"; close the app fully, reopen → the answer and note are still there.
-- [ ] **Send results** → "Sent. Thank you!" → within a minute a new row in your results sheet, with the answer in its
-      column. Home's foot then says "Tester tasks · sent".
-- [ ] Airplane mode on, **Send results** → it says it couldn't send and your answers are kept; airplane mode off, send
-      again → a row marked "2 (an update)".
-- [ ] **Send feedback** → a box to write in; **Send** → a "Feedback" row in the sheet. **Share it instead** → the share
-      sheet, with what you wrote first, and you can attach a screenshot.
-- [ ] **iPad landscape, Colours tab:** Mood is one row of six small pictures; the whole tab fits on the screen (v311.1).
+- [ ] **Tester tasks:** answer one, **Send results** → a row in your results sheet within a minute; Home's foot says
+      "Tester tasks · sent". Airplane mode on, send → it says it couldn't; off, send again → "2 (an update)".
+- [ ] **Send feedback** from Home and from the guide's **⋯** → the box to write in; **Send** → a "Feedback" row.
+      **Share it instead** → the share sheet, with what you wrote, for a screenshot.
+- [ ] **Undo and a dry marker:** in a guide, change the Mood; in Markers mark one of its markers dry; back in the guide,
+      ↶ Undo → its sections show a stand-in; mark it not dry → the marker is back in them.
+- [ ] **Edit sections › Merge** two sections → the one they became is outlined for a moment.
+- [ ] **Share › Print… › Download PDF** → the button under it says **Close**.
 
 ## Report back
 

@@ -3928,7 +3928,13 @@ function holdOn(run, extra) {
   if (!_holdOff && colored)
     assignData.order.forEach(function (l) {
       const m = assignData.assign[l];
-      if (!m || tmp[l] !== undefined || !inkOn(l) || (zones.length && run.indexOf(zoneOf(l)) < 0)) return;
+      if (!m || !inkOn(l) || (zones.length && run.indexOf(zoneOf(l)) < 0)) return;
+      // (v312.1: a coloured section pinned to its marker is held by its pin, but its marker is kept here too, so a pin
+      // for a marker marked dry or unticked since still stands: applyLocks; it had been laid afresh)
+      if (tmp[l] !== undefined) {
+        if (tmp[l] === m.mkey) (_heldObj || (_heldObj = {}))[l] = m;
+        return;
+      }
       tmp[l] = m.mkey;
       (_heldObj || (_heldObj = {}))[l] = m;
       kept.push(l);

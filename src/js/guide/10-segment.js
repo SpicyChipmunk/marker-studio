@@ -862,7 +862,13 @@ function render() {
     rgbOut[j + 3] = 255;
   }
   ctx.putImageData(imgData, 0, 0);
-  countEl.textContent = cnt + ' section' + (cnt === 1 ? '' : 's');
+  const _ct = cnt + ' section' + (cnt === 1 ? '' : 's');
+  // (v312.1: after a merge, split, add or leave-out, the new count is said; the count line had been read once only)
+  if (_secSayNext) {
+    if (countEl.textContent !== _ct) sayLive(_secSayNext + _ct);
+    _secSayNext = '';
+  }
+  countEl.textContent = _ct;
   secQuickN();
   renderTools();
   {

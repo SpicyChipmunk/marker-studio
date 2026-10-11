@@ -289,6 +289,8 @@ function growArrays() {
     secColor.push(hsl2rgb((l * 137.508) % 248, 22 + ((l * 37) % 14), 61 + ((l * 29) % 13)));
   }
 }
+// (v312.1) what the next drawing of Edit sections says before the new count ("Merged into one section: "), if it changed
+let _secSayNext = '';
 function mergeCells(a, b) {
   if (a === b || !comps[a] || !comps[b] || comps[a].merged || comps[b].merged) return;
   for (let i = 0; i < W * H; i++) if (labels[i] === b) labels[i] = a;

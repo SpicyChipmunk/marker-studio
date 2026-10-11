@@ -799,11 +799,14 @@ function planRestore(e, noFilt) {
   coll.forEach(function (m) {
     bk[m.mkey] = m;
   });
-  const res = function (k) {
+  // (v312.1) the sections whose marker isn't yours to use now (marked dry or unticked since the step was made): l → key
+  const subs = {};
+  const res = function (k, l) {
     let m = bk[k];
     if (!m && k) {
       const info = api.markerInfo ? api.markerInfo(k) : null;
       if (info && info.lab && coll.length) m = nearestInPool(info.lab, coll);
+      if (m && l != null) subs[l] = k;
     }
     return m || (k ? catMarker(k) : null);
   };
@@ -819,7 +822,7 @@ function planRestore(e, noFilt) {
   const assign = {},
     base = {};
   s.o.forEach(function (l) {
-    const m = res(s.a[l]);
+    const m = res(s.a[l], l);
     if (m) {
       assign[l] = m;
       base[l] = (s.b[l] && res(s.b[l])) || m;
@@ -852,6 +855,12 @@ function planRestore(e, noFilt) {
   }
   locks = Object.assign({}, s.locks);
   _origKeys = e.ok ? JSON.parse(JSON.stringify(e.ok)) : {};
+  // (v312.1) a step from before a marker was marked dry or unticked has no record of the marker its sections had: they
+  // show the closest you own, and the guide keeps the marker (as standInsSync does, 97-open), so it's saved as it was
+  // and comes back when the marker does. Undo had saved the stand-in for good. Not coloured ones: they keep theirs.
+  for (const l in subs)
+    if (assign[l] && !keep[l] && !_origKeys[l] && assign[l].mkey !== subs[l])
+      _origKeys[l] = { k: subs[l], s: [subs[l], assign[l].mkey] };
   anchors = s.anchors.map(function (x) {
     return { x: x.x, y: x.y, mkey: x.mkey };
   });

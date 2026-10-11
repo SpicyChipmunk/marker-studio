@@ -148,8 +148,9 @@ document.addEventListener(
     let n = 0;
     _layers.forEach(function (L) {
       if (!L.back || !L.isOpen()) return;
-      // (the welcome has no close, so no entry)
-      n += L.name === 'dialog' ? document.querySelectorAll('.overlay.on:not(#welcome)').length : 1;
+      // (the welcome has no close, so no entry; but Markers' Add markers sheet, the welcome's steps in .wcmk, closes
+      // with Back as any dialog does, a step at a time, v312.1)
+      n += L.name === 'dialog' ? document.querySelectorAll('.overlay.on:not(#welcome:not(.wcmk))').length : 1;
     });
     return n;
   };

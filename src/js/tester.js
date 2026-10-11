@@ -11,7 +11,8 @@
 (function () {
   if (typeof APP_BETA === 'undefined' || !APP_BETA) return;
   const D = document,
-    TT_KEY = 'ms-tester';
+    TT_KEY = 'ms-tester',
+    POST_MS = 20000;
   // the form's fields, in the order docs/tester-form-setup.gs makes them (its pre-filled link lists them in this order)
   const FIELDS = [
     'Kind',
@@ -60,8 +61,8 @@
     {
       k: 'plan',
       t: 'Make the plan yours',
-      s: 'Mood, Pattern, Shuffle, Surprise',
-      d: 'Try <b>Mood</b>, a different <b>Pattern</b>, <b>Shuffle</b> or <b>Surprise</b> until it’s a plan you’d colour.',
+      s: 'Mood, Pattern, Surprise, Shuffle',
+      d: 'Try <b>Mood</b>, a different <b>Pattern</b>, <b>Surprise</b>, or <b>Shuffle</b> (<b>Other pairings</b> in Random) until it’s a plan you’d colour.',
       p: ['Anything you expected that didn’t happen?', 'Anything go wrong?'],
     },
     {
@@ -206,15 +207,30 @@
     FIELDS.forEach(function (f, i) {
       body.append('entry.' + t.ids[i], String(values[f] == null ? '' : values[f]).slice(0, 4000));
     });
+    // (v312.1: given up after POST_MS, as when offline: a stalled connection had left "Sending…" for good)
+    const ac = typeof AbortController === 'function' ? new AbortController() : null;
     try {
-      return fetch(t.action, { method: 'POST', mode: 'no-cors', body: body }).then(
-        function () {
-          return true;
-        },
-        function () {
-          return false;
-        },
-      );
+      return new Promise(function (done) {
+        const t0 = setTimeout(function () {
+          if (ac) ac.abort();
+          done(false);
+        }, POST_MS);
+        fetch(t.action, {
+          method: 'POST',
+          mode: 'no-cors',
+          body: body,
+          signal: ac ? ac.signal : undefined,
+        }).then(
+          function () {
+            clearTimeout(t0);
+            done(true);
+          },
+          function () {
+            clearTimeout(t0);
+            done(false);
+          },
+        );
+      });
     } catch (e) {
       return Promise.resolve(false);
     }
@@ -444,7 +460,7 @@
     const t = e.target.closest ? e.target.closest('button') : null;
     if (!t || !ov.contains(t)) return;
     if (t.id === 'ttClose') return closeTasks();
-    if (t.id === 'ttSend' || t.id === 'ttSendTop') return sendResults(t);
+    if (t.id === 'ttSend' || t.id === 'ttSendTop') return sendResults();
     if (t.id === 'ttCopy') return copyResults();
     const row = t.closest('.ttrow');
     if (t.classList.contains('tttop') && row) {
@@ -483,13 +499,24 @@
     else return;
     save();
   });
-  function sendResults(btn) {
+  // (v312.1: both Send results buttons off while one send is under way: tapping the other had sent it twice)
+  let sending = false;
+  function sendBtns(off) {
+    ['ttSend', 'ttSendTop'].forEach(function (id) {
+      const b = D.getElementById(id);
+      if (b) b.disabled = off;
+    });
+  }
+  function sendResults() {
     load();
+    if (sending) return;
     if (!formTarget()) return shareResults();
-    btn.disabled = true;
+    sending = true;
+    sendBtns(true);
     said('Sending…');
     post(resultValues()).then(function (ok) {
-      btn.disabled = false;
+      sending = false;
+      sendBtns(false);
       if (ok) {
         st.sends = (st.sends || 0) + 1;
         st.sig = sig();
@@ -497,7 +524,7 @@
         said('Sent. Thank you! Change anything and you can send it again.');
       } else
         said(
-          'Couldn’t send: you seem to be offline. Your answers are kept here: try again when you’re online, or copy them instead.',
+          'Couldn’t send: check you’re online. Your answers are kept here: try again in a moment, or copy them instead.',
         );
     });
   }
@@ -625,7 +652,7 @@
           toast('Sent. Thank you!');
         } else
           fbSaid(
-            'Couldn’t send: you seem to be offline. Your words are kept here: try again when you’re online, or Share it instead.',
+            'Couldn’t send: check you’re online. Your words are kept here: try again in a moment, or Share it instead.',
           );
       });
     });

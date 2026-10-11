@@ -714,3 +714,33 @@ Ben's decisions: testers get tasks in the app, not a checklist (D1–D4); result
   test sets its own), so no test posts to it; one test checks the shipped link has every field and catches its post.
 - New: `e2e/v312-tester` (8).
 - Version v312; cache `marker-studio-v312`.
+
+# Changes — v312.1 (fable's reviews of v312, Ben's decisions D1–D4)
+
+Two independent reviews by fable (a new tester's walkthrough, and a code review of v310 to v312), each finding checked
+before it was brought to Ben. New: `e2e/v3121` (8), each failing on v312 (Back is left to the browser under test in Safari's engine).
+
+- **Undo back past a marker marked dry** (major): a plan step from before the marker went dry had no record of it, so
+  its sections took the closest marker you own for good: the guide was saved with the stand-in, and marking the marker
+  usable again didn't bring it back. Undo (and Redo) now keep the guide's marker for them, as a guide reopened does.
+- **A pinned, coloured section** whose marker was marked dry since kept it only until the next plan change; it now keeps
+  it, as an unpinned coloured one already did (v310.2).
+- **Back** (the browser's, Android's) closes Markers' Add markers sheet a step at a time, as every dialog; it had left
+  the page. The welcome itself still makes no Back entry. The sheet is named "Add markers" for a screen reader (it was
+  "Welcome to Marker Studio").
+- **The guide's ⋯ › Send feedback** opens the dialog that sends to the form, as every other Send feedback does; it had
+  opened the share sheet.
+- **Send results** sends once (both its buttons are off while it sends; one tap on each had sent two rows), and gives
+  up after 20 seconds on a stalled connection, saying so (it had said "Sending…" for good). Send feedback too.
+- **Edit sections:** a merge outlines the section it made for a moment (the line between them stays on the paper, so
+  nothing showed it), and a merge, split, add or leave-out says the new count for a screen reader.
+- **Wording:** Add markers' Scan line ("Type codes from a receipt, or scan caps with Scan Text on an iPad or iPhone");
+  Print's Cancel is Close once a PDF is made; To buy's empty list says to tap + To buy after Running low; tester task 3
+  names Other pairings for Random.
+- Looked at and left: in iPad landscape the count ("122 / sections") sits on two lines in the narrow tool column
+  beside the picture, as designed (one line would widen the column and shrink the picture); Focus mode's empty band on
+  a phone in a shaded guide is the two lines kept for its tips, so the bar doesn't change height (and move the
+  picture) from section to section.
+- Left as they are (D4): Colour along's paper view, the sample on a phone's Home, long toasts, the scroll to the guide
+  after Build, Scan's unanswered codes kept for later.
+- Version v312.1; cache `marker-studio-v312.1`.

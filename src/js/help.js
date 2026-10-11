@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v312.1',
+    t: 'Fixes from an independent review: Undo keeps the marker a guide had when one is marked dry; Back closes Add markers; Edit sections shows and says what a merge did; clearer wording in a few places.',
+  },
+  {
     v: 'v312',
     t: 'For testers: Tester tasks, at the foot of Home, has six things to try. Answer each as you go, then tap Send results. Send feedback now sends what you write straight from the app.',
   },

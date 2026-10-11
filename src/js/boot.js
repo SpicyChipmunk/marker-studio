@@ -788,6 +788,8 @@ document.addEventListener('keydown', function (e) {
     trail = [];
     ov.classList.add('wcmk');
     ov.classList.remove('wcplain');
+    // (v312.1: named "Add markers", not the welcome's title, for a screen reader)
+    ov.setAttribute('aria-labelledby', 'wcTA');
     sets.innerHTML = presetListHTML();
     upd();
     $('wcAddWays').innerHTML = addWaysHTML('mka');
@@ -809,6 +811,7 @@ document.addEventListener('keydown', function (e) {
     trail = [];
     closeDialog(ov);
     ov.classList.remove('wcmk');
+    ov.setAttribute('aria-labelledby', 'wcTitle');
     $('wcFindNone').textContent = 'None of these: I\u2019ll add them one by one';
     // (the keyboard back where the sheet was opened from; the card at the top goes once there are markers, so then on
     // Add markers, at the top of the collection)

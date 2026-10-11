@@ -1491,7 +1491,7 @@ function addWaysHTML(where) {
       'scan',
       'crosshair',
       'Scan or type codes',
-      'Hold up each cap to the camera, or type codes from a receipt.',
+      'Type codes from a receipt, or scan caps with Scan Text on an iPad or iPhone.',
     ) +
     row(
       'chart',

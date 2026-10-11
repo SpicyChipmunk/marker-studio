@@ -351,7 +351,7 @@ function renderWish() {
   const n = state.wish.length;
   if (!n) {
     v.innerHTML =
-      '<div class="wishempty"><b>Your To buy list is empty.</b> Wherever Marker Studio suggests a marker you don’t have, tap <b>+ To buy</b> to add it here: in <b>Match a colour</b>, a marker’s details (press and hold one), and a guide’s blend plan, shading and photo notes. Mark a marker as <b>Running low</b> in its details to add a replacement.</div>' +
+      '<div class="wishempty"><b>Your To buy list is empty.</b> Wherever Marker Studio suggests a marker you don’t have, tap <b>+ To buy</b> to add it here: in <b>Match a colour</b>, a marker’s details (press and hold one), and a guide’s blend plan, shading and photo notes. Mark a marker as <b>Running low</b> in its details, then tap <b>+ To buy</b> for a replacement.</div>' +
       buyRowHTML();
     return;
   }

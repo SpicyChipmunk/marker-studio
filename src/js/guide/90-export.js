@@ -3152,6 +3152,9 @@ async function _exportPDF() {
       (pdfWhat === 'strip' ? '-test-strip' : '') +
       '.pdf';
     shareOrSave(blob, fname, curName || 'Colouring guide', 'PDF', 'PDF downloaded.');
+    // (v312.1: once there's a PDF, the way out is Close; Cancel read as throwing it away)
+    const cx = document.querySelector('[data-pr="cancel"]');
+    if (cx) cx.textContent = 'Close';
   } catch (e) {
     const sm = sheetOpen() && document.getElementById('sfPrSum');
     if (sm) {

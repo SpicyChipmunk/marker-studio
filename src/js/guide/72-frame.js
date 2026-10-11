@@ -1119,7 +1119,11 @@ function menuDo(m) {
   else if (m === 'reset') askResetProgress();
   else if (m === 'help') {
     if (typeof window.openHelpSheet === 'function') window.openHelpSheet();
-  } else if (m === 'feedback') sendFeedback();
+  } else if (m === 'feedback') {
+    // (v312.1: the dialog that sends to the form, as every other Send feedback: tester.js)
+    if (typeof window.openFeedback === 'function') window.openFeedback();
+    else sendFeedback();
+  }
 }
 
 /* ---- #8 one-time hints ----

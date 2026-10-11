@@ -166,6 +166,9 @@ function editTapAt(P) {
       else {
         snapshotSeg();
         mergeCells(mergeSel, l);
+        // (v312.1: the section they became outlined for a moment, and the new count said)
+        mergeFlash(mergeSel);
+        _secSayNext = 'Merged into one section: ';
         mergeSel = -1;
         hasEdits = true;
       }
@@ -176,6 +179,7 @@ function editTapAt(P) {
   if (l > 0 && editMode === 'toggle') {
     pushUndo({ t: 'ov', d: secState.slice() });
     secState[l] = counted(l) ? 2 : 1;
+    _secSayNext = counted(l) ? 'Brought back: ' : 'Left out: ';
     hasEdits = true;
     render();
   }
@@ -541,6 +545,8 @@ function onUp(e) {
       };
     if (strokePts.length > 1) drawStartL = strokeSection(strokePts);
     if (strokePts.length > 1) {
+      // (v312.1: the new count said, when the stroke changed it)
+      _secSayNext = editMode === 'add' ? 'Section added: ' : 'Split: ';
       if (editMode === 'add') {
         if (drawStartL > 0) {
           const _ec = edgeCut(drawStartL, strokePts) || (_alt(drawStartL) > 0 && edgeCut(_s0, strokePts));

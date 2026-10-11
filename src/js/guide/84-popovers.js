@@ -621,9 +621,22 @@ function rowOutline() {
 // for the colour it was found in, _fnKey)
 let _fnOl = false,
   _fnKey = null;
-// Edit sections' Merge (v288): the first section picked is outlined too, as on pale tints a yellow fill alone is faint
+// Edit sections' Merge (v288): the first section picked is outlined too, as on pale tints a yellow fill alone is faint.
+// (v312.1) Once merged, the section they became, for a moment (_mergeFl): the line between them stays on the paper,
+// so nothing else showed the merge
+let _mergeFl = -1,
+  _mergeFlT = 0;
+function mergeFlash(l) {
+  clearTimeout(_mergeFlT);
+  _mergeFl = l;
+  _mergeFlT = setTimeout(function () {
+    _mergeFl = -1;
+    outlineMerge();
+  }, 1400);
+}
 function outlineMerge() {
-  const want = sfmode === 'review' && mergeSel > 0 ? mergeSel : -1;
+  const fl = _mergeFl > 0 && comps && comps[_mergeFl] && !comps[_mergeFl].merged ? _mergeFl : -1;
+  const want = sfmode === 'review' ? (mergeSel > 0 ? mergeSel : fl) : -1;
   if (want === olMerge && (want < 0 || olSet)) return;
   if (want < 0 && olMerge < 0) return;
   outlineSecs(want > 0 ? [want] : null);
