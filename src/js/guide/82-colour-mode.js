@@ -130,7 +130,10 @@ function askResetProgress() {
       '<p class="sfshtext">This clears what you\u2019ve coloured on ' +
       n +
       (n === 1 ? ' section' : ' sections') +
-      '.</p>',
+      '.' +
+      // (v314: the photo of the finished page stays)
+      (finHas() ? ' Your photo of the page is kept.' : '') +
+      '</p>',
     foot: '<button type="button" class="sfghost" data-rp="cancel">Cancel</button><button type="button" id="sfResetGo" class="sfprimary" data-rp="go">Reset</button>',
     fit: true,
   });
@@ -266,6 +269,8 @@ function enterColor(paint) {
   hlZone = null;
   blendOpen = {};
   alDoneOpen = false;
+  // (a marker finished before now doesn't light up as just finished: alongFlash)
+  _alFull = null;
   findForget();
   alDone = alongList()
     .filter(function (e) {
@@ -321,6 +326,7 @@ function enterFocus() {
   focusSheet = false;
   focusHist = [];
   focusPos = -1;
+  _hand = -1;
   root.classList.add('sffoc');
   renderControls();
   buildFocusOrder();
@@ -368,6 +374,7 @@ function exitFocus() {
         return p.contains(ae);
       });
   focusModal(false);
+  handClose(false);
   focus = false;
   focusFin = false;
   focusSheet = false;

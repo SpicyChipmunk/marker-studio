@@ -592,6 +592,8 @@ function shadeTones(base, zs) {
   }
   const full = shadeMode === 'full',
     key =
+      famRule +
+      '|' +
       shadeMode +
       '|' +
       zs.shadow +

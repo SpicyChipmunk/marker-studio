@@ -200,6 +200,8 @@ function openDesignObj(d, id, resumed, quiet, col) {
         // (a time a Date can show: "started Invalid Date" otherwise, v299)
         s: d.dates && +d.dates.s > 0 && +d.dates.s < 8.64e15 ? +d.dates.s : 0,
         e: d.dates && +d.dates.e > 0 && +d.dates.e < 8.64e15 ? +d.dates.e : 0,
+        // (v313: when it was last coloured)
+        l: d.dates && +d.dates.l > 0 && +d.dates.l < 8.64e15 ? +d.dates.l : 0,
         // (u: coloured before the dates were kept, v284: when it was started isn't known, so none are given)
         u:
           !d.dates &&

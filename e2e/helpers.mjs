@@ -32,7 +32,7 @@ export const notOnWebKit = (why) => ({ skip: ENGINE === 'webkit' && 'not on WebK
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const ARTIFACTS = join(ROOT, 'e2e', '.artifacts');
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2' };
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.wasm': 'application/wasm', '.pdf': 'application/pdf', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2' };
 
 export async function startServer() {
   const srv = createServer(async (req, res) => {

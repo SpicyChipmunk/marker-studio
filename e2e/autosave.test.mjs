@@ -324,7 +324,7 @@ test('a first save that fails (storage full) says so once, offers Save, keeps th
   });
   for (let i = 0; i < 3; i++) { await tickN(page, 1, i); await flushSave(page); }
   assert.equal(await page.evaluate(() => window.__toasts.filter((m) => /storage is full/.test(m)).length), 1, 'one message');
-  assert.match(await page.evaluate(() => window.__toasts.find((m) => /storage is full/.test(m))), /Share › Guide file/);
+  assert.match(await page.evaluate(() => window.__toasts.find((m) => /storage is full/.test(m))), /Share & print › Guide file/);
   assert.equal(await status(page), 'Not saved — storage is full');
   assert.equal(await page.textContent('#sfSave'), 'Save');
   assert.equal((await guidesR4(page)).length, 0);

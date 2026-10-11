@@ -9,7 +9,7 @@ import { createApp } from './harness.mjs';
 const NAMES = ['family', 'palette', 'gradShape', 'dir', 'look', 'emphasis', 'limitN', 'gradIncl', 'noAdj', 'balance', 'balM', 'balS', 'balA', 'balSeed', 'noRep', 'gradSeed', 'blendFall', 'blendMix',
   'texAmt', 'radC', 'shadeMode', 'shadeSun', 'shadeRound', 'shadeLines', 'shadeHi', 'shadeLo', 'shadeLight', 'shadeMain', 'shadeShadow', 'shadeHilite', 'shadeFlat', 'photoXf',
   'photoOp', 'photoPaper', 'expand', 'expandChar', 'paletteSource', 'savedPalId', 'genHarmony', 'genPal', 'fromPal', 'minPos', 'bgTrim',
-  'addAutoClose'];
+  'addAutoClose', 'famRule', 'lowX', 'smpTry', 'gradArea'];
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
 test('each style setting’s first value (a guide that changes nothing is saved with these)', () => {
@@ -28,6 +28,14 @@ test('each style setting’s first value (a guide that changes nothing is saved 
     // (v308: no palette handed over from Palette's Use in a guide)
     fromPal: null,
     minPos: 30, bgTrim: 50, addAutoClose: false,
+    // (v313: a guide saved before keeps v312's family rule; a new picture sets 1)
+    famRule: 0,
+    // (v313: no running-low line closed)
+    lowX: null,
+    // (v313: not the sample tried)
+    smpTry: 0,
+    // (v314: a guide saved before keeps v313's Gradient area rule)
+    gradArea: 0,
   });
 });
 
@@ -123,7 +131,7 @@ test('the saved style with a photo: its placement, see-through, white areas and 
 test('STYLE_FIELDS: every default is its variable’s first value, and what a file that says nothing opens with', () => {
   const core = createApp().__mstest, sv = core.styleVars;
   const VAR = { mode: 'shadeMode', round: 'shadeRound', lines: 'shadeLines', hi: 'shadeHi', lo: 'shadeLo', lightSrc: 'shadeLight', main: 'shadeMain',
-    shadow: 'shadeShadow', hilite: 'shadeHilite', minSize: 'minPos', incl: 'gradIncl' };
+    shadow: 'shadeShadow', hilite: 'shadeHilite', minSize: 'minPos', incl: 'gradIncl', smp: 'smpTry' };
   let n = 0;
   for (const f of core.styleFields) {
     if (!('def' in f)) continue;
@@ -133,8 +141,10 @@ test('STYLE_FIELDS: every default is its variable’s first value, and what a fi
     n++;
   }
   // (v306: 42, with Scatter's gradScat, gradJit and gradFix; v308: 43, with the Gradient's Include row; 44 with
-  // fromPal, the palette Palette's Use in a guide handed over, which Mood and Shuffle keep as it is)
-  assert.equal(n, 44);
+  // fromPal, the palette Palette's Use in a guide handed over, which Mood and Shuffle keep as it is; v313:
+  // 45 with famRule, the family rule; 46 with lowX, the running-low lines closed;
+  // 47 with smp, the sample not yet printed or renamed; v314: 48 with gradArea, the Gradient's area rule)
+  assert.equal(n, 48);
 });
 
 test('STYLE_FIELDS: where each setting is saved (in the order written) and which ones Undo keeps', () => {
@@ -146,7 +156,7 @@ test('STYLE_FIELDS: where each setting is saved (in the order written) and which
     'shade.hilite', 'shade.flat',
     'style.photo (no undo)', 'style.expand', 'style.expandChar', 'style.paletteSource', 'style.savedPalId',
     'style.genHarmony', 'style.genPal', 'style.fromPal', 'payload.minPos (no undo)', 'payload.minSize (no undo)', 'payload.bgTrim (no undo)',
-    'payload.addAutoClose (no undo)',
+    'payload.addAutoClose (no undo)', 'payload.famRule (no undo)', 'payload.lowX (no undo)', 'payload.smp (no undo)', 'payload.gradArea (no undo)',
   ]);
 });
 

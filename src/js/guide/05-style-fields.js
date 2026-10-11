@@ -378,6 +378,60 @@ const STYLE_FIELDS = [
   },
   { key: 'bgTrim', in: 'payload', def: 50, check: styleNum(0, 100), undo: false },
   { key: 'addAutoClose', in: 'payload', def: false, check: styleBool, undo: false },
+  // (v313) the family rule (famRule, 00-state): written only for a guide made since v313, so a guide saved before saves
+  // exactly as it was and keeps v312's rule. Not part of Undo: it's the guide's, not the plan's.
+  {
+    key: 'famRule',
+    in: 'payload',
+    def: 0,
+    check: styleOne([0, 1]),
+    undo: false,
+    save: function () {
+      return famRule ? famRule : undefined;
+    },
+  },
+  // (v313) the running-low lines closed in this guide (lowX, 00-state): a list of markers, written only when there are
+  // any
+  {
+    key: 'lowX',
+    in: 'payload',
+    def: null,
+    check: function (v) {
+      if (!Array.isArray(v)) return null;
+      const o = {};
+      v.forEach(function (k) {
+        if (typeof k === 'string' && k.length < 80) o[k] = 1;
+      });
+      return Object.keys(o).length ? o : null;
+    },
+    undo: false,
+    save: function () {
+      return lowX && Object.keys(lowX).length ? Object.keys(lowX) : undefined;
+    },
+  },
+  // (v313) the sample, not yet printed or renamed (smpTry, 00-state): written only then
+  {
+    key: 'smp',
+    in: 'payload',
+    def: 0,
+    check: styleOne([0, 1]),
+    undo: false,
+    save: function () {
+      return smpTry ? 1 : undefined;
+    },
+  },
+  // (v314) the Gradient's area rule (gradArea, 00-state): written only for a guide made since v314, so a guide saved
+  // before saves exactly as it was and is laid as it was
+  {
+    key: 'gradArea',
+    in: 'payload',
+    def: 0,
+    check: styleOne([0, 1]),
+    undo: false,
+    save: function () {
+      return gradArea ? 1 : undefined;
+    },
+  },
 ];
 // each setting's variable, by its key (x and y are the sun's; setting one keeps the other)
 const STYLE_VAR = {
@@ -644,6 +698,30 @@ const STYLE_VAR = {
   },
   set addAutoClose(v) {
     addAutoClose = v;
+  },
+  get famRule() {
+    return famRule;
+  },
+  set famRule(v) {
+    famRule = v;
+  },
+  get lowX() {
+    return lowX;
+  },
+  set lowX(v) {
+    lowX = v;
+  },
+  get smp() {
+    return smpTry;
+  },
+  set smp(v) {
+    smpTry = v;
+  },
+  get gradArea() {
+    return gradArea;
+  },
+  set gradArea(v) {
+    gradArea = v;
   },
 };
 // what is saved in `where`: 'style' gives payload.style (with its shade), 'payload' the section settings

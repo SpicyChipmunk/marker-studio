@@ -18,7 +18,7 @@ sheet, paper, and how it feels.
 ## 1. Update, install, offline (3 min)
 
 - [ ] ★ Open the Home Screen app → "Marker Studio was updated" shows, **Reload** → Home's foot says the new version
-      (e.g. "v311.1 · Beta").
+      (e.g. "v314 · Beta").
 - [ ] ★ Airplane mode on, close the app fully, reopen → it opens, your markers and guides are there; open a guide and
       make a PDF. Airplane mode off.
 - [ ] In a Safari **Private** tab, open the app's address → the welcome shows; Share › Add to Home Screen → the icon is
@@ -76,7 +76,7 @@ sheet, paper, and how it feels.
 
 ## 7. Share and print (2 min)
 
-- [ ] ★ **Share › Download PDF** (Letter) → nothing cut off, the codes are readable, the key is tidy. Print it once in a
+- [ ] ★ **Share & print › Print… › Download PDF** (Letter) → nothing cut off, the codes are readable, the key is tidy. Print it once in a
       while: the labels are readable on paper and light enough to colour over.
 - [ ] **Save image** → the share sheet → Save Image → it's in Photos and looks right.
 - [ ] **Reveal & share › Share** → opens in Messages uncropped; **Save clip** saves a video (note if it fails).
@@ -101,16 +101,23 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v312.1 (and v312's, if not checked yet)
+## New in this release: v314
 
-- [ ] **Tester tasks:** answer one, **Send results** → a row in your results sheet within a minute; Home's foot says
-      "Tester tasks · sent". Airplane mode on, send → it says it couldn't; off, send again → "2 (an update)".
-- [ ] **Send feedback** from Home and from the guide's **⋯** → the box to write in; **Send** → a "Feedback" row.
-      **Share it instead** → the share sheet, with what you wrote, for a screenshot.
-- [ ] **Undo and a dry marker:** in a guide, change the Mood; in Markers mark one of its markers dry; back in the guide,
-      ↶ Undo → its sections show a stand-in; mark it not dry → the marker is back in them.
-- [ ] **Edit sections › Merge** two sections → the one they became is outlined for a moment.
-- [ ] **Share › Print… › Download PDF** → the button under it says **Close**.
+- [ ] ★ **A photo of your finished page:** finish a page (or Reset progress on a short one and tick it all) → Colour
+      along's **Page finished** panel → **Add a photo of your page** → take one with the camera, the page on a dark or
+      patterned table → it's straightened by itself, and shows in the panel ("Added today · straightened").
+- [ ] Again with **Change**, the page on a pale desk → four corner handles over the photo; drag one (a magnifier shows
+      by your finger), then **Straighten**. Try **Keep as is** once too. Both look right in the panel.
+- [ ] **Home:** the latest piece shows your photo first, with **Your page | Plan** over its foot; tap Plan, close the
+      app and reopen → still Plan. On a finished guide with no photo, Home offers **Add a photo of your page**; ✕
+      puts it away.
+- [ ] **Reveal & share** on that guide → at the end, **With my page** → the plan and your photo side by side → **Share**
+      → the share sheet → Save Image → it looks right in Photos.
+- [ ] **⋯ › Remove your photo** asks first, then it's gone from the panel and from Home.
+- [ ] **Library › Back up**, delete the guide (let its Undo go), **Restore** the file → the guide and its photo are back.
+- [ ] A **new** guide laid as a **Gradient** (Scatter Polished or Natural) on a page with a few very big sections (a
+      big sky or background) uses more of its markers, with fewer left as a speck. A guide made before v314 looks
+      as it did.
 
 ## Report back
 

@@ -19,7 +19,7 @@ function metaText() {
     (coll.length === 1 ? '</b> marker' : '</b> markers') +
     ' from your collection' +
     br +
-    'Choose a page photo to detect its colourable sections.'
+    'Lay the page flat in even light, and get all of it in the frame.'
   );
 }
 // The Resume card offers the new guide kept in the autosave slot. Dismiss only hides it for this visit (the slot
@@ -216,17 +216,17 @@ function enterWork() {
 }
 function mount() {
   root.innerHTML =
-    '<div class="sfcard compact" id="sfStart"><button type="button" id="sfStPic" class="sfstpic" tabindex="-1" aria-hidden="true"></button><div class="sfstbody"><button id="sfHelpQ0" class="hlpq" data-help="sheet" aria-label="Help"><span aria-hidden="true">?</span></button><h2>New colouring guide</h2><div class="sftag">Turn a line-art photo into a marker-by-number guide built from the markers you own \u2014 complete with blend companions and a To buy list for shades you still need.</div><div id="sfPalNote"></div><div class="sfmeta" id="sfMeta"></div>' +
+    '<div class="sfcard compact" id="sfStart"><button type="button" id="sfStPic" class="sfstpic" tabindex="-1" aria-hidden="true"></button><div class="sfstbody"><button id="sfHelpQ0" class="hlpq" data-help="sheet" aria-label="Help"><span aria-hidden="true">?</span></button><h2>New colouring guide</h2><div class="sftag">Turn a photo of a colouring page into a marker-by-number guide, built from the markers you own.</div><div id="sfPalNote"></div><div class="sfmeta" id="sfMeta"></div>' +
     '<div class="sfstrow"><button id="sfPick" class="btn-primary sfstpick">Choose a photo</button><button id="sfSample" class="sfstbtn">Try the sample</button><button id="sfLib" class="sfstbtn">Library</button><button id="sfImport" class="sfstbtn">Import a guide</button></div>' +
-    // (v308) a colouring page that came as a PDF: the picker takes pictures only
-    '<div class="sfstpdf">Colouring page in a PDF? Take a screenshot of it, then choose the screenshot.</div></div></div>' +
+    // (v313) a colouring page that came as a PDF: opened on its own (the photo picker takes pictures only)
+    '<div class="sfstpdf">Colouring page in a PDF? <button type="button" id="sfPdf" class="sflink">Open the PDF</button></div></div></div>' +
     '<div class="sfcard" id="sfWork" style="display:none"><div id="sfHead" class="sfhead"></div><div id="sfView"><div id="sfPicBox" class="sfpicbox"><div id="sfPic" class="sfpic"><canvas id="sfCanvas" role="img" aria-label="Colouring page"></canvas></div></div>' +
     toolsHTML() +
     '<button id="sfFullX" class="sfz sffullx" aria-label="Close full screen">' +
     ic('x') +
     '</button></div>' +
     '<div id="sfCtl"></div></div>' +
-    '<div id="sfLive" class="sfsr" aria-live="polite"></div><input type="file" id="sfFile" class="fileinput" accept="image/*"><input type="file" id="sfImpFile" class="fileinput" accept="application/json,.json">';
+    '<div id="sfLive" class="sfsr" aria-live="polite"></div><input type="file" id="sfFile" class="fileinput" accept="image/*"><input type="file" id="sfPdfFile" class="fileinput" accept="application/pdf,.pdf"><input type="file" id="sfImpFile" class="fileinput" accept="application/json,.json">';
   metaEl = document.getElementById('sfMeta');
   root.addEventListener('click', function (e) {
     if (e.target.closest('[data-gomk]') && api.goMarkers) api.goMarkers();
@@ -254,14 +254,24 @@ function mount() {
   document.getElementById('sfLib').addEventListener('click', function () {
     if (api.openLibrary) api.openLibrary();
   });
-  fileEl.addEventListener('change', function (e) {
+  const onFile = function (e) {
     const f = e.target.files && e.target.files[0],
       cb = _pickCb;
     _pickCb = null;
     if (f && cb) cb();
     if (f) loadImage(f);
     e.target.value = '';
-  });
+  };
+  fileEl.addEventListener('change', onFile);
+  // (v313) Open the PDF: its own picker, for PDFs (21-pdf)
+  const pdfEl = document.getElementById('sfPdfFile'),
+    pdfB = document.getElementById('sfPdf');
+  if (pdfEl) pdfEl.addEventListener('change', onFile);
+  if (pdfB && pdfEl)
+    pdfB.addEventListener('click', function () {
+      _pickCb = null;
+      pdfEl.click();
+    });
   var _imp = document.getElementById('sfImport'),
     _impF = document.getElementById('sfImpFile');
   if (_imp && _impF) {
@@ -426,6 +436,18 @@ function mount() {
     const tn = e.target && e.target.tagName;
     return tn === 'INPUT' || tn === 'TEXTAREA' || tn === 'SELECT';
   };
+  // (v313) the hand-off card in Focus mode: Escape closes it, as a tap does (not Back: it makes no entry)
+  addLayer({
+    name: 'focus hand-off',
+    order: 32,
+    isOpen: function () {
+      return focus && sfmode === 'color' && handOn();
+    },
+    close: function (e) {
+      if (inField(e)) return false;
+      handClose(true);
+    },
+  });
   addLayer({
     name: 'focus sheet',
     back: true,

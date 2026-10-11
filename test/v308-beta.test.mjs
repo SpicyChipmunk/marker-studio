@@ -423,10 +423,10 @@ test('README: for users first, the CI as it runs (8 WebKit parts), nothing out o
   assert.match(read('docs/DEVICE-TEST.md'), /^# [^\n]*\n\n> \*\*Internal\.\*\*/);
 });
 
-test('icon credits: the 32 Lucide icons by name, the notices in index.html, no "four icons" anywhere', () => {
+test('icon credits: the 33 Lucide icons (v314: camera) by name, the notices in index.html, no "four icons" anywhere', () => {
   const syms = [...read('src/html/icons.html').matchAll(/<symbol id="i-([^"]+)"/g)].map((m) => m[1]);
   const lucide = syms.filter((s) => s !== 'codes' && s !== 'values');
-  assert.equal(lucide.length, 32);
+  assert.equal(lucide.length, 33);
   const lic = read('src/assets/icons/LICENSE-Lucide-Feather.txt');
   const listed = lic
     .slice(0, lic.indexOf('licences:'))
@@ -434,11 +434,11 @@ test('icon credits: the 32 Lucide icons by name, the notices in index.html, no "
     .replace(/\s+/g, ' ')
     .split(/, (?:and )?| and /);
   assert.deepEqual(listed.sort(), lucide.sort());
-  assert.match(lic, /^32 of the line icons/);
+  assert.match(lic, /^33 of the line icons/);
   for (const f of ['LICENSE', 'README.md', 'index.html', 'src/assets/icons/LICENSE-Lucide-Feather.txt'])
     assert.ok(!/four (line )?icons|the few (lucide|icons)/i.test(read(f)), f);
   const head = html.slice(0, html.indexOf('<meta name="viewport"'));
-  assert.match(head, /32 line icons from Lucide/);
+  assert.match(head, /33 line icons from Lucide/);
   assert.match(
     head,
     /ISC License\. Copyright \(c\) 2026 Lucide Icons and Contributors\. Permission to use, copy/,

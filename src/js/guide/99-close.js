@@ -152,6 +152,8 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     set segWarn(v) {
       segWarn = v;
     },
+    // (v313: the hand-off card's zoom, against a section's own)
+    focusZoomFor: focusZoomFor,
     get focusOrd() {
       return focusOrd;
     },
@@ -671,6 +673,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       adj: buildAdj,
       random: buildRandom,
       companion: _findComp,
+      famVal: famVal,
       companions: blendCompanions,
       lch: mLch,
     },
@@ -689,6 +692,28 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       return buildShowCard(cv);
     },
     buildShowCard: buildShowCard,
+    // (v314: the photo of the finished page, 24-page-photo)
+    fin: {
+      get id() {
+        return _fin.id;
+      },
+      get rec() {
+        return _fin.rec;
+      },
+      get read() {
+        return _fin.read;
+      },
+      get last() {
+        return _finLast ? { id: _finLast.id, q: _finLast.q, tier: _finLast.tier } : null;
+      },
+      get editing() {
+        return _finEd ? { id: _finEd.id, q: _finEd.q, k: _finEd.k, pad: _finEd.pad } : null;
+      },
+      get: finGet,
+      card: function () {
+        return _fin.img ? buildFinCard(_fin.img) : null;
+      },
+    },
     get bloomOn() {
       return !!_bloom;
     },
@@ -809,6 +834,13 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     shT2: shT2,
     minPx: minPx,
     grayUp: grayUp,
+    // (v313: Edit sections' drawing, read back; a stand-in canvas context, to time it without one)
+    get rgbOut() {
+      return rgbOut;
+    },
+    set ctx(v) {
+      ctx = v;
+    },
     boxBlur: boxBlur,
     focusCur: focusCur,
     get srcK() {
@@ -1158,6 +1190,30 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       set addAutoClose(v) {
         addAutoClose = v;
       },
+      get famRule() {
+        return famRule;
+      },
+      set famRule(v) {
+        famRule = v;
+      },
+      get lowX() {
+        return lowX;
+      },
+      set lowX(v) {
+        lowX = v;
+      },
+      get smpTry() {
+        return smpTry;
+      },
+      set smpTry(v) {
+        smpTry = v;
+      },
+      get gradArea() {
+        return gradArea;
+      },
+      set gradArea(v) {
+        gradArea = v;
+      },
     },
     get undoTop() {
       const t = undoStack[undoStack.length - 1];
@@ -1224,6 +1280,12 @@ return {
   startPic: startPic,
   pickPhoto: pickPhoto,
   pickPhotoHome: pickPhotoHome,
+  pickPdfHome: pickPdfHome,
+  // (v314: the photo of a finished page, from Home and the Library: 24-page-photo)
+  finPick: finPick,
+  finGet: finGet,
+  finOk: finOk,
+  finDrop: finDrop,
   edToPlan: edToPlan,
   secEdPending: secEdPending,
   palNote: palNote,

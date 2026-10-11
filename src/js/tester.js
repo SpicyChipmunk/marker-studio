@@ -83,7 +83,7 @@
       k: 'share',
       t: 'Share or print',
       s: 'Print, Save image or Reveal',
-      d: 'Print your guide (<b>Share › Print…</b>), save an image of it, or finish a page and try <b>Reveal &amp; share</b>.',
+      d: 'Print your guide (<b>Share &amp; print › Print…</b>), save an image of it, or finish a page and try <b>Reveal &amp; share</b>.',
       p: ['Did it look right?', 'Anything go wrong?'],
     },
   ];

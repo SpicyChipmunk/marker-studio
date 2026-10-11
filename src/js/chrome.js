@@ -208,7 +208,7 @@ function chrome() {
           ? 'Every marker. Narrow with filters, then “Tick all shown”.'
           : lowOnly
             ? 'The markers you marked running low or dry. Tap it again for all your markers.'
-            : 'Your collection. Switch to All to add more.';
+            : 'Your collection.';
   filterBar.style.display = pooled ? 'none' : '';
   filtersEl.style.display = pooled || !state.filtersOpen ? 'none' : '';
   filterBar.classList.toggle('open', state.filtersOpen && !pooled);

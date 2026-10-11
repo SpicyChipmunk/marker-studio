@@ -304,7 +304,7 @@ test('a page coloured in already gets a warning', async () => {
   assert.deepEqual(errors, []);
 });
 
-test('a file that won’t open is said once; a PDF is told to screenshot the page; the start card says so too', async () => {
+test('a file that won’t open is said once; a PDF that won’t open is told to screenshot the page (v313: PDFs open); the start card offers Open the PDF', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await haveSet(page); await page.check('#wcSets input[data-i="3"]');
   await page.click('#wcAdd');
@@ -312,7 +312,7 @@ test('a file that won’t open is said once; a PDF is told to screenshot the pag
   await idle(page);
   await page.click('#mSections');
   await page.waitForSelector('#sfStart', { state: 'visible' });
-  assert.match(await page.textContent('#sfStart'), /Colouring page in a PDF\? Take a screenshot of it/);
+  assert.match(await page.textContent('#sfStart'), /Colouring page in a PDF\? Open the PDF/);
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#sfPick')]);
   await fc.setFiles({ name: 'page.jpg', mimeType: 'image/jpeg', buffer: Buffer.from('not a picture') });
   await page.waitForSelector('.mserr');
@@ -325,7 +325,7 @@ test('a file that won’t open is said once; a PDF is told to screenshot the pag
   const [fc2] = await Promise.all([page.waitForEvent('filechooser'), page.click('#sfPick')]);
   await fc2.setFiles({ name: 'colouring.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') });
   await page.waitForFunction(() =>
-    /That’s a PDF/.test(document.querySelector('.mserr') && document.querySelector('.mserr').textContent),
+    /Couldn’t open that PDF/.test(document.querySelector('.mserr') && document.querySelector('.mserr').textContent),
   );
   assert.match(
     await page.textContent('.mserr'),

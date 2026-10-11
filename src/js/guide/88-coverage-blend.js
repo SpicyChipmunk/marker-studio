@@ -24,19 +24,28 @@ function updateProgress() {
   }
   const ds = document.getElementById('sfDoneSum');
   if (ds && N > 0 && done >= N) ds.textContent = finishLine();
+  // (v314: Add a photo of your page, or the photo: 24-page-photo)
+  finPanel();
   // (v306: Did any run low?, once the page is finished)
   const lh = document.getElementById('sfLowA');
   if (lh && fin !== !!lh.firstElementChild) lh.innerHTML = lowRowHTML('A');
   renderAlong();
 }
+/* A marker's family and its number in it, from its code: { fam, val }, val growing darker (mostly: see _findComp).
+   A guide made since v313 (famRule 1, 00-state): the code's letters and first digit, then the rest's number, as both
+   brands number them: Ohuhu Y26, Y29, Y210 and Y213 are one family (Y2, 6 to 13); Copic B00, B01, B05 are B0 (0, 1,
+   5), with Copic's paler B000 and B0000 before B00 (-1 and -2). A one-digit code (Copic N3) is its letters, as before.
+   A guide saved before (famRule 0) keeps v312's rule, everything but the last digit (Ohuhu Y213 in Y21, with Y210 to
+   Y216, not Y26 to Y29). */
 function famVal(code) {
   var m = /^([A-Za-z]+)(\d+)$/.exec(code);
   if (!m) return null;
   var L = m[1],
     dd = m[2];
-  return dd.length >= 2
-    ? { fam: L + dd.slice(0, -1), val: parseInt(dd.slice(-1), 10) }
-    : { fam: L, val: parseInt(dd, 10) };
+  if (dd.length < 2) return { fam: L, val: parseInt(dd, 10) };
+  if (!famRule) return { fam: L + dd.slice(0, -1), val: parseInt(dd.slice(-1), 10) };
+  var rest = dd.slice(1);
+  return { fam: L + dd[0], val: /^0+$/.test(rest) ? 1 - rest.length : parseInt(rest, 10) };
 }
 function _chroma(l) {
   return Math.hypot(l[1], l[2]);
@@ -59,12 +68,13 @@ function _hueOK(bl, ml) {
 /* A marker's blend companion: a lighter one (side -1) or a darker one (+1), from pool, for Colour along's strip and
    the printed key. It must really be lighter (or darker) by a step you can see (COMP_DL or more in lightness, and
    COMP_DE or more by eye, CIEDE2000) and keep the colour's hue (within COMP_DH on the colour wheel; a grey's
-   companion is a grey). Its own family comes first (the same brand and code letters, e.g. R2x for Ohuhu R25):
+   companion is a grey). Its own family comes first (the same brand and family, famVal: e.g. Ohuhu R2x and R2xx for R25):
    nearest in number first, and a member that fails the tests is passed over for the next, as a family's numbers
    don't always run light to dark (Ohuhu BV32 is lighter than BV31, Copic Y18 than Y17). Failing that, the marker
    that passes them closest by eye. (It used to take the nearest family member whatever it looked like: on Ben's
    markers 34 of 902 went the wrong way and 44 were a step too small to see; now none.) */
 var COMP_DL = 4,
+  COMP_FAM_DL = 20,
   COMP_DE = 3,
   COMP_DH = 25,
   COMP_HUE_C = 6;
@@ -98,8 +108,13 @@ function _findComp(bl, base, pool, side) {
   fam.sort(function (a, b) {
     return a[0] - b[0] || a[1] - b[1];
   });
-  for (i = 0; i < fam.length; i++)
-    if (_compOK(bl, bc, pool[fam[i][1]].lab, side, true)) return pool[fam[i][1]];
+  // (v313's families are bigger, so a family member can be a long way lighter or darker: in a guide made since, one
+  // more than COMP_FAM_DL lighter or darker is passed over too, for the next, or the nearest that passes by eye)
+  for (i = 0; i < fam.length; i++) {
+    m = pool[fam[i][1]];
+    if (famRule && Math.abs(m.lab[0] - bl[0]) > COMP_FAM_DL) continue;
+    if (_compOK(bl, bc, m.lab, side, true)) return m;
+  }
   var cand = null,
     best = Infinity,
     d;

@@ -1098,6 +1098,10 @@ button.sfSeeAll {
 .hcmeta b {
   color: var(--ink);
 }
+/* (v313) "Last coloured 3 days ago", on a line of its own under how far along */
+.hcwhen {
+  display: block;
+}
 .hcdot {
   display: inline-block;
   width: 0.9em;
@@ -1421,6 +1425,138 @@ button.hcpic:focus-visible {
   color: inherit;
   font: inherit;
   cursor: pointer;
+}
+/* (v314) the picture and, with a photo of the finished page, Your page | Plan over its foot */
+.hhpicw {
+  position: relative;
+  flex: none;
+  display: flex;
+}
+.hhseg {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(10, 12, 12, 0.78);
+  z-index: 1;
+}
+.hhseg[hidden] {
+  display: none;
+}
+.hhseg button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: #e4e2dc;
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+@media (max-width: 699px) {
+  .hhseg {
+    bottom: 6px;
+  }
+  .hhseg button {
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+}
+.hhseg button[aria-pressed='true'] {
+  background: #fff;
+  color: #111;
+}
+.hhseg button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.hhbox.ph img {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.hhfin {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(10, 12, 12, 0.78);
+  z-index: 1;
+}
+.hhfin[hidden] {
+  display: none;
+}
+.hhfinadd,
+.hhfinx {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.hhfinadd {
+  padding: 0 10px 0 12px;
+  background: #fff;
+  color: #111;
+}
+.hhfinx {
+  width: 34px;
+  color: #e4e2dc;
+}
+.hhfinadd .ic {
+  width: 16px;
+  height: 16px;
+}
+.hhfinx .ic {
+  width: 14px;
+  height: 14px;
+}
+.hhfinadd:focus-visible,
+.hhfinx:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+@media (max-width: 699px) {
+  .hhfin {
+    bottom: 6px;
+  }
+  /* (the picture is 132 px wide: the words only) */
+  .hhfinadd .ic {
+    display: none;
+  }
+  .hhfinadd,
+  .hhfinx {
+    min-height: 30px;
+    font-size: 12px;
+  }
+  .hhfinadd {
+    padding: 0 8px;
+  }
+  .hhfinx {
+    width: 28px;
+  }
 }
 .hhpic:focus-visible {
   outline: 2px solid var(--focus);

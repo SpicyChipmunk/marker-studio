@@ -101,6 +101,11 @@ function editTapAt(P) {
     return;
   }
   if (sfmode === 'color') {
+    // (v313: a tap with the hand-off card up closes it, and ticks nothing)
+    if (focus && handOn()) {
+      handClose(true);
+      return;
+    }
     if (l > 0 && assignData && assignData.assign[l]) {
       if (focus) {
         if (focusFin) return;

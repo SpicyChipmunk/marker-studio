@@ -211,9 +211,13 @@ function pgFind(img) {
   };
   const paperS = new Float32Array(N);
   for (let i = 0; i < N; i++) paperS[i] = hi[i] - 1.5 * sat[i];
-  const cands = [];
+  const cands = [],
+    conT = otsu(con, 40, 200),
+    // (v313) the drawing's blocks, for pgCross: a page's edge can't have the drawing running across it
+    dm = new Uint8Array(N);
+  for (let i = 0; i < N; i++) dm[i] = con[i] > conT ? 1 : 0;
   [
-    ['drawing', con, otsu(con, 40, 200)],
+    ['drawing', con, conT],
     ['paper', paperS, otsu(paperS, 90, 240)],
   ].forEach(function (M) {
     const m = new Uint8Array(N);
@@ -223,6 +227,10 @@ function pgFind(img) {
     const f = pgQuad(r, gw, gh, B, w, h);
     if (!f) return;
     f.kind = M[0];
+    const xc = pgCross(f.q, dm, hi, gw, gh, B);
+    f.cross = xc.cross;
+    f.sharp = xc.sharp;
+    f.sharpN = xc.n;
     // how the page compares with what is just outside it (a scan has the same white paper all round)
     let inS = 0,
       inN = 0,
@@ -247,12 +255,15 @@ function pgFind(img) {
   cands.forEach(function (f) {
     pgJudge(f, iw, ih);
   });
-  // the drawing's own outline wins a tie: on a spiral pad or an open book the paper runs on past the drawing's sheet
+  // the drawing's own outline wins a tie: on a spiral pad or an open book the paper runs on past the drawing's sheet.
+  // (v313) Only when its four sides fit the drawing (its region fills its box as a page would): a diamond drawn round a
+  // mandala under a lamp (fill 1.33, a side 21% covered) had won over the paper's own outline, found right beside it
   const rank = { sure: 3, unsure: 2, none: 1 };
+  const fits = function (f) {
+    return f.kind === 'drawing' && f.fill >= 0.8 && f.fill <= 1.25 && f.minCov >= 0.3;
+  };
   cands.sort(function (a, b) {
-    return (
-      rank[b.tier] - rank[a.tier] || (b.kind === 'drawing') - (a.kind === 'drawing') || b.score - a.score
-    );
+    return rank[b.tier] - rank[a.tier] || fits(b) - fits(a) || b.score - a.score;
   });
   cands[0].others = cands.slice(1).map(function (f) {
     return { kind: f.kind, tier: f.tier, why: f.why };
@@ -561,8 +572,74 @@ function pgQuad(r, gw, gh, B, w, h) {
     h: h,
   };
 }
+// (v313) how much of the quad's outline the drawing runs across: at points along each side (every block), the
+// block 2 in from the side and the block 2 out from it (both inside the small copy) are both the drawing's. A page's
+// edge has paper, table or nothing outside it; the bright half of a page under a lamp has the drawing on both sides.
+// Only the sides' parts inside the picture count (a side along the photo's edge can't be looked across).
+const PG_CROSS_IN = 2,
+  PG_SHARP_FAR = 5;
+function pgCross(q, dm, hi, gw, gh, B) {
+  let cx = 0,
+    cy = 0;
+  for (let e = 0; e < 4; e++) {
+    cx += q[e][0] / 4;
+    cy += q[e][1] / 4;
+  }
+  let hit = 0,
+    tot = 0,
+    near = 0,
+    far = 0,
+    nf = 0;
+  const at = function (px, py, ux, uy, k) {
+    const x = Math.floor((px + ux * k) / B),
+      y = Math.floor((py + uy * k) / B);
+    return x < 0 || y < 0 || x >= gw || y >= gh ? -1 : y * gw + x;
+  };
+  for (let e = 0; e < 4; e++) {
+    const a = q[e],
+      b = q[(e + 1) % 4],
+      L = Math.hypot(b[0] - a[0], b[1] - a[1]),
+      n = Math.max(1, Math.round(L / B));
+    for (let k = 0; k < n; k++) {
+      const t = (k + 0.5) / n,
+        px = a[0] + (b[0] - a[0]) * t,
+        py = a[1] + (b[1] - a[1]) * t,
+        dx = cx - px,
+        dy = cy - py,
+        dl = Math.hypot(dx, dy) || 1,
+        ux = (dx / dl) * B,
+        uy = (dy / dl) * B,
+        i2 = at(px, py, ux, uy, PG_CROSS_IN),
+        o2 = at(px, py, ux, uy, -PG_CROSS_IN);
+      if (i2 < 0 || o2 < 0) continue;
+      tot++;
+      if (dm[i2] && dm[o2]) hit++;
+      // the step in brightness across the side: just across it (1 block each way) against well across it
+      const i1 = at(px, py, ux, uy, 1),
+        o1 = at(px, py, ux, uy, -1),
+        i5 = at(px, py, ux, uy, PG_SHARP_FAR),
+        o5 = at(px, py, ux, uy, -PG_SHARP_FAR);
+      if (i5 < 0 || o5 < 0) continue;
+      nf++;
+      near += hi[i1] - hi[o1];
+      far += hi[i5] - hi[o5];
+    }
+  }
+  return { cross: tot ? hit / tot : 0, sharp: nf && far > 0 ? near / far : 1, n: nf };
+}
+const PG_CROSS_MAX = 0.2,
+  PG_SHARP_MIN = 0.5;
 // how sure we are, and why not
 function pgJudge(f, iw, ih) {
+  // (v313) the drawing runs across this outline, or the light changes gently across it rather than in a step: uneven
+  // light on a page (its bright half under a lamp), not a page's edge. Nothing is offered to straighten.
+  if (f.kind === 'paper' && (f.cross > PG_CROSS_MAX || (f.sharpN >= 8 && f.sharp < PG_SHARP_MIN))) {
+    f.tier = 'none';
+    f.why = 'lit';
+    f.score = 0;
+    f.minCov = Math.min.apply(null, f.cover);
+    return;
+  }
   const q = f.q,
     diag = Math.hypot(iw, ih),
     tolIn = 0.01 * diag,
@@ -819,23 +896,8 @@ function pgBegin(f35) {
   try {
     found = pgFind(pgOrig);
   } catch (e) {}
-  // sure: show the outline for a moment (flattening the page meanwhile), then build from the flat page
   if (found.tier === 'sure') {
-    pgOpen(found.q, '', 'reveal');
-    const t0 = Date.now();
-    _pgT = setTimeout(function () {
-      if (!(pgMode && pgEd && pgEd.how === 'reveal')) return;
-      let flat = null;
-      try {
-        flat = pgFlat(found.q);
-      } catch (e) {}
-      _pgT = setTimeout(
-        function () {
-          if (pgMode && pgEd && pgEd.how === 'reveal') pgApply(found.q, true, flat);
-        },
-        Math.max(0, 750 - (Date.now() - t0)),
-      );
-    }, 60);
+    pgReveal(found.q, true);
     return;
   }
   if (found.tier === 'unsure') {
@@ -847,6 +909,26 @@ function pgBegin(f35) {
   // or a picture too small or unreadable to look at; digital art and scans carry no lens, so stay quiet as before.
   if (pgF35 > 0 && ['square', 'fills', 'small', 'read'].indexOf(found.why) < 0) pgHint = 'kept';
   pgProceed(null);
+}
+// show the outline for a moment, "Straightening the page…" (flattening the page meanwhile, after a frame so it shows
+// first), then build from the flat page: by itself when the finder is sure (auto), and after Straighten when it wasn't
+// (v313: what's about to happen shows before it does, as when it's sure)
+function pgReveal(q, auto) {
+  pgOpen(q, '', 'reveal');
+  const t0 = Date.now();
+  _pgT = setTimeout(function () {
+    if (!(pgMode && pgEd && pgEd.how === 'reveal')) return;
+    let flat = null;
+    try {
+      flat = pgFlat(q);
+    } catch (e) {}
+    _pgT = setTimeout(
+      function () {
+        if (pgMode && pgEd && pgEd.how === 'reveal') pgApply(q, auto, flat);
+      },
+      Math.max(0, 750 - (Date.now() - t0)),
+    );
+  }, 60);
 }
 // build the sections from srcImg as it is now
 function pgProceed(msg) {
@@ -1094,11 +1176,16 @@ function pgControls() {
     (ok
       ? ''
       : '<div class="sfpgnote warn">Those corners cross over. Drag them back to the page’s four corners.</div>') +
-    '<div class="sfpgbtns"><button id="sfPgGo" class="btn-primary"' +
-    (ok ? '' : ' disabled') +
-    '>Straighten</button><button id="sfPgNo" class="btn-soft">' +
-    (e.how === 'first' ? 'Keep as is' : 'Cancel') +
-    '</button></div>';
+    // (v313) a fresh photo the finder wasn't sure of: Keep as is first, as what it found may not be the page (a page
+    // under a lamp, its bright half taken for it); Straighten shows what it's about to do, then does it
+    (e.how === 'first'
+      ? '<div class="sfpgbtns first"><button id="sfPgNo" class="btn-primary">Keep as is</button>' +
+        '<button id="sfPgGo" class="btn-soft"' +
+        (ok ? '' : ' disabled') +
+        '>Straighten</button></div>'
+      : '<div class="sfpgbtns"><button id="sfPgGo" class="btn-primary"' +
+        (ok ? '' : ' disabled') +
+        '>Straighten</button><button id="sfPgNo" class="btn-soft">Cancel</button></div>');
   document.getElementById('sfPgShape').addEventListener('click', function (ev) {
     const b = ev.target.closest('button');
     if (!b) return;
@@ -1107,7 +1194,8 @@ function pgControls() {
   });
   document.getElementById('sfPgGo').addEventListener('click', function () {
     if (!pgConvex(pgEd.q)) return;
-    pgApply(pgOrder(pgEd.q), false);
+    if (pgEd.how === 'first') pgReveal(pgOrder(pgEd.q), false);
+    else pgApply(pgOrder(pgEd.q), false);
   });
   document.getElementById('sfPgNo').addEventListener('click', function () {
     if (pgEd.how === 'first') {

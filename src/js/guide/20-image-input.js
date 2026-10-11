@@ -20,6 +20,13 @@ function resetForNewPicture() {
   gradFix = false;
   // (v308: a new guide, the sample too, has the Include row, with the Mood's choices; a guide saved before has none)
   if (!gradIncl) gradIncl = {};
+  // (v313: a new guide, the sample too, takes a marker's family from its code's letters and first digit: famRule)
+  famRule = 1;
+  // (the running-low lines closed: the guide's own, none for a new one)
+  lowX = null;
+  smpTry = 0;
+  // (v314: a new guide, the sample too, shares a Gradient's run out by its sections' areas softened: gradArea)
+  gradArea = 1;
   _mkOpened = {};
   _blendSel = {};
   relWake();
@@ -113,7 +120,7 @@ function note(m) {
   if (metaEl) metaEl.innerHTML = m;
   // a failure is shown as a card where the guide is, not as a passing toast
   if (
-    /^(could not|couldn|that file|that is not|that image|that\u2019s a pdf|no markers|not enough)/i.test(
+    /^(could not|couldn|that file|that is not|that image|that\u2019s a pdf|that pdf|this browser can|no markers|not enough)/i.test(
       _plain.trim(),
     )
   ) {
@@ -926,17 +933,15 @@ function fitSource(img) {
     return img;
   }
 }
-// (v308) a PDF colouring page: the picker takes pictures only, so a PDF that gets this far (from Files, say) is told
-// what to do instead
-const PDF_SAY = 'That\u2019s a PDF. Take a screenshot of the colouring page, then choose the screenshot.';
+// (v308) a PDF colouring page; v313: opened with PDF.js (21-pdf)
 function isPdf(file) {
   return !!file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name || ''));
 }
 function _loadImage(file) {
   _smpLoad = false;
+  // (v313: a PDF opens with PDF.js, 21-pdf)
   if (isPdf(file)) {
-    ++loadGen;
-    note(PDF_SAY);
+    loadPdf(file, ++loadGen);
     return;
   }
   note('Reading photo\u2026');

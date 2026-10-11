@@ -294,6 +294,8 @@ async function finishedSample(page) {
   await saveGuide(page);
   await page.evaluate(() => {
     const t = __mstest;
+    // (v313: the sample with ticks to try it isn't on Continue until it's printed or renamed: as if renamed)
+    t.styleVars.smpTry = 0;
     t.assignData.order.forEach((l) => {
       t.colored[l] = 1;
     });

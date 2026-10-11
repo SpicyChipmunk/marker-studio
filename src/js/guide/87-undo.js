@@ -450,7 +450,16 @@ function pinNoteFirst(secs) {
 // it is) or closed. (Not beside the kept-sections line: a sample with coloured sections was changed, so is kept.)
 // (v289: not while the first-time "Tap a section" line is up — it goes at the next tab, and this line comes then)
 function sampleNoteHTML() {
-  if (!curSample || _sampleNoteX || _heldNote || _pinNote || libEntry() || sampleTouched() || tapLineUp())
+  if (
+    !curSample ||
+    _sampleNoteX ||
+    _heldNote ||
+    _pinNote ||
+    libEntry() ||
+    sampleTouched() ||
+    tapLineUp() ||
+    lowLineUp()
+  )
     return '';
   return (
     '<div id="sfSampleNote" class="sfheldnote sfsamplenote" role="note"><span>This sample isn\u2019t in your Library yet. Change anything to keep it.</span><button type="button" id="sfSampleX" class="sfheldx" aria-label="Close">' +
@@ -468,11 +477,172 @@ function sampleNoteWire() {
       ctlRefocus('#sfTab-' + gTab);
     });
 }
+/* (v313) Running low: a line under the tabs while a marker you've marked running low (Markers, or Did any run low?)
+   has sections still to colour, "R413 is running low · used on 24 sections · Swap it ✕". Swap it gives those
+   sections the nearest marker you own that isn't running low (as Change colour › Everywhere would: each pinned, one
+   Undo step; coloured sections keep theirs, their ink is on the paper). ✕ is kept with the guide, for that marker
+   (lowX, saved with it); the next one running low has its turn. One line at a time: after the kept-sections and
+   pinned lines, ahead of the rest. */
+function lowXGet() {
+  return lowX || {};
+}
+function lowXSet(k) {
+  const o = Object.assign({}, lowX || {});
+  o[k] = 1;
+  lowX = o;
+  guideDirty = true;
+}
+function inkLowNow(k) {
+  return !!(api.lowInk && api.lowInk(k) === 'low');
+}
+function lowLineUp() {
+  if (sfmode !== 'guide' || !assignData || !api.lowInk) return null;
+  if (_heldNote || _pinNote || paintOn || lockMode || zoneEditOn()) return null;
+  const A = assignData.assign,
+    x = lowXGet(),
+    n = {};
+  assignData.order.forEach(function (l) {
+    const m = A[l];
+    if (!m || inkOn(l) || x[m.mkey] || !inkLowNow(m.mkey)) return;
+    n[m.mkey] = (n[m.mkey] || 0) + 1;
+  });
+  let best = null;
+  for (const k in n) if (!best || n[k] > n[best]) best = k;
+  if (!best) return null;
+  let m = null;
+  for (const l in A)
+    if (A[l].mkey === best) {
+      m = A[l];
+      break;
+    }
+  return { k: best, n: n[best], m: m };
+}
+// the nearest marker you own to swap in: not running low, not dry (which isn't in your collection for planning), not a
+// Colorless Blender
+function lowSwapTo(m) {
+  const bl = m.lab && m.lab.length ? m.lab : hexToLab(m.hex);
+  let best = null,
+    bd = Infinity;
+  coll.forEach(function (c) {
+    if (c.mkey === m.mkey || inkLowNow(c.mkey)) return;
+    const i = keyIdx(c.mkey);
+    if (i != null && NOINK.has(i)) return;
+    const d = de2000(bl, c.lab && c.lab.length ? c.lab : hexToLab(c.hex));
+    if (d < bd) {
+      bd = d;
+      best = c;
+    }
+  });
+  return best;
+}
+function lowLineHTML() {
+  const r = lowLineUp();
+  if (!r) return '';
+  const to = lowSwapTo(r.m);
+  return (
+    '<div id="sfLowLine" class="sfheldnote sflowline" role="status" data-k="' +
+    esc(r.k) +
+    '"><span>' +
+    mcodeHTML(r.m) +
+    ' is running low · used on ' +
+    nWord(r.n, 'section') +
+    (to ? ' ·' : '') +
+    '</span>' +
+    (to
+      ? '<button type="button" id="sfLowSwap" class="sflink" aria-label="Swap ' +
+        esc(r.m.code) +
+        ' for ' +
+        esc(to.code) +
+        '">Swap it</button>'
+      : '') +
+    '<button type="button" id="sfLowX" class="sfheldx" aria-label="Close">' +
+    ic('x') +
+    '</button></div>'
+  );
+}
+function lowLineWire() {
+  const el = document.getElementById('sfLowLine');
+  if (!el) return;
+  const k = el.dataset.k,
+    go = document.getElementById('sfLowSwap'),
+    x = document.getElementById('sfLowX');
+  if (go)
+    go.addEventListener('click', function () {
+      lowSwap(k);
+    });
+  if (x)
+    x.addEventListener('click', function () {
+      lowXSet(k);
+      renderControls();
+      ctlRefocus('#sfTab-' + gTab);
+    });
+}
+function lowSwap(k) {
+  if (sfmode !== 'guide' || !assignData) return;
+  const A = assignData.assign,
+    secs = assignData.order.filter(function (l) {
+      return A[l] && A[l].mkey === k && !inkOn(l);
+    });
+  if (!secs.length) return;
+  const om = A[secs[0]],
+    to = lowSwapTo(om);
+  if (!to) return;
+  secs.forEach(function (l) {
+    A[l] = to;
+    locks[l] = to.mkey;
+    toneDrop(l);
+  });
+  guideDirty = true;
+  normalizeTones();
+  renderGuide();
+  renderControls();
+  const why = 'Swapped ' + om.code + ' for ' + to.code + ' in ' + nWord(secs.length, 'section');
+  planCommit(why);
+  sayLive(why + ', pinned');
+  ctlRefocus('#sfTab-' + gTab);
+}
+/* (v313) Screens and ink differ: a one-time line under the tabs, "Screens and ink differ. Print a test strip of these
+   16 markers to see them on your paper", whose link opens Print with Test strip chosen. Once ever (with the hints),
+   when no other line is up and the first-time lines have had their turn; it stays for that visit until closed. */
+let _stripTip = 0; // 1: shown in this visit, -1: closed
+function stripLineHTML() {
+  if (_stripTip < 0 || sfmode !== 'guide' || !assignData || isDemo()) return '';
+  if (_heldNote || _pinNote || lowLineUp() || sampleNoteHTML() || tapLineUp() || _toolTip > 0) return '';
+  if (!_stripTip) {
+    if (hintSeen('strip') || !hintSeen('tap') || _hNow.tap || _smpLoad || curSample) return '';
+    markHint('strip');
+    _stripTip = 1;
+  }
+  const n = pageMarkerKeys().length;
+  return (
+    '<div id="sfStripLine" class="sfheldnote sfsamplenote" role="note"><span>Screens and ink differ. <button type="button" id="sfStripGo" class="sflink">Print a test strip</button> of ' +
+    (n === 1 ? 'this marker' : 'these ' + n + ' markers') +
+    ' to see them on your paper.</span><button type="button" id="sfStripX" class="sfheldx" aria-label="Close">' +
+    ic('x') +
+    '</button></div>'
+  );
+}
+function stripLineWire() {
+  const go = document.getElementById('sfStripGo'),
+    x = document.getElementById('sfStripX');
+  if (go)
+    go.addEventListener('click', function () {
+      printOptSet('pwhat', 'strip');
+      openPrint();
+    });
+  if (x)
+    x.addEventListener('click', function () {
+      _stripTip = -1;
+      const n = document.getElementById('sfStripLine');
+      if (n) n.remove();
+      ctlRefocus('#sfTab-' + gTab);
+    });
+}
 // The first-time "Tap a section…" line under the tabs: the first visit to the Plan, on the tab it opened on (v289: it
 // goes when you change tab, so the sample's line can have its turn)
 let _tapTab = null; // the tab it showed on; false once it has gone
 function tapLineUp() {
-  if (family === 'manual' || paintOn || zoneEditOn() || _heldNote || _pinNote) return false;
+  if (family === 'manual' || paintOn || zoneEditOn() || _heldNote || _pinNote || lowLineUp()) return false;
   if (_tapTab === false || (hintSeen('tap') && !_hNow.tap)) return false;
   if (_tapTab == null) _tapTab = gTab;
   return gTab === _tapTab;
@@ -550,7 +720,7 @@ function roughLineUp() {
   if (sfmode !== 'guide' || _heldNote || _pinNote || paintOn || lockMode || zoneEditOn()) return null;
   // (v307: beside the first-time "Tap a section" line, not after it: a page laid at all went from no line to 56 rough
   // spots on the first change of any kind)
-  if (_toolTip > 0 || sampleNoteHTML()) return null;
+  if (_toolTip > 0 || _stripTip > 0 || lowLineUp() || sampleNoteHTML()) return null;
   const r = roughNow();
   return r && r.ids.length && r.pairs.length && r.sig !== _roughX ? r : null;
 }
@@ -692,7 +862,8 @@ function toolsIconOnly() {
   return (window.innerWidth || 0) < 700 || !!(workEl && workEl.classList.contains('sftoolsv'));
 }
 function toolTipHTML() {
-  if (_toolTip < 0 || sfmode !== 'guide' || _heldNote || _pinNote || sampleNoteHTML()) return '';
+  if (_toolTip < 0 || sfmode !== 'guide' || _heldNote || _pinNote || lowLineUp() || sampleNoteHTML())
+    return '';
   if (!_toolTip) {
     if (hintSeen('tools') || !hintSeen('tap') || _hNow.tap || !toolsIconOnly()) return '';
     if (_smpLoad || (curSample && !_sampleNoteX && !libEntry() && !sampleTouched())) return '';

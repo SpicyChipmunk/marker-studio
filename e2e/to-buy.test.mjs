@@ -373,7 +373,8 @@ test('To buy everywhere: Match, the marker sheet, the To buy view, the swatch sh
 test('To buy in the guide: the start card, blend plan, shading and photo notes', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  assert.match(await page.evaluate(() => document.getElementById('sfRoot').innerHTML), /a To buy list for shades you still need/);
+  // (v313: the start card in Home's words, which leave To buy to the Plan)
+  assert.match(await page.evaluate(() => document.getElementById('sfRoot').innerHTML), /a marker-by-number guide, built from the markers you own/);
   await onlyGuideMarkers(page); await idle(page);
   await page.evaluate(() => document.getElementById('sfPlan').click());
   await page.waitForSelector('#sfPlanOverlay.on');

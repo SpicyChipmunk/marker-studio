@@ -115,7 +115,7 @@ test('with storage blocked, the guide’s header says to keep it as a guide file
   await sampleGuide(page);
   await page.click('.sftabbtn[data-t="pattern"]'); await page.click('#sfFam [data-v="random"]');
   await page.evaluate(() => __mstest.flushSave()); await idle(page);
-  assert.equal(await page.textContent('#sfSaveSt'), 'Not saved — use Share › Guide file');
+  assert.equal(await page.textContent('#sfSaveSt'), 'Not saved — use Share & print › Guide file');
   assert.match(await page.evaluate(() => document.body.innerText), /isn’t letting Marker Studio save/);
   assert.doesNotMatch(await page.evaluate(() => document.body.innerText), /storage may be full/);
   assert.deepEqual(errors, []);

@@ -39,6 +39,8 @@ function ctlPlan() {
   pinNoteWire();
   sampleNoteWire();
   toolTipWire();
+  lowLineWire();
+  stripLineWire();
   roughWire();
   positionRough();
 }
@@ -83,6 +85,8 @@ function ctlPlanHead() {
     frameLineHTML() +
     heldNoteHTML() +
     pinNoteHTML() +
+    // (v313: a marker running low, ahead of the first-time lines)
+    lowLineHTML() +
     sampleNoteHTML() +
     toolTipHTML() +
     // (one line at a time under the tabs: not beside the kept-sections or pinned line, v289)
@@ -95,6 +99,8 @@ function ctlPlanHead() {
           true,
         )
       : '') +
+    // (v313: Screens and ink differ, once, after the first-time lines)
+    stripLineHTML() +
     // (v306: rough spots, last in the queue)
     roughLineHTML()
   );
@@ -222,7 +228,7 @@ function ctlPlanColours() {
     const pals = api.listPalettes ? api.listPalettes() : [];
     if (!pals.length) {
       html +=
-        '<div class="sfc-note sfc-mt6">No saved palettes yet \u2014 make one in Palette, or use Share \u203a Save as palette.</div>';
+        '<div class="sfc-note sfc-mt6">No saved palettes yet \u2014 make one in Palette, or use Share & print \u203a Save as palette.</div>';
     } else {
       // a guide whose palette has since been deleted (or never had one) says so, and uses your markers until you
       // choose; showing the first palette as chosen would quietly switch the guide to it at its next change

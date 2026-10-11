@@ -717,11 +717,20 @@ button.sopen:hover {
 #primaryRow {
   margin-top: 18px;
 }
-#secondaryRow {
+/* (v313) Undo, Clear, Save and ⋯ share one row under Generate */
+.actrow2 {
   margin: 10px 0 6px;
 }
+#secondaryRow,
 #libRow {
-  margin: 6px 0;
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+}
+#secondaryRow button,
+#libRow button {
+  padding-left: 8px;
+  padding-right: 8px;
 }
 #libRow button {
   flex: 1;
@@ -1353,9 +1362,15 @@ button:focus-visible {
   .wrap.mkmode #mkDraw {
     flex: none;
   }
+  /* (v313) the line about the view under the row, whole, not squeezed between the buttons */
   .wrap.mkmode #ownHint {
-    flex: 1 1 200px;
+    order: 8;
+    flex: 1 1 100%;
     min-width: 0;
+    margin-top: -4px;
+  }
+  .wrap.mkmode #mkAddBtn {
+    margin-left: auto;
   }
   .wrap.mkmode #mkJump {
     flex: none;
@@ -1590,4 +1605,33 @@ button:focus-visible {
 /* (in the sheet, room under the link for its 44px tap area, which the scrolling list would otherwise cut off) */
 #wcAddWays .mkfind {
   padding-bottom: 12px;
+}
+
+/* (v313) the Library's empty state: what gets kept here, and a way to make something */
+#savedList .emptyhow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: 100%;
+  max-width: 360px;
+  margin: -14px auto 24px;
+  text-align: center;
+  color: var(--sub);
+  font-size: var(--t-base);
+}
+#savedList .emptyhow .ic {
+  width: 40px;
+  height: 40px;
+  opacity: 0.6;
+}
+#savedList .emptyhow p {
+  margin: 0;
+}
+#savedList .emptyhow .btn-soft {
+  width: auto;
+  margin-top: 4px;
+  padding: 0 22px;
 }

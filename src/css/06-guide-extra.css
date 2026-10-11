@@ -201,7 +201,8 @@
   pointer-events: none;
   background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
   transform: translateX(-130%) skewX(-18deg);
-  animation: ctaShine 4.2s ease-in-out infinite;
+  /* (v313: three times, then still: it had run for as long as the screen was open) */
+  animation: ctaShine 4.2s ease-in-out 3;
 }
 .sfcolorcta:active {
   transform: translateY(1px);
@@ -269,7 +270,8 @@
   pointer-events: none;
   background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.4) 50%, transparent 58%);
   transform: translateX(-130%) skewX(-18deg);
-  animation: revShine 6.5s ease-in-out infinite;
+  /* (v313: three times, then still) */
+  animation: revShine 6.5s ease-in-out 3;
 }
 .sfreveal:active {
   transform: translateY(1px);
@@ -1830,4 +1832,122 @@ html.sfsheetsd .mstoast {
   #sfRoot .sfmpname {
     font-size: var(--t-sm);
   }
+}
+/* ---- (v314) a photo of the finished page (24-page-photo.js): in the Page finished panel, its corner handles and
+   the card of the plan beside it ---- */
+#sfRoot .sffin:empty {
+  display: none;
+}
+#sfRoot .sffinadd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  margin-top: 10px;
+  padding: 0 14px;
+  border: 1px solid rgba(11, 34, 25, 0.28);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.3);
+  color: #0b2219;
+  font: inherit;
+  font-weight: 700;
+}
+#sfRoot .sffinadd .ic {
+  width: 20px;
+  height: 20px;
+}
+#sfRoot .sffinnote {
+  margin-top: 6px;
+  font-weight: 500;
+  font-size: var(--t-sm);
+}
+#sfRoot .sffinhave {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  text-align: left;
+}
+#sfRoot .sffinhave img {
+  flex: none;
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(11, 34, 25, 0.25);
+  background: #fff;
+}
+#sfRoot .sffint {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+#sfRoot .sffinwhen {
+  font-weight: 500;
+  font-size: var(--t-sm);
+}
+#sfRoot .sffinlinks {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 16px;
+}
+#sfRoot .sffinhave .sflink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  margin-left: 0;
+  font-size: var(--t-sm);
+}
+/* the corners (over Home, the guide or Reveal) */
+#sfFinEd,
+#sfFinCard {
+  z-index: 7100;
+}
+.sffinedc {
+  width: min(720px, 100%);
+}
+#sfFinCv {
+  display: block;
+  max-width: 100%;
+  max-height: min(62vh, 760px);
+  margin: 4px auto 8px;
+  border-radius: 10px;
+  touch-action: none;
+  cursor: grab;
+}
+#sfFinCv:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+#sfFinEd .sfpgnote.warn {
+  margin: 0 0 6px;
+  color: #ffb4a8;
+  font-size: var(--t-sm);
+}
+#sfFinEd .sfedaskbtns,
+#sfFinCard .sfedaskbtns {
+  justify-content: flex-end;
+  align-items: center;
+}
+#sfFinEd .sfedaskbtns button,
+#sfFinCard .sfedaskbtns button {
+  width: auto;
+  min-height: 44px;
+  padding: 0 18px;
+}
+#sfFinEd .sffincx {
+  margin-right: auto;
+}
+.sffincard .ocard {
+  width: min(560px, 100%);
+}
+.sffincardimg {
+  display: block;
+  max-width: 100%;
+  max-height: min(64vh, 820px);
+  margin: 4px auto 10px;
+  border-radius: 10px;
 }

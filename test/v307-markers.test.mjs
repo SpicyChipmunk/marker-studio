@@ -357,13 +357,23 @@ test('service worker: a page load with a query (?back=1) is the cached page, and
 test('service worker: updates as before (the new version’s cache, the old one deleted on activate)', async () => {
   const sw = swSandbox();
   sw.stores.set('marker-studio-v1', new Map([['https://ms.test/', { body: 'old' }]]));
+  // (v313: PDF.js's cache, named after its version, is kept from one release to the next; an older PDF.js's goes)
+  const src = readFileSync(new URL('../service-worker.js', import.meta.url), 'utf8'),
+    pdfc = 'marker-studio-pdfjs-' + src.match(/PDFJS='([^']+)'/)[1];
+  sw.stores.set(pdfc, new Map([['https://ms.test/vendor/kept', { body: 'kept' }]]));
+  sw.stores.set('marker-studio-pdfjs-0.0.1', new Map());
   await sw.life('install');
   await sw.life('activate');
-  const name = readFileSync(new URL('../service-worker.js', import.meta.url), 'utf8').match(
-    /CACHE='([^']+)'/,
-  )[1];
-  assert.deepEqual([...sw.stores.keys()], [name]);
+  const name = src.match(/CACHE='([^']+)'/)[1];
+  assert.deepEqual([...sw.stores.keys()].sort(), [name, pdfc].sort());
+  assert.ok(sw.stores.get(pdfc).has('https://ms.test/vendor/kept'), 'PDF.js kept as it was');
   assert.equal(await sw.get('?back=1'), 'file https://ms.test/index.html');
+  // a PDF.js file is fetched once, then comes from its own cache
+  const f = 'vendor/pdfjs/' + src.match(/PDFJS='([^']+)'/)[1] + '/pdf.min.mjs';
+  await sw.get(f, 'no-cors');
+  assert.ok([...sw.stores.get(pdfc).keys()].some((k) => String(k).endsWith(f)), 'stored in its own cache');
+  sw.ctx.online = false;
+  assert.match(await sw.get(f, 'no-cors'), /pdf\.min\.mjs/);
 });
 
 // ---- Markers' search: a hex code offers Match this colour ---------------------------------------------------------

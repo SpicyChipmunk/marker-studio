@@ -1020,7 +1020,8 @@ function renderGuide() {
   }
   const colArr = new Array(K),
     full = new Uint8Array(K);
-  const fcur = focusCur();
+  // (v313: the hand-off card up, all the next marker's sections to colour show, with their codes, not just the first)
+  const fcur = handOn() ? -1 : focusCur();
   for (const l in assign) {
     const b = hexRgb(assign[l].hex);
     if (dim) {

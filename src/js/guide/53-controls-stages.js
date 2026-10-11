@@ -11,13 +11,21 @@ function ctlFocus() {
         '> Step through each tone (a tap per tone instead of per section)</label>'
       : '') +
     '<div class="fshead">Jump to a colour</div><div id="sfFocMk"></div></div>' +
+    // (v313) the hand-off card, between one marker and the next (handOpen, 75-focus)
+    '<div id="sfHand" class="sfhand" hidden><div class="sfhcard"><div class="sfhhead"></div><span class="sfhsw"></span><div class="sfhlbl"></div><div class="sfhname"></div><div class="sfhsub"></div></div></div>' +
     '<div id="sfFocBot" class="sffocbot"></div>';
   var _ef = document.getElementById('sfExitFoc');
   if (_ef) _ef.addEventListener('click', exitFocus);
   var _fcb = document.getElementById('sfFocCols');
   if (_fcb)
     _fcb.addEventListener('click', function () {
+      handClose(false);
       focusSheetSet(!focusSheet);
+    });
+  var _hd = document.getElementById('sfHand');
+  if (_hd)
+    _hd.addEventListener('click', function () {
+      handClose(true);
     });
   var _fal = document.getElementById('sfFocAll');
   if (_fal) _fal.addEventListener('click', focusAllOfColour);
@@ -494,7 +502,7 @@ function ctlSections() {
       (quick ? ' hidden' : '') +
       '>Check the sections</h3><div class="sfc-note sfedline"' +
       (quick ? ' hidden' : '') +
-      '>Tap a section to leave it out or bring it back. Merge, split or add where the lines didn\u2019t come out right.</div>',
+      '>Merge, split or add where the lines didn\u2019t come out right.</div>',
     adjust =
       '<button id="sfAdjToggle" class="sfexp sfc-mt12" aria-expanded="' +
       !!showAdjust +

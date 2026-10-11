@@ -71,6 +71,8 @@ test('Put back while the Library is still to tidy the deleted guide away keeps i
 test('Home’s Continue card follows a Library rename, and leaves its picture alone while Home is hidden', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await saveGuide(page);
+  // (v313: the sample with ticks to try it isn't on Continue until it's printed or renamed: as if renamed)
+  await page.evaluate(() => { __mstest.styleVars.smpTry = 0; });
   await page.click('#sfColor'); await idle(page);
   for (const i of [0, 1, 2]) await tickInCode(page, i);
   await page.evaluate(() => __mstest.flushSave()); await idle(page);
@@ -106,6 +108,8 @@ test('on an iPad Home uses the width: the Continue card across it, the cards thr
   for (const [w, h] of [[1194, 834], [834, 1194]]) {
     const { page, errors, ctx } = await openApp({ width: w, height: h });
     await sampleGuide(page); await saveGuide(page);
+    // (v313: the sample with ticks to try it isn't on Continue until it's printed or renamed: as if renamed)
+    await page.evaluate(() => { __mstest.styleVars.smpTry = 0; });
     await tickInCode(page, 0); await page.evaluate(() => __mstest.flushSave()); await idle(page);
     await page.click('#mHome'); await idle(page);
     // (v308.1: the Continue card across the page with the cards under it; side by side, its tall picture had left an

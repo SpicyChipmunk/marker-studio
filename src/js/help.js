@@ -5,6 +5,14 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v314',
+    t: 'Finished a page? Add a photo of it: the app straightens it and keeps it beside the plan, on this device. Home shows your page first, and Reveal can share the plan and your page side by side. Gradients on pages with a few huge sections use more of your markers.',
+  },
+  {
+    v: 'v313',
+    t: 'Open a colouring page that came as a PDF: Open the PDF, under Choose a photo. Focus mode shows which marker to pick up next. A marker you’ve marked running low can be swapped in one tap. Share is now Share & print.',
+  },
+  {
     v: 'v312.1',
     t: 'Fixes from an independent review: Undo keeps the marker a guide had when one is marked dry; Back closes Add markers; Edit sections shows and says what a merge did; clearer wording in a few places.',
   },

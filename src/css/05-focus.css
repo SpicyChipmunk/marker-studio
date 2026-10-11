@@ -297,3 +297,87 @@ button.sffoccols::after {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
+
+/* (v313) the hand-off card between one marker and the next: over the middle of the picture, between the bars. A tap on
+   it (or anywhere on the picture) closes it */
+.sfhand {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--focTop, 80px);
+  bottom: var(--focBot, 76px);
+  z-index: 6002;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px 16px;
+  pointer-events: none;
+}
+/* (below the sections when they're nearer the top) */
+.sfhand.sfhbot {
+  align-items: flex-end;
+}
+.sfhand[hidden] {
+  display: none;
+}
+.sfhcard {
+  pointer-events: auto;
+  width: min(320px, 100%);
+  padding: 14px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #12171a;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  text-align: center;
+  cursor: pointer;
+}
+.sfhand.in .sfhcard {
+  animation: sfhIn 0.22s ease-out;
+}
+@keyframes sfhIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sfhand.in .sfhcard {
+    animation: none;
+  }
+}
+.sfhhead {
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+.sfhsw {
+  display: block;
+  width: 52px;
+  height: 52px;
+  margin: 10px auto 8px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+.sfhlbl {
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+.sfhname {
+  margin: 2px 0 8px;
+  font-size: var(--t-lg);
+  font-weight: 700;
+  line-height: 1.25;
+}
+.sfhsub {
+  font-size: var(--t-sm);
+  line-height: 1.4;
+  color: var(--sub);
+}
+.sfhsub b {
+  color: var(--ink);
+}
+.sfhlow {
+  display: block;
+  margin-top: 8px;
+  color: #ffb454;
+}

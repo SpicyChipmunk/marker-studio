@@ -1138,6 +1138,8 @@ function markerListSheet() {
         notes.push('for ' + (i != null && COLORS[i] ? COLORS[i].code : k) + ' (dry)');
       });
       if (!owned(m)) notes.push('To buy');
+      // (v313)
+      else if (inkLowNow(m.mkey)) notes.push('Running low');
       if (sub) notes.push(sub);
       // (a shading marker isn't any section's own: listed, not a button that would light nothing up)
       return (

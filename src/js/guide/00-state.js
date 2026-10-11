@@ -187,6 +187,24 @@ let limitN = 16;
 // v307's picks), even when laid again. A new picture (the sample too) starts with {} (resetForNewPicture).
 // Written by: 05-style-fields, 20-image-input, 30-palette-assign, 52-controls-plan-wire, 99-close (test)
 let gradIncl = null;
+// (v313) how a marker's code gives its family, for its blend companions and shading picks (famVal, 88-coverage-blend):
+// 1 for a guide made since v313 (the sample too: resetForNewPicture), the family being the code's letters and first
+// digit (Ohuhu Y213 with Y26, as Ohuhu numbers them); 0 for a guide saved before, which keeps v312's rule (Y213 with
+// Y210-Y216 only) for good, so the markers it shows for a section's tones never change under someone part-way through.
+// Written by: 05-style-fields, 20-image-input, 99-close (test)
+let famRule = 0;
+// (v313) the markers whose running-low line was closed in this guide: { mkey: 1 }, saved with it (lowLineUp, 87-undo);
+// null when none. Written by: 05-style-fields, 20-image-input, 87-undo, 99-close (test)
+let lowX = null;
+// (v313) the sample, kept because it was changed (a tick), but not yet printed or renamed: 1, saved with it, so Home's
+// Continue card leaves it be (ticks to try the sample aren't a page being coloured). Written by: 05-style-fields,
+// 60-persist, 72-frame, 90-export, 99-close (test)
+let smpTry = 0;
+// (v314) how a Gradient shares the run of markers out by area (splitByArea, 30-palette-assign): 1 for a guide made since
+// v314 (the sample too: resetForNewPicture), each section counting as its area to the power GRAD_AREA_P, so one huge
+// section (a sky, a background) takes less of the run and the markers left for the small ones aren't crowded onto specks;
+// 0 for a guide saved before, laid as v313 laid it. Written by: 05-style-fields, 20-image-input, 99-close (test)
+let gradArea = 0;
 // (v308) the zones of a guide opened from the Library, Main 0 too, not laid since: { id: 1 } (mkOwnCount)
 // Written by: 20-image-input, 30-palette-assign, 97-open
 let _mkOpened = {};

@@ -9,8 +9,10 @@ function focusBoxes() {
   focusBox = { x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1 };
 }
 // the way through one marker's sections: its topmost first, then each time the nearest one left (short hops for the
-// hand). Focus mode and Colour along's Find next both go this way. B: the sections' boxes (secBoxes).
-function markerPath(secs, B) {
+// hand). Focus mode and Colour along's Find next both go this way. B: the sections' boxes (secBoxes). big: its
+// largest section first instead (Focus mode, v313: the marker's main area while the ink flows best, and the one that
+// shows the hand-off card where the marker goes)
+function markerPath(secs, B, big) {
   var cxy = function (l) {
     return [(B.x0[l] + B.x1[l]) / 2, (B.y0[l] + B.y1[l]) / 2];
   };
@@ -19,7 +21,14 @@ function markerPath(secs, B) {
     i,
     path = [];
   if (!rest.length) return path;
-  for (i = 1; i < rest.length; i++) if (B.y0[rest[i]] < B.y0[rest[top]]) top = i;
+  for (i = 1; i < rest.length; i++)
+    if (
+      big
+        ? comps[rest[i]].area > comps[rest[top]].area ||
+          (comps[rest[i]].area === comps[rest[top]].area && B.y0[rest[i]] < B.y0[rest[top]])
+        : B.y0[rest[i]] < B.y0[rest[top]]
+    )
+      top = i;
   var l = rest.splice(top, 1)[0],
     pt = cxy(l);
   path.push(l);
@@ -81,7 +90,7 @@ function buildFocusOrder() {
   }
   focusStep = [];
   keys.forEach(function (k) {
-    var path = markerPath(by[k].secs, focusBox);
+    var path = markerPath(by[k].secs, focusBox, true);
     // each section is finished before the next; a 2nd-coat shadow needs the first coat dry, so those come as a second pass
     var later = [];
     path.forEach(function (l) {
@@ -212,6 +221,7 @@ function focusSheetSet(open) {
   }
 }
 function finishFocus() {
+  handClose(false);
   focusFin = true;
   hlKey = null;
   hlZone = null;
@@ -227,9 +237,161 @@ function finishFocus() {
   // (just finished: the toast says so instead)
   if (celebrated === was) focusSay();
 }
+// (the second pass, for 2nd coats and glazes once the first is dry)
+function focusLater(i) {
+  var t = focusStep[i] === 4 && shadeSec(focusOrd[i]);
+  return !!(t && (t.coat || t.glaze));
+}
+// (v313) which marker Focus mode is on at step i: the marker (in its zone, zone by zone), and its pass. The hand-off
+// card shows when this changes, never between one section's tones.
+function focusGroup(i) {
+  var l = focusOrd[i];
+  return assignData.assign[l].mkey + '@' + focusZoneOf(l) + (focusLater(i) ? '|2' : '|1');
+}
+// the steps of i's marker (and pass), and how many of its sections are coloured
+function focusGroupInfo(i) {
+  var g = focusGroup(i),
+    secs = {},
+    n = 0,
+    d = 0;
+  focusOrd.forEach(function (q, j) {
+    if (secs[q] || focusGroup(j) !== g) return;
+    secs[q] = 1;
+    n++;
+    if (stepDone(q, stepBits(j))) d++;
+  });
+  return { secs: Object.keys(secs).map(Number), n: n, d: d, later: focusLater(i) };
+}
+// (v313) The hand-off card: moving on to the next marker (Done, Skip or Mark all on the last of one), a card over the
+// picture says how the last went and which marker to pick up, with the picture zoomed out to all its sections. Done
+// or a tap anywhere closes it (the tap ticks nothing) and goes in to its first section.
+var _hand = -1;
+function focusNext(nx, from) {
+  if (from >= 0 && nx >= 0 && from < focusOrd.length && focusGroup(from) !== focusGroup(nx))
+    handOpen(from, nx);
+  else goFocus(nx, true);
+}
+function handOpen(from, nx) {
+  var was = focusGroupInfo(from),
+    nxt = focusGroupInfo(nx),
+    lf = focusOrd[from],
+    pm = assignData.assign[lf],
+    l = focusOrd[nx],
+    m = assignData.assign[l];
+  goFocus(nx, true);
+  _hand = nx;
+  renderGuide();
+  var el = document.getElementById('sfHand');
+  if (!el) return;
+  var nm = document.getElementById('sfFocName'),
+    sw = document.getElementById('sfFocSw'),
+    k = m.mkey,
+    low = inkLowNow(k),
+    head =
+      mcodeHTML(pm) +
+      (was.later ? '’s shadows' : '') +
+      (was.d >= was.n
+        ? ' · all ' + was.n + ' coloured <span aria-hidden="true">✓</span>'
+        : ': ' + was.d + ' of ' + was.n + ' coloured');
+  el.querySelector('.sfhhead').innerHTML = head;
+  el.querySelector('.sfhsw').style.background = sw ? sw.style.background : m.hex;
+  el.querySelector('.sfhlbl').textContent = nxt.later ? 'Back to' : 'Pick up';
+  el.querySelector('.sfhname').innerHTML = nxt.later
+    ? mcodeHTML(m) + '’s shadows, now the first coat is dry'
+    : nm
+      ? nm.innerHTML
+      : mcodeHTML(m);
+  el.querySelector('.sfhsub').innerHTML =
+    (nxt.n - nxt.d === 1 ? '1 section' : nxt.n - nxt.d + ' sections') +
+    ', shown on the picture. Tap <b>Done</b> when it’s in your hand.' +
+    (low ? '<span class="sfhlow">' + mcodeHTML(m) + ' is running low.</span>' : '');
+  el.hidden = false;
+  el.classList.remove('in');
+  void el.offsetWidth;
+  el.classList.add('in');
+  // the picture: out to all the new marker's sections still to colour
+  var B = focusBox,
+    u = { x0: [Infinity], y0: [Infinity], x1: [-Infinity], y1: [-Infinity] };
+  nxt.secs.forEach(function (q) {
+    if (colored[q] && nxt.secs.length > 1) return;
+    u.x0[0] = Math.min(u.x0[0], B.x0[q]);
+    u.y0[0] = Math.min(u.y0[0], B.y0[q]);
+    u.x1[0] = Math.max(u.x1[0], B.x1[q]);
+    u.y1[0] = Math.max(u.y1[0], B.y1[q]);
+  });
+  if (isFinite(u.x0[0])) handFrame(u, el);
+  if (navigator.vibrate)
+    try {
+      navigator.vibrate([12, 70, 12]);
+    } catch (_) {}
+  sayLive(
+    el.querySelector('.sfhhead').textContent +
+      '. ' +
+      el.querySelector('.sfhlbl').textContent +
+      ' ' +
+      (nm && nm.getAttribute('data-say') && !nxt.later
+        ? nm.getAttribute('data-say')
+        : el.querySelector('.sfhname').textContent) +
+      '.',
+  );
+}
+// the view zoomed out to box u (no further in than the section's own zoom), and the card above or below it, whichever
+// way it covers less of the sections: their middle in the room the card leaves
+function handFrame(u, el) {
+  if (!cv || !sfView) return;
+  var g = focusGeo(true),
+    DW = cv.offsetWidth,
+    DH = cv.offsetHeight,
+    card = el.querySelector('.sfhcard'),
+    ch = (card ? card.offsetHeight : 0) + 16,
+    best = null;
+  ['top', 'bot'].forEach(function (side) {
+    var ah = Math.max(40, g.ah - ch),
+      cy = side === 'top' ? g.t + ch + ah / 2 : g.t + ah / 2,
+      z = Math.min(focusZ, fitZoom(u, 0, g.aw, ah));
+    zoom = z;
+    panX = g.cx - cv.offsetLeft - ((u.x0[0] + u.x1[0] + 1) / 2 / W) * DW * z;
+    panY = cy - cv.offsetTop - ((u.y0[0] + u.y1[0] + 1) / 2 / H) * DH * z;
+    clampPan();
+    // (where the sections are on the screen, against where the card is)
+    var y0 = cv.offsetTop + panY + (u.y0[0] / H) * DH * z,
+      y1 = cv.offsetTop + panY + ((u.y1[0] + 1) / H) * DH * z,
+      c0 = side === 'top' ? g.t : g.t + g.ah - ch,
+      ov = Math.max(0, Math.min(y1, c0 + ch) - Math.max(y0, c0));
+    if (!best || ov < best.ov - 0.5) best = { side: side, ov: ov, z: z, x: panX, y: panY };
+  });
+  zoom = best.z;
+  panX = best.x;
+  panY = best.y;
+  el.classList.toggle('sfhbot', best.side === 'bot');
+  animXform(true);
+}
+function handOn() {
+  return _hand >= 0;
+}
+// close the card; in: go in to the section (Done, a tap), else leave the view to what comes next (Skip, Back, Exit)
+function handClose(go) {
+  if (_hand < 0) return;
+  _hand = -1;
+  var el = document.getElementById('sfHand');
+  if (el) {
+    el.hidden = true;
+    el.classList.remove('in');
+  }
+  renderGuide();
+  if (go && focusCur() >= 0) {
+    focusZ = focusZoomFor(focusCur());
+    frameFocus(true);
+    focusSay();
+  }
+}
 function focusDone() {
   var l = focusCur();
   if (l < 0) return;
+  if (handOn()) {
+    handClose(true);
+    return;
+  }
   guideDirty = true;
   var bits = stepBits(focusPos);
   if (stepDone(l, bits)) {
@@ -246,21 +408,25 @@ function focusDone() {
     try {
       navigator.vibrate(12);
     } catch (_) {}
-  var nx = nextUndone(focusPos);
+  var from = focusPos,
+    nx = nextUndone(focusPos);
   if (nx < 0) finishFocus();
-  else goFocus(nx, true);
+  else focusNext(nx, from);
 }
 function focusBack() {
+  handClose(false);
   var to = focusFin ? focusPos : focusHist.length ? focusHist.pop() : focusPos - 1;
   goFocus(to, true, true);
 }
 function focusSkip() {
-  var nx = nextUndone(focusPos);
+  handClose(false);
+  var from = focusPos,
+    nx = nextUndone(focusPos);
   if (nx < 0) {
     finishFocus();
     return;
   }
-  goFocus(nx, true);
+  focusNext(nx, from);
 }
 // k: a marker, or zone by zone "marker@zone" (a chip of the Colours sheet)
 function focusColour(k) {
@@ -279,6 +445,7 @@ function focusColour(k) {
     }
   }
   focusSheet = false;
+  handClose(false);
   if (first >= 0) goFocus(first, true);
   else renderFocusUI();
 }
@@ -309,7 +476,7 @@ function focusAllOfColour() {
   focusSheet = false;
   var nx = nextUndone(focusPos);
   if (nx < 0) finishFocus();
-  else goFocus(nx, true);
+  else focusNext(nx, at);
   // (an Undo, as Mark all coloured in the list has: a mis-tap lost which were really done, v299; not when that
   // finished the page, which says so instead)
   if (Object.keys(was).length && nx >= 0)
@@ -515,10 +682,7 @@ function renderFocusUI() {
       sTot = 0;
     var zq = focusZoneOf(l);
     // (the second pass, for 2nd coats and glazes once the first is dry, counts its own sections: 1 of 4, not 5 of 5)
-    var later = function (i) {
-        var t = focusStep[i] === 4 && shadeSec(focusOrd[i]);
-        return !!(t && (t.coat || t.glaze));
-      },
+    var later = focusLater,
       pass = later(focusPos);
     focusOrd.forEach(function (q, i) {
       if (assignData.assign[q].mkey === k && focusZoneOf(q) === zq && !secs[q] && later(i) === pass) {
@@ -624,4 +788,7 @@ function renderFocusUI() {
   }
   var zb = document.querySelector('.sffocbot');
   if (zb) document.documentElement.style.setProperty('--focBot', zb.offsetHeight + 'px');
+  // (v313: the hand-off card sits between the two bars)
+  var tbar = document.querySelector('.sffocbar');
+  if (tbar) document.documentElement.style.setProperty('--focTop', tbar.offsetHeight + 'px');
 }

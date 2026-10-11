@@ -764,7 +764,7 @@
 #sfRoot #sfStart .sftag {
   max-width: 560px;
 }
-/* (v308) the line for a colouring page that came as a PDF, under the buttons */
+/* (v308) the line for a colouring page that came as a PDF, under the buttons (v313: with Open the PDF) */
 #sfRoot #sfStart .sfstpdf {
   color: var(--sub);
   font-size: var(--t-sm);

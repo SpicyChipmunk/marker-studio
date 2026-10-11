@@ -287,8 +287,21 @@ function homeName(g) {
   return nm || 'Guide';
 }
 // started (a tick, or some tones) and not finished: what the Continue card offers
+// (v313) the Continue card's "Last coloured 3 days ago": nothing the same day; the last tick's time (lc), else when it was
+// last saved, for a guide coloured before that was kept
+function homeWhen(g) {
+  const t = +g.lc || +g.ts || 0;
+  if (!t) return '';
+  const day = function (x) {
+      const d = new Date(x);
+      return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5;
+    },
+    n = Math.round(day(Date.now()) - day(t));
+  return n < 1 ? '' : n === 1 ? 'Last coloured yesterday' : 'Last coloured ' + n + ' days ago';
+}
+// (v313: not the sample with a few ticks to try it, until it's printed or renamed: smp)
 function homeStarted(g) {
-  return (+g.done > 0 || +g.tn > 0) && !(+g.n > 0 && +g.done >= +g.n);
+  return !g.smp && (+g.done > 0 || +g.tn > 0) && !(+g.n > 0 && +g.done >= +g.n);
 }
 // the start card's buttons: a photo (the picker straight away, in the tap, as New colouring guide once there are
 // guides), or the sample
@@ -297,6 +310,14 @@ function homeStart(what) {
   if (what === 'sample') {
     setMode('sections');
     if (SF.loadSample) SF.loadSample();
+    return;
+  }
+  // (v313) a page in a PDF: its own picker, then the Guide screen
+  if (what === 'pdf') {
+    if (SF.pickPdfHome)
+      SF.pickPdfHome(function () {
+        setMode('sections');
+      });
     return;
   }
   // (section edits not built: the Guide screen and its question first, as New colouring guide does)
@@ -399,6 +420,87 @@ function heroGlow(hx) {
     w('94%', '94%', 0.92, 0.26),
   ].join(',');
 }
+// (v314) the latest piece's picture: the photo of the finished page (v 'page') or the plan; fade: as it first shows
+function heroShow(el, ar, v, fade) {
+  var b = el.querySelector('.hhbox'),
+    h = el._hero,
+    seg = el.querySelector('.hhseg'),
+    wh = el.querySelector('.hhwhen');
+  if (!b || !h) return;
+  var ph = !!h.fin && v !== 'plan',
+    src = ph ? h.fin.u : h.plan;
+  b.style.setProperty('--ar', (ph ? Math.max(0.2, Math.min(5, h.fin.w / h.fin.h)) : ar).toFixed(4));
+  b.classList.toggle('ph', ph);
+  b.innerHTML =
+    '<img alt="' +
+    (ph ? 'Your photo of the finished page' : '') +
+    '" src="' +
+    src +
+    '"' +
+    (fade && !reduce ? ' class="hhfade"' : '') +
+    '>';
+  if (seg) {
+    seg.hidden = !h.fin;
+    seg.querySelectorAll('[data-v]').forEach(function (x) {
+      x.setAttribute('aria-pressed', String((x.getAttribute('data-v') === 'page') === ph));
+    });
+  }
+  if (wh && h.when) wh.textContent = h.when + (ph ? ' · your photo' : '');
+}
+// which picture a guide's latest piece shows (its photo, unless Plan was chosen for it), kept as ms-fin-view
+var FIN_VIEW = 'ms-fin-view',
+  FIN_X = 'ms-finx';
+function heroView(id) {
+  try {
+    var m = JSON.parse(localStorage.getItem(FIN_VIEW) || '{}');
+    return m && m[id] === 'plan' ? 'plan' : 'page';
+  } catch (e) {
+    return 'page';
+  }
+}
+function heroViewSet(id, v) {
+  try {
+    var m = JSON.parse(localStorage.getItem(FIN_VIEW) || '{}') || {};
+    if (v === 'plan') m[id] = 'plan';
+    else delete m[id];
+    // (no more than 60 kept: the oldest go)
+    var ks = Object.keys(m);
+    for (var i = 0; i < ks.length - 60; i++) delete m[ks[i]];
+    localStorage.setItem(FIN_VIEW, JSON.stringify(m));
+  } catch (e) {}
+}
+// Add a photo of your page put away (✕) for a guide, kept as ms-finx
+function heroFinX(id) {
+  try {
+    var a = JSON.parse(localStorage.getItem(FIN_X) || '[]');
+    return Array.isArray(a) && a.indexOf(id) >= 0;
+  } catch (e) {
+    return false;
+  }
+}
+function heroFinXSet(id) {
+  try {
+    var a = JSON.parse(localStorage.getItem(FIN_X) || '[]');
+    if (!Array.isArray(a)) a = [];
+    if (a.indexOf(id) < 0) a.push(id);
+    localStorage.setItem(FIN_X, JSON.stringify(a.slice(-60)));
+  } catch (e) {}
+}
+// (v314) a guide's photo of its finished page was added, changed or removed (guide/24-page-photo.js): the backup
+// reminder counts it as a change (fn), and Home's latest piece shows it
+function homeFinChanged(id) {
+  var r = state.saved.find(function (s) {
+    return s.id === id && s.type === 'guide';
+  });
+  if (r) {
+    r.fn = Date.now();
+    save(true);
+  }
+  var el = document.getElementById('homeHero');
+  if (el) el.removeAttribute('data-hid');
+  renderRecent();
+  if (typeof renderBackupNudge === 'function') renderBackupNudge();
+}
 function homeHero(g) {
   var el = document.getElementById('homeHero');
   if (!el) return;
@@ -423,11 +525,20 @@ function homeHero(g) {
   el.innerHTML =
     '<div class="hhcard" style="background-image:' +
     heroGlow(hx) +
-    '"><button type="button" class="hhpic" data-hero="open" aria-label="Open ' +
+    '"><div class="hhpicw"><button type="button" class="hhpic" data-hero="open" aria-label="Open ' +
     nm +
     '"><span class="hhbox" style="--ar:' +
     ar.toFixed(4) +
-    '"></span></button><div class="hhbody"><span class="hheb"><i class="hhdone" aria-hidden="true"></i><span class="hhwhen">Finished</span></span><h2 class="hhname">' +
+    '"></span></button>' +
+    // (v314) with a photo of the finished page: it shows first, and the plan a tap away (remembered for the guide)
+    '<div class="hhseg" role="group" aria-label="Picture" hidden><button type="button" data-hero="view" data-v="page" aria-pressed="true">Your page</button><button type="button" data-hero="view" data-v="plan" aria-pressed="false">Plan</button></div>' +
+    // (v314) without one, in its place: Add a photo of your page, until it's added or put away (✕); over the picture,
+    // so the card keeps its size
+    '<div class="hhfin" hidden><button type="button" class="hhfinadd" data-hero="fin" aria-label="Add a photo of your page">' +
+    ic('camera') +
+    '<span aria-hidden="true">Add photo</span></button><button type="button" class="hhfinx" data-hero="finx" aria-label="Not now: no photo of this page">' +
+    ic('x') +
+    '</button></div></div><div class="hhbody"><span class="hheb"><i class="hhdone" aria-hidden="true"></i><span class="hhwhen">Finished</span></span><h2 class="hhname">' +
     nm +
     '</h2><span class="hhmeta">' +
     nWord(+g.n, 'section') +
@@ -462,6 +573,7 @@ function homeHero(g) {
         IDB.get('guide-' + gid).catch(function () {
           return null;
         }),
+        window.SF && SF.finGet ? SF.finGet(gid) : null,
       ]).then(function (res) {
         if (!same()) return;
         if (!res[0]) {
@@ -470,18 +582,43 @@ function homeHero(g) {
           renderRecent();
           return;
         }
-        var b = el.querySelector('.hhbox');
-        if (b) b.innerHTML = '<img alt="" src="' + res[0] + '"' + (reduce ? '' : ' class="hhfade"') + '>';
-        var e = res[1] && res[1].dates && +res[1].dates.e,
-          wh = el.querySelector('.hhwhen');
-        if (e && wh) wh.textContent = 'Finished · ' + heroDate(e);
+        var e = res[1] && res[1].dates && +res[1].dates.e;
+        hero.plan = res[0];
+        hero.fin = res[2] || null;
+        hero.when = e ? 'Finished · ' + heroDate(e) : '';
+        heroShow(el, ar, heroView(gid), true);
+        var hf = el.querySelector('.hhfin');
+        if (hf) hf.hidden = !!hero.fin || heroFinX(gid) || !(window.SF && SF.finPick);
       });
     }, 0);
   });
+  var hero = { plan: '', fin: null, when: '' };
+  el._hero = hero;
   el.onclick = function (e) {
     var b = e.target.closest('[data-hero]');
     if (!b || !window.SF) return;
     var what = b.getAttribute('data-hero');
+    // (v314) the photo of the finished page: which picture shows, and adding one (the picker opens in the tap)
+    if (what === 'view') {
+      heroViewSet(gid, b.getAttribute('data-v'));
+      heroShow(el, ar, heroView(gid), false);
+      return;
+    }
+    if (what === 'fin') {
+      if (SF.finPick) SF.finPick(gid);
+      return;
+    }
+    if (what === 'finx') {
+      heroFinXSet(gid);
+      var hf = el.querySelector('.hhfin');
+      if (hf) hf.hidden = true;
+      var go = document.getElementById('homeHeroGo');
+      if (go)
+        try {
+          go.focus({ preventScroll: true });
+        } catch (_) {}
+      return;
+    }
     setMode('sections');
     if (what === 'open' || !SF.openThen) {
       if (SF.openDesign) SF.openDesign(gid);
@@ -550,7 +687,7 @@ function renderRecent() {
               ba +
               '</button>'
             : '') +
-          '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a photo of a colouring page into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a photo</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button></div></div>';
+          '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a photo of a colouring page into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a photo</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button><button type="button" class="homelink hcalt hcpdf" data-start="pdf">Page in a PDF? Open it</button></div></div>';
       }
       var own = cel.querySelector('.hcown'),
         // (v309.1: the colours; a set's Colorless Blender builds nothing. v309.2: said as colours, as Home counts
@@ -579,7 +716,8 @@ function renderRecent() {
     } else if (
       cel.getAttribute('data-cid') !== String(cont.id) ||
       cel.getAttribute('data-ts') !== String(cont.ts) ||
-      cel.getAttribute('data-nm') !== homeName(cont)
+      cel.getAttribute('data-nm') !== homeName(cont) ||
+      cel.getAttribute('data-when') !== homeWhen(cont)
     ) {
       var nm = esc(homeName(cont)),
         n = +cont.n || 0,
@@ -588,6 +726,7 @@ function renderRecent() {
       cel.setAttribute('data-cid', String(cont.id));
       cel.setAttribute('data-ts', String(cont.ts));
       cel.setAttribute('data-nm', homeName(cont));
+      cel.setAttribute('data-when', homeWhen(cont));
       cel.innerHTML =
         '<button type="button" class="hccard" data-gid="' +
         esc(cont.id) +
@@ -595,13 +734,18 @@ function renderRecent() {
         nm +
         ': ' +
         progressText(d, n, true) +
+        (homeWhen(cont) ? '. ' + homeWhen(cont) : '') +
         '"><span class="hcpic"><span class="hcph"></span></span><span class="hcbody"><span class="hceb" aria-hidden="true">Continue colouring</span><span class="hcname" aria-hidden="true">' +
         nm +
         '</span><span class="hcbar" aria-hidden="true"><i style="width:' +
         pc +
         '%"></i></span><span class="hcmeta" aria-hidden="true">' +
         progressText(d, n) +
-        '</span><span class="btn-primary hcgo" aria-hidden="true">Continue</span></span></button>';
+        '</span>' +
+        (homeWhen(cont)
+          ? '<span class="hcmeta hcwhen" aria-hidden="true">' + homeWhen(cont) + '</span>'
+          : '') +
+        '<span class="btn-primary hcgo" aria-hidden="true">Continue</span></span></button>';
       cel.style.display = '';
       var gid = cont.id,
         gts = String(cont.ts),
@@ -618,11 +762,16 @@ function renderRecent() {
             m = same() && cel.querySelector('.hcmeta');
           if (nx && m && !m.querySelector('.hcdot')) {
             var cb = cel.querySelector('.hccard');
-            if (cb)
+            if (cb) {
+              // (the next marker after how far along; "Last coloured …" stays last, v313)
+              var lb = cb.getAttribute('aria-label'),
+                wh = homeWhen(cont);
+              if (wh && lb.slice(-wh.length) === wh) lb = lb.slice(0, -(wh.length + 2));
               cb.setAttribute(
                 'aria-label',
-                cb.getAttribute('aria-label') + ', next ' + nx.code + (nx.name ? ' ' + nx.name : ''),
+                lb + ', next ' + nx.code + (nx.name ? ' ' + nx.name : '') + (wh ? '. ' + wh : ''),
               );
+            }
             m.innerHTML +=
               ' · next <span class="hcdot" style="background:' +
               esc(nx.hex) +
@@ -807,7 +956,19 @@ function renderSaved() {
         .join('')
     : q
       ? '<div class="empty">No matches.</div>'
-      : '<div class="empty">No saved palettes or guides yet.</div>';
+      : '<div class="empty">No saved palettes or guides yet.</div><div class="emptyhow"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg><p>A guide saves itself here once it\u2019s built. A palette is kept with <b>Save</b>.</p><button type="button" id="libTrySample" class="btn-soft">Try the sample</button></div>';
+  // (v313) with nothing to search or sort, no search box or sort menu
+  {
+    var _bar = document.querySelector('#savedOverlay .libbar');
+    if (_bar) _bar.style.display = state.saved.length ? '' : 'none';
+  }
+  var _ts = document.getElementById('libTrySample');
+  if (_ts)
+    _ts.addEventListener('click', function () {
+      closeDialog(savedOverlay);
+      setMode('sections');
+      if (SF.loadSample) SF.loadSample();
+    });
   libArtWatch();
   libBackfill();
 }
@@ -1060,6 +1221,8 @@ function libPurge(id) {
       libPendDrop(id);
     })
     .catch(function () {});
+  // (v314: and its photo of the finished page: guide/24-page-photo.js)
+  IDB.del('fin-' + id).catch(function () {});
 }
 // a guide being put back (the guide's Put back, v285): its stored record mustn't be tidied away behind the save
 function libUnpend(id) {

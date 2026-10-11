@@ -1,7 +1,7 @@
 {
  "sample": {
-  "sha256": "7323c511585e436a4f3536e396a8cc21d5cb46b358ddf7c460a008d88a72cc1b",
-  "bytes": 4137,
+  "sha256": "edb294a4cec430ba42152c1ae8f1fb4eac71959506856b0021fe405058715154",
+  "bytes": 4178,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -49,8 +49,8 @@
   }
  },
  "sample-share": {
-  "sha256": "7323c511585e436a4f3536e396a8cc21d5cb46b358ddf7c460a008d88a72cc1b",
-  "bytes": 4137,
+  "sha256": "edb294a4cec430ba42152c1ae8f1fb4eac71959506856b0021fe405058715154",
+  "bytes": 4178,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -98,8 +98,8 @@
   }
  },
  "sample-edits": {
-  "sha256": "66b8abb841b3d292cf8a197af6c378690a2dec8e352e90ee043b661654f510bf",
-  "bytes": 4147,
+  "sha256": "1e5578c6ff1e5d3453af1457d779d1c17c9113479794b1a86d94d3e9eb834313",
+  "bytes": 4188,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -147,8 +147,8 @@
   }
  },
  "limitN": {
-  "sha256": "eca56718e5e3d7b9cbe810713d8b9a6219e01d4c6720bc8de333572cddca55c0",
-  "bytes": 4066,
+  "sha256": "44683daf5517f83e7946fe20d69f3ab92f50a41fa5262dc72908b97fc2b16063",
+  "bytes": 4104,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -196,8 +196,8 @@
   }
  },
  "palette": {
-  "sha256": "5797a7d2b6061763061fcf69e62da14ea1a38c0c3764e9c72c4dbb91c6c2f249",
-  "bytes": 4040,
+  "sha256": "c29f22cfc93a0db964a89954b69e363686823f75b7b8d84657f1b8c0e2c15bfb",
+  "bytes": 4066,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -245,8 +245,8 @@
   }
  },
  "emphasis": {
-  "sha256": "379c95cdf4802ebc7e921e3f638a0bc23d12463bc292fbffe21599f78516c880",
-  "bytes": 4038,
+  "sha256": "54e790724eb1af5d416265be6f6c02d4926d205253475b10102cd33373996595",
+  "bytes": 4064,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -294,8 +294,8 @@
   }
  },
  "generate": {
-  "sha256": "095a3ecc323ab7fdaa0441c5cc8451c4f589f893a7d8f1a188b7a5d4ab6e8b9f",
-  "bytes": 4166,
+  "sha256": "ff04b1cb34acaf094350af3c5a31e124781bb336481b569b58c18062d9c8c7e9",
+  "bytes": 4197,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -352,8 +352,8 @@
   }
  },
  "harmony": {
-  "sha256": "47f7d2e9aa6a5727a1217c424f20c5878883d4e8998cfc4147fb771ebac44bff",
-  "bytes": 4208,
+  "sha256": "d225506fc1fbcad89fa6921507cba8a55c783f87998552d3a37ef46d7a064f50",
+  "bytes": 4240,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -412,8 +412,8 @@
   }
  },
  "expand": {
-  "sha256": "7d2c2ac5969803b962f92430e74e2ec49bd79a0ebc1eed71eb4291dd6b3f8908",
-  "bytes": 4207,
+  "sha256": "fb3d7567173adc13297b5301a339b1f9e4844ee636da4753b181194e0a2a900f",
+  "bytes": 4239,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -472,8 +472,8 @@
   }
  },
  "expandChar": {
-  "sha256": "9b1ec7a859bf35a06473fb9c75d05ed734f1a0f23145480194421cf5ab24482a",
-  "bytes": 4207,
+  "sha256": "92d244535b778208099c3c4de26678790699a67ddbbdc4d98cee23e159a4e10b",
+  "bytes": 4239,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -532,8 +532,8 @@
   }
  },
  "gradShape": {
-  "sha256": "74182845b1a726c4cab7eb2e441176fd57bfe49687c1288e1609ae3ed42fe3c2",
-  "bytes": 4197,
+  "sha256": "f60d6c697034d29efb3484738f5afb17f42fd1df29b70af94d680e97d8e061ba",
+  "bytes": 4235,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -592,8 +592,8 @@
   }
  },
  "dir": {
-  "sha256": "ec818b4f37c60bf6f1419d5878b3a37396d9cc8a6e5f98a146ab6098dde26121",
-  "bytes": 4227,
+  "sha256": "4ae0c251fe1a2462ef91471c08053772cbbb1073b0088f466985f7af127198da",
+  "bytes": 4252,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -652,8 +652,8 @@
   }
  },
  "shuffle": {
-  "sha256": "cc48ff1a0de98f90957a4fa64932be37b5623a77c3894c5c65d2b94a1ba9de7f",
-  "bytes": 4279,
+  "sha256": "21c776a996ccca14f07f8b41bc53aee14316adf3a82929edf7e6e4737619d7be",
+  "bytes": 4314,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -712,8 +712,8 @@
   }
  },
  "look": {
-  "sha256": "aa2b4ca5dc64e417af62e705a330a470fcc79a7272485d48018da85f3b359656",
-  "bytes": 4260,
+  "sha256": "530d6f305fe295013b67c06ae89523b6431eb382732d0157d5acebd6c4acedf1",
+  "bytes": 4296,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -772,8 +772,8 @@
   }
  },
  "look-auto": {
-  "sha256": "cc48ff1a0de98f90957a4fa64932be37b5623a77c3894c5c65d2b94a1ba9de7f",
-  "bytes": 4279,
+  "sha256": "21c776a996ccca14f07f8b41bc53aee14316adf3a82929edf7e6e4737619d7be",
+  "bytes": 4314,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -832,8 +832,8 @@
   }
  },
  "random": {
-  "sha256": "ce2037f7d9b2f4353b3ac7a2f6572007b9acc3f99fc93af2e16046d3e8b0089f",
-  "bytes": 4313,
+  "sha256": "575f9720114f0d764eb36ef337fc3442c5d808363f28534bd8d0249354d5063c",
+  "bytes": 4346,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -892,8 +892,8 @@
   }
  },
  "random-shuffle": {
-  "sha256": "9fc8801fa8dc713fc8264e8691c77143e7ccc880c915783c3c19f9dd8e07f4d7",
-  "bytes": 4314,
+  "sha256": "e85b4e17644323402b8f8d8d33d3e9ed98c2fe01721a1eb5e86931da48e7cfed",
+  "bytes": 4347,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -952,8 +952,8 @@
   }
  },
  "noAdj": {
-  "sha256": "ad0e25e91d8492961a4cecce6232fc166a30514463291e6d9872599449512e2d",
-  "bytes": 4311,
+  "sha256": "90ce70fca6eda7862aadeeb0b4776c0d988eefd466a8016e84b4c60d8a3c0f59",
+  "bytes": 4344,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -1012,8 +1012,8 @@
   }
  },
  "blend": {
-  "sha256": "2409d71e139046f6cb185652ea9ce6d356def31b2fe80d4cb783ba5133116d8c",
-  "bytes": 4349,
+  "sha256": "8515d21a41ad1619c06268c9eb29bd9cad18666c6c84e90c01937250b29cd22b",
+  "bytes": 4382,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1072,8 +1072,8 @@
   }
  },
  "blendFall": {
-  "sha256": "1488fedab415f9fcff77993a45b16d5d762f39d1fdc11b79eb72e35446c74644",
-  "bytes": 4360,
+  "sha256": "18cc142137c4d92a73ad2c31b2dc33bdbb7d868f3a212aa9ae81083b1aa642ab",
+  "bytes": 4393,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1132,8 +1132,8 @@
   }
  },
  "blendMix-paint": {
-  "sha256": "6403f0c31b0339894cf3e9f8bad71a0122b052e99c44b6270ca89919d50a9e35",
-  "bytes": 4360,
+  "sha256": "40146381f0d21d82a63dd29add2131939116737f2bcfc53522639ab6d2d93d5b",
+  "bytes": 4393,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1192,8 +1192,8 @@
   }
  },
  "blendMix": {
-  "sha256": "ca68d7730b1d1ec75bcdaec7e3b43776cc8b6012fb9a33f49ea38bd457d079ad",
-  "bytes": 4352,
+  "sha256": "a79b7e94b73712c9de3c2c511c2ba8d26e770b71c5c48a299e035faf0f308774",
+  "bytes": 4385,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1252,8 +1252,8 @@
   }
  },
  "shadeMode": {
-  "sha256": "1e9b52c2453b28d7c6f93b0e644a6ed690e8b15c2ce6803db888b0c76f30489f",
-  "bytes": 4353,
+  "sha256": "1f9d6e54312c070a071597e24e8965ab095faa14e759bba8d7b79e24601cc0a7",
+  "bytes": 4386,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1312,8 +1312,8 @@
   }
  },
  "shadeHi": {
-  "sha256": "0fac5aadb62ae4ca918cfd8607993a76a13bfde1d2b92cd26432c4843ec4cf44",
-  "bytes": 4353,
+  "sha256": "f0db77d894ede0bb0e491fd11aa179acf832b49585acc58b1c5aaf0fc346614e",
+  "bytes": 4386,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1372,8 +1372,8 @@
   }
  },
  "shadeLo": {
-  "sha256": "286ef97bcdeb1b4079f90ddb6592d1133e9a9fdd0251005c4e8e699c9a0d415e",
-  "bytes": 4353,
+  "sha256": "2fdf35f8dc97c01690dadf2e435f9f1b4d2aeea06f6347a6cf8623686cda1464",
+  "bytes": 4386,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1432,8 +1432,8 @@
   }
  },
  "shadeRound": {
-  "sha256": "8d31a693d2747a4b344e57179eedac1bad7a64bc84a86006d1dde7451730ec52",
-  "bytes": 4353,
+  "sha256": "82b7c6f95d747a31c9e72efb3f35551c43cfa229f14c38e108a4ed8501431396",
+  "bytes": 4386,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1492,8 +1492,8 @@
   }
  },
  "shadeLines": {
-  "sha256": "fd9ca1fc4103de3cac5a6ea547f7d0e01d6ed692822f39927764aac1de8a5df1",
-  "bytes": 4354,
+  "sha256": "31f9b649d92c40453d6002278508f1433a5923835ce2a69b190dc6c3259def08",
+  "bytes": 4387,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1552,8 +1552,8 @@
   }
  },
  "shadeHilite": {
-  "sha256": "4a6aa5fc2650183cacbe9d2a7f22a9619efc7e3c88fc10572ba7a898bf974ecc",
-  "bytes": 4354,
+  "sha256": "b3888ac20522d0c5f86f14cbc049049a9711a886198176ef20a772bf69c9220a",
+  "bytes": 4387,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1612,8 +1612,8 @@
   }
  },
  "shadeShadow": {
-  "sha256": "88042fd19ddb05284ec5ecaa2725002e2b544d599978b50bed4cb51e2f0ff992",
-  "bytes": 4354,
+  "sha256": "f9937a383465331d10c6d4c5543bf319572499a281fc2129be2da27e79bb4e75",
+  "bytes": 4387,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1672,8 +1672,8 @@
   }
  },
  "shadeSunFlat": {
-  "sha256": "4786428917fd6141f363c507c26d80968c662a8a24327427531cd8ba27701538",
-  "bytes": 4356,
+  "sha256": "3f3a2df0694fb9eb6b29f938f5a2bf6145284d2233335366d59bcc12f905a1d4",
+  "bytes": 4389,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1735,8 +1735,8 @@
   }
  },
  "texAmt": {
-  "sha256": "601a3f27cd8b13015047181d0619499b358b8140fe90f54fc28f13fa332e6efc",
-  "bytes": 4357,
+  "sha256": "42e135bc240ec600c36b583937e89d2b48f8b481957c98084a42bccd7d87f138",
+  "bytes": 4390,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1798,8 +1798,8 @@
   }
  },
  "texAmt-share": {
-  "sha256": "601a3f27cd8b13015047181d0619499b358b8140fe90f54fc28f13fa332e6efc",
-  "bytes": 4357,
+  "sha256": "42e135bc240ec600c36b583937e89d2b48f8b481957c98084a42bccd7d87f138",
+  "bytes": 4390,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1861,8 +1861,8 @@
   }
  },
  "manual": {
-  "sha256": "0aa3d6f1b7c01924d4615067a92ece0f6b566e0e080b11458b5200d8cf8baf26",
-  "bytes": 4358,
+  "sha256": "3d67d3edf22fd4beeea8438b5f770d32eed0f6e907f084e36a87632ae6bbff6e",
+  "bytes": 4391,
   "style": {
    "family": "manual",
    "palette": "warm",
@@ -1924,8 +1924,8 @@
   }
  },
  "gradient": {
-  "sha256": "3ccc793642c476eb55ff99f5022d3c141e47f828a87fabc68f00eb061a4e3e48",
-  "bytes": 4422,
+  "sha256": "1e12d118cf7d68d371a2801781ae5d3adfee1a9409286646a5d95c29ab3b9e84",
+  "bytes": 4461,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -1987,8 +1987,8 @@
   }
  },
  "pins": {
-  "sha256": "ea4b5448421df32f6005bdd36415ef82cbeff010e0ac9d1b066315857eac13bd",
-  "bytes": 4460,
+  "sha256": "dc51d59eeb358feb22dec93bc5cfbd4e67dacd25534f7f3c24c7201139357848",
+  "bytes": 4499,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2050,8 +2050,8 @@
   }
  },
  "surprise": {
-  "sha256": "eca2bdf52cf702c773840b68bba15e2ccd358ae162874cc9bcd80587da245776",
-  "bytes": 4476,
+  "sha256": "41d0ce85e1d6347e7ff5a91bbfa2dbe0ae2775dc5e98c9fcb1e92671335d121b",
+  "bytes": 4502,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2111,8 +2111,8 @@
   }
  },
  "savedPalette": {
-  "sha256": "ca0fbe77b794821d7357e658e87b329f321e5175cb368a98a8ac5c357b4f9c3d",
-  "bytes": 4475,
+  "sha256": "d43dd7db7d87c7e7f8f7b171d161d9ef824f4582db2a0f30e06676f078f592d1",
+  "bytes": 4501,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2172,8 +2172,8 @@
   }
  },
  "savedPalette-render": {
-  "sha256": "d1410b14a6050a141b7c15cad320197ef319cf8b801345b396fa83d5984be959",
-  "bytes": 4358,
+  "sha256": "8574ad0518a2c6b5cc76e0dcf14b9429263ad343221b64f95bfc1c9622db4edf",
+  "bytes": 4400,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2234,8 +2234,8 @@
  },
  "edits-pending": null,
  "edits-pending-edits": {
-  "sha256": "be92ae30779162f64b5aa9c58f035ed955f386d38f1a2485d09e29a934d6ecfe",
-  "bytes": 4374,
+  "sha256": "5de4d0d4400f8e51f8c0be56668e6e46efd547abc1172b2d83beb41f553f7d13",
+  "bytes": 4416,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2295,8 +2295,8 @@
   }
  },
  "photo": {
-  "sha256": "edf39bc387eafc346b36d63919239c0062db17c6aaede59270fdb218609405d5",
-  "bytes": 4029,
+  "sha256": "d57b9a33cf6dab2389ab619392080cf635b5a734ae2aee7ab05ba9851f955869",
+  "bytes": 4062,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2355,8 +2355,8 @@
   }
  },
  "photo-share": {
-  "sha256": "edf39bc387eafc346b36d63919239c0062db17c6aaede59270fdb218609405d5",
-  "bytes": 4029,
+  "sha256": "d57b9a33cf6dab2389ab619392080cf635b5a734ae2aee7ab05ba9851f955869",
+  "bytes": 4062,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2415,8 +2415,8 @@
   }
  },
  "photoOp": {
-  "sha256": "592d3c1ad211c2fcbb9a25c0a01fd1e738fe0a0e272091f4e5bd4cc5e02f6c5c",
-  "bytes": 4028,
+  "sha256": "6006a2a278429f985ed5ebe76414ef42bf719a821a641f1f905ee9b0d4057c92",
+  "bytes": 4061,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2475,8 +2475,8 @@
   }
  },
  "photoPaper": {
-  "sha256": "1f99e87b627e438f2948877dab76c43ff3a01dd3254866573e72fef50950f045",
-  "bytes": 4029,
+  "sha256": "1a5118a9e7370783807c85fda60f0d3c99de7cfae42b7db00983e6782668e65a",
+  "bytes": 4062,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2535,8 +2535,8 @@
   }
  },
  "photo-shade": {
-  "sha256": "f972ea48565d0ff660b3d68de16781b85934396afd6707bd2e6b9c184bd380fd",
-  "bytes": 4032,
+  "sha256": "5382c8aa0ed45028325e046fc89d765c2b912b65d193c3bcabc54dcd76091dba",
+  "bytes": 4065,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2595,8 +2595,8 @@
   }
  },
  "photo-shadeLight": {
-  "sha256": "36569fb5b36908a638eed07668b046ec9d6c78a6c07c9eb9d7a09f296108b1b6",
-  "bytes": 4029,
+  "sha256": "4baaca511a87d8464c87427ff7617f44e8288fbb6005dee66dcb477e840bc04a",
+  "bytes": 4062,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2655,8 +2655,8 @@
   }
  },
  "photo-gradient": {
-  "sha256": "78eb81b92eed359edc0f25bc759b8eae69fc0d263021498d521beea906b81426",
-  "bytes": 4348,
+  "sha256": "f4bfe2e5121c07189c445f97e35820c309c3fe7bd35c43f78be078e5b5641b4d",
+  "bytes": 4385,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2715,8 +2715,8 @@
   }
  },
  "photo-gradient-share": {
-  "sha256": "654cdfa97697696dbdc8490b56c591f6e6003bb44388c8e15942d8c62463d07f",
-  "bytes": 4334,
+  "sha256": "0b3c41988c8e48f2023643445bbc036233757e18e2f2194583a87989983117e2",
+  "bytes": 4371,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2775,8 +2775,8 @@
   }
  },
  "open-all-set": {
-  "sha256": "1c42987ca417463313f32d0edbce0949edffe179005d2ac51ab7f2d1fe97260b",
-  "bytes": 4187,
+  "sha256": "1535a8a9fc809edd4308e631bd8927837d19cc3d44b5bb3a296a96ccc98d18b0",
+  "bytes": 4228,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -2827,14 +2827,14 @@
    "genHarmony": "triadic",
    "genPal": [
     "Ohuhu|RV311",
-    "Ohuhu|R413",
-    "Ohuhu|RV212"
+    "Ohuhu|RV212",
+    "Ohuhu|R413"
    ]
   }
  },
  "open-odd-types": {
-  "sha256": "64f1a46904edbc7caee51ec1ddefabdf5b8c74676c6d8e98f448a7ae0660ce7a",
-  "bytes": 4124,
+  "sha256": "5e12a678901535b6e163084d36569abbd9c1a6044d678d96d3389abdf0061851",
+  "bytes": 4165,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2881,8 +2881,8 @@
   }
  },
  "open-odd-high": {
-  "sha256": "329d2d34eb2d435d7f571ae74bed8fe85c880cafb805f33b4e002fc5bdb2b393",
-  "bytes": 4126,
+  "sha256": "7b76bc834a59c25306ee349e1ebd35ce0a4f550a32dba818cd80c82afb03238e",
+  "bytes": 4167,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2932,8 +2932,8 @@
   }
  },
  "open-odd-low": {
-  "sha256": "66a73d60ce8b4335ddb90fd804dce182aff017bcde8722e28e40cbd068cd1dc9",
-  "bytes": 4116,
+  "sha256": "929681a732a1acfc068600c84154781bc375c5ca64dcc32e96db20f49c75ec7f",
+  "bytes": 4157,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2983,8 +2983,8 @@
   }
  },
  "open-odd-enum": {
-  "sha256": "0cd18a7e7163a7fd4cf2c7dfce6a69f30898c62f00ceb7bbd413a0ae6805edc9",
-  "bytes": 4167,
+  "sha256": "1b938a9ced9b8373235cc0804cf4d637dce78a3737c8ee109e1098f81deef7c2",
+  "bytes": 4208,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -3035,8 +3035,8 @@
   }
  },
  "open-nothing": {
-  "sha256": "8787bf7480d757713ee5fe834af4df6baee2a071d332b1fc3546de4d2400d3c9",
-  "bytes": 4128,
+  "sha256": "f2c9ef2bd4bec7eee83bf0b9c5a4c181cd93a2c6d3eea7b91863faba74ae8b35",
+  "bytes": 4169,
   "style": {
    "family": "gradient",
    "palette": "all",

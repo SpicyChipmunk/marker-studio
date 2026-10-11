@@ -87,7 +87,8 @@ test('the start cards’ picture of the sample, until there’s a guide: tapped,
 test('Home’s guide pictures show the whole page: the Continue card and Your guides', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await sampleGuide(page); await saveGuide(page);
-  await page.evaluate(() => { const t = __mstest; t.assignData.order.slice(0, 20).forEach((l) => { t.colored[l] = 1; }); t.guideDirty = true; t.renderGuide(); return t.saveNow(); });
+  // (v313: the sample with ticks to try it isn't on Continue until it's printed or renamed: as if renamed)
+  await page.evaluate(() => { const t = __mstest; t.styleVars.smpTry = 0; t.assignData.order.slice(0, 20).forEach((l) => { t.colored[l] = 1; }); t.guideDirty = true; t.renderGuide(); return t.saveNow(); });
   await page.click('#mHome'); await idle(page);
   await page.waitForSelector('#homeCont .hccard[data-cont] img');
   // (polled: a picture can be swapped for a sharper one just after it first loads)
@@ -159,7 +160,8 @@ test('Markers on an iPad: the search and Owned / Unowned / All / To buy on one r
   await page.click('#mCollection'); await idle(page);
   const q = await rect(page, '#q'), ov = await rect(page, '#ownView'), rnd = await rect(page, '#mkDrawBtn'), hint = await rect(page, '#ownHint'), jmp = await rect(page, '#mkJump');
   assert.ok(Math.abs(q.top + q.height / 2 - (ov.top + ov.height / 2)) < 4 && ov.left > q.right, 'one row: ' + JSON.stringify([q, ov]));
-  assert.ok(rnd.top > q.bottom && hint.left > rnd.right && jmp.left > hint.left && Math.abs(jmp.top + jmp.height / 2 - (rnd.top + rnd.height / 2)) < 6, 'the tools on the next: ' + JSON.stringify([rnd, hint, jmp]));
+  // (v313: the line about the view under the tools' row, whole)
+  assert.ok(rnd.top > q.bottom && hint.top >= rnd.bottom - 1 && jmp.left > rnd.right && Math.abs(jmp.top + jmp.height / 2 - (rnd.top + rnd.height / 2)) < 6, 'the tools on the next: ' + JSON.stringify([rnd, hint, jmp]));
   // the switch keeps its name for screen readers
   assert.equal(await page.evaluate(() => document.getElementById(document.getElementById('ownView').getAttribute('aria-labelledby')).textContent), 'Show');
   // the first markers within the first screen's top two thirds

@@ -106,11 +106,15 @@ function showRevealBar(mode) {
     var clip = revMime && revBlob ? '<button id="revClip">Save clip</button>' : '';
     b.innerHTML =
       '<button id="revShare" class="rvmain">Share</button>' +
+      // (v314) the plan beside the photo of the finished page, when it has one (24-page-photo)
+      (finHas() ? '<button id="revFin">With my page</button>' : '') +
       clip +
       // (v288: one way to close, the ✕ at the top left, as in Focus mode; Escape too)
       '<button id="revReplay">Replay</button>';
     var _s = document.getElementById('revShare');
     if (_s) _s.addEventListener('click', shareCard);
+    var _f = document.getElementById('revFin');
+    if (_f) _f.addEventListener('click', finCardOpen);
     var _c = document.getElementById('revClip');
     if (_c) _c.addEventListener('click', downloadClip);
     var _r = document.getElementById('revReplay');

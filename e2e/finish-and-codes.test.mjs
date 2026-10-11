@@ -59,7 +59,8 @@ test('a finished page: the picture as it is, what was coloured and when (saved w
   const c = await colourAt(page, l);
   assert.ok(near(c.px, c.mk, 40), 'the finished picture in its colours');
   const d = await page.evaluate(() => __mstest.currentDesignObj().payload.dates);
-  assert.deepEqual(d, { s: at.s, e: at.e });
+  // (v313: and when it was last coloured, l)
+  assert.deepEqual(d, { s: at.s, e: at.e, l: at.l }); assert.ok(at.l >= at.e);
   // Save image, without the codes
   await page.click('#sfDoneBtn'); await idle(page);
   await page.click('.sftabbtn[data-t="share"]'); await idle(page);
@@ -96,6 +97,8 @@ test('a guide part-way coloured opens in Colour along, its Home card saying how 
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   await saveGuide(page);
+  // (v313: the sample with ticks to try it isn't on Continue until it's printed or renamed: as if renamed)
+  await page.evaluate(() => { __mstest.styleVars.smpTry = 0; });
   await page.click('#sfColor'); await idle(page);
   await page.evaluate(() => { const t = __mstest; t.assignData.order.slice(0, 20).forEach((l) => { t.colored[l] = 1; }); t.checkComplete(); t.renderGuide(); });
   await page.click('#sfDoneBtn'); await idle(page);

@@ -234,7 +234,8 @@ function lastGuideBackup() {
 function guidesAtRisk() {
   const gs = state.saved.filter((s) => s.type === 'guide'),
     bk = lastGuideBackup();
-  return gs.filter((g) => !g.fresh && (g.ts || 0) > (+g.bk || bk)).length;
+  // (v314: or its photo of the finished page added, changed or removed since: fn)
+  return gs.filter((g) => !g.fresh && Math.max(g.ts || 0, +g.fn || 0) > (+g.bk || bk)).length;
 }
 // markers and palettes have no change times of their own, so a backup keeps a fingerprint of them: a different one now means they changed since
 function dataSig() {
@@ -444,6 +445,10 @@ function guideMeta(d, id) {
     if (_tn) meta.tn = _tn;
   }
   if (d.fresh) meta.fresh = 1;
+  // (v313: the sample tried, not printed or renamed: Home's Continue card leaves it be)
+  if (_pl && _pl.smp === 1) meta.smp = 1;
+  // (v313: when it was last coloured, for Home's Continue card)
+  if (_pl && _pl.dates && +_pl.dates.l > 0 && +_pl.dates.l < 8.64e15) meta.lc = +_pl.dates.l;
   // (v307: the markers its shading takes beyond its own colours, for Home's latest piece; as it was when not given)
   const _sk = d.sk !== undefined ? +d.sk : _ex && _ex.sk;
   if (_sk > 0 && _sk < 10000) meta.sk = Math.round(_sk);
@@ -451,6 +456,8 @@ function guideMeta(d, id) {
   // "… (section edits)" is saved built)
   if (_pl && _pl.edits === 1) meta.eds = 1;
   else if (/ \(section edits\)$/.test(meta.name || '')) meta.eds = 0;
+  // (v314: when its photo of the finished page last changed, for the backup reminder: kept from save to save)
+  if (_ex && +_ex.fn > 0) meta.fn = +_ex.fn;
   return meta;
 }
 // d.mustExist: only update an entry still in the Library (an auto-save never brings back a guide deleted meanwhile);
@@ -670,6 +677,8 @@ function sfDeleteDesign(id) {
       libPendDrop(id);
     })
     .catch(function () {});
+  // (v314: and its photo of the finished page)
+  IDB.del('fin-' + id).catch(function () {});
   save();
 }
 function loadGuide(entry) {
@@ -681,27 +690,50 @@ function loadGuide(entry) {
    {v:3,type:'ms-backup',ts,owned,saved,guides}. Restoring also accepts the older files: a collection backup
    ({v:2,owned,saved} or a plain list), a guides backup ({type:'ms-guides',guides}) or a single shared guide. */
 // the Library's guides, and a new guide not in the Library yet (the one Resume offers), with no id of its own
+// (v314) a guide's photo of its finished page ('fin-<id>' beside 'guide-<id>': guide/24-page-photo.js), as stored and
+// as a backup carries it; a record bigger than FIN_MAX is left out (one photo is about 0.4 MB)
+const FIN_MAX = 8e6;
+function finRecOk(r) {
+  return (
+    !!r &&
+    typeof r === 'object' &&
+    typeof r.u === 'string' &&
+    /^data:image\/(jpeg|png|webp);base64,/.test(r.u) &&
+    r.u.length < FIN_MAX &&
+    +r.w > 0 &&
+    +r.h > 0
+  );
+}
 function gatherGuides() {
   var gs = state.saved.filter(function (s) {
     return s.type === 'guide';
   });
   return Promise.all(
     gs.map(function (s) {
-      return IDB.get('guide-' + s.id)
-        .then(function (pl) {
-          return pl
-            ? {
-                id: s.id,
-                name: s.name,
-                W: s.W,
-                H: s.H,
-                keys: s.keys,
-                n: s.n,
-                ts: s.ts || 0,
-                thumb: s.thumb || '',
-                payload: pl,
-              }
-            : null;
+      return Promise.all([
+        IDB.get('guide-' + s.id),
+        // (v314: its photo of the finished page, when it has one; one that can't be read is left out, the guide kept)
+        IDB.get('fin-' + s.id).catch(function () {
+          return null;
+        }),
+      ])
+        .then(function (r) {
+          const pl = r[0],
+            o = pl
+              ? {
+                  id: s.id,
+                  name: s.name,
+                  W: s.W,
+                  H: s.H,
+                  keys: s.keys,
+                  n: s.n,
+                  ts: s.ts || 0,
+                  thumb: s.thumb || '',
+                  payload: pl,
+                }
+              : null;
+          if (o && finRecOk(r[1])) o.fin = r[1];
+          return o;
         })
         .catch(function () {
           return null;
@@ -1789,6 +1821,15 @@ function dropKept(id) {
       return null;
     });
 }
+// (v314) a guide's photo of its finished page put in from a backup (over one here only when over is set)
+function finFill(id, rec, over) {
+  if (!id || !finRecOk(rec)) return Promise.resolve();
+  return (over ? Promise.resolve(null) : IDB.get('fin-' + id))
+    .then(function (here) {
+      if (!finRecOk(here)) return IDB.put('fin-' + id, rec);
+    })
+    .catch(function () {});
+}
 function _newGuideId() {
   let id = Date.now();
   while (
@@ -1879,8 +1920,9 @@ function restoreGuideList(guides, _fts, done, prog) {
     function step() {
       if (k >= ids.length) return Promise.resolve(false);
       var id = ids[k++];
+      // (the id of the guide here that's the same: v314, for its photo)
       return IDB.get('guide-' + id).then(function (p) {
-        return p && p.lmap === lm && JSON.stringify(p) === js ? true : step();
+        return p && p.lmap === lm && JSON.stringify(p) === js ? id : step();
       }, step);
     }
     return step();
@@ -1981,7 +2023,8 @@ function restoreGuideList(guides, _fts, done, prog) {
           if (isDup) {
             if (isDup === 'ahead') ahead++;
             else dup++;
-            next();
+            // (v314: the backup's photo of the finished page, for the same guide here without one)
+            finFill(isDup === 'ahead' ? _ex.id : isDup, g.fin, false).then(next);
             return;
           }
           var copy = false,
@@ -2047,6 +2090,13 @@ function restoreGuideList(guides, _fts, done, prog) {
                 })
                 .then(function (k) {
                   kid = k;
+                  // (v314: the guide kept aside keeps its photo of the finished page too)
+                  if (k)
+                    return IDB.get('fin-' + _ex.id)
+                      .then(function (r) {
+                        return finFill(k, r, true);
+                      })
+                      .catch(function () {});
                 });
             })
             .then(function () {
@@ -2081,6 +2131,9 @@ function restoreGuideList(guides, _fts, done, prog) {
                     return;
                   }
                   ok++;
+                  // (v314: its photo of the finished page, from the backup, when the backup has one; a photo here is
+                  // left as it is when the backup's guide has none)
+                  const finIn = finRecOk(g.fin);
                   if (bust) _damaged.delete(_ex.id);
                   if (kid) kept++;
                   if (isLost) lost++;
@@ -2090,11 +2143,15 @@ function restoreGuideList(guides, _fts, done, prog) {
                   const m = state.saved.find(function (x) {
                     return x.id === id;
                   });
-                  if (m) m.bk = m.ts || 1;
-                  // (also a guide deleted while open, restored with the same id: the open copy becomes the restored one, v289;
-                  // libChanged leaves any other guide alone)
-                  if (window.SF && SF.libChanged) SF.libChanged(id, 'replaced');
-                  next();
+                  // (a photo that came with it is backed up too)
+                  if (m) m.bk = finIn ? Math.max(m.ts || 1, +m.fn || 0) : m.ts || 1;
+                  // (put in before the guide is opened again, below)
+                  (finIn ? finFill(id, g.fin, true) : Promise.resolve()).then(function () {
+                    // (also a guide deleted while open, restored with the same id: the open copy becomes the restored one,
+                    // v289; libChanged leaves any other guide alone)
+                    if (window.SF && SF.libChanged) SF.libChanged(id, 'replaced');
+                    next();
+                  });
                 });
             });
         });

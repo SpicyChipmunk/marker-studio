@@ -38,8 +38,8 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
 ## Getting a picture in
 
 - Clear, closed lines work best: a page downloaded from the internet, a scan, or a photo of a page.
-- **A colouring page that came as a PDF:** open the PDF, take a screenshot of the page, and choose the screenshot.
-  The app reads pictures, not PDFs.
+- **A colouring page that came as a PDF:** in Guide, tap **Open the PDF** (under Choose a photo) and choose it. If it
+  won't open, or comes out blank, take a screenshot of the page and choose the screenshot.
 - **Photographing a page:**
   - Lay it flat and smooth out any curl.
   - Use even light, such as daylight near a window. Keep your shadow, your hand and shiny glare off the page.
@@ -74,7 +74,7 @@ there if you have time, then four last questions.
   screenshot there.
 - When something goes wrong, the message has **Copy details** beside it. **Help › About › Copy diagnostics** copies
   the same any time.
-- A guide that misbehaves: **Share › Guide file** saves it as a file you can send with your report.
+- A guide that misbehaves: **Share & print › Guide file** saves it as a file you can send with your report.
 
 ## Leaving the beta
 

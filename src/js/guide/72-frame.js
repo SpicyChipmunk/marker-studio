@@ -332,7 +332,7 @@ function stageTop(kb) {
     if (f) {
       const r = f.el.getBoundingClientRect(),
         F = r.top + y + f.mt;
-      if (F + f.h - S > ih - bh - 4)
+      if (f.top || F + f.h - S > ih - bh - 4)
         S = F - st - (parseFloat(document.documentElement.style.getPropertyValue('--pinH')) || 0) - f.gap;
     }
   }
@@ -358,6 +358,12 @@ function stageFirst() {
     tb = ctlEl.querySelector('.sftabs');
   if (sen && tb)
     return { el: sen, mt: parseFloat(getComputedStyle(tb).marginTop) || 0, h: tb.offsetHeight, gap: 0 };
+  // (v313) Colour along on a phone, once its first-time instructions have been seen: the order chips and ⌕ just under
+  // the picture's tool row, so three or four marker rows show above the bar (the ⓘ line is a scroll up)
+  if (sfmode === 'color' && !focus && (window.innerWidth || 0) < 600 && hintSeen('along')) {
+    const o = ctlEl.querySelector('#sfAlOrder') || ctlEl.querySelector('#sfAlSort');
+    if (o && o.offsetHeight > 0) return { el: o, mt: 0, h: o.offsetHeight, gap: 8, top: true };
+  }
   const p = ctlEl.querySelector('.sfpane') || ctlEl;
   for (let i = 0; i < p.children.length; i++) {
     const c = p.children[i];
@@ -626,7 +632,7 @@ function headGhost() {
       ? '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Removed from your Library</span><button type="button" class="sfsave" tabindex="-1">Put back</button></div>'
       : '') +
     (storeBlocked() && !libEntry()
-      ? '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Not saved — use Share › Guide file</span></div>'
+      ? '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Not saved — use Share & print › Guide file</span></div>'
       : '')
   );
 }
@@ -669,6 +675,8 @@ function endRename(keep) {
   renaming = false;
   if (keep && v && v !== curName) {
     curName = v;
+    // (v313: a sample renamed is a page of one's own: Home's Continue card offers it)
+    smpTry = 0;
     guideDirty = true;
     scheduleAutosave();
     sayLive('Renamed to ' + v);
@@ -854,6 +862,7 @@ function fitBtn() {
 
 /* ---- #6 the bar: two buttons on one row; the back button reads "← Sections" when both don't fit ---- */
 function fitBar() {
+  fitTabs();
   const bar = barEl();
   if (!bar || bar.offsetParent === null) return;
   const sh = bar.querySelectorAll('[data-short]');
@@ -869,6 +878,13 @@ function fitBar() {
     sh.forEach(function (b) {
       put(b, b.dataset.short);
     });
+}
+// (v313) the Plan's last tab: "Share & print" where its words fit, else "Share" (a phone at larger text sizes)
+function fitTabs() {
+  const b = ctlEl && ctlEl.querySelector('.sftabbtn[data-t="share"]');
+  if (!b || b.offsetParent === null) return;
+  b.textContent = 'Share & print';
+  if (b.scrollWidth > b.clientWidth + 1) b.textContent = 'Share';
 }
 
 /* ---- sheets: one panel for menus and pickers ----
@@ -1078,9 +1094,17 @@ function openMenu() {
     it('lib', 'Open from Library') +
     it('import', 'Import a guide') +
     '</div>';
-  const g =
-    (plan && libEntry() ? it('copy', 'Save a copy', 'sfSaveCopy') : '') +
-    (along ? it('reset', 'Reset progress', 'sfResetP', !progressCount()) : '');
+  // (v314) the photo of the finished page (24-page-photo): Add once the page is finished (and it's been looked for);
+  // Change and Remove whenever there is one (kept through Reset progress)
+  const inLib = (plan || along) && !!libEntry(),
+    g =
+      (plan && libEntry() ? it('copy', 'Save a copy', 'sfSaveCopy') : '') +
+      (along ? it('reset', 'Reset progress', 'sfResetP', !progressCount()) : '') +
+      (inLib && finHas()
+        ? it('finchg', 'Change your photo') + it('finrm', 'Remove your photo')
+        : inLib && pageDone() && _fin.read
+          ? it('finadd', 'Add a photo of your page')
+          : '');
   if (g)
     b +=
       '<div class="sfmenu" role="group" aria-labelledby="sfMh2"><div class="sfmh" id="sfMh2">This guide</div>' +
@@ -1117,7 +1141,10 @@ function menuDo(m) {
     if (imp) imp.click();
   } else if (m === 'copy') saveGuide();
   else if (m === 'reset') askResetProgress();
-  else if (m === 'help') {
+  else if (m === 'finadd' || m === 'finchg') finPick(null);
+  else if (m === 'finrm') {
+    if (curId != null) finRemove(curId);
+  } else if (m === 'help') {
     if (typeof window.openHelpSheet === 'function') window.openHelpSheet();
   } else if (m === 'feedback') {
     // (v312.1: the dialog that sends to the form, as every other Send feedback: tester.js)

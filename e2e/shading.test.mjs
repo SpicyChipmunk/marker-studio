@@ -116,6 +116,8 @@ test('with shading on, the PDF, its colouring page and the share image all chang
 test('colour along with shading: tones in the list, one tap per section in focus, step-by-step setting, partial tones saved', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
+  // (v313: the sample with ticks to try it isn't on Continue until it's printed or renamed: as if renamed)
+  await page.evaluate(() => { __mstest.styleVars.smpTry = 0; });
   await turnOn(page, 'full');
   await page.click('#sfColor'); await idle(page);
   assert.ok(await page.locator('#sfAlist .sfatones').count() > 0, 'each colour lists its tones');

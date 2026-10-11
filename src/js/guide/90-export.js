@@ -3152,6 +3152,12 @@ async function _exportPDF() {
       (pdfWhat === 'strip' ? '-test-strip' : '') +
       '.pdf';
     shareOrSave(blob, fname, curName || 'Colouring guide', 'PDF', 'PDF downloaded.');
+    // (v313: the sample's page printed, not just its test strip: a page being coloured, for Home's Continue card)
+    if (smpTry && pdfWhat !== 'strip') {
+      smpTry = 0;
+      guideDirty = true;
+      scheduleAutosave();
+    }
     // (v312.1: once there's a PDF, the way out is Close; Cancel read as throwing it away)
     const cx = document.querySelector('[data-pr="cancel"]');
     if (cx) cx.textContent = 'Close';
@@ -3171,8 +3177,11 @@ async function _exportPDF() {
 // when colouring started and finished: the first tick's time, and the time the last section was ticked (unticking one
 // takes the finish away)
 function progStamp() {
-  if (!assignData || !colored || progAt.u) return;
+  if (!assignData || !colored) return;
   const now = Date.now();
+  // (v313) when it was last coloured, for Home's Continue card ("Last coloured 3 days ago")
+  if (progressCount()) progAt.l = now;
+  if (progAt.u) return;
   if (!progAt.s && progressCount()) progAt.s = now;
   if (pageDone()) {
     if (!progAt.e) progAt.e = now;

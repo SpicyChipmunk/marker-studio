@@ -27,10 +27,10 @@ async function reopen(page) {
   await page.waitForFunction(() => !!__mstest.assignData); await idle(page);
 }
 
-test('Colours · Pattern · Shading · Share, one pane each: Colours the first time, then the last one used, also after a reload', async () => {
+test('Colours · Pattern · Shading · Share & print, one pane each: Colours the first time, then the last one used, also after a reload', async () => {
   const { page, errors } = await app();
   await sampleGuide(page);
-  assert.deepEqual(await page.$$eval('.sftabbtn', (b) => b.map((x) => [x.dataset.t, x.textContent])), [['colours', 'Colours'], ['pattern', 'Pattern'], ['shading', 'Shading'], ['share', 'Share']]);
+  assert.deepEqual(await page.$$eval('.sftabbtn', (b) => b.map((x) => [x.dataset.t, x.textContent])), [['colours', 'Colours'], ['pattern', 'Pattern'], ['shading', 'Shading'], ['share', 'Share & print']]);
   assert.equal(await page.getAttribute('.sftabbtn.on', 'data-t'), 'colours', 'Colours the first time');
   assert.equal(await page.getAttribute('.sftabbtn[data-t="colours"]', 'aria-selected'), 'true');
   assert.deepEqual(await page.$$eval('#sfCtl [data-tab]', (p) => p.map((x) => x.dataset.tab)), ['colours', 'pattern', 'shading', 'share'], 'one pane per tab, and no others');

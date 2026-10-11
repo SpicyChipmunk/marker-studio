@@ -7,7 +7,8 @@ const PTABS = [
     ['colours', 'Colours'],
     ['pattern', 'Pattern'],
     ['shading', 'Shading'],
-    ['share', 'Share'],
+    // (v313: "Share & print" where it fits, else Share: fitTabs)
+    ['share', 'Share &amp; print'],
   ],
   PTAB_KEY = 'ms-plan-tab';
 function isPlanTab(t) {

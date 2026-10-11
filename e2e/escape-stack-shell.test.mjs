@@ -112,7 +112,8 @@ test('two dialogs: How it works over Help closes first (focus back on its button
 });
 
 test('Escape in a dialog’s text field closes the dialog (search, hex code, backup text)', async () => {
-  const { page, errors } = await openApp(at('collection'));
+  // (v313: a palette saved, so the Library has its search box: an empty one has none)
+  const { page, errors } = await openApp(at('collection', { saved: [pal(['Ohuhu|R014'], 2, 'Two')] }));
   await openBackupKb(page);
   await page.focus('#backupText');
   await esc(page);

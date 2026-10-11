@@ -50,7 +50,7 @@ function alongHintSeen() {
 // Colour along's controls (focus mode has its own, in renderControls): the ⓘ line, the list and the bar
 function alongControls() {
   ctlEl.innerHTML =
-    '<div class="sfpane sfalongp"><div id="sfDone" class="sfpgdone" style="display:none">Page finished!<div id="sfDoneSum" class="sfpgsum"></div></div>' +
+    '<div class="sfpane sfalongp"><div id="sfDone" class="sfpgdone" style="display:none">Page finished!<div id="sfDoneSum" class="sfpgsum"></div><div id="sfFin" class="sffin"></div></div>' +
     lowHost('A') +
     alongHint() +
     (zones.length
@@ -302,6 +302,10 @@ function alongRow(e, inDone) {
     '<b>' +
     esc(m.code) +
     '</b> ' +
+    // (v313: marked running low, in Markers or Did any run low?)
+    (inkLowNow(m.mkey)
+      ? '<span class="sflowtag" aria-hidden="true">low</span><span class="sfsr">(running low) </span>'
+      : '') +
     (sn
       ? '<span class="sf2b" aria-hidden="true">2 brands</span><span class="sfsr">(' +
         esc(sn) +
@@ -450,7 +454,19 @@ function renderAlong() {
             .join('')
         : '');
   el.innerHTML = h;
+  alongFlash(el, full);
   alongRefocus(el, fid, fk);
+}
+// (v313) a marker just finished (its last section ticked, or Mark all coloured): its row's "All 10 coloured ✓" lights up
+// for a moment, the list's own "that one's done". Only for a change seen here, not on opening the list.
+let _alFull = null;
+function alongFlash(el, full) {
+  const was = _alFull && _alFull.g === loadGen && _alFull.m === sfmode ? _alFull.k : null;
+  _alFull = { g: loadGen, m: sfmode, k: full };
+  if (!was) return;
+  el.querySelectorAll('.sfarow.full').forEach(function (x) {
+    if (!was[x.dataset.k]) x.classList.add('sfaflash');
+  });
 }
 // (keyboard focus back on the same button after a redraw of the list)
 function alongRefocus(el, fid, fk) {

@@ -168,6 +168,8 @@ test('phone: a new photo’s Edit sections shows its tools above the bar on the 
 test('leaving the guide saves at once: Home shows the guide just coloured, its Continue card there straight away', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
+  // (v313: the sample with ticks to try it isn't on Continue until it's printed or renamed: as if renamed)
+  await page.evaluate(() => { __mstest.styleVars.smpTry = 0; });
   await page.click('#sfColor'); await idle(page);
   await tickN(page, 4); await idle(page, 200);
   await page.click('#mHome'); await idle(page, 600);
@@ -197,6 +199,10 @@ test('Focus mode on a phone: Greyscale, zoom and Fit in a strip of their own abo
     const { page, errors, ctx } = await openApp({ width: w, height: h });
     await sampleGuide(page); await idle(page);
     await page.click('#sfColor'); await idle(page); await page.click('#sfFocus'); await idle(page);
+    // (v313: each marker starts on its largest section, which can show at the whole picture's size: on to a section
+    // it zooms in on)
+    const fills = () => page.evaluate(() => { const z = document.getElementById('sfZoomCtl').getBoundingClientRect(), c = document.getElementById('sfCanvas'); return [4, z.width / 2, z.width - 4].every((x) => document.elementFromPoint(x, z.top - 2) === c); });
+    for (let i = 0; i < 40 && !(await fills()); i++) { await page.click('#sfFSkip'); await idle(page); if (await page.isVisible('#sfHand')) { await page.click('#sfFDone'); await idle(page); } }
     const g = await page.evaluate(() => { const r = (s) => document.querySelector(s).getBoundingClientRect(); return { z: r('#sfZoomCtl'), c: r('#sfCanvas'), b: r('#sfFocBot') }; });
     assert.ok(Math.abs(g.z.bottom - g.b.top) <= 1, `${w}×${h}: the strip sits on the bottom bar`);
     // (v308: Focus mode opens zoomed in on the first section, so the canvas runs on past the strip. What the user
@@ -401,8 +407,15 @@ test('sheets: the markers list counts its shading markers in the title; a sidewa
 test('Change colour by keyboard: one Tab stop per row or group, the arrow keys within it', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  const p = await page.evaluate(() => { const t = __mstest, l = t.assignData.order[10], q = t.labelPos(l), c = document.getElementById('sfCanvas').getBoundingClientRect(); return { x: c.left + (q.x / t.W) * c.width, y: c.top + (q.y / t.H) * c.height }; });
-  await page.mouse.click(p.x, p.y); await page.waitForSelector('.sftip');
+  // (v313: the page settled first, and the tap tried again if no tip came: GitHub's runner once tapped as the guide's
+  // first frames were still moving the picture, and the tip never showed)
+  await idle(page);
+  for (let i = 0; i < 3 && !(await page.isVisible('.sftip')); i++) {
+    const p = await page.evaluate(() => { const t = __mstest, l = t.assignData.order[10], q = t.labelPos(l), c = document.getElementById('sfCanvas').getBoundingClientRect(); return { x: c.left + (q.x / t.W) * c.width, y: c.top + (q.y / t.H) * c.height }; });
+    await page.mouse.click(p.x, p.y);
+    await page.waitForSelector('.sftip', { timeout: 5000 }).catch(() => {});
+  }
+  await page.waitForSelector('.sftip');
   await page.click('.sftip >> text=Change colour'); await page.waitForSelector('#sfSheet.sfpicksh'); await idle(page);
   const stops = () => page.evaluate(() => { const ls = [...document.querySelectorAll('#sfPopSw .sfswl')].filter((l) => l.closest('.sfswg:not([hidden])')); return { lists: ls.length, stops: ls.map((l) => [...l.querySelectorAll('.sfsw')].filter((b) => b.tabIndex === 0 && !b.hidden).length) }; });
   const s = await stops();

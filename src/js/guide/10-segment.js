@@ -65,9 +65,11 @@ function autoStretch(g, n) {
   }
   return out;
 }
+// (v313: the running sums as whole numbers, Uint32, while they fit — 255 × W × H under 2³²: up to about 4,100 × 4,100,
+// and MAXSIDE is 2400 — half the memory of Float64 and faster, the same sums; Float64 beyond)
 function adaptiveInk(g, n) {
   const w1 = W + 1,
-    ii = new Float64Array(w1 * (H + 1));
+    ii = 255 * W * H < 4294967295 ? new Uint32Array(w1 * (H + 1)) : new Float64Array(w1 * (H + 1));
   for (let y = 0; y < H; y++) {
     let rs = 0;
     const o = (y + 1) * w1,
@@ -156,14 +158,26 @@ function denoise(g) {
 }
 // grainy paper and camera noise leave specks of 'ink' that chop the paper into crumbs: drop any ink blob too
 // small to be part of a line (lines are long and connected; a dot eye is still far bigger than a speck)
+// (v313) despeckle's figures for the faint-marks split (faintSplitFast), valid straight after it, as segment uses them
+let _faintStats = null;
 function despeckle(L) {
   const n = W * H,
     // (an enlarged picture's specks are srcK² times as big: cleared as they were before it was enlarged, v303)
     sp = Math.max(Math.round(4 * srcK * srcK), Math.round(n / 500000) * 2),
     seen = new Uint8Array(n),
     st = new Int32Array(n),
-    blob = new Int32Array(sp + 1);
-  let gone = 0;
+    blob = new Int32Array(sp + 1),
+    // (v313) the faint-marks split's figures, gathered on this same walk over the ink blobs (faintSplit walked them all
+    // again, about a tenth of the time to find the sections): each kept blob's grey histogram, scored by its
+    // 10th-percentile grey, as faintSplit does
+    hs = new Uint32Array(256),
+    fh = new Float64Array(256),
+    stats = gray && gray.length === n;
+  let gone = 0,
+    dark = 0,
+    mid = 0,
+    faint = 0,
+    tot = 0;
   for (let p = 0; p < n; p++) {
     if (L[p] !== -1 || seen[p]) continue;
     let sn = 0,
@@ -171,12 +185,14 @@ function despeckle(L) {
       big = false;
     st[sn++] = p;
     seen[p] = 1;
+    if (stats) hs.fill(0);
     while (sn > 0) {
       const q = st[--sn];
       if (!big) {
         if (bn <= sp) blob[bn++] = q;
         if (bn > sp) big = true;
       }
+      if (stats) hs[gray[q]]++;
       const x = q % W,
         y = (q / W) | 0;
       for (let dy = -1; dy <= 1; dy++) {
@@ -196,9 +212,34 @@ function despeckle(L) {
     if (!big) {
       for (let k = 0; k < bn; k++) L[blob[k]] = 0;
       gone += bn;
+    } else if (stats) {
+      let cnt = 0;
+      for (let g = 0; g < 256; g++) cnt += hs[g];
+      const k = Math.max(1, Math.ceil(cnt * 0.1));
+      let core = 0,
+        acc = 0;
+      while (core < 255 && acc + hs[core] < k) acc += hs[core++];
+      tot += cnt;
+      if (core < 64) dark += cnt;
+      else if (core >= 160) {
+        faint += cnt;
+        fh[core] += cnt;
+      } else mid += cnt;
     }
   }
+  _faintStats = stats ? { dark: dark, mid: mid, faint: faint, tot: tot, fh: fh } : null;
   return gone;
+}
+// the faint-marks split from the figures despeckle gathered (the same answer as faintSplit, without the second walk;
+// faintSplit stays, for when there are none and for the tests)
+function faintSplitFast() {
+  const s = _faintStats;
+  if (!s) return faintSplit();
+  if (!s.tot || s.dark < 0.5 * s.tot || s.faint < 0.05 * s.tot || s.mid >= 0.5 * s.faint) return 0;
+  let c = 160,
+    acc = 0;
+  while (c < 255 && acc + s.fh[c] < s.faint / 2) acc += s.fh[c++];
+  return Math.max(160, c - 32);
 }
 // (v308) Faint grey marks: a watermark, or light decorative swirls, drawn much paler than the outlines. The ink is
 // grouped into blobs, each scored by its core (its 10th-percentile grey: a single pixel's grey can't tell them apart,
@@ -777,6 +818,8 @@ function labelCells() {
   rgbOut = new Uint8ClampedArray(n * 4);
   imgData = new ImageData(rgbOut, W, H);
 }
+// (v313) the byte order of a Uint32 write into a canvas's pixels (render): little-endian on every device the app runs on
+const LITTLE_END = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 function segment() {
   const n = W * H;
   // (sections found afresh: ticks held for an Undo of a merge were the old sections', 65-edit)
@@ -798,7 +841,7 @@ function segment() {
   if (faintCut > 0) for (let i = 0; i < n; i++) if (labels[i] === -1 && gray[i] > faintCut) labels[i] = 0;
   despeckle(labels);
   // (whether to offer to ignore them: measured while they're still there)
-  if (!faintCut) faintOffer = faintSplit();
+  if (!faintCut) faintOffer = faintSplitFast();
   labelCells();
   adj = null;
   edgeDist = null;
@@ -838,29 +881,43 @@ function render() {
       cnt++;
     }
   }
-  const lite = new Array(comps.length);
-  for (let p = 0, j = 0; p < n; p++, j += 4) {
-    const l = labels[p];
+  // (v313) one colour per section worked out once, then one lookup a pixel: the per-pixel branches took about 0.3 s a
+  // redraw on a 2400 x 2400 photo at an iPad's speed, after every tap in Edit sections. Pixel for pixel as before.
+  const lut = new Uint32Array(comps.length + 1),
+    // (clamped and rounded as a write into rgbOut would be)
+    cl = new Uint8ClampedArray(3),
+    pack = function (c) {
+      cl[0] = c[0];
+      cl[1] = c[1];
+      cl[2] = c[2];
+      return (255 << 24) | (cl[2] << 16) | (cl[1] << 8) | cl[0];
+    };
+  lut[0] = pack(LINE);
+  // (label 0 doesn't survive labelCells; drawn as a left-out section if it ever did, not as nothing)
+  lut[1] = pack(MAG);
+  for (let l = 1; l < comps.length; l++) {
     let col;
-    if (l === -1) col = LINE;
-    else if (l === mergeSel) col = HILITE;
-    else {
+    if (l === mergeSel) col = HILITE;
+    else if (cn[l]) {
       // (v288: paler tints, still one per section, so a gap that let two shapes run together shows, without looking
       // like a colour plan)
-      if (cn[l]) {
-        col = lite[l];
-        if (!col) {
-          const c0 = secColor[l];
-          col = lite[l] = [(c0[0] + 357) / 2.4, (c0[1] + 357) / 2.4, (c0[2] + 357) / 2.4];
-        }
-      } else if (comps[l].bg) col = TEAL;
-      else col = MAG;
-    }
-    rgbOut[j] = col[0];
-    rgbOut[j + 1] = col[1];
-    rgbOut[j + 2] = col[2];
-    rgbOut[j + 3] = 255;
+      const c0 = secColor[l];
+      col = [(c0[0] + 357) / 2.4, (c0[1] + 357) / 2.4, (c0[2] + 357) / 2.4];
+    } else if (comps[l] && comps[l].bg) col = TEAL;
+    else col = MAG;
+    lut[l + 1] = pack(col);
   }
+  if (LITTLE_END) {
+    const out32 = new Uint32Array(rgbOut.buffer, rgbOut.byteOffset, n);
+    for (let p = 0; p < n; p++) out32[p] = lut[labels[p] + 1];
+  } else
+    for (let p = 0, j = 0; p < n; p++, j += 4) {
+      const v = lut[labels[p] + 1];
+      rgbOut[j] = v & 255;
+      rgbOut[j + 1] = (v >>> 8) & 255;
+      rgbOut[j + 2] = (v >>> 16) & 255;
+      rgbOut[j + 3] = 255;
+    }
   ctx.putImageData(imgData, 0, 0);
   const _ct = cnt + ' section' + (cnt === 1 ? '' : 's');
   // (v312.1: after a merge, split, add or leave-out, the new count is said; the count line had been read once only)

@@ -130,7 +130,8 @@ test('Continue opens Colour along with the marker’s row on screen', async () =
   const { page, errors } = await openApp({ width: 390, height: 844 });
   await sampleGuide(page); await saveGuide(page);
   // part-way through a marker far down the list (the darkest with more than one section)
-  await page.evaluate(() => { const t = __mstest, by = {}; t.assignData.order.forEach((l) => { const m = t.assignData.assign[l]; (by[m.mkey] = by[m.mkey] || { hex: m.hex, ls: [] }).ls.push(l); }); const lum = (h) => 0.299 * parseInt(h.slice(1, 3), 16) + 0.587 * parseInt(h.slice(3, 5), 16) + 0.114 * parseInt(h.slice(5, 7), 16); const e = Object.values(by).filter((e) => e.ls.length > 1).sort((a, b) => lum(a.hex) - lum(b.hex))[0]; t.colored[e.ls[0]] = 1; t.guideDirty = true; t.renderGuide(); });
+  // (v313: the sample with ticks to try it isn't on Continue until it's printed or renamed: as if renamed)
+  await page.evaluate(() => { const t = __mstest, by = {}; t.styleVars.smpTry = 0; t.assignData.order.forEach((l) => { const m = t.assignData.assign[l]; (by[m.mkey] = by[m.mkey] || { hex: m.hex, ls: [] }).ls.push(l); }); const lum = (h) => 0.299 * parseInt(h.slice(1, 3), 16) + 0.587 * parseInt(h.slice(3, 5), 16) + 0.114 * parseInt(h.slice(5, 7), 16); const e = Object.values(by).filter((e) => e.ls.length > 1).sort((a, b) => lum(a.hex) - lum(b.hex))[0]; t.colored[e.ls[0]] = 1; t.guideDirty = true; t.renderGuide(); });
   await page.evaluate(() => __mstest.flushSave()); await idle(page);
   await page.click('#mHome'); await idle(page);
   await page.click('#homeCont .hccard');

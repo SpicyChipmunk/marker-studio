@@ -232,7 +232,7 @@ function currentDesignObj(share, edits) {
         prog: prog,
         tones: tones,
         held: Object.keys(held).length ? held : undefined,
-        dates: progAt.s ? { s: progAt.s, e: progAt.e || undefined } : undefined,
+        dates: progAt.s ? { s: progAt.s, e: progAt.e || undefined, l: progAt.l || undefined } : undefined,
         out: Object.keys(out).length ? out : undefined,
         edits: edits ? 1 : undefined,
         base: Object.keys(bas).length ? bas : undefined,
@@ -302,6 +302,13 @@ function pickPhotoHome(onPick) {
   if (!document.getElementById('sfPick')) mount();
   _pickCb = onPick || null;
   if (fileEl) fileEl.click();
+}
+// (v313) Home's "Open a PDF": the PDF picker, the same way
+function pickPdfHome(onPick) {
+  if (!document.getElementById('sfPick')) mount();
+  _pickCb = onPick || null;
+  const el = document.getElementById('sfPdfFile');
+  if (el) el.click();
 }
 // Before something else opens: a guide in the Library saves its last changes into its entry; a new guide with
 // changes is added to the Library. If that fails the switch is stopped, so nothing is lost.
@@ -435,7 +442,7 @@ function askEdits(now) {
 function askLeaveBlocked() {
   return askBox(
     'This guide isn’t saved',
-    'This browser isn’t letting Marker Studio save, so the guide goes when you open something else. To keep it, Cancel and use Share › Guide file.',
+    'This browser isn’t letting Marker Studio save, so the guide goes when you open something else. To keep it, Cancel and use Share & print › Guide file.',
     '<button type="button" class="sfghost" data-a="stay">Cancel</button><button type="button" data-a="go">Open anyway</button>',
   ).then(function (a) {
     if (a !== 'go') return false;
@@ -872,6 +879,8 @@ let curSample = false,
 function sampleBuilt(nm) {
   _smpLoad = false;
   curSample = true;
+  // (v313: kept once changed, it's the sample tried until it's printed or renamed: smpTry)
+  smpTry = 1;
   _sampleNm = nm;
   curName = nm;
   _sampleNoteX = false;
@@ -1491,7 +1500,7 @@ function saveStText(pe) {
   if (pe) return 'Section edits not saved \u2014 Build again to keep them';
   if (!assignData) return labels && sfmode === 'review' ? 'Not saved yet' : '';
   const e = libEntry();
-  if (!e && storeBlocked()) return 'Not saved \u2014 use Share \u203a Guide file';
+  if (!e && storeBlocked()) return 'Not saved \u2014 use Share & print \u203a Guide file';
   // (v304: or the browser's database stopped answering)
   if (_saveErr)
     return storeNotAnswering() ? 'Not saved \u2014 reload to try again' : 'Not saved \u2014 storage is full';
@@ -1659,7 +1668,7 @@ function btnBusy(t) {
 // (plain text, v308: said in a toast, or by note with no name in it)
 function saveFailWords(m, nm, open) {
   if (typeof STORE_BLOCKED !== 'undefined' && STORE_BLOCKED)
-    return 'This browser isn’t letting Marker Studio save — use Share › Guide file to keep this guide.';
+    return 'This browser isn’t letting Marker Studio save — use Share & print › Guide file to keep this guide.';
   if (m && storeNotAnswering())
     return (
       'Couldn’t save' +
@@ -1764,6 +1773,8 @@ function firstSave(auto) {
         // (said once, in the header's status line rather than a toast over the tabs: v284)
         _savedNew = Date.now();
         setTimeout(saveStatus, 6100);
+        // (v314: and its photo of the finished page, if its record went meanwhile)
+        if (back != null) finPutBack(id);
         sayLive(
           back != null
             ? 'Put back in your Library.'
@@ -1792,7 +1803,7 @@ function firstSave(auto) {
           saveFailWords(
             'Couldn\u2019t save \u201c' +
               nm +
-              '\u201d \u2014 this browser\u2019s storage is full. It stays open here: free up space (back up, then delete a few guides in the Library), or keep it with Share \u203a Guide file.',
+              '\u201d \u2014 this browser\u2019s storage is full. It stays open here: free up space (back up, then delete a few guides in the Library), or keep it with Share & print \u203a Guide file.',
             nm,
             true,
           ),

@@ -744,3 +744,88 @@ before it was brought to Ben. New: `e2e/v3121` (8), each failing on v312 (Back i
 - Left as they are (D4): Colour along's paper view, the sample on a phone's Home, long toasts, the scroll to the guide
   after Build, Scan's unanswered codes kept for later.
 - Version v312.1; cache `marker-studio-v312.1`.
+
+# Changes — v313 (fable's look for improvements, Ben's decisions D1–D8, D10, D11)
+
+An independent look by fable at the engines, the features and the screens, each idea pressure-tested alone and
+together before Ben chose (D9, a photo of the finished page, is its own release later). New tests: `test/v313-family`
+(6) and `e2e/v313-plan` (6), `v313-photo` (2), `v313-along` (3), `v313-focus` (2), `v313-polish` (7), `v313-pdf` (4),
+each failing on v312.
+
+- **Open a PDF** (D10): a colouring page that came as a PDF opens with Mozilla's PDF.js (`vendor/pdfjs/6.3.289/`, its
+  legacy build, Apache-2.0, unmodified; `src/js/guide/21-pdf.js`). **Open the PDF** under Choose a photo, and "Page in
+  a PDF? Open it" on Home's start card (the photo picker still takes pictures only). One page goes straight on, as a
+  scan does (a PDF page is flat: no straightening); several pages ask which, with a small picture of each (up to 60).
+  The page is drawn on white at the working size (2400 on its long side). A locked PDF, a page that comes out blank,
+  or a browser that can't run PDF.js says to take a screenshot instead, as before. Tried on vector, Flate, JPEG, CCITT
+  G4 and JPEG 2000 pages and several pages, in Chromium and Safari's engine (whose WebAssembly can't run the JPEG 2000
+  decoder: its JavaScript version is kept beside it). The service worker keeps PDF.js in a cache of its own, named
+  after its version, which a new release leaves alone, so its 2.9 MB are downloaded once. Help and About say so.
+- **Colour along** (D1): on an iPad held upright the order chips and the code box share one row; on a phone, once the
+  first-time instructions have been seen, Colour along opens with the order chips just under the picture's tool row,
+  so three or four markers show above the bar (the picture keeps its size; the ⓘ line is a scroll up). A marker just
+  finished lights up its row's "All 10 coloured ✓" for a moment.
+- **Focus mode's hand-off card** (D2): moving on to the next marker (Done, Skip or Mark all on the last of one), a card
+  says how the last went ("Y28 · all 10 coloured ✓", or "9 of 10 coloured") and which to pick up, with the picture
+  zoomed out to all its sections still to colour, in colour with their codes; the card sits above or below them,
+  whichever covers fewer. A second pass says "Back to Y28's shadows, now the first coat is dry", and a marker running
+  low says so. Done, a tap anywhere (it ticks nothing) or Escape closes it and goes in to its first section; never
+  between one section's tones. A double buzz where the device has one; no movement with Reduce Motion. Each marker now
+  starts on its largest section (D11).
+- **Marker families** (D3): a marker's family is its code's letters and first digit, as both brands number them (Ohuhu
+  Y213 with Y26 to Y29; Copic B0000, B000, B00, B01 in that order), for blend companions and shading; a family
+  companion is never more than 20 lighter or darker. Only for guides made since v313 (`famRule`, saved only when 1):
+  one saved before keeps v312's rule for good, so the markers shown for a part-coloured page's tones never change.
+  On Ben's 322 markers: companions more than 20 lighter or darker 18 → 1, about 7 of 620 shift hue 15–25°; on all of
+  Copic 97 → 0.
+- **Plan lines** (D4, D7), one at a time under the tabs: "R413 is running low · used on 24 sections · Swap it ✕" while
+  a marker marked running low has sections still to colour (Swap it gives them the nearest marker you own that isn't
+  low, dry or a blender: pinned, one Undo step; coloured ones keep theirs; ✕ is kept with the guide, `lowX`); "low" on
+  its Colour along row and in the markers on the page (not the printed key). Once, after the first-time lines:
+  "Screens and ink differ. Print a test strip of these 16 markers to see them on your paper", whose link opens Print
+  with Test strip. The last tab is **Share & print** where it fits (Share on a small phone at larger text).
+- **Photos under a lamp** (D6): the page finder no longer takes the bright half of an unevenly lit page for the page
+  (the drawing runs across that outline, or the light changes gently there rather than in a step), and a drawing's own
+  outline wins a tie only when it fits the drawing. When it isn't sure, **Keep as is** comes first and Straighten shows
+  "Straightening the page…" before it does it. All 36 real photos (Ben's and downloaded) unchanged; 41 synthetic lamp
+  photos better (none worse). `e2e/fixtures/lit-mandala*.png` are two of them.
+- **Edit sections draws faster** (D5): the picture is redrawn through a table of each section's colour, the faint-marks
+  figures come from the speck pass already made, and the integral image is 32-bit while it fits. Byte-identical
+  sections and pictures on 71 test images.
+- **Polish** (D11): Markers' line about the view under its row ("Your collection."); Palette's Undo, Clear, Save and ⋯
+  on one row; the empty Library says what's kept there, with Try the sample, and has no search box; the guide's start
+  card in Home's words; Edit sections' intro is one line; the Colour along and Reveal shimmer runs three times; the
+  sample's ticks don't put it on Home's Continue card until it's printed (its page, not the test strip) or renamed
+  (`smp`); Continue says "Last coloured 3 days ago" (`dates.l`).
+- **Not changed** (D8): a cap on how much of a Gradient one huge section takes, and dropping ramp stops with under 1%
+  of the page, were measured on 20 pages × 3 collections × 5 shapes × 3 counts: neither was clearly better (harsh
+  neighbour jumps worse on several pages; dropping stops also gave far fewer markers than asked).
+- Tests: v289's keyboard test settles before its tap (flaky on GitHub); tests that tick the sample and expect Continue
+  take it as renamed; the test server serves `.mjs`, `.wasm` and `.pdf` with their types.
+- Version v313; cache `marker-studio-v313`.
+
+# Changes — v314 (Ben's decisions D9 and D8)
+
+The two ideas from fable's look that v313 left for later. New tests: `e2e/v314-page-photo` (6) and `v314-gradient`
+(1), `test/v314-gradient` (3), each failing on v313.
+
+- **A photo of the finished page** (D9; `src/js/guide/24-page-photo.js`): **Add a photo of your page** in Colour
+  along's Page finished panel, on Home's latest piece (until added, or put away with ✕ for that guide: `ms-finx`) and
+  in the guide's ⋯ menu (Change your photo, Remove your photo, which asks first). The photo is found and straightened
+  by itself when the page finder is sure, as a coloured reference photo is; otherwise four corner handles over it
+  (a magnifier by the finger, the arrow keys too), with Straighten, Keep as is and Cancel. It's kept on the device
+  beside its guide (`fin-<id>` in the guides' store: one JPEG, 1600 on its long side, about 0.3 MB), never uploaded.
+  The panel shows it with Show beside the plan, Adjust corners (this visit) and Change. **Home's latest piece** shows
+  it first, with **Your page | Plan** over the picture's foot (remembered for the guide: `ms-fin-view`); Library tiles
+  keep the plan. **Reveal's end** has **With my page**: the plan beside the photo in Reveal's frame (side by side
+  for a tall page, one over the other for a wide one), with Share. It's in the Library's backup (and counts as a
+  change for the backup reminder until backed up), not in a guide file; restoring puts it back, for the guide here or
+  one deleted. Deleting the guide deletes it once Undo has gone; Put back brings it back; Save a copy doesn't copy
+  it; Reset progress keeps it, and says so. A new Lucide icon, camera (33 now).
+- **Gradients on pages with a few huge sections** (D8): a guide made since v314 (`gradArea`, saved only when 1) laid
+  as a Gradient in Polished or Natural shares its run of markers out by each section's area to the power 0.7, not
+  its plain area, so one huge section no longer takes most of the run. Measured on 21 pages × 3 collections × 5
+  shapes × 3 counts: clashing borders 10.7% → 10.3%, markers left as a speck (under 1% of the page) 1.7 → 1.0 a
+  plan, about two plans better for each one worse; Ben's pages unchanged. Textured, Sparkle and Confetti keep the
+  plain rule (more plans were worse there), and so does every guide saved before.
+- Version v314; cache `marker-studio-v314`.
