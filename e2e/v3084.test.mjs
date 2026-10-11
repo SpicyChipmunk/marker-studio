@@ -3,7 +3,16 @@
 // cap it read, until Scan was closed and opened again.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, teardown, openApp, welcome, idle, scanFromMarkers } from './helpers.mjs';
+import {
+  setup,
+  teardown,
+  openApp,
+  welcome,
+  idle,
+  scanFromMarkers,
+  sampleGuide,
+  saveGuide,
+} from './helpers.mjs';
 
 before(setup);
 after(teardown);
@@ -51,8 +60,9 @@ test('Scan: the page is not held while its box has the keyboard, cap after cap; 
 
 test('the Library still holds the page; its search box, while typed in, does not', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
-  await welcome(page, 'look');
-  await idle(page);
+  // (v313: an empty Library has no search box, so a guide in it)
+  await sampleGuide(page);
+  await saveGuide(page);
   await page.evaluate(() => openLibrary());
   await page.waitForSelector('#savedOverlay.on');
   await idle(page);
@@ -61,9 +71,8 @@ test('the Library still holds the page; its search box, while typed in, does not
   await page.waitForTimeout(50);
   assert.equal(await held(page), true);
   const search = await page.$('#savedOverlay input[type="search"], #savedOverlay input[type="text"]');
-  if (search) {
-    await search.focus();
-    assert.equal(await held(page), false);
-  }
+  assert.ok(search && (await search.isVisible()), 'the search box');
+  await search.focus();
+  assert.equal(await held(page), false);
   assert.deepEqual(errors, []);
 });

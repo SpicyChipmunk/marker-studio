@@ -161,6 +161,8 @@ test('Markers › All: each family brand by brand, by code within a brand (Ohuhu
 test('Colour along, a finished page: a colour with one section says "Coloured ✓", not "All 1 coloured"', async () => {
   const { page, errors } = await openApp({ width: 1180, height: 820 });
   await sampleGuide(page);
+  // (laid as before v314: v314's Gradient, gradArea, leaves the sample no marker on a single section)
+  await page.evaluate(() => { __mstest.styleVars.gradArea = 0; __mstest.reassign(); }); await idle(page);
   await page.click('#sfColor'); await idle(page);
   await page.evaluate(() => { const t = __mstest; t.assignData.order.forEach((l) => { t.colored[l] = 1; }); t.guideDirty = true; t.renderGuide(); t.checkComplete(); t.updateProgress && t.updateProgress(); });
   await idle(page);

@@ -8561,6 +8561,23 @@ button.hcpic:focus-visible {
 .hhfin[hidden] {
   display: none;
 }
+/* (each a 44 px tap, taller than it looks) */
+.hhseg button,
+.hhfinadd,
+.hhfinx {
+  position: relative;
+}
+.hhseg button::before,
+.hhfinadd::before,
+.hhfinx::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
+}
 .hhfinadd,
 .hhfinx {
   display: inline-flex;
