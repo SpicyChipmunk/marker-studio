@@ -1654,14 +1654,21 @@ html.sfsheetsd .mstoast {
   background: var(--glass);
   color: var(--sub);
 }
+/* (v314.1: and the running-low line, so Swap it and ✕ stay on its right and its words wrap) */
 #sfRoot .sfsamplenote,
-#sfRoot #sfPinNote {
+#sfRoot #sfPinNote,
+#sfRoot .sflowline {
   flex-wrap: nowrap;
 }
 #sfRoot .sfsamplenote > span,
-#sfRoot #sfPinNote > span {
+#sfRoot #sfPinNote > span,
+#sfRoot .sflowline > span {
   flex: 1 1 0;
   min-width: 0;
+}
+#sfRoot .sflowline > .sflink {
+  flex: none;
+  white-space: nowrap;
 }
 #sfRoot .sftooltip .sftti {
   white-space: nowrap;
@@ -1870,14 +1877,28 @@ html.sfsheetsd .mstoast {
   margin-top: 10px;
   text-align: left;
 }
-#sfRoot .sffinhave img {
+#sfRoot .sffinpic {
   flex: none;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 10px;
+}
+/* (v314.1: the whole page, not a square from its middle) */
+#sfRoot .sffinhave img {
+  display: block;
   width: 84px;
   height: 84px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 10px;
   border: 1px solid rgba(11, 34, 25, 0.25);
   background: #fff;
+}
+#sfRoot .sffinpic:focus-visible {
+  outline: 2px solid #0b2219;
+  outline-offset: 2px;
 }
 #sfRoot .sffint {
   display: flex;
@@ -1897,7 +1918,7 @@ html.sfsheetsd .mstoast {
 #sfRoot .sffinhave .sflink {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 44px;
   margin-left: 0;
   font-size: var(--t-sm);
 }
@@ -1940,6 +1961,20 @@ html.sfsheetsd .mstoast {
 }
 #sfFinEd .sffincx {
   margin-right: auto;
+}
+/* (v314.1) a phone: the three full width, the main one first and Cancel last */
+@media (max-width: 480px) {
+  #sfFinEd .sfedaskbtns {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #sfFinEd .sfedaskbtns .btn-primary {
+    order: -1;
+  }
+  #sfFinEd .sffincx {
+    order: 1;
+    margin-right: 0;
+  }
 }
 .sffincard .ocard {
   width: min(560px, 100%);

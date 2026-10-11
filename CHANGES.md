@@ -829,3 +829,40 @@ The two ideas from fable's look that v313 left for later. New tests: `e2e/v314-p
   plan, about two plans better for each one worse; Ben's pages unchanged. Textured, Sparkle and Confetti keep the
   plain rule (more plans were worse there), and so does every guide saved before.
 - Version v314; cache `marker-studio-v314`.
+
+# Changes — v314.1 (fable's fresh-eyes review of v314)
+
+Five independent reviews by fable (engineering, function, pressure test, UI, a new tester and the words), each
+finding checked before it was brought to Ben, who chose to fix the clear ones now. New: `e2e/v3141` (9), each failing
+on v314.
+
+- **A photo record is checked whole** (data safety): a backup's photo of a finished page went into the page as an
+  image's address after only its start was checked, so an edited backup file could run code when restored. The whole
+  record must now be base64, as a plan's thumbnail must, and it's escaped where it's written into the page.
+- **PDF page chooser**: a PDF of more than about 20 pages squashed every page's picture to a white strip; the pictures
+  keep their size and the list scrolls (v313).
+- **Reveal's end on a phone**: with With my page the end's buttons wrap to two rows, which covered the title and the
+  marker codes; the piece and its caption are laid out again above the bar once they've lifted (v314).
+- **Home's latest piece** (mocked first): Your page | Plan no longer resizes the picture and moves the card. The box
+  keeps one shape for both, a straightened photo's (the plan on paper of that shape), else the page's (a photo kept as
+  taken sits inside it), and the Library row keeps that shape (`fa`) so the box doesn't change when the photo comes.
+  The switch and the Add photo pill sit centred on the picture's foot on an iPad (they hung off its bottom); on a page
+  narrower than the pill, Add photo drops its camera, then sits under the picture.
+- **The photo's corners**: when the page wasn't found, Keep as is is the main button and has the keyboard (a
+  Straighten of the starting corners trimmed the photo and called it straightened), as the guide's own corners have
+  since v313. The magnifier sits beside the top corners (it was under the finger). On a phone the three buttons are
+  full width; the crossed-corners line keeps its room; the margin round the photo is the dialog's colour.
+- **Focus mode**: Undo of Mark all closes the hand-off card, which went on saying the marker was finished. A marker
+  with one section says "coloured ✓", not "all 1 coloured", there and in a zone's heading.
+- **"Last coloured N days ago"** moved to now whenever a started guide was opened in Colour along; it moves only when
+  the ticks change (v313).
+- **Swap it** says which marker took the low one's place, with Undo ("Swapped R413 for R412 in 17 sections, pinned");
+  the line under the tabs lost its stray "·", and Swap it and ✕ stay on its right on a phone.
+- **Page finished panel**: the photo's thumbnail shows the whole page and opens the plan-and-page card; its links are
+  44 px tall.
+- Home's latest piece is drawn afresh after a restore (a photo put back for an unchanged guide didn't show until
+  something else changed). The corner editor's canvas is freed when it closes.
+- Correction to v314's notes: the stored photo is the straightened page as found in a copy of the photo 1600 on its
+  long side, so usually 700–1000 px on its long side and 60–240 KB; and D8 on fable's 14 downloaded pages (420 plans)
+  gave markers on specks 1.47 → 0.92 a plan but rough borders better in 195 plans and worse in 140, not two to one.
+- Version v314.1; cache `marker-studio-v314.1`.

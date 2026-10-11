@@ -18,7 +18,7 @@ sheet, paper, and how it feels.
 ## 1. Update, install, offline (3 min)
 
 - [ ] ★ Open the Home Screen app → "Marker Studio was updated" shows, **Reload** → Home's foot says the new version
-      (e.g. "v314 · Beta").
+      (e.g. "v314.1 · Beta").
 - [ ] ★ Airplane mode on, close the app fully, reopen → it opens, your markers and guides are there; open a guide and
       make a PDF. Airplane mode off.
 - [ ] In a Safari **Private** tab, open the app's address → the welcome shows; Share › Add to Home Screen → the icon is
@@ -101,7 +101,7 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v314
+## New in this release: v314 and v314.1
 
 - [ ] ★ **A photo of your finished page:** finish a page (or Reset progress on a short one and tick it all) → Colour
       along's **Page finished** panel → **Add a photo of your page** → take one with the camera, the page on a dark or
@@ -113,7 +113,12 @@ sheet, paper, and how it feels.
       puts it away.
 - [ ] **Reveal & share** on that guide → at the end, **With my page** → the plan and your photo side by side → **Share**
       → the share sheet → Save Image → it looks right in Photos.
+- [ ] On Home, tap **Plan** then **Your page** → the picture swaps, the card doesn't move; the switch sits on the
+      picture's foot.
 - [ ] **⋯ › Remove your photo** asks first, then it's gone from the panel and from Home.
+- [ ] (v314.1) A colouring book saved as a PDF (20+ pages) → **Open the PDF** → each page has its picture, and the
+      list scrolls.
+- [ ] (v314.1) A marker running low → **Swap it** → a message says which marker took its place, with **Undo**.
 - [ ] **Library › Back up**, delete the guide (let its Undo go), **Restore** the file → the guide and its photo are back.
 - [ ] A **new** guide laid as a **Gradient** (Scatter Polished or Natural) on a page with a few very big sections (a
       big sky or background) uses more of its markers, with fewer left as a speck. A guide made before v314 looks

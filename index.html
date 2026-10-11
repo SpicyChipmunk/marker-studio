@@ -6762,14 +6762,21 @@ html.sfsheetsd .mstoast {
   background: var(--glass);
   color: var(--sub);
 }
+/* (v314.1: and the running-low line, so Swap it and ✕ stay on its right and its words wrap) */
 #sfRoot .sfsamplenote,
-#sfRoot #sfPinNote {
+#sfRoot #sfPinNote,
+#sfRoot .sflowline {
   flex-wrap: nowrap;
 }
 #sfRoot .sfsamplenote > span,
-#sfRoot #sfPinNote > span {
+#sfRoot #sfPinNote > span,
+#sfRoot .sflowline > span {
   flex: 1 1 0;
   min-width: 0;
+}
+#sfRoot .sflowline > .sflink {
+  flex: none;
+  white-space: nowrap;
 }
 #sfRoot .sftooltip .sftti {
   white-space: nowrap;
@@ -6978,14 +6985,28 @@ html.sfsheetsd .mstoast {
   margin-top: 10px;
   text-align: left;
 }
-#sfRoot .sffinhave img {
+#sfRoot .sffinpic {
   flex: none;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 10px;
+}
+/* (v314.1: the whole page, not a square from its middle) */
+#sfRoot .sffinhave img {
+  display: block;
   width: 84px;
   height: 84px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 10px;
   border: 1px solid rgba(11, 34, 25, 0.25);
   background: #fff;
+}
+#sfRoot .sffinpic:focus-visible {
+  outline: 2px solid #0b2219;
+  outline-offset: 2px;
 }
 #sfRoot .sffint {
   display: flex;
@@ -7005,7 +7026,7 @@ html.sfsheetsd .mstoast {
 #sfRoot .sffinhave .sflink {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 44px;
   margin-left: 0;
   font-size: var(--t-sm);
 }
@@ -7048,6 +7069,20 @@ html.sfsheetsd .mstoast {
 }
 #sfFinEd .sffincx {
   margin-right: auto;
+}
+/* (v314.1) a phone: the three full width, the main one first and Cancel last */
+@media (max-width: 480px) {
+  #sfFinEd .sfedaskbtns {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #sfFinEd .sfedaskbtns .btn-primary {
+    order: -1;
+  }
+  #sfFinEd .sffincx {
+    order: 1;
+    margin-right: 0;
+  }
 }
 .sffincard .ocard {
   width: min(560px, 100%);
@@ -8538,12 +8573,29 @@ button.hcpic:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 1px;
 }
+/* (v314.1: the whole photo, never cropped: the box is its shape when straightened, else the page's) */
 .hhbox.ph img {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  border-radius: 4px;
+  object-fit: contain;
+}
+/* (v314.1) a picture narrower than the pill: Add photo without its camera; still too narrow, the pill under it */
+.hhnarrow .hhfinadd .ic {
+  display: none;
+}
+.hhpicw.hhunder {
+  flex-direction: column;
+  align-items: center;
+}
+.hhunder .hhpic {
+  padding-bottom: 10px;
+}
+.hhunder .hhseg,
+.hhunder .hhfin {
+  position: static;
+  transform: none;
+  margin: 0 0 10px;
 }
 .hhfin {
   position: absolute;
@@ -8749,6 +8801,16 @@ button.hcpic:focus-visible {
     inset: 3%;
     width: 94%;
     height: 94%;
+  }
+  /* (v314.1) the pill centred on the picture's foot, inside it (the picture sits right of the column's padding) */
+  .hhseg,
+  .hhfin {
+    left: calc(50% + clamp(18px, 3vh, 34px) / 2);
+    bottom: calc(clamp(18px, 3vh, 34px) + 10px);
+  }
+  .hhunder .hhseg,
+  .hhunder .hhfin {
+    margin: 0 0 clamp(18px, 3vh, 34px) clamp(18px, 3vh, 34px);
   }
   .hhbody {
     gap: 10px;
@@ -10512,6 +10574,8 @@ button.wnx::after,
 .sfedaskbtns .sfpdfpgs {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  /* (v314.1: rows their own height, the grid scrolling; a long PDF squashed every picture to a strip) */
+  grid-auto-rows: max-content;
   gap: 10px;
   width: 100%;
   max-height: 56vh;
@@ -11869,7 +11933,7 @@ button.wrm {
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v314</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v314.1</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -18015,13 +18079,15 @@ function heroShow(el, ar, v, fade) {
   if (!b || !h) return;
   var ph = !!h.fin && v !== 'plan',
     src = ph ? h.fin.u : h.plan;
-  b.style.setProperty('--ar', (ph ? Math.max(0.2, Math.min(5, h.fin.w / h.fin.h)) : ar).toFixed(4));
+  // (v314.1) the box keeps one shape for both pictures, so Your page | Plan doesn't move the card: a straightened
+  // photo's (the plan sits on paper of that shape), else the plan's (a photo kept as taken sits inside it)
+  b.style.setProperty('--ar', heroShape(h.fin, ar).toFixed(4));
   b.classList.toggle('ph', ph);
   b.innerHTML =
     '<img alt="' +
     (ph ? 'Your photo of the finished page' : '') +
     '" src="' +
-    src +
+    esc(src) +
     '"' +
     (fade && !reduce ? ' class="hhfade"' : '') +
     '>';
@@ -18032,6 +18098,33 @@ function heroShow(el, ar, v, fade) {
     });
   }
   if (wh && h.when) wh.textContent = h.when + (ph ? ' · your photo' : '');
+  heroPillFit(el);
+}
+window.addEventListener('resize', function () {
+  var el = document.getElementById('homeHero');
+  if (el && el._hero && el.offsetParent !== null) heroPillFit(el);
+});
+// the picture's box: a straightened photo's shape, else the page's (ar)
+function heroShape(fin, ar) {
+  return fin && fin.flat ? Math.max(0.2, Math.min(5, fin.w / fin.h)) : ar;
+}
+// (v314.1) the pill over the picture's foot (Your page | Plan, or Add photo): when it's wider than the picture (a narrow
+// page), Add photo without its camera, and if that's still too wide, the pill under the picture. On a phone the
+// picture is its whole cream column (the card's footprint is fixed there), so only that column counts.
+function heroPillFit(el) {
+  var phone = !(window.matchMedia && matchMedia('(min-width: 700px)').matches),
+    b = el.querySelector(phone ? '.hhpic' : '.hhbox'),
+    w = el.querySelector('.hhpicw');
+  if (!b || !w) return;
+  w.classList.remove('hhnarrow', 'hhunder');
+  var bw = b.getBoundingClientRect().width,
+    wide = function () {
+      var p = el.querySelector('.hhseg:not([hidden]), .hhfin:not([hidden])');
+      return !!p && p.getBoundingClientRect().width > bw - 8;
+    };
+  if (!bw || !wide()) return;
+  w.classList.add('hhnarrow');
+  if (!phone && wide()) w.classList.add('hhunder');
 }
 // which picture a guide's latest piece shows (its photo, unless Plan was chosen for it), kept as ms-fin-view
 var FIN_VIEW = 'ms-fin-view',
@@ -18074,12 +18167,13 @@ function heroFinXSet(id) {
 }
 // (v314) a guide's photo of its finished page was added, changed or removed (guide/24-page-photo.js): the backup
 // reminder counts it as a change (fn), and Home's latest piece shows it
-function homeFinChanged(id) {
+function homeFinChanged(id, rec) {
   var r = state.saved.find(function (s) {
     return s.id === id && s.type === 'guide';
   });
   if (r) {
     r.fn = Date.now();
+    finRowShape(r, rec);
     save(true);
   }
   var el = document.getElementById('homeHero');
@@ -18107,14 +18201,17 @@ function homeHero(g) {
     nk = (g.keys || []).length,
     W = +g.W > 0 ? +g.W : 3,
     H = +g.H > 0 ? +g.H : 4,
-    ar = Math.max(0.2, Math.min(5, W / H));
+    ar = Math.max(0.2, Math.min(5, W / H)),
+    // (v314.1: the shape its straightened photo will give the box, kept in its row, so the box doesn't change when
+    // the photo comes)
+    ar0 = +g.fa > 0 ? Math.max(0.2, Math.min(5, +g.fa)) : ar;
   el.innerHTML =
     '<div class="hhcard" style="background-image:' +
     heroGlow(hx) +
     '"><div class="hhpicw"><button type="button" class="hhpic" data-hero="open" aria-label="Open ' +
     nm +
     '"><span class="hhbox" style="--ar:' +
-    ar.toFixed(4) +
+    ar0.toFixed(4) +
     '"></span></button>' +
     // (v314) with a photo of the finished page: it shows first, and the plan a tap away (remembered for the guide)
     '<div class="hhseg" role="group" aria-label="Picture" hidden><button type="button" data-hero="view" data-v="page" aria-pressed="true">Your page</button><button type="button" data-hero="view" data-v="plan" aria-pressed="false">Plan</button></div>' +
@@ -18175,6 +18272,7 @@ function homeHero(g) {
         heroShow(el, ar, heroView(gid), true);
         var hf = el.querySelector('.hhfin');
         if (hf) hf.hidden = !!hero.fin || heroFinX(gid) || !(window.SF && SF.finPick);
+        heroPillFit(el);
       });
     }, 0);
   });
@@ -18198,6 +18296,7 @@ function homeHero(g) {
       heroFinXSet(gid);
       var hf = el.querySelector('.hhfin');
       if (hf) hf.hidden = true;
+      heroPillFit(el);
       var go = document.getElementById('homeHeroGo');
       if (go)
         try {
@@ -23573,6 +23672,8 @@ function guideMeta(d, id) {
   else if (/ \(section edits\)$/.test(meta.name || '')) meta.eds = 0;
   // (v314: when its photo of the finished page last changed, for the backup reminder: kept from save to save)
   if (_ex && +_ex.fn > 0) meta.fn = +_ex.fn;
+  // (v314.1: and its straightened photo's shape)
+  if (_ex && +_ex.fa > 0) meta.fa = +_ex.fa;
   return meta;
 }
 // d.mustExist: only update an entry still in the Library (an auto-save never brings back a guide deleted meanwhile);
@@ -23813,11 +23914,19 @@ function finRecOk(r) {
     !!r &&
     typeof r === 'object' &&
     typeof r.u === 'string' &&
-    /^data:image\/(jpeg|png|webp);base64,/.test(r.u) &&
+    // (the whole of it: base64 only, as safeThumb checks a thumbnail; it goes into the page as an <img>'s src)
+    /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(r.u) &&
     r.u.length < FIN_MAX &&
     +r.w > 0 &&
     +r.h > 0
   );
+}
+// (v314.1) a Library row's note of its straightened photo's shape (fa, width ÷ height), for Home's latest piece to be laid
+// out in it from the start; none for a photo kept as taken, or none at all
+function finRowShape(row, rec) {
+  if (!row) return;
+  if (finRecOk(rec) && rec.flat) row.fa = Math.round((rec.w / rec.h) * 10000) / 10000;
+  else delete row.fa;
 }
 function gatherGuides() {
   var gs = state.saved.filter(function (s) {
@@ -24941,7 +25050,17 @@ function finFill(id, rec, over) {
   if (!id || !finRecOk(rec)) return Promise.resolve();
   return (over ? Promise.resolve(null) : IDB.get('fin-' + id))
     .then(function (here) {
-      if (!finRecOk(here)) return IDB.put('fin-' + id, rec);
+      if (!finRecOk(here))
+        return IDB.put('fin-' + id, rec).then(function () {
+          // (the row's note of its shape, for Home: v314.1)
+          finRowShape(
+            state.saved.find(function (s) {
+              return s.id === id;
+            }),
+            rec,
+          );
+          save(true);
+        });
     })
     .catch(function () {});
 }
@@ -25057,6 +25176,9 @@ function restoreGuideList(guides, _fts, done, prog) {
         renderBackupNudge();
       }
       renderSaved();
+      // (v314.1: Home's latest piece drawn afresh: a photo put in for a guide whose row is unchanged)
+      var _hh = document.getElementById('homeHero');
+      if (_hh) _hh.removeAttribute('data-hid');
       renderRecent();
       if (done)
         done(ok, copies, {
@@ -30299,8 +30421,8 @@ function finSetRec(r) {
   finPanel();
 }
 // the photo was added, changed or removed: Home's latest piece shows it (library.js)
-function finChanged(id) {
-  if (typeof homeFinChanged === 'function') homeFinChanged(id);
+function finChanged(id, rec) {
+  if (typeof homeFinChanged === 'function') homeFinChanged(id, rec || null);
 }
 // (the toast is read out as it shows)
 function finSay(m) {
@@ -30480,7 +30602,7 @@ function finStore(id, c, flat, msg) {
   return IDB.put(finKey(id), rec).then(
     function () {
       if (_fin.id === id) finSetRec(rec);
-      finChanged(id);
+      finChanged(id, rec);
       finSay(msg || (flat ? 'Photo of your page added, straightened.' : 'Photo of your page added.'));
       return true;
     },
@@ -30561,8 +30683,15 @@ function finEdit(id, src, q, why) {
     '<div class="dsub" id="sfFinEdD">' +
     esc(FIN_WHY[why] || FIN_WHY.adjust) +
     '</div><canvas id="sfFinCv" tabindex="0" aria-label="The photo, with the page’s four corners. Arrow keys move the highlighted corner; Space picks the next one."></canvas>' +
-    '<div class="sfpgnote warn" id="sfFinX" hidden>Those corners cross over. Drag them back to the page’s four corners.</div>' +
-    '<div class="sfedaskbtns"><button type="button" class="sfghost sffincx" data-a="cancel">Cancel</button><button type="button" class="sfghost" data-a="keep">Keep as is</button><button type="button" class="btn-primary" data-a="go">Straighten</button></div></div>';
+    // (its line kept, so the dialog doesn't move when it shows: v314.1)
+    '<div class="sfpgnote warn" id="sfFinX" style="visibility:hidden">Those corners cross over. Drag them back to the page’s four corners.</div>' +
+    // (v314.1, as the guide's own corners since v313: the page not found, Keep as is is the main button; a Straighten of
+    // the starting corners would trim the photo's edges and call it straightened)
+    '<div class="sfedaskbtns"><button type="button" class="sfghost sffincx" data-a="cancel">Cancel</button><button type="button" class="' +
+    (why === 'none' ? 'btn-primary' : 'sfghost') +
+    '" data-a="keep">Keep as is</button><button type="button" class="' +
+    (why === 'none' ? 'sfghost' : 'btn-primary') +
+    '" data-a="go">Straighten</button></div></div>';
   const cvs = o.querySelector('#sfFinCv');
   cvs.width = dw + 2 * pad;
   cvs.height = dh + 2 * pad;
@@ -30613,6 +30742,11 @@ function finEdit(id, src, q, why) {
     finEdDraw();
   });
   document.body.appendChild(o);
+  // (the margin round the photo in the dialog's own colour: v314.1)
+  try {
+    const bg = getComputedStyle(o.querySelector('.ocard')).backgroundColor;
+    if (bg && !/rgba\(0, 0, 0, 0\)|transparent/.test(bg)) E.bg = bg;
+  } catch (_) {}
   finEdDraw();
   finEdOK();
   try {
@@ -30624,6 +30758,7 @@ function finEdClose() {
   if (!E) return;
   _finEd = null;
   E.el.remove();
+  freeCanvas(E.cv);
   try {
     if (E.op && E.op.isConnected && E.op !== document.body) E.op.focus({ preventScroll: true });
   } catch (_) {}
@@ -30638,7 +30773,7 @@ function finEdOK() {
     b = E.el.querySelector('[data-a="go"]'),
     x = E.el.querySelector('#sfFinX');
   if (b) b.disabled = !ok;
-  if (x) x.hidden = ok;
+  if (x) x.style.visibility = ok ? 'hidden' : 'visible';
 }
 function finEdDo(a) {
   const E = _finEd;
@@ -30669,7 +30804,7 @@ function finEdDraw() {
     iw = E.src.width,
     ih = E.src.height;
   g.setTransform(1, 0, 0, 1, 0, 0);
-  g.fillStyle = '#202124';
+  g.fillStyle = E.bg || '#202124';
   g.fillRect(0, 0, cvs.width, cvs.height);
   g.imageSmoothingEnabled = true;
   g.drawImage(E.src, pad, pad, iw * k, ih * k);
@@ -30719,9 +30854,13 @@ function finEdDraw() {
     const c = P[E.drag],
       R = Math.round(cvs.width * 0.14),
       Z = 3;
+    // (above the finger; with no room above — the top corners — beside it, towards the middle: below, the hand hid it)
     let lx = c[0],
       ly = c[1] - 2.3 * R;
-    if (ly < R + 4) ly = c[1] + 2.3 * R;
+    if (ly < R + 4) {
+      ly = c[1];
+      lx = c[0] < cvs.width / 2 ? c[0] + 2.3 * R : c[0] - 2.3 * R;
+    }
     lx = Math.max(R + 4, Math.min(cvs.width - R - 4, lx));
     ly = Math.max(R + 4, Math.min(cvs.height - R - 4, ly));
     g.save();
@@ -30835,9 +30974,10 @@ function finPanel() {
       today = new Date().toDateString() === d.toDateString(),
       when = today ? 'today' : typeof heroDate === 'function' ? heroDate(r.ts) : '';
     h =
-      '<div class="sffinhave"><img alt="Your photo of the finished page" src="' +
-      r.u +
-      '"><div class="sffint"><b>Your page</b><span class="sffinwhen">Added ' +
+      // (v314.1: the picture opens the card too)
+      '<div class="sffinhave"><button type="button" class="sffinpic" data-fin="show" aria-label="Your photo of the finished page, beside the plan"><img alt="" src="' +
+      esc(r.u) +
+      '"></button><div class="sffint"><b>Your page</b><span class="sffinwhen">Added ' +
       esc(when) +
       (r.flat ? ' · straightened' : '') +
       '</span><span class="sffinlinks"><button type="button" class="sflink" data-fin="show">Show beside the plan</button>' +
@@ -50969,7 +51109,9 @@ function handOpen(from, nx) {
       mcodeHTML(pm) +
       (was.later ? '’s shadows' : '') +
       (was.d >= was.n
-        ? ' · all ' + was.n + ' coloured <span aria-hidden="true">✓</span>'
+        ? // (one section: "coloured ✓", as Colour along's row says, v314.1)
+          (was.n === 1 ? ' · coloured' : ' · all ' + was.n + ' coloured') +
+          ' <span aria-hidden="true">✓</span>'
         : ': ' + was.d + ' of ' + was.n + ' coloured');
   el.querySelector('.sfhhead').innerHTML = head;
   el.querySelector('.sfhsw').style.background = sw ? sw.style.background : m.hex;
@@ -51161,6 +51303,8 @@ function focusAllOfColour() {
     toastActionHTML('Marked all ' + mcodeHTML(mm) + ' done', 'Undo', function () {
       // (v308.2: Focus mode closed since, the toast still up, it undoes too: it had done nothing)
       if (g !== loadGen || !assignData || comps.length !== K) return;
+      // (v314.1: the hand-off card about the marker just finished goes: it's no longer finished)
+      handClose(false);
       // (as the list's Undo does, kept shading too: 82-colour-mode)
       markBack(was, true);
       renderGuide();
@@ -53113,7 +53257,11 @@ function renderAlong() {
           '<div class="sfazh"><b>' +
           esc(zoneName(e.z)) +
           '</b><span>' +
-          (t.d >= t.n ? 'all ' + t.n + ' coloured' : t.d + ' of ' + t.n + ' coloured') +
+          (t.d >= t.n
+            ? t.n === 1
+              ? 'coloured'
+              : 'all ' + t.n + ' coloured'
+            : t.d + ' of ' + t.n + ' coloured') +
           '</span></div>';
       }
       return hd + alongRow(e);
@@ -55835,7 +55983,21 @@ function hideRevealBar() {
 // the picture leaves room for the bar (its height changes when the clip button appears or buttons wrap)
 function revFitBar() {
   var b = document.getElementById('sfRevealBar');
-  if (b) document.documentElement.style.setProperty('--revBot', b.offsetHeight + 'px');
+  if (!b) return;
+  var was = parseFloat(document.documentElement.style.getPropertyValue('--revBot')) || 0,
+    now = b.offsetHeight;
+  document.documentElement.style.setProperty('--revBot', now + 'px');
+  // (v314.1) the end's buttons taller than "Revealing…" (on a phone, With my page wraps them to two rows): the piece
+  // and its caption laid out again above them, once the lift has finished (they were left under the bar)
+  var S = _show;
+  if (S && S.onResize && Math.abs(now - was) > 2)
+    Promise.all(
+      (S.anims || []).map(function (a) {
+        return a.finished.catch(function () {});
+      }),
+    ).then(function () {
+      if (_show === S && S.onResize) S.onResize();
+    });
 }
 function revCloseEl() {
   var x = document.getElementById('sfRevX');
@@ -56581,7 +56743,6 @@ function lowLineHTML() {
     mcodeHTML(r.m) +
     ' is running low · used on ' +
     nWord(r.n, 'section') +
-    (to ? ' ·' : '') +
     '</span>' +
     (to
       ? '<button type="button" id="sfLowSwap" class="sflink" aria-label="Swap ' +
@@ -56633,8 +56794,24 @@ function lowSwap(k) {
   renderControls();
   const why = 'Swapped ' + om.code + ' for ' + to.code + ' in ' + nWord(secs.length, 'section');
   planCommit(why);
-  sayLive(why + ', pinned');
   ctlRefocus('#sfTab-' + gTab);
+  // (v314.1) said, with the marker it now takes and an Undo, as Mark all is: the line went and only the picture changed
+  // (the toast is read out; its Undo is the Plan's own, while this is still the last change)
+  const n = planStack.length,
+    g = loadGen;
+  toastActionHTML(
+    'Swapped ' +
+      mcodeHTML(om) +
+      ' for ' +
+      mcodeHTML(to) +
+      ' in ' +
+      nWord(secs.length, 'section') +
+      ', pinned',
+    'Undo',
+    function () {
+      if (g === loadGen && sfmode === 'guide' && assignData && planStack.length === n) planUndo();
+    },
+  );
 }
 /* (v313) Screens and ink differ: a one-time line under the tabs, "Screens and ink differ. Print a test strip of these
    16 markers to see them on your paper", whose link opens Print with Test strip chosen. Once ever (with the hints),
@@ -62047,11 +62224,27 @@ async function _exportPDF() {
 }
 // when colouring started and finished: the first tick's time, and the time the last section was ticked (unticking one
 // takes the finish away)
+// (v314.1) the ticks as last seen, and the guide as opened (_gTok): "last coloured" moves only when the ticks change
+let _progSig = null,
+  _progTok = -1;
+function progSig() {
+  let s = 0;
+  for (let l = 1; l < colored.length; l++) if (colored[l]) s = (s * 31 + l) % 1000000007;
+  return progressCount() + ':' + s;
+}
 function progStamp() {
   if (!assignData || !colored) return;
   const now = Date.now();
-  // (v313) when it was last coloured, for Home's Continue card ("Last coloured 3 days ago")
-  if (progressCount()) progAt.l = now;
+  // (v313) when it was last coloured, for Home's Continue card ("Last coloured 3 days ago"); v314.1: only when the ticks
+  // changed since the guide opened or was last looked at (opening it, or Colour along, re-stamped it before)
+  const sig = progSig();
+  if (_progTok !== _gTok) {
+    _progTok = _gTok;
+    _progSig = sig;
+  } else if (sig !== _progSig) {
+    _progSig = sig;
+    if (progressCount()) progAt.l = now;
+  }
   if (progAt.u) return;
   if (!progAt.s && progressCount()) progAt.s = now;
   if (pageDone()) {
@@ -71466,6 +71659,10 @@ function renderHomeNotes() {
 // newer than the version last seen (ms-last-ver), up to four (not on a fresh install); Help › About lists this
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v314.1',
+    t: 'Fixes from an independent review: a PDF of many pages shows a picture of each page again; Swap it says which marker it swapped in, with Undo; Home’s Your page | Plan no longer moves the card; and smaller fixes to the photo of your page.',
+  },
   {
     v: 'v314',
     t: 'Finished a page? Add a photo of it: the app straightens it and keeps it beside the plan, on this device. Home shows your page first, and Reveal can share the plan and your page side by side. Gradients on pages with a few huge sections use more of your markers.',

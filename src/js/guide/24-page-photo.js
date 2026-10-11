@@ -71,8 +71,8 @@ function finSetRec(r) {
   finPanel();
 }
 // the photo was added, changed or removed: Home's latest piece shows it (library.js)
-function finChanged(id) {
-  if (typeof homeFinChanged === 'function') homeFinChanged(id);
+function finChanged(id, rec) {
+  if (typeof homeFinChanged === 'function') homeFinChanged(id, rec || null);
 }
 // (the toast is read out as it shows)
 function finSay(m) {
@@ -252,7 +252,7 @@ function finStore(id, c, flat, msg) {
   return IDB.put(finKey(id), rec).then(
     function () {
       if (_fin.id === id) finSetRec(rec);
-      finChanged(id);
+      finChanged(id, rec);
       finSay(msg || (flat ? 'Photo of your page added, straightened.' : 'Photo of your page added.'));
       return true;
     },
@@ -333,8 +333,15 @@ function finEdit(id, src, q, why) {
     '<div class="dsub" id="sfFinEdD">' +
     esc(FIN_WHY[why] || FIN_WHY.adjust) +
     '</div><canvas id="sfFinCv" tabindex="0" aria-label="The photo, with the page’s four corners. Arrow keys move the highlighted corner; Space picks the next one."></canvas>' +
-    '<div class="sfpgnote warn" id="sfFinX" hidden>Those corners cross over. Drag them back to the page’s four corners.</div>' +
-    '<div class="sfedaskbtns"><button type="button" class="sfghost sffincx" data-a="cancel">Cancel</button><button type="button" class="sfghost" data-a="keep">Keep as is</button><button type="button" class="btn-primary" data-a="go">Straighten</button></div></div>';
+    // (its line kept, so the dialog doesn't move when it shows: v314.1)
+    '<div class="sfpgnote warn" id="sfFinX" style="visibility:hidden">Those corners cross over. Drag them back to the page’s four corners.</div>' +
+    // (v314.1, as the guide's own corners since v313: the page not found, Keep as is is the main button; a Straighten of
+    // the starting corners would trim the photo's edges and call it straightened)
+    '<div class="sfedaskbtns"><button type="button" class="sfghost sffincx" data-a="cancel">Cancel</button><button type="button" class="' +
+    (why === 'none' ? 'btn-primary' : 'sfghost') +
+    '" data-a="keep">Keep as is</button><button type="button" class="' +
+    (why === 'none' ? 'sfghost' : 'btn-primary') +
+    '" data-a="go">Straighten</button></div></div>';
   const cvs = o.querySelector('#sfFinCv');
   cvs.width = dw + 2 * pad;
   cvs.height = dh + 2 * pad;
@@ -385,6 +392,11 @@ function finEdit(id, src, q, why) {
     finEdDraw();
   });
   document.body.appendChild(o);
+  // (the margin round the photo in the dialog's own colour: v314.1)
+  try {
+    const bg = getComputedStyle(o.querySelector('.ocard')).backgroundColor;
+    if (bg && !/rgba\(0, 0, 0, 0\)|transparent/.test(bg)) E.bg = bg;
+  } catch (_) {}
   finEdDraw();
   finEdOK();
   try {
@@ -396,6 +408,7 @@ function finEdClose() {
   if (!E) return;
   _finEd = null;
   E.el.remove();
+  freeCanvas(E.cv);
   try {
     if (E.op && E.op.isConnected && E.op !== document.body) E.op.focus({ preventScroll: true });
   } catch (_) {}
@@ -410,7 +423,7 @@ function finEdOK() {
     b = E.el.querySelector('[data-a="go"]'),
     x = E.el.querySelector('#sfFinX');
   if (b) b.disabled = !ok;
-  if (x) x.hidden = ok;
+  if (x) x.style.visibility = ok ? 'hidden' : 'visible';
 }
 function finEdDo(a) {
   const E = _finEd;
@@ -441,7 +454,7 @@ function finEdDraw() {
     iw = E.src.width,
     ih = E.src.height;
   g.setTransform(1, 0, 0, 1, 0, 0);
-  g.fillStyle = '#202124';
+  g.fillStyle = E.bg || '#202124';
   g.fillRect(0, 0, cvs.width, cvs.height);
   g.imageSmoothingEnabled = true;
   g.drawImage(E.src, pad, pad, iw * k, ih * k);
@@ -491,9 +504,13 @@ function finEdDraw() {
     const c = P[E.drag],
       R = Math.round(cvs.width * 0.14),
       Z = 3;
+    // (above the finger; with no room above — the top corners — beside it, towards the middle: below, the hand hid it)
     let lx = c[0],
       ly = c[1] - 2.3 * R;
-    if (ly < R + 4) ly = c[1] + 2.3 * R;
+    if (ly < R + 4) {
+      ly = c[1];
+      lx = c[0] < cvs.width / 2 ? c[0] + 2.3 * R : c[0] - 2.3 * R;
+    }
     lx = Math.max(R + 4, Math.min(cvs.width - R - 4, lx));
     ly = Math.max(R + 4, Math.min(cvs.height - R - 4, ly));
     g.save();
@@ -607,9 +624,10 @@ function finPanel() {
       today = new Date().toDateString() === d.toDateString(),
       when = today ? 'today' : typeof heroDate === 'function' ? heroDate(r.ts) : '';
     h =
-      '<div class="sffinhave"><img alt="Your photo of the finished page" src="' +
-      r.u +
-      '"><div class="sffint"><b>Your page</b><span class="sffinwhen">Added ' +
+      // (v314.1: the picture opens the card too)
+      '<div class="sffinhave"><button type="button" class="sffinpic" data-fin="show" aria-label="Your photo of the finished page, beside the plan"><img alt="" src="' +
+      esc(r.u) +
+      '"></button><div class="sffint"><b>Your page</b><span class="sffinwhen">Added ' +
       esc(when) +
       (r.flat ? ' · straightened' : '') +
       '</span><span class="sffinlinks"><button type="button" class="sflink" data-fin="show">Show beside the plan</button>' +

@@ -3176,11 +3176,27 @@ async function _exportPDF() {
 }
 // when colouring started and finished: the first tick's time, and the time the last section was ticked (unticking one
 // takes the finish away)
+// (v314.1) the ticks as last seen, and the guide as opened (_gTok): "last coloured" moves only when the ticks change
+let _progSig = null,
+  _progTok = -1;
+function progSig() {
+  let s = 0;
+  for (let l = 1; l < colored.length; l++) if (colored[l]) s = (s * 31 + l) % 1000000007;
+  return progressCount() + ':' + s;
+}
 function progStamp() {
   if (!assignData || !colored) return;
   const now = Date.now();
-  // (v313) when it was last coloured, for Home's Continue card ("Last coloured 3 days ago")
-  if (progressCount()) progAt.l = now;
+  // (v313) when it was last coloured, for Home's Continue card ("Last coloured 3 days ago"); v314.1: only when the ticks
+  // changed since the guide opened or was last looked at (opening it, or Colour along, re-stamped it before)
+  const sig = progSig();
+  if (_progTok !== _gTok) {
+    _progTok = _gTok;
+    _progSig = sig;
+  } else if (sig !== _progSig) {
+    _progSig = sig;
+    if (progressCount()) progAt.l = now;
+  }
   if (progAt.u) return;
   if (!progAt.s && progressCount()) progAt.s = now;
   if (pageDone()) {

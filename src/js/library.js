@@ -429,13 +429,15 @@ function heroShow(el, ar, v, fade) {
   if (!b || !h) return;
   var ph = !!h.fin && v !== 'plan',
     src = ph ? h.fin.u : h.plan;
-  b.style.setProperty('--ar', (ph ? Math.max(0.2, Math.min(5, h.fin.w / h.fin.h)) : ar).toFixed(4));
+  // (v314.1) the box keeps one shape for both pictures, so Your page | Plan doesn't move the card: a straightened
+  // photo's (the plan sits on paper of that shape), else the plan's (a photo kept as taken sits inside it)
+  b.style.setProperty('--ar', heroShape(h.fin, ar).toFixed(4));
   b.classList.toggle('ph', ph);
   b.innerHTML =
     '<img alt="' +
     (ph ? 'Your photo of the finished page' : '') +
     '" src="' +
-    src +
+    esc(src) +
     '"' +
     (fade && !reduce ? ' class="hhfade"' : '') +
     '>';
@@ -446,6 +448,33 @@ function heroShow(el, ar, v, fade) {
     });
   }
   if (wh && h.when) wh.textContent = h.when + (ph ? ' · your photo' : '');
+  heroPillFit(el);
+}
+window.addEventListener('resize', function () {
+  var el = document.getElementById('homeHero');
+  if (el && el._hero && el.offsetParent !== null) heroPillFit(el);
+});
+// the picture's box: a straightened photo's shape, else the page's (ar)
+function heroShape(fin, ar) {
+  return fin && fin.flat ? Math.max(0.2, Math.min(5, fin.w / fin.h)) : ar;
+}
+// (v314.1) the pill over the picture's foot (Your page | Plan, or Add photo): when it's wider than the picture (a narrow
+// page), Add photo without its camera, and if that's still too wide, the pill under the picture. On a phone the
+// picture is its whole cream column (the card's footprint is fixed there), so only that column counts.
+function heroPillFit(el) {
+  var phone = !(window.matchMedia && matchMedia('(min-width: 700px)').matches),
+    b = el.querySelector(phone ? '.hhpic' : '.hhbox'),
+    w = el.querySelector('.hhpicw');
+  if (!b || !w) return;
+  w.classList.remove('hhnarrow', 'hhunder');
+  var bw = b.getBoundingClientRect().width,
+    wide = function () {
+      var p = el.querySelector('.hhseg:not([hidden]), .hhfin:not([hidden])');
+      return !!p && p.getBoundingClientRect().width > bw - 8;
+    };
+  if (!bw || !wide()) return;
+  w.classList.add('hhnarrow');
+  if (!phone && wide()) w.classList.add('hhunder');
 }
 // which picture a guide's latest piece shows (its photo, unless Plan was chosen for it), kept as ms-fin-view
 var FIN_VIEW = 'ms-fin-view',
@@ -488,12 +517,13 @@ function heroFinXSet(id) {
 }
 // (v314) a guide's photo of its finished page was added, changed or removed (guide/24-page-photo.js): the backup
 // reminder counts it as a change (fn), and Home's latest piece shows it
-function homeFinChanged(id) {
+function homeFinChanged(id, rec) {
   var r = state.saved.find(function (s) {
     return s.id === id && s.type === 'guide';
   });
   if (r) {
     r.fn = Date.now();
+    finRowShape(r, rec);
     save(true);
   }
   var el = document.getElementById('homeHero');
@@ -521,14 +551,17 @@ function homeHero(g) {
     nk = (g.keys || []).length,
     W = +g.W > 0 ? +g.W : 3,
     H = +g.H > 0 ? +g.H : 4,
-    ar = Math.max(0.2, Math.min(5, W / H));
+    ar = Math.max(0.2, Math.min(5, W / H)),
+    // (v314.1: the shape its straightened photo will give the box, kept in its row, so the box doesn't change when
+    // the photo comes)
+    ar0 = +g.fa > 0 ? Math.max(0.2, Math.min(5, +g.fa)) : ar;
   el.innerHTML =
     '<div class="hhcard" style="background-image:' +
     heroGlow(hx) +
     '"><div class="hhpicw"><button type="button" class="hhpic" data-hero="open" aria-label="Open ' +
     nm +
     '"><span class="hhbox" style="--ar:' +
-    ar.toFixed(4) +
+    ar0.toFixed(4) +
     '"></span></button>' +
     // (v314) with a photo of the finished page: it shows first, and the plan a tap away (remembered for the guide)
     '<div class="hhseg" role="group" aria-label="Picture" hidden><button type="button" data-hero="view" data-v="page" aria-pressed="true">Your page</button><button type="button" data-hero="view" data-v="plan" aria-pressed="false">Plan</button></div>' +
@@ -589,6 +622,7 @@ function homeHero(g) {
         heroShow(el, ar, heroView(gid), true);
         var hf = el.querySelector('.hhfin');
         if (hf) hf.hidden = !!hero.fin || heroFinX(gid) || !(window.SF && SF.finPick);
+        heroPillFit(el);
       });
     }, 0);
   });
@@ -612,6 +646,7 @@ function homeHero(g) {
       heroFinXSet(gid);
       var hf = el.querySelector('.hhfin');
       if (hf) hf.hidden = true;
+      heroPillFit(el);
       var go = document.getElementById('homeHeroGo');
       if (go)
         try {

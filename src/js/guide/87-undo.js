@@ -546,7 +546,6 @@ function lowLineHTML() {
     mcodeHTML(r.m) +
     ' is running low · used on ' +
     nWord(r.n, 'section') +
-    (to ? ' ·' : '') +
     '</span>' +
     (to
       ? '<button type="button" id="sfLowSwap" class="sflink" aria-label="Swap ' +
@@ -598,8 +597,24 @@ function lowSwap(k) {
   renderControls();
   const why = 'Swapped ' + om.code + ' for ' + to.code + ' in ' + nWord(secs.length, 'section');
   planCommit(why);
-  sayLive(why + ', pinned');
   ctlRefocus('#sfTab-' + gTab);
+  // (v314.1) said, with the marker it now takes and an Undo, as Mark all is: the line went and only the picture changed
+  // (the toast is read out; its Undo is the Plan's own, while this is still the last change)
+  const n = planStack.length,
+    g = loadGen;
+  toastActionHTML(
+    'Swapped ' +
+      mcodeHTML(om) +
+      ' for ' +
+      mcodeHTML(to) +
+      ' in ' +
+      nWord(secs.length, 'section') +
+      ', pinned',
+    'Undo',
+    function () {
+      if (g === loadGen && sfmode === 'guide' && assignData && planStack.length === n) planUndo();
+    },
+  );
 }
 /* (v313) Screens and ink differ: a one-time line under the tabs, "Screens and ink differ. Print a test strip of these
    16 markers to see them on your paper", whose link opens Print with Test strip chosen. Once ever (with the hints),

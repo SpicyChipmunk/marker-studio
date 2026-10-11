@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v314.1',
+    t: 'Fixes from an independent review: a PDF of many pages shows a picture of each page again; Swap it says which marker it swapped in, with Undo; Home’s Your page | Plan no longer moves the card; and smaller fixes to the photo of your page.',
+  },
+  {
     v: 'v314',
     t: 'Finished a page? Add a photo of it: the app straightens it and keeps it beside the plan, on this device. Home shows your page first, and Reveal can share the plan and your page side by side. Gradients on pages with a few huge sections use more of your markers.',
   },

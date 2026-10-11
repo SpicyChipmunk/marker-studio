@@ -458,6 +458,8 @@ function guideMeta(d, id) {
   else if (/ \(section edits\)$/.test(meta.name || '')) meta.eds = 0;
   // (v314: when its photo of the finished page last changed, for the backup reminder: kept from save to save)
   if (_ex && +_ex.fn > 0) meta.fn = +_ex.fn;
+  // (v314.1: and its straightened photo's shape)
+  if (_ex && +_ex.fa > 0) meta.fa = +_ex.fa;
   return meta;
 }
 // d.mustExist: only update an entry still in the Library (an auto-save never brings back a guide deleted meanwhile);
@@ -698,11 +700,19 @@ function finRecOk(r) {
     !!r &&
     typeof r === 'object' &&
     typeof r.u === 'string' &&
-    /^data:image\/(jpeg|png|webp);base64,/.test(r.u) &&
+    // (the whole of it: base64 only, as safeThumb checks a thumbnail; it goes into the page as an <img>'s src)
+    /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(r.u) &&
     r.u.length < FIN_MAX &&
     +r.w > 0 &&
     +r.h > 0
   );
+}
+// (v314.1) a Library row's note of its straightened photo's shape (fa, width ÷ height), for Home's latest piece to be laid
+// out in it from the start; none for a photo kept as taken, or none at all
+function finRowShape(row, rec) {
+  if (!row) return;
+  if (finRecOk(rec) && rec.flat) row.fa = Math.round((rec.w / rec.h) * 10000) / 10000;
+  else delete row.fa;
 }
 function gatherGuides() {
   var gs = state.saved.filter(function (s) {
@@ -1826,7 +1836,17 @@ function finFill(id, rec, over) {
   if (!id || !finRecOk(rec)) return Promise.resolve();
   return (over ? Promise.resolve(null) : IDB.get('fin-' + id))
     .then(function (here) {
-      if (!finRecOk(here)) return IDB.put('fin-' + id, rec);
+      if (!finRecOk(here))
+        return IDB.put('fin-' + id, rec).then(function () {
+          // (the row's note of its shape, for Home: v314.1)
+          finRowShape(
+            state.saved.find(function (s) {
+              return s.id === id;
+            }),
+            rec,
+          );
+          save(true);
+        });
     })
     .catch(function () {});
 }
@@ -1942,6 +1962,9 @@ function restoreGuideList(guides, _fts, done, prog) {
         renderBackupNudge();
       }
       renderSaved();
+      // (v314.1: Home's latest piece drawn afresh: a photo put in for a guide whose row is unchanged)
+      var _hh = document.getElementById('homeHero');
+      if (_hh) _hh.removeAttribute('data-hid');
       renderRecent();
       if (done)
         done(ok, copies, {

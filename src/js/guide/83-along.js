@@ -431,7 +431,11 @@ function renderAlong() {
           '<div class="sfazh"><b>' +
           esc(zoneName(e.z)) +
           '</b><span>' +
-          (t.d >= t.n ? 'all ' + t.n + ' coloured' : t.d + ' of ' + t.n + ' coloured') +
+          (t.d >= t.n
+            ? t.n === 1
+              ? 'coloured'
+              : 'all ' + t.n + ' coloured'
+            : t.d + ' of ' + t.n + ' coloured') +
           '</span></div>';
       }
       return hd + alongRow(e);

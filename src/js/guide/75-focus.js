@@ -291,7 +291,9 @@ function handOpen(from, nx) {
       mcodeHTML(pm) +
       (was.later ? '’s shadows' : '') +
       (was.d >= was.n
-        ? ' · all ' + was.n + ' coloured <span aria-hidden="true">✓</span>'
+        ? // (one section: "coloured ✓", as Colour along's row says, v314.1)
+          (was.n === 1 ? ' · coloured' : ' · all ' + was.n + ' coloured') +
+          ' <span aria-hidden="true">✓</span>'
         : ': ' + was.d + ' of ' + was.n + ' coloured');
   el.querySelector('.sfhhead').innerHTML = head;
   el.querySelector('.sfhsw').style.background = sw ? sw.style.background : m.hex;
@@ -483,6 +485,8 @@ function focusAllOfColour() {
     toastActionHTML('Marked all ' + mcodeHTML(mm) + ' done', 'Undo', function () {
       // (v308.2: Focus mode closed since, the toast still up, it undoes too: it had done nothing)
       if (g !== loadGen || !assignData || comps.length !== K) return;
+      // (v314.1: the hand-off card about the marker just finished goes: it's no longer finished)
+      handClose(false);
       // (as the list's Undo does, kept shading too: 82-colour-mode)
       markBack(was, true);
       renderGuide();

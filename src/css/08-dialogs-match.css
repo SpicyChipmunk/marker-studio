@@ -1685,6 +1685,8 @@ button.wnx::after,
 .sfedaskbtns .sfpdfpgs {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  /* (v314.1: rows their own height, the grid scrolling; a long PDF squashed every picture to a strip) */
+  grid-auto-rows: max-content;
   gap: 10px;
   width: 100%;
   max-height: 56vh;

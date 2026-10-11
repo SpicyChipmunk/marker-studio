@@ -119,7 +119,9 @@ test('Camera: taps on + To buy count while live; a right-press or a lost press d
   assert.notEqual(await hexNow(page), '#1e3cc8', 'the camera reads another colour');
   assert.equal(await shown(page), rgbOf('#1e3cc8'), 'held while pressed');
   await pause(page, 1200, 'past the longest hold');
-  assert.equal(await shown(page), rgbOf(await hexNow(page)), 'let go without a pointerup');
+  // (the swatch and the hex box read in one go, and given a reading to agree: read one after the other, a camera
+  // reading in between could leave them a unit apart, v314 on GitHub)
+  await until(page, () => { const s = document.querySelector('#matchResult .mcmp span'), h = document.getElementById('matchHex').value; return !!s && s.style.background === `rgb(${[1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16)).join(', ')})`; }, null, 'let go without a pointerup', 2000);
   assert.deepEqual(errors, []);
 });
 

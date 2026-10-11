@@ -1477,12 +1477,29 @@ button.hcpic:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 1px;
 }
+/* (v314.1: the whole photo, never cropped: the box is its shape when straightened, else the page's) */
 .hhbox.ph img {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  border-radius: 4px;
+  object-fit: contain;
+}
+/* (v314.1) a picture narrower than the pill: Add photo without its camera; still too narrow, the pill under it */
+.hhnarrow .hhfinadd .ic {
+  display: none;
+}
+.hhpicw.hhunder {
+  flex-direction: column;
+  align-items: center;
+}
+.hhunder .hhpic {
+  padding-bottom: 10px;
+}
+.hhunder .hhseg,
+.hhunder .hhfin {
+  position: static;
+  transform: none;
+  margin: 0 0 10px;
 }
 .hhfin {
   position: absolute;
@@ -1688,6 +1705,16 @@ button.hcpic:focus-visible {
     inset: 3%;
     width: 94%;
     height: 94%;
+  }
+  /* (v314.1) the pill centred on the picture's foot, inside it (the picture sits right of the column's padding) */
+  .hhseg,
+  .hhfin {
+    left: calc(50% + clamp(18px, 3vh, 34px) / 2);
+    bottom: calc(clamp(18px, 3vh, 34px) + 10px);
+  }
+  .hhunder .hhseg,
+  .hhunder .hhfin {
+    margin: 0 0 clamp(18px, 3vh, 34px) clamp(18px, 3vh, 34px);
   }
   .hhbody {
     gap: 10px;

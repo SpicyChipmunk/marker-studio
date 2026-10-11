@@ -139,7 +139,21 @@ function hideRevealBar() {
 // the picture leaves room for the bar (its height changes when the clip button appears or buttons wrap)
 function revFitBar() {
   var b = document.getElementById('sfRevealBar');
-  if (b) document.documentElement.style.setProperty('--revBot', b.offsetHeight + 'px');
+  if (!b) return;
+  var was = parseFloat(document.documentElement.style.getPropertyValue('--revBot')) || 0,
+    now = b.offsetHeight;
+  document.documentElement.style.setProperty('--revBot', now + 'px');
+  // (v314.1) the end's buttons taller than "Revealing…" (on a phone, With my page wraps them to two rows): the piece
+  // and its caption laid out again above them, once the lift has finished (they were left under the bar)
+  var S = _show;
+  if (S && S.onResize && Math.abs(now - was) > 2)
+    Promise.all(
+      (S.anims || []).map(function (a) {
+        return a.finished.catch(function () {});
+      }),
+    ).then(function () {
+      if (_show === S && S.onResize) S.onResize();
+    });
 }
 function revCloseEl() {
   var x = document.getElementById('sfRevX');
