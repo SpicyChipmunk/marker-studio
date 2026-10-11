@@ -91,7 +91,10 @@ test('the tip keeps its size outside the shrunk picture, never covers its sectio
   // sections from the top, middle and bottom of the picture, big and small
   const pick = await page.evaluate((ls) => { const t = __mstest, f = (l) => t.labelPos(l).y / t.H; return [ls.find((l) => f(l) < 0.25), ls.find((l) => f(l) > 0.4 && f(l) < 0.6), ls.find((l) => f(l) > 0.75), ls[ls.length - 1]].filter((l) => l != null); }, ls);
   for (const l of pick) {
+    // (the last section's tip closed first: it can cover the next one's label, and the tap landed on it, v314)
+    if (await page.locator('.sftip').count()) { await page.keyboard.press('Escape'); await idle(page); }
     await click(page, l); await page.waitForSelector('.sftip');
+    assert.equal(await page.textContent('.sftip b'), await page.evaluate((l) => __mstest.assignData.assign[l].code, l), `section ${l}'s own tip`);
     const t = await rect(page, '.sftip'), b = await secBox(page, l), v = await rect(page, '#sfView');
     const unscaled = await page.evaluate(() => { const e = document.querySelector('.sftip'); return Math.abs(e.getBoundingClientRect().height - e.offsetHeight) < 0.5 && !e.closest('#sfPic'); });
     assert.ok(unscaled, 'not in the scaled wrapper');

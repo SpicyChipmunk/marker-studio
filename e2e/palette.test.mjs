@@ -314,6 +314,12 @@ test('tapping a band re-rolls that colour to one clearly different from the rest
       await band.click({ position: { x: box.width / 2, y: box.height - 8 } }); // clear of the lock
       await until(page, () => !rolling, null, 'the re-roll finished'); await idle(page);
       const after = await page.evaluate(() => state.palettes[state.palettes.length - 1].slice());
+      // (a tight Monochrome can leave no other marker on its scheme: then it says so and keeps the colour, v304; a
+      // random palette did about 1 time in 5, v314)
+      if (h === 'mono' && after[k] === before[k]) {
+        assert.match(await page.textContent('#msToast'), /No other marker .*fits this scheme/, `${h}: band ${k} said why`);
+        continue;
+      }
       assert.notEqual(after[k], before[k], `${h}: band ${k} changed`);
       assert.deepEqual(after.filter((_, p) => p !== k), before.filter((_, p) => p !== k), 'the others stay');
       const d = await page.evaluate(([pal, k]) => Math.min(...pal.filter((_, p) => p !== k).map((i) => de2000(LAB[i], LAB[pal[k]]))), [after, k]);
