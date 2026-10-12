@@ -504,6 +504,15 @@ test('the Print sheet: a choice not taken is in the ink colour, not faded as if 
   await page.waitForFunction(() =>
     [...document.querySelectorAll('#sfSheet [data-plabels]')].every((e) => !e.getAnimations().some((a) => a.playState === 'running')),
   );
+  // (v316: and until the choice not taken has its ink, up to 2 s: WebKit doesn't always list its 0.2 s colour change
+  // as running, and read mid-way it came back 0.52–0.77 opaque on GitHub; one that stays faded times out here)
+  await page
+    .waitForFunction(() => {
+      const on = document.querySelector('#sfSheet [data-plabels].on'),
+        off = document.querySelector('#sfSheet [data-plabels]:not(.on):not(:disabled)');
+      return getComputedStyle(off).color === getComputedStyle(on).color;
+    }, null, { timeout: 2000 })
+    .catch(() => {});
   const r = await page.evaluate(() => {
     const on = document.querySelector('#sfSheet [data-plabels].on'),
       off = document.querySelector('#sfSheet [data-plabels]:not(.on):not(:disabled)'),

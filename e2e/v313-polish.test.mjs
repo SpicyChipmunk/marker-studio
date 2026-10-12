@@ -22,13 +22,16 @@ const loadSample = async (page) => {
   await idle(page);
 };
 
-test('Markers: the line about the view sits under the row, whole; Your collection. says no more', async () => {
+test('Markers: the line about the view sits under the row, whole; Owned has none (v316: "Your collection." said what the switch says)', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await welcome(page, 'look');
   await idle(page);
   await page.click('#mCollection');
   await idle(page);
-  assert.equal(await page.textContent('#ownHint'), 'Your collection.');
+  assert.equal(await page.isVisible('#ownHint'), false);
+  await page.click('#ownView [data-v="unowned"]');
+  await idle(page);
+  assert.match(await page.textContent('#ownHint'), /^Markers you don’t own yet/);
   const h = await box(page, '#ownHint'),
     a = await box(page, '#mkAddBtn');
   assert.ok(h.y >= a.y + a.height - 1, 'under the row');

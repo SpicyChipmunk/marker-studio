@@ -158,10 +158,15 @@ test('Markers on an iPad: the search and Owned / Unowned / All / To buy on one r
   const { page, errors } = await openApp({ width: 1180, height: 740 });
   await welcome(page, 'look'); await idle(page);
   await page.click('#mCollection'); await idle(page);
-  const q = await rect(page, '#q'), ov = await rect(page, '#ownView'), rnd = await rect(page, '#mkDrawBtn'), hint = await rect(page, '#ownHint'), jmp = await rect(page, '#mkJump');
+  const q = await rect(page, '#q'), ov = await rect(page, '#ownView'), rnd = await rect(page, '#mkDrawBtn'), jmp = await rect(page, '#mkJump');
   assert.ok(Math.abs(q.top + q.height / 2 - (ov.top + ov.height / 2)) < 4 && ov.left > q.right, 'one row: ' + JSON.stringify([q, ov]));
-  // (v313: the line about the view under the tools' row, whole)
-  assert.ok(rnd.top > q.bottom && hint.top >= rnd.bottom - 1 && jmp.left > rnd.right && Math.abs(jmp.top + jmp.height / 2 - (rnd.top + rnd.height / 2)) < 6, 'the tools on the next: ' + JSON.stringify([rnd, hint, jmp]));
+  assert.ok(rnd.top > q.bottom && jmp.left > rnd.right && Math.abs(jmp.top + jmp.height / 2 - (rnd.top + rnd.height / 2)) < 6, 'the tools on the next: ' + JSON.stringify([rnd, jmp]));
+  // (v313: the line about the view under the tools' row, whole; v316: Owned has none, it said what the switch says)
+  assert.equal(await page.isVisible('#ownHint'), false, 'Owned: no line');
+  await page.click('#ownView [data-v="unowned"]'); await idle(page);
+  const hint = await rect(page, '#ownHint'), rnd1 = await rect(page, '#mkDrawBtn');
+  assert.ok(hint.height > 0 && hint.top >= rnd1.bottom - 1, 'Unowned: its line under the tools: ' + JSON.stringify([rnd1, hint]));
+  await page.click('#ownView [data-v="owned"]'); await idle(page);
   // the switch keeps its name for screen readers
   assert.equal(await page.evaluate(() => document.getElementById(document.getElementById('ownView').getAttribute('aria-labelledby')).textContent), 'Show');
   // the first markers within the first screen's top two thirds
@@ -179,8 +184,8 @@ test('Markers on an iPad: the search and Owned / Unowned / All / To buy on one r
   // a phone: one column, as before (the search over the switch over Random)
   await page.setViewportSize({ width: 390, height: 844 }); await idle(page);
   await page.click('#ownView [data-v="owned"]'); await idle(page);
-  const q2 = await rect(page, '#q'), ov2 = await rect(page, '#ownView'), rn2 = await rect(page, '#mkDrawBtn'), h2 = await rect(page, '#ownHint');
-  assert.ok(ov2.top >= q2.bottom && rn2.top >= ov2.bottom && h2.top >= rn2.bottom, 'one column: ' + JSON.stringify([q2, ov2, rn2, h2]));
+  const q2 = await rect(page, '#q'), ov2 = await rect(page, '#ownView'), rn2 = await rect(page, '#mkDrawBtn');
+  assert.ok(ov2.top >= q2.bottom && rn2.top >= ov2.bottom, 'one column: ' + JSON.stringify([q2, ov2, rn2]));
   // no markers yet: Add a set you own comes above the tools' row, not inside it (v300 review)
   await page.setViewportSize({ width: 1180, height: 740 });
   await page.evaluate(() => { state.owned.clear(); save(); chrome(); }); await idle(page);
