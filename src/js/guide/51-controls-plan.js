@@ -43,6 +43,8 @@ function ctlPlan() {
   stripLineWire();
   roughWire();
   positionRough();
+  speckWire();
+  positionSpecks();
 }
 // a Plan panel's attributes: shown only while its tab is chosen
 function ctlTabAttrs(t) {
@@ -509,6 +511,8 @@ function ctlPlanPattern() {
           '.'
         : GRAD_SCAT_DESC[_sv]) +
       '</div>';
+    // (v315) markers seen only on specks, last: what spreads them, and where they are
+    html += gradSpeckHTML();
   } else if (family === 'random') {
     // (Balance, its bar, Keep touching sections clearly different and No repeats: 31-balance)
     html += balHTML();
@@ -871,4 +875,122 @@ function ctlPlanBar() {
     (guideWhite() ? ' disabled title="Every section is left white: nothing to colour yet"' : '') +
     '>Colour along</button></div>'
   );
+}
+
+/* (v315) A Gradient's markers seen only on specks: on the Pattern tab, last, "Y29 only colours specks of this page.
+   Fewer markers would spread the colours further. Show them" (Show them rings their sections, as the rough spots' line
+   does; Hide them, or the plan laid again, a tab or a zone changed, takes the rings away). A marker counts when its
+   sections together are under SPECK_SHARE of the zone (the same floor as the v315 Gradient rule, which lays to avoid
+   them where it can: what is left is on pages with several huge sections). Not when scattered (Textured and up: specks
+   are the look), nor when each section has a marker of its own, nor for a marker only on sections you pinned. More
+   than three: how many, not their codes. */
+const SPECK_SHARE = 0.003;
+let _speckOn = null, // the plan whose speck sections are ringed (assignData, its zone)
+  speckEl = null;
+function gradSpecks() {
+  if (family !== 'gradient' || !assignData) return null;
+  const secs = zoneList(),
+    c = gradCountNow();
+  if (!secs.length || c.M >= secs.length || gradScatAt(c.M) >= 2) return null;
+  const A = assignData.assign,
+    by = {},
+    ms = {},
+    at = {};
+  let all = 0;
+  secs.forEach(function (l) {
+    const m = A[l];
+    if (!m) return;
+    const a = comps[l].area || 1;
+    all += a;
+    if (locks[l] !== undefined) {
+      by[m.mkey] = Infinity;
+      return;
+    }
+    by[m.mkey] = (by[m.mkey] || 0) + a;
+    ms[m.mkey] = m;
+    (at[m.mkey] || (at[m.mkey] = [])).push(l);
+  });
+  const ks = Object.keys(by).filter(function (k) {
+    return by[k] < SPECK_SHARE * all;
+  });
+  if (!ks.length) return null;
+  let ls = [];
+  ks.forEach(function (k) {
+    ls = ls.concat(at[k]);
+  });
+  return { keys: ks, ms: ms, secs: ls };
+}
+function speckShown() {
+  return !!_speckOn && _speckOn.a === assignData && _speckOn.z === zoneLive() && gTab === 'pattern';
+}
+function gradSpeckHTML() {
+  const sp = gradSpecks();
+  if (!sp) return '';
+  const n = sp.keys.length,
+    names = sp.keys.map(function (k) {
+      return '<b>' + mcodeHTML(sp.ms[k]) + '</b>';
+    }),
+    who = n > 3 ? n + ' markers' : n > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[n - 1] : names[0];
+  return (
+    '<div id="sfSpeck" class="sfc-note sfc-mt6">' +
+    who +
+    (n > 1 ? ' only colour' : ' only colours') +
+    ' specks of this ' +
+    (zones.length ? 'zone' : 'page') +
+    '. Fewer markers would spread the colours further. <button type="button" id="sfSpeckShow" class="sflink" aria-pressed="' +
+    speckShown() +
+    '">' +
+    (speckShown() ? 'Hide them' : 'Show them') +
+    '</button></div>'
+  );
+}
+function speckWire() {
+  const b = document.getElementById('sfSpeckShow');
+  if (b)
+    b.addEventListener('click', function () {
+      _speckOn = speckShown() ? null : { a: assignData, z: zoneLive() };
+      renderControls();
+      ctlRefocus('#sfSpeckShow');
+      sayLive(_speckOn ? 'Their sections are ringed on the picture.' : 'Rings hidden.');
+    });
+}
+// the rings, over the picture, while Show them is on for this plan
+function positionSpecks() {
+  if (!sfView || !cv) return;
+  const sp = speckShown() && sfmode === 'guide' && document.getElementById('sfSpeck') ? gradSpecks() : null;
+  if (!sp) {
+    if (_speckOn && _speckOn.a !== assignData) _speckOn = null;
+    if (speckEl) speckEl.innerHTML = '';
+    return;
+  }
+  if (!speckEl) {
+    speckEl = document.createElement('div');
+    speckEl.className = 'sfroughs sfspecks';
+    speckEl.setAttribute('aria-hidden', 'true');
+  }
+  if (speckEl.parentNode !== (picEl || sfView)) (picEl || sfView).appendChild(speckEl);
+  if (cv.style.transition) {
+    speckEl.innerHTML = '';
+    setTimeout(positionSpecks, 400);
+    return;
+  }
+  const r0 = cv.getBoundingClientRect(),
+    vr = picHost().getBoundingClientRect(),
+    q = picK(),
+    k = r0.width / q / W;
+  if (!(k > 0)) return;
+  const ox = (r0.left - vr.left) / q,
+    oy = (r0.top - vr.top) / q;
+  speckEl.innerHTML = sp.secs
+    .map(function (l) {
+      const p = labelPos(l);
+      return (
+        '<span class="sfring" style="left:' +
+        (ox + p.x * k).toFixed(1) +
+        'px;top:' +
+        (oy + p.y * k).toFixed(1) +
+        'px"></span>'
+      );
+    })
+    .join('');
 }

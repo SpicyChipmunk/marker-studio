@@ -30,8 +30,8 @@
   font-size: var(--t-base);
 }
 #sfRoot .sfedit.on {
-  background: rgba(120, 200, 180, 0.22);
-  border-color: rgba(143, 214, 180, 0.55);
+  background: var(--pick-bg);
+  border-color: var(--pick-edge);
 }
 #sfRoot .sfghost {
   padding: 8px 12px;
@@ -250,9 +250,10 @@
 #sfRoot .sfmlrow.sfmlplain {
   cursor: default;
 }
+/* (v316: the picked tint, not done's green) */
 #sfRoot .sfmlrow[aria-pressed='true'] {
-  border-color: var(--ok);
-  background: rgba(95, 184, 159, 0.12);
+  border-color: var(--pick-edge);
+  background: var(--pick-bg);
 }
 #sfRoot .sfmlrow .sw {
   flex: none;
@@ -1066,24 +1067,120 @@
 #sfRoot #sfCtl .sfc-sw-ex {
   background: #e63bc9;
 }
-/* the Gradient's Start colour: the loop's colours in a strip, each under the slider's stop for it (the slider's stops
-   run from half a thumb in at each end) */
+/* the Gradient's Start colour (v316): the loop's colours in a strip, and the slider's thumb riding on it — a hollow
+   ring, so the colour it sits on shows through — in place of a native slider on its own track under the strip. The
+   strip and the range share one grid cell; the range's own track is see-through, 22px tall as its thumb, so the thumb
+   is centred on it in both engines (Chromium puts the thumb at the track's top, WebKit centres it: the same when the
+   two are the same height). The strip's side margins are half the thumb: a slider's stops run from half a thumb in at
+   each end, so each colour sits under its stop */
 #sfRoot #sfCtl .sfgstart {
   position: relative;
+  display: grid;
+  align-items: center;
+  margin-top: 2px;
 }
 #sfRoot #sfCtl .sfgsstrip {
-  height: 8px;
-  margin: 2px 9px 0;
+  grid-area: 1 / 1;
+  height: 10px;
+  margin: 0 11px;
   border-radius: 5px;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
-/* v307: Scatter's slider straight under its name, as Start colour's is */
+/* v307: Scatter's slider straight under its name, as Start colour's is; (v316) with Start colour's hollow ring for a
+   thumb, on a thin grey line in place of the strip, so the Gradient's two sliders match. The line is the range's own
+   see-through track's background, inset half a thumb at each end as the strip is */
 #sfRoot #sfCtl .sfgscat .sfc-range {
-  margin-top: 0;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+#sfRoot #sfCtl .sfgscat .sfc-range:disabled {
+  cursor: default;
 }
 #sfRoot #sfCtl .sfgstart .sfc-range {
+  grid-area: 1 / 1;
   display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 36px;
   margin: 0;
+  padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+#sfRoot #sfCtl .sfgstart .sfc-range::-webkit-slider-runnable-track,
+#sfRoot #sfCtl .sfgscat .sfc-range::-webkit-slider-runnable-track {
+  height: 22px;
+  background: transparent;
+  border: 0;
+}
+#sfRoot #sfCtl .sfgstart .sfc-range::-webkit-slider-thumb,
+#sfRoot #sfCtl .sfgscat .sfc-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: transparent;
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+#sfRoot #sfCtl .sfgstart .sfc-range::-moz-range-track,
+#sfRoot #sfCtl .sfgscat .sfc-range::-moz-range-track {
+  height: 22px;
+  background: transparent;
+  border: 0;
+}
+#sfRoot #sfCtl .sfgstart .sfc-range::-moz-range-thumb,
+#sfRoot #sfCtl .sfgscat .sfc-range::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: transparent;
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+/* the keyboard's focus: the ring in the accent, as the other controls' */
+#sfRoot #sfCtl .sfgstart .sfc-range:focus-visible,
+#sfRoot #sfCtl .sfgscat .sfc-range:focus-visible {
+  outline: none;
+}
+#sfRoot #sfCtl .sfgstart .sfc-range:focus-visible::-webkit-slider-thumb,
+#sfRoot #sfCtl .sfgscat .sfc-range:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 2px #0e0e12,
+    0 0 0 4px #7c5cff;
+}
+#sfRoot #sfCtl .sfgstart .sfc-range:focus-visible::-moz-range-thumb,
+#sfRoot #sfCtl .sfgscat .sfc-range:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 0 0 2px #0e0e12,
+    0 0 0 4px #7c5cff;
+}
+/* (Scatter's line, after the shared see-through track it draws on) */
+#sfRoot #sfCtl .sfgscat .sfc-range::-webkit-slider-runnable-track {
+  background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)) center / calc(100% - 22px)
+    4px no-repeat;
+}
+#sfRoot #sfCtl .sfgscat .sfc-range::-moz-range-track {
+  background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)) center / calc(100% - 22px)
+    4px no-repeat;
 }
 /* (the line about the biggest colour step is there only once the start has moved) */
 #sfRoot #sfCtl #sfGStartLbl:empty {
@@ -1174,8 +1271,8 @@
   cursor: pointer;
 }
 #sfRoot #sfCtl .sfzchip.on {
-  background: rgba(120, 200, 180, 0.22);
-  border-color: rgba(143, 214, 180, 0.6);
+  background: var(--pick-bg);
+  border-color: var(--pick-edge);
   font-weight: 700;
 }
 #sfRoot #sfCtl .sfzchip .sfzpen {

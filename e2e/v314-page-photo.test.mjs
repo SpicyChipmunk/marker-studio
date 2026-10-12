@@ -118,17 +118,23 @@ test('a photo of the finished page, found and straightened: kept beside the guid
   // ⋯: Change and Remove (not Add)
   await openMenu(page);
   const items = await page.$$eval('#sfSheet .sfmitem', (b) => b.map((x) => x.textContent));
-  assert.ok(items.includes('Change your photo') && items.includes('Remove your photo'), items.join());
+  assert.ok(
+    items.includes('Change the photo of your page') && items.includes('Remove the photo of your page'),
+    items.join(),
+  );
   assert.ok(!items.includes('Add a photo of your page'));
   await page.keyboard.press('Escape');
   await idle(page);
   // Reset progress says it's kept
   await menuItem(page, 'Reset progress');
-  assert.match(await page.textContent('#sfSheet'), /Your photo of the page is kept\./);
+  assert.match(
+    await page.textContent('#sfSheet'),
+    /Your photo of the page is kept, and shows again once the page is finished\./,
+  );
   await page.click('#sfSheet [data-rp="cancel"]');
   await idle(page);
   // Remove asks first
-  await menuItem(page, 'Remove your photo');
+  await menuItem(page, 'Remove the photo of your page');
   await page.waitForSelector('#sfEdAsk');
   assert.match(await page.textContent('#sfEdAsk'), /Remove your photo\?.*The guide stays as it is\./);
   await page.click('#sfEdAsk [data-a="go"]');
@@ -357,7 +363,7 @@ test('the Library’s backup holds the photo (a guide file doesn’t); restoring
   assert.deepEqual(errors, []);
 });
 
-test('Reveal’s end: With my page shows the plan beside the photo (side by side for a tall page), over Reveal, with Share', async () => {
+test('Reveal’s end: Plan and your page shows the plan beside the photo (side by side for a tall page), over Reveal, with Share', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await finished(page);
   await choose(page, await photo(page, FOUND), '#sfFin [data-fin="add"]');
@@ -374,7 +380,7 @@ test('Reveal’s end: With my page shows the plan beside the photo (side by side
   assert.ok(Math.abs(c.at.plan.h - c.at.page.h) < 1, 'the same height');
   await page.click('#sfAlongRev');
   await page.waitForSelector('#revFin', { timeout: 30000 });
-  assert.equal(await page.textContent('#revFin'), 'With my page');
+  assert.equal(await page.textContent('#revFin'), 'Plan and your page');
   await page.click('#revFin');
   await page.waitForSelector('#sfFinCard img');
   // over Reveal

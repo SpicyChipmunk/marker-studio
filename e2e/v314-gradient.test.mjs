@@ -44,8 +44,9 @@ test('a page with big sections: a new guide takes the softened rule, with fewer 
   await idle(page);
   await letterGuide(page);
   await answerAsks(page);
-  assert.equal(await page.evaluate(() => __mstest.styleVars.gradArea), 1, 'a new guide');
-  assert.equal(await page.evaluate(() => __mstest.currentDesignObj().payload.gradArea), 1, 'saved with it');
+  // (v315: a new guide takes the newer rule, 2; v314's, 1, is still laid as it was)
+  assert.equal(await page.evaluate(() => __mstest.styleVars.gradArea), 2, 'a new guide');
+  assert.equal(await page.evaluate(() => __mstest.currentDesignObj().payload.gradArea), 2, 'saved with it');
   const soft = await lay(page, 1, 0),
     plain = await lay(page, 0, 0);
   assert.notEqual(soft.keys, plain.keys, 'laid differently');

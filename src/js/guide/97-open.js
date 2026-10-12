@@ -457,6 +457,8 @@ function openDesignObj(d, id, resumed, quiet, col) {
       normalizeTones();
       curId = id;
       libNote();
+      // (v315: its photo of the finished page read now, so Put back after a delete always has it)
+      finSync(true);
       focus = false;
       var _rt1 = document.getElementById('sfRoot');
       if (_rt1) _rt1.classList.remove('sffoc');

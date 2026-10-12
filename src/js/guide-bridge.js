@@ -445,6 +445,9 @@ function guideMeta(d, id) {
     if (_tn) meta.tn = _tn;
   }
   if (d.fresh) meta.fresh = 1;
+  // (v316: its family rule, famRule, so To buy's "From your guides" finds its blend companions as its plan does
+  // without opening it; a row saved before v316 has none, and is read with v315's rule, 2, until the guide is saved again)
+  if (_pl) meta.fr = [1, 2, 3].indexOf(+_pl.famRule) >= 0 ? +_pl.famRule : 0;
   // (v313: the sample tried, not printed or renamed: Home's Continue card leaves it be)
   if (_pl && _pl.smp === 1) meta.smp = 1;
   // (v313: when it was last coloured, for Home's Continue card)
@@ -1831,12 +1834,13 @@ function dropKept(id) {
       return null;
     });
 }
-// (v314) a guide's photo of its finished page put in from a backup (over one here only when over is set)
+// (v314) a guide's photo of its finished page put in from a backup (over one here only when over is set; v315: or
+// when the backup's is newer, as when moving to another device after changing the photo)
 function finFill(id, rec, over) {
   if (!id || !finRecOk(rec)) return Promise.resolve();
   return (over ? Promise.resolve(null) : IDB.get('fin-' + id))
     .then(function (here) {
-      if (!finRecOk(here))
+      if (!finRecOk(here) || (+rec.ts || 0) > (+here.ts || 0))
         return IDB.put('fin-' + id, rec).then(function () {
           // (the row's note of its shape, for Home: v314.1)
           finRowShape(
@@ -1966,6 +1970,8 @@ function restoreGuideList(guides, _fts, done, prog) {
       var _hh = document.getElementById('homeHero');
       if (_hh) _hh.removeAttribute('data-hid');
       renderRecent();
+      // (v315: and the open guide's, if a newer one came in)
+      if (window.SF && SF.finRefresh) SF.finRefresh();
       if (done)
         done(ok, copies, {
           dup: dup,

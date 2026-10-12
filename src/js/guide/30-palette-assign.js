@@ -721,6 +721,19 @@ function gradPickSpread(src, K, loop, rnd, zs, lt) {
       }
     }
     if (!near.length) break;
+    // (v315, a Gradient made since: gradArea 2) never a marker within RAINBOW_NEED of one already picked while one
+    // further off is among the near ones, as Rainbow keeps them apart: one more colour you can tell apart in the run
+    // (Ben's 16: B111 and B112, 3.9 apart). Measured on 765 plans: runs with such a pair 240 → 48; the clashes along
+    // the borders as before, the steps along the walk a touch bigger (6.09 → 6.12)
+    if (gradArea >= 2 && out.length) {
+      const far = near.filter(function (e) {
+        const lb = col[e[1]].lab || hexToLab(col[e[1]].hex);
+        for (let q = 0; q < out.length; q++)
+          if (de2000(lb, out[q].lab || hexToLab(out[q].hex)) < RAINBOW_NEED) return false;
+        return true;
+      });
+      if (far.length && far.length < near.length) near.splice.apply(near, [0, near.length].concat(far));
+    }
     const cost = near.map(function (e) {
       const x = mLch(col[e[1]]);
       let v = e[0] + Math.abs(x[0] - LT) * 0.8 - x[1] * 0.15;
@@ -1271,47 +1284,100 @@ function gradStartInfo() {
   return { cols: p.base.slice(0, p.nc), n: p.nc, r: p.r };
 }
 // items (sections, in order) cut into parts: part k takes shares[k] of the whole area and at least mins[k] items;
-// where one part hands over to the next goes by each section's middle in the running total of area. (v314) soft: a
-// section counts as its area to the power GRAD_AREA_P, so a huge one (a sky, a background) takes less of the run and
-// the small ones aren't left with markers seen only on specks: a Gradient made since v314 (gradArea) laid Polished or
-// Natural (buildGradient). Measured on 21 pages, 945 plans: markers on under 1% of the page 1.7 → 1.0 a plan, about two
-// plans with fewer colour clashes along the borders for every one with more; 0.5 and a hard cap did less well. Not for
-// Textured, Sparkle or Confetti, whose scattering is the point: there it made more plans clash than fewer.
-const GRAD_AREA_P = 0.7;
-function splitByArea(items, shares, mins, soft) {
+// where one part hands over to the next goes by each section's middle in the running total of area.
+// soft, the Gradient's area rule (gradArea), laid Polished or Natural (buildGradient); Textured, Sparkle and Confetti,
+// whose scattering is the point, always take the plain rule (0):
+// 1 (a Gradient made in v314): a section counts as its area to the power GRAD_AREA_P, so a huge one (a sky, a
+//   background) takes less of the run and the small ones aren't left with markers seen only on specks.
+// 2 (made since v315, "adapt"): the plain rule, unless it leaves a part on a speck (its sections together under
+//   GRAD_SPECK of the whole, or a fifth of an even share if less); then softer and softer (GRAD_ADAPT_P) until none is.
+//   Measured on 765 plans (17 pages × 3 collections × 5 Flows × 8/16/24): markers only on specks 1.02 → 0.35 a plan
+//   (v314's 0.7: 0.53), the colour clashes along the borders as with the plain rule, and 76% of plans exactly as plain
+//   lays them. A softer exponent for everything (0.85) kept half the gain and moved the clashes about (the vase page).
+// zero: sections that count for nothing (a section pinned by you, bigger than one marker's share: buildGradient), so
+// the run is shared out over the rest; they stay in the parts, to keep their place in the walk
+const GRAD_AREA_P = 0.7,
+  GRAD_ADAPT_P = [1, 0.85, 0.7, 0.55],
+  GRAD_SPECK = 0.003;
+function splitByArea(items, shares, mins, soft, zero) {
+  // (true, as v314 passed it: 1)
+  soft = soft === true ? 1 : +soft || 0;
   const n = items.length,
     K = shares.length,
     mid = new Float64Array(n),
-    out = [];
-  let acc = 0,
+    ar = new Float64Array(n);
+  let tot = 0,
     sh = 0,
-    need = 0;
+    need0 = 0;
   for (let i = 0; i < n; i++) {
-    const a0 = Math.max(1, comps[items[i]].area || 1),
-      a = soft ? Math.pow(a0, GRAD_AREA_P) : a0;
-    mid[i] = acc + a / 2;
-    acc += a;
+    ar[i] = zero && zero[items[i]] ? 0 : Math.max(1, comps[items[i]].area || 1);
+    tot += ar[i];
   }
   for (let k = 0; k < K; k++) {
     sh += shares[k];
-    need += mins[k];
+    need0 += mins[k];
   }
-  let start = 0,
-    p = 0,
-    cum = 0;
-  for (let k = 0; k < K; k++) {
-    need -= mins[k];
-    cum += shares[k];
-    let end = n;
-    if (k < K - 1) {
-      const cut = (acc * cum) / sh;
-      while (p < n && mid[p] < cut) p++;
-      end = Math.min(n - need, Math.max(start + mins[k], p));
+  const cutAt = function (P) {
+    let acc = 0;
+    for (let i = 0; i < n; i++) {
+      const a = ar[i] ? (P === 1 ? ar[i] : Math.pow(ar[i], P)) : 1e-9;
+      mid[i] = acc + a / 2;
+      acc += a;
     }
-    out.push(items.slice(start, end));
-    start = end;
+    const out = [];
+    let start = 0,
+      p = 0,
+      cum = 0,
+      need = need0;
+    for (let k = 0; k < K; k++) {
+      need -= mins[k];
+      cum += shares[k];
+      let end = n;
+      if (k < K - 1) {
+        const cut = (acc * cum) / sh;
+        while (p < n && mid[p] < cut) p++;
+        end = Math.min(n - need, Math.max(start + mins[k], p));
+      }
+      out.push(items.slice(start, end));
+      start = end;
+    }
+    return out;
+  };
+  if (soft !== 2) return cutAt(soft === 1 ? GRAD_AREA_P : 1);
+  // (adapt) a part on a speck: its sections' own areas (one made only of sections that count for nothing is none)
+  const floor = Math.min(GRAD_SPECK * tot, (0.2 * tot) / Math.max(1, sh));
+  let best = null;
+  for (let q = 0; q < GRAD_ADAPT_P.length; q++) {
+    const out = cutAt(GRAD_ADAPT_P[q]);
+    best = out;
+    let ok = true,
+      i0 = 0;
+    for (let k = 0; k < K && ok; k++) {
+      let a = 0;
+      for (let j = 0; j < out[k].length; j++) a += ar[i0 + j];
+      i0 += out[k].length;
+      if (a > 0 && a < floor * shares[k]) ok = false;
+    }
+    if (ok) break;
   }
-  return out;
+  return best;
+}
+// (v315, gradArea 2) the sections you pinned that are bigger than one marker's share of the run: they count for nothing
+// when it's shared out (splitByArea), so a pinned sky or background leaves the other markers the rest of the page,
+// rather than specks. Only your own pins (_userLocks), not the coloured sections a laying holds (holdOn); a small one
+// keeps its area, so pinning it never nudges the rest.
+function gradPinZero(order, M) {
+  const ul = _userLocks || locks;
+  if (!M) return null;
+  let tot = 0;
+  for (let i = 0; i < order.length; i++) tot += comps[order[i]].area || 1;
+  const share = tot / M;
+  let z = null;
+  for (let i = 0; i < order.length; i++) {
+    const l = order[i];
+    if (ul[l] !== undefined && (comps[l].area || 1) > share) (z || (z = {}))[l] = 1;
+  }
+  return z;
 }
 // Which way a band runs light to dark across the flow (+1 or -1 along the line across it): its light side faces the
 // sun when the zone is shaded by it, else the top (a flat zone, or light from the photo, has no sun to face). 0 for
@@ -1384,9 +1450,10 @@ function buildGradient(cl) {
   }
   const sign = plan.g > 1 ? gradLightSign() : 0,
     across = gradAcross(sign),
-    // (v314: softened by area in a guide made since v314, laid Polished or Natural)
-    soft = !!gradArea && gradScatAt(M) < 2,
-    bands = M && N ? splitByArea(order, sizes, sizes, soft) : [];
+    // (the area rule: a guide's own, laid Polished or Natural; v314's or v315's: splitByArea)
+    soft = gradScatAt(M) < 2 ? gradArea : 0,
+    zero = soft === 2 ? gradPinZero(order, M) : null,
+    bands = M && N ? splitByArea(order, sizes, sizes, soft, zero) : [];
   for (let b = 0; b < bands.length; b++) {
     let secs = bands[b],
       grp = groups[b];
@@ -1412,7 +1479,7 @@ function buildGradient(cl) {
     const ones = grp.map(function () {
         return 1;
       }),
-      parts = splitByArea(secs, ones, ones, soft);
+      parts = splitByArea(secs, ones, ones, soft, zero);
     for (let q = 0; q < parts.length; q++)
       for (let j = 0; j < parts[q].length; j++) assign[parts[q][j]] = grp[q];
   }
@@ -3924,6 +3991,8 @@ function zoneSigSync() {
    (heldRecolour), once per visit to the plan (and again when more are kept). _heldRun: those kept by the last
    laying out, for that line. */
 let _holdOff = false,
+  // (v315) the pins as you made them, while a laying holds the coloured sections too (holdOn): null otherwise
+  _userLocks = null,
   _heldRun = null,
   _heldTold = 0,
   // (the markers of the sections held by the laying under way, themselves: one no longer in the collection kept too)
@@ -3931,6 +4000,8 @@ let _holdOff = false,
 function holdOn(run, extra) {
   _heldRun = null;
   if (!assignData) return null;
+  // (v315: your own pins, for the Gradient's share-out: gradPinZero)
+  _userLocks = locks;
   const was = locks,
     tmp = Object.assign({}, locks),
     kept = [];
@@ -3972,6 +4043,7 @@ function holdRun(ids, fn, extra) {
   } finally {
     if (was) locks = was;
     _heldObj = null;
+    _userLocks = null;
   }
 }
 // { section: marker key } of a zoneStayRandom result (null for none)

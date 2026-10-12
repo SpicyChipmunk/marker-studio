@@ -245,8 +245,8 @@ button.tttop {
   font-weight: 600;
 }
 .ttrate button.on {
-  background: rgba(120, 200, 180, 0.22);
-  border-color: rgba(143, 214, 180, 0.6);
+  background: var(--pick-bg);
+  border-color: var(--pick-edge);
 }
 .ttnote,
 .ttinput {

@@ -512,8 +512,8 @@
   font-size: var(--t-base);
 }
 .paperbtn[aria-pressed='true'] {
-  background: rgba(120, 200, 180, 0.22);
-  border-color: rgba(143, 214, 180, 0.6);
+  background: var(--pick-bg);
+  border-color: var(--pick-edge);
 }
 .lightchip {
   border-radius: var(--r-pill);
@@ -842,6 +842,25 @@ img.paperpick {
   font: inherit;
   font-size: var(--t-base);
   font-weight: 600;
+}
+/* (v316) Markers' Order as wide in every view as Unowned's longest ranking, so it doesn't change width as you switch
+   between Owned, Unowned and All (its options are rebuilt for each) */
+#gapSort {
+  min-width: 17.8em;
+}
+/* (v316) every drop-down (Markers' Order, the Library's sort, the guide's Saved palette, Harmony and tone) with the app's
+   own chevron, not the browser's arrow: the picture is Lucide's chevron-down in the ink colour (a background can't take
+   currentColor); the rules come after each one's own background shorthand, which would otherwise clear it */
+.ordsel,
+.libbar .libsel,
+#sfRoot #sfCtl .sfc-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f4f2ec' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.8'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px 16px;
 }
 /* (centred on its own width: with only left:50% it would get just half the screen to wrap in) */
 .mstoast {

@@ -7,31 +7,52 @@
   margin: 2px 0 0;
 }
 #sfRoot .sfpgdone {
+  position: relative;
   margin-top: 10px;
-  padding: 10px 12px;
+  padding: 18px 14px 14px;
   text-align: center;
-  border-radius: var(--r-md);
-  background: linear-gradient(135deg, var(--ok2), var(--ok));
-  /* (v300: dark on the green, about 7:1; white was 2.3:1) */
-  color: #0b2219;
+  border-radius: var(--r-lg);
+  /* (v316: a dark raised card with a green edge and a soft green-to-purple wash, as the rest of the app; it was a solid
+     mint block, the one light block on the dark screens, with dark text and underlined links) */
+  border: 1px solid rgba(var(--ok-rgb), 0.55);
+  background:
+    radial-gradient(90% 110% at 0% 0%, rgba(var(--ok-rgb), 0.16), transparent 62%),
+    radial-gradient(80% 100% at 100% 100%, rgba(124, 92, 255, 0.14), transparent 62%), var(--raise);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  color: var(--ink);
   font-weight: 700;
   font-size: var(--t-md);
 }
+#sfRoot .sfpgstar {
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 0 auto 2px;
+  color: var(--ok);
+}
+#sfRoot .sfpgtitle {
+  display: block;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  font-size: var(--t-2xl);
+  line-height: 1.2;
+}
 #sfRoot .sfpgdone .sflink {
-  color: #0b2219;
+  color: var(--ink);
   text-decoration: underline;
   margin-left: 6px;
 }
 /* what was coloured, and when (v284) */
 #sfRoot .sfpgsum {
   margin-top: 4px;
+  color: var(--sub);
   font-weight: 500;
-  font-size: var(--t-sm);
+  font-size: var(--t-md);
 }
 #sfRoot .sfpgsum:empty {
   display: none;
 }
-/* brought into view when the page is finished (90-export.js celebrate) */
+/* brought into view when the page is finished (90-export.js celebrate): a green ring that swells and fades */
 #sfRoot .sfpgdone.flash {
   animation: pgflash 1.6s ease;
 }
@@ -39,8 +60,9 @@
   0%,
   45% {
     box-shadow:
-      0 0 0 3px #fff,
-      0 0 22px 4px rgba(95, 184, 159, 0.8);
+      0 0 0 3px rgba(var(--ok-rgb), 0.95),
+      0 0 30px 8px rgba(var(--ok-rgb), 0.5),
+      0 10px 30px rgba(0, 0, 0, 0.35);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -328,6 +350,12 @@
   font-size: var(--t-sm);
   line-height: 1.35;
   color: var(--sub);
+}
+/* (v316) the line takes no room until there's a match on every screen (the phone's rule below, before): its reserved
+   height had pushed the order row, aligned with the box's foot, 24px below the ⓘ line, a gap in a 10px rhythm */
+#sfRoot .sffindl:empty {
+  min-height: 0;
+  margin-bottom: 0;
 }
 /* on a phone the box folds away behind a ⌕ at the end of the order row (Colour along's first rows stay above the
    bar), and its line takes no room while empty */

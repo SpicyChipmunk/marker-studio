@@ -132,7 +132,7 @@ function askResetProgress() {
       (n === 1 ? ' section' : ' sections') +
       '.' +
       // (v314: the photo of the finished page stays)
-      (finHas() ? ' Your photo of the page is kept.' : '') +
+      (finHas() ? ' Your photo of the page is kept, and shows again once the page is finished.' : '') +
       '</p>',
     foot: '<button type="button" class="sfghost" data-rp="cancel">Cancel</button><button type="button" id="sfResetGo" class="sfprimary" data-rp="go">Reset</button>',
     fit: true,
@@ -322,6 +322,8 @@ function enterFocus() {
   closeSheet();
   holdScroll();
   focus = true;
+  // (v315: the hand-off card's side chosen afresh for each visit)
+  handFrame.last = null;
   focusFin = false;
   focusSheet = false;
   focusHist = [];

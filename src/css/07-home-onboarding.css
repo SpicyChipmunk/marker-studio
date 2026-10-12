@@ -457,8 +457,8 @@ button.sfSeeAll {
 }
 .wcseg button[aria-pressed='true'],
 .wccount button[aria-pressed='true'] {
-  background: rgba(120, 200, 180, 0.22);
-  box-shadow: inset 0 0 0 1px rgba(143, 214, 180, 0.6);
+  background: var(--pick-bg);
+  box-shadow: inset 0 0 0 1px var(--pick-edge);
 }
 /* (v309.1: on the chosen brand's tint, --sub's small print read at 4.3:1) */
 .wcseg button[aria-pressed='true'] small {
@@ -932,9 +932,9 @@ button.sfSeeAll {
   cursor: pointer;
 }
 .wcbrands button.on {
-  background: rgba(120, 200, 180, 0.22);
+  background: var(--pick-bg);
   color: var(--ink);
-  box-shadow: inset 0 0 0 1px rgba(143, 214, 180, 0.6);
+  box-shadow: inset 0 0 0 1px var(--pick-edge);
 }
 /* Home's three tiles sit side by side while all three fit; when they'd wrap (a narrow phone at a large text size) each
    becomes a full-width row, icon left and text right, so none is left alone on a line. Three need 3 x 84 text pixels and
@@ -1501,6 +1501,8 @@ button.hcpic:focus-visible {
   transform: none;
   margin: 0 0 10px;
 }
+/* (v316) Add photo as a pill of its own, and ✕ a round dark button beside it: the two in one dark pill had read as a
+   switch with Add photo chosen (the Your page | Plan switch that takes this place once there's a photo) */
 .hhfin {
   position: absolute;
   left: 50%;
@@ -1508,10 +1510,8 @@ button.hcpic:focus-visible {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
   padding: 3px;
-  border-radius: 999px;
-  background: rgba(10, 12, 12, 0.78);
   z-index: 1;
 }
 .hhfin[hidden] {
@@ -1551,12 +1551,14 @@ button.hcpic:focus-visible {
   white-space: nowrap;
 }
 .hhfinadd {
-  padding: 0 10px 0 12px;
+  padding: 0 12px 0 12px;
   background: #fff;
   color: #111;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
 }
 .hhfinx {
   width: 34px;
+  background: rgba(10, 12, 12, 0.78);
   color: #e4e2dc;
 }
 .hhfinadd .ic {
@@ -1589,7 +1591,7 @@ button.hcpic:focus-visible {
     padding: 0 8px;
   }
   .hhfinx {
-    width: 28px;
+    width: 30px;
   }
 }
 .hhpic:focus-visible {
@@ -1789,5 +1791,66 @@ button.hcpic:focus-visible {
   #wcStepRes .wcacts > [style*='display: none'] ~ .obGhost,
   #wcStepRes .wcacts .btn-primary:only-child {
     grid-column: 1 / -1;
+  }
+}
+/* (v316) a new user's Home on a wide screen: three steps of how it works under the cards, where the start card's
+   height had left the right-hand column empty; nowhere else (a phone's Home is one column), and only until the first
+   guide is made (hownew, library.js) */
+.homehow {
+  display: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 700px) {
+  #homeView .homehub.hasstart.hownew .homehow {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 8px;
+    padding: 16px 18px;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--line);
+    background: var(--glass);
+    counter-reset: how;
+  }
+  .homehow li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    counter-increment: how;
+  }
+  .homehow .hhwi {
+    position: relative;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(124, 92, 255, 0.14);
+    color: #cbbcff;
+  }
+  .homehow .hhwi .ic {
+    width: 18px;
+    height: 18px;
+  }
+  .homehow .hhwt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: var(--t-sm);
+    line-height: 1.4;
+    color: var(--sub);
+  }
+  .homehow .hhwt b {
+    font-size: var(--t-base);
+    color: var(--ink);
+  }
+  .homehow .hhwt b::before {
+    content: counter(how) '. ';
+    color: var(--sub);
+    font-weight: 400;
   }
 }

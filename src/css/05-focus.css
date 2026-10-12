@@ -305,7 +305,8 @@ button.sffoccols::after {
   left: 0;
   right: 0;
   top: var(--focTop, 80px);
-  bottom: var(--focBot, 76px);
+  /* (v315: above the zoom buttons) */
+  bottom: calc(var(--focBot, 76px) + var(--hcut, 0px));
   z-index: 6002;
   display: flex;
   align-items: flex-start;
@@ -316,6 +317,15 @@ button.sffoccols::after {
 /* (below the sections when they're nearer the top) */
 .sfhand.sfhbot {
   align-items: flex-end;
+}
+/* (v315: beside them, when that leaves them bigger: a wide screen) */
+.sfhand.sfhleft,
+.sfhand.sfhright {
+  align-items: center;
+  justify-content: flex-start;
+}
+.sfhand.sfhright {
+  justify-content: flex-end;
 }
 .sfhand[hidden] {
   display: none;
@@ -380,4 +390,18 @@ button.sffoccols::after {
   display: block;
   margin-top: 8px;
   color: #ffb454;
+}
+/* (v315: a phone held sideways: a shorter card, so it fits between the bars above the zoom buttons) */
+@media (max-height: 430px) {
+  .sfhcard {
+    padding: 10px 16px 12px;
+  }
+  .sfhsw {
+    width: 36px;
+    height: 36px;
+    margin: 6px auto 4px;
+  }
+  .sfhname {
+    margin: 0 0 4px;
+  }
 }

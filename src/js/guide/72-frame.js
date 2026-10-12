@@ -144,6 +144,10 @@ function frameSize() {
       Math.min(Math.round(vw * ar), Math.round(vh * (along && small ? 0.45 : big ? 0.6 : 0.55))),
     );
     let comp = along ? full : Math.min(full, Math.round(vh * (small ? 0.4 : big ? 0.5 : 0.45)));
+    // (v316) an iPad's one column with a narrow picture (the sample, a bookmark: under 55% of the column's width at the
+    // 60% start, black either side): the Plan and Edit sections start at the 50% floor, the size it shrinks to anyway,
+    // so the tabs and their first row are on the first screen; a page-shaped picture keeps its 60%
+    if (big && !along && full / ar < vw * 0.55) full = comp;
     // on short screens (or with larger text) the start size is capped so the tool row ends above the bar at the top of
     // the page; never below the floor
     if (!along && headEl) {
@@ -464,8 +468,9 @@ function switchTab(t) {
   if (th != null) window.scrollTo(0, Math.round(th));
   picScroll();
   fitPairs();
-  // (Radial's centre shows on the Pattern tab only)
+  // (Radial's centre shows on the Pattern tab only; v315: and the specks' rings, from Show them)
   positionRadC();
+  positionSpecks();
 }
 // does a button's label need more room than it has? A button that centres its label (as Share's do) overflows on
 // both sides, and Safari's engine doesn't count that in scrollWidth (it stays equal to clientWidth), so the text is
@@ -1075,7 +1080,8 @@ function sheetTab(e) {
 function openMenu() {
   const plan = sfmode === 'guide' && !!assignData,
     along = sfmode === 'color' && !focus && !!assignData,
-    it = function (m, label, id, off) {
+    // (v316) each item with its line icon before the label, as the Library's tile menus
+    it = function (m, icon, label, id, off) {
       return (
         '<button type="button" class="sfmitem" data-m="' +
         m +
@@ -1083,27 +1089,30 @@ function openMenu() {
         (id ? ' id="' + id + '"' : '') +
         (off ? ' aria-disabled="true"' : '') +
         '>' +
+        // (the label a bare text node: tests find an item by its text)
+        ic(icon) +
         label +
         '</button>'
       );
     };
   let b =
     '<div class="sfmenu" role="group" aria-labelledby="sfMh1"><div class="sfmh" id="sfMh1">New</div>' +
-    it('pick', 'Choose a photo') +
-    it('sample', 'Try the sample') +
-    it('lib', 'Open from Library') +
-    it('import', 'Import a guide') +
+    it('pick', 'image', 'Choose a photo') +
+    it('sample', 'sparkles', 'Try the sample') +
+    it('lib', 'library-big', 'Open from Library') +
+    it('import', 'file-down', 'Import a guide') +
     '</div>';
   // (v314) the photo of the finished page (24-page-photo): Add once the page is finished (and it's been looked for);
   // Change and Remove whenever there is one (kept through Reset progress)
   const inLib = (plan || along) && !!libEntry(),
     g =
-      (plan && libEntry() ? it('copy', 'Save a copy', 'sfSaveCopy') : '') +
-      (along ? it('reset', 'Reset progress', 'sfResetP', !progressCount()) : '') +
+      (plan && libEntry() ? it('copy', 'copy', 'Save a copy', 'sfSaveCopy') : '') +
+      (along ? it('reset', 'rotate-ccw', 'Reset progress', 'sfResetP', !progressCount()) : '') +
       (inLib && finHas()
-        ? it('finchg', 'Change your photo') + it('finrm', 'Remove your photo')
+        ? it('finchg', 'camera', 'Change the photo of your page') +
+          it('finrm', 'trash-2', 'Remove the photo of your page')
         : inLib && pageDone() && _fin.read
-          ? it('finadd', 'Add a photo of your page')
+          ? it('finadd', 'camera', 'Add a photo of your page')
           : '');
   if (g)
     b +=
@@ -1113,8 +1122,8 @@ function openMenu() {
   b +=
     // (v308: no heading of its own: "Help" over a Help button said it twice, and the room keeps the menu on a phone)
     '<div class="sfmenu" role="group" aria-label="Help">' +
-    it('help', 'Help') +
-    it('feedback', 'Send feedback') +
+    it('help', 'circle-help', 'Help') +
+    it('feedback', 'message-square', 'Send feedback') +
     '</div>';
   const el = openSheet({
     title: (curName && curName.trim()) || 'New guide',

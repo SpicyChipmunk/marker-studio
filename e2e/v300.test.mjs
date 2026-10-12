@@ -270,8 +270,8 @@ test('a finished page keeps no outline from the marker row last open (after Focu
   await page.evaluate(() => { const t = __mstest; t.assignData.order.forEach((l) => { t.colored[l] = 1; }); t.guideDirty = true; t.renderGuide(); t.checkComplete(); });
   await idle(page);
   assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.sfoutline')).display), 'none', 'no outline on the finished page');
-  // dark words on the green, 4.5:1 at least
-  const c = await page.evaluate(() => { const L = (r, g, b) => [r, g, b].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0); const p = (s) => s.match(/\d+/g).map(Number); const d = document.getElementById('sfDone'), fg = p(getComputedStyle(d).color), bg = p(getComputedStyle(document.documentElement).getPropertyValue('--ok-rgb')); const a = L(...fg), b = L(...bg); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); });
+  // the words on the panel's own colour, 4.5:1 at least (v316: light words on the dark card; before, dark on the green)
+  const c = await page.evaluate(() => { const L = (r, g, b) => [r, g, b].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0); const p = (s) => s.match(/\d+/g).map(Number); const d = document.getElementById('sfDone'), fg = p(getComputedStyle(d).color), bg = p(getComputedStyle(d).backgroundColor); const a = L(...fg), b = L(...bg); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); });
   assert.ok(c >= 4.5, 'contrast ' + c);
   assert.deepEqual(errors, []);
 });

@@ -144,10 +144,12 @@ test('focus mode: Colours open frames the section above the sheet, the picture i
   }
 });
 
-test('Markers › All: each family brand by brand, by code within a brand (Ohuhu’s R12 and R14 with the other Ohuhu reds)', async () => {
+test('Markers › All, Code order: each family brand by brand, by code within a brand (Ohuhu’s R12 and R14 with the other Ohuhu reds)', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await welcome(page, 'look'); await idle(page);
   await page.click('#mCollection'); await page.click('#ownView [data-v="all"]'); await idle(page);
+  // (v316: Lightest first is the order to start with; Code order is the one this checks)
+  await page.selectOption('#gapSort', 'code'); await idle(page);
   const red = await page.evaluate(() => { const g = [...document.querySelectorAll('.rgroup')].find((x) => /^Red\b/.test(x.querySelector('.rghead').textContent.trim())); return [...g.querySelectorAll('.cell, [data-i]')].map((c) => +c.dataset.i).filter((i) => i >= 0).map((i) => COLORS[i].brand + ' ' + COLORS[i].code); });
   const firstCopic = red.findIndex((s) => s.startsWith('Copic'));
   assert.ok(firstCopic > 0, red.slice(0, 5).join());

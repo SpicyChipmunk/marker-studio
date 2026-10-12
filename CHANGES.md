@@ -866,3 +866,118 @@ on v314.
   long side, so usually 700–1000 px on its long side and 60–240 KB; and D8 on fable's 14 downloaded pages (420 plans)
   gave markers on specks 1.47 → 0.92 a plan but rough borders better in 195 plans and worse in 140, not two to one.
 - Version v314.1; cache `marker-studio-v314.1`.
+
+# Changes — v315
+
+Ben's decisions after fable's reviews of v314.1 and its pressure tests of each plan, mocked first where it shows (the
+card, the hand-off card, the specks line). New e2e files: `v315` (5), `v315-fixes` (4), `v315-gradient` (1),
+`v315-specks` (1), `v315-card` (3), `v315-focus` (2); unit: `v315-family` (3), `v315-gradient` (5); each test fails on
+v314.1.
+
+- **A finished page on a light table is found** (Q3): a coloured page on a grey or light wood table had never been
+  found in a photo of the finished page (the drawing's colours made a third mode in the paper view, so the whole photo
+  passed as paper). The finder splits again for a finished page when the first split leaves nearly everything above
+  it, kept only where the brightness has a clear valley. 531 made-up photos: found on tables up to 75% of the paper's
+  brightness, nothing lost. Guide building's finder is unchanged.
+- **A photo taken sideways or upside down is kept the right way up** (Q4), by comparing the drawing in it with the
+  plan at the four quarter turns; the panel's **Turn** turns it by hand. The page takes the paper Print uses when it
+  measures within 6% of it.
+- **Adjust corners** (Q9) on the toast after a photo is straightened by itself, from Colour along or Home. On a
+  **patterned cloth** a page found by itself has its corners shown to check (the table's flicker round the page: plain
+  and wood 0.3–3.2, real photos 1.5–2.8, check cloths 15.6–22.6; threshold 10).
+- **The plan-and-your-page card** (Q7) stays 1080 × 1350 and lays the two side by side or one over the other,
+  whichever shows both pictures bigger (it was side by side only for a tall plan, so a wide plan over a tall photo, or a
+  tall plan beside a panorama, were both small). THE PLAN and MY PAGE are at least 2% of its width. On a phone held
+  sideways its dialog's Share stays on the screen.
+- **Focus mode's hand-off card** (Q8) goes above, below, left or right of the next marker's sections, wherever it
+  covers least of them, then lets them be biggest, then hides least of the picture, keeping its side unless another
+  is clearly better. While it's up the picture is centred in the room it leaves; it never covers the zoom buttons or
+  the bars; it's compact on short screens, placed again when the screen turns, and closes as the Colours sheet opens.
+  On a phone held sideways it had covered most of the picture and the zoom buttons.
+- **The Gradient's v315 rule** (Q5, Q11; new guides only, `gradArea` 2): the plain area split unless a marker would
+  land only on specks (under 0.3% of the page), then softer and softer (area^0.85, 0.7, 0.55) until none does; a
+  section you pinned that is bigger than one marker's share counts for nothing, so the others spread over the rest
+  (not a section kept because it's coloured); and no two markers in the run within 5 (CIEDE2000) of each other while one
+  further off is near (Ben's 16: B111 and B112). Measured on 765 plans: markers only on specks 1.02 → 0.35 a plan
+  (v314's 0.7: 0.53), border clashes as with the plain rule, 76% of plans exactly as plain; runs with a near-identical
+  pair 240 → 48. v314's 0.7 for everything had spoilt the vase page and moved clashes about. Guides made in v314 (1) and
+  before (0) lay exactly as before (all 765 plans identical); an older app reads a 2 as the plain rule.
+- **Specks line** (Q11): the Pattern tab, last, names a Gradient's markers seen only on specks of the page or zone
+  ("Y29 only colours specks of this page. Fewer markers would spread the colours further. Show them"); Show them rings
+  their sections. Not when scattered, nor when every section has its own marker, nor for a marker only on sections you
+  pinned; more than three, a count.
+- **Copic's greys in families** (Q10g; new guides only, `famRule` 2): written with a hyphen (C-00 … C-10, N-, T-, W-),
+  they had no family, so a grey's blend companions and shading were found by eye across the grey types (C-6's darker
+  companion was V28). Full Copic set: 61 of 1,428 picks change, all within the grey's type; Ben's markers: 2.
+- **Fixes** (Q10): a photo of the finished page changed in another tab, or by a restore, shows when the tab comes back;
+  a restore's newer photo replaces an older one here; the photo's record is read as a guide opens (Put back always
+  has it), decoded only when shown; a PDF that finished opening after another picture was chosen is let go, and its
+  page canvas freed; offline before the PDF reader was ever stored, opening a PDF says it needs the internet once;
+  PDF.js's version is checked to match in the app, the service worker and the vendor folder (`test/pwa`).
+- **Wording** (Q6): Reveal's **Plan and your page**; ⋯ **Change the photo of your page** / **Remove the photo of your
+  page**; Reset progress says the photo shows again once the page is finished; What's new v314 says where; the
+  Library's "Your guides and palettes are kept here." and, empty, "Nothing yet. A guide saves itself here once it's
+  built; a palette is kept with Save."; Home's **Page in a PDF? Open the PDF**; tester task 6 adds the photo; Help's
+  glossary has **Your page**.
+- **From fable's fresh-eyes review of v315**: the specks' rings now go when you leave the Pattern tab (they stayed on
+  the picture) and come back with it; Turn keeps the day the photo was added (it said "Added today"), turns the photo
+  as taken while it's to hand so turning round loses nothing to JPEG, and Adjust corners after a Turn keeps the turn
+  (it re-oriented it). The browser tests close each test's pages when it ends: under WebKit each page holds 0.6–1 GB,
+  and a long file ran an 8 GB machine out of memory (v3141's Swap it test then timed out); `e2e/helpers.mjs`.
+- Version v315; cache `marker-studio-v315`.
+
+# Changes — v316
+
+Ben's interface decisions after fable's UI, bug and premium reviews of v315 and its pressure tests of each idea,
+mocked first. New e2e files: `v316` (5), `v316-tobuy` (4); unit: `v316-blend` (2); each fails on v315.
+
+- **Page finished!** is a dark raised card like the rest of the app (it was the one solid mint block): a green edge
+  and a soft green-to-purple wash, a sparkle over a Fraunces title, the summary in grey, the photo of your page at
+  96 px in a cream frame with a shadow, its four links as pill buttons (Show beside the plan tinted as the main one),
+  Add a photo as a green-tinted button; the finish flash is a green ring. Text 4.5:1 or better on the card.
+- **Save image's key** is drawn in the app's fonts (the title in Fraunces, the brand line and key in Hanken; they were
+  Arial), with round swatches and a faint edge (Copic 0, B60 and G00 had vanished into the white), and the dot note in
+  grey under the key rather than between the brand line and the key. The fonts are loaded before it's drawn.
+- **Markers' families run lightest first** (R16, R28, R38 … R514; by code they jumped R013 R014 R015 R16 R210).
+  **Order** (Lightest first | Code order) shows in Owned, Unowned and All; Unowned keeps its three rankings after them.
+  The options are rebuilt for each view, not hidden: iPad Safari's picker shows hidden options. A Code order saved
+  before v316 (it was the only order) becomes Lightest first once (`ordLight1`); Code order chosen after that stays.
+- **The ⋯ menus** (the guide's, Markers' and the Library's) have a line icon before each item, in grey. Three more
+  Lucide icons (circle-help, message-square, square-minus): 36 credited in LICENSE, the icon licence file and
+  index.html's notice.
+- **The Gradient's sliders match**: Start colour's thumb is a hollow ring riding on its colour strip (it was a native
+  slider on its own track under the strip), and Scatter's is the same ring on a thin grey line. Keyboard focus: an
+  accent ring round the thumb.
+- **One picked tint** (`--pick-bg`, `--pick-edge`): every chosen option uses the same teal, now as tokens; Codes and
+  Greyscale, an open marker row and Balance's choice had used done's green or a grey, and Mood's ✓ is in ink. Green
+  (`--ok`) is for done.
+- **An upright iPad's Plan starts a narrow picture at its 50% floor** (the sample, a bookmark: narrower than 55% of the
+  column at 60%), the size it shrinks to anyway, so each tab's first row is on the first screen (Mood's pictures were
+  below the bar). A page-shaped picture keeps 60%; Colour along keeps 60% (at 50% the sample lost 12 of 91 codes).
+- **Colour along's first marker row is on an upright iPad's first screen**, for any page: the find line takes no room
+  while empty (24 px gone) and the first-time tip's **More** ends its sentence.
+- **Polish**: Owned has no "Your collection." line and **+ Add markers** is an outline button like its neighbours; the
+  app's chevron on drop-downs (Order, the Library's sort, the guide's Saved palette, Harmony and tone); a new user's Home
+  on a wide screen has three numbered steps of how it works under the cards, until the first guide is made; Home's Add
+  photo and its ✕ are a pill and a round button apart (they had read as a switch).
+- **Blend companions closer to the colour** (new guides only, `famRule` 3): one from outside the marker's family is no
+  more than 20 lighter or darker, as a family member may be, and a darker one keeps 35% of the colour's chroma.
+  Before, the nearest by eye could be any distance away (Copic E29's lighter was YR07, 34 lighter; black's the pale
+  grey C-3) and a red's darker a near grey (Ohuhu E515 Black Brown for R514 and R215). Over 11 collections (Honolulu
+  24–216, Ciao 12/36/72, Ben's, all Ohuhu, all Copic) 79 of 3,540 picks change: 66 from a far-off marker you own to one
+  to buy, 5 to none (V09 has nothing darker that keeps its colour); Ben's markers: 2. A guide saved before keeps its
+  picks; an older app reads a 3 as 0.
+- **To buy › From your guides**: after your list and Copy list, above Brands I'd buy, the markers your saved guides'
+  blend plans would ask you to buy (the plan's "To complete every blend, add …"), across the Library without opening
+  a guide, ranked by how many guides want each, with the reason ("Darker than B115 · 2 of your 4 guides"), and
+  markers your guides use that are marked dry. + adds one with the plan's reason ("blend for B115"); Add all adds the
+  rest. Eight rows, then Show all. With every blend complete it says so. 16 guides in 3–10 ms, 50 in 16 ms on WebKit.
+  Each Library row now keeps its guide's family rule (`fr`); a row saved before v316 is read with v315's rule until the
+  guide is saved again. Brands I'd buy says the card follows it.
+- **From fable's fresh-eyes review of v316**: From your guides now asks for what each guide's plan does when a
+  marker it was planned with isn't yours any more (its sections show the nearest of yours, a stand-in, and the plan
+  asks for the stand-in's companions: the card had left those markers out, and could say every blend was complete);
+  "both your guides" for two; Show all is 44 px tall; Save image's brand line sits clear of the title's descenders and
+  the dot note is #777 (4.5:1); Markers' Order keeps one width in every view. New e2e test: the card against the open
+  guide's own plan, with a smaller set (`v316-tobuy`, 4).
+- Version v316; cache `marker-studio-v316`.

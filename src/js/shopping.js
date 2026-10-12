@@ -345,6 +345,168 @@ function wishText() {
     })
     .join(' · ');
 }
+/* ---- (v316) Buy next, from your guides ----
+   On To buy, after your own list: the markers your saved guides' blend plans would ask you to buy ("To complete every blend, add
+   …", 88-coverage-blend), across every guide in the Library without opening one, from each Library row's markers
+   (SF.guideWants), ranked by how many guides want each; and the markers your guides were planned with that are dry or
+   no longer yours (their sections show stand-ins). Nothing with no guides, or with no markers of your own (guides then
+   use every marker). A tap adds one to To buy with the plan's own reason ("blend for G315"); Add all adds the lot.
+   Worked out when To buy shows, and kept until your markers, your ink, Brands I'd buy or the Library change (guideBuys'
+   signature): about 5 ms for 16 guides, 15 ms for 50, as most guides share markers (the memo). */
+let _gbuy = null;
+const GBUY_SHOW = 8;
+function guideBuysSig() {
+  const gs = state.saved.filter((s) => s.type === 'guide');
+  return (
+    gs.map((g) => g.id + ':' + (g.ts || 0) + ':' + (g.keys || []).length).join(',') +
+    '|' +
+    state.owned.size +
+    ':' +
+    [...state.owned].join(',') +
+    '|' +
+    JSON.stringify(state.ink) +
+    '|' +
+    JSON.stringify(state.buyBrands || null)
+  );
+}
+function guideBuys() {
+  const sig = guideBuysSig();
+  if (_gbuy && _gbuy.sig === sig) return _gbuy;
+  const gs = state.saved.filter((s) => s.type === 'guide' && Array.isArray(s.keys) && s.keys.length),
+    out = { sig: sig, n: gs.length, want: [], gone: [], ms: 0 };
+  _gbuy = out;
+  if (!gs.length || !state.owned.size || !(window.SF && SF.guideWants)) return out;
+  const t0 = performance.now(),
+    list = sfCollection(),
+    memo = {},
+    want = {},
+    gone = {};
+  gs.forEach(function (g) {
+    let w;
+    try {
+      // (a row saved before v316 has no rule: v315's, 2)
+      w = SF.guideWants(g.keys, [0, 1, 2, 3].indexOf(g.fr) >= 0 ? g.fr : 2, list, memo);
+    } catch (_) {
+      return;
+    }
+    Object.keys(w.want).forEach(function (k) {
+      const x = w.want[k];
+      if (!want[k]) want[k] = { k: k, m: x.m, gs: [], for: [], side: x.side };
+      want[k].gs.push(g.name || '');
+      x.for.forEach(function (c) {
+        if (want[k].for.indexOf(c) < 0) want[k].for.push(c);
+      });
+    });
+    Object.keys(w.gone).forEach(function (k) {
+      if (!gone[k]) gone[k] = { k: k, m: w.gone[k].m, dry: w.gone[k].dry, gs: [] };
+      gone[k].gs.push(g.name || '');
+    });
+  });
+  const byUse = (a, b) => b.gs.length - a.gs.length || b.for.length - a.for.length || b.m.lab[0] - a.m.lab[0];
+  out.want = Object.values(want).sort(byUse);
+  out.gone = Object.values(gone).sort((a, b) => b.gs.length - a.gs.length || b.m.lab[0] - a.m.lab[0]);
+  out.ms = performance.now() - t0;
+  return out;
+}
+let _gbuyAll = false;
+// (the brand letter where the list mixes brands, as the plan's chips show it: an Ohuhu owner sees Copic B37 as "C B37")
+function guideBuysRow(x, why, reason, tags) {
+  const c = x.m,
+    inner = '<i style="background:' + esc(c.hex) + '"></i>' + (tags ? bTag(c.brand) + ' ' : '') + esc(c.code);
+  return (
+    '<div class="gbrow"><span class="gbwho">' +
+    wishChipHTML(x.k, why, inner, '') +
+    '</span><span class="gbwhy">' +
+    reason +
+    '</span></div>'
+  );
+}
+function guideBuysHTML() {
+  const g = guideBuys();
+  if (!g.n || !state.owned.size) return '';
+  const nG = g.n,
+    inN = (x) => (nG === 1 ? 'your guide' : x.gs.length + ' of your ' + nG + ' guides'),
+    // (every one of your guides: "your guide", "both your guides", "all 5 of your guides")
+    allG = nG === 1 ? 'your guide' : nG === 2 ? 'both your guides' : 'all ' + nG + ' of your guides',
+    // (a marker you unticked yourself isn't offered back: only one marked dry is)
+    gone = g.gone.filter((x) => x.dry),
+    all = g.want.length + gone.length;
+  if (!all)
+    return (
+      '<div class="gbuy ok"><b>✓ Every blend in ' + allG + ' is complete</b> — nothing to buy for them.</div>'
+    );
+  // (one already on the list is in the list above, with its reason: not shown twice)
+  // (how many of the markers the line counts are on the list already: the blends' markers, or with none the dry ones)
+  const counted = g.want.length ? g.want : gone,
+    listed = counted.filter((x) => isWished(x.k)).length,
+    rows = [],
+    bs = {};
+  gone.concat(g.want).forEach(function (x) {
+    bs[x.m.brand] = 1;
+  });
+  state.owned.forEach(function (k) {
+    bs[k.slice(0, k.indexOf('|'))] = 1;
+  });
+  const tags = Object.keys(bs).length > 1,
+    pairs = [];
+  gone.forEach(function (x) {
+    const why = 'dry · ' + nWord(x.gs.length, 'guide') + (x.gs.length === 1 ? ' uses it' : ' use it');
+    pairs.push([x.k, why]);
+    if (isWished(x.k)) return;
+    rows.push(
+      guideBuysRow(
+        x,
+        why,
+        '<b>Dry</b> · ' +
+          (nG === 1 ? 'your guide uses it' : x.gs.length + ' of your ' + nG + ' guides use it'),
+        tags,
+      ),
+    );
+  });
+  g.want.forEach(function (x) {
+    const fors = x.for.slice(0, 3).join(', ') + (x.for.length > 3 ? ' +' + (x.for.length - 3) : ''),
+      why = 'blend for ' + x.for[0];
+    pairs.push([x.k, why]);
+    if (isWished(x.k)) return;
+    rows.push(
+      guideBuysRow(
+        x,
+        why,
+        '<b>' + (x.side === 'lighter' ? 'Lighter' : 'Darker') + ' than ' + esc(fors) + '</b> · ' + inN(x),
+        tags,
+      ),
+    );
+  });
+  const sum =
+    (g.want.length
+      ? nWord(g.want.length, 'marker') + ' would complete every blend in ' + allG
+      : nWord(gone.length, 'marker') +
+        (nG === 1 ? ' your guide uses ' : ' your guides use ') +
+        (gone.length === 1 ? 'is' : 'are') +
+        ' dry') +
+    (listed ? ' · ' + (listed === counted.length ? 'all' : listed) + ' on your list' : '') +
+    '.';
+  if (!rows.length) return '<div class="gbuy ok"><b>✓ From your guides:</b> ' + sum + '</div>';
+  const shown = _gbuyAll ? rows : rows.slice(0, GBUY_SHOW);
+  return (
+    '<div class="gbuy"><div class="gbhead"><b>From your guides</b><span class="gbsum">' +
+    sum +
+    '</span></div>' +
+    shown.join('') +
+    (rows.length > shown.length
+      ? '<button type="button" class="gbmore" id="gbMore">Show all ' + rows.length + '</button>'
+      : '') +
+    '<div class="gbacts">' +
+    wishAllHTML(pairs) +
+    '</div></div>'
+  );
+}
+document.addEventListener('click', function (e) {
+  const b = e.target.closest ? e.target.closest('#gbMore') : null;
+  if (!b) return;
+  _gbuyAll = true;
+  renderWish();
+});
 function renderWish() {
   const v = document.getElementById('wishView');
   if (!v) return;
@@ -352,6 +514,7 @@ function renderWish() {
   if (!n) {
     v.innerHTML =
       '<div class="wishempty"><b>Your To buy list is empty.</b> Wherever Marker Studio suggests a marker you don’t have, tap <b>+ To buy</b> to add it here: in <b>Match a colour</b>, a marker’s details (press and hold one), and a guide’s blend plan, shading and photo notes. Mark a marker as <b>Running low</b> in its details, then tap <b>+ To buy</b> for a replacement.</div>' +
+      guideBuysHTML() +
       buyRowHTML();
     return;
   }
@@ -425,6 +588,9 @@ function renderWish() {
     '<div class="wishacts"><button type="button" id="wishCopy">Copy list</button>' +
     (navigator.share ? '<button type="button" id="wishShare">Share list</button>' : '') +
     '</div>' +
+    // (v316: what your guides would have you buy, after your own list: on a phone it had pushed the list off the first
+    // screen; just above Brands I'd buy, which changes what it suggests)
+    guideBuysHTML() +
     // (which brands the suggestions to buy come from, v304)
     buyRowHTML();
   v.innerHTML = h;

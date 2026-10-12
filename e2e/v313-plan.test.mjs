@@ -61,15 +61,15 @@ const shadow = (page, k) =>
     return d ? d.mkey : null;
   }, k);
 
-test('a new guide (the sample) takes v313’s family rule, saves it and opens with it', async () => {
+test('a new guide (the sample) takes the newest family rule (v316’s 3), saves it and opens with it', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await sampleGuide(page);
-  assert.equal(await sv(page, 'famRule'), 1);
-  assert.equal(await page.evaluate(() => __mstest.currentDesignObj().payload.famRule), 1);
+  assert.equal(await sv(page, 'famRule'), 3);
+  assert.equal(await page.evaluate(() => __mstest.currentDesignObj().payload.famRule), 3);
   await saveGuide(page);
   const id = await page.evaluate(() => __mstest.curId);
   await reopen(page, id);
-  assert.equal(await sv(page, 'famRule'), 1);
+  assert.equal(await sv(page, 'famRule'), 3);
   assert.deepEqual(errors, []);
 });
 

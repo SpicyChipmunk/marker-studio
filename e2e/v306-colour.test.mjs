@@ -320,8 +320,9 @@ test('U7: turning shading on doesn’t pick other markers; the note offers “Pi
       ms = [...new Set(t.assignData.order.map((l) => A[l]))];
     return ms.filter((m) => t.grad.shadeOK(m)).length;
   });
-  // (v308: 14 of the 16, picked from Honolulu 120's vivid markers; 16 from v307's wider pool)
-  assert.equal(ok, 14);
+  // (v308: 14 of the 16, picked from Honolulu 120's vivid markers; 16 from v307's wider pool. v315's Gradient keeps
+  // near-identical markers apart, gradArea 2: Y111, which can't be shaded, in place of Y28, too like Y27: 13)
+  assert.equal(ok, 13);
   // Undo: back as it was, and the offer with it
   await page.keyboard.press('Control+z');
   await idle(page);

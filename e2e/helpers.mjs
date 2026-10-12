@@ -13,6 +13,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, extname, normalize } from 'node:path';
 import * as pw from 'playwright';
+import { afterEach } from 'node:test';
 
 // E2E_BROWSER=webkit runs the same tests on Safari's engine (CI runs it as a separate, informational job)
 export const ENGINE = process.env.E2E_BROWSER || 'chromium';
@@ -48,6 +49,15 @@ export async function startServer() {
 }
 
 let browser = null, server = null;
+// (v315) each test's pages closed when it ends: most tests leave theirs open, and under WebKit each page of the app holds
+// 0.6–1 GB, so a long file ran an 8 GB machine out of memory partway (the kernel killed a page, or the one under test
+// stalled and a click timed out: v3141's Swap it test). Only under the test runner, not in a plain script.
+const _open = new Set();
+if (process.env.NODE_TEST_CONTEXT)
+  afterEach(async () => {
+    for (const c of _open) await c.close().catch(() => {});
+    _open.clear();
+  });
 export async function setup() {
   server = await startServer();
   browser = await pw[ENGINE].launch(ENGINE === 'chromium' ? { args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] } : {});
@@ -61,6 +71,7 @@ export async function teardown() {
 // Optional: `userAgent` (e.g. an iPhone's) and `init`, a function run in the page before the app (to stub browser APIs).
 export async function openApp({ width = 390, height = 844, storage = null, userAgent = undefined, init = null } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2, serviceWorkers: 'block', acceptDownloads: true, hasTouch: false, ...(userAgent ? { userAgent } : {}) });
+  _open.add(ctx);
   await trackIdle(ctx);
   // (v312) no Google Form under test: Send results and Send feedback share, as without one. A test's own init that sets
   // window.__MS_RESULTS_FORM (to a made-up form) comes after this, so it wins

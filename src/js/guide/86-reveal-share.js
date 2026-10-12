@@ -107,7 +107,7 @@ function showRevealBar(mode) {
     b.innerHTML =
       '<button id="revShare" class="rvmain">Share</button>' +
       // (v314) the plan beside the photo of the finished page, when it has one (24-page-photo)
-      (finHas() ? '<button id="revFin">With my page</button>' : '') +
+      (finHas() ? '<button id="revFin">Plan and your page</button>' : '') +
       clip +
       // (v288: one way to close, the ✕ at the top left, as in Focus mode; Escape too)
       '<button id="revReplay">Replay</button>';

@@ -85,9 +85,14 @@ function showCustom() {
   setAmb(filled.length ? COLORS[filled[0]].hex : null);
 }
 
-// a family's markers in order: by brand as the data has them (its first marker's place), then by code as the data
-// lists them (by the code's text: YR015 before YR03, as printed on the sets' charts)
+// a family's markers in order: by brand as the data has them (its first marker's place), then (v316) lightest first
+// (L* of the marker's colour, the order the keys and Colour along use: a family reads as a ramp, R16 R28 R38 … R514,
+// where by code it jumped R013 R014 R015 R16 R210) or, with Order set to Code order, by code as the data lists them
+// (by the code's text: YR015 before YR03, as printed on the sets' charts, and as they sit in the case)
 let _brandAt = null;
+function famLight() {
+  return state.gapSort !== 'code';
+}
 function famOrd(a, b) {
   if (!_brandAt) {
     _brandAt = {};
@@ -97,7 +102,11 @@ function famOrd(a, b) {
   }
   const A = COLORS[a],
     B = COLORS[b];
-  return _brandAt[A.brand] - _brandAt[B.brand] || (A.code < B.code ? -1 : A.code > B.code ? 1 : a - b);
+  return (
+    _brandAt[A.brand] - _brandAt[B.brand] ||
+    (famLight() ? LAB[b][0] - LAB[a][0] : 0) ||
+    (A.code < B.code ? -1 : A.code > B.code ? 1 : a - b)
+  );
 }
 // the grid's groups in order: the markers whose code the search names exactly, as "Best match", then those whose old
 // code it names, as "Old code" (v304: "g410" had shown G24, once G410, first), then each family, brand by brand and by

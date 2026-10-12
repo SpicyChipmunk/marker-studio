@@ -51,7 +51,7 @@ test('the list starts right under the pinned block: an ⓘ line, then one 48px r
   });
   assert.match(g.first, /sfinfo/, 'the ⓘ line comes first');
   assert.ok(g.gap >= 0 && g.gap <= 16, `straight under the tool row (${g.gap}px)`);
-  assert.ok(g.infoOpen && /^iTap a marker to see its sections, then tap each section on the picture as you colour it\.More$/.test(g.text.trim()), 'the first line of the instructions and More, the first time');
+  assert.ok(g.infoOpen && /^iTap a marker to see its sections, then tap each section on the picture as you colour it\. More$/.test(g.text.trim()), 'the first line of the instructions and More, the first time (v316: More ends the sentence)');
   // (v305: the list's order, Lightest first · Rainbow · By brand, between them)
   assert.ok(g.sortGap >= 0 && g.sortGap <= 16, `the list's order right after it (${g.sortGap}px)`);
   // (v306: the code box, "Marker in your hand? Type its code", folds behind ⌕ at the end of the order row on a phone,
@@ -446,13 +446,13 @@ test('Reset progress asks in the guide’s sheet: Cancel keeps the ticks, Clear 
   assert.deepEqual(errors, []);
 });
 
-test('Colour along, the first time: two lines and More; opening a marker folds them into the ⓘ line, as later visits show', async () => {
+test('Colour along, the first time: its first line and More; opening a marker folds them into the ⓘ line, as later visits show', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await page.click('#sfColor'); await idle(page);
   const h = '#sfAlHint';
   assert.ok(await page.isVisible(h));
-  assert.equal((await page.textContent(h + ' .sfit')).trim(), 'Tap a marker to see its sections, then tap each section on the picture as you colour it.More');
+  assert.equal((await page.textContent(h + ' .sfit')).trim(), 'Tap a marker to see its sections, then tap each section on the picture as you colour it. More');
   assert.equal(await page.textContent('#sfAlMore'), 'More');
   const seen = () => page.evaluate(() => JSON.parse(localStorage.getItem('ms-seen-hints') || '[]').includes('along'));
   assert.equal(await seen(), false, 'not seen yet');

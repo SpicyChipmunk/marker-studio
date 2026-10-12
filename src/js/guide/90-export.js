@@ -188,36 +188,36 @@ function exportShrink(g0, pic, xs) {
   g0.setTransform(xs, 0, 0, xs, 0, 0);
   return g0;
 }
+// (v316: the title in Fraunces and the rest in Hanken, as Reveal's card and the PDF; the swatches rounded with a faint
+// edge; the dot note in grey under the key, not between the brand line and the key. exportImage loads the fonts first
+// (showFonts); drawn before they are, the fallbacks are used, as Reveal's card would)
 function exportLegend(g, ex, uniq, one, K, note) {
   const cols = K.cols,
     rh = K.rh,
     colw = K.colw,
-    legTop = K.legTop + (note ? Math.max(18, W / 46) : 0);
+    legTop = K.legTop,
+    titleFs = Math.max(22, W / 34);
   g.textAlign = 'left';
   g.textBaseline = 'middle';
   g.fillStyle = '#111';
-  g.font = '700 ' + Math.max(20, W / 40) + 'px sans-serif';
+  g.font = showFont(SHOW_TITLE, titleFs);
   {
-    const suf = ' · ' + nWord(uniq.length, 'marker');
+    const suf = ' \u00b7 ' + nWord(uniq.length, 'marker');
     g.fillText(
       pdfTrunc(g, curName || 'Colouring guide', Math.max(40, W - 40 - g.measureText(suf).width)) + suf,
       20,
       H + Math.max(28, W / 34),
     );
   }
-  g.font = '600 ' + Math.max(13, W / 70) + 'px sans-serif';
+  g.font = '600 ' + Math.max(13, W / 70) + 'px ' + LFONT;
   g.fillStyle = '#777';
-  g.fillText(one || brandKey(), 20, H + Math.max(28, W / 34) + Math.max(18, W / 46));
-  if (note)
-    g.fillText(
-      pdfTrunc(g, 'A dot marks each small section: see the guide or the PDF’s close-ups.', W - 40),
-      20,
-      H + Math.max(28, W / 34) + 2 * Math.max(18, W / 46),
-    );
+  // (far enough under the bigger title that its descenders clear this line's capitals)
+  g.fillText(one || brandKey(), 20, H + Math.max(28, W / 34) + Math.max(22, W / 30));
   g.fillStyle = '#111';
   const fs2 = Math.max(14, W / 58),
     sw = Math.max(16, W / 50);
-  g.font = '500 ' + fs2 + 'px sans-serif';
+  g.font = '500 ' + fs2 + 'px ' + LFONT;
+  let bot = H + legTop;
   for (let k = 0; k < uniq.length; k++) {
     const mk = uniq[k].m,
       cc = k % cols,
@@ -226,9 +226,12 @@ function exportLegend(g, ex, uniq, one, K, note) {
       y = H + legTop + rr * rh + rh / 2,
       rgb = hexRgb(mk.hex);
     g.fillStyle = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
-    g.fillRect(x, y - sw / 2, sw, sw);
-    g.strokeStyle = '#bbb';
-    g.strokeRect(x, y - sw / 2, sw, sw);
+    roundRect(g, x, y - sw / 2, sw, sw, sw * 0.3);
+    g.fill();
+    // (a faint edge: Copic's 0, B60 or G00 vanished into the paper without one)
+    g.lineWidth = 1;
+    g.strokeStyle = 'rgba(0,0,0,.2)';
+    g.stroke();
     g.fillStyle = '#111';
     g.fillText(
       trunc(
@@ -238,6 +241,17 @@ function exportLegend(g, ex, uniq, one, K, note) {
       ),
       x + sw + 8,
       y,
+    );
+    bot = y + rh / 2;
+  }
+  if (note) {
+    g.font = '500 ' + Math.max(12, W / 76) + 'px ' + LFONT;
+    // (#777: 4.5:1 on the white, as the brand line)
+    g.fillStyle = '#777';
+    g.fillText(
+      pdfTrunc(g, 'A dot marks each small section: see the guide or the PDF\u2019s close-ups.', W - 40),
+      20,
+      bot + Math.max(18, W / 46) / 2 + 4,
     );
   }
   return ex;
@@ -3532,20 +3546,21 @@ function exportImage() {
   };
   setTimeout(function () {
     // (anything going wrong puts the button back: before, it stayed on Preparing… until the app was reloaded, v304)
-    let xc = null;
     const codes = exCodesNow();
-    try {
-      if (!assignData) throw new Error('no guide');
-      xc = buildExportCanvas(false, !codes);
-    } catch (e) {
-      freeCanvas(xc);
-      done();
-      note(errNote('Couldn’t export the image.', 'Saving the image', e));
-      return;
-    }
-    // (v305) without the codes it's the picture to show, not a guide: framed as Reveal's card is (89-show.js), twice
-    // its size so the art keeps its detail
-    (codes ? Promise.resolve() : showFonts()).then(function () {
+    // (v316: the key's fonts loaded first, as Reveal's card's are: they're in the app, so this is quick)
+    showFonts().then(function () {
+      let xc = null;
+      try {
+        if (!assignData) throw new Error('no guide');
+        xc = buildExportCanvas(false, !codes);
+      } catch (e) {
+        freeCanvas(xc);
+        done();
+        note(errNote('Couldn’t export the image.', 'Saving the image', e));
+        return;
+      }
+      // (v305) without the codes it's the picture to show, not a guide: framed as Reveal's card is (89-show.js), twice
+      // its size so the art keeps its detail
       if (!codes) {
         let card = null;
         try {

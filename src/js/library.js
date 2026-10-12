@@ -531,6 +531,13 @@ function homeFinChanged(id, rec) {
   renderRecent();
   if (typeof renderBackupNudge === 'function') renderBackupNudge();
 }
+// (v315) the open guide's photo changed in another tab or by a restore: Home's latest piece drawn again (the row's
+// note of it is already saved)
+function homeFinSeen() {
+  var el = document.getElementById('homeHero');
+  if (el) el.removeAttribute('data-hid');
+  renderRecent();
+}
 function homeHero(g) {
   var el = document.getElementById('homeHero');
   if (!el) return;
@@ -722,7 +729,7 @@ function renderRecent() {
               ba +
               '</button>'
             : '') +
-          '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a photo of a colouring page into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a photo</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button><button type="button" class="homelink hcalt hcpdf" data-start="pdf">Page in a PDF? Open it</button></div></div>';
+          '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a photo of a colouring page into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a photo</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button><button type="button" class="homelink hcalt hcpdf" data-start="pdf">Page in a PDF? Open the PDF</button></div></div>';
       }
       var own = cel.querySelector('.hcown'),
         // (v309.1: the colours; a set's Colorless Blender builds nothing. v309.2: said as colours, as Home counts
@@ -822,6 +829,8 @@ function renderRecent() {
   }
   var hub0 = document.querySelector('#homeView .homehub');
   if (hub0) hub0.classList.toggle('hasstart', !cont);
+  // (v316) How it works, under the cards on a wide screen, until the first guide is made
+  if (hub0) hub0.classList.toggle('hownew', !all.length);
   var nb = document.getElementById('homeNew');
   // (beside the Continue card, a new guide is the second choice)
   if (nb) nb.classList.toggle('homenew2', !!cont);
@@ -937,7 +946,7 @@ function libSubText() {
       ? 'Tap a guide to open it.'
       : p
         ? 'Tap a palette to load it.'
-        : 'Palettes and guides you save are kept here.';
+        : 'Your guides and palettes are kept here.';
 }
 function renderSaved() {
   if (_libEd) libEndRename(true, false);
@@ -991,7 +1000,7 @@ function renderSaved() {
         .join('')
     : q
       ? '<div class="empty">No matches.</div>'
-      : '<div class="empty">No saved palettes or guides yet.</div><div class="emptyhow"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg><p>A guide saves itself here once it\u2019s built. A palette is kept with <b>Save</b>.</p><button type="button" id="libTrySample" class="btn-soft">Try the sample</button></div>';
+      : '<div class="empty">Nothing yet. A guide saves itself here once it\u2019s built; a palette is kept with <b>Save</b>.</div><div class="emptyhow"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg><button type="button" id="libTrySample" class="btn-soft">Try the sample</button></div>';
   // (v313) with nothing to search or sort, no search box or sort menu
   {
     var _bar = document.querySelector('#savedOverlay .libbar');

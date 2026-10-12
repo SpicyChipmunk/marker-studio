@@ -89,6 +89,7 @@ function applyXform() {
   if (sunEl || radEl) positionSun();
   if (zoneEl) positionZones();
   if (roughEl) positionRough();
+  if (speckEl) positionSpecks();
   if (photoEl) positionPhoto();
   if (tipL >= 0) positionTip();
   if (olSet) positionOutline();
@@ -103,8 +104,18 @@ function clampPan() {
     const g = focusGeo(true),
       ol = cv.offsetLeft,
       ot = cv.offsetTop;
-    panX = sw >= g.aw ? Math.min(-ol, Math.max(g.aw - ol - sw, panX)) : g.cx - ol - sw / 2;
-    panY = sh >= g.ah ? Math.min(g.t - ot, Math.max(g.t + g.ah - ot - sh, panY)) : g.cy - ot - sh / 2;
+    // (v315: with the hand-off card up, a picture that fits is centred in the room the card leaves, kept in the view)
+    const r = handOn() && _handRoom ? _handRoom : null,
+      cx = r ? (r.x0 + r.x1) / 2 : g.cx,
+      cy = r ? (r.y0 + r.y1) / 2 : g.cy;
+    panX =
+      sw >= g.aw
+        ? Math.min(-ol, Math.max(g.aw - ol - sw, panX))
+        : Math.max(-ol, Math.min(g.aw - ol - sw, cx - ol - sw / 2));
+    panY =
+      sh >= g.ah
+        ? Math.min(g.t - ot, Math.max(g.t + g.ah - ot - sh, panY))
+        : Math.max(g.t - ot, Math.min(g.t + g.ah - ot - sh, cy - ot - sh / 2));
     return;
   }
   if (zoom <= 1) {

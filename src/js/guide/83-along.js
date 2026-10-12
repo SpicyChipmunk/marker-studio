@@ -33,7 +33,8 @@ function alongHint() {
     AL_1 +
     (_alMore
       ? ' ' + AL_2 + alongTips()
-      : '<br><button type="button" id="sfAlMore" class="sflink">More</button>') +
+      : // (v316: More at the end of the sentence, not on a line of its own: Colour along's first row stays above the bar)
+        ' <button type="button" id="sfAlMore" class="sflink">More</button>') +
     '</span></div>'
   );
 }
@@ -50,7 +51,9 @@ function alongHintSeen() {
 // Colour along's controls (focus mode has its own, in renderControls): the ⓘ line, the list and the bar
 function alongControls() {
   ctlEl.innerHTML =
-    '<div class="sfpane sfalongp"><div id="sfDone" class="sfpgdone" style="display:none">Page finished!<div id="sfDoneSum" class="sfpgsum"></div><div id="sfFin" class="sffin"></div></div>' +
+    '<div class="sfpane sfalongp"><div id="sfDone" class="sfpgdone" style="display:none">' +
+    ic('sparkles', 'sfpgstar') +
+    '<span class="sfpgtitle">Page finished!</span><div id="sfDoneSum" class="sfpgsum"></div><div id="sfFin" class="sffin"></div></div>' +
     lowHost('A') +
     alongHint() +
     (zones.length

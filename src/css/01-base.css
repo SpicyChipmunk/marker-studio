@@ -27,6 +27,11 @@
   --ok-rgb: 95, 184, 159;
   --ok: rgb(var(--ok-rgb));
   --ok2: #4bbf9a;
+  /* (v316) the one "picked" tint for a chosen option (segments, chips, the tools' toggles, Mood): one teal everywhere;
+     green itself (--ok) is for done */
+  --pick-rgb: 120, 200, 180;
+  --pick-bg: rgba(var(--pick-rgb), 0.22);
+  --pick-edge: rgba(143, 214, 180, 0.6);
   --warn-rgb: 255, 180, 84;
   --warn: rgb(var(--warn-rgb));
   --sel: #ffd84a;
@@ -291,9 +296,9 @@ html.noamb .ambient {
 }
 /* white pill = where you are (page, tab); teal = a setting you picked; teal with a tick = a filter */
 .segs button.on {
-  background: rgba(120, 200, 180, 0.22);
+  background: var(--pick-bg);
   color: var(--ink);
-  box-shadow: inset 0 0 0 1px rgba(143, 214, 180, 0.6);
+  box-shadow: inset 0 0 0 1px var(--pick-edge);
 }
 .segs button:disabled {
   opacity: 0.28;

@@ -117,7 +117,7 @@ test('a PDF of 30 pages: each page’s picture keeps its size, and the list scro
   }
 });
 
-test('a phone: Reveal’s end with With my page lays the piece and its caption out above its taller bar', async () => {
+test('a phone: Reveal’s end with Plan and your page lays the piece and its caption out above its taller bar', async () => {
   const { page, errors } = await openApp({ width: 390, height: 844 });
   await finished(page);
   await page.evaluate(() => document.getElementById('sfDone').scrollIntoView({ block: 'center' }));

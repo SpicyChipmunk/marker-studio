@@ -249,3 +249,75 @@ button.wrm {
     white-space: nowrap;
   }
 }
+
+/* (v316) To buy: From your guides */
+.gbuy {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  font-size: var(--t-base);
+  line-height: 1.45;
+}
+.gbuy.ok {
+  color: var(--sub);
+}
+.gbuy.ok b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.gbhead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.gbhead b {
+  font-weight: 600;
+}
+.gbsum {
+  color: var(--sub);
+}
+.gbrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+.gbrow .gbwho {
+  flex: none;
+  min-width: 120px;
+}
+.gbrow .gbwho .wishchip {
+  margin: 0;
+}
+.gbwhy {
+  color: var(--sub);
+  min-width: 0;
+}
+.gbwhy b {
+  color: var(--ink);
+  font-weight: 500;
+}
+.gbmore {
+  margin: 6px 0 0;
+  min-height: 44px;
+}
+.gbacts {
+  margin-top: 8px;
+}
+.gbacts .wishall {
+  margin-left: 0;
+}
+/* (a phone: every reason under its chip, the short ones too, so the rows line up) */
+@media (max-width: 480px) {
+  .gbrow {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .gbwhy {
+    flex-basis: 100%;
+  }
+}

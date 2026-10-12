@@ -1281,6 +1281,7 @@ function renderGuide() {
   positionSun();
   positionZones();
   positionRough();
+  positionSpecks();
   positionPhoto();
   if (tipL >= 0) positionTip();
   rowOutline();

@@ -18,7 +18,7 @@ sheet, paper, and how it feels.
 ## 1. Update, install, offline (3 min)
 
 - [ ] ★ Open the Home Screen app → "Marker Studio was updated" shows, **Reload** → Home's foot says the new version
-      (e.g. "v314.1 · Beta").
+      (e.g. "v316 · Beta").
 - [ ] ★ Airplane mode on, close the app fully, reopen → it opens, your markers and guides are there; open a guide and
       make a PDF. Airplane mode off.
 - [ ] In a Safari **Private** tab, open the app's address → the welcome shows; Share › Add to Home Screen → the icon is
@@ -101,28 +101,59 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v314 and v314.1
+## New in this release: v316
 
-- [ ] ★ **A photo of your finished page:** finish a page (or Reset progress on a short one and tick it all) → Colour
-      along's **Page finished** panel → **Add a photo of your page** → take one with the camera, the page on a dark or
-      patterned table → it's straightened by itself, and shows in the panel ("Added today · straightened").
-- [ ] Again with **Change**, the page on a pale desk → four corner handles over the photo; drag one (a magnifier shows
-      by your finger), then **Straighten**. Try **Keep as is** once too. Both look right in the panel.
-- [ ] **Home:** the latest piece shows your photo first, with **Your page | Plan** over its foot; tap Plan, close the
-      app and reopen → still Plan. On a finished guide with no photo, Home offers **Add a photo of your page**; ✕
-      puts it away.
-- [ ] **Reveal & share** on that guide → at the end, **With my page** → the plan and your photo side by side → **Share**
-      → the share sheet → Save Image → it looks right in Photos.
-- [ ] On Home, tap **Plan** then **Your page** → the picture swaps, the card doesn't move; the switch sits on the
-      picture's foot.
-- [ ] **⋯ › Remove your photo** asks first, then it's gone from the panel and from Home.
-- [ ] (v314.1) A colouring book saved as a PDF (20+ pages) → **Open the PDF** → each page has its picture, and the
-      list scrolls.
-- [ ] (v314.1) A marker running low → **Swap it** → a message says which marker took its place, with **Undo**.
-- [ ] **Library › Back up**, delete the guide (let its Undo go), **Restore** the file → the guide and its photo are back.
-- [ ] A **new** guide laid as a **Gradient** (Scatter Polished or Natural) on a page with a few very big sections (a
-      big sky or background) uses more of its markers, with fewer left as a speck. A guide made before v314 looks
-      as it did.
+- [ ] ★ **Markers:** each family runs lightest first (R16, R28, R38 … R514). **Order** shows in Owned, Unowned and All;
+      tap it in Owned → the picker offers only **Lightest first** and **Code order** (iPad Safari had shown hidden
+      choices before; check there are just two). Code order → families by code, and it's still Code order after closing
+      the app. Owned has no "Your collection." line; **+ Add markers** is an outline button like the ones beside it.
+- [ ] The ⋯ menus (the guide's, Markers', the Library's) have an icon before each item, lined up, in grey.
+- [ ] ★ **Page finished** (tick every section of a short page): a dark card with a green edge, a sparkle over
+      **Page finished!**, and the four buttons under the photo as pills. Save image → the key's title in the app's serif
+      font, round swatches (Copic 0 or B60 still visible on the white), the dot note in grey under the key.
+- [ ] A Gradient's **Start colour**: the slider's ring rides on the colour strip; at both ends it sits over the first and
+      last colours, not off the strip. **Scatter** has the same ring on a thin grey line.
+- [ ] Upright iPad, the **sample** jellyfish → the Plan's picture is smaller to start and Mood's pictures (and the
+      Pattern tab's first row) are on the first screen; **Colour along** → the picture is bigger again and the first
+      marker row shows fully above the bar, with **More** at the end of the tip's sentence. A Letter page starts as before.
+- [ ] Chosen options (Codes, Greyscale, Plan choices, a marker row you've opened, Balance) are all one teal; Mood's ✓ is
+      white. Green is left for done (Saves itself ✓, the progress bar, Page finished).
+- [ ] Drop-downs (Markers' Order, the Library's sort, the guide's Saved palette) have the app's chevron.
+- [ ] ★ **Home** on the iPad before you've made a guide (a fresh install, or a test profile) → three numbered steps
+      under the cards. Gone once a guide is built. On Home's **Add a photo of your page**, the ✕ is a round button of its
+      own.
+- [ ] ★ **To buy › From your guides** (with a smaller set ticked, e.g. 24 or 48, and a few guides in the Library) →
+      under your list: the markers that would complete every blend in your guides, each with why ("Darker than B115 ·
+      2 of your 4 guides") and +. Tap + → on the list with "blend for …"; **Add all to To buy**. Mark a marker a guide
+      uses as **dry** → it's offered too. With all your markers ticked → "Every blend … is complete". With 30 or more
+      guides, To buy still opens at once.
+- [ ] **Brands I'd buy › Only these** with one brand → the card offers only that brand.
+- [ ] A **new** guide's Colour along strip: a marker's lighter and darker companions look like a step of the same colour
+      (no orange as a dark brown's lighter, no Black Brown as a red's darker). A guide made before v316 shows the same
+      companions as before.
+
+## From v315
+
+- [ ] ★ **A finished page on a light table:** photograph a coloured page on a light grey or light wood table → **Add a
+      photo of your page** → it's straightened by itself. The message has **Adjust corners** → the corners as found.
+- [ ] Photograph it with the phone held **sideways**, then **upside down** → kept the right way up. **Turn** in the
+      panel turns it a quarter turn.
+- [ ] On a **check or striped cloth** → the corners open to check, with a line about the table's pattern.
+- [ ] **Plan and your page** for a **wide** page, and for a photo kept as is that's wider than the page → the two are
+      one over the other or side by side, whichever shows both bigger; THE PLAN and MY PAGE are easy to read. On a
+      phone held sideways, **Share** is on the screen.
+- [ ] ★ **Focus mode** with the iPad **on its side** → finish a marker → the next-marker card sits beside the
+      picture, not over it. On a phone held sideways too, clear of the zoom buttons; turn the phone with the card up →
+      it moves to fit.
+- [ ] A **new** Gradient of **24** markers on a page with a few huge sections → the Pattern tab's last line names a
+      marker that only colours specks; **Show them** rings where. Tap the biggest section, change its colour, then
+      change **Flow** → the other markers spread over the rest of the page.
+- [ ] A new Gradient from your markers: no two markers in its key look the same (B111 and B112 aren't both used).
+- [ ] Copic greys (if you have some): a grey's blend companions in Colour along are the same grey type (C-6 with C-5
+      and C-7).
+- [ ] Wording: Library (empty) says **Nothing yet…**; Home says **Page in a PDF? Open the PDF**; Help's glossary has
+      **Your page**.
+- [ ] A guide made before v315 looks exactly as it did, and its photo is still there.
 
 ## Report back
 

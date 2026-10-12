@@ -20,13 +20,15 @@ function resetForNewPicture() {
   gradFix = false;
   // (v308: a new guide, the sample too, has the Include row, with the Mood's choices; a guide saved before has none)
   if (!gradIncl) gradIncl = {};
-  // (v313: a new guide, the sample too, takes a marker's family from its code's letters and first digit: famRule)
-  famRule = 1;
+  // (v313: a new guide, the sample too, takes a marker's family from its code's letters and first digit: famRule; v315:
+  // and Copic's greys theirs; v316: blend companions outside the family a step a blend can make)
+  famRule = 3;
   // (the running-low lines closed: the guide's own, none for a new one)
   lowX = null;
   smpTry = 0;
-  // (v314: a new guide, the sample too, shares a Gradient's run out by its sections' areas softened: gradArea)
-  gradArea = 1;
+  // (v314: a new guide, the sample too, shares a Gradient's run out by its sections' areas softened: gradArea; v315: the
+  // adapting rule, pins bigger than a share counting for nothing, and no two markers too alike in the run)
+  gradArea = 2;
   _mkOpened = {};
   _blendSel = {};
   relWake();

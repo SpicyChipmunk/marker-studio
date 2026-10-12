@@ -191,6 +191,7 @@ let gradIncl = null;
 // 1 for a guide made since v313 (the sample too: resetForNewPicture), the family being the code's letters and first
 // digit (Ohuhu Y213 with Y26, as Ohuhu numbers them); 0 for a guide saved before, which keeps v312's rule (Y213 with
 // Y210-Y216 only) for good, so the markers it shows for a section's tones never change under someone part-way through.
+// 2 for a guide made since v315: Copic's greys (N-3, C-6…) in families too (famVal); a guide made in v313/v314 keeps 1.
 // Written by: 05-style-fields, 20-image-input, 99-close (test)
 let famRule = 0;
 // (v313) the markers whose running-low line was closed in this guide: { mkey: 1 }, saved with it (lowLineUp, 87-undo);
@@ -203,7 +204,10 @@ let smpTry = 0;
 // (v314) how a Gradient shares the run of markers out by area (splitByArea, 30-palette-assign): 1 for a guide made since
 // v314 (the sample too: resetForNewPicture), each section counting as its area to the power GRAD_AREA_P, so one huge
 // section (a sky, a background) takes less of the run and the markers left for the small ones aren't crowded onto specks;
-// 0 for a guide saved before, laid as v313 laid it. Written by: 05-style-fields, 20-image-input, 99-close (test)
+// 0 for a guide saved before, laid as v313 laid it. (v315) Now the Gradient's rule generation: 2 for a guide made since
+// v315, the adapting area rule (plain unless a marker would land only on specks), a pinned section bigger than one
+// marker's share counting for nothing, and no two markers too alike in the run (gradPickSpread); a guide made in v314
+// keeps 1. Written by: 05-style-fields, 20-image-input, 99-close (test)
 let gradArea = 0;
 // (v308) the zones of a guide opened from the Library, Main 0 too, not laid since: { id: 1 } (mkOwnCount)
 // Written by: 20-image-input, 30-palette-assign, 97-open

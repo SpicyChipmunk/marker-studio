@@ -22,7 +22,7 @@ test('a guide made since v314: by area to the power 0.7, the small sections shar
   assert.deepEqual(split(true), [1, 1, 4, 5]);
 });
 
-test('gradArea: saved beside the section settings only when 1, opens as saved, 0 otherwise', () => {
+test('gradArea: saved beside the section settings when set (1 in v314; 2 since v315), opens as saved, 0 otherwise', () => {
   const core = createApp().__mstest,
     f = [...core.styleFields].find((x) => x.key === 'gradArea');
   assert.equal(f.in, 'payload');

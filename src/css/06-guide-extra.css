@@ -1596,8 +1596,10 @@ html.sfsheetsd .mstoast {
   font: inherit;
   text-align: left;
 }
+/* (v316: the picked tint, as every other chosen option) */
 #sfRoot .sfbalopt[aria-pressed='true'] {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--pick-bg);
+  box-shadow: inset 0 0 0 1px var(--pick-edge);
 }
 #sfRoot .sfbalopt[aria-pressed='true'] .sfbaltt::after {
   content: ' \2713';
@@ -1798,8 +1800,8 @@ html.sfsheetsd .mstoast {
   display: none;
 }
 #sfRoot .sfmp.on {
-  background: rgba(120, 200, 180, 0.22);
-  border-color: rgba(143, 214, 180, 0.75);
+  background: var(--pick-bg);
+  border-color: var(--pick-edge);
 }
 #sfRoot .sfmp.on::after {
   /* (not read out: the button says it's chosen, aria-pressed; the plain one for a browser without alt text) */
@@ -1811,7 +1813,8 @@ html.sfsheetsd .mstoast {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--ok);
+  /* (v316: in ink, as chosen, not done's green) */
+  background: var(--ink);
   color: #0b0b0e;
   font-size: 12px;
   font-weight: 700;
@@ -1852,33 +1855,46 @@ html.sfsheetsd .mstoast {
   gap: 8px;
   width: 100%;
   min-height: 46px;
-  margin-top: 10px;
+  margin-top: 12px;
   padding: 0 14px;
-  border: 1px solid rgba(11, 34, 25, 0.28);
+  border: 1px solid rgba(var(--ok-rgb), 0.55);
   border-radius: var(--r-md);
-  background: rgba(255, 255, 255, 0.3);
-  color: #0b2219;
+  background: rgba(var(--ok-rgb), 0.16);
+  color: var(--ink);
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
+  font-size: var(--t-lg);
+}
+#sfRoot .sffinadd:active {
+  background: rgba(var(--ok-rgb), 0.28);
 }
 #sfRoot .sffinadd .ic {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 #sfRoot .sffinnote {
-  margin-top: 6px;
+  margin-top: 8px;
+  color: var(--sub);
   font-weight: 500;
   font-size: var(--t-sm);
 }
+/* the photo at the left, Your page and its line beside it, the pills under them (a grid: on a phone the pills take the
+   whole width under the photo instead of stacking three deep beside it) */
 #sfRoot .sffinhave {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 10px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'pic name'
+    'pic when'
+    'pic links';
+  align-items: start;
+  column-gap: 14px;
+  margin-top: 14px;
   text-align: left;
 }
 #sfRoot .sffinpic {
-  flex: none;
+  grid-area: pic;
+  align-self: center;
   display: block;
   margin: 0;
   padding: 0;
@@ -1886,41 +1902,85 @@ html.sfsheetsd .mstoast {
   background: none;
   border-radius: 10px;
 }
-/* (v314.1: the whole page, not a square from its middle) */
+/* (v314.1: the whole page, not a square from its middle; v316: in a cream frame with a shadow, as a print on the desk) */
 #sfRoot .sffinhave img {
   display: block;
-  width: 84px;
-  height: 84px;
+  width: 96px;
+  height: 96px;
   object-fit: contain;
-  border-radius: 10px;
-  border: 1px solid rgba(11, 34, 25, 0.25);
+  border-radius: 8px;
+  border: 3px solid var(--ink);
   background: #fff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
 }
 #sfRoot .sffinpic:focus-visible {
-  outline: 2px solid #0b2219;
-  outline-offset: 2px;
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
 }
 #sfRoot .sffint {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  min-width: 0;
+  display: contents;
+}
+#sfRoot .sffint b {
+  grid-area: name;
+  font-size: var(--t-lg);
 }
 #sfRoot .sffinwhen {
+  grid-area: when;
+  color: var(--sub);
   font-weight: 500;
   font-size: var(--t-sm);
 }
 #sfRoot .sffinlinks {
+  grid-area: links;
   display: flex;
   flex-wrap: wrap;
-  column-gap: 16px;
+  gap: 8px;
+  margin-top: 8px;
 }
+@media (max-width: 520px) {
+  #sfRoot .sffinhave {
+    grid-template-areas:
+      'pic name'
+      'pic when'
+      'links links';
+  }
+  /* (the two lines together, in the middle of the photo's height) */
+  #sfRoot .sffint b {
+    align-self: end;
+  }
+  #sfRoot .sffinwhen {
+    align-self: start;
+  }
+  #sfRoot .sffinhave .sffinlinks {
+    margin-top: 12px;
+  }
+}
+/* the four as pill buttons, Show beside the plan tinted as the main one (v316; they were underlined links) */
 #sfRoot .sffinhave .sflink {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  margin-left: 0;
-  font-size: var(--t-sm);
+  margin: 0;
+  padding: 0 14px;
+  /* (3.1:1 against the card, as a control's edge should be: the app's ghost edge, 0.18, is 1.9:1) */
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: var(--t-base);
+  text-decoration: none;
+}
+#sfRoot .sffinhave .sflink[data-fin='show'] {
+  border-color: rgba(var(--ok-rgb), 0.6);
+  background: rgba(var(--ok-rgb), 0.18);
+}
+#sfRoot .sffinhave .sflink:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+#sfRoot .sffinhave .sflink:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 /* the corners (over Home, the guide or Reveal) */
 #sfFinEd,
@@ -1979,10 +2039,11 @@ html.sfsheetsd .mstoast {
 .sffincard .ocard {
   width: min(560px, 100%);
 }
-.sffincardimg {
+#sfFinCard .sffincardimg {
   display: block;
   max-width: 100%;
-  max-height: min(64vh, 820px);
+  /* (v315: room for the title and the buttons on a phone held sideways; .ocard img's own 66vh had won before) */
+  max-height: min(64vh, 820px, calc(100vh - 190px));
   margin: 4px auto 10px;
   border-radius: 10px;
 }

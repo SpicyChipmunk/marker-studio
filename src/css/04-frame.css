@@ -299,10 +299,11 @@
   width: 17px;
   height: 17px;
 }
+/* (v316: Codes and Greyscale on in the picked tint, not done's green) */
 #sfRoot .sftools .sfz[aria-pressed='true'] {
-  background: rgba(95, 184, 159, 0.16);
-  border-color: var(--ok);
-  color: #dff5ee;
+  background: var(--pick-bg);
+  border-color: var(--pick-edge);
+  color: var(--ink);
 }
 /* (Codes with nothing to show, a finished page in Colour along: off, and plainly not to be tapped, v302; greyed words
    at 4.5:1, not faded to 1.8:1 with the button, as the app's other disabled buttons, v308.2) */
@@ -660,6 +661,10 @@ html.sfsheetin #sfRoot .sfsheet.sfshside {
   color: var(--sub);
 }
 #sfRoot .sfmitem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
   border-radius: 0;
   padding: 8px 4px;
   border: 0;
@@ -670,6 +675,12 @@ html.sfsheetin #sfRoot .sfsheet.sfshside {
   font-size: var(--t-md);
   text-align: left;
   cursor: pointer;
+}
+/* (v316) the item's line icon, in the quieter colour so the label reads first */
+#sfRoot .sfmitem .ic {
+  width: 20px;
+  height: 20px;
+  color: var(--sub);
 }
 #sfRoot .sfmitem:active {
   background: rgba(255, 255, 255, 0.05);

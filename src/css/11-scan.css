@@ -26,8 +26,8 @@
 /* (v300: chosen as every other choice in the app is, the green of .segs button.on) */
 .sccard .scbrand button[aria-pressed='true'] {
   color: var(--ink);
-  background: rgba(120, 200, 180, 0.22);
-  box-shadow: inset 0 0 0 1px rgba(143, 214, 180, 0.6);
+  background: var(--pick-bg);
+  box-shadow: inset 0 0 0 1px var(--pick-edge);
 }
 /* (16px or more: Safari zooms into a smaller box) */
 .scbox {

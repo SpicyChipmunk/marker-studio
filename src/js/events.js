@@ -380,13 +380,15 @@ exportBtn.addEventListener('click', async () => {
     fn = 'marker-studio-drawn.png';
   } else return;
   exportBtn.disabled = true;
-  const old = exportBtn.textContent;
-  exportBtn.textContent = 'Rendering…';
+  // (v316: the label after its icon)
+  const lbl = exportBtn.querySelector('span') || exportBtn,
+    old = lbl.textContent;
+  lbl.textContent = 'Rendering…';
   try {
     const url = await makeCard(idxs, state.mode);
     showOverlay(url, fn);
   } catch (e) {}
-  exportBtn.textContent = old;
+  lbl.textContent = old;
   exportBtn.disabled = false;
 });
 ovClose.addEventListener('click', closeOverlay);
@@ -801,9 +803,14 @@ libMenu.className = 'libmenu';
 libMenu.setAttribute('role', 'menu');
 libMenu.setAttribute('aria-label', 'More');
 libMenu.hidden = true;
-[savedBtn, exportBtn].forEach((b) => {
+// (v316: each with its line icon, as the guide's ⋯ and the Library's tile menus)
+[
+  [savedBtn, 'library-big'],
+  [exportBtn, 'image'],
+].forEach(([b, icon]) => {
   b.setAttribute('role', 'menuitem');
   b.tabIndex = -1;
+  b.innerHTML = ic(icon) + '<span>' + esc(b.textContent) + '</span>';
   libMenu.appendChild(b);
 });
 libMoreWrap.append(libMore, libMenu);
@@ -1532,14 +1539,19 @@ function addWay(a, from) {
 const clearBtn = document.createElement('button');
 clearBtn.type = 'button';
 clearBtn.id = 'mkClear';
-clearBtn.textContent = 'Clear collection';
+// (v316) a Markers' ⋯ item's label, after its line icon (the label changes while an item asks for a second tap)
+function mkLabel(b, icon, text, sub) {
+  b.innerHTML =
+    ic(icon) + '<span>' + esc(text) + (sub ? ' <span class="mkmsub">' + sub + '</span>' : '') + '</span>';
+}
+mkLabel(clearBtn, 'trash-2', 'Clear collection');
 let clearT = null,
   clearAt = 0;
 function clearDisarm() {
   clearTimeout(clearT);
   clearT = null;
   clearBtn.dataset.arm = '';
-  clearBtn.textContent = 'Clear collection';
+  mkLabel(clearBtn, 'trash-2', 'Clear collection');
 }
 clearBtn.addEventListener('click', function () {
   // (the second tap of a double tap isn't the confirming one, as Untick all shown)
@@ -1574,8 +1586,11 @@ clearBtn.addEventListener('click', function () {
   }
   clearBtn.dataset.arm = '1';
   clearAt = Date.now();
-  clearBtn.textContent =
-    'Clear all ' + state.owned.size + (state.owned.size === 1 ? ' marker' : ' markers') + '? Tap again';
+  mkLabel(
+    clearBtn,
+    'trash-2',
+    'Clear all ' + state.owned.size + (state.owned.size === 1 ? ' marker' : ' markers') + '? Tap again',
+  );
   clearT = setTimeout(clearDisarm, 2500);
 });
 let unownT = null;
@@ -1585,7 +1600,7 @@ function unownDisarm() {
     unownT = null;
   }
   ownNoneBtn.dataset.arm = '0';
-  ownNoneBtn.textContent = 'Untick all shown';
+  mkLabel(ownNoneBtn, 'square-minus', 'Untick all shown');
 }
 let unownAt = 0;
 ownNoneBtn.addEventListener('click', () => {
@@ -1613,7 +1628,11 @@ ownNoneBtn.addEventListener('click', () => {
   }
   ownNoneBtn.dataset.arm = '1';
   unownAt = Date.now();
-  ownNoneBtn.textContent = 'Untick ' + m.length + (m.length === 1 ? ' marker' : ' markers') + '? Tap again';
+  mkLabel(
+    ownNoneBtn,
+    'square-minus',
+    'Untick ' + m.length + (m.length === 1 ? ' marker' : ' markers') + '? Tap again',
+  );
   unownT = setTimeout(unownDisarm, 3000);
 });
 // Markers' ⋯ (v288): the rarer and riskier actions out of the way: Untick all shown (asks with a second tap, then
@@ -1634,7 +1653,7 @@ mkMenu.className = 'libmenu';
 mkMenu.setAttribute('role', 'menu');
 mkMenu.setAttribute('aria-label', 'More');
 mkMenu.hidden = true;
-backupBtn.innerHTML = 'Back up &amp; restore <span class="mkmsub">(in the Library)</span>';
+mkLabel(backupBtn, 'library-big', 'Back up & restore', '(in the Library)');
 [ownNoneBtn, clearBtn, backupBtn].forEach((b) => {
   b.setAttribute('role', 'menuitem');
   b.tabIndex = -1;

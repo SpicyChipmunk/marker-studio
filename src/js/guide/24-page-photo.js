@@ -39,8 +39,9 @@ function finInLib(id) {
   for (let i = 0; i < a.length; i++) if (a[i].id === id) return true;
   return false;
 }
-// the open guide's photo, read when the guide changes (the Page finished panel asks)
-function finSync() {
+// the open guide's photo, read when the guide changes (the Page finished panel asks; v315: and as a guide opens, so a
+// Put back after a delete always has it: lazy, the record only, the picture decoded when it's first shown)
+function finSync(lazy) {
   if (_fin.id === curId && _fin.tok === _gTok) return;
   const g = _fin.gen + 1,
     id = curId;
@@ -48,31 +49,62 @@ function finSync() {
   if (_finLast && _finLast.id !== id) finFreeLast();
   if (id == null) return;
   finGet(id).then(function (r) {
-    if (_fin.gen === g) finSetRec(r);
+    if (_fin.gen === g) finSetRec(r, lazy);
   });
 }
+// (v315) the open guide's photo read again, as it may have changed elsewhere: another tab added, changed or removed it
+// (the tab coming back into view), or a restore put a newer one in. Only when it differs; not while its corners are
+// open (that photo is the one being worked on)
+function finRefresh() {
+  const id = curId;
+  if (id == null || _fin.id !== id || !_fin.read || _finEd) return Promise.resolve();
+  const g = _fin.gen;
+  return finGet(id).then(function (r) {
+    const a = _fin.rec;
+    if (_fin.gen !== g || _fin.id !== id || _finEd) return;
+    if ((!a && !r) || (a && r && +a.ts === +r.ts && a.u === r.u)) return;
+    const shown = !!_fin.img;
+    _fin.gen = g + 1;
+    finSetRec(r, !shown);
+    // (Home's latest piece shows it too; the row's own note of it came with the other tab's save)
+    if (typeof homeFinSeen === 'function') homeFinSeen();
+  });
+}
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') finRefresh();
+});
 // the last photo let go (not while the corners are open on it: a photo for another guide, chosen on Home)
 function finFreeLast() {
   if (_finLast && !(_finEd && _finEd.src === _finLast.src)) freeCanvas(_finLast.src);
   _finLast = null;
 }
-function finSetRec(r) {
+function finSetRec(r, lazy) {
   _fin.read = true;
   _fin.rec = r || null;
   _fin.img = null;
-  if (r) {
-    const im = new Image(),
-      g = _fin.gen;
-    im.onload = function () {
-      if (_fin.gen === g && _fin.rec === r) _fin.img = im;
-    };
-    im.src = r.u;
-  }
+  _fin.dec = false;
+  if (r && !lazy) finDecode();
   finPanel();
+}
+// the photo decoded, for the card (once)
+function finDecode() {
+  const r = _fin.rec;
+  if (!r || _fin.img || _fin.dec) return;
+  _fin.dec = true;
+  const im = new Image(),
+    g = _fin.gen;
+  im.onload = function () {
+    if (_fin.gen === g && _fin.rec === r) _fin.img = im;
+  };
+  im.src = r.u;
 }
 // the photo was added, changed or removed: Home's latest piece shows it (library.js)
 function finChanged(id, rec) {
   if (typeof homeFinChanged === 'function') homeFinChanged(id, rec || null);
+}
+// the photo as taken, for the corners, still to hand for guide id (finSync lets it go when another guide opens)
+function finAdjOk(id) {
+  return !!(_finLast && _finLast.id === id && _finLast.src && _finLast.src.width > 0 && !_finEd);
 }
 // (the toast is read out as it shows)
 function finSay(m) {
@@ -199,9 +231,11 @@ function finRead(file) {
 function finFound(id, src, f35) {
   let f = { tier: 'none' };
   try {
-    f = pgFind(src);
+    // (the page is coloured in: v315)
+    f = pgFind(src, { coloured: true });
   } catch (_) {}
   if (_finLast && _finLast.src !== src) finFreeLast();
+  _finKeep = null;
   _finLast = { id: id, src: src, q: f.q || null, f35: f35 || 0, tier: f.tier };
   if (f.tier === 'sure') finFlatten(id, src, f.q, f35);
   else finEdit(id, src, f.tier === 'unsure' ? f.q : null, f.tier === 'unsure' ? f.why : 'none');
@@ -209,16 +243,277 @@ function finFound(id, src, f35) {
 function finFlatten(id, src, q, f35) {
   let out = null;
   try {
-    out = pgWarp(src, q, pgShapeOf(q, src.width, src.height, f35, null).aspect);
+    out = pgWarp(src, q, finAspect(q, src.width, src.height, f35));
   } catch (_) {}
   if (!out) {
     finStore(id, src, 0, 'Couldn’t straighten that photo, so it’s kept as taken.');
     return;
   }
-  finStore(id, out, 1);
-  freeCanvas(out);
+  // (v315) turned by hand since (Turn): kept that way, not compared with the plan again
+  if (_finLast && _finLast.src === src && _finLast.manual) {
+    const t = finTurned(out, _finLast.turns || 0);
+    finStore(id, t, 1, '', true).then(function () {
+      if (t !== out) freeCanvas(t);
+      freeCanvas(out);
+    });
+    return;
+  }
+  finStore(id, out, 1).then(function () {
+    freeCanvas(out);
+  });
 }
-function finStore(id, c, flat, msg) {
+// (v315) the page's shape: as measured, or the paper Print uses (Letter, A4…, either way up) when it's within 6% of it,
+// so a photo whose camera doesn't say its lens (a 2× zoom measured 4% too wide) still comes out the paper's shape
+function finAspect(q, iw, ih, f35) {
+  let a = pgShapeOf(q, iw, ih, f35, null).aspect;
+  const P = PAPERS[paper] || PAPERS.letter,
+    pa = P[0] / P[1];
+  [pa, 1 / pa].forEach(function (t) {
+    if (Math.abs(a / t - 1) < 0.06) a = t;
+  });
+  return a;
+}
+/* (v315) A photo taken with the phone turned is straightened on its side (the finder takes the side nearest level as
+   the top), and upside down when the phone was. It's compared with the plan, both shrunk to a few dozen pixels, at
+   each quarter turn: the drawing's box in each (finInkBox: the paper's margins and the table left out), stretched to a
+   small grid and compared colour for colour (and the boxes' shapes); it's turned only when one turn is clearly the best
+   (FIN_TURN_*), else left as it is, and the panel's Turn is there for the rest. On 144 made-up photos of three
+   coloured pages (on their sides both ways, upside down, a little turned, two tables, two tilts) the right turn scored
+   best every time it was a page with no key printed beside the drawing, 0.19 or more ahead; with these thresholds 131
+   came out the right way up, none the wrong way, and 13 were left (12 of them a page with a large printed key). */
+const FIN_TURN_MIN = 0.2,
+  FIN_TURN_GAIN = 0.1,
+  FIN_TURN_LEAD = 0.05;
+function finRow(id) {
+  const a = api.listDesigns ? api.listDesigns() : [];
+  for (let i = 0; i < a.length; i++) if (a[i].id === id) return a[i];
+  return null;
+}
+// a canvas turned a quarter turn clockwise `turns` times (the same canvas for none)
+function finTurned(c, turns) {
+  turns = ((turns % 4) + 4) % 4;
+  if (!turns) return c;
+  const w = c.naturalWidth || c.width,
+    h = c.naturalHeight || c.height,
+    o = document.createElement('canvas');
+  o.width = turns % 2 ? h : w;
+  o.height = turns % 2 ? w : h;
+  const g = o.getContext('2d');
+  g.translate(o.width / 2, o.height / 2);
+  g.rotate((turns * Math.PI) / 2);
+  g.drawImage(c, -w / 2, -h / 2);
+  return o;
+}
+// the drawing's box in a small picture: rows and columns with enough ink (darker than the paper by a fifth, or clearly
+// coloured), so the page's margins, the table and a printed key's spacing don't count
+function finInkBox(c) {
+  const w = c.width,
+    h = c.height,
+    d = c.getContext('2d').getImageData(0, 0, w, h).data,
+    lum = new Float32Array(w * h),
+    srt = [];
+  for (let i = 0; i < w * h; i++) {
+    lum[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+    if (i % 7 === 0) srt.push(lum[i]);
+  }
+  srt.sort(function (a, b) {
+    return a - b;
+  });
+  const P = srt[Math.floor(srt.length * 0.95)] || 255,
+    rows = new Uint16Array(h),
+    cols = new Uint16Array(w);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x,
+        r = d[i * 4],
+        g = d[i * 4 + 1],
+        b = d[i * 4 + 2];
+      if (lum[i] < 0.8 * P || Math.max(r, g, b) - Math.min(r, g, b) > 50) {
+        rows[y]++;
+        cols[x]++;
+      }
+    }
+  const edge = function (a, n, lim) {
+    let lo = 0,
+      hi = n - 1;
+    while (lo < n && a[lo] <= lim) lo++;
+    while (hi > lo && a[hi] <= lim) hi--;
+    return [lo, hi];
+  };
+  const ry = edge(rows, h, Math.max(1, w * 0.03)),
+    rx = edge(cols, w, Math.max(1, h * 0.03));
+  if (rx[1] - rx[0] < 4 || ry[1] - ry[0] < 4) return { x: 0, y: 0, w: w, h: h };
+  return { x: rx[0], y: ry[0], w: rx[1] - rx[0] + 1, h: ry[1] - ry[0] + 1 };
+}
+// colour on a G × G grid (the box stretched to it), each channel less its mean
+const FIN_G = 24;
+function finGrid(src, box, turns) {
+  const c = document.createElement('canvas');
+  c.width = c.height = FIN_G;
+  const g = c.getContext('2d');
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  g.translate(FIN_G / 2, FIN_G / 2);
+  g.rotate((turns * Math.PI) / 2);
+  g.drawImage(src, box.x, box.y, box.w, box.h, -FIN_G / 2, -FIN_G / 2, FIN_G, FIN_G);
+  const d = g.getImageData(0, 0, FIN_G, FIN_G).data,
+    n = FIN_G * FIN_G,
+    v = new Float32Array(n * 3);
+  for (let k = 0; k < 3; k++) {
+    let m = 0;
+    for (let i = 0; i < n; i++) m += d[i * 4 + k];
+    m /= n;
+    for (let i = 0; i < n; i++) v[k * n + i] = d[i * 4 + k] - m;
+  }
+  freeCanvas(c);
+  return v;
+}
+function finNcc(a, b) {
+  let ab = 0,
+    aa = 0,
+    bb = 0;
+  for (let i = 0; i < a.length; i++) {
+    ab += a[i] * b[i];
+    aa += a[i] * a[i];
+    bb += b[i] * b[i];
+  }
+  return aa > 0 && bb > 0 ? ab / Math.sqrt(aa * bb) : 0;
+}
+// how well the photo's drawing, turned `turns` quarter turns, matches the plan's, each in its own box (their shapes
+// compared too: a wrong quarter turn swaps the box's width and height)
+function finTurnScore(photo, pbox, plan, qbox, turns) {
+  const ap = turns % 2 ? pbox.h / pbox.w : pbox.w / pbox.h,
+    aq = qbox.w / qbox.h,
+    fit = Math.sqrt(Math.min(ap / aq, aq / ap));
+  return finNcc(finGrid(photo, pbox, turns), finGrid(plan, qbox, 0)) * fit;
+}
+// the photo the right way up: resolves to { c (the same canvas, or a turned copy), turns }
+function finOrient(id, c) {
+  const keep = { c: c, turns: 0 },
+    row = finRow(id);
+  if (!row || typeof homeArt !== 'function') return Promise.resolve(keep);
+  return Promise.resolve(homeArt(row, 'plan', 120))
+    .then(function (u) {
+      if (!u) return null;
+      return new Promise(function (res) {
+        const im = new Image();
+        im.onload = function () {
+          res(im);
+        };
+        im.onerror = function () {
+          res(null);
+        };
+        im.src = u;
+      });
+    })
+    .then(function (plan) {
+      if (!plan || !plan.width) return keep;
+      // (a small copy of the photo to compare)
+      const k = Math.min(1, 160 / Math.max(c.width, c.height)),
+        sm = document.createElement('canvas');
+      sm.width = Math.max(1, Math.round(c.width * k));
+      sm.height = Math.max(1, Math.round(c.height * k));
+      drawShrunk(sm.getContext('2d'), c, sm.width, sm.height);
+      const pc = document.createElement('canvas');
+      pc.width = plan.naturalWidth || plan.width;
+      pc.height = plan.naturalHeight || plan.height;
+      pc.getContext('2d').drawImage(plan, 0, 0);
+      const pbox = finInkBox(sm),
+        qbox = finInkBox(pc),
+        sc = [0, 1, 2, 3].map(function (t) {
+          return finTurnScore(sm, pbox, pc, qbox, t);
+        });
+      freeCanvas(sm);
+      freeCanvas(pc);
+      let best = 0;
+      for (let t = 1; t < 4; t++) if (sc[t] > sc[best]) best = t;
+      const next = Math.max.apply(
+        null,
+        sc.filter(function (_, t) {
+          return t !== best;
+        }),
+      );
+      finOrient.last = sc;
+      if (
+        !best ||
+        sc[best] < FIN_TURN_MIN ||
+        sc[best] - sc[0] < FIN_TURN_GAIN ||
+        sc[best] - next < FIN_TURN_LEAD
+      )
+        return keep;
+      return { c: finTurned(c, best), turns: best };
+    })
+    .catch(function () {
+      return keep;
+    });
+}
+// (v315) the panel's Turn: a quarter turn clockwise, as it is now
+function finTurn() {
+  const id = curId,
+    r = _fin.rec;
+  if (id == null || !r || _fin.id !== id) return;
+  finKeepAdded(id);
+  // (v315) from the photo as taken, while it's to hand: straightened again and turned, so turning round and round
+  // never loses anything to JPEG; else the photo as kept, turned
+  const L = _finLast;
+  if (r.flat && finAdjOk(id) && L.q) {
+    let out = null;
+    try {
+      out = pgWarp(L.src, L.q, finAspect(L.q, L.src.width, L.src.height, L.f35));
+    } catch (_) {}
+    if (out) {
+      L.turns = ((L.turns || 0) + 1) % 4;
+      L.manual = true;
+      const t = finTurned(out, L.turns);
+      finStore(id, t, 1, 'Photo turned.', true).then(function () {
+        if (t !== out) freeCanvas(t);
+        freeCanvas(out);
+      });
+      return;
+    }
+  }
+  const im = new Image();
+  im.onload = function () {
+    const c = finTurned(im, 1);
+    finStore(id, c, r.flat, 'Photo turned.', true).then(function () {
+      freeCanvas(c);
+    });
+  };
+  im.src = r.u;
+}
+// asis: kept the way it is (the panel's Turn), not compared with the plan
+function finStore(id, c, flat, msg, asis) {
+  return (asis ? Promise.resolve({ c: c, turns: 0 }) : finOrient(id, c)).then(function (o) {
+    // (how it was turned upright, for Turn to count on from: v315)
+    if (!asis && _finLast && _finLast.id === id) {
+      _finLast.turns = o.turns || 0;
+      _finLast.manual = false;
+    }
+    const r = finStoreNow(
+      id,
+      o.c,
+      flat,
+      !asis,
+      msg ||
+        (o.turns
+          ? flat
+            ? 'Photo of your page added, straightened and turned upright.'
+            : 'Photo of your page added, turned upright.'
+          : ''),
+    );
+    if (o.c !== c) freeCanvas(o.c);
+    return r;
+  });
+}
+// (v315) a Turn or Adjust corners of the photo already kept: the record keeps the day it was added (its ts moves on, for
+// a restore's newer-wins)
+let _finKeep = null;
+function finKeepAdded(id) {
+  const r = _fin.id === id ? _fin.rec : null;
+  _finKeep = r ? { id: id, added: +r.added || +r.ts || Date.now() } : null;
+}
+// adj: just added, so a straightened one's toast offers Adjust corners (v315)
+function finStoreNow(id, c, flat, adj, msg) {
   let rec = null;
   try {
     const w0 = c.width,
@@ -239,6 +534,8 @@ function finStore(id, c, flat, msg) {
       ts: Date.now(),
       flat: flat ? 1 : 0,
     };
+    if (_finKeep && _finKeep.id === id) rec.added = _finKeep.added;
+    _finKeep = null;
     freeCanvas(t);
   } catch (_) {}
   if (!finOk(rec)) {
@@ -253,7 +550,13 @@ function finStore(id, c, flat, msg) {
     function () {
       if (_fin.id === id) finSetRec(rec);
       finChanged(id, rec);
-      finSay(msg || (flat ? 'Photo of your page added, straightened.' : 'Photo of your page added.'));
+      const m = msg || (flat ? 'Photo of your page added, straightened.' : 'Photo of your page added.');
+      // (v315) straightened: a button to check the corners, from Home too (the photo as taken is still to hand)
+      if (adj && flat && finAdjOk(id))
+        toastAction(m, 'Adjust corners', function () {
+          if (finAdjOk(id)) finEdit(id, _finLast.src, _finLast.q, 'adjust');
+        });
+      else finSay(m);
       return true;
     },
     function () {
@@ -301,6 +604,8 @@ const FIN_WHY = {
   unclear: 'One edge of the page is hard to see. Check the corners, then Straighten.',
   none: 'Drag the four corners onto the corners of your page, or keep the photo as it is.',
   adjust: 'Drag a corner to move it.',
+  // (v315: a patterned table round the page, 22-straighten pgFind)
+  cloth: 'The table’s pattern makes the page’s edges hard to be sure of. Check the corners, then Straighten.',
 };
 let _finEd = null;
 function finEdit(id, src, q, why) {
@@ -362,6 +667,7 @@ function finEdit(id, src, q, why) {
     g: cvs.getContext('2d'),
     op: op,
     t0: Date.now(),
+    why: why,
   };
   _finEd = E;
   o.addEventListener('click', function (e) {
@@ -435,6 +741,8 @@ function finEdDo(a) {
       src = E.src,
       f35 = _finLast && _finLast.src === src ? _finLast.f35 : 0;
     if (_finLast && _finLast.src === src) _finLast.q = q;
+    // (v315) the same photo's corners adjusted: it keeps the day it was added
+    if (E.why === 'adjust') finKeepAdded(id);
     finEdClose();
     finFlatten(id, src, q, f35);
   } else if (a === 'keep') {
@@ -619,10 +927,14 @@ function finPanel() {
     on = id != null && _fin.id === id && !!libEntry() && pageDone();
   let h = '';
   if (on && _fin.rec) {
+    // (shown: decoded for the card)
+    finDecode();
     const r = _fin.rec,
-      d = new Date(r.ts || 0),
+      // (v315: the day it was added; a Turn or Adjust corners since doesn't move it)
+      at = +r.added || r.ts || 0,
+      d = new Date(at),
       today = new Date().toDateString() === d.toDateString(),
-      when = today ? 'today' : typeof heroDate === 'function' ? heroDate(r.ts) : '';
+      when = today ? 'today' : typeof heroDate === 'function' ? heroDate(at) : '';
     h =
       // (v314.1: the picture opens the card too)
       '<div class="sffinhave"><button type="button" class="sffinpic" data-fin="show" aria-label="Your photo of the finished page, beside the plan"><img alt="" src="' +
@@ -634,12 +946,14 @@ function finPanel() {
       (_finLast && _finLast.id === id
         ? '<button type="button" class="sflink" data-fin="adjust">Adjust corners</button>'
         : '') +
+      // (v315: a quarter turn, for a photo the wrong way up)
+      '<button type="button" class="sflink" data-fin="turn" aria-label="Turn the photo a quarter turn">Turn</button>' +
       '<button type="button" class="sflink" data-fin="change">Change</button></span></div></div>';
   } else if (on && _fin.read)
     h =
       '<button type="button" class="sffinadd" data-fin="add">' +
       ic('camera') +
-      ' Add a photo of your page</button><div class="sffinnote">Keep your finished page beside its plan. It stays on this device.</div>';
+      ' Add a photo of your page</button><div class="sffinnote">Keep your finished page beside its plan. It stays on this device. On a plain table darker than the paper, it straightens by itself.</div>';
   if (el._h === h) return;
   el._h = h;
   el.innerHTML = h;
@@ -649,6 +963,7 @@ function finPanel() {
     const a = b.dataset.fin;
     if (a === 'add' || a === 'change') finPick(null);
     else if (a === 'show') finCardOpen();
+    else if (a === 'turn') finTurn();
     else if (a === 'adjust' && _finLast && _finLast.id === curId)
       finEdit(_finLast.id, _finLast.src, _finLast.q, 'adjust');
   };
@@ -656,25 +971,15 @@ function finPanel() {
 
 /* -- the card with the plan and the page: tall pages side by side, wide ones one over the other, a label over each,
    in Reveal's frame (89-show showLayout, with a box made to hold both) -- */
-function buildFinCard(im, w, h) {
-  const M = showModel();
-  if (!M || !im) return null;
-  w = w || 1080;
-  h = h || 1350;
-  let xc = null;
-  try {
-    xc = buildExportCanvas(false, true);
-  } catch (_) {}
-  if (!xc) return null;
-  const k = xc.width / W,
-    cr = M.crop,
-    a1 = cr.w / cr.h,
-    a2 = (im.naturalWidth || im.width) / (im.naturalHeight || im.height),
-    side = a1 < 1.05,
-    lab = 0.085,
-    gap = 0.07,
-    p = 0.035;
-  // the two slots in units of the box: the plan on its paper (p round it), and the photo
+// the two slots in units of the box: the plan on its paper (p round it), and the photo; side by side, or one over the
+// other
+const FIN_LAB = 0.085,
+  FIN_GAP = 0.07,
+  FIN_PAD = 0.035;
+function finCardBox(a1, a2, side) {
+  const lab = FIN_LAB,
+    gap = FIN_GAP,
+    p = FIN_PAD;
   let bw, bh, s1, s2;
   if (side) {
     const ph = 1 + 2 * p;
@@ -688,6 +993,55 @@ function buildFinCard(im, w, h) {
     bw = 1;
     bh = s2.y + s2.h;
   }
+  return { bw: bw, bh: bh, s1: s1, s2: s2 };
+}
+// (v315) side by side or one over the other, whichever shows both pictures bigger: the smaller of the two, as the card
+// lays them out (a tall plan beside a wide photo kept as is had been side by side and both small; a wide plan over a
+// tall photo, stacked and both small). Side by side when they're as big.
+function finCardSide(M, a1, a2, w, h) {
+  const c = document.createElement('canvas'),
+    g = c.getContext('2d'),
+    p = FIN_PAD,
+    at = function (side) {
+      const b = finCardBox(a1, a2, side),
+        L = showLayout(
+          g,
+          Object.assign({}, M, { crop: { x: 0, y: 0, w: b.bw * 1000, h: b.bh * 1000 } }),
+          w,
+          h,
+          {
+            card: true,
+          },
+        ),
+        K = Math.min(L.art.w / b.bw, L.art.h / b.bh);
+      return Math.min((b.s1.w - 2 * p) * (b.s1.h - 2 * p), b.s2.w * b.s2.h) * K * K;
+    },
+    side = at(true) >= at(false);
+  freeCanvas(c);
+  return side;
+}
+function buildFinCard(im, w, h, sideAs) {
+  const M = showModel();
+  if (!M || !im) return null;
+  w = w || 1080;
+  h = h || 1350;
+  let xc = null;
+  try {
+    xc = buildExportCanvas(false, true);
+  } catch (_) {}
+  if (!xc) return null;
+  const k = xc.width / W,
+    cr = M.crop,
+    a1 = cr.w / cr.h,
+    a2 = (im.naturalWidth || im.width) / (im.naturalHeight || im.height),
+    side = sideAs != null ? !!sideAs : finCardSide(M, a1, a2, w, h),
+    lab = FIN_LAB,
+    p = FIN_PAD,
+    B = finCardBox(a1, a2, side),
+    bw = B.bw,
+    bh = B.bh,
+    s1 = B.s1,
+    s2 = B.s2;
   const M2 = Object.assign({}, M, { crop: { x: 0, y: 0, w: bw * 1000, h: bh * 1000 } }),
     c = document.createElement('canvas');
   c.width = w;
@@ -737,7 +1091,8 @@ function buildFinCard(im, w, h) {
   g.drawImage(im, P2.x, P2.y, P2.w, P2.h);
   g.restore();
   // the labels
-  const fs = Math.max(12, lab * K * 0.42);
+  // (v315: never smaller than 2% of the card's width, to read in a feed)
+  const fs = Math.max(0.02 * w, lab * K * 0.42);
   g.save();
   g.font = showFont(SHOW_TEXT, fs).replace('500', '700');
   g.fillStyle = 'rgba(244,242,236,.66)';
@@ -748,7 +1103,7 @@ function buildFinCard(im, w, h) {
   g.restore();
   showDrawCap(g, M, L);
   // (where each went, for the tests)
-  c.finAt = { side: side, plan: P1, page: P2 };
+  c.finAt = { side: side, plan: P1, page: P2, lab: fs };
   return c;
 }
 // the card, shown with Share (a tap of its own: Safari shares only from a tap)

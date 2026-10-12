@@ -518,6 +518,7 @@ function mount() {
       if (photoEl) positionPhoto();
       if (zoneEl) positionZones();
       if (roughEl) positionRough();
+      if (speckEl) positionSpecks();
       if (tipL >= 0) positionTip();
       if (olSet) positionOutline();
     });
@@ -621,7 +622,9 @@ function mount() {
         fitFocus();
         if (focusCur() >= 0) {
           focusZ = focusZoomFor(focusCur());
-          frameFocus(false);
+          // (v315: the hand-off card up: placed again for the new shape)
+          if (handOn()) handReframe();
+          else frameFocus(false);
           renderGuide();
         } else {
           zoom = 1;

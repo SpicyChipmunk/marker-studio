@@ -27,6 +27,27 @@ function pdfLib() {
     });
   return _pdfjs;
 }
+// (v315) whether PDF.js is stored for offline use (its own cache, which the service worker fills)
+function pdfStored() {
+  try {
+    if (!self.caches) return Promise.resolve(false);
+    return caches
+      .open('marker-studio-pdfjs-' + PDFJS_VER)
+      .then(function (c) {
+        return c.match(pdfUrl('pdf.min.mjs'));
+      })
+      .then(
+        function (r) {
+          return !!r;
+        },
+        function () {
+          return false;
+        },
+      );
+  } catch (_) {
+    return Promise.resolve(false);
+  }
+}
 // (the module workers and dynamic import PDF.js needs; Safari before 15 has neither)
 function pdfCan() {
   try {
@@ -39,7 +60,11 @@ function pdfCan() {
     return false;
   }
 }
-const PDF_SHOT = ' Take a screenshot of the colouring page, then choose the screenshot.';
+const PDF_SHOT = ' Take a screenshot of the colouring page, then choose the screenshot.',
+  // (v315) offline, and the PDF reader never stored (it's fetched once, the first time it's needed or as the app
+  // installs, then kept)
+  PDF_OFFLINE =
+    'Opening a PDF needs the internet the first time, to fetch the PDF reader. Connect, then open it again.';
 function loadPdf(file, gen) {
   if (!pdfCan()) {
     note('This browser can’t open PDFs here.' + PDF_SHOT);
@@ -49,13 +74,25 @@ function loadPdf(file, gen) {
   let doc = null;
   const fail = function (e, what) {
     if (gen !== loadGen) return;
-    if (e && e.name === 'PasswordException')
-      note('That PDF is locked with a password, so it can’t be opened here.' + PDF_SHOT);
-    else note(errNote((what || 'Couldn’t open that PDF.') + PDF_SHOT, 'Opening a PDF', e));
     if (doc)
       try {
         doc.destroy();
       } catch (_) {}
+    if (e && e.name === 'PasswordException') {
+      note('That PDF is locked with a password, so it can’t be opened here.' + PDF_SHOT);
+      return;
+    }
+    const said = function () {
+      note(errNote((what || 'Couldn’t open that PDF.') + PDF_SHOT, 'Opening a PDF', e));
+    };
+    // (v315) offline, with the PDF reader never stored: it needs the internet once. (Told by its cache, not by the
+    // error, which differs from browser to browser)
+    if (navigator.onLine !== false) return said();
+    pdfStored().then(function (has) {
+      if (gen !== loadGen) return;
+      if (has) said();
+      else note(PDF_OFFLINE);
+    });
   };
   Promise.all([pdfLib(), file.arrayBuffer()])
     .then(function (r) {
@@ -69,7 +106,14 @@ function loadPdf(file, gen) {
       }).promise;
     })
     .then(function (d) {
-      if (!d || gen !== loadGen) return null;
+      if (!d) return null;
+      // (v315: a PDF that opened after another picture was chosen is let go too)
+      if (gen !== loadGen) {
+        try {
+          d.destroy();
+        } catch (_) {}
+        return null;
+      }
       doc = d;
       if (d.numPages === 1) return 1;
       return pdfChoose(d, gen);
@@ -91,12 +135,18 @@ function loadPdf(file, gen) {
       });
     })
     .then(function (c) {
-      if (!c || gen !== loadGen) return;
+      if (!c) return;
       try {
         doc.destroy();
       } catch (_) {}
       doc = null;
+      // (v315: and a page drawn after another picture was chosen, or blank, handed back)
+      if (gen !== loadGen) {
+        freeCanvas(c);
+        return;
+      }
       if (pdfBlank(c)) {
+        freeCanvas(c);
         note('That PDF page came out blank here.' + PDF_SHOT);
         return;
       }

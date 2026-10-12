@@ -251,7 +251,14 @@ if (!['owned', 'unowned', 'all', 'wish'].includes(state.collView)) state.collVie
 state.wish = cleanWish(state.wish);
 state.ink = cleanInk(state.ink);
 if (typeof state.filtersOpen !== 'boolean') state.filtersOpen = false;
-if (!['code', 'gap', 'complete', 'ramps'].includes(state.gapSort)) state.gapSort = 'code';
+// (v316: 'light', lightest first in each family, is the order for every view; the three rankings are Unowned's)
+if (!['light', 'code', 'gap', 'complete', 'ramps'].includes(state.gapSort)) state.gapSort = 'light';
+// (v316) Code order was the only order a grid had before, so a saved 'code' is moved to Lightest first once; Code order
+// chosen again after that stays
+if (state.ordLight1 !== 1) {
+  if (state.gapSort === 'code') state.gapSort = 'light';
+  state.ordLight1 = 1;
+}
 if (!Array.isArray(state.customPal)) state.customPal = [];
 if (!Array.isArray(state.saved)) state.saved = [];
 state.saved = state.saved.map(cleanSaved).filter(Boolean);
@@ -416,7 +423,7 @@ function parseState(raw) {
       seed: f('seed', (x) => typeof x === 'string', null),
       locked: f('locked', arr, null, (a) => idxs('locked', a)),
       filtersOpen: !!v.filtersOpen,
-      gapSort: ['code', 'gap', 'complete', 'ramps'].includes(v.gapSort) ? v.gapSort : 'code',
+      gapSort: ['light', 'code', 'gap', 'complete', 'ramps'].includes(v.gapSort) ? v.gapSort : 'light',
       customPal: f('customPal', arr, null, (a) =>
         a.map((x) => (x == null ? null : ix(x) ? x : (bad.push('customPal'), null))),
       ),
@@ -425,6 +432,7 @@ function parseState(raw) {
       copicAdd1: v.copicAdd1 || null,
       libAdj1: v.libAdj1,
       setFix1: v.setFix1 || null,
+      ordLight1: v.ordLight1 || null,
       wish: v.wish,
       ink: v.ink,
     },
@@ -531,6 +539,7 @@ function load() {
     copicAdd1: 1,
     libAdj1: 1,
     setFix1: 1,
+    ordLight1: 1,
   };
 }
 // Another tab may have added to the Library since this one last read it: its entries are kept (merged by id) unless
@@ -595,6 +604,7 @@ function save(quiet) {
       copicAdd1: state.copicAdd1,
       libAdj1: state.libAdj1,
       setFix1: state.setFix1,
+      ordLight1: state.ordLight1,
       wish: state.wish,
       ink: state.ink,
     });

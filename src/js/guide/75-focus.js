@@ -212,6 +212,8 @@ function focusSay() {
 // the Colours sheet opened or closed, however (its button, a tap on the picture, Back): the section framed again in the
 // room it leaves (v303)
 function focusSheetSet(open) {
+  // (v315: the hand-off card goes as the sheet opens: the room it was placed in is the sheet's now)
+  if (open) handClose(false);
   focusSheet = open;
   renderFocusUI();
   const l = focusCur();
@@ -337,36 +339,112 @@ function handOpen(from, nx) {
       '.',
   );
 }
-// the view zoomed out to box u (no further in than the section's own zoom), and the card above or below it, whichever
-// way it covers less of the sections: their middle in the room the card leaves
+// the view zoomed out to box u (no further in than the section's own zoom), and the card above, below, left or right of
+// it (v315), wherever it covers least of the sections and, then, lets them be biggest: their middle in the room the
+// card leaves. The card never lies over the zoom buttons: its room ends above them.
+var _handRoom = null;
 function handFrame(u, el) {
   if (!cv || !sfView) return;
   var g = focusGeo(true),
     DW = cv.offsetWidth,
     DH = cv.offsetHeight,
     card = el.querySelector('.sfhcard'),
-    ch = (card ? card.offsetHeight : 0) + 16,
+    vr = sfView.getBoundingClientRect(),
+    zc = document.getElementById('sfZoomCtl'),
     best = null;
-  ['top', 'bot'].forEach(function (side) {
-    var ah = Math.max(40, g.ah - ch),
-      cy = side === 'top' ? g.t + ch + ah / 2 : g.t + ah / 2,
-      z = Math.min(focusZ, fitZoom(u, 0, g.aw, ah));
+  if (!card) return;
+  handFrame.u = u;
+  var zr = zc && zc.offsetHeight ? zc.getBoundingClientRect() : null;
+  // (the side it was on last time first, and kept unless another is clearly better: no hopping about between hand-offs)
+  var sides = ['top', 'bot', 'left', 'right'],
+    last = handFrame.last;
+  if (last && sides.indexOf(last) > 0) (sides.splice(sides.indexOf(last), 1), sides.unshift(last));
+  sides.forEach(function (side) {
+    el.classList.remove('sfhbot', 'sfhleft', 'sfhright');
+    if (side !== 'top') el.classList.add('sfh' + side);
+    // (the room ends above the zoom buttons only where the card would meet them: beside them it needn't)
+    el.style.setProperty('--hcut', '0px');
+    // (the card measured by its layout, not its box on screen: its entrance animation moves and shrinks it a little)
+    var cbox = function () {
+        const h = el.getBoundingClientRect();
+        return {
+          left: h.left + card.offsetLeft,
+          top: h.top + card.offsetTop,
+          right: h.left + card.offsetLeft + card.offsetWidth,
+          bottom: h.top + card.offsetTop + card.offsetHeight,
+        };
+      },
+      hr = el.getBoundingClientRect(),
+      cr = cbox(),
+      cut =
+        zr && zr.width && cr.right > zr.left - 8 && cr.left < zr.right + 8
+          ? Math.max(0, hr.bottom - zr.top + 8)
+          : 0;
+    el.style.setProperty('--hcut', cut + 'px');
+    if (cut) cr = cbox();
+    var c = {
+        x0: cr.left - vr.left - 8,
+        y0: cr.top - vr.top - 8,
+        x1: cr.right - vr.left + 8,
+        y1: cr.bottom - vr.top + 8,
+      },
+      // the room the card leaves, in the view
+      R = { x0: 0, y0: g.t, x1: g.aw, y1: g.t + g.ah };
+    if (side === 'top') R.y0 = c.y1;
+    else if (side === 'bot') R.y1 = c.y0;
+    else if (side === 'left') {
+      R.x0 = c.x1;
+      // (and ends before the zoom buttons, where they float over the picture's corner)
+      if (zr && zr.width && zr.left - vr.left > c.x1 + 40) R.x1 = Math.min(R.x1, zr.left - vr.left - 8);
+    } else R.x1 = c.x0;
+    _handRoom = R;
+    var rw = Math.max(40, R.x1 - R.x0),
+      rh = Math.max(40, R.y1 - R.y0),
+      z = Math.min(focusZ, fitZoom(u, 0, rw, rh));
     zoom = z;
-    panX = g.cx - cv.offsetLeft - ((u.x0[0] + u.x1[0] + 1) / 2 / W) * DW * z;
-    panY = cy - cv.offsetTop - ((u.y0[0] + u.y1[0] + 1) / 2 / H) * DH * z;
+    panX = (R.x0 + R.x1) / 2 - cv.offsetLeft - ((u.x0[0] + u.x1[0] + 1) / 2 / W) * DW * z;
+    panY = (R.y0 + R.y1) / 2 - cv.offsetTop - ((u.y0[0] + u.y1[0] + 1) / 2 / H) * DH * z;
     clampPan();
     // (where the sections are on the screen, against where the card is)
-    var y0 = cv.offsetTop + panY + (u.y0[0] / H) * DH * z,
-      y1 = cv.offsetTop + panY + ((u.y1[0] + 1) / H) * DH * z,
-      c0 = side === 'top' ? g.t : g.t + g.ah - ch,
-      ov = Math.max(0, Math.min(y1, c0 + ch) - Math.max(y0, c0));
-    if (!best || ov < best.ov - 0.5) best = { side: side, ov: ov, z: z, x: panX, y: panY };
+    var sx0 = cv.offsetLeft + panX + (u.x0[0] / W) * DW * z,
+      sx1 = cv.offsetLeft + panX + ((u.x1[0] + 1) / W) * DW * z,
+      sy0 = cv.offsetTop + panY + (u.y0[0] / H) * DH * z,
+      sy1 = cv.offsetTop + panY + ((u.y1[0] + 1) / H) * DH * z,
+      ov =
+        (Math.max(0, Math.min(sx1, c.x1) - Math.max(sx0, c.x0)) *
+          Math.max(0, Math.min(sy1, c.y1) - Math.max(sy0, c.y0))) /
+        Math.max(1, (sx1 - sx0) * (sy1 - sy0)),
+      // (a sliver under the card counts as none)
+      o = ov < 0.02 ? 0 : ov,
+      // (and of the rest of the picture: at the same size, the side that hides least of it)
+      px0 = cv.offsetLeft + panX,
+      py0 = cv.offsetTop + panY,
+      pv =
+        Math.max(0, Math.min(px0 + DW * z, c.x1) - Math.max(px0, c.x0)) *
+        Math.max(0, Math.min(py0 + DH * z, c.y1) - Math.max(py0, c.y0));
+    var keep = best && best.side === last;
+    if (
+      !best ||
+      o < best.o - (keep ? 0.05 : 0.01) ||
+      (Math.abs(o - best.o) <= 0.01 &&
+        (z > best.z * (keep ? 1.15 : 1.02) || (z >= best.z / 1.02 && pv < best.pv * (keep ? 0.5 : 0.9) - 1)))
+    )
+      best = { side: side, o: o, z: z, pv: pv, x: panX, y: panY, cut: cut, R: R };
   });
   zoom = best.z;
   panX = best.x;
   panY = best.y;
-  el.classList.toggle('sfhbot', best.side === 'bot');
+  _handRoom = best.R;
+  el.classList.remove('sfhbot', 'sfhleft', 'sfhright');
+  if (best.side !== 'top') el.classList.add('sfh' + best.side);
+  el.style.setProperty('--hcut', best.cut + 'px');
+  handFrame.last = best.side;
   animXform(true);
+}
+// (the screen turned with the card up: placed again, the picture out to the sections again)
+function handReframe() {
+  var el = document.getElementById('sfHand');
+  if (handOn() && el && handFrame.u) handFrame(handFrame.u, el);
 }
 function handOn() {
   return _hand >= 0;
@@ -375,6 +453,7 @@ function handOn() {
 function handClose(go) {
   if (_hand < 0) return;
   _hand = -1;
+  _handRoom = null;
   var el = document.getElementById('sfHand');
   if (el) {
     el.hidden = true;

@@ -5,12 +5,20 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v316',
+    t: 'A fresh coat: Page finished is a dark card with your photo framed, the ⋯ menus have icons, the Gradient’s sliders ride on their strips, and chosen options share one colour. Markers run lightest first in each family. On an upright iPad the Plan’s first row and Colour along’s first marker are on the first screen. To buy suggests the markers that would complete your guides’ blends. New guides pick blend companions closer to the colour.',
+  },
+  {
+    v: 'v315',
+    t: 'Your page: a finished page on a light table is found, a photo taken sideways is turned upright, and its message has Adjust corners. Focus mode’s next-marker card keeps clear of the picture. New Gradients use more of your markers, keep near-identical ones apart, and say when a marker only colours specks. Copic greys pair within their own grey.',
+  },
+  {
     v: 'v314.1',
     t: 'Fixes from an independent review: a PDF of many pages shows a picture of each page again; Swap it says which marker it swapped in, with Undo; Home’s Your page | Plan no longer moves the card; and smaller fixes to the photo of your page.',
   },
   {
     v: 'v314',
-    t: 'Finished a page? Add a photo of it: the app straightens it and keeps it beside the plan, on this device. Home shows your page first, and Reveal can share the plan and your page side by side. Gradients on pages with a few huge sections use more of your markers.',
+    t: 'Finished a page? Add a photo of it from Colour along’s Page finished panel: the app straightens it and keeps it beside the plan, on this device. Home shows your page first, and Reveal & share can share the plan and your page together. Gradients on pages with a few huge sections use more of your markers.',
   },
   {
     v: 'v313',

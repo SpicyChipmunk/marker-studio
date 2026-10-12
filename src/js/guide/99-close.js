@@ -630,6 +630,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       tour: gradTour,
       sequence: gradSequence,
       splitByArea: splitByArea,
+      pinZero: gradPinZero,
       lightSign: gradLightSign,
       plan: gradPlan,
       poolSource: poolSource,
@@ -703,6 +704,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       get read() {
         return _fin.read;
       },
+      get decoded() {
+        return !!_fin.img || !!_fin.dec;
+      },
       get last() {
         return _finLast ? { id: _finLast.id, q: _finLast.q, tier: _finLast.tier } : null;
       },
@@ -711,7 +715,25 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       },
       get: finGet,
       card: function () {
+        if (!_fin.img) finDecode();
         return _fin.img ? buildFinCard(_fin.img) : null;
+      },
+      // (v315) the card for any picture as the photo
+      cardOf: function (im, side) {
+        return buildFinCard(im, 0, 0, side);
+      },
+      refresh: finRefresh,
+      // (v315) a photo as the finished-page path takes it: found and flattened ({ tier, c, aspect }), and which way up
+      flatten: function (img) {
+        const f = pgFind(img, { coloured: true });
+        if (f.tier !== 'sure') return { tier: f.tier };
+        const a = finAspect(f.q, img.width, img.height, 0);
+        return { tier: f.tier, aspect: a, c: pgWarp(img, f.q, a) };
+      },
+      orient: function (id, c) {
+        return finOrient(id, c).then(function (o) {
+          return { turns: o.turns, sc: finOrient.last || null };
+        });
       },
     },
     get bloomOn() {
@@ -1286,6 +1308,8 @@ return {
   finGet: finGet,
   finOk: finOk,
   finDrop: finDrop,
+  // (v315: read again after a restore)
+  finRefresh: finRefresh,
   edToPlan: edToPlan,
   secEdPending: secEdPending,
   palNote: palNote,
@@ -1304,4 +1328,6 @@ return {
   flushSave: flushNow,
   checkGuide: guideCheck,
   focusOnOpen: focusOnOpen,
+  // (v316: Buy next, from your guides: what a saved guide's markers want, from its Library row)
+  guideWants: guideWants,
 };

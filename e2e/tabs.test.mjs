@@ -252,7 +252,9 @@ test('each tab stays within about one and a half screens of room at 390×844, wi
       //  and Colours' 120px more, the marker count's 44px − and + and Include's row of chips, which Ben asked for)
       // (v310, deliberately: Mood as pictures of the page, one row of six small ones on a phone, 51px more than its
       //  buttons; 56 allowed)
-      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 + 120 + 56 : 0) + (tb === 'pattern' ? 74 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
+      // (v316, deliberately: the Gradient's Start colour and Scatter sliders 36px tall each, a 22px ring riding on the
+      //  strip or line, easier to catch with a finger: 26px more; 30 allowed)
+      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 + 120 + 56 : 0) + (tb === 'pattern' ? 74 + 30 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
     }
   }
   t.diagnostic(JSON.stringify(out));

@@ -379,12 +379,13 @@ const STYLE_FIELDS = [
   { key: 'bgTrim', in: 'payload', def: 50, check: styleNum(0, 100), undo: false },
   { key: 'addAutoClose', in: 'payload', def: false, check: styleBool, undo: false },
   // (v313) the family rule (famRule, 00-state): written only for a guide made since v313, so a guide saved before saves
-  // exactly as it was and keeps v312's rule. Not part of Undo: it's the guide's, not the plan's.
+  // exactly as it was and keeps v312's rule. Not part of Undo: it's the guide's, not the plan's. (v315: 2, Copic's greys
+  // in families too; an older app reads a 2 as 0; v316: 3, blend companions outside the family a step a blend can make)
   {
     key: 'famRule',
     in: 'payload',
     def: 0,
-    check: styleOne([0, 1]),
+    check: styleOne([0, 1, 2, 3]),
     undo: false,
     save: function () {
       return famRule ? famRule : undefined;
@@ -426,10 +427,11 @@ const STYLE_FIELDS = [
     key: 'gradArea',
     in: 'payload',
     def: 0,
-    check: styleOne([0, 1]),
+    check: styleOne([0, 1, 2]),
     undo: false,
+    // (v315: 2, the adapting rule, your pins and markers kept apart; an older app reads a 2 as 0)
     save: function () {
-      return gradArea ? 1 : undefined;
+      return gradArea || undefined;
     },
   },
 ];

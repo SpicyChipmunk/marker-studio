@@ -36,10 +36,16 @@ function updateProgress() {
    brands number them: Ohuhu Y26, Y29, Y210 and Y213 are one family (Y2, 6 to 13); Copic B00, B01, B05 are B0 (0, 1,
    5), with Copic's paler B000 and B0000 before B00 (-1 and -2). A one-digit code (Copic N3) is its letters, as before.
    A guide saved before (famRule 0) keeps v312's rule, everything but the last digit (Ohuhu Y213 in Y21, with Y210 to
-   Y216, not Y26 to Y29). */
+   Y216, not Y26 to Y29).
+   (v315, famRule 2) Copic's greys, written with a hyphen (C-00, C-0, C-1 … C-10, and N-, T-, W-), are a family each,
+   palest first (C-00 is -1, C-0 0, C-10 10); before, they had none, so a grey's companions and shading were found by eye,
+   across the grey types and into near-grey colours. */
 function famVal(code) {
   var m = /^([A-Za-z]+)(\d+)$/.exec(code);
-  if (!m) return null;
+  if (!m) {
+    var h = famRule > 1 ? /^([A-Za-z]+)-(\d+)$/.exec(code) : null;
+    return h ? { fam: h[1] + '-', val: /^0+$/.test(h[2]) ? 1 - h[2].length : parseInt(h[2], 10) } : null;
+  }
   var L = m[1],
     dd = m[2];
   if (dd.length < 2) return { fam: L, val: parseInt(dd, 10) };
@@ -72,12 +78,18 @@ function _hueOK(bl, ml) {
    nearest in number first, and a member that fails the tests is passed over for the next, as a family's numbers
    don't always run light to dark (Ohuhu BV32 is lighter than BV31, Copic Y18 than Y17). Failing that, the marker
    that passes them closest by eye. (It used to take the nearest family member whatever it looked like: on Ben's
-   markers 34 of 902 went the wrong way and 44 were a step too small to see; now none.) */
+   markers 34 of 902 went the wrong way and 44 were a step too small to see; now none.)
+   (v316, famRule 3) Outside the family, a step a blend can make: no more than COMP_FAM_DL lighter or darker, as a
+   family member may be, and a darker one keeping COMP_DARK_C of the colour's chroma. Before, the nearest by eye could be
+   any distance away (Copic E29's lighter was YR07, 34 lighter; black's was the pale grey C-3) and a red's darker a near
+   grey (Ohuhu E515 Black Brown for R514): over 11 collections 79 of 3,540 picks change, most to one to buy. A guide
+   saved before keeps its rule. */
 var COMP_DL = 4,
   COMP_FAM_DL = 20,
   COMP_DE = 3,
   COMP_DH = 25,
-  COMP_HUE_C = 6;
+  COMP_HUE_C = 6,
+  COMP_DARK_C = 0.35;
 // (fam: the same family, which is one colour from its palest to its darkest, so a pale tint too faint to count as
 // coloured may go with its family's coloured ones; the hue is compared where both have one to see, chroma COMP_HUE_C
 // or more. Outside the family a grey goes with a grey, and a colour with a colour of much the same hue.)
@@ -86,9 +98,17 @@ function _compOK(bl, bc, ml, side, fam) {
   var mc = lchOf(ml);
   if (fam) {
     if (Math.min(bc[1], mc[1]) >= COMP_HUE_C && hueDiff(bc[2], mc[2]) > COMP_DH) return false;
-  } else if (bc[1] < GREY_C) {
-    if (mc[1] >= GREY_C) return false;
-  } else if (mc[1] < COMP_HUE_C || hueDiff(bc[2], mc[2]) > COMP_DH) return false;
+  } else {
+    if (famRule > 2 && Math.abs(ml[0] - bl[0]) > COMP_FAM_DL) return false;
+    if (bc[1] < GREY_C) {
+      if (mc[1] >= GREY_C) return false;
+    } else if (
+      mc[1] < COMP_HUE_C ||
+      hueDiff(bc[2], mc[2]) > COMP_DH ||
+      (famRule > 2 && side > 0 && mc[1] < COMP_DARK_C * bc[1])
+    )
+      return false;
+  }
   return de2000(bl, ml) >= COMP_DE;
 }
 function _findComp(bl, base, pool, side) {
@@ -206,6 +226,71 @@ function blendCompanions(base) {
     }
   }
   return { light: light, lightOwned: lo, dark: dark, darkOwned: dOwn };
+}
+/* (v316) Buy next, from your guides (Markers › To buy: guideBuys, shopping.js). What a saved guide's markers want,
+   from its Library row alone (keys: the markers it uses; rule: its family rule, famRule, where the row has it; list:
+   a collection as sfCollection gives it, yours or any), without opening it:
+     want: { mkey: { m, for: [code…], side: 'lighter'|'darker' } }  the blend companions its plan would ask you to buy
+           (renderBlendPlan's "To complete every blend, add …"), found as the plan finds them (blendCompanions)
+     gone: { mkey: { m, dry } }  the markers it was planned with that aren't in the collection now (dry, or unticked):
+           its sections still to colour show stand-ins (standInsSync, 97-open) until it's bought again, so their
+           companions are the stand-ins' (a section coloured before keeps its own marker: the row can't tell which)
+   The module's collection and rule are those of the guide open, if any: they're set aside for the call. memo: a map
+   the caller keeps across guides, as most guides share markers (a base's companions depend only on the base, the
+   rule and the collection). */
+function guideWants(keys, rule, list, memo) {
+  const c0 = coll,
+    r0 = famRule,
+    want = {},
+    gone = {},
+    inColl = {};
+  coll = Array.isArray(list) ? list : [];
+  famRule = rule == null ? 2 : rule;
+  coll.forEach(function (m) {
+    inColl[m.mkey] = 1;
+  });
+  try {
+    (keys || []).forEach(function (k) {
+      const i = keyIdx(k);
+      if (i == null || NOINK.has(i)) return;
+      const base = {
+        mkey: k,
+        code: COLORS[i].code,
+        brand: COLORS[i].brand,
+        hex: COLORS[i].hex,
+        lab: LAB[i],
+        fam: COLORS[i].fam,
+      };
+      let want4 = base;
+      if (!inColl[k]) {
+        gone[k] = { m: base, dry: markerDry(k) };
+        // (its sections still to colour show the nearest marker of yours, as the guide does (standInsSync, 97-open):
+        // the plan's "To complete every blend" asks for that stand-in's companions, so the card does too)
+        const rep = coll.length ? nearestInPool(base.lab, coll) : null;
+        if (!rep) return;
+        want4 = rep;
+      }
+      const mk = famRule + '|' + want4.mkey;
+      let c = memo ? memo[mk] : null;
+      if (!c) {
+        c = blendCompanions(want4);
+        if (memo) memo[mk] = c;
+      }
+      [
+        ['light', 'lighter'],
+        ['dark', 'darker'],
+      ].forEach(function (s) {
+        const m = c[s[0]];
+        if (!m || c[s[0] + 'Owned']) return;
+        if (!want[m.mkey]) want[m.mkey] = { m: m, for: [], side: s[1] };
+        if (want[m.mkey].for.indexOf(want4.code) < 0) want[m.mkey].for.push(want4.code);
+      });
+    });
+  } finally {
+    coll = c0;
+    famRule = r0;
+  }
+  return { want: want, gone: gone };
 }
 // a marker's lighter and darker companions (from blendCompanions), shown under its open row in Colour along
 function blendStrip(base) {

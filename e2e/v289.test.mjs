@@ -254,7 +254,7 @@ test('Markers: ⋯ beside Copy codes in the heading, its menu clear of Palette f
 test('Library: the line under the title fits what is there', async () => {
   const { page, errors } = await openApp();
   await page.evaluate(() => { state.saved = []; save(); openLibrary(); });
-  assert.equal(await page.textContent('#libSub'), 'Palettes and guides you save are kept here.');
+  assert.equal(await page.textContent('#libSub'), 'Your guides and palettes are kept here.');
   await page.evaluate(() => { state.saved.push({ id: 9001, type: 'palette', name: 'P', keys: [...state.owned].slice(0, 3), ts: Date.now() }); save(); renderSaved(); });
   assert.equal(await page.textContent('#libSub'), 'Tap a palette to load it.');
   await page.evaluate(() => { state.saved = [{ id: 9002, type: 'guide', name: 'G', keys: [...state.owned].slice(0, 3), ts: Date.now(), n: 10, done: 0 }]; save(); renderSaved(); });

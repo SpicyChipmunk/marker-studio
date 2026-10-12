@@ -104,7 +104,8 @@ function pgAngles(q) {
 //  - "paper": bright, colourless blocks (a page with white margins on a darker or coloured table)
 // Each gives a region; its outline's four straight sides make the page. Returns
 // {tier:'sure'|'unsure'|'none', q (corners, photo pixels), why, ...details}.
-function pgFind(img) {
+// (v315) opt.coloured: the page is coloured in (a photo of the finished page, 24-page-photo): see pgPaperT
+function pgFind(img, opt) {
   const iw = img.naturalWidth || img.width,
     ih = img.naturalHeight || img.height;
   if (!(iw > 40 && ih > 40)) return { tier: 'none', why: 'small' };
@@ -218,7 +219,7 @@ function pgFind(img) {
   for (let i = 0; i < N; i++) dm[i] = con[i] > conT ? 1 : 0;
   [
     ['drawing', con, conT],
-    ['paper', paperS, otsu(paperS, 90, 240)],
+    ['paper', paperS, pgPaperT(paperS, N, otsu, opt)],
   ].forEach(function (M) {
     const m = new Uint8Array(N);
     for (let i = 0; i < N; i++) m[i] = M[1][i] > M[2] ? 1 : 0;
@@ -246,6 +247,9 @@ function pgFind(img) {
       }
     }
     f.step = inN && outN ? inS / inN - outS / outN : 0;
+    // (v315) how much the table just outside the page flickers from block to block: a patterned cloth (a check, stripes)
+    // where a plain table or wood is even (pgFlicker)
+    f.flick = pgFlicker(r.ring, mean, gw, gh);
     f.q = f.q.map(function (p) {
       return [p[0] / sc, p[1] / sc];
     });
@@ -268,7 +272,72 @@ function pgFind(img) {
   cands[0].others = cands.slice(1).map(function (f) {
     return { kind: f.kind, tier: f.tier, why: f.why };
   });
+  // (v315) a finished page on a patterned cloth (a check, stripes): the pattern can pass for the page's edge, so a find
+  // there is checked rather than trusted (the corners shown). Only for a photo of a finished page, and only the page found
+  if (opt && opt.coloured && cands[0].tier === 'sure' && cands[0].flick > PG_CLOTH) {
+    cands[0].tier = 'unsure';
+    cands[0].why = 'cloth';
+  }
   return cands[0];
+}
+// (v315) how much the table may flicker round a page found 'sure' on a finished-page photo (pgFlicker, the mean step in
+// brightness between neighbouring blocks just outside it). Measured: plain tables 0.3-0.9, wood 1-3.2, Ben's and
+// the 14 real photos found 'sure' 1.5-2.8; patterned cloths a page was found 'sure' on 15.6-22.6 (one of those 7
+// wrong by 3%), the others not found at all.
+const PG_CLOTH = 10;
+// The paper view's threshold: Otsu's over every block. (v315) On a coloured page the drawing's blocks (dark, or
+// colourful: a low paperS) are a third mode under the table's and the paper's, and the one split can fall between
+// them and everything else, so the whole photo passes as paper (judged 'fills': a finished page on a light wood, grey
+// or beige table was never found, where the same page uncoloured was). With opt.coloured, when that split leaves
+// nearly all the blocks above it (PG_PAPER_ALL), the blocks above are split again, and that split is kept only where
+// the blocks' histogram has a clear valley at it (PG_PAPER_VALLEY: the split's bin against the smaller of the peaks
+// either side), as table and paper make one and a white table's lighting gradient doesn't (that split cut the page in
+// half and offered the bright half as the page). Measured on 531 made-up photos of three coloured pages: found on
+// grey tables up to 75% of the paper's brightness (none before), nothing lost, no wrong page found that wasn't before.
+const PG_PAPER_ALL = 0.85,
+  PG_PAPER_VALLEY = 0.35;
+function pgPaperT(paperS, N, otsu, opt) {
+  const t = otsu(paperS, 90, 240);
+  if (!opt || !opt.coloured) return t;
+  let n = 0;
+  for (let i = 0; i < N; i++) if (paperS[i] > t) n++;
+  if (n <= PG_PAPER_ALL * N) return t;
+  const up = new Float32Array(n);
+  n = 0;
+  for (let i = 0; i < N; i++) if (paperS[i] > t) up[n++] = paperS[i];
+  const t2 = otsu(up, 90, 240),
+    BW = 4,
+    nb = Math.ceil(256 / BW),
+    h0 = new Float32Array(nb),
+    h1 = new Float32Array(nb);
+  for (let i = 0; i < n; i++) h0[Math.max(0, Math.min(nb - 1, Math.floor(up[i] / BW)))]++;
+  for (let b = 0; b < nb; b++) h1[b] = (h0[Math.max(0, b - 1)] + h0[b] + h0[Math.min(nb - 1, b + 1)]) / 3;
+  const bt = Math.max(0, Math.min(nb - 1, Math.floor(t2 / BW)));
+  let pLo = 0,
+    pHi = 0;
+  for (let b = 0; b < bt; b++) if (h1[b] > pLo) pLo = h1[b];
+  for (let b = bt + 1; b < nb; b++) if (h1[b] > pHi) pHi = h1[b];
+  const p = Math.min(pLo, pHi);
+  return p > 0 && h1[bt] <= PG_PAPER_VALLEY * p ? t2 : t;
+}
+// the mean brightness step between neighbouring blocks of the ring just outside the page, along and across it
+function pgFlicker(ring, mean, gw, gh) {
+  let s = 0,
+    n = 0;
+  for (let y = 0; y < gh; y++)
+    for (let x = 0; x < gw; x++) {
+      const i = y * gw + x;
+      if (!ring[i]) continue;
+      if (x + 1 < gw && ring[i + 1]) {
+        s += Math.abs(mean[i] - mean[i + 1]);
+        n++;
+      }
+      if (y + 1 < gh && ring[i + gw]) {
+        s += Math.abs(mean[i] - mean[i + gw]);
+        n++;
+      }
+    }
+  return n ? s / n : 0;
 }
 // the region nearest the middle, with its holes (the drawing's lines, a hand resting on it) filled
 function pgRegion(m0, gw, gh) {

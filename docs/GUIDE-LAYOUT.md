@@ -15,6 +15,9 @@ The stages are **Edit sections → Plan → Colour along**. "Plan" is the built 
   - The app header (title and Home/Guide/Markers/Palette) scrolls away.
   - Left/right safe-area padding keeps content clear of the notch or Dynamic Island.
 - **Unchanged**: Focus mode, Full screen and Reveal keep their own full-screen layouts. None of the pinning or shrinking below applies while they are open.
+- **Focus mode's hand-off card (v315)** (`#sfHand`): above, below, left or right of the next marker's sections
+  (`.sfhbot`, `.sfhleft`, `.sfhright`; above has none), never over the zoom buttons (`--hcut`); the picture is centred
+  in the room it leaves while it's up (clampPan, `_handRoom`).
 
 ## #5 Header row (top of the guide card, scrolls away)
 
@@ -46,7 +49,9 @@ The stages are **Edit sections → Plan → Colour along**. "Plan" is the built 
   - Example: on 390×844 it goes from 464 to 380px.
   - A picture whose width limits it to less than the floor doesn't shrink at all.
 - **Colour along:** a fixed **55%**, or **45%** on screens under 780px tall. It never shrinks: the list scrolls underneath it.
+  - (v316) On an upright iPad the first marker row is on the first screen, wholly above the bar, for any page: the find line under the code box takes no room while empty (it had left 24 px between the ⓘ line and the order row), and the first-time tip's **More** ends its sentence instead of taking a line.
 - **iPad portrait (700px wide or more, v285):** 60% to start, 50% at the least, and 60% in Colour along.
+  - **A narrow picture (v316):** when the picture at 60% would be narrower than 55% of its column (the sample, a bookmark), the Plan and Edit sections start at the 50% floor, the size it shrinks to anyway, so the tabs and their first row (Mood; the pattern and its Flow) are on the first screen. A page-shaped picture (Letter, A4) keeps its 60%. Colour along keeps 60%.
 - **A phone's Plan (v289):** the picture starts smaller where it must, so the tabs and their first row (about 4.75rem) are on the first screen too, but never below the floor. Only a tall picture is affected; a wide one is short enough already. The room is measured at the top of the page (`_ctlGap`), so a scrolled page can't make the start size flip back and forth.
 - **How the shrink works:** the in-flow height stays at the full size, and the pinned block uses a negative sticky `top` of −(full − floor).
   - One wrapper holds the canvas and every picture overlay: sun, zones, anchor dots, photo overlay, outlines, tip anchor. That wrapper gets `translateY(d) scale((full−d)/full)` with its origin at top centre, where d is how far the block has scrolled past the top (clamped to full − floor).
@@ -133,6 +138,8 @@ The stages are **Edit sections → Plan → Colour along**. "Plan" is the built 
 - **Pattern:**
   - the pattern chooser (Gradient Random Blend Photo Manual), on one row where it fits;
   - that pattern's options (flow and direction; Blend anchors hint; Photo options; Manual with Paint and brush);
+  - (v315) last in a Gradient's options, a line naming markers that only colour specks of the page or zone, with
+    **Show them** (`#sfSpeck`, `#sfSpeckShow`; rings in `.sfspecks`);
   - then ↻ Shuffle and Pin colours side by side.
 - **Shading:** Off / Shadows / Light & shadow, its sliders, tone guides, Leave sections flat, and the "richer with" line (#8). **Texture** goes at the bottom and is always shown. Since v281 the whole picture's settings come first (the mode, Light from, the ⓘ line, the "richer with" line, tone lines + Leave sections flat), then the chosen zone's own: with zones, the chips row and "☑ Shade Bell" (`.sfzshade`), then Roundness and the Highlights / Shadows pair (each its kind and amount), or for a flat zone one line saying so (`.sfzflat`). The chips sit right above what they choose for, as in Pattern and Colours; the tab keeps within #8's room besides the chips and the Shade line.
 - **Share:** see #9.

@@ -25,6 +25,8 @@ function filterSummary() {
     );
   return parts.length ? parts.join(' · ') : 'All markers';
 }
+// Order's options as the page has them (Lightest first, Code order, then Unowned's three rankings)
+let _gapOpts = null;
 function chrome() {
   // a toast belongs to the screen that made it: moving to another screen clears it
   if (chrome._mode !== state.mode) {
@@ -189,9 +191,19 @@ function chrome() {
     }
   }
   [...ownView.children].forEach((b) => segOn(b, b.dataset.v === state.collView));
-  gapWrap.style.display = col && state.collView === 'unowned' ? 'flex' : 'none';
+  // (v316) Order in every grid view: Lightest first or Code order; Unowned adds its three rankings (a ranking chosen
+  // there shows as Lightest first in Owned and All, whose families are lightest first then)
+  gapWrap.style.display = col && state.collView !== 'wish' ? 'flex' : 'none';
   lowChipSync(col);
-  gapSort.value = state.gapSort;
+  {
+    // (the options rebuilt, not hidden: iPad Safari's picker shows a hidden option all the same)
+    const _un = state.collView === 'unowned';
+    if (!_gapOpts) _gapOpts = [...gapSort.options].map((o) => [o.value, o.textContent]);
+    const want = _un ? _gapOpts : _gapOpts.slice(0, 2);
+    if (gapSort.options.length !== want.length)
+      gapSort.innerHTML = want.map((o) => '<option value="' + o[0] + '">' + o[1] + '</option>').join('');
+    gapSort.value = _un || state.gapSort === 'code' ? state.gapSort : 'light';
+  }
   ownHint.style.display = col ? '' : 'none';
   mkJumpSync(col);
   if (col)
@@ -209,6 +221,8 @@ function chrome() {
           : lowOnly
             ? 'The markers you marked running low or dry. Tap it again for all your markers.'
             : 'Your collection.';
+  // (v316) Owned says nothing the switch doesn't: the line goes, and the markers start a row higher
+  if (col && ownHint.textContent === 'Your collection.') ownHint.style.display = 'none';
   filterBar.style.display = pooled ? 'none' : '';
   filtersEl.style.display = pooled || !state.filtersOpen ? 'none' : '';
   filterBar.classList.toggle('open', state.filtersOpen && !pooled);

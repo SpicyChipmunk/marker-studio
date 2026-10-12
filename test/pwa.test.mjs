@@ -36,3 +36,15 @@ test('the version shown on Home matches the service-worker cache version', () =>
   const cache = read('service-worker.js').toString().match(/marker-studio-(v\d+(?:\.\d+)?)/)[1];
   assert.equal(shown, cache, 'bump both together on each release');
 });
+
+// v315: PDF.js's version is written in two places, the app (21-pdf.js) and the service worker (its own cache, kept from
+// one release to the next), and its files sit in a folder of that name: bumped in one only, the files would fall into
+// the app's cache and be fetched again every release
+test('PDF.js: the same version in the app, the service worker and the vendor folder', () => {
+  const app = read('src/js/guide/21-pdf.js').toString().match(/PDFJS_VER = '([\d.]+)'/),
+    sw = read('service-worker.js').toString().match(/PDFJS='([\d.]+)'/);
+  assert.ok(app && sw, 'both say a version');
+  assert.equal(sw[1], app[1], 'the service worker’s PDF.js is the app’s');
+  for (const f of ['pdf.min.mjs', 'pdf.worker.min.mjs']) assert.ok(read(`vendor/pdfjs/${app[1]}/${f}`).length > 1000, f);
+  assert.match(read('service-worker.js').toString(), /PDFC='marker-studio-pdfjs-'\+PDFJS/);
+});

@@ -76,7 +76,7 @@ test('small wording: blend plan legend, Library caption and empty list, seed sea
   await page.click('#homeLibCard');
   assert.equal(await page.textContent('#libStat'), 'Not backed up yet (1 guide)');
   await page.evaluate(() => { state.saved = []; renderSaved(); });
-  assert.equal(await page.textContent('#savedList .empty'), 'No saved palettes or guides yet.');
+  assert.equal(await page.textContent('#savedList .empty'), 'Nothing yet. A guide saves itself here once it’s built; a palette is kept with Save.');
   await page.keyboard.press('Escape');
   assert.equal(await page.getAttribute('#seedSearch', 'aria-label'), 'Search markers');
   await page.evaluate(() => toastAction('Deleted', 'Undo', () => {}));

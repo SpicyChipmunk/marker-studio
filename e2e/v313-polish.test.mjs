@@ -58,7 +58,7 @@ test('the Library, empty: what gets kept there and Try the sample; no search box
   await page.click('#homeLibCard');
   await idle(page);
   assert.equal(await page.isVisible('#savedOverlay .libbar'), false);
-  assert.match(await page.textContent('#savedList .emptyhow'), /A guide saves itself here once it’s built/);
+  assert.match(await page.textContent('#savedList .empty'), /A guide saves itself here once it’s built/);
   await page.click('#libTrySample');
   await page.waitForFunction(() => !!__mstest.assignData, null, { timeout: 60000 });
   await idle(page);

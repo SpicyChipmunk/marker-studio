@@ -247,7 +247,8 @@ const tagsOf = (page, what) => page.evaluate((what) => {
   const P = CanvasRenderingContext2D.prototype, of = P.fill, oa = P.arcTo, ot = P.fillText, log = [], cv = document.getElementById('sfCanvas');
   P.arcTo = function () { this.__tag = 1; return oa.apply(this, arguments); };
   P.fill = function () { if (this.__tag) { this.__tag = 0; this.__box = this.fillStyle; } return of.apply(this, arguments); };
-  P.fillText = function (t) { if (this.__box) log.push({ box: this.__box, t: String(t), cv: this.canvas }); this.__box = null; return ot.apply(this, arguments); };
+  // (v316: the saved image's key swatches are rounded boxes too, each followed by its code and name; a tag's text is one letter)
+  P.fillText = function (t) { if (this.__box && /^[A-Z]$/.test(String(t))) log.push({ box: this.__box, t: String(t), cv: this.canvas }); this.__box = null; return ot.apply(this, arguments); };
   let cvs;
   try { if (what === 'screen') { cvs = [cv]; __mstest.forceFullRender(); __mstest.renderGuide(); } else if (what === 'pdf') cvs = __mstest.buildPDFPages(); else cvs = [__mstest.buildExportCanvas()]; } finally { P.fill = of; P.arcTo = oa; P.fillText = ot; }
   return log.filter((e) => cvs.indexOf(e.cv) >= 0).map((e) => (what === 'pdf' ? { box: e.box, t: e.t, p: cvs.indexOf(e.cv) } : { box: e.box, t: e.t }));
