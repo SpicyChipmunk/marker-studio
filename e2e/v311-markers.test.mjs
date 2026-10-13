@@ -74,6 +74,8 @@ test('with a collection: + Add markers on the first screen opens the ways to add
     assert.equal(await page.textContent('#wcTA'), 'Add markers');
     assert.deepEqual(await page.$$eval('#wcAddWays .wcc b', (b) => b.map((x) => x.textContent)), [
       'Add a set you own',
+      // (v318: where the photo reader runs, as in Chromium and WebKit here)
+      'Photograph your caps',
       'Scan or type codes',
       'Tick colours on a chart',
     ]);

@@ -1464,8 +1464,8 @@ function presetListHTML() {
 // (v311) the list is the welcome's, in the Add markers sheet (boot.js sets this)
 let presetRelist = null;
 /* (v311) Markers' ways to add, in one place: the Add markers sheet (the welcome's card, boot.js openAddMarkers) and,
-   with no markers yet, a card at the top of Markers (chrome.js). Add a set you own (the sets list), Scan or type
-   codes, Tick colours on a chart, and "Not sure which set? Find it from 3 caps" (the welcome's Find). */
+   with no markers yet, a card at the top of Markers (chrome.js). Add a set you own (the sets list), (v318) Photograph
+   your caps (Scan, straight on to its photo reader), Scan or type codes, Tick colours on a chart, and "Not sure which set? Find it from 3 caps" (the welcome's Find). */
 function addWaysHTML(where) {
   const row = function (a, icon, b, t) {
     return (
@@ -1494,6 +1494,15 @@ function addWaysHTML(where) {
       'Add a set you own',
       'Pick it from the list: Ohuhu Honolulu, Copic Ciao, Sketch and more.',
     ) +
+    // (v318) only where the reader runs (WebAssembly with SIMD: Safari 16.4)
+    (typeof ocrCan === 'function' && ocrCan()
+      ? row(
+          'photo',
+          'camera',
+          'Photograph your caps',
+          'Photos of your trays, read on this device: every code they show joins a list to check before adding.',
+        )
+      : '') +
     row(
       'scan',
       'crosshair',
@@ -1529,8 +1538,8 @@ function openerBack(el) {
 // sheet, at that step
 function addWay(a, from) {
   if (from && from.isConnected && from.getClientRects().length) from.focus({ preventScroll: true });
-  if (a === 'scan') {
-    if (typeof openScan === 'function') openScan();
+  if (a === 'scan' || a === 'photo') {
+    if (typeof openScan === 'function') openScan(a === 'photo' ? { photo: true } : undefined);
   } else if (a === 'chart') {
     if (typeof openChart === 'function') openChart();
   } else if (typeof window.openAddMarkers === 'function') window.openAddMarkers(a === 'add' ? null : a);

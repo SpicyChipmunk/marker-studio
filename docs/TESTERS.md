@@ -32,8 +32,8 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
   you can colour in to compare.
 - **Your data stays on your device.** There's no account, no ads and no tracking, and nothing you add is uploaded.
   The only things that leave it are what you choose to send with **Send results** and **Send feedback**. It works
-  offline. The camera is used only when you scan caps (**Markers › + Add markers › Scan or type codes**) or match a
-  colour.
+  offline. The camera is used only when you scan or photograph caps (**Markers › + Add markers**) or match a colour.
+  Photos of your caps are read on your device and never leave it.
 
 ## Getting a picture in
 

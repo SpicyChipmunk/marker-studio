@@ -1012,7 +1012,7 @@ Scan on Android, and a whole tray at once on any device; built from fable's pres
 # Changes — v318
 
 Read photos of your caps, and three quicker ways to add markers. New e2e files: `v318` (2), `v318-scan` (4),
-`v318-ocr` (6); unit: `v318-sets` (4), `v318-ocr` (3).
+`v318-ocr` (8); unit: `v318-sets` (4), `v318-ocr` (3).
 
 - **Read photos of your caps** (Scan, under the steps; not in Find my set): photograph each tray from above, choose one
   photo or all of them, and the codes they read join Scan's list as they're read, over the photo green boxes for what's added and amber for what's to check.
@@ -1022,6 +1022,11 @@ Read photos of your caps, and three quicker ways to add markers. New e2e files: 
   (`marker-studio-ocr-1`) that the service worker and new releases leave alone. A cut-off download keeps what came and
   finishes on a second try; offline, the card says it needs the internet the first time. The worker ends as Scan
   closes, or as the page is hidden while it's idle, so its memory goes.
+- **Where it's offered**: **Photograph your caps** first among the welcome's ways to add markers one by one, and after
+  Add a set in Markers' Add markers (the sheet, and the card on an empty Markers), opening Scan straight on to the
+  reader, in the same tap and without the keyboard; the welcome's "I bought them one by one" and "I have extra markers"
+  name it, as does the tester task Add your markers and TESTERS.md. Only where the reader runs (Safari 16.4 or later);
+  elsewhere everything reads as in v317.
 - **Several photos at once** (a pressure test's suggestion, from Ben's question): chosen together, they're read in turn
   in the same view — "Photo 3 of 19 · Reading the caps…", one bar over them all, the worker kept between photos and
   each photo's pixels let go of once it's read. Scan's list already holds each marker once, so a cap in two photos is

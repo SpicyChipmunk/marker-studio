@@ -48,7 +48,7 @@
       k: 'add',
       t: 'Add your markers',
       s: 'You did this in the welcome: how did it go?',
-      d: 'However suits how you got them: a set, scanning caps, ticking colours on a chart, or finding your set from 3 caps. There are more ways in <b>Markers › + Add markers</b>.',
+      d: 'However suits how you got them: a set, photographing or scanning caps, ticking colours on a chart, or finding your set from 3 caps. There are more ways in <b>Markers › + Add markers</b>.',
       p: ['Was the way that suits you easy to find?', 'Anything go wrong?'],
     },
     {

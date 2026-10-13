@@ -784,6 +784,18 @@ document.addEventListener('keydown', function (e) {
       if (typeof openScan === 'function') openScan({ added: oneAdded, undone: oneUndone });
     });
   });
+  // (v318) Photograph your caps: Scan, straight on to its photo reader. Offered, and named on the cards before it, only
+  // where the reader runs
+  $('wcOnePhoto').addEventListener('click', function () {
+    if (typeof openScan === 'function') openScan({ added: oneAdded, undone: oneUndone, photo: true });
+  });
+  if (typeof ocrCan === 'function' && ocrCan()) {
+    $('wcOnePhoto').style.display = '';
+    $('wcOneByOne').querySelector('.wct span').textContent =
+      'Photograph or scan the caps, tick colours on a chart, or type the codes.';
+    $('wcMoreExtra').querySelector('.wct span').textContent =
+      'Bought on their own? Photograph or scan their caps, or tick them.';
+  }
   $('wcOneChart').addEventListener('click', function () {
     if (typeof openChart === 'function') openChart({ added: oneAdded, undone: oneUndone });
   });

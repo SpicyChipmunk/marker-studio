@@ -131,6 +131,8 @@ test('Home: one card at a time under the tiles, in order; putting one away shows
 
   await page.click('#wnClose'); await page.waitForSelector('#whatsNew', { state: 'hidden' });
   assert.deepEqual(await cards(page), { install: false, backup: false, news: false }, '✕: nothing left');
+  // (v318: a closed layer's history entry taken back before the reload, which it would otherwise cut short)
+  await idle(page); await page.waitForFunction(() => !(history.state && history.state.msLayer));
   await page.reload(); await idle(page);
   assert.deepEqual(await cards(page), { install: false, backup: false, news: false }, 'and after a reload');
   assert.ok(await shown(page, 'loadNote'), 'the note stays until it is dismissed');

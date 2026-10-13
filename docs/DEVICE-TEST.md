@@ -107,9 +107,9 @@ sheet, paper, and how it feels.
 later; older 2 GB iPads can't update that far and don't show the card), if you can borrow one; then your own iPad.
 Write the times down.
 
-- [ ] ★ **Markers › + Add markers › Scan or type codes → Read photos of your caps** → the card says 22 MB and that
-      photos never leave the iPad → **Download the reader** on Wi-Fi → it counts up the MB → "The reader is ready".
-      Time to download: ____
+- [ ] ★ **Markers › + Add markers › Photograph your caps** → Scan opens on the reader's card (no keyboard) → it says
+      22 MB and that photos never leave the iPad → **Download the reader** on Wi-Fi → it counts up the MB → "The reader
+      is ready". Time to download: ____
 - [ ] ★ **Take or choose photos** → photograph **half a tray** from above, caps up → the photo shows, the bar moves,
       codes join the list as they're read, green boxes on the photo. Time to finished: ____ s. Nothing wrong in the
       list; amber boxes are the ones asked about.
@@ -131,6 +131,8 @@ Write the times down.
       **Private** tab with Airplane mode on → the card says it needs the internet the first time; its button waits.
 - [ ] **A set's name:** copy the text from a set's box (Live Text) or a shop's page (Honolulu 120) and paste it into
       Scan → the set is offered, added with a tap. **Open a list file** with a .csv from Files → read as a paste.
+- [ ] On the welcome (in a Private tab) → **I bought them one by one** → **Photograph your caps** is first → it opens
+      the reader; read a photo, **Done**, **Add to my collection** → the welcome says how many were added.
 - [ ] On the welcome (in a Private tab), add a set → **Some are missing** → the chart with its markers ticked; untick
       two → they're left out.
 - [ ] Help › **Adding markers by code** and About's credits read right.

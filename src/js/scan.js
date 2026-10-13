@@ -1504,6 +1504,12 @@ function openScan(opts) {
   );
   scanRender();
   openDialog(ov);
+  // (v318) from Photograph your caps: straight on to the reader, in the same tap (the photo picker opens only from one),
+  // and no keyboard
+  if (o.photo && !scanFind && typeof ocrCan === 'function' && ocrCan()) {
+    ocrOpenTap();
+    return;
+  }
   // (straight into the box: what's done here is typing or Scan Text, which the box's own menu starts)
   scanFocusBox();
 }

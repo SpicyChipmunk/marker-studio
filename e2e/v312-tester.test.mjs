@@ -124,6 +124,10 @@ test('answers: a rating answers a task (tapped again, taken back), notes and que
   await page.fill('#ttName', 'Sam');
   await page.keyboard.press('Escape');
   assert.equal(await foot(page), 'Tester tasks · 1 of 6', 'the extras don’t count');
+  // (the tasks' history entry taken back first: Escape's history.go(-1), on the next frame, had been under way as the
+  // reload began, which the browser then gave up on — net::ERR_ABORTED on GitHub, v318's run)
+  await idle(page);
+  await page.waitForFunction(() => !(history.state && history.state.msLayer));
   await page.reload();
   await idle(page);
   await page.click('#homeTasks');

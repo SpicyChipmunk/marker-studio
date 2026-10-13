@@ -291,3 +291,101 @@ test('several photos chosen at once: read in turn, a marker in two photos listed
   assert.deepEqual(await list(page), []);
   assert.deepEqual(errors, []);
 });
+
+test('Photograph your caps: first in the welcome’s one by one, and in Markers’ Add markers; Scan opens on the reader, no keyboard; the stored reader’s picker in the same tap', async () => {
+  const { page, errors, ctx } = await openApp({ width: 820, height: 1180 });
+  await unroute(ctx);
+  assert.match(await page.textContent('#wcOneByOne'), /Photograph or scan the caps, tick colours on a chart/);
+  await page.click('#wcOneByOne');
+  await idle(page);
+  assert.deepEqual(await page.$$eval('#wcStepOne .wcc b', (b) => b.map((x) => x.textContent)), [
+    'Photograph your caps',
+    'Scan the caps',
+    'Tick colours on a chart',
+    'Type or paste codes',
+  ]);
+  await page.click('#wcOnePhoto');
+  await page.waitForSelector('#ocrGet');
+  assert.equal(await page.textContent('#scTitle'), 'Read photos of your caps');
+  assert.notEqual(
+    await page.evaluate(() => document.activeElement && document.activeElement.id),
+    'scBox',
+    'no keyboard',
+  );
+  // Not now: Scan's list, opened from the welcome: what's added there is the welcome's
+  await page.click('#ocrNo');
+  await page.fill('#scBox', 'R014');
+  await page.press('#scBox', 'Enter');
+  await idle(page);
+  await page.click('#scAdd');
+  await idle(page);
+  assert.ok(await page.isVisible('#wcStep2'), 'the welcome’s last step');
+  assert.match(await page.textContent('#wcDone'), /1 marker/);
+  assert.match(await page.textContent('#wcMoreExtra'), /Photograph or scan their caps, or tick them/);
+  await page.click('#wcLook');
+  await idle(page);
+  // Markers › + Add markers: after a set
+  await page.click('#mCollection');
+  await idle(page);
+  await page.click('#mkAddBtn');
+  await idle(page);
+  assert.deepEqual((await page.$$eval('#wcAddWays .wcc b', (b) => b.map((x) => x.textContent))).slice(0, 2), [
+    'Add a set you own',
+    'Photograph your caps',
+  ]);
+  await page.click('#mkaPhoto');
+  await page.waitForSelector('#ocrGet');
+  await page.click('#ocrGet');
+  await page.waitForSelector('#ocrPick', { timeout: 60000 });
+  await page.click('#scClose');
+  await idle(page);
+  // (the reader known to be stored: the row's tap opens the photo picker itself)
+  await page.click('#mkAddBtn');
+  await idle(page);
+  const [fc] = await Promise.all([
+    page.waitForEvent('filechooser', { timeout: 10000 }),
+    page.click('#mkaPhoto'),
+  ]);
+  assert.ok(fc.isMultiple());
+  assert.deepEqual(errors, []);
+});
+
+test('where the reader can’t run: no Photograph your caps, and the welcome reads as before', async () => {
+  const { page, errors } = await openApp({
+    width: 390,
+    height: 844,
+    init: () => {
+      WebAssembly.validate = () => false;
+    },
+  });
+  assert.match(
+    await page.textContent('#wcOneByOne'),
+    /Scan the caps, tick colours on a chart, or type the codes\./,
+  );
+  await page.click('#wcOneByOne');
+  await idle(page);
+  assert.equal(await page.isVisible('#wcOnePhoto'), false);
+  await page.click('#wcOneType');
+  await idle(page);
+  assert.equal(await page.isVisible('#ocrOpen'), false);
+  assert.deepEqual(errors, []);
+  // (an empty Markers' card of ways to add, where it can and where it can't)
+  for (const can of [true, false]) {
+    const o = await openApp({
+      width: 820,
+      height: 1180,
+      storage: { 'ms-onboarded': '1', 'ms-setup-tip': '1', 'ms-owned': '[]' },
+      init: can
+        ? null
+        : () => {
+            WebAssembly.validate = () => false;
+          },
+    });
+    await idle(o.page);
+    await o.page.click('#mCollection');
+    await idle(o.page);
+    const ways = await o.page.$$eval('#mkAddWays .wcc b', (b) => b.map((x) => x.textContent));
+    assert.equal(ways.includes('Photograph your caps'), can, String(ways));
+    assert.deepEqual(o.errors, []);
+  }
+});
