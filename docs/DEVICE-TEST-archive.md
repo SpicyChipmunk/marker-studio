@@ -77,6 +77,37 @@ On a guide, open **Style** and set **Shading** to **Light & shadow**.
 - [ ] **Blend:** a tap still adds an anchor; press and hold a section shows Change colour / Pin. **Manual:** a tap opens the picker.
 - [ ] **Style → Pin colours:** taps pin and unpin sections directly.
 
+## 3n. v316 on the iPad
+
+- [ ] ★ **Markers:** each family runs lightest first (R16, R28, R38 … R514). **Order** shows in Owned, Unowned and All;
+      tap it in Owned → the picker offers only **Lightest first** and **Code order** (iPad Safari had shown hidden
+      choices before; check there are just two). Code order → families by code, and it's still Code order after closing
+      the app. Owned has no "Your collection." line; **+ Add markers** is an outline button like the ones beside it.
+- [ ] The ⋯ menus (the guide's, Markers', the Library's) have an icon before each item, lined up, in grey.
+- [ ] ★ **Page finished** (tick every section of a short page): a dark card with a green edge, a sparkle over
+      **Page finished!**, and the four buttons under the photo as pills. Save image → the key's title in the app's serif
+      font, round swatches (Copic 0 or B60 still visible on the white), the dot note in grey under the key.
+- [ ] A Gradient's **Start colour**: the slider's ring rides on the colour strip; at both ends it sits over the first and
+      last colours, not off the strip. **Scatter** has the same ring on a thin grey line.
+- [ ] Upright iPad, the **sample** jellyfish → the Plan's picture is smaller to start and Mood's pictures (and the
+      Pattern tab's first row) are on the first screen; **Colour along** → the picture is bigger again and the first
+      marker row shows fully above the bar, with **More** at the end of the tip's sentence. A Letter page starts as before.
+- [ ] Chosen options (Codes, Greyscale, Plan choices, a marker row you've opened, Balance) are all one teal; Mood's ✓ is
+      white. Green is left for done (Saves itself ✓, the progress bar, Page finished).
+- [ ] Drop-downs (Markers' Order, the Library's sort, the guide's Saved palette) have the app's chevron.
+- [ ] ★ **Home** on the iPad before you've made a guide (a fresh install, or a test profile) → three numbered steps
+      under the cards. Gone once a guide is built. On Home's **Add a photo of your page**, the ✕ is a round button of its
+      own.
+- [ ] ★ **To buy › From your guides** (with a smaller set ticked, e.g. 24 or 48, and a few guides in the Library) →
+      under your list: the markers that would complete every blend in your guides, each with why ("Darker than B115 ·
+      2 of your 4 guides") and +. Tap + → on the list with "blend for …"; **Add all to To buy**. Mark a marker a guide
+      uses as **dry** → it's offered too. With all your markers ticked → "Every blend … is complete". With 30 or more
+      guides, To buy still opens at once.
+- [ ] **Brands I'd buy › Only these** with one brand → the card offers only that brand.
+- [ ] A **new** guide's Colour along strip: a marker's lighter and darker companions look like a step of the same colour
+      (no orange as a dark brown's lighter, no Black Brown as a red's darker). A guide made before v316 shows the same
+      companions as before.
+
 ## 3m. v311 on the iPad (6 min)
 
 - [ ] **Markers › + Add markers** (top, beside To buy's row): the sheet lists Add a set you own, Scan or type codes, Tick colours on a chart, and Find it from 3 caps. Add a set you don't have: the sheet closes, the toast says how many, Undo takes them out.

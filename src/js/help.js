@@ -5,6 +5,14 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318',
+    t: 'Read photos of your caps: in Scan, photograph each tray from above, choose the photos, and the codes they read join the list, without doubles. It works on this device, after a one-time download of about 22 MB. Also in Scan: a set’s name copied from its box or an order offers the whole set, and Open a list file reads a CSV. After adding a set, Some are missing lets you untick the few you’ve lost.',
+  },
+  {
+    v: 'v317',
+    t: 'Scan on Android: the steps now show Gboard’s Scan text (photograph a cap, tap Insert). On any device, add a whole tray at once: copy the text from a photo of it with Live Text or Google Lens and paste it into Scan.',
+  },
+  {
     v: 'v316',
     t: 'A fresh coat: Page finished is a dark card with your photo framed, the ⋯ menus have icons, the Gradient’s sliders ride on their strips, and chosen options share one colour. Markers run lightest first in each family. On an upright iPad the Plan’s first row and Colour along’s first marker are on the first screen. To buy suggests the markers that would complete your guides’ blends. New guides pick blend companions closer to the colour.',
   },

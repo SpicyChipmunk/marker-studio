@@ -169,10 +169,16 @@ function scanRead(text, brand) {
   if (lines.length > 1) {
     const out = { codes: [], byName: -1, flips: [], other: [], names: [], names2: [], many: true, unread: 0 },
       seen = {};
+    // (v317) lines of plain words with nothing to read: counted apart, so that text copied from a photo of a tray
+    // (Google Lens, Live Text), where every name comes on a line of its own, isn't "51 lines not read"
+    let unreadWords = 0;
     lines.forEach(function (l) {
       const r = scanRead(l, brand);
       // (v308: a line with nothing in it to read, said, not dropped without a word)
-      if (!r.codes.length && !r.flips.length && r.byName < 0 && !r.byNames && !r.other.length) out.unread++;
+      if (!r.codes.length && !r.flips.length && r.byName < 0 && !r.byNames && !r.other.length) {
+        if (/\d/.test(l)) out.unread++;
+        else unreadWords++;
+      }
       r.codes.forEach(function (c) {
         const k = c.code + '|' + c.opts.join(',');
         if (!seen[k]) out.codes.push(c);
@@ -184,6 +190,38 @@ function scanRead(text, brand) {
       if (r.byNames && !out.names2.some((n) => n.join() === r.byNames.join())) out.names2.push(r.byNames);
       r.other.forEach((i) => out.other.indexOf(i) < 0 && out.other.push(i));
     });
+    // (v317) text from a photo of a tray: each cap's name comes on a line of its own, under or beside its code. A line
+    // with only a name settles nothing when a code in the same paste accounts for it: the name of a marker read by its
+    // code ("E75" then "Light Rose Taupe"), or words of one ("CG17 Cool Grey" then "Grey" isn't a question about CG24
+    // Grey), as a name read beside a code on one line already doesn't (told, partOf below). A list of names alone, or
+    // a name no code here accounts for, still asks as before.
+    if (out.codes.length) {
+      // (and a name on the line after a code both brands use settles it, as on one line: "B04" then "Tahitian Blue"
+      // is Copic's B04)
+      const named = new Set(out.names.concat(...out.names2));
+      // (v318: and one asked about as an old code that's now another marker's, R16 Light Salmon or RV316 once R16:
+      // its name under it on a photo of the caps says which)
+      out.codes.forEach(function (c) {
+        if (c.named || c.opts.length < 2 || (c.asked && c.asked !== 'old')) return;
+        const m = c.opts.filter((i) => named.has(i));
+        if (m.length !== 1) return;
+        c.opts = m;
+        c.named = true;
+        c.old = (c.oldOf || []).indexOf(m[0]) >= 0;
+        if (c.asked) {
+          delete c.asked;
+          c.oldOf = c.old ? m : [];
+        }
+      });
+      const byCode = [].concat(...out.codes.map((c) => c.opts)).map((j) => scanWords(COLORS[j].name || '')),
+        told = (i) => {
+          const nw = scanWords(COLORS[i].name || '');
+          return byCode.some((jw) => nw.every((w) => jw.indexOf(w) >= 0));
+        };
+      out.names = out.names.filter((i) => !told(i));
+      out.names2 = out.names2.filter((is) => !is.some(told));
+      // (and lines of plain words aren't counted as not read: the names and the noise around the codes)
+    } else out.unread += unreadWords;
     return out;
   }
   const ix = scanIndex(),
@@ -508,7 +546,9 @@ function scanRead(text, brand) {
   if (namedOk.length > 1 && new Set(namedOk.map((i) => scanKey(COLORS[i].name))).size === 1)
     return { codes: [], byName: -1, byNames: namedOk, flips: [], other: [] };
   if (!namedOk.length && named.size === 1) return { codes: [], byName: -1, flips: [], other: [...named] };
-  // nothing the right way up: each word as if it was read upside down
+  // nothing the right way up: each word as if it was read upside down (not the photo reader's lines: it has read each
+  // both ways up already, and a scrap of a line, "001", had become Ohuhu 100)
+  if (scanNoFlip) return { codes: [], byName: -1, flips: [], other: [] };
   const flips = [];
   for (const t of words) {
     // (a number-only code as read, 120, isn't BG21 upside down; nor is a word on every cap, v299)
@@ -616,6 +656,8 @@ function scanSaveList() {
 })();
 // (v303) no sound while the dialog closes (text left in the box read on the way out)
 let scanMute = false;
+// (v318) the photo reader's lines read: none as if upside down (the reader tried both ways up)
+let scanNoFlip = false;
 // (v308) lines of pasted lists with nothing to read in them since the last Add or Clear, said by Add's toast
 let scanUnread = 0;
 function scanBeep(kind) {
@@ -675,11 +717,21 @@ function scanSay(kind, big, small, i, choices) {
       from = scanHandling;
     row.className = 'scpick';
     choices.forEach(function (c) {
+      // (v318: a heading over a set's choices)
+      if (c.head) {
+        const h = document.createElement('span');
+        h.className = 'scphead';
+        h.textContent = c.head;
+        row.appendChild(h);
+        return;
+      }
       const b = document.createElement('button');
       b.type = 'button';
-      b.textContent = c.label + (state.owned.has(mkey(c.i)) ? ' · already yours' : '');
+      b.textContent = c.label + (!c.go && state.owned.has(mkey(c.i)) ? ' · already yours' : '');
       b.addEventListener('click', function () {
-        scanTake(c.i, c.how, true);
+        // (v318: or a set's markers)
+        if (c.go) c.go();
+        else scanTake(c.i, c.how, true);
         // (v303) the text the card was about goes from the box (typed, and not cleared as it had no code in it): it
         // had run on into the next code typed ("Honey BrownB015")
         const bx = $('scBox');
@@ -782,11 +834,265 @@ function scanCardAgain(key, loud) {
   scanLastCard = { key: key, at: now };
   return again;
 }
+// (v318) A set's name in pasted text (its box, an order email, a shop's page): "Honolulu 120", "Ciao 36 Set A",
+// "36 Skin Tones". Returns groups of MARKER_SETS indices, each the sets one name could be: one when the name says which,
+// more when it doesn't (Ciao 36 with no letter read: Set A to E). Only a size the range comes in counts, and not a price
+// ($48.99, 48.99) or part of an order number; a size said as colours ("120 Colors") first. A line, or a line and the
+// next, at a time (an order of two sets is two names); the whole text when no line says (a box's words a line each).
+// brand: only that brand's sets.
+function scanSets(text, brand) {
+  const lines = String(text).normalize('NFKC').replace(/[‐-―]/g, '-').split(/\r?\n/),
+    all = lines.join(' '),
+    ohuhu = /\b(ohuhu|honolulu)\b/i.test(all),
+    copic = /\bcopic\b/i.test(all),
+    out = [],
+    seen = new Set();
+  const by = (n) => MARKER_SETS.findIndex((p) => p.n === n);
+  const put = function (names, into) {
+    const is = names.map(by).filter((i) => i >= 0 && (!brand || MARKER_SETS[i].b === brand)),
+      k = is.join(',');
+    if (is.length && !seen.has(k)) {
+      seen.add(k);
+      into.push(is);
+    }
+    return is.length > 0;
+  };
+  // the sizes in w that are among ok, as numbers standing alone, said as colours ("120 Colors") or near kw, the word
+  // that says which range ("Honolulu 120", "Ciao Set 72A"): not a code read off a cap in a tray's text
+  const sizes = function (w, ok, kw) {
+    const re = /\d+(?:[.,]\d+)*/g,
+      near = [],
+      col = [],
+      at = [];
+    let m;
+    const k = new RegExp(kw.source, 'gi');
+    while ((m = k.exec(w))) at.push(m.index, m.index + m[0].length);
+    while ((m = re.exec(w))) {
+      const v = m[0],
+        i = m.index,
+        before = w.slice(0, i),
+        after = w.slice(i + v.length);
+      // (not a price, an order number's part, nor a code's number: E24, or "R 24" as a tray's text can split one)
+      if (
+        /[.,]/.test(v) ||
+        /[A-Za-z\d]$|[$£€#-]\s?$/.test(before) ||
+        (/\b[A-Z]{1,3}\s$/.test(before) && !/\b(SET|OF)\s$/.test(before)) ||
+        /^(-\d|\s?%)/.test(after)
+      )
+        continue;
+      const n = +v;
+      if (ok.indexOf(n) < 0) continue;
+      if (/^\s*-?\s*(colou?rs?|pcs|pieces|count|ct|pack)\b/i.test(after)) col.push(n);
+      else if (at.some((x) => Math.abs(x - i) <= 24 || Math.abs(x - i - v.length) <= 24)) near.push(n);
+    }
+    const r = [...new Set(col.length ? col : near)];
+    // (each said as colours: a set each, "Honolulu 24 Colors and Honolulu 48 Colors"; else which one it is, unsure)
+    r.each = col.length > 0;
+    return r;
+  };
+  // the sets of the sizes found: one name each when each was said as colours, else one question
+  const named = function (ns, f, into) {
+    if (!ns.each) return put(ns.flatMap(f), into);
+    let hit = false;
+    ns.forEach((n) => (hit = put(f(n), into) || hit));
+    return hit;
+  };
+  // a Copic set's letter: "Set A", "36A", "72 - B"
+  const letter = function (w, n) {
+    const m =
+      w.match(/\b[Ss][Ee][Tt]\s*-?\s*([A-E])\b/) || w.match(new RegExp('\\b' + n + '\\s*-?\\s*([A-E])\\b'));
+    return m ? m[1] : '';
+  };
+  const lettered = function (name, n, w) {
+    const l = letter(w, n);
+    return l ? [name + ' - Set ' + l] : 'ABCDE'.split('').map((x) => name + ' - Set ' + x);
+  };
+  // (whether w named a set, new or not)
+  const rules = function (w, into) {
+    let hit = false;
+    if (ohuhu) {
+      if (/\bmid[\s-]?tones?\b/i.test(w) && sizes(w, [48], /mid[\s-]?tones?/).length)
+        hit = put(['48 Mid-tone Set'], into) || hit;
+      if (/\bskin\b/i.test(w) && sizes(w, [36], /skin/).length) hit = put(['36 Skin Tones'], into) || hit;
+      if (/\bgr[ae]ys?\b/i.test(w) && sizes(w, [36], /gr[ae]ys?/).length)
+        hit = put(['36 Gray Tones'], into) || hit;
+      if (/\bpastels?\b/i.test(w) && sizes(w, [48], /pastels?/).length)
+        hit =
+          put(
+            /sweet/i.test(w)
+              ? ['48 Pastel - Sweetness']
+              : /blossom/i.test(w)
+                ? ['48 Pastel - Blossoming']
+                : ['48 Pastel - Sweetness', '48 Pastel - Blossoming'],
+            into,
+          ) || hit;
+      if (/\bportraits?\b/i.test(w) && sizes(w, [24], /portraits?/).length)
+        hit = put(['24 Portrait'], into) || hit;
+      if (sizes(w, [104], /ohuhu/).length) hit = put(['104 Colors Set'], into) || hit;
+      // (a line naming one of those isn't also Honolulu 48: "Honolulu Mid-tone 48 Colors")
+      if (!hit && /\bhonolulu\b/i.test(w))
+        hit = named(
+          sizes(w, [24, 48, 72, 120, 168, 216, 320], /honolulu/),
+          (n) => [n === 320 ? 'Honolulu 320 (complete set)' : 'Honolulu ' + n],
+          into,
+        );
+    }
+    if (/\bciao\b/i.test(w))
+      hit =
+        named(
+          sizes(w, [12, 24, 36, 72], /ciao/),
+          (n) => (n < 36 ? ['Ciao ' + n] : lettered('Ciao ' + n, n, w)),
+          into,
+        ) || hit;
+    if (copic && /\bsketch\b/i.test(w))
+      hit =
+        named(
+          sizes(w, [12, 24, 36, 72], /sketch/),
+          (n) =>
+            n === 72
+              ? lettered('Sketch 72', 72, w)
+              : n === 24
+                ? /manga/i.test(w)
+                  ? ['Sketch 24 - Manga']
+                  : []
+                : ['Sketch ' + n],
+          into,
+        ) || hit;
+    return hit;
+  };
+  lines.forEach(function (l, i) {
+    if (!rules(l, out) && i + 1 < lines.length) rules(l + ' ' + lines[i + 1], out);
+  });
+  if (!out.length && lines.length > 1) rules(all, out);
+  return out;
+}
 // A piece of text from the box. loud: Enter or a paste, said even when nothing in it is a code. Returns how many
 // markers or questions it held (0: nothing to clear the box for).
 let scanHandling = '',
   scanHandleId = 0;
 function scanHandle(text, loud) {
+  // (v318: a set's name, in text pasted or typed: its box, an order email)
+  const sets = loud && String(text).trim() ? scanSets(text, scanFind ? scanFind.brand : '') : [];
+  // (the set's size isn't a code: a box's "120 Colors" had added Ohuhu 120, Black)
+  let codes = String(text);
+  new Set(sets.flat().map((i) => (MARKER_SETS[i].n.match(/\d+/) || [''])[0])).forEach(function (z) {
+    if (z) codes = codes.replace(new RegExp('(^|[^A-Za-z0-9-])' + z + '(?![A-Za-z0-9])', 'g'), '$1');
+  });
+  const n = scanHandleCodes(codes, loud, sets.length > 0);
+  if (!sets.length) return n;
+  if (scanFind) {
+    // (Find mode: the name says which set, straight to Is this your set?, with the caps read so far)
+    const keys = scanList.filter((e) => !e.ask).map((e) => mkey(e.i)),
+      f = scanFind;
+    closeScan();
+    f.done(keys, [...new Set(sets.flat())]);
+    return n || 1;
+  }
+  scanSetCard(sets, n > 0, null);
+  return n || 1;
+}
+// (v318) a set added to the list by its name since the list was last added or cleared: the welcome offers Some are
+// missing after it, as after a set ticked
+let scanSetIn = false;
+// the card for the sets named: a button for each, asked first (a set's markers are a lot to put in the list unasked,
+// and the name may be a set you're giving away). codes: codes were read along with it. took: after one was added, what
+// it added, with the other names' buttons still there
+function scanSetCard(groups, codes, took) {
+  const full = (p) => (p.allbrand ? p.n : p.b + ' ' + p.n),
+    one = groups.length === 1 && groups[0].length === 1,
+    choices = [];
+  groups.forEach(function (g, gi) {
+    // (a name that doesn't say which: its sets under a heading, by what tells them apart, "Ciao 36: which one?" Set A,
+    // Set B…: five full names had made a column taller than a phone's screen)
+    let base = '';
+    if (g.length > 1) {
+      const ns = g.map((si) => MARKER_SETS[si].n);
+      base = ns.reduce(function (a, b) {
+        let k = 0;
+        while (k < a.length && a[k] === b[k]) k++;
+        return a.slice(0, k);
+      });
+      base = base.slice(0, base.indexOf(' - ') >= 0 ? base.indexOf(' - ') : base.lastIndexOf(' '));
+      if (base && groups.length > 1) choices.push({ head: base + ': which one?' });
+    }
+    g.forEach(function (si) {
+      const p = MARKER_SETS[si],
+        part = base ? p.n.slice(base.length).replace(/^\s*-?\s*/, '') : '';
+      choices.push({
+        label: part
+          ? part
+          : one && !took
+            ? 'Add its ' + presetSize(p) + ' markers to the list'
+            : 'Add ' + p.n,
+        go: function () {
+          scanSetTake(
+            si,
+            groups.filter((x, j) => j !== gi),
+          );
+        },
+      });
+    });
+  });
+  if (took) {
+    scanSay(
+      took.took && took.mine < took.took ? 'ok' : 'same',
+      took.took ? took.took + ' added to the list' : 'All already in the list',
+      [
+        took.p.n,
+        took.mine ? took.mine + ' already yours' : '',
+        took.took && took.same ? took.same + ' already in the list' : '',
+        groups.length ? 'Another named below' : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      -1,
+      choices,
+    );
+    return;
+  }
+  const p0 = MARKER_SETS[groups[0][0]];
+  // ("Copic Ciao 36: which one?", as the choices' heading says it)
+  const whichOf = function (g) {
+    const a = MARKER_SETS[g[0]];
+    let k = 0;
+    while (k < a.n.length && g.every((si) => MARKER_SETS[si].n[k] === a.n[k])) k++;
+    const c = a.n.slice(0, k),
+      b = c.slice(0, c.indexOf(' - ') >= 0 ? c.indexOf(' - ') : c.lastIndexOf(' '));
+    return b ? a.b + ' ' + b + ': which one?' : 'Which set is yours?';
+  };
+  scanSay(
+    'ask',
+    one ? full(p0) : groups.length === 1 ? whichOf(groups[0]) : groups.length + ' sets named',
+    (one
+      ? presetSize(p0) + ' markers: a set’s name, read'
+      : groups.length === 1
+        ? 'A set’s name, read: not which one'
+        : 'Add each you have') + (codes ? ' · its codes are in the list' : ''),
+    -1,
+    choices,
+  );
+  scanBeep('same');
+}
+function scanSetTake(si, rest) {
+  const p = MARKER_SETS[si];
+  let took = 0,
+    mine = 0,
+    same = 0;
+  presetMkeys(p).forEach(function (k) {
+    const i = keyIdx(k);
+    if (i == null) return;
+    if (scanTake(i, '', true, true)) {
+      took++;
+      if (state.owned.has(k)) mine++;
+    } else same++;
+  });
+  scanSetIn = true;
+  scanRender();
+  scanSetCard(rest, false, { p: p, took: took, mine: mine, same: same });
+  scanBeep(took && mine < took ? 'ok' : 'same');
+}
+// the codes in a piece of text. named: a set's name was read in it, said instead
+function scanHandleCodes(text, loud, named) {
   if (!String(text).trim()) return 0;
   scanHandling = String(text);
   scanHandleId++;
@@ -901,9 +1207,10 @@ function scanHandle(text, loud) {
       now = Date.now(),
       again = !loud && !took && !asked && scanLastMany.key === key && now - scanLastMany.at < 6000;
     scanLastMany = { key: key, at: now };
-    if (r.unread && !again) scanUnread += r.unread;
+    // (v318: not a box's other words, when its name was read)
+    if (r.unread && !again && !named) scanUnread += r.unread;
     // (two caps held in view come again and again: said once)
-    if (!again && n) {
+    if (!again && n && !named) {
       // (v303: what's added that's already yours is said so, with the quieter sound, as one read alone is)
       const allMine = took && mine === took;
       scanSay(
@@ -978,7 +1285,7 @@ function scanHandle(text, loud) {
     scanBeep('none');
     return 0;
   }
-  if (loud) {
+  if (loud && !named) {
     scanSay('none', 'No marker code found', '“' + String(text).trim().slice(0, 40) + '”', -1);
     scanBeep('none');
   }
@@ -1141,6 +1448,20 @@ function scanBrandButtons() {
     .querySelectorAll('button')
     .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.b === scanBrand)));
 }
+const SCAN_ANDROID = /Android/i.test(navigator.userAgent || '');
+// (v318) the line under the steps: a whole tray, a set's box or an order email, pasted (Android: Google Lens, then the
+// box's long-press Paste), or a list file opened; in Find mode, the set's box or order to find it by its name
+function scanLensLine() {
+  const t = $('scLensT'),
+    f = $('scFile');
+  if (!t) return;
+  t.textContent = scanFind
+    ? 'Got the box or an order email? Paste its text: the set’s name finds it.'
+    : SCAN_ANDROID
+      ? 'A whole tray, the set’s box or an order email: copy its text with Google Lens, then long-press the box \u203a Paste. A set’s name adds the whole set, asked first.'
+      : 'A whole tray, the set’s box or an order email: copy its text (Live Text in Photos, or Google Lens) and paste it here. A set’s name adds the whole set, asked first.';
+  if (f) f.style.display = scanFind ? 'none' : '';
+}
 function openScan(opts) {
   const ov = $('scanOverlay');
   if (!ov) return;
@@ -1157,6 +1478,8 @@ function openScan(opts) {
   }
   ov.classList.toggle('scfind', !!scanFind);
   $('scTitle').textContent = scanFind ? 'Scan 3 caps' : 'Scan or type codes';
+  scanLensLine();
+  if (typeof ocrCard === 'function') ocrCard();
   // (v303: sound can only start from a tap; the one that opened this counts, not only a tap in the box)
   try {
     if (!scanAudio) scanAudio = new (window.AudioContext || window.webkitAudioContext)();
@@ -1207,6 +1530,8 @@ function scanFlushBox(loud) {
 function closeScan() {
   const ov = $('scanOverlay');
   if (!ov || !ov.classList.contains('on')) return;
+  // (v318: a photo being read stopped, the reader's worker ended)
+  if (typeof ocrClose === 'function') ocrClose();
   scanMute = true;
   try {
     scanFlushBox(false);
@@ -1286,10 +1611,15 @@ function scanAdd() {
   if (offList || Object.keys(ink).length) wishChanged();
   // (v308) the questions still to answer, and lines not read, are said, with Open to go back to them
   const left = scanAsks(),
-    unread = scanUnread;
+    unread = scanUnread,
+    setIn = scanSetIn;
   scanUnread = 0;
+  scanSetIn = false;
+  // (v318: a set's Colorless Blender, now a set can come in by its name, said as Add a set says it, not counted)
+  const cols = setKeys(keys).length,
+    bl = cols > 0 && keys.indexOf('Ohuhu|0') >= 0;
   const said =
-    addedManyLine(keys.length, offList) +
+    addedManyLine(cols || keys.length, offList, bl) +
     (left ? ' \u00b7 ' + left + ' still to choose' : '') +
     (unread ? ' \u00b7 ' + unread + (unread === 1 ? ' line' : ' lines') + ' not read' : '');
   toastActions(
@@ -1300,7 +1630,7 @@ function scanAdd() {
     ),
     left || unread ? 10000 : 8000,
   );
-  if (after) after(keys.length);
+  if (after) after(cols || keys.length, 0, setIn);
   function scanUndoAdd() {
     const wishNow = state.wish.slice();
     // (v303: the markers it added back on the list, once each; its questions are as they are now)
@@ -1358,6 +1688,7 @@ function scanAdd() {
     cb.textContent = 'Clear list';
     scanList = [];
     scanUnread = 0;
+    scanSetIn = false;
     scanLast = { i: -1, at: 0 };
     // (v303: a cleared list asks afresh)
     scanTookAt.clear();
@@ -1365,6 +1696,32 @@ function scanAdd() {
     scanSay('', 'Ready', 'List cleared', -1);
     scanRender();
     scanFocusBox();
+  });
+  // (v318) Open a list file: a .csv or .txt (a spreadsheet saved as CSV, notes), read as a paste is, a line at a time
+  const fileIn = $('scFileIn');
+  $('scFile').addEventListener('click', function () {
+    fileIn.value = '';
+    fileIn.click();
+  });
+  fileIn.addEventListener('change', function () {
+    const f = fileIn.files && fileIn.files[0];
+    if (!f) return;
+    const no = function (why) {
+      scanSay('none', why, f.name, -1);
+      scanBeep('none');
+      scanFocusBox();
+    };
+    if (f.size > 2e6) return no('Too big for a list of markers');
+    const rd = new FileReader();
+    rd.onload = function () {
+      scanHandle(String(rd.result || '').replace(/^\uFEFF/, ''), true);
+      scanRender();
+      scanFocusBox();
+    };
+    rd.onerror = function () {
+      no('That file couldn’t be read');
+    };
+    rd.readAsText(f);
   });
   ov.addEventListener('click', function (e) {
     if (e.target === ov) return closeScan();
@@ -1481,7 +1838,24 @@ function scanAdd() {
   let was = '',
     wasN = 0,
     keyAt = 0;
-  const ANDROID = /Android/i.test(navigator.userAgent || '');
+  const ANDROID = SCAN_ANDROID;
+  // (v317) on Android the steps say Gboard's way: its Scan text tool photographs a cap and puts the text it reads in on
+  // Insert (the page never sees the camera, here as on an iPad). Gboard's tools open from the four-squares icon at
+  // the left of its toolbar, and the tool stays open for the next cap. (Samsung Keyboard's Extract text went in One
+  // UI 8.5.) The steps are shown on touch screens only (11-scan.css)
+  if (ANDROID) {
+    const how = $('scHow');
+    if (how)
+      how.innerHTML =
+        '<li><b>Tap the box</b>The keyboard opens. To type a code, tap \u2713 after it.</li>' +
+        '<li><b>Gboard \u203a Scan text</b>With Gboard (free on Google Play): open its tools (the four squares, left of its toolbar) and tap Scan text.</li>' +
+        '<li><b>Snap, then Insert</b>Photograph one cap and tap Insert: its code is read, with a beep. Then \u2190 for the next cap.</li>';
+    // (the paragraph a mouse and keyboard see, an Android tablet's or Chromebook's)
+    const hint = ov.querySelector('.schint');
+    if (hint)
+      hint.innerHTML =
+        'Type or paste codes, then press Enter. With Gboard (free on Google Play), tap the box, open its tools and tap <b>Scan text</b>: photograph a cap and tap Insert, and its code is read.';
+  }
   // (v303) a key pressed just before text arrives: typing. Scan Text puts its text in without any key, so composed text
   // (a pinyin or Japanese keyboard) that follows keys is typing on an iPad too, not a cap read half-way
   box.addEventListener('keydown', function () {
@@ -1494,12 +1868,23 @@ function scanAdd() {
   box.addEventListener('compositionstart', function () {
     scanIme = true;
   });
+  // (v317) Android: text read during a composition that a keyboard then leaves in the box (Gboard's Scan text, if it
+  // puts its text in as a composition) is cleared once the composition ends, so the next cap's text can't run on
+  // into it. Not on an iPad: Scan Text takes its own text out (above)
+  let imeLeft = '';
   box.addEventListener('compositionend', function () {
     scanIme = false;
+    if (ANDROID && imeLeft && box.value === imeLeft) {
+      set('');
+      scanText = '';
+      box.dispatchEvent(new Event('scanreset'));
+    }
+    imeLeft = '';
   });
   const set = function (v) {
     if (scanIme && v === '') {
       if (typeof scanTraceAdd === 'function') scanTraceAdd('left for Scan Text to clear');
+      imeLeft = box.value;
       return;
     }
     box.value = v;
@@ -1538,6 +1923,7 @@ function scanAdd() {
     clearTimeout(scanStill);
     // (Add reads text left in the box: on while there's some)
     scanAddState();
+    const wasWaiting = waiting;
     waiting = false;
     const v = box.value,
       before = was,
@@ -1566,6 +1952,30 @@ function scanAdd() {
       return;
     }
     if (e.inputType && e.inputType.indexOf('delete') === 0) return;
+    // (v317) Android: text arriving two or more characters at once (Gboard's Scan text on Insert, voice typing, a
+    // clipboard chip; Copic's W1 is two), whether or not it comes as a composition or after Gboard's key 229, is a read: Gboard composes
+    // what's typed a letter at a time, and a cap's text has no Enter after it. (Chrome's IME, driven from the test
+    // harness, put "E75 Light Rose Taupe" in as one composition after key 229: the rules below took it for typing, and
+    // it waited for Enter.) Not a word being typed that grows by a suggestion tapped or a correction ("Ta" to
+    // "Taupe ", "e75" to "E75 "): still one word, the same word
+    if (ANDROID) {
+      let p = 0;
+      while (p < before.length && p < v.length && before[p] === v[p]) p++;
+      const added = v.length - p,
+        word = before.slice(before.search(/\S*$/)),
+        stem = before.length - word.length,
+        oneWord = !!word && p >= stem && !/\s\S/.test(v.slice(stem).trim());
+      // (the same text sent again as the composition is committed, after Gboard's key: still that read, not typing)
+      if ((added >= 2 && !oneWord) || (wasWaiting && v === before)) {
+        if (typeof scanTraceAdd === 'function')
+          scanTraceAdd(
+            added ? 'android: ' + added + ' characters at once, a read' : 'android: the same, still a read',
+          );
+        waiting = true;
+        scanStill = setTimeout(settle, 600);
+        return;
+      }
+    }
     if (
       ANDROID &&
       (e.isComposing || e.inputType === 'insertCompositionText') &&

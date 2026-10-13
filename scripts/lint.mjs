@@ -12,7 +12,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
 import { blocks, locate } from './lib/bundle.mjs';
-import { BUNDLE_PATH } from '../eslint.config.mjs';
+import { BUNDLE_PATH, WORKER_PATH } from '../eslint.config.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -21,21 +21,36 @@ const onlyRules = args.flatMap((a, i) => (a === '--rule' ? [args[i + 1]] : []));
 
 // The <script> blocks share one global scope in the page, so they are linted as one text,
 // joined by a newline. Segments keep track of which src/ file each line came from.
+// (v318) The photo reader's worker (src/js/ocr/, in a text/plain block the page makes a Worker from) has a scope of its
+// own, a worker's: linted apart, as WORKER_PATH.
 const bs = await blocks(ROOT, 'js');
-let text = '';
-const segments = [];
-for (const b of bs) {
-  if (text) text += '\n';
-  const base = text.length;
-  for (const s of b.shippedSegments) segments.push({ rel: s.rel, start: base + s.start, end: base + s.end });
-  text += b.shipped;
+const isWorker = (b) => b.files.some((f) => f.startsWith('js/ocr/'));
+function joined(list) {
+  let text = '';
+  const segments = [];
+  for (const b of list) {
+    if (text) text += '\n';
+    const base = text.length;
+    for (const s of b.shippedSegments) segments.push({ rel: s.rel, start: base + s.start, end: base + s.end });
+    text += b.shipped;
+  }
+  return { text, segments };
 }
 
 const eslint = new ESLint({ cwd: ROOT });
-const [result] = await eslint.lintText(text, { filePath: join(ROOT, BUNDLE_PATH) });
-if (!result) throw new Error(`ESLint ignored ${BUNDLE_PATH}; check eslint.config.mjs`);
+let messages = [];
+for (const [list, path] of [
+  [bs.filter((b) => !isWorker(b)), BUNDLE_PATH],
+  [bs.filter(isWorker), WORKER_PATH],
+]) {
+  if (!list.length) continue;
+  const { text, segments } = joined(list);
+  const [result] = await eslint.lintText(text, { filePath: join(ROOT, path) });
+  if (!result) throw new Error(`ESLint ignored ${path}; check eslint.config.mjs`);
+  messages = messages.concat(result.messages.map((m) => toMessage(m, text, segments)));
+}
 
-let messages = result.messages.map((m) => {
+function toMessage(m, text, segments) {
   const at = locate(text, segments, m.line);
   return {
     rule: m.ruleId || (m.fatal ? 'parse-error' : 'other'),
@@ -45,7 +60,7 @@ let messages = result.messages.map((m) => {
     column: m.column,
     message: m.message,
   };
-});
+}
 if (onlyRules.length) messages = messages.filter((m) => onlyRules.includes(m.rule));
 
 const byRule = {},

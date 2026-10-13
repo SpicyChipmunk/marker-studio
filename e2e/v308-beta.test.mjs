@@ -301,6 +301,7 @@ test('Help: the beta tester guide first, the new glossary entries, “phone or i
   assert.deepEqual(secs, [
     'Beta tester guide',
     'Photographing a page',
+    'Adding markers by code',
     'Glossary',
     'Keyboard and screen readers',
     'Your data',

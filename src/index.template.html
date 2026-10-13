@@ -117,8 +117,12 @@ window.SF=(function(){ /* guide module (window.SF): the js/guide files below sha
 @@include(js/shopping.js)
 @@include(js/swatch.js)
 @@include(js/scan.js)
+@@include(js/photo-read.js)
 @@include(js/chart.js)
 </script>
+<!-- (v318) the photo reader's engine and worker: not run here; the page makes its worker from this text -->
+<script type="text/plain" id="ocrWorkerSrc">@@include(js/ocr/engine.js)
+@@include(js/ocr/worker.js)</script>
 <!-- start-up, Match and Help each in a script of their own, so an error in one can't stop the others -->
 <script>@@include(js/boot.js)</script>
 <script>@@include(js/match.js)</script>

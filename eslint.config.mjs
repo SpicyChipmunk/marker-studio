@@ -9,11 +9,24 @@ import globals from 'globals';
 
 /** Virtual file name scripts/lint.mjs hands to ESLint for the shipped script. */
 export const BUNDLE_PATH = 'bundle/app.js';
+/** (v318) And for the photo reader's worker (src/js/ocr/): a worker's scope, not the page's. */
+export const WORKER_PATH = 'bundle/ocr-worker.js';
 
 export default [
   {
     // src/js is linted through the bundle only (see above); the rest isn't linted yet.
     ignores: ['node_modules/**', 'e2e/.artifacts/**', 'src/**', 'index.html', 'service-worker.js'],
+  },
+  {
+    files: [WORKER_PATH],
+    languageOptions: { ecmaVersion: 'latest', sourceType: 'script', globals: { ...globals.worker } },
+    linterOptions: { reportUnusedDisableDirectives: 'off' },
+    rules: {
+      'no-undef': 'error',
+      'no-unused-vars': ['error', { caughtErrors: 'none' }],
+      'no-redeclare': 'error',
+      'no-empty': ['warn', { allowEmptyCatch: true }],
+    },
   },
   {
     files: [BUNDLE_PATH],

@@ -19,6 +19,11 @@ Third-party material keeps its own licence:
 - 36 line icons come from Lucide (ISC License), some of them derived from
   Feather (MIT License); see src/assets/icons/LICENSE-Lucide-Feather.txt.
   Their notices are also in the comment at the top of index.html.
+- Mozilla's PDF.js in vendor/pdfjs is under the Apache License 2.0, its wasm
+  decoders under BSD and MIT licences; see the LICENSE files beside them.
+- The photo reader in vendor/ocr: ONNX Runtime Web (MIT License) and
+  PaddleOCR's models (Apache License 2.0); see vendor/ocr/README.md and the
+  LICENSE files beside them.
 - "Ohuhu" and "Copic" are trademarks of their respective owners. This project
   is not affiliated with or endorsed by them.
 

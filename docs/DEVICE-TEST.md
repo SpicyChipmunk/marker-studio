@@ -18,7 +18,7 @@ sheet, paper, and how it feels.
 ## 1. Update, install, offline (3 min)
 
 - [ ] ★ Open the Home Screen app → "Marker Studio was updated" shows, **Reload** → Home's foot says the new version
-      (e.g. "v316 · Beta").
+      (e.g. "v318 · Beta").
 - [ ] ★ Airplane mode on, close the app fully, reopen → it opens, your markers and guides are there; open a guide and
       make a PDF. Airplane mode off.
 - [ ] In a Safari **Private** tab, open the app's address → the welcome shows; Share › Add to Home Screen → the icon is
@@ -101,59 +101,50 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v316
+## New in this release: v318
 
-- [ ] ★ **Markers:** each family runs lightest first (R16, R28, R38 … R514). **Order** shows in Owned, Unowned and All;
-      tap it in Owned → the picker offers only **Lightest first** and **Code order** (iPad Safari had shown hidden
-      choices before; check there are just two). Code order → families by code, and it's still Code order after closing
-      the app. Owned has no "Your collection." line; **+ Add markers** is an outline button like the ones beside it.
-- [ ] The ⋯ menus (the guide's, Markers', the Library's) have an icon before each item, lined up, in grey.
-- [ ] ★ **Page finished** (tick every section of a short page): a dark card with a green edge, a sparkle over
-      **Page finished!**, and the four buttons under the photo as pills. Save image → the key's title in the app's serif
-      font, round swatches (Copic 0 or B60 still visible on the white), the dot note in grey under the key.
-- [ ] A Gradient's **Start colour**: the slider's ring rides on the colour strip; at both ends it sits over the first and
-      last colours, not off the strip. **Scatter** has the same ring on a thin grey line.
-- [ ] Upright iPad, the **sample** jellyfish → the Plan's picture is smaller to start and Mood's pictures (and the
-      Pattern tab's first row) are on the first screen; **Colour along** → the picture is bigger again and the first
-      marker row shows fully above the bar, with **More** at the end of the tip's sentence. A Letter page starts as before.
-- [ ] Chosen options (Codes, Greyscale, Plan choices, a marker row you've opened, Balance) are all one teal; Mood's ✓ is
-      white. Green is left for done (Saves itself ✓, the progress bar, Page finished).
-- [ ] Drop-downs (Markers' Order, the Library's sort, the guide's Saved palette) have the app's chevron.
-- [ ] ★ **Home** on the iPad before you've made a guide (a fresh install, or a test profile) → three numbered steps
-      under the cards. Gone once a guide is built. On Home's **Add a photo of your page**, the ✕ is a round button of its
-      own.
-- [ ] ★ **To buy › From your guides** (with a smaller set ticked, e.g. 24 or 48, and a few guides in the Library) →
-      under your list: the markers that would complete every blend in your guides, each with why ("Darker than B115 ·
-      2 of your 4 guides") and +. Tap + → on the list with "blend for …"; **Add all to To buy**. Mark a marker a guide
-      uses as **dry** → it's offered too. With all your markers ticked → "Every blend … is complete". With 30 or more
-      guides, To buy still opens at once.
-- [ ] **Brands I'd buy › Only these** with one brand → the card offers only that brand.
-- [ ] A **new** guide's Colour along strip: a marker's lighter and darker companions look like a step of the same colour
-      (no orange as a dark brown's lighter, no Black Brown as a red's darker). A guide made before v316 shows the same
-      companions as before.
+**The photo reader's gate for the beta: a 2 GB iPad** (the 5th or 6th generation iPad, 2017–18, on iPadOS 16.4 or
+later; older 2 GB iPads can't update that far and don't show the card), if you can borrow one; then your own iPad.
+Write the times down.
 
-## From v315
+- [ ] ★ **Markers › + Add markers › Scan or type codes → Read photos of your caps** → the card says 22 MB and that
+      photos never leave the iPad → **Download the reader** on Wi-Fi → it counts up the MB → "The reader is ready".
+      Time to download: ____
+- [ ] ★ **Take or choose photos** → photograph **half a tray** from above, caps up → the photo shows, the bar moves,
+      codes join the list as they're read, green boxes on the photo. Time to finished: ____ s. Nothing wrong in the
+      list; amber boxes are the ones asked about.
+- [ ] ★ A **whole tray** in one photo, then a **close-up** of a few caps → each finishes, no "too much for this device".
+      If the app reloads itself part way (memory), open Scan and read the same photo again: it should read more gently
+      and finish. Note which iPad.
+- [ ] ★ **All your photos at once:** take a photo of each tray (or half-tray) in the Camera first, then **Read photos of
+      your caps → Take or choose photos → Photo Library**, select them all → "Photo 1 of N…", one bar over all of them;
+      at the end one summary and a line per photo. Total time: ____ for ____ photos. Compare the list with your
+      collection: anything missing or wrong? Each marker is in the list once, however many photos it was in. On the
+      2 GB iPad, at least ten photos in one go.
+- [ ] **Stop** during a batch → it stops within a second or two; what was read stays. **Undo these photos** → all their
+      codes go back out.
+- [ ] One photo: **Stop** part way → it stops within a second or two, what was read stays in the list. **Undo this
+      photo** → its codes go back out. **Read another photo** → straight to the camera or photos.
+- [ ] Switch to another app while a batch is being read, then back → it carries on or has finished; nothing lost. Lock
+      the iPad for a minute mid-batch, unlock → the same.
+- [ ] Airplane mode on, close the app fully, reopen → **Read photos of your caps** works offline. In a Safari
+      **Private** tab with Airplane mode on → the card says it needs the internet the first time; its button waits.
+- [ ] **A set's name:** copy the text from a set's box (Live Text) or a shop's page (Honolulu 120) and paste it into
+      Scan → the set is offered, added with a tap. **Open a list file** with a .csv from Files → read as a paste.
+- [ ] On the welcome (in a Private tab), add a set → **Some are missing** → the chart with its markers ticked; untick
+      two → they're left out.
+- [ ] Help › **Adding markers by code** and About's credits read right.
 
-- [ ] ★ **A finished page on a light table:** photograph a coloured page on a light grey or light wood table → **Add a
-      photo of your page** → it's straightened by itself. The message has **Adjust corners** → the corners as found.
-- [ ] Photograph it with the phone held **sideways**, then **upside down** → kept the right way up. **Turn** in the
-      panel turns it a quarter turn.
-- [ ] On a **check or striped cloth** → the corners open to check, with a line about the table's pattern.
-- [ ] **Plan and your page** for a **wide** page, and for a photo kept as is that's wider than the page → the two are
-      one over the other or side by side, whichever shows both bigger; THE PLAN and MY PAGE are easy to read. On a
-      phone held sideways, **Share** is on the screen.
-- [ ] ★ **Focus mode** with the iPad **on its side** → finish a marker → the next-marker card sits beside the
-      picture, not over it. On a phone held sideways too, clear of the zoom buttons; turn the phone with the card up →
-      it moves to fit.
-- [ ] A **new** Gradient of **24** markers on a page with a few huge sections → the Pattern tab's last line names a
-      marker that only colours specks; **Show them** rings where. Tap the biggest section, change its colour, then
-      change **Flow** → the other markers spread over the rest of the page.
-- [ ] A new Gradient from your markers: no two markers in its key look the same (B111 and B112 aren't both used).
-- [ ] Copic greys (if you have some): a grey's blend companions in Colour along are the same grey type (C-6 with C-5
-      and C-7).
-- [ ] Wording: Library (empty) says **Nothing yet…**; Home says **Page in a PDF? Open the PDF**; Help's glossary has
-      **Your page**.
-- [ ] A guide made before v315 looks exactly as it did, and its photo is still there.
+## From v317
+
+- [ ] ★ **A whole tray at once:** photograph a tray of caps with the iPad's Camera, open it in Photos, press and hold
+      the text (Live Text) › Select All › Copy. Markers › Add markers › Scan or type codes → tap the box › Paste → the
+      codes are read into the list. Colour names under their codes don't raise questions; the message doesn't say
+      dozens of lines weren't read.
+- [ ] Scan Text on the iPad as before: AutoFill › Scan Text, cap after cap with a beep, no Insert.
+- [ ] Help › **Adding markers by code** reads right.
+- [ ] (An Android tester) Scan's steps say Gboard › Scan text; photograph a cap, tap Insert → its code is read with
+      a beep, no ✓ needed; ← for the next cap. If nothing is read: Help › About › Copy diagnostics and send it.
 
 ## Report back
 

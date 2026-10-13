@@ -108,6 +108,13 @@
   gap: 6px;
   margin-top: 6px;
 }
+/* (v318) a heading over the sets a name could be: Set A, Set B… */
+.scpick .scphead {
+  flex-basis: 100%;
+  margin-top: 4px;
+  color: var(--sub);
+  font-size: var(--t-sm);
+}
 .scpick button {
   min-height: 44px;
   padding: 0 12px;
@@ -292,9 +299,11 @@
     0 -10px 18px 4px var(--bg),
     0 18px 0 10px var(--bg);
 }
-/* the welcome's way here, for markers bought one at a time: a link in the sentence, with a 44px tap area */
+/* the welcome's way here, for markers bought one at a time: a link in the sentence, with a 44px tap area; and (v318)
+   Scan's Open a list file */
 .wcsub .wcscan,
-.mkfind .wcscan {
+.mkfind .wcscan,
+.sclens .scfile {
   position: relative;
   display: inline-block;
   white-space: nowrap;
@@ -307,7 +316,8 @@
   text-align: left;
 }
 .wcsub .wcscan::after,
-.mkfind .wcscan::after {
+.mkfind .wcscan::after,
+.sclens .scfile::after {
   content: '';
   position: absolute;
   left: -4px;
@@ -421,4 +431,125 @@
 }
 .scfindnote b {
   color: var(--ink);
+}
+/* ===== Read a photo of your caps (v318): the card under the paste line, and its view in place of the list ===== */
+.ocrbtn {
+  width: 100%;
+  margin: 2px 0;
+}
+.sccard.ocron > :not(.mhead):not(#ocrView) {
+  display: none !important;
+}
+.ocrv {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ocrv[hidden] {
+  display: none;
+}
+.ocrh {
+  font-family: Fraunces, Georgia, serif;
+  font-size: calc(22 * var(--tpx));
+  color: var(--ink);
+  margin: 2px 0 0;
+}
+.ocrp {
+  color: var(--sub);
+  font-size: var(--t-base);
+  line-height: 1.45;
+  margin: 0;
+}
+.ocrp b {
+  color: var(--ink);
+}
+.ocrul {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--sub);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+.ocrwarn {
+  color: #ffcf85;
+}
+.ocrstat {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--sub);
+  font-size: var(--t-base);
+  min-height: 1.4em;
+}
+.ocrbar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--line);
+  overflow: hidden;
+}
+.ocrbar b {
+  display: block;
+  height: 100%;
+  background: #7a6cff;
+  border-radius: 4px;
+  transition: width 0.25s ease;
+}
+/* the photo, its boxes drawn on a canvas over it */
+.ocrpic {
+  position: relative;
+  align-self: center;
+  max-width: 100%;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  line-height: 0;
+}
+.ocrpic canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 62vh;
+  width: auto;
+  height: auto;
+}
+.ocrpic canvas.ocrbox {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+}
+.ocrsum {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+.ocrsum:empty {
+  display: none;
+}
+.ocrleg {
+  display: flex;
+  gap: 14px;
+}
+.ocrleg span::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 2px solid #4cd39a;
+  margin-right: 6px;
+  vertical-align: -2px;
+}
+.ocrleg span.am::before {
+  border-color: #ffb547;
+}
+.ocrrow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ocrrow > * {
+  flex: 1 1 160px;
 }

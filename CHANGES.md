@@ -981,3 +981,85 @@ mocked first. New e2e files: `v316` (5), `v316-tobuy` (4); unit: `v316-blend` (2
   the dot note is #777 (4.5:1); Markers' Order keeps one width in every view. New e2e test: the card against the open
   guide's own plan, with a smaller set (`v316-tobuy`, 4).
 - Version v316; cache `marker-studio-v316`.
+
+# Changes — v317
+
+Scan on Android, and a whole tray at once on any device; built from fable's pressure-tested version. New e2e file:
+`v317-scan` (4); unit: `v317-scan` (3).
+
+- **Android's steps** (on an Android user agent): Scan's three boxes say Gboard's way — Tap the box (✓ after a typed
+  code), Gboard › Scan text ("With Gboard (free on Google Play): open its tools (the four squares, left of its
+  toolbar) and tap Scan text"), Snap, then Insert (← for the next cap). Before, Android showed the iPhone's AutoFill ›
+  Scan Text, which it doesn't have. Samsung Keyboard's Extract text went in One UI 8.5. The iPad's and iPhone's steps
+  are unchanged.
+- **Android's box**: text arriving two or more characters at once (Gboard's Insert, committed or as a composition after
+  its key 229, voice typing, a clipboard chip) is read after it holds still, without ✓; Chrome's re-sending of the same
+  text as a composition ends no longer cancels the read. Typing a letter at a time, a correction or a suggestion tapped
+  still wait for ✓. Text read during a composition the keyboard leaves in the box goes when the composition ends.
+  Copic's two-character codes (W1, N1) count. How Gboard's Scan text puts its text in isn't documented: every way
+  passes, and Copy diagnostics shows which one a tester's phone used. iPad: Scan Text's sequences (iPadOS 27's
+  compositions included) give the same box, list, card and trace as v316, in Chromium and WebKit.
+- **A whole tray at once** (every device): a line in Scan and a new Help section, **Adding markers by code** — copy the
+  text from a photo of the caps (Live Text in Photos on an iPad or iPhone; Google Lens on Android, then long-press the
+  box › Paste) and paste it; each line is read.
+- **A pasted list is quieter**: a line with only a colour name that a code in the same paste accounts for ("E75" then
+  "Light Rose Taupe"; "CG17 Cool Grey" then "Grey") is no question, and a name on the line after a code both brands
+  use settles it ("B04" then "Tahitian Blue" is Copic's); lines of plain words beside codes aren't counted as not read.
+  On text read from tray photos: 21 codes as before, 8 name questions → 0, "51 lines not read" → 11. Lists of names
+  alone, codes alone or codes with names on one line read as before.
+- Version v317; cache `marker-studio-v317`.
+
+# Changes — v318
+
+Read photos of your caps, and three quicker ways to add markers. New e2e files: `v318` (2), `v318-scan` (4),
+`v318-ocr` (6); unit: `v318-sets` (4), `v318-ocr` (3).
+
+- **Read photos of your caps** (Scan, under the steps; not in Find my set): photograph each tray from above, choose one
+  photo or all of them, and the codes they read join Scan's list as they're read, over the photo green boxes for what's added and amber for what's to check.
+  The reader runs on the device, in a worker: ONNX Runtime Web 1.30 (one thread) and PaddleOCR's models (PP-OCRv3
+  detection, PP-OCRv6 tiny recognition, the text-direction classifier) in `vendor/ocr/1`, about 22 MB, downloaded once
+  after a consent card ("your photos never leave it"), each file's size and SHA-256 checked, into a cache of its own
+  (`marker-studio-ocr-1`) that the service worker and new releases leave alone. A cut-off download keeps what came and
+  finishes on a second try; offline, the card says it needs the internet the first time. The worker ends as Scan
+  closes, or as the page is hidden while it's idle, so its memory goes.
+- **Several photos at once** (a pressure test's suggestion, from Ben's question): chosen together, they're read in turn
+  in the same view — "Photo 3 of 19 · Reading the caps…", one bar over them all, the worker kept between photos and
+  each photo's pixels let go of once it's read. Scan's list already holds each marker once, so a cap in two photos is
+  in it once, and a later photo answers an earlier one's question. At the end, one summary and a line per photo;
+  **Undo these photos**; **Read more photos**. Stop ends the batch after what's read so far. A photo that can't be read
+  is counted and skipped; a reader that can't start ends the batch, said. All 27 of Ben's close-ups in one batch:
+  470 of his 471 markers, nothing wrong added, 6 questions, 240 s (Chromium, the iPad's two strips).
+- **How it reads**: the photo at 1600 px (iPhone and iPad in two strips, 1280 px after running out of memory once, read
+  again gently by itself); tall boxes looked at again closer; each code's name paired with it; then a second look, the
+  photo turned a quarter, at only what the first didn't read (always: on wide trays it finds about 11 more of 334;
+  accuracy before time, as adding a collection is done once). A lone character is kept only when a name is paired with
+  it. The worker lets its messages in every 60 ms of reading, so Stop lands within a fraction of a second, not at the
+  end of a look (a minute on an iPad).
+- **How it settles**: a code read for sure, of one marker, joins the list as it's read when a brand is chosen above
+  the box or it's of the brand the photo's codes plainly show (five or more, four to one); the rest wait for the end of
+  the photo and are read as a pasted list, each code with its names on one line, with the photo's brand. On a tray
+  plainly of one brand, another brand's code read short (E71 beside E711) or unsure is left out, not asked about. An
+  old code that's now another marker's (R16) is settled by a name read with it. With a brand chosen above the box and a
+  photo plainly of the other brand, its codes go in as the photo's brand, said, not as the chosen brand's or as dozens
+  of questions. The photo's lines aren't read as if upside down (the reader tried both ways up already: a scrap of a
+  line, "001", had become Ohuhu 100). Boxes are green for every code added, at once or at the end. **Undo this photo** takes out what it
+  added; **Read another photo**; **Done** says on Scan's card how many came from the photo. On Ben's close-ups: Copic
+  137 of 137, no questions; Ohuhu 333 of 334 with the last a question, 6 questions in all, nothing wrong added (Chromium,
+  45 s and 192 s for the two sets). A real iPad's speed and memory are untested: the device checklist's first lines.
+  Measured memory (WebAssembly's, which never shrinks): about 180 MB on the iPad's path, 125 MB read gently.
+- **When things go wrong**: out of memory, the photo is read again gently, and later photos are read gently for a
+  fortnight. A stored reader that won't start has its files checked again; a damaged or missing one is let go of, and
+  Read another photo downloads only it (not the whole reader, which offline couldn't come back). Photo numbers go on
+  across Scan's openings, so Undo never takes out another photo's codes. Screen readers hear each stage once, not the
+  count as it climbs; focus stays on Stop or Cancel.
+- **A set's name in pasted text** (its box, an order email, a shop's page): Scan offers its markers, asked first, a
+  button for each set named; a name that doesn't say which (Ciao 36) lists its sets under a heading by what tells them
+  apart. A set's size (a box's "120 COLORS") isn't read as a code, nor a price, an order number or a quantity. Find my
+  set goes straight to the set named. A set's Colorless Blender is said apart when the list is added.
+- **Open a list file** (.csv, .txt, .tsv), under Scan's steps: read as a paste. The line under the steps says so, in
+  Android's and Find mode's own words.
+- **Some are missing**: after adding a set on the welcome, a card opens the chart with its markers ticked, to untick the
+  few lost or used up. The toast's Undo of a later addition puts back what Anything else? said.
+- Help: **Adding markers by code** has the photo reader, set names and list files; About credits ONNX Runtime and
+  PaddleOCR. `LICENSE` and `vendor/ocr/README.md` list the reader's files, sources and licences.
+- Version v318; cache `marker-studio-v318`.

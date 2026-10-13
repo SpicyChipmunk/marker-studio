@@ -174,5 +174,15 @@ test('Scan: a pasted line with nothing to read in it is counted, not dropped wit
     E,
     `(() => { const r = scanRead('B02\\nfoo bar\\nR014\\n?? !!', ''); return { codes: r.codes.length, unread: r.unread }; })()`,
   );
-  assert.deepEqual(r, { codes: 2, unread: 2 });
+  // (v317: lines of plain words beside codes are the names and noise of a tray photographed: not counted; a line with
+  // a digit in it, and any line when nothing in the paste is a code, still are)
+  assert.deepEqual(r, { codes: 2, unread: 0 });
+  assert.deepEqual(
+    J(E, `(() => { const r = scanRead('B02\\nfoo 7 bar\\nR014\\n?? !!', ''); return { codes: r.codes.length, unread: r.unread }; })()`),
+    { codes: 2, unread: 1 },
+  );
+  assert.deepEqual(
+    J(E, `(() => { const r = scanRead('foo bar\\n?? !!', ''); return { codes: r.codes.length, unread: r.unread }; })()`),
+    { codes: 0, unread: 2 },
+  );
 });

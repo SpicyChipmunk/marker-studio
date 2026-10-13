@@ -139,7 +139,8 @@ test('Scan: Add says what’s still to choose and the lines it couldn’t read, 
   });
   await scanFromMarkers(page);
   await idle(page);
-  await paste(page, 'B015\nR14\nfoo bar\nBGY24');
+  // (v317: a line of plain words beside codes isn't counted, a tray photo's names and noise; one with a digit is)
+  await paste(page, 'B015\nR14\nfoo 7 bar\nBGY24');
   await idle(page);
   assert.match(await page.textContent('#scStat'), /1 line not read/);
   assert.ok((await page.textContent('#scList')).includes('Which R14?'));

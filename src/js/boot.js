@@ -364,15 +364,28 @@ document.addEventListener('keydown', function (e) {
   }
   // markers added: step 2 says how many, and asks if there's anything else
   // (v309.1: none new, a set or caps already yours, says so, not "0 more markers added")
-  function added(n, names, del) {
+  function added(n, names, del, set) {
     var all = state.owned.size,
       // (the first markers: all the colours owned are these; a set's blender aside)
       first = setKeys([...state.owned]).length === n;
     // (v309.1: added on "Anything else?" itself (Scan's toast Open): what it said, for Undo to put back)
     snap =
       cur === 'wcStep2'
-        ? { id: cur, t2: $('wcT2').textContent, msg: $('wcDone').textContent, was: snap }
-        : { id: cur, trail: trail.slice() };
+        ? {
+            id: cur,
+            t2: $('wcT2').textContent,
+            msg: $('wcDone').textContent,
+            setIn: setIn,
+            was: snap,
+          }
+        : // (v318: and what "Anything else?" said, if Back leads there: the step it was added from came after it)
+          {
+            id: cur,
+            trail: trail.slice(),
+            setIn: setIn,
+            t2: $('wcT2').textContent,
+            msg: $('wcDone').textContent,
+          };
     // (v309.2: the Colorless Blender a set brought is said, so Home's count, which includes it, adds up)
     var bl = names && ownBlender;
     step2(
@@ -406,6 +419,10 @@ document.addEventListener('keydown', function (e) {
       [...state.owned],
       true,
     );
+    // (v318) after a set, Some are missing: its markers ticked on the chart, to untick the few lost or used up (most
+    // big collections are a set less a few, plus some singles). It stays after the chart or extra markers from there.
+    if (names || set) setIn = true;
+    $('wcMoreMiss').style.display = setIn ? '' : 'none';
   }
   // add markers (a set, a set found, the caps read) with Undo through keep; how many were new
   // (v309.1: the colours new to the collection are counted, a set's blender not; and the toast's Undo, as Markers' Add
@@ -457,14 +474,20 @@ document.addEventListener('keydown', function (e) {
     return n;
   }
   // where the markers were added from (the step, and the steps before it), for the toast's Undo
-  var snap = null;
+  var snap = null,
+    // (v318: a set added in this welcome, for Some are missing)
+    setIn = false;
   function undoneBack() {
     if (!snap) return;
+    setIn = snap.setIn;
+    $('wcMoreMiss').style.display = setIn ? '' : 'none';
+    // (what "Anything else?" said before: shown again, or where Back leads (v318: the latter had kept the undone
+    // "118 more markers added"))
+    $('wcT2').textContent = snap.t2;
+    $('wcDone').textContent = snap.msg;
+    fan([...state.owned]);
     if (snap.id === 'wcStep2') {
       // (added on "Anything else?" itself: it says again what it said before, wherever the welcome is now)
-      $('wcT2').textContent = snap.t2;
-      $('wcDone').textContent = snap.msg;
-      fan([...state.owned]);
       snap = snap.was;
       if (cur !== 'wcStep2') return;
     } else if (cur === 'wcStep2') {
@@ -557,10 +580,27 @@ document.addEventListener('keydown', function (e) {
       find: {
         brand: fBrand,
         bucket: fBucket,
-        done: function (keys) {
+        done: function (keys, named) {
           // (in the order read: Scan's list has the latest first)
           fKeys = keys.slice().reverse();
-          fRes = findSets(fBrand, fBucket, keys);
+          // (v318: or the sets a name pasted there could be, its box's or an order email's, as found)
+          fRes = named
+            ? named.map(function (i) {
+                var ks = presetMkeys(MARKER_SETS[i]),
+                  hits = keys.filter(function (k) {
+                    return ks.indexOf(k) >= 0;
+                  }).length;
+                return {
+                  i: i,
+                  n: setKeys(ks).length,
+                  hits: hits,
+                  all: hits === keys.length,
+                  of: keys.length,
+                  far: false,
+                  named: true,
+                };
+              })
+            : findSets(fBrand, fBucket, keys);
           fAt = 0;
           result();
           show('wcStepRes', false, $('wcFindNext'));
@@ -617,11 +657,17 @@ document.addEventListener('keydown', function (e) {
       step = Math.max(1, Math.ceil(ix.length / 40)),
       strip = '';
     for (var j = 0; j < ix.length; j += step) strip += '<i style="background:' + COLORS[ix[j]].hex + '"></i>';
-    $('wcTR').textContent = r.all ? 'Is this your set?' : 'The closest set';
+    $('wcTR').textContent = r.all || r.named ? 'Is this your set?' : 'The closest set';
     box.innerHTML =
       '<div class="wcrest">' +
       // (v309.1: a set further down with only some of the caps had said "Also matches")
-      (!r.all ? 'Has ' + r.hits + ' of the ' + r.of + ' caps' : fAt ? 'Also matches' : 'Best match') +
+      (r.named
+        ? 'Named in what you pasted'
+        : !r.all
+          ? 'Has ' + r.hits + ' of the ' + r.of + ' caps'
+          : fAt
+            ? 'Also matches'
+            : 'Best match') +
       '</div><div class="wcresn">' +
       // ("All Copic markers", not "Copic All Copic markers")
       esc(p.allbrand ? p.n : p.b + ' ' + p.n) +
@@ -631,19 +677,23 @@ document.addEventListener('keydown', function (e) {
       (ks.length > presetSize(p) ? ' and a Colorless Blender' : '') +
       '</div><div class="wcstrip" aria-hidden="true">' +
       strip +
-      '</div><div class="wcress">' +
-      (r.all
-        ? 'Has ' + (r.of === 1 ? 'the cap' : 'all ' + r.of + ' caps') + ' you scanned: '
-        : 'Of the caps you scanned, it has ' + r.hits + ': ') +
-      '<b>' +
-      esc(
-        codes(
-          fKeys.filter(function (k) {
-            return ks.indexOf(k) >= 0;
-          }),
-        ),
-      ) +
-      '</b>.</div>';
+      '</div>' +
+      // (v318: a set found by its name, with no caps scanned or none of them in it: nothing to say about caps)
+      (r.hits
+        ? '<div class="wcress">' +
+          (r.all
+            ? 'Has ' + (r.of === 1 ? 'the cap' : 'all ' + r.of + ' caps') + ' you scanned: '
+            : 'Of the caps you scanned, it has ' + r.hits + ': ') +
+          '<b>' +
+          esc(
+            codes(
+              fKeys.filter(function (k) {
+                return ks.indexOf(k) >= 0;
+              }),
+            ),
+          ) +
+          '</b>.</div>'
+        : '');
     // (v309.1) the caps it hasn't (a cap in no set, a colour from another set) are added too: said, on the button
     var extra = fKeys.filter(function (k) {
       return ks.indexOf(k) < 0;
@@ -671,7 +721,7 @@ document.addEventListener('keydown', function (e) {
       other.textContent =
         (fAt + 1 < list.length ? 'No: show ' : 'Back to ') +
         MARKER_SETS[nx.i].n +
-        (fAt + 1 < list.length && nx.all ? ' (also matches)' : '');
+        (fAt + 1 < list.length && nx.all && !nx.named ? ' (also matches)' : '');
   }
   $('wcFindOther').addEventListener('click', function () {
     var list = findList(fRes);
@@ -720,8 +770,9 @@ document.addEventListener('keydown', function (e) {
     show('wcStep1', false, this);
     $('wcT1').focus({ preventScroll: true });
   });
-  function oneAdded(n, del) {
-    if (n > 0 || del > 0) added(n, null, del || 0);
+  // (v318: set, a set's markers came from Scan, by its name)
+  function oneAdded(n, del, set) {
+    if (n > 0 || del > 0) added(n, null, del || 0, set);
   }
   // (v309.1) Scan's or the chart's Undo took them back out: the welcome back where they were added from (it had gone
   // on saying "2 markers added")
@@ -734,6 +785,9 @@ document.addEventListener('keydown', function (e) {
     });
   });
   $('wcOneChart').addEventListener('click', function () {
+    if (typeof openChart === 'function') openChart({ added: oneAdded, undone: oneUndone });
+  });
+  $('wcMoreMiss').addEventListener('click', function () {
     if (typeof openChart === 'function') openChart({ added: oneAdded, undone: oneUndone });
   });
   // Restore a backup: the file picker opens in the same tap (an iPhone allows it only then). The welcome stays until a
@@ -785,6 +839,7 @@ document.addEventListener('keydown', function (e) {
     mk = true;
     mkFrom = document.activeElement;
     snap = null;
+    setIn = false;
     trail = [];
     ov.classList.add('wcmk');
     ov.classList.remove('wcplain');
