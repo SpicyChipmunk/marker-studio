@@ -25,7 +25,7 @@ async function pickPage(page, buf, name = 'letter-page.png', type = 'image/png')
 }
 const letter = () => readFile(join(ROOT, 'e2e', 'fixtures', 'letter-page.png'));
 
-test('a new user: "Looks right?" with Build guide and Fix sections; a tap changes nothing; Fix sections stays', async () => {
+test('a new user: "Looks right?" with Build guide and Edit sections (Fix sections before the v318 review); a tap changes nothing; Edit sections stays', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180, storage: { 'ms-sec-tools': '0' } });
   await welcome(page, 'look');
   await idle(page);
@@ -35,8 +35,11 @@ test('a new user: "Looks right?" with Build guide and Fix sections; a tap change
   assert.equal(await page.textContent('#sfQuickN'), await page.textContent('#sfCount'));
   for (const s of ['#sfEdit', '#sfMin', '#sfBg', '#sfAdjToggle'])
     assert.equal(await shown(page, s), false, s);
-  assert.doesNotMatch(await page.innerText('#sfCtl'), /Check the sections/);
+  // (v318 review: the full step's heading is Edit sections too, as the button now is: hidden here)
+  assert.equal(await page.isVisible('#sfSecHead'), false, 'the full step\'s heading is hidden');
   assert.ok(await shown(page, '#sfFix'));
+  // (v318 review: one name for the section tools, as the Plan's ← Edit sections and Help call them)
+  assert.equal((await page.textContent('#sfFix')).trim(), 'Edit sections');
   assert.ok(await shown(page, '#sfBuild'));
   // a tap on a section: nothing left out, a word on where the tools are
   const before = await page.evaluate(() => __mstest.secState.join());
@@ -56,13 +59,14 @@ test('a new user: "Looks right?" with Build guide and Fix sections; a tap change
   await page.mouse.click(at.x, at.y);
   await idle(page);
   assert.equal(await page.evaluate(() => __mstest.secState.join()), before);
-  assert.match(await page.textContent('#msToast'), /tap Fix sections/);
+  assert.match(await page.textContent('#msToast'), /tap Edit sections/);
   // Fix sections: the tools, the keyboard on the first, kept from now on
   await page.click('#sfFix');
   assert.ok(await shown(page, '#sfEdit'));
   assert.equal(await shown(page, '#sfQuick'), false);
   assert.equal(await shown(page, '#sfFix'), false);
   assert.equal(await page.evaluate(() => document.activeElement.id), 'sfEmToggle');
+  assert.equal((await page.textContent('#sfSecHead')).trim(), 'Edit sections', 'the step is called what its button was');
   assert.equal(await page.evaluate(() => localStorage.getItem('ms-sec-tools')), '1');
   await pickPage(page, await letter(), 'again.png');
   assert.ok(await shown(page, '#sfEdit'), 'the next picture: the full step');
@@ -83,6 +87,7 @@ test('Build guide from the quick check; the Plan’s ← Edit sections opens the
   await page.click('#sfBack2');
   await idle(page);
   assert.ok(await shown(page, '#sfEdit'));
+  assert.equal((await page.textContent('#sfSecHead')).trim(), 'Edit sections', '← Edit sections lands on Edit sections');
   assert.equal(await shown(page, '#sfQuick'), false);
   // (came to fix something: not remembered as Fix sections was)
   assert.equal(await page.evaluate(() => localStorage.getItem('ms-sec-tools')), '0');

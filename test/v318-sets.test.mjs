@@ -71,3 +71,33 @@ test('a tray’s text, codes read off caps with the brand on them: no set', () =
   ])
     assert.deepEqual(sets(t), [], t);
 });
+
+// (v318.1) a tray's text with the case's HONOLULU and the Black marker's code, 120, on lines of their own: no set, and
+// the 120 is still read as a code; a box's words a line each still name the set; "Honolulu B" is the range too
+test('a tray’s text with HONOLULU and the 120 Black cap on lines of their own: a code, not Honolulu 120', () => {
+  for (const t of ['HONOLULU\nR014\n120\nY28', 'HONOLULU\n120\nR014\nY28\nBG314'])
+    assert.deepEqual(sets(t), [], t);
+  const r = JSON.parse(
+    E(
+      'JSON.stringify(scanRead("HONOLULU\\nR014\\n120\\nY28", "").codes.map((c) => c.opts.map((i) => COLORS[i].brand + " " + COLORS[i].code)))',
+    ),
+  );
+  assert.ok(
+    r.some((o) => o.indexOf('Ohuhu 120') >= 0),
+    'Ohuhu 120 Black is read',
+  );
+  // (a box's words, a line each, and the size on a line of its own: still the set)
+  assert.deepEqual(sets('OHUHU\nHONOLULU\n120\nCOLORS'), [['Honolulu 120']]);
+  assert.deepEqual(sets('OHUHU\nHONOLULU\n120'), [['Honolulu 120']]);
+  // (a set named on a line of its own above the codes: still the set)
+  assert.deepEqual(sets('Honolulu 120\nR014\nY28'), [['Honolulu 120']]);
+  // (an order's name wrapped onto the next line, with codes below)
+  assert.deepEqual(sets('Ohuhu Honolulu Markers,\n72 Colors\nR014 Y28'), [['Honolulu 72']]);
+});
+
+test('Honolulu B, the range’s second series: its size isn’t taken for a code "B 120"', () => {
+  assert.deepEqual(sets('Ohuhu Honolulu B 120 Colors'), [['Honolulu 120']]);
+  assert.deepEqual(sets('OHUHU\nHONOLULU B\n72 COLORS'), [['Honolulu 72']]);
+  // (a code split by Live Text, "R 24", still isn't a size)
+  assert.deepEqual(sets('HONOLULU R 24 Y 48'), []);
+});

@@ -84,7 +84,7 @@ function ctlCrop() {
 function edBarHTML(quick) {
   return (
     '<div class="sfbar sfedbar">' +
-    (quick ? '<button type="button" id="sfFix" class="sfghost">Fix sections</button>' : '') +
+    (quick ? '<button type="button" id="sfFix" class="sfghost">Edit sections</button>' : '') +
     '<button id="sfToPlan" class="sfghost" style="display:none" aria-label="Back to the Plan">\u2190 Plan</button><button id="sfBuild" class="sfprimary" aria-label="Build guide">Build guide \u2192</button></div>'
   );
 }
@@ -405,8 +405,8 @@ function frameColour() {
   ctlRefocus('#sfTab-' + gTab);
 }
 /* (v310) The quick check: a new picture's first Build, when the sections found raise no warning, asks only "Looks
-   right?" with Build guide, the tools behind Fix sections (the same markup, hidden, so every line kept in step
-   still finds its place). Once Fix sections is tapped, the full step stays on this device ('ms-sec-tools', set at
+   right?" with Build guide, the tools behind Edit sections (the same markup, hidden, so every line kept in step
+   still finds its place). Once Edit sections is tapped, the full step stays on this device ('ms-sec-tools', set at
    the first start of v310 for anyone with a guide in their Library: the step they know stays as it was). Lines that
    need a choice (straightened, the paper round the drawing, faint grey marks) show in both. */
 let _secTools = null;
@@ -438,7 +438,7 @@ function secQuick() {
     _secFullAt !== loadGen
   );
 }
-// Fix sections: the tools open now, and from now on
+// Edit sections (the quick check's; Fix sections before the v318 review): the tools open now, and from now on
 function secFix() {
   secToolsSet();
   renderControls();
@@ -471,8 +471,8 @@ function secQuickN() {
   _secQuickSaid = loadGen;
   sayLive(
     q
-      ? 'Looks right? We found ' + countEl.textContent + ' to colour. Build guide, or Fix sections.'
-      : 'Check the sections. ' +
+      ? 'Looks right? We found ' + countEl.textContent + ' to colour. Build guide, or Edit sections.'
+      : 'Edit sections. ' +
           warn +
           'We found ' +
           countEl.textContent +
@@ -500,7 +500,7 @@ function ctlSections() {
         : '') +
       '<h3 class="sfedhead" id="sfSecHead" tabindex="-1"' +
       (quick ? ' hidden' : '') +
-      '>Check the sections</h3><div class="sfc-note sfedline"' +
+      '>Edit sections</h3><div class="sfc-note sfedline"' +
       (quick ? ' hidden' : '') +
       '>Merge, split or add where the lines didn\u2019t come out right.</div>',
     adjust =
@@ -618,7 +618,9 @@ function ctlSections() {
     b.textContent = 'Building\u2026';
     // (the picture Build was pressed on: another guide opened meanwhile isn't built over, v307 debug)
     const g = loadGen;
-    requestAnimationFrame(function () {
+    // (v318 polish: after the screen is drawn, not in the frame's own callback: with the label points already worked
+    // out, "Building…" never showed)
+    afterPaint(function () {
       // (v307: the label points worked out in the worker first, while "Building…" shows: lptsReady, 40-render)
       lptsReady().then(function () {
         // (the first Build of a new picture blooms: 41-bloom.js)

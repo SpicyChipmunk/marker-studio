@@ -13,7 +13,7 @@ it, one marker at a time.
   an iPad or iPhone, add it to your Home Screen before you set up your markers.
 - **Private and offline.** No account, no ads, no tracking: your markers,
   palettes, guides and photos stay on your device. The camera is used only to
-  scan marker caps or match a colour.
+  scan or photograph marker caps (read on your device) or match a colour.
 - **Ohuhu and Copic only**, for now. Colours on screen are approximate.
 - **Feedback:** tap **Send feedback** at the foot of Home.
 

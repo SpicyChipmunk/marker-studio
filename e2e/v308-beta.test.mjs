@@ -231,7 +231,9 @@ test('What’s new shows only what came after the version last seen; About lists
   const about = await page.textContent('#helpAbout');
   assert.ok(about.includes('Marker Studio isn’t affiliated with or endorsed by Ohuhu or Copic.'));
   assert.ok(
-    about.includes('It works offline, and the camera is used only when you Scan caps or Match a colour.'),
+    about.includes(
+      'It works offline, and the camera is used only when you scan or photograph caps or Match a colour, and photos of caps are read on this device.',
+    ),
   );
   assert.ok(about.includes('Icons: Lucide (ISC License), some from Feather (MIT License).'));
   assert.ok((await page.isVisible('#helpFeedback')) && (await page.isVisible('#helpDiag')));
@@ -433,7 +435,7 @@ test('the welcome says it works offline and what the camera is for', async () =>
   assert.ok(await page.isVisible('#welcome'));
   assert.equal(
     (await page.textContent('.wcpriv')).trim(),
-    'Works offline. Nothing you add leaves this device; the camera is used only to Scan caps or Match a colour.',
+    'Works offline. Nothing you add leaves this device; the camera is used only to scan or photograph caps, or to Match a colour.',
   );
   assert.ok(await page.isVisible('.wcpriv'));
   assert.deepEqual(errors, []);

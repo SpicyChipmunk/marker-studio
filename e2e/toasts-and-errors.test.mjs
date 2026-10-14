@@ -52,10 +52,17 @@ test('toasts sit above the bottom bar and let taps through; progress is not a to
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await page.evaluate(() => toast('Hello there', 4000)); await idle(page);
-  const r = await page.evaluate(() => { const t = document.getElementById('msToast').getBoundingClientRect(), b = document.querySelector('.sfbar').getBoundingClientRect(); return { gap: b.top - t.bottom, pe: getComputedStyle(document.getElementById('msToast')).pointerEvents }; });
-  assert.ok(r.gap >= 0 && r.gap < 30, `just above the bar (${r.gap})`);
+  // (v318 review: in the Plan, over the foot of the picture, just above its tool row, not over the tabs)
+  const r = await page.evaluate(() => { const t = document.getElementById('msToast').getBoundingClientRect(), b = document.getElementById('sfZoomCtl').getBoundingClientRect(); return { gap: b.top - t.bottom, pe: getComputedStyle(document.getElementById('msToast')).pointerEvents }; });
+  assert.ok(r.gap >= 0 && r.gap < 30, `just above the picture's tool row (${r.gap})`);
   assert.equal(r.pe, 'none');
   await page.evaluate(() => { document.getElementById('msToast').classList.remove('on'); }); await idle(page);
+  // Colour along: just above the bottom bar, as before
+  await page.click('#sfColor'); await idle(page);
+  await page.evaluate(() => toast('Hello there', 4000)); await idle(page);
+  const c = await page.evaluate(() => { const t = document.getElementById('msToast').getBoundingClientRect(), b = [...document.querySelectorAll('.sfbar')].find((x) => x.getClientRects().length).getBoundingClientRect(); return b.top - t.bottom; });
+  assert.ok(c >= 0 && c < 30, `Colour along: just above the bar (${c})`);
+  await page.evaluate(() => { document.getElementById('msToast').classList.remove('on'); }); await page.click('#sfDoneBtn'); await idle(page);
   await page.click('.sftabbtn[data-t="share"]'); await page.click('#sfPrint');
   await page.evaluate(() => { navigator.canShare = () => false; });
   const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 20000 }), page.click('#sfPDF')]);

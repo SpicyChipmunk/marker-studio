@@ -730,6 +730,8 @@
 }
 #sfRoot .sfheldnote.sfrough > span {
   flex: 0 1 auto;
+  /* (v318 review: "2 rough spots ·" kept on one line beside Smooth them (+1 marker) on a phone) */
+  white-space: nowrap;
 }
 #sfRoot .sfheldnote.sfrough .sfheldx {
   margin-left: auto;
@@ -1101,6 +1103,16 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+}
+/* (v318 review) Colour along's question over another marker's section: "not Y28", Open V216 and Tick it */
+#sfRoot .sftip .sftipnot {
+  margin-left: auto;
+  opacity: 0.7;
+}
+#sfRoot .sftip .sftipbtn.sftipgo {
+  background: var(--accent, #6f4ef5);
+  border-color: transparent;
+  color: #fff;
 }
 #sfRoot .sftipbtn:active {
   background: rgba(255, 255, 255, 0.14);

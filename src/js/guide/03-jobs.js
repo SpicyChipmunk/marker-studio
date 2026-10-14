@@ -223,3 +223,25 @@ function rgbPack(px, n) {
   }
   return o;
 }
+
+// fn once the screen has been drawn: after the next frame. A status ("Detecting sections…", "Building…") set just before
+// work that holds the page for a while only shows if the work waits for this: a frame's own callback runs before that
+// frame is drawn (v318 polish). A page in the background draws no frames: there it goes on at once, and a second at
+// most where frames stop otherwise (a busy machine can take a few hundred ms to draw the next one)
+function afterPaint(fn) {
+  let done = false;
+  const go = function () {
+    if (!done) {
+      done = true;
+      fn();
+    }
+  };
+  if (document.hidden) {
+    setTimeout(go, 0);
+    return;
+  }
+  requestAnimationFrame(function () {
+    setTimeout(go, 0);
+  });
+  setTimeout(go, 1000);
+}

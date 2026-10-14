@@ -845,6 +845,10 @@ function scanSets(text, brand) {
     all = lines.join(' '),
     ohuhu = /\b(ohuhu|honolulu)\b/i.test(all),
     copic = /\bcopic\b/i.test(all),
+    // (v318.1) a tray's text (two or more codes read off caps): a number near the range's word on another line is a
+    // cap's code, not the set's size, unless said as colours ("HONOLULU" on the case, then R014, 120 — Ohuhu's Black —
+    // and Y28 had offered Honolulu 120 and dropped the 120 from the codes). A line of its own still says it.
+    tray = (all.match(/\b[A-Z]{1,3}\d{1,4}\b/gi) || []).length >= 2,
     out = [],
     seen = new Set();
   const by = (n) => MARKER_SETS.findIndex((p) => p.n === n);
@@ -859,6 +863,8 @@ function scanSets(text, brand) {
   };
   // the sizes in w that are among ok, as numbers standing alone, said as colours ("120 Colors") or near kw, the word
   // that says which range ("Honolulu 120", "Ciao Set 72A"): not a code read off a cap in a tray's text
+  // (strict: lines joined — the line and the next, or the whole text — of a tray's text: only a size said as colours)
+  let strict = false;
   const sizes = function (w, ok, kw) {
     const re = /\d+(?:[.,]\d+)*/g,
       near = [],
@@ -873,17 +879,19 @@ function scanSets(text, brand) {
         before = w.slice(0, i),
         after = w.slice(i + v.length);
       // (not a price, an order number's part, nor a code's number: E24, or "R 24" as a tray's text can split one)
+      // (v318.1: "Honolulu B 120" is the range's second series, not a code "B 120")
       if (
         /[.,]/.test(v) ||
         /[A-Za-z\d]$|[$£€#-]\s?$/.test(before) ||
-        (/\b[A-Z]{1,3}\s$/.test(before) && !/\b(SET|OF)\s$/.test(before)) ||
+        (/\b[A-Z]{1,3}\s$/.test(before) && !/\b(SET|OF|HONOLULU\s+B)\s$/i.test(before)) ||
         /^(-\d|\s?%)/.test(after)
       )
         continue;
       const n = +v;
       if (ok.indexOf(n) < 0) continue;
       if (/^\s*-?\s*(colou?rs?|pcs|pieces|count|ct|pack)\b/i.test(after)) col.push(n);
-      else if (at.some((x) => Math.abs(x - i) <= 24 || Math.abs(x - i - v.length) <= 24)) near.push(n);
+      else if (!strict && at.some((x) => Math.abs(x - i) <= 24 || Math.abs(x - i - v.length) <= 24))
+        near.push(n);
     }
     const r = [...new Set(col.length ? col : near)];
     // (each said as colours: a set each, "Honolulu 24 Colors and Honolulu 48 Colors"; else which one it is, unsure)
@@ -891,21 +899,39 @@ function scanSets(text, brand) {
     return r;
   };
   // the sets of the sizes found: one name each when each was said as colours, else one question
+  // (v318 review: and a set each for the letters named, "Ciao 72 Set A and Set B": sep)
   const named = function (ns, f, into) {
-    if (!ns.each) return put(ns.flatMap(f), into);
     let hit = false;
-    ns.forEach((n) => (hit = put(f(n), into) || hit));
+    const each = (names) =>
+      names.sep ? names.forEach((x) => (hit = put([x], into) || hit)) : (hit = put(names, into) || hit);
+    if (!ns.each && ns.length !== 1) return put(ns.flatMap(f), into);
+    ns.forEach((n) => each(f(n)));
     return hit;
   };
-  // a Copic set's letter: "Set A", "36A", "72 - B"
-  const letter = function (w, n) {
-    const m =
-      w.match(/\b[Ss][Ee][Tt]\s*-?\s*([A-E])\b/) || w.match(new RegExp('\\b' + n + '\\s*-?\\s*([A-E])\\b'));
-    return m ? m[1] : '';
+  // a Copic set's letters: "Set A", "36A", "72 - B", and more than one, "Set A and Set B", "Sets A & B", "72A, 72B"
+  const letters = function (w, n) {
+    const out = [],
+      add = (x) => out.indexOf(x) < 0 && out.push(x),
+      join =
+        '(?:\\s*(?:,|&|/|\\+|[Aa][Nn][Dd]|[Oo][Rr])\\s*(?:[Ss][Ee][Tt]\\s*-?\\s*|' +
+        n +
+        '\\s*-?\\s*)?[A-E]\\b)*';
+    [
+      new RegExp('\\b[Ss][Ee][Tt][Ss]?\\s*-?\\s*[A-E]\\b' + join, 'g'),
+      new RegExp('\\b' + n + '\\s*-?\\s*[A-E]\\b' + join, 'g'),
+    ].forEach(function (re) {
+      (w.match(re) || []).forEach((m) =>
+        (m.replace(/^[Ss][Ee][Tt][Ss]?|^\d+/, '').match(/\b[A-E]\b|(?<=\d)[A-E]\b/g) || []).forEach(add),
+      );
+    });
+    return out;
   };
   const lettered = function (name, n, w) {
-    const l = letter(w, n);
-    return l ? [name + ' - Set ' + l] : 'ABCDE'.split('').map((x) => name + ' - Set ' + x);
+    const ls = letters(w, n);
+    if (!ls.length) return 'ABCDE'.split('').map((x) => name + ' - Set ' + x);
+    const r = ls.map((x) => name + ' - Set ' + x);
+    r.sep = true;
+    return r;
   };
   // (whether w named a set, new or not)
   const rules = function (w, into) {
@@ -961,8 +987,12 @@ function scanSets(text, brand) {
     return hit;
   };
   lines.forEach(function (l, i) {
-    if (!rules(l, out) && i + 1 < lines.length) rules(l + ' ' + lines[i + 1], out);
+    strict = false;
+    if (rules(l, out) || i + 1 >= lines.length) return;
+    strict = tray;
+    rules(l + ' ' + lines[i + 1], out);
   });
+  strict = tray;
   if (!out.length && lines.length > 1) rules(all, out);
   return out;
 }
@@ -972,12 +1002,41 @@ let scanHandling = '',
   scanHandleId = 0;
 function scanHandle(text, loud) {
   // (v318: a set's name, in text pasted or typed: its box, an order email)
-  const sets = loud && String(text).trim() ? scanSets(text, scanFind ? scanFind.brand : '') : [];
+  // (v318 review: and read by Scan Text from a set's box, quietly: "HONOLULU 120" had added Ohuhu's 120, Black. Not in
+  // Find mode, where a set's name goes straight on to Is this your set?: only on Enter or a paste there)
+  let sets = String(text).trim() && (loud || !scanFind) ? scanSets(text, scanFind ? scanFind.brand : '') : [];
+  // (read quietly with the name of the marker whose code is the size, "HONOLULU 120 Black": that cap, not the set)
+  if (!loud && sets.length) {
+    const tw = scanWords(text),
+      zs = sets.flat().map((i) => (MARKER_SETS[i].n.match(/\d+/) || [''])[0]);
+    if (
+      COLORS.some(
+        (c) => zs.indexOf(scanKey(c.code)) >= 0 && scanWords(c.name || '').every((w) => tw.indexOf(w) >= 0),
+      )
+    )
+      sets = [];
+  }
   // (the set's size isn't a code: a box's "120 Colors" had added Ohuhu 120, Black)
   let codes = String(text);
+  const sizes = [];
   new Set(sets.flat().map((i) => (MARKER_SETS[i].n.match(/\d+/) || [''])[0])).forEach(function (z) {
+    const was = codes;
     if (z) codes = codes.replace(new RegExp('(^|[^A-Za-z0-9-])' + z + '(?![A-Za-z0-9])', 'g'), '$1');
+    // (said as colours, "120 COLORS", it's the set's size for sure: no cap offered)
+    if (
+      codes !== was &&
+      !new RegExp('\\b' + z + '\\s*-?\\s*(colou?rs?|pcs|pieces|count|ct|pack)\\b', 'i').test(text)
+    )
+      sizes.push(z);
   });
+  // (read quietly, the size could still be the cap of that code, Black's 120 beside "Ohuhu" on its barrel: offered on
+  // the set's card, beside the set, and the card said once while the camera holds still on it)
+  const offer = loud
+    ? []
+    : COLORS.map((c, i) => i).filter(
+        (i) => sizes.indexOf(scanKey(COLORS[i].code)) >= 0 && (!scanBrand || COLORS[i].brand === scanBrand),
+      );
+  if (sets.length && !loud && scanCardAgain('sets ' + sets.flat().join(','), false)) return 1;
   const n = scanHandleCodes(codes, loud, sets.length > 0);
   if (!sets.length) return n;
   if (scanFind) {
@@ -988,7 +1047,7 @@ function scanHandle(text, loud) {
     f.done(keys, [...new Set(sets.flat())]);
     return n || 1;
   }
-  scanSetCard(sets, n > 0, null);
+  scanSetCard(sets, n > 0, null, offer);
   return n || 1;
 }
 // (v318) a set added to the list by its name since the list was last added or cleared: the welcome offers Some are
@@ -997,7 +1056,8 @@ let scanSetIn = false;
 // the card for the sets named: a button for each, asked first (a set's markers are a lot to put in the list unasked,
 // and the name may be a set you're giving away). codes: codes were read along with it. took: after one was added, what
 // it added, with the other names' buttons still there
-function scanSetCard(groups, codes, took) {
+// offer: markers whose code is the size read (read quietly: it could be that cap), each a button of its own
+function scanSetCard(groups, codes, took, offer) {
   const full = (p) => (p.allbrand ? p.n : p.b + ' ' + p.n),
     one = groups.length === 1 && groups[0].length === 1,
     choices = [];
@@ -1019,11 +1079,7 @@ function scanSetCard(groups, codes, took) {
       const p = MARKER_SETS[si],
         part = base ? p.n.slice(base.length).replace(/^\s*-?\s*/, '') : '';
       choices.push({
-        label: part
-          ? part
-          : one && !took
-            ? 'Add its ' + presetSize(p) + ' markers to the list'
-            : 'Add ' + p.n,
+        label: part ? part : one && !took ? 'Add all ' + presetSize(p) + ' to the list' : 'Add ' + p.n,
         go: function () {
           scanSetTake(
             si,
@@ -1060,16 +1116,25 @@ function scanSetCard(groups, codes, took) {
       b = c.slice(0, c.indexOf(' - ') >= 0 ? c.indexOf(' - ') : c.lastIndexOf(' '));
     return b ? a.b + ' ' + b + ': which one?' : 'Which set is yours?';
   };
+  // (v318 review: said as a question in plain words, "120 markers: a set's name, read" had been terse)
   scanSay(
     'ask',
-    one ? full(p0) : groups.length === 1 ? whichOf(groups[0]) : groups.length + ' sets named',
-    (one
-      ? presetSize(p0) + ' markers: a set’s name, read'
+    one
+      ? 'Found a set: ' + full(p0)
       : groups.length === 1
-        ? 'A set’s name, read: not which one'
-        : 'Add each you have') + (codes ? ' · its codes are in the list' : ''),
+        ? whichOf(groups[0])
+        : 'Found ' + groups.length + ' sets',
+    (one
+      ? 'Add all ' + presetSize(p0) + ' of its markers to the list?'
+      : groups.length === 1
+        ? 'Found a set’s name, but not which one: choose yours'
+        : 'Add each one you have') +
+      (codes ? ' · The codes read with it are in the list' : '') +
+      (offer && offer.length ? ' · or a cap: ' + offer.map((i) => COLORS[i].code).join(', ') + '?' : ''),
     -1,
-    choices,
+    choices.concat(
+      (offer || []).map((i) => ({ i: i, how: '', label: 'Add ' + COLORS[i].code + ' ' + COLORS[i].name })),
+    ),
   );
   scanBeep('same');
 }
@@ -1100,9 +1165,16 @@ function scanHandleCodes(text, loud, named) {
   let n = 0;
   // several at once (a pasted list): into the list together, then said once
   // (another brand's codes read along with codes of the brand chosen, or in a list, are questions in the list)
-  const others = r.many || r.codes.length ? r.other : [],
+  // (v318 review: not in Find mode, whose list is of the brand chosen there: another brand's marker in it matches no set.
+  // Left out, and said)
+  const others = scanFind ? [] : r.many || r.codes.length ? r.other : [],
+    otherOut = scanFind && (r.many || r.codes.length) ? r.other.length : 0,
     many =
-      r.codes.length + (r.many ? r.flips.length + r.names.length + r.names2.length : 0) + others.length > 1;
+      r.codes.length +
+        (r.many ? r.flips.length + r.names.length + r.names2.length : 0) +
+        others.length +
+        otherOut >
+      1;
   let took = 0,
     mine = 0,
     asked = 0;
@@ -1224,6 +1296,7 @@ function scanHandleCodes(text, loud, named) {
           allMine ? (took === 1 ? 'Already in your collection' : 'All already in your collection') : '',
           took && asked ? asked + ' to choose below' : '',
           same ? same + ' already in the list' : '',
+          otherOut ? otherOut + ' not ' + scanFind.brand + ', left out' : '',
           r.unread ? r.unread + (r.unread === 1 ? ' line' : ' lines') + ' not read' : '',
         ]
           .filter(Boolean)
@@ -1274,6 +1347,25 @@ function scanHandleCodes(text, loud, named) {
   if (r.other.length) {
     if (scanCardAgain('other ' + r.other.join(','), loud)) return 0;
     const one = r.other.length === 1 ? r.other[0] : -1;
+    // (v318 review) Find mode: the set looked for is the brand chosen there, so no Add
+    if (scanFind) {
+      scanSay(
+        'none',
+        one >= 0
+          ? COLORS[one].brand + ' ' + scanName(one)
+          : COLORS[r.other[0]].code + ': another brand’s code',
+        'Not ' +
+          (scanFind.brand === 'Ohuhu' ? 'an' : 'a') +
+          ' ' +
+          scanFind.brand +
+          ' code: this looks for ' +
+          scanFind.brand +
+          ' sets',
+        one,
+      );
+      scanBeep('none');
+      return 0;
+    }
     // (v298: "Ohuhu E19 Dried Sage", not "E19 is a Ohuhu code")
     scanSay(
       'ask',
@@ -1328,6 +1420,16 @@ function scanRender() {
                 esc(scanName(o.i)) +
                 ' · ' +
                 esc(COLORS[o.i].brand) +
+                // (v318.1: an answer that's the marker by its old code, or the code upside down, says so: "Which R14?"
+                // had offered RV18 Bubblegum with no word of why. v318 audit: "was", as the marker picker says it, and
+                // the old code as shown everywhere, CGII00 not CGⅡ00)
+                (o.how === 'old'
+                  ? ' · <i>' +
+                    (oldCode(COLORS[o.i]) ? 'was ' + esc(oldCode(COLORS[o.i])) : 'by its old code') +
+                    '</i>'
+                  : o.how === 'upside'
+                    ? ' · <i>upside down</i>'
+                    : '') +
                 // (v305: which of the answers you have)
                 (state.owned.has(mkey(o.i)) ? ' · <i>already yours</i>' : '') +
                 '</span></button>',
@@ -1364,6 +1466,8 @@ function scanRender() {
     })
     .join('');
   $('scEmpty').hidden = scanList.length > 0;
+  const card = list.closest('.sccard');
+  if (card) card.classList.toggle('scsome', scanList.length > 0);
   // (v309: the number of markers read big, to see it go up cap after cap from across the table)
   $('scCount').innerHTML = scanList.length
     ? // (each part kept on one line: "2 to / choose" had broken in two on a phone, v300)
@@ -1423,6 +1527,16 @@ function scanFindNote(marks) {
         ? ' ' + (full.length - 1) + ' other sets have these too.'
         : '') +
     more;
+}
+// (v318 review) text too long to be a list of markers: 200,000 characters, ten times a list of every Ohuhu and Copic
+// code with its name; reading that much takes about a second in Chrome on a desktop, more on an iPad
+const SCAN_MAX = 200000;
+function scanTooBig(text, what) {
+  if (String(text).length <= SCAN_MAX) return false;
+  scanSay('none', 'Too much text for a list of markers', what + ': paste or open just the list', -1);
+  scanBeep('none');
+  scanFocusBox();
+  return true;
 }
 function scanFocusBox() {
   const b = $('scBox');
@@ -1507,7 +1621,7 @@ function openScan(opts) {
   // (v318) from Photograph your caps: straight on to the reader, in the same tap (the photo picker opens only from one),
   // and no keyboard
   if (o.photo && !scanFind && typeof ocrCan === 'function' && ocrCan()) {
-    ocrOpenTap();
+    ocrOpenTap('entry');
     return;
   }
   // (straight into the box: what's done here is typing or Scan Text, which the box's own menu starts)
@@ -1564,13 +1678,23 @@ function closeScan() {
     $('scTitle').textContent = 'Scan or type codes';
     scanRender();
   }
-  openerBack(scanOpener);
+  // (v318 review) what opened Scan gone (the toast's Open, which went with its toast): the keyboard's place on Markers'
+  // Add markers, or on the welcome's step, not lost to the page
+  const vis = (e) => !!e && e.isConnected && e.getClientRects().length > 0;
+  let back = scanOpener;
+  if (back && back.closest && back.closest('#msToast')) back = null;
+  if (!vis(back) && !(back && back.closest && back.closest('#mkAddCard')))
+    back = [$('mkAddBtn'), ...document.querySelectorAll('#welcome .wctitle[tabindex]')].find(vis) || back;
+  openerBack(back);
   scanOpener = null;
 }
 // (v309) Find my set: the caps read (with any left in the box) go back to the welcome
 function scanFindDone() {
   const asks0 = scanAsks();
   scanFlushBox(true);
+  // (v318.1: a set's name left in the box has handed the caps on and closed Scan already, scanHandle; the list here is
+  // now the one kept for Add, and Find's own is over: nothing more to hand on, no "Something went wrong")
+  if (!scanFind) return;
   if (scanAsks() > asks0) return;
   const keys = scanList.filter((e) => !e.ask).map((e) => mkey(e.i));
   if (!keys.length) return;
@@ -1720,6 +1844,7 @@ function scanAdd() {
     if (f.size > 2e6) return no('Too big for a list of markers');
     const rd = new FileReader();
     rd.onload = function () {
+      if (scanTooBig(String(rd.result || ''), f.name)) return;
       scanHandle(String(rd.result || '').replace(/^\uFEFF/, ''), true);
       scanRender();
       scanFocusBox();
@@ -1802,6 +1927,17 @@ function scanAdd() {
           scanBrand ? 'By the brand chosen: ' + scanBrand : 'Either brand',
           -1,
         );
+      // (v318 review: else the brand now reading, said; the card had gone on naming the brand before, "By the brand
+      // chosen: Ohuhu" with Copic pressed, or "Set to Ohuhu, the brand of all your markers")
+      else
+        scanSay(
+          '',
+          'Ready',
+          scanBrand
+            ? scanBrand + ' codes only · Either brand reads both'
+            : 'Ohuhu and Copic codes, either brand',
+          -1,
+        );
       scanFocusBox();
     }
   });
@@ -1827,6 +1963,28 @@ function scanAdd() {
       });
     },
   );
+  // (v318 review) the keyboard or Scan Text's camera up: the box has focus and the visible part of the page is
+  // shorter than the page by more than a toolbar (an iPad's and an iPhone's keyboard leave the page its height and
+  // shorten what's seen, visualViewport); the card drops what's not needed while scanning (11-scan.css)
+  const kb = function () {
+    const vv = window.visualViewport,
+      card = ov.querySelector('.sccard'),
+      up =
+        !!vv &&
+        document.activeElement === box &&
+        document.documentElement.clientHeight - vv.height * (vv.scale || 1) > 150;
+    if (card.classList.contains('sckb') !== up) {
+      card.classList.toggle('sckb', up);
+      // (the box kept in view as what's above it goes)
+      if (up) box.scrollIntoView({ block: 'nearest' });
+    }
+  };
+  box.addEventListener('focus', kb);
+  box.addEventListener('blur', function () {
+    // (after the tap that took focus has landed: what's under the finger doesn't move before it lands)
+    setTimeout(kb, 0);
+  });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', kb);
   // sound can only start from a tap
   box.addEventListener('pointerdown', function () {
     try {
@@ -1998,6 +2156,9 @@ function scanAdd() {
     const text = e.clipboardData && e.clipboardData.getData('text');
     if (!text) return;
     e.preventDefault();
+    // (v318 review) more text than any list of markers (a whole web page copied): said, not read, as a file too big is;
+    // reading it froze the page for seconds
+    if (scanTooBig(text, 'What was pasted')) return;
     clearTimeout(scanStill);
     // (what Scan Text had put in the box, waiting to hold still, is read first and cleared; v299: it was left there)
     if (waiting && box.value.trim()) {

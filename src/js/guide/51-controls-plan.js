@@ -8,20 +8,22 @@ function ctlPlan() {
     for (var _l in assignData.assign) _hx.push(assignData.assign[_l].hex);
     curName = evoName(_hx, Date.now(), usedGuideNames());
   }
+  // (v318.1: said shorter, its words of filler gone (palette, main colour, mood): with large text it had covered
+  // the most of the picture)
   const _snote = surpriseNote
     ? HARM[genHarmony] +
-      ' palette \u00b7 ' +
+      ' \u00b7 ' +
       (family === 'random'
-        ? 'Random, main colour ' + surpriseRoles()
+        ? 'Random: ' + surpriseRoles()
         : gradShape.charAt(0).toUpperCase() +
           gradShape.slice(1) +
           (dir < 0 ? ' (reversed)' : '') +
-          ' \u00b7 ' +
-          LOOK_LABEL[look] +
+          ', ' +
+          LOOK_LABEL[look].toLowerCase() +
           ' look') +
       ' \u00b7 ' +
       MOODS[emphasis].label +
-      ' mood \u00b7 ' +
+      ' \u00b7 ' +
       (lastPoolN || limitN) +
       ' markers'
     : '';

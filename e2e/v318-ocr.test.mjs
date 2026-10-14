@@ -83,9 +83,9 @@ test('the card, its consent and Not now; not in Find mode; the reader downloaded
   await page.waitForSelector('#ocrGet');
   assert.match(
     await page.textContent('#ocrView'),
-    /^Read your caps from photosThe reader works on this device: your photos never leave it\. It’s a one-time download of about 22 MB, kept for offline use\./,
+    /^The reader works on this device: your photos never leave it\. It’s a one-time download of about 22 MB, kept for offline use\./,
   );
-  assert.equal(await page.textContent('#scTitle'), 'Read photos of your caps');
+  assert.equal(await page.textContent('#scTitle'), 'Photograph your caps');
   assert.equal(await page.isVisible('#scBox'), false, 'the list and box behind it');
   await page.click('#ocrNo');
   assert.ok(await page.isVisible('#scBox'));
@@ -165,12 +165,19 @@ test('a photo read: its codes join the list as they’re read; Done says so; Und
   await idle(page);
   assert.deepEqual(await list(page), []);
   assert.match(await page.textContent('#scStat'), /Photo taken back out/);
+  // (v318 review: the keyboard's place on the card, not in the box, whose focus in a tap opens an iPad's keyboard)
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'ocrOpen');
   // again (the reader known to be stored: the card's tap goes straight to the photo), and Done
   await read(page, t, '#ocrOpen');
   await page.waitForSelector('#ocrDone', { timeout: 120000 });
   await page.click('#ocrDone');
   await idle(page);
   assert.match(await page.textContent('#scStat'), /^✓From the photo: \d+ added to the list/);
+  assert.equal(
+    await page.evaluate(() => document.activeElement.id),
+    'scAdd',
+    'on Add, no keyboard over the list',
+  );
   assert.ok((await list(page)).length >= 22);
   assert.deepEqual(errors, []);
 });
@@ -209,6 +216,27 @@ test('Stop: it lands within a moment, not at the end of a look; what was read st
   await page.click('#scClose');
   await idle(page);
   assert.equal(await page.evaluate(() => ocrW), null, 'the worker ended');
+  // (v318 review) Scan closed while a photo's read: the worker ended, and the next photo not read gently for it (the
+  // flag that says a read was cut short by running out of memory had stayed)
+  await page.evaluate(() => openScan());
+  await idle(page);
+  await read(page, t, '#ocrOpen');
+  await page.waitForFunction(
+    () => ocrRun && ocrRun.sent && localStorage.getItem('ms-ocr-busy') === '1',
+    null,
+    {
+      timeout: 60000,
+      polling: 20,
+    },
+  );
+  await page.click('#scClose');
+  await idle(page);
+  assert.equal(await page.evaluate(() => ocrW), null, 'the worker ended mid-read');
+  assert.equal(
+    await page.evaluate(() => localStorage.getItem('ms-ocr-busy')),
+    null,
+    'not taken for running out of memory',
+  );
   assert.deepEqual(errors, []);
 });
 
@@ -255,6 +283,9 @@ test('several photos chosen at once: read in turn, a marker in two photos listed
   );
   await page.waitForSelector('#ocrDone', { timeout: 120000 });
   assert.match(await page.textContent('#ocrSay'), /^2 photos: \d+ markers added to the list/);
+  // (v318 review: what a screen reader hears, in a live region kept across the photos, not one made with each)
+  assert.match(await page.textContent('#ocrLive'), /^2 photos: \d+ markers added to the list/);
+  assert.equal(await page.evaluate(() => !!document.getElementById('ocrLive').closest('#ocrView')), false);
   assert.match(await page.textContent('#ocrSum'), /Photo 1: \d+ added.*Photo 2: \d+ added/);
   const got = await list(page);
   assert.equal(new Set(got).size, got.length, 'each marker once');
@@ -283,11 +314,12 @@ test('several photos chosen at once: read in turn, a marker in two photos listed
     [a.jpg, b.jpg],
   );
   await page.waitForSelector('#ocrDone', { timeout: 60000 });
-  assert.equal(await page.textContent('#ocrSay'), '1 photo: no new codes read · stopped');
+  // (v318 review: said as the one photo it stopped at, the other not read)
+  assert.equal(await page.textContent('#ocrSay'), 'No new codes read · stopped · the other photo not read');
   assert.equal(await page.$('#ocrUndo'), null);
   await page.click('#ocrDone');
   await idle(page);
-  assert.match(await page.textContent('#scStat'), /From 1 photo: nothing new/);
+  assert.match(await page.textContent('#scStat'), /From the photo: nothing new/);
   assert.deepEqual(await list(page), []);
   assert.deepEqual(errors, []);
 });
@@ -306,7 +338,7 @@ test('Photograph your caps: first in the welcome’s one by one, and in Markers�
   ]);
   await page.click('#wcOnePhoto');
   await page.waitForSelector('#ocrGet');
-  assert.equal(await page.textContent('#scTitle'), 'Read photos of your caps');
+  assert.equal(await page.textContent('#scTitle'), 'Photograph your caps');
   assert.notEqual(
     await page.evaluate(() => document.activeElement && document.activeElement.id),
     'scBox',

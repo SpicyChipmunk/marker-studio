@@ -534,6 +534,8 @@ function alongClick(e) {
 }
 // open a marker's row (k) or close the open one (null); found: a press and hold on the picture chose it
 function alongOpen(k, found) {
+  // (v318 review: the question over another marker's section is about the row that was open)
+  if (tipEl && tipEl.classList.contains('sftipask')) hideTip();
   alongSet(k);
   // (a row tapped after a two-brand search: that marker is the one in your hand, v307)
   if (k && alFind) alFind.two = null;

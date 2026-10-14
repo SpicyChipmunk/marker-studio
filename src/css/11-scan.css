@@ -410,6 +410,13 @@
     display: none;
   }
 }
+/* (v318 review) while the keyboard or Scan Text's camera is up (scan.js scanKb): the paste line and the photo card go,
+   and the steps once the list has a marker, so what was just read and the count stay above it */
+.sccard.sckb .sclens,
+.sccard.sckb .ocrbtn,
+.sccard.sckb.scsome .schow {
+  display: none !important;
+}
 @media (pointer: coarse) and (max-width: 560px) {
   .schow {
     grid-template-columns: 1fr;
@@ -437,8 +444,14 @@
   width: 100%;
   margin: 2px 0;
 }
-.sccard.ocron > :not(.mhead):not(#ocrView) {
+.sccard.ocron > :not(.mhead):not(#ocrView):not(#ocrLive) {
   display: none !important;
+}
+/* (v318 review) a photo shown wider where the screen allows, an iPad's, so each box's code shows over it (in the card's
+   480 px, never: the labels need the photo 500 px wide). Only when that's so (photo-read.js ocrWide): a photo taken
+   upright on an iPad held sideways is as narrow either way, and the card had widened for nothing */
+.sccard.ocron.ocrwide {
+  max-width: 760px;
 }
 .ocrv {
   display: flex;

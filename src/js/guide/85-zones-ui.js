@@ -31,6 +31,7 @@ function zoneEditStart(id, kb) {
     id = z.id;
   }
   if (paintOn) setPaint(false);
+  photoSettleNow();
   photoEndAlign();
   shadeFlatMode = false;
   lockMode = false;
@@ -302,6 +303,7 @@ function zoneChipEl(id) {
 }
 // the Pattern and Colours tabs edit zone id now: its sections flash on the picture
 function zoneSwitch(id) {
+  photoSettleNow();
   zoneEditEnd(true);
   zoneSelect(id);
   planSync();

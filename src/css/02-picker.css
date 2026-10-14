@@ -1320,6 +1320,10 @@ button:focus-visible {
   display: inline-block;
   margin-left: 5px;
 }
+/* (v318 review) under Add markers, not tucked up into it: the button had taken the link's top 12px (a 32px tap area) */
+#mkAddBtn:not([style*='none']) + .mkjump {
+  margin-top: 0;
+}
 /* (v300) Markers' top on a wide screen: the search with Owned / Unowned / All / To buy beside it, then Random and Match
    a colour with the line about the view and the link down to the tools (Order on a row of its own under them), so
    the markers start higher. Elsewhere, and on a phone, the wrappers are no boxes and everything is as it was */
@@ -1553,6 +1557,11 @@ button:focus-visible {
   #segs {
     grid-template-columns: none;
     grid-auto-flow: column;
+  }
+  /* (v318 review: 44px wide where the row has room, as every other choice; 34 on a phone, where 7 of them and the
+     label fill the width, their tap areas meeting: below) */
+  #segs button {
+    width: 44px;
   }
 }
 /* (beside the palette, the column is narrow again: up to 9 on a row, else two even rows, as on a phone) */

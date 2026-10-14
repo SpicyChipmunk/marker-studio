@@ -35,6 +35,7 @@ function ctlWirePatternFamily() {
     _fam.addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (b) {
+        photoSettleNow();
         const was = family;
         family = b.dataset.v;
         if (family !== 'photo') delete photoWait[pwKey()];

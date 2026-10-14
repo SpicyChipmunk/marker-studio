@@ -93,6 +93,16 @@ export async function openApp({ width = 390, height = 844, storage = null, userA
   // them kept every photo from opening there — the photo tests were left out on WebKit for it until v294)
   await ctx.route((u) => !u.href.startsWith(server.url) && !/^(blob|data):/.test(u.href), (r) => r.abort());
   const page = await ctx.newPage();
+  // (v318.1) a reload waits for the app's history to settle first: a layer closed (or, with Back across the tabs, a
+  // tab switched) takes its entry back a frame later, and a reload begun meanwhile is given up by the browser
+  // (net::ERR_ABORTED)
+  const reload0 = page.reload.bind(page);
+  page.reload = async function (opts) {
+    try {
+      await page.waitForFunction(() => !(window.__histBusy && window.__histBusy()), null, { timeout: 5000 });
+    } catch (_) {}
+    return reload0(opts);
+  };
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(server.url);

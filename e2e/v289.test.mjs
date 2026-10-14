@@ -337,9 +337,14 @@ test('Back closes what is open first: the Library, a sheet, Focus mode, then Col
   await back();
   assert.equal(await page.evaluate(() => __mstest.sfmode), 'guide', 'then Colour along, back to the Plan');
   assert.equal(page.url(), url);
-  // closed in the app, its entry goes too: nothing left for Back to close
+  // closed in the app, its entry goes too: only the Guide tab's own is left (v318 review: the tabs sit one Back step
+  // above Home), and Back from the Plan goes Home; then nothing is left for Back to close
   await page.evaluate(() => openLibrary()); await idle(page); await page.waitForTimeout(100);
   await page.click('#savedClose'); await idle(page); await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(() => history.state && history.state.msLayer), 1);
+  await back();
+  assert.equal(await page.evaluate(() => state.mode), 'home', 'then the Guide tab, back to Home');
+  assert.equal(page.url(), url);
   assert.equal(await page.evaluate(() => history.state && history.state.msLayer), null);
   assert.deepEqual(errors, []);
 });

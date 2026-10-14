@@ -163,6 +163,76 @@
     } catch (e) {}
     footSync();
   }
+  // (v318 review) the answers go in a backup and come back with it: moving from a Safari tab to the Home Screen app
+  // (back up, then restore there) had left them behind, and the tester's id with them. null when there's nothing yet.
+  function clean(o) {
+    if (!o || typeof o !== 'object' || typeof o.id !== 'string' || !/^T[A-Z0-9]{1,12}$/.test(o.id))
+      return null;
+    const t = {},
+      q = {},
+      str = function (x, n) {
+        return typeof x === 'string' ? x.slice(0, n) : '';
+      };
+    if (o.t && typeof o.t === 'object')
+      TASKS.concat(EXTRAS).forEach(function (x) {
+        const a = o.t[x.k];
+        if (!a || typeof a !== 'object') return;
+        const r = RATES.some((y) => y[0] === a.r) ? a.r : '',
+          n = str(a.n, 1000);
+        if (r || n) t[x.k] = { r: r, n: n, v: str(a.v, 20) };
+      });
+    if (o.q && typeof o.q === 'object')
+      QS.forEach(function (x) {
+        const v = str(o.q[x[0]], 1500);
+        if (v) q[x[0]] = v;
+      });
+    if (NEXT.some((y) => y[0] === (o.q && o.q.next))) q.next = o.q.next;
+    return {
+      id: o.id,
+      name: str(o.name, 60),
+      t: t,
+      q: q,
+      sends: Math.max(0, Math.min(999, +o.sends || 0)),
+      sig: str(o.sig, 20000),
+    };
+  }
+  function blank(x) {
+    return !x.name && !Object.keys(x.t).length && !Object.keys(x.q).length && !x.sends;
+  }
+  window.testerBackup = function () {
+    load();
+    const c = clean(st);
+    return c && !blank(c) ? c : null;
+  };
+  // the backup's answers: all of them on a device with none; else only those not answered here (yours stay)
+  window.testerRestore = function (o) {
+    const b = clean(o);
+    if (!b || blank(b)) return 0;
+    load();
+    const here = clean(st);
+    let n = 0,
+      took = false;
+    if (!here || blank(here)) {
+      st = b;
+      // (v318 audit: kept even with no answers, only a name or the sends: the tester's id with them)
+      took = true;
+      n = Object.keys(b.t).length + Object.keys(b.q).length;
+    } else {
+      for (const k in b.t)
+        if (!(st.t[k] && (st.t[k].r || st.t[k].n))) {
+          st.t[k] = b.t[k];
+          n++;
+        }
+      for (const k in b.q)
+        if (!st.q[k]) {
+          st.q[k] = b.q[k];
+          n++;
+        }
+      if (!st.name && b.name) st.name = b.name;
+    }
+    if (n || took) save();
+    return n;
+  };
   // what's been answered, to tell a change since the last send
   function sig() {
     return JSON.stringify([st.t, st.q, st.name]);
@@ -507,9 +577,24 @@
       if (b) b.disabled = off;
     });
   }
+  // (v318 review) anything to send: a task answered or noted, a last question, or a name
+  function anyAnswer() {
+    const some = function (o) {
+      return Object.keys(o || {}).some(function (k) {
+        const v = o[k];
+        return v && (typeof v === 'object' ? !!(v.r || (v.n && v.n.trim())) : !!String(v).trim());
+      });
+    };
+    return some(st.t) || some(st.q) || !!(st.name && st.name.trim());
+  }
   function sendResults() {
     load();
     if (sending) return;
+    // (v318 review: Send results at the top, tapped before answering anything, sent six "not yet"s)
+    if (!anyAnswer()) {
+      said('Nothing to send yet: answer a task first (Easy, OK, Hard or Didn’t try), then Send results.');
+      return;
+    }
     if (!formTarget()) return shareResults();
     sending = true;
     sendBtns(true);
@@ -584,6 +669,51 @@
     row.appendChild(footBtn);
     foot.insertAdjacentElement('afterend', row);
   }
+  // (v318 review, prototype) a card on Home, under its cards, while there are tasks to answer or send: how
+  // many are done and the next one ("Next: 2 · Make a guide"), or "ready to send";
+  // it opens the tasks at that one. Gone once they're sent as they are (the line at the foot stays, as a way in)
+  let card = null;
+  {
+    // (under the Markers, Palette and Library cards: above them, on an iPad the cards no longer lined up with the
+    // start card beside them)
+    const at = D.querySelector('#homeView .homegrid');
+    if (at) {
+      card = D.createElement('button');
+      card.type = 'button';
+      card.id = 'homeTaskCard';
+      card.className = 'tthomecard';
+      card.setAttribute('data-tasks', '');
+      at.insertAdjacentElement('afterend', card);
+    }
+  }
+  function cardSync(n, all, sent) {
+    if (!card) return;
+    card.hidden = sent;
+    if (sent) return;
+    const nx = TASKS.find(function (x) {
+      return !(st.t[x.k] && st.t[x.k].r);
+    });
+    card.classList.toggle('ttready', all);
+    card.innerHTML =
+      '<span class="ttcn" aria-hidden="true">' +
+      n +
+      '/' +
+      TASKS.length +
+      '</span><span class="ttct"><b>Beta tester tasks</b><span>' +
+      (all
+        ? 'All ' + TASKS.length + ' answered: ready to send'
+        : 'Next: ' + (TASKS.indexOf(nx) + 1) + ' \u00b7 ' + nx.t) +
+      ' <span aria-hidden="true">\u203a</span></span></span>';
+    card.setAttribute(
+      'aria-label',
+      'Beta tester tasks, ' +
+        n +
+        ' of ' +
+        TASKS.length +
+        ' answered. ' +
+        (all ? 'Ready to send.' : 'Next: ' + nx.t + '.'),
+    );
+  }
   // "Tester tasks · 2 of 6"; "ready to send" once all six are answered and not sent as they are; "sent" after
   function footSync() {
     if (!footBtn) return;
@@ -594,6 +724,7 @@
     footBtn.textContent =
       'Tester tasks · ' + (sent ? 'sent' : all ? 'ready to send' : n + ' of ' + TASKS.length);
     footBtn.classList.toggle('ttready', all && !sent);
+    cardSync(n, all, sent);
   }
   footSync();
 
@@ -636,6 +767,9 @@
         return;
       }
       const v = context('Feedback');
+      // (v318.1: not the name given in Tester tasks, which was given for the results; the tester number made on this
+      // device still links a note to them in the sheet)
+      v.Name = '';
       v.Message =
         text +
         '\n\n' +

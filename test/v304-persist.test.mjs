@@ -56,11 +56,13 @@ test('v304 D8: in a Safari tab, due on a visit after five days or more away, for
   assert.equal(boot(UA.ipad, changed, { ...at, 'ms-last-visit': String(Date.now() - 4 * DAY) }).why(), null, 'four days away');
   assert.equal(boot(UA.ipad, changed, at).why(), null, 'no visit before this one');
   assert.equal(boot(UA.macChrome, changed, { ...at, 'ms-last-visit': String(Date.now() - 6 * DAY) }).why(), null, 'not Chrome');
-  // markers only (changed since the backup): the 14-day rule as before
-  assert.equal(boot(UA.ipad, [], { ...at, 'ms-backup-sig': 'old', 'ms-last-visit': String(Date.now() - 6 * DAY) }).why(), null);
-  // nothing changed since the backup: nothing to say
-  const safe = [guide(5, { done: 2, ts: Date.now() - 9 * DAY, bk: Date.now() - 8 * DAY })];
-  assert.equal(boot(UA.ipad, safe, { ...at, 'ms-last-visit': String(Date.now() - 6 * DAY) }).why(), null);
+  // markers only (changed since the backup): due too (v318.1; it had waited for the 14-day rule)
+  assert.equal(boot(UA.ipad, [], { ...at, 'ms-backup-sig': 'old', 'ms-last-visit': String(Date.now() - 6 * DAY) }).why(), 'gap');
+  // nothing changed since the backup: nothing to say (v318.1: the markers' fingerprint the backup kept, as theirs count)
+  const safe = [guide(5, { done: 2, ts: Date.now() - 9 * DAY, bk: Date.now() - 8 * DAY })],
+    s0 = boot(UA.ipad, safe, { ...at, 'ms-last-visit': String(Date.now() - 6 * DAY) });
+  s0.ls.setItem('ms-backup-sig', s0.a.__eval('dataSig()'));
+  assert.equal(s0.why(), null);
   // this visit is noted for the next one
   const b = boot(UA.ipad, changed, at);
   assert.ok(Math.abs(+b.ls.getItem('ms-last-visit') - Date.now()) < 5000);

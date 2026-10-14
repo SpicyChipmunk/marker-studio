@@ -187,8 +187,12 @@ test('the stored section map stays byte-identical through a save, and a section 
       if (L[i] > 0) {
         const was = L[i];
         L[i] = -1;
+        // (an edit in place, said as Edit sections says its own: v318 review keeps the map's signature in the Plan
+        // and Colour along until an edit lets it go)
+        t.labels = L;
         const u = t.lmapURL();
         L[i] = was;
+        t.labels = L;
         return u;
       }
     return '';

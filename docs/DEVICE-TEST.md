@@ -18,7 +18,7 @@ sheet, paper, and how it feels.
 ## 1. Update, install, offline (3 min)
 
 - [ ] ★ Open the Home Screen app → "Marker Studio was updated" shows, **Reload** → Home's foot says the new version
-      (e.g. "v318 · Beta").
+      (e.g. "v318.1 · Beta").
 - [ ] ★ Airplane mode on, close the app fully, reopen → it opens, your markers and guides are there; open a guide and
       make a PDF. Airplane mode off.
 - [ ] In a Safari **Private** tab, open the app's address → the welcome shows; Share › Add to Home Screen → the icon is
@@ -101,7 +101,43 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318
+## New in this release: v318.1
+
+Most of v318.1 is fixes found by a deep review and checked in Chromium and Safari's engine. These are the parts only a
+real iPad (or iPhone) can show.
+
+- [ ] ★ **Test print first:** print the sample's PDF with **Page + key** (Share & print › Print or save PDF), colour
+      a few of its smallest sections with your palest markers (light yellows, blush pinks) → the darker grey of the
+      smallest codes doesn't show through. (If it does, say so: they go back to the lighter grey.) The same codes are
+      easier to read than before.
+- [ ] ★ **Colour along**, a marker's row open → tap a section of another marker → a small question beside it: **Open
+      …** / **Tick it**; nothing ticked until you choose. Tap it again → it closes. A done one says **Untick it**. It
+      feels right under a finger, not in the way.
+- [ ] ★ **Taps on the picture:** tick sections quickly with a fingertip, a little carelessly → each tap ticks (a small
+      roll of the finger no longer counts as a drag); zoomed in, small pans still move the picture.
+- [ ] ★ **Scan with the keyboard up:** Markers › + Add markers › Scan or type codes, type a code and Enter → the "✓
+      added" card and the count stay in view above the keyboard (the paste line and photo card put away while it's up).
+      The same with the iPad on its side, and with AutoFill › Scan Text's camera.
+- [ ] ★ **Back in a Safari tab** (not the Home Screen app): Markers, then swipe in from the left edge → Home, still in
+      the app; once more → Safari's previous page. On the Plan, panning the picture near its left edge doesn't go Home.
+      On the welcome: **I have a set**, then the swipe → back on the first step.
+- [ ] ★ **Key + reference** with Codes, printed → page 1 is your picture in colour with dark codes you can read at arm's
+      length beside the page you're colouring; small sections in close-ups after it, then the key. Labels **None** →
+      one page, the picture beside the key.
+- [ ] **Print or save PDF** in the Print sheet → the share sheet offers Print. A wide picture's page 1 prints on its
+      side, and the sheet said "page 1 landscape".
+- [ ] Delete a guide in the Library, wait past the Undo → **Recently deleted (1)** at the Library's foot → **Put
+      back** → it's back with its ticks and page photo.
+- [ ] **Surprise** in the Plan → its message sits over the foot of the picture, the tabs and controls clear, and it's
+      short.
+- [ ] Settings › Display › Text Size larger (on an iPhone, if you have one to try) → the Plan's picture is smaller and
+      its controls have room.
+- [ ] Home shows **Beta tester tasks** with the next task; it says "ready to send" when all six are answered.
+- [ ] Some are missing (after adding a set on the welcome) → the chart shows just your markers, "Untick any you've
+      lost".
+- [ ] With a keyboard: **Edit sections › Crop**, then Escape → back as Cancel.
+
+## From v318
 
 **The photo reader's gate for the beta: a 2 GB iPad** (the 5th or 6th generation iPad, 2017–18, on iPadOS 16.4 or
 later; older 2 GB iPads can't update that far and don't show the card), if you can borrow one; then your own iPad.
@@ -114,20 +150,24 @@ Write the times down.
       codes join the list as they're read, green boxes on the photo. Time to finished: ____ s. Nothing wrong in the
       list; amber boxes are the ones asked about.
 - [ ] ★ A **whole tray** in one photo, then a **close-up** of a few caps → each finishes, no "too much for this device".
-      If the app reloads itself part way (memory), open Scan and read the same photo again: it should read more gently
+      If the app reloads itself part way (memory), open Scan and read the same photo again: it should read it again
       and finish. Note which iPad.
-- [ ] ★ **All your photos at once:** take a photo of each tray (or half-tray) in the Camera first, then **Read photos of
+- [ ] ★ **All your photos at once:** take a photo of each tray (or half-tray) in the Camera first, then **Photograph
       your caps → Take or choose photos → Photo Library**, select them all → "Photo 1 of N…", one bar over all of them;
       at the end one summary and a line per photo. Total time: ____ for ____ photos. Compare the list with your
       collection: anything missing or wrong? Each marker is in the list once, however many photos it was in. On the
       2 GB iPad, at least ten photos in one go.
+- [ ] ★ After a photo, **Done** → back on the list, **no keyboard** over it (the focus on Add). On the iPad held
+      upright, before Done, each box has its code over it; turn the iPad → the boxes follow the photo.
+- [ ] With VoiceOver, choose three photos → it says "Photo 1 of 3 · Opening the photo…", then each photo's first
+      stage, once each, and the summary at the end.
 - [ ] **Stop** during a batch → it stops within a second or two; what was read stays. **Undo these photos** → all their
       codes go back out.
 - [ ] One photo: **Stop** part way → it stops within a second or two, what was read stays in the list. **Undo this
       photo** → its codes go back out. **Read another photo** → straight to the camera or photos.
 - [ ] Switch to another app while a batch is being read, then back → it carries on or has finished; nothing lost. Lock
       the iPad for a minute mid-batch, unlock → the same.
-- [ ] Airplane mode on, close the app fully, reopen → **Read photos of your caps** works offline. In a Safari
+- [ ] Airplane mode on, close the app fully, reopen → **Photograph your caps** works offline. In a Safari
       **Private** tab with Airplane mode on → the card says it needs the internet the first time; its button waits.
 - [ ] **A set's name:** copy the text from a set's box (Live Text) or a shop's page (Honolulu 120) and paste it into
       Scan → the set is offered, added with a tap. **Open a list file** with a .csv from Files → read as a paste.
@@ -136,17 +176,6 @@ Write the times down.
 - [ ] On the welcome (in a Private tab), add a set → **Some are missing** → the chart with its markers ticked; untick
       two → they're left out.
 - [ ] Help › **Adding markers by code** and About's credits read right.
-
-## From v317
-
-- [ ] ★ **A whole tray at once:** photograph a tray of caps with the iPad's Camera, open it in Photos, press and hold
-      the text (Live Text) › Select All › Copy. Markers › Add markers › Scan or type codes → tap the box › Paste → the
-      codes are read into the list. Colour names under their codes don't raise questions; the message doesn't say
-      dozens of lines weren't read.
-- [ ] Scan Text on the iPad as before: AutoFill › Scan Text, cap after cap with a beep, no Insert.
-- [ ] Help › **Adding markers by code** reads right.
-- [ ] (An Android tester) Scan's steps say Gboard › Scan text; photograph a cap, tap Insert → its code is read with
-      a beep, no ✓ needed; ← for the next cap. If nothing is read: Help › About › Copy diagnostics and send it.
 
 ## Report back
 

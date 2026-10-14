@@ -83,17 +83,26 @@ function _hueOK(bl, ml) {
    family member may be, and a darker one keeping COMP_DARK_C of the colour's chroma. Before, the nearest by eye could be
    any distance away (Copic E29's lighter was YR07, 34 lighter; black's was the pale grey C-3) and a red's darker a near
    grey (Ohuhu E515 Black Brown for R514): over 11 collections 79 of 3,540 picks change, most to one to buy. A guide
-   saved before keeps its rule. */
+   saved before keeps its rule.
+   (v318, famRule 4) A companion found as before that is less than COMP_DE4 (5, CIEDE2000) away gives way to one a
+   clear step away, found the same way, family first, but outside the family only within COMP_DH4 of the colour's hue;
+   none such, it stays. Nearest in number first in the family had made a dense family's next marker the companion
+   though it was barely a step (Ohuhu B111's darker B112, 3.9 apart: by the shading's own sum a second coat of B111
+   darkens it more). Kept, not lost: a pick under 5 with nothing clearer stays (Copic BG75's darker BG78, 4.8), and
+   none becomes one to buy. Ben's markers: 85 of 942 picks change, none lost, none to buy, no more hue drift; over
+   20 collections 414 of 4,986. A guide saved before keeps its rule. */
 var COMP_DL = 4,
   COMP_FAM_DL = 20,
   COMP_DE = 3,
   COMP_DH = 25,
   COMP_HUE_C = 6,
-  COMP_DARK_C = 0.35;
+  COMP_DARK_C = 0.35,
+  COMP_DE4 = 5,
+  COMP_DH4 = 10;
 // (fam: the same family, which is one colour from its palest to its darkest, so a pale tint too faint to count as
 // coloured may go with its family's coloured ones; the hue is compared where both have one to see, chroma COMP_HUE_C
 // or more. Outside the family a grey goes with a grey, and a colour with a colour of much the same hue.)
-function _compOK(bl, bc, ml, side, fam) {
+function _compOK(bl, bc, ml, side, fam, minDE) {
   if (!ml || (ml[0] - bl[0]) * -side < COMP_DL) return false;
   var mc = lchOf(ml);
   if (fam) {
@@ -109,9 +118,16 @@ function _compOK(bl, bc, ml, side, fam) {
     )
       return false;
   }
-  return de2000(bl, ml) >= COMP_DE;
+  return de2000(bl, ml) >= minDE;
 }
 function _findComp(bl, base, pool, side) {
+  const m = _findCompBy(bl, base, pool, side, COMP_DE, 0);
+  if (famRule < 4 || !m || de2000(bl, m.lab) >= COMP_DE4) return m;
+  return _findCompBy(bl, base, pool, side, COMP_DE4, COMP_DH4) || m;
+}
+// (minDE: how far by eye at least; dh: outside the family, a colour's companion no more than dh round the hue; 0: any
+// within COMP_DH, as _compOK has it)
+function _findCompBy(bl, base, pool, side, minDE, dh) {
   var fv = famVal(base.code),
     bc = lchOf(bl),
     fam = [],
@@ -133,14 +149,15 @@ function _findComp(bl, base, pool, side) {
   for (i = 0; i < fam.length; i++) {
     m = pool[fam[i][1]];
     if (famRule && Math.abs(m.lab[0] - bl[0]) > COMP_FAM_DL) continue;
-    if (_compOK(bl, bc, m.lab, side, true)) return m;
+    if (_compOK(bl, bc, m.lab, side, true, minDE)) return m;
   }
   var cand = null,
     best = Infinity,
     d;
   for (i = 0; i < pool.length; i++) {
     m = pool[i];
-    if (m.mkey === base.mkey || !_compOK(bl, bc, m.lab, side, false)) continue;
+    if (m.mkey === base.mkey || !_compOK(bl, bc, m.lab, side, false, minDE)) continue;
+    if (dh && bc[1] >= GREY_C && hueDiff(bc[2], lchOf(m.lab)[2]) > dh) continue;
     d = de2000(bl, m.lab);
     if (d < best) {
       best = d;

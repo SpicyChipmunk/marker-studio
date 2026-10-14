@@ -313,6 +313,11 @@ html.noamb .ambient {
 #segs button {
   width: 34px;
 }
+/* (v318 review) the sizes' tap areas meet, without the 3px gaps between them that a tap could fall in */
+#segs button::after {
+  left: -1.5px;
+  right: -1.5px;
+}
 /* a choice is 40px tall with a 44px tap area; so are the top tabs (38px, in the tab bar's padding) */
 .modes button::after,
 .segs button::after,

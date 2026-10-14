@@ -228,7 +228,8 @@ test('a guide deleted while open (no Undo) stays out of the Library and the slot
   await tickInCode(page, 0); await flushSave(page); await idle(page, AUTO);
   assert.equal((await guides(page)).length, 0, 'a change doesn’t bring it back');
   assert.equal(await page.evaluate(() => localStorage.getItem('ms-guide-auto')), null, 'nor into the autosave slot');
-  assert.equal(await page.evaluate((id) => IDB.get('guide-' + id).then((p) => !!p), g.id), false, 'its stored copy stays deleted');
+  // (v318.1: kept a week for Recently deleted, as it was when deleted: the change made meanwhile isn't saved into it)
+  assert.equal((await stored(page, g.id)).prog, 0, 'its stored copy as it was when deleted');
   await page.click('#sfSave'); await idle(page);
   const gs = await guides(page);
   assert.equal(gs.length, 1);

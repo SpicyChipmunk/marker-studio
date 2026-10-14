@@ -951,6 +951,7 @@ function libSubText() {
 function renderSaved() {
   if (_libEd) libEndRename(true, false);
   renderLibStat();
+  renderLibBin();
   if (typeof preRestoreRender === 'function') preRestoreRender();
   var _sub = $('libSub');
   if (_sub) _sub.textContent = libSubText();
@@ -1208,11 +1209,13 @@ function libArtWatch() {
     _libIO.observe(r);
   });
 }
-// Deleting: the row goes at once and a toast offers Undo for 6 seconds. A guide's stored picture and progress (its
-// 'guide-<id>' record) are only removed when that time is up or the next delete comes; the ids still waiting are kept
-// in localStorage, so after a reload in between the next start tidies them away (unless the guide is back in the list).
+// Deleting: the row goes at once and a toast offers Undo for 6 seconds. (v318.1) Then it waits in Recently deleted,
+// at the foot of the Library, for a week: Put back brings it back as it was; a guide's stored picture and progress (its
+// 'guide-<id>' record) are only removed when the week is up. The ids waiting are kept in localStorage with the row
+// (without its thumbnail, drawn again from the guide), so they last through reloads and are seen by every tab.
 var libPend = null;
-const LIBDEL_KEY = 'ms-lib-deleting';
+const LIBDEL_KEY = 'ms-lib-deleting',
+  LIB_KEEP_DAYS = 7;
 // each waiting id carries when and in which tab it was deleted ({id,t,tab}; a plain number is from before and counts
 // as long ago): a start in another tab leaves one alone while that tab's Undo can still bring it back; a reload of the
 // same tab (its Undo is gone) tidies it straight away
@@ -1236,7 +1239,7 @@ function libPendList() {
           .map((x) =>
             typeof x === 'number'
               ? { id: x, t: 0 }
-              : { id: x && +x.id, t: (x && +x.t) || 0, tab: x && x.tab },
+              : { id: x && +x.id, t: (x && +x.t) || 0, tab: x && x.tab, e: (x && cleanSaved(x.e)) || null },
           )
           .filter((x) => Number.isFinite(x.id))
       : [];
@@ -1260,6 +1263,11 @@ function libPurge(id) {
     libPendDrop(id);
     return;
   }
+  const x = libPendList().find((y) => y.id === id);
+  if (x && x.e && x.e.type !== 'guide') {
+    libPendDrop(id);
+    return;
+  }
   IDB.del('guide-' + id)
     .then(function () {
       libPendDrop(id);
@@ -1276,12 +1284,13 @@ function libUnpend(id) {
   }
   libPendDrop(id);
 }
+// the Undo's time over (or another delete): it waits in Recently deleted now (v318.1: it had gone for good then)
 function libFinish() {
   const p = libPend;
   if (!p) return;
   libPend = null;
   clearTimeout(p.t);
-  if (p.entry.type === 'guide') libPurge(p.entry.id);
+  renderLibBin();
 }
 // Focus moves to the next row's bin (the one before when it was the last; the list when it's empty), and back to the
 // row on Undo, so the keyboard never drops to the top of the page.
@@ -1299,14 +1308,15 @@ function libDelete(id) {
     })
   )
     return;
-  if (entry.type === 'guide') {
-    libPendSet(
-      libPendList()
-        .filter((x) => x.id !== id)
-        .concat([{ id: id, t: Date.now(), tab: LIB_TAB }]),
-    );
-    if (window.SF && SF.libChanged) SF.libChanged(id, false);
-  }
+  // (v318.1: every kind waits in Recently deleted, its row with it, the thumbnail left out for room)
+  const keepRow = Object.assign({}, entry);
+  delete keepRow.thumb;
+  libPendSet(
+    libPendList()
+      .filter((x) => x.id !== id)
+      .concat([{ id: id, t: Date.now(), tab: LIB_TAB, e: keepRow }]),
+  );
+  if (entry.type === 'guide' && window.SF && SF.libChanged) SF.libChanged(id, false);
   const p = { entry: entry, i: i };
   p.t = setTimeout(libFinish, 6000);
   libPend = p;
@@ -1417,18 +1427,80 @@ function libFocus(at) {
     b = r && r.querySelector('.smore');
   (b || savedList).focus({ preventScroll: true });
 }
+// at start: what's waited its week in Recently deleted goes for good (and one from before v318.1, with no row to put
+// back, at once, as it did then)
 setTimeout(function tidy() {
-  const mine = (x) => !!LIB_TAB && x.tab === LIB_TAB;
   libPendList().forEach(function (x) {
-    if ((!libPend || libPend.entry.id !== x.id) && (mine(x) || Date.now() - x.t > 7000)) libPurge(x.id);
+    if (!x.e || Date.now() - x.t > LIB_KEEP_DAYS * 864e5 || x.t > Date.now() + 864e5) libPurge(x.id);
   });
+  renderLibBin();
+}, 1500);
+// (v318.1) Recently deleted: what's waiting, newest first, each with Put back; Delete them now ends the wait
+function libBinList() {
+  return libPendList()
+    .filter((x) => x.e && !state.saved.some((s) => s.id === x.id) && !(libPend && libPend.entry.id === x.id))
+    .sort((a, b) => b.t - a.t);
+}
+function renderLibBin() {
+  const b = $('libBin');
+  if (!b) return;
+  const n = libBinList().length;
+  b.hidden = !n;
+  b.textContent = 'Recently deleted (' + n + ')';
+}
+function libBinOpen() {
+  const ask = window.SF && SF.askBox,
+    l = libBinList();
+  if (!ask || !l.length) return renderLibBin();
+  const kind = (e) => (e.type === 'guide' ? 'guide' : e.type === 'draw' ? 'random draw' : 'palette');
+  ask(
+    'Recently deleted',
+    'Kept on this device for ' +
+      LIB_KEEP_DAYS +
+      ' days after you delete them, then gone for good. They aren’t in a backup made meanwhile.',
+    l
+      .map(
+        (x) =>
+          '<button type="button" data-a="put:' +
+          x.id +
+          '">Put back “' +
+          esc(x.e.name || kind(x.e)) +
+          '” <span class="libbinwhen">' +
+          esc(kind(x.e) + ', deleted ' + (relDate(x.t) || 'today')) +
+          '</span></button>',
+      )
+      .join('') +
+      '<button type="button" data-a="purge">Delete them now</button><button type="button" class="sfghost" data-a="stay">Close</button>',
+    false,
+  ).then(function (a) {
+    if (a === 'purge') {
+      libBinList().forEach((x) => libPurge(x.id));
+      renderLibBin();
+      toast('Deleted for good', 3000);
+    } else if (a && a.indexOf('put:') === 0) libPutBack(+a.slice(4));
+  });
+}
+function libPutBack(id) {
+  const x = libBinList().find((y) => y.id === id);
+  if (!x) return renderLibBin();
+  const entry = cleanSaved(x.e);
+  if (!entry) return;
+  state.saved.unshift(entry);
+  _savedGone.delete(id);
   if (
-    libPendList().some(function (x) {
-      return !mine(x) && Date.now() - x.t <= 7000;
+    !keep(function () {
+      state.saved.splice(state.saved.indexOf(entry), 1);
     })
   )
-    setTimeout(tidy, 7500);
-}, 1500);
+    return;
+  libPendDrop(id);
+  if (entry.type === 'guide' && window.SF && SF.libChanged) SF.libChanged(id, true);
+  renderSaved();
+  chrome();
+  toast('Put back “' + (entry.name || 'it') + '”', 4000);
+  const b = savedList.querySelector('.srow[data-id="' + id + '"] .smore');
+  if (b && savedOverlay.classList.contains('on')) b.focus({ preventScroll: true });
+}
 // renaming in place: one edit at a time; _libEd is cleared before the row is redrawn, so the blur that redraw causes is ignored
 var _libEd = null;
 function libStartRename(id) {
@@ -1637,3 +1709,7 @@ function loadDraw(entry) {
   save();
   fullRender();
 }
+(function () {
+  const b = $('libBin');
+  if (b) b.addEventListener('click', libBinOpen);
+})();

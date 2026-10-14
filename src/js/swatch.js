@@ -409,10 +409,14 @@ function swSync() {
 }
 // the button says what it will do: on a phone or tablet that can share files the PDF goes to the share sheet, which
 // saves it (handOver in core.js); on a computer it downloads
+// (v318 review: on an iPhone or iPad, "Print or save PDF": the share sheet it opens has Print as well as Save to Files,
+// and the sheet was reached from Print…; Android's share sheet has no Print, so there it stays Save PDF)
 function swGoLabel() {
   try {
     return shareFirst() && canShareFile(new File([''], 'a.pdf', { type: 'application/pdf' }))
-      ? 'Save PDF'
+      ? isIOSDevice()
+        ? 'Print or save PDF'
+        : 'Save PDF'
       : 'Download PDF';
   } catch (e) {
     return 'Download PDF';

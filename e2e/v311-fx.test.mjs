@@ -391,8 +391,8 @@ test('8 a picture’s sections found: the step’s heading gets the keyboard, an
     assert.equal(
       await page.textContent('#sfLive'),
       tools === '0'
-        ? 'Looks right? We found ' + n + ' to colour. Build guide, or Fix sections.'
-        : 'Check the sections. We found ' + n + ' to colour. Build guide when they look right.',
+        ? 'Looks right? We found ' + n + ' to colour. Build guide, or Edit sections.'
+        : 'Edit sections. We found ' + n + ' to colour. Build guide when they look right.',
     );
     // once: Min section size moved, the keyboard stays on it and nothing more is said
     if (tools === '1') {
@@ -405,7 +405,7 @@ test('8 a picture’s sections found: the step’s heading gets the keyboard, an
       });
       await idle(page);
       assert.equal(await focusedId(page), 'sfMin');
-      assert.match(await page.textContent('#sfLive'), /^Check the sections\./);
+      assert.match(await page.textContent('#sfLive'), /^Edit sections\./);
     }
     assert.deepEqual(errors, []);
     await ctx.close();
@@ -421,7 +421,7 @@ test('8 the keyboard moved somewhere by the person stays there when the sections
   assert.equal(await focusedId(page), 'mCollection');
   assert.match(
     await page.textContent('#sfLive'),
-    /^Check the sections\. We found \d+ sections to colour\./,
+    /^Edit sections\. We found \d+ sections to colour\./,
     'still said',
   );
   // a built guide's ← Edit sections isn't a new picture: nothing said or moved
@@ -540,7 +540,9 @@ test('10 the first set added to an empty collection: the top of the collection i
     assert.ok(at.sets, 'Brands I’d buy went below the grid');
     assert.equal(await page.isVisible('#mkAddCard'), false);
     assert.equal(at.y, 0, w + ': the top of the collection');
-    assert.ok(at.grid > 0 && at.grid < h * 0.8, w + ': the first markers in view: ' + at.grid);
+    // (a row of markers at least on the first screen; v318 review's Swatch chart link, no longer under Add markers'
+    // bottom 12px, put the grid that much lower on a phone: 685 of 844)
+    assert.ok(at.grid > 0 && at.grid < h - 120, w + ': the first markers in view: ' + at.grid);
     assert.match(await page.textContent('#msToast'), /^Added 120 markers/);
     assert.equal(await focusedId(page), 'mkAddBtn', 'the keyboard on Add markers');
     // Undo: an empty collection again, the sets back at the top

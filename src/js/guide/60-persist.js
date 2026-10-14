@@ -2,10 +2,23 @@
 // (checked with two cheap hashes of the label array)
 let _lmC = null,
   _lastAuto = null;
+// (v318 review) Each save asks it twice (whether the sections were edited since the guide was built, and whether the
+// saved section map is still the one kept), and it reads every pixel of the map: about 100 ms in Chrome on a desktop
+// for a 1275 × 1650 page, a hitch a moment after each tick, and some three times that for a photo at full size. In the
+// Plan and Colour along the map can't change (it's edited only in Edit sections, in place, which lets it go:
+// labelsEdited; anything else that changes it makes a new one), so there it's kept for the same map.
+let _lsC = null;
 function labelsSig() {
-  return labelsSigOf(labels, W, H);
+  const keep = sfmode === 'guide' || sfmode === 'color';
+  if (keep && _lsC && _lsC.l === labels && _lsC.W === W && _lsC.H === H) return _lsC.s;
+  const s = labelsSigOf(labels, W, H);
+  _lsC = keep ? { l: labels, W: W, H: H, s: s } : null;
+  return s;
 }
+// (how many times the whole map has been read for it: the tests' count, __mstest.labelsSigN)
+let _lsN = 0;
 function labelsSigOf(labels, W, H) {
+  _lsN++;
   let a = 2166136261 | 0,
     b = 5381 | 0;
   const n = W * H;
@@ -121,6 +134,10 @@ function bgByEdge(c) {
 }
 function guideStale() {
   return !!(assignData && guideSig && labels && labelsSig() !== guideSig);
+}
+// the section map changed in place (Edit sections' merge, split, add): labelsSig reads it again
+function labelsEdited() {
+  _lsC = null;
 }
 // share: for a guide file to share, which leaves out a photo the pattern doesn't use (to keep it small). edits: the
 // guide with section edits not built yet (kept when the page is hidden): only sections still there keep their
@@ -614,7 +631,10 @@ function importFromHome(file) {
 }
 // A section map's pixels (null when it can't be read), and how many different sections it has (counting stops past cap)
 const MAXSECS = 100000,
-  TOO_COMPLEX = 'Couldn’t open that guide — it has too many sections (the file is too complex).';
+  TOO_COMPLEX = 'Couldn’t open that guide — it has too many sections (the file is too complex).',
+  // (v318 review) a section map that couldn't be read into a canvas (97-open): memory, not damage
+  SHORT_MEM =
+    'Couldn’t open that guide just now — this device is short of memory. Your guide is still saved: close other apps or tabs, then try again (reloading Marker Studio helps too).';
 function lmapRead(img) {
   try {
     const w = img.naturalWidth || img.width,
@@ -648,7 +668,7 @@ function lmapCount(d, cap) {
 // A guide from outside (a file, a backup) is checked before it goes into the Library: its section map must be a PNG
 // that decodes, at a size a guide can have, with at most MAXSECS sections (the picture's size is taken from it); what's
 // in it is kept in range when it opens. One that still fails to open is taken out of the Library again.
-// Resolves {ok, w, h} or {ok:false, why: 'bad' | 'size' | 'decode' | 'complex'}.
+// Resolves {ok, w, h} or {ok:false, why: 'bad' | 'size' | 'decode' | 'complex' | 'memory'}.
 function guideCheck(pl) {
   return new Promise(function (res) {
     if (
@@ -669,8 +689,9 @@ function guideCheck(pl) {
         return;
       }
       const d = lmapRead(im);
+      // (v318 review: it decoded, so a canvas that couldn't be had is memory, not damage)
       if (!d) {
-        res({ ok: false, why: 'decode' });
+        res({ ok: false, why: 'memory' });
         return;
       }
       res(lmapCount(d, MAXSECS) > MAXSECS ? { ok: false, why: 'complex' } : { ok: true, w: w, h: h });
@@ -768,7 +789,9 @@ function importChecked(d) {
           ? 'Couldn’t import that guide \u2014 its picture is the wrong size.'
           : c.why === 'complex'
             ? 'Couldn’t import that guide \u2014 it has too many sections (the file is too complex).'
-            : 'Couldn’t import that guide \u2014 its picture couldn\u2019t be read.',
+            : c.why === 'memory'
+              ? 'Couldn’t import that guide just now \u2014 this device is short of memory. Close other apps or tabs, then try again.'
+              : 'Couldn’t import that guide \u2014 its picture couldn\u2019t be read.',
       );
       return;
     }
@@ -1155,6 +1178,8 @@ function slotSave(d, edits) {
       _slotTok = tok;
       return IDB.put('guide-autosave', d).then(function () {
         _lastAuto = js;
+        // (v318 polish: the note Resume is offered from couldn't be written, storage being full to the last byte: said,
+        // once for the guide, not left to a Resume that never comes; the next change tries again)
         try {
           localStorage.setItem(
             'ms-guide-auto',
@@ -1170,10 +1195,31 @@ function slotSave(d, edits) {
               edits: edits ? 1 : undefined,
             }),
           );
-        } catch (_) {}
+        } catch (_) {
+          _lastAuto = null;
+          slotNoteFailed(tok);
+        }
       });
     });
   });
+}
+function slotNoteFailed(tok) {
+  if (_slotWarn === tok) return;
+  _slotWarn = tok;
+  const say = function () {
+    toast(
+      'This guide isn\u2019t kept for Resume: this browser\u2019s storage is full. Free up space (back up, then delete a few guides in the Library) to keep it.',
+      8000,
+    );
+  };
+  // (with the page hidden, as it went away: once it's back, where it can be read)
+  if (document.visibilityState !== 'hidden') say();
+  else
+    document.addEventListener('visibilitychange', function back() {
+      if (document.visibilityState === 'hidden') return;
+      document.removeEventListener('visibilitychange', back);
+      if (tok === _gTok) say();
+    });
 }
 // the open guide's Library entry, or null: not saved yet, or deleted in the Library while open (then it counts as new)
 function libEntry() {
@@ -1384,6 +1430,9 @@ function storedTs(id) {
 function libNote() {
   const e = libEntry();
   _libTs = e ? { id: curId, ts: +e.ts || 0 } : null;
+  // (v318 review) a page finished before the guide was in the Library (the sample, whose first save comes with its
+  // last tick): the Page finished panel gets its Add a photo of your page now, not only after leaving and coming back
+  if (e && sfmode === 'color') finPanel();
 }
 function libOther() {
   if (!_libTs || _libTs.id !== curId) return false;
@@ -1775,10 +1824,17 @@ function firstSave(auto) {
         setTimeout(saveStatus, 6100);
         // (v314: and its photo of the finished page, if its record went meanwhile)
         if (back != null) finPutBack(id);
+        // (v318 polish: after "Page finished.", said a moment before when the tick that finished the page is what's
+        // saved, not instead of it: a sample finished as it's first saved had only this heard)
+        const fin =
+          sayLive.last && /^Page finished\./.test(sayLive.last) && Date.now() - (sayLive.at || 0) < 5000
+            ? sayLive.last + ' '
+            : '';
         sayLive(
-          back != null
-            ? 'Put back in your Library.'
-            : 'Saved in your Library. Changes now save automatically.',
+          fin +
+            (back != null
+              ? 'Put back in your Library.'
+              : 'Saved in your Library. Changes now save automatically.'),
         );
         btnBusy(null);
         renderHead();

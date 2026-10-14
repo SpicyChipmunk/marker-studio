@@ -35,6 +35,14 @@ test('one word per idea', async () => {
   await page.click('#sfPrint');
   assert.equal(await page.textContent('#sfPDF'), 'Save PDF');
   await page.keyboard.press('Escape');
+  // (v318 review) on an iPhone or iPad the share sheet has Print too, and the sheet came from Print…: it says both;
+  // the swatch chart's button the same
+  await page.evaluate(() => { window.__io = isIOSDevice; isIOSDevice = () => true; });
+  await page.click('#sfPrint');
+  assert.equal(await page.textContent('#sfPDF'), 'Print or save PDF');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.evaluate(() => swGoLabel()), 'Print or save PDF');
+  await page.evaluate(() => { isIOSDevice = window.__io; });
   await page.evaluate(() => { navigator.canShare = window.__cs; navigator.share = window.__sh; shareFirst = window.__sf; });
   await page.click('.sftabbtn[data-t="colours"]'); await page.click('#sfColor'); await idle(page);
   assert.equal(await page.textContent('#sfDoneBtn'), '← Plan');

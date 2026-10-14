@@ -327,3 +327,56 @@ button.hlplink.ttready {
   font: inherit;
   font-weight: 600;
 }
+/* (v318 review, prototype) Home's Beta tester tasks card, under its cards: how many are answered and the next */
+.tthomecard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 64px;
+  margin: 16px 0 4px;
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(124, 92, 255, 0.55);
+  background: rgba(124, 92, 255, 0.1);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tthomecard[hidden] {
+  display: none;
+}
+.tthomecard .ttcn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--t-md);
+}
+.tthomecard .ttct {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--t-base);
+  color: var(--sub);
+  line-height: 1.35;
+}
+.tthomecard .ttct b {
+  color: var(--ink);
+  font-size: var(--t-md);
+}
+.tthomecard.ttready {
+  border-color: rgba(95, 184, 159, 0.6);
+  background: rgba(95, 184, 159, 0.1);
+}
+.tthomecard.ttready .ttcn {
+  background: var(--ok);
+  color: #10201a;
+}

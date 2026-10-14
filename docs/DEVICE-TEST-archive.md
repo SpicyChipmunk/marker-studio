@@ -77,6 +77,17 @@ On a guide, open **Style** and set **Shading** to **Light & shadow**.
 - [ ] **Blend:** a tap still adds an anchor; press and hold a section shows Change colour / Pin. **Manual:** a tap opens the picker.
 - [ ] **Style → Pin colours:** taps pin and unpin sections directly.
 
+## 3o. v317 on the iPad
+
+- [ ] ★ **A whole tray at once:** photograph a tray of caps with the iPad's Camera, open it in Photos, press and hold
+      the text (Live Text) › Select All › Copy. Markers › Add markers › Scan or type codes → tap the box › Paste → the
+      codes are read into the list. Colour names under their codes don't raise questions; the message doesn't say
+      dozens of lines weren't read.
+- [ ] Scan Text on the iPad as before: AutoFill › Scan Text, cap after cap with a beep, no Insert.
+- [ ] Help › **Adding markers by code** reads right.
+- [ ] (An Android tester) Scan's steps say Gboard › Scan text; photograph a cap, tap Insert → its code is read with
+      a beep, no ✓ needed; ← for the next cap. If nothing is read: Help › About › Copy diagnostics and send it.
+
 ## 3n. v316 on the iPad
 
 - [ ] ★ **Markers:** each family runs lightest first (R16, R28, R38 … R514). **Order** shows in Owned, Unowned and All;

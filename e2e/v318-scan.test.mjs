@@ -37,9 +37,9 @@ test('a box’s text pasted: the set named, asked first; its markers into the li
   assert.deepEqual(await marks(page), [], 'nothing in the list unasked');
   assert.match(
     await page.textContent('#scStat'),
-    /^\?Ohuhu Honolulu 120120 markers: a set’s name, read(?!.*codes)/,
+    /^\?Found a set: Ohuhu Honolulu 120Add all 120 of its markers to the list\?(?!.*codes)/,
   );
-  assert.equal(await page.textContent('#scStat .scpick button'), 'Add its 120 markers to the list');
+  assert.equal(await page.textContent('#scStat .scpick button'), 'Add all 120 to the list');
   await page.click('#scStat .scpick button');
   await idle(page);
   const want = await setKeysOf(page, 'Honolulu 120');
@@ -75,7 +75,7 @@ test('an order email with two sets, one without its letter: a button each; addin
     'Your order #112-4824839-1234567\nOhuhu Honolulu Markers, 72 Colors\nQty: 1  $48.99\nCopic Ciao Markers 36 Colors\n$120.00',
   );
   await idle(page);
-  assert.match(await page.textContent('#scStat b'), /^2 sets named$/);
+  assert.match(await page.textContent('#scStat b'), /^Found 2 sets$/);
   const btns = await page.$$eval('#scStat .scpick button', (a) => a.map((b) => b.textContent));
   // (the Ciao 36's letter not read: its sets under a heading, by their letters)
   assert.deepEqual(btns, ['Add Honolulu 72', 'Set A', 'Set B', 'Set C', 'Set D', 'Set E']);
@@ -166,5 +166,69 @@ test('Open a list file: a CSV read as a pasted list; its 44px tap area clear of 
   await page.waitForFunction(() => scanList.length === 3);
   assert.deepEqual((await marks(page)).sort(), ['Copic|E00', 'Copic|YG06', 'Ohuhu|BG314']);
   assert.match(await page.textContent('#scStat'), /3 added to the list/);
+  assert.deepEqual(errors, []);
+});
+
+test('Find my set with a set’s name typed in the box (no Enter) and markers on the list kept for Add: no error', async () => {
+  const { page, errors } = await openApp({ width: 820, height: 1180 });
+  // a marker on Scan's own list first (kept aside while Find mode runs)
+  await page.click('#wcOneByOne');
+  await page.click('#wcOneType');
+  await idle(page);
+  await page.fill('#scBox', 'R014');
+  await page.keyboard.press('Enter');
+  await idle(page);
+  await page.click('#scClose');
+  await page.click('#wcStepOne .wcback');
+  await page.click('#wcNotSure');
+  await page.click('#wcFBrand [data-b="Copic"]');
+  await page.click('#wcFCount [data-n="1"]');
+  await page.click('#wcFindNext');
+  await idle(page);
+  // (typed a letter at a time: text that arrives at once is Scan Text's, read quietly once it holds still)
+  await page.click('#scBox');
+  await page.keyboard.type('Copic Ciao 36 Set A');
+  // (Find my set reads the box first: the name hands the caps on and closes Scan; it had then gone on with the list
+  // kept for Add and a Find that was over: "Cannot read properties of null (reading 'done')")
+  await page.click('#scAdd');
+  await idle(page);
+  assert.equal(await page.textContent('#wcTR'), 'Is this your set?');
+  assert.match(await page.textContent('#wcRes'), /^Named in what you pastedCopic Ciao 36 - Set A/);
+  assert.equal(
+    await page.evaluate(() => document.getElementById('scanOverlay').classList.contains('on')),
+    false,
+  );
+  // (the list kept for Add is back, as it was)
+  assert.deepEqual(await marks(page), ['Ohuhu|R014']);
+  assert.deepEqual(errors, []);
+});
+
+test('a question’s answer that is a marker by its old code says so: "Which R14?" offers RV18, was R14', async () => {
+  const { page, errors } = await openApp({
+    width: 820,
+    height: 1180,
+    storage: { 'ms-onboarded': '1', 'ms-setup-tip': '1', 'ms-scan-brand': '' },
+  });
+  await scanFromMarkers(page);
+  await page.fill('#scBox', 'R14');
+  await page.keyboard.press('Enter');
+  await idle(page);
+  const choices = await page.$$eval('#scList .scask .scchoose', (bs) => bs.map((b) => b.textContent));
+  assert.ok(
+    choices.some((c) => /^RV18 Bubblegum · Ohuhu · was R14$/.test(c)),
+    choices.join(' / '),
+  );
+  assert.ok(
+    choices.some((c) => /^R14 Sheer Peach · Ohuhu$/.test(c)),
+    choices.join(' / '),
+  );
+  // (v318 audit) an old code stored with the Roman numeral Ⅱ is said with plain letters, as everywhere else: BGII03
+  const roman = await page.evaluate(() => {
+    const i = COLORS.findIndex((c) => c.old === 'BGⅡ03');
+    scanList.unshift({ ask: 'test', title: 'Which one?', opts: [{ i: i, how: 'old' }] });
+    scanRender();
+    return document.querySelector('#scList .scask .scchoose').textContent;
+  });
+  assert.match(roman, / · was BGII03$/);
   assert.deepEqual(errors, []);
 });

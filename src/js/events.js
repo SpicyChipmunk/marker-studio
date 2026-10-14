@@ -1004,6 +1004,19 @@ function setMode(m) {
   }
 }
 
+// (v318 review) Back across the main tabs: Guide, Markers and Palette (and Random, under Markers) sit one Back step
+// above Home, as the start of the app, the way a phone's apps with tabs go back (Android's Back, Safari's back swipe
+// and button). Switching between them keeps that one step: Back from any of them is Home, and from Home Back leaves the
+// app as before. What's open on top of a tab (a dialog, a sheet, Colour along…) closes first, one each (layers.js).
+// Back only: Escape never changes tabs. Random goes back to Markers first, where it was opened from.
+addLayer({
+  name: 'tab',
+  order: 1,
+  back: true,
+  escape: false,
+  isOpen: () => state.mode !== 'home',
+  close: () => setMode(state.mode === 'random' ? 'collection' : 'home'),
+});
 mPalette.addEventListener('click', () => setMode('palette'));
 {
   const eg = $('eoGo');
@@ -1507,7 +1520,10 @@ function addWaysHTML(where) {
       'scan',
       'crosshair',
       'Scan or type codes',
-      'Type codes from a receipt, or scan caps with Scan Text on an iPad or iPhone.',
+      // (v318 review: on Android, Gboard's Scan text, as Scan's own steps say)
+      /Android/i.test(navigator.userAgent || '')
+        ? 'Type codes from a receipt, or scan caps with Gboard’s Scan text.'
+        : 'Type codes from a receipt, or scan caps with Scan Text on an iPad or iPhone.',
     ) +
     row(
       'chart',

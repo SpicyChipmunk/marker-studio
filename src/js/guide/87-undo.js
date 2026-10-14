@@ -694,8 +694,11 @@ function roughNow() {
   if (sfmode !== 'guide' || !assignData || !assignData.order || !labels || !comps) return null;
   const sig = roughSig();
   if (_rough && _rough.sig === sig) return _rough;
-  const out = { sig: sig, pairs: [], ids: [], pts: null },
-    A0 = assignData.assign;
+  const out = { sig: sig, pairs: [], ids: [], pts: null, add: 0 },
+    A0 = assignData.assign,
+    // (v318 review: how many more markers the page would have, which the line says before the tap: those it brings,
+    // less any it takes the last section from)
+    A1 = Object.assign({}, A0);
   _rough = out;
   zoneIds().forEach(function (id) {
     if (zoneFamily(id) !== 'gradient') return;
@@ -726,9 +729,20 @@ function roughNow() {
       if (r.after < r.before) {
         out.ids.push(id);
         out.pairs = out.pairs.concat(gradRough(secs, A0));
+        secs.forEach(function (l) {
+          if (A[l]) A1[l] = A[l];
+        });
       }
     });
   });
+  const keys = function (A) {
+    const k = new Set();
+    assignData.order.forEach(function (l) {
+      if (A[l]) k.add(A[l].mkey);
+    });
+    return k.size;
+  };
+  out.add = out.ids.length ? keys(A1) - keys(A0) : 0;
   return out;
 }
 function roughLineUp() {
@@ -743,12 +757,24 @@ function roughLineHTML() {
   const r = roughLineUp();
   if (!r) return '';
   const n = r.pairs.length;
+  // (v318 review) what it costs, said before the tap: it brings markers the guide doesn't use, so the page can end up
+  // with more than Markers in this guide says ("Smooth them (+2 markers)"; the button's name says it in words)
   return (
     '<div id="sfRough" class="sfheldnote sfrough" role="status"><span>' +
     n +
     ' rough spot' +
     (n === 1 ? '' : 's') +
-    ' ·</span><button type="button" id="sfRoughGo" class="sflink">Smooth them</button><button type="button" id="sfRoughX" class="sfheldx" aria-label="Close">' +
+    ' ·</span><button type="button" id="sfRoughGo" class="sflink"' +
+    (r.add > 0
+      ? ' aria-label="Smooth them, with ' +
+        r.add +
+        ' more marker' +
+        (r.add === 1 ? '' : 's') +
+        ' on the page"'
+      : '') +
+    '>Smooth them' +
+    (r.add > 0 ? ' (+' + r.add + ' marker' + (r.add === 1 ? '' : 's') + ')' : '') +
+    '</button><button type="button" id="sfRoughX" class="sfheldx" aria-label="Close">' +
     ic('x') +
     '</button></div>'
   );
@@ -1243,9 +1269,42 @@ function toolRedo() {
 // status is one part (CSS).
 // v288: in a row 700px wide or more (an iPad's one column), Codes, Greyscale and Full screen show their word too
 // (sftw); when tight, after the status's second part the words go first (sfzcw), then as before.
+// (v318 review) Each try is a layout of the page, and the row was fitted twice at every tick in Colour along (the
+// status changes, and the picture is drawn): on a page of 839 sections about a fifth of a tick in Chrome. Not fitted
+// again while nothing it depends on has changed: the row's width and buttons, the window, the text size, the stages, the fonts, and
+// the status but for its figures (in <b>, whose digits are all one width), its classes as the last fit left them.
+let _pfKey = '',
+  _pfOut = '';
 function planFit() {
   const z = document.getElementById('sfZoomCtl');
   if (!z) return;
+  const st0 = document.getElementById('sfStat'),
+    key = [
+      window.innerWidth,
+      // (the text size, which the row's words follow)
+      getComputedStyle(document.documentElement).fontSize,
+      root.className,
+      workEl ? workEl.className : '',
+      _fontGen,
+      st0
+        ? st0.innerHTML.replace(/<b>[^<]*<\/b>/g, function (t) {
+            return t.replace(/\d/g, '0');
+          })
+        : '',
+      [].map
+        .call(z.querySelectorAll('button'), function (b) {
+          return b.style.display + b.style.visibility;
+        })
+        .join(),
+      z.parentElement ? z.parentElement.clientWidth : 0,
+      z.offsetParent === null,
+    ].join('|');
+  if (key === _pfKey && z.className === _pfOut) return;
+  _pfKey = key;
+  planFitNow(z);
+  _pfOut = z.className;
+}
+function planFitNow(z) {
   z.classList.remove('sfzc1', 'sfzcw', 'sfzc2', 'sfzc3', 'sfzc4', 'sftw');
   if (z.offsetParent === null || (workEl && workEl.classList.contains('sftoolsv'))) return;
   if (

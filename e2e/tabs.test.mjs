@@ -193,14 +193,14 @@ test('Share: Show it off, Print…, Plan & keep; the Print sheet opens under the
   assert.equal(Math.round(cv.height), 380, 'the picture at its floor size');
   assert.ok(cv.top >= -1, 'the picture stays on screen');
   assert.equal(await page.textContent('#sfSheetT'), 'Print');
-  assert.deepEqual(await page.$$eval('#sfSheet [role="group"]', (g) => g.map((x) => x.getAttribute('aria-label'))), ['What to print', 'Labels on the colouring page', 'Paper size']);
+  assert.deepEqual(await page.$$eval('#sfSheet [role="group"]', (g) => g.map((x) => x.getAttribute('aria-label'))), ['What to print', 'Labels on the picture', 'Paper size']);
   assert.ok(await page.isVisible('#sfPdfDark') && await page.isVisible('#sfPdfBlend'));
   assert.deepEqual(await page.$$eval('#sfSheet .sfshft button', (b) => b.map((x) => x.textContent)), ['Cancel', 'Download PDF']);
   // the summary follows the choices, and its page count matches the PDF's
   const sum = () => page.textContent('#sfPrSum');
   const count = async () => { const n = await page.evaluate(() => __mstest.buildPDFPages().length); const m = /^(\d+) pages?/.exec(await sum()); return [+m[1], n]; };
   // (v284: with any close-ups of small sections, how many and on how many pages)
-  const CL = '(\\d+ small sections? (is|are) on \\d+ close-up pages?\\.( Numbers would fit more of (it|them) on the colouring page\\.)?)?$';
+  const CL = '(\\d+ small sections? (is|are) on \\d+ close-up pages?\\.( Numbers would fit more of (it|them) on page 1\\.)?)?$';
   assert.match(await sum(), new RegExp('^\\d+ pages · Letter · Codes' + CL));
   let [said, real] = await count(); assert.equal(said, real, 'Letter, codes');
   await page.click('[data-plabels="numbers"]');
@@ -212,7 +212,8 @@ test('Share: Show it off, Print…, Plan & keep; the Print sheet opens under the
   await page.click('[data-paper="a5"]');
   [said, real] = await count(); assert.equal(said, real, 'A5 with blend companions');
   await page.click('[data-pwhat="ref"]');
-  assert.match(await sum(), /^\d+ pages? · A5 · Key \+ reference$/);
+  // (v318.1: with labels, the picture in colour with them, then the key)
+  assert.match(await sum(), new RegExp("^\\d+ pages? · A5 · Key \\+ reference · Numbers in colour" + CL));
   [said, real] = await count(); assert.equal(said, real, 'Key + reference');
   assert.deepEqual(await page.evaluate(() => ['ms-pdf-labels', 'ms-paper', 'ms-pdf-what', 'ms-pdf-blend'].map((k) => localStorage.getItem(k))), ['numbers', 'a5', 'ref', '1']);
   // Cancel closes it, focus goes back to Print…, and the choices are there next time
@@ -254,7 +255,8 @@ test('each tab stays within about one and a half screens of room at 390×844, wi
       //  buttons; 56 allowed)
       // (v316, deliberately: the Gradient's Start colour and Scatter sliders 36px tall each, a 22px ring riding on the
       //  strip or line, easier to catch with a finger: 26px more; 30 allowed)
-      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 + 120 + 56 : 0) + (tb === 'pattern' ? 74 + 30 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
+      // (v318 review, deliberately: + Zone beside Colour pattern 32px tall with a 44px tap area, its row 13px taller)
+      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 + 120 + 56 : 0) + (tb === 'pattern' ? 74 + 30 + 14 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
     }
   }
   t.diagnostic(JSON.stringify(out));

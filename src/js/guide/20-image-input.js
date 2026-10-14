@@ -4,6 +4,7 @@
 // (the user opened something else meanwhile) must stop. A change still waiting to be saved is saved first, into the
 // guide it was made in (the Library entry or the autosave slot).
 function resetForNewPicture() {
+  photoSettleNow();
   if (paintOn) setPaint(false);
   zoneEditEnd(true);
   // (a change waiting to be saved goes into the guide it was made in, zones and all, before they're cleared)
@@ -21,14 +22,16 @@ function resetForNewPicture() {
   // (v308: a new guide, the sample too, has the Include row, with the Mood's choices; a guide saved before has none)
   if (!gradIncl) gradIncl = {};
   // (v313: a new guide, the sample too, takes a marker's family from its code's letters and first digit: famRule; v315:
-  // and Copic's greys theirs; v316: blend companions outside the family a step a blend can make)
-  famRule = 3;
+  // and Copic's greys theirs; v316: blend companions outside the family a step a blend can make; v318: a companion a
+  // clear step away by eye)
+  famRule = 4;
   // (the running-low lines closed: the guide's own, none for a new one)
   lowX = null;
   smpTry = 0;
   // (v314: a new guide, the sample too, shares a Gradient's run out by its sections' areas softened: gradArea; v315: the
-  // adapting rule, pins bigger than a share counting for nothing, and no two markers too alike in the run)
-  gradArea = 2;
+  // adapting rule, pins bigger than a share counting for nothing, and no two markers too alike in the run; v318:
+  // touching sections kept off near twins)
+  gradArea = 3;
   _mkOpened = {};
   _blendSel = {};
   relWake();
@@ -128,9 +131,18 @@ function note(m) {
   ) {
     const a = document.getElementById(workEl && workEl.offsetParent !== null ? 'sfHead' : 'sfStart');
     if (a && a.offsetParent !== null) {
-      errCard(a, m);
+      const c = errCard(a, m);
       // (v308: under the start card, the card's own line goes back to what it says: the message was shown twice)
       if (a.id === 'sfStart' && metaEl) metaEl.innerHTML = metaText();
+      // (v318 review: on a phone the card under the start card was below the screen's foot, so a PDF or photo that
+      // wouldn't open seemed to do nothing at all: brought into view)
+      if (c && c.getBoundingClientRect) {
+        const r = c.getBoundingClientRect();
+        if (r.bottom > window.innerHeight || r.top < 0)
+          try {
+            c.scrollIntoView({ block: 'nearest' });
+          } catch (_) {}
+      }
     } else toastHTML(m, 6500);
     return;
   }
@@ -978,28 +990,31 @@ function _loadImage(file) {
       }
       lens.then(function (f35) {
         if (gen !== loadGen) return;
-        try {
-          note('Detecting sections\u2026');
-          resetForNewPicture();
-          // (once the photo has opened: one that won't leaves the open guide's palette alone, v289)
-          takeNextPal();
-          srcImg = fitSource(img);
-          srcUp = true;
-          enterWork();
-          var _rs = document.getElementById('sfResume');
-          if (_rs) _rs.style.display = 'none';
-          // a photographed page is found and flattened first (or its corners offered for checking); a scan goes straight on
-          pgBegin(f35);
-        } catch (err) {
-          note(
-            errNote(
-              'Couldn’t process that photo. Try it again, or another photo.',
-              'Processing a photo',
-              err,
-            ),
-          );
-        }
+        note('Detecting sections\u2026');
+        // (v318 polish: drawn before the work below holds the page, or "Reading photo…" stayed up throughout)
+        afterPaint(function () {
+          if (gen !== loadGen) return;
+          detect(f35);
+        });
       });
+    };
+    const detect = function (f35) {
+      try {
+        resetForNewPicture();
+        // (once the photo has opened: one that won't leaves the open guide's palette alone, v289)
+        takeNextPal();
+        srcImg = fitSource(img);
+        srcUp = true;
+        enterWork();
+        var _rs = document.getElementById('sfResume');
+        if (_rs) _rs.style.display = 'none';
+        // a photographed page is found and flattened first (or its corners offered for checking); a scan goes straight on
+        pgBegin(f35);
+      } catch (err) {
+        note(
+          errNote('Couldn’t process that photo. Try it again, or another photo.', 'Processing a photo', err),
+        );
+      }
     };
     img.onerror = function () {
       if (url) {

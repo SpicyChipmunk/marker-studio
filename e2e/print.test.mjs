@@ -65,6 +65,9 @@ test('labels: Codes, Numbers or None on the colouring page, light grey unless Da
   assert.equal(await page.getAttribute('[data-plabels="codes"]', 'aria-pressed'), 'true', 'codes by default');
   assert.equal(await page.isChecked('#sfPdfDark'), false, 'light labels by default');
 
+  // (v318.1: a line under What to print says what it prints)
+  const what = () => page.textContent('#sfPrWhat');
+  assert.equal(await what(), 'Your picture with light codes to colour on, then the colour key.');
   const codes = await probe(page, 'codes');
   // (v284: every section is labelled on the page, or has a dot there and is labelled in a close-up; none overlap)
   const nSec = Object.keys(await page.evaluate(() => __mstest.assignData.assign)).length, onP1 = codes.onArt.filter((t) => !/^[A-Z]{1,2}$/.test(t));
@@ -72,12 +75,16 @@ test('labels: Codes, Numbers or None on the colouring page, light grey unless Da
   assert.ok(onP1.length >= nSec * 0.6, 'most labelled on the page: ' + onP1.length);
   const cs = [...new Set(onP1.filter((t) => !/^\d+$/.test(t)))];
   assert.ok(cs.every((t) => codes.codes.includes(t)) && cs.length >= codes.codes.length - 2, 'codes on the colouring page');
-  assert.ok(codes.texts.filter((e) => e.p === 0 && !e.id && !/^[A-Z]{1,2}$/.test(e.t)).every((e) => e.fill === '#a0a0a0'), 'light grey labels');
+  // (v318.1: those under 6 pt a darker grey, #8a8a8a, so the smallest can be read; most stay #a0a0a0)
+  const p1Fills = codes.texts.filter((e) => e.p === 0 && !e.id && !/^[A-Z]{1,2}$/.test(e.t)).map((e) => e.fill);
+  assert.ok(p1Fills.every((f) => f === '#a0a0a0' || f === '#8a8a8a'), 'light grey labels');
+  assert.ok(p1Fills.filter((f) => f === '#a0a0a0').length > p1Fills.length / 2, 'most the lightest grey');
   // (a key number stands in where a code won't fit: then the key has its numbers column)
   const fellBack = onP1.some((t) => /^\d+$/.test(t));
   assert.equal(codes.texts.some((e) => e.p === codes.keyP && e.t === 'NO.'), fellBack, 'a numbers column in the key only when numbers stand in');
 
   await pick(page, '[data-plabels="numbers"]');
+  assert.match(await what(), /with light numbers to colour on/);
   const nums = await probe(page, 'numbers');
   const want = Array.from({ length: nums.keyN }, (_, i) => String(i + 1));
   const ns = [...new Set(nums.onArt.filter((t) => /^\d+$/.test(t)))];
@@ -90,17 +97,20 @@ test('labels: Codes, Numbers or None on the colouring page, light grey unless Da
 
   await pick(page, '[data-plabels="none"]');
   assert.equal(await page.isDisabled('#sfPdfDark'), true, 'darkness has nothing to do with no labels');
+  assert.match(await what(), /to colour on, unlabelled/);
   const none = await probe(page, 'none');
   assert.equal(none.onArt.length, 0, 'no labels drawn');
   assert.deepEqual(none.pages, codes.pages.slice(0, codes.pages.length - (codes.keyP - 1)), 'same pages otherwise (no close-ups)');
 
   await pick(page, '[data-plabels="codes"]'); await page.check('#sfPdfDark');
+  assert.match(await what(), /with dark codes to colour on/);
   const dark = await probe(page, 'dark');
   assert.ok(dark.texts.filter((e) => e.p === 0 && !e.id && !/^[A-Z]{1,2}$/.test(e.t)).every((e) => e.fill === '#111111'), 'darker labels are near-black (the close-ups’ letters aside)');
   assert.ok(dark.dark > none.dark + 2000, `darker labels add dark ink (${dark.dark} vs ${none.dark})`);
   assert.ok(codes.dark <= none.dark + 200, `light labels add no dark ink (${codes.dark} vs ${none.dark})`);
   const lightInk = await labelInk(page, 'codes', 'none'), darkInk = await labelInk(page, 'dark', 'none');
-  assert.ok(lightInk.n > 1000 && lightInk.min >= 140, `light labels print grey: ${JSON.stringify(lightInk)}`);
+  // (v318.1: labels under 6 pt are #8a8a8a, 138)
+  assert.ok(lightInk.n > 1000 && lightInk.min >= 136, `light labels print grey: ${JSON.stringify(lightInk)}`);
   assert.ok(darkInk.min < 60, `darker labels print black: ${JSON.stringify(darkInk)}`);
   assert.deepEqual(errors, []);
 });
@@ -156,16 +166,35 @@ test('shading marks still work with numbers: H/S circles and tone lines, key kee
   assert.deepEqual(errors, []);
 });
 
-test('Key + reference: no colouring page, a coloured reference at least as big, labels switched off', async () => {
+// (v318.1) Key + reference is to read beside your own drawing: with labels, page 1 is the picture in colour with
+// near-black codes (its close-ups after it, as Page + key's), then the key; with no labels, one page of reference and key
+test('Key + reference: the picture in colour with near-black codes, then the key; with no labels, a coloured reference beside the key', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await sharePrint(page);
-  const full = await probe(page);
+  const full = await probe(page, 'page');
+  await page.check('#sfPdfDark');
+  const fullDark = await probe(page);
+  await page.uncheck('#sfPdfDark');
   await pick(page, '[data-pwhat="ref"]');
-  assert.equal(await page.isDisabled('[data-plabels="numbers"]'), true, 'labels have nothing to label');
-  assert.equal(await page.isDisabled('#sfPdfDark'), true);
+  assert.equal(await page.isDisabled('[data-plabels="numbers"]'), false, 'labels for the picture');
+  assert.equal(await page.isDisabled('#sfPdfDark'), true, 'always dark: nothing to colour over');
+  assert.match(await page.textContent('#sfPrWhat'), /in colour with dark codes/);
+  const lab = await probe(page, 'ref');
+  assert.equal(lab.pages.length, full.pages.length, 'picture, close-ups and key, as Page + key');
+  assert.equal(lab.keyP, full.keyP, 'the same close-ups');
+  const onPic = (r) => r.texts.filter((e) => e.p === 0 && !e.id && !/^[A-Z]{1,2}$/.test(e.t)), labs = onPic(lab);
+  assert.deepEqual(labs.map((e) => e.t).sort(), onPic(fullDark).map((e) => e.t).sort(), 'labelled as Page + key with Darker labels');
+  assert.ok(labs.every((e) => e.fill === '#111111'), 'near-black labels');
+  // (page 1 in colour: many more strongly coloured pixels than the colouring page's)
+  const sat = await page.evaluate(() => Object.fromEntries(['page', 'ref'].map((k) => { const d = window.__p0[k]; let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) > 60) n++; return [k, n]; })));
+  assert.ok(sat.ref > sat.page * 5 && sat.ref > 100000, 'the picture in colour: ' + JSON.stringify(sat));
+  checkInside(lab, 'reference with codes');
+
+  await pick(page, '[data-plabels="none"]');
+  assert.match(await page.textContent('#sfPrWhat'), /beside the colour key/);
   const ref = await probe(page);
-  assert.equal(ref.pages.length, full.pages.length - full.keyP, 'no colouring page (nor close-ups)');
+  assert.equal(ref.pages.length, full.pages.length - full.keyP, 'no picture page (nor close-ups)');
   assert.equal(full.art.length, 2, 'colouring page + reference'); assert.equal(ref.art.length, 1, 'just the reference');
   const a = full.art[1], b = ref.art[0];
   // (v284: a tall picture's reference fills a column beside the key in Page + key too, so it can be as big)
@@ -247,11 +276,11 @@ test('choices are remembered after a reload, and the download is a real PDF', as
   assert.deepEqual([+box[1], +box[2]], [419.53, 595.28], 'A5 media box');
   assert.equal((s.match(/\/Type\s*\/Page[^s]/g) || []).length, n, 'one PDF page per built page');
   assert.match(s.slice(-6), /%%EOF/);
-  // back to the colouring page: one more page
-  await pick(page, '[data-pwhat="page"]');
+  // (v318.1) no labels: the reference beside the key, fewer pages
+  await pick(page, '[data-plabels="none"]');
   const [dl2] = await Promise.all([page.waitForEvent('download', { timeout: 20000 }), page.click('#sfPDF')]);
   const s2 = (await readFile(await dl2.path())).toString('latin1');
-  assert.ok((s2.match(/\/Type\s*\/Page[^s]/g) || []).length > n, 'the colouring page is back');
+  assert.ok((s2.match(/\/Type\s*\/Page[^s]/g) || []).length < n, 'no picture page');
   assert.deepEqual(errors, []);
 });
 

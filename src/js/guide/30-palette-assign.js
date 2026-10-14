@@ -1450,8 +1450,8 @@ function buildGradient(cl) {
   }
   const sign = plan.g > 1 ? gradLightSign() : 0,
     across = gradAcross(sign),
-    // (the area rule: a guide's own, laid Polished or Natural; v314's or v315's: splitByArea)
-    soft = gradScatAt(M) < 2 ? gradArea : 0,
+    // (the area rule: a guide's own, laid Polished or Natural; v314's or v315's: splitByArea; v318's 3 lays v315's)
+    soft = gradScatAt(M) < 2 ? Math.min(gradArea, 2) : 0,
     zero = soft === 2 ? gradPinZero(order, M) : null,
     bands = M && N ? splitByArea(order, sizes, sizes, soft, zero) : [];
   for (let b = 0; b < bands.length; b++) {
@@ -1970,7 +1970,8 @@ function gradScatter(order, assign, loop, seq, lv) {
    smoothed: only that, so a swap is made only where it leaves fewer touching sections sharing a marker. */
 const SMOOTH_PASSES = 8,
   SMOOTH_AREA = 1.5,
-  SMOOTH_SAME = 30;
+  SMOOTH_SAME = 30,
+  SMOOTH_TWIN = 12;
 let gradSmoothLast = null; // (what the last one did, for the tests)
 function gradSmooth(order, one, all, mode) {
   const n = order.length;
@@ -2032,6 +2033,12 @@ function gradSmooth(order, one, all, mode) {
     let v = D[k];
     if (v < 0) {
       v = de2000(mk[x].lab, mk[y].lab);
+      // (v318, gradArea 3) two markers that read as one colour (under TWIN_DE, 2.5) touching count as a clash of
+      // SMOOTH_TWIN, so smoothing moves them apart: the person would change marker for a difference nobody sees, and
+      // the run's step is lost there. Ben's markers, the three test pages at 16 to all markers, 4 Moods, 2 shapes: touching
+      // twins 1,025 → 468; touching sections sharing a marker +1.2%, jumps over 30 +0.5%, the clash and specks as before.
+      // The markers picked are as before (a Mood's tier and Palette's Rainbow too)
+      if (gradArea >= 3 && v < TWIN_DE) v = SMOOTH_TWIN;
       v = D[k] = D[y * K + x] = v * v;
     }
     return v;
@@ -4267,6 +4274,7 @@ function surprise() {
   reassign();
 }
 function backToReview() {
+  photoSettleNow();
   zoneEditEnd(true);
   heldNoteClear();
   if (assignData && guideDirty) {

@@ -258,6 +258,7 @@ function renderFocusMarkers() {
 // Colour along: markers already finished are gathered in a collapsed "Done (n)" group at the bottom of the list
 // (paint false: not painted here, as something else paints it next: Home's Continue, v307)
 function enterColor(paint) {
+  photoSettleNow();
   zoneEditEnd(true);
   heldNoteClear();
   if (!assignData || guideWhite()) return;

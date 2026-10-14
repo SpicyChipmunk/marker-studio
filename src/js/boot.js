@@ -300,6 +300,11 @@ document.addEventListener('keydown', function (e) {
   var trail = [],
     cur = 'wcStep0';
   ov.querySelector('.wcard').dataset.step = cur;
+  // (v318 review) whether the welcome has a step to go back to: the browser's Back (an iPad's swipe from the edge in a
+  // Safari tab, Android's Back) then takes it there, as the Back link does, instead of leaving the app (layers.js)
+  ov.msCanBack = function () {
+    return trail.length > 0;
+  };
   // (v309.1: each step in the trail with what led on from it — the button, else what had the keyboard — so Back puts
   // the keyboard back there, wherever the step was reached from; Safari doesn't focus a button that's tapped)
   function show(id, back, from) {
@@ -789,6 +794,10 @@ document.addEventListener('keydown', function (e) {
   $('wcOnePhoto').addEventListener('click', function () {
     if (typeof openScan === 'function') openScan({ added: oneAdded, undone: oneUndone, photo: true });
   });
+  // (v318 review) Scan the caps, said for an Android phone or tablet: Gboard's Scan text, a photo of a cap at a time
+  if (/Android/i.test(navigator.userAgent || ''))
+    $('wcOneScan').querySelector('.wct span').textContent =
+      'With Gboard’s Scan text: photograph each cap and tap Insert, and its code is read.';
   if (typeof ocrCan === 'function' && ocrCan()) {
     $('wcOnePhoto').style.display = '';
     $('wcOneByOne').querySelector('.wct span').textContent =
@@ -800,7 +809,7 @@ document.addEventListener('keydown', function (e) {
     if (typeof openChart === 'function') openChart({ added: oneAdded, undone: oneUndone });
   });
   $('wcMoreMiss').addEventListener('click', function () {
-    if (typeof openChart === 'function') openChart({ added: oneAdded, undone: oneUndone });
+    if (typeof openChart === 'function') openChart({ added: oneAdded, undone: oneUndone, missing: true });
   });
   // Restore a backup: the file picker opens in the same tap (an iPhone allows it only then). The welcome stays until a
   // restore worked; a problem is said just above the buttons (pinned to the card's bottom edge) until the next file is
@@ -1148,7 +1157,8 @@ function lostWord(k) {
 // offered again. Resolves to what the toast says ('' when storage was full: that has its own message).
 function addLost(ids) {
   const added = [],
-    bad = [];
+    bad = [],
+    skipNot = [];
   function recName() {
     const used = new Set(
       state.saved.map(function (s) {
@@ -1168,6 +1178,8 @@ function addLost(ids) {
           window.SF && SF.checkGuide ? SF.checkGuide(pl) : { ok: typeof pl.lmap === 'string' },
         ).then(function (c) {
           if (!c || !c.ok) {
+            // (v318 review: one that couldn't be checked for want of memory is offered again next time)
+            if (c && c.why === 'memory') skipNot.push(id);
             bad.push(id);
             return;
           }
@@ -1202,9 +1214,12 @@ function addLost(ids) {
       });
     }, Promise.resolve())
     .then(function () {
-      if (bad.length)
+      const skip = bad.filter(function (id) {
+        return skipNot.indexOf(id) < 0;
+      });
+      if (skip.length)
         try {
-          localStorage.setItem(LOST_SKIP, JSON.stringify(lostSkip().concat(bad).slice(-200)));
+          localStorage.setItem(LOST_SKIP, JSON.stringify(lostSkip().concat(skip).slice(-200)));
         } catch (e) {}
       if (
         added.length &&
@@ -1235,12 +1250,20 @@ function addLost(ids) {
             libRowChanged(m.id);
           });
       });
-      const nb = bad.length
-        ? nWord(bad.length, 'guide') +
-          ' couldn’t be read and ' +
-          (bad.length === 1 ? 'was' : 'were') +
-          ' left out.'
-        : '';
+      // (v318 audit: one that couldn't be checked for want of memory said as that, as it's offered again: "couldn't
+      // be read", said of it too, sounded final)
+      const nb =
+        (skip.length
+          ? nWord(skip.length, 'guide') +
+            ' couldn’t be read and ' +
+            (skip.length === 1 ? 'was' : 'were') +
+            ' left out.'
+          : '') +
+        (skip.length && skipNot.length ? ' ' : '') +
+        (skipNot.length
+          ? nWord(skipNot.length, 'guide') +
+            ' couldn’t be checked just now: this device is short of memory. Close other apps or tabs, then try again.'
+          : '');
       return added.length
         ? 'Added ' + nWord(added.length, 'guide') + ' back to your Library' + (nb ? '. ' + nb : '')
         : nb ||

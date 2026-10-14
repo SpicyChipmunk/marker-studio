@@ -205,14 +205,15 @@ function photoLitToggle(on) {
   positionPhoto();
 }
 // saved with the guide: the correction found (so a reopened guide reads the same colours), or false for none
+// (v318 polish: the gains as they are, not rounded to 4 places: a reopened guide's corrected photo, and the shading lit
+// from it, came out 1 or 2 levels off in a few pixels. Guides saved before keep their rounded gains, so open as they
+// were saved)
 function photoLitSave(ref) {
   if (!ref || !ref.lit) return false;
   return {
     on: ref.lit.on,
     from: ref.lit.from,
-    gain: ref.lit.fix.gain.map(function (g) {
-      return Math.round(g * 1e4) / 1e4;
-    }),
+    gain: ref.lit.fix.gain.slice(),
   };
 }
 // a reopened guide's photo: its saved correction; a guide saved before there was one (undefined) is offered the
@@ -1210,6 +1211,7 @@ function photoPtr(e, kind) {
     _phP.set(e.pointerId, { x: e.clientX, y: e.clientY });
     _phPrev = _phState();
     clearTimeout(_phT);
+    _phT = 0;
     return;
   }
   if (!_phP.has(e.pointerId)) return;
@@ -1232,11 +1234,23 @@ function photoPtr(e, kind) {
     clearTimeout(_phT);
     _phT = setTimeout(function () {
       photoRecolour(true);
-      _phT = setTimeout(photoRecolour, PH_SETTLE);
+      _phT = setTimeout(photoSettled, PH_SETTLE);
     }, 60);
   }
 }
 const PH_SETTLE = 500;
+function photoSettled() {
+  _phT = 0;
+  photoRecolour();
+}
+// (v318 polish) the colours for where the photo was left, now, when they're still to come: before the Plan is left
+// (Colour along, the sections, another pattern, zone or guide), or the photo's last move kept only the quick choice and
+// had no Undo step
+function photoSettleNow() {
+  if (!_phT) return;
+  clearTimeout(_phT);
+  photoSettled();
+}
 // move from point m0 to m1, scaling by f and turning by da around that point
 function photoMove(m0, m1, f, da) {
   const X = photoXf;
@@ -1274,7 +1288,7 @@ function photoWheel(e) {
   if (e.shiftKey) photoMove(m, m, 1, ((e.deltaY > 0 ? 1 : -1) * Math.PI) / 90);
   else photoMove(m, m, Math.exp(-e.deltaY * 0.0015), 0);
   clearTimeout(_phT);
-  _phT = setTimeout(photoRecolour, 160);
+  _phT = setTimeout(photoSettled, 160);
 }
 // Back to the pattern Photo was chosen over, its photo not picked yet (v305): that pattern is still laid (photoWait), so
 // it is only named again, its colours and anchors just as they are, and no Undo step

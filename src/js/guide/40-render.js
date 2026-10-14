@@ -406,10 +406,12 @@ function showTip(l, btns, quiet) {
   const ae = document.activeElement,
     fa = ae && ae.closest && ae.closest('.sftip') && ae.dataset ? ae.dataset.a : null;
   hideTip();
+  // (v318 review) Colour along, a section of another marker than the open row's: what it is, and Open it or Tick it
+  const ask = btns === 'ask' && sfmode === 'color' && !!hlKey;
   btns = !!btns && sfmode === 'guide';
   const pin = locks[l] !== undefined,
     d = document.createElement('div');
-  d.className = 'sftip' + (btns ? ' sftipb' : '');
+  d.className = 'sftip' + (btns || ask ? ' sftipb' : '') + (ask ? ' sftipask' : '');
   d.innerHTML =
     '<i style="background:' +
     esc(m.hex) +
@@ -424,6 +426,7 @@ function showTip(l, btns, quiet) {
     shadeTipHTML(l) +
     photoTipHTML(l) +
     (btns ? zoneTipHTML(l) : '') +
+    (ask ? askTipHTML(l) : '') +
     (btns
       ? '<div class="sftipbtns"><button type="button" class="sftipbtn" data-a="change">Change colour</button><button type="button" class="sftipbtn" data-a="pin" aria-pressed="' +
         pin +
@@ -454,6 +457,23 @@ function showTip(l, btns, quiet) {
       }
     });
   }
+  if (ask) {
+    d.setAttribute('role', 'group');
+    d.setAttribute('aria-label', 'Section of ' + m.code + ', not the marker that’s open');
+    d.addEventListener('pointerdown', function (e) {
+      e.stopPropagation();
+    });
+    d.addEventListener('click', function (e) {
+      const b = e.target.closest('[data-a]');
+      if (!b) return;
+      hideTip();
+      if (b.dataset.a === 'open') findInList(l);
+      else {
+        alongTick(l);
+        sayLive((colored[l] ? 'Ticked ' : 'Unticked ') + alongName(m));
+      }
+    });
+  }
   // next to the picture in the page (so Tab reaches it straight after the picture), placed on the screen
   sfView.insertAdjacentElement('afterend', d);
   tipEl = d;
@@ -478,8 +498,45 @@ function showTip(l, btns, quiet) {
         nb.focus({ preventScroll: true });
       } catch (_) {}
   }
+  if (ask) {
+    const h = hlM();
+    sayLive(
+      alongName(m) +
+        (h ? ', not ' + msay(h) : '') +
+        '. Open ' +
+        msay(m) +
+        ', or ' +
+        (colored[l] ? 'Untick it' : 'Tick it') +
+        '.',
+    );
+    return;
+  }
   if (!quiet) sayLive(m.code + ' ' + (m.name || '') + ', ' + m.brand + (pin ? ', pinned' : ''));
   if (!btns) tipT = setTimeout(hideTip, shadeOn() ? 3600 : 2200);
+}
+// (v318 review) the open row's marker, for "not Y28"
+function hlM() {
+  if (!hlKey || !assignData) return null;
+  for (const l of assignData.order) {
+    const m = assignData.assign[l];
+    if (m && m.mkey === hlKey) return m;
+  }
+  return null;
+}
+// the question's words and buttons: "not Y28 (in Bell)", Open V216, Tick it / Untick it
+function askTipHTML(l) {
+  const m = assignData.assign[l],
+    h = hlM(),
+    zn = h && h.mkey === m.mkey && hlZone != null ? ' in ' + esc(zoneName(hlZone)) : '';
+  return (
+    (h ? '<span class="sftipnot">not ' + esc(h.code) + zn + '</span>' : '') +
+    '<div class="sftipbtns"><button type="button" class="sftipbtn" data-a="open">Open ' +
+    esc(m.code) +
+    (zn ? ' in ' + esc(zoneName(zoneOf(l))) : '') +
+    '</button><button type="button" class="sftipbtn sftipgo" data-a="tick">' +
+    (colored[l] ? 'Untick it' : 'Tick it') +
+    '</button></div>'
+  );
 }
 // Where it goes on the screen: centred on the section's label point, on the picture's side of the screen; above the
 // part of the section that shows when that fits inside the picture, else below it; for a section too tall for
@@ -976,7 +1033,9 @@ function renderGuide() {
   if (labHi && !labHiK()) labHiOff();
   if (sfmode !== 'guide') {
     if (popOpen()) closeSwatchPop(false);
-    if (tipL >= 0) hideTip();
+    // (v318 review: not Colour along's question over another marker's section, which a tick's fade drawing the
+    // picture again a moment later had taken away as it showed)
+    if (tipL >= 0 && !(sfmode === 'color' && tipEl && tipEl.classList.contains('sftipask'))) hideTip();
   }
   if (!labelPts) buildLabelPts();
   // Colour along (v288): what you've coloured (ticked, or some of its tones) in its colour, as on your paper, the rest

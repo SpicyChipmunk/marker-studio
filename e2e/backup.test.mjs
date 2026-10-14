@@ -174,7 +174,8 @@ test('Back up takes the open guide not yet in the Library, and a guide it couldn
   assert.equal(gs[0].name, await page.evaluate(() => __mstest.curName), 'named as it is');
   assert.equal(gs[0].prog, 2);
   // a Library guide whose stored guide can't be read is left out of the backup and stays "not backed up"
-  await page.evaluate(() => sfSaveDesign({ name: 'Lost', W: 10, H: 10, keys: [], n: 0, payload: { lmap: 'x' } }).then((id) => IDB.del('guide-' + id)));
+  // (v318 review: one the database won't give back; one not stored at all is said apart, e2e/v318-data)
+  await page.evaluate(() => sfSaveDesign({ name: 'Lost', W: 10, H: 10, keys: [], n: 0, payload: { lmap: 'x' } }).then((id) => { const get = IDB.get; IDB.get = (k) => (k === 'guide-' + id ? Promise.reject(new DOMException('gone', 'UnknownError')) : get(k)); }));
   const [dl] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => backupAll('noSuchButton'))]);
   assert.ok(dl);
   assert.ok(await page.evaluate(() => guidesAtRisk()) >= 1, 'still at risk');

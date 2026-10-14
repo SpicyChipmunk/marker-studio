@@ -301,6 +301,17 @@ function toastShow(m, ms, html) {
   } else {
     t.style.top = '';
     t.style.bottom = toastBottom();
+    t.style.left = '';
+    t.style.maxWidth = '';
+    // (v318 review: in the Plan, over the foot of the picture, not over the tabs: SF.toastSpot, 72-frame.js)
+    const sp = window.SF && SF.toastSpot ? SF.toastSpot(t.offsetHeight) : null;
+    if (sp) {
+      t.style.bottom = sp.bottom + 'px';
+      if (sp.left != null) {
+        t.style.left = sp.left + 'px';
+        t.style.maxWidth = Math.min(sp.maxW, 420) + 'px';
+      }
+    }
   }
   t.classList.add('on');
   toast._at = Date.now();

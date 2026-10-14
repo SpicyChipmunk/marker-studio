@@ -72,9 +72,17 @@ function openDesignObj(d, id, resumed, quiet, col) {
   hideTip();
   if (!d || typeof d.lmap !== 'string' || !/^data:image\/png;base64,/.test(d.lmap)) {
     // (from the Library, id: its stored copy is missing or unreadable; otherwise a file that isn't a guide)
+    // (v318 review: or the browser's storage didn't answer, which a reload may fix: not "missing", which sent people to
+    // an older backup)
     note(
       id != null && !d
-        ? 'Couldn’t open that guide \u2014 its stored copy is missing from this browser. A backup or guide file can bring it back.'
+        ? typeof sfLoadDesign === 'function' && sfLoadDesign.errOf(id)
+          ? errNote(
+              'Couldn’t open that guide \u2014 this browser’s storage isn’t answering. Your guide is still saved: reload Marker Studio and try again.',
+              'Opening a guide',
+              sfLoadDesign.errOf(id),
+            )
+          : 'Couldn’t open that guide \u2014 its stored copy is missing from this browser. A backup or guide file can bring it back.'
         : 'Couldn’t load that guide \u2014 the file isn\u2019t a Marker Studio guide.',
     );
     return;
@@ -96,16 +104,19 @@ function openDesignObj(d, id, resumed, quiet, col) {
   function opened(pre, lp) {
     try {
       if (pre.ex) throw pre.ex;
-      if ((pre.err === 'size' || pre.err === 'read') && id != null && id !== _justImported) {
+      // (v318 review) a section map that decoded but couldn't be read into a canvas: the device ran short of memory
+      // (Safari limits what all canvases may hold), not a damaged guide. Said so, and the guide is left as it is:
+      // called damaged, Restore it from a backup put the backup's older copy in its place
+      if (pre.err === 'read') {
+        note(errNote(SHORT_MEM, 'Opening a guide', 'its section map couldn’t be read (short of memory)'));
+        return;
+      }
+      if (pre.err === 'size' && id != null && id !== _justImported) {
         damagedGuide(id);
         return;
       }
       if (pre.err === 'size') {
         note('Couldn’t load that guide \u2014 its picture is the wrong size.');
-        return;
-      }
-      if (pre.err === 'read') {
-        note('Couldn’t load that guide \u2014 its picture couldn\u2019t be read.');
         return;
       }
       if (pre.err === 'complex') {

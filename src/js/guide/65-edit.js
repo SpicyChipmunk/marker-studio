@@ -293,6 +293,7 @@ function growArrays() {
 let _secSayNext = '';
 function mergeCells(a, b) {
   if (a === b || !comps[a] || !comps[b] || comps[a].merged || comps[b].merged) return;
+  labelsEdited();
   for (let i = 0; i < W * H; i++) if (labels[i] === b) labels[i] = a;
   const A = comps[a],
     B = comps[b],
@@ -422,6 +423,7 @@ function tickCarry() {
   }
 }
 function relabelRegion(L) {
+  labelsEdited();
   const n = W * H;
   for (let i = 0; i < n; i++) if (labels[i] === L) labels[i] = -3;
   const stk = [];
@@ -516,6 +518,7 @@ function cutRad() {
   return Math.max(3, Math.round(3 * srcK));
 }
 function paintStroke(pts, L) {
+  labelsEdited();
   const rad = cutRad();
   for (let i = 0; i < pts.length - 1; i++) {
     const x0 = pts[i].x,

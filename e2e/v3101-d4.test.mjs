@@ -81,7 +81,7 @@ test('the quick check is said to a screen reader once the sections are found', a
   assert.match(n, /^\d+ sections$/);
   assert.equal(
     await page.textContent('#sfLive'),
-    'Looks right? We found ' + n + ' to colour. Build guide, or Fix sections.',
+    'Looks right? We found ' + n + ' to colour. Build guide, or Edit sections.',
   );
   assert.deepEqual(errors, []);
 });

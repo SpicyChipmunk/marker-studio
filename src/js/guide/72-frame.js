@@ -66,6 +66,19 @@ function workOn(on) {
   const w = root && root.parentElement;
   if (w) w.classList.toggle('sfworkon', !!on);
 }
+// how much larger than usual the page's text is, as --tpx0 has it (01-base.css): the root font size against 16px, or
+// on an iPhone or iPad against the Dynamic Type body size at its default, 17px (its Text Size)
+function textK() {
+  try {
+    const ios =
+      typeof CSS !== 'undefined' &&
+      CSS.supports('font', '-apple-system-body') &&
+      CSS.supports('-webkit-touch-callout', 'none');
+    return (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16) / (ios ? 17 : 16);
+  } catch (_) {
+    return 1;
+  }
+}
 // the picture's sizes: full and floor heights, the pinned block's offset, --pinH, and the controls' min-height
 let _ctlGap = 12, // (see frameSize)
   _planNeed = 0,
@@ -143,7 +156,13 @@ function frameSize() {
       120,
       Math.min(Math.round(vw * ar), Math.round(vh * (along && small ? 0.45 : big ? 0.6 : 0.55))),
     );
-    let comp = along ? full : Math.min(full, Math.round(vh * (small ? 0.4 : big ? 0.5 : 0.45)));
+    // (v318 review) with larger text on a phone (the iPhone's Text Size, or the browser's), the Plan and Edit sections'
+    // floor is lower, by the square root of how much larger: 45% of the screen at the usual size, 40% at 1.3×, 36% at
+    // 1.6× (the cap), so the tabs' panel keeps several rows of its larger controls under the pinned picture
+    const tk = big || along ? 1 : Math.min(1.6, Math.max(1, textK()));
+    let comp = along
+      ? full
+      : Math.min(full, Math.round((vh * (small ? 0.4 : big ? 0.5 : 0.45)) / Math.sqrt(tk)));
     // (v316) an iPad's one column with a narrow picture (the sample, a bookmark: under 55% of the column's width at the
     // 60% start, black either side): the Plan and Edit sections start at the 50% floor, the size it shrinks to anyway,
     // so the tabs and their first row are on the first screen; a page-shaped picture keeps its 60%
@@ -221,6 +240,38 @@ function frameSize() {
   paneMin();
   touchRule();
   planFit();
+}
+// (v318 review) Where a toast goes in the Plan: over the foot of the picture, just above its tool row (beside the
+// picture's ↶ Undo), not over the tabs and their controls, where it had sat for Surprise's 8 seconds over the tab
+// bar on a phone and over Colours from on an iPad held sideways (taps go through a toast, but not its Undo, and what
+// it covers can't be seen). Held sideways, over the foot of the picture's own column. Only while the Plan's controls show and the picture is in view;
+// otherwise null, and the toast goes where it always did; so too when the toast (th: its height) would hide more than
+// half of the picture in view (very large text on a phone). { bottom, left, maxW } in px.
+function toastSpot(th) {
+  if (
+    sfmode !== 'guide' ||
+    !root ||
+    !root.offsetParent ||
+    !cv ||
+    root.classList.contains('sfrev') ||
+    root.classList.contains('sffull') ||
+    root.classList.contains('sffoc') ||
+    document.documentElement.classList.contains('sfsheeton')
+  )
+    return null;
+  const H = window.innerHeight,
+    W = window.innerWidth,
+    pr = (picBox || cv).getBoundingClientRect(),
+    tl = document.getElementById('sfZoomCtl'),
+    tr = tl && tl.getClientRects().length ? tl.getBoundingClientRect() : null;
+  // (the picture's foot on the screen, with room above it for a toast)
+  const foot = geo.side ? Math.min(pr.bottom, H) : tr ? tr.top : pr.bottom;
+  if (foot - Math.max(pr.top, 0) < Math.max(160, 2 * (th || 0)) || foot > H || foot < 160) return null;
+  return {
+    bottom: Math.round(H - foot + 10),
+    left: geo.side ? Math.round((Math.max(pr.left, 0) + Math.min(pr.right, W)) / 2) : null,
+    maxW: geo.side ? Math.round(Math.min(pr.right, W) - Math.max(pr.left, 0) - 16) : null,
+  };
 }
 // the picture's size on the screen; when it changes while zoomed in (a turn, a resize, a stage with another size) the
 // pan keeps the same spot in the middle and is held inside the picture again, so no blank strip shows

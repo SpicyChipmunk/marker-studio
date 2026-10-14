@@ -14,7 +14,10 @@ let chartBrand = 'Ohuhu',
   chartOn = new Set(),
   chartAfter = null,
   chartUndone = null,
-  chartOpener = null;
+  chartOpener = null,
+  // (v318 review) Some are missing (the welcome, after a set): only the markers you had when it opened, to untick the
+  // few lost or used up; null for every colour. Kept as they were, so a swatch unticked stays where it was
+  chartOnly = null;
 // the families with markers of the brand, in Markers' order, each with its markers (light to dark) and a dot: its
 // most colourful marker of middle lightness (a grey family's middle one)
 // (v309.1: grey is the brand's own markers' mean chroma, and lightness counts twice: Copic's Cool Grey, which f.neutral
@@ -23,7 +26,9 @@ let chartBrand = 'Ohuhu',
 function chartFams(brand) {
   return families
     .map(function (f) {
-      const idxs = f.idxs.filter((i) => COLORS[i].brand === brand).sort((a, b) => HS[b].l - HS[a].l);
+      const idxs = f.idxs
+        .filter((i) => COLORS[i].brand === brand && (!chartOnly || chartOnly.has(mkey(i))))
+        .sort((a, b) => HS[b].l - HS[a].l);
       if (!idxs.length) return null;
       const grey = idxs.reduce((s, i) => s + LCH[i][1], 0) / idxs.length < GREY_C;
       let dot = idxs[Math.floor(idxs.length / 2)],
@@ -53,7 +58,11 @@ function chartChanges() {
 function chartRender() {
   const fams = chartFams(chartBrand);
   if (!fams.some((f) => f.name === chartFam)) chartFam = fams.length ? fams[0].name : '';
-  const brands = [...new Set(COLORS.map((c) => c.brand))];
+  // (Some are missing: only the brands you have)
+  const brands = [...new Set(COLORS.map((c) => c.brand))].filter(
+    (b) => !chartOnly || [...chartOnly].some((k) => k.split('|')[0] === b),
+  );
+  $('chBrand').hidden = brands.length < 2 && !!chartOnly;
   $('chBrand').innerHTML = brands
     .map(
       (b) =>
@@ -137,15 +146,18 @@ function chartFoot() {
   const ch = chartChanges(),
     b = $('chSave');
   $('chSum').innerHTML = '<b>' + chartOn.size + '</b> ticked in all';
-  b.disabled = !ch.add.length && !ch.del.length;
+  // (Some are missing, none unticked: the button closes, all there)
+  b.disabled = !ch.add.length && !ch.del.length && !chartOnly;
   b.textContent =
-    ch.add.length && ch.del.length
-      ? 'Save: +' + ch.add.length + ' −' + ch.del.length
-      : ch.del.length
-        ? 'Remove ' + ch.del.length
-        : ch.add.length
-          ? 'Add ' + ch.add.length + ' marker' + (ch.add.length === 1 ? '' : 's')
-          : 'Tick your colours';
+    chartOnly && !ch.add.length && !ch.del.length
+      ? 'None are missing'
+      : ch.add.length && ch.del.length
+        ? 'Save: +' + ch.add.length + ' −' + ch.del.length
+        : ch.del.length
+          ? 'Remove ' + ch.del.length
+          : ch.add.length
+            ? 'Add ' + ch.add.length + ' marker' + (ch.add.length === 1 ? '' : 's')
+            : 'Tick your colours';
 }
 // opts: { added(n) } from the welcome: called after a save that added markers
 function openChart(opts) {
@@ -156,6 +168,7 @@ function openChart(opts) {
   chartUndone = o.undone || null;
   chartOpener = document.activeElement;
   chartOn = new Set(state.owned);
+  chartMiss(o.missing && state.owned.size ? new Set(state.owned) : null);
   // the brand of most of your markers (Ohuhu with none)
   const n = {};
   state.owned.forEach((k) => {
@@ -172,6 +185,14 @@ function openChart(opts) {
   const first = ov.querySelector('#chFams [aria-pressed="true"]');
   if (first) first.focus({ preventScroll: true });
 }
+// (v318 review) Some are missing's view (only, the markers you have) or every colour's
+function chartMiss(only) {
+  chartOnly = only;
+  const ov = $('chartOverlay');
+  ov.querySelector('.chcard').classList.toggle('chmiss', !!only);
+  $('chTitle').textContent = only ? 'Untick any you’ve lost' : 'Tick the colours you have';
+  $('chAll').hidden = !only;
+}
 function closeChart() {
   const ov = $('chartOverlay');
   if (!ov || !ov.classList.contains('on')) return;
@@ -186,7 +207,7 @@ function chartSave() {
     after = chartAfter,
     undone = chartUndone,
     opener = chartOpener;
-  if (!ch.add.length && !ch.del.length) return;
+  if (!ch.add.length && !ch.del.length) return closeChart();
   ch.add.forEach((k) => state.owned.add(k));
   ch.del.forEach((k) => state.owned.delete(k));
   const ink = inkAddedOff(ch.add),
@@ -226,6 +247,15 @@ function chartSave() {
   if (!ov) return;
   $('chClose').addEventListener('click', closeChart);
   $('chSave').addEventListener('click', chartSave);
+  // (Some are missing: every colour, to tick one bought on its own too)
+  $('chAll').addEventListener('click', function () {
+    chartMiss(null);
+    chartRender();
+    $('chGrid').scrollTop = 0;
+    chartChipInView();
+    const first = $('chFams').querySelector('[aria-pressed="true"]');
+    if (first) first.focus({ preventScroll: true });
+  });
   ov.addEventListener('click', function (e) {
     if (e.target === ov) return closeChart();
     const t = e.target.closest ? e.target : null;

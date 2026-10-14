@@ -209,7 +209,7 @@ test('the bar by keyboard: each part a button that opens its sheet; Surprise som
     if (await page.evaluate(() => __mstest.styleVars.family) === 'random') got = await undoLabel(page);
   }
   assert.ok(got, 'Random in 30 goes');
-  assert.match(got, /Surprise: .+ palette · Random, main colour [a-z-]+s/);
+  assert.match(got, /Surprise: .+ · Random: [a-z-]+s/);
   assert.equal(await page.evaluate(() => __mstest.styleVars.balance), 'main');
   assert.deepEqual(errors, []);
 });

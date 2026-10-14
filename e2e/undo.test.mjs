@@ -255,7 +255,8 @@ test('Library delete: Undo brings the guide back, and it opens with its progress
   assert.deepEqual(errors, []);
 });
 
-test('Library delete without Undo: the stored guide goes after the Undo window, or at the next start', async () => {
+// (v318.1: Recently deleted keeps it a week after the Undo window, e2e/v3181-bin; it had gone when the window was over)
+test('Library delete without Undo: the stored guide waits in Recently deleted, then goes at the first start a week on', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await saveGuide(page); await idle(page);
@@ -264,7 +265,8 @@ test('Library delete without Undo: the stored guide goes after the Undo window, 
   await libItem(page, row(id), 'sdel'); await idle(page);
   assert.ok(await hasPayload(page, id));
   await idle(page, 6200); // until the 6 s Undo window has run out
-  assert.equal(await hasPayload(page, id), false, 'removed once the Undo window is over');
+  assert.ok(await hasPayload(page, id), 'kept once the Undo window is over');
+  assert.equal(await page.textContent('#libBin'), 'Recently deleted (1)');
   // another guide deleted, then the app reloaded before the window ends
   await page.click('#savedClose');
   await page.evaluate(() => { const o = __mstest.assignData.order; __mstest.colored[o[0]] = 1; __mstest.guideDirty = true; });
@@ -277,7 +279,13 @@ test('Library delete without Undo: the stored guide goes after the Undo window, 
   assert.ok(await hasPayload(page, id2));
   await page.reload(); await idle(page, 2500);
   assert.equal(await page.evaluate((id) => state.saved.some((s) => s.id === id), id2), false);
-  assert.equal(await hasPayload(page, id2), false, 'tidied away at the next start');
+  assert.ok(await hasPayload(page, id2), 'kept through the next start');
+  // a week on: both go at the next start
+  await page.evaluate(() => { const l = JSON.parse(localStorage.getItem('ms-lib-deleting')); l.forEach((x) => (x.t -= 8 * 864e5)); localStorage.setItem('ms-lib-deleting', JSON.stringify(l)); });
+  await page.reload(); await idle(page, 2500);
+  await page.waitForFunction(() => localStorage.getItem('ms-lib-deleting') === null);
+  assert.equal(await hasPayload(page, id), false);
+  assert.equal(await hasPayload(page, id2), false, 'tidied away at the first start a week on');
   assert.deepEqual(errors, []);
 });
 

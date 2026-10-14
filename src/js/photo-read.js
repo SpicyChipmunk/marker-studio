@@ -32,7 +32,10 @@ const OCR_VER = '1',
   OCR_MB = Math.round(OCR_FILES.reduce((s, x) => s + x.n, 0) / 1e6),
   // (a read under way when the app last closed: it may have run out of memory, so the next reads go gently)
   OCR_BUSY_KEY = 'ms-ocr-busy',
-  // (the photo read gently since running out of memory, for a fortnight: one shortfall, other apps open, isn't for ever)
+  // (the photo read gently since running out of memory, for a fortnight: one shortfall, other apps open, isn't for ever.
+  // v318.1: gently is the detector in four strips, as an iPad's or iPhone's always is, not at 1280 px: in Safari's engine
+  // a 12 MP tray's peak was the same within the noise, 1016 MB at 1600 px in four strips, 1028 at 1280 (three runs
+  // each), and 1280 px added wrong codes: Ben's Copic set 6, his wide trays 1, close-ups 1, none at 1600)
   OCR_LOW_DAYS = 14,
   OCR_LOW_KEY = 'ms-ocr-low';
 const ocrUrl = (f) => new URL(OCR_DIR + f, location.href).href;
@@ -44,7 +47,9 @@ let ocrW = null, // the worker
   // (v318 prototype) several photos chosen at once: read in turn, one summary at the end
   // { files, k (the next to read), n0 (the first's photo number), per: [{ name, added, asked, failed }], stop }
   ocrQ = null,
-  ocrOk = false; // the reader known to be stored: the card's tap opens the photo picker straight away
+  ocrOk = false, // the reader known to be stored: the card's tap opens the photo picker straight away
+  // (questions in the list answered by a photo's codes: [{ e, by: its photo }], for Undo)
+  ocrAnswered = [];
 
 // whether this browser can run the reader: WebAssembly with SIMD (Safari 16.4), workers, the Cache API
 function ocrCan() {
@@ -238,13 +243,39 @@ function ocrLine(r, it) {
     // (and with a brand chosen, not once the photo plainly shows the other brand: an Ohuhu B04 isn't Copic's. The
     // photo's codes are then read at the end with the photo's brand, and the summary says so)
     mine = !!cs.length && (scanBrand ? !seen || seen === scanBrand : COLORS[cs[0].i].brand === seen);
-  if (!it.unsure && it.text.length >= 2 && cs.length === 1 && cs[0].n === 1 && !cs[0].asked && mine) {
+  // (a lone character, the blender's 0, never at once: only at the end, with its name)
+  if (
+    !it.unsure &&
+    it.text.length >= 2 &&
+    cs.length === 1 &&
+    cs[0].n === 1 &&
+    !cs[0].asked &&
+    mine &&
+    COLORS[cs[0].i].code.length >= 2
+  ) {
     const was = scanList.length;
     if (scanTake(cs[0].i, '', true, true) && scanList.length > was) scanList[0].photo = r.n;
     r.taken.add(it.id);
     r.sure++;
   }
   ocrSoon(r);
+}
+// whether the names read with a code are its marker's: a word of them (4 letters or more, not a word every family has)
+// is part of a word of its name, or the other way ("coal" of Charcoal, "akura" of Sakura)
+const OCR_PLAIN = new Set(
+  'grey gray light dark pale deep green blue pink yellow brown orange purple violet cool warm neutral bright soft'.split(
+    ' ',
+  ),
+);
+function ocrWordsOf(t) {
+  return String(t || '')
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((w) => w.length >= 4 && !OCR_PLAIN.has(w));
+}
+function ocrNameAgrees(i, names) {
+  const mine = ocrWordsOf(COLORS[i].name);
+  return ocrWordsOf(names.join(' ')).some((f) => mine.some((w) => w.indexOf(f) >= 0 || f.indexOf(w) >= 0));
 }
 // the list and the photo drawn again, a few times a second at most (each code drawing the list again had cost a
 // second over 300 codes, more on an iPad)
@@ -266,6 +297,88 @@ function ocrBrandOf(r) {
     c = r.brands.Copic || 0;
   return o >= 5 && o >= 4 * c ? 'Ohuhu' : c >= 5 && c >= 4 * o ? 'Copic' : '';
 }
+// (v318.1) a photo's lines without the parts of caps read as codes of their own; what went in at once for one of them
+// is taken back out of the list:
+// - a code inside a longer one read in the same place, by either look ("V91" of RV91, "Y00" of BGY00, "G3" of G316,
+//   read as Ohuhu's old G3, now G311), unless the names read with it are its own;
+// - a code that went in at once, read for sure, whose names Scan takes for another marker's ("V91" with "Grayish
+//   Cherry", RV91's name): asked about, as Scan asks about a typed code and name that don't match.
+function ocrParts(r, lines) {
+  const key = (t) =>
+      String(t)
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, ''),
+    markers = (t) =>
+      (scanRead(t, '').codes || []).filter((c) => c.opts.length).reduce((a, c) => a.concat(c.opts), []),
+    names = (x) => lines.filter((y) => y.nameOf === x.id).map((y) => y.text),
+    ins = (b, x, y) => {
+      const a = (b[4] * Math.PI) / 180,
+        dx = x - b[0],
+        dy = y - b[1],
+        m4 = 0.25 * b[3];
+      return (
+        Math.abs(dx * Math.cos(a) + dy * Math.sin(a)) <= b[2] / 2 + m4 &&
+        Math.abs(-dx * Math.sin(a) + dy * Math.cos(a)) <= b[3] / 2 + m4
+      );
+    },
+    over = (p, q) => ins(p.box, q.box[0], q.box[1]) || ins(q.box, p.box[0], p.box[1]),
+    codes = lines.filter((x) => !x.nameOf && /\d/.test(x.text)),
+    // (the photo's brand, as its other questions are asked: not another brand's marker of the same code)
+    brand = ocrBrandOf(r) || scanBrand,
+    drop = new Set(),
+    ask = [];
+  codes.forEach((x) => {
+    const k = key(x.text),
+      own = markers(x.text),
+      nm = names(x),
+      mine = own.length && own.some((i) => ocrNameAgrees(i, nm));
+    if (!own.length || mine) return;
+    if (
+      k.length >= 2 &&
+      codes.some((y) => {
+        const ky = key(y.text);
+        return y !== x && ky.length > k.length && ky.indexOf(k) >= 0 && over(x, y) && markers(y.text).length;
+      })
+    )
+      return drop.add(x.id);
+    // (only Scan's own "the code and the name don't match": a scrap of a name read as a code, "R|ush", isn't one)
+    if (r.taken.has(x.id) && nm.length) {
+      const a = (scanRead([x.text].concat(nm).join(' '), brand).codes || []).find(
+        (c) => c.asked === 'name' && c.opts.some((i) => own.indexOf(i) >= 0),
+      );
+      if (a) {
+        ask.push({ k: 'name ' + a.code + ' ' + a.opts.map(mkey).join(','), opts: a.opts });
+        drop.add(x.id);
+      }
+    }
+  });
+  // (what went in at once for a line left out or read again, unless another line kept took the same marker)
+  const back = new Set();
+  r.taken.forEach((id) => {
+    if (!drop.has(id)) return;
+    const x = lines.find((y) => y.id === id) || r.items.get(id);
+    r.taken.delete(id);
+    r.sure = Math.max(0, r.sure - 1);
+    if (x) ocrCodes(x.text, scanBrand).forEach((c) => back.add(c.i));
+  });
+  r.taken.forEach((id) => {
+    const x = lines.find((y) => y.id === id) || r.items.get(id);
+    if (x) ocrCodes(x.text, scanBrand).forEach((c) => back.delete(c.i));
+  });
+  if (back.size) scanList = scanList.filter((e) => e.ask || e.photo !== r.n || !back.has(e.i));
+  ask.forEach((x) => {
+    const asked = scanAsk(
+      x.k,
+      'The code and the name read don’t match: which one?',
+      x.opts.map((i) => ({ i: i, how: 'chosen' })),
+      true,
+      true,
+    );
+    // (this photo's question: counted for it, and taken out by Undo this photo)
+    if (asked === true) scanList[0].photo = r.n;
+  });
+  return lines.filter((x) => !drop.has(x.id) && !(x.nameOf && drop.has(x.nameOf)));
+}
 // the end of the photo: what waited (the unsure, two-brand codes, the names) read by Scan with the photo's brand
 function ocrDone(r, m) {
   clearTimeout(r.soon);
@@ -277,14 +390,18 @@ function ocrDone(r, m) {
   try {
     localStorage.removeItem(OCR_BUSY_KEY);
   } catch (_) {}
+  // (a part of a cap read as a code: left out, and taken back out of the list when it went in at once)
+  m = Object.assign({}, m, { lines: ocrParts(r, m.lines) });
   // (each code's line with its names after it, the order Scan's reading of a list wants; a code already added
   // needs neither again)
   const items = new Map(m.lines.map((x) => [x.id, x])),
     text = [];
   r.taken.forEach((id) => !items.has(id) && r.items.has(id) && items.set(id, r.items.get(id)));
   r.items = items;
-  // (on a tray plainly of one brand, another brand's code that's the start of a code of this one read in the photo
-  // too, E71 beside E711, or one read unsure, is that cap read short, or a misreading: left out, not asked about)
+  // (on a tray plainly of one brand, another brand's code that's the start or the end of a code of this one read in
+  // the photo too, E71 beside E711 or Y13 beside BGY13, or one read unsure, is that cap read short, or a misreading:
+  // left out, not asked about. A code both brands have now is the photo's brand's, never left out: E81 beside E814
+  // had been, as Copic's E81 comes first)
   const seen = ocrBrandOf(r),
     // (a brand chosen, and the photo plainly the other brand's: what went in at once under the brand chosen, before
     // the photo's brand showed, comes out, and is read again with the rest under the photo's brand)
@@ -294,20 +411,64 @@ function ocrDone(r, m) {
           ...m.lines.map((x) => ocrCodes(x.text, seen).map((c) => COLORS[c.i].code.replace(/-/g, ''))),
         )
       : [],
+    codesIn = (t) => (scanRead(t, '').codes || []).filter((c) => c.opts.length),
+    // (a marker the code is now, not one it was: Ohuhu's E515 was Y13)
+    now = (c, i) => (c.oldOf || []).indexOf(i) < 0,
     short = (x) => {
       if (!seen) return false;
-      const cs = ocrCodes(x.text, '');
-      if (!cs.length || cs.some((c) => COLORS[c.i].brand === seen)) return false;
-      const k = COLORS[cs[0].i].code.replace(/-/g, '');
-      return x.unsure || ownCodes.some((o) => o !== k && o.indexOf(k) === 0);
-    };
+      const cs = codesIn(x.text),
+        other = [];
+      cs.forEach((c) => c.opts.forEach((i) => COLORS[i].brand !== seen && now(c, i) && other.push(i)));
+      // (the photo's brand has the code now, or only another brand's old code is it, P3 an Ohuhu V18's: not short)
+      if (!other.length || cs.some((c) => c.opts.some((i) => COLORS[i].brand === seen && now(c, i))))
+        return false;
+      const k = COLORS[other[0]].code.replace(/-/g, '');
+      return x.unsure || ownCodes.some((o) => o !== k && (o.indexOf(k) === 0 || o.slice(-k.length) === k));
+    },
+    // (the same cap read twice, by each look or as a whole box and a line of it: one line, with the names read by
+    // either, so a name read once settles it; "R23" with no name beside "R23 Sakura" had been asked about)
+    key = (t) => t.toUpperCase().replace(/[^A-Z0-9]/g, ''),
+    inBox = (b, x, y) => {
+      const a = (b[4] * Math.PI) / 180,
+        dx = x - b[0],
+        dy = y - b[1],
+        m4 = 0.25 * b[3];
+      return (
+        Math.abs(dx * Math.cos(a) + dy * Math.sin(a)) <= b[2] / 2 + m4 &&
+        Math.abs(-dx * Math.sin(a) + dy * Math.cos(a)) <= b[3] / 2 + m4
+      );
+    },
+    groups = [];
   m.lines.forEach((x) => {
+    if (x.nameOf) return;
+    const k = key(x.text),
+      g = groups.find(
+        (g) =>
+          g.k === k &&
+          g.lines.some((y) => inBox(y.box, x.box[0], x.box[1]) || inBox(x.box, y.box[0], y.box[1])),
+      );
+    if (g) g.lines.push(x);
+    else groups.push({ k: k, lines: [x] });
+  });
+  groups.forEach((g) => {
+    const x = g.lines[0],
+      names = [];
+    g.lines.forEach((l) =>
+      m.lines.forEach((y) => {
+        if (y.nameOf === l.id && names.every((n) => key(n) !== key(y.text))) names.push(y.text);
+      }),
+    );
     // (only lines with a digit, as every code has: a lone word, "Green", read as the other brand's colour's name, had
     // been a question about it)
-    if (x.nameOf || (!swap && r.taken.has(x.id)) || !/\d/.test(x.text) || short(x)) return;
+    if ((!swap && g.lines.some((l) => r.taken.has(l.id))) || !/\d/.test(x.text)) return;
+    if (short({ text: x.text, unsure: g.lines.every((l) => l.unsure) })) return;
+    // (a lone character, the blender's 0, only with its name: a seam read "0,3,5" had added Copic's 0)
+    const lone = (scanRead(x.text, seen || scanBrand).codes || []).filter((c) => c.opts.length);
+    if (!names.length && !/[A-Za-z]{3}/.test(x.text) && lone.length && lone.every((c) => c.code.length < 2))
+      return;
     // (a code and its name on one line, as on the cap: a word of the name settles a code two markers answer to, R16
     // Light Salmon and RV316, once R16; the name's lines come in any order, "Pink" then "Tender")
-    text.push([x.text].concat(m.lines.filter((y) => y.nameOf === x.id).map((y) => y.text)).join(' '));
+    text.push([x.text].concat(names).join(' '));
   });
   if (swap) {
     scanList = scanList.filter((e) => e.photo !== r.n);
@@ -315,7 +476,6 @@ function ocrDone(r, m) {
     r.sure = 0;
   }
   const before = new Set(scanList),
-    asks0 = scanAsks(),
     was = scanBrand;
   r.brand = seen;
   if (text.length) {
@@ -329,6 +489,21 @@ function ocrDone(r, m) {
       scanBrand = was;
     }
   }
+  // (on a tray plainly of one brand, another brand's marker offered only by its name, its code not read, isn't asked
+  // about: "R47 Peach" had offered Copic's R32 Peach on a tray of Ohuhu caps)
+  const read = new Set(),
+    // (what this photo added: "Which R15?", R15 or the old R15 that's RV19 now, from a scrap read "RT5" beside "R15
+    // Lychee Juice" that added R15, is that cap read again, or a scrap of it: not asked. Not when the marker added is the
+    // one the code was: "Which WG01?" beside YGY11, once WG01, is still asked)
+    got = new Set(scanList.filter((e) => !e.ask && (e.photo === r.n || !before.has(e))).map((e) => e.i));
+  m.lines.forEach((x) => !x.nameOf && codesIn(x.text).forEach((c) => c.opts.forEach((i) => read.add(i))));
+  scanList = scanList.filter(
+    (e) =>
+      before.has(e) ||
+      !e.ask ||
+      ((!seen || !/^other /.test(e.ask) || e.opts.some((o) => read.has(o.i))) &&
+        !(/^old /.test(e.ask) && e.opts.some((o) => o.how === 'chosen' && got.has(o.i)))),
+  );
   scanList.forEach((e) => {
     if (before.has(e)) return;
     e.photo = r.n;
@@ -336,7 +511,15 @@ function ocrDone(r, m) {
     if (e.ask && seen && seen !== was && /^other /.test(e.ask))
       e.title = e.title.replace('than the one chosen (' + seen + ')', 'than the photo’s (' + seen + ')');
   });
-  r.asked = scanAsks() - asks0;
+  // (a question every answer of which is in the list now, this photo's or an earlier one's, is answered: it goes, kept
+  // to come back with Undo. "Which G410?" had stayed with G410 and G24 both in the list, from later photos)
+  const listed = new Set(scanList.filter((e) => !e.ask).map((e) => e.i));
+  scanList = scanList.filter((e) => {
+    if (!e.ask || !e.opts.every((o) => listed.has(o.i))) return true;
+    ocrAnswered.push({ e: e, by: r.n });
+    return false;
+  });
+  r.asked = scanList.filter((e) => e.ask && e.photo === r.n).length;
   r.added = scanList.filter((e) => e.photo === r.n && !e.ask).length;
   scanRender();
   ocrDraw(r);
@@ -379,7 +562,13 @@ function ocrFailed(m) {
       localStorage.setItem(OCR_LOW_KEY, String(Date.now()));
     } catch (_) {}
     r.gentle = true;
-    r.note = 'That was a lot for this device’s memory: reading it again, more gently…';
+    // (what the first try read is let go of, all but what it added: the second's lines are numbered from 1 again, and
+    // a line taken by the first had kept the second's of the same number out of the list)
+    r.items = new Map();
+    r.taken = new Set();
+    r.brands = {};
+    r.sure = 0;
+    r.note = 'That was a lot for this device’s memory: reading it again…';
     ocrStatus(r);
     return ocrGo(r);
   }
@@ -394,23 +583,43 @@ function ocrFailed(m) {
 }
 
 // --- the photo: decoded (turned upright as taken), the copy read at most 2048 px on its long side, and a smaller one
-// shown
+// shown. (v318 polish) A big photo is decoded straight to that size where the browser can (createImageBitmap's resize,
+// checked once to turn a photo upright as a picture does, below): decoded whole first, a 24 MP photo took about 98 MB
+// and a 48 MP one 190 MB before it was shrunk. Elsewhere, or if that fails, as before.
 async function ocrPhoto(file) {
   const url = URL.createObjectURL(file);
   try {
     const img = new Image();
-    img.src = url;
-    await img.decode();
+    // (its size, upright, is known once it loads: its pixels needn't be decoded for that)
+    await new Promise(function (res, rej) {
+      img.onload = res;
+      img.onerror = function () {
+        rej(new Error('the photo couldn’t be decoded'));
+      };
+      img.src = url;
+    });
     const W0 = img.naturalWidth,
       H0 = img.naturalHeight,
       s = Math.min(1, 2048 / Math.max(W0, H0)),
       w = Math.max(1, Math.round(W0 * s)),
       h = Math.max(1, Math.round(H0 * s));
+    let src = null;
+    if (s < 1 && (await ocrBitmapOk()))
+      try {
+        const b = await createImageBitmap(file, { resizeWidth: w, resizeHeight: h, resizeQuality: 'high' });
+        if (b.width === w && b.height === h) src = b;
+        else b.close();
+      } catch (_) {}
+    if (!src) {
+      await img.decode();
+      src = img;
+    }
     const c = document.createElement('canvas');
     c.width = w;
     c.height = h;
     const x = c.getContext('2d');
-    x.drawImage(img, 0, 0, w, h);
+    x.drawImage(src, 0, 0, w, h);
+    if (src.close) src.close();
     const data = x.getImageData(0, 0, w, h);
     // (the copy shown: up to 900 px, enough for a phone's or an iPad's view)
     const v = Math.min(1, 900 / Math.max(w, h)),
@@ -424,6 +633,56 @@ async function ocrPhoto(file) {
     URL.revokeObjectURL(url);
   }
 }
+// whether createImageBitmap makes a photo the size asked and turned upright from its camera data (EXIF), as a picture
+// in the page is: tried once, on a tiny JPEG made here, turned half round (orientation 3), left half red
+let _ocrBmp = null;
+function ocrBitmapOk() {
+  if (_ocrBmp) return _ocrBmp;
+  _ocrBmp = (async function () {
+    if (typeof createImageBitmap !== 'function') return false;
+    const c = document.createElement('canvas');
+    c.width = 32;
+    c.height = 16;
+    const g = c.getContext('2d');
+    g.fillStyle = '#00f';
+    g.fillRect(0, 0, 32, 16);
+    g.fillStyle = '#f00';
+    g.fillRect(0, 0, 16, 16);
+    const jb = await new Promise(function (r) {
+      c.toBlob(r, 'image/jpeg', 0.95);
+    });
+    if (!jb) return false;
+    const j = new Uint8Array(await jb.arrayBuffer()),
+      // (an APP1 segment with one tag: Orientation = 3)
+      ex = [
+        0xff, 0xe1, 0, 34, 0x45, 0x78, 0x69, 0x66, 0, 0, 0x4d, 0x4d, 0, 0x2a, 0, 0, 0, 8, 0, 1, 1, 0x12, 0, 3,
+        0, 0, 0, 1, 0, 3, 0, 0, 0, 0, 0, 0,
+      ],
+      out = new Uint8Array(j.length + ex.length);
+    out.set(j.subarray(0, 2));
+    out.set(ex, 2);
+    out.set(j.subarray(2), 2 + ex.length);
+    const b = await createImageBitmap(new Blob([out], { type: 'image/jpeg' }), {
+      resizeWidth: 16,
+      resizeHeight: 8,
+      resizeQuality: 'high',
+    });
+    const k = document.createElement('canvas');
+    k.width = 16;
+    k.height = 8;
+    const kx = k.getContext('2d'),
+      bw = b.width;
+    kx.drawImage(b, 0, 0);
+    b.close();
+    const L = kx.getImageData(2, 4, 1, 1).data,
+      R = kx.getImageData(13, 4, 1, 1).data;
+    // (turned: blue on the left now, red on the right)
+    return bw === 16 && L[2] > 160 && L[0] < 100 && R[0] > 160 && R[2] < 100;
+  })().catch(function () {
+    return false;
+  });
+  return _ocrBmp;
+}
 
 // --- the view, in Scan's card in place of its list while a photo is read
 const ocrV = () => $('ocrView');
@@ -431,17 +690,31 @@ function ocrShow(html) {
   const card = $('scanOverlay').querySelector('.sccard'),
     v = ocrV();
   card.classList.add('ocron');
+  // (wide only for a photo: the next of a batch keeps the last's width until it's open, ocrWide)
+  if (html.indexOf('id="ocrPic"') < 0) card.classList.remove('ocrwide');
   v.hidden = false;
   v.innerHTML = html;
-  $('scTitle').textContent = 'Read photos of your caps';
+  // (v318 review: one name for it everywhere, as the welcome's and Add markers' cards have it)
+  $('scTitle').textContent = 'Photograph your caps';
 }
 function ocrHide() {
   const card = $('scanOverlay').querySelector('.sccard'),
     v = ocrV();
-  card.classList.remove('ocron');
+  card.classList.remove('ocron', 'ocrwide');
   v.hidden = true;
   v.innerHTML = '';
+  if ($('ocrLive')) $('ocrLive').textContent = '';
   $('scTitle').textContent = scanFind ? 'Scan 3 caps' : 'Scan or type codes';
+}
+// (v318 review) the card widened for a photo only when that shows it 500 px wide, for its codes over the boxes (ocrDraw):
+// the card's 760 px less its padding, and the photo at most 62% of the window's height (11-scan.css)
+function ocrWide(r) {
+  const card = $('scanOverlay').querySelector('.sccard');
+  if (!r || !r.img || !r.img.show) return card.classList.remove('ocrwide');
+  const s = r.img.show,
+    room = Math.min(760, window.innerWidth - 24) - 34,
+    w = Math.min(room, s.width, ((0.62 * window.innerHeight) / s.height) * s.width);
+  card.classList.toggle('ocrwide', w >= 500);
 }
 // the card in Scan: shown where the reader can run, not in Find mode
 function ocrCard() {
@@ -452,8 +725,8 @@ function ocrCard() {
 function ocrConsent(msg) {
   const off = navigator.onLine === false;
   ocrShow(
-    '<div class="ocrh">Read your caps from photos</div>' +
-      '<p class="ocrp">The reader works on this device: your photos never leave it. It’s a one-time download of about <b>' +
+    // (no heading of its own: the sheet's title says what it is, and on a phone the two were stacked)
+    '<p class="ocrp">The reader works on this device: your photos never leave it. It’s a one-time download of about <b>' +
       OCR_MB +
       ' MB</b>, kept for offline use. Wi-Fi is best.</p>' +
       '<ul class="ocrul"><li>Caps up, in good light, the phone or iPad held flat above them.</li>' +
@@ -519,14 +792,33 @@ function ocrBack() {
   ocrDown = null;
   ocrHide();
   scanRender();
-  scanFocusBox();
+  ocrFocusList(false);
 }
-// the card tapped: the photo picker straight away when the reader is stored (it opens only from a tap), else consent
-async function ocrOpenTap() {
+// (v318 review) back from the reader to the list: the keyboard's place on Add (after Done) or on the card that reads
+// photos, not in the box: in a tap, focus there opens an iPad's or iPhone's keyboard over the list just read, the way
+// Photograph your caps opened Scan without it
+function ocrFocusList(add) {
+  const a = $('scAdd'),
+    o = $('ocrOpen'),
+    to = add && a && !a.disabled ? a : o && o.getClientRects().length ? o : null;
+  if (to) to.focus({ preventScroll: true });
+  else scanFocusBox();
+}
+// the card tapped: the photo picker straight away when the reader is stored (it opens only from a tap), else consent.
+// how: 'entry', from Photograph your caps elsewhere (Scan opened for it)
+async function ocrOpenTap(how) {
   if (!ocrCan()) return;
   // (the picker first, in the tap; whether the reader is stored is known by the time a photo's chosen)
-  if (ocrOk) return ocrPick();
-  if (await ocrStored()) {
+  // (v318 review: from Photograph your caps, the reader's own view under the picker: the picker put away, that's
+  // where you are, Take or choose photos again a tap away, not Scan's list and box that weren't asked for)
+  if (ocrOk) {
+    if (how === 'entry') ocrShowPick();
+    return ocrPick();
+  }
+  const stored = await ocrStored();
+  // (Scan closed meanwhile: its card not left on the reader, to be found there when Scan opens again)
+  if (!$('scanOverlay').classList.contains('on')) return;
+  if (stored) {
     ocrOk = true;
     return ocrShowPick();
   }
@@ -535,7 +827,7 @@ async function ocrOpenTap() {
 // (stored, found out after the tap: one more tap for the picker)
 function ocrShowPick() {
   ocrShow(
-    '<div class="ocrh">Read your caps from photos</div><p class="ocrp">Caps up, in good light, held flat above them. About half a tray per photo: closer reads more. Choose several and they’re read in turn.</p>' +
+    '<p class="ocrp">Caps up, in good light, held flat above them. About half a tray per photo: closer reads more. Choose several and they’re read in turn.</p>' +
       '<button type="button" class="btn-primary" id="ocrPick">Take or choose photos</button><button type="button" class="obGhost" id="ocrNo">Back to the list</button>',
   );
   $('ocrPick').addEventListener('click', ocrPick);
@@ -576,8 +868,6 @@ async function ocrOne(file) {
   ocrRun = r;
   ocrShow(
     '<div class="ocrstat"><span id="ocrSay">Opening the photo…</span><span id="ocrLeft"></span></div>' +
-      // (what a screen reader hears: each stage once, not the count as it climbs ten times a second)
-      '<span class="sfsr" id="ocrLive" role="status" aria-live="polite"></span>' +
       '<div class="ocrbar"><b id="ocrBar" style="width:0"></b></div><div class="ocrpic" id="ocrPic"></div>' +
       '<div class="ocrsum" id="ocrSum"></div><div class="ocrrow" id="ocrBtns"></div>',
   );
@@ -593,9 +883,13 @@ async function ocrOne(file) {
     ocrQueueOn(r);
     return;
   }
+  // (what it shows is said in words above and below it)
+  r.img.show.setAttribute('aria-hidden', 'true');
+  ocrWide(r);
   $('ocrPic').appendChild(r.img.show);
   r.cv = document.createElement('canvas');
   r.cv.className = 'ocrbox';
+  r.cv.setAttribute('aria-hidden', 'true');
   $('ocrPic').appendChild(r.cv);
   ocrGo(r);
 }
@@ -657,15 +951,30 @@ async function ocrGo(r) {
   }
   const px = r.img.data.data.slice().buffer,
     o = {
-      maxSide: low ? 1280 : 1600,
-      // (an iPad or iPhone: the detector in two strips, so its working memory is half: memory there is tight)
-      detTiles: low || isIOSDevice() ? 2 : 1,
+      maxSide: 1600,
+      // (an iPad or iPhone, or read gently: the detector in four strips, so its working memory is a quarter's: memory
+      // there is tight.
+      // v318 review: four, not two, as they overlap by more than a cap's code is long (below): the page's peak in
+      // Chromium 576 MB in two strips overlapping by 64, 513–535 in four by 192 (1280 in two, the gentle read's, 525),
+      // reading as well as one strip: Ben's wide Ohuhu trays 329 of 334, as on a desktop, not 326; 4% slower)
+      detTiles: low || isIOSDevice() ? 4 : 1,
+      // (v318 review: the strips overlapping by more than a cap's code is long, so one across a cut is whole in one of
+      // them; by 64 map pixels, a code across it was cut in both and dropped from both, by each look: YGY13, YG415, R54,
+      // RV57 and E511 on Ben's close-ups)
+      detOverlap: 192,
+      // (names paired again once read, a word level with a code just under or over it: Sakura beside R23)
+      pairLate: true,
+      // (v318.1: a box read whole as one of its halves: the other half isn't a code of its own)
+      halfBox: true,
       maxW: 160,
       minH: 16,
       quad: 1.6,
       retry: true,
       split: 2.5,
       zoom: 1.6,
+      // (v318 review: a squarish box the zoom didn't part, its lines turned the other way, again closer and turned a
+      // quarter: G49 Sour Apple, Y43, YG66 on the wide trays, 329 → 332 of 334, nothing wrong)
+      zoom2: 2.4,
       zoomPad: 0.08,
       zoomMargin: 8,
       longWord: true,
@@ -709,6 +1018,13 @@ function ocrStatus(r) {
     left = $('ocrLeft'),
     bar = $('ocrBar');
   if (!say) return;
+  const q = ocrQ,
+    k = q ? Math.max(1, Math.min(q.files.length, q.k)) : 1,
+    // (v318 review: a batch stopped at its first photo is said as that photo, with the others not read: "1 photo:", "Photo
+    // 1: 0 added" and "The last photo is shown" had said a batch of one)
+    one = !!q && q.files.length > 1 && r.done && q.stop && q.k <= 1,
+    many = q && q.files.length > 1 && !one,
+    over = many && r.done && (q.k >= q.files.length || q.stop);
   const p = r.p || {};
   let t = '',
     pc = 0;
@@ -719,7 +1035,12 @@ function ocrStatus(r) {
         ? r.added + (r.added === 1 ? ' marker' : ' markers') + ' added to the list'
         : 'No new codes read') +
       (r.asked ? ' · ' + r.asked + ' to choose there' : '') +
-      (r.aborted ? ' · stopped' : '');
+      (r.aborted ? ' · stopped' : '') +
+      (one
+        ? q.files.length === 2
+          ? ' · the other photo not read'
+          : ' · the other ' + (q.files.length - 1) + ' photos not read'
+        : '');
     pc = 100;
   } else if (r.note && p.stage === 'load') t = r.note;
   else if (p.stage === 'load') t = 'Starting the reader…';
@@ -733,10 +1054,6 @@ function ocrStatus(r) {
     t = 'Reading the caps… ' + r.sure + ' so far';
     pc = 20 + (p.total ? (65 * p.done) / p.total : 0);
   }
-  const q = ocrQ,
-    many = q && q.files.length > 1,
-    k = q ? Math.max(1, Math.min(q.files.length, q.k)) : 1,
-    over = many && r.done && (q.k >= q.files.length || q.stop);
   if (many && !over) {
     // (the queue's own words: this photo's place, and the bar over the whole queue)
     t = 'Photo ' + k + ' of ' + q.files.length + ' · ' + t;
@@ -755,10 +1072,13 @@ function ocrStatus(r) {
     pc = 100;
   }
   say.textContent = t;
+  // (what a screen reader hears: each stage once, not the count as it climbs ten times a second. v318 review: in Scan's
+  // card, not in the view rebuilt for each photo, as a live region made with its words isn't heard, "Photo 2 of 19")
   const live = $('ocrLive'),
     heard = t.replace(/ \d+ so far$/, '');
   if (live && live.textContent !== heard) live.textContent = heard;
-  if (left) left.textContent = '';
+  // (read again after running out of memory: said while it's read, not only while the reader starts again)
+  if (left) left.textContent = r.gentle && !r.done && p.stage !== 'load' ? 'Second try' : '';
   bar.style.width = Math.round(pc) + '%';
   const sum = $('ocrSum');
   if (sum && many && over) {
@@ -810,11 +1130,14 @@ function ocrDraw(r) {
     k = show.width / r.img.w;
   cv.width = show.width;
   cv.height = show.height;
-  const x = cv.getContext('2d'),
-    vw = ocrV().clientWidth || show.width,
-    wide = vw >= 500,
+  // (the photo's width on the screen: the view's, or less when its height is what limits it, as on an iPad held
+  // sideways. v318 review: the view's width had been taken, and in Scan's card, 446 px wide, labels never showed)
+  const dw = show.getBoundingClientRect().width || Math.min(ocrV().clientWidth || show.width, show.width),
+    x = cv.getContext('2d'),
+    // (each box's code over it where the photo's shown big enough for them)
+    wide = dw >= 500,
     // (in the canvas's own pixels, for lines and labels the same size on the screen whatever the photo's shown at)
-    px = show.width / Math.min(vw, show.width);
+    px = show.width / dw;
   x.lineWidth = 2.5 * px;
   x.font = '600 ' + Math.round(12 * px) + 'px system-ui, sans-serif';
   // (once the photo's done, a code that went in at its end, read as a pasted line, is read too: green, not amber)
@@ -836,10 +1159,13 @@ function ocrDraw(r) {
     if (wide) {
       const label = sure && cs.length ? COLORS[cs[0].i].code : it.text.slice(0, 8);
       x.fillStyle = 'rgba(15,20,18,.85)';
-      const tw = x.measureText(label).width + 6 * px;
-      x.fillRect(cx * k - tw / 2, cy * k - (h * k) / 2 - 17 * px, tw, 15 * px);
+      const tw = x.measureText(label).width + 6 * px,
+        // (kept on the photo: a cap at its edge had its label cut off)
+        lx = Math.max(0, Math.min(cv.width - tw, cx * k - tw / 2)),
+        ly = Math.max(0, cy * k - (h * k) / 2 - 17 * px);
+      x.fillRect(lx, ly, tw, 15 * px);
       x.fillStyle = sure ? '#7ff0bf' : '#ffcf85';
-      x.fillText(label, cx * k - tw / 2 + 3 * px, cy * k - (h * k) / 2 - 5 * px);
+      x.fillText(label, lx + 3 * px, ly + 12 * px);
     }
   });
 }
@@ -873,27 +1199,29 @@ function ocrButtons(r) {
     '</button>' +
     (undo ? '<button type="button" class="obGhost" id="ocrUndo">Undo ' + photos + '</button>' : '');
   $('ocrDone').addEventListener('click', ocrFinish);
+  // (the photo's or the batch's results kept until others are chosen: the picker put away, Done still says them)
   $('ocrMore').addEventListener('click', function () {
-    ocrRun = null;
-    ocrQ = null;
     ocrOk ? ocrPick() : ocrOpenTap();
   });
   if ($('ocrUndo'))
     $('ocrUndo').addEventListener('click', function () {
       const n = scanList.length,
         n0 = many ? q.n0 : r.n;
-      scanList = scanList.filter((e) => !(e.photo >= n0 && e.photo <= r.n));
+      const mine = (e) => e.photo >= n0 && e.photo <= r.n;
+      scanList = scanList.filter((e) => !mine(e));
+      const off = n - scanList.length;
+      // (the questions these photos answered, asked before them, back)
+      ocrAnswered = ocrAnswered.filter((a) => {
+        if (a.by < n0 || a.by > r.n) return true;
+        if (!mine(a.e)) scanList.unshift(a.e);
+        return false;
+      });
       scanRender();
       ocrRun = null;
       ocrQ = null;
       ocrHide();
-      scanSay(
-        'same',
-        (many ? 'Photos' : 'Photo') + ' taken back out',
-        n - scanList.length + ' off the list',
-        -1,
-      );
-      scanFocusBox();
+      scanSay('same', (many ? 'Photos' : 'Photo') + ' taken back out', off + ' off the list', -1);
+      ocrFocusList(false);
     });
   $('ocrDone').focus({ preventScroll: true });
 }
@@ -902,7 +1230,8 @@ const ocrNPhotos = (n) => (n === 1 ? '1 photo' : n + ' photos');
 function ocrFinish() {
   const r = ocrRun,
     q = ocrQ,
-    many = q && q.files.length > 1;
+    // (a batch stopped at its first photo: said as that photo, as ocrStatus does)
+    many = q && q.files.length > 1 && !(q.stop && q.k <= 1);
   ocrRun = null;
   ocrQ = null;
   ocrHide();
@@ -923,13 +1252,17 @@ function ocrFinish() {
       -1,
     );
   scanRender();
-  scanFocusBox();
+  ocrFocusList(true);
 }
 // Scan closing: the read stopped, the worker ended (its memory with it)
 function ocrClose() {
   if (ocrDown) ocrDown.ctl.abort();
   ocrDown = null;
   if (ocrRun && !ocrRun.done && ocrW) ocrW.postMessage({ t: 'stop' });
+  // (a read stopped by closing Scan didn't run out of memory: the next photo isn't read gently for it)
+  try {
+    localStorage.removeItem(OCR_BUSY_KEY);
+  } catch (_) {}
   ocrRun = null;
   ocrQ = null;
   // (the count goes on: the list keeps its marks while the app is open, and a photo read after Scan's reopened must
@@ -945,6 +1278,13 @@ function ocrClose() {
   f.addEventListener('change', function () {
     const files = f.files ? [...f.files] : [];
     if (files.length) ocrChosen(files);
+  });
+  // (the screen turned, or the window made wider: the boxes and their labels drawn for the photo's new size)
+  window.addEventListener('resize', function () {
+    if (ocrRun && ocrRun.cv && ocrV() && !ocrV().hidden) {
+      ocrWide(ocrRun);
+      ocrDraw(ocrRun);
+    }
   });
   // (the app put away while nothing's being read: the worker's memory given back)
   document.addEventListener('visibilitychange', function () {

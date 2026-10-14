@@ -45,7 +45,8 @@ test('How it works shows once, the first time the guide opens the sample, never 
   await page.keyboard.press('ArrowRight'); await idle(page);
   assert.equal(await step(), 2);
   assert.equal((await page.textContent('#hiwNext')).trim(), 'Got it');
-  assert.ok(await page.evaluate(() => { const t = document.getElementById('hiwTrack'), s = document.querySelectorAll('.hiwslide')[2]; return Math.abs(s.getBoundingClientRect().left - t.getBoundingClientRect().left) < 2; }), 'the third card is in view');
+  // (v318.1: waited for, not read once: a slow WebKit can be mid smooth scroll when idle() returns)
+  assert.ok(await page.waitForFunction(() => { const t = document.getElementById('hiwTrack'), s = document.querySelectorAll('.hiwslide')[2]; return Math.abs(s.getBoundingClientRect().left - t.getBoundingClientRect().left) < 2; }, null, { timeout: 3000 }).then(() => true, () => false), 'the third card is in view');
   await page.keyboard.press('ArrowLeft'); await idle(page);
   assert.equal(await step(), 1);
   await page.click('#hiwBack'); await idle(page);

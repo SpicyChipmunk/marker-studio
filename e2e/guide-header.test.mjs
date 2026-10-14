@@ -157,7 +157,7 @@ test('the header keeps its height: Surprise, renaming and saving move nothing un
     await page.click('#sfSurprise'); await idle(page);
     assert.equal(await hh(), h0, `@${sc}: after Surprise`);
     assert.equal(await page.locator('.sfsnote').count(), 0, 'no note line over the picture');
-    assert.match(await page.textContent('#msToast'), /Surprise: .+ palette .+ markers/, 'what it chose is in its toast (with Undo)');
+    assert.match(await page.textContent('#msToast'), /Surprise: .+ · .+ markers/, 'what it chose is in its toast (with Undo)');
     await page.click('#sfSurprise'); await idle(page);
     assert.equal(await hh(), h0);
     await page.click('#sfRename'); await idle(page);

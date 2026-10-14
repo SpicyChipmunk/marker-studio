@@ -388,11 +388,39 @@ function mount() {
       closeSheet();
     },
   });
+  // (v318 review) the photo's editors in Check the sections: Escape leaves Adjust corners and Crop as their Cancel
+  // does (a keyboard on an iPad, or a computer), as it leaves the zone editor; not the first corners, when the page
+  // wasn't found (Keep as is is a choice, not a cancel). Escape only: Back is left as it was (no entry is made).
+  // (v318 audit) Only while the Guide screen shows: they stay open when another tab is chosen, and an Escape on
+  // Markers had cancelled a crop out of sight instead of closing Markers' ⋯ menu
+  const shown = function () {
+    return !!root && root.style.display !== 'none' && !!root.offsetParent;
+  };
+  addLayer({
+    name: 'Adjust corners',
+    order: 36,
+    isOpen: function () {
+      return shown() && !!(pgMode && pgEd && pgEd.how === 'adjust');
+    },
+    close: function () {
+      pgCancelAdjust();
+    },
+  });
+  addLayer({
+    name: 'crop',
+    order: 36,
+    isOpen: function () {
+      return shown() && !!cropMode;
+    },
+    close: function () {
+      cancelCrop();
+    },
+  });
   addLayer({
     name: 'zone editor',
     order: 35,
     isOpen: function () {
-      return zoneEditOn();
+      return shown() && zoneEditOn();
     },
     close: function () {
       zoneNameCommit();
@@ -537,6 +565,12 @@ function mount() {
   window.addEventListener('pagehide', function () {
     flushAutosave();
     saveOnLeave();
+  });
+  // (v318 polish) a reload or a tab closed: the save waiting to happen starts as the page is asked to go, before the
+  // next page is fetched (pagehide comes only as that one replaces it: in Chromium a new guide's first save begun then
+  // was lost, its database write dropped with the page). Nothing is asked of the person.
+  window.addEventListener('beforeunload', function () {
+    flushAutosave();
   });
   [sfView, picBox].forEach(function (el) {
     el.addEventListener('scroll', function () {

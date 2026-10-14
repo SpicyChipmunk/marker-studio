@@ -885,6 +885,12 @@
 #sfRoot #sfCtl .sfc-inline {
   display: inline-flex;
 }
+/* (v318 review) a checkbox on a line of its own (Codes on the saved image, Colours' Expand with nearby markers) is a 44px tap
+   area, its box and its words (it was the 24px line); the room the top margin gave is inside it now */
+#sfRoot #sfCtl label.sfc-check.sfc-inline {
+  min-height: 44px;
+  margin-top: 0;
+}
 #sfRoot #sfCtl .sfc-flex {
   display: flex;
 }
@@ -1221,10 +1227,14 @@
   justify-content: space-between;
   gap: 8px;
 }
+/* (v318 review: 32px tall, its tap area 44 (it had 35: the row under it took the rest), the row's margin kept clear) */
+#sfRoot #sfCtl .sfzlbl:has(.sfzfirst) {
+  margin-bottom: 13px;
+}
 #sfRoot #sfCtl .sfzfirst {
   position: relative;
-  min-height: 26px;
-  margin: -5px 0;
+  min-height: 32px;
+  margin: -4px 0;
   padding: 0 10px;
   border-radius: var(--r-pill);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -1240,7 +1250,7 @@
 #sfRoot #sfCtl .sfzfirst::after {
   content: '';
   position: absolute;
-  inset: -10px -4px;
+  inset: -7px -4px;
 }
 #sfRoot #sfCtl .sfzrow {
   display: flex;

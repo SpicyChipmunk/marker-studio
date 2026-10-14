@@ -448,6 +448,8 @@ function renderInstallCard(wait, keep) {
   try {
     snooze = +localStorage.getItem(INSTALL_SNOOZE) || 0;
   } catch (e) {}
+  // (Not now is a week's rest: one longer was given while the device's clock was ahead, v318 review)
+  if (snooze > Date.now() + 8 * 864e5) snooze = 0;
   const kind = keep ? 'ios' : wait || Date.now() < snooze ? '' : installKind();
   if (!kind) {
     if (el) el.style.display = 'none';
@@ -657,7 +659,19 @@ function wipeAllData() {
       String(Date.now()),
     );
   } catch (e) {}
-  return new Promise(function (res) {
+  // (v318.1: and the photo reader's download, about 22 MB: no photos in it, but it's this app's, and someone leaving
+  // wants the room back. The app's own files and PDF.js's stay, for the welcome it starts again at, offline too)
+  const reader = (function () {
+    try {
+      if (typeof ocrEnd === 'function') ocrEnd();
+      return self.caches && typeof OCR_CACHE === 'string'
+        ? caches.delete(OCR_CACHE).catch(function () {})
+        : Promise.resolve();
+    } catch (e) {
+      return Promise.resolve();
+    }
+  })();
+  const db = new Promise(function (res) {
     let r;
     try {
       r = indexedDB.deleteDatabase('ms-guides');
@@ -675,6 +689,9 @@ function wipeAllData() {
           clearTimeout(t);
           res(keys.length);
         };
+  });
+  return Promise.all([db, reader]).then(function (a) {
+    return a[0];
   });
 }
 // the page starts again, at the welcome. Closing the question steps the history back (layers.js), which can cancel a

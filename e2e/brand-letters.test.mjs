@@ -272,7 +272,8 @@ test('brand tags: a small box after every code when the collection mixes brands 
   // the print's light labels draw them as light as the codes; the saved image as on screen
   // (v305: the close-ups' codes are near-black; v306: their tags in print colours too, near-black and white)
   const pdf = await tagsOf(page, 'pdf'), p1 = pdf.filter((e) => e.p === 0), cu = pdf.filter((e) => e.p > 0);
-  assert.ok(p1.length > 20 && p1.every((e) => e.box === (e.t === 'C' ? '#ffffff' : '#a0a0a0')), JSON.stringify(p1.slice(0, 3)));
+  // (v318.1: a code under 6 pt, and its tag, a darker grey, #8a8a8a)
+  assert.ok(p1.length > 20 && p1.every((e) => (e.t === 'C' ? e.box === '#ffffff' : e.box === '#a0a0a0' || e.box === '#8a8a8a')), JSON.stringify(p1.slice(0, 3)));
   assert.ok(cu.every((e) => e.box === (e.t === 'C' ? '#ffffff' : '#1a1a1a')), JSON.stringify(cu.slice(0, 3)));
   const img = await tagsOf(page, 'image');
   assert.ok(img.length > 20 && img.every((e) => e.box === (e.t === 'C' ? '#c4c1c9' : '#26252b')), JSON.stringify(img.slice(0, 3)));

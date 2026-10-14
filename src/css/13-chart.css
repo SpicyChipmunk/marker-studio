@@ -18,6 +18,9 @@
   grid-auto-columns: 1fr;
   width: 100%;
 }
+.chcard #chBrand[hidden] {
+  display: none;
+}
 .chcard #chBrand button {
   width: auto;
 }
@@ -75,6 +78,38 @@
   font-size: var(--t-sm);
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+/* (v318 review) the family's count, and in Some are missing, Show all colours beside it */
+.chlrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 24px;
+}
+.chall {
+  min-height: 0;
+  padding: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  position: relative;
+}
+/* (a 44px tap area round the link) */
+.chall::after {
+  content: '';
+  position: absolute;
+  inset: -10px -6px;
+}
+.chall[hidden] {
+  display: none;
+}
+/* (Some are missing) a marker unticked, lost: its colour faded, so what's left to keep stands out */
+.chcard.chmiss .chsw[aria-pressed='false'] i {
+  opacity: 0.3;
+}
+.chcard.chmiss .chsw[aria-pressed='false'] span {
+  color: var(--sub);
+  text-decoration: line-through;
 }
 .chlbl {
   font-size: var(--t-sm);

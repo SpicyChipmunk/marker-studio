@@ -606,38 +606,109 @@ function buildBalance(cl, p) {
     };
     let cand = pick(Math.max(sizes[Math.floor(sizes.length * 0.3)] || 0, floor));
     if (!cand.length) cand = pick(0);
-    // (each candidate's distance to the nearest accent so far, brought up to date as each is chosen)
-    const near = new Float64Array(cand.length).fill(Infinity),
-      out = new Uint8Array(cand.length),
-      top = [0, 0, 0, 0],
-      topD = [0, 0, 0, 0];
-    let left = cand.length,
-      first = true,
-      ga = got.a;
-    while (ga < want.a && left) {
-      let i;
-      if (first) {
-        i = Math.floor(Math.random() * cand.length);
-        first = false;
-      } else {
-        let k = 0;
-        for (let j = 0; j < cand.length; j++) {
-          if (out[j]) continue;
-          const d = near[j];
-          if (k < 4) {
-            top[k] = j;
-            topD[k] = d;
-            k++;
-          } else {
-            let w = 0;
-            for (let q = 1; q < 4; q++) if (topD[q] < topD[w]) w = q;
-            if (d > topD[w]) {
-              top[w] = j;
-              topD[w] = d;
-            }
+    // (each candidate's distance to the nearest accent so far, brought up to date as each is chosen; the next accent
+    // at random among the 4 furthest from those chosen. v318: the 4 furthest from a heap, and only the candidates near
+    // enough to the new accent to come nearer brought up to date (a grid): on a page of 29,000 sections choosing them
+    // one by one against every candidate had taken 3.4 s in Chrome, quadratic in the sections. The same choices but
+    // for the order among exact ties)
+    const nc = cand.length,
+      near = new Float64Array(nc).fill(Infinity),
+      out = new Uint8Array(nc),
+      cx = new Float64Array(nc),
+      cy = new Float64Array(nc),
+      // (the grid: cells about as big as a candidate's share of the picture)
+      gs = Math.max(8, Math.sqrt((W * H) / Math.max(1, nc)) * 2),
+      gw = Math.max(1, Math.ceil(W / gs)),
+      gh = Math.max(1, Math.ceil(H / gs)),
+      gStart = new Int32Array(gw * gh + 1),
+      gItem = new Int32Array(nc),
+      gOf = new Int32Array(nc);
+    for (let j = 0; j < nc; j++) {
+      const c = comps[cand[j]];
+      cx[j] = c.cx;
+      cy[j] = c.cy;
+      const gx = Math.min(gw - 1, Math.max(0, Math.floor(c.cx / gs))),
+        gy = Math.min(gh - 1, Math.max(0, Math.floor(c.cy / gs)));
+      gOf[j] = gy * gw + gx;
+      gStart[gOf[j] + 1]++;
+    }
+    for (let k = 0; k < gw * gh; k++) gStart[k + 1] += gStart[k];
+    {
+      const fill = gStart.slice(0, gw * gh);
+      for (let j = 0; j < nc; j++) gItem[fill[gOf[j]]++] = j;
+    }
+    // a max-heap of [distance, candidate]; an entry whose distance is no longer the candidate's (it came nearer
+    // since) or whose candidate is out is dropped as it comes up
+    const hv = [],
+      hj = [],
+      hpush = function (v, j) {
+        let i = hv.length;
+        hv.push(v);
+        hj.push(j);
+        while (i > 0) {
+          const pi = (i - 1) >> 1;
+          if (hv[pi] > hv[i] || (hv[pi] === hv[i] && hj[pi] < hj[i])) break;
+          const tv = hv[pi],
+            tj = hj[pi];
+          hv[pi] = hv[i];
+          hj[pi] = hj[i];
+          hv[i] = tv;
+          hj[i] = tj;
+          i = pi;
+        }
+      },
+      hpop = function () {
+        const v = hv[0],
+          j = hj[0],
+          lv = hv.pop(),
+          lj = hj.pop();
+        if (hv.length) {
+          hv[0] = lv;
+          hj[0] = lj;
+          let i = 0;
+          for (;;) {
+            const l2 = 2 * i + 1,
+              r2 = l2 + 1;
+            let m = i;
+            if (l2 < hv.length && (hv[l2] > hv[m] || (hv[l2] === hv[m] && hj[l2] < hj[m]))) m = l2;
+            if (r2 < hv.length && (hv[r2] > hv[m] || (hv[r2] === hv[m] && hj[r2] < hj[m]))) m = r2;
+            if (m === i) break;
+            const tv = hv[m],
+              tj = hj[m];
+            hv[m] = hv[i];
+            hj[m] = hj[i];
+            hv[i] = tv;
+            hj[i] = tj;
+            i = m;
           }
         }
-        i = top[Math.floor(Math.random() * k)];
+        return [v, j];
+      };
+    let left = nc,
+      first = true,
+      some = false,
+      ga = got.a;
+    while (ga < want.a && left) {
+      let i,
+        far = Infinity;
+      if (first) {
+        i = Math.floor(Math.random() * nc);
+        first = false;
+      } else if (!some) {
+        // (none chosen yet, the first passed over: every one is as far, so the first 4 left, as before)
+        const top = [];
+        for (let j = 0; j < nc && top.length < 4; j++) if (!out[j]) top.push(j);
+        i = top[Math.floor(Math.random() * top.length)];
+      } else {
+        const top = [];
+        while (top.length < 4 && hv.length) {
+          const e = hpop();
+          if (out[e[1]] || e[0] !== near[e[1]] || top.indexOf(e[1]) >= 0) continue;
+          top.push(e[1]);
+        }
+        i = top[Math.floor(Math.random() * top.length)];
+        far = near[top[0]];
+        for (let q = 0; q < top.length; q++) if (top[q] !== i) hpush(near[top[q]], top[q]);
       }
       const l = cand[i];
       out[i] = 1;
@@ -646,11 +717,27 @@ function buildBalance(cl, p) {
       if (ga > 0 && ga + area(l) - want.a > area(l) / 2) continue;
       accSec[l] = 1;
       ga += area(l);
-      for (let j = 0; j < cand.length; j++)
-        if (!out[j]) {
-          const q = cand[j],
-            d = Math.hypot(comps[q].cx - comps[l].cx, comps[q].cy - comps[l].cy);
-          if (d < near[j]) near[j] = d;
+      some = true;
+      // (only a candidate nearer to it than `far`, the furthest any was from the accents before, can come nearer)
+      const x = cx[i],
+        y = cy[i],
+        r = far,
+        gx0 = r === Infinity ? 0 : Math.max(0, Math.floor((x - r) / gs)),
+        gx1 = r === Infinity ? gw - 1 : Math.min(gw - 1, Math.floor((x + r) / gs)),
+        gy0 = r === Infinity ? 0 : Math.max(0, Math.floor((y - r) / gs)),
+        gy1 = r === Infinity ? gh - 1 : Math.min(gh - 1, Math.floor((y + r) / gs));
+      for (let gy = gy0; gy <= gy1; gy++)
+        for (let gx = gx0; gx <= gx1; gx++) {
+          const k = gy * gw + gx;
+          for (let e = gStart[k]; e < gStart[k + 1]; e++) {
+            const j = gItem[e];
+            if (out[j]) continue;
+            const d = Math.hypot(cx[j] - x, cy[j] - y);
+            if (d < near[j]) {
+              near[j] = d;
+              hpush(d, j);
+            }
+          }
         }
     }
   }

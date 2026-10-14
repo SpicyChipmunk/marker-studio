@@ -1740,3 +1740,22 @@ button.wnx::after,
   max-width: 100%;
   max-height: 100%;
 }
+/* (v318.1) Recently deleted's link: centred under Import a guide, as the line under Back up / Restore is, a full 44px
+   to tap */
+#savedOverlay #libBin {
+  display: block;
+  align-self: center;
+  width: auto;
+  min-height: 44px;
+  padding: 0 4px;
+}
+#savedOverlay #libBin[hidden] {
+  display: none;
+}
+/* (v318.1) Recently deleted: when each went, under its name */
+.libbinwhen {
+  display: block;
+  font-size: var(--t-sm);
+  font-weight: 400;
+  color: var(--sub);
+}

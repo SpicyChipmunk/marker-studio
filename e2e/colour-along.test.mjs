@@ -369,6 +369,9 @@ test('finishing the page in Colour along brings "Page finished!" and its Reveal 
     const last = await page.evaluate(() => { const ks = [...document.querySelectorAll('#sfAlist .sfarow')].map((r) => r.dataset.k); return ks[ks.length - 1]; });
     await page.click(`#sfAlist .sfarow[data-k="${last}"] .sfah`); await idle(page);
     await page.click('#sfMarkAll'); await idle(page);
+    // (v318 polish: its smooth scroll waited for to the end: on a slow WebKit, scroll events can come further apart than
+    // idle() allows for a scroll still moving, and the banner was measured on its way, 1 run in 4)
+    await page.waitForFunction(() => new Promise((res) => { const y = scrollY; requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => res(scrollY === y), 150))); }), null, { polling: 200, timeout: 15000 });
     const dn = await rect(page, '#sfDone'), bar = await rect(page, '#sfWork>.sfbar'), top = await pinH(page);
     assert.ok(dn && dn.height > 0, 'the banner shows');
     assert.ok(dn.top >= top - 1 && dn.bottom <= bar.top + 1, `${w}×${h}: the banner is on the screen under the pinned block (${dn.top}–${dn.bottom}, pinned ${top}, bar ${bar.top})`);

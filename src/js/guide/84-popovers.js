@@ -538,7 +538,9 @@ function openAnchorPop(idx) {
     changes enough to blur or thicken the line; otherwise only moved. */
 let olEl = null,
   olSet = null,
-  olKey = '';
+  olKey = '',
+  // (what the outline's canvas holds, for drawing again only what a tick changed: positionOutline)
+  _olDrawn = null;
 // once: one pulse as it arrives, then steady (Find next, v288); otherwise it pulses while the picker is open
 let olOnce = false,
   olMerge = -1;
@@ -547,6 +549,7 @@ function outlineSecs(ls, once) {
   olGroups = null;
   olSet = ls && ls.length ? ls.slice() : null;
   olKey = '';
+  _olDrawn = null;
   olOnce = !!once;
   olMerge = -1;
   positionOutline();
@@ -670,6 +673,8 @@ function positionOutline() {
       olEl.style.display = 'none';
       olEl.dataset.secs = '';
     }
+    // (shown again, it's drawn whole: only a change made while it shows is drawn in part)
+    _olDrawn = null;
     return;
   }
   if (!olEl) {
@@ -698,6 +703,7 @@ function positionOutline() {
   });
   if (x1 < 0) {
     olEl.style.display = 'none';
+    _olDrawn = null;
     return;
   }
   // line widths in screen pixels (v288): 3.5 white inside 2.5 dark, so it shows on any colour, light or dark; the canvas
@@ -727,37 +733,94 @@ function positionOutline() {
       : '');
   if (key !== olKey) {
     olKey = key;
+    // (v318 review) a row's outline after a tick (or an untick): the same sections but one or a few, at the same scale
+    // over the same picture, so only round those few is it drawn again. Drawn whole, at each tick, it was most of the
+    // tick's time on a big page (about 75 ms of 100 in Chrome on a desktop, 839 sections), as the ring is 32 copies of
+    // the mask over the box round every section still to do.
+    const prev = _olDrawn,
+      cur = olSet.slice();
+    let part = null;
+    if (
+      prev &&
+      !olGroups &&
+      !prev.groups &&
+      prev.labels === labels &&
+      prev.comps === comps &&
+      prev.s === s &&
+      prev.px === s / k &&
+      prev.W === W &&
+      prev.H === H &&
+      olEl.width === prev.ow &&
+      olEl.height === prev.oh
+    ) {
+      const was = prev.set,
+        now = new Set(cur),
+        diff = [];
+      was.forEach(function (l) {
+        if (!now.has(l)) diff.push(l);
+      });
+      now.forEach(function (l) {
+        if (!was.has(l)) diff.push(l);
+      });
+      let area = 0;
+      const inBox = diff.every(function (l) {
+        if (!(l < B.K && B.x1[l] >= 0)) return false;
+        area += (B.x1[l] - B.x0[l] + 1) * (B.y1[l] - B.y0[l] + 1);
+        return B.x0[l] >= prev.x0 && B.y0[l] >= prev.y0 && B.x1[l] <= prev.x1 && B.y1[l] <= prev.y1;
+      });
+      if (
+        inBox &&
+        diff.length &&
+        diff.length <= 12 &&
+        area * 4 <= (prev.x1 - prev.x0 + 1) * (prev.y1 - prev.y0 + 1)
+      )
+        part = diff;
+    }
+    if (part) {
+      // (the box stays as it was: it may now be roomier than the sections need, which shows nothing)
+      x0 = prev.x0;
+      y0 = prev.y0;
+      x1 = prev.x1;
+      y1 = prev.y1;
+    }
     const ow = Math.max(1, Math.ceil((x1 - x0 + 1) * s)),
       oh = Math.max(1, Math.ceil((y1 - y0 + 1) * s));
-    // a mask of these sections (the white inside dark ring is drawn round it)
-    const mask = function (set) {
+    const px = s / k,
+      rad1 = Math.max(2, 6 * px),
+      rad2 = Math.max(1.2, 3.5 * px),
+      // (how far round a part drawn again the mask is needed: the wider ring's reach, and a pixel for smoothing)
+      reach = Math.ceil(rad1) + 2;
+    // the white-inside-dark ring round sections `set`, for the outline's pixels [ci, ci + cw) × [cj, cj + ch), into g:
+    // a mask of the sections over that part and `reach` round it, each ring 16 copies of it moved about, less the mask
+    const paint = function (g, set, hex, ci, cj, cw, ch) {
+      const ai = Math.max(0, ci - reach),
+        aj = Math.max(0, cj - reach),
+        lw = Math.min(ow, ci + cw + reach) - ai,
+        lh = Math.min(oh, cj + ch + reach) - aj;
+      if (lw < 1 || lh < 1) return;
       const f = new Uint8Array(comps.length);
       set.forEach(function (l) {
         if (l < f.length) f[l] = 1;
       });
       const m = document.createElement('canvas');
-      m.width = ow;
-      m.height = oh;
+      m.width = lw;
+      m.height = lh;
       const mc = m.getContext('2d'),
-        im = mc.createImageData(ow, oh),
+        im = mc.createImageData(lw, lh),
         d = im.data;
-      for (let j = 0; j < oh; j++) {
-        const y = Math.min(H - 1, y0 + Math.floor((j + 0.5) / s)),
+      for (let j = 0; j < lh; j++) {
+        const y = Math.min(H - 1, y0 + Math.floor((aj + j + 0.5) / s)),
           row = y * W;
-        for (let i = 0; i < ow; i++) {
-          const L = labels[row + Math.min(W - 1, x0 + Math.floor((i + 0.5) / s))];
-          if (L > 0 && f[L]) d[(j * ow + i) * 4 + 3] = 255;
+        for (let i = 0; i < lw; i++) {
+          const L = labels[row + Math.min(W - 1, x0 + Math.floor((ai + i + 0.5) / s))];
+          if (L > 0 && f[L]) d[(j * lw + i) * 4 + 3] = 255;
         }
       }
       mc.putImageData(im, 0, 0);
-      return m;
-    };
-    let m = null;
-    const px = s / k,
-      ring = function (rad, col) {
+      const ring = function (rad, col) {
         const o = document.createElement('canvas');
-        o.width = ow;
-        o.height = oh;
+        o.width = lw;
+        o.height = lh;
         const oc = o.getContext('2d');
         for (let a = 0; a < 16; a++) {
           const t = (a / 16) * 6.2832;
@@ -765,28 +828,60 @@ function positionOutline() {
         }
         oc.globalCompositeOperation = 'source-in';
         oc.fillStyle = col;
-        oc.fillRect(0, 0, ow, oh);
+        oc.fillRect(0, 0, lw, lh);
         oc.globalCompositeOperation = 'destination-out';
         oc.drawImage(m, 0, 0);
         return o;
       };
-    olEl.width = ow;
-    olEl.height = oh;
-    const g = olEl.getContext('2d');
-    g.clearRect(0, 0, ow, oh);
-    // (the working canvases let go at once: Safari limits the memory all canvases hold, and a row's outline is drawn
-    // again at each tick, v289)
-    // (v307: a two-brand search's, each marker's sections in its own colour inside the dark ring)
-    (olGroups || [{ s: olSet, hex: '#fff' }]).forEach(function (q) {
-      m = mask(q.s);
-      const r1 = ring(Math.max(2, 6 * px), 'rgba(0,0,0,.8)'),
-        r2 = ring(Math.max(1.2, 3.5 * px), q.hex);
-      g.drawImage(r1, 0, 0);
-      g.drawImage(r2, 0, 0);
+      const r1 = ring(rad1, 'rgba(0,0,0,.8)'),
+        r2 = ring(rad2, hex);
+      g.save();
+      g.beginPath();
+      g.rect(ci, cj, cw, ch);
+      g.clip();
+      g.drawImage(r1, ai, aj);
+      g.drawImage(r2, ai, aj);
+      g.restore();
+      // (the working canvases let go at once: Safari limits the memory all canvases hold, v289)
       freeCanvas(r1);
       freeCanvas(r2);
       freeCanvas(m);
-    });
+    };
+    const g = olEl.getContext('2d');
+    if (part) {
+      part.forEach(function (l) {
+        const ci = Math.max(0, Math.floor((B.x0[l] - x0) * s) - reach),
+          cj = Math.max(0, Math.floor((B.y0[l] - y0) * s) - reach),
+          cw = Math.min(ow, Math.ceil((B.x1[l] - x0 + 1) * s) + reach) - ci,
+          ch = Math.min(oh, Math.ceil((B.y1[l] - y0 + 1) * s) + reach) - cj;
+        g.clearRect(ci, cj, cw, ch);
+        paint(g, cur, '#fff', ci, cj, cw, ch);
+      });
+    } else {
+      olEl.width = ow;
+      olEl.height = oh;
+      g.clearRect(0, 0, ow, oh);
+      // (v307: a two-brand search's, each marker's sections in its own colour inside the dark ring)
+      (olGroups || [{ s: olSet, hex: '#fff' }]).forEach(function (q) {
+        paint(g, q.s, q.hex, 0, 0, ow, oh);
+      });
+    }
+    _olDrawn = {
+      set: new Set(cur),
+      groups: !!olGroups,
+      labels: labels,
+      comps: comps,
+      s: s,
+      px: px,
+      W: W,
+      H: H,
+      x0: x0,
+      y0: y0,
+      x1: x1,
+      y1: y1,
+      ow: ow,
+      oh: oh,
+    };
     // (many at once, Everywhere or a row's: lighter and steady)
     olEl.classList.toggle('sfolmany', olRow || olSet.length > 1);
   }

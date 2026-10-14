@@ -107,12 +107,13 @@ test('the key’s reference with shading is never a stamp: a third of the page o
 });
 
 test('Key + reference fits on one page where it can (a smaller picture rather than rows on a second sheet)', async () => {
-  // (a Letter page: v307 put 16 markers' key on two pages, as on Ben's page)
+  // (a Letter page: v307 put 16 markers' key on two pages, as on Ben's page; v318.1: with no labels, as with labels
+  // page 1 is the labelled picture)
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await welcome(page, 'look');
   await idle(page);
   await letterGuide(page);
-  await opt(page, { pwhat: 'ref', plabels: 'codes', paper: 'letter', blend: false });
+  await opt(page, { pwhat: 'ref', plabels: 'none', paper: 'letter', blend: false });
   const r = await probe(page);
   assert.equal(r.pages.length, 1, 'one page');
   assert.ok(r.art[0].h >= r.pages[0][1] * 0.3, 'the reference still a good size');

@@ -127,20 +127,17 @@ function editTapAt(P) {
           if (_ix >= 0) goFocus(_ix, true);
         }
       } else {
-        colored[l] ^= 1;
-        tp()[l] = 0;
-        guideDirty = true;
-        if (colored[l]) {
-          popAt(l);
-          if (navigator.vibrate)
-            try {
-              navigator.vibrate(12);
-            } catch (_) {}
+        // (v318 review, second pass) a section faded because another marker's row is open: asked first, beside it,
+        // "Open V216" or "Tick it" ("Untick it" when it's ticked, which had changed it unseen), rather than ticked with
+        // a word after (wave one). A tap that missed the marker in hand changes nothing; one meant to see what is
+        // there, or to switch to that marker, has its way. A second tap on it, or anywhere else, closes the question
+        if (!!hlKey && !pageDone() && !hlMatch(l)) {
+          if (tipL === l && tipEl && tipEl.classList.contains('sftipask')) hideTip();
+          else showTip(l, 'ask');
+          return;
         }
-        checkComplete();
-        renderGuide();
-        updateProgress();
-        jumpToNext();
+        hideTip();
+        alongTick(l);
       }
     }
     return;
@@ -152,10 +149,10 @@ function editTapAt(P) {
     return;
   }
   if (sfmode !== 'review') return;
-  // (v310: the quick check changes nothing on a tap; the tools are behind Fix sections)
+  // (v310: the quick check changes nothing on a tap; the tools are behind Edit sections)
   // (what shows decides: the tools may have been opened in another tab meanwhile)
   if (document.getElementById('sfQuick')) {
-    if (l > 0) toast('To change the sections, tap Fix sections.', 2600);
+    if (l > 0) toast('To change the sections, tap Edit sections.', 2600);
     return;
   }
   if (editMode === 'merge') {
@@ -188,6 +185,24 @@ function editTapAt(P) {
     hasEdits = true;
     render();
   }
+}
+// a section ticked, or unticked, in Colour along: a tap on one of the open row's (or with none open), or Tick it in the
+// question over another marker's
+function alongTick(l) {
+  colored[l] ^= 1;
+  tp()[l] = 0;
+  guideDirty = true;
+  if (colored[l]) {
+    popAt(l);
+    if (navigator.vibrate)
+      try {
+        navigator.vibrate(12);
+      } catch (_) {}
+  }
+  checkComplete();
+  renderGuide();
+  updateProgress();
+  jumpToNext();
 }
 const MERGE_BG_SAY = 'That’s the background, not a section. To make a section white, use Leave out.';
 // the section a Split or Add stroke is for: the one it runs through furthest, lines not counted (v304: the section it
@@ -431,9 +446,17 @@ function onMove(e) {
     return;
   }
   if (!pStart) return;
-  const dx = e.clientX - pStart.x,
+  let dx = e.clientX - pStart.x,
     dy = e.clientY - pStart.y;
-  if (Math.abs(dx) + Math.abs(dy) > 4) ptMoved = true;
+  if (!ptMoved && Math.abs(dx) + Math.abs(dy) > tapSlop(e)) {
+    ptMoved = true;
+    // (a finger's pan starts from where it left the tap's room, so the picture doesn't jump by that much)
+    if (e.pointerType === 'touch') {
+      pStart.x = e.clientX;
+      pStart.y = e.clientY;
+      dx = dy = 0;
+    }
+  }
   if (drawing) {
     const P = evPt(e),
       last = strokePts[strokePts.length - 1];
@@ -593,6 +616,13 @@ function onUp(e) {
   }
 }
 
+// How far a pointer may wander and still be a tap (or a press and hold), in CSS pixels, across and down added. A
+// finger on a glass screen drifts a few pixels as it lands and lifts: at the 4 a mouse gets, a tap that rolled 3
+// across and 2 down ticked nothing and opened nothing (v318 review). 10 for a finger, as touch screens allow; 6 for a
+// pencil.
+function tapSlop(e) {
+  return e.pointerType === 'touch' ? 10 : e.pointerType === 'pen' ? 6 : 4;
+}
 // long-press (or right-click) a section while colouring along: open its marker in the list (findInList, 83-along.js);
 // _holdAt: when the last one did (clicks on the list just after it are ignored, see frameInit)
 let lpT = 0,

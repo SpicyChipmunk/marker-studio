@@ -119,7 +119,8 @@ document.addEventListener(
   true,
 );
 // Back (v289): the browser's or Android's Back closes what's open first — a dialog, a sheet, the Library, Focus mode,
-// Reveal, full screen, Colour along — one each, then leaves the app as before. Each one open is a history entry of the
+// Reveal, full screen, Colour along — one each, then (v318 review) a tab other than Home goes back to Home (events.js),
+// then it leaves the app as before. Each one open is a history entry of the
 // page's own (pushState), made and taken back as things open and close, however they do; Back takes one, and the top
 // layer marked back closes as its Escape would. (A question that won't go gets its entry back; the welcome has none.)
 (function () {
@@ -143,7 +144,8 @@ document.addEventListener(
   let base = at(),
     depth = base,
     pending = false,
-    raf = 0;
+    raf = 0,
+    first = true;
   const count = function () {
     let n = 0;
     _layers.forEach(function (L) {
@@ -151,12 +153,24 @@ document.addEventListener(
       // (the welcome has no close, so no entry; but Markers' Add markers sheet, the welcome's steps in .wcmk, closes
       // with Back as any dialog does, a step at a time, v312.1)
       n += L.name === 'dialog' ? document.querySelectorAll('.overlay.on:not(#welcome:not(.wcmk))').length : 1;
+      // (v318 review: and the first-run welcome while it has a step to go back to, one at a time as the sheet's; on its
+      // first step Back still leaves the app, as before)
+      const w = L.name === 'dialog' && document.getElementById('welcome');
+      if (w && w.classList.contains('on') && !w.classList.contains('wcmk') && w.msCanBack && w.msCanBack())
+        n++;
     });
     return n;
   };
   const sync = function () {
     raf = 0;
     if (pending) return;
+    // (v318 review) reloaded on an entry of the app's own with something open again at the start (the tab it was on,
+    // Markers or Palette, which sits a Back step above Home): that entry is its, not one more on top of it, so Back
+    // goes Home and then leaves, without a step that does nothing
+    if (first) {
+      first = false;
+      base = Math.max(0, base - count());
+    }
     const n = base + count();
     if (n > depth)
       while (depth < n) {
@@ -172,6 +186,11 @@ document.addEventListener(
     if (!raf) raf = requestAnimationFrame(sync);
   };
   window.__histSync = sync;
+  // (whether an entry is still being taken back, or a sync waits for its frame: the tests wait for neither before a
+  // reload, which the browser would otherwise give up on)
+  window.__histBusy = function () {
+    return pending || !!raf;
+  };
   // (the page keeps its own scroll: taking an entry back mustn't put the page where it was when the entry was made)
   try {
     history.scrollRestoration = 'manual';

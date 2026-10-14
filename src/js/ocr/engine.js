@@ -444,6 +444,156 @@ const OCR2 = (function () {
         return bx;
       }
 
+      // a look's readings in order, each code's names after it. Readings below minConf are left out (a speck read as
+      // "0" would be the colourless blender); a lone character only with a name under it (the blender's 0 has its name
+      // under it; a speck read "0", even surely, hasn't)
+      function order(items) {
+        const ordered = [],
+          minConf = o.minConf == null ? 0.3 : o.minConf;
+        items.forEach((it) => {
+          if (it.nameOf || !it.best || it.best.conf < minConf) return;
+          if (it.best.text.length === 1 && !it.names.length) return;
+          ordered.push(it);
+          it.names.forEach((n) => n.best && n.best.conf >= minConf && ordered.push(n));
+        });
+        return ordered;
+      }
+      // (v318 review) once read, a code with no name paired and a word read beside it, level with it, just under or over
+      // it: that word is its name. The pairing before reading has to be strict, not knowing which box is the code ("BGY18"
+      // under the taller "Graphite" would have been its name, never read as a code), so it left out a name overlapping its
+      // code's box ("Sakura" 7 px into R23's), as boxes come grown by the unclip ratio; here the readings say which is which
+      function latePair(items, lineH) {
+        const word = (it) =>
+            !it.nameOf &&
+            !it.names.length &&
+            !it.half &&
+            it.best &&
+            it.best.conf >= (o.wordConf || 0.5) &&
+            /^[A-Za-z][A-Za-z .'-]{2,}$/.test(it.best.text),
+          code = (it) =>
+            !it.nameOf &&
+            !it.names.length &&
+            !it.zoomed &&
+            it.best &&
+            /^[A-Za-z]{0,3}[0-9Oo]{1,4}$/.test(it.best.text) &&
+            /[0-9]/.test(it.best.text);
+        items
+          .filter(code)
+          .sort((x, y) => y.best.conf - x.best.conf)
+          .forEach((A) => {
+            const a = A.box,
+              ca = Math.cos(a.a),
+              sa = Math.sin(a.a);
+            items.forEach((B) => {
+              if (B === A || !word(B) || B.box.from) return;
+              const b = B.box;
+              if (b.h >= a.h * (o.lateH || 1.3)) return;
+              let da = Math.abs(a.a - b.a);
+              while (da > Math.PI / 2) da = Math.abs(da - Math.PI);
+              if (da > (o.pairAngle || 20) * (Math.PI / 180)) return;
+              const dx = b.cx - a.cx,
+                dy = b.cy - a.cy,
+                u = dx * ca + dy * sa,
+                v = -dx * sa + dy * ca,
+                gap = Math.abs(v) - (a.h + b.h) / 2;
+              if (Math.abs(u) > (a.w + b.w) / 4 + 4) return;
+              if (gap < (-(o.lateOver || 0.5) * (a.h + b.h)) / 2 || gap > (o.pairGap || 0.8) * lineH) return;
+              B.nameOf = A;
+              A.names.push(B);
+            });
+          });
+      }
+
+      // (the zoom's one pass: each box's tile, z times enlarged, padW and pad of its size around it along and across
+      // its text, detected again; its lines when it comes apart, else the box kept)
+      async function zoomPass(tall, z, padW, pad) {
+        // (one tile size for all, so they run as one batch: the largest, rounded to 32)
+        const tiles = tall.map((b) => {
+          // (wider along the text than across it: a line can run past the box's ends, and the tile costs little)
+          const w = b.w * (1 + 2 * padW) + (o.zoomMargin == null ? 16 : o.zoomMargin),
+            h = b.h * (1 + 2 * pad) + (o.zoomMargin == null ? 16 : o.zoomMargin);
+          return { b: b, w: w, h: h, W: Math.ceil((w * z) / 32) * 32, H: Math.ceil((h * z) / 32) * 32 };
+        });
+        // (grouped by tile size so that most share one; a group is one run)
+        const groups = new Map();
+        tiles.forEach((tl) => {
+          const W = Math.min(tl.W, 512),
+            H = Math.min(tl.H, 512),
+            k = W + 'x' + H;
+          if (!groups.has(k)) groups.set(k, { W: W, H: H, list: [] });
+          groups.get(k).list.push(tl);
+        });
+        const found = [],
+          keep = [];
+        for (const g of groups.values()) {
+          if (aborted()) break;
+          const bs = o.zoomBatch || 8;
+          for (let i = 0; i < g.list.length; i += bs) {
+            await breathe();
+            if (aborted()) break;
+            const grp = g.list.slice(i, i + bs),
+              n = g.W * g.H,
+              data = new Float32Array(grp.length * 3 * n);
+            grp.forEach((tl, k) => {
+              // (the tile covers W/z × H/z image pixels around the box, level with its text)
+              sample(
+                img,
+                tl.b.cx,
+                tl.b.cy,
+                g.W / z,
+                g.H / z,
+                tl.b.a,
+                g.W,
+                g.H,
+                true,
+                data.subarray(k * 3 * n, (k + 1) * 3 * n),
+              );
+            });
+            const rr = await zs.run({
+              [zs.inputNames[0]]: new ort.Tensor('float32', data, [grp.length, 3, g.H, g.W]),
+            });
+            const out = rr[zs.outputNames[0]];
+            stat.zoomTiles += grp.length;
+            grp.forEach((tl, k) => {
+              const sub = boxes(out.data.subarray(k * n, (k + 1) * n), g.W, g.H, 1, 1, o, buf),
+                ca = Math.cos(tl.b.a),
+                sa = Math.sin(tl.b.a),
+                lines = [];
+              sub.forEach((s) => {
+                // (back to the image: unzoomed, turned by the box's angle, about its centre)
+                const u = (s.cx - g.W / 2) / z,
+                  v = (s.cy - g.H / 2) / z,
+                  w = s.w / z,
+                  h = s.h / z;
+                if (h < Math.max(8, minH * 0.6)) return;
+                let a = s.a + tl.b.a;
+                while (a > Math.PI / 2) a -= Math.PI;
+                while (a <= -Math.PI / 2) a += Math.PI;
+                // (only lines inside the tall box, give or take; the tile may show a neighbour's text)
+                if (Math.abs(u) > tl.b.w * 0.75 + 4 || Math.abs(v) > tl.b.h * 0.6 + 4) return;
+                lines.push({
+                  cx: tl.b.cx + u * ca - v * sa,
+                  cy: tl.b.cy + u * sa + v * ca,
+                  w: w,
+                  h: h,
+                  a: a,
+                  score: s.score,
+                  from: tl.b,
+                });
+              });
+              // (two or more lines, none as tall as the box was: split. Else the box stays, to be read whole and split in halves)
+              if (lines.length >= 2 && lines.every((l) => l.h < tl.b.h * 0.8)) {
+                found.push(...lines);
+                stat.zoomBoxes += lines.length;
+              } else keep.push(tl.b);
+            });
+            if (out.dispose) out.dispose();
+            progress('zoom', Math.min(g.list.length, i + bs), tiles.length);
+          }
+        }
+        return { found: found, keep: keep };
+      }
+
       // 2.–4. a look's boxes read (lineH0: the first look's line height, for the second)
       async function readBoxes(bx, lineH0) {
         // 2. zoom: tall boxes (lines merged) detected again, each on its own, enlarged
@@ -458,90 +608,21 @@ const OCR2 = (function () {
             z = o.zoom === true ? 2 : o.zoom,
             pad = o.zoomPad || 0.15;
           stat.tallBoxes = tall.length;
-          // (one tile size for all, so they run as one batch: the largest, rounded to 32)
-          const tiles = tall.map((b) => {
-            // (wider along the text than across it: a line can run past the box's ends, and the tile costs little)
-            const w =
-                b.w * (1 + 2 * (o.zoomPadW == null ? 0.25 : o.zoomPadW)) +
-                (o.zoomMargin == null ? 16 : o.zoomMargin),
-              h = b.h * (1 + 2 * pad) + (o.zoomMargin == null ? 16 : o.zoomMargin);
-            return { b: b, w: w, h: h, W: Math.ceil((w * z) / 32) * 32, H: Math.ceil((h * z) / 32) * 32 };
-          });
-          // (grouped by tile size so that most share one; a group is one run)
-          const groups = new Map();
-          tiles.forEach((tl) => {
-            const W = Math.min(tl.W, 512),
-              H = Math.min(tl.H, 512),
-              k = W + 'x' + H;
-            if (!groups.has(k)) groups.set(k, { W: W, H: H, list: [] });
-            groups.get(k).list.push(tl);
-          });
-          const found = [];
-          let keep = [];
-          for (const g of groups.values()) {
-            if (aborted()) break;
-            const bs = o.zoomBatch || 8;
-            for (let i = 0; i < g.list.length; i += bs) {
-              await breathe();
-              if (aborted()) break;
-              const grp = g.list.slice(i, i + bs),
-                n = g.W * g.H,
-                data = new Float32Array(grp.length * 3 * n);
-              grp.forEach((tl, k) => {
-                // (the tile covers W/z × H/z image pixels around the box, level with its text)
-                sample(
-                  img,
-                  tl.b.cx,
-                  tl.b.cy,
-                  g.W / z,
-                  g.H / z,
-                  tl.b.a,
-                  g.W,
-                  g.H,
-                  true,
-                  data.subarray(k * 3 * n, (k + 1) * 3 * n),
-                );
-              });
-              const rr = await zs.run({
-                [zs.inputNames[0]]: new ort.Tensor('float32', data, [grp.length, 3, g.H, g.W]),
-              });
-              const out = rr[zs.outputNames[0]];
-              stat.zoomTiles += grp.length;
-              grp.forEach((tl, k) => {
-                const sub = boxes(out.data.subarray(k * n, (k + 1) * n), g.W, g.H, 1, 1, o, buf),
-                  ca = Math.cos(tl.b.a),
-                  sa = Math.sin(tl.b.a),
-                  lines = [];
-                sub.forEach((s) => {
-                  // (back to the image: unzoomed, turned by the box's angle, about its centre)
-                  const u = (s.cx - g.W / 2) / z,
-                    v = (s.cy - g.H / 2) / z,
-                    w = s.w / z,
-                    h = s.h / z;
-                  if (h < Math.max(8, minH * 0.6)) return;
-                  let a = s.a + tl.b.a;
-                  while (a > Math.PI / 2) a -= Math.PI;
-                  while (a <= -Math.PI / 2) a += Math.PI;
-                  // (only lines inside the tall box, give or take; the tile may show a neighbour's text)
-                  if (Math.abs(u) > tl.b.w * 0.75 + 4 || Math.abs(v) > tl.b.h * 0.6 + 4) return;
-                  lines.push({
-                    cx: tl.b.cx + u * ca - v * sa,
-                    cy: tl.b.cy + u * sa + v * ca,
-                    w: w,
-                    h: h,
-                    a: a,
-                    score: s.score,
-                    from: tl.b,
-                  });
-                });
-                // (two or more lines, none as tall as the box was: split. Else the box stays, to be read whole and split in halves)
-                if (lines.length >= 2 && lines.every((l) => l.h < tl.b.h * 0.8)) {
-                  found.push(...lines);
-                  stat.zoomBoxes += lines.length;
-                } else keep.push(tl.b);
-              });
-              if (out.dispose) out.dispose();
-              progress('zoom', Math.min(g.list.length, i + bs), tiles.length);
+          let { found, keep } = await zoomPass(tall, z, o.zoomPadW == null ? 0.25 : o.zoomPadW, pad);
+          // (v318 review) a box that didn't come apart and is about as tall as it's wide: lines merged, and which way they
+          // run unsure ("G49 / Sour / Apple" turned 55°, its box taken as turned the other way, read as junk). Again, the
+          // tile square round it and turned a quarter: the detector parts lines that run across the tile, not down it
+          if (o.zoom2 && keep.length && !aborted()) {
+            const sq = keep.filter((b) => b.w / b.h < (o.zoom2Sq || 1.5)),
+              // (each a copy, square, the side its longer, turned a quarter)
+              sqs = sq.map((b) =>
+                Object.assign({}, b, { w: Math.max(b.w, b.h), h: Math.max(b.w, b.h), a: b.a + Math.PI / 2 }),
+              );
+            if (sq.length) {
+              const z2 = await zoomPass(sqs, o.zoom2, 0.1, 0.1);
+              stat.zoom2 = { tried: sq.length, split: sq.length - z2.keep.length };
+              found = found.concat(z2.found);
+              keep = keep.filter((b) => sq.indexOf(b) < 0 || z2.keep.indexOf(sqs[sq.indexOf(b)]) >= 0);
             }
           }
           bx = rest.concat(found, keep);
@@ -704,7 +785,7 @@ const OCR2 = (function () {
             stat.recs[tag] = (stat.recs[tag] || 0) + 1;
             if (!it.done && settled(it.best)) {
               it.done = true;
-              if (hooks.line) hooks.line(it);
+              if (hooks.line && !it.quiet) hooks.line(it);
             }
             // (of the codes only: names and halves read later would take the count past the total)
             progress('rec', Math.min(total, codes.filter((x) => x.done).length), total);
@@ -774,6 +855,8 @@ const OCR2 = (function () {
                   of: it,
                   rot: it.best.flip,
                   half: true,
+                  // (told to the page once the pair's been compared, below)
+                  quiet: !!o.halfBox,
                   done: false,
                   names: [],
                   nameOf: null,
@@ -781,6 +864,21 @@ const OCR2 = (function () {
               });
             });
           await pass(halves, (h) => h.rot, 'half');
+          // (v318.1, o.halfBox) a box read whole as one of its halves reads ("BV29", its halves "BV29" and "RV29"): one
+          // line, read in full; the other half is a part of it, or a scrap below it, and isn't a code of its own
+          if (o.halfBox) {
+            const k = (t) => t.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            for (let i = 0; i + 1 < halves.length; i += 2) {
+              const w = halves[i].of,
+                pair = [halves[i], halves[i + 1]];
+              if (!w.best || !codeLike(w.best.text)) continue;
+              pair.forEach((h, j) => {
+                const o2 = pair[1 - j];
+                if (h.best && o2.best && k(h.best.text) === k(w.best.text) && codeLike(o2.best.text))
+                  o2.best = null;
+              });
+            }
+          }
           halves.forEach(function (h) {
             // (a half that reads surely, or like a code, is a line of its own)
             // (v3: of three characters or more — a two-character half, "c2", is half of a longer code, G28)
@@ -792,8 +890,10 @@ const OCR2 = (function () {
                 (codeLike(h.best.text) &&
                   h.best.text.length >= (o.halfLen || 3) &&
                   h.best.conf >= (o.halfConf || 0.7)))
-            )
+            ) {
               items.push(h);
+              if (h.quiet && h.done && hooks.line) hooks.line(h);
+            }
           });
         }
         // phase 2: the names, each turned as its code was read (cls'd when the code is unsure), once
@@ -805,6 +905,20 @@ const OCR2 = (function () {
           await turn(rest, 0, 't0');
           await pass(nm, (it) => it.t0, 'name');
         }
+        // (v318 review) a zoomed box's lines: the tallest was taken for the code, the rest its names, before reading. When
+        // it reads as a word and one of the others surely as a code ("Apple" over "G49"), that one's the code
+        items.forEach((A) => {
+          if (!A.zoomed || A.nameOf || !A.names.length || !A.best || codeLike(A.best.text)) return;
+          const N = A.names.find((n) => n.best && n.best.conf >= good && codeLike(n.best.text));
+          if (!N) return;
+          const rest = A.names.filter((n) => n !== N).concat([A]);
+          A.names = [];
+          N.nameOf = null;
+          N.names = rest;
+          rest.forEach((n) => (n.nameOf = N));
+          N.done = true;
+          if (hooks.line) hooks.line(N);
+        });
         // (the unsettled, told last: amber)
         items.forEach((it) => {
           if (!it.done && it.best) {
@@ -816,23 +930,13 @@ const OCR2 = (function () {
         lap('recAll', t);
         stat.nRec = (stat.nRec || 0) + nRec;
         stat.lines = (stat.lines || 0) + items.length;
-        // (readings below minConf are left out: a speck read as "0" would be the colourless blender)
-        const ordered = [],
-          minConf = o.minConf == null ? 0.3 : o.minConf;
-        // (a lone character, "0", only with a name under it: the blender's 0 has its name under it; a speck read
-        // "0", even surely, hasn't)
-        items.forEach((it) => {
-          if (it.nameOf || !it.best || it.best.conf < minConf) return;
-          if (it.best.text.length === 1 && !it.names.length) return;
-          ordered.push(it);
-          it.names.forEach((n) => n.best && n.best.conf >= minConf && ordered.push(n));
-        });
-        return { items: items, ordered: ordered, lineH: lineH, tallH: tallH };
+        return { items: items, ordered: order(items), lineH: lineH, tallH: tallH };
       }
 
       // the first look
       const first = await readBoxes(await detect(0), 0);
-      let lines = first.ordered;
+      let lines = first.ordered,
+        second = null;
       // the second look: turned a quarter, only where the first read no code (not a name, not shaped like a code) or
       // saw nothing (no box of its lines there)
       if (o.second && !aborted()) {
@@ -858,8 +962,15 @@ const OCR2 = (function () {
           found = await detect(o.secondAngle == null ? Math.PI / 2 : o.secondAngle),
           kept = found.filter((b) => failed.some((k) => over(k, b)) || !seen.some((k) => over(k, b)));
         stat.look2 = { found: found.length, kept: kept.length, failed: failed.length, seen: seen.length };
-        if (kept.length && !aborted()) lines = lines.concat((await readBoxes(kept, first.lineH)).ordered);
+        if (kept.length && !aborted()) second = await readBoxes(kept, first.lineH);
+        if (second) lines = lines.concat(second.ordered);
         lap('look2', t2);
+      }
+      // (names paired once read: each look's own, after the second look, which looks again where the first read no code)
+      if (o.pairLate && !aborted()) {
+        latePair(first.items, first.lineH);
+        if (second) latePair(second.items, first.lineH);
+        lines = order(first.items).concat(second ? order(second.items) : []);
       }
       return {
         lines: lines,

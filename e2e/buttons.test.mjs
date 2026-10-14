@@ -24,7 +24,7 @@ const TAB = '.modes button,.sftabbtn';
 // (v288: a palette band's own button fills the band; the Print sheet's choices with a drawing over the word)
 // (v306: Home's latest piece's picture)
 // (v309: the welcome's ways in and its two-line choices, the colour chart's swatches; v310: Mood's pictures)
-const BIG = '.homecard,.sopen,.mdrop,.hlphiw,.sfRecCard,.sfah,.sfinfo,.focmk,.bhit,.sfprsh .segs button:has(.sfprpv),.hhpic,.wcc,.wcseg button,.wccount button,.chsw,.sfmp';
+const BIG = '.homecard,#homeTaskCard,.sopen,.mdrop,.hlphiw,.sfRecCard,.sfah,.sfinfo,.focmk,.bhit,.sfprsh .segs button:has(.sfprpv),.hhpic,.wcc,.wcseg button,.wccount button,.chsw,.sfmp';
 const CHOICE = '.segs button,.chip,.msrc button,.wcbrands button,#sfRoot .sfedit';
 // a link inside a sentence; the guide's tool-row icons and Save pill, whose tap areas stop at the picture's edge,
 // and ✎, whose lower edge the Save pill under it shares

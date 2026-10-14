@@ -41,7 +41,7 @@ const lay = (page, rule) =>
     }
   }, rule);
 
-test('a new guide takes rule 2, saves it and opens with it; pinning the big section spreads the others, colouring it doesn’t', async () => {
+test('a new guide takes rule 3 (v318; laid by rule 2’s area), saves 2 and opens with it; pinning the big section spreads the others, colouring it doesn’t', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await welcome(page, 'look');
   await idle(page);
@@ -49,7 +49,7 @@ test('a new guide takes rule 2, saves it and opens with it; pinning the big sect
   await idle(page);
   await letterGuide(page);
   await answerAsks(page);
-  assert.equal(await page.evaluate(() => __mstest.styleVars.gradArea), 2);
+  assert.equal(await page.evaluate(() => __mstest.styleVars.gradArea), 3);
   const a = await lay(page, 2);
   // coloured, then laid again: as before
   await page.evaluate((l) => {

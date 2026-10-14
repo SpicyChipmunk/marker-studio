@@ -1263,8 +1263,18 @@ function pgControls() {
   });
   document.getElementById('sfPgGo').addEventListener('click', function () {
     if (!pgConvex(pgEd.q)) return;
-    if (pgEd.how === 'first') pgReveal(pgOrder(pgEd.q), false);
-    else pgApply(pgOrder(pgEd.q), false);
+    if (pgEd.how === 'first') {
+      pgReveal(pgOrder(pgEd.q), false);
+      return;
+    }
+    // (v318 polish: said, and drawn, before the page is flattened and its sections found again)
+    const ed = pgEd,
+      q = pgOrder(ed.q);
+    this.disabled = true;
+    this.textContent = 'Straightening\u2026';
+    afterPaint(function () {
+      if (pgMode && pgEd === ed) pgApply(q, false);
+    });
   });
   document.getElementById('sfPgNo').addEventListener('click', function () {
     if (pgEd.how === 'first') {

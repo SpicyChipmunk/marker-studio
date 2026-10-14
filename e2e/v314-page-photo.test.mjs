@@ -295,18 +295,20 @@ test('Home’s latest piece: Add a photo of your page (✕ puts it away for that
   assert.deepEqual(errors, []);
 });
 
-test('the photo goes when the guide is deleted, and comes back with Put back; Save a copy doesn’t copy it', async () => {
+test('the photo stays while the guide waits in Recently deleted, and comes back with Put back; Save a copy doesn’t copy it', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   const id = await finished(page);
   await choose(page, await photo(page, FOUND), '#sfFin [data-fin="add"]');
   await waitRec(page);
   const ts = (await rec(page)).ts;
-  // deleted in the Library while open, its Undo let go
+  // deleted in the Library while open, its Undo let go (v318.1: it waits a week in Recently deleted, photo and all;
+  // it went with the Undo window before)
   await page.evaluate((id) => {
     libDelete(id);
     libFinish();
   }, id);
-  await finIs(page, id, false);
+  await idle(page, 600);
+  await finIs(page, id, true);
   // Put back
   await page.click('#sfHead .sfsave');
   await finIs(page, id, true);
@@ -354,6 +356,8 @@ test('the Library’s backup holds the photo (a guide file doesn’t); restoring
   await page.evaluate((id) => {
     libDelete(id);
     libFinish();
+    // (v318.1: Recently deleted's Delete them now)
+    libPurge(id);
   }, id);
   await finIs(page, id, false);
   await page.setInputFiles('#guidesFile', file);

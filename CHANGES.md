@@ -1012,7 +1012,7 @@ Scan on Android, and a whole tray at once on any device; built from fable's pres
 # Changes — v318
 
 Read photos of your caps, and three quicker ways to add markers. New e2e files: `v318` (2), `v318-scan` (4),
-`v318-ocr` (8); unit: `v318-sets` (4), `v318-ocr` (3).
+`v318-ocr` (8); unit: `v318-sets` (4), `v318-ocr` (9).
 
 - **Read photos of your caps** (Scan, under the steps; not in Find my set): photograph each tray from above, choose one
   photo or all of them, and the codes they read join Scan's list as they're read, over the photo green boxes for what's added and amber for what's to check.
@@ -1033,9 +1033,12 @@ Read photos of your caps, and three quicker ways to add markers. New e2e files: 
   in it once, and a later photo answers an earlier one's question. At the end, one summary and a line per photo;
   **Undo these photos**; **Read more photos**. Stop ends the batch after what's read so far. A photo that can't be read
   is counted and skipped; a reader that can't start ends the batch, said. All 27 of Ben's close-ups in one batch:
-  470 of his 471 markers, nothing wrong added, 6 questions, 240 s (Chromium, the iPad's two strips).
-- **How it reads**: the photo at 1600 px (iPhone and iPad in two strips, 1280 px after running out of memory once, read
-  again gently by itself); tall boxes looked at again closer; each code's name paired with it; then a second look, the
+  471 of his 471 markers, nothing wrong added, no questions (Chromium, the iPad's path; 470 and one question, Y210
+  whose name read "Yelliow", on a desktop's).
+- **How it reads**: the photo at 1600 px (iPhone and iPad in four strips overlapping by more than a code is long, so a
+  code across a cut is whole in one; 1280 px after running out of memory once, read again gently by itself); tall boxes
+  looked at again closer, and a squarish one that didn't come apart again closer still, turned a quarter (lines merged
+  at an angle); each code's name paired with it, and again once read, a word just under or over a code; then a second look, the
   photo turned a quarter, at only what the first didn't read (always: on wide trays it finds about 11 more of 334;
   accuracy before time, as adding a collection is done once). A lone character is kept only when a name is paired with
   it. The worker lets its messages in every 60 ms of reading, so Stop lands within a fraction of a second, not at the
@@ -1043,20 +1046,28 @@ Read photos of your caps, and three quicker ways to add markers. New e2e files: 
 - **How it settles**: a code read for sure, of one marker, joins the list as it's read when a brand is chosen above
   the box or it's of the brand the photo's codes plainly show (five or more, four to one); the rest wait for the end of
   the photo and are read as a pasted list, each code with its names on one line, with the photo's brand. On a tray
-  plainly of one brand, another brand's code read short (E71 beside E711) or unsure is left out, not asked about. An
+  plainly of one brand, another brand's code read short (E71 beside E711) or unsure is left out, not asked about. So is
+  one read short at its start (Y13 beside BGY13), and another brand's marker offered only by its name; a code both
+  brands have is never another brand's (E81 beside E814). The same cap read twice is one line, with the names of both.
+  A question every answer of which a later photo has put in the list goes (back with Undo). An
   old code that's now another marker's (R16) is settled by a name read with it. With a brand chosen above the box and a
   photo plainly of the other brand, its codes go in as the photo's brand, said, not as the chosen brand's or as dozens
   of questions. The photo's lines aren't read as if upside down (the reader tried both ways up already: a scrap of a
-  line, "001", had become Ohuhu 100). Boxes are green for every code added, at once or at the end. **Undo this photo** takes out what it
-  added; **Read another photo**; **Done** says on Scan's card how many came from the photo. On Ben's close-ups: Copic
-  137 of 137, no questions; Ohuhu 333 of 334 with the last a question, 6 questions in all, nothing wrong added (Chromium,
-  45 s and 192 s for the two sets). A real iPad's speed and memory are untested: the device checklist's first lines.
-  Measured memory (WebAssembly's, which never shrinks): about 180 MB on the iPad's path, 125 MB read gently.
+  line, "001", had become Ohuhu 100). Boxes are green for every code added, at once or at the end, each with its code
+  over it where the photo's shown 500 px wide or more (an iPad held upright: the card widens to 760 px for the photo).
+  **Undo this photo** takes out what it
+  added; **Read another photo**; **Done** says on Scan's card how many came from the photo, the keyboard's place on
+  Add (no keyboard over the list). On Ben's photos (Chromium; the iPad's path in brackets): Copic 137 of 137; Ohuhu
+  close-ups 333 (334) of 334, the last a question, 2 (1) questions in all; wide Ohuhu trays 332 (331) of 334; nothing
+  wrong added. A real iPad's speed and memory are untested: the device checklist's first lines. Measured memory
+  (WebAssembly's, which never shrinks): about 180 MB on the iPad's path, 125 MB read gently; the page's peak in
+  Chromium on the iPad's path 513–535 MB in four strips (576 in two, 720 in one).
 - **When things go wrong**: out of memory, the photo is read again gently, and later photos are read gently for a
   fortnight. A stored reader that won't start has its files checked again; a damaged or missing one is let go of, and
   Read another photo downloads only it (not the whole reader, which offline couldn't come back). Photo numbers go on
-  across Scan's openings, so Undo never takes out another photo's codes. Screen readers hear each stage once, not the
-  count as it climbs; focus stays on Stop or Cancel.
+  across Scan's openings, so Undo never takes out another photo's codes. Scan closed mid-read isn't taken for running
+  out of memory. Screen readers hear each stage once, not the count as it climbs, from a live region kept across a
+  batch's photos; focus stays on Stop or Cancel.
 - **A set's name in pasted text** (its box, an order email, a shop's page): Scan offers its markers, asked first, a
   button for each set named; a name that doesn't say which (Ciao 36) lists its sets under a heading by what tells them
   apart. A set's size (a box's "120 COLORS") isn't read as a code, nor a price, an order number or a quantity. Find my
@@ -1068,3 +1079,158 @@ Read photos of your caps, and three quicker ways to add markers. New e2e files: 
 - Help: **Adding markers by code** has the photo reader, set names and list files; About credits ONNX Runtime and
   PaddleOCR. `LICENSE` and `vendor/ocr/README.md` list the reader's files, sources and licences.
 - Version v318; cache `marker-studio-v318`.
+
+# Changes — v318.1 (a deep review of v318: three waves of fresh-eyes reviewers, an audit, and Ben's decisions)
+
+Five reviewers' fixes after v318, then an audit of them, a second and a third wave (the guide end to end, the
+proposals pressure-tested and prototyped), and Ben's twenty decisions (the last part of this section). The photo
+reader's first fixes are folded into v318's section above (four strips, the closer second zoom, names paired once
+read, the settling rules, labels, no keyboard after Done). Version v318.1; cache `marker-studio-v318.1`. New e2e
+files: `v318-review-ux` (7), `v318-data` (11); unit: `v318-release` (3); more tests in `v318-scan`, `v318-sets`,
+`v318-ocr`; and those listed below.
+
+- **Scan** (v318.1): Find my set with a set's name typed but no Enter, and markers already on Scan's list, no longer
+  ends in "Something went wrong". A tray's text with HONOLULU on the case and Ohuhu's Black cap (120) on lines of their
+  own reads 120 as a code, not as Honolulu 120; "Honolulu B 120 Colors" is Honolulu 120. A question's answer that's a
+  marker by its old code says so ("RV18 Bubblegum · Ohuhu · was R14", the old code with plain letters, CGII00), or
+  "upside down".
+- **Escape** leaves Crop and Adjust corners in Check the sections as their Cancel does, as it leaves the zone editor;
+  only while the Guide screen shows (left open there, an Escape on Markers closes Markers' ⋯ menu, not the crop).
+- **The browser's Back in the first-run welcome** (an iPad's swipe from the edge in a Safari tab, Android's Back) goes
+  back a step, as its Back link does, instead of leaving the app; on its first step it still leaves.
+- **Colour along**: with a marker's row open, a tap on a faded section (another marker's) asks first: see Ben's
+  decisions below (it had ticked it unseen; a first fix ticked it and said so, with Undo).
+- **Tester tasks**: Send results with nothing answered says so and sends nothing (it sent six "not yet"s). The answers
+  go in a backup and come back with it (moving from a Safari tab to the Home Screen app had left them, and the tester's
+  id, behind): all of them on a device with none, else only those not answered there.
+- **Send feedback** and Help › Your data say all that's sent: the device and screen size, the version, how many markers,
+  guides and palettes, a tester number made on this device (not your name) and the last few errors.
+- **A guide that can't be read for want of memory** (Safari's canvas limit) isn't called damaged: "this device is short
+  of memory. Your guide is still saved". Importing one, adding a lost guide back and restoring one say memory too, not
+  "couldn't be read"; the lost guide is offered again. A restore over a guide called damaged keeps its stored copy as
+  "… (before restore)" when that copy differs and is whole.
+- **The browser's storage not answering**: a Library guide it doesn't give back says to reload, not that its stored
+  copy is missing (which sent people to an older backup); an open of the database that never answers is given up after
+  8 s, so a save says so instead of "Saving…" for good.
+- **Back up** says a Library guide that isn't stored on this device at all by name, with what to do, apart from one it
+  couldn't read; it no longer keeps Home's reminder due for good.
+- A backup reminder's **Later**, or the install card's **Not now**, given while the device's clock was ahead rests a
+  week, not until the clock catches up.
+- On a phone, a PDF or photo that won't open from the Guide screen's start card has its message brought into view.
+- **Random**'s Main colour places its accents in n log n: 29,000 sections 3.4 s → 0.75 s in Chrome. The style golden's
+  three Random guides take other markers (Random isn't repeatable; no saved guide changes).
+- Tests: the service worker's caches are checked against the version and the reader's folder (`v318-release`).
+
+**The guide, checked end to end** (a second wave: Undo and Redo after some 60 changes, Library round-trips and every
+count were exact; these were not):
+
+- **Page finished's Add a photo of your page** is there on the tick that first saves a guide (the sample, finished in
+  Colour along, had none until Colour along was left and opened again).
+- **A finger's tap on the picture may drift 10 px** (a pencil's 6, a mouse's 4 as before): a tap that rolled 3 px across
+  and 2 down had ticked nothing. Panning starts without a jump.
+- **A wide picture prints on its side**: page 1 turns landscape when that prints the picture at least 10% bigger each
+  way (a 4:3 picture had printed across the top half of an upright page); close-ups and the key stay upright, and the
+  Print sheet's summary says "page 1 landscape". On an iPhone or iPad its button says **Print or save PDF** (the share
+  sheet has Print in it).
+- **Ticking is quicker on a big page**: a tick with a marker's row open redraws its outline only round the section
+  ticked, and the tool row isn't fitted again unless something it depends on changed (839 sections: 606 → 163 ms over
+  6 ticks in Chrome); a save no longer reads the whole section map twice (about 100 ms 1.5 s after every tick).
+- **"Detecting sections…", "Building…" and "Straightening…"** are drawn before the work they name (they never showed:
+  the work started in the same frame).
+- **The Photo pattern**: the photo dragged and the Plan left within half a second finishes its colours and keeps the
+  "Photo moved" Undo step; its lighting correction is saved as found (guides saved before open as before).
+- **Saving**: a reload just as a new guide appears keeps it (the waiting save starts as the page goes, and the database
+  writes are committed at once); a guide whose Resume note can't be written (storage full to the last byte) says so,
+  once; why a stored copy couldn't be read is kept per guide (a thumbnail's load at the same time had reset it); a
+  restore keeps a guide called damaged aside as "… (before restore)" only if that copy is whole, and says when Tester
+  tasks answers came back. A screen reader hears "Page finished." before "Saved in your Library…".
+- **Edit sections** is the one name for the section tools (the quick check had said Fix sections, its step Check the
+  sections). **Smooth them** says how many markers it adds before the tap ("Smooth them (+1 marker)"). **Save image**
+  with codes, for a narrow picture (the sample), is saved up to twice its size, so its codes are sharp.
+- **Tap areas** of 44 px where the layout has room: Pattern's + Zone, the checkboxes on lines of their own (Codes on the
+  saved image), Markers' Swatch chart ↓ (no longer under Add markers' bottom 12 px), Palette's colour counts (44 px wide
+  on an iPad; on a phone 34 px, their tap areas meeting).
+
+**Adding markers** (a third wave, each proposal prototyped and measured):
+
+- **Some are missing** opens the chart on your markers only, titled "Untick any you've lost"; one unticked stays where
+  it was, faded; **None are missing** closes it, **Show all colours** gives every colour back.
+- **Scan the caps** says iPad or iPhone, and Gboard's Scan text on Android; the privacy lines (welcome, Help › About,
+  README) say the camera is used to scan or photograph caps, and photos of caps are read on this device.
+- **A set's name** found in Scan is a question in plain words: "Found a set: Ohuhu Honolulu 120 · Add all 120 of its
+  markers to the list?". Copic Ciao 72 Set A and Set B is both sets. Read quietly by Scan Text (HONOLULU 120 on a box),
+  it's the set's card with its size offered as a cap, not Ohuhu's 120 Black added unasked.
+- **The photo reader has one name, Photograph your caps**, from its entry points to its sheet; its views open on their
+  text (its own heading had stacked under the sheet's title on a phone). Its card widens to 760 px only when that shows
+  the photo at least 500 px wide, for the code labels over the caps, and decides again as the screen turns. With the
+  reader stored, its picker put away leaves you on the reader, not Scan's list. A batch stopped at its first photo says
+  "No new codes read · stopped · the other 2 photos not read".
+- **Scan's smaller fixes**: a brand tapped with nothing to answer says the brand now reading; Find mode says another
+  brand's code, with no Add, and leaves it out of a list, said; focus after the toast's Open and Scan closed goes to Add
+  markers or the welcome's step; a paste or list file over 200,000 characters is said, not read (a web page pasted froze
+  it for seconds).
+
+**The photo reader and data** (measured on Ben's photos on both paths, and on synthetic trays):
+
+- **Read gently at 1600 px in four strips, never 1280 px**: at 1280 px it added wrong codes (6 on the Copic set) and
+  saved no memory in Safari's engine; the photo itself is most of the peak. "Reading it again…" says the second try.
+- **A part of a cap read as a code of its own is left out**: a box whose whole reading equals one half's drops a
+  code-shaped other half; a code inside a longer code read in the same place is left out (or taken back out); a code
+  added at once whose names are another marker's becomes Scan's question. Big photos are decoded straight to the
+  2048 px read (`createImageBitmap`), where the browser applies the photo's rotation.
+- **Delete all my data** also removes the reader's download (22 MB, no personal data); Help says so. Help › Your data
+  says a private window deletes everything when it's closed. Back up & restore says the file holds the Tester tasks
+  answers and name, and points to Share & print › Guide file to share one guide.
+
+New e2e files: `v318-review-guide` (7), `v318-polish` (11), `v318-adding-2`, `-3`, `-8`, `-9`, `tap-areas`,
+`rough-count`, `saved-image-size`, `v3181-backup-words`, `v3181-private`, `v3181-wipe`; unit: `v318-adding-9`,
+`v3181-gentle`, `v3181-parts`.
+
+**Ben's decisions** (each pressure-tested first; the options not taken are in the review's notes):
+
+- **Colour along asks first.** With a marker's row open, a tap on another marker's section asks beside it: "YG611
+  Mantis Green · not YG00", **Open YG611** or **Tick it** (**Untick it** when it's done, which had changed unseen). A
+  second tap, Escape, scrolling or another row closes it; the zone is named when it's another. Nothing changes by a
+  slip; the question goes as another guide opens.
+- **Scan keeps what it read in view.** While the keyboard or Scan Text's camera is up (`visualViewport` shorter than
+  the page by more than 150 px, the box focused), the paste line and the photo card are put away, and the steps too
+  once the list has a marker, so the ✓ card and the count stay above the keyboard on an iPhone and a sideways iPad.
+- **Back goes to Home first.** Guide, Markers and Palette are a Back step above Home (in a Safari tab or on Android
+  Back had left the app); anything open on top closes first; Random goes back to Markers; Escape never changes tabs.
+- **In the Plan, a toast sits over the foot of the picture**, not over the tabs and their controls (inside the
+  picture's column on a sideways iPad; back in its old place if with very large text it would hide over half the
+  picture). Surprise's says less: "Split complementary · Random: blues, with greens and a yellow accent · Bright · 16
+  markers".
+- **Larger text on a phone**: the Plan's pinned picture shrinks as the text grows (45% of the screen, 40% at 1.3×, 36%
+  from 1.6×), so its controls have room (at 1.6×: 125 px of them on the first screen, from 55).
+- **A Beta tester tasks card on Home** during the beta: "0/6 · Beta tester tasks · Next: 1 · Add your markers ›",
+  "ready to send" once all six are answered, gone once sent.
+- **Blend companions a clearer step away** (`famRule 4`, new guides only): a companion under 5 CIEDE2000 of its marker
+  is swapped for a clearer one in its family, or within 10° of hue, where there is one; else it stays (none lost, none
+  to buy that was owned). On Ben's markers 85 of 942 change (B111's darker B112 → B114).
+- **Gradient smoothing keeps near-twins apart** (`gradArea 3`, new guides only): touching sections on markers under
+  2.5 CIEDE2000 apart count as a clash (Ben's markers on the test pages: 1,025 → 468). The markers a run picks are as
+  before.
+- **The PDF's light labels under 6 pt are a darker grey** (#8a8a8a, from #a0a0a0), so the smallest can be read; the
+  rest stay light, not to show through pale ink; close-ups' near-black labels as they were. A test print with pale
+  markers decides whether it stays.
+- **Key + reference is for colouring your own drawing**: with Codes or Numbers, page 1 is the picture in colour with
+  near-black labels (as big as the page allows, its small sections in close-ups after it, as Page + key's), then the
+  key; with Labels None, the one page of coloured reference beside the key as before (it had always printed that,
+  Labels greyed out). Page + key keeps its light labels, to colour on. A line under What to print says what each choice
+  prints; the Labels group is "Labels on the picture"; Darker labels is for Page + key only (Key + reference is always
+  dark). Tests: `print` (Key + reference's picture, labels as Page + key's with Darker labels, in colour; the line under
+  What to print), `tabs`, `v308-output` (one page with no labels).
+- **Recently deleted**: a deleted guide, palette or drawing waits a week, through reloads, in Library › Recently
+  deleted (N), with **Put back** (its progress and page photo too) and **Delete them now**; after the week it goes at
+  the next start. The 6-second Undo stays.
+- **Backup reminders count markers**: in a Safari tab, markers changed since the last backup bring the reminder after
+  5 days away, as guides and palettes do.
+- **Send feedback leaves out the Tester tasks name**; the tester number already links a note to the tester's results.
+- Kept as they are after testing: no step bar, no words under the tool icons, no print previews (to look at again
+  later), wide pictures printing on their side automatically, the reader's name check for a code read from part of a
+  cap. For after the beta: the Library's thumbnails into IndexedDB (Safari's 5 MB localStorage holds about 220 guides
+  once any name has a curly quote), and finding the page and sections in the worker (big photos hold the screen 2–3 s).
+
+New e2e files: `back-tabs`, `v318-adding-1a`, `v3181-bin`, `v3181-markers-reminder`, `toast-spot`,
+`large-text-frame`, `tasks-card`; unit: `v318-comp`, `v318-gradient-twins`.

@@ -5,8 +5,16 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.1',
+    t: 'Photograph your caps is offered wherever you add markers, and the reader reads more on an iPad. In Colour along, a tap on another marker’s section asks before ticking it. Deleted guides wait a week in Library › Recently deleted. Back goes to Home first. Wide pictures print on their side, and Key + reference prints your picture in colour with dark codes, to read beside the page you’re colouring.',
+  },
+  {
+    v: 'v318.1',
+    t: 'Some are missing shows just your markers to untick. Scan keeps what it read in view above the keyboard. A guide that can’t open for want of memory says so, and your Tester tasks answers go in your backup. Many smaller fixes from a review.',
+  },
+  {
     v: 'v318',
-    t: 'Read photos of your caps: in Scan, photograph each tray from above, choose the photos, and the codes they read join the list, without doubles. It works on this device, after a one-time download of about 22 MB. Also in Scan: a set’s name copied from its box or an order offers the whole set, and Open a list file reads a CSV. After adding a set, Some are missing lets you untick the few you’ve lost.',
+    t: 'Photograph your caps: in Scan, photograph each tray from above, choose the photos, and the codes they read join the list, without doubles. It works on this device, after a one-time download of about 22 MB. Also in Scan: a set’s name copied from its box or an order offers the whole set, and Open a list file reads a CSV. After adding a set, Some are missing lets you untick the few you’ve lost.',
   },
   {
     v: 'v317',

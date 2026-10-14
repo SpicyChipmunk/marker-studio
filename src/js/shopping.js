@@ -385,7 +385,7 @@ function guideBuys() {
     let w;
     try {
       // (a row saved before v316 has no rule: v315's, 2)
-      w = SF.guideWants(g.keys, [0, 1, 2, 3].indexOf(g.fr) >= 0 ? g.fr : 2, list, memo);
+      w = SF.guideWants(g.keys, [0, 1, 2, 3, 4].indexOf(g.fr) >= 0 ? g.fr : 2, list, memo);
     } catch (_) {
       return;
     }

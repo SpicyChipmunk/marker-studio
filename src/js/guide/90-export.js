@@ -28,12 +28,16 @@ function buildExportCanvas(outline, noCodes) {
       const legH = K.per * K.rh + K.legTop + (note ? noteH : 0) + 16;
       // (no bigger than iPad Safari's canvas allows, 16.7 million pixels: a guide with hundreds of markers has a
       // legend taller than its picture; past that the whole image is drawn smaller, xs, v304)
-      return { legH: legH, xs: Math.min(1, Math.sqrt(EXPORT_MAXPX / (W * (H + legH)))) };
+      // (v318 review: and a narrow picture with its codes, the sample's 568 px, is saved larger, up to twice its size,
+      // so it's EXPORT_UPW wide: its codes and key are drawn at that size, sharp, the picture enlarged smoothly)
+      const up = noCodes ? 1 : Math.min(2, Math.max(1, EXPORT_UPW / W));
+      return { legH: legH, xs: Math.min(up, Math.sqrt(EXPORT_MAXPX / (W * (H + legH)))) };
     };
   // the codes placed first, as on the PDF's colouring page: none over another, each as big as its section allows or
   // smaller down to the least size, else left off; the least size kept on the image as saved, after any shrinking
   // (from the smaller size, the one with the extra line: without it the image is no smaller, v304)
-  const pl = noCodes ? null : exportPlace(sizeOf(true).xs),
+  // (an image saved larger places them as at its own size: the same codes and dots, only sharper)
+  const pl = noCodes ? null : exportPlace(Math.min(1, sizeOf(true).xs)),
     note = !!(pl && pl.dropped.length),
     S = sizeOf(note),
     legH = S.legH,
@@ -44,8 +48,8 @@ function buildExportCanvas(outline, noCodes) {
   const g0 = ex.getContext('2d');
   g0.fillStyle = '#fff';
   g0.fillRect(0, 0, ex.width, ex.height);
-  // (made smaller: the picture is drawn full size on a canvas of its own first, then shrunk onto the image)
-  const pic = xs < 1 ? document.createElement('canvas') : null;
+  // (made smaller or larger: the picture is drawn full size on a canvas of its own first, then sized onto the image)
+  const pic = xs !== 1 ? document.createElement('canvas') : null;
   if (pic) {
     pic.width = W;
     pic.height = H;
@@ -89,10 +93,14 @@ function buildExportCanvas(outline, noCodes) {
     d[j + 3] = 255;
   }
   g.putImageData(im, 0, 0);
-  if (pl) exportPlaceDraw(g, pl, outline);
-  return exportLegend(pic ? exportShrink(g0, pic, xs) : g, ex, uniq, one, K, note);
+  // (made larger: the codes drawn after, at the image's size, so they're as sharp as the key's)
+  if (pl && xs <= 1) exportPlaceDraw(g, pl, outline);
+  const gx = pic ? exportShrink(g0, pic, xs) : g;
+  if (pl && xs > 1) exportPlaceDraw(gx, pl, outline);
+  return exportLegend(gx, ex, uniq, one, K, note);
 }
-const EXPORT_MAXPX = 15e6;
+const EXPORT_MAXPX = 15e6,
+  EXPORT_UPW = 1100;
 // The saved image's key (v304): 3 columns (2 on a picture under 700 px wide, where the key's letters stop getting
 // smaller and 3 would cut most names short), 4 when 3 would make the key taller than 60% of the picture (names still
 // fit 4 across from 812 px), and past 150 markers 6 of just the brand letter and code (5 or 6 across cut most names)
@@ -375,8 +383,12 @@ async function canvasesToPDF(cvs, PW, PH, blob, prog) {
     );
     push(comp);
     push('\nendstream\nendobj\n');
-    const aw = PW - 2 * M,
-      ah = PH - 2 * M,
+    // (a page drawn wider than it's tall, as a landscape colouring page is, goes on a page turned on its side)
+    const land = w > h && PW < PH,
+      pw = land ? PH : PW,
+      ph = land ? PW : PH,
+      aw = pw - 2 * M,
+      ah = ph - 2 * M,
       a = w / h;
     let dw = aw,
       dh = dw / a;
@@ -384,8 +396,8 @@ async function canvasesToPDF(cvs, PW, PH, blob, prog) {
       dh = ah;
       dw = dh * a;
     }
-    const tx = (PW - dw) / 2,
-      ty = (PH - dh) / 2,
+    const tx = (pw - dw) / 2,
+      ty = (ph - dh) / 2,
       cs2 =
         'q ' +
         dw.toFixed(2) +
@@ -407,9 +419,9 @@ async function canvasesToPDF(cvs, PW, PH, blob, prog) {
     push(
       pNo(i) +
         ' 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' +
-        PW +
+        pw +
         ' ' +
-        PH +
+        ph +
         '] /Resources << /XObject << /Im' +
         i +
         ' ' +
@@ -486,7 +498,7 @@ const PRINT_OPTS = [
   [
     'plabels',
     'Labels',
-    'Labels on the colouring page',
+    'Labels on the picture',
     [
       ['codes', 'Codes'],
       ['numbers', 'Numbers'],
@@ -544,8 +556,10 @@ const PRINT_PV = (function () {
     };
   return {
     page: pg(shape + key(27, 2)),
+    // (v318.1: the picture in colour with its codes, then the key)
     ref: pg(
-      key(5, 4) + '<rect x="6" y="23" width="18" height="10" rx="1" fill="currentColor" opacity=".35"/>',
+      '<path d="M6 19 C5 11 11 6 16 7 C23 8 25 14 23 19 C21 24 9 25 6 19Z" fill="currentColor" opacity=".35" stroke="currentColor" stroke-width="1.3"/><text x="15" y="17.5" text-anchor="middle" font-size="6" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor">R1</text>' +
+        key(27, 2),
     ),
     strip: pg(
       [6, 13, 20, 27]
@@ -610,6 +624,8 @@ function openPrint() {
     b += '</div></div>';
   });
   b +=
+    '</div><div class="sfshhint" id="sfPrWhat">' +
+    printWhatNote() +
     '</div><div class="sfprchk"><label class="sfchk"><input type="checkbox" id="sfPdfDark"' +
     (pdfDark ? ' checked' : '') +
     '> Darker labels</label>' +
@@ -671,16 +687,37 @@ function printSummary() {
     (pp ? pp[1] : paper) +
     ' · ' +
     (pdfWhat === 'ref'
-      ? 'Key + reference'
+      ? 'Key + reference' +
+        (pdfLabels === 'none' ? '' : ' · ' + { codes: 'Codes', numbers: 'Numbers' }[pdfLabels] + ' in colour')
       : pdfWhat === 'strip'
         ? 'Test strip'
         : { codes: 'Codes', numbers: 'Numbers', none: 'No labels' }[pdfLabels]) +
+    // (v318 review: a wide picture's colouring page is printed on its side, pdfLandFirst; the paper as set by the
+    // count just made)
+    (printPic() && n && pdfLandFirst(PX(pdfS < 1 ? 30 : 36)) ? ' · page 1 landscape' : '') +
     // (sections too small to label, in close-ups: with Codes, Numbers would fit more on the page itself)
     // (v289: the short form on a small phone, so the Paper choices start on the sheet's first screen)
-    (pdfWhat === 'page' && (_pdfCloseN || _pdfLeft)
-      ? '<br>' + printCloseNote((window.innerHeight || 0) < 700)
-      : '')
+    (printPic() && (_pdfCloseN || _pdfLeft) ? '<br>' + printCloseNote((window.innerHeight || 0) < 700) : '')
   );
+}
+// (v318.1) whether the PDF's page 1 is the labelled picture: Page + key's to colour on, or Key + reference's in colour
+function printPic() {
+  return pdfWhat === 'page' || (pdfWhat === 'ref' && pdfLabels !== 'none');
+}
+// what the Pages choice prints, said under it
+function printWhatNote() {
+  const w = pdfLabels === 'numbers' ? 'numbers' : 'codes';
+  return pdfWhat === 'ref'
+    ? pdfLabels === 'none'
+      ? 'Your picture in colour beside the colour key, for colouring your own page.'
+      : 'Your picture in colour with dark ' +
+        w +
+        ', then the colour key: to read beside the page you’re colouring.'
+    : pdfWhat === 'strip'
+      ? 'A box for each marker to try on your paper first.'
+      : pdfLabels === 'none'
+        ? 'Your picture to colour on, unlabelled, then the colour key.'
+        : 'Your picture with ' + (pdfDark ? 'dark ' : 'light ') + w + ' to colour on, then the colour key.';
 }
 // what the close-ups hold, for the Print sheet: how many small sections on how many pages, and any too small even there
 // (short: the counts only — "19 small sections on 2 close-up pages; 3 only as a dot")
@@ -706,15 +743,15 @@ function printCloseNote(short) {
       pl(_pdfCloseP, 'close-up page.', 'close-up pages.') +
       (pdfLabels === 'codes'
         ? _pdfCloseN === 1
-          ? ' Numbers might fit it on the colouring page.'
-          : ' Numbers would fit more of them on the colouring page.'
+          ? ' Numbers might fit it on page 1.'
+          : ' Numbers would fit more of them on page 1.'
         : '')
     : '';
   if (_pdfLeft)
     t +=
       (t ? ' ' : '') +
       (t ? pl(_pdfLeft, 'more has', 'more have') : pl(_pdfLeft, 'small section has', 'small sections have')) +
-      ' only a dot on the colouring page: see ' +
+      ' only a dot on page 1: see ' +
       (_pdfLeft === 1 ? 'it' : 'them') +
       ' in the app' +
       (pdfLabels === 'codes' ? ', or print with Numbers.' : '.');
@@ -734,8 +771,10 @@ function printOptsSync() {
       on = printOptVal(k) === x.dataset[k];
     x.classList.toggle('on', on);
     x.setAttribute('aria-pressed', on ? 'true' : 'false');
-    if (k === 'plabels') x.disabled = pdfWhat !== 'page';
+    if (k === 'plabels') x.disabled = pdfWhat === 'strip';
   });
+  const wn = document.getElementById('sfPrWhat');
+  if (wn) wn.textContent = printWhatNote();
   const dk = document.getElementById('sfPdfDark');
   if (dk) {
     dk.disabled = pdfWhat !== 'page' || pdfLabels === 'none';
@@ -874,10 +913,10 @@ function pdfLazy(pages, keep) {
   });
 }
 // (pp: the paper the PDF was started on, for pages drawn while it is written: Paper can be changed meanwhile, v304)
-function pdfPage(pp) {
+function pdfPage(pp, land) {
   const P = PAPERS[pp || paper] || PAPERS.letter,
-    w = Math.round((P[0] / 72) * PDPI),
-    h = Math.round((P[1] / 72) * PDPI);
+    w = Math.round((P[land ? 1 : 0] / 72) * PDPI),
+    h = Math.round((P[land ? 0 : 1] / 72) * PDPI);
   if (_pdfRec) {
     const r = pdfRecCtx();
     r.g.fillStyle = '#fff';
@@ -1459,6 +1498,19 @@ function pdfZoneOverlay(g, x0, y0, f, ids) {
   g.textAlign = 'left';
   g.textBaseline = 'alphabetic';
 }
+// (v318 review) the colouring page on its side, landscape, when the picture is wide enough for that to print it at
+// least 10% bigger each way (a fifth more paper): a landscape page had been printed across the top half of an upright
+// sheet. Only page 1 turns; the
+// close-ups and the key stay upright. m: the page's margin; the room under the title as for two lines under it.
+function pdfLandFirst(m) {
+  const P = PAPERS[paper] || PAPERS.letter,
+    a = Math.round((P[0] / 72) * PDPI),
+    b = Math.round((P[1] / 72) * PDPI),
+    head = m + PX(36) + PX(11) + m + PX(14),
+    kp = Math.min((a - 2 * m) / W, (b - head) / H),
+    kl = Math.min((b - 2 * m) / W, (a - head) / H);
+  return kl > kp * 1.1;
+}
 function pdfFit(bw, bh) {
   const k = Math.min(bw / W, bh / H);
   return { k: k, w: W * k, h: H * k };
@@ -1593,9 +1645,13 @@ function pdfNumPut(g, l, lay, o) {
   }
   g.lineWidth = lw;
   g.strokeStyle = o.stroke;
-  g.fillStyle = o.fill;
+  g.fillStyle = pdfSmall(o, lay.fs) ? o.smallFill : o.fill;
   g.strokeText(lay.t, p.x, p.y);
   g.fillText(lay.t, p.x, p.y);
+}
+// (v318.1) a light label under 6 pt on paper: drawn a darker grey (o.small, o.smallFill: loAt)
+function pdfSmall(o, fs) {
+  return !!(o.small && fs < o.small - 1e-6);
 }
 // a code's size and box at size s, or as big as its section allows when s is null
 function pdfCodeLay(g, l, m, o, s) {
@@ -1732,7 +1788,18 @@ function pdfPlace(g, ids, o, lab, numOf, opt) {
 function pdfPlaceDraw(g, asg, pl, o, numOf, dr, dotOk) {
   for (const l in pl.lays) {
     const L = pl.lays[l];
-    if (L.kind === 'code') drawCode(g, +l, asg[l], L.o);
+    if (L.kind === 'code')
+      drawCode(
+        g,
+        +l,
+        asg[l],
+        pdfSmall(o, L.fs)
+          ? Object.assign({}, L.o, {
+              fill: o.smallFill,
+              tag: Object.assign({}, L.o.tag, { dark: o.smallFill }),
+            })
+          : L.o,
+      );
     else pdfNumPut(g, +l, L, o);
   }
   for (const l in pl.sq || {}) pdfNumPut(g, +l, pl.sq[l], o);
@@ -2088,7 +2155,12 @@ function _buildPDF(dry) {
     },
     nMk = mkCount(rows.length, oneB, withShade ? null : 0);
   const ref = pdfWhat === 'ref',
-    lab = ref ? 'none' : pdfLabels,
+    // (v318.1) Key + reference with labels: page 1 is the picture in colour with near-black codes, to read beside
+    // the page being coloured (no one colours on it, so dark: Page + key's light labels are for colouring on), its
+    // small sections in close-ups as Page + key's; with no labels, the one page of reference and key as before
+    refPic = ref && pdfLabels !== 'none',
+    refOne = ref && !refPic,
+    lab = refOne ? 'none' : pdfLabels,
     nums = lab === 'numbers',
     num = {};
   // (v308: a marker's number is its place in colouring order, lightest first, as the key's ORDER was: with Numbers
@@ -2112,7 +2184,9 @@ function _buildPDF(dry) {
   // each close-up a part of the picture magnified with its labels, lettered A, B… here and there). v284: before,
   // labels in small sections printed on top of each other. A dry run works it all out too, for the page count.
   // labels: small and light grey by default so they don't show through pale marker ink; outlines stay dark
-  const LS = pdfDark
+  // (Key + reference's picture always near-black: it's read, not coloured on)
+  const dk = pdfDark || refPic,
+    LS = dk
       ? { base: 8, min: 6, max: 15, w: 700, swk: 0.28, fill: '#111' }
       : { base: 6.5, min: 5, max: 10, w: 600, swk: 0.22, fill: '#a0a0a0' },
     loAt = function (k) {
@@ -2128,9 +2202,13 @@ function _buildPDF(dry) {
         bt: guideMixed(),
         // the brand tags as light as the codes (outlined ones white inside)
         tag: Object.assign(
-          pdfDark ? { dark: TAG.dark, pale: TAG.pale } : { dark: LS.fill, pale: '#fff' },
+          dk ? { dark: TAG.dark, pale: TAG.pale } : { dark: LS.fill, pale: '#fff' },
           TAG_PRINT,
         ),
+        // (v318.1) light labels under 6 pt on paper a darker grey, so the smallest can be read: the rest stay light,
+        // not to show through pale ink
+        small: dk ? 0 : PX(6) / k,
+        smallFill: '#8a8a8a',
       };
     };
   let keyNums = nums,
@@ -2141,9 +2219,11 @@ function _buildPDF(dry) {
   // (the sections with no room on page 1, and those of them a close-up labels)
   const small = {},
     shown = {};
-  if (!ref) {
-    const p1 = pdfPage(),
-      g1 = p1.g;
+  if (!refOne) {
+    const p1 = pdfPage(null, pdfLandFirst(m)),
+      g1 = p1.g,
+      // (page 1's own width for the picture and its lines: on its side it's wider than the other pages)
+      bw1 = p1.w - 2 * m;
     pages.push(dry ? null : p1);
     g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
     // (the picture's place, from the longest the lines under the title can be)
@@ -2161,11 +2241,11 @@ function _buildPDF(dry) {
           lab === 'codes' && !oneB && guideMixed() ? brandKey().replace(/\s{2,}/g, '  ') : [],
         );
       },
-      sub0 = pdfLines(g1, subParts(54, 5, true), bw, 2),
+      sub0 = pdfLines(g1, subParts(54, 5, true), bw1, 2),
       top = m + PX(36) + (sub0.length - 1) * PX(11),
       bot = p1.h - m - PX(14),
-      f1 = pdfFit(bw, bot - top),
-      ox = m + (bw - f1.w) / 2,
+      f1 = pdfFit(bw1, bot - top),
+      ox = m + (bw1 - f1.w) / 2,
       lo = loAt(f1.k),
       numOf = function (mm) {
         return String(num[mm.mkey] || '');
@@ -2193,7 +2273,7 @@ function _buildPDF(dry) {
         closeups = closeups.slice(0, cell.per * 3);
         closeP = Math.ceil(closeups.length / cell.per);
         // each close-up's labels: its own sections placed first, every label kept inside it
-        closeups.forEach(function (c) {
+        const closeUp = function (c) {
           const cr = c.crop;
           c.k = Math.min(cell.w / (cr[2] - cr[0]), cell.h / (cr[3] - cr[1]));
           // (v305: a close-up's codes near-black over its lines in mid grey, so the labels lead; page 1's stay light
@@ -2202,6 +2282,8 @@ function _buildPDF(dry) {
           c.lo = Object.assign(loAt(c.k), {
             fill: CU_INK,
             tag: Object.assign({ dark: CU_INK, pale: '#fff' }, TAG_PRINT),
+            // (near-black already: no smaller label lighter)
+            small: 0,
           });
           c.pl = pdfPlace(
             g1,
@@ -2218,18 +2300,44 @@ function _buildPDF(dry) {
           );
           if (c.pl.usedNum) keyNums = true;
           for (const l in c.pl.lays) if (small[l]) shown[l] = 1;
-        });
+        };
+        closeups.forEach(closeUp);
+        // (v318.1) a small section still without a label in its close-up, a number squeezed in there too: a close-up
+        // of its own, closer (4×, 5×, 6× page 1), while the 3 pages have room. With every one of 451 markers on Half
+        // Letter, a 3-digit number fitted nowhere round one tiny section, left with only a dot
+        const squeeze = function (c) {
+          c.ids.forEach(function (l) {
+            if (shown[l] || !pdfNumSqueeze(g1, c.pl, l, numOf(asg[l]), c.lo)) return;
+            shown[l] = 1;
+            keyNums = true;
+          });
+        };
+        closeups.forEach(squeeze);
+        for (let mag = 4; mag <= 6; mag++) {
+          const rest = pl.dropped.filter(function (l) {
+              return !shown[l];
+            }),
+            room = cell.per * 3 - closeups.length;
+          if (!rest.length || room <= 0) break;
+          const more = pdfClusters(rest, cell, f1.k * mag).slice(0, room);
+          more.forEach(function (c) {
+            closeUp(c);
+            squeeze(c);
+          });
+          // (kept only where it labels what was left: else the closer view is no help)
+          closeups = closeups.concat(
+            more.filter(function (c) {
+              return c.ids.some(function (l) {
+                return shown[l];
+              });
+            }),
+          );
+        }
+        closeP = Math.ceil(closeups.length / cell.per);
       }
       // (v308) a small section no close-up labels gets its number after all, a little smaller or off its label point
-      // if that's what it takes, in place of its dot: in its close-up, else on page 1. On Half Letter with Codes, 5
-      // sections had only a dot and were labelled nowhere
-      closeups.forEach(function (c) {
-        c.ids.forEach(function (l) {
-          if (shown[l] || !pdfNumSqueeze(g1, c.pl, l, numOf(asg[l]), c.lo)) return;
-          shown[l] = 1;
-          keyNums = true;
-        });
-      });
+      // if that's what it takes, in place of its dot: in its close-up (above, with v318.1's closer ones), else on page
+      // 1. On Half Letter with Codes, 5 sections had only a dot and were labelled nowhere
       pl.dropped.forEach(function (l) {
         if (shown[l] || !pdfNumSqueeze(g1, pl, l, numOf(asg[l]), lo)) return;
         numd++;
@@ -2246,10 +2354,10 @@ function _buildPDF(dry) {
     if (!dry) {
       g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
       const keyPg = 2 + closeP,
-        sub = pdfLines(g1, subParts(closeups.length, keyPg), bw, 2);
+        sub = pdfLines(g1, subParts(closeups.length, keyPg), bw1, 2);
       g1.fillStyle = '#111';
       g1.font = '700 ' + PX(15) + 'px ' + LFONT;
-      g1.fillText(pdfTrunc(g1, nm, bw), m, m + PX(12));
+      g1.fillText(pdfTrunc(g1, nm, bw1), m, m + PX(12));
       g1.fillStyle = '#777';
       g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
       sub.forEach(function (t, i) {
@@ -2258,14 +2366,16 @@ function _buildPDF(dry) {
       g1.imageSmoothingEnabled = true;
       g1.imageSmoothingQuality = 'high';
       // (v308: no tone line under a label, the sun or a close-up's letter; before, they struck through the codes)
+      // (in colour for Key + reference, its tones shown as coloured, so no tone lines)
       const art1 = pdfArt(
-        false,
+        refPic,
         sh,
-        pdfToneLines && {
-          t: Math.max(1, Math.round(PX(0.8) / f1.k)),
-          dash: Math.max(3, Math.round(PX(4) / f1.k)),
-          clear: pl.boxes.concat(pl.extra || []),
-        },
+        !refPic &&
+          pdfToneLines && {
+            t: Math.max(1, Math.round(PX(0.8) / f1.k)),
+            dash: Math.max(3, Math.round(PX(4) / f1.k)),
+            clear: pl.boxes.concat(pl.extra || []),
+          },
       );
       g1.drawImage(art1, ox, top, f1.w, f1.h);
       g1.save();
@@ -2475,13 +2585,13 @@ function _buildPDF(dry) {
   pages.push(pg);
   g.fillStyle = '#111';
   g.font = '700 ' + PX(15) + 'px ' + LFONT;
-  g.fillText(pdfTrunc(g, ref ? nm : 'Colour key', bw), m, m + PX(12));
+  g.fillText(pdfTrunc(g, refOne ? nm : 'Colour key', bw), m, m + PX(12));
   g.fillStyle = '#777';
   g.font = '500 ' + PX(8.5) + 'px ' + LFONT;
   g.fillText(
     pdfTrunc(
       g,
-      (ref ? 'Colour key' : nm) +
+      (refOne ? 'Colour key' : nm) +
         ' · ' +
         nMk +
         ' · ' +
@@ -2617,7 +2727,7 @@ function _buildPDF(dry) {
   // it continues on the next page and the reference takes the room the key's first page can spare: as big as it can
   // be without the key needing another page. Key + reference goes down to that size too, to fit on one page.
   const avail = pg.h - 2 * m,
-    hiF = ref ? 0.8 : 0.5,
+    hiF = refOne ? 0.8 : 0.5,
     loH = Math.max(PX(60), Math.round(avail * 0.32));
   let pvH = 0;
   [PX(19), PX(16.5)].some(function (rh) {
@@ -2656,7 +2766,7 @@ function _buildPDF(dry) {
   const side =
     cols === 2 &&
     pdfFit(cw, pageBot0 - pvTop).k > pdfFit(bw, pvH).k &&
-    (hdrH + famN * famH + rows.length * PX(19) <= pageBot0 - pvTop || (ref && !onePage));
+    (hdrH + famN * famH + rows.length * PX(19) <= pageBot0 - pvTop || (refOne && !onePage));
   if (side) rowH = PX(19);
   const f2 = side ? pdfFit(cw, pageBot0 - pvTop) : pdfFit(bw, pvH),
     pvx = m + ((side ? cw : bw) - f2.w) / 2,

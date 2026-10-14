@@ -153,7 +153,8 @@ test('v304 P3: a save the browser’s database didn’t answer says reload, not 
 
 test('v304 P4: Back up says which guides it couldn’t read, the reminder asks again at once, and focus follows the card', async () => {
   const gone = { id: 77, type: 'guide', name: 'Unreadable', keys: [], W: 1, H: 1, n: 1, done: 1, ts: Date.now() - 20 * DAY };
-  const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState([gone]), 'ms-first-use': String(Date.now() - 15 * DAY) }) });
+  // (v318 review: its stored guide one the database won't give back; one not stored at all is said apart, e2e/v318-data)
+  const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState([gone]), 'ms-first-use': String(Date.now() - 15 * DAY) }), init: () => { addEventListener('DOMContentLoaded', () => { const get = IDB.get; IDB.get = (k) => (k === 'guide-77' ? Promise.reject(new DOMException('gone', 'UnknownError')) : get(k)); }); } });
   await page.waitForSelector('#bkGo');
   await page.focus('#bkGo');
   await Promise.all([page.waitForEvent('download'), page.keyboard.press('Enter')]); await idle(page);
@@ -205,7 +206,9 @@ test('v304 D8: in a Safari tab, a visit after five days away with changes since 
 
 test('v304 P4: a backup that couldn’t read a guide brings the reminder back on Home even while an earlier Later is resting it', async () => {
   const gone = { id: 78, type: 'guide', name: 'Unreadable', keys: [], W: 1, H: 1, n: 1, done: 1, ts: Date.now() - 20 * DAY };
-  const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState([gone]), 'ms-first-use': String(Date.now() - 15 * DAY), 'ms-backup-snooze': String(Date.now() + 5 * DAY) }) });
+  // (v318 review: its stored guide one the database won't give back, after a reload too; one not stored at all is said
+  // apart, e2e/v318-data)
+  const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState([gone]), 'ms-first-use': String(Date.now() - 15 * DAY), 'ms-backup-snooze': String(Date.now() + 5 * DAY) }), init: () => { addEventListener('DOMContentLoaded', () => { const get = IDB.get; IDB.get = (k) => (k === 'guide-78' ? Promise.reject(new DOMException('gone', 'UnknownError')) : get(k)); }); } });
   await idle(page);
   assert.equal(await shown(page, 'backupNudge'), false, 'put off with Later two days ago');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => backupAll('noSuchButton'))]);

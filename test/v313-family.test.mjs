@@ -99,7 +99,7 @@ test('a guide saved before v313 keeps v312’s companions: famRule 0 picks as v3
   assert.ok(now && now.code !== 'GG15' && gg12.lab[0] - now.lab[0] <= 20, 'since v313: ' + (now && now.code));
 });
 
-test('famRule is saved beside the section settings only when set (1, 2 since v315, 3 since v316), and opens as saved (anything else as 0)', () => {
+test('famRule is saved beside the section settings only when set (1, 2 since v315, 3 since v316, 4 since v318), and opens as saved (anything else as 0)', () => {
   const { app, core, sv } = appWith();
   const W = 4,
     H = 4;
@@ -123,10 +123,11 @@ test('famRule is saved beside the section settings only when set (1, 2 since v31
   assert.equal(f.check(1, f.def), 1);
   assert.equal(f.check(undefined, f.def), 0);
   // (v315: 2 is Copic's greys in families too; v316: 3, blend companions outside the family a step a blend can make;
-  // anything else as before)
+  // v318: 4, a companion a clear step away by eye; anything else as before)
   assert.equal(f.check(2, f.def), 2);
   assert.equal(f.check(3, f.def), 3);
-  assert.equal(f.check(4, f.def), 0);
+  assert.equal(f.check(4, f.def), 4);
+  assert.equal(f.check(5, f.def), 0);
   assert.equal(f.check('1', f.def), 0);
 });
 

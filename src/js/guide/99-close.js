@@ -59,8 +59,12 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get labels() {
       return labels;
     },
+    get labelsSigN() {
+      return _lsN;
+    },
     set labels(v) {
       labels = v;
+      labelsEdited();
     },
     get comps() {
       return comps;
@@ -1330,4 +1334,6 @@ return {
   focusOnOpen: focusOnOpen,
   // (v316: Buy next, from your guides: what a saved guide's markers want, from its Library row)
   guideWants: guideWants,
+  // (v318 review: where a toast goes in the Plan, toastShow in core.js)
+  toastSpot: toastSpot,
 };
