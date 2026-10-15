@@ -1372,3 +1372,10 @@ answer. In whole sessions, with no brand, Ohuhu or Copic chosen: no marker added
 - Left for later, with the reviewers' notes: upside-down Copic greys ("8-N", "L-M") are still missed (Scan's own
   reading of turned dashes); another brand's code read with the chosen brand's whole name offers only the other brand;
   a name both brands use read alone with no brand chosen isn't asked about.
+
+## v318.6
+
+- **A question opened in the Library's first moments** (Restore's choices, as a backup's file was chosen just after
+  the Library opened) lost the keyboard to the Library's Close a moment later, under the question, so Tab left it. A
+  dialog no longer takes the keyboard back once another has opened over it. (A GitHub run failed on it, in Chromium
+  and Safari's engine both; replayed and fixed, with a test.)

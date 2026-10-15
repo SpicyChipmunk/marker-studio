@@ -264,7 +264,10 @@ document.addEventListener(
         back.set(ov, document.activeElement);
         if (Date.now() - (toast._at || 0) > 150) hideToast();
         setTimeout(() => {
-          if (ov.contains(document.activeElement)) return;
+          // (v318.6: not if another dialog has opened over it meanwhile, which has the keyboard: a restore question
+          // opened just after the Library lost it to the Library's Close, and Tab then left the question)
+          if (ov.contains(document.activeElement) || !ov.classList.contains('on') || topDialog() !== ov)
+            return;
           const coarse = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches),
             card = ov.firstElementChild;
           if (coarse && card) {

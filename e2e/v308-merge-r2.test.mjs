@@ -119,6 +119,29 @@ test('restore choices: Keep my markers has the keyboard, Tab goes round its four
   assert.deepEqual(errors, []);
 });
 
+// (v318.6: a CI run failed here when the question opened within the Library's first moments: the Library, a moment
+// after opening, gave the keyboard to its own Close, under the question, and Tab then left the question)
+test('a question opened just after the Library keeps the keyboard; the Library doesn’t take it back', async () => {
+  const { page, errors } = await openApp({ width: 390, height: 844, storage: onboarded() });
+  const f = await page.evaluate(async () => {
+    openLibrary();
+    // (a question as askBox makes it, at once)
+    const o = document.createElement('div');
+    o.className = 'overlay on';
+    o.id = 'sfEdAsk';
+    o.innerHTML =
+      '<div class="ocard"><button type="button" data-a="stay">Cancel</button>' +
+      '<button type="button" class="btn-primary" data-a="go">Go</button></div>';
+    document.body.appendChild(o);
+    o.querySelector('.btn-primary').focus();
+    await new Promise((r) => setTimeout(r, 150));
+    return document.activeElement.dataset.a || document.activeElement.id;
+  });
+  assert.equal(f, 'go');
+  assert.deepEqual(await tabRound(page), ['stay']);
+  assert.deepEqual(errors, []);
+});
+
 test('Import a guide already here with ticks this device lacks: Add a copy, the highlighted answer, has the keyboard', async () => {
   const { page, errors } = await openApp({ width: 1180, height: 820 });
   await sampleGuide(page);

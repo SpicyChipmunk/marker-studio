@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.6',
+    t: 'A question that opens just as the Library does (restoring a backup, say) keeps the keyboard: Tab no longer slips out of it.',
+  },
+  {
     v: 'v318.5',
     t: 'Photograph your caps, run end to end on test trays: caps cut by the photo’s edge are no longer added as the wrong marker (the next photo reads them whole), another brand’s cap read with its name is asked about, closing Scan mid-photo keeps nothing unchecked, and a photo that won’t open no longer stops a batch.',
   },

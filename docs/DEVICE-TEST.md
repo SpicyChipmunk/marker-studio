@@ -101,7 +101,7 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.5 (with v318.2 to v318.4)
+## New in this release: v318.6 (with v318.2 to v318.5)
 
 The photo reader is more careful: a cap it can't read for sure is asked about rather than added, and each question
 shows the cap. Checked on captured reads of your photos; on a real iPad:
