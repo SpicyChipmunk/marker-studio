@@ -57,7 +57,12 @@ test('Random says what is left to draw, and a drawn marker is put back (no "pool
   const st = await page.textContent('#status');
   assert.match(st, /^1 drawn, \d+ left to draw$/);
   assert.match(await page.getAttribute('#pile .cell', 'aria-label'), /, put it back$/);
-  assert.doesNotMatch(await page.evaluate(() => document.body.innerText), /pool/i);
+  // (the word, not a marker's name: Ohuhu B111 Pool Blue, when it's the one drawn, failed this on GitHub, v318.6; every
+  // marker whose name has it is taken out first, so one added later can't fail it either)
+  const text = await page.evaluate(() =>
+    COLORS.reduce((t, c) => (/pool/i.test(c.name || '') ? t.split(c.name).join('') : t), document.body.innerText),
+  );
+  assert.doesNotMatch(text, /pool/i);
   assert.deepEqual(errors, []);
 });
 
