@@ -92,6 +92,52 @@ const scanWords = (s) =>
     .toUpperCase()
     .split(/[^A-Z0-9]+/)
     .filter(Boolean);
+// (v318.2) every word of the markers' names
+let _scanNameW = null;
+function scanNameWords() {
+  if (!_scanNameW) {
+    _scanNameW = new Set();
+    COLORS.forEach((c) => scanWords(c.name || '').forEach((w) => _scanNameW.add(w)));
+  }
+  return _scanNameW;
+}
+// (v318.3) the one word of the markers' names (or of the words on every cap) a word read is one letter away from: a
+// letter wrong, missing, extra, or two swapped; '' for none or more than one. Only for a word of 5 letters or more that
+// isn't a name's word itself
+const SCAN_CAP_WORDS = [
+  'OHUHU',
+  'HONOLULU',
+  'COPIC',
+  'SKETCH',
+  'CLASSIC',
+  'ALCOHOL',
+  'MARKER',
+  'MARKERS',
+  'BRUSH',
+  'CHISEL',
+];
+function scanNameNear(w) {
+  const names = scanNameWords();
+  if (w.length < 5 || !/^[A-Z]+$/.test(w) || names.has(w)) return '';
+  const one = (a, b) => {
+    if (Math.abs(a.length - b.length) > 1) return false;
+    let i = 0;
+    while (i < a.length && i < b.length && a[i] === b[i]) i++;
+    if (a.length === b.length)
+      return (
+        a.slice(i + 1) === b.slice(i + 1) ||
+        (a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2))
+      );
+    return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1);
+  };
+  let hit = '';
+  for (const v of SCAN_CAP_WORDS.concat([...names]))
+    if (v.length >= 3 && one(w, v)) {
+      if (hit && hit !== v) return '';
+      hit = v;
+    }
+  return SCAN_CAP_WORDS.indexOf(hit) >= 0 ? '' : hit;
+}
 // words on the caps and their labels that are never a code, nor the reason a number-only code (0, 120) isn't one
 const SCAN_NOISE =
   /^(OHUHU|HONOLULU|COPIC|SKETCH|CIAO|CLASSIC|ALCOHOL|ART|ARTS|MARKERS?|BRUSH|FINE|CHISEL|DUAL|TIPS?|NO|\d{8,}|X\d{1,3}|\d{1,3}X)$/;
@@ -304,7 +350,14 @@ function scanRead(text, brand) {
     for (let k = 0; k + nw.length <= tw.length; k++) if (nw.every((w, j) => tw[k + j] === w)) return true;
     return false;
   };
-  const hit = ix.names.filter((n) => inRow(n[2]) || (n[0].length >= 6 && joined.indexOf(n[0]) >= 0));
+  // (v318.2: not a name found inside a longer word that's a name's word of its own: "Yellowish", of Copic YR20 Yellowish
+  // Shade, R30, Y23 and YG06, isn't Copic Y06 Yellow, nor "Buttercup", Copic Y21's, Ohuhu Y06 Butter. Read the other
+  // way round, "Shade Yellowish", YR20 had been asked about against Y06)
+  const nameWord = scanNameWords(),
+    inWord = (k) => tw.some((w) => w !== k && w.indexOf(k) >= 0 && nameWord.has(w));
+  const hit = ix.names.filter(
+    (n) => inRow(n[2]) || (n[0].length >= 6 && joined.indexOf(n[0]) >= 0 && !inWord(n[0])),
+  );
   let named = new Set(
     hit
       .filter((n) => !hit.some((m) => m[0].length > n[0].length && m[0].indexOf(n[0]) >= 0))
@@ -394,7 +447,7 @@ function scanRead(text, brand) {
       const isNamed = all.some((i) => named.has(i)),
         // (v303: a word of its own name beside it, "FB Blue", "0 Colorless", isn't stray)
         strayHere = strayBeside(t, all);
-      if (digits && v !== t && beside && !isNamed) continue;
+      if (digits && v !== t && (beside || (scanPhoto && t.length <= 2)) && !isNamed) continue;
       if (!/\d/.test(v) && v === t && beside && !isNamed && strayHere) continue;
       // a code that's only a number (0, 100, 120): only as read and on its own, or with its name
       // (words on every cap don't count: "Copic 0", "Ohuhu 120" are the code, v299)
@@ -408,7 +461,16 @@ function scanRead(text, brand) {
       }
       const opts = all.filter(chosen);
       if (!opts.length) continue;
-      const withName = opts.filter((i) => named.has(i));
+      let withName = opts.filter((i) => named.has(i));
+      // (v318.2) a name of two words or more read in any order is its marker's ("Pink Ballet", R22 Ballet Pink: a cap's
+      // lines are read in either order); and a name read that's only some of the words of another of the code's markers'
+      // names settles nothing ("R22 Pink" isn't RV17 Pink, once R22, over R22 Ballet Pink: it had been added unasked)
+      const nw = (i) => scanWords(COLORS[i].name || ''),
+        allRead = opts.filter((i) => nw(i).length > 1 && nw(i).every((w) => tw.indexOf(w) >= 0)),
+        inside = (b, a) => nw(a).length > nw(b).length && nw(b).every((w) => nw(a).indexOf(w) >= 0);
+      if (allRead.length === 1) withName = allRead;
+      else if (withName.length === 1 && opts.some((j) => j !== withName[0] && inside(withName[0], j)))
+        withName = [];
       cands.push({
         code: v,
         opts: withName.length ? withName : opts,
@@ -418,6 +480,7 @@ function scanRead(text, brand) {
         asked: '',
         hadOld: old.length > 0 && cur.some(chosen),
         numAsk: numAsk,
+        bent: digits && v !== t && scanPhoto && !isNamed,
         // (which of them are by an old code, for "by its old code" once the options are narrowed, v303)
         oldSet: new Set(old),
       });
@@ -467,6 +530,23 @@ function scanRead(text, brand) {
     // (nor a word of another marker's whole name read, "Light" of B06 Light Cerulean beside B02)
     looseWords = new Set([].concat(...loose.map((i) => scanWords(COLORS[i].name || ''))));
   codes.forEach(function (c) {
+    // (v318.2) a photo plainly of the codes as they are now (scanGen): a code that's only an old one is likely a scrap of
+    // a cap read short ("GG1" of GG15), unless the name read with it is its marker's: asked about, never added unasked
+    // (v318.3: with the cap's picture beside the question; v318.2 had left it out). One that's a marker's now and
+    // another's old code is the one it is now. Not Copic's fluorescents, whose caps carry their old codes (FB2)
+    if (scanGen && !c.named && c.oldSet.size && !ix.capOld.has(c.code)) {
+      const cur = c.opts.filter((i) => !c.oldSet.has(i));
+      if (!cur.length) c.oldOnly = true;
+      else if (scanGen === 'new') {
+        c.opts = cur;
+        c.hadOld = false;
+        c.old = false;
+        if (c.fix) {
+          const cs = [...new Set(cur.map((i) => COLORS[i].code))];
+          c.fix = cs.length > 1 ? cs : null;
+        }
+      }
+    }
     // (v303) the brand's name on the cap first: its markers only, when it has any here ("Copic R12" isn't asked about
     // Ohuhu's R12 or the Ohuhu marker whose old code was R12)
     if (hint && !c.named) {
@@ -496,7 +576,11 @@ function scanRead(text, brand) {
               !looseWords.has(w),
           ),
         ),
-        m = c.opts.filter((j) => scanWords(COLORS[j].name).some((w) => pw.has(w)));
+        m0 = c.opts.filter((j) => scanWords(COLORS[j].name).some((w) => pw.has(w))),
+        // (v318.3) from a photo, with no word of theirs read as it is: a word misread by one letter ("Yelliow"), of 5
+        // letters or more, that's one name's word and no other's, chooses between the code's own markers only
+        fw = scanPhoto && !m0.length ? new Set([...pw].map(scanNameNear).filter(Boolean)) : null,
+        m = fw && fw.size ? c.opts.filter((j) => scanWords(COLORS[j].name).some((w) => fw.has(w))) : m0;
       if (pw.size && m.length === 1) {
         c.opts = m;
         c.old = c.oldSet.has(m[0]);
@@ -528,12 +612,16 @@ function scanRead(text, brand) {
         c.asked = 'turned';
       }
     }
-    if (c.asked === 'fix') c.as = c.t;
+    // (v318.2) digits bent into a code: asked, never added unasked
+    if ((c.bent || c.oldOnly) && !c.asked) c.asked = 'confirm';
+    if (c.asked === 'fix' || c.asked === 'confirm') c.as = c.t;
     // (the options asked about by an old code are said so)
     c.oldOf = c.opts.filter((i) => c.oldSet.has(i));
     delete c.oldSet;
     delete c.hadOld;
     delete c.numAsk;
+    delete c.bent;
+    delete c.oldOnly;
     delete c.t;
     delete c.fix;
   });
@@ -558,6 +646,36 @@ function scanRead(text, brand) {
       flips.push({ as: t, opts: [].concat(...like.map((x) => ix.byCode.get(x).filter(chosen))) });
   }
   return { codes: [], byName: -1, flips: flips, other: [] };
+}
+
+// (v318.3) a question's cap from the photo, larger, over Scan: a tap anywhere, Escape or Back closes it
+function scanZoom(e) {
+  if (!e || !e.crop) return;
+  const o = document.createElement('div'),
+    op = document.activeElement,
+    t0 = Date.now();
+  o.className = 'overlay on sczoom';
+  o.setAttribute('role', 'dialog');
+  o.setAttribute('aria-modal', 'true');
+  o.setAttribute('aria-label', 'The cap in the photo');
+  o.innerHTML =
+    '<div class="ocard dcard sczoomcard"><img src="' +
+    esc(e.crop) +
+    '" alt="The cap in the photo"><div class="dsub">' +
+    esc(e.title) +
+    '</div><button type="button" class="btn-primary" data-a="close">Close</button></div>';
+  const end = function () {
+    o.remove();
+    try {
+      if (op && op.isConnected && op !== document.body) op.focus({ preventScroll: true });
+    } catch (_) {}
+  };
+  // (not the rest of the tap that opened it; Escape's click, detail 0, at once)
+  o.addEventListener('click', function (ev) {
+    if (ev.detail === 0 || Date.now() - t0 > 300) end();
+  });
+  document.body.appendChild(o);
+  o.querySelector('[data-a]').focus({ preventScroll: true });
 }
 
 /* ---- the dialog ---- */
@@ -658,6 +776,14 @@ function scanSaveList() {
 let scanMute = false;
 // (v318) the photo reader's lines read: none as if upside down (the reader tried both ways up)
 let scanNoFlip = false;
+// (v318.2) the photo reader's reading: a reading of digits alone isn't bent into a code with letters, as a typed one is
+// ("99" isn't G9, Ohuhu's old code for G112: a scrap of a cap; three digits or more, "808", are asked about). And while a
+// photo's lines are settled, its generation (photo-read.js): 'new' when its caps plainly show the codes as they are now,
+// so a code that's only an old one isn't taken (unless the name read with it is its marker's) and a code that's one
+// marker's now and another's old code is the one it is now ("Which Y210?"); 'strict', for the photo's unsure lines, the
+// first only
+let scanPhoto = false,
+  scanGen = '';
 // (v308) lines of pasted lists with nothing to read in them since the last Add or Clear, said by Add's toast
 let scanUnread = 0;
 function scanBeep(kind) {
@@ -1189,12 +1315,14 @@ function scanHandleCodes(text, loud, named) {
   };
   r.codes.forEach(function (c) {
     n++;
-    if (c.asked === 'num' || c.asked === 'hint') {
+    if (c.asked === 'num' || c.asked === 'hint' || c.asked === 'confirm') {
       ask(
-        c.asked + ' ' + c.code,
-        c.asked === 'num'
-          ? c.code + ' was read beside other codes: is it this one?'
-          : c.code + ' isn\u2019t a code of the brand on the cap: is it this one?',
+        c.asked + ' ' + (c.asked === 'confirm' ? c.as : c.code),
+        c.asked === 'confirm'
+          ? '“' + c.as + '” read: is it this one?'
+          : c.asked === 'num'
+            ? c.code + ' was read beside other codes: is it this one?'
+            : c.code + ' isn\u2019t a code of the brand on the cap: is it this one?',
         c.opts.map((i) => ({ i: i, how: (c.oldOf || []).indexOf(i) >= 0 ? 'old' : 'chosen' })),
       );
       return;
@@ -1401,7 +1529,16 @@ function scanRender() {
         '</button>';
       if (e.ask)
         return (
-          '<li class="scrow scask"><span class="scmark" aria-hidden="true">?</span><span class="scname"><b>' +
+          '<li class="scrow scask' +
+          // (v318.3) a question from a photo: the cap it's about, from the photo, a tap to see it larger
+          (e.crop
+            ? ' sccropped"><button type="button" class="sccrop" data-n="' +
+              n +
+              '" aria-label="See the cap in the photo larger"><img src="' +
+              esc(e.crop) +
+              '" alt=""></button>'
+            : '"><span class="scmark" aria-hidden="true">?</span>') +
+          '<span class="scname"><b>' +
           esc(e.title) +
           '</b><span class="scpick">' +
           e.opts
@@ -1870,6 +2007,8 @@ function scanAdd() {
       scanFocusBox();
       return;
     }
+    const cz = t.closest('.sccrop');
+    if (cz) return scanZoom(scanList[+cz.dataset.n]);
     const ch = t.closest('.scchoose');
     if (ch) {
       // the answer takes the question's place

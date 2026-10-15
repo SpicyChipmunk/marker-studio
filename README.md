@@ -59,9 +59,10 @@ GitHub Actions runs both on every push to any branch but `release`
 - the same browser tests on WebKit (Safari's engine), in 10 parts side by side,
   one test file at a time. This job reports but doesn't fail the build. A failed
   test is run once more (`e2e/ci-retry.mjs`): one that then passes is reported
-  as flaky, as a warning. Tests that can't pass on GitHub's WebKit at all are
-  left out of that job, each with its reason (`notOnWebKit` in
-  `e2e/helpers.mjs`).
+  as flaky, as a warning. If the browser's page process crashed during the test,
+  the warning says so, with the machine's free memory at the time. Tests that
+  can't pass on GitHub's WebKit at all are left out of that job, each with its
+  reason (`notOnWebKit` in `e2e/helpers.mjs`).
 
 `e2e/ci-parts.mjs` shares the files out so the parts take about as long
 (`e2e/ci-durations.json`), and each part lists its results on the run's page.

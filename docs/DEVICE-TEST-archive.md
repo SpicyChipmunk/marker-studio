@@ -77,6 +77,46 @@ On a guide, open **Style** and set **Shading** to **Light & shadow**.
 - [ ] **Blend:** a tap still adds an anchor; press and hold a section shows Change colour / Pin. **Manual:** a tap opens the picker.
 - [ ] **Style → Pin colours:** taps pin and unpin sections directly.
 
+## 3p. v318 on the iPad
+
+**The photo reader's gate for the beta: a 2 GB iPad** (the 5th or 6th generation iPad, 2017–18, on iPadOS 16.4 or
+later; older 2 GB iPads can't update that far and don't show the card), if you can borrow one; then your own iPad.
+Write the times down.
+
+- [ ] ★ **Markers › + Add markers › Photograph your caps** → Scan opens on the reader's card (no keyboard) → it says
+      22 MB and that photos never leave the iPad → **Download the reader** on Wi-Fi → it counts up the MB → "The reader
+      is ready". Time to download: ____
+- [ ] ★ **Take or choose photos** → photograph **half a tray** from above, caps up → the photo shows, the bar moves,
+      codes join the list as they're read, green boxes on the photo. Time to finished: ____ s. Nothing wrong in the
+      list; amber boxes are the ones asked about.
+- [ ] ★ A **whole tray** in one photo, then a **close-up** of a few caps → each finishes, no "too much for this device".
+      If the app reloads itself part way (memory), open Scan and read the same photo again: it should read it again
+      and finish. Note which iPad.
+- [ ] ★ **All your photos at once:** take a photo of each tray (or half-tray) in the Camera first, then **Photograph
+      your caps → Take or choose photos → Photo Library**, select them all → "Photo 1 of N…", one bar over all of them;
+      at the end one summary and a line per photo. Total time: ____ for ____ photos. Compare the list with your
+      collection: anything missing or wrong? Each marker is in the list once, however many photos it was in. On the
+      2 GB iPad, at least ten photos in one go.
+- [ ] ★ After a photo, **Done** → back on the list, **no keyboard** over it (the focus on Add). On the iPad held
+      upright, before Done, each box has its code over it; turn the iPad → the boxes follow the photo.
+- [ ] With VoiceOver, choose three photos → it says "Photo 1 of 3 · Opening the photo…", then each photo's first
+      stage, once each, and the summary at the end.
+- [ ] **Stop** during a batch → it stops within a second or two; what was read stays. **Undo these photos** → all their
+      codes go back out.
+- [ ] One photo: **Stop** part way → it stops within a second or two, what was read stays in the list. **Undo this
+      photo** → its codes go back out. **Read another photo** → straight to the camera or photos.
+- [ ] Switch to another app while a batch is being read, then back → it carries on or has finished; nothing lost. Lock
+      the iPad for a minute mid-batch, unlock → the same.
+- [ ] Airplane mode on, close the app fully, reopen → **Photograph your caps** works offline. In a Safari
+      **Private** tab with Airplane mode on → the card says it needs the internet the first time; its button waits.
+- [ ] **A set's name:** copy the text from a set's box (Live Text) or a shop's page (Honolulu 120) and paste it into
+      Scan → the set is offered, added with a tap. **Open a list file** with a .csv from Files → read as a paste.
+- [ ] On the welcome (in a Private tab) → **I bought them one by one** → **Photograph your caps** is first → it opens
+      the reader; read a photo, **Done**, **Add to my collection** → the welcome says how many were added.
+- [ ] On the welcome (in a Private tab), add a set → **Some are missing** → the chart with its markers ticked; untick
+      two → they're left out.
+- [ ] Help › **Adding markers by code** and About's credits read right.
+
 ## 3o. v317 on the iPad
 
 - [ ] ★ **A whole tray at once:** photograph a tray of caps with the iPad's Camera, open it in Photos, press and hold

@@ -224,12 +224,21 @@ function ocrCodes(text, brand) {
   const r = scanRead(text, brand);
   return (r.codes || [])
     .filter((c) => c.opts.length)
-    .map((c) => ({ i: c.opts[0], n: c.opts.length, asked: c.asked }));
+    .map((c) => ({ i: c.opts[0], n: c.opts.length, asked: c.asked, old: (c.oldOf || []).length > 0 }));
 }
 // a line read: a code for sure, of one marker, into the list now; else kept for the end of the photo
 function ocrLine(r, it) {
   r.items.set(it.id, it);
   if (it.nameOf) return;
+  scanPhoto = true;
+  try {
+    ocrLineRead(r, it);
+  } finally {
+    scanPhoto = false;
+  }
+  ocrSoon(r);
+}
+function ocrLineRead(r, it) {
   // (the brands the photo shows: codes only one brand has)
   const any = scanRead(it.text, '');
   (any.codes || []).forEach((c) => {
@@ -243,6 +252,9 @@ function ocrLine(r, it) {
     // (and with a brand chosen, not once the photo plainly shows the other brand: an Ohuhu B04 isn't Copic's. The
     // photo's codes are then read at the end with the photo's brand, and the summary says so)
     mine = !!cs.length && (scanBrand ? !seen || seen === scanBrand : COLORS[cs[0].i].brand === seen);
+  // (v318.2) digits alone read as a code with letters ("808", B08): asked at the end of the photo, as they are read here
+  // (read again at the end with the words beside them, they'd be no code at all)
+  if (cs.length === 1 && cs[0].asked === 'confirm') (r.bent = r.bent || []).push({ t: it.text, i: cs[0].i });
   // (a lone character, the blender's 0, never at once: only at the end, with its name)
   if (
     !it.unsure &&
@@ -251,14 +263,197 @@ function ocrLine(r, it) {
     cs[0].n === 1 &&
     !cs[0].asked &&
     mine &&
-    COLORS[cs[0].i].code.length >= 2
+    COLORS[cs[0].i].code.length >= 2 &&
+    // (v318.2: nor by an old code, nor a reading with letters that isn't the code as it's printed, give or take a
+    // letter for a digit: they wait for the end of the photo, its generation and its names. "W60g" had gone in at once as
+    // WG06)
+    !cs[0].old &&
+    (!/[A-Za-z]/.test(it.text) || ocrAsRead(it.text, scanKey(COLORS[cs[0].i].code)))
   ) {
     const was = scanList.length;
     if (scanTake(cs[0].i, '', true, true) && scanList.length > was) scanList[0].photo = r.n;
     r.taken.add(it.id);
     r.sure++;
   }
-  ocrSoon(r);
+}
+// (v318.3) a code's line read as no code: its first other reading (letters and digits, 3 characters or more, at least
+// 0.75 sure and 0.8 times as sure as the best) that's one code of one marker, as an unsure line
+function ocrAlt(r, x) {
+  if (x.nameOf || !x.alts || !x.alts.length) return x;
+  const brand = ocrBrandOf(r) || scanBrand;
+  if (ocrCodes(x.text, brand).length) return x;
+  for (const [t, cf, turn] of x.alts) {
+    if (t === x.text || !/[A-Za-z]/.test(t) || scanKey(t).length < 3 || cf < 0.75 || cf < 0.8 * x.conf)
+      continue;
+    const cs = ocrCodes(t, brand);
+    if (cs.length === 1 && cs[0].n === 1 && !cs[0].asked)
+      return Object.assign({}, x, { text: t, conf: cf, unsure: true, turn: turn || 0 });
+  }
+  return x;
+}
+// (v318.3) the marker whose whole name the names read are, of the brand: a name of two words or more, or of one word of
+// six letters or more that's no word of another's name; not one whose words are all in another's longer name. Else -1
+function ocrWholeName(names, brand) {
+  const r = scanRead(names.join(' '), brand);
+  if (r.byName < 0) return -1;
+  const ws = scanWords(COLORS[r.byName].name || ''),
+    of = (c) => !brand || c.brand === brand;
+  if (
+    COLORS.some((c, j) => {
+      if (j === r.byName || !of(c)) return false;
+      const o = scanWords(c.name || '');
+      return o.length > ws.length && ws.every((w) => o.indexOf(w) >= 0);
+    })
+  )
+    return -1;
+  if (ws.length >= 2) return r.byName;
+  if ((ws[0] || '').length < 6) return -1;
+  return COLORS.some(
+    (c, j) =>
+      j !== r.byName &&
+      of(c) &&
+      scanWords(c.name || '').length > 1 &&
+      scanWords(c.name || '').indexOf(ws[0]) >= 0,
+  )
+    ? -1
+    : r.byName;
+}
+// (v318.3) the photo's questions, each with the cap it's about from the photo: the line asked about (its reading, a
+// code of one of its answers, or a name that is one), cut from the photo's pixels while they're still here, turned as
+// the reader read it, so it's the right way up
+function ocrCropQuestions(r, lines) {
+  if (!r.img || !r.img.data) return;
+  // (a code that's one of the answers as it is now: not by its old code, YR33 for Y29 Melon Yellow once YR33)
+  const codeOf = (x, opts) =>
+    (scanRead(x.text, '').codes || []).some((c) =>
+      c.opts.some((i) => opts.has(i) && (c.oldOf || []).indexOf(i) < 0),
+    );
+  scanList.forEach((e) => {
+    if (!e.ask || e.photo !== r.n || e.crop) return;
+    const opts = new Set(e.opts.map((o) => o.i)),
+      // (a name read is its brand's: Yellow Green is Ohuhu's YG012 and Copic's own)
+      brand = COLORS[e.opts[0].i].brand,
+      m = /^confirm (.+)$/.exec(e.ask);
+    let line = m ? lines.find((x) => !x.nameOf && x.text === m[1]) : null;
+    if (!line && !/^byname/.test(e.ask))
+      line = lines.find((x) => !x.nameOf && /\d/.test(x.text) && codeOf(x, opts));
+    // (a name read: a line that's the name itself, the one read on the cap; else a cap's line with its names, or those
+    // names alone)
+    const names = (nm) => nm.length && opts.has(scanRead(nm.join(' '), brand).byName);
+    if (!line) line = lines.find((x) => !/\d/.test(x.text) && names([x.text]));
+    if (!line)
+      line = lines.find((x) => {
+        if (x.nameOf) return false;
+        const ns = lines.filter((y) => y.nameOf === x.id).map((y) => y.text);
+        return names((/\d/.test(x.text) ? [] : [x.text]).concat(ns)) || names(ns);
+      });
+    if (!line) return;
+    try {
+      const c = ocrCrop(r.img.data, line.box, line.turn || 0);
+      if (c) e.crop = c;
+    } catch (_) {}
+  });
+}
+// a square of the photo round a box (a cap's code or name and some of the cap round it), upright, as a small JPEG
+function ocrCrop(img, box, turn) {
+  const [cx, cy, w, h, a] = box,
+    // (a short reading's box is a scrap of its cap: at least three times its height round it)
+    R = Math.max(1.25 * Math.max(w, h), 3 * Math.min(w, h)),
+    // (the corners of the square turned: a little more of the photo round it)
+    Q = Math.ceil(R * 1.45),
+    x0 = Math.max(0, Math.round(cx - Q)),
+    y0 = Math.max(0, Math.round(cy - Q)),
+    x1 = Math.min(img.width, Math.round(cx + Q)),
+    y1 = Math.min(img.height, Math.round(cy + Q));
+  if (x1 - x0 < 4 || y1 - y0 < 4) return '';
+  const part = document.createElement('canvas');
+  part.width = x1 - x0;
+  part.height = y1 - y0;
+  part.getContext('2d').putImageData(img, -x0, -y0, x0, y0, x1 - x0, y1 - y0);
+  // (sharp enough for the larger view on a 3× screen at about 160 points)
+  const OUT = 360,
+    out = document.createElement('canvas'),
+    g = out.getContext('2d');
+  out.width = out.height = OUT;
+  g.fillStyle = '#111';
+  g.fillRect(0, 0, OUT, OUT);
+  g.translate(OUT / 2, OUT / 2);
+  g.scale(OUT / (2 * R), OUT / (2 * R));
+  g.rotate((-(a + turn) * Math.PI) / 180);
+  g.drawImage(part, x0 - cx, y0 - cy);
+  return out.toDataURL('image/jpeg', 0.82);
+}
+// (v318.2) whether a reading is the code as it's printed: its letters as letters, its digits as digits or the letter a
+// digit is often read as (O for 0, I, L or T for 1, S for 5, Z for 2). "W60g" isn't WG06, nor "Eg9" E69: Scan puts those
+// right, but from a photo they're asked about
+function ocrAsRead(text, code) {
+  const t = scanKey(text),
+    like = { 0: 'O', 1: 'ILT', 5: 'S', 2: 'Z' };
+  for (let k = 0; k + code.length <= t.length; k++) {
+    let ok = true;
+    for (let j = 0; j < code.length && ok; j++) {
+      const a = t[k + j],
+        b = code[j];
+      ok = a === b || (!!like[b] && like[b].indexOf(a) >= 0);
+    }
+    if (ok) return true;
+  }
+  return false;
+}
+// (v318.2) whether the names read with a code hold a word of another marker's name of the brand (4 letters or more, not
+// one every family has) and none of the code's markers' own: "V91 Grayish Cherry" is RV91's cap, not V91's
+let _ocrVocab = {};
+function ocrForeign(text, names, brand) {
+  const b = brand || '';
+  if (!_ocrVocab[b]) {
+    const s = new Set();
+    COLORS.forEach((c) => (!b || c.brand === b) && ocrWordsOf(c.name).forEach((w) => s.add(w)));
+    _ocrVocab[b] = s;
+  }
+  const V = _ocrVocab[b],
+    is = [].concat(...(scanRead(text, brand).codes || []).filter((c) => c.opts.length).map((c) => c.opts));
+  if (!is.length || is.some((i) => ocrNameAgrees(i, names))) return false;
+  const own = [].concat(...is.map((i) => ocrWordsOf(COLORS[i].name)));
+  return ocrWordsOf(names.join(' ')).some(
+    (w) => V.has(w) && !own.some((o) => o.indexOf(w) >= 0 || w.indexOf(o) >= 0),
+  );
+}
+// (v318.2) whether a code's reading is to be trusted as it is: the code as printed, or a name of its own read with it
+function ocrExact(text, names, brand) {
+  const cs = (scanRead([text].concat(names).join(' '), brand).codes || []).filter((c) => c.opts.length);
+  return (
+    !cs.length ||
+    cs.every((c) => c.named || ocrAsRead(text, c.code) || c.opts.some((i) => ocrNameAgrees(i, names)))
+  );
+}
+// (v318.2) a question that's noise: only a name read, a one-word name that's a word of two or more of its brand's other
+// names ("Grey"); another brand's code, on a photo plainly of one brand, that's the start or end of a code of that brand
+// (Copic BG11 on a tray of Ohuhu's, BG114 read short)
+function ocrNoise(e, brand) {
+  if (/^byname /.test(e.ask) && e.opts.length === 1) {
+    const i = e.opts[0].i,
+      ws = scanWords(COLORS[i].name || '');
+    if (
+      ws.length === 1 &&
+      COLORS.filter(
+        (c, j) => j !== i && c.brand === COLORS[i].brand && scanWords(c.name || '').indexOf(ws[0]) >= 0,
+      ).length >= 2
+    )
+      return true;
+  }
+  if (/^other /.test(e.ask) && brand && e.opts.length === 1) {
+    const k = scanKey(COLORS[e.opts[0].i].code);
+    if (
+      COLORS.some(
+        (c) =>
+          c.brand === brand &&
+          scanKey(c.code) !== k &&
+          (scanKey(c.code).startsWith(k) || scanKey(c.code).endsWith(k)),
+      )
+    )
+      return true;
+  }
+  return false;
 }
 // whether the names read with a code are its marker's: a word of them (4 letters or more, not a word every family has)
 // is part of a word of its name, or the other way ("coal" of Charcoal, "akura" of Sakura)
@@ -349,6 +544,14 @@ function ocrParts(r, lines) {
       if (a) {
         ask.push({ k: 'name ' + a.code + ' ' + a.opts.map(mkey).join(','), opts: a.opts });
         drop.add(x.id);
+      } else if (ocrForeign(x.text, nm, brand)) {
+        // (v318.2) a word of another marker's name, none of its own: asked
+        ask.push({
+          k: 'confirm ' + x.text,
+          opts: own,
+          t: '“' + [x.text].concat(nm).join(' ') + '” read: is it this one?',
+        });
+        drop.add(x.id);
       }
     }
   });
@@ -369,7 +572,7 @@ function ocrParts(r, lines) {
   ask.forEach((x) => {
     const asked = scanAsk(
       x.k,
-      'The code and the name read don’t match: which one?',
+      x.t || 'The code and the name read don’t match: which one?',
       x.opts.map((i) => ({ i: i, how: 'chosen' })),
       true,
       true,
@@ -381,6 +584,15 @@ function ocrParts(r, lines) {
 }
 // the end of the photo: what waited (the unsure, two-brand codes, the names) read by Scan with the photo's brand
 function ocrDone(r, m) {
+  scanPhoto = true;
+  try {
+    ocrSettle(r, m);
+  } finally {
+    scanPhoto = false;
+    scanGen = '';
+  }
+}
+function ocrSettle(r, m) {
   clearTimeout(r.soon);
   r.soon = 0;
   r.done = true;
@@ -390,12 +602,41 @@ function ocrDone(r, m) {
   try {
     localStorage.removeItem(OCR_BUSY_KEY);
   } catch (_) {}
+  // (v318.2) the photo's generation: its caps read by the codes as they are now, eight at least and an old code at most
+  // one in eight, and the photo is of them ('new': scanGen)
+  let cur = 0,
+    old = 0;
+  const b0 = ocrBrandOf(r) || scanBrand;
+  m.lines.forEach((x) => {
+    if (x.nameOf || !/\d/.test(x.text)) return;
+    (scanRead(x.text, b0).codes || []).forEach((c) => {
+      if (!c.opts.length) return;
+      const o = (c.oldOf || []).length;
+      if (!o) cur++;
+      else if (o === c.opts.length) old++;
+    });
+  });
+  r.gen = cur >= 8 && old * 8 <= cur ? 'new' : '';
+  // (v318.3) a code's line whose reading holds no code: its next reading that does, read nearly as surely ("E19" over
+  // "61", "V000" over "000A"), as unsure (settled at the end, with its names)
+  scanGen = r.gen;
+  try {
+    m = Object.assign({}, m, { lines: m.lines.map((x) => ocrAlt(r, x)) });
+  } finally {
+    scanGen = '';
+  }
   // (a part of a cap read as a code: left out, and taken back out of the list when it went in at once)
+  // (every line, as read, for the questions' pictures: a part of a cap left out below may be what's asked about)
+  const read0 = m.lines;
   m = Object.assign({}, m, { lines: ocrParts(r, m.lines) });
   // (each code's line with its names after it, the order Scan's reading of a list wants; a code already added
   // needs neither again)
   const items = new Map(m.lines.map((x) => [x.id, x])),
-    text = [];
+    text = [],
+    // (v318.2) a code whose every reading was unsure, read apart: only an old code dropped by the photo's generation,
+    // no current one chosen over another's old one; and readings to confirm, asked)
+    textU = [],
+    confirm = [];
   r.taken.forEach((id) => !items.has(id) && r.items.has(id) && items.set(id, r.items.get(id)));
   r.items = items;
   // (on a tray plainly of one brand, another brand's code that's the start or the end of a code of this one read in
@@ -453,14 +694,28 @@ function ocrDone(r, m) {
   groups.forEach((g) => {
     const x = g.lines[0],
       names = [];
-    g.lines.forEach((l) =>
-      m.lines.forEach((y) => {
-        if (y.nameOf === l.id && names.every((n) => key(n) !== key(y.text))) names.push(y.text);
-      }),
-    );
+    // (v318.2: in reading order, the line nearest the code first, so "Ballet" then "Pink" comes out "Ballet Pink")
+    g.lines.forEach((l) => {
+      const a = (l.box[4] * Math.PI) / 180,
+        off = (y) => Math.abs(-(y.box[0] - l.box[0]) * Math.sin(a) + (y.box[1] - l.box[1]) * Math.cos(a));
+      m.lines
+        .filter((y) => y.nameOf === l.id)
+        .sort((p, q) => off(p) - off(q))
+        .forEach((y) => {
+          if (names.every((n) => key(n) !== key(y.text))) names.push(y.text);
+        });
+    });
     // (only lines with a digit, as every code has: a lone word, "Green", read as the other brand's colour's name, had
     // been a question about it)
-    if ((!swap && g.lines.some((l) => r.taken.has(l.id))) || !/\d/.test(x.text)) return;
+    if (!swap && g.lines.some((l) => r.taken.has(l.id))) return;
+    if (!/\d/.test(x.text)) {
+      // (v318.3) a cap whose name was read but not its code: asked about by its whole name ("Only its name was read"),
+      // never added unasked; not a name that's a part of another's ("Light Apricot" of Light Apricot Pink), nor one
+      // word that's a word of another's
+      const nm = names.length ? names : [x.text];
+      if (ocrWholeName(nm, seen || scanBrand) >= 0) text.push(nm.join(' '));
+      return;
+    }
     if (short({ text: x.text, unsure: g.lines.every((l) => l.unsure) })) return;
     // (a lone character, the blender's 0, only with its name: a seam read "0,3,5" had added Copic's 0)
     const lone = (scanRead(x.text, seen || scanBrand).codes || []).filter((c) => c.opts.length);
@@ -468,7 +723,14 @@ function ocrDone(r, m) {
       return;
     // (a code and its name on one line, as on the cap: a word of the name settles a code two markers answer to, R16
     // Light Salmon and RV316, once R16; the name's lines come in any order, "Pink" then "Tender")
-    text.push([x.text].concat(names).join(' '));
+    // (v318.2) a reading with letters that isn't the code as printed, nor with a name of its own, is asked about; so is a
+    // code read with a word of another marker's name and none of its own
+    if (
+      (/[A-Za-z]/.test(x.text) && !ocrExact(x.text, names, seen || scanBrand)) ||
+      (names.length && ocrForeign(x.text, names, seen || scanBrand))
+    )
+      return confirm.push({ t: x.text, names: names });
+    (g.lines.every((l) => l.unsure) ? textU : text).push([x.text].concat(names).join(' '));
   });
   if (swap) {
     scanList = scanList.filter((e) => e.photo !== r.n);
@@ -478,17 +740,52 @@ function ocrDone(r, m) {
   const before = new Set(scanList),
     was = scanBrand;
   r.brand = seen;
-  if (text.length) {
+  [
+    [text, r.gen],
+    [textU, r.gen ? 'strict' : ''],
+  ].forEach(([t, gen]) => {
+    if (!t.length) return;
     // (the photo's brand, when its codes plainly show one; else the brand chosen)
     if (seen) scanBrand = seen;
     scanMute = scanNoFlip = true;
+    scanGen = gen;
     try {
-      scanHandleCodes(text.join('\n'), true, true);
+      scanHandleCodes(t.join('\n'), true, true);
     } finally {
       scanMute = scanNoFlip = false;
       scanBrand = was;
+      scanGen = '';
     }
-  }
+  });
+  (r.bent || []).forEach((x) => {
+    if ((!seen || COLORS[x.i].brand === seen) && !scanList.some((e) => !e.ask && e.i === x.i))
+      scanAsk(
+        'confirm ' + x.t,
+        '“' + x.t + '” read: is it this one?',
+        [{ i: x.i, how: 'chosen' }],
+        true,
+        true,
+      );
+  });
+  confirm.forEach((x) => {
+    scanGen = r.gen;
+    const os = [];
+    try {
+      (scanRead(x.t, seen || scanBrand).codes || []).forEach((c) =>
+        c.opts.forEach((i) => os.indexOf(i) < 0 && os.push(i)),
+      );
+    } finally {
+      scanGen = '';
+    }
+    if (os.length)
+      scanAsk(
+        'confirm ' + x.t,
+        '“' + [x.t].concat(x.names).join(' ') + '” read: is it this one?',
+        os.map((i) => ({ i: i, how: 'chosen' })),
+        true,
+        true,
+      );
+  });
   // (on a tray plainly of one brand, another brand's marker offered only by its name, its code not read, isn't asked
   // about: "R47 Peach" had offered Copic's R32 Peach on a tray of Ohuhu caps)
   const read = new Set(),
@@ -502,7 +799,8 @@ function ocrDone(r, m) {
       before.has(e) ||
       !e.ask ||
       ((!seen || !/^other /.test(e.ask) || e.opts.some((o) => read.has(o.i))) &&
-        !(/^old /.test(e.ask) && e.opts.some((o) => o.how === 'chosen' && got.has(o.i)))),
+        !(/^old /.test(e.ask) && e.opts.some((o) => o.how === 'chosen' && got.has(o.i))) &&
+        !ocrNoise(e, seen || was)),
   );
   scanList.forEach((e) => {
     if (before.has(e)) return;
@@ -519,6 +817,7 @@ function ocrDone(r, m) {
     ocrAnswered.push({ e: e, by: r.n });
     return false;
   });
+  ocrCropQuestions(r, read0);
   r.asked = scanList.filter((e) => e.ask && e.photo === r.n).length;
   r.added = scanList.filter((e) => e.photo === r.n && !e.ask).length;
   scanRender();

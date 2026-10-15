@@ -18,6 +18,10 @@ const ser = (it) => ({
   conf: it.best ? +it.best.conf.toFixed(3) : 0,
   unsure: !!it.unsure,
   nameOf: it.nameOf ? it.nameOf.id : 0,
+  // (v318.3) every reading tried, in the order read: the page may take another when the best holds no code
+  alts: (it.all || []).map((r) => [r.text, +r.conf.toFixed(3), r.flip || 0]),
+  // (v318.3) the turn its best reading was read at (180: upside down), for the cap's picture beside a question
+  turn: it.best ? it.best.flip || 0 : 0,
   box: [
     Math.round(it.box.cx),
     Math.round(it.box.cy),

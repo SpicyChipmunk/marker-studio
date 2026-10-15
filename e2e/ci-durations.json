@@ -202,7 +202,8 @@
   "v3181-bin.test.mjs": 36,
   "v3181-markers-reminder.test.mjs": 36,
   "v3181-private.test.mjs": 5,
-  "v3181-wipe.test.mjs": 5
+  "v3181-wipe.test.mjs": 5,
+  "v3183-crops.test.mjs": 6
  },
  "webkit": {
   "autosave.test.mjs": 154,
@@ -406,6 +407,7 @@
   "v3181-bin.test.mjs": 75,
   "v3181-markers-reminder.test.mjs": 75,
   "v3181-private.test.mjs": 5,
-  "v3181-wipe.test.mjs": 11
+  "v3181-wipe.test.mjs": 11,
+  "v3183-crops.test.mjs": 15
  }
 }

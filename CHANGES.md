@@ -1120,6 +1120,12 @@ files: `v318-review-ux` (7), `v318-data` (11); unit: `v318-release` (3); more te
 - **Random**'s Main colour places its accents in n log n: 29,000 sections 3.4 s → 0.75 s in Chrome. The style golden's
   three Random guides take other markers (Random isn't repeatable; no saved guide changes).
 - Tests: the service worker's caches are checked against the version and the reader's folder (`v318-release`).
+- **CI: a crash is named.** v318's and v318.1's GitHub runs each had one flaky WebKit test (`v310-moodpics`, then
+  `v318-review-guide`), both "Target page, context or browser has been closed", both passing on the retry. Killing
+  WebKit's page process mid-test gives exactly that error, so these were the browser's page process ending, not the
+  tests (memory isn't short here: about 0.9 GB a page). A test whose page crashes is now noted in the CI record with the
+  free memory then (`e2e/helpers.mjs`), and the run's summary and warning say "the browser's page process crashed, not
+  the test" (`e2e/ci-summary.mjs`; unit: `ci-summary`, 2).
 
 **The guide, checked end to end** (a second wave: Undo and Redo after some 60 changes, Library round-trips and every
 count were exact; these were not):
@@ -1234,3 +1240,64 @@ New e2e files: `v318-review-guide` (7), `v318-polish` (11), `v318-adding-2`, `-3
 
 New e2e files: `back-tabs`, `v318-adding-1a`, `v3181-bin`, `v3181-markers-reminder`, `toast-spot`,
 `large-text-frame`, `tasks-card`; unit: `v318-comp`, `v318-gradient-twins`.
+
+# Changes — v318.2 (the photo reader adds no marker it can't stand behind)
+
+A review of the reader's accuracy scored each photo against the caps actually in it, not against the whole collection.
+Scored that way, v318.1 added 24 markers from other caps over 16 runs of Ben's photos (8 photo sets, each on the
+desktop and the iPad path), shown as 0 before: a marker Ben owns counted as a hit wherever it came from. For a tester
+with part of a set each is a marker added that they don't have. The rules below are settling only (the reader itself
+is unchanged), each prototyped, measured and pressure-tested by a second reviewer. Over all 1,205 captured reads of the
+real photos, each photo alone: markers added from another cap 531 → 60, caps found +272, questions 573 → 366. Over the 16
+runs: 24 → 0, misses 19 → 15, questions 18 → 12. Version v318.2; cache `marker-studio-v318.2`. New unit tests:
+`v3182-reader` (7).
+
+- **Digits alone aren't bent into a code with letters** from a photo: "99" isn't G9 (Ohuhu's old code for G112), "63"
+  isn't G3 (G311's): scraps of caps, 19 of the 24. Three digits or more are asked about ("808" read: is it this one?
+  B08). Typed in Scan's box, as before.
+- **A reading with letters that isn't the code as printed** (give or take O for 0, I, L or T for 1, S for 5, Z for 2)
+  is asked about, not added: "W60g" had gone in as WG06, "Eg9" as E69. It no longer goes in at once either.
+- **A photo plainly of the codes as they are now** (eight at least, an old code at most one in eight) drops a code
+  that's only an old one ("GG1", a scrap of GG15, had added GG03), unless the name read with it is its marker's; a code
+  that's one marker's now and another's old code is the one it is now ("Which Y210?" gone). A photo of an older set's
+  caps, or of a mix, is read as before. Ben's decision: dropped rather than asked (a question about a scrap invites a
+  wrong yes); once questions show the cap's photo they'll be asked.
+- **R22 Ballet Pink** read "Pink Ballet", or "Pink" alone, had been added as RV17 Pink (R22 by its old code), in Ben's
+  photos too: a name of two words or more read in any order is its marker's, a name that's only some of the words of
+  another of the code's markers' names settles nothing (typed "R22 Pink" is asked about), and a cap's names are taken in
+  reading order, the line nearest the code first.
+- **A code read with a word of another marker's name and none of its own** is asked about ("B21" with "Sakura").
+- **Questions that are noise go**: a name alone that's a word of two or more other names ("Grey"); another brand's
+  code on a photo plainly of one brand that's the start or end of one of its codes (Copic BG11 by Ohuhu's BG114).
+- **"Yellowish" isn't Copic Y06 Yellow**: YR20 Yellowish Shade read "Shade Yellowish" had been asked about against
+  Y06, as had R30, Y23 and YG06 (and Copic Y21 Buttercup against Ohuhu Y06 Butter): a name found inside a longer word
+  that's a word of another name doesn't count.
+- Considered and left for v318.3, with the reasons in the review: the reader's second-choice readings, a cap whose name
+  was read but not its code asked about, a crop of the cap beside each question, and fuzzy matching of misread names
+  (only to choose between a code's own markers). Completing a code read short from its name: not done (it added wrong
+  markers elsewhere and nothing in Ben's runs).
+
+# Changes — v318.3 (released with v318.2: the reader finds more, and each question shows its cap)
+
+Version v318.3; cache `marker-studio-v318.3`. Released together with v318.2 (above). New tests: unit `v3183-reader`
+(3), e2e `v3183-crops` (2). Over the 1,205 captured reads of Ben's photos, each photo alone, from v318.1: markers added
+from another cap 531 → 60, caps found +299; questions 573 → 580, each now with its cap's picture.
+
+- **Each question from a photo shows the cap it's about**, cut from the photo while it's in memory and turned the way
+  the reader read it, so it's the right way up (upside-down caps too), in place of the "?". A tap shows it larger
+  over Scan, with the question; a tap, Escape or Back closes it, and focus goes back. The pictures are kept while Scan
+  is open; after a reload a question still waiting shows "?" (they're not stored). On a synthetic tray a scrap read
+  "R38 …nt Ochre", asked as R38 Rose Pink, shows a peach cap cut by the photo's edge: YR38 Burnt Ochre, plainly not.
+- **On a photo of current codes, a code that's only an old one is asked about** with its picture (v318.2 left it out,
+  as a question about a scrap invited a wrong yes): Ben's decision, once questions had pictures. About 5 more
+  questions over the 16 runs.
+- **A cap whose name was read but not its code is asked about** by its whole name ("Only its name was read"), never
+  added unasked; not a name that's part of a longer one (Light Apricot of Light Apricot Pink), nor one word of five
+  letters or one that's a word of another name ("Frost", "Grey"). In a whole session these are mostly caps that
+  appear whole in another photo, so asked only when nothing else read them.
+- **A line read as no code takes its next reading that is one**, read nearly as surely (at least 0.75, and 0.8 times
+  the best): "61" → E19, "000A" → V000. The reader now sends every reading it tried, with its turn. Over the captured
+  reads: +25 caps, no marker added from another cap.
+- **A colour name misread by one letter** ("Yelliow", 5 letters or more, one name's word and no other's) chooses
+  between a code's own markers only, from a photo: Y210 read with "Yelliow" is Y210 Pumpkin Yellow, not Y416 (once
+  Y210). Typed text as before.

@@ -1,0 +1,143 @@
+// v318.3: a question from a photo shows the cap it's about, cut from the photo the right way up as the reader read it;
+// a tap shows it larger, and a tap, Escape or Back closes that. The photo is drawn here (nothing of anyone's), the
+// reader's lines made up. Fails on v318.2.
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { setup, teardown, openApp, scanFromMarkers, ENGINE } from './helpers.mjs';
+
+before(setup);
+after(teardown);
+
+// a photo 400×400: round the box at (200, 200), red where the reading starts, blue where it ends, with the box turned
+// `a` degrees; the reader's lines: eight codes as they are now, and "808" (asked about) in that box, read at `turn`
+function read(page, a, turn) {
+  return page.evaluate(
+    ([a, turn]) => {
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 400;
+      const g = cv.getContext('2d');
+      g.fillStyle = '#888';
+      g.fillRect(0, 0, 400, 400);
+      g.translate(200, 200);
+      g.rotate((a * Math.PI) / 180);
+      g.fillStyle = '#f00';
+      g.fillRect(-60, -40, 60, 80);
+      g.fillStyle = '#00f';
+      g.fillRect(0, -40, 60, 80);
+      const data = cv.getContext('2d').getImageData(0, 0, 400, 400);
+      scanList = [];
+      scanBrand = '';
+      const r = {
+        n: 1,
+        items: new Map(),
+        taken: new Set(),
+        brands: {},
+        sure: 0,
+        p: null,
+        done: false,
+        note: '',
+      };
+      r.img = { w: 400, h: 400, data: data };
+      ocrRun = r;
+      const lines = ['B015', 'B03', 'B05', 'B09', 'B111', 'B112', 'B114', 'B115'].map((t, k) => ({
+        id: k + 1,
+        look: 1,
+        text: t,
+        conf: 0.98,
+        unsure: false,
+        nameOf: 0,
+        box: [20 + k * 40, 380, 30, 14, 0],
+      }));
+      lines.push({
+        id: 20,
+        look: 1,
+        text: '808',
+        conf: 0.97,
+        unsure: false,
+        nameOf: 0,
+        box: [200, 200, 100, 40, a],
+        turn: turn,
+      });
+      lines.forEach((it) => ocrLine(r, it));
+      ocrDone(r, { lines: lines, stat: {}, ms: 1, aborted: false });
+      clearTimeout(r.soon);
+      scanRender();
+      const q = scanList.find((e) => e.ask);
+      return { asks: scanList.filter((e) => e.ask).map((e) => e.title), crop: q && q.crop };
+    },
+    [a, turn],
+  );
+}
+// the crop's colour on its left and on its right (the reading's start and end once it's upright)
+const sides = (page, url) =>
+  page.evaluate(async (url) => {
+    const im = new Image();
+    im.src = url;
+    await im.decode();
+    const c = document.createElement('canvas');
+    c.width = im.width;
+    c.height = im.height;
+    const g = c.getContext('2d');
+    g.drawImage(im, 0, 0);
+    const px = (x, y) => [...g.getImageData(x, y, 1, 1).data.slice(0, 3)];
+    const col = (p) => (p[0] > 150 && p[2] < 100 ? 'red' : p[2] > 150 && p[0] < 100 ? 'blue' : 'other');
+    return [col(px(im.width * 0.35, im.height / 2)), col(px(im.width * 0.65, im.height / 2))];
+  }, url);
+
+test('a question from a photo shows its cap, upright as the reader read it, whatever the turn', async () => {
+  const { page, errors } = await openApp({
+    width: 390,
+    height: 844,
+    storage: { 'ms-onboarded': '1', 'ms-setup-tip': '1' },
+  });
+  await scanFromMarkers(page);
+  for (const [a, turn, want] of [
+    [0, 0, ['red', 'blue']],
+    [90, 0, ['red', 'blue']],
+    [-35, 0, ['red', 'blue']],
+    [0, 180, ['blue', 'red']],
+    [90, 180, ['blue', 'red']],
+  ]) {
+    const o = await read(page, a, turn);
+    assert.deepEqual(o.asks, ['“808” read: is it this one?']);
+    assert.match(o.crop || '', /^data:image\/jpeg;base64,/, 'a picture of the cap');
+    assert.deepEqual(await sides(page, o.crop), want, `turned ${a}°, read at ${turn}°`);
+  }
+  // the row: the picture in place of the "?"
+  assert.equal(await page.locator('#scList .scask .sccrop img').count(), 1);
+  assert.equal(await page.locator('#scList .scask .scmark').count(), 0);
+  assert.deepEqual(errors, []);
+});
+
+test('a tap on the picture shows it larger; a tap, Escape or Back closes it, and focus goes back', async () => {
+  const { page, errors } = await openApp({
+    width: 820,
+    height: 1180,
+    storage: { 'ms-onboarded': '1', 'ms-setup-tip': '1' },
+  });
+  await scanFromMarkers(page);
+  await read(page, 20, 0);
+  // (Back: not in Safari's engine under test automation, where it's left to the browser: helpers.mjs WK.back)
+  for (const how of ENGINE === 'webkit' ? ['tap', 'Escape'] : ['tap', 'Escape', 'back']) {
+    await page.click('#scList .sccrop');
+    await page.waitForSelector('.sczoom.on');
+    assert.equal(await page.locator('.sczoom img').count(), 1);
+    assert.match(await page.textContent('.sczoom'), /“808” read: is it this one\?/);
+    await page.waitForTimeout(350);
+    if (how === 'tap') await page.click('.sczoom [data-a="close"]');
+    else if (how === 'Escape') await page.keyboard.press('Escape');
+    else await page.goBack().catch(() => {});
+    await page.waitForSelector('.sczoom', { state: 'detached' });
+    assert.ok(await page.isVisible('#scList'), `Scan still open after ${how}`);
+    if (how !== 'back')
+      assert.equal(
+        await page.evaluate(() => document.activeElement.classList.contains('sccrop')),
+        true,
+        'focus back on the picture',
+      );
+  }
+  // answering the question takes the picture with it
+  await page.click('#scList .scchoose');
+  assert.equal(await page.locator('#scList .sccrop').count(), 0);
+  assert.deepEqual(errors, []);
+});

@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.3',
+    t: 'Photograph your caps is more careful: a cap it can’t read for sure is asked about instead of added as a marker you may not have, and each question shows the cap from your photo (tap it to see it larger). It finds more caps too, including one whose name was read but not its code.',
+  },
+  {
     v: 'v318.1',
     t: 'Photograph your caps is offered wherever you add markers, and the reader reads more on an iPad. In Colour along, a tap on another marker’s section asks before ticking it. Deleted guides wait a week in Library › Recently deleted. Back goes to Home first. Wide pictures print on their side, and Key + reference prints your picture in colour with dark codes, to read beside the page you’re colouring.',
   },
