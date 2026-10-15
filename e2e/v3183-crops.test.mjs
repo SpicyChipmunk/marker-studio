@@ -141,3 +141,108 @@ test('a tap on the picture shows it larger; a tap, Escape or Back closes it, and
   assert.equal(await page.locator('#scList .sccrop').count(), 0);
   assert.deepEqual(errors, []);
 });
+
+// (v318.3 debug) Safari doesn't focus a button that's tapped: focus was given back to what had it before, the box (on an
+// iPad, its keyboard over the list), not the picture tapped; nor found again once the list was drawn again under it
+test('the larger view gives focus back to the picture tapped, not to what had it before, even with the list redrawn', async () => {
+  const { page, errors } = await openApp({
+    width: 820,
+    height: 1180,
+    storage: { 'ms-onboarded': '1', 'ms-setup-tip': '1' },
+  });
+  await scanFromMarkers(page);
+  await read(page, 0, 0);
+  for (const redraw of [false, true]) {
+    // (a tap as Safari makes it: a click, with no focus on the button)
+    await page.evaluate(() => {
+      document.getElementById('scBox').focus();
+      document.querySelector('#scList .sccrop').click();
+    });
+    await page.waitForSelector('.sczoom.on');
+    if (redraw) await page.evaluate(() => scanRender());
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('.sczoom', { state: 'detached' });
+    assert.equal(
+      await page.evaluate(() => document.activeElement.className),
+      'sccrop',
+      redraw ? 'on the picture drawn again' : 'on the picture',
+    );
+  }
+  assert.deepEqual(errors, []);
+});
+
+// (v318.3 debug) a phone held sideways: the picture kept square (it had been squashed to 320×257 by the dialogs' own
+// height limit) and Close in view
+test('the larger view on a phone held sideways: the picture square, Close in view', async () => {
+  const { page, errors } = await openApp({
+    width: 844,
+    height: 390,
+    storage: { 'ms-onboarded': '1', 'ms-setup-tip': '1' },
+  });
+  await scanFromMarkers(page);
+  await read(page, 0, 0);
+  await page.evaluate(() => document.querySelector('#scList .sccrop').click());
+  await page.waitForSelector('.sczoom.on');
+  const o = await page.evaluate(() => {
+    const i = document.querySelector('.sczoom img').getBoundingClientRect(),
+      b = document.querySelector('.sczoom [data-a="close"]').getBoundingClientRect();
+    return { w: Math.round(i.width), h: Math.round(i.height), bottom: b.bottom };
+  });
+  assert.ok(Math.abs(o.w - o.h) <= 1, `square: ${o.w}×${o.h}`);
+  assert.ok(o.bottom <= 390, `Close in view: its foot at ${o.bottom}`);
+  assert.deepEqual(errors, []);
+});
+
+// (v318.3 debug) "Which G410?" (G410, or G24 by its old code) on a photo whose G24 was read before it: the picture was
+// G24's cap, already added, not the G410 asked about
+test('a question about a code shows the cap read as that code, not another of its answers read before it', async () => {
+  const { page, errors } = await openApp({
+    width: 390,
+    height: 844,
+    storage: { 'ms-onboarded': '1', 'ms-setup-tip': '1' },
+  });
+  await scanFromMarkers(page);
+  const o = await page.evaluate(() => {
+    // red round the first line (G24), blue round the second (G410)
+    const cv = document.createElement('canvas');
+    cv.width = 400;
+    cv.height = 400;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#f00';
+    g.fillRect(0, 0, 200, 400);
+    g.fillStyle = '#00f';
+    g.fillRect(200, 0, 200, 400);
+    scanList = [];
+    scanBrand = 'Ohuhu';
+    const r = {
+      n: 1,
+      items: new Map(),
+      taken: new Set(),
+      brands: {},
+      sure: 0,
+      p: null,
+      done: false,
+      note: '',
+    };
+    r.img = { w: 400, h: 400, data: g.getImageData(0, 0, 400, 400) };
+    ocrRun = r;
+    const lines = ['G24', 'G410'].map((t, k) => ({
+      id: k + 1,
+      look: 1,
+      text: t,
+      conf: 0.97,
+      unsure: false,
+      nameOf: 0,
+      box: [100 + k * 200, 200, 40, 20, 0],
+      turn: 0,
+    }));
+    lines.forEach((it) => ocrLine(r, it));
+    ocrDone(r, { lines: lines, stat: {}, ms: 1, aborted: false });
+    clearTimeout(r.soon);
+    const q = scanList.find((e) => e.ask);
+    return { asks: scanList.filter((e) => e.ask).map((e) => e.title), crop: q && q.crop };
+  });
+  assert.deepEqual(o.asks, ['Which G410?']);
+  assert.deepEqual(await sides(page, o.crop), ['blue', 'blue'], 'the G410 cap');
+  assert.deepEqual(errors, []);
+});

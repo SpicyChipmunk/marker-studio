@@ -5,6 +5,14 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.5',
+    t: 'Photograph your caps, run end to end on test trays: caps cut by the photo’s edge are no longer added as the wrong marker (the next photo reads them whole), another brand’s cap read with its name is asked about, closing Scan mid-photo keeps nothing unchecked, and a photo that won’t open no longer stops a batch.',
+  },
+  {
+    v: 'v318.4',
+    t: 'Photograph your caps, checked again: a few caps that could have been added as the wrong marker, or missed (with a brand chosen above the box, and Copic’s greys), are now asked about, and each question’s picture is of the right cap.',
+  },
+  {
     v: 'v318.3',
     t: 'Photograph your caps is more careful: a cap it can’t read for sure is asked about instead of added as a marker you may not have, and each question shows the cap from your photo (tap it to see it larger). It finds more caps too, including one whose name was read but not its code.',
   },

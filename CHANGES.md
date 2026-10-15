@@ -1301,3 +1301,74 @@ from another cap 531 → 60, caps found +299; questions 573 → 580, each now wi
 - **A colour name misread by one letter** ("Yelliow", 5 letters or more, one name's word and no other's) chooses
   between a code's own markers only, from a photo: Y210 read with "Yelliow" is Y210 Pumpkin Yellow, not Y416 (once
   Y210). Typed text as before.
+
+# Changes — v318.4 (a debugging pass on v318.2 and v318.3)
+
+Two fresh-eyes reviewers, one on the settling rules and one on the questions' pictures, while v318.3's GitHub run
+passed. Version v318.4; cache `marker-studio-v318.4`. New unit tests: `v3183-settle` (7); `v3183-crops` 2 → 5. The
+replays of Ben's photos are unchanged (none of these cases is in them); each fix's test fails on v318.3.
+
+- **Wrong markers added unasked** (now asked about):
+  - With Copic chosen, Ohuhu's E711 read as it is had been taken as holding no code, so its next reading "E71" went in
+    as Copic E71 (Ohuhu R014 as Copic R14). A next reading is taken in place of another brand's code only when it
+    holds that code (Copic E51 read as Ohuhu E515 still works).
+  - "C-3 Cool Gray No.5" (and the warm greys) went in as C-3: the any-order name rule had counted the code's own 3 as
+    the name's number. A grey's number counts only after "No".
+  - On a photo of current codes, "Y210" read with "Golden" (an old Golden Brown cap, now Y416) went in as Y210 Pumpkin
+    Yellow: asked as the code and the name not matching, so Y210's own cap beside it doesn't drop the question.
+- **Caps missed without a word** (now asked about):
+  - With a brand chosen, a photo's one line left to settle (a cap's name alone, another brand's code) was shown as a
+    card, and cards are muted while a photo settles: the photo's lines are always read as a list.
+  - With Ohuhu chosen and no plain brand on the photo, Copic caps whose codes are the start or end of an Ohuhu code
+    (63 of Copic's 358: E71, B41, G02, R00…) were left out as noise: only on a photo plainly of one brand now.
+- **Questions**: one about a code read with another marker's whole name offers that marker too ("R29 Crimson", Copic
+  RV29 read short, offers RV29); one about a code taken at once with another marker's name offers the photo's brand
+  only.
+- **The questions' pictures**: one about a code shows the cap read as that code first (G410's question had shown G24,
+  read earlier); closing the larger view gives focus back to the picture tapped, not the box (on an iPad the keyboard
+  came up); the larger view stays square with Close in view on a phone held sideways; each picture's canvases are let
+  go at once (Safari counts them against its canvas memory).
+- Left as they are (judgement calls, in the review's notes): a cap's name read in two lines with no code ("Pumpkin"
+  over "Yellow") isn't asked about (joining them asked about 11 more true caps but 44 with no true answer); a name read
+  alone can settle another line's code two markers answer to (usually the same cap's lines unpaired); pictures of caps
+  cut by the photo's edge keep their black corner (moving the square into the photo centred a neighbour); with very
+  many questions the list redraws more slowly (48 ms at 71 pictures in Safari's engine, fine at the usual 2–10).
+
+# Changes — v318.5 (a second debugging pass: the v318.4 fixes, and the real reader run end to end)
+
+Two more reviewers: one on v318.4's own fixes and how they meet, one driving the real reader (worker and models) end
+to end on synthetic trays drawn or generated for the purpose, in Chromium and Safari's engine, at phone and iPad
+widths, with a brand chosen or not, batches, Stop, Undo, Close and reload. Version v318.5; cache
+`marker-studio-v318.5`. New tests: unit `v3184-settle` (5), e2e `v3184-flow` (8); each fails on v318.4. Over the
+captured reads of Ben's photos, each photo alone, from v318.4: markers added from another cap 60 → 53, questions 580 →
+411 (those with no right answer 241 → 116), caps found 81 fewer of 65,342 (cut by the photo's edge; in whole sessions
+one, V414 in one run); on the synthetic photos, markers added from another cap 22 → 0 and no question without a right
+answer. In whole sessions, with no brand, Ohuhu or Copic chosen: no marker added from another cap.
+
+- **A cap cut by the photo's edge**, its code maybe read short ("/R312" of YR312 had gone in at once as R312; "G1
+  Dusty", "G3", "Eg9", "R38 …nt Ochre" were asked about with no right answer): never taken at once, and left out
+  unless a name read with it is one of its code's markers'; the next photo reads it whole. (Asking about these
+  instead was measured: as many caps missed in whole sessions, and more questions.)
+- **Another brand's cap with a code both brands have**, read with its name (Copic E81 "Ivory" with Ohuhu chosen; Ohuhu
+  Y00, Y02, Y06 with Copic chosen): asked "Another brand than the one chosen", as Scan does typed. "RV29 Crimson" with
+  Ohuhu chosen: asked as Copic's, sure or unsure (it had gone in as Ohuhu RV29 Plum Pink).
+- **A cap read twice in one place** (by each look; nearly half the codes' lines on Ben's photos), its names beside one
+  reading only: the twin without names goes with the reading asked about. It had kept the marker in, and the
+  question, its answer then in the list, was dropped as answered: added unasked ("B21 Peacock", "C-3 Cool Gray
+  No.5", "RV29 Crimson").
+- **"Y210 Golden" read unsure** is asked about too, as read for sure (Y416 had gone in by its old code).
+- **With a brand chosen, a photo of the other brand**: the questions it raised before the swap stay (one was lost, its
+  cap missed).
+- **Closing Scan, or a reload, mid-photo** takes that photo's unchecked adds back out, and they aren't stored while
+  it's read (Copic R46, RV09 and B02 had stayed from an Ohuhu tray with Copic chosen).
+- **A batch with a photo that won't open** no longer stops dead ("Cannot set properties of undefined"; Stop did
+  nothing).
+- **"R|ush"** (Blush, cut by the edge) is read as a word, not R1, Ohuhu's old code for R210.
+- **The questions' pictures**: of the cap asked about, not one read the same that went in (12 replayed photos); a
+  name read in either order finds its cap ("Shadow" then "Mauve"); a reading put right ("E1T: E11 or E17?") by that
+  reading.
+- **A batch's next photo** says "Photo 2 of 3" with its bar from the start, not "Opening the photo…" with an empty
+  bar.
+- Left for later, with the reviewers' notes: upside-down Copic greys ("8-N", "L-M") are still missed (Scan's own
+  reading of turned dashes); another brand's code read with the chosen brand's whole name offers only the other brand;
+  a name both brands use read alone with no brand chosen isn't asked about.

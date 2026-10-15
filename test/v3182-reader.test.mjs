@@ -128,8 +128,13 @@ test('R22 Ballet Pink: its names in either order, or "Pink" alone, aren’t RV17
 test('a code read with a word of another marker’s name and none of its own is asked about', () => {
   const o = photo(now.concat([['B21', false, [['Sakura', 30]]]]));
   assert.ok(!o.list.includes('Ohuhu|B21'), o.list.join(' '));
-  assert.ok(o.asks.includes('Ohuhu|B21'), o.asks.join(' | '));
-  assert.match(o.titles.join(' '), /“B21 Sakura” read: is it this one\?/);
+  // (v318.3 debug: "Sakura" is R23's whole name, so Scan's own question between the code and the name, R23 offered too;
+  // a word that's no whole name, "nt Ochre", is asked about by the code alone)
+  assert.ok(o.asks.includes('Ohuhu|B21,Ohuhu|R23'), o.asks.join(' | '));
+  const p = photo(now.concat([['R38', false, [['nt Ochre', 30]]]]));
+  assert.ok(!p.list.includes('Ohuhu|R38'), p.list.join(' '));
+  assert.ok(p.asks.includes('Ohuhu|R38'), p.asks.join(' | '));
+  assert.match(p.titles.join(' '), /“R38 nt Ochre” read: is it this one\?/);
 });
 
 test('noise questions go: a name alone that’s a word of other names ("Grey"); another brand’s code that’s part of the photo’s brand’s (Copic BG11 by BG114)', () => {

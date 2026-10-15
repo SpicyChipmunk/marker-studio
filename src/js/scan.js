@@ -465,8 +465,12 @@ function scanRead(text, brand) {
       // (v318.2) a name of two words or more read in any order is its marker's ("Pink Ballet", R22 Ballet Pink: a cap's
       // lines are read in either order); and a name read that's only some of the words of another of the code's markers'
       // names settles nothing ("R22 Pink" isn't RV17 Pink, once R22, over R22 Ballet Pink: it had been added unasked)
+      // (v318.3 debug: a name's number counts only as its "No.": "C-3 Cool Gray No.5" isn't C-3 Cool Gray No.3 by the
+      // code's own 3, it's asked about, as before v318.2. Copic's greys are the names with a number)
       const nw = (i) => scanWords(COLORS[i].name || ''),
-        allRead = opts.filter((i) => nw(i).length > 1 && nw(i).every((w) => tw.indexOf(w) >= 0)),
+        isRead = (w) =>
+          /^\d+$/.test(w) ? tw.some((x, k) => x === w && tw[k - 1] === 'NO') : tw.indexOf(w) >= 0,
+        allRead = opts.filter((i) => nw(i).length > 1 && nw(i).every(isRead)),
         inside = (b, a) => nw(a).length > nw(b).length && nw(b).every((w) => nw(a).indexOf(w) >= 0);
       if (allRead.length === 1) withName = allRead;
       else if (withName.length === 1 && opts.some((j) => j !== withName[0] && inside(withName[0], j)))
@@ -528,15 +532,36 @@ function scanRead(text, brand) {
     );
   const loose = namedOk.filter((i) => !told.has(i) && !partOf(i) && (!hint || ofHint(i))),
     // (nor a word of another marker's whole name read, "Light" of B06 Light Cerulean beside B02)
-    looseWords = new Set([].concat(...loose.map((i) => scanWords(COLORS[i].name || ''))));
+    looseWords = new Set([].concat(...loose.map((i) => scanWords(COLORS[i].name || '')))),
+    // (v303) the words read that may be a word of a code's markers' names (not a word of a name read whole, another
+    // cap's: "B015 Celadon Blue B04" isn't Copic B04 Tahitian Blue), and those of the options they're a word of (v318.3
+    // debug: worked out once, not for each code)
+    pw = new Set(
+      tw.filter(
+        (w) =>
+          w.length >= 3 && !SCAN_NOISE.test(w) && !scanIsCode(w) && !toldWords.has(w) && !looseWords.has(w),
+      ),
+    ),
+    byWord = (opts) => {
+      const m0 = opts.filter((j) => scanWords(COLORS[j].name).some((w) => pw.has(w))),
+        // (v318.3) from a photo, with no word of theirs read as it is: a word misread by one letter ("Yelliow"), of 5
+        // letters or more, that's one name's word and no other's, chooses between the code's own markers only
+        fw = scanPhoto && !m0.length ? new Set([...pw].map(scanNameNear).filter(Boolean)) : null;
+      return fw && fw.size ? opts.filter((j) => scanWords(COLORS[j].name).some((w) => fw.has(w))) : m0;
+    };
   codes.forEach(function (c) {
     // (v318.2) a photo plainly of the codes as they are now (scanGen): a code that's only an old one is likely a scrap of
     // a cap read short ("GG1" of GG15), unless the name read with it is its marker's: asked about, never added unasked
     // (v318.3: with the cap's picture beside the question; v318.2 had left it out). One that's a marker's now and
     // another's old code is the one it is now. Not Copic's fluorescents, whose caps carry their old codes (FB2)
     if (scanGen && !c.named && c.oldSet.size && !ix.capOld.has(c.code)) {
-      const cur = c.opts.filter((i) => !c.oldSet.has(i));
+      // (v318.4 review: the photo's unsure lines too, 'strict': "Y210 Golden" unsure had gone in as Y416 unasked)
+      const cur = c.opts.filter((i) => !c.oldSet.has(i)),
+        w = pw.size ? byWord(c.opts) : [];
       if (!cur.length) c.oldOnly = true;
+      // (v318.3 debug: not when a word read with it is of the old one's name alone: "Y210 Golden", Brown missed, an old
+      // cap's, had gone in as Y210 Pumpkin Yellow, and read unsure as Y416: the code and the name disagree, asked below)
+      else if (w.length && w.every((i) => c.oldSet.has(i))) c.byOld = true;
       else if (scanGen === 'new') {
         c.opts = cur;
         c.hadOld = false;
@@ -564,23 +589,8 @@ function scanRead(text, brand) {
     }
     // (v303) a word of one of its markers' names read beside a code more than one marker has ("B21 Porcelain": Ohuhu's
     // B21 Porcelain Blue, not Copic's): that one
-    if (!c.named && c.opts.length > 1) {
-      // (not a word of a name read whole, another cap's: "B015 Celadon Blue B04" isn't Copic B04 Tahitian Blue)
-      const pw = new Set(
-          tw.filter(
-            (w) =>
-              w.length >= 3 &&
-              !SCAN_NOISE.test(w) &&
-              !scanIsCode(w) &&
-              !toldWords.has(w) &&
-              !looseWords.has(w),
-          ),
-        ),
-        m0 = c.opts.filter((j) => scanWords(COLORS[j].name).some((w) => pw.has(w))),
-        // (v318.3) from a photo, with no word of theirs read as it is: a word misread by one letter ("Yelliow"), of 5
-        // letters or more, that's one name's word and no other's, chooses between the code's own markers only
-        fw = scanPhoto && !m0.length ? new Set([...pw].map(scanNameNear).filter(Boolean)) : null,
-        m = fw && fw.size ? c.opts.filter((j) => scanWords(COLORS[j].name).some((w) => fw.has(w))) : m0;
+    if (!c.named && c.opts.length > 1 && !c.byOld) {
+      const m = byWord(c.opts);
       if (pw.size && m.length === 1) {
         c.opts = m;
         c.old = c.oldSet.has(m[0]);
@@ -594,6 +604,11 @@ function scanRead(text, brand) {
     else if (!c.named && loose.length) {
       // the colour name read says another marker (R4b with "Old Rose": R48 read, R46 named): ask between them
       loose.forEach((i) => c.opts.indexOf(i) < 0 && c.opts.push(i));
+      c.asked = 'name';
+    } else if (c.byOld) {
+      // (v318.3 debug: the code as it is now and a word of its old marker's name, "Y210 Golden": the code and the name
+      // don't match, asked so, not "Which Y210?", which the photo drops as a scrap of a cap once Y210 has gone in; with
+      // Y210 Pumpkin Yellow's cap beside it, Y416 was missed)
       c.asked = 'name';
     } else if (c.fix) c.asked = 'fix';
     else if (!c.named && c.hadOld) {
@@ -622,6 +637,7 @@ function scanRead(text, brand) {
     delete c.numAsk;
     delete c.bent;
     delete c.oldOnly;
+    delete c.byOld;
     delete c.t;
     delete c.fix;
   });
@@ -649,10 +665,13 @@ function scanRead(text, brand) {
 }
 
 // (v318.3) a question's cap from the photo, larger, over Scan: a tap anywhere, Escape or Back closes it
-function scanZoom(e) {
+// (v318.3 debug: focus back on the picture tapped, from: Safari doesn't focus a button tapped, so what had focus before,
+// the box after an answer, had it back, and on an iPad its keyboard over the list. Found again by its question when the
+// list's been drawn again meanwhile)
+function scanZoom(e, from) {
   if (!e || !e.crop) return;
   const o = document.createElement('div'),
-    op = document.activeElement,
+    op = from || document.activeElement,
     t0 = Date.now();
   o.className = 'overlay on sczoom';
   o.setAttribute('role', 'dialog');
@@ -666,8 +685,15 @@ function scanZoom(e) {
     '</div><button type="button" class="btn-primary" data-a="close">Close</button></div>';
   const end = function () {
     o.remove();
+    const n = scanList.indexOf(e),
+      to =
+        op && op.isConnected
+          ? op
+          : from && n >= 0
+            ? document.querySelector('#scList .sccrop[data-n="' + n + '"]')
+            : null;
     try {
-      if (op && op.isConnected && op !== document.body) op.focus({ preventScroll: true });
+      if (to && to !== document.body) to.focus({ preventScroll: true });
     } catch (_) {}
   };
   // (not the rest of the tap that opened it; Escape's click, detail 0, at once)
@@ -722,17 +748,21 @@ function scanSaveList() {
       localStorage.setItem(
         SCAN_LIST_KEY,
         JSON.stringify(
-          scanList.map((e) =>
-            e.ask
-              ? {
-                  ask: e.ask,
-                  title: e.title,
-                  opts: e.opts.map((o) => ({ k: mkey(o.i), how: o.how })),
-                  // (all its answers, when the brand chosen has narrowed them: Either brand brings them back)
-                  opts0: e.opts0 ? e.opts0.map((o) => ({ k: mkey(o.i), how: o.how })) : undefined,
-                }
-              : { k: mkey(e.i), how: e.how },
-          ),
+          // (v318.4 e2e) not what a photo still being read added at once: its end checks it, and a reload meanwhile
+          // ends the read, as closing Scan does (ocrClose)
+          scanList
+            .filter((e) => !(typeof ocrRun !== 'undefined' && ocrRun && !ocrRun.done && e.photo === ocrRun.n))
+            .map((e) =>
+              e.ask
+                ? {
+                    ask: e.ask,
+                    title: e.title,
+                    opts: e.opts.map((o) => ({ k: mkey(o.i), how: o.how })),
+                    // (all its answers, when the brand chosen has narrowed them: Either brand brings them back)
+                    opts0: e.opts0 ? e.opts0.map((o) => ({ k: mkey(o.i), how: o.how })) : undefined,
+                  }
+                : { k: mkey(e.i), how: e.how },
+            ),
         ),
       );
   } catch (_) {}
@@ -781,7 +811,7 @@ let scanNoFlip = false;
 // photo's lines are settled, its generation (photo-read.js): 'new' when its caps plainly show the codes as they are now,
 // so a code that's only an old one isn't taken (unless the name read with it is its marker's) and a code that's one
 // marker's now and another's old code is the one it is now ("Which Y210?"); 'strict', for the photo's unsure lines, the
-// first only
+// first only. Either way, such a code read with a word of the old one's name only is asked about ("Y210 Golden")
 let scanPhoto = false,
   scanGen = '';
 // (v308) lines of pasted lists with nothing to read in them since the last Add or Clear, said by Add's toast
@@ -1282,12 +1312,23 @@ function scanSetTake(si, rest) {
   scanSetCard(rest, false, { p: p, took: took, mine: mine, same: same });
   scanBeep(took && mine < took ? 'ok' : 'same');
 }
-// the codes in a piece of text. named: a set's name was read in it, said instead
-function scanHandleCodes(text, loud, named) {
+// the codes in a piece of text. named: a set's name was read in it, said instead. list: read as a list even when it's
+// one line (a photo's), so a name alone or another brand's code is a question in the list, not a card
+function scanHandleCodes(text, loud, named, list) {
   if (!String(text).trim()) return 0;
   scanHandling = String(text);
   scanHandleId++;
   const r = scanRead(text, scanBrand);
+  // (v318.3 debug: a photo whose other lines all went in at once, or were unsure and read apart, left one cap's name or
+  // another brand's code to say on a card, muted while a photo's settled: missed without a word)
+  if (list && !r.many) {
+    r.many = true;
+    r.names = r.byName >= 0 ? [r.byName] : [];
+    r.names2 = r.byNames ? [r.byNames] : [];
+    r.unread = 0;
+    r.byName = -1;
+    delete r.byNames;
+  }
   let n = 0;
   // several at once (a pasted list): into the list together, then said once
   // (another brand's codes read along with codes of the brand chosen, or in a list, are questions in the list)
@@ -2008,7 +2049,7 @@ function scanAdd() {
       return;
     }
     const cz = t.closest('.sccrop');
-    if (cz) return scanZoom(scanList[+cz.dataset.n]);
+    if (cz) return scanZoom(scanList[+cz.dataset.n], cz);
     const ch = t.closest('.scchoose');
     if (ch) {
       // the answer takes the question's place
