@@ -101,7 +101,16 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.7 (with v318.2 to v318.6)
+## New in this release: v318.8 (with v318.2 to v318.7)
+
+v318.8 changes nothing you should see: the code for adding markers was reorganised (proved the same as v318.7's by the
+build). A 2-minute smoke test first:
+
+- [ ] Markers › + Add markers › Scan or type codes: type two codes and Enter, paste a short list, answer a question, Add
+      → all as before. Photograph your caps with one tray → markers and questions as before.
+
+Then, if v318.7's checks weren't done yet:
+
 
 The photo reader is more careful (a cap it can't read for sure is asked about, with its picture), and adding markers is
 safer and quicker to check. Checked on captured reads of your photos and in Safari's engine; on a real iPad:

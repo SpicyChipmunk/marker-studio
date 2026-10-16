@@ -152,29 +152,32 @@ test('a photo’s question keeps its picture through a reload; a draw that chang
 });
 
 test('the list shows first, the picture a moment later; when the storage fails, "?" as before', async () => {
-  const { page, errors } = await opened();
+  const { ctx, page, errors } = await opened();
   await read(page);
   await page.waitForFunction(() => scanPics.writes === 1);
-  // (the database made slow to answer, as a device busy or waking can be)
-  await page.addInitScript(() => {
-    const open = indexedDB.open;
+  // (the database made slow to answer, as a device busy or waking can be: the app is handed a request of the test's
+  // own, answered only when the test lets it go. v318.7 debug: the first way, an accessor put over the real request's
+  // onsuccess, held in Chromium and in WebKit here but not in WebKit on GitHub, where the picture was there at once)
+  await ctx.addInitScript(() => {
+    const open = indexedDB.open.bind(indexedDB);
     indexedDB.open = function (name, v) {
-      const r = open.call(indexedDB, name, v);
-      if (name !== 'ms-scan-pics') return r;
-      let fn = null;
-      Object.defineProperty(r, 'onsuccess', {
-        set(f) {
-          fn = f;
-        },
-        get() {
-          return fn;
-        },
-      });
-      // (held until the test lets it go: a wait of so many seconds isn't the same on every engine)
-      r.addEventListener('success', (ev) => {
-        window.__picsGo = () => fn && fn.call(r, ev);
-      });
-      return r;
+      if (name !== 'ms-scan-pics') return open(name, v);
+      const fake = { result: null, error: null, onsuccess: null, onerror: null, onupgradeneeded: null, onblocked: null };
+      const real = open(name, v);
+      real.onupgradeneeded = (ev) => {
+        fake.result = real.result;
+        if (fake.onupgradeneeded) fake.onupgradeneeded.call(fake, ev);
+      };
+      real.onsuccess = (ev) => {
+        fake.result = real.result;
+        window.__picsGo = () => fake.onsuccess && fake.onsuccess.call(fake, ev);
+      };
+      real.onerror = (ev) => {
+        fake.error = real.error;
+        if (fake.onerror) fake.onerror.call(fake, ev);
+      };
+      real.onblocked = (ev) => fake.onblocked && fake.onblocked.call(fake, ev);
+      return fake;
     };
   });
   await reopen(page);
@@ -185,7 +188,7 @@ test('the list shows first, the picture a moment later; when the storage fails, 
   await page.evaluate(() => window.__picsGo());
   await page.waitForSelector('#scList .scask.sccropped', { timeout: 5000 });
   // the storage failing: "?" stays, no error
-  await page.addInitScript(() => {
+  await ctx.addInitScript(() => {
     const open = indexedDB.open;
     indexedDB.open = function (name, v) {
       if (name === 'ms-scan-pics') throw new Error('no storage here');

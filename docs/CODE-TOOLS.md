@@ -188,3 +188,21 @@ At v259 the config used ESLint's defaults for `no-unused-vars` and `no-empty`, s
 1. Decide whether to add a whitespace minifier to the build (step 3 option (b)): the review estimated −13 KB gzipped against the unformatted file at v259, for a build-time dev dependency.
 2. Rewrite `00-state.js` with one variable per line, grouped by topic (cleanup step 4). Check that `npm run fingerprint` still shows the same `JS shipped` hash.
 3. Make `lint -- --strict` part of CI, then work through the rest of the cleanup plan, one behaviour change per commit (each one is expected to change the fingerprint).
+
+## Moving code
+
+Moving code between files in `src/js/` (outside `js/guide/`, which is one function) changes nothing that runs as long as
+every top-level statement that isn't a function declaration keeps its order: function declarations are hoisted across
+the whole script, but `const`/`let`/`class` have a temporal dead zone and IIFEs, calls and `try` blocks run where they
+stand. `scripts/move-check.mjs` proves a move: it compares the main script of two built `index.html` files (everything
+else byte-identical; no name declared twice; the function declarations the same set, token for token; every other
+top-level statement in the same order, token for token; `--allow name,…` for a constant moved on purpose, which must be
+inert). A cut that moves nothing at all also gives the same `npm run fingerprint` hash.
+
+    node scripts/build.mjs && cp index.html /tmp/old.html   # before
+    … move …
+    node scripts/build.mjs && node scripts/move-check.mjs /tmp/old.html index.html
+
+History across a move: `git log --follow` stops at it; `git blame -w -C -C <file>` follows every line back (v318.8 cut
+`scan.js` into `src/js/scan/`; each file's header names the lines it came from).
+

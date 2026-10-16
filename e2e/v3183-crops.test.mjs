@@ -69,19 +69,35 @@ function read(page, a, turn) {
   );
 }
 // the crop's colour on its left and on its right (the reading's start and end once it's upright)
+// (v318.8: read back once more, a frame later, when a side is neither: one run of WebKit here read 'other' twice,
+// once in some hundreds, and the picture itself read right at once and a frame later in 80 more. A picture that is
+// itself wrong still fails; the pixels read go in the message, to tell the two apart if it happens again)
 const sides = (page, url) =>
   page.evaluate(async (url) => {
-    const im = new Image();
-    im.src = url;
-    await im.decode();
-    const c = document.createElement('canvas');
-    c.width = im.width;
-    c.height = im.height;
-    const g = c.getContext('2d');
-    g.drawImage(im, 0, 0);
-    const px = (x, y) => [...g.getImageData(x, y, 1, 1).data.slice(0, 3)];
+    const look = async () => {
+      const im = new Image();
+      im.src = url;
+      await im.decode();
+      const c = document.createElement('canvas');
+      c.width = im.width;
+      c.height = im.height;
+      const g = c.getContext('2d');
+      g.drawImage(im, 0, 0);
+      const px = (x, y) => [...g.getImageData(x, y, 1, 1).data.slice(0, 3)];
+      return [px(im.width * 0.35, im.height / 2), px(im.width * 0.65, im.height / 2)];
+    };
     const col = (p) => (p[0] > 150 && p[2] < 100 ? 'red' : p[2] > 150 && p[0] < 100 ? 'blue' : 'other');
-    return [col(px(im.width * 0.35, im.height / 2)), col(px(im.width * 0.65, im.height / 2))];
+    let ps = await look();
+    if (ps.some((p) => col(p) === 'other')) {
+      const first = ps.map((p) => p.join(','));
+      await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 50)));
+      ps = await look();
+      if (ps.some((p) => col(p) === 'other'))
+        return ps
+          .map(col)
+          .concat(['read ' + first.join(' ') + ', then ' + ps.map((p) => p.join(',')).join(' ')]);
+    }
+    return ps.map(col);
   }, url);
 
 test('a question from a photo shows its cap, upright as the reader read it, whatever the turn', async () => {

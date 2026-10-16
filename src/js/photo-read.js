@@ -341,40 +341,6 @@ function ocrCut(r, x, brand) {
     );
   });
 }
-// (v318.7) the markers whose name the names read are, as Scan reads them, in reading order and the other way ("Violet"
-// then "Deep" is V013 Violet one way, V015 Deep Violet the other)
-function ocrNamed(names, brand) {
-  return [names, names.slice().reverse()]
-    .map((n) => scanRead(n.join(' '), brand).byName)
-    .filter((i) => i >= 0);
-}
-// (v318.3) the marker whose whole name the names read are, of the brand: a name of two words or more, or of one word of
-// six letters or more that's no word of another's name; not one whose words are all in another's longer name. Else -1
-function ocrWholeName(names, brand) {
-  const r = scanRead(names.join(' '), brand);
-  if (r.byName < 0) return -1;
-  const ws = scanWords(COLORS[r.byName].name || ''),
-    of = (c) => !brand || c.brand === brand;
-  if (
-    COLORS.some((c, j) => {
-      if (j === r.byName || !of(c)) return false;
-      const o = scanWords(c.name || '');
-      return o.length > ws.length && ws.every((w) => o.indexOf(w) >= 0);
-    })
-  )
-    return -1;
-  if (ws.length >= 2) return r.byName;
-  if ((ws[0] || '').length < 6) return -1;
-  return COLORS.some(
-    (c, j) =>
-      j !== r.byName &&
-      of(c) &&
-      scanWords(c.name || '').length > 1 &&
-      scanWords(c.name || '').indexOf(ws[0]) >= 0,
-  )
-    ? -1
-    : r.byName;
-}
 // (v318.3) the photo's questions, each with the cap it's about from the photo: the line asked about (its reading, a
 // code of one of its answers, or a name that is one), cut from the photo's pixels while they're still here, turned as
 // the reader read it, so it's the right way up
@@ -482,95 +448,6 @@ function ocrCrop(img, box, turn) {
   // canvases waiting for that against its limit, and a busy photo's questions left a megabyte or more each)
   part.width = part.height = out.width = out.height = 1;
   return url;
-}
-// (v318.2) whether a reading is the code as it's printed: its letters as letters, its digits as digits or the letter a
-// digit is often read as (O for 0, I, L or T for 1, S for 5, Z for 2). "W60g" isn't WG06, nor "Eg9" E69: Scan puts those
-// right, but from a photo they're asked about
-function ocrAsRead(text, code) {
-  const t = scanKey(text),
-    like = { 0: 'O', 1: 'ILT', 5: 'S', 2: 'Z' };
-  for (let k = 0; k + code.length <= t.length; k++) {
-    let ok = true;
-    for (let j = 0; j < code.length && ok; j++) {
-      const a = t[k + j],
-        b = code[j];
-      ok = a === b || (!!like[b] && like[b].indexOf(a) >= 0);
-    }
-    if (ok) return true;
-  }
-  return false;
-}
-// (v318.2) whether the names read with a code hold a word of another marker's name of the brand (4 letters or more, not
-// one every family has) and none of the code's markers' own: "V91 Grayish Cherry" is RV91's cap, not V91's
-let _ocrVocab = {};
-function ocrForeign(text, names, brand) {
-  const b = brand || '';
-  if (!_ocrVocab[b]) {
-    const s = new Set();
-    COLORS.forEach((c) => (!b || c.brand === b) && ocrWordsOf(c.name).forEach((w) => s.add(w)));
-    _ocrVocab[b] = s;
-  }
-  const V = _ocrVocab[b],
-    is = [].concat(...(scanRead(text, brand).codes || []).filter((c) => c.opts.length).map((c) => c.opts));
-  if (!is.length || is.some((i) => ocrNameAgrees(i, names))) return false;
-  const own = [].concat(...is.map((i) => ocrWordsOf(COLORS[i].name)));
-  return ocrWordsOf(names.join(' ')).some(
-    (w) => V.has(w) && !own.some((o) => o.indexOf(w) >= 0 || w.indexOf(o) >= 0),
-  );
-}
-// (v318.2) whether a code's reading is to be trusted as it is: the code as printed, or a name of its own read with it
-function ocrExact(text, names, brand) {
-  const cs = (scanRead([text].concat(names).join(' '), brand).codes || []).filter((c) => c.opts.length);
-  return (
-    !cs.length ||
-    cs.every((c) => c.named || ocrAsRead(text, c.code) || c.opts.some((i) => ocrNameAgrees(i, names)))
-  );
-}
-// (v318.2) a question that's noise: only a name read, a one-word name that's a word of two or more of its brand's other
-// names ("Grey"); another brand's code, on a photo plainly of one brand, that's the start or end of a code of that brand
-// (Copic BG11 on a tray of Ohuhu's, BG114 read short)
-function ocrNoise(e, brand) {
-  if (/^byname /.test(e.ask) && e.opts.length === 1) {
-    const i = e.opts[0].i,
-      ws = scanWords(COLORS[i].name || '');
-    if (
-      ws.length === 1 &&
-      COLORS.filter(
-        (c, j) => j !== i && c.brand === COLORS[i].brand && scanWords(c.name || '').indexOf(ws[0]) >= 0,
-      ).length >= 2
-    )
-      return true;
-  }
-  if (/^other /.test(e.ask) && brand && e.opts.length === 1) {
-    const k = scanKey(COLORS[e.opts[0].i].code);
-    if (
-      COLORS.some(
-        (c) =>
-          c.brand === brand &&
-          scanKey(c.code) !== k &&
-          (scanKey(c.code).startsWith(k) || scanKey(c.code).endsWith(k)),
-      )
-    )
-      return true;
-  }
-  return false;
-}
-// whether the names read with a code are its marker's: a word of them (4 letters or more, not a word every family has)
-// is part of a word of its name, or the other way ("coal" of Charcoal, "akura" of Sakura)
-const OCR_PLAIN = new Set(
-  'grey gray light dark pale deep green blue pink yellow brown orange purple violet cool warm neutral bright soft'.split(
-    ' ',
-  ),
-);
-function ocrWordsOf(t) {
-  return String(t || '')
-    .toLowerCase()
-    .split(/[^a-z]+/)
-    .filter((w) => w.length >= 4 && !OCR_PLAIN.has(w));
-}
-function ocrNameAgrees(i, names) {
-  const mine = ocrWordsOf(COLORS[i].name);
-  return ocrWordsOf(names.join(' ')).some((f) => mine.some((w) => w.indexOf(f) >= 0 || f.indexOf(w) >= 0));
 }
 // the list and the photo drawn again, a few times a second at most (each code drawing the list again had cost a
 // second over 300 codes, more on an iPad)

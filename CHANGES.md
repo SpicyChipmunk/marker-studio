@@ -1414,3 +1414,16 @@ questions with no right answer 111 → 70, with no brand, Ohuhu or Copic chosen;
 - **Fixes**: the Plan's bar kept across equal redraws, so a click isn't lost; scanRead three times faster on long lines again; Colour along's code box stays above
   the iPad keyboard (Safari's scroll-padding).
 
+## v318.8
+
+No change to what the app does. The code for adding markers was reorganised so the next changes to the reader and the
+brand rules are safer to make and review: `src/js/scan.js` (3,658 lines) is now ten files in `src/js/scan/` in the same
+order, and every brand and name rule, including those the photo reader shares, is in `src/js/scan/60-brands.js`
+(`photo-read.js` 2,027 → 1,904 lines). Proved before release: the first step's shipped script minifies to the same
+sha256 as v318.7's; the second's matches v318.7's function for function and in the order of everything that runs at
+load (`scripts/move-check.mjs`, new; docs/CODE-TOOLS.md, "Moving code"). The photo replays give byte-identical results.
+
+- Tests: the pictures' test holds the database with a request of its own (it didn't hold in WebKit on GitHub); a Plan
+  height test waits for the picture to settle; the cap-picture test reads a picture back once more, a frame later,
+  when a colour reads as neither (once in some hundreds, in WebKit), and says the pixels if it still does.
+

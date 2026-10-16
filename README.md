@@ -90,6 +90,12 @@ Screenshots and PDFs from the browser tests land in `e2e/.artifacts/`
     what Escape closes. `colour.js` holds colour as the eye sees it
     (L\*C\*h°, CIEDE2000) and the six moods, used by the palette generator
     (`picker.js`) and the guide's gradient (`guide/30-palette-assign.js`).
+  - `js/scan/` — Scan or type codes and the code reader it shares with the
+    photo reader (`photo-read.js`), in the template's order: `10-read`
+    (text → codes), `15-answer`, `20-list`, `30-pictures`, `35-waiting`,
+    `40-gaps`, `50-handle`, `60-brands` (every brand and name rule), `65-codes`,
+    `70-dialog`. Part of the one global script; their order matters only for
+    code that runs at load (see docs/CODE-TOOLS.md, "Moving code").
   - `js/guide/` — the guide screen (`window.SF`). Its files are consecutive
     slices of one function, opened and closed by two lines in
     `index.template.html` around their includes (`99-close.js` holds the

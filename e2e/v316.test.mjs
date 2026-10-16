@@ -93,6 +93,18 @@ test('a Code order saved before v316 becomes Lightest first once; Code order cho
 // the picture's height on the screen, and whether Colour along's first marker row is wholly above the bar
 const picH = (page) =>
   page.evaluate(() => Math.round(document.getElementById('sfCanvas').getBoundingClientRect().height));
+// (v318.7: waited for, up to 3 s, as the picture's height settles: a slow WebKit on GitHub measured it mid-change once,
+// "Colour along: 708" — 708 by the time the message read it)
+const picNear = async (page, want) => {
+  await page
+    .waitForFunction(
+      (w) => Math.abs(Math.round(document.getElementById('sfCanvas').getBoundingClientRect().height) - w) <= 2,
+      want,
+      { timeout: 3000 },
+    )
+    .catch(() => {});
+  return Math.abs((await picH(page)) - want) <= 2;
+};
 const firstRowShows = (page) =>
   page.evaluate(() => {
     scrollTo(0, 0);
@@ -105,10 +117,10 @@ test('an upright iPad: a narrow picture starts the Plan at the 50% floor, a page
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await sampleGuide(page);
   await idle(page);
-  assert.ok(Math.abs((await picH(page)) - 590) <= 2, 'the sample in the Plan: ' + (await picH(page)));
+  assert.ok(await picNear(page, 590), 'the sample in the Plan: ' + (await picH(page)));
   await page.click('#sfColor');
   await idle(page);
-  assert.ok(Math.abs((await picH(page)) - 708) <= 2, 'Colour along: ' + (await picH(page)));
+  assert.ok(await picNear(page, 708), 'Colour along: ' + (await picH(page)));
   assert.ok(await firstRowShows(page), 'the first marker row above the bar');
   await page.click('#sfDoneBtn');
   await idle(page);
@@ -118,7 +130,7 @@ test('an upright iPad: a narrow picture starts the Plan at the 50% floor, a page
   await idle(page);
   await letterGuide(page);
   await answerAsks(page);
-  assert.ok(Math.abs((await picH(page)) - 708) <= 2, 'the Letter page in the Plan: ' + (await picH(page)));
+  assert.ok(await picNear(page, 708), 'the Letter page in the Plan: ' + (await picH(page)));
   await page.click('#sfColor');
   await idle(page);
   assert.ok(await firstRowShows(page), 'the Letter page: the first marker row above the bar');
