@@ -248,13 +248,15 @@ test('Delete all my data: only this app’s keys go (other sites at the same add
     'other-site': 'keep',
     'msx': 'keep',
   });
-  let deleted = null;
+  // (v318.7: every database deleted is noted, not the last: Scan's pictures of the questions waiting, 'ms-scan-pics',
+  // go with the guides' — and the page deletes it itself at start when no question waits, so it's listed before the wipe)
+  const deleted = [];
   const a = app({
     localStorage: ls,
     extra: {
       indexedDB: {
         deleteDatabase: (n) => {
-          deleted = n;
+          deleted.push(n);
           const r = {};
           setImmediate(() => r.onsuccess && r.onsuccess());
           return r;
@@ -263,9 +265,10 @@ test('Delete all my data: only this app’s keys go (other sites at the same add
       },
     },
   });
+  const before = deleted.length;
   assert.ok((await a.__eval('wipeAllData()')) >= 4);
   assert.deepEqual([...ls._map.keys()].sort(), ['msx', 'other-site']);
-  assert.equal(deleted, 'ms-guides');
+  assert.deepEqual(deleted.slice(before).sort(), ['ms-guides', 'ms-scan-pics']);
   assert.throws(
     () => a.__eval(`indexedDB.open('ms-guides', 1)`),
     /deleted/,

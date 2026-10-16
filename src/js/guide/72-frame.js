@@ -232,9 +232,14 @@ function frameSize() {
   picBox.classList.toggle('sfshort', ch < full - 1);
   picBox.style.height = full + 'px';
   sfView.style.setProperty('--picShift', geo.full - geo.comp + 'px');
+  // (not while the iPad's keyboard is up over the code box, when the picture isn't pinned, findKbd: v318.6, the picture
+  // sized again as it stopped being pinned put it back, and Safari, showing the box as it was typed in, took the page's
+  // scroll-padding from it and put the box under the keyboard)
   document.documentElement.style.setProperty(
     '--pinH',
-    side ? '0px' : geo.comp + (tools ? tools.offsetHeight : 0) + 'px',
+    side || (workEl && workEl.classList.contains('sfkbd'))
+      ? '0px'
+      : geo.comp + (tools ? tools.offsetHeight : 0) + 'px',
   );
   picScroll();
   paneMin();
@@ -434,8 +439,28 @@ function dockBar() {
   if (!ctlEl || !workEl) return;
   const nb = ctlEl.querySelector('.sfbar'),
     old = barEl();
+  // (v318.6 debug) the Plan's bar drawn again as it is keeps its buttons: a click whose press and release fall either
+  // side of a redraw (the photo's colours following a drag, 60 ms and then half a second after it) lands on a button
+  // that's gone by the release, and the browser drops it ("the photo dragged and the Plan left at once" failed so on
+  // GitHub, in WebKit: Colour along not entered). Only the Plan's, whose buttons nothing changes after they're drawn
+  // (fitBar's words aside, put again below); the other stages' bars are changed in place, so theirs are drawn anew
+  if (nb && old && old !== nb && sameBar(old, nb)) {
+    nb.remove();
+    return;
+  }
   if (old && old !== nb) old.remove();
   if (nb) workEl.appendChild(nb);
+}
+function sameBar(a, b) {
+  const sig = (bar) =>
+    bar.querySelector('#sfColor')
+      ? bar.className +
+        [...bar.children]
+          .map((c) => [c.tagName, c.id, c.className, c.disabled ? 1 : 0, c.title || ''].join('|'))
+          .join(';')
+      : null;
+  const sa = sig(a);
+  return !!sa && sa === sig(b);
 }
 function barEl() {
   return workEl ? workEl.querySelector(':scope>.sfbar') : null;

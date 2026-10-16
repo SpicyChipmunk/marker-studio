@@ -1379,3 +1379,38 @@ answer. In whole sessions, with no brand, Ohuhu or Copic chosen: no marker added
   the Library opened) lost the keyboard to the Library's Close a moment later, under the question, so Tab left it. A
   dialog no longer takes the keyboard back once another has opened over it. (A GitHub run failed on it, in Chromium
   and Safari's engine both; replayed and fixed, with a test.)
+
+## v318.7
+
+Adding markers, after four pressure tests of the plan and a debugging pass. Photo reader, measured on captured reads of
+Ben's photos (each photo alone, held-out real): markers added from another cap 53 → 14, caps found 59,874 → 59,911,
+questions with no right answer 111 → 70, with no brand, Ohuhu or Copic chosen; whole sessions 0 wrong adds.
+
+- **The reader**: a code read unsure where another was read for sure is left out; a cut cap's whole name keeps it;
+  readings asked about off a word, or digits off a code read in the same place, aren't; digits alone take the other
+  look's code. Another brand's cap read whole with its name on a one-brand tray is asked about, not dropped. A photo
+  whose reading failed takes back out what it added unchecked.
+- **An old Ohuhu code that's a Copic code now** (R29, Y13, R20 …) with Ohuhu chosen is asked "Which R29?" with Ohuhu
+  YR47 (was R29) first, not offered only as Copic R29. On photos, only a question that survives the photo's checks gains
+  the Ohuhu marker.
+- **A list read as its own brand**: a list purely of one brand's codes is read as that brand's (a Ciao 36 pasted with
+  Ohuhu set for you had put 10 codes in as Ohuhu's); a line naming its brand is that brand's; a list of both brands asks
+  the codes both have.
+- **Sweeping another brand's caps** with the brand set for you: once the sweep plainly shows Copic (two caps read whole,
+  three in a row, or a Copic photo or list), both brands are read, codes both have are asked, and a row at the top of
+  the list offers **Keep Ohuhu**. A cap that could be an Ohuhu code read short or misread is a card, never evidence.
+- **A tray photographed again**: its caps already in the list, read for sure, are green and counted ("· 69 already in
+  the list").
+- **After answering a question** the keyboard's place follows the keyboard: up for a Scan Text sweep, down after a
+  photo (focus on the next question). **The larger view** of a cap answers its question (its answers, Not this cap, Not
+  now), closing only on the picture, outside, Escape or Back.
+- **Question pictures** are kept in their own small database until answered (60 at most), so a reload or reopening
+  shows them; Delete all my data deletes it.
+- **Questions waiting**: Add markers says "2 questions still to answer · Answer them"; a question whose answers are all
+  yours is dropped (Undo after Add brings it back). **Per-photo headings** in the list, kept through a reload.
+- **Which markers of a set weren't read**: when nearly all of a set is here, "Honolulu 120: all but 2 are here — B64
+  and G1. Not read, or not yours?" with Add these 2 (to the list) and I don't have them; after a sweep, in Add's toast
+  with Open. Never adds by itself; blenders never counted missing.
+- **Fixes**: the Plan's bar kept across equal redraws, so a click isn't lost; scanRead three times faster on long lines again; Colour along's code box stays above
+  the iPad keyboard (Safari's scroll-padding).
+

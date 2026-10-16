@@ -671,26 +671,35 @@ function wipeAllData() {
       return Promise.resolve();
     }
   })();
-  const db = new Promise(function (res) {
-    let r;
-    try {
-      r = indexedDB.deleteDatabase('ms-guides');
-    } catch (e) {
-      res(keys.length);
-      return;
-    }
-    const t = setTimeout(function () {
-      res(keys.length);
-    }, 4000);
-    r.onsuccess =
-      r.onerror =
-      r.onblocked =
-        function () {
-          clearTimeout(t);
-          res(keys.length);
-        };
-  });
-  return Promise.all([db, reader]).then(function (a) {
+  // (v318.7: and the pictures of Scan's questions waiting, 'ms-scan-pics', which writes nothing more from now on,
+  // scan.js scanPics; the guides' database as before)
+  const delDb = function (name) {
+    return new Promise(function (res) {
+      let r;
+      try {
+        r = indexedDB.deleteDatabase(name);
+      } catch (e) {
+        res(keys.length);
+        return;
+      }
+      const t = setTimeout(function () {
+        res(keys.length);
+      }, 4000);
+      r.onsuccess =
+        r.onerror =
+        r.onblocked =
+          function () {
+            clearTimeout(t);
+            res(keys.length);
+          };
+    });
+  };
+  try {
+    if (typeof scanPicsWipe === 'function') scanPicsWipe();
+  } catch (e) {}
+  const db = delDb('ms-guides'),
+    pics = delDb('ms-scan-pics');
+  return Promise.all([db, pics, reader]).then(function (a) {
     return a[0];
   });
 }

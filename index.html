@@ -2087,6 +2087,23 @@ button:focus-visible {
 #wcAddWays .mkfind {
   padding-bottom: 12px;
 }
+/* (v318.7) the questions waiting in Scan's list, above the ways in: "2 questions still to answer · Answer them" */
+.mkwait {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  background: rgba(var(--warn-rgb), 0.1);
+  color: var(--ink);
+  font-size: var(--t-base);
+  line-height: 1.5;
+}
+.mkwait[hidden] {
+  display: none;
+}
 
 /* (v313) the Library's empty state: what gets kept here, and a way to make something */
 #savedList .emptyhow {
@@ -12018,6 +12035,30 @@ button.wrm {
 .scask .scname {
   padding-block: 4px 6px;
 }
+/* (v318.7) a small heading over each photo's markers: "Photo 1 · 58 markers · 3 to choose" */
+.scgroup {
+  padding: 8px 2px 2px 8px;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+.scgroup b {
+  color: var(--ink);
+}
+.scgroup:first-child {
+  padding-top: 2px;
+}
+/* (v318.7) the row at the top of the list once the sweep showed the other brand: Reading both brands, with Keep Ohuhu */
+.scrow.scswitch {
+  background: rgba(var(--ok-rgb), 0.1);
+}
+.scswitch .scmark {
+  color: var(--ok);
+}
+.scswitch .scname small {
+  display: block;
+  color: var(--sub);
+  font-size: var(--t-sm);
+}
 .scchoose {
   display: inline-flex;
   align-items: center;
@@ -12060,6 +12101,7 @@ button.wrm {
    Scan's Open a list file */
 .wcsub .wcscan,
 .mkfind .wcscan,
+.mkwait .wcscan,
 .sclens .scfile {
   position: relative;
   display: inline-block;
@@ -12074,6 +12116,7 @@ button.wrm {
 }
 .wcsub .wcscan::after,
 .mkfind .wcscan::after,
+.mkwait .wcscan::after,
 .sclens .scfile::after {
   content: '';
   position: absolute;
@@ -12358,9 +12401,44 @@ button.wrm {
   margin: 0 auto 12px;
   border-radius: var(--r-md);
 }
-.sczoomcard .btn-primary {
-  margin-top: 12px;
+/* (v318.7) the answers under the picture, then Not this cap and Not now */
+.sczpick {
+  justify-content: center;
+  margin-top: 10px;
+}
+.sczrow {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.sczrow > * {
   min-width: 140px;
+}
+/* (a phone held sideways: the picture on the left, the question, its answers and the buttons beside it, so Not now
+   stays in view under a picture kept square, as v318.3 debug had it with Close alone) */
+@media (max-height: 500px) and (min-width: 600px) {
+  .sczoomcard {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    column-gap: 16px;
+    align-items: center;
+    text-align: left;
+  }
+  .sczoomcard img {
+    grid-row: 1 / span 3;
+    width: min(320px, 40vw, 60vh);
+    margin: 0;
+  }
+  .sczpick,
+  .sczrow {
+    justify-content: flex-start;
+  }
+  .sczrow {
+    margin-top: 6px;
+  }
 }
 /* ===== Tick colours on a chart (v309, chart.js) ===== */
 #chartOverlay {
@@ -12654,7 +12732,7 @@ button.wrm {
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v318.6</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v318.7</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="light">Lightest first</option><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -12697,7 +12775,7 @@ button.wrm {
 <div class="overlay" id="swOverlay" role="dialog" aria-modal="true" aria-labelledby="swTitle"><div class="ocard dcard swcard"><div class="mhead"><h2 class="mtitle" id="swTitle">Swatch chart</h2><button id="swClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Print it, colour each box with the real marker and pin it up. The strip beside each box is the colour shown on screen, which is only an approximation: the chart shows how your markers really look.</div><div id="swOpts" class="swopts"></div><div id="swSum" class="swsum" role="status" aria-live="polite"></div><button id="swGo" class="btn-primary swgo">Download PDF</button></div></div>
 <div class="overlay" id="sfPlanOverlay" role="dialog" aria-modal="true" aria-labelledby="planTitle"><div class="ocard dcard plancard"><div class="mhead"><h2 class="mtitle" id="planTitle">Blend plan</h2><button id="sfPlanClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Every colour in this guide with a lighter and darker shade from your markers. Amber outline: a marker you don’t own yet.</div><div id="sfPlanBuy"></div><div id="sfPlanList" class="planlist"></div></div></div>
 <div class="overlay" id="welcome" role="dialog" aria-modal="true" aria-labelledby="wcTitle"><div class="ocard wcard"><div id="wcStep0" class="wcstep"><div class="wcscroll"><div class="wctitle" id="wcTitle">Welcome to Marker Studio</div><div class="wcsub">Guides and palettes are built from the markers you own. How did you get yours?</div><div class="wcch"><button type="button" id="wcHaveSet" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>I have a set</b><span>Pick it from the list: Ohuhu Honolulu, Copic Ciao, Sketch and more.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneByOne" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>I bought them one by one</b><span>Scan the caps, tick colours on a chart, or type the codes.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcNotSure" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></span><span class="wct"><b>I’m not sure which set</b><span>Scan 3 caps and we’ll work out which set you have.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div></div><div class="wcacts"><div id="wcErr" role="alert" style="display:none"></div><div class="wcrow"><button id="wcSkip" class="obGhost">I’ll do this later</button><button id="wcRestore" class="obGhost">Restore a backup</button></div><div class="wcpriv">Works offline. Nothing you add leaves this device; the camera is used only to scan or photograph caps, or to Match a colour.</div></div><input type="file" id="wcFile" class="fileinput" accept=".json,.txt,application/json,text/plain"></div><div id="wcStepAdd" class="wcstep" style="display:none"><div class="wcscroll"><div class="wctitle" id="wcTA" tabindex="-1">Add markers</div><div class="wcsub">Each adds to your collection, with Undo.</div><div id="wcAddWays"></div></div></div><div id="wcStep1" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcT1" tabindex="-1">Which sets do you have?</div><div class="wcsub">Tick each set you have. Not sure which? <button type="button" id="wcToFind" class="sflink wcscan">Find it from 3 caps</button></div><div class="wcbrands" role="group" aria-label="Jump to a brand"><button type="button" data-b="Ohuhu" class="on" data-first>Ohuhu</button><button type="button" data-b="Copic">Copic</button></div><div id="wcSets" class="wcsets"></div></div><div class="wcacts"><button id="wcAdd" class="btn-primary" disabled>Tick a set above</button></div></div><div id="wcStepFind" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wcsteps" aria-hidden="true"><i class="on"></i><i></i><i></i></div><div class="wctitle" id="wcTF" tabindex="-1">Let’s find your set</div><div class="wcsub">Two quick questions, then 3 caps.</div><div class="wclbl" id="wcFBl">Which brand?</div><div class="wcseg" id="wcFBrand" role="group" aria-labelledby="wcFBl"><button type="button" data-b="Ohuhu" aria-pressed="true">Ohuhu<small>codes like R014, Y28</small></button><button type="button" data-b="Copic" aria-pressed="false">Copic<small>codes like R29, E00</small></button></div><div class="wclbl" id="wcFCl">About how many markers?</div><div class="wccount" id="wcFCount" role="group" aria-labelledby="wcFCl"></div><div class="wcsub wcnote">A guess is fine: it tells apart sets that share colours.</div></div><div class="wcacts"><button id="wcFindNext" class="btn-primary" disabled>Next: scan 3 caps</button></div></div><div id="wcStepRes" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wcsteps" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></div><div class="wctitle" id="wcTR" tabindex="-1">Is this your set?</div><div id="wcRes" class="wcres"></div></div><div class="wcacts"><button id="wcFindYes" class="btn-primary">Yes, add these</button><button id="wcFindOther" class="obSecond"></button><button id="wcFindNone" class="obGhost">None of these: I’ll add them one by one</button></div></div><div id="wcStepOne" class="wcstep" style="display:none"><div class="wcscroll"><button type="button" class="wcback"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcTO" tabindex="-1">Add your markers one by one</div><div class="wcsub">Pick whichever suits you. You can mix them, and add more any time in Markers.</div><div class="wcch"><button type="button" id="wcOnePhoto" class="wcc" style="display:none"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="wct"><b>Photograph your caps</b><span>A tray at a time, or all your trays at once: the codes they show are read on this device. Quickest for a big collection.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneScan" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>Scan the caps</b><span>On an iPad or iPhone: hold up each cap to the camera in turn, and each is read as its code shows.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneChart" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>Tick colours on a chart</b><span>Big swatches by colour family. Tap the ones you have.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcOneType" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-pencil"/></svg></span><span class="wct"><b>Type or paste codes</b><span>From a receipt or an order email: R014 Y28 BG314…</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="wcsub wcnote">Tip: Markers › Print a swatch chart puts every code on paper, to tick off at the table.</div></div></div><div id="wcStep2" class="wcstep" style="display:none"><button type="button" class="wcback" id="wcBack2" style="display:none"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>Back</button><div class="wctitle" id="wcT2" tabindex="-1">You’re all set</div><div class="wcsub" id="wcDone"></div><div class="wcch" id="wcMore"><button type="button" id="wcMoreExtra" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg></span><span class="wct"><b>I have extra markers</b><span>Bought on their own? Scan their caps or tick them.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcMoreSet" class="wcc"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="wct"><b>I have another set</b><span>Add it from the list, or find it from 3 caps.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><button type="button" id="wcMoreMiss" class="wcc" style="display:none"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-square-minus"/></svg></span><span class="wct"><b>Some are missing</b><span>Lost or used up a few? Untick them on a chart.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><button id="wcSample" class="btn-primary">Try the sample</button><button id="wcPhoto" class="obSecond">Make a guide from my photo</button><button id="wcLook" class="obGhost">Look around first</button></div></div></div>
-<div class="overlay" id="scanOverlay" role="dialog" aria-modal="true" aria-labelledby="scTitle"><div class="ocard dcard sccard"><div class="mhead"><h2 class="mtitle" id="scTitle">Scan or type codes</h2><button id="scClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub schint">Type or paste codes, then press Enter. On an iPad or iPhone, tap the box, then <b>AutoFill › Scan Text</b>, and hold each marker’s cap in view until it beeps: no need to tap Insert.</div><ol class="schow" id="scHow" aria-label="How to scan"><li><b>Tap the box</b>The keyboard opens. To type a code, tap return after it.</li><li><b>AutoFill › Scan Text</b>The camera opens where the keyboard was.</li><li><b>Cap after cap</b>Each code is read as it shows, with a beep: no need to tap Insert.</li></ol><div class="dsub sclens" id="scLens"><span id="scLensT">A whole tray, the set’s box or an order email: copy its text (Live Text in Photos, or Google Lens) and paste it here. A set’s name adds the whole set, asked first.</span> <button type="button" id="scFile" class="sflink scfile">Open a list file</button><input type="file" id="scFileIn" class="fileinput" accept=".csv,.txt,.tsv,text/plain,text/csv"></div><button type="button" id="ocrOpen" class="wcc ocrbtn" style="display:none"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="wct"><b>Photograph your caps</b><span>Each tray from above, caps up, or photos you’ve taken: the codes they show are read on this device and join the list below.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><input type="file" id="ocrFile" class="fileinput" accept="image/*" multiple><div class="segs wide scbrand" id="scBrand" role="group" aria-label="Brand"></div><input id="scBox" class="search scbox" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" placeholder="Scan or type a code" aria-label="Marker codes"><div id="scStat" class="scstat" role="status" aria-live="polite"></div><div id="scFind" class="scfindnote" role="status" hidden></div><div class="schead"><span class="lbl">Read so far</span><span id="scCount" class="sccount"></span><button type="button" id="scClear" class="sflink" hidden>Clear list</button></div><ul id="scList" class="sclist"></ul><div id="scEmpty" class="scempty">Nothing yet. Each marker read joins this list, to check before adding.</div><button id="scAdd" class="btn-primary scadd" disabled>Add to my collection</button><div id="ocrView" class="ocrv" hidden></div><span class="sfsr" id="ocrLive" role="status" aria-live="polite"></span></div></div>
+<div class="overlay" id="scanOverlay" role="dialog" aria-modal="true" aria-labelledby="scTitle"><div class="ocard dcard sccard"><div class="mhead"><h2 class="mtitle" id="scTitle">Scan or type codes</h2><button id="scClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub schint">Type or paste codes, then press Enter. On an iPad or iPhone, tap the box, then <b>AutoFill › Scan Text</b>, and hold each marker’s cap in view until it beeps: no need to tap Insert.</div><ol class="schow" id="scHow" aria-label="How to scan"><li><b>Tap the box</b>The keyboard opens. To type a code, tap return after it.</li><li><b>AutoFill › Scan Text</b>The camera opens where the keyboard was.</li><li><b>Cap after cap</b>Each code is read as it shows, with a beep: no need to tap Insert.</li></ol><div class="dsub sclens" id="scLens"><span id="scLensT">A whole tray, the set’s box or an order email: copy its text (Live Text in Photos, or Google Lens) and paste it here. A set’s name adds the whole set, asked first.</span> <button type="button" id="scFile" class="sflink scfile">Open a list file</button><input type="file" id="scFileIn" class="fileinput" accept=".csv,.txt,.tsv,text/plain,text/csv"></div><button type="button" id="ocrOpen" class="wcc ocrbtn" style="display:none"><span class="wci" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="wct"><b>Photograph your caps</b><span>Each tray from above, caps up, or photos you’ve taken: the codes they show are read on this device and join the list below.</span></span><span class="wcchev" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button><input type="file" id="ocrFile" class="fileinput" accept="image/*" multiple><div class="segs wide scbrand" id="scBrand" role="group" aria-label="Brand"></div><input id="scBox" class="search scbox" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" placeholder="Scan or type a code" aria-label="Marker codes"><div id="scStat" class="scstat" role="status" aria-live="polite"></div><div id="scFind" class="scfindnote" role="status" hidden></div><div class="schead"><span class="lbl">Read so far</span><span id="scCount" class="sccount" tabindex="-1"></span><button type="button" id="scClear" class="sflink" hidden>Clear list</button></div><ul id="scList" class="sclist"></ul><div id="scEmpty" class="scempty" tabindex="-1">Nothing yet. Each marker read joins this list, to check before adding.</div><button id="scAdd" class="btn-primary scadd" disabled>Add to my collection</button><div id="ocrView" class="ocrv" hidden></div><span class="sfsr" id="ocrLive" role="status" aria-live="polite"></span></div></div>
 <div class="overlay" id="chartOverlay" role="dialog" aria-modal="true" aria-labelledby="chTitle"><div class="ocard dcard chcard"><div class="mhead"><h2 class="mtitle" id="chTitle">Tick the colours you have</h2><button id="chClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="segs wide" id="chBrand" role="group" aria-label="Brand"></div><div class="chfams" id="chFams" role="group" aria-label="Colour family"></div><div class="chlrow"><div class="lbl chlbl" id="chFamLbl" aria-live="polite"></div><button type="button" id="chAll" class="sflink chall" hidden>Show all colours</button></div><div class="chgrid" id="chGrid" role="group" aria-labelledby="chFamLbl"></div><div class="chbar"><span id="chSum" class="chsum"></span><button id="chSave" class="btn-primary" disabled>Tick your colours</button></div></div></div>
 
 
@@ -13381,26 +13459,35 @@ function wipeAllData() {
       return Promise.resolve();
     }
   })();
-  const db = new Promise(function (res) {
-    let r;
-    try {
-      r = indexedDB.deleteDatabase('ms-guides');
-    } catch (e) {
-      res(keys.length);
-      return;
-    }
-    const t = setTimeout(function () {
-      res(keys.length);
-    }, 4000);
-    r.onsuccess =
-      r.onerror =
-      r.onblocked =
-        function () {
-          clearTimeout(t);
-          res(keys.length);
-        };
-  });
-  return Promise.all([db, reader]).then(function (a) {
+  // (v318.7: and the pictures of Scan's questions waiting, 'ms-scan-pics', which writes nothing more from now on,
+  // scan.js scanPics; the guides' database as before)
+  const delDb = function (name) {
+    return new Promise(function (res) {
+      let r;
+      try {
+        r = indexedDB.deleteDatabase(name);
+      } catch (e) {
+        res(keys.length);
+        return;
+      }
+      const t = setTimeout(function () {
+        res(keys.length);
+      }, 4000);
+      r.onsuccess =
+        r.onerror =
+        r.onblocked =
+          function () {
+            clearTimeout(t);
+            res(keys.length);
+          };
+    });
+  };
+  try {
+    if (typeof scanPicsWipe === 'function') scanPicsWipe();
+  } catch (e) {}
+  const db = delDb('ms-guides'),
+    pics = delDb('ms-scan-pics');
+  return Promise.all([db, pics, reader]).then(function (a) {
     return a[0];
   });
 }
@@ -23775,6 +23862,8 @@ function addWaysHTML(where) {
     );
   };
   return (
+    // (v318.7) the questions waiting in Scan's list, with Answer them (scan.js), above the ways in
+    (typeof scanWaitHTML === 'function' ? scanWaitHTML(where) : '') +
     '<div class="wcch">' +
     row(
       'set',
@@ -23829,8 +23918,10 @@ function openerBack(el) {
 // sheet, at that step
 function addWay(a, from) {
   if (from && from.isConnected && from.getClientRects().length) from.focus({ preventScroll: true });
-  if (a === 'scan' || a === 'photo') {
-    if (typeof openScan === 'function') openScan(a === 'photo' ? { photo: true } : undefined);
+  // (v318.7: questions, the line's Answer them: Scan at its questions, without the keyboard)
+  if (a === 'scan' || a === 'photo' || a === 'questions') {
+    if (typeof openScan === 'function')
+      openScan(a === 'photo' ? { photo: true } : a === 'questions' ? { questions: true } : undefined);
   } else if (a === 'chart') {
     if (typeof openChart === 'function') openChart();
   } else if (typeof window.openAddMarkers === 'function') window.openAddMarkers(a === 'add' ? null : a);
@@ -51790,9 +51881,14 @@ function frameSize() {
   picBox.classList.toggle('sfshort', ch < full - 1);
   picBox.style.height = full + 'px';
   sfView.style.setProperty('--picShift', geo.full - geo.comp + 'px');
+  // (not while the iPad's keyboard is up over the code box, when the picture isn't pinned, findKbd: v318.6, the picture
+  // sized again as it stopped being pinned put it back, and Safari, showing the box as it was typed in, took the page's
+  // scroll-padding from it and put the box under the keyboard)
   document.documentElement.style.setProperty(
     '--pinH',
-    side ? '0px' : geo.comp + (tools ? tools.offsetHeight : 0) + 'px',
+    side || (workEl && workEl.classList.contains('sfkbd'))
+      ? '0px'
+      : geo.comp + (tools ? tools.offsetHeight : 0) + 'px',
   );
   picScroll();
   paneMin();
@@ -51992,8 +52088,28 @@ function dockBar() {
   if (!ctlEl || !workEl) return;
   const nb = ctlEl.querySelector('.sfbar'),
     old = barEl();
+  // (v318.6 debug) the Plan's bar drawn again as it is keeps its buttons: a click whose press and release fall either
+  // side of a redraw (the photo's colours following a drag, 60 ms and then half a second after it) lands on a button
+  // that's gone by the release, and the browser drops it ("the photo dragged and the Plan left at once" failed so on
+  // GitHub, in WebKit: Colour along not entered). Only the Plan's, whose buttons nothing changes after they're drawn
+  // (fitBar's words aside, put again below); the other stages' bars are changed in place, so theirs are drawn anew
+  if (nb && old && old !== nb && sameBar(old, nb)) {
+    nb.remove();
+    return;
+  }
   if (old && old !== nb) old.remove();
   if (nb) workEl.appendChild(nb);
+}
+function sameBar(a, b) {
+  const sig = (bar) =>
+    bar.querySelector('#sfColor')
+      ? bar.className +
+        [...bar.children]
+          .map((c) => [c.tagName, c.id, c.className, c.disabled ? 1 : 0, c.title || ''].join('|'))
+          .join(';')
+      : null;
+  const sa = sig(a);
+  return !!sa && sa === sig(b);
 }
 function barEl() {
   return workEl ? workEl.querySelector(':scope>.sfbar') : null;
@@ -70267,7 +70383,17 @@ function scanRead(text, brand) {
     // (Google Lens, Live Text), where every name comes on a line of its own, isn't "51 lines not read"
     let unreadWords = 0;
     lines.forEach(function (l) {
-      const r = scanRead(l, brand);
+      // (v318.7) a pasted list's line that names its brand ("Copic E00", "Ohuhu B02") is read as that brand's, whatever
+      // the brand chosen above the box: counted, to say so
+      const lb = scanLineBrand ? scanBrandWord(l) : '';
+      const r = scanRead(l, lb || brand);
+      if (lb) {
+        r.codes.forEach((c) => (c.lb = lb));
+        if (lb !== brand && r.codes.length) {
+          out.named = out.named || {};
+          out.named[lb] = (out.named[lb] || 0) + r.codes.length;
+        }
+      }
       // (v308: a line with nothing in it to read, said, not dropped without a word)
       if (!r.codes.length && !r.flips.length && r.byName < 0 && !r.byNames && !r.other.length) {
         if (/\d/.test(l)) out.unread++;
@@ -70393,7 +70519,11 @@ function scanRead(text, brand) {
   // the colour names in the text, of either brand: its words in a row ("Cool Gray No.1"), or run together when the
   // name is long enough not to turn up inside other words ("LightSalmon"); the longest (Honey Brown, not Honey too)
   const tw = scanWords(up),
-    joined = tw.join('');
+    joined = tw.join(''),
+    // (v318.6 debug: the words read, and the numbers after a "No", as sets, worked out once: looked up for every code's
+    // markers below, a line of 20,000 codes had taken three times as long as before v318.2)
+    twSet = new Set(tw),
+    noNums = new Set(tw.filter((w, k) => /^\d+$/.test(w) && tw[k - 1] === 'NO'));
   const inRow = (nw) => {
     for (let k = 0; k + nw.length <= tw.length; k++) if (nw.every((w, j) => tw[k + j] === w)) return true;
     return false;
@@ -70477,8 +70607,12 @@ function scanRead(text, brand) {
         ix.byCode.get(t) || (ix.byOld.has(t) && ix.byOld.get(t).some(chosen) ? [] : ix.capOld.get(t)) || [];
       // (not when the brand chosen has the same code and name: both brands' colourless blender, 0)
       const sameNamed = [...named].some((i) => chosen(i) && scanKey(COLORS[i].code) === t),
-        otherNamed = sameNamed ? [] : [...named].filter((i) => !chosen(i) && scanKey(COLORS[i].code) === t);
-      if ((ex.length && !ex.some(chosen)) || otherNamed.length) {
+        otherNamed = sameNamed ? [] : [...named].filter((i) => !chosen(i) && scanKey(COLORS[i].code) === t),
+        // (v318.7) an old code of the brand chosen that's another brand's code now (R29, Ohuhu YR47's old code and
+        // Copic's R29): asked, "Which R29?", with both, as Either brand asks it; it had been "another brand than the
+        // one chosen" with Copic's offered and Ohuhu's not at all. Not a photo's lines, which the photo settles
+        oldMine = !scanPhoto && !otherNamed.length && (ix.byOld.get(t) || []).some(chosen);
+      if (((ex.length && !ex.some(chosen)) || otherNamed.length) && !oldMine) {
         (otherNamed.length ? otherNamed : ex).forEach((i) => other.add(i));
         continue;
       }
@@ -70507,7 +70641,10 @@ function scanRead(text, brand) {
         // (beside another code, two caps in view: asked; beside a count or a word of its name only, it's that code)
         numAsk = otherCodes(t);
       }
-      const opts = all.filter(chosen);
+      // (v318.7) as read, an old code of the brand chosen that's another brand's code now: that brand's marker is an
+      // answer too, after the brand chosen's ("Ohuhu YR47 · was R29", then Copic R29), outside photos
+      const s0 = !scanPhoto && v === t && !!brand && cur.length > 0 && !cur.some(chosen) && old.some(chosen),
+        opts = s0 ? old.filter(chosen).concat(cur) : all.filter(chosen);
       if (!opts.length) continue;
       let withName = opts.filter((i) => named.has(i));
       // (v318.2) a name of two words or more read in any order is its marker's ("Pink Ballet", R22 Ballet Pink: a cap's
@@ -70516,8 +70653,7 @@ function scanRead(text, brand) {
       // (v318.3 debug: a name's number counts only as its "No.": "C-3 Cool Gray No.5" isn't C-3 Cool Gray No.3 by the
       // code's own 3, it's asked about, as before v318.2. Copic's greys are the names with a number)
       const nw = (i) => scanWords(COLORS[i].name || ''),
-        isRead = (w) =>
-          /^\d+$/.test(w) ? tw.some((x, k) => x === w && tw[k - 1] === 'NO') : tw.indexOf(w) >= 0,
+        isRead = (w) => (/^\d+$/.test(w) ? noNums.has(w) : twSet.has(w)),
         allRead = opts.filter((i) => nw(i).length > 1 && nw(i).every(isRead)),
         inside = (b, a) => nw(a).length > nw(b).length && nw(b).every((w) => nw(a).indexOf(w) >= 0);
       if (allRead.length === 1) withName = allRead;
@@ -70530,7 +70666,8 @@ function scanRead(text, brand) {
         fixed: v !== t,
         old: (withName.length ? withName : opts).every((i) => old.indexOf(i) >= 0),
         asked: '',
-        hadOld: old.length > 0 && cur.some(chosen),
+        hadOld: old.length > 0 && (cur.some(chosen) || s0),
+        s0: s0,
         numAsk: numAsk,
         bent: digits && v !== t && scanPhoto && !isNamed,
         // (which of them are by an old code, for "by its old code" once the options are narrowed, v303)
@@ -70610,7 +70747,8 @@ function scanRead(text, brand) {
       // (v318.3 debug: not when a word read with it is of the old one's name alone: "Y210 Golden", Brown missed, an old
       // cap's, had gone in as Y210 Pumpkin Yellow, and read unsure as Y416: the code and the name disagree, asked below)
       else if (w.length && w.every((i) => c.oldSet.has(i))) c.byOld = true;
-      else if (scanGen === 'new') {
+      // (v318.7: never narrowed to the other brand's marker alone: "Which R29?" stays asked)
+      else if (scanGen === 'new' && !c.s0) {
         c.opts = cur;
         c.hadOld = false;
         c.old = false;
@@ -70712,10 +70850,14 @@ function scanRead(text, brand) {
   return { codes: [], byName: -1, flips: flips, other: [] };
 }
 
-// (v318.3) a question's cap from the photo, larger, over Scan: a tap anywhere, Escape or Back closes it
+// (v318.3) a question's cap from the photo, larger, over Scan. (v318.7) Its answers are under it, to answer from the
+// picture, with Not this cap (the question goes, as its × does) and Not now; a tap on the picture or outside the card,
+// Escape or Back closes it, nothing else (a tap meant to close that landed on an answer would add a marker), and the
+// answers ignore the tail of the tap that opened it. The question is found again when a chip's tapped: a photo or a cap
+// read meanwhile can have answered it or moved it
 // (v318.3 debug: focus back on the picture tapped, from: Safari doesn't focus a button tapped, so what had focus before,
 // the box after an answer, had it back, and on an iPad its keyboard over the list. Found again by its question when the
-// list's been drawn again meanwhile)
+// list's been drawn again meanwhile. After an answer, the keyboard's place follows scanFocusAfter, not the picture)
 function scanZoom(e, from) {
   if (!e || !e.crop) return;
   const o = document.createElement('div'),
@@ -70728,11 +70870,24 @@ function scanZoom(e, from) {
   o.innerHTML =
     '<div class="ocard dcard sczoomcard"><img src="' +
     esc(e.crop) +
-    '" alt="The cap in the photo"><div class="dsub">' +
+    '" alt="The cap in the photo"><div class="dsub" id="sczTitle">' +
     esc(e.title) +
-    '</div><button type="button" class="btn-primary" data-a="close">Close</button></div>';
-  const end = function () {
+    '</div><div class="scpick sczpick">' +
+    (e.opts || [])
+      .map(
+        (x, k) =>
+          '<button type="button" class="scchoose" data-k="' +
+          k +
+          '" aria-describedby="sczTitle">' +
+          scanChip(x) +
+          '</button>',
+      )
+      .join('') +
+    '</div><div class="sczrow"><button type="button" class="obGhost" data-a="not">Not this cap</button>' +
+    '<button type="button" class="btn-primary" data-a="close">Not now</button></div></div>';
+  const end = function (back) {
     o.remove();
+    if (back === false) return;
     const n = scanList.indexOf(e),
       to =
         op && op.isConnected
@@ -70744,12 +70899,126 @@ function scanZoom(e, from) {
       if (to && to !== document.body) to.focus({ preventScroll: true });
     } catch (_) {}
   };
-  // (not the rest of the tap that opened it; Escape's click, detail 0, at once)
   o.addEventListener('click', function (ev) {
-    if (ev.detail === 0 || Date.now() - t0 > 300) end();
+    const t = ev.target,
+      // (not the rest of the tap that opened it; Escape's click, detail 0, at once)
+      soon = ev.detail !== 0 && Date.now() - t0 < 300,
+      a = t.closest ? t.closest('[data-a]') : null,
+      ch = t.closest ? t.closest('.scchoose') : null;
+    if (soon) return;
+    if (a && a.dataset.a === 'close') return end();
+    if (ch || (a && a.dataset.a === 'not')) {
+      const n = scanList.indexOf(e);
+      end(false);
+      if (n < 0) {
+        scanSay('same', 'That question’s gone', 'Answered, or taken off the list, meanwhile', -1);
+        scanFocusAfter(-1);
+        return;
+      }
+      if (ch) {
+        const x = e.opts[+ch.dataset.k];
+        scanAnswer(e, x.i, x.how);
+      } else scanRemove(n);
+      scanFocusAfter(n);
+      return;
+    }
+    if (t === o || (t.tagName === 'IMG' && t.closest('.sczoomcard'))) end();
   });
   document.body.appendChild(o);
-  o.querySelector('[data-a]').focus({ preventScroll: true });
+  o.querySelector('[data-a="close"]').focus({ preventScroll: true });
+}
+// a question's answer as a chip's words: the marker, its brand, by its old code or upside down, already yours
+function scanChip(o) {
+  return (
+    '<span class="scsw" style="background:' +
+    COLORS[o.i].hex +
+    // (v309.2: the words in one span, wrapping as a line: "already yours" had become a column of its own)
+    '"></span><span class="scchtx">' +
+    esc(scanName(o.i)) +
+    ' · ' +
+    esc(COLORS[o.i].brand) +
+    // (v318.1: an answer that's the marker by its old code, or the code upside down, says so: "Which R14?"
+    // had offered RV18 Bubblegum with no word of why. v318 audit: "was", as the marker picker says it, and
+    // the old code as shown everywhere, CGII00 not CGⅡ00)
+    (o.how === 'old'
+      ? ' · <i>' + (oldCode(COLORS[o.i]) ? 'was ' + esc(oldCode(COLORS[o.i])) : 'by its old code') + '</i>'
+      : o.how === 'upside'
+        ? ' · <i>upside down</i>'
+        : '') +
+    // (v305: which of the answers you have)
+    (state.owned.has(mkey(o.i)) ? ' · <i>already yours</i>' : '') +
+    '</span>'
+  );
+}
+/* ---- (v318.7) answering, and where the keyboard goes after ---- */
+// One answer to a question, from the list's chips or the larger view's: the answer takes the question's place in the
+// list (not the top: the eye and a screen reader stay put, and a photo's group stays together) and its photo, and the
+// question isn't asked again while its cap's still in view. Returns the question's place, or -1 when it had gone
+function scanAnswer(q, i, how) {
+  const n = scanList.indexOf(q);
+  if (n < 0) return -1;
+  scanAnsweredAt.set(q.ask, Date.now());
+  scanList.splice(n, 1);
+  scanTake(i, how, true, false, { n: n, with: q.photo ? { photo: q.photo } : null });
+  scanRender();
+  return n;
+}
+// a row taken off the list (its ×, or the larger view's Not this cap): a question let go by isn't asked again while
+// its cap's still in view (v303)
+function scanRemove(n) {
+  const e = scanList[n];
+  if (!e) return;
+  scanList.splice(n, 1);
+  if (e.i === scanLast.i) scanLast = { i: -1, at: 0 };
+  if (e.ask) scanAnsweredAt.set(e.ask, Date.now());
+  scanRender();
+}
+// Follow the keyboard. Whether the box had the keyboard as a tap in Scan's card began, noted at pointerdown (before
+// the tap moves focus) and forgotten after the click or a second (a touch that scrolls has no click, and mustn't
+// count for a key pressed later). A chip answered with Enter or by VoiceOver has no pointerdown: the box hadn't it
+let scanBoxHad = false,
+  scanBoxHadT = 0;
+function scanNoteBox() {
+  const bx = $('scBox');
+  scanBoxHad = !!bx && document.activeElement === bx;
+  clearTimeout(scanBoxHadT);
+  scanBoxHadT = setTimeout(function () {
+    scanBoxHad = false;
+  }, 1000);
+}
+// After a question's answered, a row's taken off, the row at the top's Keep Ohuhu or ×, or a card's button: the box
+// again when it had the keyboard as the tap began (a sweep with Scan Text, or codes being typed on a Mac or PC: v303's
+// way); else the keyboard stays down (on an iPad it had come up over the list after every answer to a photo's
+// questions): focus goes to the next question's first answer, the nearest below the row answered, else the nearest
+// above, else Add, else the count over the list (what's listed, read out). n: the row's place in the list; del: a plain
+// marker row taken off, so the row that takes its place, its ×
+function scanFocusAfter(n, del) {
+  const had = scanBoxHad;
+  scanBoxHad = false;
+  clearTimeout(scanBoxHadT);
+  if (had) return scanFocusBox();
+  const list = $('scList'),
+    go = function (el) {
+      if (!el) return false;
+      try {
+        el.focus();
+      } catch (_) {}
+      return true;
+    };
+  if (!list) return;
+  if (del) {
+    const rows = [...list.querySelectorAll('.scrow:not(.scask) .scdel')],
+      at = rows.find((d) => +d.dataset.n >= n) || rows.reverse().find((d) => +d.dataset.n < n);
+    if (go(at)) return;
+  }
+  const qs = [...list.querySelectorAll('.scask:not(.scswitch)')].filter((q) => q.querySelector('.scchoose')),
+    q = qs.find((x) => +x.dataset.n >= n) || qs.reverse().find((x) => +x.dataset.n < n);
+  if (q && go(q.querySelector('.scchoose'))) return;
+  const add = $('scAdd');
+  if (add && !add.disabled && go(add)) return;
+  // (v318.7 debug: with the list emptied, the count is empty too, and a screen reader heard nothing: the line that
+  // says so instead, "Nothing yet. Each marker read joins this list")
+  go(scanList.length ? $('scCount') : $('scEmpty') || $('scCount'));
 }
 
 /* ---- the dialog ---- */
@@ -70788,39 +71057,58 @@ let scanFind = null,
   scanAfter = null,
   // (v309.1) and after the toast's Undo of that Add: the welcome goes back
   scanUndone = null;
+// (v318.7) the list as last saved or read here, to tell another tab's save from this one's own (scanReread)
+let scanListRaw = null;
 function scanSaveList() {
   if (scanFind) return;
+  // (v318.4 e2e) not what a photo still being read added at once: its end checks it, and a reload meanwhile ends the
+  // read, as closing Scan does (ocrClose)
+  const kept = scanList.filter(
+    (e) => !(typeof ocrRun !== 'undefined' && ocrRun && !ocrRun.done && e.photo === ocrRun.n),
+  );
   try {
-    if (!scanList.length) localStorage.removeItem(SCAN_LIST_KEY);
-    else
-      localStorage.setItem(
-        SCAN_LIST_KEY,
-        JSON.stringify(
-          // (v318.4 e2e) not what a photo still being read added at once: its end checks it, and a reload meanwhile
-          // ends the read, as closing Scan does (ocrClose)
-          scanList
-            .filter((e) => !(typeof ocrRun !== 'undefined' && ocrRun && !ocrRun.done && e.photo === ocrRun.n))
-            .map((e) =>
-              e.ask
-                ? {
-                    ask: e.ask,
-                    title: e.title,
-                    opts: e.opts.map((o) => ({ k: mkey(o.i), how: o.how })),
-                    // (all its answers, when the brand chosen has narrowed them: Either brand brings them back)
-                    opts0: e.opts0 ? e.opts0.map((o) => ({ k: mkey(o.i), how: o.how })) : undefined,
-                  }
-                : { k: mkey(e.i), how: e.how },
-            ),
+    if (!scanList.length) {
+      localStorage.removeItem(SCAN_LIST_KEY);
+      scanListRaw = null;
+    } else {
+      const raw = JSON.stringify(
+        kept.map((e) =>
+          Object.assign(
+            e.ask
+              ? {
+                  ask: e.ask,
+                  title: e.title,
+                  opts: e.opts.map((o) => ({ k: mkey(o.i), how: o.how })),
+                  // (all its answers, when the brand chosen has narrowed them: Either brand brings them back)
+                  opts0: e.opts0 ? e.opts0.map((o) => ({ k: mkey(o.i), how: o.how })) : undefined,
+                }
+              : { k: mkey(e.i), how: e.how },
+            // (v318.7: its photo, for the headings over each photo's markers after a reload)
+            e.photo ? { p: e.photo } : null,
+          ),
         ),
       );
+      localStorage.setItem(SCAN_LIST_KEY, raw);
+      scanListRaw = raw;
+    }
   } catch (_) {}
-}
-(function scanLoadList() {
+  // (v318.7) and the pictures of its questions, what's changed of them (scanPics)
   try {
-    const a = JSON.parse(localStorage.getItem(SCAN_LIST_KEY) || '[]');
-    if (!Array.isArray(a)) return;
-    const idx = (k) => (typeof k === 'string' ? keyIdx(k) : null);
-    scanList = a
+    scanPics.sync(kept);
+  } catch (_) {}
+  scanWaitSync();
+}
+// the list as saved (SCAN_LIST_KEY's JSON), read back: markers by their keys, questions with their answers, and
+// (v318.7) each entry's photo, the photos numbered 1.. in turn (no gaps: "Photo 3" and "Photo 5" after a reload had
+// been read as photos 1 and 2 of the list)
+function scanParseList(raw) {
+  let list = [];
+  try {
+    const a = JSON.parse(raw || '[]');
+    if (!Array.isArray(a)) return [];
+    const idx = (k) => (typeof k === 'string' ? keyIdx(k) : null),
+      photo = (e) => (Number.isInteger(e.p) && e.p > 0 ? { photo: e.p } : null);
+    list = a
       .map(function (e) {
         if (!e || typeof e !== 'object') return null;
         if (typeof e.ask === 'string' && Array.isArray(e.opts)) {
@@ -70833,23 +71121,545 @@ function scanSaveList() {
                 .filter((o) => o && o.i != null)
             : null;
           return opts.length
-            ? {
-                ask: e.ask,
-                title: String(e.title || ''),
-                opts: opts,
-                opts0: all && all.length ? all : undefined,
-                at: 0,
-              }
+            ? Object.assign(
+                {
+                  ask: e.ask,
+                  title: String(e.title || ''),
+                  opts: opts,
+                  opts0: all && all.length ? all : undefined,
+                  at: 0,
+                },
+                photo(e),
+              )
             : null;
         }
         const i = idx(e.k);
-        return i == null ? null : { i: i, how: typeof e.how === 'string' ? e.how : '' };
+        return i == null
+          ? null
+          : Object.assign({ i: i, how: typeof e.how === 'string' ? e.how : '' }, photo(e));
       })
       .filter(Boolean);
   } catch (_) {
-    scanList = [];
+    list = [];
   }
+  // (the photos numbered 1..k in turn)
+  const ns = [...new Set(list.filter((e) => e.photo).map((e) => e.photo))].sort((a, b) => a - b),
+    map = new Map(ns.map((n, k) => [n, k + 1]));
+  list.forEach((e) => {
+    if (e.photo) e.photo = map.get(e.photo);
+  });
+  return list;
+}
+// (v318.7) the number of the last photo in the list: the next photo read is numbered after it (photo-read.js ocrPhotos)
+const scanPhotoMax = () => scanList.reduce((m, e) => Math.max(m, e.photo || 0), 0);
+(function scanLoadList() {
+  try {
+    scanListRaw = localStorage.getItem(SCAN_LIST_KEY);
+  } catch (_) {}
+  scanList = scanParseList(scanListRaw);
 })();
+/* ---- (v318.7) the pictures of the questions waiting, kept ---- */
+// A photo's question shows its cap, a small JPEG as a data URL (e.crop, about 30 KB). The pictures of the questions
+// waiting are kept in a small database of the app's own, 'ms-scan-pics' (not the guides': a record there could be
+// taken for a guide, and a new store there would need a version step, which can block with two tabs open), each by its
+// question (ask) with when it was written. Written as the list is saved (scanSaveList), only what's changed: the
+// questions not yet written are put, those gone from the list deleted, and nothing at all when nothing's changed (the
+// list is saved at every draw). On load, the pictures of the questions restored come a moment later ("?" until then, as
+// when there's none, or when the storage fails); the rest are pruned, and at most 60, the newest by the row's time,
+// are kept. The database is deleted with Delete all my data (safety.js wipeAllData), and nothing's written after.
+// Opened as the guides' is (guide-bridge.js IDB): an open given up after 8 s, the connection let go when it closes or
+// a delete asks, every failure quiet
+const SCAN_PICS_DB = 'ms-scan-pics',
+  SCAN_PICS_MAX = 60;
+const scanPics = (function () {
+  const OPEN_MS = 8000;
+  let dbp = null,
+    wiped = false,
+    loaded = false,
+    // (the asks whose pictures the database holds, as far as this page knows; and those being written now)
+    written = new Set(),
+    pending = new Set(),
+    // (a save asked for before the load answered: done after it; and the last save asked for, done over after a write
+    // it came during)
+    dirty = null,
+    last = null;
+  const S = { writes: 0, deletes: 0, loads: 0 };
+  function db() {
+    if (dbp) return dbp;
+    const p = new Promise(function (res, rej) {
+      var r,
+        done = false;
+      const t = setTimeout(function () {
+        if (done) return;
+        done = true;
+        rej(new Error('storage isn’t answering'));
+      }, OPEN_MS);
+      const end = function () {
+        if (done) return false;
+        done = true;
+        clearTimeout(t);
+        return true;
+      };
+      try {
+        if (wiped || typeof indexedDB === 'undefined' || !indexedDB) throw new Error('no storage');
+        r = indexedDB.open(SCAN_PICS_DB, 1);
+      } catch (e) {
+        end();
+        rej(e);
+        return;
+      }
+      r.onupgradeneeded = function () {
+        r.result.createObjectStore('p');
+      };
+      r.onsuccess = function () {
+        const d = r.result;
+        if (!end()) {
+          try {
+            d.close();
+          } catch (_) {}
+          return;
+        }
+        d.onclose = function () {
+          if (dbp === p) dbp = null;
+        };
+        d.onversionchange = function () {
+          try {
+            d.close();
+          } catch (_) {}
+          if (dbp === p) dbp = null;
+        };
+        res(d);
+      };
+      r.onerror = function () {
+        if (end()) rej(r.error);
+      };
+      r.onblocked = function () {
+        if (end()) rej(new Error('storage is busy'));
+      };
+    });
+    dbp = p;
+    p.catch(function () {
+      if (dbp === p) dbp = null;
+    });
+    return p;
+  }
+  // a readwrite transaction's work, done quietly
+  function tx(mode, fn) {
+    return db()
+      .then(function (d) {
+        return new Promise(function (res, rej) {
+          var t = d.transaction('p', mode);
+          const out = fn(t.objectStore('p'));
+          if (mode === 'readwrite' && t.commit) t.commit();
+          t.oncomplete = function () {
+            res(out);
+          };
+          t.onerror = function () {
+            rej(t.error);
+          };
+          t.onabort = function () {
+            rej(t.error || new Error('aborted'));
+          };
+        });
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+  // the list as saved: its questions' pictures put or deleted as needed, nothing when nothing's changed
+  function sync(entries) {
+    if (wiped) return;
+    if (!loaded) {
+      dirty = entries;
+      return;
+    }
+    last = entries;
+    const want = new Map();
+    entries.forEach((e) => e.ask && e.crop && want.set(e.ask, e.crop));
+    const add = [...want.keys()].filter((k) => !written.has(k) && !pending.has(k)),
+      del = [...written].filter((k) => !want.has(k) && !pending.has(k));
+    if (!add.length && !del.length) return;
+    add.forEach((k) => pending.add(k));
+    del.forEach((k) => pending.add(k));
+    const now = Date.now();
+    tx('readwrite', function (st) {
+      add.forEach(function (k) {
+        st.put({ crop: want.get(k), at: now }, k);
+        S.writes++;
+      });
+      del.forEach(function (k) {
+        st.delete(k);
+        S.deletes++;
+      });
+    }).then(function (ok) {
+      add.forEach((k) => pending.delete(k));
+      del.forEach((k) => pending.delete(k));
+      if (ok !== null) {
+        add.forEach((k) => written.add(k));
+        del.forEach((k) => written.delete(k));
+      }
+      // (v318.7 debug: a save that came while these were being written, and left what they cover alone, is done over
+      // now: a question dropped at Add and given back by its Undo within the moment had kept no picture until the
+      // next draw)
+      if (last !== entries && !wiped) sync(last);
+    });
+  }
+  // the pictures of the questions in the list now, from the database, a moment later; the rest pruned, and at most
+  // SCAN_PICS_MAX kept, the newest. then(): the list drawn again where it's showing
+  function load(then) {
+    if (wiped) return Promise.resolve(false);
+    S.loads++;
+    // (no question waiting: nothing to find, and every picture kept is of a question gone, so the database goes as a
+    // whole. Not opened: opening makes one where there's none, and after Delete all my data there must be none)
+    if (!scanList.some((e) => e.ask)) {
+      try {
+        if (typeof indexedDB !== 'undefined' && indexedDB) {
+          const r = indexedDB.deleteDatabase(SCAN_PICS_DB);
+          r.onerror = r.onblocked = function () {};
+        }
+      } catch (_) {}
+      loaded = true;
+      written = new Set();
+      if (dirty) {
+        const d = dirty;
+        dirty = null;
+        sync(d);
+      }
+      return Promise.resolve(false);
+    }
+    return tx('readonly', function (st) {
+      const out = { keys: null, rows: null };
+      const a = st.getAllKeys(),
+        b = st.getAll();
+      a.onsuccess = function () {
+        out.keys = a.result || [];
+      };
+      b.onsuccess = function () {
+        out.rows = b.result || [];
+      };
+      return out;
+    }).then(function (got) {
+      if (!got || !got.keys || !got.rows || got.keys.length !== got.rows.length) {
+        if (!loaded) loaded = true;
+        if (dirty) {
+          const d = dirty;
+          dirty = null;
+          sync(d);
+        }
+        return false;
+      }
+      const asks = new Set(scanList.filter((e) => e.ask).map((e) => e.ask)),
+        keep = [],
+        drop = [];
+      let hit = 0;
+      got.keys.forEach(function (k, n) {
+        const row = got.rows[n];
+        if (asks.has(k) && row && typeof row.crop === 'string')
+          keep.push({ k: k, at: +row.at || 0, crop: row.crop });
+        else drop.push(k);
+      });
+      keep.sort((x, y) => y.at - x.at);
+      keep.splice(SCAN_PICS_MAX).forEach((x) => drop.push(x.k));
+      written = new Set(keep.map((x) => x.k));
+      keep.forEach(function (x) {
+        scanList.forEach(function (e) {
+          if (e.ask === x.k && !e.crop) {
+            e.crop = x.crop;
+            hit++;
+          }
+        });
+      });
+      loaded = true;
+      if (drop.length)
+        tx('readwrite', function (st) {
+          drop.forEach(function (k) {
+            st.delete(k);
+            S.deletes++;
+          });
+        });
+      if (dirty) {
+        const d = dirty;
+        dirty = null;
+        sync(d);
+      }
+      if (hit && then) then();
+      return hit > 0;
+    });
+  }
+  // Delete all my data: nothing written from now on, the connection let go (the delete isn't blocked by it)
+  function wipe() {
+    wiped = true;
+    const p = dbp;
+    dbp = null;
+    if (p)
+      p.then(function (d) {
+        try {
+          d.close();
+        } catch (_) {}
+      });
+  }
+  // (v318.7 debug: another tab saved the list while Scan's open here: what the database holds is no longer known, so
+  // the next save puts every picture this list wants again. A question answered there, its picture deleted, and still
+  // here had been left with none after a reload)
+  function forget() {
+    written = new Set();
+  }
+  S.sync = sync;
+  S.load = load;
+  S.forget = forget;
+  S.wipe = wipe;
+  S.written = () => [...written];
+  return S;
+})();
+function scanPicsWipe() {
+  scanPics.wipe();
+}
+// (the list drawn again with its pictures, where Scan is open)
+function scanPicsShow() {
+  const ov = $('scanOverlay');
+  if (ov && ov.classList.contains('on')) scanRender();
+}
+scanPics.load(scanPicsShow);
+/* ---- (v318.7) the questions waiting, said on Add markers ---- */
+// Questions not yet answered stay in the list after Add, for next time; Markers' Add markers sheet (and the card at the
+// top with no markers yet) says so in a line above its ways in, "2 questions still to answer · Answer them", which
+// opens Scan at the questions without the keyboard. A question every answer of which is in your collection is dropped
+// (its picture with it), not counted: after Add, and when the sheet opens. Not one with no answers, and not the row at
+// the top after the switch to both brands, which isn't a question. With two tabs open, the list is read again from
+// what the other tab saved (another tab's save event, the tab coming back into view, the sheet opening) while Scan
+// isn't open here and no photo is being read, its pictures found again (scanPics)
+// out (v318.7 debug): an array the questions dropped are added to, for Add's Undo to give them back
+function scanDropOwned(out) {
+  const n0 = scanList.length;
+  scanList = scanList.filter(function (e) {
+    const go = e.ask && e.opts.length && e.opts.every((o) => state.owned.has(mkey(o.i)));
+    if (go && out) out.push(e);
+    return !go;
+  });
+  if (scanList.length === n0) return false;
+  scanSaveList();
+  return true;
+}
+// the questions waiting, counted for the line (the list read again first, and the answered-by-owning dropped)
+function scanWaiting() {
+  scanReread();
+  scanDropOwned();
+  return scanFind ? 0 : scanAsks();
+}
+// the line itself (events.js addWaysHTML puts it above the ways in; empty and hidden with no question waiting)
+function scanWaitInner(where, n) {
+  return n
+    ? '<span>' +
+        (n === 1 ? '1 question' : n + ' questions') +
+        ' still to answer</span><button type="button" class="sflink wcscan" data-add="questions" id="' +
+        where +
+        'Questions">Answer them</button>'
+    : '';
+}
+function scanWaitHTML(where) {
+  const n = scanWaiting();
+  return (
+    '<div class="mkwait" id="' +
+    where +
+    'Wait"' +
+    (n ? '' : ' hidden') +
+    '>' +
+    scanWaitInner(where, n) +
+    '</div>'
+  );
+}
+// the line, where it's showing, told the count now (the list drawn or saved, the sheet or the card up)
+function scanWaitSync() {
+  let els;
+  try {
+    els = document.querySelectorAll('.mkwait');
+  } catch (_) {
+    return;
+  }
+  if (!els || !els.length) return;
+  const n = scanFind ? 0 : scanAsks();
+  els.forEach(function (el) {
+    const html = scanWaitInner(el.id.replace(/Wait$/, ''), n);
+    if (el.innerHTML !== html) el.innerHTML = html;
+    el.hidden = !n;
+  });
+}
+// the list read again from what another tab saved, when it's safe to: true when it changed
+function scanReread() {
+  const ov = $('scanOverlay');
+  if (scanFind || (ov && ov.classList && ov.classList.contains('on'))) return false;
+  if (typeof ocrRun !== 'undefined' && ocrRun && !ocrRun.done) return false;
+  let raw = null;
+  try {
+    raw = localStorage.getItem(SCAN_LIST_KEY);
+  } catch (_) {
+    return false;
+  }
+  if (raw === scanListRaw) return false;
+  scanListRaw = raw;
+  scanList = scanParseList(raw);
+  if (typeof ocrPhotos !== 'undefined') ocrPhotos = scanPhotoMax();
+  try {
+    scanPics.load(scanPicsShow);
+  } catch (_) {}
+  scanWaitSync();
+  return true;
+}
+try {
+  addEventListener('storage', function (e) {
+    if (e.key === SCAN_LIST_KEY || e.key === null) {
+      if (!scanReread())
+        try {
+          scanPics.forget();
+        } catch (_) {}
+    }
+  });
+  addEventListener('pageshow', function (e) {
+    if (e.persisted) scanReread();
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') scanReread();
+  });
+} catch (_) {}
+/* ---- (v318.7) which markers of a set weren't read ---- */
+// After a photo (Done's card), a list pasted (its card) or a sweep (Add's toast): when the list and your collection
+// cover nearly all of a set, the set is named with the few of it that are missing, "Honolulu 120: all but 2 are
+// here — B64 and G1. Not read, or not yours?", with Add these 2 (to the list, to check before Add) and I don't have
+// them (remembered for the set, under an ms- key, so Delete all my data clears it). The set: of the sets of 24 or more
+// with a marker in this session's list (not All Copic markers), leaving out those complete (listed or yours, a question
+// waiting's answers counted as there) and any set nine-tenths of which is in a complete set (an owner of Honolulu 216
+// isn't told "48 Mid-tone Set: all but 3"), the largest with nine-tenths of it here; shown only when it misses 12 or
+// fewer (never a smaller set instead). A brand's blender (0) is never missing; the answers of a question waiting are
+// neither here nor missing ("2 waiting as questions below"). One card per set per visit; nothing is added by itself
+const SCAN_NOTHAVE_KEY = 'ms-scan-nothave',
+  scanGapsSaid = new Set();
+let scanGapPending = null;
+function scanNotHave() {
+  try {
+    const a = JSON.parse(localStorage.getItem(SCAN_NOTHAVE_KEY) || '[]');
+    return new Set(Array.isArray(a) ? a.filter((x) => typeof x === 'string') : []);
+  } catch (_) {
+    return new Set();
+  }
+}
+function scanNotHaveAdd(name) {
+  const a = scanNotHave();
+  a.add(name);
+  try {
+    localStorage.setItem(SCAN_NOTHAVE_KEY, JSON.stringify([...a]));
+  } catch (_) {}
+}
+const scanSetName = (p) => p.b + '|' + p.n,
+  scanIsBlender = (k) => /\|0$/.test(k);
+// the set nearly all here, with what's missing: { name, p, miss: [{ k, i, code }], waiting } or null. again: one
+// named already this visit may be again (Add's toast after a list's card named it)
+function scanSetGaps(again) {
+  if (scanFind || typeof MARKER_SETS === 'undefined') return null;
+  const listed = new Set(scanList.filter((e) => !e.ask).map((e) => mkey(e.i)));
+  if (!listed.size) return null;
+  const pend = new Set();
+  scanList.forEach((e) => e.ask && e.opts.forEach((o) => pend.add(mkey(o.i))));
+  const have = (k) => listed.has(k) || state.owned.has(k),
+    no = scanNotHave(),
+    complete = [],
+    cands = [];
+  MARKER_SETS.forEach(function (p) {
+    if (p.allbrand) return;
+    const keys = presetMkeys(p);
+    if (setKeys(keys).length < 24) return;
+    const colours = keys.filter((k) => !scanIsBlender(k)),
+      real = colours.filter((k) => !pend.has(k)),
+      miss = real.filter((k) => !have(k)),
+      done = colours.every((k) => have(k) || pend.has(k));
+    if (done) {
+      complete.push(new Set(keys));
+      return;
+    }
+    if (!keys.some((k) => listed.has(k))) return;
+    if (real.length && (real.length - miss.length) / real.length < 0.9) return;
+    if (!miss.length) return;
+    cands.push({
+      name: scanSetName(p),
+      p: p,
+      keys: keys,
+      size: keys.length,
+      miss: miss,
+      waiting: keys.filter((k) => pend.has(k)).length,
+    });
+  });
+  const left = cands.filter(
+    (c) =>
+      !no.has(c.name) &&
+      (again || !scanGapsSaid.has(c.name)) &&
+      !complete.some((X) => c.keys.filter((k) => X.has(k)).length / c.keys.length >= 0.9),
+  );
+  left.sort((a, b) => b.size - a.size || a.miss.length - b.miss.length);
+  if (!left.length) return null;
+  const top = left[0];
+  if (top.miss.length > 12) return null;
+  return {
+    name: top.name,
+    p: top.p,
+    miss: top.miss.map((k) => ({ k: k, i: keyIdx(k), code: COLORS[keyIdx(k)].code })),
+    waiting: top.waiting,
+  };
+}
+// the codes missing, said: "B64 and G1", "B64, G1 and Y13"
+function scanGapCodes(g) {
+  const c = g.miss.map((m) => m.code);
+  return c.length === 1 ? c[0] : c.slice(0, -1).join(', ') + ' and ' + c[c.length - 1];
+}
+// the card's choices for the set (scanSay), said once per set per visit: null when there's no set to name
+function scanGapChoices(g) {
+  g = g || scanSetGaps();
+  if (!g) return null;
+  scanGapsSaid.add(g.name);
+  const n = g.miss.length;
+  return [
+    {
+      head:
+        g.p.n +
+        ': all but ' +
+        n +
+        (n === 1 ? ' is' : ' are') +
+        ' here \u2014 ' +
+        scanGapCodes(g) +
+        (g.waiting
+          ? ', and ' + g.waiting + ' waiting as ' + (g.waiting === 1 ? 'a question' : 'questions') + ' below'
+          : '') +
+        '. Not read, or not yours?',
+    },
+    {
+      label: 'Add ' + (n === 1 ? 'it' : 'these ' + n),
+      go: function () {
+        let took = 0;
+        g.miss.forEach(function (m) {
+          if (scanTake(m.i, '', true, true)) took++;
+        });
+        scanSay(
+          took ? 'ok' : 'same',
+          took ? took + ' added to the list' : 'All already in the list',
+          g.p.n + ' \u00b7 Check them below, then Add',
+          -1,
+        );
+        scanBeep(took ? 'ok' : 'same');
+        scanRender();
+      },
+    },
+    {
+      label: n === 1 ? 'I don\u2019t have it' : 'I don\u2019t have them',
+      go: function () {
+        scanNotHaveAdd(g.name);
+        scanSay(
+          'same',
+          'Not yours, then',
+          g.p.n + '\u2019s missing markers aren\u2019t asked about again',
+          -1,
+        );
+      },
+    },
+  ];
+}
 // (v303) no sound while the dialog closes (text left in the box read on the way out)
 let scanMute = false;
 // (v318) the photo reader's lines read: none as if upside down (the reader tried both ways up)
@@ -70862,6 +71672,16 @@ let scanNoFlip = false;
 // first only. Either way, such a code read with a word of the old one's name only is asked about ("Y210 Golden")
 let scanPhoto = false,
   scanGen = '';
+// (v318.7) while a list typed, pasted or opened is read: a line naming its brand is read as that brand's
+let scanLineBrand = false;
+// the one brand a piece of text names ('' for none or both)
+function scanBrandWord(t) {
+  const up = String(t || '')
+      .normalize('NFKC')
+      .toUpperCase(),
+    hs = SCAN_BRANDS.filter((b) => b[0].test(up));
+  return hs.length === 1 ? hs[0][1] : '';
+}
 // (v308) lines of pasted lists with nothing to read in them since the last Add or Clear, said by Add's toast
 let scanUnread = 0;
 function scanBeep(kind) {
@@ -70946,7 +71766,9 @@ function scanSay(kind, big, small, i, choices) {
           bx.dispatchEvent(new Event('scanreset'));
           scanAddState();
         }
-        scanFocusBox();
+        // (v318.7: the keyboard's place follows the keyboard, as after a question in the list: not up over the list
+        // after a photo's card)
+        scanFocusAfter(-1);
       });
       row.appendChild(b);
     });
@@ -70954,8 +71776,9 @@ function scanSay(kind, big, small, i, choices) {
   }
 }
 // into the list. loud: said and sounded even when it's the marker just read (a read from the camera holding still on
-// one cap comes again and again: only the first says so)
-function scanTake(i, how, loud, batch) {
+// one cap comes again and again: only the first says so). at (v318.7): where in the list it goes, with what else the
+// entry carries (an answer takes its question's place and its photo); else at the top
+function scanTake(i, how, loud, batch, at) {
   const now = Date.now(),
     again = !loud && scanLast.i === i && now - scanLast.at < 6000;
   scanLast = { i: i, at: now };
@@ -70985,7 +71808,9 @@ function scanTake(i, how, loud, batch) {
     }
     return false;
   }
-  scanList.unshift({ i: i, how: how || '' });
+  const entry = Object.assign({ i: i, how: how || '' }, at && at.with);
+  if (at && at.n >= 0 && at.n <= scanList.length) scanList.splice(at.n, 0, entry);
+  else scanList.unshift(entry);
   if (batch) return true;
   const mine = state.owned.has(mkey(i));
   scanSay(
@@ -71002,13 +71827,27 @@ function scanTake(i, how, loud, batch) {
 }
 // a question for the list (once per key)
 // Returns true when asked, else why not: 'waiting' (the same question is), 'listed' (every answer is in the list),
-// 'quiet' (the cap's still in view, v303)
+// 'quiet' (the cap's still in view, v303), 'again' (one brand's marker of the code is in the list: said, v318.7)
 function scanAsk(key, title, opts, batch, loud) {
   // (asked already: the same question waiting)
   if (scanList.some((e) => e.ask === key)) return 'waiting';
   const now = Date.now();
   // (v303) nothing to ask: every answer is in the list already (a list pasted twice)
   if (opts.every((o) => scanList.some((e) => e.i === o.i))) return 'listed';
+  // (v318.7) a code both brands use, read in the box when that brand's marker of it is in the list from a list pasted
+  // or opened this visit and the last one-brand code read was that brand's too (a Copic list pasted, then its caps
+  // swept): that cap read again, said so, not "Ohuhu or Copic?". Not one read in the box before (v303: a second cap
+  // with the same code is asked about once the first has gone), nor when the caps just read were the other brand's
+  if (!batch && /^brands /.test(key) && scanLastBrand) {
+    const o = opts.find(
+      (o) => COLORS[o.i].brand === scanLastBrand && scanList.some((e) => !e.ask && e.i === o.i && e.pasted),
+    );
+    if (o) {
+      scanSay('same', scanName(o.i), 'Already in the list' + scanBrandOf(o.i), o.i);
+      scanBeep('same');
+      return 'again';
+    }
+  }
   if (!loud) {
     // (v303) answered a moment ago, and the cap's still in view: not asked again (it came back with a beep every time
     // the camera read it again). The moment runs on while it's read again and again.
@@ -71334,6 +72173,8 @@ function scanSetCard(groups, codes, took, offer) {
         ? 'Found a set’s name, but not which one: choose yours'
         : 'Add each one you have') +
       (codes ? ' · The codes read with it are in the list' : '') +
+      // (v318.7: and how the list was read, as its own brand, which this card would otherwise cover)
+      (codes && scanReadNote ? ' · ' + scanReadNote : '') +
       (offer && offer.length ? ' · or a cap: ' + offer.map((i) => COLORS[i].code).join(', ') + '?' : ''),
     -1,
     choices.concat(
@@ -71360,13 +72201,358 @@ function scanSetTake(si, rest) {
   scanSetCard(rest, false, { p: p, took: took, mine: mine, same: same });
   scanBeep(took && mine < took ? 'ok' : 'same');
 }
+/* ---- (v318.7) a list read as its own brand; the sweep that shows the brand ---- */
+// The brand a list typed, pasted or opened is plainly of: its codes that only one brand has (not a line naming its
+// brand, read as that brand's whatever the rest is) are five or more and all one brand's → that brand, whatever is
+// chosen above the box (a Copic
+// set's 36 codes pasted with Ohuhu set for you had put the 10 codes both brands have in as Ohuhu's, unasked, and asked
+// about the other 26 one by one); codes only one brand has and codes only the other has, five or more together →
+// mixed, read as either brand (each brand's codes as its, those both have asked); fewer → null, read as before.
+// Not more text than a long list (a web page pasted is read once, not twice): the reading is kept for the mixed case
+const SCAN_LIST_BRAND_MAX = 20000;
+function scanListBrand(text) {
+  if (String(text).length > SCAN_LIST_BRAND_MAX) return null;
+  const n = {};
+  scanLineBrand = true;
+  let r;
+  try {
+    r = scanRead(text, '');
+  } finally {
+    scanLineBrand = false;
+  }
+  (r.codes || []).forEach(function (c) {
+    const bs = [...new Set(c.opts.map((i) => COLORS[i].brand))];
+    if (bs.length === 1 && !c.lb) n[bs[0]] = (n[bs[0]] || 0) + 1;
+  });
+  const bs = Object.keys(n);
+  if (bs.reduce((s, b) => s + n[b], 0) < 5) return null;
+  return bs.length === 1 ? { brand: bs[0], r: r } : { brand: '', mixed: true, r: r };
+}
+// the other brand's name
+const scanOtherBrand = (b) => [...new Set(COLORS.map((c) => c.brand))].find((x) => x !== b) || '';
+// whether another brand has the marker's code too
+let _scanShared = null;
+function scanShared(i) {
+  if (!_scanShared) {
+    const by = {};
+    COLORS.forEach((c) => {
+      const k = scanKey(c.code);
+      (by[k] = by[k] || new Set()).add(c.brand);
+    });
+    _scanShared = new Set(Object.keys(by).filter((k) => by[k].size > 1));
+  }
+  return _scanShared.has(scanKey(COLORS[i].code));
+}
+// a brand's codes, by key
+const _scanCodesOf = {};
+function scanCodesOf(b) {
+  if (!_scanCodesOf[b]) {
+    const m = new Map();
+    COLORS.forEach((c) => c.brand === b && m.set(scanKey(c.code), c.code));
+    _scanCodesOf[b] = m;
+  }
+  return _scanCodesOf[b];
+}
+// A code read that could be one of a brand's codes read wrong: the start or the end of one (E71 of E711, Y13 of BGY13),
+// one digit the camera confuses (0, 6, 8 and 9; 3 and 8; 1 and 7; 2 and 7; 5 and 6), one doubled character read once
+// (B12 of B112) or one letter it confuses (B, E and R; G and C; V and Y) from one. Returns { longer, near } (the codes
+// it could be), or null when it's none of them: read whole
+const SCAN_NEAR_DIGIT = { 0: '689', 6: '0895', 8: '0693', 9: '068', 3: '8', 1: '7', 7: '12', 2: '7', 5: '6' },
+  SCAN_NEAR_LETTER = { B: 'ER', E: 'B', R: 'B', G: 'C', C: 'G', V: 'Y', Y: 'V' };
+function scanNotWhole(k, b) {
+  if (!b || !k) return null;
+  const codes = scanCodesOf(b),
+    longer = [],
+    near = [],
+    nearKeys = new Set();
+  codes.forEach((code, c) => {
+    if (c !== k && (c.startsWith(k) || c.endsWith(k))) longer.push(code);
+  });
+  for (let j = 0; j < k.length; j++) {
+    for (const a of (SCAN_NEAR_DIGIT[k[j]] || '') + (SCAN_NEAR_LETTER[k[j]] || ''))
+      nearKeys.add(k.slice(0, j) + a + k.slice(j + 1));
+    nearKeys.add(k.slice(0, j + 1) + k[j] + k.slice(j + 1));
+  }
+  nearKeys.forEach((x) => x !== k && codes.has(x) && near.push(codes.get(x)));
+  return longer.length || near.length ? { longer: longer, near: near } : null;
+}
+// what a code that isn't whole could be, in words: "Ohuhu B114 read short", "an Ohuhu code read short (E711, E713)",
+// "Ohuhu B28 misread"
+function scanNotWholeWhy(w, b) {
+  // (v318.7 debug: "a Copic code", not "an Copic code", with Copic set for you)
+  const list = (cs) =>
+      (cs.length === 1 ? b + ' ' + cs[0] : (b === 'Ohuhu' ? 'an ' : 'a ') + b + ' code') + ' ',
+    tail = (cs) => (cs.length > 1 ? ' (' + cs.slice(0, 2).join(', ') + ')' : '');
+  return w.longer.length
+    ? list(w.longer) + 'read short' + tail(w.longer)
+    : list(w.near) + 'misread' + tail(w.near);
+}
+// whether another brand's marker was read WHOLE: its code with a word of its own name (as a photo's names agree with
+// a code, ocrNameAgrees), with its brand's word, or its code read whole (scanNotWhole). 'name', 'code' or false.
+// words (v318.7 debug): a list's words, worked out once for all its markers (a 122 KB paste under the switch to both
+// brands had taken over twice as long, the whole text searched again for each marker's name)
+function scanWholeOther(i, text, auto, words) {
+  if (words) {
+    if (ocrWordsOf(COLORS[i].name).some((w) => words.has(w))) return 'name';
+  } else if (ocrNameAgrees(i, [String(text)])) return 'name';
+  if (scanBrandWord(text) && scanBrandWord(text) !== auto) return 'name';
+  return scanNotWhole(scanKey(COLORS[i].code), auto) ? false : 'code';
+}
+// The brand set for you (scanBrandAuto, never tapped) and, with it, the sweep's evidence that the caps are the other
+// brand's: Scan Text reads one cap at a time, and a Copic tray swept with Ohuhu set for you had put the codes both
+// brands have in as Ohuhu's, and said each Copic-only code was "another brand's" on a card that vanished with the next.
+// Now, with an automatic brand only, the other brand's markers read whole are questions in the list, read noisily (a
+// code that could be this brand's read wrong) a card, and at the first of: two distinct markers read whole as the other
+// brand; two distinct other-brand-only reads when no code only this brand has was read this visit; the last three
+// one-brand codes read all the other brand's; a photo plainly of the other brand; a list read as the other brand — the
+// switch goes to Either brand for the visit (not stored, scanBrandChosen stays false), said on a row at the top of the
+// list with Keep Ohuhu to take it back. At the switch, codes both brands use taken as this brand's since the last
+// code only this brand has (e.auto, e.autoAt) are asked "YR07: Ohuhu or Copic?", and the whole reads waiting as
+// questions go in. A visit is the page's life; Clear list, a brand tapped and a reload end it.
+let scanAutoB = '',
+  scanSw = scanSwNew();
+function scanSwNew() {
+  return {
+    on: false, // switched to both brands
+    off: false, // Keep Ohuhu tapped: switched again only after two more distinct other-brand reads
+    row: false, // the row at the top of the list (× takes it off, the switch stands)
+    whole: new Set(), // distinct markers read whole as the other brand
+    other: new Set(), // distinct other-brand markers read, whole or noisy
+    seq: [], // the one-brand codes read, in order: { k: 'auto' } or { k: 'other', i }
+    autoOnly: 0, // codes only the automatic brand has read this visit
+    added: [], // codes both brands use Added to the collection as the automatic brand's this visit
+    say: null, // the switch's card, said after the read that made it
+  };
+}
+const scanAuto = () => (scanBrandChosen || scanFind ? '' : scanAutoB);
+function scanSwitchOn(why) {
+  const auto = scanAuto();
+  if (!auto || scanSw.on) return;
+  const other = scanOtherBrand(auto),
+    now = Date.now(),
+    was = scanList;
+  scanSw.on = true;
+  scanSw.off = false;
+  scanSw.row = true;
+  scanBrand = '';
+  scanBrandButtons();
+  scanList = was
+    .map(function (e) {
+      if (e.ask) {
+        // (a whole read's question goes in; a noisy one stays)
+        if (/^other /.test(e.ask) && e.whole && e.opts.length === 1) {
+          scanAnsweredAt.set(e.ask, now);
+          const o = e.opts[0];
+          return was.some((y) => !y.ask && y.i === o.i)
+            ? null
+            : { i: o.i, how: o.how === 'name' ? 'name' : 'chosen', photo: e.photo, flip: true, whole: true };
+        }
+        return e;
+      }
+      if (!e.auto || e.autoAt !== scanSw.autoOnly) return e;
+      const k = scanKey(COLORS[e.i].code),
+        j = COLORS.findIndex((c) => c.brand === other && scanKey(c.code) === k);
+      if (j < 0) return e;
+      if (was.some((y) => y.ask === 'brands ' + k)) return null;
+      return {
+        ask: 'brands ' + k,
+        title: COLORS[e.i].code + ': ' + auto + ' or ' + other + '?',
+        opts: [
+          { i: e.i, how: 'chosen' },
+          { i: j, how: 'chosen' },
+        ],
+        at: now,
+        held: true,
+        photo: e.photo,
+        crop: e.crop,
+      };
+    })
+    .filter(Boolean);
+  const say = [
+    'Reading both brands: ' + other + ' caps were read',
+    'Codes both brands use are asked from now on · Keep ' + auto + ' is at the top of the list',
+  ];
+  if (why === 'read') scanSw.say = say;
+  else if (why === 'photo') scanSay('ok', say[0], say[1], -1);
+  scanRender();
+}
+// Keep Ohuhu: the automatic brand back for the visit; the brand questions the switch raised, and any raised while
+// it stood, answered as its; the other brand's markers taken since the switch asked about
+function scanSwitchOff() {
+  const auto = scanAuto();
+  if (!scanSw.on || !auto) return;
+  const other = scanOtherBrand(auto),
+    now = Date.now(),
+    was = scanList;
+  scanSw.on = false;
+  scanSw.off = true;
+  scanSw.row = false;
+  scanSw.whole = new Set();
+  scanSw.other = new Set();
+  scanSw.seq = [];
+  scanBrand = auto;
+  scanBrandButtons();
+  scanList = was
+    .map(function (e) {
+      if (e.ask && e.held) {
+        const o = e.opts.find((x) => COLORS[x.i].brand === auto);
+        if (!o) return e;
+        scanAnsweredAt.set(e.ask, now);
+        return was.some((y) => !y.ask && y.i === o.i)
+          ? null
+          : { i: o.i, how: 'chosen', photo: e.photo, crop: e.crop, auto: true, autoAt: scanSw.autoOnly };
+      }
+      if (!e.ask && e.flip)
+        return {
+          ask: 'other ' + mkey(e.i),
+          title: COLORS[e.i].brand + ' ' + scanName(e.i) + ': add it? ' + auto + ' was set for you',
+          opts: [{ i: e.i, how: e.how === 'name' ? 'name' : 'chosen' }],
+          at: now,
+          photo: e.photo,
+          whole: !!e.whole,
+        };
+      return e;
+    })
+    .filter(Boolean);
+  scanSay('ok', auto + ' again', other + ' codes read since are asked below', -1);
+  scanRender();
+}
+// the switch over: a brand tapped, the list cleared, or the brand set for you gone (keep: the brand it switched from
+// comes back, Clear list)
+function scanSwitchEnd(keep) {
+  const auto = scanAuto();
+  scanSw = scanSwNew();
+  if (!keep || !auto) return;
+  scanBrand = auto;
+  scanBrandButtons();
+}
+// the card under the box, for a card said while a read's own would cover it
+let scanReadNote = '',
+  // the brand of the last code read in the box that one brand has (scanAsk)
+  scanLastBrand = '';
 // the codes in a piece of text. named: a set's name was read in it, said instead. list: read as a list even when it's
 // one line (a photo's), so a name alone or another brand's code is a question in the list, not a card
 function scanHandleCodes(text, loud, named, list) {
+  const n = scanHandleCodes0(text, loud, named, list);
+  // (v318.7) the switch to both brands this read made: its card said last, over the read's own
+  if (scanSw.say) {
+    const s = scanSw.say;
+    scanSw.say = null;
+    scanSay('ok', s[0], s[1], -1);
+  }
+  return n;
+}
+function scanHandleCodes0(text, loud, named, list) {
   if (!String(text).trim()) return 0;
   scanHandling = String(text);
   scanHandleId++;
-  const r = scanRead(text, scanBrand);
+  scanReadNote = '';
+  // (v318.7) a list typed, pasted or opened (loud; not a photo's lines, nor Find mode, nor Scan Text's reads cap by
+  // cap) plainly one brand's is read as that brand's; of both brands, as either; said on the card (scanListBrand)
+  const auto = !list && !scanFind && !scanPhoto ? scanAuto() : '',
+    lb = loud && !list && !scanFind && !scanPhoto ? scanListBrand(text) : null,
+    one = !/[\r\n]/.test(String(text).trim());
+  let brand = scanBrand,
+    note = '';
+  if (lb && lb.brand && lb.brand !== scanBrand) {
+    brand = lb.brand;
+    note =
+      scanBrandChosen && scanBrand
+        ? 'Read as ' + brand + ', though ' + scanBrand + ' is chosen above the box'
+        : 'Read as ' + brand + ': its codes are plainly ' + brand + '’s';
+    // (a list read as the other brand: the sweep's brand shown, both read from now on)
+    if (auto && brand !== auto && !scanSw.on) {
+      scanSwitchOn('paste');
+      note += ' · both brands are read from now on';
+    }
+  } else if (lb && lb.mixed && scanBrand) {
+    brand = '';
+    note = 'Codes of both brands: those both have are asked · A brand tapped above answers them at once';
+  }
+  // (a line naming its brand is read as its, whatever is chosen: a list's, or one typed, unless the brand was set for
+  // you and the word is the other brand's, read as evidence of the brand below)
+  scanLineBrand = !!lb || (loud && !list && !scanFind && !scanPhoto && (!auto || scanSw.on));
+  if (scanLineBrand && !lb && one && scanBrandWord(text)) brand = scanBrandWord(text);
+  let r;
+  try {
+    r = lb && brand === '' ? lb.r : scanRead(text, brand);
+  } finally {
+    scanLineBrand = false;
+  }
+  const before = new Set(scanList);
+  if (!list && !scanFind && !scanPhoto && !lb) {
+    const bs = new Set(r.other.map((i) => COLORS[i].brand));
+    r.codes.forEach((c) => {
+      const b = [...new Set(c.opts.map((i) => COLORS[i].brand))];
+      if (b.length === 1) bs.add(b[0]);
+    });
+    if (bs.size === 1) scanLastBrand = [...bs][0];
+  }
+  // (v318.7) with the brand set for you, a cap read in the box as the other brand's alone: counted towards the
+  // switch to both brands (scanSw); read noisily (a code of this brand read wrong, scanNotWhole), a card; whole, a
+  // question in the list, or the read that makes the switch, read again under either brand
+  let whole = [],
+    noisy = null;
+  if (auto && !lb && !r.many && r.other.length && !r.codes.length) {
+    whole = r.other.filter((i) => scanWholeOther(i, text, auto));
+    if (!scanSw.on) {
+      whole.forEach((i) => scanSw.whole.add(i));
+      r.other.forEach((i) => scanSw.other.add(i));
+      const last = scanSw.seq[scanSw.seq.length - 1];
+      if (!(last && last.k === 'other' && last.i === r.other[0]))
+        scanSw.seq.push({ k: 'other', i: r.other[0] });
+      const three = scanSw.seq.slice(-3),
+        go =
+          scanSw.whole.size >= 2 ||
+          (scanSw.other.size >= 2 && !scanSw.autoOnly) ||
+          (three.length === 3 && three.every((x) => x.k === 'other'));
+      if (go && (!scanSw.off || scanSw.other.size >= 2)) {
+        scanSwitchOn('read');
+        if (whole.length === r.other.length) r = scanRead(text, '');
+      }
+    }
+    if (r.other.length && whole.length < r.other.length) {
+      noisy = r.other.slice();
+      r = Object.assign({}, r, { other: [] });
+    }
+  }
+  // (v318.7) a single quiet read of an old code of the brand set or chosen that's another brand's code now, where the
+  // code could be a code of this brand read wrong (Y13 of BGY13): a card with every choice, never a question in the
+  // list (the cap, held still, is read whole)
+  if (!loud && !list && !r.many && r.codes.length === 1 && r.codes[0].s0 && r.codes[0].opts.length > 1) {
+    const c = r.codes[0],
+      w = scanNotWhole(c.code, brand);
+    if (w) {
+      if (!scanCardAgain('s0 ' + c.code, loud)) {
+        scanSay(
+          'ask',
+          c.code +
+            ': ' +
+            c.opts
+              .map(
+                (i) =>
+                  COLORS[i].brand +
+                  ' ' +
+                  scanName(i) +
+                  ((c.oldOf || []).indexOf(i) >= 0 && oldCode(COLORS[i])
+                    ? ' (was ' + oldCode(COLORS[i]) + ')'
+                    : ''),
+              )
+              .join(', or ') +
+            '?',
+          'Or ' + scanNotWholeWhy(w, brand) + ' · Hold the cap still',
+          -1,
+          c.opts.map((i) => ({
+            i: i,
+            how: (c.oldOf || []).indexOf(i) >= 0 ? 'old' : 'chosen',
+            label: 'Add ' + COLORS[i].brand + ' ' + COLORS[i].code,
+          })),
+        );
+        scanBeep('none');
+      }
+      return 0;
+    }
+  }
   // (v318.3 debug: a photo whose other lines all went in at once, or were unsure and read apart, left one cap's name or
   // another brand's code to say on a card, muted while a photo's settled: missed without a word)
   if (list && !r.many) {
@@ -71382,7 +72568,8 @@ function scanHandleCodes(text, loud, named, list) {
   // (another brand's codes read along with codes of the brand chosen, or in a list, are questions in the list)
   // (v318 review: not in Find mode, whose list is of the brand chosen there: another brand's marker in it matches no set.
   // Left out, and said)
-  const others = scanFind ? [] : r.many || r.codes.length ? r.other : [],
+  // (v318.7: and, with the brand set for you, another brand's cap read whole on its own)
+  const others = scanFind ? [] : r.many || r.codes.length || (auto && !scanSw.on) ? r.other : [],
     otherOut = scanFind && (r.many || r.codes.length) ? r.other.length : 0,
     many =
       r.codes.length +
@@ -71396,7 +72583,7 @@ function scanHandleCodes(text, loud, named, list) {
   const ask = function (key, title, opts) {
     const a = scanAsk(key, title, opts, many, loud);
     if (a === true) asked++;
-    else if (!many && loud) {
+    else if (!many && loud && a !== 'again') {
       // (said when it's typed: the question is waiting in the list already, or its answers are in it)
       scanSay('same', title, a === 'listed' ? 'Already in the list' : 'Waiting in the list below', -1);
       scanBeep('same');
@@ -71483,10 +72670,52 @@ function scanHandleCodes(text, loud, named, list) {
   }
   others.forEach(function (i) {
     n++;
-    ask('other ' + mkey(i), 'Another brand than the one chosen (' + scanBrand + '): add it?', [
-      { i: i, how: 'chosen' },
-    ]);
+    // (v318.7: with the brand set for you, not "chosen"; in a list read as its own brand, the rest of the list's)
+    ask(
+      'other ' + mkey(i),
+      auto
+        ? COLORS[i].brand + ' ' + scanName(i) + ': add it? ' + auto + ' was set for you'
+        : (brand === scanBrand
+            ? 'Another brand than the one chosen (' + brand + ')'
+            : 'Another brand than the rest of the list (' + brand + ')') + ': add it?',
+      [{ i: i, how: 'chosen' }],
+    );
   });
+  // (v318.7) what this read put in, for the switch to both brands: a code both brands use taken as the brand set for
+  // you (e.auto, with the count of codes only its own read so far), a code only its own (counted), a question about a
+  // cap read whole, and, once switched, the other brand's markers taken and the brand questions raised
+  const listWords = auto && scanSw.on && r.many ? new Set(ocrWordsOf(text)) : null;
+  if (auto)
+    scanList.forEach(function (e) {
+      // (a question waiting about a cap now read whole: so marked)
+      if (e.ask && /^other /.test(e.ask) && e.opts.some((o) => whole.indexOf(o.i) >= 0)) e.whole = true;
+      if (before.has(e)) return;
+      if (e.ask) {
+        if (scanSw.on && /^brands /.test(e.ask)) e.held = true;
+        return;
+      }
+      const b = COLORS[e.i].brand;
+      if (scanSw.on) {
+        if (b !== auto) {
+          e.flip = true;
+          e.whole = e.whole || !!scanWholeOther(e.i, text, auto, listWords);
+        }
+        return;
+      }
+      if (b !== auto) return;
+      if (scanShared(e.i)) {
+        e.auto = true;
+        e.autoAt = scanSw.autoOnly;
+      } else {
+        scanSw.autoOnly++;
+        scanSw.seq.push({ k: 'auto' });
+      }
+    });
+  // (v318.7) the markers a list typed, pasted or opened put in: a code both brands use read in the box after it is that
+  // list's marker read again, scanAsk (v318.7 debug: this had been done before the list's markers were in, so none was
+  // ever marked, and "YR07: Ohuhu or Copic?" was still asked after a Copic list was pasted and its caps swept)
+  if (loud && !list && !scanFind && !scanPhoto && (r.many || many))
+    scanList.forEach((e) => !before.has(e) && !e.ask && (e.pasted = true));
   if (many) {
     const same = n - took - asked,
       key = r.codes
@@ -71510,6 +72739,13 @@ function scanHandleCodes(text, loud, named, list) {
             ? asked + ' to choose in the list'
             : 'All already in the list',
         [
+          // (v318.7: a list read as its own brand, or as either: said, as a photo's brand is; lines naming a brand)
+          note,
+          r.named
+            ? Object.keys(r.named)
+                .map((b) => r.named[b] + ' named ' + b)
+                .join(' \u00b7 ')
+            : '',
           allMine ? (took === 1 ? 'Already in your collection' : 'All already in your collection') : '',
           took && asked ? asked + ' to choose below' : '',
           same ? same + ' already in the list' : '',
@@ -71519,11 +72755,15 @@ function scanHandleCodes(text, loud, named, list) {
           .filter(Boolean)
           .join(' · ') || 'Check them below',
         -1,
+        // (v318.7: a list typed, pasted or opened: the set nearly all here, with what's missing, as Done's card says it)
+        loud ? scanGapChoices() : null,
       );
       scanBeep(took && !allMine ? 'ok' : 'same');
     }
     // (v303: drawn every time: a question settled by a name read can leave the list as long as it was)
     scanRender();
+    // (a set's name read with the codes: its card takes this one's place, with the note)
+    if (named) scanReadNote = note;
   }
   if (n) return n;
   if (r.byName >= 0) {
@@ -71561,6 +72801,22 @@ function scanHandleCodes(text, loud, named, list) {
       );
   });
   if (n) return n;
+  // (v318.7) with the brand set for you, another brand's code read that could be one of this brand's read wrong: a
+  // card, with what it could be (the cap held still is read whole; typed, there's no cap to hold)
+  if (noisy) {
+    if (scanCardAgain('noisy ' + noisy.join(','), loud)) return 0;
+    const i = noisy[0],
+      w = scanNotWhole(scanKey(COLORS[i].code), auto);
+    scanSay(
+      'ask',
+      COLORS[i].code + ': ' + COLORS[i].brand + '\u2019s, or ' + scanNotWholeWhy(w, auto) + '?',
+      loud ? '' : 'Hold the cap still',
+      noisy.length === 1 ? i : -1,
+      noisy.map((i) => ({ i: i, how: 'chosen', label: 'Add ' + COLORS[i].brand + ' ' + COLORS[i].code })),
+    );
+    scanBeep('none');
+    return 0;
+  }
   if (r.other.length) {
     if (scanCardAgain('other ' + r.other.join(','), loud)) return 0;
     const one = r.other.length === 1 ? r.other[0] : -1;
@@ -71587,7 +72843,7 @@ function scanHandleCodes(text, loud, named, list) {
     scanSay(
       'ask',
       one >= 0 ? COLORS[one].brand + ' ' + scanName(one) : COLORS[r.other[0]].code + ': another brand’s code',
-      'Another brand than the one chosen (' + scanBrand + ')',
+      'Another brand than the one chosen (' + brand + ')',
       one,
       r.other.map((i) => ({ i: i, how: 'chosen', label: 'Add ' + COLORS[i].brand + ' ' + COLORS[i].code })),
     );
@@ -71606,8 +72862,67 @@ function scanRender() {
   const fresh = scanNew().length,
     asks = scanAsks(),
     marks = scanList.length - asks;
-  list.innerHTML = scanList
-    .map(function (e, n) {
+  // (v318.7) the switch to both brands, said at the top of the list for the visit, with Keep Ohuhu: not a question,
+  // not saved, not counted
+  const auto = scanAuto(),
+    swRow =
+      scanSw.on && scanSw.row && auto
+        ? '<li class="scrow scask scswitch"><span class="scmark" aria-hidden="true">=</span><span class="scname"><b>Reading both brands: ' +
+          esc(scanOtherBrand(auto)) +
+          ' caps were read</b>' +
+          (scanSw.added.length
+            ? '<small>' +
+              esc(scanSw.added.join(', ')) +
+              ' went into your collection as ' +
+              esc(auto) +
+              '</small>'
+            : '') +
+          '<span class="scpick"><button type="button" class="scswkeep">Keep ' +
+          esc(auto) +
+          '</button></span></span><button type="button" class="scdel scswx" aria-label="Take this off the list">' +
+          ic('x') +
+          '</button></li>'
+        : '';
+  // (v318.7) a small heading over each photo's markers, "Photo 1 · 58 markers · 3 to choose", so each tray's count sits
+  // with its markers: a run of entries of one photo in the list (a photo's entries go in together, newest first; an
+  // answer takes its question's place; Undo this photo gives a question back at its group), as an <li> a screen reader
+  // hears whole. Markers typed or scanned get one too, "Typed or scanned · 12", only while photo groups are there. Not
+  // in Find mode
+  const groups = !scanFind && scanList.some((e) => e.photo),
+    heading = function (n) {
+      const g = scanList[n].photo || 0;
+      let m = 0,
+        q = 0;
+      for (let k = n; k < scanList.length && (scanList[k].photo || 0) === g; k++) scanList[k].ask ? q++ : m++;
+      const parts = [
+        g ? (m ? m + (m === 1 ? ' marker' : ' markers') : '') : m ? String(m) : '',
+        q ? q + ' to choose' : '',
+      ].filter(Boolean);
+      return (
+        '<li class="scgroup" data-g="' +
+        g +
+        '"><b>' +
+        (g ? 'Photo ' + g : 'Typed or scanned') +
+        '</b>' +
+        (parts.length ? '<span> · ' + parts.join(' · ') + '</span>' : '') +
+        '</li>'
+      );
+    };
+  let lastG = -1;
+  list.innerHTML =
+    swRow +
+    scanList
+      .map(function (e, n) {
+        let head = '';
+        if (groups && (e.photo || 0) !== lastG) {
+          lastG = e.photo || 0;
+          head = heading(n);
+        }
+        return head + row(e, n);
+      })
+      .join('');
+  function row(e, n) {
+    {
       const del =
         '<button type="button" class="scdel" data-n="' +
         n +
@@ -71619,15 +72934,22 @@ function scanRender() {
       if (e.ask)
         return (
           '<li class="scrow scask' +
+          (e.crop ? ' sccropped' : '') +
+          '" data-n="' +
+          n +
           // (v318.3) a question from a photo: the cap it's about, from the photo, a tap to see it larger
           (e.crop
-            ? ' sccropped"><button type="button" class="sccrop" data-n="' +
+            ? '"><button type="button" class="sccrop" data-n="' +
               n +
               '" aria-label="See the cap in the photo larger"><img src="' +
               esc(e.crop) +
               '" alt=""></button>'
             : '"><span class="scmark" aria-hidden="true">?</span>') +
-          '<span class="scname"><b>' +
+          // (v318.7: the question's words, which each answer's chip is described by: a screen reader had heard the
+          // chip, "B05 Light Cerulean · Ohuhu, button", without the question)
+          '<span class="scname"><b id="scq' +
+          n +
+          '">' +
           esc(e.title) +
           '</b><span class="scpick">' +
           e.opts
@@ -71639,26 +72961,11 @@ function scanRender() {
                 o.i +
                 '" data-how="' +
                 esc(o.how) +
-                '"><span class="scsw" style="background:' +
-                COLORS[o.i].hex +
-                // (v309.2: the words in one span, wrapping as a line: "already yours" had become a column of its own)
-                '"></span><span class="scchtx">' +
-                esc(scanName(o.i)) +
-                ' · ' +
-                esc(COLORS[o.i].brand) +
-                // (v318.1: an answer that's the marker by its old code, or the code upside down, says so: "Which R14?"
-                // had offered RV18 Bubblegum with no word of why. v318 audit: "was", as the marker picker says it, and
-                // the old code as shown everywhere, CGII00 not CGⅡ00)
-                (o.how === 'old'
-                  ? ' · <i>' +
-                    (oldCode(COLORS[o.i]) ? 'was ' + esc(oldCode(COLORS[o.i])) : 'by its old code') +
-                    '</i>'
-                  : o.how === 'upside'
-                    ? ' · <i>upside down</i>'
-                    : '') +
-                // (v305: which of the answers you have)
-                (state.owned.has(mkey(o.i)) ? ' · <i>already yours</i>' : '') +
-                '</span></button>',
+                '" aria-describedby="scq' +
+                n +
+                '">' +
+                scanChip(o) +
+                '</button>',
             )
             .join('') +
           '</span></span>' +
@@ -71670,6 +72977,8 @@ function scanRender() {
       return (
         '<li class="scrow' +
         (mine ? ' mine' : '') +
+        '" data-n="' +
+        n +
         '"><span class="scsw" style="background:' +
         c.hex +
         '"></span><span class="sccode">' +
@@ -71689,8 +72998,8 @@ function scanRender() {
         del +
         '</li>'
       );
-    })
-    .join('');
+    }
+  }
   $('scEmpty').hidden = scanList.length > 0;
   const card = list.closest('.sccard');
   if (card) card.classList.toggle('scsome', scanList.length > 0);
@@ -71830,17 +73139,34 @@ function openScan(opts) {
   // (no Scan Text session can be open yet: a composition left marked open by an earlier visit is over)
   scanIme = false;
   const auto = scanFind ? '' : scanBrandAuto();
-  if (!scanFind && !scanBrandChosen) scanBrand = auto;
+  if (!scanFind && !scanBrandChosen) {
+    // (v318.7) the switch to both brands stands for the visit, while the brand it switched from is still the one set
+    // for you (scanSw)
+    if (scanSw.on && auto !== scanAutoB) scanSwitchEnd(false);
+    scanAutoB = auto;
+    if (!scanSw.on) scanBrand = auto;
+  }
   scanBrandButtons();
+  // (v318.7: the set nearly all here when Add was tapped, its missing markers to add to the list, kept for this opening)
+  // (v318.7 debug: not let go by an opening in Find mode, which doesn't show it)
+  const gaps = scanFind ? null : scanGapPending;
+  if (!scanFind) scanGapPending = null;
   scanSay(
     '',
     'Ready',
     scanFind
       ? 'Any 3 ' + scanFind.brand + ' markers from the set'
-      : auto
-        ? 'Set to ' + auto + ', the brand of all your markers · Either brand reads both'
-        : 'Each marker read shows here, with a sound',
+      : scanSw.on && auto
+        ? 'Reading both brands: ' +
+          scanOtherBrand(auto) +
+          ' caps were read · Keep ' +
+          auto +
+          ' is at the top of the list'
+        : auto
+          ? 'Set to ' + auto + ', the brand of all your markers · Either brand reads both'
+          : 'Each marker read shows here, with a sound',
     -1,
+    gaps ? scanGapChoices(gaps) : null,
   );
   scanRender();
   openDialog(ov);
@@ -71849,6 +73175,18 @@ function openScan(opts) {
   if (o.photo && !scanFind && typeof ocrCan === 'function' && ocrCan()) {
     ocrOpenTap('entry');
     return;
+  }
+  // (v318.7) from Add markers' "Answer them": at the questions, the first one's first answer, and no keyboard (on an
+  // iPad it had come up over the list)
+  if (o.questions && !scanFind) {
+    const q = $('scList').querySelector('.scask:not(.scswitch) .scchoose');
+    if (q) {
+      try {
+        q.scrollIntoView({ block: 'center' });
+      } catch (_) {}
+      q.focus({ preventScroll: true });
+      return;
+    }
   }
   // (straight into the box: what's done here is typing or Scan Text, which the box's own menu starts)
   scanFocusBox();
@@ -71913,6 +73251,8 @@ function closeScan() {
     back = [$('mkAddBtn'), ...document.querySelectorAll('#welcome .wctitle[tabindex]')].find(vis) || back;
   openerBack(back);
   scanOpener = null;
+  // (v318.7: Add markers' line on the questions waiting, told)
+  scanWaitSync();
 }
 // (v309) Find my set: the caps read (with any left in the box) go back to the welcome
 function scanFindDone() {
@@ -71938,9 +73278,17 @@ function scanAdd() {
   if (!fresh.length) return;
   // (v303: the text left in the box raised a question: shown, with the dialog left open, before anything's added)
   if (scanAsks() > asks0) return;
+  // (v318.7) the set nearly all here, with what's missing, worked out while the list still holds the markers: said by
+  // the toast, and by the card when Scan's opened next (scanGapPending)
+  const gaps = scanSetGaps(true);
+  if (gaps) scanGapsSaid.add(gaps.name);
   const keys = fresh.map((e) => mkey(e.i)),
-    wishWas = state.wish.slice();
+    wishWas = state.wish.slice(),
+    // (v318.7) codes both brands use that go in as the brand set for you: named on the row at the top of the list
+    // should the sweep turn out to be the other brand's (scanSw), as they aren't rewritten then
+    autoIn = scanAuto() && !scanSw.on ? fresh.filter((e) => e.auto).map((e) => COLORS[e.i].code) : [];
   keys.forEach((k) => state.owned.add(k));
+  scanSw.added = scanSw.added.concat(autoIn);
   // (bought: off the To buy list, as its Bought button does, and fresh: a Running low or Dry mark from before it was
   // unticked goes, v308.3; Undo gives it back)
   const ink = inkAddedOff(keys);
@@ -71956,8 +73304,12 @@ function scanAdd() {
     return;
   // (questions not yet answered stay for next time; what was added, and what was already yours, go; Undo brings
   // the list back too, to put right and add again)
-  const listWas = scanList.slice();
+  const listWas = scanList.slice(),
+    dropped = [];
   scanList = scanList.filter((e) => e.ask);
+  // (v318.7: a question every answer of which is yours now is answered: dropped, its picture with it; Undo gives it
+  // back, dropped)
+  scanDropOwned(dropped);
   scanSaveList();
   // (v303: drawn first, then closed: the first markers in an empty collection move Add a set and this button with it,
   // and focus went back to the top tab; the sets' ticks and counts follow too)
@@ -71974,23 +73326,46 @@ function scanAdd() {
   // (v318: a set's Colorless Blender, now a set can come in by its name, said as Add a set says it, not counted)
   const cols = setKeys(keys).length,
     bl = cols > 0 && keys.indexOf('Ohuhu|0') >= 0;
+  if (gaps) scanGapPending = gaps;
   const said =
     addedManyLine(cols || keys.length, offList, bl) +
     (left ? ' \u00b7 ' + left + ' still to choose' : '') +
-    (unread ? ' \u00b7 ' + unread + (unread === 1 ? ' line' : ' lines') + ' not read' : '');
+    (unread ? ' \u00b7 ' + unread + (unread === 1 ? ' line' : ' lines') + ' not read' : '') +
+    // (v318.7: "Honolulu 120: B64 and G1 weren't read"; more than four, their number)
+    (gaps
+      ? ' \u00b7 ' +
+        gaps.p.n +
+        ': ' +
+        (gaps.miss.length > 4
+          ? gaps.miss.length + ' weren\u2019t read'
+          : scanGapCodes(gaps) + (gaps.miss.length === 1 ? ' wasn\u2019t' : ' weren\u2019t') + ' read')
+      : '');
   toastActions(
     said,
     // (v309.1: Open from the welcome's Scan is the welcome's again: what's added then is counted there)
+    // (v318.7: and Open for the set's missing markers, the card with Add these 2 when Scan opens)
     [{ label: 'Undo', fn: scanUndoAdd }].concat(
-      left ? [{ label: 'Open', fn: () => openScan({ added: after, undone: undone }) }] : [],
+      left || gaps ? [{ label: 'Open', fn: () => openScan({ added: after, undone: undone }) }] : [],
     ),
-    left || unread ? 10000 : 8000,
+    left || unread || gaps ? 10000 : 8000,
   );
   if (after) after(cols || keys.length, 0, setIn);
   function scanUndoAdd() {
     const wishNow = state.wish.slice();
-    // (v303: the markers it added back on the list, once each; its questions are as they are now)
-    scanList = scanList.concat(listWas.filter((e) => !e.ask && !scanList.some((x) => x.i === e.i)));
+    scanSw.added = scanSw.added.filter((c) => autoIn.indexOf(c) < 0);
+    // (v303: the markers it added back on the list, once each; its questions are as they are now. v318.7 debug: and
+    // the questions this Add dropped as answered by owning, with their pictures, unless asked again meanwhile: with
+    // the markers taken back out of the collection they're open again, and they had gone for good. Not one whose
+    // answers were all yours before this Add: it would only be dropped again)
+    scanList = scanList.concat(
+      listWas.filter((e) =>
+        e.ask
+          ? dropped.indexOf(e) >= 0 &&
+            e.opts.some((o) => keys.indexOf(mkey(o.i)) >= 0) &&
+            !scanList.some((x) => x.ask === e.ask)
+          : !scanList.some((x) => x.i === e.i),
+      ),
+    );
     scanSaveList();
     keys.forEach((k) => state.owned.delete(k));
     const inkNow = Object.assign({}, state.ink);
@@ -72046,9 +73421,15 @@ function scanAdd() {
     scanUnread = 0;
     scanSetIn = false;
     scanLast = { i: -1, at: 0 };
+    // (v318.7 debug: and numbers its photos afresh, Photo 1 next, not Photo 3 over an empty list; not while a photo's
+    // being read, whose number stands)
+    if (typeof ocrPhotos !== 'undefined' && !(typeof ocrRun !== 'undefined' && ocrRun && !ocrRun.done))
+      ocrPhotos = scanPhotoMax();
     // (v303: a cleared list asks afresh)
     scanTookAt.clear();
     scanAnsweredAt.clear();
+    // (v318.7: and the sweep's brand afresh, the brand set for you back)
+    scanSwitchEnd(true);
     scanSay('', 'Ready', 'List cleared', -1);
     scanRender();
     scanFocusBox();
@@ -72084,34 +73465,42 @@ function scanAdd() {
     if (e.target === ov) return closeScan();
     const t = e.target.closest ? e.target : null;
     if (!t) return;
+    // (v318.7) the row at the top of the list after the switch to both brands: Keep Ohuhu, or × to take the row off
+    // (after any of these, the keyboard's place follows the keyboard, scanFocusAfter: the box again when it had the
+    // keyboard as the tap began — the button tapped is gone, and on an iPad the keyboard and Scan Text with it — else
+    // the next question. v303 had gone back to the box every time, and on an iPad that raised the keyboard over the
+    // list after every answer to a photo's questions)
+    const sw = t.closest('.scswitch button');
+    if (sw) {
+      if (sw.classList.contains('scswkeep')) scanSwitchOff();
+      else {
+        scanSw.row = false;
+        scanRender();
+      }
+      scanFocusAfter(-1);
+      return;
+    }
     const d = t.closest('.scdel');
-    // (after either, back to the box: the button tapped is gone, and on an iPad the keyboard and Scan Text with it)
     if (d) {
-      const e2 = scanList[+d.dataset.n];
-      scanList.splice(+d.dataset.n, 1);
-      if (e2 && e2.i === scanLast.i) scanLast = { i: -1, at: 0 };
-      // (v303: a question let go by isn't asked again while its cap's still in view)
-      if (e2 && e2.ask) scanAnsweredAt.set(e2.ask, Date.now());
-      scanRender();
-      scanFocusBox();
+      const n = +d.dataset.n,
+        e2 = scanList[n];
+      scanRemove(n);
+      scanFocusAfter(n, !!(e2 && !e2.ask));
       return;
     }
     const cz = t.closest('.sccrop');
     if (cz) return scanZoom(scanList[+cz.dataset.n], cz);
     const ch = t.closest('.scchoose');
     if (ch) {
-      // the answer takes the question's place
-      // (v303: and isn't asked again while its cap's still in view)
-      const q = scanList[+ch.dataset.n];
-      if (q && q.ask) scanAnsweredAt.set(q.ask, Date.now());
-      scanList.splice(+ch.dataset.n, 1);
-      scanTake(+ch.dataset.i, ch.dataset.how, true);
-      scanRender();
-      scanFocusBox();
+      // the answer takes the question's place (v318.7: in the list too, not the top)
+      const n = scanAnswer(scanList[+ch.dataset.n], +ch.dataset.i, ch.dataset.how);
+      scanFocusAfter(n < 0 ? +ch.dataset.n : n);
       return;
     }
     const b = t.closest('#scBrand button');
     if (b) {
+      // (v318.7: a brand tapped ends the sweep's switch to both brands, and its row)
+      scanSwitchEnd(false);
       scanBrand = b.dataset.b;
       scanBrandChosen = true;
       try {
@@ -72129,15 +73518,17 @@ function scanAdd() {
         if (!e.ask) return out.push(e);
         // (from all its answers as first asked: switching back to Either brand brings them back)
         const all = e.opts0 || e.opts,
-          o = scanBrand ? all.filter((x) => COLORS[x.i].brand === scanBrand) : all;
+          o = scanBrand ? all.filter((x) => COLORS[x.i].brand === scanBrand) : all,
+          // (v318.7: and "Which R29?" between two brands' markers, Ohuhu YR47 once R29 and Copic's R29)
+          twoBrands = /^old /.test(e.ask) && new Set(all.map((x) => COLORS[x.i].brand)).size > 1;
         const answer =
-          (/^(brands|bynames) /.test(e.ask) && scanBrand && o.length === 1) ||
+          ((/^(brands|bynames) /.test(e.ask) || twoBrands) && scanBrand && o.length === 1) ||
           (/^other /.test(e.ask) && o.length === 1);
         if (answer) {
           done++;
           // (its answer already in the list: the question just goes, v299)
           if (!scanList.some((y) => y.i === o[0].i) && !out.some((y) => y.i === o[0].i))
-            out.push({ i: o[0].i, how: o[0].how === 'name' ? 'name' : 'chosen' });
+            out.push({ i: o[0].i, how: o[0].how === 'name' || o[0].how === 'old' ? o[0].how : 'chosen' });
           return;
         }
         out.push(
@@ -72168,6 +73559,14 @@ function scanAdd() {
         );
       scanFocusBox();
     }
+  });
+  // (v318.7) whether the box had the keyboard as a tap in the card began (scanFocusAfter): noted before the tap moves
+  // focus, and forgotten once its click is handled
+  const card = ov.querySelector('.sccard');
+  card.addEventListener('pointerdown', scanNoteBox, true);
+  ov.addEventListener('click', function () {
+    scanBoxHad = false;
+    clearTimeout(scanBoxHadT);
   });
   // (v308.5) Copy diagnostics' trace of what the box is sent (safety.js scanTraceAdd)
   const tr = function (what, e) {
@@ -72465,7 +73864,8 @@ const ocrUrl = (f) => new URL(OCR_DIR + f, location.href).href;
 let ocrW = null, // the worker
   ocrReady = null, // its start: a promise
   ocrRun = null, // the read under way: { n, img, lines, taken, held, ... }
-  ocrPhotos = 0, // photos read since Scan opened (Undo this photo marks)
+  // photos read since Scan opened (Undo this photo marks; v318.7: numbered on from the list's, kept through a reload)
+  ocrPhotos = typeof scanPhotoMax === 'function' ? scanPhotoMax() : 0,
   ocrDown = null, // a download under way: { ctl }
   // (v318 prototype) several photos chosen at once: read in turn, one summary at the end
   // { files, k (the next to read), n0 (the first's photo number), per: [{ name, added, asked, failed }], stop }
@@ -72678,7 +74078,7 @@ function ocrLineRead(r, it) {
   // (v318.2) digits alone read as a code with letters ("808", B08): asked at the end of the photo, as they are read here
   // (read again at the end with the words beside them, they'd be no code at all)
   if (cs.length === 1 && cs[0].asked === 'confirm' && !ocrCut(r, it, ''))
-    (r.bent = r.bent || []).push({ t: it.text, i: cs[0].i });
+    (r.bent = r.bent || []).push({ t: it.text, i: cs[0].i, id: it.id });
   // (a lone character, the blender's 0, never at once: only at the end, with its name)
   // (v318.4 e2e: nor a code at the photo's edge that may be its cap's cut short, ocrCut)
   if (
@@ -72702,6 +74102,16 @@ function ocrLineRead(r, it) {
     r.sure++;
   }
 }
+// (v318.7) a cap this photo read for sure (at once and still so at its end, or settled at its end as one marker) that
+// was in the list already, from an earlier photo or a sweep: a tray photographed again, to see that nothing was missed,
+// had said "No new codes read" and drawn the caps its end settled (codes both brands have, unsure lines) amber, to
+// check, with no question in the list. Those caps are drawn as read and counted, "69 already in the list" (r.listed,
+// worked out at the photo's end). Not an unsure reading, nor one the settling throws out (a scrap read short, a cap
+// cut by the edge): a B05 read unsure over a B06 cap, with B05 listed, stays amber
+function ocrListed(r, i) {
+  const e = scanList.find((e) => !e.ask && e.i === i);
+  if (e && e.photo !== r.n) r.listed.add(i);
+}
 // (v318.3) a code's line read as no code: its first other reading (letters and digits, 3 characters or more, at least
 // 0.75 sure and 0.8 times as sure as the best) that's one code of one marker, as an unsure line
 function ocrAlt(r, x) {
@@ -72712,7 +74122,9 @@ function ocrAlt(r, x) {
     // E711 with Copic chosen, read next as "E71", had gone in as Copic E71, and R014 as Copic R14, where they're asked
     // about as another brand's; Copic's E51 read off Ohuhu's E515, next read whole, is still E515)
     other = (as.other || []).length ? scanKey(x.text) : '';
-  if ((as.codes || []).some((c) => c.opts.length)) return x;
+  // (v318.7: digits alone, bent into a code to ask about, hold none for this: "879" by one look is "G28" by the other,
+  // read nearly as surely, and was asked about as B79)
+  if ((as.codes || []).some((c) => c.opts.length) && /[A-Za-z]/.test(x.text)) return x;
   for (const [t, cf, turn] of x.alts) {
     if (t === x.text || !/[A-Za-z]/.test(t) || scanKey(t).length < 3 || cf < 0.75 || cf < 0.8 * x.conf)
       continue;
@@ -72750,6 +74162,13 @@ function ocrCut(r, x, brand) {
       })
     );
   });
+}
+// (v318.7) the markers whose name the names read are, as Scan reads them, in reading order and the other way ("Violet"
+// then "Deep" is V013 Violet one way, V015 Deep Violet the other)
+function ocrNamed(names, brand) {
+  return [names, names.slice().reverse()]
+    .map((n) => scanRead(n.join(' '), brand).byName)
+    .filter((i) => i >= 0);
 }
 // (v318.3) the marker whose whole name the names read are, of the brand: a name of two words or more, or of one word of
 // six letters or more that's no word of another's name; not one whose words are all in another's longer name. Else -1
@@ -73277,17 +74696,49 @@ function ocrSettle(r, m) {
     // (the same cap read twice, by each look or as a whole box and a line of it: one line, with the names read by
     // either, so a name read once settles it; "R23" with no name beside "R23 Sakura" had been asked about)
     key = (t) => t.toUpperCase().replace(/[^A-Z0-9]/g, ''),
-    inBox = (b, x, y) => {
+    inBox = (b, x, y, m) => {
       const a = (b[4] * Math.PI) / 180,
         dx = x - b[0],
         dy = y - b[1],
-        m4 = 0.25 * b[3];
+        m4 = (m === undefined ? 0.25 : m) * b[3];
       return (
         Math.abs(dx * Math.cos(a) + dy * Math.sin(a)) <= b[2] / 2 + m4 &&
         Math.abs(-dx * Math.sin(a) + dy * Math.cos(a)) <= b[3] / 2 + m4
       );
     },
-    groups = [];
+    groups = [],
+    // (v318.6 debug) the markers whose name was read with their code: another brand's cap read whole on a tray plainly of
+    // one brand is asked about, not left out as that brand's code read short. "E71 Brick Beige", Copic's, on a tray of
+    // Ohuhu caps had gone without a word as E711's start, "BG11 Moon White" as BG114's, "Y13 Lemon Yellow" as BGY13's
+    // end (a cap whose name alone was read is asked about; one read whole was dropped)
+    agreed = new Set(),
+    // (v318.7) a reading that would be asked about whose centre is inside (no margin) a line read for sure as a word, not
+    // its own name ("663" and "Eg9" read off Egg Yellow's "Eggnog" and "Egg" had been asked as GG05 and E69), or, digits
+    // alone, inside a line read as a code with letters ("804" over "BG04", asked as B04): that line misread, not asked
+    word = (x, nm) =>
+      !!x &&
+      !!x.box &&
+      read0.some(
+        (y) =>
+          y !== x &&
+          y.nameOf !== x.id &&
+          !(nm || []).some((n) => key(n) === key(y.text)) &&
+          !y.unsure &&
+          !/\d/.test(y.text) &&
+          /[A-Za-z]{3}/.test(y.text) &&
+          inBox(y.box, x.box[0], x.box[1], 0),
+      ),
+    coded = (x) =>
+      !!x &&
+      !!x.box &&
+      read0.some(
+        (y) =>
+          y !== x &&
+          !y.nameOf &&
+          /[A-Za-z]/.test(y.text) &&
+          codesIn(y.text).length &&
+          inBox(y.box, x.box[0], x.box[1], 0),
+      );
   m.lines.forEach((x) => {
     if (x.nameOf) return;
     const k = key(x.text),
@@ -73324,17 +74775,58 @@ function ocrSettle(r, m) {
       if (ocrWholeName(nm, seen || scanBrand) >= 0) text.push(nm.join(' '));
       return;
     }
-    if (short({ text: x.text, unsure: g.lines.every((l) => l.unsure) })) return;
-    // (v318.4 e2e) a cap cut by the photo's edge, its code maybe read short: left out, unless a name read with it is
-    // one of its code's markers'
+    // (the code's markers whose name is read with it, by a word of it or whole, in either order: not read short, nor
+    // misread by one look, nor cut by the edge, nor noise. v318.7: whole too, "V015" at the top edge with "Deep
+    // Violet", its name of plain words only, had been left out of 30 reads)
+    const named = [];
+    codesIn(x.text).forEach((c) =>
+      c.opts.forEach(
+        (i) =>
+          (ocrNameAgrees(i, names) || (names.length && ocrNamed(names, seen || scanBrand).indexOf(i) >= 0)) &&
+          named.indexOf(i) < 0 &&
+          named.push(i),
+      ),
+    );
+    named.forEach((i) => agreed.add(i));
+    if (!named.length && short({ text: x.text, unsure: g.lines.every((l) => l.unsure) })) return;
+    // (v318.7) a code every reading of which was unsure, read in the same place (half a line's height either way: a
+    // look's slices of one cap) as a line read for sure as another code, as printed: that cap misread by one look ("G12"
+    // by one look where "G14" was read for sure, "BV25" over RV25, "YR0o" over YR09, "B000" over R000): left out, unless
+    // a name read with it is one of its own markers'. Of the 53 markers added from another cap over the captured reads
+    // of Ben's photos, 39 were these. Not a sure reading that's digits alone ("8411", B411's cap, beside "B411" unsure)
     if (
-      g.lines.every((l) => ocrCut(r, l, seen || scanBrand)) &&
-      !codesIn(x.text).some((c) => c.opts.some((i) => ocrNameAgrees(i, names)))
+      !named.length &&
+      g.lines.every((l) => l.unsure) &&
+      groups.some(
+        (h) =>
+          h.k !== g.k &&
+          h.lines.some(
+            (y) =>
+              !y.unsure &&
+              /\d/.test(y.text) &&
+              codesIn(y.text).some((c) => ocrAsRead(y.text, scanKey(c.code))) &&
+              g.lines.some(
+                (l) => inBox(l.box, y.box[0], y.box[1], 0.5) || inBox(y.box, l.box[0], l.box[1], 0.5),
+              ),
+          ),
+      )
     )
       return;
+    // (v318.4 e2e) a cap cut by the photo's edge, its code maybe read short: left out, unless a name read with it is
+    // one of its code's markers'
+    if (!named.length && g.lines.every((l) => ocrCut(r, l, seen || scanBrand))) return;
     // (a lone character, the blender's 0, only with its name: a seam read "0,3,5" had added Copic's 0)
     const lone = (scanRead(x.text, seen || scanBrand).codes || []).filter((c) => c.opts.length);
     if (!names.length && !/[A-Za-z]{3}/.test(x.text) && lone.length && lone.every((c) => c.code.length < 2))
+      return;
+    // (v318.7) digits alone that would be asked about as a code, read where a word or a code with letters was: not
+    // asked (word, coded)
+    if (
+      !/[A-Za-z]/.test(x.text) &&
+      lone.length &&
+      lone.every((c) => c.asked === 'confirm' || c.asked === 'turned') &&
+      g.lines.some((l) => word(l, names) || coded(l))
+    )
       return;
     // (a code and its name on one line, as on the cap: a word of the name settles a code two markers answer to, R16
     // Light Salmon and RV316, once R16; the name's lines come in any order, "Pink" then "Tender")
@@ -73352,7 +74844,7 @@ function ocrSettle(r, m) {
       const rr = scanRead([x.text].concat(names).join(' '), seen || scanBrand),
         cs = (rr.codes || []).filter((c) => c.opts.length);
       if ((!cs.length && !(rr.other || []).length) || cs.some((c) => c.asked !== 'name'))
-        return confirm.push({ t: x.text, names: names });
+        return confirm.push({ t: x.text, names: names, lines: g.lines });
     }
     (g.lines.every((l) => l.unsure) ? textU : text).push([x.text].concat(names).join(' '));
   });
@@ -73384,6 +74876,9 @@ function ocrSettle(r, m) {
     }
   });
   (r.bent || []).forEach((x) => {
+    const l = read0.find((y) => y.id === x.id);
+    // (v318.7: nor one read again as a code with letters, ocrAlt, or read where a word or such a code was)
+    if (l && (l.text !== x.t || word(l) || coded(l))) return;
     if ((!seen || COLORS[x.i].brand === seen) && !scanList.some((e) => !e.ask && e.i === x.i))
       scanAsk(
         'confirm ' + x.t,
@@ -73394,6 +74889,7 @@ function ocrSettle(r, m) {
       );
   });
   confirm.forEach((x) => {
+    if ((x.lines || []).some((l) => word(l, x.names))) return;
     scanGen = r.gen;
     const os = [];
     try {
@@ -73427,16 +74923,62 @@ function ocrSettle(r, m) {
       ((!seen || !/^other /.test(e.ask) || e.opts.some((o) => read.has(o.i))) &&
         !(/^old /.test(e.ask) && e.opts.some((o) => o.how === 'chosen' && got.has(o.i))) &&
         // (v318.3 debug: by the photo's brand, not the one chosen: a few Copic caps read with Ohuhu chosen, E71 among
-        // them, are asked about, not taken for Ohuhu's E711 read short)
-        !ocrNoise(e, seen)),
+        // them, are asked about, not taken for Ohuhu's E711 read short; v318.6 debug: nor one whose name was read)
+        (!ocrNoise(e, seen) || e.opts.some((o) => agreed.has(o.i)))),
   );
+  const auto = scanAuto();
   scanList.forEach((e) => {
     if (before.has(e)) return;
     e.photo = r.n;
     // (the brand the question names came from the photo, not from above the box)
     if (e.ask && seen && seen !== was && /^other /.test(e.ask))
       e.title = e.title.replace('than the one chosen (' + seen + ')', 'than the photo’s (' + seen + ')');
+    // (v318.7 debug: with the brand set for you, and the photo not plainly one brand's, said as Scan's own reads say
+    // it, "Copic E71 Champagne: add it? Ohuhu was set for you", not "than the one chosen": nothing was chosen)
+    else if (e.ask && !seen && auto && /^other /.test(e.ask) && e.opts.length === 1)
+      e.title =
+        COLORS[e.opts[0].i].brand + ' ' + scanName(e.opts[0].i) + ': add it? ' + auto + ' was set for you';
+    // (v318.7) another brand's code asked about that's an old code of the photo's brand, or the one chosen (R29, Copic's
+    // and Ohuhu YR47's old code): that marker is an answer too, first, "Which R29?" (as Scan asks it typed); the
+    // question had offered Copic's alone. Only a question the photo's own rules kept: a scrap read short is still none;
+    // not a cap whose name was read with it, that marker's
+    if (e.ask && /^other /.test(e.ask) && e.opts.length === 1 && !agreed.has(e.opts[0].i)) {
+      const b = seen || was,
+        k = scanKey(COLORS[e.opts[0].i].code),
+        mine = b ? (scanIndex().byOld.get(k) || []).filter((i) => COLORS[i].brand === b) : [];
+      if (mine.length) {
+        e.opts = mine.map((i) => ({ i: i, how: 'old' })).concat(e.opts);
+        e.title = 'Which ' + COLORS[e.opts[e.opts.length - 1].i].code + '?';
+        e.ask = 'old ' + k;
+      }
+    }
   });
+  // (v318.7) the caps read for sure, at once (and kept so: not a part of a cap, ocrParts, nor taken back at a swap) or
+  // settled at the end as one marker, that were in the list already (ocrListed); and, with the brand set for you and
+  // the photo not plainly one brand's, codes both brands use that went in as its (e.auto, for the switch to both
+  // brands should the sweep show the other brand, scan.js scanSw)
+  r.listed = new Set();
+  r.taken.forEach((id) => {
+    const x = r.items.get(id),
+      cs = x ? ocrCodes(x.text, was) : [];
+    if (cs.length === 1) ocrListed(r, cs[0].i);
+  });
+  scanGen = r.gen;
+  try {
+    text.forEach((t) => {
+      const cs = ocrCodes(t, seen || was);
+      if (cs.length === 1 && cs[0].n === 1 && !cs[0].asked) ocrListed(r, cs[0].i);
+    });
+  } finally {
+    scanGen = '';
+  }
+  if (auto && !seen && !scanSw.on)
+    scanList.forEach((e) => {
+      if (!e.ask && e.photo === r.n && COLORS[e.i].brand === auto && scanShared(e.i)) {
+        e.auto = true;
+        e.autoAt = scanSw.autoOnly;
+      }
+    });
   // (a question every answer of which is in the list now, this photo's or an earlier one's, is answered: it goes, kept
   // to come back with Undo. "Which G410?" had stayed with G410 and G24 both in the list, from later photos)
   const listed = new Set(scanList.filter((e) => !e.ask).map((e) => e.i));
@@ -73448,6 +74990,12 @@ function ocrSettle(r, m) {
   ocrCropQuestions(r, read0);
   r.asked = scanList.filter((e) => e.ask && e.photo === r.n).length;
   r.added = scanList.filter((e) => e.photo === r.n && !e.ask).length;
+  r.same = r.listed ? r.listed.size : 0;
+  // (v318.7) a photo plainly of the other brand than the one set for you: both brands are read from now on (scanSw)
+  if (auto && seen && seen !== auto && !scanSw.on) {
+    scanSwitchOn('photo');
+    r.switched = true;
+  }
   scanRender();
   ocrDraw(r);
   ocrStatus(r);
@@ -73463,8 +75011,10 @@ function ocrQueueOn(r) {
     name: r.file && r.file.name,
     added: r.added || 0,
     asked: r.asked || 0,
+    same: r.same || 0,
     failed: !!r.failed,
     brand: r.brand || '',
+    switched: !!r.switched,
   });
   if (r.aborted) q.stop = true;
   if (q.k < q.files.length && !q.stop) {
@@ -73485,14 +75035,21 @@ function ocrFailed(m) {
   } catch (_) {}
   ocrEnd();
   if (!r || r.done) return;
+  // (v318.7) what the photo added at once is taken back out, as closing Scan mid-photo does: its end never checked it
+  // (caps cut by the edge, one look's misreading, the photo's brand). Read gently, what's read again goes in again,
+  // checked; given up, the photo's to be taken again. A memory failure's first try had kept them, unchecked
+  const n0 = scanList.length;
+  scanList = scanList.filter((e) => e.photo !== r.n);
+  r.bent = [];
+  if (scanList.length !== n0) scanRender();
   // (out of memory: once more, gently, before giving up)
   if (m.memory && !r.gentle) {
     try {
       localStorage.setItem(OCR_LOW_KEY, String(Date.now()));
     } catch (_) {}
     r.gentle = true;
-    // (what the first try read is let go of, all but what it added: the second's lines are numbered from 1 again, and
-    // a line taken by the first had kept the second's of the same number out of the list)
+    // (what the first try read is let go of, what it added with it, above: the second's lines are numbered from 1 again,
+    // and a line taken by the first had kept the second's of the same number out of the list)
     r.items = new Map();
     r.taken = new Set();
     r.brands = {};
@@ -73971,6 +75528,8 @@ function ocrStatus(r) {
       (r.added
         ? r.added + (r.added === 1 ? ' marker' : ' markers') + ' added to the list'
         : 'No new codes read') +
+      // (v318.7: a tray photographed again: what it read that's in the list already)
+      (r.same ? ' · ' + r.same + ' already in the list' : '') +
       (r.asked ? ' · ' + r.asked + ' to choose there' : '') +
       (r.aborted ? ' · stopped' : '') +
       (one
@@ -73998,11 +75557,13 @@ function ocrStatus(r) {
   } else if (many && over) {
     const added = q.per.reduce((s, x) => s + x.added, 0),
       asked = q.per.reduce((s, x) => s + x.asked, 0),
+      same = q.per.reduce((s, x) => s + (x.same || 0), 0),
       failed = q.per.filter((x) => x.failed).length;
     t =
       ocrNPhotos(q.per.length) +
       ': ' +
       (added ? added + (added === 1 ? ' marker' : ' markers') + ' added to the list' : 'no new codes read') +
+      (same ? ' · ' + same + ' already in the list' : '') +
       (asked ? ' · ' + asked + ' to choose there' : '') +
       (failed ? ' · ' + failed + ' not read' : '') +
       (q.stop && !q.halt ? ' · stopped' : '');
@@ -74019,7 +75580,9 @@ function ocrStatus(r) {
   bar.style.width = Math.round(pc) + '%';
   const sum = $('ocrSum');
   if (sum && many && over) {
-    const other = scanBrand && q.per.find((x) => x.brand && x.brand !== scanBrand);
+    // (v318.7: or, with the brand set for you, the photos that switched the reading to both brands)
+    const sw = q.per.find((x) => x.switched),
+      other = sw || (scanBrand && q.per.find((x) => x.brand && x.brand !== scanBrand));
     sum.innerHTML =
       '<span class="ocrleg"><span>Read</span><span class="am">To check</span></span>' +
       // (why the queue ended early, when a photo couldn't be read)
@@ -74029,18 +75592,26 @@ function ocrStatus(r) {
           esc(other.brand) +
           ' caps, so theirs went in as ' +
           esc(other.brand) +
-          ', though ' +
-          esc(scanBrand) +
-          ' is chosen above the box. Undo these photos takes them out.</span>'
+          (sw
+            ? ', and both brands are read from now on. Undo these photos takes them out.</span>'
+            : ', though ' +
+              esc(scanBrand) +
+              ' is chosen above the box. Undo these photos takes them out.</span>')
         : '') +
       '<span class="ocrhint">' +
       q.per
+        // (v318.7: numbered as the list's headings number them, on from the photos before this batch)
         .map(
           (x, i) =>
             'Photo ' +
-            (i + 1) +
+            (q.n0 + i) +
             ': ' +
-            (x.failed ? 'not read' : x.added + ' added' + (x.asked ? ', ' + x.asked + ' to choose' : '')),
+            (x.failed
+              ? 'not read'
+              : x.added +
+                ' added' +
+                (x.same ? ', ' + x.same + ' already in the list' : '') +
+                (x.asked ? ', ' + x.asked + ' to choose' : '')),
         )
         .join(' · ') +
       '</span>' +
@@ -74048,15 +75619,21 @@ function ocrStatus(r) {
   } else if (sum && r.done && !r.failed)
     sum.innerHTML =
       '<span class="ocrleg"><span>Read</span><span class="am">To check</span></span>' +
-      (r.brand && scanBrand && r.brand !== scanBrand
+      (r.switched
         ? '<span class="ocrwarn">These look like ' +
           esc(r.brand) +
           ' caps, so they went in as ' +
           esc(r.brand) +
-          ', though ' +
-          esc(scanBrand) +
-          ' is chosen above the box. Undo this photo takes them out.</span>'
-        : '') +
+          ', and both brands are read from now on. Undo this photo takes them out.</span>'
+        : r.brand && scanBrand && r.brand !== scanBrand
+          ? '<span class="ocrwarn">These look like ' +
+            esc(r.brand) +
+            ' caps, so they went in as ' +
+            esc(r.brand) +
+            ', though ' +
+            esc(scanBrand) +
+            ' is chosen above the box. Undo this photo takes them out.</span>'
+          : '') +
       '<span class="ocrhint">Caps without a box weren’t read: a closer photo of them reads them.</span>';
 }
 // the boxes over the photo: green for a code added, amber for one to check; names not drawn
@@ -74078,12 +75655,16 @@ function ocrDraw(r) {
   x.lineWidth = 2.5 * px;
   x.font = '600 ' + Math.round(12 * px) + 'px system-ui, sans-serif';
   // (once the photo's done, a code that went in at its end, read as a pasted line, is read too: green, not amber)
+  // (v318.7: and one read for sure that's in the list from an earlier photo or a sweep, a tray photographed again)
   const added = r.done ? new Set(scanList.filter((e) => !e.ask && e.photo === r.n).map((e) => e.i)) : null,
+    listed = (r.done && r.listed) || null,
     brand = (r.done && r.brand) || scanBrand;
   r.items.forEach((it) => {
     if (!it || it.nameOf || !it.text) return;
     let cs = r.taken.has(it.id) ? ocrCodes(it.text, scanBrand) : ocrCodes(it.text, brand);
-    const sure = r.taken.has(it.id) || (added && cs.length === 1 && added.has(cs[0].i));
+    const sure =
+      r.taken.has(it.id) ||
+      (cs.length === 1 && ((added && added.has(cs[0].i)) || (listed && listed.has(cs[0].i))));
     if (!sure && !cs.length) cs = ocrCodes(it.text, '');
     if (!sure && !cs.length) return;
     const [cx, cy, w, h, a] = it.box;
@@ -74150,7 +75731,7 @@ function ocrButtons(r) {
       // (the questions these photos answered, asked before them, back)
       ocrAnswered = ocrAnswered.filter((a) => {
         if (a.by < n0 || a.by > r.n) return true;
-        if (!mine(a.e)) scanList.unshift(a.e);
+        if (!mine(a.e)) scanList.splice(ocrGroupAt(a.e), 0, a.e);
         return false;
       });
       scanRender();
@@ -74162,7 +75743,23 @@ function ocrButtons(r) {
     });
   $('ocrDone').focus({ preventScroll: true });
 }
-const ocrNPhotos = (n) => (n === 1 ? '1 photo' : n + ' photos');
+// (v318.7) where an entry of a photo goes back into the list: at the top of its photo's group (the list is newest first,
+// a photo's entries together), else where its photo would sit among the others; one of no photo at the top. A question
+// of photo 1 given back by Undo this photo had been put at the top, above photo 2's, and the headings said Photo 1 twice
+function ocrGroupAt(e) {
+  if (!e.photo) return 0;
+  let k = scanList.findIndex((x) => x.photo === e.photo);
+  if (k < 0) k = scanList.findIndex((x) => x.photo && x.photo < e.photo);
+  if (k < 0) {
+    k = 0;
+    scanList.forEach((x, j) => x.photo > e.photo && (k = j + 1));
+  }
+  return k;
+}
+const ocrNPhotos = (n) => (n === 1 ? '1 photo' : n + ' photos'),
+  // (v318.7) Done's card after a photo that switched the reading to both brands
+  ocrSwitchNote = (b) =>
+    'Read as ' + b + ': these look like ' + b + ' caps, so both brands are read from now on';
 // Done: back to the list, with what the photo added said on its card
 function ocrFinish() {
   const r = ocrRun,
@@ -74173,20 +75770,38 @@ function ocrFinish() {
   ocrQ = null;
   ocrHide();
   if (many) {
+    // (v318.7: what was in the list already, a tray photographed again; and the switch to both brands)
     const added = q.per.reduce((s, x) => s + x.added, 0),
-      asked = q.per.reduce((s, x) => s + x.asked, 0);
+      asked = q.per.reduce((s, x) => s + x.asked, 0),
+      same = q.per.reduce((s, x) => s + (x.same || 0), 0),
+      sw = q.per.find((x) => x.switched);
     scanSay(
       added ? 'ok' : 'same',
       'From ' + ocrNPhotos(q.per.length) + ': ' + (added ? added + ' added to the list' : 'nothing new'),
-      asked ? asked + ' to choose in the list below' : 'Check them below, then Add',
+      [
+        same ? same + ' already in the list' : '',
+        asked ? asked + ' to choose in the list below' : '',
+        sw ? ocrSwitchNote(sw.brand) : '',
+      ]
+        .filter(Boolean)
+        .join(' · ') || 'Check them below, then Add',
       -1,
+      // (v318.7: the set nearly all here, with what's missing: "Honolulu 120: all but 2 are here", scan.js)
+      scanGapChoices(),
     );
   } else if (r && r.done && !r.failed)
     scanSay(
       r.added ? 'ok' : 'same',
       r.added ? 'From the photo: ' + r.added + ' added to the list' : 'From the photo: nothing new',
-      r.asked ? r.asked + ' to choose in the list below' : 'Check them below, then Add',
+      [
+        r.same ? r.same + ' already in the list' : '',
+        r.asked ? r.asked + ' to choose in the list below' : '',
+        r.switched ? ocrSwitchNote(r.brand) : '',
+      ]
+        .filter(Boolean)
+        .join(' · ') || 'Check them below, then Add',
       -1,
+      scanGapChoices(),
     );
   scanRender();
   ocrFocusList(true);
@@ -78300,6 +79915,10 @@ function renderHomeNotes() {
 // newer than the version last seen (ms-last-ver), up to four (not on a fresh install); Help › About lists this
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v318.7',
+    t: 'Adding markers is safer and quicker to check: a pasted list is read as its own brand, sweeping another brand’s caps reads both brands (with Keep Ohuhu to go back), a question can be answered from its cap’s larger picture and keeps that picture until it’s answered, and a set nearly all photographed names the markers not read.',
+  },
   {
     v: 'v318.6',
     t: 'A question that opens just as the Library does (restoring a backup, say) keeps the keyboard: Tab no longer slips out of it.',

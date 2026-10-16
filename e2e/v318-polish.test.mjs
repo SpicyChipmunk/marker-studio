@@ -167,6 +167,35 @@ test('the photo dragged and the Plan left at once: its colours are finished, wit
   assert.deepEqual(errors, []);
 });
 
+// (v318.6 debug) The test above failed once on GitHub, in WebKit, with the Plan still showing: the photo's colours follow
+// a drag 60 ms after it, the controls drawn again with them, and a click whose press and release fall either side of
+// that redraw lands on a Colour along button that's gone by the release, so the browser drops it (a mouse or a
+// trackpad; a finger's tap on an iPad is one piece). The Plan's bar drawn again as it is keeps its buttons.
+test('the Plan’s bar drawn again between a press and its release: Colour along still opens', async () => {
+  const { page, errors } = await openApp({ width: 820, height: 1180 });
+  await sampleGuide(page);
+  await idle(page);
+  await scrollTop(page);
+  const b = await page.locator('#sfColor').boundingBox();
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await page.mouse.down();
+  await page.evaluate(() => __mstest.renderControls());
+  await page.mouse.up();
+  await idle(page);
+  assert.equal(await page.evaluate(() => __mstest.sfmode), 'color');
+  assert.equal(await page.locator('#sfRoot .sfbar').count(), 1, 'one bar');
+  // (and back to the Plan, with its bar drawn anew for the stage: still one, still working)
+  await page.click('#sfDoneBtn');
+  await idle(page);
+  assert.equal(await page.evaluate(() => __mstest.sfmode), 'guide');
+  assert.equal(await page.locator('#sfRoot .sfbar').count(), 1, 'one bar');
+  assert.equal(await page.locator('#sfColor').count(), 1);
+  await page.click('#sfColor');
+  await idle(page);
+  assert.equal(await page.evaluate(() => __mstest.sfmode), 'color');
+  assert.deepEqual(errors, []);
+});
+
 // The sample, finished in Colour along, is first saved a moment later: "Saved in your Library…" replaced "Page
 // finished." in what a screen reader is told, before it could be read. Both are said now, Page finished first.
 test('the page finished as the guide is first saved: screen readers are told both, Page finished first', async () => {

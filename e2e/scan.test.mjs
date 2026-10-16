@@ -115,18 +115,19 @@ test('asks when it cannot be sure, in the list (sweeping on loses no question); 
   assert.equal(await page.locator('#scList .scask').count(), 1);
   assert.equal((await page.textContent('#scCount')).replace(/\u00a0/g, ' '), '1 marker · 1 to choose');
   await page.click('#scList .scask .scchoose:has-text("Copic")'); await idle(page);
-  assert.deepEqual(await list(page), ['B04', 'B015']);
-  assert.match(await page.textContent('#scList .scrow'), /Copic/);
+  // (v318.7: the answer takes the question's place in the list, under B015 read after it; it had gone to the top)
+  assert.deepEqual(await list(page), ['B015', 'B04']);
+  assert.match(await page.textContent('#scList .scrow:nth-child(2)'), /Copic/);
   // only the name read: offered by the card above the list
   await type(page, 'Honey Brown');
   assert.match(await stat(page), /Is it E49 Honey Brown\?/);
   await page.click('#scStat .scpick button'); await idle(page);
-  assert.deepEqual(await list(page), ['E49', 'B04', 'B015']);
+  assert.deepEqual(await list(page), ['E49', 'B015', 'B04']);
   // upside down: E19 reads "6L3" (Ohuhu E19, Copic E19 or E79); with Ohuhu chosen it's E19, added and marked
   await page.click('#scBrand button[data-b="Ohuhu"]');
   assert.equal(await page.getAttribute('#scBrand button[data-b="Ohuhu"]', 'aria-pressed'), 'true');
   await type(page, '6L3');
-  assert.deepEqual(await list(page), ['E19', 'E49', 'B04', 'B015']);
+  assert.deepEqual(await list(page), ['E19', 'E49', 'B015', 'B04']);
   assert.match(await page.textContent('#scList .scrow'), /read upside down/);
   // YR213 upside down with its Y lost reads as R213: asked, in the list
   await type(page, 'ELZと');
@@ -185,9 +186,14 @@ test('two caps held in view say so once; a question answered isn’t asked again
   assert.equal(await page.locator('#scList .scask').count(), 0);
   assert.equal((await list(page))[0], 'B05');
   assert.match(await page.textContent('#scList .scrow'), /Ohuhu/);
-  // ✕: back in the box
+  // ✕: back in the box, as the box had the keyboard when the tap began (v318.7: and not otherwise — e2e/v3187-answer)
+  await page.focus('#scBox');
   await page.click('#scList .scrow .scdel'); await idle(page);
   assert.equal(await page.evaluate(() => document.activeElement.id), 'scBox');
+  await type(page, 'B05');
+  await page.evaluate(() => document.getElementById('scAdd').focus());
+  await page.click('#scList .scrow .scdel'); await idle(page);
+  assert.equal(await page.evaluate(() => document.activeElement.className), 'scdel', 'the box hadn’t the keyboard: on the row that took its place');
   // text with nothing to read in it doesn't stay to run into the next cap's
   await scanText(page, 'Ohuhu'); await idle(page, 2200);
   assert.equal(await page.inputValue('#scBox'), '');

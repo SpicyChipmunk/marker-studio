@@ -1500,6 +1500,8 @@ function addWaysHTML(where) {
     );
   };
   return (
+    // (v318.7) the questions waiting in Scan's list, with Answer them (scan.js), above the ways in
+    (typeof scanWaitHTML === 'function' ? scanWaitHTML(where) : '') +
     '<div class="wcch">' +
     row(
       'set',
@@ -1554,8 +1556,10 @@ function openerBack(el) {
 // sheet, at that step
 function addWay(a, from) {
   if (from && from.isConnected && from.getClientRects().length) from.focus({ preventScroll: true });
-  if (a === 'scan' || a === 'photo') {
-    if (typeof openScan === 'function') openScan(a === 'photo' ? { photo: true } : undefined);
+  // (v318.7: questions, the line's Answer them: Scan at its questions, without the keyboard)
+  if (a === 'scan' || a === 'photo' || a === 'questions') {
+    if (typeof openScan === 'function')
+      openScan(a === 'photo' ? { photo: true } : a === 'questions' ? { questions: true } : undefined);
   } else if (a === 'chart') {
     if (typeof openChart === 'function') openChart();
   } else if (typeof window.openAddMarkers === 'function') window.openAddMarkers(a === 'add' ? null : a);

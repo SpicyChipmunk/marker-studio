@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.7',
+    t: 'Adding markers is safer and quicker to check: a pasted list is read as its own brand, sweeping another brand’s caps reads both brands (with Keep Ohuhu to go back), a question can be answered from its cap’s larger picture and keeps that picture until it’s answered, and a set nearly all photographed names the markers not read.',
+  },
+  {
     v: 'v318.6',
     t: 'A question that opens just as the Library does (restoring a backup, say) keeps the keyboard: Tab no longer slips out of it.',
   },

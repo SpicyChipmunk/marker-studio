@@ -42,7 +42,8 @@ const ocrUrl = (f) => new URL(OCR_DIR + f, location.href).href;
 let ocrW = null, // the worker
   ocrReady = null, // its start: a promise
   ocrRun = null, // the read under way: { n, img, lines, taken, held, ... }
-  ocrPhotos = 0, // photos read since Scan opened (Undo this photo marks)
+  // photos read since Scan opened (Undo this photo marks; v318.7: numbered on from the list's, kept through a reload)
+  ocrPhotos = typeof scanPhotoMax === 'function' ? scanPhotoMax() : 0,
   ocrDown = null, // a download under way: { ctl }
   // (v318 prototype) several photos chosen at once: read in turn, one summary at the end
   // { files, k (the next to read), n0 (the first's photo number), per: [{ name, added, asked, failed }], stop }
@@ -255,7 +256,7 @@ function ocrLineRead(r, it) {
   // (v318.2) digits alone read as a code with letters ("808", B08): asked at the end of the photo, as they are read here
   // (read again at the end with the words beside them, they'd be no code at all)
   if (cs.length === 1 && cs[0].asked === 'confirm' && !ocrCut(r, it, ''))
-    (r.bent = r.bent || []).push({ t: it.text, i: cs[0].i });
+    (r.bent = r.bent || []).push({ t: it.text, i: cs[0].i, id: it.id });
   // (a lone character, the blender's 0, never at once: only at the end, with its name)
   // (v318.4 e2e: nor a code at the photo's edge that may be its cap's cut short, ocrCut)
   if (
@@ -279,6 +280,16 @@ function ocrLineRead(r, it) {
     r.sure++;
   }
 }
+// (v318.7) a cap this photo read for sure (at once and still so at its end, or settled at its end as one marker) that
+// was in the list already, from an earlier photo or a sweep: a tray photographed again, to see that nothing was missed,
+// had said "No new codes read" and drawn the caps its end settled (codes both brands have, unsure lines) amber, to
+// check, with no question in the list. Those caps are drawn as read and counted, "69 already in the list" (r.listed,
+// worked out at the photo's end). Not an unsure reading, nor one the settling throws out (a scrap read short, a cap
+// cut by the edge): a B05 read unsure over a B06 cap, with B05 listed, stays amber
+function ocrListed(r, i) {
+  const e = scanList.find((e) => !e.ask && e.i === i);
+  if (e && e.photo !== r.n) r.listed.add(i);
+}
 // (v318.3) a code's line read as no code: its first other reading (letters and digits, 3 characters or more, at least
 // 0.75 sure and 0.8 times as sure as the best) that's one code of one marker, as an unsure line
 function ocrAlt(r, x) {
@@ -289,7 +300,9 @@ function ocrAlt(r, x) {
     // E711 with Copic chosen, read next as "E71", had gone in as Copic E71, and R014 as Copic R14, where they're asked
     // about as another brand's; Copic's E51 read off Ohuhu's E515, next read whole, is still E515)
     other = (as.other || []).length ? scanKey(x.text) : '';
-  if ((as.codes || []).some((c) => c.opts.length)) return x;
+  // (v318.7: digits alone, bent into a code to ask about, hold none for this: "879" by one look is "G28" by the other,
+  // read nearly as surely, and was asked about as B79)
+  if ((as.codes || []).some((c) => c.opts.length) && /[A-Za-z]/.test(x.text)) return x;
   for (const [t, cf, turn] of x.alts) {
     if (t === x.text || !/[A-Za-z]/.test(t) || scanKey(t).length < 3 || cf < 0.75 || cf < 0.8 * x.conf)
       continue;
@@ -327,6 +340,13 @@ function ocrCut(r, x, brand) {
       })
     );
   });
+}
+// (v318.7) the markers whose name the names read are, as Scan reads them, in reading order and the other way ("Violet"
+// then "Deep" is V013 Violet one way, V015 Deep Violet the other)
+function ocrNamed(names, brand) {
+  return [names, names.slice().reverse()]
+    .map((n) => scanRead(n.join(' '), brand).byName)
+    .filter((i) => i >= 0);
 }
 // (v318.3) the marker whose whole name the names read are, of the brand: a name of two words or more, or of one word of
 // six letters or more that's no word of another's name; not one whose words are all in another's longer name. Else -1
@@ -854,17 +874,49 @@ function ocrSettle(r, m) {
     // (the same cap read twice, by each look or as a whole box and a line of it: one line, with the names read by
     // either, so a name read once settles it; "R23" with no name beside "R23 Sakura" had been asked about)
     key = (t) => t.toUpperCase().replace(/[^A-Z0-9]/g, ''),
-    inBox = (b, x, y) => {
+    inBox = (b, x, y, m) => {
       const a = (b[4] * Math.PI) / 180,
         dx = x - b[0],
         dy = y - b[1],
-        m4 = 0.25 * b[3];
+        m4 = (m === undefined ? 0.25 : m) * b[3];
       return (
         Math.abs(dx * Math.cos(a) + dy * Math.sin(a)) <= b[2] / 2 + m4 &&
         Math.abs(-dx * Math.sin(a) + dy * Math.cos(a)) <= b[3] / 2 + m4
       );
     },
-    groups = [];
+    groups = [],
+    // (v318.6 debug) the markers whose name was read with their code: another brand's cap read whole on a tray plainly of
+    // one brand is asked about, not left out as that brand's code read short. "E71 Brick Beige", Copic's, on a tray of
+    // Ohuhu caps had gone without a word as E711's start, "BG11 Moon White" as BG114's, "Y13 Lemon Yellow" as BGY13's
+    // end (a cap whose name alone was read is asked about; one read whole was dropped)
+    agreed = new Set(),
+    // (v318.7) a reading that would be asked about whose centre is inside (no margin) a line read for sure as a word, not
+    // its own name ("663" and "Eg9" read off Egg Yellow's "Eggnog" and "Egg" had been asked as GG05 and E69), or, digits
+    // alone, inside a line read as a code with letters ("804" over "BG04", asked as B04): that line misread, not asked
+    word = (x, nm) =>
+      !!x &&
+      !!x.box &&
+      read0.some(
+        (y) =>
+          y !== x &&
+          y.nameOf !== x.id &&
+          !(nm || []).some((n) => key(n) === key(y.text)) &&
+          !y.unsure &&
+          !/\d/.test(y.text) &&
+          /[A-Za-z]{3}/.test(y.text) &&
+          inBox(y.box, x.box[0], x.box[1], 0),
+      ),
+    coded = (x) =>
+      !!x &&
+      !!x.box &&
+      read0.some(
+        (y) =>
+          y !== x &&
+          !y.nameOf &&
+          /[A-Za-z]/.test(y.text) &&
+          codesIn(y.text).length &&
+          inBox(y.box, x.box[0], x.box[1], 0),
+      );
   m.lines.forEach((x) => {
     if (x.nameOf) return;
     const k = key(x.text),
@@ -901,17 +953,58 @@ function ocrSettle(r, m) {
       if (ocrWholeName(nm, seen || scanBrand) >= 0) text.push(nm.join(' '));
       return;
     }
-    if (short({ text: x.text, unsure: g.lines.every((l) => l.unsure) })) return;
-    // (v318.4 e2e) a cap cut by the photo's edge, its code maybe read short: left out, unless a name read with it is
-    // one of its code's markers'
+    // (the code's markers whose name is read with it, by a word of it or whole, in either order: not read short, nor
+    // misread by one look, nor cut by the edge, nor noise. v318.7: whole too, "V015" at the top edge with "Deep
+    // Violet", its name of plain words only, had been left out of 30 reads)
+    const named = [];
+    codesIn(x.text).forEach((c) =>
+      c.opts.forEach(
+        (i) =>
+          (ocrNameAgrees(i, names) || (names.length && ocrNamed(names, seen || scanBrand).indexOf(i) >= 0)) &&
+          named.indexOf(i) < 0 &&
+          named.push(i),
+      ),
+    );
+    named.forEach((i) => agreed.add(i));
+    if (!named.length && short({ text: x.text, unsure: g.lines.every((l) => l.unsure) })) return;
+    // (v318.7) a code every reading of which was unsure, read in the same place (half a line's height either way: a
+    // look's slices of one cap) as a line read for sure as another code, as printed: that cap misread by one look ("G12"
+    // by one look where "G14" was read for sure, "BV25" over RV25, "YR0o" over YR09, "B000" over R000): left out, unless
+    // a name read with it is one of its own markers'. Of the 53 markers added from another cap over the captured reads
+    // of Ben's photos, 39 were these. Not a sure reading that's digits alone ("8411", B411's cap, beside "B411" unsure)
     if (
-      g.lines.every((l) => ocrCut(r, l, seen || scanBrand)) &&
-      !codesIn(x.text).some((c) => c.opts.some((i) => ocrNameAgrees(i, names)))
+      !named.length &&
+      g.lines.every((l) => l.unsure) &&
+      groups.some(
+        (h) =>
+          h.k !== g.k &&
+          h.lines.some(
+            (y) =>
+              !y.unsure &&
+              /\d/.test(y.text) &&
+              codesIn(y.text).some((c) => ocrAsRead(y.text, scanKey(c.code))) &&
+              g.lines.some(
+                (l) => inBox(l.box, y.box[0], y.box[1], 0.5) || inBox(y.box, l.box[0], l.box[1], 0.5),
+              ),
+          ),
+      )
     )
       return;
+    // (v318.4 e2e) a cap cut by the photo's edge, its code maybe read short: left out, unless a name read with it is
+    // one of its code's markers'
+    if (!named.length && g.lines.every((l) => ocrCut(r, l, seen || scanBrand))) return;
     // (a lone character, the blender's 0, only with its name: a seam read "0,3,5" had added Copic's 0)
     const lone = (scanRead(x.text, seen || scanBrand).codes || []).filter((c) => c.opts.length);
     if (!names.length && !/[A-Za-z]{3}/.test(x.text) && lone.length && lone.every((c) => c.code.length < 2))
+      return;
+    // (v318.7) digits alone that would be asked about as a code, read where a word or a code with letters was: not
+    // asked (word, coded)
+    if (
+      !/[A-Za-z]/.test(x.text) &&
+      lone.length &&
+      lone.every((c) => c.asked === 'confirm' || c.asked === 'turned') &&
+      g.lines.some((l) => word(l, names) || coded(l))
+    )
       return;
     // (a code and its name on one line, as on the cap: a word of the name settles a code two markers answer to, R16
     // Light Salmon and RV316, once R16; the name's lines come in any order, "Pink" then "Tender")
@@ -929,7 +1022,7 @@ function ocrSettle(r, m) {
       const rr = scanRead([x.text].concat(names).join(' '), seen || scanBrand),
         cs = (rr.codes || []).filter((c) => c.opts.length);
       if ((!cs.length && !(rr.other || []).length) || cs.some((c) => c.asked !== 'name'))
-        return confirm.push({ t: x.text, names: names });
+        return confirm.push({ t: x.text, names: names, lines: g.lines });
     }
     (g.lines.every((l) => l.unsure) ? textU : text).push([x.text].concat(names).join(' '));
   });
@@ -961,6 +1054,9 @@ function ocrSettle(r, m) {
     }
   });
   (r.bent || []).forEach((x) => {
+    const l = read0.find((y) => y.id === x.id);
+    // (v318.7: nor one read again as a code with letters, ocrAlt, or read where a word or such a code was)
+    if (l && (l.text !== x.t || word(l) || coded(l))) return;
     if ((!seen || COLORS[x.i].brand === seen) && !scanList.some((e) => !e.ask && e.i === x.i))
       scanAsk(
         'confirm ' + x.t,
@@ -971,6 +1067,7 @@ function ocrSettle(r, m) {
       );
   });
   confirm.forEach((x) => {
+    if ((x.lines || []).some((l) => word(l, x.names))) return;
     scanGen = r.gen;
     const os = [];
     try {
@@ -1004,16 +1101,62 @@ function ocrSettle(r, m) {
       ((!seen || !/^other /.test(e.ask) || e.opts.some((o) => read.has(o.i))) &&
         !(/^old /.test(e.ask) && e.opts.some((o) => o.how === 'chosen' && got.has(o.i))) &&
         // (v318.3 debug: by the photo's brand, not the one chosen: a few Copic caps read with Ohuhu chosen, E71 among
-        // them, are asked about, not taken for Ohuhu's E711 read short)
-        !ocrNoise(e, seen)),
+        // them, are asked about, not taken for Ohuhu's E711 read short; v318.6 debug: nor one whose name was read)
+        (!ocrNoise(e, seen) || e.opts.some((o) => agreed.has(o.i)))),
   );
+  const auto = scanAuto();
   scanList.forEach((e) => {
     if (before.has(e)) return;
     e.photo = r.n;
     // (the brand the question names came from the photo, not from above the box)
     if (e.ask && seen && seen !== was && /^other /.test(e.ask))
       e.title = e.title.replace('than the one chosen (' + seen + ')', 'than the photo’s (' + seen + ')');
+    // (v318.7 debug: with the brand set for you, and the photo not plainly one brand's, said as Scan's own reads say
+    // it, "Copic E71 Champagne: add it? Ohuhu was set for you", not "than the one chosen": nothing was chosen)
+    else if (e.ask && !seen && auto && /^other /.test(e.ask) && e.opts.length === 1)
+      e.title =
+        COLORS[e.opts[0].i].brand + ' ' + scanName(e.opts[0].i) + ': add it? ' + auto + ' was set for you';
+    // (v318.7) another brand's code asked about that's an old code of the photo's brand, or the one chosen (R29, Copic's
+    // and Ohuhu YR47's old code): that marker is an answer too, first, "Which R29?" (as Scan asks it typed); the
+    // question had offered Copic's alone. Only a question the photo's own rules kept: a scrap read short is still none;
+    // not a cap whose name was read with it, that marker's
+    if (e.ask && /^other /.test(e.ask) && e.opts.length === 1 && !agreed.has(e.opts[0].i)) {
+      const b = seen || was,
+        k = scanKey(COLORS[e.opts[0].i].code),
+        mine = b ? (scanIndex().byOld.get(k) || []).filter((i) => COLORS[i].brand === b) : [];
+      if (mine.length) {
+        e.opts = mine.map((i) => ({ i: i, how: 'old' })).concat(e.opts);
+        e.title = 'Which ' + COLORS[e.opts[e.opts.length - 1].i].code + '?';
+        e.ask = 'old ' + k;
+      }
+    }
   });
+  // (v318.7) the caps read for sure, at once (and kept so: not a part of a cap, ocrParts, nor taken back at a swap) or
+  // settled at the end as one marker, that were in the list already (ocrListed); and, with the brand set for you and
+  // the photo not plainly one brand's, codes both brands use that went in as its (e.auto, for the switch to both
+  // brands should the sweep show the other brand, scan.js scanSw)
+  r.listed = new Set();
+  r.taken.forEach((id) => {
+    const x = r.items.get(id),
+      cs = x ? ocrCodes(x.text, was) : [];
+    if (cs.length === 1) ocrListed(r, cs[0].i);
+  });
+  scanGen = r.gen;
+  try {
+    text.forEach((t) => {
+      const cs = ocrCodes(t, seen || was);
+      if (cs.length === 1 && cs[0].n === 1 && !cs[0].asked) ocrListed(r, cs[0].i);
+    });
+  } finally {
+    scanGen = '';
+  }
+  if (auto && !seen && !scanSw.on)
+    scanList.forEach((e) => {
+      if (!e.ask && e.photo === r.n && COLORS[e.i].brand === auto && scanShared(e.i)) {
+        e.auto = true;
+        e.autoAt = scanSw.autoOnly;
+      }
+    });
   // (a question every answer of which is in the list now, this photo's or an earlier one's, is answered: it goes, kept
   // to come back with Undo. "Which G410?" had stayed with G410 and G24 both in the list, from later photos)
   const listed = new Set(scanList.filter((e) => !e.ask).map((e) => e.i));
@@ -1025,6 +1168,12 @@ function ocrSettle(r, m) {
   ocrCropQuestions(r, read0);
   r.asked = scanList.filter((e) => e.ask && e.photo === r.n).length;
   r.added = scanList.filter((e) => e.photo === r.n && !e.ask).length;
+  r.same = r.listed ? r.listed.size : 0;
+  // (v318.7) a photo plainly of the other brand than the one set for you: both brands are read from now on (scanSw)
+  if (auto && seen && seen !== auto && !scanSw.on) {
+    scanSwitchOn('photo');
+    r.switched = true;
+  }
   scanRender();
   ocrDraw(r);
   ocrStatus(r);
@@ -1040,8 +1189,10 @@ function ocrQueueOn(r) {
     name: r.file && r.file.name,
     added: r.added || 0,
     asked: r.asked || 0,
+    same: r.same || 0,
     failed: !!r.failed,
     brand: r.brand || '',
+    switched: !!r.switched,
   });
   if (r.aborted) q.stop = true;
   if (q.k < q.files.length && !q.stop) {
@@ -1062,14 +1213,21 @@ function ocrFailed(m) {
   } catch (_) {}
   ocrEnd();
   if (!r || r.done) return;
+  // (v318.7) what the photo added at once is taken back out, as closing Scan mid-photo does: its end never checked it
+  // (caps cut by the edge, one look's misreading, the photo's brand). Read gently, what's read again goes in again,
+  // checked; given up, the photo's to be taken again. A memory failure's first try had kept them, unchecked
+  const n0 = scanList.length;
+  scanList = scanList.filter((e) => e.photo !== r.n);
+  r.bent = [];
+  if (scanList.length !== n0) scanRender();
   // (out of memory: once more, gently, before giving up)
   if (m.memory && !r.gentle) {
     try {
       localStorage.setItem(OCR_LOW_KEY, String(Date.now()));
     } catch (_) {}
     r.gentle = true;
-    // (what the first try read is let go of, all but what it added: the second's lines are numbered from 1 again, and
-    // a line taken by the first had kept the second's of the same number out of the list)
+    // (what the first try read is let go of, what it added with it, above: the second's lines are numbered from 1 again,
+    // and a line taken by the first had kept the second's of the same number out of the list)
     r.items = new Map();
     r.taken = new Set();
     r.brands = {};
@@ -1548,6 +1706,8 @@ function ocrStatus(r) {
       (r.added
         ? r.added + (r.added === 1 ? ' marker' : ' markers') + ' added to the list'
         : 'No new codes read') +
+      // (v318.7: a tray photographed again: what it read that's in the list already)
+      (r.same ? ' · ' + r.same + ' already in the list' : '') +
       (r.asked ? ' · ' + r.asked + ' to choose there' : '') +
       (r.aborted ? ' · stopped' : '') +
       (one
@@ -1575,11 +1735,13 @@ function ocrStatus(r) {
   } else if (many && over) {
     const added = q.per.reduce((s, x) => s + x.added, 0),
       asked = q.per.reduce((s, x) => s + x.asked, 0),
+      same = q.per.reduce((s, x) => s + (x.same || 0), 0),
       failed = q.per.filter((x) => x.failed).length;
     t =
       ocrNPhotos(q.per.length) +
       ': ' +
       (added ? added + (added === 1 ? ' marker' : ' markers') + ' added to the list' : 'no new codes read') +
+      (same ? ' · ' + same + ' already in the list' : '') +
       (asked ? ' · ' + asked + ' to choose there' : '') +
       (failed ? ' · ' + failed + ' not read' : '') +
       (q.stop && !q.halt ? ' · stopped' : '');
@@ -1596,7 +1758,9 @@ function ocrStatus(r) {
   bar.style.width = Math.round(pc) + '%';
   const sum = $('ocrSum');
   if (sum && many && over) {
-    const other = scanBrand && q.per.find((x) => x.brand && x.brand !== scanBrand);
+    // (v318.7: or, with the brand set for you, the photos that switched the reading to both brands)
+    const sw = q.per.find((x) => x.switched),
+      other = sw || (scanBrand && q.per.find((x) => x.brand && x.brand !== scanBrand));
     sum.innerHTML =
       '<span class="ocrleg"><span>Read</span><span class="am">To check</span></span>' +
       // (why the queue ended early, when a photo couldn't be read)
@@ -1606,18 +1770,26 @@ function ocrStatus(r) {
           esc(other.brand) +
           ' caps, so theirs went in as ' +
           esc(other.brand) +
-          ', though ' +
-          esc(scanBrand) +
-          ' is chosen above the box. Undo these photos takes them out.</span>'
+          (sw
+            ? ', and both brands are read from now on. Undo these photos takes them out.</span>'
+            : ', though ' +
+              esc(scanBrand) +
+              ' is chosen above the box. Undo these photos takes them out.</span>')
         : '') +
       '<span class="ocrhint">' +
       q.per
+        // (v318.7: numbered as the list's headings number them, on from the photos before this batch)
         .map(
           (x, i) =>
             'Photo ' +
-            (i + 1) +
+            (q.n0 + i) +
             ': ' +
-            (x.failed ? 'not read' : x.added + ' added' + (x.asked ? ', ' + x.asked + ' to choose' : '')),
+            (x.failed
+              ? 'not read'
+              : x.added +
+                ' added' +
+                (x.same ? ', ' + x.same + ' already in the list' : '') +
+                (x.asked ? ', ' + x.asked + ' to choose' : '')),
         )
         .join(' · ') +
       '</span>' +
@@ -1625,15 +1797,21 @@ function ocrStatus(r) {
   } else if (sum && r.done && !r.failed)
     sum.innerHTML =
       '<span class="ocrleg"><span>Read</span><span class="am">To check</span></span>' +
-      (r.brand && scanBrand && r.brand !== scanBrand
+      (r.switched
         ? '<span class="ocrwarn">These look like ' +
           esc(r.brand) +
           ' caps, so they went in as ' +
           esc(r.brand) +
-          ', though ' +
-          esc(scanBrand) +
-          ' is chosen above the box. Undo this photo takes them out.</span>'
-        : '') +
+          ', and both brands are read from now on. Undo this photo takes them out.</span>'
+        : r.brand && scanBrand && r.brand !== scanBrand
+          ? '<span class="ocrwarn">These look like ' +
+            esc(r.brand) +
+            ' caps, so they went in as ' +
+            esc(r.brand) +
+            ', though ' +
+            esc(scanBrand) +
+            ' is chosen above the box. Undo this photo takes them out.</span>'
+          : '') +
       '<span class="ocrhint">Caps without a box weren’t read: a closer photo of them reads them.</span>';
 }
 // the boxes over the photo: green for a code added, amber for one to check; names not drawn
@@ -1655,12 +1833,16 @@ function ocrDraw(r) {
   x.lineWidth = 2.5 * px;
   x.font = '600 ' + Math.round(12 * px) + 'px system-ui, sans-serif';
   // (once the photo's done, a code that went in at its end, read as a pasted line, is read too: green, not amber)
+  // (v318.7: and one read for sure that's in the list from an earlier photo or a sweep, a tray photographed again)
   const added = r.done ? new Set(scanList.filter((e) => !e.ask && e.photo === r.n).map((e) => e.i)) : null,
+    listed = (r.done && r.listed) || null,
     brand = (r.done && r.brand) || scanBrand;
   r.items.forEach((it) => {
     if (!it || it.nameOf || !it.text) return;
     let cs = r.taken.has(it.id) ? ocrCodes(it.text, scanBrand) : ocrCodes(it.text, brand);
-    const sure = r.taken.has(it.id) || (added && cs.length === 1 && added.has(cs[0].i));
+    const sure =
+      r.taken.has(it.id) ||
+      (cs.length === 1 && ((added && added.has(cs[0].i)) || (listed && listed.has(cs[0].i))));
     if (!sure && !cs.length) cs = ocrCodes(it.text, '');
     if (!sure && !cs.length) return;
     const [cx, cy, w, h, a] = it.box;
@@ -1727,7 +1909,7 @@ function ocrButtons(r) {
       // (the questions these photos answered, asked before them, back)
       ocrAnswered = ocrAnswered.filter((a) => {
         if (a.by < n0 || a.by > r.n) return true;
-        if (!mine(a.e)) scanList.unshift(a.e);
+        if (!mine(a.e)) scanList.splice(ocrGroupAt(a.e), 0, a.e);
         return false;
       });
       scanRender();
@@ -1739,7 +1921,23 @@ function ocrButtons(r) {
     });
   $('ocrDone').focus({ preventScroll: true });
 }
-const ocrNPhotos = (n) => (n === 1 ? '1 photo' : n + ' photos');
+// (v318.7) where an entry of a photo goes back into the list: at the top of its photo's group (the list is newest first,
+// a photo's entries together), else where its photo would sit among the others; one of no photo at the top. A question
+// of photo 1 given back by Undo this photo had been put at the top, above photo 2's, and the headings said Photo 1 twice
+function ocrGroupAt(e) {
+  if (!e.photo) return 0;
+  let k = scanList.findIndex((x) => x.photo === e.photo);
+  if (k < 0) k = scanList.findIndex((x) => x.photo && x.photo < e.photo);
+  if (k < 0) {
+    k = 0;
+    scanList.forEach((x, j) => x.photo > e.photo && (k = j + 1));
+  }
+  return k;
+}
+const ocrNPhotos = (n) => (n === 1 ? '1 photo' : n + ' photos'),
+  // (v318.7) Done's card after a photo that switched the reading to both brands
+  ocrSwitchNote = (b) =>
+    'Read as ' + b + ': these look like ' + b + ' caps, so both brands are read from now on';
 // Done: back to the list, with what the photo added said on its card
 function ocrFinish() {
   const r = ocrRun,
@@ -1750,20 +1948,38 @@ function ocrFinish() {
   ocrQ = null;
   ocrHide();
   if (many) {
+    // (v318.7: what was in the list already, a tray photographed again; and the switch to both brands)
     const added = q.per.reduce((s, x) => s + x.added, 0),
-      asked = q.per.reduce((s, x) => s + x.asked, 0);
+      asked = q.per.reduce((s, x) => s + x.asked, 0),
+      same = q.per.reduce((s, x) => s + (x.same || 0), 0),
+      sw = q.per.find((x) => x.switched);
     scanSay(
       added ? 'ok' : 'same',
       'From ' + ocrNPhotos(q.per.length) + ': ' + (added ? added + ' added to the list' : 'nothing new'),
-      asked ? asked + ' to choose in the list below' : 'Check them below, then Add',
+      [
+        same ? same + ' already in the list' : '',
+        asked ? asked + ' to choose in the list below' : '',
+        sw ? ocrSwitchNote(sw.brand) : '',
+      ]
+        .filter(Boolean)
+        .join(' · ') || 'Check them below, then Add',
       -1,
+      // (v318.7: the set nearly all here, with what's missing: "Honolulu 120: all but 2 are here", scan.js)
+      scanGapChoices(),
     );
   } else if (r && r.done && !r.failed)
     scanSay(
       r.added ? 'ok' : 'same',
       r.added ? 'From the photo: ' + r.added + ' added to the list' : 'From the photo: nothing new',
-      r.asked ? r.asked + ' to choose in the list below' : 'Check them below, then Add',
+      [
+        r.same ? r.same + ' already in the list' : '',
+        r.asked ? r.asked + ' to choose in the list below' : '',
+        r.switched ? ocrSwitchNote(r.brand) : '',
+      ]
+        .filter(Boolean)
+        .join(' · ') || 'Check them below, then Add',
       -1,
+      scanGapChoices(),
     );
   scanRender();
   ocrFocusList(true);

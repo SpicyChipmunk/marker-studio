@@ -109,7 +109,8 @@ test('a question from a photo shows its cap, upright as the reader read it, what
   assert.deepEqual(errors, []);
 });
 
-test('a tap on the picture shows it larger; a tap, Escape or Back closes it, and focus goes back', async () => {
+// (v318.7: Not now in Close's place, still data-a="close")
+test('a tap on the picture shows it larger; Not now, Escape or Back closes it, and focus goes back', async () => {
   const { page, errors } = await openApp({
     width: 820,
     height: 1180,
@@ -172,8 +173,8 @@ test('the larger view gives focus back to the picture tapped, not to what had it
 });
 
 // (v318.3 debug) a phone held sideways: the picture kept square (it had been squashed to 320×257 by the dialogs' own
-// height limit) and Close in view
-test('the larger view on a phone held sideways: the picture square, Close in view', async () => {
+// height limit) and Close in view (v318.7: Not now, with the answers beside the picture there)
+test('the larger view on a phone held sideways: the picture square, Not now in view', async () => {
   const { page, errors } = await openApp({
     width: 844,
     height: 390,
@@ -189,7 +190,7 @@ test('the larger view on a phone held sideways: the picture square, Close in vie
     return { w: Math.round(i.width), h: Math.round(i.height), bottom: b.bottom };
   });
   assert.ok(Math.abs(o.w - o.h) <= 1, `square: ${o.w}×${o.h}`);
-  assert.ok(o.bottom <= 390, `Close in view: its foot at ${o.bottom}`);
+  assert.ok(o.bottom <= 390, `Not now in view: its foot at ${o.bottom}`);
   assert.deepEqual(errors, []);
 });
 

@@ -101,19 +101,36 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.6 (with v318.2 to v318.5)
+## New in this release: v318.7 (with v318.2 to v318.6)
 
-The photo reader is more careful: a cap it can't read for sure is asked about rather than added, and each question
-shows the cap. Checked on captured reads of your photos; on a real iPad:
+The photo reader is more careful (a cap it can't read for sure is asked about, with its picture), and adding markers is
+safer and quicker to check. Checked on captured reads of your photos and in Safari's engine; on a real iPad:
 
 - [ ] ★ **Photograph your caps** with a tray of your markers (Markers › + Add markers) → every marker added is one in
-      the photo. No "Which Y210?" on a photo of your current caps.
-- [ ] ★ Any **question** from a photo shows the cap it's about, the right way up, in place of the "?" → you can tell at
-      a glance whether to say yes. Tap the picture → it's shown larger with the question; tap anywhere, or swipe back,
-      → back to the list. Try a photo with a cap cut off at its edge.
+      the photo; no "Which Y210?" on a photo of your current caps. Photograph the same tray again → its caps go green
+      and the card says "… already in the list".
+- [ ] ★ A **question** from a photo shows its cap in place of the "?". Tap the picture → shown larger with the question
+      and its answers: tap an answer, "Not this cap" or "Not now". A tap on the picture or outside closes it; a tap on
+      the card's text doesn't.
+- [ ] ★ **The keyboard after answering:** with the keyboard down (after a photo), answer a question in the list → the
+      keyboard stays down and the next question is ready. With AutoFill › Scan Text running, answer one → the keyboard
+      (and Scan Text) stays.
+- [ ] ★ **A Copic list pasted** (Ohuhu-only collection, the brand set for you) → read as Copic: all of it in as Copic,
+      the card says "Read as Copic: its codes are plainly Copic's".
+- [ ] ★ **Sweep a few Copic caps with Scan Text** (Ohuhu-only collection) → after two or three, the card says "Reading
+      both brands: Copic caps were read" and a row at the top of the list has **Keep Ohuhu**; codes both brands use are
+      asked "Ohuhu or Copic?". Tap Keep Ohuhu → back to Ohuhu. A sweep of your Ohuhu caps never shows that row.
+- [ ] Type **R29** with Ohuhu set → asked "Which R29?" with Ohuhu YR47 (was R29) first and Copic R29, not "Another
+      brand than the one chosen".
+- [ ] Leave a question unanswered, tap Add, close the app fully (swipe it away) and open it again → Markers › + Add
+      markers says "1 question still to answer · Answer them"; Answer them opens the list at it **without the keyboard**,
+      and its picture comes back a moment later.
+- [ ] Two photos in the list → a small heading over each ("Photo 1 · 58 markers"); still there after a reload.
+- [ ] Photograph a set's tray with a cap or two hidden → the card names them: "Honolulu 120: all but 2 are here — …
+      Not read, or not yours?". "Add these 2" puts them in the list, not your collection; "I don't have them" isn't
+      asked again.
+- [ ] Help › Your data › Delete all my data → nothing of Scan's list or pictures comes back after the reload.
 - [ ] Photograph a cap of **R22 Ballet Pink** among others → R22 is added, not RV17 Pink.
-- [ ] After a reload with a question still waiting → it shows "?" again (the pictures are kept only while Scan is
-      open), and still works.
 
 ## From v318.1
 

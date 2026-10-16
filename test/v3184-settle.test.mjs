@@ -126,3 +126,34 @@ test('a cap read twice in one place, its names beside one reading only, is asked
   assert.deepEqual(photo([twin('RV29', 'Plum Pink')], 'Ohuhu').list, ['Ohuhu|RV29']);
   assert.deepEqual(photo([twin('C-3', 'Cool Gray No.3')], 'Copic').list, ['Copic|C-3']);
 });
+
+// (v318.6 debug) another brand's cap read whole, its name with its code, on a tray plainly of one brand had gone without
+// a word as that brand's code read short (v318.2's noise rule, meant for scraps): Copic's BG11 as BG114's start, Y13 as
+// BGY13's end, E71 as E711's start. A cap whose name alone was read was asked about; one read whole was dropped.
+test('another brand’s cap read with its name on a tray plainly of one brand is asked about, not dropped as a code read short', () => {
+  for (const brand of ['', 'Ohuhu', 'Copic']) {
+    for (const [code, name, unsure] of [
+      ['BG11', 'Moon White', false],
+      ['Y13', 'Lemon Yellow', false],
+      ['E71', 'Champagne', false],
+      ['E71', 'Champagne', true],
+    ]) {
+      const o = photo(NOW.concat([[code, unsure, [[name, 30]]]]), brand);
+      assert.deepEqual(
+        o.asks,
+        ['Copic|' + code],
+        brand + ' ' + code + ' ' + name + ': ' + o.asks.join(' | '),
+      );
+      assert.ok(!o.list.some((k) => /Copic/.test(k)), 'asked, not added: ' + o.list.join(' '));
+      // (with its picture, the cap's own line: 9, after the tray's eight)
+      assert.deepEqual(o.pics, [9]);
+    }
+    // (beside the Ohuhu cap whose code it starts, the same: both are there)
+    const p = photo(NOW.concat([['E711'], ['E71', false, [['Champagne', 30]]]]), brand);
+    assert.deepEqual(p.asks, ['Copic|E71'], brand + ': ' + p.asks.join(' | '));
+    assert.ok(p.list.includes('Ohuhu|E711'), p.list.join(' '));
+    // (the code alone, or with the Ohuhu cap's name, a scrap of it: still left out, as before)
+    assert.deepEqual(photo(NOW.concat([['E71']]), brand).asks, []);
+    assert.deepEqual(photo(NOW.concat([['E71', false, [['Old Mahogany', 30]]]]), brand).asks, []);
+  }
+});

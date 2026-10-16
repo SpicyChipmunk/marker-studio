@@ -54,9 +54,11 @@ test('Scan: an all-Ohuhu collection starts on Ohuhu, shown and said, until a bra
   assert.equal(await pressed(page), 'Ohuhu');
   assert.match(await page.textContent('#scStat'), /Set to Ohuhu, the brand of all your markers · Either brand reads both/);
   assert.equal(await page.evaluate(() => localStorage.getItem('ms-scan-brand')), null, 'not stored');
-  // a Copic-only code asks
+  // a Copic-only code asks (v318.7: with the brand set for you, a Copic cap read whole is a question in the list, said
+  // so, not a card saying "chosen": the sweep may show the caps are Copic's)
   await type(page, 'B000');
-  assert.match(await page.textContent('#scStat'), /Another brand than the one chosen \(Ohuhu\)/);
+  assert.match(await page.textContent('#scStat'), /Copic B000 Pale Porcelain Blue: add it\? Ohuhu was set for you/);
+  assert.match(await page.textContent('#scList .scask'), /Ohuhu was set for you/);
   // Either brand, tapped: kept from now on
   await page.click('#scBrand button[data-b=""]'); await idle(page);
   assert.equal(await page.evaluate(() => localStorage.getItem('ms-scan-brand')), '');

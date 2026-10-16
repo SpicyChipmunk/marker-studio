@@ -561,6 +561,39 @@ test('find by code with the iPad’s keyboard up in portrait: the picture stops 
   assert.deepEqual(errors, []);
 });
 
+// (v318.6: a GitHub run, Safari's engine, failed the test above once in a while: the picture, sized again as it stopped
+// being pinned, put back the height it takes when pinned, and Safari, showing the box as it was typed in, took the
+// page's scroll-padding from it and put the box under the keyboard)
+test('the keyboard up over the code box: the picture sized again keeps it unpinned, and the box stays above the keyboard as you type', async () => {
+  const { page, errors } = await openApp({ width: 820, height: 1180 });
+  await benGuide(page);
+  await along(page);
+  const KB = 375;
+  await page.focus('#sfFindIn');
+  await page.evaluate((kb) => {
+    __mstest.kbdSim = kb;
+  }, KB);
+  await frames(page);
+  // (what the picture's own resizing does)
+  await page.evaluate(() => window.dispatchEvent(new Event('resize')));
+  await frames(page, 3);
+  assert.equal(await page.evaluate(() => document.documentElement.style.getPropertyValue('--pinH')), '0px');
+  await page.keyboard.type('y26');
+  await idle(page);
+  const box = await page.evaluate(() => document.getElementById('sfFindIn').getBoundingClientRect().bottom);
+  assert.ok(box <= 1180 - KB, 'the box above the keyboard: ' + box);
+  // (the keyboard gone: pinned again, with its height)
+  await page.keyboard.press('Enter');
+  await page.evaluate(() => {
+    __mstest.kbdSim = 0;
+  });
+  await frames(page);
+  assert.ok(
+    (await page.evaluate(() => parseFloat(document.documentElement.style.getPropertyValue('--pinH')))) > 100,
+  );
+  assert.deepEqual(errors, []);
+});
+
 // ---- Focus mode's finish ----
 async function finishInList(page) {
   await page.click('#sfColor');

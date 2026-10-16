@@ -261,6 +261,30 @@
 .scask .scname {
   padding-block: 4px 6px;
 }
+/* (v318.7) a small heading over each photo's markers: "Photo 1 · 58 markers · 3 to choose" */
+.scgroup {
+  padding: 8px 2px 2px 8px;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+.scgroup b {
+  color: var(--ink);
+}
+.scgroup:first-child {
+  padding-top: 2px;
+}
+/* (v318.7) the row at the top of the list once the sweep showed the other brand: Reading both brands, with Keep Ohuhu */
+.scrow.scswitch {
+  background: rgba(var(--ok-rgb), 0.1);
+}
+.scswitch .scmark {
+  color: var(--ok);
+}
+.scswitch .scname small {
+  display: block;
+  color: var(--sub);
+  font-size: var(--t-sm);
+}
 .scchoose {
   display: inline-flex;
   align-items: center;
@@ -303,6 +327,7 @@
    Scan's Open a list file */
 .wcsub .wcscan,
 .mkfind .wcscan,
+.mkwait .wcscan,
 .sclens .scfile {
   position: relative;
   display: inline-block;
@@ -317,6 +342,7 @@
 }
 .wcsub .wcscan::after,
 .mkfind .wcscan::after,
+.mkwait .wcscan::after,
 .sclens .scfile::after {
   content: '';
   position: absolute;
@@ -601,7 +627,42 @@
   margin: 0 auto 12px;
   border-radius: var(--r-md);
 }
-.sczoomcard .btn-primary {
-  margin-top: 12px;
+/* (v318.7) the answers under the picture, then Not this cap and Not now */
+.sczpick {
+  justify-content: center;
+  margin-top: 10px;
+}
+.sczrow {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.sczrow > * {
   min-width: 140px;
+}
+/* (a phone held sideways: the picture on the left, the question, its answers and the buttons beside it, so Not now
+   stays in view under a picture kept square, as v318.3 debug had it with Close alone) */
+@media (max-height: 500px) and (min-width: 600px) {
+  .sczoomcard {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    column-gap: 16px;
+    align-items: center;
+    text-align: left;
+  }
+  .sczoomcard img {
+    grid-row: 1 / span 3;
+    width: min(320px, 40vw, 60vh);
+    margin: 0;
+  }
+  .sczpick,
+  .sczrow {
+    justify-content: flex-start;
+  }
+  .sczrow {
+    margin-top: 6px;
+  }
 }

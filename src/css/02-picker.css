@@ -1630,6 +1630,23 @@ button:focus-visible {
 #wcAddWays .mkfind {
   padding-bottom: 12px;
 }
+/* (v318.7) the questions waiting in Scan's list, above the ways in: "2 questions still to answer · Answer them" */
+.mkwait {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  background: rgba(var(--warn-rgb), 0.1);
+  color: var(--ink);
+  font-size: var(--t-base);
+  line-height: 1.5;
+}
+.mkwait[hidden] {
+  display: none;
+}
 
 /* (v313) the Library's empty state: what gets kept here, and a way to make something */
 #savedList .emptyhow {
