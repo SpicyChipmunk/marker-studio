@@ -49,7 +49,7 @@ test('a new guide takes rule 3 (v318; laid by rule 2’s area), saves 2 and open
   await idle(page);
   await letterGuide(page);
   await answerAsks(page);
-  assert.equal(await page.evaluate(() => __mstest.styleVars.gradArea), 3);
+  assert.equal(await page.evaluate(() => __mstest.styleVars.gradArea), 5, 'a new guide (5 since v318.11)');
   const a = await lay(page, 2);
   // coloured, then laid again: as before
   await page.evaluate((l) => {

@@ -1448,3 +1448,48 @@ before. Such photos take about twice as long (a Copic case three to four times);
 - The photo's pixels are let go of once its questions' pictures are cut, not kept while the questions are answered.
 - Tests: test/v3189-detail (the engine's early word, the code-as-name swap, the page's closer read, Stop, the memory
   fallback, the unfinished read); e2e/v3189-detail on drawn trays in Chromium and WebKit.
+
+## v318.10
+
+**Colouring fixes found by the guide benchmark** (`npm run bench:colour`: 9,880 builds on the benchmark's synthetic
+pages, five collections, their true sections; scripts/bench/README.md). New guides only where a guide's look changes;
+a saved guide lays as it did.
+
+- **Gradient never picks near twins** (gradArea 4, new guides): when every marker near a run's next step is close to one
+  already picked, it no longer takes one under TWIN_DE (2.5 CIEDE2000) of a picked marker while another is among them.
+  Honolulu 120 at 32 markers had picked a near twin on 33 of 38 pages (YR111 beside YR112, 2.41), laid side by side;
+  now 0. Pastel on Honolulu 320 and the large two-brand set had too: touching near twins 12–13 a page → 0. Rough
+  share and the markers used are unchanged; a guide saved at gradArea 3 or before lays as it did.
+- **No repeats lays the most-connected sections first**, and its last resort is the least used marker that isn't on a
+  neighbour before one that is (it had taken the least used whatever its neighbours). On Ciao 12 and Honolulu 24, 24
+  guides had touching sections sharing a marker; now 0. Every marker is still used once before any twice, except where
+  the unused ones are all twins of a neighbour's (as since v304).
+- **Balance lays hubs first** (a section touching at least 12 others and 3 times the median), the rest biggest first as
+  before: touching pairs on one marker 15 → 9, all on Ciao 12, where Balance's plan uses 7 markers and a tessellation's
+  sections touch 12–13 others; the rest unchanged (markers used 15.8 → 15.6 on the large sets).
+- Tests: test/v31810-colouring (each fix on drawn pages that fail on v318.9); the gradArea checks take 4.
+
+## v318.11
+
+- **Shuffle always changes a Gradient** (gradArea 5, new guides). A Gradient whose markers run light to dark (a
+  ramp, not a loop round the colour wheel: often Pastel, sometimes Deep or Muted) had only near-equal markers for
+  Shuffle to swap, and when the run was all of the Mood's markers, none: Shuffle gave the same guide back (Pastel on
+  Honolulu 120: no section changed in 4 Shuffles). Shuffle now also moves where each marker hands over to the next
+  along the flow (by at least a fifth of a band each time; the run's order and markers stay): 25–61% of the sections
+  change per Shuffle on the pages measured. A loop, the first build, a saved or handed-over palette, Scatter, and a
+  guide saved before lay as they did; the colour benchmark's digest is unchanged. Surprise, which draws its own
+  Shuffle seed, lays a light-to-dark Gradient with its handovers moved too.
+- **A tip after a steep photo.** When the page finder is sure of a page whose far edge is much shorter than its near
+  edge (under 0.67 of it; the maintainer's flat photos 0.92–0.99, his 45° ones 0.57–0.62), a note after it's
+  straightened: hold the phone flatter. On the guide benchmark's printed set, such photos lost about half their
+  sections. Reading the far end from the full-size photo was measured and doesn't help (+1 point), so there's no fix
+  beyond the tip.
+- **Tests:** the pictures' WebKit test (`e2e/v3187-pics`) runs its "storage fails" step in a session of its own, with
+  a check that the failure was met (on GitHub's WebKit the second setup script wasn't in force on the reload);
+  test/v31811-shuffle; the steep-angle note in e2e/straighten.
+- **Benchmark:** photo registration finds slanted sheets (41 of Ben's 42 photos, from 30; a misread page fixed);
+  `photos.mjs --decode N` and `--list`; sections under 2 mm across lost to a photo's thicker lines are scored apart
+  (info), not as defects.
+- **README for people using the app:** getting started, photographing a page, adding markers, your data, what it
+  covers, feedback. Building, testing and the code's layout moved to docs/DEVELOPING.md (internal), as the licence
+  doesn't allow reuse.

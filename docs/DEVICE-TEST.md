@@ -101,7 +101,28 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.9
+## New in this release: v318.11
+
+- [ ] ★ A new **Gradient** with Mood **Pastel** → tap **Shuffle** 3 times → the guide changes every time (same
+      colours, moved along).
+- [ ] Photograph a page **at a steep angle** (about 45°) → it's straightened, then a tip to hold the phone flatter.
+      Photograph it again from **right above** → no tip.
+
+Then v318.10's checks, if not done:
+
+## v318.10
+
+New guides colour more cleanly (measured on the benchmark; nothing new to tap). On the iPad, with one of your pages:
+
+- [ ] ★ A new **Gradient** guide with 32 markers, and one with Pastel → no two neighbouring sections in colours you
+      can't tell apart.
+- [ ] A new **Random** guide with No repeats → no two touching sections share a marker (unless a section touches more
+      sections than you have markers).
+- [ ] Open a guide saved before this release → it looks as it did.
+
+Then v318.9's checks, if not done:
+
+## v318.9
 
 Photos whose codes are small are read again closer. On the iPad, with **Photograph your caps** (time each read; note
 the seconds):

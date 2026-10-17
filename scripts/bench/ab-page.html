@@ -1,0 +1,157 @@
+<title>Gradient Pair Test</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<style>
+/* layout: one pair at a time — the two guides side by side (stacked on a phone), the verdict row under them */
+:root {
+  --bg: #f3f4f1; --surface: #ffffff; --ink: #1f2420; --muted: #5d665f; --line: #d6dbd4;
+  --accent: #2f6b57; --accent-ink: #ffffff; --chip: #e7ece6; --chip-on: #cfe3d9;
+  --display: "Fraunces", Georgia, "Times New Roman", serif;
+  --body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #161a17; --surface: #1f2420; --ink: #e8ece7; --muted: #a2ada4; --line: #343c36;
+  --accent: #7cc3a5; --accent-ink: #10201a; --chip: #2a312c; --chip-on: #2f5444; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #161a17; --surface: #1f2420; --ink: #e8ece7; --muted: #a2ada4; --line: #343c36;
+  --accent: #7cc3a5; --accent-ink: #10201a; --chip: #2a312c; --chip-on: #2f5444; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 20px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+h1 { font-family: var(--display); font-weight: 650; font-size: 1.6rem; margin: 0; text-wrap: balance; }
+.count { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 500; }
+.intro { margin: 0; color: var(--muted); max-width: 70ch; }
+.ticks { display: grid; grid-template-columns: repeat(40, 1fr); gap: 3px; }
+.ticks button { height: 8px; border: 0; padding: 0; border-radius: 2px; background: var(--line); cursor: pointer; }
+.ticks button.done { background: var(--accent); opacity: .55; }
+.ticks button.here { background: var(--accent); opacity: 1; outline: 2px solid var(--ink); outline-offset: 1px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 640px) { .pair { grid-template-columns: 1fr; } }
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px; display: grid; gap: 8px; min-width: 0; }
+figure.picked { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+figure img { width: 100%; height: auto; display: block; border-radius: 2px; background: #fff; }
+figcaption { font-family: var(--display); font-weight: 500; font-size: 1.05rem; }
+.verdict { display: flex; flex-wrap: wrap; gap: 10px; }
+.verdict button { flex: 1 1 160px; font: 600 1rem var(--body); padding: 14px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.verdict button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.why { display: grid; gap: 8px; }
+.why .label { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button { font: 500 .9rem var(--body); padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--chip); color: var(--ink); cursor: pointer; }
+.chips button[aria-pressed="true"] { background: var(--chip-on); border-color: var(--accent); }
+textarea { font: 400 .95rem var(--body); width: 100%; min-height: 54px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); resize: vertical; box-sizing: border-box; }
+.nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.nav button { font: 600 .95rem var(--body); padding: 10px 18px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.nav button.go { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.nav button:disabled { opacity: .45; cursor: default; }
+.status { color: var(--muted); font-size: .88rem; }
+.done { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 24px; display: grid; gap: 8px; }
+.done h2 { font-family: var(--display); margin: 0; font-size: 1.3rem; }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) { figure { transition: box-shadow .15s, border-color .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Which guide would you rather colour?</h1>
+    <span class="count" id="count">Pair 1 of 40</span>
+  </header>
+  <p class="intro">Each pair is the same page and the same markers, laid out two ways. Pick the one you'd rather colour from, or say they're about the same, and tap a reason or two if one stands out. Your answers save as you go, so you can stop and come back.</p>
+  <nav class="ticks" id="ticks" aria-label="Pairs"></nav>
+  <section id="work">
+    <div class="pair">
+      <figure id="f1"><figcaption>1</figcaption><img id="i1" alt="Guide 1"></figure>
+      <figure id="f2"><figcaption>2</figcaption><img id="i2" alt="Guide 2"></figure>
+    </div>
+  </section>
+  <div class="verdict" id="verdict">
+    <button id="v1" aria-pressed="false" data-v="1">1 is better</button>
+    <button id="vs" aria-pressed="false" data-v="same">About the same</button>
+    <button id="v2" aria-pressed="false" data-v="2">2 is better</button>
+  </div>
+  <div class="why">
+    <span class="label">Why (optional)</span>
+    <div class="chips" id="chips"></div>
+    <textarea id="note" placeholder="Anything else about this pair (optional)"></textarea>
+  </div>
+  <div class="nav">
+    <button id="back">Back</button>
+    <span class="status" id="status">Answers aren't saved in this view.</span>
+    <button id="next" class="go">Next pair</button>
+  </div>
+  <div class="done" id="done" hidden>
+    <h2>All 40 pairs answered</h2>
+    <p>Thanks. Claude reads the answers straight from this page; you can still go back and change any of them.</p>
+  </div>
+</div>
+
+<script>
+const PAIRS = /*PAIRS*/[];
+const REASONS = ['Smoother flow', 'Livelier', 'Harsh jumps', 'Colours clash', 'Too samey', 'Muddy', 'Better balance'];
+let at = 0, db = null;
+const answers = {}; // pair n -> {pick: 'a'|'b'|'same', reasons: [], note}
+const $ = (id) => document.getElementById(id);
+
+function sideOf(p, slot) { return slot === 1 ? p.left : p.left === 'a' ? 'b' : 'a'; }
+function render() {
+  const p = PAIRS[at], ans = answers[p.n] || {};
+  $('count').textContent = `Pair ${at + 1} of ${PAIRS.length}`;
+  $('i1').src = p[sideOf(p, 1)];
+  $('i2').src = p[sideOf(p, 2)];
+  const slot = ans.pick === 'same' ? 'same' : ans.pick ? (ans.pick === sideOf(p, 1) ? '1' : '2') : null;
+  for (const b of $('verdict').children) b.setAttribute('aria-pressed', String(b.dataset.v === slot));
+  $('f1').classList.toggle('picked', slot === '1');
+  $('f2').classList.toggle('picked', slot === '2');
+  for (const b of $('chips').children) b.setAttribute('aria-pressed', String((ans.reasons || []).includes(b.textContent)));
+  $('note').value = ans.note || '';
+  $('back').disabled = at === 0;
+  $('next').textContent = at === PAIRS.length - 1 ? 'Finish' : 'Next pair';
+  [...$('ticks').children].forEach((t, i) => { t.classList.toggle('done', !!answers[PAIRS[i].n]?.pick); t.classList.toggle('here', i === at); });
+  $('done').hidden = !(PAIRS.every((q) => answers[q.n]?.pick));
+}
+let saveT = 0;
+function save(n) {
+  if (!db) return;
+  clearTimeout(saveT);
+  saveT = setTimeout(async () => {
+    const a = answers[n], p = PAIRS.find((q) => q.n === n);
+    try {
+      await db.doc('choices/pair-' + n).set({ n, pick: a.pick || null, left: p.left, reasons: a.reasons || [], note: a.note || '', at: new Date().toISOString() });
+      $('status').textContent = 'Saved';
+    } catch (e) { $('status').textContent = "Couldn't save: " + (e && e.message ? e.message : 'try again'); }
+  }, 350);
+}
+function edit(fn) { const n = PAIRS[at].n; answers[n] = answers[n] || {}; fn(answers[n]); render(); save(n); }
+
+$('verdict').addEventListener('click', (e) => {
+  const v = e.target.closest('button')?.dataset.v; if (!v) return;
+  edit((a) => { a.pick = v === 'same' ? 'same' : sideOf(PAIRS[at], +v); });
+});
+REASONS.forEach((r) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = r; b.setAttribute('aria-pressed', 'false'); $('chips').appendChild(b); });
+$('chips').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  edit((a) => { const s = new Set(a.reasons || []); s.has(b.textContent) ? s.delete(b.textContent) : s.add(b.textContent); a.reasons = [...s]; });
+});
+$('note').addEventListener('input', () => { const n = PAIRS[at].n; answers[n] = answers[n] || {}; answers[n].note = $('note').value; save(n); });
+$('back').addEventListener('click', () => { if (at > 0) { at--; render(); window.scrollTo({ top: 0 }); } });
+$('next').addEventListener('click', () => {
+  if (at < PAIRS.length - 1) { at++; render(); window.scrollTo({ top: 0 }); }
+  else $('done').scrollIntoView({ block: 'center' });
+});
+PAIRS.forEach((p, i) => { const t = document.createElement('button'); t.type = 'button'; t.setAttribute('aria-label', 'Pair ' + (i + 1)); t.addEventListener('click', () => { at = i; render(); }); $('ticks').appendChild(t); });
+render();
+
+(async () => {
+  db = window.claude ? await window.claude.use('db') : null;
+  if (!db) { $('status').textContent = "Answers can't be saved in this view: open the page in Claude to keep them."; return; }
+  $('status').textContent = 'Answers save as you go';
+  try {
+    const snap = await db.collection('choices').get();
+    for (const d of snap.docs) { const v = d.data() || {}; if (v.n) answers[v.n] = { pick: v.pick || undefined, reasons: v.reasons || [], note: v.note || '' }; }
+    const first = PAIRS.findIndex((q) => !answers[q.n]?.pick);
+    at = first < 0 ? 0 : first;
+    render();
+  } catch (e) { $('status').textContent = "Couldn't load earlier answers: " + (e && e.message ? e.message : ''); }
+})();
+</script>

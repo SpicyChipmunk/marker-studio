@@ -32,7 +32,14 @@ function lay(a, vars) {
   const t = a.t;
   Object.assign(
     t.styleVars,
-    { family: 'gradient', gradShape: 'serpentine', look: 'auto', paletteSource: 'owned', palette: 'all', gradScat: 0 },
+    {
+      family: 'gradient',
+      gradShape: 'serpentine',
+      look: 'auto',
+      paletteSource: 'owned',
+      palette: 'all',
+      gradScat: 0,
+    },
     vars,
   );
   t.assign.adj = null;
@@ -45,13 +52,14 @@ function lay(a, vars) {
 const markers = (ad) => [...new Map(Object.values(ad.assign).map((m) => [m.mkey, m])).values()];
 function twins(a, ms) {
   let n = 0;
-  for (let i = 0; i < ms.length; i++) for (let j = i + 1; j < ms.length; j++) if (a.de(ms[i].lab, ms[j].lab) < 2.5) n++;
+  for (let i = 0; i < ms.length; i++)
+    for (let j = i + 1; j < ms.length; j++) if (a.de(ms[i].lab, ms[j].lab) < 2.5) n++;
   return n;
 }
 
-test('a new guide takes gradArea 3', () => {
+test('a new guide takes gradArea 3 or later (4 since v318.10)', () => {
   const a = gridApp(4, 4);
-  assert.equal(a.t.styleVars.gradArea, 3);
+  assert.ok(a.t.styleVars.gradArea >= 3);
 });
 
 test('Pastel 24, Soft 24, Deep 32 on Ben’s markers: gradArea 3 picks the same markers as 2', () => {
@@ -66,7 +74,11 @@ test('Pastel 24, Soft 24, Deep 32 on Ben’s markers: gradArea 3 picks the same 
     ['muted', 24],
     ['deep', 32],
   ])
-    assert.equal(k(lay(a, { gradArea: 2, emphasis, limitN })), k(lay(a, { gradArea: 3, emphasis, limitN })), emphasis);
+    assert.equal(
+      k(lay(a, { gradArea: 2, emphasis, limitN })),
+      k(lay(a, { gradArea: 3, emphasis, limitN })),
+      emphasis,
+    );
 });
 
 test('Any and Bright pick from the whole set as before (no tiers): the same markers under 2 and 3', () => {
@@ -77,7 +89,10 @@ test('Any and Bright pick from the whole set as before (no tiers): the same mark
         .map((m) => m.mkey)
         .sort()
         .join();
-    assert.equal(k(lay(a, { gradArea: 2, emphasis, limitN: 16 })), k(lay(a, { gradArea: 3, emphasis, limitN: 16 })));
+    assert.equal(
+      k(lay(a, { gradArea: 2, emphasis, limitN: 16 })),
+      k(lay(a, { gradArea: 3, emphasis, limitN: 16 })),
+    );
   }
 });
 
@@ -88,7 +103,13 @@ test('smoothing at all your markers: fewer touching sections on near twins at gr
     let n = 0;
     for (const l of ad.order)
       for (const q of adj[l] || [])
-        if (q > l && ad.assign[q] && ad.assign[q].mkey !== ad.assign[l].mkey && a.de(ad.assign[q].lab, ad.assign[l].lab) < 2.5) n++;
+        if (
+          q > l &&
+          ad.assign[q] &&
+          ad.assign[q].mkey !== ad.assign[l].mkey &&
+          a.de(ad.assign[q].lab, ad.assign[l].lab) < 2.5
+        )
+          n++;
     return n;
   };
   const was = touchTwins(lay(a, { gradArea: 2, emphasis: 'neutral', limitN: 999 })),

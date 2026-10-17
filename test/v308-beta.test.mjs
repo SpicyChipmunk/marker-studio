@@ -408,21 +408,30 @@ test('releasing: Pages from a release branch that only takes a commit whose test
     assert.ok(doc.includes(s), s);
 });
 
-test('README: for users first, the CI as it runs (8 WebKit parts), nothing out of date; DEVICE-TEST is internal', () => {
+test('README: for users (v318.11: how to use the app; working on it is docs/DEVELOPING.md), the CI as it runs (10 WebKit parts), nothing out of date; DEVICE-TEST and DEVELOPING are internal', () => {
   const r = read('README.md');
-  const top = r.slice(0, r.indexOf('## Working on it'));
   for (const s of [
     'https://spicychipmunk.github.io/marker-studio/',
     'docs/TESTERS.md',
     'Send feedback',
     "isn't affiliated with or endorsed by Ohuhu or Copic",
+    '## Getting started',
+    '## Photographing a page',
+    'All rights reserved',
   ])
-    assert.ok(top.includes(s), s);
-  assert.ok(!/phone-first|graduating|3 parts|6 parts|the few\s/i.test(r));
-  assert.match(r, /WebKit \(Safari's engine\), in 10 parts/);
-  assert.match(r, /Chromium in 2 parts/);
+    assert.ok(r.includes(s), s);
+  // (nothing on building or changing the code: the licence doesn't allow reuse)
+  assert.ok(
+    !/npm run|## Working on it|## Running the tests|src\/js/.test(r),
+    'no working on the code in the README',
+  );
+  const dev = read('docs/DEVELOPING.md');
+  assert.match(dev, /^# [^\n]*\n\n> \*\*Internal\.\*\*/);
+  for (const f of [r, dev]) assert.ok(!/phone-first|graduating|3 parts|6 parts|the few\s/i.test(f));
+  assert.match(dev, /WebKit \(Safari's engine\), in 10 parts/);
+  assert.match(dev, /Chromium in 2 parts/);
   const wf = read('.github/workflows/test.yml');
-  assert.match(wf, /part: \[1, 2, 3, 4, 5, 6, 7, 8, 9, 10\]/, 'the README matches the workflow');
+  assert.match(wf, /part: \[1, 2, 3, 4, 5, 6, 7, 8, 9, 10\]/, 'DEVELOPING matches the workflow');
   assert.match(read('docs/DEVICE-TEST.md'), /^# [^\n]*\n\n> \*\*Internal\.\*\*/);
 });
 
@@ -438,7 +447,13 @@ test('icon credits: the 36 Lucide icons (v316: circle-help, message-square, squa
     .split(/, (?:and )?| and /);
   assert.deepEqual(listed.sort(), lucide.sort());
   assert.match(lic, /^36 of the line icons/);
-  for (const f of ['LICENSE', 'README.md', 'index.html', 'src/assets/icons/LICENSE-Lucide-Feather.txt'])
+  for (const f of [
+    'LICENSE',
+    'README.md',
+    'docs/DEVELOPING.md',
+    'index.html',
+    'src/assets/icons/LICENSE-Lucide-Feather.txt',
+  ])
     assert.ok(!/four (line )?icons|the few (lucide|icons)/i.test(read(f)), f);
   const head = html.slice(0, html.indexOf('<meta name="viewport"'));
   assert.match(head, /36 line icons from Lucide/);

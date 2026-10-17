@@ -359,6 +359,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     labelsSig: labelsSig,
     stepFaint: stepFaint,
     pgFind: pgFind,
+    pgKeystone: pgKeystone,
     get cropMode() {
       return cropMode;
     },
@@ -382,6 +383,8 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       return pgQ;
     },
     pgShapeOf: pgShapeOf,
+    // (the guide benchmark straightens its synthetic photos with the app's own warp: scripts/bench)
+    pgWarp: pgWarp,
     pgExifFocal: pgExifFocal,
     pgHomog: pgHomog,
     packLabels: packLabels,

@@ -733,6 +733,20 @@ function gradPickSpread(src, K, loop, rnd, zs, lt) {
         return true;
       });
       if (far.length && far.length < near.length) near.splice.apply(near, [0, near.length].concat(far));
+      // (v318.10, gradArea 4) when every one of the near ones is that close to a marker already picked, never one under
+      // TWIN_DE (a near twin, which reads as the same colour beside it) while one that isn't is among them: a dense run
+      // of reds or yellows on Honolulu 120 at 32 markers had picked YR111 beside YR112 (2.41), and the bands laid them
+      // side by side on 33 of 38 benchmark pages (scripts/bench colour.mjs)
+      else if (!far.length && gradArea >= 4) {
+        const apart = near.filter(function (e) {
+          const lb = col[e[1]].lab || hexToLab(col[e[1]].hex);
+          for (let q = 0; q < out.length; q++)
+            if (de2000(lb, out[q].lab || hexToLab(out[q].hex)) < TWIN_DE) return false;
+          return true;
+        });
+        if (apart.length && apart.length < near.length)
+          near.splice.apply(near, [0, near.length].concat(apart));
+      }
     }
     const cost = near.map(function (e) {
       const x = mLch(col[e[1]]);
@@ -1430,6 +1444,24 @@ function outAndBack(seq) {
   });
   return ev.concat(od.reverse());
 }
+// (v318.11, a Gradient made since: gradArea 5) a light-to-dark run (a ramp, not a loop) of markers the Mood picks
+// itself has nothing for Shuffle to change once the run is all of them (gradPickSet: M >= the pool), and its order is
+// fixed (from its lighter end): Shuffle gave the same guide back (Pastel on Honolulu 120: no section changed in 4
+// Shuffles). There, Shuffle's gradSeed also moves where each marker hands over to the next along the flow: the first
+// band's share times (1 + u), the last's times (1 - u), u in [-1/2, 1/2) from gradSeed, so every handover moves by u
+// of a band and the run's order and markers stay as they were. gradSeed 0 (a guide's first build): as before. Not a
+// loop (Shuffle turns its start), a palette that keeps its own order (src.seeded: saved, handed over, the Photo
+// pattern's), Scatter (its own draws) or the other families.
+function gradPhased(sizes, plan, src) {
+  const K = sizes.length;
+  if (family !== 'gradient' || gradArea < 5 || !(gradSeed > 0) || plan.loop || src.seeded || K < 2)
+    return sizes;
+  const u = ((gradSeed + 0.5) % 1) - 0.5,
+    out = sizes.slice();
+  out[0] *= 1 + u;
+  out[K - 1] *= 1 - u;
+  return out;
+}
 function buildGradient(cl) {
   // (the guide as it was: the other zones' markers, which rough spots' new markers keep clear of)
   const prevAll = assignData,
@@ -1453,7 +1485,7 @@ function buildGradient(cl) {
     // (the area rule: a guide's own, laid Polished or Natural; v314's or v315's: splitByArea; v318's 3 lays v315's)
     soft = gradScatAt(M) < 2 ? Math.min(gradArea, 2) : 0,
     zero = soft === 2 ? gradPinZero(order, M) : null,
-    bands = M && N ? splitByArea(order, sizes, sizes, soft, zero) : [];
+    bands = M && N ? splitByArea(order, gradPhased(sizes, plan, src), sizes, soft, zero) : [];
   for (let b = 0; b < bands.length; b++) {
     let secs = bands[b],
       grp = groups[b];

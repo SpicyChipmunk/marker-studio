@@ -428,10 +428,11 @@ const STYLE_FIELDS = [
     key: 'gradArea',
     in: 'payload',
     def: 0,
-    check: styleOne([0, 1, 2, 3]),
+    check: styleOne([0, 1, 2, 3, 4, 5]),
     undo: false,
     // (v315: 2, the adapting rule, your pins and markers kept apart; an older app reads a 2 as 0; v318: 3, smoothing
-    // keeps touching near twins apart: gradSmooth)
+    // keeps touching near twins apart: gradSmooth; v318.10: 4, no near twins picked while others will do: gradPickSpread;
+    // v318.11: 5, Shuffle on a light-to-dark run moves where each marker hands over to the next: buildGradient)
     save: function () {
       return gradArea || undefined;
     },

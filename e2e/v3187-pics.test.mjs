@@ -162,7 +162,14 @@ test('the list shows first, the picture a moment later; when the storage fails, 
     const open = indexedDB.open.bind(indexedDB);
     indexedDB.open = function (name, v) {
       if (name !== 'ms-scan-pics') return open(name, v);
-      const fake = { result: null, error: null, onsuccess: null, onerror: null, onupgradeneeded: null, onblocked: null };
+      const fake = {
+        result: null,
+        error: null,
+        onsuccess: null,
+        onerror: null,
+        onupgradeneeded: null,
+        onblocked: null,
+      };
       const real = open(name, v);
       real.onupgradeneeded = (ev) => {
         fake.result = real.result;
@@ -187,19 +194,47 @@ test('the list shows first, the picture a moment later; when the storage fails, 
   await page.waitForFunction(() => typeof window.__picsGo === 'function');
   await page.evaluate(() => window.__picsGo());
   await page.waitForSelector('#scList .scask.sccropped', { timeout: 5000 });
-  // the storage failing: "?" stays, no error
-  await ctx.addInitScript(() => {
-    const open = indexedDB.open;
-    indexedDB.open = function (name, v) {
-      if (name === 'ms-scan-pics') throw new Error('no storage here');
-      return open.call(indexedDB, name, v);
-    };
+  // the storage failing: "?" stays, no error. (v318.11: in a session of its own, the list as this one left it, the
+  // database's open made to throw from the start: on GitHub's WebKit a second init script added to this session was
+  // not in force on the reload, and the picture came back at once, 1 !== 0; and a check that the throw was met)
+  const listLeft = await page.evaluate(() => localStorage.getItem('ms-scan-list'));
+  assert.ok(listLeft && listLeft.includes('808'), 'the question is in the saved list');
+  const b = await openApp({
+    width: 820,
+    height: 1180,
+    storage: { ...onboarded, 'ms-scan-list': listLeft },
+    init: () => {
+      window.__picsThrew = 0;
+      const open = indexedDB.open;
+      indexedDB.open = function (name, v) {
+        if (name === 'ms-scan-pics') {
+          window.__picsThrew++;
+          throw new Error('no storage here');
+        }
+        return open.call(indexedDB, name, v);
+      };
+    },
   });
-  await reopen(page);
-  await page.waitForTimeout(800);
-  assert.equal(await page.locator('#scList .scask').count(), 1);
-  assert.equal(await page.locator('#scList .scask.sccropped').count(), 0);
-  assert.equal(await page.textContent('#scList .scask .scmark'), '?');
+  await idle(b.page);
+  await scanFromMarkers(b.page);
+  await idle(b.page);
+  await b.page.waitForTimeout(800);
+  const why = async () =>
+    JSON.stringify(
+      await b.page.evaluate(() => ({
+        threw: window.__picsThrew,
+        loads: scanPics.loads,
+        open: String(indexedDB.open).slice(0, 80),
+      })),
+    );
+  assert.ok(
+    await b.page.evaluate(() => window.__picsThrew > 0),
+    'the database was asked for and failed ' + (await why()),
+  );
+  assert.equal(await b.page.locator('#scList .scask').count(), 1);
+  assert.equal(await b.page.locator('#scList .scask.sccropped').count(), 0, 'no picture ' + (await why()));
+  assert.equal(await b.page.textContent('#scList .scask .scmark'), '?');
+  assert.deepEqual(b.errors, []);
   assert.deepEqual(errors, []);
 });
 

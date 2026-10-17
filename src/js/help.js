@@ -5,6 +5,14 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.11',
+    t: 'Shuffle always changes a new Gradient now, even with Pastel or Deep colours that run light to dark (it had sometimes given the same guide back). And a page photographed at a steep angle gets a tip to hold the phone flatter, as some of its sections can be missed.',
+  },
+  {
+    v: 'v318.10',
+    t: 'New guides colour more cleanly: a Gradient no longer picks two markers that look the same, with No repeats on a small set, touching sections no longer share a marker, and with Balance they do so far less often (the sections touching the most others are coloured first).',
+  },
+  {
     v: 'v318.9',
     t: 'Photographing your caps finds far more of them in a photo of a whole bag or case: when the codes are small in the photo, it’s read again closer. Such photos take two to three times as long to read.',
   },

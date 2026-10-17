@@ -189,3 +189,26 @@ test('Adjust corners, then Cancel, leaves the straightened page and its section 
   assert.match(r.line, /Page straightened/);
   assert.deepEqual(errors, []);
 });
+
+// v318.11: a page photographed at a steep angle (its far edge much shorter than its near edge, the finder sure) is
+// straightened as before, then told once to hold the phone flatter; a gentle angle says nothing (the guide benchmark's
+// printed set: at about 45° half the sections were lost)
+test('a steep angle: straightened, then a note to hold the phone flatter; a gentle one says nothing', async () => {
+  for (const [o, steep] of [
+    [{ tilt: 35, size: 0.7 }, true],
+    [{ tilt: 25, roll: 8, size: 0.6 }, false],
+  ]) {
+    const { page, errors } = await fresh();
+    const ph = await photo(page, o);
+    const f = await page.evaluate(async (b64) => { const img = new Image(); await new Promise((r) => { img.onload = r; img.src = 'data:image/jpeg;base64,' + b64; }); const r = __mstest.pgFind(img); return { tier: r.tier, k: r.q ? __mstest.pgKeystone(r.q) : 1 }; }, ph.b64);
+    assert.equal(f.tier, 'sure', JSON.stringify(o));
+    assert.equal(f.k < 0.67, steep, `keystone ${f.k.toFixed(3)}`);
+    await page.evaluate(() => { window.__toasts = []; const t = document.getElementById('msToast'); if (t) new MutationObserver(() => window.__toasts.push(t.textContent)).observe(t, { childList: true, subtree: true, characterData: true }); });
+    await pick(page, ph);
+    await sections(page); await idle(page);
+    assert.match((await info(page)).line, /Page straightened/);
+    const said = await page.evaluate(() => (window.__toasts || []).concat([document.getElementById('msToast') ? document.getElementById('msToast').textContent : '']).some((x) => /steep angle/.test(x)));
+    assert.equal(said, steep, JSON.stringify(o));
+    assert.deepEqual(errors, []);
+  }
+});

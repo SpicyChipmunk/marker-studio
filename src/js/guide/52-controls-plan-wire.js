@@ -363,7 +363,9 @@ function ctlWirePatternOptions() {
       // land on the same one: with 6 markers from the smoothest start, 1 Shuffle in 12 changed nothing)
       var gs = gradStartInfo();
       if (gs) gradStartSet((gs.r + 1 + Math.floor(Math.random() * (gs.n - 1))) % gs.n, gs.n);
-      else gradSeed = (((gradSeed || 0) % 1) + 1.1 + Math.random() * 0.8) % 1;
+      // (v318.11: a ramp's step at least a fifth of the way, either way round: its handovers move at least a fifth of a
+      // band, gradPhased)
+      else gradSeed = (((gradSeed || 0) % 1) + 1.2 + Math.random() * 0.6) % 1;
     }
     reassign();
   }

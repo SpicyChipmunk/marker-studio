@@ -154,13 +154,15 @@ test('rule 2: no two markers in the run within RAINBOW_NEED of each other (Benâ€
   assert.equal(close(), 0);
 });
 
-test('gradArea: saved beside the section settings when set (2 for a new guide; 3 since v318), opens as saved, 0 otherwise', () => {
+test('gradArea: saved beside the section settings when set (2 for a new guide; 3 since v318, 4 since v318.10, 5 since v318.11), opens as saved, 0 otherwise', () => {
   const core = createApp().__mstest,
     f = [...core.styleFields].find((x) => x.key === 'gradArea');
   assert.equal(f.check(2, f.def), 2);
   assert.equal(f.check(1, f.def), 1);
   assert.equal(f.check(3, f.def), 3);
-  assert.equal(f.check(4, f.def), 0);
+  assert.equal(f.check(4, f.def), 4);
+  assert.equal(f.check(5, f.def), 5);
+  assert.equal(f.check(6, f.def), 0);
   core.styleVars.gradArea = 2;
   assert.equal(f.save(), 2, 'a 2 is saved as 2, not 1');
   core.styleVars.gradArea = 0;

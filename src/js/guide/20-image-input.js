@@ -30,8 +30,9 @@ function resetForNewPicture() {
   smpTry = 0;
   // (v314: a new guide, the sample too, shares a Gradient's run out by its sections' areas softened: gradArea; v315: the
   // adapting rule, pins bigger than a share counting for nothing, and no two markers too alike in the run; v318:
-  // touching sections kept off near twins)
-  gradArea = 3;
+  // touching sections kept off near twins; v318.10: no near twins picked for the run while other markers will do;
+  // v318.11: Shuffle on a light-to-dark run moves its handovers)
+  gradArea = 5;
   _mkOpened = {};
   _blendSel = {};
   relWake();

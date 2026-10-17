@@ -1,0 +1,41 @@
+{
+  "note": "How often each kind of page and each hazard is met, for the step-6 ranking (HELD count x area x frequency x taps to repair). From Ben's answer (Oct 2026): his own pages are neurographic, edge to edge, without the other hazards; most of his photos are coloured in whole or in part, which he doesn't think is common; text very unlikely; frames and partly coloured pages possible; the rest is judgement for a wide user base. Shares of pages, not probabilities of being right. Change them freely: nothing else reads this file yet.",
+  "family": {
+    "neuroEdge": 0.3,
+    "neuroMargin": 0.1,
+    "mandala": 0.15,
+    "mandalaFramed": 0.05,
+    "cartoon": 0.08,
+    "botanical": 0.06,
+    "zentangle": 0.06,
+    "doodlesText": 0.04,
+    "geometric": 0.04,
+    "mosaic": 0.03,
+    "stainedGlass": 0.03,
+    "waveBands": 0.02
+  },
+  "hazard": {
+    "edgeToEdge": 0.35,
+    "photo": 0.5,
+    "smallDownload": 0.3,
+    "gap": 0.4,
+    "faintLine": 0.15,
+    "faintMark": 0.15,
+    "hatch": 0.2,
+    "frame": 0.15,
+    "coloured": 0.12,
+    "text": 0.03
+  },
+  "tapsToRepair": {
+    "merged": 3,
+    "split": 1,
+    "shattered": 4,
+    "bgDropped:edge": 1,
+    "bgDropped:inner": 1,
+    "missed": 3,
+    "marginCounted": 1,
+    "spurious": 1,
+    "coloured:lost": 3,
+    "coloured:keptNotDone": 1
+  }
+}

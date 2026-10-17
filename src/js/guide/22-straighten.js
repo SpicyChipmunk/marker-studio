@@ -945,6 +945,26 @@ const PG_WHY = {
   adjust: 'Drag a corner to move it.',
 };
 let _pgT = 0;
+// (v318.11) a page photographed at a steep angle: the far end of the page has few of the photo's pixels, and half its
+// sections were lost (the guide benchmark's printed set: flat on the desk 94-97% of the sections found, at about 45°
+// 52%). Found by how much shorter the page's far edge is than its near edge in the finder's corners (pgKeystone): on
+// the maintainer's photos the finder sure, flat ones 0.92-0.99, steep ones 0.57-0.62; a made-up photo tilted 25° in
+// front of a wide lens, close, 0.71, which stays quiet. Only when the finder is sure (an unsure outline is a guess that
+// can look slanted), said once, after the page is straightened by itself.
+const PG_STEEP = 0.67;
+let pgSteep = false;
+function pgKeystone(q) {
+  if (!q || q.length !== 4) return 1;
+  const L = function (a, b) {
+      return Math.hypot(q[a][0] - q[b][0], q[a][1] - q[b][1]);
+    },
+    a = L(0, 1),
+    b = L(1, 2),
+    c = L(2, 3),
+    d = L(3, 0);
+  if (!(a > 0 && b > 0 && c > 0 && d > 0)) return 1;
+  return Math.min(Math.min(a, c) / Math.max(a, c), Math.min(b, d) / Math.max(b, d));
+}
 function pgReset() {
   clearTimeout(_pgT);
   pgMode = false;
@@ -965,6 +985,7 @@ function pgBegin(f35) {
   try {
     found = pgFind(pgOrig);
   } catch (e) {}
+  pgSteep = found.tier === 'sure' && pgKeystone(found.q) < PG_STEEP;
   if (found.tier === 'sure') {
     pgReveal(found.q, true);
     return;
@@ -1043,6 +1064,13 @@ function pgApply(q, auto, flat) {
   if (!sensUser) adaptC = SENS_PHOTO;
   pgProceed(pgOrig ? null : 'Page straightened.');
   sayLive(auto ? 'Straightened the page so the drawing is flat and square.' : 'Page straightened.');
+  if (auto && pgSteep) {
+    pgSteep = false;
+    const m =
+      'This page was photographed at a steep angle, so some sections may be missed. For best results, hold the phone flatter, right above the page.';
+    // (the toast is a polite live region of its own: no sayLive, which would say over "Straightened the page…")
+    toastHTML(esc(m), 7000);
+  }
 }
 function pgUndo() {
   if (!pgOrig || !pgQ) return;

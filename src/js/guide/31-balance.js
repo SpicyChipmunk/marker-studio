@@ -745,8 +745,21 @@ function buildBalance(cl, p) {
     uses = {},
     alike = balAlike(),
     twin = balAlike(TWIN_DE),
+    // (v318.10: sections touching far more others than most go first, the rest biggest first as before: a hub laid late
+    // can find every marker of its roles beside it)
+    degs = free
+      .map(function (l) {
+        return a && a[l] ? a[l].size : 0;
+      })
+      .sort(function (x, y) {
+        return x - y;
+      }),
+    hubAt = Math.max(12, 3 * (degs[degs.length >> 1] || 0)),
+    hub = function (l) {
+      return a && a[l] && a[l].size >= hubAt ? 1 : 0;
+    },
     seq = free.slice().sort(function (x, y) {
-      return area(y) - area(x);
+      return hub(y) - hub(x) || area(y) - area(x);
     });
   seq.forEach(function (l) {
     const nbs = [];
@@ -879,6 +892,19 @@ function buildNoRep(cl, pool) {
     free[i] = free[j];
     free[j] = t;
   }
+  // (v318.10) the sections touching the most others go first, in their shuffled order among equals: laid last, a section
+  // with 50-100 neighbours on a small collection found every marker already beside it and took one anyway (the
+  // benchmark: 24 guides on Ciao 12 and Honolulu 24 with touching sections sharing a marker)
+  const deg = function (l) {
+      return a && a[l] ? a[l].size : 0;
+    },
+    at0 = new Map();
+  free.forEach(function (l, i) {
+    at0.set(l, i);
+  });
+  free.sort(function (x, y) {
+    return deg(y) - deg(x) || at0.get(x) - at0.get(y);
+  });
   // the markers by how often they're used so far (lists kept as they change: no scan of the pool per section)
   const byUse = [
     pool.filter(function (m) {
@@ -941,7 +967,32 @@ function buildNoRep(cl, pool) {
       const ns = c.length ? c : some(g, notSame, K);
       if (ns.length) cand = ns;
     }
-    if (!cand) cand = byUse[low] || pool;
+    // (v318.10: none of the least used will do: the least used of the rest of the pool that isn't on a neighbour, and
+    // only when every marker is, the one on the fewest of them)
+    if (!cand) {
+      const ok = pool.filter(notSame);
+      if (ok.length) {
+        let lo = Infinity;
+        ok.forEach(function (m) {
+          lo = Math.min(lo, uses[m.mkey] || 0);
+        });
+        cand = ok.filter(function (m) {
+          return (uses[m.mkey] || 0) === lo;
+        });
+      } else {
+        const on = {};
+        nbs.forEach(function (x) {
+          on[x.mkey] = (on[x.mkey] || 0) + 1;
+        });
+        let lo = Infinity;
+        pool.forEach(function (m) {
+          lo = Math.min(lo, on[m.mkey] || 0);
+        });
+        cand = pool.filter(function (m) {
+          return (on[m.mkey] || 0) === lo;
+        });
+      }
+    }
     if (low > 0 && cand.length > 1) {
       // (a repeat: of those, the ones whose other sections are furthest away)
       const far = cand
