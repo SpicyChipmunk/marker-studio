@@ -210,7 +210,8 @@
   "v3187-brands.test.mjs": 25,
   "v3187-gaps.test.mjs": 30,
   "v3187-pics.test.mjs": 11,
-  "v3187-waiting.test.mjs": 18
+  "v3187-waiting.test.mjs": 18,
+  "v3189-detail.test.mjs": 80
  },
  "webkit": {
   "autosave.test.mjs": 154,
@@ -422,6 +423,7 @@
   "v3187-brands.test.mjs": 40,
   "v3187-gaps.test.mjs": 67,
   "v3187-pics.test.mjs": 25,
-  "v3187-waiting.test.mjs": 68
+  "v3187-waiting.test.mjs": 68,
+  "v3189-detail.test.mjs": 160
  }
 }

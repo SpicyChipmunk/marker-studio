@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.9',
+    t: 'Photographing your caps finds far more of them in a photo of a whole bag or case: when the codes are small in the photo, it’s read again closer. Such photos take two to three times as long to read.',
+  },
+  {
     v: 'v318.8',
     t: 'Behind the scenes: the code for adding markers was reorganised, to make the next improvements safer. Nothing should look or work differently.',
   },

@@ -17,6 +17,8 @@
    - a lone character is kept only with a name under it (a cap's "0" is the Colorless Blender's; a speck read "0" isn't).
    Streaming: hooks.line(item) as each box's reading settles, hooks.progress({ look, stage, done, total, ms }).
    o.signal (an AbortSignal) stops between runs; read() then resolves with what it has (aborted: true).
+   o.detailCheck (v318.9): when the first look's line height is under it, read() resolves at once with detail: true
+   and nothing read (stat.detail.lineH), for the page to read the photo again larger, detected closer.
    img: { width, height, data: Uint8ClampedArray RGBA }. ort: the onnxruntime-web namespace. */
 const OCR2 = (function () {
   const MEAN = [0.406, 0.456, 0.485],
@@ -906,9 +908,11 @@ const OCR2 = (function () {
           await pass(nm, (it) => it.t0, 'name');
         }
         // (v318 review) a zoomed box's lines: the tallest was taken for the code, the rest its names, before reading. When
-        // it reads as a word and one of the others surely as a code ("Apple" over "G49"), that one's the code
+        // it reads as a word and one of the others surely as a code ("Apple" over "G49"), that one's the code.
+        // (v318.9) So too a box paired as a name before reading because it was the shorter: an Ohuhu cap's two-word name
+        // is often a taller box than its code ("Jade Green" over G311), and the code, read surely, had ended as a name
         items.forEach((A) => {
-          if (!A.zoomed || A.nameOf || !A.names.length || !A.best || codeLike(A.best.text)) return;
+          if (A.nameOf || !A.names.length || !A.best || codeLike(A.best.text)) return;
           const N = A.names.find((n) => n.best && n.best.conf >= good && codeLike(n.best.text));
           if (!N) return;
           const rest = A.names.filter((n) => n !== N).concat([A]);
@@ -934,7 +938,18 @@ const OCR2 = (function () {
       }
 
       // the first look
-      const first = await readBoxes(await detect(0), 0);
+      const bx0 = await detect(0);
+      // (v318.9) codes small in the photo (a whole bag, a tray from afar, a Copic case): nothing read here, the page told
+      // to read the photo again larger and closer. By the line height the first look would go by (readBoxes'), before
+      // anything's read or told, so the page has nothing to take back
+      if (o.detailCheck && !aborted()) {
+        const lh = median(bx0.filter((b) => b.w / b.h >= 1.8).map((b) => b.h)) || 30;
+        if (lh < o.detailCheck) {
+          stat.detail = { lineH: lh };
+          return { lines: [], ms: Date.now() - T0, stat: stat, aborted: false, detail: true };
+        }
+      }
+      const first = await readBoxes(bx0, 0);
       let lines = first.ordered,
         second = null;
       // the second look: turned a quarter, only where the first read no code (not a name, not shaped like a code) or

@@ -74,7 +74,14 @@ self.onmessage = async function (ev) {
           }),
       });
       running = null;
-      postMessage({ t: 'done', lines: r.lines.map(ser), stat: r.stat, ms: r.ms, aborted: r.aborted });
+      postMessage({
+        t: 'done',
+        lines: r.lines.map(ser),
+        stat: r.stat,
+        ms: r.ms,
+        aborted: r.aborted,
+        detail: !!r.detail,
+      });
     } else if (m.t === 'codes') {
       if (askCodes) askCodes(new Set(m.ids || []));
       askCodes = null;

@@ -37,7 +37,15 @@ const OCR_VER = '1',
   // a 12 MP tray's peak was the same within the noise, 1016 MB at 1600 px in four strips, 1028 at 1280 (three runs
   // each), and 1280 px added wrong codes: Ben's Copic set 6, his wide trays 1, close-ups 1, none at 1600)
   OCR_LOW_DAYS = 14,
-  OCR_LOW_KEY = 'ms-ocr-low';
+  OCR_LOW_KEY = 'ms-ocr-low',
+  // (v318.9) a photo whose codes are small in it is read again closer: decoded up to 4096 px instead of 2048 and the
+  // detector at 3200 in 16 strips, when the first look's line height (in the 2048 copy) is under 25 px and the photo is
+  // more than 2560 px. On Ben's 42 photos of a whole bag and a Copic case, by scene, those not tuned on: Ohuhu 70 → 93%
+  // of the caps read, Copic 85 → 88%; 23 wrong → 19, read off another cap 20 → 12; his 39 earlier photos as before. Twice
+  // as long for a whole bag, three or four times for a Copic case; the page's peak +22–35% in Safari's engine
+  OCR_DETAIL_LINE = 25,
+  OCR_DETAIL_SIDE = 4096,
+  OCR_DETAIL_MIN = 2560;
 const ocrUrl = (f) => new URL(OCR_DIR + f, location.href).href;
 let ocrW = null, // the worker
   ocrReady = null, // its start: a promise
@@ -216,7 +224,19 @@ function ocrMessage(ev) {
   else if (m.t === 'codes')
     // (which of the first look's readings hold a code, by Scan's own reading: the second look reads again where not)
     w.postMessage({ t: 'codes', ids: m.items.filter((x) => ocrCodes(x[1], '').length).map((x) => x[0]) });
-  else if (m.t === 'done') ocrDone(r, m);
+  else if (m.t === 'done') {
+    if (m.detail) ocrDetail(r, m);
+    else ocrDone(r, m);
+  }
+}
+// (v318.9) the first look found the codes small: the photo read again, larger and closer. Not the photo's end: the read
+// goes on (r.sent and the busy mark as they are, Stop as it is), its pixels let go of and decoded again larger by ocrGo
+function ocrDetail(r, m) {
+  if (r.done) return;
+  r.detail = true;
+  r.lineH = m.stat && m.stat.detail ? m.stat.detail.lineH : 0;
+  r.img.data = null;
+  ocrGo(r);
 }
 
 // --- reading a line: the codes in it, as Scan reads them; [{ i (the marker), n: how many it could be }]
@@ -476,10 +496,13 @@ function ocrBrandOf(r) {
 // - a code that went in at once, read for sure, whose names Scan takes for another marker's ("V91" with "Grayish
 //   Cherry", RV91's name): asked about, as Scan asks about a typed code and name that don't match.
 function ocrParts(r, lines) {
+  // (v318.9: an O read for a 0, as no code has the letter: "VO15" of BV015, read at the photo's edge, its B cut off,
+  // had stayed in beside it as V015)
   const key = (t) =>
       String(t)
         .toUpperCase()
-        .replace(/[^A-Z0-9]/g, ''),
+        .replace(/[^A-Z0-9]/g, '')
+        .replace(/O/g, '0'),
     markers = (t) =>
       (scanRead(t, '').codes || []).filter((c) => c.opts.length).reduce((a, c) => a.concat(c.opts), []),
     names = (x) => lines.filter((y) => y.nameOf === x.id).map((y) => y.text),
@@ -1043,6 +1066,9 @@ function ocrSettle(r, m) {
     return false;
   });
   ocrCropQuestions(r, read0);
+  // (v318.9: the pixels let go of once the questions' pictures are cut, 49 MB for a photo read closer, not kept while
+  // the questions are answered)
+  if (r.img) r.img.data = null;
   r.asked = scanList.filter((e) => e.ask && e.photo === r.n).length;
   r.added = scanList.filter((e) => e.photo === r.n && !e.ask).length;
   r.same = r.listed ? r.listed.size : 0;
@@ -1103,6 +1129,11 @@ function ocrFailed(m) {
       localStorage.setItem(OCR_LOW_KEY, String(Date.now()));
     } catch (_) {}
     r.gentle = true;
+    // (v318.9) the closer read was too much: read as before, its 2048 copy decoded again (not the larger one at 1600)
+    if (r.detail) {
+      r.detail = false;
+      r.img.data = null;
+    }
     // (what the first try read is let go of, what it added with it, above: the second's lines are numbered from 1 again,
     // and a line taken by the first had kept the second's of the same number out of the list)
     r.items = new Map();
@@ -1127,7 +1158,9 @@ function ocrFailed(m) {
 // shown. (v318 polish) A big photo is decoded straight to that size where the browser can (createImageBitmap's resize,
 // checked once to turn a photo upright as a picture does, below): decoded whole first, a 24 MP photo took about 98 MB
 // and a 48 MP one 190 MB before it was shrunk. Elsewhere, or if that fails, as before.
-async function ocrPhoto(file) {
+// (v318.9) cap: the long side's most (2048; 4096 for a photo read closer); noShow: no copy to show (it has one); ow/oh:
+// the photo's own size
+async function ocrPhoto(file, cap, noShow) {
   const url = URL.createObjectURL(file);
   try {
     const img = new Image();
@@ -1141,7 +1174,7 @@ async function ocrPhoto(file) {
     });
     const W0 = img.naturalWidth,
       H0 = img.naturalHeight,
-      s = Math.min(1, 2048 / Math.max(W0, H0)),
+      s = Math.min(1, (cap || 2048) / Math.max(W0, H0)),
       w = Math.max(1, Math.round(W0 * s)),
       h = Math.max(1, Math.round(H0 * s));
     let src = null;
@@ -1162,6 +1195,10 @@ async function ocrPhoto(file) {
     x.drawImage(src, 0, 0, w, h);
     if (src.close) src.close();
     const data = x.getImageData(0, 0, w, h);
+    if (noShow) {
+      c.width = c.height = 1;
+      return { w: w, h: h, data: data, show: null, ow: W0, oh: H0 };
+    }
     // (the copy shown: up to 900 px, enough for a phone's or an iPad's view)
     const v = Math.min(1, 900 / Math.max(w, h)),
       show = document.createElement('canvas');
@@ -1169,7 +1206,7 @@ async function ocrPhoto(file) {
     show.height = Math.round(h * v);
     show.getContext('2d').drawImage(c, 0, 0, show.width, show.height);
     c.width = c.height = 1;
-    return { w: w, h: h, data: data, show: show };
+    return { w: w, h: h, data: data, show: show, ow: W0, oh: H0 };
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -1272,7 +1309,7 @@ function ocrConsent(msg) {
       ' MB</b>, kept for offline use. Wi-Fi is best.</p>' +
       '<ul class="ocrul"><li>Caps up, in good light, the phone or iPad held flat above them.</li>' +
       '<li>About half a tray per photo: closer reads more.</li>' +
-      '<li>Each code it reads joins the list, to check before you add it. A photo takes a few seconds to a minute; choose several and they’re read in turn.</li></ul>' +
+      '<li>Each code it reads joins the list, to check before you add it. A photo takes a few seconds to a minute or two (a whole bag the longest); choose several and they’re read in turn.</li></ul>' +
       (msg || off
         ? '<p class="ocrp ocrwarn" role="alert">' +
           esc(msg || 'The reader needs the internet the first time: connect, then try again.') +
@@ -1449,8 +1486,16 @@ async function ocrGo(r) {
   r.sent = false;
   let low = r.gentle;
   try {
+    // (a read that never finished, the page put away or ended by the system for its memory: this photo read gently.
+    // v318.9: a closer read that never finished ('2'), gently for a fortnight, as after a memory failure caught: on a
+    // device short of memory every other photo of a whole bag would have ended the page)
+    const busy = r.detail ? '' : localStorage.getItem(OCR_BUSY_KEY);
+    if (busy === '2' && !r.gentle) {
+      localStorage.setItem(OCR_LOW_KEY, String(Date.now()));
+      r.note = 'The last photo didn’t finish reading: reading more gently for a while…';
+    }
     const at = +localStorage.getItem(OCR_LOW_KEY) || 0;
-    low = low || Date.now() - at < OCR_LOW_DAYS * 864e5 || localStorage.getItem(OCR_BUSY_KEY) === '1';
+    low = low || Date.now() - at < OCR_LOW_DAYS * 864e5 || !!busy;
   } catch (_) {}
   r.p = { look: 1, stage: 'load', done: 0, total: 1, ms: 0 };
   ocrStatus(r);
@@ -1488,25 +1533,35 @@ async function ocrGo(r) {
   if (ocrRun !== r || r.done) return;
   if (r.stop) return ocrDone(r, { lines: [], stat: {}, ms: 0, aborted: true });
   try {
-    localStorage.setItem(OCR_BUSY_KEY, '1');
+    localStorage.setItem(OCR_BUSY_KEY, r.detail ? '2' : '1');
   } catch (_) {}
-  // (the photo's pixels go to the worker: copied, so a second try still has them; or decoded again when let go of)
+  // (the photo's pixels go to the worker: copied, so a second try still has them; or decoded again when let go of:
+  // v318.9, larger to be read closer, and its size with them)
   if (!r.img.data) {
     try {
-      r.img = Object.assign(r.img, { data: (await ocrPhoto(r.file)).data });
+      const p = await ocrPhoto(r.file, r.detail ? OCR_DETAIL_SIDE : 0, true);
+      r.img = Object.assign(r.img, { w: p.w, h: p.h, data: p.data, ow: p.ow, oh: p.oh });
     } catch (_) {
+      // (not decoded larger, as a device short of memory may not: read as before)
+      if (r.detail && ocrRun === r && !r.done) {
+        r.detail = false;
+        r.noDetail = true;
+        return ocrGo(r);
+      }
       return ocrFailed({ message: 'photo', memory: false });
     }
   }
+  if (ocrRun !== r || r.done) return;
   const px = r.img.data.data.slice().buffer,
     o = {
-      maxSide: 1600,
+      // (v318.9: read closer, 3200, in 16 strips on every device: their working memory a sixteenth's)
+      maxSide: r.detail ? 3200 : 1600,
       // (an iPad or iPhone, or read gently: the detector in four strips, so its working memory is a quarter's: memory
       // there is tight.
       // v318 review: four, not two, as they overlap by more than a cap's code is long (below): the page's peak in
       // Chromium 576 MB in two strips overlapping by 64, 513–535 in four by 192 (1280 in two, the gentle read's, 525),
       // reading as well as one strip: Ben's wide Ohuhu trays 329 of 334, as on a desktop, not 326; 4% slower)
-      detTiles: low || isIOSDevice() ? 4 : 1,
+      detTiles: r.detail ? 16 : low || isIOSDevice() ? 4 : 1,
       // (v318 review: the strips overlapping by more than a cap's code is long, so one across a cut is whole in one of
       // them; by 64 map pixels, a code across it was cut in both and dropped from both, by each look: YGY13, YG415, R54,
       // RV57 and E511 on Ben's close-ups)
@@ -1531,6 +1586,9 @@ async function ocrGo(r) {
       second: true,
       words: ocrWords(),
     };
+  // (v318.9) a photo bigger than its 2048 copy, not read gently: the first look tells whether its codes are small
+  if (!r.detail && !r.noDetail && !low && Math.max(r.img.ow || 0, r.img.oh || 0) > OCR_DETAIL_MIN)
+    o.detailCheck = OCR_DETAIL_LINE;
   // (Stop tapped while the photo was decoded again)
   if (r.stop) return ocrDone(r, { lines: [], stat: {}, ms: 0, aborted: true });
   ocrW.postMessage({ t: 'read', img: { width: r.img.w, height: r.img.h, data: px }, o: o }, [px]);
@@ -1605,6 +1663,9 @@ function ocrStatus(r) {
     t = 'Reading the caps… ' + r.sure + ' so far';
     pc = 20 + (p.total ? (65 * p.done) / p.total : 0);
   }
+  // (v318.9) a photo read again closer: said so, so the longer wait isn't a surprise
+  if (r.detail && !r.done && !r.failed)
+    t = p.stage === 'load' ? 'The codes are small: reading the photo closer…' : 'Reading closer · ' + t;
   if (many && !over) {
     // (the queue's own words: this photo's place, and the bar over the whole queue)
     t = 'Photo ' + k + ' of ' + q.files.length + ' · ' + t;

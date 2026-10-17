@@ -1427,3 +1427,24 @@ load (`scripts/move-check.mjs`, new; docs/CODE-TOOLS.md, "Moving code"). The pho
   height test waits for the picture to settle; the cap-picture test reads a picture back once more, a frame later,
   when a colour reads as neither (once in some hundreds, in WebKit), and says the pixels if it still does.
 
+
+## v318.9
+
+**Photographing your caps reads small codes closer.** A photo is read from a 2048-px copy as before; when the first
+detection finds its codes small (line height under 25 px, a whole bag or a Copic case) and the photo is bigger than
+2560 px, it is read again from a copy up to 4096 px with the detector at 3200 in 16 strips. On the maintainer's 42 new
+photos (by scene; HELD = not tuned on): Ohuhu HELD 69.9% → 93.2% of legible caps, TUNE 58.5% → 75.9%; Copic HELD
+84.8% → 87.8%, TUNE 73.9% → 85.8%; wrong 23 → 19 (read off another cap 20 → 12). The 39 earlier photos read exactly as
+before. Such photos take about twice as long (a Copic case three to four times); the page's peak in Safari's engine is
+22–35% higher on them. The measurements, the options and what was dropped: docs/READER-DETAIL.md.
+
+- **A closer read that never finished** (the page ended, an iPad short of memory) makes the next photos read gently for
+  a fortnight, said once; a memory failure caught in it reads the 2048 copy again, gently. The re-decode after a memory
+  failure now replaces the copy's size with its pixels.
+- **A code read surely as a name**: a cap's two-word name is often a taller box than its code, and the code had ended
+  as its name; swapped back as a zoomed box's lines already were (+11 caps on the new photos, the earlier photos
+  unchanged).
+- **The parts rule reads an O as a 0**: "VO15" read at a cap's edge beside BV015 had stayed in as V015.
+- The photo's pixels are let go of once its questions' pictures are cut, not kept while the questions are answered.
+- Tests: test/v3189-detail (the engine's early word, the code-as-name swap, the page's closer read, Stop, the memory
+  fallback, the unfinished read); e2e/v3189-detail on drawn trays in Chromium and WebKit.

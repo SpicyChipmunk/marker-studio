@@ -96,6 +96,13 @@ Screenshots and PDFs from the browser tests land in `e2e/.artifacts/`
     `40-gaps`, `50-handle`, `60-brands` (every brand and name rule), `65-codes`,
     `70-dialog`. Part of the one global script; their order matters only for
     code that runs at load (see docs/CODE-TOOLS.md, "Moving code").
+  - `js/photo-read.js` and `js/ocr/` — the photo reader: the page's side
+    (decoding, options, settling a photo's lines into codes) and the engine
+    run in a worker (detect, zoom, recognise, a second look). A photo is read
+    from a 2048-px copy; when the first detection finds its codes small (line
+    height under 25 px) and the photo is bigger than 2560 px, the engine stops
+    there and the page reads it again from a copy up to 4096 px with the
+    detector at 3200 in 16 strips (v318.9; docs/READER-DETAIL.md).
   - `js/guide/` — the guide screen (`window.SF`). Its files are consecutive
     slices of one function, opened and closed by two lines in
     `index.template.html` around their includes (`99-close.js` holds the

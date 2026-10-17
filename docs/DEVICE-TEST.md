@@ -101,7 +101,24 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.8 (with v318.2 to v318.7)
+## New in this release: v318.9
+
+Photos whose codes are small are read again closer. On the iPad, with **Photograph your caps** (time each read; note
+the seconds):
+
+- [ ] ★ A photo of the **whole Ohuhu bag** → "The codes are small: reading the photo closer…", then "Reading closer ·
+      …" → it finishes, no reload; far more caps than before. Seconds: ___
+- [ ] ★ A photo of the **Copic case** → read closer too. Seconds: ___
+- [ ] A **close-up of one pocket or tray** → no "closer"; as quick as before. Seconds: ___
+- [ ] The same whole-bag photo **twice more** in one visit → each finishes, no reload.
+- [ ] Put the app away (Home) **while** a whole-bag photo is being read closer, then come back → it carries on and
+      finishes, or, if iPadOS ended the page, the next photo says "The last photo didn’t finish reading: reading more
+      gently for a while…" and reads without "closer". (Whenever the page reloads on its own during a closer read, the
+      next photo must say this.)
+
+Then v318.8's smoke test, if not done:
+
+## v318.8 (with v318.2 to v318.7)
 
 v318.8 changes nothing you should see: the code for adding markers was reorganised (proved the same as v318.7's by the
 build). A 2-minute smoke test first:
