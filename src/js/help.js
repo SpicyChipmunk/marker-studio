@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.18',
+    t: 'Theme, under Colours › Lean towards: twelve themes, from Blossom to Twilight, each with a strip of the colours it takes from your markers. Tap one again for none. With Cool or Warm, a theme takes those colours only.',
+  },
+  {
     v: 'v318.17',
     t: 'Themes in Colours › Lean towards: Sunset, Forest and Candy, from your markers. Blender highlights: with a Colorless Blender (0), it can be the highlight. Shadows only can now be for one zone. Pattern is tidier on a phone (More options, ＋ Zone at the end), and each Flow has a little picture.',
   },

@@ -109,13 +109,32 @@ const STYLE_FIELDS = [
     save: famSaved,
     snap: famSaved,
   },
-  // (v318.17: the themes too, Lean towards' Sunset, Forest and Candy; an older copy reads them as Any)
+  // (v318.17 saved its themes here too, Sunset, Forest and Candy: read as Any, and as the theme below)
   {
     key: 'palette',
     in: 'style',
     def: 'all',
-    check: styleOne(['all', 'cool', 'warm', 'sunset', 'forest', 'candy']),
+    check: styleOne(['all', 'cool', 'warm']),
     undo: true,
+  },
+  // (v318.18) the Theme: saved only when there is one, so a guide without says nothing new; a v318.17 guide's theme
+  // in palette is read as it (its Candy as Blossom, the nearest of the twelve). An older copy reads a theme as Any.
+  {
+    key: 'theme',
+    in: 'style',
+    def: '',
+    check: function (v, d, src) {
+      if (typeof v === 'string' && Object.prototype.hasOwnProperty.call(THEMES, v)) return v;
+      if (v === undefined && src && typeof src.palette === 'string') {
+        if (src.palette === 'candy') return 'blossom';
+        if (src.palette === 'sunset' || src.palette === 'forest') return src.palette;
+      }
+      return d;
+    },
+    undo: true,
+    save: function () {
+      return theme || undefined;
+    },
   },
   {
     key: 'gradShape',
@@ -491,6 +510,12 @@ const STYLE_VAR = {
   },
   set palette(v) {
     palette = v;
+  },
+  get theme() {
+    return theme;
+  },
+  set theme(v) {
+    theme = v;
   },
   get gradShape() {
     return gradShape;

@@ -1,7 +1,7 @@
 // v318.17: Shadows only per zone (a record's Highlights None: no H for its sections, the rest as they were; leaving the
 // whole picture's Shadows only from one zone keeps the others and every coloured section as they are); Blender
 // highlights (the Colorless Blender you own as the H, the base lifted, never a lighter marker to buy); themes in Lean
-// towards (Sunset, Forest, Candy from your markers, widened to the nearest when too few). Fails on v318.16.
+// towards (Sunset, Forest, Candy from your markers; v318.18: their own Theme, v31818, widened to the nearest when too few). Fails on v318.16.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createApp } from './harness.mjs';
@@ -78,6 +78,19 @@ test('a section coloured under Shadows only is held as None; with shading off, a
   assert.equal(t.hiOn(t.zshOf(6)), true);
 });
 
+test('the last zone deleted with Main’s Highlights None: the whole picture is Shadows only, as it’s saved', () => {
+  const t = createApp().__mstest;
+  t.W = 10;
+  t.H = 10;
+  t.zoneOpen([{ name: 'Bell', secs: [1] }], { 1: 11 });
+  t.shadeMode = 'full';
+  t.zshSet(0, 'hilite', 'none');
+  t.zoneDelete(t.zones[0].id);
+  assert.equal(t.zones.length, 0);
+  assert.equal(t.shadeMode, 'shadow');
+  assert.equal(t.zsh(0).hilite, 'same');
+});
+
 test('Blender: the Colorless Blender you own is the H (its own brand’s), the base lifted; no lighter marker to buy', () => {
   const { t } = appWith(['Honolulu 120']);
   t.shadeMode = 'full';
@@ -104,25 +117,26 @@ test('the highlight kinds saved: blender and none are values; an older value sti
     f = [...t.styleFields].find((x) => x.key === 'hilite' && x.in === 'shade');
   for (const v of ['same', 'warm', 'paper', 'blender', 'none']) assert.equal(f.check(v, f.def), v);
   assert.equal(f.check('glitter', f.def), 'same');
+  // (v318.18: the themes are their own setting, theme; palette is Any, Cool or Warm again: see v31818)
   const p = [...t.styleFields].find((x) => x.key === 'palette');
-  for (const v of ['all', 'cool', 'warm', 'sunset', 'forest', 'candy']) assert.equal(p.check(v, p.def), v);
-  assert.equal(p.check('ocean', p.def), 'all');
+  for (const v of ['all', 'cool', 'warm']) assert.equal(p.check(v, p.def), v);
+  assert.equal(p.check('sunset', p.def), 'all');
 });
 
 test('themes: each finds its own colours in a full set, and widens to the nearest in a small one, saying so', () => {
   for (const set of ['Honolulu 320 (complete set)', 'Honolulu 120', 'All Copic markers']) {
     const { t } = appWith([set]);
-    for (const k of ['sunset', 'forest', 'candy']) {
-      const pool = [...t.colour.poolFor(k)],
-        w = t.themeWide;
+    for (const k of ['sunset', 'forest', 'blossom']) {
+      const pool = [...t.colour.poolFor('all', k)],
+        w = t.themeEntry('all', k).wide;
       assert.ok(pool.length >= 8, `${set} ${k}: ${pool.length}`);
       assert.ok(w.inside >= 6, `${set} ${k}: ${w.inside} inside`);
     }
   }
   const { t } = appWith(['Honolulu 24']);
-  const pool = [...t.colour.poolFor('candy')];
+  const pool = [...t.colour.poolFor('all', 'blossom')];
   assert.ok(pool.length >= 8, 'widened to 8: ' + pool.length);
-  assert.ok(t.themeWide.added > 0);
-  t.styleVars.palette = 'candy';
-  assert.match(t.themeNote(), /^(Few|No) candy colours in your markers: the nearest \d+ (added|used)\.$/);
+  assert.ok(t.themeEntry('all', 'blossom').wide.added > 0);
+  t.styleVars.theme = 'blossom';
+  assert.match(t.themeNote(), /^(Few|No) blossom colours in your markers: the nearest \d+ (added|used)\.$/);
 });

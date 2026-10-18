@@ -1408,3 +1408,47 @@
 #sfRoot #sfCtl .sfzrow + .sfmkcount {
   margin-top: 4px;
 }
+/* (v318.18) Lean towards: Any, Cool and Warm, three even columns (as Temperature's were) */
+#sfRoot #sfCtl #sfPal.sfc-segs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+#sfRoot #sfCtl #sfPal.sfc-segs .sfedit {
+  min-width: 0;
+  white-space: nowrap;
+}
+/* (v318.18) Theme: twelve, four across (an iPad: three rows), three across on a phone or where a name wouldn't fit
+   (four rows; fitPairs, 72-frame.js); each a name with a strip of its colours under it */
+#sfRoot #sfCtl .sfc-segs.sfthemes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+#sfRoot #sfCtl .sfc-segs.sfthemes.sfthemes3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+#sfRoot #sfCtl .sfc-segs.sfthemes .sfedit {
+  position: relative;
+  min-width: 0;
+  /* (44px, as the guide's other choices: the name a little high, the strip under it) */
+  min-height: 44px;
+  padding: 0 4px 11px;
+  white-space: nowrap;
+}
+#sfRoot #sfCtl .sfthemes .sfstrip {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  bottom: 6px;
+  height: 6px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+#sfRoot #sfCtl .sfthemes .sfstrip.sfempty {
+  box-shadow: none;
+  border: 1px dashed var(--sub-guide);
+}
+#sfRoot #sfCtl .sfthemes .sfedit.sfthoff {
+  opacity: 0.45;
+}

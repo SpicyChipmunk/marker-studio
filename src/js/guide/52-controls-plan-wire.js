@@ -159,12 +159,47 @@ function ctlWireColours() {
       if (b) {
         // (no markers of that temperature: the note says so, and the choice stays as it was, so Build guide never
         // meets a temperature it can't use, v287)
-        var was = palette;
+        var was = palette,
+          wasTh = theme;
         palette = b.dataset.v;
+        themeDrop = null;
+        // (v318.18: a temperature that leaves the theme with next to none of its colours turns it off, in the same
+        // step, and says so under the themes)
+        if (THEMES[theme] && themeStrip(theme).off) {
+          themeDrop = { n: THEMES[theme].n, t: palette };
+          theme = '';
+        }
         if (reassign() === false) {
           palette = was;
+          theme = wasTh;
+          themeDrop = null;
           renderControls();
         }
+      }
+    });
+  // (v318.18) Theme: one at a time, the chosen one tapped again for none
+  var _th = document.getElementById('sfTheme');
+  if (_th)
+    _th.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      var k = b.dataset.v,
+        was = theme;
+      if (b.getAttribute('aria-disabled') === 'true') {
+        note(
+          'Next to none of your ' +
+            palette +
+            ' markers are ' +
+            THEMES[k].n.toLowerCase() +
+            ' colours \u2014 choose Any in Lean towards for this theme.',
+        );
+        return;
+      }
+      themeDrop = null;
+      theme = theme === k ? '' : k;
+      if (reassign() === false) {
+        theme = was;
+        renderControls();
       }
     });
   var _src = document.getElementById('sfSrc');
@@ -258,6 +293,8 @@ function ctlWireColours() {
       document.querySelectorAll('[id^="sfMoreIn-' + t + '"]').forEach(function (d) {
         d.hidden = !open;
       });
+      // (rows fitted only where shown: the Theme grid's columns, v318.18)
+      if (open) fitPairs();
     });
   });
   var _ft = document.getElementById('sfFiltToggle');

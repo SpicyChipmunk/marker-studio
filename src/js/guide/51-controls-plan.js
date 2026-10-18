@@ -122,7 +122,9 @@ function moreCheck() {
 function moreColoursSum() {
   const bits = [];
   if (palette === 'warm' || palette === 'cool') bits.push(palette === 'warm' ? 'Warm' : 'Cool');
-  else if (THEMES[palette]) bits.push(THEMES[palette].n);
+  // (the theme when Theme is shown: not under a saved or generated palette, which it doesn't steer)
+  if (THEMES[theme] && (paletteSource === 'owned' || family === 'manual') && family !== 'photo')
+    bits.push(THEMES[theme].n);
   const fs = typeof filterSummary === 'function' ? String(filterSummary()) : '';
   if (fs && !/^All/.test(fs)) bits.push(fs.replace(/<[^>]*>/g, ''));
   return bits.length ? bits.join(' \u00b7 ') : 'Filters, lean towards, include';
@@ -289,6 +291,30 @@ function mkCountCtl(off) {
 }
 // Colours: how many markers comes first (it changes the guide the most), then where the colours come from (with
 // the filters for Owned), then Temperature and Mood
+// (v318.18) a Theme button: its name, and under it a strip of the colours it takes from your markers (themeStrip,
+// 30-palette-assign; heard as the name alone). Greyed where next to none of its colours are the Lean towards
+// temperature: still a button, which says so when tapped (aria-disabled), and the chosen one can be tapped off.
+function themeChip(k, s) {
+  const on = theme === k;
+  return (
+    '<button class="sfedit sfthemeb' +
+    (on ? ' on' : '') +
+    (s.off ? ' sfthoff' : '') +
+    '" data-v="' +
+    k +
+    '" aria-pressed="' +
+    on +
+    '"' +
+    (s.off && !on ? ' aria-disabled="true"' : '') +
+    '><span class="sfthn">' +
+    THEMES[k].n +
+    '</span><span class="sfstrip' +
+    (s.css ? '' : ' sfempty') +
+    '" aria-hidden="true"' +
+    (s.css ? ' style="background:' + s.css + '"' : '') +
+    '></span></button>'
+  );
+}
 function ctlPlanColours() {
   let html = '<div class="sftab" data-tab="colours"' + ctlTabAttrs('colours') + '>' + zoneChipsHTML();
   // (v318.16: on a phone, with your own markers as the source, Filters, Temperature, Include and the count under More
@@ -444,27 +470,45 @@ function ctlPlanColours() {
     paletteSource === 'owned' &&
     (balM !== 'auto' || balS !== 'auto' || balA !== 'auto');
   // (v318.17: Lean towards, Temperature's Any, Cool and Warm with three themes, a six-wide row as Mood's)
+  // (v318.18: Lean towards is Any, Cool and Warm again, and the themes are their own choice below it, Theme: twelve, each
+  // with a strip of the colours it takes from your markers; tap the chosen one again for none. A hand-chosen Main
+  // colour greys Lean towards only: the theme is still the markers Random chooses from)
   if (_tShow) {
-    const _thN = themeNote();
+    const _thN = themeNote(),
+      _strips = THEME_KEYS.map(themeStrip),
+      _anyOff = _strips.some(function (s) {
+        return s.off;
+      }),
+      _thNotes = [];
+    // (only while it's still so: not after Undo or another guide)
+    if (themeDrop && themeDrop.t === palette && !theme)
+      _thNotes.push(themeDrop.n + ' is off: next to none of its colours are ' + themeDrop.t + '.');
+    else if (_thN) _thNotes.push(_thN);
+    if (_anyOff) _thNotes.push('Greyed themes have next to none of your ' + palette + ' colours.');
     html +=
       '<div class="sfsublbl' +
       (_tOff ? ' sfoff' : '') +
-      '" id="sfPalLbl">Lean towards</div><div id="sfPal" role="group" aria-labelledby="sfPalLbl" class="sfc-segs sfsix' +
+      '" id="sfPalLbl">Lean towards</div><div id="sfPal" role="group" aria-labelledby="sfPalLbl" class="sfc-segs' +
       (_tOff ? ' sfoff' : '') +
       '">' +
       // (Any first, as in Mood, v300)
       ctlSeg('all', 'Any', palette === 'all', _tOff) +
       ctlSeg('cool', 'Cool', palette === 'cool', _tOff) +
       ctlSeg('warm', 'Warm', palette === 'warm', _tOff) +
-      THEME_KEYS.map(function (k) {
-        return ctlSeg(k, THEMES[k].n, palette === k, _tOff);
-      }).join('') +
       '</div>' +
       (_tOff
         ? '<div class="sfc-note sfc-mt6">Main colour sets this: its colours are chosen (Pattern).</div>'
-        : _thN
-          ? '<div id="sfThemeNote" class="sfc-note sfc-mt6">' + _thN + '</div>'
-          : '');
+        : '') +
+      '<div class="sfsublbl" id="sfThemeLbl">Theme</div><div id="sfTheme" role="group" aria-labelledby="sfThemeLbl" class="sfc-segs sfthemes' +
+      (moreNarrow() ? ' sfthemes3' : '') +
+      '">' +
+      THEME_KEYS.map(function (k, i) {
+        return themeChip(k, _strips[i]);
+      }).join('') +
+      '</div>' +
+      (_thNotes.length
+        ? '<div id="sfThemeNote" class="sfc-note sfc-mt6">' + _thNotes.join(' ') + '</div>'
+        : '');
   }
   if (_iShow && !_mpics) {
     const _moodH =

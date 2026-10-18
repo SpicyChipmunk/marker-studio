@@ -107,8 +107,10 @@ sheet, paper, and how it feels.
       options** (Direction, Start colour, Scatter), then Shuffle · Pin, then **＋ Zone** at the end. Do the Flow
       pictures read at a glance? On iPad nothing is folded.
 - [ ] A mandala page → Pattern › Gradient › Radial → "Looks like a mandala" with Matching shapes alike and Try Around.
-- [ ] ★ **Colours** › More options › **Lean towards** → Sunset, Forest, Candy → the picture takes those colours from
-      your markers. Does each look like its name? A small set says "Few … colours: the nearest N added".
+- [ ] ★ **Colours** › More options › **Theme** (v318.18): twelve chips, 3 across on iPhone, 4 on iPad, each with a
+      strip of its colours. Tap a few → the picture takes those colours; tap it again → none. Does each strip and
+      picture look like its name on your markers? Then **Warm** → Winter, Ocean (and others) greyed; with Ocean on,
+      Warm turns it off and says so. A small set says "Few … colours: the nearest N added".
 - [ ] ★ With a Colorless Blender in your markers: **Shading** › Highlights › **Blender (0)** → H on the guide is "0";
       the line says to put the 0 down first, then the base. Try it on paper: does the highlight come out?
 - [ ] With a zone: choose the zone's chip in Shading › Highlights › **None** → that zone has no H, the rest keep

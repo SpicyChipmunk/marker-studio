@@ -20,6 +20,7 @@
 const ZONE_KEYS = [
   'family',
   'palette',
+  'theme',
   'gradShape',
   'dir',
   'look',

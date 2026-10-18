@@ -944,7 +944,8 @@ function photoPool() {
     }
     if (seed.length) return expand && limitN > seed.length ? expandToN(seed, limitN, expandChar) : seed;
   }
-  return poolFor('all');
+  // (every marker: the photo's colours choose, not a theme, v318.18)
+  return poolFor('all', '');
 }
 /* ---- a photo with no colour (v304) ----
     A photo of the page before it was coloured (or a blank one) has nothing for the markers to match: with white areas

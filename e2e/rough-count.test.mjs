@@ -77,6 +77,8 @@ test('all of a big collection in play: the count it says is the count it adds', 
   await page.click('.sftabbtn[data-t="pattern"]');
   await page.evaluate(() => __mstest.renderControls());
   await idle(page);
+  // (every marker in play: the line can take a while on GitHub's WebKit, which once missed the usual 30 s, v318.18)
+  await page.waitForSelector('#sfRoughGo', { timeout: 90000 });
   const n = await said(page),
     before = await pageCount(page);
   await page.click('#sfRoughGo');

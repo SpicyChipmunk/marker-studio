@@ -85,38 +85,111 @@ function markerTemp(m) {
   if (x[1] < TEMP_NEUTRAL_C || (x[1] < GREY_C && x[0] < TEMP_BLACK_L)) return 'both';
   return x[2] >= TEMP_COOL_FROM && x[2] < TEMP_WARM_FROM ? 'cool' : 'warm';
 }
-/* (v318.17) Themes, beside Any, Cool and Warm in Lean towards: hue windows in L*C*h° (h from the first to the second
-   going round, C and L at least / at most), from your markers; an `extra` window adds at most a third as many as the
-   others found (a sunset's violet sky). Too few inside (under THEME_MIN): the nearest outside are added (by how far
-   each is from a window), and the line under the row says so (themeWide). */
+/* (v318.17; v318.18: their own choice, Theme, under Lean towards, twelve of them, tuned on the Ohuhu and Copic sets)
+   Themes: hue windows in L*C*h° (h from the first to the second going round; C at least, Cmax at most; L between), from
+   your markers. An `extra` window adds at most a third as many as the others found (a sunset's violet sky), the ones
+   nearest the main windows first. Too few inside (under THEME_MIN): the nearest outside are added (by how far each is
+   from a window), and the line under the themes says so. With Cool or Warm too, the theme is taken from the markers of
+   that temperature (Warm + Tropical: its pinks, oranges and lime), widened within them. */
 const THEMES = {
+  blossom: {
+    n: 'Blossom',
+    w: [
+      { h: [330, 50], C: 12, Cmax: 45, L: [70, 100] },
+      { h: [270, 320], C: 10, Cmax: 40, L: [65, 100] },
+      { h: [90, 150], C: 12, Cmax: 45, L: [75, 100] },
+    ],
+  },
+  tropical: {
+    n: 'Tropical',
+    w: [
+      { h: [150, 210], C: 35 },
+      { h: [330, 15], C: 50 },
+      { h: [40, 75], C: 55 },
+      { h: [95, 135], C: 45 },
+    ],
+  },
+  autumn: {
+    n: 'Autumn',
+    w: [
+      { h: [25, 80], C: 30, L: [30, 72] },
+      { h: [5, 30], C: 35, L: [30, 60] },
+      { h: [45, 85], C: 10, Cmax: 35, L: [25, 60] },
+    ],
+  },
+  // (silver as the extra: at most a third as many as the icy blues and lilacs, the bluest greys first)
+  winter: {
+    n: 'Winter',
+    w: [
+      { h: [200, 290], C: 10, Cmax: 40, L: [60, 98] },
+      { h: [290, 330], C: 8, Cmax: 35, L: [65, 98] },
+      { h: [0, 360], C: 0, Cmax: 8, L: [78, 96], extra: true },
+    ],
+  },
   sunset: {
     n: 'Sunset',
     w: [
-      { h: [350, 60], C: 35, L: [40, 85] },
-      { h: [290, 340], C: 25, extra: true },
+      { h: [350, 25], C: 35, L: [50, 85] },
+      { h: [25, 60], C: 45, L: [50, 85] },
+      { h: [60, 85], C: 50, L: [65, 92] },
+      { h: [305, 345], C: 25, L: [35, 90], extra: true },
+    ],
+  },
+  desert: {
+    n: 'Desert',
+    w: [
+      { h: [40, 95], C: 10, Cmax: 42, L: [45, 88] },
+      { h: [20, 45], C: 18, Cmax: 45, L: [40, 70] },
+      { h: [110, 160], C: 6, Cmax: 25, L: [50, 80] },
     ],
   },
   forest: {
     n: 'Forest',
     w: [
-      { h: [95, 165], C: 15 },
-      { h: [40, 80], C: 12, Cmax: 35, L: [0, 65] },
+      { h: [112, 170], C: 15 },
+      { h: [85, 112], C: 15, L: [0, 80] },
+      { h: [35, 85], C: 10, Cmax: 32, L: [10, 60] },
     ],
   },
-  candy: {
-    n: 'Candy',
+  ocean: {
+    n: 'Ocean',
     w: [
-      { h: [330, 10], C: 20, L: [72, 100] },
-      { h: [140, 180], C: 20, L: [72, 100] },
-      { h: [280, 310], C: 20, L: [72, 100] },
-      { h: [85, 105], C: 20, L: [72, 100] },
-      { h: [220, 250], C: 20, L: [72, 100] },
+      { h: [180, 270], C: 15 },
+      { h: [270, 305], C: 55 },
+    ],
+  },
+  coral: {
+    n: 'Coral',
+    w: [
+      { h: [10, 45], C: 30, Cmax: 70, L: [55, 85] },
+      { h: [45, 70], C: 25, Cmax: 55, L: [72, 90] },
+      { h: [350, 10], C: 25, Cmax: 60, L: [60, 85] },
+      { h: [170, 210], C: 25, L: [50, 80], extra: true },
+    ],
+  },
+  berry: { n: 'Berry', w: [{ h: [318, 20], C: 28, L: [18, 68] }] },
+  galaxy: {
+    n: 'Galaxy',
+    w: [
+      { h: [235, 340], C: 18, L: [10, 60] },
+      { h: [320, 355], C: 40, L: [40, 75], extra: true },
+    ],
+  },
+  twilight: {
+    n: 'Twilight',
+    w: [
+      { h: [280, 330], C: 10, Cmax: 45, L: [55, 90] },
+      { h: [255, 285], C: 10, Cmax: 35, L: [40, 75] },
+      { h: [330, 360], C: 12, Cmax: 40, L: [55, 85] },
+      { h: [260, 300], C: 20, Cmax: 45, L: [20, 45] },
     ],
   },
 };
+// (the grid's order, kept: three rows of four that go together on an iPad, and Twilight never beside Winter or Blossom)
 const THEME_KEYS = Object.keys(THEMES),
-  THEME_MIN = 8;
+  THEME_MIN = 8,
+  // (a strip shows at most this many of a theme's markers)
+  THEME_STOPS = 24;
 // how far a marker's L*C*h° is from a window (0 inside)
 function themeOff(x, w) {
   const h = x[2],
@@ -128,44 +201,80 @@ function themeOff(x, w) {
     dl = w.L ? Math.max(0, w.L[0] - x[0], x[0] - w.L[1]) : 0;
   return dh * 0.6 + dc + dl;
 }
-let themeWide = null,
-  _themeMemo = null;
-function themePool(base, key) {
+// base split by a theme: { inside: [[window, marker]], extra (the extra window's, nearest the main windows first),
+// out: [[distance, marker]] }
+function themeSplit(base, key) {
   const T = THEMES[key],
+    main = T.w.filter(function (w) {
+      return !w.extra;
+    }),
     inside = [],
     extra = [],
     out = [];
   base.forEach(function (m) {
     const x = mLch(m);
     let best = Infinity,
-      ex = false;
-    T.w.forEach(function (w) {
+      bi = 0;
+    T.w.forEach(function (w, i) {
       const d = themeOff(x, w);
-      if (d < best || (d === best && !w.extra)) {
+      if (d < best || (d === best && !w.extra && T.w[bi].extra)) {
         best = d;
-        ex = !!w.extra;
+        bi = i;
       }
     });
-    if (best === 0) (ex ? extra : inside).push(m);
-    else out.push([best, m]);
+    if (best > 0) out.push([best, m]);
+    else if (T.w[bi].extra)
+      extra.push([
+        Math.min.apply(
+          null,
+          main.map(function (w) {
+            return themeOff(x, w);
+          }),
+        ),
+        m,
+        bi,
+      ]);
+    else inside.push([bi, m]);
   });
-  const keep = inside.concat(extra.slice(0, Math.max(2, Math.floor(inside.length / 3)))),
+  // (v318.18: by fit, not the collection's order, which had given Copic's blues before its violets)
+  extra.sort(function (p, q) {
+    return p[0] - q[0];
+  });
+  return { inside: inside, extra: extra, out: out };
+}
+function themeExtraN(inside) {
+  return Math.max(2, Math.floor(inside / 3));
+}
+function themePool(base, key) {
+  const s = themeSplit(base, key),
+    keep = s.inside
+      .map(function (p) {
+        return p[1];
+      })
+      .concat(
+        s.extra.slice(0, themeExtraN(s.inside.length)).map(function (p) {
+          return p[1];
+        }),
+      ),
     want = Math.min(THEME_MIN, base.length);
   let added = 0;
   if (keep.length < want) {
-    out.sort(function (p, q) {
+    s.out.sort(function (p, q) {
       return p[0] - q[0];
     });
-    for (let i = 0; i < out.length && keep.length < want; i++, added++) keep.push(out[i][1]);
+    for (let i = 0; i < s.out.length && keep.length < want; i++, added++) keep.push(s.out[i][1]);
   }
-  themeWide = { key: key, inside: inside.length, added: added };
   // (in the collection's order, as the other pools are)
   const set = new Set(keep);
-  return base.filter(function (m) {
-    return set.has(m);
-  });
+  return {
+    items: base.filter(function (m) {
+      return set.has(m);
+    }),
+    wide: { key: key, inside: s.inside.length, added: added },
+  };
 }
-function poolFor(pal) {
+// your markers that pass the filters (all of them when none do), of the temperature pal ('cool', 'warm'; else any)
+function poolBase(pal) {
   let base = coll.filter(function (m) {
     return m.pass;
   });
@@ -175,24 +284,80 @@ function poolFor(pal) {
       const t = markerTemp(m);
       return t === pal || t === 'both';
     });
-  if (THEMES[pal]) {
-    if (_themeMemo && _themeMemo.coll === coll && _themeMemo.pal === pal && _themeMemo.n === base.length) {
-      themeWide = _themeMemo.wide;
-      return _themeMemo.items;
-    }
-    const items = themePool(base, pal);
-    _themeMemo = { coll: coll, pal: pal, n: base.length, items: items, wide: themeWide };
-    return items;
-  }
   return base;
 }
-// the line under Lean towards when a theme had too few of your markers
+// (a collection is made afresh when it changes: the pools and strips are kept for it)
+let _themeMemo = { coll: null, m: new Map() };
+function themeMemo(k, make) {
+  if (_themeMemo.coll !== coll) _themeMemo = { coll: coll, m: new Map() };
+  let e = _themeMemo.m.get(k);
+  if (!e) _themeMemo.m.set(k, (e = make()));
+  return e;
+}
+// the theme th's pool in the temperature pal: { items, wide: { key, inside, added } }
+function themeEntry(pal, th) {
+  const base = poolBase(pal);
+  return themeMemo('p|' + pal + '|' + th + '|' + base.length, function () {
+    return themePool(base, th);
+  });
+}
+// the markers a pattern picks from: the temperature pal's, then the theme th's (the guide's own when not given)
+function poolFor(pal, th) {
+  if (th === undefined) th = theme;
+  if (!THEMES[th]) return poolBase(pal);
+  return themeEntry(pal, th).items;
+}
+// (v318.18) a theme's strip, from your markers in the Lean towards temperature: its markers inside the windows (the
+// widened ones aren't its colours), window by window, round the wheel within each, at most THEME_STOPS of them, as
+// a CSS gradient of hard stops; `off`: with Cool or Warm, next to none of its colours are that temperature
+function themeStrip(key) {
+  const base = poolBase(palette);
+  return themeMemo('s|' + palette + '|' + key + '|' + base.length, function () {
+    const T = THEMES[key],
+      s = themeSplit(base, key),
+      ms = s.inside
+        .map(function (p) {
+          return [p[0], p[1]];
+        })
+        .concat(
+          s.extra.slice(0, themeExtraN(s.inside.length)).map(function (p) {
+            return [p[2], p[1]];
+          }),
+        )
+        .map(function (p) {
+          return [p[0], (mLch(p[1])[2] - T.w[p[0]].h[0] + 360) % 360, p[1].hex];
+        })
+        .sort(function (a, b) {
+          return a[0] - b[0] || a[1] - b[1];
+        });
+    let hx = ms.map(function (p) {
+      return p[2];
+    });
+    if (hx.length > THEME_STOPS) {
+      const st = hx.length / THEME_STOPS,
+        pick = [];
+      for (let i = 0; i < THEME_STOPS; i++) pick.push(hx[Math.floor(i * st)]);
+      hx = pick;
+    }
+    const n = hx.length,
+      css = n
+        ? 'linear-gradient(90deg,' +
+          hx
+            .map(function (h, i) {
+              return h + ' ' + +((i * 100) / n).toFixed(2) + '% ' + +(((i + 1) * 100) / n).toFixed(2) + '%';
+            })
+            .join(',') +
+          ')'
+        : '';
+    return { css: css, inside: s.inside.length, off: palette !== 'all' && s.inside.length < 2 };
+  });
+}
+// the line under the themes when the theme had too few of your markers (in the temperature, with Cool or Warm)
 function themeNote() {
-  if (!THEMES[palette] || paletteSource !== 'owned') return '';
-  poolFor(palette);
-  const w = themeWide;
-  if (!w || !w.added) return '';
-  const nm = THEMES[palette].n.toLowerCase();
+  if (!THEMES[theme] || paletteSource !== 'owned') return '';
+  const w = themeEntry(palette, theme).wide;
+  if (!w.added) return '';
+  const nm = (palette === 'cool' || palette === 'warm' ? palette + ' ' : '') + THEMES[theme].n.toLowerCase();
   return (
     (w.inside ? 'Few ' : 'No ') +
     nm +
@@ -201,6 +366,9 @@ function themeNote() {
     (w.inside ? ' added.' : ' used.')
   );
 }
+// (v318.18) a Cool or Warm tap that leaves the theme with next to none of its colours turns it off: said once, under
+// the themes ({ n: the theme's name, t: the temperature }), until the next choice there
+let themeDrop = null;
 // (v318.15) Rings: how many touching steps each section of cl is from the start (the section under the centre mark,
 // radCentre, when it's one of them; else the one whose middle is nearest it), walking only within cl (a zone's own
 // sections). A section the walk can't reach (an island: a section cut off by another zone, or one whose borders are
@@ -3242,6 +3410,7 @@ function blendPoolKey() {
     zoneLive(),
     emphasis,
     palette,
+    theme,
     limitN,
     paletteSource,
     savedPalId,
@@ -3882,7 +4051,7 @@ function inclStatus() {
     off = INCL_KEYS.filter(function (k) {
       return !on[k];
     }),
-    yours = isDemo() ? ' of the catalogue markers' : ' of your markers';
+    yours = (isDemo() ? ' of the catalogue markers' : ' of your markers') + themeIn();
   let t =
     n +
     yours +
@@ -3981,10 +4150,14 @@ const MOOD_WORDS = {
   deep: ['deep', 'next deepest'],
   earthy: ['earthy', 'nearest to earthy'],
 };
+// (v318.18) the pool line's word for a theme: " in Sunset" (your markers, not a saved or generated palette)
+function themeIn() {
+  return THEMES[theme] && paletteSource === 'owned' ? ' in ' + THEMES[theme].n : '';
+}
 function poolMsg() {
-  const yours = isDemo()
-    ? 'the ' + coll.length + ' catalogue markers'
-    : 'your ' + nWord(coll.length, 'marker');
+  const yours =
+    (isDemo() ? 'the ' + coll.length + ' catalogue markers' : 'your ' + nWord(coll.length, 'marker')) +
+    themeIn();
   // (Random's Main colour and No repeats choose their own markers: 31-balance)
   if (family === 'random' && balance === 'main') {
     const p = balPlan();
@@ -4099,9 +4272,7 @@ function assignOne(cl) {
     note(
       palette === 'all'
         ? 'No markers to use \u2014 check Filters in Colours.'
-        : (THEMES[palette]
-            ? 'None of your markers fit ' + THEMES[palette].n
-            : 'None of your markers are ' + palette) + ' \u2014 choose another in Lean towards.',
+        : 'None of your markers are ' + palette + ' \u2014 choose another in Lean towards.',
     );
     return false;
   }

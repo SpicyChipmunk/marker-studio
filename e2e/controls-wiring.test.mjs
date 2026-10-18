@@ -14,7 +14,7 @@ after(teardown);
 // each control and the events its handlers listen for
 const WIRED = {
   // Plan: Colours
-  sfSrc: ['click'], sfHarm: ['change'], sfPalPick: ['change'], sfPal: ['click'], sfMood: ['click'],
+  sfSrc: ['click'], sfHarm: ['change'], sfPalPick: ['change'], sfPal: ['click'], sfTheme: ['click'], sfMood: ['click'],
   sfMkCount: ['input', 'change'], sfExpand: ['change'], sfExpChar: ['input', 'change'], sfFiltToggle: ['click'],
   // (v308: the count's − and +, held down to keep going, the count to type one, and the Include row)
   sfMkMinus: ['pointerdown', 'pointerup', 'click'], sfMkPlus: ['pointerdown', 'pointerup', 'click'], sfMkNum: ['click'], sfIncl: ['click'],

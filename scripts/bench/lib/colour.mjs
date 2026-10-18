@@ -116,6 +116,7 @@ export const BASE = {
   look: 'auto',
   paletteSource: 'owned',
   palette: 'all',
+  theme: '',
   emphasis: 'neutral',
   limitN: 16,
   gradScat: 0,

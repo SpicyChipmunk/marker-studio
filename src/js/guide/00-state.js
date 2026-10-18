@@ -179,6 +179,9 @@ let lastPoolN = 0; // written by: 30-palette-assign, 46-photo
 // written by: 05-style-fields, 30-palette-assign, 46-photo, 50-controls, 99-close (test)
 let family = 'gradient';
 let palette = 'all'; // written by: 05-style-fields, 50-controls, 99-close (test)
+// (v318.18) the Theme under Lean towards: '' or a THEMES key (30-palette-assign). Written by: 05-style-fields,
+// 52-controls-plan-wire, 99-close (test)
+let theme = '';
 let gradShape = 'serpentine'; // written by: 05-style-fields, 30-palette-assign, 50-controls, 99-close (test)
 let dir = 1; // written by: 05-style-fields, 30-palette-assign, 50-controls, 99-close (test)
 // the Gradient's Look: 'auto', 'smooth' or 'ltd' (Light to dark)

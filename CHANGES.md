@@ -1714,8 +1714,38 @@ Mood's fitting).
 - **Themes in Lean towards** (Colours, was Temperature): Any · Cool · Warm · **Sunset · Forest · Candy**, a six-wide
   row as Mood's. A theme keeps your markers inside its hues (L*C*h° windows), and with fewer than 8 adds the nearest,
   with a line saying so. The full Ohuhu 320, Honolulu 120 and all-Copic sets have at least 6 inside each. Not in
-  Surprise yet; an older copy reads a theme as Any.
+  Surprise yet; an older copy reads a theme as Any. Random's Main colour chooses from the theme's markers too (the
+  debugging pass found it took its colours from all of them).
 - **Shading styles under the photo's light** no longer read Custom for a Roundness the photo doesn't use.
 - **Tests:** test/v31817, e2e/v31817 (Chromium and WebKit); targeted e2e locally (the files that touch the guide's
   controls), the full suite on GitHub. Updated: e2e/help (Lean towards in the glossary), e2e/v308-colour (Try
   Around).
+
+# Changes — v318.18 (Theme: twelve themes with colour strips)
+
+- **Theme, its own choice** under Colours › Lean towards (Any · Cool · Warm again, three even buttons): twelve
+  themes in a grid, **Blossom · Tropical · Autumn · Winter / Sunset · Desert · Forest · Ocean / Coral · Berry ·
+  Galaxy · Twilight**, 3 across on a phone and 4 on an iPad. Each has a strip of the colours it takes from your
+  markers; tap the chosen one again for none. Undo: "Theme: Coral" / "Theme off".
+- **Tuned on the Ohuhu 120/320, Honolulu 48 and Copic sets** (Fable's study): Forest takes no lemon yellows, Sunset's
+  violet sky no royal blues (its extra colours are taken by fit, not the collection's order), Ocean has them; Winter
+  is icy blues and lilacs with silver at most a third; Coral is coral, peach and pink with a little teal; Twilight
+  lavender, periwinkle, mauve and indigo. Candy is gone (a v318.17 guide's Candy opens as Blossom). The order keeps
+  Twilight away from Winter and Blossom.
+- **With Cool or Warm** a theme takes that temperature's markers (Warm + Tropical: its pinks, oranges and lime),
+  widened within them; its strip shows those, and a theme with next to none is greyed. Tapping Cool or Warm with such
+  a theme on turns it off in the same step, and a line says so.
+- **Saving**: a new `theme` setting, written only when one is chosen (a guide without saves exactly as before). A
+  v318.17 guide's Sunset or Forest (saved in `palette`) opens as the theme with Any; zones too. An older copy reads a
+  theme as Any, and loses it if it saves the guide again.
+- The pool line names the theme ("… of your markers in Coral"); Random's Main colour's Auto says "an ocean colour,
+  from the theme"; Blend's anchors and the rough-spots line notice a theme change. The Photo pattern takes no theme.
+- More options' Lean towards and Theme rows are fitted when the fold opens (they were fitted only while shown).
+- **Tests:** test/v31818, e2e/v31818 (Chromium and WebKit). Updated: test/v31817, test/style-fields, test/zones,
+  e2e/v31817, e2e/style-fields, e2e/controls-wiring. Targeted e2e locally; the full suite on GitHub.
+- **From the v318.15–17 run on GitHub (WebKit part 1):** on a phone in Safari's engine, the first change of tab to
+  Shading moved the page up 14px. Every tab is held at the tallest tab's height, measured by laying each out without
+  that minimum; the short Shading tab (v318.16) made the page shorter for that moment, and Safari's engine pulled the
+  scroll up with it. The page now keeps its height while the tabs are measured (e2e/guide-frame). And
+  e2e/rough-count's big-collection test waits up to 90 s for its line (it once missed 30 s there, then passed).
+- Cache bumped to `marker-studio-v318.18`.

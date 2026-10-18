@@ -188,11 +188,9 @@ function planLabel1(p, q) {
     return 'Include changed';
   }
   if (a.palette !== b.palette)
-    return (
-      'Lean towards: ' +
-      ({ cool: 'Cool', warm: 'Warm', all: 'Any' }[b.palette] ||
-        (THEMES[b.palette] ? THEMES[b.palette].n : b.palette))
-    );
+    return 'Lean towards: ' + ({ cool: 'Cool', warm: 'Warm', all: 'Any' }[b.palette] || b.palette);
+  // (v318.18)
+  if (a.theme !== b.theme) return THEMES[b.theme] ? 'Theme: ' + THEMES[b.theme].n : 'Theme off';
   if (a.emphasis !== b.emphasis) return 'Mood: ' + (MOODS[b.emphasis] ? MOODS[b.emphasis].label : b.emphasis);
   if (a.expand !== b.expand) return 'Nearby markers ' + onoff(b.expand);
   if (a.expandChar !== b.expandChar) return 'Nearby colours changed';
@@ -691,6 +689,7 @@ function roughSig() {
     limitN,
     family,
     palette,
+    theme,
     emphasis,
     paletteSource,
     savedPalId,

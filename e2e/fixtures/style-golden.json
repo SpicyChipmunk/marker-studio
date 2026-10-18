@@ -2775,11 +2775,12 @@
   }
  },
  "open-all-set": {
-  "sha256": "c6c18dc3d9e8e51936208e7553eebf4b19fe04655228bf3c183767b864de33b3",
-  "bytes": 4231,
+  "sha256": "c5513a2c8f75c5205ba1f1db91ab2d28924bbdbe8eb4e15be18242245bd21368",
+  "bytes": 4247,
   "style": {
    "family": "random",
    "palette": "warm",
+   "theme": "coral",
    "gradShape": "radial",
    "dir": -1,
    "look": "ltd",

@@ -1,5 +1,5 @@
 // v318.17 in the browser: Pattern's More options on a phone, ＋ Zone at the tab's end, the Flow pictures; Shadows only
-// per zone; Blender highlights; Lean towards with its themes. Fails on v318.16.
+// per zone; Blender highlights; Lean towards. Fails on v318.16.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { setup, teardown, openApp, sampleGuide, sectionPoint, idle, scrollTop } from './helpers.mjs';
@@ -143,7 +143,7 @@ test('Blender highlights: offered with a Colorless Blender; the H is the 0; Colo
   assert.deepEqual(errors, []);
 });
 
-test('Lean towards: Any, Cool, Warm and three themes; a theme is one Undo step', async () => {
+test('Lean towards: Any, Cool, Warm (v318.18: the themes are their own row, e2e/v31818); one Undo step', async () => {
   const { page, errors } = await openApp({ width: 390, height: 844 });
   await sampleGuide(page);
   await tab(page, 'colours');
@@ -151,24 +151,11 @@ test('Lean towards: Any, Cool, Warm and three themes; a theme is one Undo step',
     'Any',
     'Cool',
     'Warm',
-    'Sunset',
-    'Forest',
-    'Candy',
   ]);
-  await page.click('#sfPal [data-v="forest"]');
+  await page.click('#sfPal [data-v="cool"]');
   await idle(page);
-  assert.equal(await page.evaluate(() => __mstest.styleVars.palette), 'forest');
-  assert.equal(await page.evaluate(() => __mstest.planLabel), 'Lean towards: Forest');
-  // the row fits: one row of six or two of three, nothing cut off, no sideways scroll
-  const fit = await page.evaluate(() => {
-    const r = document.getElementById('sfPal');
-    return {
-      over: r.scrollWidth > r.clientWidth + 1,
-      clipped: [...r.children].filter((b) => b.scrollWidth > b.clientWidth + 1).length,
-      page: document.documentElement.scrollWidth > innerWidth,
-    };
-  });
-  assert.deepEqual(fit, { over: false, clipped: 0, page: false });
+  assert.equal(await page.evaluate(() => __mstest.styleVars.palette), 'cool');
+  assert.equal(await page.evaluate(() => __mstest.planLabel), 'Lean towards: Cool');
   await page.keyboard.press('Control+z');
   await idle(page);
   assert.equal(await page.evaluate(() => __mstest.styleVars.palette), 'all');

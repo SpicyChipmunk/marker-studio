@@ -61,7 +61,7 @@ async function nonDefault(page) {
     const t = __mstest, o = t.assignData.order, keys = [...new Set(o.map((l) => t.assignData.assign[l].mkey))];
     return {
       style: {
-        family: 'random', palette: 'warm', gradShape: 'radial', dir: -1, look: 'ltd', emphasis: 'earthy', limitN: 11, noAdj: true,
+        family: 'random', palette: 'warm', theme: 'coral', gradShape: 'radial', dir: -1, look: 'ltd', emphasis: 'earthy', limitN: 11, noAdj: true,
         balance: 'mixed', balM: 'blue', balS: 'teal', balA: 'orange', balSeed: 0.4, noRep: true,
         gradSeed: 0.37, blendFall: 3.2, blendVivid: false, blendMix: 'paint', texAmt: 0.2, radC: { x: 0.3, y: 0.6 },
         shade: { mode: 'full', x: 0.7, y: 0.8, round: 0.9, lines: false, hi: 0.3, lo: 0.65, lightSrc: 'sun', light: 'sun', main: false, shadow: 'cool', hilite: 'warm', flat: [o[2], o[5]] },
@@ -390,6 +390,8 @@ test('Undo: every field it keeps goes back after a change that was never committ
 const CONTROLS = [
   ['limitN', 'colours', (p) => slide(p, 'sfMkCount', 10)],
   ['palette', 'colours', (p) => click(p, '#sfPal [data-v="warm"]')],
+  // (v318.18: a theme the warm markers have)
+  ['theme', 'colours', (p) => click(p, '#sfTheme [data-v="sunset"]')],
   ['emphasis', 'colours', (p) => click(p, '#sfMood [data-v="muted"]')],
   ['paletteSource', 'colours', async (p) => { await seed(p, 21); await click(p, '#sfSrc [data-v="generate"]'); }],
   ['genHarmony', 'colours', async (p) => { await seed(p, 22); await choose(p, 'sfHarm', 'tetradic'); }],

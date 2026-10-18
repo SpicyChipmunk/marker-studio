@@ -314,12 +314,23 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     hiOn: hiOn,
     shAnyHi: shAnyHi,
     shZonesNone: shZonesNone,
+    zoneDelete: zoneDelete,
     blenderFor: blenderFor,
+    // (v318.18: the guide's own theme in its Lean towards temperature, or the one asked for)
     get themeWide() {
-      return themeWide;
+      return THEMES[theme] ? themeEntry(palette, theme).wide : null;
+    },
+    themeEntry: themeEntry,
+    themeStrip: themeStrip,
+    themeSplit: themeSplit,
+    poolBase: poolBase,
+    get themeDrop() {
+      return themeDrop;
     },
     THEMES: THEMES,
+    THEME_KEYS: THEME_KEYS,
     themeNote: themeNote,
+    balAutoSub: balAutoSub,
     morePatternSum: morePatternSum,
     // (v304 tests: the tone lines drawn into a buffer; a held shading put back as Undo does; the brand letters in print)
     shadeLinesDraw: shadeLinesDraw,
@@ -993,6 +1004,12 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       },
       set palette(v) {
         palette = v;
+      },
+      get theme() {
+        return theme;
+      },
+      set theme(v) {
+        theme = v;
       },
       get gradShape() {
         return gradShape;

@@ -486,6 +486,12 @@ function tabsTallest() {
   const ps = ctlEl ? ctlEl.querySelectorAll('.sftab') : [];
   if (ps.length < 2) return 0;
   let t = 0;
+  // (v318.18: the page held at its height while the tabs are measured: Safari's engine moved the scroll up when the
+  // tab shown, measured without its minimum, made the page shorter for a moment, as a short Shading tab did)
+  const de = document.documentElement,
+    keepMin = de.style.minHeight,
+    y = window.scrollY;
+  de.style.minHeight = de.scrollHeight + 'px';
   workEl.classList.add('sftabmeas');
   ps.forEach(function (p) {
     const was = p.style.display;
@@ -494,6 +500,8 @@ function tabsTallest() {
     p.style.display = was;
   });
   workEl.classList.remove('sftabmeas');
+  de.style.minHeight = keepMin;
+  if (Math.abs(window.scrollY - y) > 0.5) window.scrollTo(0, y);
   return t;
 }
 // Switching tabs never moves anything: when the tabs are pinned, the new tab opens at its top with them still pinned
@@ -578,6 +586,13 @@ function fitPairs() {
     if (six.offsetParent === null) return;
     six.classList.remove('sfsix3');
     six.classList.toggle('sfsix3', [].some.call(six.children, labelTooWide));
+  });
+  // (v318.18) Theme's twelve: three across on a phone (the screen's short side, as More options), else four where
+  // every name fits
+  ctlEl.querySelectorAll('.sfthemes').forEach(function (g) {
+    if (g.offsetParent === null) return;
+    g.classList.remove('sfthemes3');
+    g.classList.toggle('sfthemes3', moreNarrow() || [].some.call(g.children, labelTooWide));
   });
 }
 // Drag to scroll: at zoom 1 a vertical drag on the picture scrolls the page, unless the picture needs one-finger drags

@@ -123,7 +123,9 @@ function balWarm(k) {
   return !BAL_COOL[k] && k !== 'grey';
 }
 // the markers Balance chooses from: a saved or generated palette's (with nearby ones when Expand is on), else every
-// marker you can use (your filters); the Temperature only steers Auto, so an accent can be the other temperature
+// marker you can use (your filters); the Temperature only steers Auto, so an accent can be the other temperature.
+// (v318.17: a theme is the markers chosen from, as for every other pattern: an accent from outside a Sunset isn't a
+// sunset. v318.18: the Theme's own setting, without the temperature, which steers Auto as before)
 function balBase() {
   if (paletteSource === 'saved' || paletteSource === 'generate') {
     const s = poolSource(limitN, true);
@@ -1194,7 +1196,12 @@ function balNote(p) {
       ' No colour to go second, so the main colour and ' +
       (p.roles.a.fams && p.roles.a.fams.length > 1 ? 'accents.' : 'an accent.');
   if (p.tempMiss)
-    t += ' No ' + palette + ' colour has markers enough to be the main one, so it can be any colour.';
+    t +=
+      ' No ' +
+      palette +
+      (THEMES[theme] ? ' ' + THEMES[theme].n.toLowerCase() : '') +
+      ' colour has markers enough to be the main one, so it can be any colour' +
+      (THEMES[theme] ? ' of the theme.' : '.');
   if (p.crossTemp) t += ' The accent is ' + (palette === 'cool' ? 'warm' : 'cool') + ', to stand out.';
   return t;
 }
@@ -1250,6 +1257,20 @@ function balMore(p, ms) {
   return t;
 }
 // (mf: Keep touching sections clearly different and No repeats under More options, on a phone: v318.17)
+// (v318.18) Main colour's Auto, under its name: what Lean towards and Theme ask for ("a warm sunset colour"; with a
+// colour chosen by hand for another role, the temperature has nothing to steer, the theme still holds)
+function balAutoSub(otherHand) {
+  const tp = (palette === 'cool' || palette === 'warm') && !otherHand ? palette : '',
+    th = THEMES[theme] ? THEMES[theme].n.toLowerCase() : '',
+    w = [tp, th].filter(Boolean).join(' ');
+  if (!w) return 'chosen for you';
+  return (
+    (/^[aeiou]/.test(w) ? 'an ' : 'a ') +
+    w +
+    ' colour, ' +
+    (tp && th ? 'as Lean towards and Theme say' : tp ? 'as Lean towards says' : 'from the theme')
+  );
+}
 function balHTML(mf) {
   let h =
     '<div class="sfsublbl">Balance</div><div id="sfBal" role="group" aria-label="Balance" class="sfc-segs">' +
@@ -1380,11 +1401,7 @@ function balChoose(r) {
     (r === 'm'
       ? p.seeded
         ? 'the palette’s biggest colour'
-        : palette !== 'all' && !otherHand
-          ? 'a ' +
-            (THEMES[palette] ? THEMES[palette].n.toLowerCase() : palette) +
-            ' colour, as Lean towards says'
-          : 'chosen for you'
+        : balAutoSub(otherHand)
       : r === 'a'
         ? 'across the colour wheel, bright'
         : 'next to the main colour') +
