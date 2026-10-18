@@ -196,6 +196,8 @@ function openDesignObj(d, id, resumed, quiet, col) {
       }
       // the guide's own settings first: which sections are background depends on its Background trim
       styleFrom(d);
+      // (its own Min section size, as saved: not a new picture's)
+      minAuto = false;
       applyBg(true);
       secColor = new Array(comps.length);
       for (let l = 1; l < comps.length; l++) {
@@ -449,7 +451,7 @@ function openDesignObj(d, id, resumed, quiet, col) {
             nl &&
             Array.isArray(h) &&
             ['same', 'cool', 'grey'].includes(h[0]) &&
-            ['same', 'warm', 'paper'].includes(h[1])
+            ['same', 'warm', 'paper', 'blender', 'none'].includes(h[1])
           )
             heldSet(
               nl,

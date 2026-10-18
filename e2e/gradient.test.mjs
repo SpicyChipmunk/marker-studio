@@ -322,16 +322,16 @@ test('Light to dark: bands are light at the top, or on the sun’s side once the
   const before = await assignMap(page);
   await page.evaluate(() => { __mstest.styleVars.shadeSun = { x: 0.5, y: 0.95 }; });
   await tab(page, 'shading');
-  await click(page, '#sfShade [data-v="shadow"]'); await idle(page);
+  await page.evaluate(() => __mstest.shadeTo('shadow')); await idle(page);
   assert.ok((await topMinusBottom()) < -5, 'light at the bottom, by the sun');
-  assert.equal(await page.evaluate(() => __mstest.planLabel), 'Shading: Shadows');
+  assert.equal(await page.evaluate(() => __mstest.planLabel), 'Highlights: None (shadows only)');
   await page.keyboard.press('Control+z'); await idle(page);
   assert.deepEqual(await assignMap(page), before);
   // an opened guide keeps its markers when the shading changes
   await reopenAs(page, 'Opened', '');
   const opened = await assignMap(page);
   await tab(page, 'shading');
-  await click(page, '#sfShade [data-v="full"]'); await idle(page);
+  await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   assert.deepEqual(await assignMap(page), opened);
   assert.deepEqual(errors, []);
 });

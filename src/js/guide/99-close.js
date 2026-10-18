@@ -311,6 +311,16 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     shadeField: shadeField,
     shadeTones: shadeTones,
+    hiOn: hiOn,
+    shAnyHi: shAnyHi,
+    shZonesNone: shZonesNone,
+    blenderFor: blenderFor,
+    get themeWide() {
+      return themeWide;
+    },
+    THEMES: THEMES,
+    themeNote: themeNote,
+    morePatternSum: morePatternSum,
     // (v304 tests: the tone lines drawn into a buffer; a held shading put back as Undo does; the brand letters in print)
     shadeLinesDraw: shadeLinesDraw,
     heldSet: heldSet,
@@ -404,20 +414,25 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     setPhotoRef: setPhotoRef,
     // (v304: the Photo pattern through a change to the picture, its size limits, a photo with no colour)
     geoSet: function (o) {
-      okGeom(function () {
-        // (q: the page's corners in the photo as taken, straightened)
-        if (o.q) {
-          srcImg = pgOrig;
-          pgApply(o.q, false);
-          return;
-        }
-        if ('rot90' in o) rot90 = o.rot90;
-        if ('tilt' in o) tilt = o.tilt;
-        if ('crop' in o) cropRect = o.crop;
-        reprocessImg();
-      });
+      // (v318.14: in one go, as before, so a test can read the picture straight after: segSync)
+      segSync = true;
+      try {
+        geoSet0(o);
+      } finally {
+        segSync = false;
+      }
     },
-    autoCrop: autoCrop,
+    set segSync(v) {
+      segSync = v;
+    },
+    autoCrop: function () {
+      segSync = true;
+      try {
+        autoCrop();
+      } finally {
+        segSync = false;
+      }
+    },
     buildGuide: buildGuide,
     photoMove: photoMove,
     photoFit: photoFit,
@@ -425,8 +440,19 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     photoStatsHTML: photoStatsHTML,
     zoneNew: zoneNew,
     zoneSelect: zoneSelect,
+    pgStartQ: pgStartQ,
+    PG_BUSY: PG_BUSY,
+    get pgSteep() {
+      return pgSteep;
+    },
+    set pgSteep(v) {
+      pgSteep = v;
+    },
     get pgOrig() {
       return pgOrig;
+    },
+    set pgOrig(v) {
+      pgOrig = v;
     },
     get phRefit() {
       return _phRefit;
@@ -801,6 +827,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get cropRect() {
       return cropRect;
     },
+    set cropRect(v) {
+      cropRect = v;
+    },
     openFillPop: openFillPop,
     gradStartInfo: gradStartInfo,
     get zones() {
@@ -867,6 +896,17 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     shadeTipHTML: shadeTipHTML,
     shT2: shT2,
     minPx: minPx,
+    minPosAuto: minPosAuto,
+    minMmText: minMmText,
+    get minAuto() {
+      return minAuto;
+    },
+    get srcDims() {
+      return srcDims;
+    },
+    set srcDims(v) {
+      srcDims = v;
+    },
     grayUp: grayUp,
     // (v313: Edit sections' drawing, read back; a stand-in canvas context, to time it without one)
     get rgbOut() {
@@ -1031,6 +1071,12 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       },
       set noRep(v) {
         noRep = v;
+      },
+      get matchAlike() {
+        return matchAlike;
+      },
+      set matchAlike(v) {
+        matchAlike = v;
       },
       get gradSeed() {
         return gradSeed;
@@ -1284,6 +1330,46 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     set srcColour(v) {
       srcColour = v;
+    },
+    resegment: resegment,
+    get speckGone() {
+      return speckGone;
+    },
+    speckCap: speckCap,
+    trimOffer: trimOffer,
+    mandalaGroups: mandalaGroups,
+    matchUnify: matchUnify,
+    ringDepths: ringDepths,
+    shPresetApply: shPresetApply,
+    shStyleCur: shStyleCur,
+    moreOpen: moreOpen,
+    moreFold: moreFold,
+    // (v318.16) shading turned to a mode as its old row's buttons did (Off, Shadows, Light & shadow): the tests' way
+    // to shade with the amounts as they are, one Undo step
+    shadeTo: function (mode) {
+      if (mode === shadeMode) return;
+      shadeMode = mode;
+      if (mode === 'off') shadeFlatMode = false;
+      guideDirty = true;
+      gradFollowLight();
+      normalizeTones();
+      renderControls();
+      renderGuide();
+      planCommit();
+    },
+    shPresetOn: shPresetOn,
+    SH_PRESETS: SH_PRESETS,
+    edgeShadeField: edgeShadeField,
+    edgeBandsOf: edgeBandsOf,
+    get edgeBands() {
+      return edgeBands;
+    },
+    set edgeBands(v) {
+      edgeBands = v;
+    },
+    processSrcAsync: processSrcAsync,
+    get segBusy() {
+      return segBusy;
     },
     get adaptC() {
       return adaptC;

@@ -146,6 +146,8 @@ function secNow(u) {
   return s;
 }
 function doUndo() {
+  // (v318.14: not while the sections are being found, segRun: the step it would undo isn't done yet)
+  if (segBusy) return;
   const u = popUndo();
   if (!u) return;
   // (v311: the sections as they are, for Redo; none with a tilt still waiting, whose picture was never made)
@@ -156,7 +158,8 @@ function doUndo() {
 // Redo: the edit the last Undo took back, the sections as it left them; Undo takes it back again. Not while a change
 // to the detection waits to be made (it is a new edit: Redo goes with it)
 function secRedo() {
-  if (sfmode !== 'review' || !labels || !secFwd.length || pgMode || cropMode || _reFrom || _imgT) return;
+  if (sfmode !== 'review' || !labels || !secFwd.length || pgMode || cropMode || _reFrom || _imgT || segBusy)
+    return;
   const r = secFwd.pop();
   pushUndo(secNow(r), true);
   secApply(r, true);

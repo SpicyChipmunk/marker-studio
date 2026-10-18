@@ -15,8 +15,9 @@ function ctlPlan() {
       ' \u00b7 ' +
       (family === 'random'
         ? 'Random: ' + surpriseRoles()
-        : gradShape.charAt(0).toUpperCase() +
-          gradShape.slice(1) +
+        : (gradShape === 'rings'
+            ? 'Radial, following the drawing'
+            : gradShape.charAt(0).toUpperCase() + gradShape.slice(1)) +
           (dir < 0 ? ' (reversed)' : '') +
           ', ' +
           LOOK_LABEL[look].toLowerCase() +
@@ -34,6 +35,7 @@ function ctlPlan() {
   ctlEl.innerHTML =
     ctlPlanHead() + ctlPlanColours() + ctlPlanPattern() + ctlPlanShading() + ctlPlanShare() + ctlPlanBar();
   ctlPlanWire();
+  _moreNarrow = moreNarrow();
   frameLineWire();
   ctlEl.setAttribute('data-tab', gTab);
   mpAfterPlan();
@@ -49,6 +51,112 @@ function ctlPlan() {
   positionSpecks();
 }
 // a Plan panel's attributes: shown only while its tab is chosen
+// (v318.16) "More options" on a phone: where the controls are narrower than MORE_W (a phone upright, or a phone on its
+// side with the picture beside them), Shading and Colours show their main choices and fold the rest under one bar,
+// open or shut for the session (moreOpen, per tab; not saved, not an Undo step). Wider, nothing is folded. It's open
+// by itself while something in it is in use (choosing sections to leave flat; the Filters panel).
+const MORE_W = 600;
+// (the tests open it: window.__MS_MORE_OPEN, e2e/helpers.mjs)
+const moreOpen = (function () {
+  const o = typeof window !== 'undefined' && !!window.__MS_MORE_OPEN;
+  return { shading: o, colours: o, pattern: o };
+})();
+let _moreNarrow = null;
+// (a phone, upright or on its side, or an iPad's narrow split view: the screen's short side under MORE_W; an iPad's is
+// 744 or more, so it keeps everything open either way round)
+function moreNarrow() {
+  if (typeof innerWidth !== 'number' || !innerWidth) return false;
+  return Math.min(innerWidth, innerHeight || innerWidth) < MORE_W;
+}
+// whether the tab folds (the bar shown): its folded part exists and it's narrow
+function moreFold(tab) {
+  if (!moreNarrow()) return false;
+  if (tab === 'shading') return shadeMode !== 'off';
+  if (tab === 'colours') return family !== 'manual' && family !== 'photo' && paletteSource === 'owned';
+  // (v318.17: Gradient's Direction, Start colour and Scatter, Random's two tick boxes, Blend's Spread and Mix)
+  if (tab === 'pattern') return family === 'gradient' || family === 'random' || family === 'blend';
+  return false;
+}
+function moreShut(tab) {
+  if (moreOpen[tab]) return false;
+  if (tab === 'shading') return !shadeFlatMode;
+  if (tab === 'colours') return !state.filtersOpen;
+  return true;
+}
+// the bar and the folded part's start, or '' when the tab doesn't fold
+function moreBarHTML(tab, sum) {
+  const shut = moreShut(tab);
+  return (
+    '<button type="button" id="sfMore-' +
+    tab +
+    '" class="filterbar sfmorebar sfc-mt12' +
+    (shut ? '' : ' open') +
+    '" aria-expanded="' +
+    !shut +
+    '" aria-controls="sfMoreIn-' +
+    tab +
+    // (Shading's texture is a second part, after the zones' group)
+    (tab === 'shading' ? ' sfMoreIn-shading-2' : '') +
+    '"><span class="fb-label">More options</span><span class="fb-sum">' +
+    sum +
+    '</span><span class="fb-chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"></path></svg></span></button>'
+  );
+}
+function moreIn(tab, n) {
+  return (
+    '<div class="sfmorein" id="sfMoreIn-' +
+    tab +
+    (n ? '-' + n : '') +
+    '"' +
+    (moreShut(tab) ? ' hidden' : '') +
+    '>'
+  );
+}
+// (on a resize across MORE_W: drawn again, 72-frame)
+function moreCheck() {
+  const n = moreNarrow();
+  if (_moreNarrow !== null && n !== _moreNarrow && sfmode === 'guide' && assignData) renderControls();
+  _moreNarrow = n;
+}
+// what's folded in Colours that isn't as it starts, said on the bar ("Warm · 2 filters · Browns on")
+function moreColoursSum() {
+  const bits = [];
+  if (palette === 'warm' || palette === 'cool') bits.push(palette === 'warm' ? 'Warm' : 'Cool');
+  else if (THEMES[palette]) bits.push(THEMES[palette].n);
+  const fs = typeof filterSummary === 'function' ? String(filterSummary()) : '';
+  if (fs && !/^All/.test(fs)) bits.push(fs.replace(/<[^>]*>/g, ''));
+  return bits.length ? bits.join(' \u00b7 ') : 'Filters, lean towards, include';
+}
+// (v318.16) the line under the Shading row when no style is chosen
+function shCustomText() {
+  return (
+    (shadeMode === 'shadow' ? 'Shadows only: Highlights is None' : 'Custom: your own amounts') +
+    (moreFold('shading') ? ', in More options' : ', below')
+  );
+}
+// the row's chosen button and that line brought up to date after a slider (which doesn't draw the controls again)
+function shRowSync() {
+  const row = document.getElementById('sfShade');
+  if (!row) return;
+  const cur = shStyleCur();
+  row.querySelectorAll('button').forEach(function (b) {
+    const on = b.dataset.v === 'off' ? shadeMode === 'off' : !!cur && cur.k === b.dataset.v;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+  let c = document.getElementById('sfShCustom');
+  if (shadeMode === 'off' || cur) {
+    if (c) c.remove();
+    return;
+  }
+  if (!c) {
+    c = document.createElement('div');
+    c.id = 'sfShCustom';
+    c.className = 'sfc-note sfc-mt6';
+    row.after(c);
+  }
+  c.textContent = shCustomText();
+}
 function ctlTabAttrs(t) {
   return (
     ' id="sfPanel-' +
@@ -183,6 +291,10 @@ function mkCountCtl(off) {
 // the filters for Owned), then Temperature and Mood
 function ctlPlanColours() {
   let html = '<div class="sftab" data-tab="colours"' + ctlTabAttrs('colours') + '>' + zoneChipsHTML();
+  // (v318.16: on a phone, with your own markers as the source, Filters, Temperature, Include and the count under More
+  // options; Mood's buttons, where its pictures aren't shown, come up above the bar)
+  const _mf = moreFold('colours'),
+    FOLD = '<i data-fold></i>';
   // (v310) Mood as pictures of the page, first: 32-mood-pics (where they aren't shown, Mood's buttons as before)
   const _mpics = mpShow();
   if (_mpics) html += moodPicsHTML();
@@ -286,6 +398,7 @@ function ctlPlanColours() {
       }).join('') +
       '</select>';
   } else {
+    html += FOLD;
     {
       var _tot = coll.length,
         _pass = coll.filter(function (m) {
@@ -298,11 +411,11 @@ function ctlPlanColours() {
           : _pass === 0
             ? 'None of your markers match the filters \u2014 using all ' + _tot
             : _pass >= _tot
-              ? _tot === 1
-                ? 'The one marker you own'
-                : 'All ' + _tot + ' markers you own'
+              ? // (v318.16: nothing to say when every marker you own is in: the count of those the pattern draws on is
+                // under Include, and two counts of "your markers" read as a contradiction)
+                ''
               : _pass + ' of ' + _tot + ' owned match your filters';
-      html += '<div class="sfc-note sfc-mt6">' + _msg + '</div>';
+      if (_msg) html += '<div class="sfc-note sfc-mt6">' + _msg + '</div>';
     }
     html +=
       '<div id="sfFiltToggle" role="button" tabindex="0" aria-expanded="' +
@@ -330,24 +443,31 @@ function ctlPlanColours() {
     balance === 'main' &&
     paletteSource === 'owned' &&
     (balM !== 'auto' || balS !== 'auto' || balA !== 'auto');
-  if (_tShow) html += '<div class="sflean">Within your filters, lean towards\u2026</div>';
-  if (_tShow)
+  // (v318.17: Lean towards, Temperature's Any, Cool and Warm with three themes, a six-wide row as Mood's)
+  if (_tShow) {
+    const _thN = themeNote();
     html +=
       '<div class="sfsublbl' +
       (_tOff ? ' sfoff' : '') +
-      '">Temperature</div><div id="sfPal" role="group" aria-label="Temperature" class="sfc-segs' +
+      '" id="sfPalLbl">Lean towards</div><div id="sfPal" role="group" aria-labelledby="sfPalLbl" class="sfc-segs sfsix' +
       (_tOff ? ' sfoff' : '') +
       '">' +
-      // (Any first, as in Mood under it, v300)
+      // (Any first, as in Mood, v300)
       ctlSeg('all', 'Any', palette === 'all', _tOff) +
       ctlSeg('cool', 'Cool', palette === 'cool', _tOff) +
       ctlSeg('warm', 'Warm', palette === 'warm', _tOff) +
+      THEME_KEYS.map(function (k) {
+        return ctlSeg(k, THEMES[k].n, palette === k, _tOff);
+      }).join('') +
       '</div>' +
       (_tOff
         ? '<div class="sfc-note sfc-mt6">Main colour sets this: its colours are chosen (Pattern).</div>'
-        : '');
-  if (_iShow && !_mpics)
-    html +=
+        : _thN
+          ? '<div id="sfThemeNote" class="sfc-note sfc-mt6">' + _thN + '</div>'
+          : '');
+  }
+  if (_iShow && !_mpics) {
+    const _moodH =
       '<div class="sfsublbl' +
       (_mOff ? ' sfoff' : '') +
       '">Mood</div><div id="sfMood" role="group" aria-label="Mood" class="sfc-segs sfsix' +
@@ -357,6 +477,9 @@ function ctlPlanColours() {
         return ctlSeg(k, MOODS[k].label, emphasis === k, _mOff);
       }).join('') +
       '</div>';
+    if (_mf && html.indexOf(FOLD) >= 0) html = html.replace(FOLD, _moodH + FOLD);
+    else html += _moodH;
+  }
   // (v308) Include, the Gradient from your markers (or a palette Expand adds to) in a guide made since v308: three
   // chips, a tick on those that are on; the line under says how many markers that leaves
   var _inShow = _iShow && inclShow();
@@ -374,6 +497,11 @@ function ctlPlanColours() {
       '<div class="sfpoolct" id="sfPoolCt">' +
       (_inShow && paletteSource === 'owned' ? inclStatus() : poolMsg()) +
       '</div>';
+  // (the folded part: from the marker before Filters to here)
+  if (html.indexOf(FOLD) >= 0)
+    html = _mf
+      ? html.replace(FOLD, moreBarHTML('colours', moreColoursSum()) + moreIn('colours')) + '</div>'
+      : html.replace(FOLD, '');
   // (v288) the markers to get out of the box: every marker on the page, all zones, opens a list
   if (assignData) {
     const nm = pageMarkerKeys().length;
@@ -440,8 +568,11 @@ function ctlPlanPattern() {
   let html = '<div class="sftab" data-tab="pattern"' + ctlTabAttrs('pattern') + '>';
   // the zone editor takes the tab's place while it's open (85-zones-ui)
   if (zoneEditOn()) return html + zoneEditorHTML() + '</div>';
+  // (v318.17: the heading heard, here whatever the zones; ＋ Zone itself at the tab's end, zoneAddHTML)
+  const _mf = moreFold('pattern');
   html +=
-    (zones.length ? zoneChipsHTML() : zoneAddHTML()) +
+    '<h3 class="sfsr">Colour pattern</h3>' +
+    zoneChipsHTML() +
     '<div id="sfFam" class="sffit" role="group" aria-label="Colour pattern">' +
     ctlSeg('gradient', 'Gradient', family === 'gradient') +
     ctlSeg('random', 'Random', family === 'random') +
@@ -452,14 +583,24 @@ function ctlPlanPattern() {
   if (family === 'gradient') {
     html +=
       '<div class="sfsublbl">Flow</div><div id="sfShape" role="group" aria-label="Flow" class="sffit">' +
-      ctlSeg('serpentine', 'Serpentine', gradShape === 'serpentine') +
-      ctlSeg('vertical', 'Vertical', gradShape === 'vertical') +
-      ctlSeg('diagonal', 'Diagonal', gradShape === 'diagonal') +
-      ctlSeg('radial', 'Radial', gradShape === 'radial') +
-      ctlSeg('around', 'Around', gradShape === 'around') +
+      // (v318.17: each with a small picture of its path above its word)
+      ctlSeg('serpentine', flowIco('serpentine') + 'Serpentine', gradShape === 'serpentine') +
+      ctlSeg('vertical', flowIco('vertical') + 'Vertical', gradShape === 'vertical') +
+      ctlSeg('diagonal', flowIco('diagonal') + 'Diagonal', gradShape === 'diagonal') +
+      ctlSeg('radial', flowIco('radial') + 'Radial', gradShape === 'radial' || gradShape === 'rings') +
+      ctlSeg('around', flowIco('around') + 'Around', gradShape === 'around') +
       '</div>' +
+      // (v318.15) Radial's rings: circles round the centre, or out through the touching sections (Rings, gradShape
+      // 'rings'), as a choice under Radial: a sixth Flow doesn't fit on a phone's row
+      (gradShape === 'radial' || gradShape === 'rings'
+        ? // (v318.16: one line, its label beside two compact choices)
+          '<div id="sfRingKind" role="group" aria-label="Rings" class="sfringk"><span class="sfringl" aria-hidden="true">Rings</span>' +
+          ctlSeg('radial', 'Circles', gradShape === 'radial') +
+          ctlSeg('rings', 'Follow the drawing', gradShape === 'rings') +
+          '</div>'
+        : '') +
       // (Radial: where its rings start, the centre mark on the picture; Around: what the colours go round, v305)
-      (gradShape === 'radial' || gradShape === 'around'
+      (gradShape === 'radial' || gradShape === 'around' || gradShape === 'rings'
         ? '<div id="sfRadNote" class="sfc-note sfc-mt6">Centre: ' +
           (radC
             ? '<b>moved</b> <button type="button" id="sfRadReset" class="sflink">Back to the middle</button>'
@@ -468,10 +609,19 @@ function ctlPlanPattern() {
               '<span class="sfsr">centre mark</span> on the picture to move it') +
           '</div>'
         : '') +
-      // (v308: Radial on a mandala-like page: Around keeps matching petals alike, Radial's rings cut across them)
-      (gradShape === 'radial' && labels && comps && gradMandala()
-        ? '<div id="sfAroundTip" class="sfc-note sfc-mt6">This page looks like a mandala: Around keeps matching shapes alike. <button type="button" id="sfUseAround" class="sflink">Use Around</button></div>'
-        : '') +
+      // (v318.17: a page that looks like a mandala: one group, its heading, Matching shapes alike, and with Radial's rings
+      // Try Around, which keeps matching petals alike as Radial's rings cut across them, v308)
+      mandalaHTML(gradShape === 'radial' || gradShape === 'rings') +
+      '<div class="sfsublbl">Look</div><div id="sfLook" role="group" aria-label="Look" class="sffit">' +
+      ctlSeg('auto', LOOK_LABEL.auto, look === 'auto') +
+      ctlSeg('smooth', LOOK_LABEL.smooth, look === 'smooth') +
+      ctlSeg('ltd', LOOK_LABEL.ltd, look === 'ltd') +
+      '</div>';
+    const _ln = lookNote();
+    if (_ln) html += '<div id="sfLookNote" class="sfc-note sfc-mt6">' + _ln + '</div>';
+    // (v318.17: Direction, Start colour and Scatter after Look, under More options on a phone)
+    if (_mf) html += moreBarHTML('pattern', morePatternSum()) + moreIn('pattern');
+    html +=
       '<div class="sfsublbl">Direction</div><div id="sfDir" role="group" aria-label="Direction" class="sffit"><button class="sfedit' +
       (dir > 0 ? ' on' : '') +
       '" data-d="1" aria-pressed="' +
@@ -481,14 +631,7 @@ function ctlPlanPattern() {
       '" data-d="-1" aria-pressed="' +
       (dir < 0) +
       '">Reversed</button></div>' +
-      gradStartHTML() +
-      '<div class="sfsublbl">Look</div><div id="sfLook" role="group" aria-label="Look" class="sffit">' +
-      ctlSeg('auto', LOOK_LABEL.auto, look === 'auto') +
-      ctlSeg('smooth', LOOK_LABEL.smooth, look === 'smooth') +
-      ctlSeg('ltd', LOOK_LABEL.ltd, look === 'ltd') +
-      '</div>';
-    const _ln = lookNote();
-    if (_ln) html += '<div id="sfLookNote" class="sfc-note sfc-mt6">' + _ln + '</div>';
+      gradStartHTML();
     // Scatter (v306): one line, and its note (v308: Polished's too); with too few markers it stays Polished and says why
     // (v307: its name over the slider as Flow, Direction, Start colour and Look have theirs, "Scatter: Polished")
     const _sOff = gradCountNow().M < GRAD_SCAT_MIN,
@@ -515,9 +658,11 @@ function ctlPlanPattern() {
       '</div>';
     // (v315) markers seen only on specks, last: what spreads them, and where they are
     html += gradSpeckHTML();
+    if (_mf) html += '</div>';
   } else if (family === 'random') {
-    // (Balance, its bar, Keep touching sections clearly different and No repeats: 31-balance)
-    html += balHTML();
+    // (Balance, its bar, Keep touching sections clearly different and No repeats: 31-balance; v318.17: those two
+    // under More options on a phone, balHTML)
+    html += balHTML(_mf);
   } else if (family === 'blend') {
     html +=
       infoLine(
@@ -529,6 +674,7 @@ function ctlPlanPattern() {
       anchors.length +
       (anchors.length === 1 ? ' anchor' : ' anchors') +
       '</span></div>';
+    if (_mf) html += moreBarHTML('pattern', morePatternSum()) + moreIn('pattern');
     html +=
       '<div class="sfc-mt10"><label class="sfc-slider">Spread<input type="range" id="sfSpread" min="0.6" max="4" step="0.2" value="' +
       blendFall +
@@ -539,7 +685,8 @@ function ctlPlanPattern() {
       // (what the chosen one does, in a line: v285)
       '</div><div id="sfMixHint" class="sfc-note sfc-mt6">' +
       (BLEND_MIX_DESC[blendMix] || '') +
-      '</div>';
+      '</div>' +
+      (_mf ? '</div>' : '');
   } else if (family === 'photo') {
     const _pw = !photoRef && photoWait[pwKey()] !== 'photo' ? photoWait[pwKey()] : null,
       _pwName = _pw ? FAM_NAME[_pw] || _pw : '';
@@ -678,8 +825,8 @@ function ctlPlanPattern() {
             lockMode +
             '">' +
             (lockMode ? 'Done pinning' : 'Pin colours') +
-            ' · ' +
-            Object.keys(locks).length +
+            // (the count only once there's one: "· 0" read as a score, v318.16)
+            (Object.keys(locks).length ? ' · ' + Object.keys(locks).length : '') +
             '</button>'
           : '') +
         '</div>';
@@ -689,7 +836,54 @@ function ctlPlanPattern() {
     if (_pin && lockMode)
       html += '<div class="sfc-note sfc-mt6">Tap sections to pin or unpin their colour.</div>';
   }
+  // (v318.17: ＋ Zone last, the tab's most advanced choice; with zones their chips at the top choose)
+  if (!zones.length) html += zoneAddHTML();
   return html + '</div>';
+}
+// (v318.17) the Flow's pictures: the path the colours take. Heard as their word only (aria-hidden, no text inside)
+const FLOW_ICO = {
+  serpentine: '<path d="M3 5.5h13.5a3.25 3.25 0 0 1 0 6.5h-9a3.25 3.25 0 0 0 0 6.5H21"/>',
+  vertical: '<path d="M5 4v16M19 4v16M12 4v15.5M8.5 16 12 19.5l3.5-3.5"/>',
+  diagonal: '<path d="M4 11.5 11.5 4M4 20 20 4M12.5 20 20 12.5"/>',
+  radial: '<circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="9.6"/>',
+  around:
+    '<circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M20 12a8 8 0 1 1-2.35-5.65"/><path d="M18.2 2.8v4h-4"/>',
+};
+function flowIco(k) {
+  return (
+    '<svg class="sfflowico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' +
+    FLOW_ICO[k] +
+    '</svg>'
+  );
+}
+// what's folded in Pattern that isn't as it starts, said on the bar
+function morePatternSum() {
+  const bits = [];
+  if (family === 'gradient') {
+    if (dir < 0) bits.push('Reversed');
+    if (gradScat > 0) bits.push('Scatter: ' + GRAD_SCAT_LABEL[gradScat]);
+    return bits.length ? bits.join(' \u00b7 ') : 'Direction, start colour, scatter';
+  }
+  if (family === 'random') {
+    if (noAdj) bits.push('Kept apart');
+    if (balance === 'mixed' && noRep) bits.push('No repeats');
+    return bits.length ? bits.join(' \u00b7 ') : 'Touching sections, repeats';
+  }
+  return 'Spread, mix';
+}
+// (v318.17) a page that looks like a mandala, in Gradient and Random: Matching shapes alike, and with Radial's rings
+// Try Around
+function mandalaHTML(around) {
+  const m = matchAlikeHTML();
+  if (!m) return '';
+  return (
+    '<div class="sfmand" role="group" aria-labelledby="sfMandLbl"><div class="sfsublbl" id="sfMandLbl">Looks like a mandala</div><div class="sfmandrow">' +
+    m +
+    (around
+      ? '<span id="sfAroundTip" class="sfc-note">\u00b7 <button type="button" id="sfUseAround" class="sflink">Try Around</button></span>'
+      : '') +
+    '</div></div>'
+  );
 }
 // Shading: the three modes, how the tones go (a one-line ⓘ after the first time), the sliders, where each tone
 // goes, sections left flat and the suggestions line; texture at the bottom, always
@@ -699,12 +893,21 @@ function ctlPlanPattern() {
 // zone's own (Main's without zones): Roundness, Highlights and Shadows, each its kind and amount. Texture last.
 function ctlPlanShading() {
   let html = '<div class="sftab" data-tab="shading"' + ctlTabAttrs('shading') + '>';
+  // (v318.16: on a phone, the tone lines, Leave sections flat, the zones' shading and texture under More options)
+  const _mf = moreFold('shading');
   html +=
-    '<div class="sfgrp sfshade"><h3 class="sfglbl">Shading</h3><div id="sfShade" class="sfshsegs sffit" role="group" aria-label="Shading">' +
+    // (v318.16) one row: Off, or a style (45-shading SH_PRESETS), which turns shading on with its amounts. Amounts of
+    // your own (a slider moved, or a guide saved before) are Custom, a line under the row, not a button: a sixth
+    // didn't fit a phone's row, and it can't be chosen. Shadows only is Highlights › None.
+    '<div class="sfgrp sfshade"><h3 class="sfsr">Shading</h3><div id="sfShade" class="sfshsegs sffit" role="group" aria-label="Shading">' +
     ctlSeg('off', 'Off', shadeMode === 'off') +
-    ctlSeg('shadow', 'Shadows', shadeMode === 'shadow') +
-    ctlSeg('full', 'Light &amp; shadow', shadeMode === 'full') +
-    '</div>';
+    SH_PRESETS.map(function (p) {
+      return ctlSeg(p.k, p.n, shadeMode !== 'off' && shPresetOn(p));
+    }).join('') +
+    '</div>' +
+    (shadeMode !== 'off' && !shStyleCur()
+      ? '<div id="sfShCustom" class="sfc-note sfc-mt6">' + shCustomText() + '</div>'
+      : '');
   if (shadeMode !== 'off') {
     const _fp = shadeFromPhoto(),
       _nf = Object.keys(shadeFlat).length,
@@ -725,12 +928,17 @@ function ctlPlanShading() {
         );
       };
     // one light for the whole picture: the sun, or the photo when there is one in place
-    if (photoLightOK()) {
+    // (v318.15: always, with The edges: each section darker along its lines, lighter in its middle)
+    {
+      const _ed = shadeEdges();
       html +=
         '<div class="sfsublbl">Light from</div><div id="sfShLight" role="group" aria-label="Light from" class="sfc-segs">' +
-        ctlSeg('sun', 'The sun ' + ic('sun'), !_fp) +
-        ctlSeg('photo', 'The photo', _fp) +
+        ctlSeg('sun', 'The sun ' + ic('sun'), !_fp && !_ed) +
+        ctlSeg('edges', 'The edges', _ed) +
+        (photoLightOK() ? ctlSeg('photo', 'The photo', _fp) : '') +
         '</div>';
+    }
+    if (photoLightOK()) {
       const _out = _fp ? shadeOutside() : 0;
       if (_out)
         html +=
@@ -743,16 +951,19 @@ function ctlPlanShading() {
     }
     html += infoLine(
       'shade',
-      (shadeMode === 'full' ? '<b>H</b> › ' : '') + '<b>B</b> › <b>S</b>, laid light to dark',
+      (shAnyHi() ? '<b>H</b> › ' : '') + '<b>B</b> › <b>S</b>, laid light to dark',
       '<b>H</b> highlight › <b>B</b> base › <b>S</b> shadow, laid light to dark. ' +
         (_fp
           ? 'The light and dark come from your photo: where it’s lighter than a section’s colour you get H, darker gets S, and even areas stay flat.'
-          : shadeUse().sun
-            ? 'Drag the ' + ic('sun') + '<span class="sfsr">sun</span> on the picture to move the light.'
-            : '') +
+          : shadeEdges()
+            ? 'Each section is darker along its lines and in its corners, lighter in its middle, as neurographic drawings are rounded. Roundness sets how far in the shadow reaches.'
+            : shadeUse().sun
+              ? 'Drag the ' + ic('sun') + '<span class="sfsr">sun</span> on the picture to move the light.'
+              : '') +
         ' Tap a section to see its markers.',
     );
     html += shadeNoteHTML();
+    if (_mf) html += moreBarHTML('shading', 'Roundness, tones, texture') + moreIn('shading');
     // the tone lines and Leave sections flat share a row where they fit
     html +=
       '<div class="sfshrow"><label class="sfchk sfc-check sfc-flex"><input type="checkbox" id="sfShLines"' +
@@ -763,8 +974,7 @@ function ctlPlanShading() {
       shadeFlatMode +
       '">' +
       (shadeFlatMode ? 'Done choosing' : 'Leave sections flat') +
-      ' · ' +
-      _nf +
+      (_nf ? ' · ' + _nf : '') +
       '</button></div>' +
       (shadeFlatMode
         ? '<div class="sfphint">Tap sections to stop them being shaded (eyes, tiny details). Tap again to shade them.</div>'
@@ -803,24 +1013,29 @@ function ctlPlanShading() {
             })
             .join('') +
           '</select>' +
-          _sl(slId, 'Amount', 'less <i aria-hidden="true">↔</i> more', v, name) +
+          (slId ? _sl(slId, 'Amount', 'less <i aria-hidden="true">↔</i> more', v, name) : '') +
           '</div>'
         );
       };
+      // (v318.16: Shadows only, once a mode of its own, is Highlights › None: the whole picture's, mode 'shadow')
+      // (v318.17: None per zone, a record's own; the Colorless Blender's lift where you own one, or it's chosen)
+      const _none = shadeMode === 'shadow' || zs.hilite === 'none',
+        _blOwn = blenderOwned(),
+        _hk = ['same', 'warm', 'paper'].concat(_blOwn || zs.hilite === 'blender' ? ['blender'] : [], [
+          'none',
+        ]);
       html +=
         '<div class="sfshpair">' +
-        (shadeMode === 'full'
-          ? _col(
-              'sfHiStyle',
-              'Highlights',
-              ['same', 'warm', 'paper'],
-              SHADE_HILITE_LABEL,
-              zs.hilite,
-              'sfShHi',
-              zs.hi,
-              'Highlight amount',
-            )
-          : '') +
+        _col(
+          'sfHiStyle',
+          'Highlights',
+          _hk,
+          SHADE_HILITE_LABEL_ALL,
+          _none ? 'none' : zs.hilite,
+          _none ? null : 'sfShHi',
+          zs.hi,
+          'Highlight amount',
+        ) +
         _col(
           'sfShStyle',
           'Shadows',
@@ -831,16 +1046,31 @@ function ctlPlanShading() {
           zs.lo,
           'Shadow amount',
         ) +
-        '</div>';
+        '</div>' +
+        (shadeMode === 'shadow' && zones.length
+          ? '<div class="sfc-note sfc-mt6">No highlights anywhere: the whole picture is shadows only. A highlight chosen here is this zone’s alone.</div>'
+          : zs.hilite === 'none' && shadeMode === 'full'
+            ? '<div class="sfc-note sfc-mt6">' + _zn + ' is shadows only: no highlights here.</div>'
+            : zs.hilite === 'blender' && !_none
+              ? '<div class="sfc-note sfc-mt6">' +
+                (_blOwn
+                  ? 'The 0 on the highlight first, then B over the whole section; while it’s wet, touch the 0 again to lift more.'
+                  : 'No Colorless Blender in your markers: a lighter marker instead.') +
+                '</div>'
+              : '');
     }
     html += '</div>';
+    if (_mf) html += '</div>';
   }
   html +=
-    '</div><label class="sftex">Marker texture <b id="sfTexVal">' +
+    '</div>' +
+    (_mf ? moreIn('shading', 2) : '') +
+    '<label class="sftex">Marker texture <b id="sfTexVal">' +
     Math.round(texAmt * 100) +
     '%</b><input type="range" id="sfTex" min="0" max="100" value="' +
     Math.round(texAmt * 100) +
-    '"></label>';
+    '"></label>' +
+    (_mf ? '</div>' : '');
   return html + '</div>';
 }
 // Share (#9): show it off, Print… (a sheet), plan and keep

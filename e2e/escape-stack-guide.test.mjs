@@ -243,7 +243,7 @@ test('focus mode: Escape from a form field in it (the tone-steps box) does nothi
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   await page.click('.sftabbtn[data-t="shading"]'); await idle(page);
-  await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await page.click('#sfColor'); await idle(page);
   await page.click('#sfFocus'); await idle(page);
   await page.click('#sfFocCols'); await idle(page);

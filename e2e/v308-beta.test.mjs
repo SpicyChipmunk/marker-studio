@@ -332,7 +332,7 @@ test('Help: the beta tester guide first, the new glossary entries, “phone or i
   const ph = await page.textContent('#helpPhoto');
   assert.ok(
     // (v313: a PDF opens with Open the PDF, no longer by a screenshot)
-    ph.includes('Hold your phone or iPad above the page') && ph.includes('opens with Open the PDF'),
+    ph.includes('Hold your phone or iPad right above the page') && ph.includes('opens with Open the PDF'),
   );
   await page.click('#helpData > summary');
   assert.ok((await page.textContent('#helpData')).includes('Library › Restore brings it back'));

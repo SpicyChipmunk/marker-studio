@@ -28,7 +28,7 @@ async function makeZone(page, secs, name) {
   for (const l of secs) await tapSec(page, l);
   await page.click('#sfZoneDone'); await idle(page);
 }
-const shadingOn = async (page, mode = 'full') => { await page.click('.sftabbtn[data-t="shading"]'); await idle(page); await page.click(`#sfShade [data-v="${mode}"]`); await idle(page); };
+const shadingOn = async (page, mode = 'full') => { await page.click('.sftabbtn[data-t="shading"]'); await idle(page); await page.evaluate((m) => __mstest.shadeTo(m), mode); await idle(page); };
 const shadeTab = async (page) => { await page.click('.sftabbtn[data-t="shading"]'); await idle(page); };
 const chip = (page, id) => page.click(`#sfPanel-shading .sfzchip[data-z="${id}"]`).then(() => idle(page));
 const slide = (page, id, v) => page.evaluate(([id, v]) => { const el = document.getElementById(id); el.value = String(v); el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }, [id, v]);
@@ -349,13 +349,13 @@ test('Main flat, the picture turned (the zones cleared), then Undo in Edit secti
   assert.deepEqual(errors, []);
 });
 
-test('by keyboard, Off / Shadows / Light & shadow keeps the focus on the one chosen', async () => {
+test('by keyboard, the Shading row (Off and the styles, v318.16) keeps the focus on the one chosen', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   await shadeTab(page);
-  await page.focus('#sfShade [data-v="shadow"]');
+  await page.focus('#sfShade [data-v="dramatic"]');
   await page.keyboard.press('Enter'); await idle(page);
-  assert.equal(await page.evaluate(() => { const a = document.activeElement; return a && a.closest('#sfShade') ? a.dataset.v : a && a.tagName; }), 'shadow');
+  assert.equal(await page.evaluate(() => { const a = document.activeElement; return a && a.closest('#sfShade') ? a.dataset.v : a && a.tagName; }), 'dramatic');
   assert.deepEqual(errors, []);
 });
 

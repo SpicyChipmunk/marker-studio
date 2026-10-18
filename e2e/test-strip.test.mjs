@@ -63,7 +63,7 @@ test('Test strip: a Pages choice of its own; Labels have nothing to label; a row
 test('Test strip with shading and a zone that shades differently: rows 1a/1b with the zone’s name, the tones in thirds, glazes “over B”, paper highlights, and more pages on A5', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await selectVal(page, 'sfShStyle', 'grey'); await idle(page);
   // a zone over the top third: paper highlights, cooler shadows
   await page.click('.sftabbtn[data-t="pattern"]'); await idle(page);

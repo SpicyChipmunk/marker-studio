@@ -33,6 +33,7 @@ const ZONE_KEYS = [
   'balA',
   'balSeed',
   'noRep',
+  'matchAlike',
   'gradSeed',
   'gradScat',
   'gradJit',
@@ -204,8 +205,10 @@ function zshOf(l) {
   }
   const so = shadowOn(l);
   if (!h) {
-    heldSet(l, { shadow: z.shadow, hilite: z.hilite, free: !so });
-    return z;
+    // (v318.17: coloured with no highlight, under Shadows only (the whole picture's or its zone's), it's held as None, so
+    // a highlight turned on after doesn't come back on a section already on the paper; with shading off, as before)
+    heldSet(l, { shadow: z.shadow, hilite: shadeMode !== 'off' && !hiOn(z) ? 'none' : z.hilite, free: !so });
+    return heldSh[l].hilite === z.hilite ? z : zshOf(l);
   }
   if (!h.legacy && !!h.free === so) {
     h = { shadow: so ? z.shadow : h.shadow, hilite: h.hilite, free: !so };
@@ -552,6 +555,11 @@ function zoneDelete(id) {
 function zoneNoneLeft() {
   zoneMain = null;
   shadeMain = true;
+  // (v318.17: Main's Highlights None, without zones, is Shadows only for the whole picture, as it's saved)
+  if (shadeHilite === 'none') {
+    shadeHilite = 'same';
+    if (shadeMode === 'full') shadeMode = 'shadow';
+  }
 }
 // the Pattern and Colours tabs edit zone id from now on
 function zoneSelect(id) {

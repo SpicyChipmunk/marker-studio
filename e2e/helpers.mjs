@@ -129,6 +129,7 @@ export async function openApp({
   storage = null,
   userAgent = undefined,
   init = null,
+  moreShut = false,
 } = {}) {
   const ctx = await browser.newContext({
     viewport: { width, height },
@@ -146,6 +147,12 @@ export async function openApp({
   await ctx.addInitScript(() => {
     window.__MS_RESULTS_FORM = '';
   });
+  // (v318.16) More options on a phone open, as the tests were written for (most run 390 wide), unless a test asks for
+  // it as it comes (moreShut: e2e/v31816)
+  if (!moreShut)
+    await ctx.addInitScript(() => {
+      window.__MS_MORE_OPEN = true;
+    });
   if (init) await ctx.addInitScript(init);
   await ctx.addInitScript((st) => {
     window.__MS_TEST = true;

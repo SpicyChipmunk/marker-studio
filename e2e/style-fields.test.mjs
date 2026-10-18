@@ -161,7 +161,7 @@ async function captureAll() {
     await step(page, 'blendMix-paint', () => click(page, '#sfMix [data-v="paint"]'));
     // (Vivid last: the captures after it are with the Mix that the old "Keep colours vivid" became)
     await step(page, 'blendMix', () => click(page, '#sfMix [data-v="vivid"]'));
-    await step(page, 'shadeMode', () => click(page, '#sfShade [data-v="full"]'));
+    await step(page, 'shadeMode', () => page.evaluate(() => __mstest.shadeTo('full')));
     await step(page, 'shadeHi', () => slide(page, 'sfShHi', 30));
     await step(page, 'shadeLo', () => slide(page, 'sfShLo', 70));
     await step(page, 'shadeRound', () => slide(page, 'sfRound', 80));
@@ -194,7 +194,7 @@ async function captureAll() {
     await cap(page, 'photo'); await cap(page, 'photo-share', true);
     await step(page, 'photoOp', () => slide(page, 'sfPhOp', 40));
     await step(page, 'photoPaper', () => click(page, '#sfPhPaper'));
-    await step(page, 'photo-shade', () => click(page, '#sfShade [data-v="shadow"]'));
+    await step(page, 'photo-shade', () => page.evaluate(() => __mstest.shadeTo('shadow')));
     await step(page, 'photo-shadeLight', () => click(page, '#sfShLight [data-v="sun"]'));
     await step(page, 'photo-gradient', () => click(page, '#sfFam [data-v="gradient"]'));
     await cap(page, 'photo-gradient-share', true);
@@ -416,13 +416,13 @@ const CONTROLS = [
   ['shadeHilite', 'shading', (p) => choose(p, 'sfHiStyle', 'paper')],
   ['shadeShadow', 'shading', (p) => choose(p, 'sfShStyle', 'cool')],
   // (last: Shadows has no Highlight slider)
-  ['shadeMode', 'shading', (p) => click(p, '#sfShade [data-v="shadow"]')],
+  ['shadeMode', 'shading', (p) => p.evaluate(() => __mstest.shadeTo('shadow'))],
 ];
 test('Undo: each style control’s change is one step, and Undo puts every setting back', async () => {
   const { page, errors } = await openApp({ init: SEEDED });
   await sampleGuide(page);
   // shading on first, so its controls are there
-  await click(page, '#sfShade [data-v="full"]'); await idle(page);
+  await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   for (const [what, tab, act] of CONTROLS) {
     await page.click(`.sftabbtn[data-t="${tab}"]`); await idle(page);
     const before = await allSettings(page), n = await page.evaluate(() => __mstest.planCount);
@@ -444,7 +444,7 @@ test('Undo: the photo’s see-through, white areas and placement are steps too',
   await sampleGuide(page);
   await pickPhoto(page);
   await page.click('.sftabbtn[data-t="pattern"]'); await idle(page);
-  await click(page, '#sfShade [data-v="full"]'); await idle(page);
+  await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   const steps = [
     ['photoOp', (p) => slide(p, 'sfPhOp', 55)],
     ['photoPaper', (p) => click(p, '#sfPhPaper')],

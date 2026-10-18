@@ -42,8 +42,70 @@ const SH_MINR = 5,
 // zs; its Highlight and Shadow sliders move them (at 50% they are 0.34 and 0.60; a paper highlight 0.17). Kept on the
 // zone's tones (t.T2, t.T3: shadeTones).
 function shT2(zs) {
-  // (paper left white is the brightest part only: about half as much as a lighter marker covers)
-  return shadeMode === 'full' && zs.hilite === 'paper' ? 0.08 + 0.18 * zs.hi : 0.2 + 0.28 * zs.hi;
+  // (paper left white is the brightest part only: about half as much as a lighter marker covers; v318.17: a blender's
+  // lift the same)
+  return hiOn(zs) && (zs.hilite === 'paper' || (zs.hilite === 'blender' && blenderOwned()))
+    ? 0.08 + 0.18 * zs.hi
+    : 0.2 + 0.28 * zs.hi;
+}
+// (v318.17) whether a shading record's sections have a highlight: shading Light & shadow and its Highlights not None
+// (Shadows only, per zone; shadeMode 'shadow' is the whole picture's, as saved before)
+function hiOn(zs) {
+  return shadeMode === 'full' && !!zs && zs.hilite !== 'none';
+}
+// whether any shaded section of the guide has one (the how-to, the key's H column, the info line)
+function shAnyHi() {
+  const u = shadeUse();
+  return !!(u.hp || u.hm || u.hb);
+}
+// (v318.17) Blender highlights: the Colorless Blender you own for a base (its own brand's first), or null; as the
+// highlight it's laid first, the base over it, so the highlight is the base lifted (BLEND_LIFT of the way to white)
+const BLEND_LIFT = 0.4;
+function rgbHexOf(c) {
+  return (
+    '#' +
+    c
+      .map(function (v) {
+        return Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0');
+      })
+      .join('')
+  );
+}
+let _blendColl = null,
+  _blends = [];
+function blenderFor(base) {
+  if (_blendColl !== coll) {
+    _blendColl = coll;
+    _blends = typeof sfBlenders === 'function' ? sfBlenders() : [];
+  }
+  return (
+    _blends.find(function (m) {
+      return m.brand === base.brand;
+    }) ||
+    _blends[0] ||
+    null
+  );
+}
+// (v318.17) leaving whole-picture Shadows only from one zone: every other record None, and every section coloured
+// so far held as None (it was coloured without a highlight)
+function shZonesNone(keep) {
+  [0]
+    .concat(
+      zones.map(function (z) {
+        return z.id;
+      }),
+    )
+    .forEach(function (id) {
+      if (id !== keep) zshSet(id, 'hilite', 'none');
+    });
+  for (const l in heldSh) {
+    const h = heldSh[l];
+    if (h && h.hilite !== 'none') heldSet(l, Object.assign({}, h, { hilite: 'none' }));
+  }
+}
+function blenderOwned() {
+  if (_blendColl !== coll) blenderFor({ brand: '' });
+  return _blends.length > 0;
 }
 function shT3(zs) {
   return 0.78 - 0.36 * zs.lo;
@@ -57,6 +119,73 @@ function photoLightOK() {
 function shadeFromPhoto() {
   if (!photoLightOK()) return false;
   return shadeLight === 'photo' || (shadeLight === 'auto' && zoneFamily(0) === 'photo');
+}
+// (v318.15) Shading styles: each sets existing values only, shown as chosen while they all still match (within half a
+// slider step). v318.16: the Shading row itself (Off · Soft · Dramatic · Rounded · Neuro), the whole picture's look:
+// the mode, Main's and every zone's Roundness, Highlights and Shadows amounts, and Light from only between the sun and
+// the edges (a photo's light is kept: the three amounts alone then say which style it is; Neuro is the edges).
+const SH_PRESETS = [
+  { k: 'soft', n: 'Soft', mode: 'full', light: 'sun', round: 0.35, hi: 0.35, lo: 0.35 },
+  { k: 'dramatic', n: 'Dramatic', mode: 'full', light: 'sun', round: 0.6, hi: 0.6, lo: 0.65 },
+  { k: 'rounded', n: 'Rounded', mode: 'full', light: 'sun', round: 0.9, hi: 0.5, lo: 0.6 },
+  { k: 'neuro', n: 'Neuro', mode: 'full', light: 'edges', round: 0.5, hi: 0.4, lo: 0.45 },
+];
+// the shading records a style sets and is judged by: Main's (when shaded, or with no zones) and each shaded zone's;
+// Main's when none is shaded
+function shStyleRecs() {
+  const ids = [];
+  if (!zones.length || shadeMain) ids.push(0);
+  zones.forEach(function (z) {
+    if (zsh(z.id).on) ids.push(z.id);
+  });
+  return ids.length ? ids : [0];
+}
+function shPresetOn(p) {
+  if (shadeMode !== p.mode) return false;
+  if (shadeFromPhoto() ? p.light === 'edges' : (shadeEdges() ? 'edges' : 'sun') !== p.light) return false;
+  const near = function (a, b) {
+      return Math.abs(a - b) < 0.006;
+    },
+    // (v318.17: Roundness isn't drawn or used with the photo's light, so it isn't asked of a photo-lit guide)
+    fp = shadeFromPhoto();
+  return shStyleRecs().every(function (id) {
+    const zs = zsh(id);
+    return (fp || near(zs.round, p.round)) && near(zs.hi, p.hi) && near(zs.lo, p.lo);
+  });
+}
+// the style shown as chosen, or null (Custom: shading on, amounts of your own)
+function shStyleCur() {
+  if (shadeMode !== 'full') return null;
+  return (
+    SH_PRESETS.find(function (p) {
+      return shPresetOn(p);
+    }) || null
+  );
+}
+function shPresetApply(k) {
+  const p = SH_PRESETS.find(function (x) {
+    return x.k === k;
+  });
+  if (!p) return false;
+  shadeMode = p.mode;
+  if (p.light === 'edges') shadeLight = 'edges';
+  else if (shadeLight === 'edges') shadeLight = 'sun';
+  [0]
+    .concat(
+      zones.map(function (z) {
+        return z.id;
+      }),
+    )
+    .forEach(function (id) {
+      zshSet(id, 'round', p.round);
+      zshSet(id, 'hi', p.hi);
+      zshSet(id, 'lo', p.lo);
+    });
+  return true;
+}
+// (v318.15) Light from the edges: each section darker along its lines, lighter in its middle (edgeShadeField)
+function shadeEdges() {
+  return shadeLight === 'edges' && !shadeFromPhoto();
 }
 function shadeOn() {
   return shadeMode !== 'off' && !!assignData;
@@ -214,7 +343,7 @@ function shadeField(step) {
   step = step || 1;
   const fromPhoto = shadeFromPhoto(),
     key = [
-      fromPhoto ? 'photo' : 'sun',
+      fromPhoto ? 'photo' : shadeEdges() ? 'edges' : 'sun',
       shadeSun.x.toFixed(4),
       shadeSun.y.toFixed(4),
       shadeRound.toFixed(3),
@@ -243,6 +372,7 @@ function shadeField(step) {
   // slider moves: that one does, every pixel of it, v304)
   if (step > 1 && same(key.replace('|s' + step + '|', '|s1|'))) return shadeV;
   if (fromPhoto) return photoShadeField(g, step, key);
+  if (shadeEdges()) return edgeShadeField(g, step, key);
   const n = W * H,
     K = comps.length,
     sx = shadeSun.x * W,
@@ -316,6 +446,48 @@ function shadeField(step) {
         w = e * (0.6 + 0.4 * e);
       const R = rnd[l];
       let v = (1 - R) * (lin - 0.04) + R * (0.5 + 0.52 * facing * w + 0.32 * (lin - 0.5));
+      v = v < 0 ? 0 : v > 1 ? 1 : v;
+      V[q] = 1 + Math.round(v * 254);
+    }
+  }
+  V._g = g;
+  V._a = assignData;
+  shadeV = V;
+  shadeVKey = key;
+  return V;
+}
+// (v318.15) Light from the edges, as neurographic drawings are rounded: each section darker along its outline and lighter
+// in its middle. e is how near a pixel is to the section's edge (1 on the line, 0 at the point farthest in: the label's;
+// from the distances worked out for the labels, in 1/8 px), the tone 0.08 + 0.9·e^k, k = 3 − 2·Roundness: at 0.5 (k 2)
+// the tones take about the shares of a round section they do with the sun (the share inside e is e²); rounder, the
+// shadow reaches further in. A corner fills where the bands from its two sides meet. Highlights and Shadows move the
+// handovers (shT2, shT3) as with the sun.
+function edgeShadeField(g, step, key) {
+  const n = W * H,
+    K = comps.length,
+    ok = new Uint8Array(K),
+    ie = new Float64Array(K),
+    kk = new Float64Array(K);
+  for (let l = 1; l < K; l++) {
+    if (!shadeable(l, g, false)) continue;
+    ok[l] = 1;
+    ie[l] = 1 / (8 * Math.max(1, g.mx[l]));
+    kk[l] = 3 - 2 * zshOf(l).round;
+  }
+  const V = shadeV && shadeV.length === n ? shadeV : new Uint8Array(n),
+    Dq = g.D;
+  for (let y = 0; y < H; y += step) {
+    const ro = y * W;
+    for (let x = 0; x < W; x += step) {
+      const q = ro + x,
+        l = labels[q];
+      if (l < 1 || !ok[l]) {
+        V[q] = 0;
+        continue;
+      }
+      let e = Dq[q] * ie[l];
+      e = e >= 1 ? 0 : 1 - e;
+      let v = 0.08 + 0.9 * Math.pow(e, kk[l]);
       v = v < 0 ? 0 : v > 1 ? 1 : v;
       V[q] = 1 + Math.round(v * 254);
     }
@@ -467,7 +639,9 @@ function shadePick(base, pool, side) {
    yellow-green, yellows towards orange, oranges and reds towards yellow-orange, violets towards pink.
    The two ways are never the same for one colour. A grey base takes a cooler (or warmer) grey. */
 const SHADE_SHADOW_LABEL = { same: 'Same colour', cool: 'Cooler', grey: 'Grey' },
-  SHADE_HILITE_LABEL = { same: 'Same colour', warm: 'Warmer', paper: 'Paper white' };
+  SHADE_HILITE_LABEL = { same: 'Same colour', warm: 'Warmer', paper: 'Paper white' },
+  // (v318.16: the Highlights list's, with None: Shadows only, shadeMode 'shadow')
+  SHADE_HILITE_LABEL_ALL = Object.assign({ blender: 'Blender (0)', none: 'None' }, SHADE_HILITE_LABEL);
 const SH_TURN = [8, 40];
 // the signed turn from hue a to hue b, the shorter way round (-180..180)
 function shTurn(a, b) {
@@ -590,7 +764,8 @@ function shadeTones(base, zs) {
     shadeToneCache = {};
     shadeToneColl = coll;
   }
-  const full = shadeMode === 'full',
+  // (v318.17: a record with Highlights None has none, as Shadows only does for the whole picture)
+  const full = hiOn(zs),
     key =
       famRule +
       '|' +
@@ -608,11 +783,22 @@ function shadeTones(base, zs) {
   const bl0 = (base.lab || hexToLab(base.hex))[0],
     noShadow = bl0 < 28, // near-black: nothing darker to add, a 2nd coat changes nothing
     sStyle = zs.shadow !== 'same',
-    paper = full && zs.hilite === 'paper';
+    paper = full && zs.hilite === 'paper',
+    // (v318.17: the Colorless Blender laid first, the base over it; one you own, else Same colour's)
+    blM = full && zs.hilite === 'blender' ? blenderFor(base) : null;
   let dark = null,
     glaze = false,
     light = null,
     warm = false;
+  if (blM) {
+    const bb = hexRgb(base.hex),
+      up = bb.map(function (v) {
+        return Math.round(v + (255 - v) * BLEND_LIFT);
+      });
+    // (the blender itself, shown as the base it lifts: its code, the lifted colour)
+    const lh = rgbHexOf(up);
+    light = Object.assign({}, blM, { hex: lh, lab: hexToLab(lh), blender: true });
+  }
   if (!noShadow) {
     if (sStyle) {
       dark = shadeStylePick(base, coll, zs.shadow);
@@ -620,7 +806,7 @@ function shadeTones(base, zs) {
     }
     if (!dark) dark = shadePick(base, coll, 1);
   }
-  if (full && !paper) {
+  if (full && !paper && !light) {
     if (zs.hilite === 'warm') {
       light = shadeWarmPick(base, coll);
       warm = !!light;
@@ -653,7 +839,7 @@ function shadeTones(base, zs) {
       if (sStyle && !glaze) wantDark = shadeStylePick(base, catS, zs.shadow);
       if (!wantDark && !dark) wantDark = shadePick(base, catS, 1);
     }
-    if (full && !paper) {
+    if (full && !paper && !blM) {
       if (zs.hilite === 'warm' && !warm) wantLight = shadeWarmPick(base, cat);
       if (!wantLight && !light) wantLight = shadePick(base, cat, -1);
     }
@@ -671,6 +857,9 @@ function shadeTones(base, zs) {
     wantLight: wantLight,
     glaze: glaze,
     paper: paper,
+    // (v318.17) the highlight is the Colorless Blender's lift; no highlight at all (Highlights None)
+    blender: !!blM,
+    noHi: !full,
     fellS: sStyle && !noShadow && !glaze,
     fellH: full && zs.hilite === 'warm' && !warm,
     // (the kinds asked for, for the notes that say which kind was missing)
@@ -972,6 +1161,9 @@ const SHADE_HOWTO_MIX =
   'Shading \u2014 H = highlight (a lighter marker, or the paper left white where the key says so), B = base (the section\u2019s marker), S = shadow (darker marker). Work light to dark while the ink is wet: H over the whole section, B over everything except the highlight (where H is the paper, start with B and leave the highlight white), S in the shadow, then soften the edges with the lighter marker. Dashed lines and the small H and S circles on the colouring page show where each goes; the \u2600 marks where the light comes from.';
 const SHADE_HOWTO_GLAZE =
   ' A cooler or grey shadow is laid over the base once it\u2019s dry, not while it\u2019s wet, so the base shows through.';
+// (v318.17) where H is the Colorless Blender's lift
+const SHADE_HOWTO_BLEND =
+  ' Where H is 0 (the Colorless Blender): the 0 on the highlight first, then B over the whole section; while it\u2019s wet, touch the 0 again to lift more. Small strokes from the light side: it pushes ink outward.';
 const SHADE_HOWTO_PAPER =
   'Shading \u2014 H = highlight (the paper left white), B = base (the section\u2019s marker), S = shadow. Colour the section with B, leaving the highlight white, add S in the shadow while it\u2019s still wet, then soften the edges with B. Dashed lines and the small H and S circles on the colouring page show where each goes; the \u2600 marks where the light comes from.';
 // the key's how-to line; with the light taken from the photo there is no sun to point at
@@ -979,7 +1171,7 @@ const SHADE_HOWTO_PAPER =
 function shadeHowto(noLines) {
   const u = shadeUse(),
     t =
-      shadeMode === 'full'
+      u.hp || u.hm || u.hb
         ? u.hp && u.hm
           ? SHADE_HOWTO_MIX
           : u.hp
@@ -994,10 +1186,15 @@ function shadeHowto(noLines) {
       )
     : t;
   // (a cooler or grey shadow is a glaze: laid over the base once it's dry)
-  const tg = u.gl ? tl + SHADE_HOWTO_GLAZE : tl;
+  const tg = (u.gl ? tl + SHADE_HOWTO_GLAZE : tl) + (u.hb ? SHADE_HOWTO_BLEND : '');
   return shadeFromPhoto()
     ? tg.replace('the \u2600 marks where the light comes from.', 'the light and shadow follow your photo.')
-    : tg;
+    : shadeEdges()
+      ? tg.replace(
+          'the \u2600 marks where the light comes from.',
+          'S goes along each section\u2019s lines and into its corners, H in its middle.',
+        )
+      : tg;
 }
 // what the tip says when you tap a section
 function shadeTipHTML(l) {
@@ -1077,7 +1274,7 @@ function shadeNoteHTML() {
     if (sets[t.id]) continue;
     sets[t.id] = 1;
     if (t.coat) once(coats, m.code);
-    if (shadeMode === 'full' && !t.light && !t.paper) once(noLight, m.code);
+    if (!t.noHi && !t.light && !t.paper) once(noLight, m.code);
     if (t.fellS) {
       once(fellS, m.code);
       fsKind[t.kS] = 1;
@@ -1103,15 +1300,21 @@ function shadeNoteHTML() {
     kH = Object.keys(u.kH),
     sK = kS.length === 1 ? kS[0] : null,
     hK = kH.length === 1 ? kH[0] : null,
-    _hs = shadeMode === 'full' && hK !== 'paper',
+    // (v318.17: by what the shaded sections have: with Highlights None somewhere, or the blender)
+    _any = shAnyHi(),
+    _hs = _any && hK !== 'paper' && hK !== 'blender',
     _all =
-      !sK || (!hK && shadeMode === 'full')
+      !sK || (!hK && _any)
         ? 'the highlights and shadows each zone asks for, from markers you own'
         : sK === 'same' && hK === 'same'
           ? _hs
             ? 'lighter and darker markers you own'
             : 'darker markers you own'
-          : (_hs ? (hK === 'warm' ? 'warmer highlights' : 'lighter markers') + ' and ' : '') +
+          : (_hs
+              ? (hK === 'warm' ? 'warmer highlights' : 'lighter markers') + ' and '
+              : _any && hK === 'blender'
+                ? 'blender highlights and '
+                : '') +
             (sK === 'cool' ? 'cooler' : sK === 'grey' ? 'grey' : 'darker') +
             ' shadows from markers you own',
     fsK = Object.keys(fsKind);
@@ -1313,7 +1516,7 @@ function radCOn() {
     sfmode === 'guide' &&
     gTab === 'pattern' &&
     family === 'gradient' &&
-    (gradShape === 'radial' || gradShape === 'around') &&
+    (gradShape === 'radial' || gradShape === 'around' || gradShape === 'rings') &&
     assignData &&
     !zoneEditOn() &&
     !root.classList.contains('sfrev') &&
@@ -1420,7 +1623,9 @@ function positionRadC() {
     'aria-label',
     gradShape === 'around'
       ? 'Centre \u2014 drag, or use the arrow keys, to move what the colours go round'
-      : 'Radial centre \u2014 drag, or use the arrow keys, to move where the rings start',
+      : gradShape === 'rings'
+        ? 'Centre \u2014 drag, or use the arrow keys, to the section the rings start from'
+        : 'Radial centre \u2014 drag, or use the arrow keys, to move where the rings start',
   );
   radEl.style.left = x + 'px';
   radEl.style.top = y + 'px';
@@ -1614,7 +1819,7 @@ function shadeOutside() {
 let _suKey = null,
   _su = null;
 function shadeUse() {
-  const none = { on: false, sun: false, hp: false, hm: false, gl: false, kS: {}, kH: {} };
+  const none = { on: false, sun: false, hp: false, hm: false, hb: false, gl: false, kS: {}, kH: {} };
   if (!shadeOn() || !labels || !comps) return none;
   const fp = shadeFromPhoto(),
     key = [
@@ -1625,6 +1830,7 @@ function shadeUse() {
       _flatVer,
       coll,
       fp,
+      shadeLight,
       fp ? [photoXf.cx, photoXf.cy, photoXf.sx, photoXf.sy, photoXf.r].join() + photoRef.w : '',
       labelPts,
       // (a coloured section's held Highlights and Shadows, noted or let go as it's ticked and unticked, v304)
@@ -1641,21 +1847,25 @@ function shadeUse() {
   const g = shadeGeom();
   if (!g) return none;
   // (gl: some section's shadow is a glaze, laid over the base once it's dry)
-  const u = { on: false, sun: false, hp: false, hm: false, gl: false, kS: {}, kH: {} };
+  const u = { on: false, sun: false, hp: false, hm: false, hb: false, gl: false, kS: {}, kH: {} };
   for (const k in assignData.assign) {
     const l = +k;
     if (!shadeable(l, g, fp)) continue;
     const zs = zshOf(l);
     u.on = true;
     u.kS[zs.shadow] = 1;
-    u.kH[zs.hilite] = 1;
     if (!u.gl && zs.shadow !== 'same' && shadeTones(assignData.assign[l], zs).glaze) u.gl = true;
-    if (shadeMode === 'full') {
-      if (zs.hilite === 'paper') u.hp = true;
+    // (v318.17: only the sections that have a highlight say what kind; the blender's lift, one you own, its own)
+    if (hiOn(zs)) {
+      const bl = zs.hilite === 'blender' && blenderOwned(),
+        hk = zs.hilite === 'blender' && !bl ? 'same' : zs.hilite;
+      u.kH[hk] = 1;
+      if (hk === 'paper') u.hp = true;
+      else if (bl) u.hb = true;
       else u.hm = true;
     }
   }
-  u.sun = u.on && !fp;
+  u.sun = u.on && !fp && !shadeEdges();
   _suKey = labelPts ? key : null;
   _su = u;
   return u;

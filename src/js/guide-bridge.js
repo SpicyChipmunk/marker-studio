@@ -1,4 +1,23 @@
 /* ===== Section Finder (integrated mode) ===== */
+// (v318.17) the Colorless Blenders you own (any, in demo mode), as the guide's markers are: Blender highlights
+function sfBlenders() {
+  const demo = state.owned.size === 0,
+    out = [];
+  NOINK.forEach(function (i) {
+    if (!demo && (!isOwned(i) || isDry(i))) return;
+    const c = COLORS[i];
+    out.push({
+      mkey: mkey(i),
+      code: c.code,
+      brand: c.brand,
+      hex: c.hex,
+      name: c.name,
+      lab: hexToLab(c.hex),
+      fam: c.fam,
+    });
+  });
+  return out;
+}
 function sfCollection() {
   const demo = state.owned.size === 0,
     out = [];

@@ -226,7 +226,7 @@ test('Scatter: moving the sun never lays a scattered guide again (a Polished one
   await idle(page);
   const sunMoved = async () => {
     await tab(page, 'shading');
-    await page.click('#sfShade [data-v="full"]');
+    await page.evaluate(() => __mstest.shadeTo('full'));
     await idle(page);
     const k0 = await keys(page);
     // the sun to the other side, and the shading turned off and on, which faces the bands to it
@@ -235,7 +235,7 @@ test('Scatter: moving the sun never lays a scattered guide again (a Polished one
     });
     await page.click('#sfShade [data-v="off"]');
     await idle(page);
-    await page.click('#sfShade [data-v="full"]');
+    await page.evaluate(() => __mstest.shadeTo('full'));
     await idle(page);
     const k1 = await keys(page);
     await page.click('#sfShade [data-v="off"]');
@@ -300,7 +300,7 @@ test('U7: turning shading on doesn’t pick other markers; the note offers “Pi
   // (Honolulu 120 at 16 markers: 13 of the sample's 16 shade)
   const k0 = await keys(page);
   await tab(page, 'shading');
-  await page.click('#sfShade [data-v="full"]');
+  await page.evaluate(() => __mstest.shadeTo('full'));
   await idle(page);
   assert.deepEqual(await keys(page), k0, 'shading on: the same markers');
   // (v308: 11 of the new guide's 16 vivid markers; 13 of v307's)
@@ -341,7 +341,7 @@ test('U7: turning shading on doesn’t pick other markers; the note offers “Pi
     __mstest.shadeSun = { x: 0.5, y: 0.95 };
   });
   await tab(page, 'shading');
-  await page.click('#sfShade [data-v="full"]');
+  await page.evaluate(() => __mstest.shadeTo('full'));
   await idle(page);
   const b1 = await keys(page);
   assert.notDeepEqual(b1, b0, 'turned to face the light');

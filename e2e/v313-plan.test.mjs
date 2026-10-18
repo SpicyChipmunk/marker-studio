@@ -77,7 +77,7 @@ test('a guide saved before v313 keeps v312’s rule: its shadows and blend compa
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await sampleGuide(page);
   await page.click('.sftabbtn[data-t="shading"]');
-  await page.click('#sfShade [data-v="full"]');
+  await page.evaluate(() => __mstest.shadeTo('full'));
   await idle(page);
   const d = await differing(page);
   assert.ok(d.comp && d.shade, JSON.stringify(d));

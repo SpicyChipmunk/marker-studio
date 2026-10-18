@@ -42,6 +42,9 @@ function seg(t, gray, W, H, srcK, adaptC, colour) {
   t.srcK = srcK;
   t.W = W;
   t.H = H;
+  // (as processSrc: the picture as it came, and a new picture's own Min section size, v318.13)
+  t.srcDims = { w: Math.round(W / srcK), h: Math.round(H / srcK) };
+  if (t.minAuto && t.minPosAuto) t.styleVars.minPos = t.minPosAuto();
   t.gray = gray;
   t.srcColour = colour;
   const t0 = performance.now();

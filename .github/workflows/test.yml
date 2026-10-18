@@ -15,7 +15,7 @@ jobs:
   test:
     name: tests on Chromium, part ${{ matrix.part }} of 2
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -67,6 +67,30 @@ jobs:
       - name: Summary (browser tests)
         if: always()
         run: node e2e/ci-summary.mjs e2e/.artifacts/chromium-results.jsonl "Browser tests (Chromium), part ${{ matrix.part }} of 2" ${{ matrix.part }}/2
+      # (v318.14) The colour benchmark's gates, quick (scripts/bench/README.md, stage B): a guide is always built, laying
+      # it again gives the same guide, Random never puts one marker on two sections the app sees touching, "keep
+      # touching sections clearly different" leaves no touching pair too alike, and a Gradient makes no twins. Part 1
+      # only, after the browser tests. The bench's pages are kept between runs, keyed on everything that draws them
+      # or finds their sections (a change there draws them afresh: no restore-keys). The bench writes outside the repo.
+      - name: Keep the colour benchmark's pages between runs
+        if: matrix.part == 1
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/bench/cache
+          key: bench-pages-${{ runner.os }}-24.04-${{ steps.pw.outputs.v }}-${{ hashFiles('scripts/bench/**', 'src/js/**', 'src/html/**') }}
+      - name: Colour benchmark gates (quick)
+        if: always() && matrix.part == 1
+        timeout-minutes: 12
+        run: node scripts/bench/colour.mjs --quick --out "$RUNNER_TEMP/bench"
+      - name: Keep the colour benchmark's report from a failed run
+        if: failure() && matrix.part == 1
+        uses: actions/upload-artifact@v7
+        with:
+          name: colour-bench-report
+          path: |
+            ${{ runner.temp }}/bench/colour-report.md
+            ${{ runner.temp }}/bench/colour-results.json
+          if-no-files-found: ignore
       - name: Keep screenshots and PDFs from a failed run
         if: failure()
         uses: actions/upload-artifact@v7

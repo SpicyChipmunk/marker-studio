@@ -4,7 +4,14 @@
 // (the user opened something else meanwhile) must stop. A change still waiting to be saved is saved first, into the
 // guide it was made in (the Library entry or the autosave slot).
 function resetForNewPicture() {
+  // (v318.14: sections still being found for the picture before go with it)
+  segStop();
+  _preview = false;
+  // (v318.15: its own bands, found as it's prepared: srcPrep)
+  edgeBands = null;
   photoSettleNow();
+  // (v318.13: its own Min section size, from its size: minPosAuto, set in processSrc)
+  minAuto = true;
   if (paintOn) setPaint(false);
   zoneEditEnd(true);
   // (a change waiting to be saved goes into the guide it was made in, zones and all, before they're cleared)
@@ -228,7 +235,12 @@ function autoCropBox() {
   let fb = ruledBox();
   const out = fb ? frameOutside(fb, true) : null;
   if (fb && out > CROP_OUT) fb = 0;
-  let x0, y0, x1, y1;
+  let x0,
+    y0,
+    x1,
+    y1,
+    // (how far the padding may reach: the picture, or inside the binding or table, v318.15)
+    pb = { x0: 0, y0: 0, x1: W - 1, y1: H - 1 };
   if (fb) {
     const c = comps[fb];
     x0 = c.x0;
@@ -247,23 +259,42 @@ function autoCropBox() {
         }
     }
     const rowThr = Math.max(1, W * 0.012),
-      colThr = Math.max(1, H * 0.012);
-    y0 = 0;
+      colThr = Math.max(1, H * 0.012),
+      // (v318.15: the binding or table along an edge isn't the drawing: trimOffer's bands, not counted as ink)
+      eb = trimBands() ? edgeBands : null,
+      et = eb ? Math.ceil(eb.t * H) : 0,
+      ebt = eb ? H - 1 - Math.ceil(eb.b * H) : H - 1,
+      el = eb ? Math.ceil(eb.l * W) : 0,
+      er = eb ? W - 1 - Math.ceil(eb.r * W) : W - 1;
+    if (eb) {
+      rowInk.fill(0);
+      colInk.fill(0);
+      for (let y = et; y <= ebt; y++) {
+        const ro = y * W;
+        for (let x = el; x <= er; x++)
+          if (labels[ro + x] === -1) {
+            rowInk[y]++;
+            colInk[x]++;
+          }
+      }
+    }
+    y0 = et;
     while (y0 < H && rowInk[y0] < rowThr) y0++;
-    y1 = H - 1;
+    y1 = ebt;
     while (y1 > y0 && rowInk[y1] < rowThr) y1--;
-    x0 = 0;
+    x0 = el;
     while (x0 < W && colInk[x0] < colThr) x0++;
-    x1 = W - 1;
+    x1 = er;
     while (x1 > x0 && colInk[x1] < colThr) x1--;
     if (x1 - x0 < W * 0.2 || y1 - y0 < H * 0.2) return null;
+    pb = { x0: el, y0: et, x1: er, y1: ebt };
   }
   const padX = W * 0.03,
     padY = H * 0.03;
-  x0 = Math.max(0, x0 - padX);
-  x1 = Math.min(W - 1, x1 + padX);
-  y0 = Math.max(0, y0 - padY);
-  y1 = Math.min(H - 1, y1 + padY);
+  x0 = Math.max(pb.x0, x0 - padX);
+  x1 = Math.min(pb.x1, x1 + padX);
+  y0 = Math.max(pb.y0, y0 - padY);
+  y1 = Math.min(pb.y1, y1 + padY);
   return { x0: x0, y0: y0, x1: x1, y1: y1, ruled: !!fb, out: out };
 }
 function autoCrop() {
@@ -533,7 +564,38 @@ function grayUp(g, w, h, w2, h2) {
 }
 function processSrc() {
   _rg = null;
-  if (!srcImg) return;
+  const pic = srcPrep();
+  if (!pic) return;
+  srcCommit(pic);
+  segment();
+  // (the Photo pattern's photo goes with the picture: 46-photo, v304)
+  photoGeoAfter();
+}
+// (v318.14) processSrc with a paint between its steps (segRun, 10-segment): resolves true once the new picture and its
+// sections are in place, false when something newer took over. hide: the controls out of sight meanwhile
+function processSrcAsync(hide) {
+  _rg = null;
+  if (!srcImg) return Promise.resolve(false);
+  return segRun(
+    function () {
+      const p = srcPrep();
+      if (!p) throw new Error('no picture');
+      return p;
+    },
+    function (p) {
+      _rg = null;
+      srcCommit(p);
+    },
+    hide,
+  ).then(function (ok) {
+    if (ok) photoGeoAfter();
+    return ok;
+  });
+}
+// the picture as it will be worked on: turned, tilted, cropped, in grey, enlarged when small (v318.14: drawn on a canvas
+// of its own, the picture on the page left as it is until srcCommit)
+function srcPrep() {
+  if (!srcImg) return null;
   const oc = buildRotatedFull(true),
     fw = oc.width,
     fh = oc.height;
@@ -547,38 +609,162 @@ function processSrc() {
     // a small picture of the person's own (a page downloaded at 400-800 pixels, say) is enlarged to UPSIDE on its long
     // side before its sections are found; not the sample, whose sections are its own (v303)
     up = srcUp ? Math.min(8, MAXSIDE / Math.max(cw, ch), Math.max(1, UPSIDE / Math.max(cw, ch))) : 1;
-  // (the picture changes shape: the zones can't be placed on the sections found from it)
-  zoneGeoLost();
-  cv.width = cw;
-  cv.height = ch;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const c = document.createElement('canvas');
+  c.width = cw;
+  c.height = ch;
+  const g = c.getContext('2d', { willReadFrequently: true });
   // (on white: a picture under 8 pixels across is made 8, and the part past its edge would read as ink, v298)
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, cw, ch);
-  ctx.drawImage(oc, cx, cy, cw, ch, 0, 0, cw, ch);
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, cw, ch);
+  g.drawImage(oc, cx, cy, cw, ch, 0, 0, cw, ch);
   freeCanvas(oc);
-  const d = ctx.getImageData(0, 0, cw, ch).data,
+  const d = g.getImageData(0, 0, cw, ch).data,
     n = cw * ch,
     g0 = new Uint8Array(n);
+  freeCanvas(c);
   for (let i = 0, j = 0; i < n; i++, j += 4) g0[i] = (d[j] * 0.299 + d[j + 1] * 0.587 + d[j + 2] * 0.114) | 0;
-  // (how much of it is coloured in, for the warning about a page coloured already: segQuality, v308)
-  srcColour = colourShare(d, n);
-  W = cw;
-  H = ch;
-  gray = g0;
-  srcK = 1;
-  srcDims = { w: cw, h: ch };
+  const p = {
+    W: cw,
+    H: ch,
+    gray: g0,
+    srcK: 1,
+    dims: { w: cw, h: ch },
+    // (how much of it is coloured in, for the warning about a page coloured already: segQuality, v308)
+    colour: colourShare(d, n),
+    // (v318.15) a photo as taken, as it came: the binding or the table along its edges (Auto crop leaves them out).
+    // Found while it's as taken and kept through a crop or a turn (trimOffer asks for neither), so Undo of Trim it
+    // offers it again; a new picture starts without (resetForNewPicture)
+    bands: pgOrig && !pgQ && !cropRect && !rot90 && !tilt ? edgeBandsOf(d, cw, ch) : undefined,
+  };
   if (up > 1.05) {
-    W = Math.round(cw * up);
-    H = Math.round(ch * up);
-    gray = grayUp(g0, cw, ch, W, H);
-    srcK = W / cw;
-    cv.width = W;
-    cv.height = H;
+    p.W = Math.round(cw * up);
+    p.H = Math.round(ch * up);
+    p.gray = grayUp(g0, cw, ch, p.W, p.H);
+    p.srcK = p.W / cw;
   }
-  segment();
-  // (the Photo pattern's photo goes with the picture: 46-photo, v304)
-  photoGeoAfter();
+  return p;
+}
+// the prepared picture put in place, before its sections are found
+function srcCommit(p) {
+  // (the picture changes shape: the zones can't be placed on the sections found from it)
+  zoneGeoLost();
+  cv.width = p.W;
+  cv.height = p.H;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  srcColour = p.colour;
+  W = p.W;
+  H = p.H;
+  gray = p.gray;
+  srcK = p.srcK;
+  srcDims = p.dims;
+  if (p.bands !== undefined) edgeBands = p.bands;
+  if (minAuto) minPos = minPosAuto();
+}
+// (v318.15) A sketchbook page photographed as it is keeps its spiral binding and a strip of the table along its
+// edges, dark blobs that Auto crop kept (they're ink) and the guide printed. edgeBandsOf finds them: from each edge in,
+// rows (or columns) over a quarter of whose pixels are off the paper (dark grey: under 0.45 of the paper's
+// brightness and nearly colourless; or a brownish table), in runs averaging EDGE_RUN px or more (a binding's holes,
+// a table: not a page's hatching or lines, whose runs are a line's width), up to EDGE_MAX of the picture. As
+// fractions of the picture: { t, b, l, r }, or null with none of 1% or more. Only for a page that isn't coloured in
+// (trimOffer): on Ben's coloured sketchbook pages the colour ran into the bands (left 5-12% on 3 of 7).
+let edgeBands = null;
+const EDGE_MAX = 0.06,
+  EDGE_RUN = 12;
+function edgeBandsOf(d, w, h) {
+  try {
+    const n = w * h,
+      g = new Uint8Array(n),
+      hist = new Uint32Array(256);
+    for (let i = 0, j = 0; i < n; i++, j += 4) {
+      const v = (d[j] * 0.299 + d[j + 1] * 0.587 + d[j + 2] * 0.114) | 0;
+      g[i] = v;
+      hist[v]++;
+    }
+    let paper = 255,
+      acc = 0;
+    while (paper > 0 && acc + hist[paper] < n * 0.05) acc += hist[paper--];
+    const off = new Uint8Array(n);
+    for (let i = 0, j = 0; i < n; i++, j += 4) {
+      const r = d[j],
+        gg = d[j + 1],
+        b = d[j + 2],
+        ch = Math.max(r, gg, b) - Math.min(r, gg, b),
+        v = g[i];
+      off[i] = (v < paper * 0.45 && ch < 28) || (v < paper * 0.75 && ch >= 28 && ch < 70 && r > b) ? 1 : 0;
+    }
+    // one line of pixels (count of them, start, step): off the paper?
+    // (or in runs half that long on a line darker overall than the paper's 0.8: a binding's wire and holes, in the
+    // shadow along it)
+    const offLine = function (len, at, step) {
+      let k = 0,
+        runs = 0,
+        sum = 0,
+        inRun = false;
+      for (let i = 0, q = at; i < len; i++, q += step) {
+        sum += g[q];
+        if (off[q]) {
+          k++;
+          if (!inRun) runs++;
+          inRun = true;
+        } else inRun = false;
+      }
+      const rl = k / Math.max(1, runs);
+      return k > len * 0.25 && (rl >= EDGE_RUN || (rl >= EDGE_RUN / 2 && sum < len * paper * 0.8));
+    };
+    const run = function (count, line) {
+      let k = 0;
+      const lim = Math.floor(count * EDGE_MAX);
+      while (k < lim && line(k)) k++;
+      return k / count;
+    };
+    const B = {
+      t: run(h, function (k) {
+        return offLine(w, k * w, 1);
+      }),
+      b: run(h, function (k) {
+        return offLine(w, (h - 1 - k) * w, 1);
+      }),
+      l: run(w, function (k) {
+        return offLine(h, k, w);
+      }),
+      r: run(w, function (k) {
+        return offLine(h, w - 1 - k, w);
+      }),
+    };
+    return Math.max(B.t, B.b, B.l, B.r) >= 0.01 ? B : null;
+  } catch (e) {
+    return null;
+  }
+}
+// the trim offered on its own line (53-controls-stages): a photo as taken, as it came, not coloured in, and only
+// when Auto crop would then crop (a thin band on a drawing that fills the page leaves "Nothing to trim": autoCrop)
+let _trimMemo = null;
+function trimOffer() {
+  if (!trimBands()) return false;
+  if (!_trimMemo || _trimMemo.l !== labels || _trimMemo.c !== comps || _trimMemo.b !== edgeBands) {
+    let ok = false;
+    try {
+      const b = labels ? autoCropBox() : null;
+      ok = !!b && !(b.x1 - b.x0 >= W * 0.97 && b.y1 - b.y0 >= H * 0.97);
+    } catch (e) {
+      ok = false;
+    }
+    _trimMemo = { l: labels, c: comps, b: edgeBands, ok: ok };
+  }
+  return _trimMemo.ok;
+}
+// (the bands, for a photo they apply to: what autoCropBox leaves out)
+function trimBands() {
+  return !!(
+    edgeBands &&
+    pgOrig &&
+    !pgQ &&
+    !cropRect &&
+    !rot90 &&
+    !tilt &&
+    srcColour != null &&
+    srcColour <= 0.05
+  );
 }
 // Sensitivity and Enhance: the sections are found again. On a guide with progress or section edits that asks first,
 // as turning the picture does (once: the Undo step kept covers the changes that follow); No puts the control back.
@@ -626,14 +812,27 @@ function resegment() {
 function reseg() {
   keepSnap(false);
   _reFrom = null;
-  segment();
-  hasEdits = false;
-  if (sfmode === 'review') {
-    render();
-    segWarnSync();
-    faintLineSync();
-  }
-  note('Sections detected again \u2014 tap Undo to go back.');
+  // (v318.14: with a paint between its steps; a newer change takes over from it, segRun)
+  note('Detecting sections\u2026');
+  segThen(
+    function () {
+      return segRun(null, null);
+    },
+    segment,
+    function (ok) {
+      if (!ok) return;
+      hasEdits = false;
+      if (sfmode === 'review') {
+        render();
+        segWarnSync();
+        faintLineSync();
+      }
+      note('Sections detected again \u2014 tap Undo to go back.');
+    },
+    function (err) {
+      note(errNote('Couldn’t detect the sections again.', 'Detecting sections', err));
+    },
+  );
   return true;
 }
 // the detection settings before a change to them (put back if the person says No above)
@@ -799,18 +998,31 @@ function reprocessImg() {
   if (!srcImg) return;
   _reFrom = null;
   const he = hasEdits || hasProgress();
-  processSrc();
-  hasEdits = false;
-  geoUndoOK();
-  resetZoom();
-  editMode = 'toggle';
-  if (sfmode !== 'review') sfmode = 'review';
-  renderControls();
-  render();
-  note(
-    he
-      ? 'Sections rebuilt from the photo \u2014 tap Undo to bring back your edits and progress.'
-      : metaText(),
+  // (v318.14: with a paint between its steps, segRun)
+  note('Detecting sections\u2026');
+  segThen(
+    processSrcAsync,
+    processSrc,
+    function (ok) {
+      if (!ok) return;
+      hasEdits = false;
+      geoUndoOK();
+      resetZoom();
+      editMode = 'toggle';
+      if (sfmode !== 'review') sfmode = 'review';
+      renderControls();
+      render();
+      note(
+        he
+          ? 'Sections rebuilt from the photo \u2014 tap Undo to bring back your edits and progress.'
+          : metaText(),
+      );
+    },
+    function (err) {
+      note(
+        errNote('Couldn’t process that photo. Try it again, or another photo.', 'Processing a photo', err),
+      );
+    },
   );
 }
 // (v304: a tilt waiting to be applied has a timer of its own, so a Sensitivity change, or a control on the Plan, no
@@ -893,6 +1105,9 @@ function _loadSample() {
       }
       if (gen !== loadGen) return;
       resetForNewPicture();
+      // (v318.13) the sample keeps Min section size as it was: a clean drawing at its own size, whose smallest real
+      // sections are under 1 mm on a page that size (its 166 sections at the default)
+      minAuto = false;
       // (a palette held for the next new guide is this one's, the sample too, v289)
       takeNextPal();
       pgOrig = null;
@@ -992,7 +1207,14 @@ function _loadImage(file) {
         note('That image looked empty \u2014 try another file.');
         return;
       }
-      lens.then(function (f35) {
+      // (v318.14) the photo decoded away from the page first (img.decode: another thread, where the browser can), so
+      // fitSource's drawing doesn't hold the page while it decodes; a refusal (or none) goes on as before
+      let dec = null;
+      try {
+        dec = img.decode ? img.decode() : null;
+      } catch (e) {}
+      Promise.all([lens, Promise.resolve(dec).catch(function () {})]).then(function (r) {
+        const f35 = r[0];
         if (gen !== loadGen) return;
         note('Detecting sections\u2026');
         // (v318 polish: drawn before the work below holds the page, or "Reading photo…" stayed up throughout)
@@ -1003,8 +1225,9 @@ function _loadImage(file) {
       });
     };
     const detect = function (f35) {
+      let tok = 0;
       try {
-        resetForNewPicture();
+        tok = resetForNewPicture();
         // (once the photo has opened: one that won't leaves the open guide's palette alone, v289)
         takeNextPal();
         srcImg = fitSource(img);
@@ -1012,13 +1235,35 @@ function _loadImage(file) {
         enterWork();
         var _rs = document.getElementById('sfResume');
         if (_rs) _rs.style.display = 'none';
-        // a photographed page is found and flattened first (or its corners offered for checking); a scan goes straight on
-        pgBegin(f35);
+        // (v318.15) the new photo on the picture at once, the controls out of sight until it's ready (after enterWork,
+        // whose controls' bar is drawn afresh: 72-frame dockBar), then a paint before the page is found
+        photoPreview(srcImg);
+        segBusySet(true, true, true);
       } catch (err) {
+        segBusySet(false);
         note(
           errNote('Couldn’t process that photo. Try it again, or another photo.', 'Processing a photo', err),
         );
+        return;
       }
+      // a photographed page is found and flattened first (or its corners offered for checking); a scan goes straight
+      // on. (resetForNewPicture moved loadGen on: its token is this photo's; a newer one's segStop cleared the busy state)
+      afterPaint(function () {
+        if (tok !== loadGen) return;
+        segBusySet(false);
+        try {
+          pgBegin(f35);
+        } catch (err) {
+          _preview = false;
+          note(
+            errNote(
+              'Couldn’t process that photo. Try it again, or another photo.',
+              'Processing a photo',
+              err,
+            ),
+          );
+        }
+      });
     };
     img.onerror = function () {
       if (url) {
@@ -1039,5 +1284,44 @@ function _loadImage(file) {
       if (gen === loadGen) note('Couldn’t read that file.');
     };
     fr.readAsDataURL(file);
+  }
+}
+// (the tests' geoSet, 99-close: the picture turned, tilted, cropped or straightened as a person would)
+function geoSet0(o) {
+  okGeom(function () {
+    // (q: the page's corners in the photo as taken, straightened)
+    if (o.q) {
+      srcImg = pgOrig;
+      pgApply(o.q, false);
+      return;
+    }
+    if ('rot90' in o) rot90 = o.rot90;
+    if ('tilt' in o) tilt = o.tilt;
+    if ('crop' in o) cropRect = o.crop;
+    reprocessImg();
+  });
+}
+// (v318.15) A new photo shown on the picture as soon as it's opened, while its page and sections are found: the
+// previous guide's picture had stayed on screen, under "Detecting sections…". Until its sections are in place
+// (segEnd) render() leaves the picture alone (_preview), as it would draw the previous guide's sections.
+let _preview = false;
+function photoPreview(img) {
+  if (!cv || !ctx || !img) return;
+  try {
+    const w = img.naturalWidth || img.width,
+      h = img.naturalHeight || img.height;
+    _preview = true;
+    sfmode = 'review';
+    resetZoom();
+    cv.width = w;
+    cv.height = h;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(img, 0, 0);
+    if (zoneEl) zoneEl.innerHTML = '';
+    sizeCanvas();
+    positionSun();
+    positionPhoto();
+  } catch (e) {
+    _preview = false;
   }
 }

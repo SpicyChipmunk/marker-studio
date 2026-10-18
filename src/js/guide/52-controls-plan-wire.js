@@ -245,10 +245,27 @@ function ctlWireColours() {
       clearTimeout(reTimer);
       reassign();
     });
+  // (v318.16) More options on a phone: open or shut, for the session; the bar keeps the keyboard (a disclosure)
+  ['shading', 'colours', 'pattern'].forEach(function (t) {
+    var mb = document.getElementById('sfMore-' + t);
+    if (!mb) return;
+    mb.addEventListener('click', function () {
+      var shut = moreShut(t);
+      moreOpen[t] = shut;
+      var open = !moreShut(t);
+      mb.setAttribute('aria-expanded', String(open));
+      mb.classList.toggle('open', open);
+      document.querySelectorAll('[id^="sfMoreIn-' + t + '"]').forEach(function (d) {
+        d.hidden = !open;
+      });
+    });
+  });
   var _ft = document.getElementById('sfFiltToggle');
   if (_ft)
     _ft.addEventListener('click', function () {
       state.filtersOpen = !state.filtersOpen;
+      // (v318.16: More options stays open under your finger as the Filters panel shuts)
+      if (moreFold('colours')) moreOpen.colours = true;
       save();
       renderControls();
     });
@@ -261,10 +278,21 @@ function ctlWirePatternOptions() {
   if (_shp)
     _shp.addEventListener('click', function (e) {
       var b = e.target.closest('button');
-      if (b) {
+      // (Radial while its rings follow the drawing: chosen already)
+      if (b && !(b.dataset.v === 'radial' && gradShape === 'rings')) {
         gradShape = b.dataset.v;
         reassign();
       }
+    });
+  // (v318.15) Radial's rings: Circles or Follow the drawing
+  var _rk = document.getElementById('sfRingKind');
+  if (_rk)
+    _rk.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b || b.dataset.v === gradShape) return;
+      gradShape = b.dataset.v;
+      reassign();
+      ctlRefocus('#sfRingKind [data-v="' + gradShape + '"]');
     });
   var _ua = document.getElementById('sfUseAround');
   if (_ua)
@@ -384,6 +412,13 @@ function ctlWirePatternOptions() {
   var _br = document.getElementById('sfBrush');
   if (_br) _br.addEventListener('click', openBrushPop);
   balWire();
+  // (v318.15) Matching shapes alike
+  var _ma = document.getElementById('sfMatchAlike');
+  if (_ma)
+    _ma.addEventListener('change', function (e) {
+      matchAlike = e.target.checked;
+      reassign();
+    });
   var _na = document.getElementById('sfNoAdj');
   if (_na)
     _na.addEventListener('change', function (e) {
@@ -472,16 +507,24 @@ function ctlWireShading() {
   var _shd = document.getElementById('sfShade');
   if (_shd)
     _shd.addEventListener('click', function (e) {
+      // (v318.16) Off, or a style: the mode, the light and every zone's amounts at once (45-shading shPresetApply)
       var b = e.target.closest('button');
-      if (!b || b.dataset.v === shadeMode) return;
-      shadeMode = b.dataset.v;
-      if (shadeMode === 'off') shadeFlatMode = false;
+      if (!b || b.getAttribute('aria-pressed') === 'true') return;
+      var v = b.dataset.v;
+      if (v === 'off') {
+        shadeMode = 'off';
+        planWhy = 'Shading: Off';
+      } else {
+        if (!shPresetApply(v)) return;
+        planWhy = 'Shading: ' + b.textContent.trim();
+      }
+      shadeFlatMode = false;
       guideDirty = true;
       gradFollowLight();
       normalizeTones();
       renderControls();
       renderGuide();
-      ctlRefocus('#sfShade [data-v="' + shadeMode + '"]');
+      ctlRefocus('#sfShade [data-v="' + v + '"]');
     });
   // Highlights and Shadows: what kind of companion marker (a highlight left as paper has no step of its own, so
   // part-done sections are brought in line)
@@ -492,12 +535,41 @@ function ctlWireShading() {
     var el = document.getElementById(x[0]);
     if (!el) return;
     el.addEventListener('change', function () {
-      if (el.value === zsh(zoneCur)[x[1]]) return;
+      // (v318.16) Highlights › None: Shadows only, the whole picture's mode; another highlight from there turns the
+      // highlights back on, with that kind
+      // (v318.17) Highlights › None: without zones, Shadows only for the whole picture (shadeMode 'shadow', as saved
+      // before); with zones, the chosen zone's own (its record's 'none'). A highlight chosen in a zone while the whole
+      // picture is shadows only turns highlights on for that zone alone: the others, and every section already
+      // coloured, are kept as they are (None)
+      var zn = zones.length ? zoneName(zoneCur) + ': ' : '';
+      if (x[1] === 'hilite' && el.value === 'none') {
+        if (shadeMode === 'shadow' || zsh(zoneCur).hilite === 'none') return;
+        if (!zones.length) shadeMode = 'shadow';
+        else zshSet(zoneCur, 'hilite', 'none');
+        planWhy = zn + 'Highlights: None (shadows only)';
+        guideDirty = true;
+        gradFollowLight();
+        normalizeTones();
+        renderControls();
+        renderGuide();
+        ctlRefocus('#sfHiStyle');
+        return;
+      }
+      var back = x[1] === 'hilite' && shadeMode === 'shadow';
+      if (!back && el.value === zsh(zoneCur)[x[1]]) return;
+      if (back) {
+        shadeMode = 'full';
+        if (zones.length) shZonesNone(zoneCur);
+        planWhy = zn + 'Highlights: ' + (SHADE_HILITE_LABEL_ALL[el.value] || el.value);
+        gradFollowLight();
+      } else if (x[1] === 'hilite')
+        planWhy = zn + 'Highlights: ' + (SHADE_HILITE_LABEL_ALL[el.value] || el.value);
       zshSet(zoneCur, x[1], el.value);
       guideDirty = true;
       normalizeTones();
       renderControls();
       renderGuide();
+      if (back) ctlRefocus('#sfHiStyle');
     });
   });
   // one light for the whole picture (the sections the photo doesn't cover stay flat, and Gradient bands that faced
@@ -538,6 +610,7 @@ function ctlWireShading() {
   if (_shf)
     _shf.addEventListener('click', function () {
       shadeFlatMode = !shadeFlatMode;
+      if (moreFold('shading')) moreOpen.shading = true;
       hideTip();
       if (shadeFlatMode) {
         setPaint(false);
@@ -562,6 +635,7 @@ function ctlWireShading() {
     _rnd.addEventListener('change', function () {
       dragPreview = false;
       renderGuide();
+      shRowSync();
     });
   }
   // "Shade Bell": the chosen zone shaded, or flat (its sections one colour each, as sections left flat are)

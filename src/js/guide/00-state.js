@@ -116,6 +116,11 @@ const MIN_DEF = 30,
   MIN_LO = 2,
   MIN_HI = 400;
 let minPos = MIN_DEF; // (the slider's place, 0-100; minPx gives the size) written by: 05-style-fields, 50-controls, 99-close (test)
+// (v318.13) a new picture's Min section size starts at its own place, about MIN_MM across on the page (minPosAuto),
+// until it's moved by hand or a guide opens with its own (not the sample): minAuto. Written by: 20-image-input, 53-controls-stages, 97-open
+const MIN_MM = 1,
+  PAGE_MM = 279.4;
+let minAuto = false;
 let bgTrim = 50; // written by: 05-style-fields, 50-controls, 99-close (test)
 let undoStack = []; // never reassigned (65-edit pushes, pops and empties it)
 let undoBytes = 0; // written by: 65-edit
@@ -229,6 +234,8 @@ let balS = 'auto';
 let balA = 'auto';
 let balSeed = 0;
 let noRep = false;
+// (v318.15) Matching shapes alike: a mandala's matching shapes (mandalaGroups) one marker each; Gradient and Random
+let matchAlike = false;
 let gradSeed = 0; // written by: 05-style-fields, 30-palette-assign, 50-controls, 99-close (test)
 // the Gradient's Scatter (v306): 0 Polished (v305 as laid), 1 Natural, 2 Textured, 3 Sparkle, 4 Confetti; gradJit, the
 // seed its draws come from (Shuffle at Textured and up re-rolls only it); gradFix, rough spots smoothed ("Smooth

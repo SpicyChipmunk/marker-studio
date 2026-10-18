@@ -19,7 +19,8 @@
 }
 #sfRoot .sfedit {
   position: relative;
-  min-height: 40px;
+  /* (v318.16: 44px, the size Apple asks for a finger; 40px with a 44px tap area before) */
+  min-height: 44px;
   padding: 7px 11px;
   border-radius: var(--r-sm);
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -208,8 +209,9 @@
   font-weight: 600;
 }
 #sfRoot .sfsublbl {
-  font-size: var(--t-sm);
-  color: var(--sub);
+  /* (v318.16: 13px and a step clearer, from 12px at --sub) */
+  font-size: var(--t-base);
+  color: var(--sub-guide);
   margin: 8px 0 4px;
 }
 #sfRoot .sfpoolct {
@@ -512,6 +514,73 @@
   padding-left: 4px;
   padding-right: 4px;
 }
+/* (v318.17) each Flow's picture above its word */
+#sfRoot #sfShape .sfedit {
+  padding-top: 6px;
+  padding-bottom: 5px;
+}
+#sfRoot #sfShape .sfflowico {
+  display: block;
+  margin: 0 auto 2px;
+}
+/* (v318.16) More options on a phone: the Filters bar's look, as a button across the controls */
+#sfRoot #sfCtl .sfmorebar {
+  width: calc(100% - 4px);
+  /* (an action: 44px, as the bar's) */
+  min-height: 44px;
+  height: 44px;
+  padding-top: 0;
+  padding-bottom: 0;
+  font: inherit;
+  font-weight: normal;
+  text-align: left;
+  color: inherit;
+  margin-left: 2px;
+  margin-right: 2px;
+}
+#sfRoot #sfCtl .sfmorebar .fb-sum {
+  color: var(--sub-guide);
+}
+/* (v318.17) ＋ Zone at the Pattern tab's end, its words beside it */
+#sfRoot #sfCtl .sfzaddl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+#sfRoot #sfCtl .sfzaddl .sfc-note {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+/* (v318.17) a page that looks like a mandala: its heading, then Matching shapes alike and Try Around on a line */
+#sfRoot #sfCtl .sfmandrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+#sfRoot #sfCtl .sfmandrow .sfchk {
+  margin-top: 0;
+}
+/* (v318.16) Radial's rings on one line: the label, then two choices as wide as their words */
+#sfRoot .sfringk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+#sfRoot .sfringk .sfringl {
+  font-size: var(--t-base);
+  color: var(--sub-guide);
+  margin-right: 4px;
+}
+#sfRoot .sfringk .sfedit {
+  flex: 0 0 auto;
+  padding: 4px 14px;
+}
 #sfRoot .sfshpin {
   margin-top: 14px;
   padding-top: 12px;
@@ -565,10 +634,9 @@
   width: 100%;
   margin-top: 2px;
 }
+/* (v318.16: a plain line, not a dashed box, the only one in the guide) */
 #sfRoot .sfonel {
-  padding: 8px 10px;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
-  border-radius: var(--r-md);
+  padding: 0;
 }
 #sfRoot .sfonelh {
   display: flex;
@@ -694,8 +762,8 @@
     padding: 0 6px;
   }
 }
-/* Buttons in the guide follow the app's rule (02-picker.css): actions 44px (the same as the bar), choices (.sfedit)
-   40px with a 44px tap area, the icon buttons their own size */
+/* Buttons in the guide: actions 44px (the same as the bar), choices (.sfedit) 44px too since v318.16 (the app's rule,
+   02-picker.css, is 40px with a 44px tap area elsewhere), the icon buttons their own size */
 #sfRoot .sfedit::after {
   content: '';
   position: absolute;
@@ -931,16 +999,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
-/* v288: Temperature's three choices the same even width as Mood's */
-#sfRoot #sfCtl #sfPal.sfc-segs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
-}
-#sfRoot #sfCtl #sfPal.sfc-segs .sfedit {
-  min-width: 0;
-  white-space: nowrap;
-}
+/* (v318.17: Lean towards, Temperature's row with the themes, is a six-wide row as Mood's: .sfsix) */
 /* (the Filters bar's edges on the rows of choices above and below it: the main one's 2px side margins had left it inset
    here, v302) */
 #sfRoot #sfCtl #sfFiltToggle {
@@ -976,10 +1035,10 @@
 #sfRoot #sfCtl .sfc-segs.sfoff .sfedit {
   cursor: default;
 }
-/* small grey text */
+/* small grey text (v318.16: 13px and a step clearer) */
 #sfRoot #sfCtl .sfc-note {
-  font-size: var(--t-sm);
-  color: var(--sub);
+  font-size: var(--t-base);
+  color: var(--sub-guide);
 }
 #sfRoot #sfCtl .sfc-sub {
   color: var(--sub);

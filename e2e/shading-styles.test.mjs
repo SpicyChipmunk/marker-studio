@@ -11,7 +11,7 @@ after(teardown);
 
 async function shaded(page) {
   await sampleGuide(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
 }
 // every colour in the guide with its tones: hue and lightness of the base, the companions and the glaze (L*C*h°)
 const tones = (page) => page.evaluate(() => {
@@ -81,7 +81,7 @@ test('Shadows › Grey: a grey from a grey family, matched to the colour\'s warm
   assert.deepEqual(errors, []);
 });
 
-test('Highlights › Warmer: a lighter marker turned the warm way; shown only with Light & shadow', async () => {
+test('Highlights › Warmer: a lighter marker turned the warm way; None with Shadows only', async () => {
   const { page, errors } = await openApp();
   await shaded(page);
   await page.selectOption('#sfHiStyle', 'warm'); await idle(page);
@@ -96,9 +96,10 @@ test('Highlights › Warmer: a lighter marker turned the warm way; shown only wi
       assert.ok(k >= 8 && k <= 40, `${t.code} → ${t.light.code}: turned ${k.toFixed(1)}° the warm way`);
     }
   }
-  // Shadows only: no highlight, so no Highlights choice
-  await page.click('#sfShade [data-v="shadow"]'); await idle(page);
-  assert.equal(await page.$('#sfHiStyle'), null);
+  // Shadows only: no highlight (v318.16: Highlights shows None, with no amount of its own)
+  await page.evaluate(() => __mstest.shadeTo('shadow')); await idle(page);
+  assert.equal(await page.inputValue('#sfHiStyle'), 'none');
+  assert.equal(await page.$('#sfShHi'), null);
   assert.ok(await page.$('#sfShStyle'));
   assert.deepEqual(errors, []);
 });

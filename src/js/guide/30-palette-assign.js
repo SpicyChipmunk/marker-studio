@@ -14,6 +14,33 @@ function minPx(pos) {
   // (on the picture as it came: an enlarged one's sections are srcK² times as many pixels, v303)
   return Math.round(MIN_LO * Math.pow(MIN_HI / MIN_LO, t) * srcK * srcK);
 }
+// (v318.13) a new picture's Min section size: a section about MIN_MM across on the page, taking the picture as a
+// page (its long side as a Letter page's, PAGE_MM). Sensitivity had made hundreds of specks of paper grain and pen
+// texture that 10 px let through (Ben's photos: 255 → 759 sections from Sensitivity 1 to 9, at 1 mm 227 → 241); the
+// guide benchmark's pages lose nothing at 1 mm (98.22 → 98.21% matched). Never under MIN_DEF (a small download keeps
+// today's), never over the slider's end. On the picture as it came (srcDims), as minPx is
+function minPosAuto() {
+  if (!srcDims) return MIN_DEF;
+  const L = Math.max(srcDims.w, srcDims.h),
+    a = Math.pow((MIN_MM * L) / PAGE_MM, 2);
+  if (!(a > MIN_LO)) return MIN_DEF;
+  return Math.max(
+    MIN_DEF,
+    Math.min(100, Math.round((100 * Math.log(a / MIN_LO)) / Math.log(MIN_HI / MIN_LO))),
+  );
+}
+// (v318.13) Min section size in real terms, taking the picture as a page as minPosAuto does: "about 1 mm"
+function minMmText() {
+  if (!srcDims) return '';
+  const L = Math.max(srcDims.w, srcDims.h),
+    mm = (Math.sqrt(minPx() / (srcK * srcK)) * PAGE_MM) / L;
+  if (!(mm > 0)) return '';
+  return (
+    'about ' +
+    (mm < 0.95 ? mm.toFixed(1) : mm < 3 ? (Math.round(mm * 2) / 2).toString() : Math.round(mm)) +
+    ' mm'
+  );
+}
 function minPosOld(pos) {
   const px = MIN_LO * Math.pow(MIN_HI / MIN_LO, pos / 100);
   return Math.round(100 * Math.sqrt(Math.max(0, px - 2) / 1998));
@@ -58,6 +85,86 @@ function markerTemp(m) {
   if (x[1] < TEMP_NEUTRAL_C || (x[1] < GREY_C && x[0] < TEMP_BLACK_L)) return 'both';
   return x[2] >= TEMP_COOL_FROM && x[2] < TEMP_WARM_FROM ? 'cool' : 'warm';
 }
+/* (v318.17) Themes, beside Any, Cool and Warm in Lean towards: hue windows in L*C*h° (h from the first to the second
+   going round, C and L at least / at most), from your markers; an `extra` window adds at most a third as many as the
+   others found (a sunset's violet sky). Too few inside (under THEME_MIN): the nearest outside are added (by how far
+   each is from a window), and the line under the row says so (themeWide). */
+const THEMES = {
+  sunset: {
+    n: 'Sunset',
+    w: [
+      { h: [350, 60], C: 35, L: [40, 85] },
+      { h: [290, 340], C: 25, extra: true },
+    ],
+  },
+  forest: {
+    n: 'Forest',
+    w: [
+      { h: [95, 165], C: 15 },
+      { h: [40, 80], C: 12, Cmax: 35, L: [0, 65] },
+    ],
+  },
+  candy: {
+    n: 'Candy',
+    w: [
+      { h: [330, 10], C: 20, L: [72, 100] },
+      { h: [140, 180], C: 20, L: [72, 100] },
+      { h: [280, 310], C: 20, L: [72, 100] },
+      { h: [85, 105], C: 20, L: [72, 100] },
+      { h: [220, 250], C: 20, L: [72, 100] },
+    ],
+  },
+};
+const THEME_KEYS = Object.keys(THEMES),
+  THEME_MIN = 8;
+// how far a marker's L*C*h° is from a window (0 inside)
+function themeOff(x, w) {
+  const h = x[2],
+    a = w.h[0],
+    b = w.h[1],
+    inH = a <= b ? h >= a && h <= b : h >= a || h <= b,
+    dh = inH ? 0 : Math.min(Math.abs(((h - a + 540) % 360) - 180), Math.abs(((h - b + 540) % 360) - 180)),
+    dc = Math.max(0, (w.C || 0) - x[1]) + Math.max(0, x[1] - (w.Cmax || 999)),
+    dl = w.L ? Math.max(0, w.L[0] - x[0], x[0] - w.L[1]) : 0;
+  return dh * 0.6 + dc + dl;
+}
+let themeWide = null,
+  _themeMemo = null;
+function themePool(base, key) {
+  const T = THEMES[key],
+    inside = [],
+    extra = [],
+    out = [];
+  base.forEach(function (m) {
+    const x = mLch(m);
+    let best = Infinity,
+      ex = false;
+    T.w.forEach(function (w) {
+      const d = themeOff(x, w);
+      if (d < best || (d === best && !w.extra)) {
+        best = d;
+        ex = !!w.extra;
+      }
+    });
+    if (best === 0) (ex ? extra : inside).push(m);
+    else out.push([best, m]);
+  });
+  const keep = inside.concat(extra.slice(0, Math.max(2, Math.floor(inside.length / 3)))),
+    want = Math.min(THEME_MIN, base.length);
+  let added = 0;
+  if (keep.length < want) {
+    out.sort(function (p, q) {
+      return p[0] - q[0];
+    });
+    for (let i = 0; i < out.length && keep.length < want; i++, added++) keep.push(out[i][1]);
+  }
+  themeWide = { key: key, inside: inside.length, added: added };
+  // (in the collection's order, as the other pools are)
+  const set = new Set(keep);
+  return base.filter(function (m) {
+    return set.has(m);
+  });
+}
 function poolFor(pal) {
   let base = coll.filter(function (m) {
     return m.pass;
@@ -68,7 +175,91 @@ function poolFor(pal) {
       const t = markerTemp(m);
       return t === pal || t === 'both';
     });
+  if (THEMES[pal]) {
+    if (_themeMemo && _themeMemo.coll === coll && _themeMemo.pal === pal && _themeMemo.n === base.length) {
+      themeWide = _themeMemo.wide;
+      return _themeMemo.items;
+    }
+    const items = themePool(base, pal);
+    _themeMemo = { coll: coll, pal: pal, n: base.length, items: items, wide: themeWide };
+    return items;
+  }
   return base;
+}
+// the line under Lean towards when a theme had too few of your markers
+function themeNote() {
+  if (!THEMES[palette] || paletteSource !== 'owned') return '';
+  poolFor(palette);
+  const w = themeWide;
+  if (!w || !w.added) return '';
+  const nm = THEMES[palette].n.toLowerCase();
+  return (
+    (w.inside ? 'Few ' : 'No ') +
+    nm +
+    ' colours in your markers: the nearest ' +
+    w.added +
+    (w.inside ? ' added.' : ' used.')
+  );
+}
+// (v318.15) Rings: how many touching steps each section of cl is from the start (the section under the centre mark,
+// radCentre, when it's one of them; else the one whose middle is nearest it), walking only within cl (a zone's own
+// sections). A section the walk can't reach (an island: a section cut off by another zone, or one whose borders are
+// too short to count as touching) takes the step of the nearest reached section (by their middles) plus one.
+function ringDepths(cl) {
+  const c = comps,
+    a = adj || (adj = buildAdj()),
+    inZ = new Set(cl),
+    rc = radCentre(),
+    dep = {};
+  if (!cl.length) return dep;
+  let s = -1;
+  const ux = Math.round(rc.x),
+    uy = Math.round(rc.y);
+  if (labels && ux >= 0 && uy >= 0 && ux < W && uy < H && inZ.has(labels[uy * W + ux]))
+    s = labels[uy * W + ux];
+  if (s < 0) {
+    let best = Infinity;
+    cl.forEach(function (l) {
+      const d = Math.hypot(c[l].cx - rc.x, c[l].cy - rc.y);
+      if (d < best) {
+        best = d;
+        s = l;
+      }
+    });
+  }
+  dep[s] = 0;
+  let q = [s];
+  while (q.length) {
+    const nq = [];
+    q.forEach(function (l) {
+      const nb = a[l];
+      if (nb)
+        nb.forEach(function (m) {
+          if (inZ.has(m) && dep[m] === undefined) {
+            dep[m] = dep[l] + 1;
+            nq.push(m);
+          }
+        });
+    });
+    q = nq;
+  }
+  const got = cl.filter(function (l) {
+    return dep[l] !== undefined;
+  });
+  cl.forEach(function (l) {
+    if (dep[l] !== undefined) return;
+    let best = Infinity,
+      d0 = 0;
+    got.forEach(function (m) {
+      const d = Math.hypot(c[l].cx - c[m].cx, c[l].cy - c[m].cy);
+      if (d < best) {
+        best = d;
+        d0 = dep[m];
+      }
+    });
+    dep[l] = d0 + 1;
+  });
+  return dep;
 }
 function orderSections(cl) {
   const arr = cl.slice(),
@@ -89,6 +280,18 @@ function orderSections(cl) {
       my = rc.y;
     arr.sort(function (a, b) {
       return Math.hypot(c[a].cx - mx, c[a].cy - my) - Math.hypot(c[b].cx - mx, c[b].cy - my);
+    });
+  } else if (gradShape === 'rings') {
+    // (v318.15) out from the section under the centre mark through touching sections, ring by ring (ringDepths); in a
+    // ring, nearer the centre first, so the colours hand over in rounded seams
+    const dep = ringDepths(arr),
+      rc = radCentre(),
+      rad = {};
+    arr.forEach(function (l) {
+      rad[l] = Math.hypot(c[l].cx - rc.x, c[l].cy - rc.y);
+    });
+    arr.sort(function (a, b) {
+      return dep[a] - dep[b] || rad[a] - rad[b] || a - b;
     });
   } else if (gradShape === 'around') {
     // (v305) round Radial's centre, clockwise from the top; at the same angle, outwards
@@ -221,6 +424,175 @@ function gradMandalaScore(cl) {
   }
   _mandMemo = { key: key, c: c, v: v };
   return v;
+}
+// (v318.15) Matching shapes alike. The mandala's matching shapes: as gradMandalaScore rings a zone's sections round the
+// middle of their extent and groups each ring's by area (within GRAD_RING[2] of the group's smallest), then splits a
+// group by shape (how round: the label's inscribed radius over √area, within MATCH_ROUND, so an alternating ring of
+// petals and dots of one size is two groups, not one), keeping the groups of 4 or more set evenly round (no gap over
+// MANDALA_GAP times an even share). Each such group is laid in one marker (matchUnify).
+const MATCH_ROUND = 1.25;
+let _mgMemo = null;
+function mandalaGroups(cl) {
+  const c = comps,
+    n = cl.length;
+  if (n < MANDALA_MIN || !c) return [];
+  const key = W + 'x' + H + ':' + cl.join(',');
+  // (the labels' radii tell the shapes apart: worked out now if they aren't yet)
+  if (!labelPts) buildLabelPts();
+  if (_mgMemo && _mgMemo.key === key && _mgMemo.c === c && _mgMemo.lp === labelPts) return _mgMemo.g;
+  let x0 = Infinity,
+    y0 = Infinity,
+    x1 = -Infinity,
+    y1 = -Infinity;
+  cl.forEach(function (l) {
+    const s = c[l];
+    x0 = Math.min(x0, s.x0 != null ? s.x0 : s.cx);
+    y0 = Math.min(y0, s.y0 != null ? s.y0 : s.cy);
+    x1 = Math.max(x1, s.x1 != null ? s.x1 : s.cx);
+    y1 = Math.max(y1, s.y1 != null ? s.y1 : s.cy);
+  });
+  const mx = (x0 + x1) / 2,
+    my = (y0 + y1) / 2,
+    rr = cl
+      .map(function (l) {
+        return [l, Math.hypot(c[l].cx - mx, c[l].cy - my)];
+      })
+      .sort(function (a, b) {
+        return a[1] - b[1];
+      }),
+    R = rr.length ? rr[rr.length - 1][1] || 1 : 1,
+    gap = GRAD_RING[0] * R,
+    span = GRAD_RING[1] * R,
+    rings = [],
+    out = [];
+  let cur = [],
+    r0 = 0,
+    rp = 0;
+  rr.forEach(function (x) {
+    if (cur.length && (x[1] - rp > gap || x[1] - r0 > span)) {
+      rings.push(cur);
+      cur = [];
+    }
+    if (!cur.length) r0 = x[1];
+    cur.push(x[0]);
+    rp = x[1];
+  });
+  if (cur.length) rings.push(cur);
+  const round = function (l) {
+    const p = labelPts && labelPts[l];
+    return p && p.r ? p.r / Math.sqrt(Math.max(1, c[l].area || 1)) : 0;
+  };
+  const even = function (g) {
+    const k = g.length;
+    if (k < 4) return false;
+    const a = g
+      .map(function (l) {
+        return ((Math.atan2(c[l].cy - my, c[l].cx - mx) * 180) / Math.PI + 360) % 360;
+      })
+      .sort(function (p, q) {
+        return p - q;
+      });
+    let w = 360 - a[k - 1] + a[0];
+    for (let i = 1; i < k; i++) w = Math.max(w, a[i] - a[i - 1]);
+    return w < (MANDALA_GAP * 360) / k;
+  };
+  const byShape = function (g) {
+    // (split by roundness, when the labels' radii are known)
+    if (!labelPts) return [g];
+    const s = g.slice().sort(function (a, b) {
+        return round(a) - round(b);
+      }),
+      parts = [];
+    let p = [],
+      q0 = 0;
+    s.forEach(function (l) {
+      const q = round(l);
+      if (p.length && q > q0 * MATCH_ROUND) {
+        parts.push(p);
+        p = [];
+      }
+      if (!p.length) q0 = q;
+      p.push(l);
+    });
+    if (p.length) parts.push(p);
+    return parts;
+  };
+  rings.forEach(function (ring) {
+    ring.sort(function (a, b) {
+      return (c[a].area || 1) - (c[b].area || 1);
+    });
+    let a0 = -1,
+      g = [];
+    const close = function () {
+      byShape(g).forEach(function (h) {
+        if (even(h)) out.push(h);
+      });
+    };
+    ring.forEach(function (l) {
+      const a = Math.max(1, c[l].area || 1);
+      if (a0 < 0 || a > a0 * GRAD_RING[2]) {
+        if (g.length) close();
+        g = [];
+        a0 = a;
+      }
+      g.push(l);
+    });
+    if (g.length) close();
+  });
+  _mgMemo = { key: key, c: c, lp: labelPts, g: out };
+  return out;
+}
+// each group one marker: a member's pinned marker, or one it's coloured already (kept), else the one most of its
+// members got, else its first member's in the order laid. After the pattern lays them (assignOne).
+function matchUnify(cl) {
+  if (!assignData || !assignData.assign) return 0;
+  const A = assignData.assign,
+    groups = mandalaGroups(cl),
+    ord = {};
+  (assignData.order || cl).forEach(function (l, i) {
+    ord[l] = i;
+  });
+  let n = 0;
+  groups.forEach(function (g) {
+    let m = null;
+    for (let i = 0; i < g.length && !m; i++) if (locks[g[i]] || (colored && colored[g[i]])) m = A[g[i]];
+    if (!m) {
+      const cnt = {};
+      let best = 0;
+      g.slice()
+        .sort(function (a, b) {
+          return (ord[a] || 0) - (ord[b] || 0);
+        })
+        .forEach(function (l) {
+          const x = A[l];
+          if (!x) return;
+          cnt[x.mkey] = (cnt[x.mkey] || 0) + 1;
+          if (cnt[x.mkey] > best) {
+            best = cnt[x.mkey];
+            m = x;
+          }
+        });
+    }
+    if (!m) return;
+    g.forEach(function (l) {
+      if (A[l] && A[l] !== m && !locks[l] && !(colored && colored[l])) {
+        A[l] = m;
+        // (the pattern's own marker too, which Unpin brings back and a pin is saved with, as gradSplitSame keeps it)
+        if (assignData.base) assignData.base[l] = m;
+        n++;
+      }
+    });
+  });
+  return n;
+}
+// the tick box, on a page that looks like a mandala (Gradient's Flow and Random's options)
+function matchAlikeHTML() {
+  if (!labels || !comps || !gradMandala()) return '';
+  return (
+    '<label class="sfchk sfc-check sfc-flex sfc-mt8"><input type="checkbox" id="sfMatchAlike"' +
+    (matchAlike ? ' checked' : '') +
+    '> Matching shapes alike</label>'
+  );
 }
 function gradMandala(cl) {
   return gradMandalaScore(cl || zoneList()) >= MANDALA_SYM;
@@ -1266,7 +1638,7 @@ function gradShpOf(id) {
 }
 function gradShadeOK(m, zs) {
   const t = shadeTones(m, zs);
-  return !!t.dark && (shadeMode !== 'full' || !!t.light || !!t.paper);
+  return !!t.dark && (t.noHi || shadeMode !== 'full' || !!t.light || !!t.paper);
 }
 // how far round a loop of n starts: gradSeed is kept as a share of the way round (0 is the smoothest start), so a
 // start stays about where it was when the marker count changes
@@ -1397,11 +1769,11 @@ function gradPinZero(order, M) {
 // sun when the zone is shaded by it, else the top (a flat zone, or light from the photo, has no sun to face). 0 for
 // Radial, whose rings run light to dark and back.
 function gradLightSign() {
-  if (gradShape === 'radial' || gradShape === 'around') return 0;
+  if (gradShape === 'radial' || gradShape === 'around' || gradShape === 'rings') return 0;
   const ax = gradShape === 'diagonal' ? [Math.SQRT1_2, -Math.SQRT1_2] : [0, 1];
   let d = 0;
   // (where the sun is from the middle of the extent the flow runs over: the zone's, or the picture's)
-  if (shadeMode !== 'off' && zsh(zoneLive()).on && !shadeFromPhoto())
+  if (shadeMode !== 'off' && zsh(zoneLive()).on && !shadeFromPhoto() && !shadeEdges())
     d =
       (shadeSun.x * (W || 1) - (zbX0() + zbW() / 2)) * ax[0] +
       (shadeSun.y * (H || 1) - (zbY0() + zbH() / 2)) * ax[1];
@@ -1422,7 +1794,7 @@ function gradAcross(sign) {
       return Math.hypot(c[l].cx - rc.x, c[l].cy - rc.y);
     };
   }
-  if (gradShape === 'radial') {
+  if (gradShape === 'radial' || gradShape === 'rings') {
     const rc = radCentre();
     return function (l) {
       return Math.atan2(c[l].cy - rc.y, c[l].cx - rc.x);
@@ -1499,7 +1871,7 @@ function buildGradient(cl) {
       });
       grp = grp.slice().sort(byLightFirst);
       // round a ring: light to dark and back, so its two ends meet
-      if (gradShape === 'radial') {
+      if (gradShape === 'radial' || gradShape === 'rings') {
         const ev = [],
           od = [];
         grp.forEach(function (m, q) {
@@ -3727,7 +4099,9 @@ function assignOne(cl) {
     note(
       palette === 'all'
         ? 'No markers to use \u2014 check Filters in Colours.'
-        : 'None of your markers are ' + palette + ' \u2014 choose another Temperature.',
+        : (THEMES[palette]
+            ? 'None of your markers fit ' + THEMES[palette].n
+            : 'None of your markers are ' + palette) + ' \u2014 choose another in Lean towards.',
     );
     return false;
   }
@@ -3752,6 +4126,8 @@ function assignOne(cl) {
     }
     buildGradient(cl);
   } else buildGradient(cl);
+  // (v318.15) a mandala's matching shapes one marker each, when asked (Gradient and Random)
+  if (matchAlike && (family === 'gradient' || family === 'random')) matchUnify(cl);
   return true;
 }
 // Blend again from its anchors (a drag, the Spread slider, an anchor's colour): the zone being edited only
@@ -3787,7 +4163,8 @@ function buildManual(cl, pool) {
 // the guide changed, for a change that makes its own step (Colour it on the paper inside a frame, v306)
 let _gone = {};
 function buildGuide(keepPlan) {
-  if (!labels) return;
+  // (v318.14: not while the sections are being found, segRun)
+  if (!labels || segBusy) return;
   // (which sections touch is found again when the specks looked across changed: Min section size, a keep tap, v304)
   if (adj && _adjSig !== adjTiny().sig) adj = null;
   const cl = countedList();

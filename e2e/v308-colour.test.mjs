@@ -403,7 +403,7 @@ test('a mandala-like page: Radial offers “Use Around”; Surprise goes Around,
   assert.equal(await page.isVisible('#sfAroundTip'), false);
   await page.click('#sfShape [data-v="radial"]');
   await idle(page);
-  assert.match(await page.textContent('#sfAroundTip'), /looks like a mandala/);
+  assert.match(await page.textContent('#sfAroundTip'), /Try Around/); // (v318.17: beside Matching shapes alike, under Looks like a mandala)
   await page.click('#sfUseAround');
   await idle(page);
   assert.equal(await sv(page, 'gradShape'), 'around');

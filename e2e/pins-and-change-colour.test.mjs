@@ -179,7 +179,7 @@ test('Pin colours mode: a tap toggles the pin, with no picker', async () => {
 test('shading on: a new colour brings its own tones, drawn exactly as a full redraw', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await page.click('.sftabbtn[data-t="colours"]');
   const [l] = await bigSections(page, 1), orig = await mk(page, l);
   await page.evaluate((l) => { __mstest.tonePart[l] = 1; }, l);

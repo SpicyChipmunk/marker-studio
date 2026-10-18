@@ -24,7 +24,7 @@ async function probe(page) {
 }
 async function turnOn(page, mode = 'full') {
   await page.click('.sftabbtn[data-t="shading"]');
-  await page.click(`#sfShade [data-v="${mode}"]`);
+  await page.evaluate((m) => __mstest.shadeTo(m), mode);
   await idle(page);
 }
 async function sunTo(page, fx, fy) {
@@ -164,7 +164,7 @@ test('colour along with shading: tones in the list, one tap per section in focus
 async function shaded(page, mode = 'full') {
   await sampleGuide(page);
   await page.click('.sftabbtn[data-t="shading"]');
-  await page.click(`#sfShade [data-v="${mode}"]`); await idle(page);
+  await page.evaluate((m) => __mstest.shadeTo(m), mode); await idle(page);
 }
 // shade values (0..1) of one section's pixels, split by a test
 const vals = (page, l, fn) => page.evaluate(([l, fn]) => {
@@ -238,7 +238,7 @@ test('in a Photo guide the light comes from the photo (no sun), and can be switc
   await fc.setFiles({ name: 'ref.png', mimeType: 'image/png', buffer: Buffer.from(b64, 'base64') });
   await page.waitForFunction(() => !!__mstest.photoRef); await idle(page);
   await page.click('#sfPhAlign');
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   assert.equal(await page.evaluate(() => __mstest.shadeFromPhoto()), true, 'photo light by default');
   assert.ok(!(await page.isVisible('#sfSun')), 'no sun');
   // sections that straddle the light/dark split: their dark part is shadowed; sections on one side stay even
@@ -266,7 +266,7 @@ test('changing shading counts as an unsaved change', async () => {
   assert.equal(await page.evaluate(() => __mstest.guideDirty), false);
   // (the Library guide then saves itself 1.5 s later, which clears it again: so it's caught as it happens, not after
   // the page has gone idle, which on a slow machine can be after the auto-save)
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]');
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full'));
   await until(page, () => __mstest.guideDirty === true, null, 'the guide marked changed', 5000);
   assert.deepEqual(errors, []);
 });
@@ -275,7 +275,7 @@ test('changing shading counts as an unsaved change', async () => {
 test('stepping through tones: the base code fades on the highlight and shadow steps, and only this step’s marker is bright', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await page.click('.sftabbtn[data-t="colours"]'); await page.click('#sfColor'); await idle(page);
   await page.click('#sfFocus'); await idle(page);
   await page.click('#sfFocCols'); await page.check('#sfToneSteps'); await idle(page);
@@ -309,7 +309,7 @@ test('reopening a guide lit from its photo draws the photo light (no sun) once t
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#sfFam [data-v="photo"]')]);
   await fc.setFiles({ name: 'r.png', mimeType: 'image/png', buffer: Buffer.from(b64, 'base64') });
   await page.waitForFunction(() => !!__mstest.photoRef); await idle(page);
-  await page.click('#sfPhAlign'); await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('#sfPhAlign'); await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await saveGuide(page); await idle(page);
   const id = await page.evaluate(() => state.saved.find((s) => s.type === 'guide').id);
   await page.evaluate(() => SF.loadSample()); await idle(page, 1200);
@@ -324,7 +324,7 @@ test('reopening a guide lit from its photo draws the photo light (no sun) once t
 test('Leave sections flat works in the Blend pattern (the tap leaves it flat instead of adding an anchor)', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await page.click('.sftabbtn[data-t="pattern"]'); await page.click('#sfFam [data-v="blend"]'); await idle(page);
   await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShFlat');
   const l = await bigShaded(page);
@@ -337,7 +337,7 @@ test('Leave sections flat works in the Blend pattern (the tap leaves it flat ins
 test('the sun sits on the picture after full screen opens and closes (measured once the picture has settled)', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await page.evaluate(() => { __mstest.shadeSun = { x: 0.8, y: 0.8 }; __mstest.renderGuide(); });
   const off = () => page.evaluate(() => { const s = document.getElementById('sfSun').getBoundingClientRect(), c = document.getElementById('sfCanvas').getBoundingClientRect(); return Math.hypot(s.left + s.width / 2 - (c.left + 0.8 * c.width), s.top + s.height / 2 - (c.top + 0.8 * c.height)); });
   // the picture eases to its new size and the sun is placed again when that ends: wait for it (GitHub's WebKit can hold
@@ -367,7 +367,7 @@ test('switching shading off keeps part-done tones: Undo (or shading back on) mak
   const { page, errors } = await openApp();
   await sampleGuide(page); await saveNew(page);
   const id = await savedId(page);
-  await tab(page, 'shading'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await tab(page, 'shading'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   const l = await page.evaluate(() => { const t = __mstest, g = t.shadeGeom(); let best = 0, ba = 0; for (const l in t.assignData.assign) { if (!t.shadeable(+l, g)) continue; const a = t.comps[l].area; if (a > ba) { ba = a; best = +l; } } return best; });
   await page.evaluate((l) => { __mstest.stepSet(l, 2, true); __mstest.guideDirty = true; __mstest.renderGuide(); }, l);
   assert.equal(await page.evaluate((l) => __mstest.colored[l], l), 0, 'base only: not done yet');
@@ -386,7 +386,7 @@ test('switching shading off keeps part-done tones: Undo (or shading back on) mak
   // (v284: part-way coloured, it opens in Colour along)
   assert.equal(await page.evaluate(() => __mstest.sfmode), 'color');
   await page.click('#sfDoneBtn'); await idle(page);
-  await tab(page, 'shading'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await tab(page, 'shading'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   assert.deepEqual(await page.evaluate((l) => [__mstest.colored[l], __mstest.tonePart[l]], l), [0, 2]);
   assert.deepEqual(errors, []);
 });

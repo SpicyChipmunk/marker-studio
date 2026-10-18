@@ -443,7 +443,7 @@ test('9 Focus mode’s Mark all … done, undone, puts back the kept shading as 
   await sampleGuide(page);
   await idle(page);
   await page.click('.sftabbtn[data-t="shading"]');
-  await page.click('#sfShade [data-v="full"]');
+  await page.evaluate(() => __mstest.shadeTo('full'));
   await idle(page);
   await page.click('#sfColor');
   await idle(page);

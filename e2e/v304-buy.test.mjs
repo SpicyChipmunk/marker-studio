@@ -116,7 +116,7 @@ test('a guide open while another tab changes Brands I’d buy: its shading’s m
   await sampleGuide(page);
   await page.evaluate((own) => { state.owned = new Set(own); state.buyBrands = null; save(); SF.setCollection(sfCollection()); }, OWN);
   await page.click('.sftabbtn[data-t="shading"]');
-  await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   const panel = () => page.evaluate(() => document.getElementById('sfRoot').textContent);
   const lay = await page.evaluate(() => JSON.stringify(__mstest.assignData.assign));
   const before = await panel();

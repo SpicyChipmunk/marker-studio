@@ -144,7 +144,7 @@ test('Undo and Redo with shading on: the Start colour line still names the marke
   });
   await idle(page);
   await tab(page, 'shading');
-  await page.click('#sfShade [data-v="shadow"]');
+  await page.evaluate(() => __mstest.shadeTo('shadow'));
   await idle(page);
   await tab(page, 'pattern');
   // laid with shading on (Shuffle), then another change

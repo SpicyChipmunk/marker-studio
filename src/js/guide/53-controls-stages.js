@@ -188,7 +188,13 @@ function segWarnHTML() {
         segWarn.msg +
         '</b><br><span class="sfc-sub">' +
         segWarn.tip +
-        '</span></div>'
+        '</span>' +
+        // (v318.13: a photo that came out wrong is often quickest to take again. A photo chosen now (pgOrig), not the
+        // sample, a PDF's page or a guide opened again)
+        (segWarn.retake && pgOrig
+          ? '<br><button type="button" class="sflink sfc-retake" id="sfRetake">Choose another photo</button>'
+          : '') +
+        '</div>'
     : '';
 }
 // Very dense pages (v304). Above DENSE_ASK sections Build asks first, once for a picture (again only when there are
@@ -269,6 +275,7 @@ function denseAsk(go) {
   ).then(function (a) {
     if (a === 'min') {
       minPos = m.pos;
+      minAuto = false;
       _denseAsked = m.d.cnt;
       renderControls();
       render();
@@ -541,6 +548,10 @@ function ctlSections() {
           'Page kept as photographed' +
           ' \u00b7 <button class="sflink" id="sfPgAdj">Straighten</button></div>'
         : '') +
+    // (v318.15) the binding or a strip of table along the photo's edge: Auto crop leaves it out
+    (trimOffer()
+      ? '<div class="sfpgline sfpghint" id="sfTrimLine">Binding or table at the edge? \u00b7 <button class="sflink" id="sfTrim">Trim it</button></div>'
+      : '') +
     frameLineHTML() +
     head +
     faintLineHTML() +
@@ -548,7 +559,9 @@ function ctlSections() {
     '<div class="sfedtools"' +
     (quick ? ' hidden' : '') +
     '><div id="sfEdit" role="group" aria-label="Edit tool" class="sfc-segs sfc-mt8"><button type="button" id="sfEmToggle" data-m="toggle" class="sfedit">Leave out</button><button type="button" id="sfEmMerge" data-m="merge" class="sfedit">Merge</button><button type="button" id="sfEmSplit" data-m="split" class="sfedit">Split</button><button type="button" id="sfEmAdd" data-m="add" class="sfedit">Add</button></div><label id="sfAutoCloseWrap" class="sfc-autoclose" style="display:none"><input type="checkbox" id="sfAutoClose"> Join the ends of a loop for me</label><div id="sfHint" class="sfc-note sfc-mt8"></div><div class="sfc-key"><span><span class="sfc-sw sfc-sw-sec"></span>section</span><span><span class="sfc-sw sfc-sw-bg"></span>background</span><span><span class="sfc-sw sfc-sw-ex"></span>left out</span></div>' +
-    '<label class="sfrng sfc-mt12">Min section size<input type="range" id="sfMin" min="0" max="100" value="' +
+    '<label class="sfrng sfc-mt12">Min section size <b id="sfMinMm">' +
+    esc(minMmText()) +
+    '</b><input type="range" id="sfMin" min="0" max="100" value="' +
     mv +
     '" aria-describedby="sfMinHint"></label><div id="sfMinHint" class="sfrnghint">Higher: small specks left out of the guide</div><span id="sfCount" hidden>' +
     esc(cntTxt || '0 sections') +
@@ -568,6 +581,9 @@ function ctlSections() {
   });
   minEl.addEventListener('input', function () {
     minPos = +minEl.value;
+    minAuto = false;
+    const mm = document.getElementById('sfMinMm');
+    if (mm) mm.textContent = minMmText();
     if (labels && sfmode === 'review') {
       if (!texRaf)
         texRaf = requestAnimationFrame(function () {
@@ -664,6 +680,7 @@ function ctlSections() {
   frameLineWire();
   faintWire();
   wire('sfAutoCrop', 'click', autoCrop);
+  wire('sfTrim', 'click', autoCrop);
   wire('sfRotL', 'click', function () {
     okGeom(function () {
       rot90 = (rot90 + 270) % 360;

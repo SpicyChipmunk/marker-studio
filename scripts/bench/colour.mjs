@@ -85,7 +85,8 @@ const rows = [],
   drops = [],
   e2e = [],
   gates = [],
-  abCands = [];
+  abCands = [],
+  truthN = {};
 
 function pagesFor(set) {
   let ps = (set === 'TUNE' ? TUNE : HELD).filter((s) => !only || only.some((o) => s.id.startsWith(o)));
@@ -101,6 +102,8 @@ for (const set of sets) {
   for (const spec of pagesFor(set)) {
     const page = (await products(spec, [1200], CACHE, log))[1200],
       m = page.meta;
+    // (the page's true sections, logged so a change in how pages are drawn shows as a truth change, not a colour one)
+    truthN[set + ' ' + spec.id] = m.nTruth != null ? m.nTruth : null;
     const reach = Math.ceil(m.lwW) + 1;
     for (const coll of COLLS) {
       const a = appOn(page, coll),
@@ -489,3 +492,22 @@ if (has('--compare')) {
 log(
   `\n${rows.length} builds, ${splits.length} splits, ${gates.length} gate failures in ${Math.round((Date.now() - T0) / 1000)} s; digest ${digest}; report ${path.join(OUT, 'colour-report.md')}`,
 );
+// (v318.14) the gates on GitHub: any failure fails the step, listed with each page's true section count (a page drawn
+// differently on another machine shows there), and on the run's summary page
+if (gates.length) {
+  const lines = gates.map(
+    (g) =>
+      `${g.set} ${g.id} (${truthN[g.set + ' ' + g.id]} true sections) · ${g.coll} · ${g.row} · seed ${g.seed}: ${g.gate}`,
+  );
+  log('\ngate failures:\n' + lines.join('\n'));
+  if (process.env.GITHUB_STEP_SUMMARY)
+    fs.appendFileSync(
+      process.env.GITHUB_STEP_SUMMARY,
+      `### Colour bench: ${gates.length} gate failure(s)\n\n` + lines.map((l) => '- ' + l).join('\n') + '\n',
+    );
+  if (!has('--baseline')) process.exitCode = 1;
+} else if (process.env.GITHUB_STEP_SUMMARY)
+  fs.appendFileSync(
+    process.env.GITHUB_STEP_SUMMARY,
+    `### Colour bench: no gate failures\n\n${rows.length} builds, ${splits.length} splits on ${Object.keys(truthN).length} pages; digest ${digest}\n`,
+  );

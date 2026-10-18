@@ -174,7 +174,7 @@ test('…with pins, sections coloured, and shading with Smooth them: still left 
   await layAll(page, 'pins and coloured sections');
   // shading on, with its Light & shadow
   await tab(page, 'shading');
-  await page.click('#sfShade [data-v="full"]');
+  await page.evaluate(() => __mstest.shadeTo('full'));
   await idle(page);
   await tab(page, 'colours');
   await layAll(page, 'shading on');

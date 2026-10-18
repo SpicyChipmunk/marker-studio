@@ -1001,7 +1001,8 @@
   margin-right: 3px;
 }
 #sfRoot .sfpgline .sflink,
-#sfRoot .sfframeline .sflink {
+#sfRoot .sfframeline .sflink,
+#sfRoot .sfc-segwarn .sfc-retake {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -1351,14 +1352,15 @@
   margin-top: 10px;
 }
 #sfRoot .sfpaint .sfedit {
-  min-height: 40px;
+  /* (v318.16: 44px, as the guide's other choices) */
+  min-height: 44px;
   font-weight: 600;
 }
 #sfRoot .sfbrush {
   position: relative;
   flex: 1 1 160px;
   min-width: 0;
-  min-height: 40px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 8px;

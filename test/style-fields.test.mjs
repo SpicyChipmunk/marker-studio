@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { createApp } from './harness.mjs';
 
 // every setting, by the name of the variable that holds it (as __mstest.styleVars reads them)
-const NAMES = ['family', 'palette', 'gradShape', 'dir', 'look', 'emphasis', 'limitN', 'gradIncl', 'noAdj', 'balance', 'balM', 'balS', 'balA', 'balSeed', 'noRep', 'gradSeed', 'blendFall', 'blendMix',
+const NAMES = ['family', 'palette', 'gradShape', 'dir', 'look', 'emphasis', 'limitN', 'gradIncl', 'noAdj', 'balance', 'balM', 'balS', 'balA', 'balSeed', 'noRep', 'matchAlike', 'gradSeed', 'blendFall', 'blendMix',
   'texAmt', 'radC', 'shadeMode', 'shadeSun', 'shadeRound', 'shadeLines', 'shadeHi', 'shadeLo', 'shadeLight', 'shadeMain', 'shadeShadow', 'shadeHilite', 'shadeFlat', 'photoXf',
   'photoOp', 'photoPaper', 'expand', 'expandChar', 'paletteSource', 'savedPalId', 'genHarmony', 'genPal', 'fromPal', 'minPos', 'bgTrim',
   'addAutoClose', 'famRule', 'lowX', 'smpTry', 'gradArea', 'bgRule'];
@@ -20,7 +20,7 @@ test('each style setting’s first value (a guide that changes nothing is saved 
     family: 'gradient', palette: 'all', gradShape: 'serpentine', dir: 1, look: 'auto', emphasis: 'neutral', limitN: 16,
     // (v308: no Include row until a new picture gives it one; a guide saved before has none)
     gradIncl: null,
-    noAdj: false, balance: 'main', balM: 'auto', balS: 'auto', balA: 'auto', balSeed: 0, noRep: false, gradSeed: 0, blendFall: 2, blendMix: 'soft', texAmt: 0.5, radC: null, shadeMode: 'off', shadeSun: { x: 0.2, y: 0.12 },
+    noAdj: false, balance: 'main', balM: 'auto', balS: 'auto', balA: 'auto', balSeed: 0, noRep: false, matchAlike: false, gradSeed: 0, blendFall: 2, blendMix: 'soft', texAmt: 0.5, radC: null, shadeMode: 'off', shadeSun: { x: 0.2, y: 0.12 },
     shadeRound: 0.5, shadeLines: true, shadeHi: 0.5, shadeLo: 0.5, shadeLight: 'auto', shadeMain: true, shadeShadow: 'same', shadeHilite: 'same',
     shadeFlat: {}, photoXf: null,
     photoOp: 0.65, photoPaper: true, expand: false, expandChar: 0.5, paletteSource: 'owned', savedPalId: null,
@@ -146,15 +146,15 @@ test('STYLE_FIELDS: every default is its variable’s first value, and what a fi
   // fromPal, the palette Palette's Use in a guide handed over, which Mood and Shuffle keep as it is; v313:
   // 45 with famRule, the family rule; 46 with lowX, the running-low lines closed;
   // 47 with smp, the sample not yet printed or renamed; v314: 48 with gradArea, the Gradient's area rule; v318.12: 49
-  // with bgRule, the background rule)
-  assert.equal(n, 49);
+  // with bgRule, the background rule; v318.15: 50 with matchAlike, Matching shapes alike)
+  assert.equal(n, 50);
 });
 
 test('STYLE_FIELDS: where each setting is saved (in the order written) and which ones Undo keeps', () => {
   const core = createApp().__mstest;
   assert.deepEqual([...core.styleFields].map((f) => f.in + '.' + f.key + (f.undo ? '' : ' (no undo)')), [
     'style.family', 'style.palette', 'style.gradShape', 'style.dir', 'style.look', 'style.emphasis', 'style.limitN',
-    'style.incl', 'style.noAdj', 'style.balance', 'style.balM', 'style.balS', 'style.balA', 'style.balSeed', 'style.noRep', 'style.gradSeed', 'style.gradScat', 'style.gradJit', 'style.gradFix', 'style.blendFall', 'style.blendVivid (no undo)', 'style.blendMix', 'style.texAmt', 'style.radC',
+    'style.incl', 'style.noAdj', 'style.balance', 'style.balM', 'style.balS', 'style.balA', 'style.balSeed', 'style.noRep', 'style.matchAlike', 'style.gradSeed', 'style.gradScat', 'style.gradJit', 'style.gradFix', 'style.blendFall', 'style.blendVivid (no undo)', 'style.blendMix', 'style.texAmt', 'style.radC',
     'shade.mode', 'shade.x', 'shade.y', 'shade.round', 'shade.lines', 'shade.hi', 'shade.lo', 'shade.lightSrc', 'shade.light (no undo)', 'shade.main', 'shade.shadow',
     'shade.hilite', 'shade.flat',
     'style.photo (no undo)', 'style.expand', 'style.expandChar', 'style.paletteSource', 'style.savedPalId',

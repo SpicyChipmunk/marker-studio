@@ -160,13 +160,31 @@ function denoise(g) {
 // small to be part of a line (lines are long and connected; a dot eye is still far bigger than a speck)
 // (v313) despeckle's figures for the faint-marks split (faintSplitFast), valid straight after it, as segment uses them
 let _faintStats = null;
+// (v318.15) the blobs too big to be dropped here but small enough to be a speck in the blank paper (under SPECK_MARGIN_MM mm²
+// on the page, the picture's long side taken as a Letter page's), with their pixels, 10th-percentile grey and box;
+// speckClean (segEnd) decides once the background is known. And the lines' own typical grey (the ink-weighted median
+// of the bigger blobs' cores). Valid straight after despeckle, as _faintStats is.
+let _speckCands = null;
+// (faint specks anywhere in the background up to SPECK_MM mm², grain lighter than the lines in the margin up to
+// SPECK_MARGIN_MM: a clump of grain on a photographed page, with crumbs of paper in it, runs to 5-6 mm²)
+const SPECK_MM = 3,
+  SPECK_MARGIN_MM = 10;
+function speckCap(mm) {
+  return Math.max(
+    Math.round(10 * srcK * srcK),
+    Math.round((mm || SPECK_MARGIN_MM) * Math.pow((MIN_MM * Math.max(W, H)) / PAGE_MM, 2)),
+  );
+}
 function despeckle(L) {
   const n = W * H,
     // (an enlarged picture's specks are srcK² times as big: cleared as they were before it was enlarged, v303)
     sp = Math.max(Math.round(4 * srcK * srcK), Math.round(n / 500000) * 2),
+    cap = Math.max(sp, speckCap()),
+    cands = [],
+    lh = new Float64Array(256),
     seen = new Uint8Array(n),
     st = new Int32Array(n),
-    blob = new Int32Array(sp + 1),
+    blob = new Int32Array(cap + 1),
     // (v313) the faint-marks split's figures, gathered on this same walk over the ink blobs (faintSplit walked them all
     // again, about a tenth of the time to find the sections): each kept blob's grey histogram, scored by its
     // 10th-percentile grey, as faintSplit does
@@ -189,8 +207,8 @@ function despeckle(L) {
     while (sn > 0) {
       const q = st[--sn];
       if (!big) {
-        if (bn <= sp) blob[bn++] = q;
-        if (bn > sp) big = true;
+        if (bn <= cap) blob[bn++] = q;
+        if (bn > cap) big = true;
       }
       if (stats) hs[gray[q]]++;
       const x = q % W,
@@ -209,7 +227,7 @@ function despeckle(L) {
         }
       }
     }
-    if (!big) {
+    if (!big && bn <= sp) {
       for (let k = 0; k < bn; k++) L[blob[k]] = 0;
       gone += bn;
     } else if (stats) {
@@ -225,11 +243,152 @@ function despeckle(L) {
         faint += cnt;
         fh[core] += cnt;
       } else mid += cnt;
+      if (!big) {
+        let x0 = W,
+          y0 = H,
+          x1 = -1,
+          y1 = -1;
+        for (let j = 0; j < bn; j++) {
+          const q = blob[j],
+            x = q % W,
+            y = (q / W) | 0;
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+        }
+        cands.push({ px: blob.slice(0, bn), core: core, x0: x0, y0: y0, x1: x1, y1: y1 });
+      } else lh[core] += cnt;
     }
   }
   _faintStats = stats ? { dark: dark, mid: mid, faint: faint, tot: tot, fh: fh } : null;
+  let lc = 0;
+  if (stats) {
+    let all = 0,
+      acc = 0;
+    for (let g = 0; g < 256; g++) all += lh[g];
+    while (lc < 255 && acc + lh[lc] < all / 2) acc += lh[lc++];
+  }
+  _speckCands = stats ? { list: cands, line: lc } : null;
   return gone;
 }
+// (v318.15) Specks in the blank paper. Grain, dust and a printer's specks round a page became ink blobs too big for
+// despeckle and too small to matter, drawn as the line and printed with the guide: on a photo of a printed page, 233
+// round its margin. A blob (despeckle's _speckCands) that touches only background (or crumbs of paper it closes in)
+// is made paper (the label of the background round it, whose area grows) when it's faint (its core grey 160 or more,
+// what Ignore faint grey marks calls faint) and under SPECK_MM mm², or when it lies in the margin, outside the box
+// round the sections (padded 1 mm), and is lighter than the lines (by 30 greys), under SPECK_MARGIN_MM mm²: a full stop, a signature's dot or a letter in a caption, as dark as the
+// drawing, stays. Inside the drawing's extent a dark dot stays too (stars in a sky that's background). The faint-marks
+// figures lose what went, so Ignore faint grey marks isn't offered for them (and never offered because of them). Saved guides keep their sections: only a
+// new build or a re-detection does this.
+function speckClean() {
+  const S = _speckCands;
+  _speckCands = null;
+  if (!S || !S.list.length || !labels || !comps) return 0;
+  const mpx = minPx(),
+    fcap = speckCap(SPECK_MM),
+    pad = Math.round((MIN_MM * Math.max(W, H)) / PAGE_MM),
+    mm1 = Math.max(mpx, pad * pad);
+  let bx0 = W,
+    by0 = H,
+    bx1 = -1,
+    by1 = -1;
+  for (let l = 1; l < comps.length; l++) {
+    const c = comps[l];
+    // (the drawing's extent: its sections of 20 mm² or more, not the crumbs of paper a clump of grain closes in)
+    if (!c || c.merged || c.bg || c.area < 20 * mm1) continue;
+    if (c.x0 < bx0) bx0 = c.x0;
+    if (c.y0 < by0) by0 = c.y0;
+    if (c.x1 > bx1) bx1 = c.x1;
+    if (c.y1 > by1) by1 = c.y1;
+  }
+  bx0 -= pad;
+  by0 -= pad;
+  bx1 += pad;
+  by1 += pad;
+  const fs = _faintStats;
+  let gone = 0;
+  for (let i = 0; i < S.list.length; i++) {
+    const b = S.list[i],
+      faint = b.core >= 160 && b.px.length <= fcap,
+      margin = bx1 < 0 || b.x1 < bx0 || b.x0 > bx1 || b.y1 < by0 || b.y0 > by1;
+    if (!faint && !(margin && b.core > S.line + 30)) continue;
+    // every pixel round it background, or a crumb of paper it closes in (a section under Min section size inside its
+    // box: a speck's clump of grain has them), which goes with it
+    let to = 0,
+      ok = true;
+    const crumbs = [];
+    for (let j = 0; j < b.px.length && ok; j++) {
+      const q = b.px[j],
+        x = q % W,
+        y = (q / W) | 0;
+      for (let dy = -1; dy <= 1 && ok; dy++) {
+        const yy = y + dy;
+        if (yy < 0 || yy >= H) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          if (xx < 0 || xx >= W) continue;
+          const l = labels[yy * W + xx];
+          if (l === -1) continue;
+          const c = l > 0 ? comps[l] : null;
+          if (c && c.bg) {
+            if (!to) to = l;
+            continue;
+          }
+          if (
+            c &&
+            !c.merged &&
+            c.area < mpx &&
+            c.x0 >= b.x0 &&
+            c.x1 <= b.x1 &&
+            c.y0 >= b.y0 &&
+            c.y1 <= b.y1
+          ) {
+            if (crumbs.indexOf(l) < 0) crumbs.push(l);
+            continue;
+          }
+          ok = false;
+          break;
+        }
+      }
+    }
+    if (!ok || !to) continue;
+    for (let j = 0; j < b.px.length; j++) labels[b.px[j]] = to;
+    let cn = 0;
+    crumbs.forEach(function (l) {
+      const c = comps[l];
+      for (let y = c.y0; y <= c.y1; y++)
+        for (let x = c.x0; x <= c.x1; x++) {
+          const q = y * W + x;
+          if (labels[q] === l) {
+            labels[q] = to;
+            cn++;
+          }
+        }
+      // (gone into the background: no pixels of its own now)
+      c.area = 0;
+      c.bg = true;
+      c.merged = true;
+      c.into = to;
+    });
+    comps[to].area += b.px.length + cn;
+    gone += b.px.length;
+    if (fs) {
+      fs.tot -= b.px.length;
+      if (b.core < 64) fs.dark -= b.px.length;
+      else if (b.core >= 160) {
+        fs.faint -= b.px.length;
+        fs.fh[b.core] -= b.px.length;
+      } else fs.mid -= b.px.length;
+    }
+  }
+  // (only ever taking the offer away: with dark specks gone the faint share can rise, and a page with no faint marks
+  // was offered Ignore faint grey marks on the guide benchmark's doodles-and-text page)
+  if (gone && !faintCut && faintOffer) faintOffer = faintSplitFast();
+  speckGone = gone;
+  return gone;
+}
+let speckGone = 0;
 // the faint-marks split from the figures despeckle gathered (the same answer as faintSplit, without the second walk;
 // faintSplit stays, for when there are none and for the tests)
 function faintSplitFast() {
@@ -677,6 +836,7 @@ function segQuality() {
     tooSmall = {
       ok: false,
       code: 'small',
+      retake: true,
       msg: 'This picture is very small (' + w0 + ' \u00d7 ' + h0 + ' pixels).',
       tip: 'Find a bigger copy of the page: a saved thumbnail is often this size. A photo of the printed page works too.',
     };
@@ -690,29 +850,43 @@ function segQuality() {
     tiny = 0,
     kept = 0,
     keptTiny = 0,
-    // (v308: sections in the guide under 3x Min section size, and specks left out by it)
+    // (v308: sections in the guide under 3x Min section size)
     keptSmall = 0,
-    specks = 0,
     mp = minPx(),
+    // (v318.13: the coloured page's specks and sections at the size its rule was tuned at, MIN_DEF's, whatever Min
+    // section size is now: a new picture's starts bigger, and a photo of a page on a wooden table, as taken, had been
+    // told it was coloured in)
+    ref = minPx(MIN_DEF),
+    keptRef = 0,
+    specksRef = 0,
     tc = Math.max(20 * srcK * srcK, px * 0.00002);
   for (var l = 1; l < comps.length; l++) {
     var c = comps[l];
     if (!c || c.merged) continue;
     N++;
     if (c.area < tc && !c.bg) tiny++;
+    if (!c.bg) {
+      if (c.area >= ref) keptRef++;
+      else specksRef++;
+    }
     if (!c.bg && c.area >= mp) {
       kept++;
       if (c.area < tc) keptTiny++;
       if (c.area < 3 * mp) keptSmall++;
-    } else if (!c.bg) specks++;
+    }
   }
   var tinyFrac = N ? tiny / N : 0;
   if (inkFrac < 0.02 && N < 5)
     return {
       ok: false,
       code: 'faint',
+      retake: true,
       msg: 'Barely any outlines were detected \u2014 the image may be blank, faint, or low-contrast.',
-      tip: 'Use line art with dark outlines on a light background, or turn on Enhance (under Adjust photo).',
+      // (v318.13: Enhance is on for a new picture: then it's Sensitivity, beside it)
+      tip:
+        'Use line art with dark outlines on a light background, or ' +
+        (enhance ? 'raise Sensitivity' : 'turn on Enhance') +
+        ' (under Adjust photo).',
     };
   if (N < 2)
     return {
@@ -725,6 +899,7 @@ function segQuality() {
     return {
       ok: false,
       code: 'dark',
+      retake: true,
       msg: 'Most of the image is dark \u2014 this looks like a photo or heavily shaded drawing rather than outlines.',
       tip: 'Try high-contrast line art on white, or crop to just the drawing.',
     };
@@ -732,10 +907,11 @@ function segQuality() {
   // specks, more than 3 for every section. Real line-art pages are under 1% and 2 specks a section. Only with the
   // picture itself to look at (srcColour): a guide opened again without it isn't checked. Before the warning about
   // fragments: it says more.
-  if (srcColour != null && srcColour > 0.15 && specks > 3 * kept)
+  if (srcColour != null && srcColour > 0.15 && specksRef > 3 * keptRef)
     return {
       ok: false,
       code: 'coloured',
+      retake: true,
       msg: 'This page looks coloured in already — its colours break up into specks.',
       tip: 'Use the page before it was coloured, with plain outlines on white.',
     };
@@ -746,6 +922,7 @@ function segQuality() {
     return {
       ok: false,
       code: 'noisy',
+      retake: true,
       msg: 'Found a lot of tiny fragments \u2014 usually a photo or textured image rather than clean line art.',
       tip: 'Use line art with solid outlines, or raise Min section size in Edit sections.',
     };
@@ -759,9 +936,25 @@ function segQuality() {
       msg: 'Lots of slivers — this page looks hatched or shaded with lines.',
       tip: 'The lines between the hatching become sections. Raise Min section size in Edit sections, or use a page with plain outlines.',
     };
+  // (v318.13) a page the finder was sure of, photographed at a steep angle (pgSteep, pgBegin): last, as the others
+  // say more; once said here it stays for this photo
+  if (pgSteep && pgOrig)
+    return {
+      ok: false,
+      code: 'steep',
+      retake: true,
+      msg: 'This page was photographed at a steep angle, so some sections may be missed.',
+      tip: 'For best results, photograph it again holding the phone flatter, right above the page.',
+    };
   return { ok: true };
 }
 function labelCells() {
+  labelFill();
+  labelTail();
+}
+// (v318.14) labelCells in two: the flood fill (each region of paper a section, its area, box and centre) and what
+// follows it (the background, the page and the frame, the per-section arrays), so a paint can come between them
+function labelFill() {
   const n = W * H,
     stack = new Int32Array(n);
   comps = [null];
@@ -834,6 +1027,9 @@ function labelCells() {
       y1: mxy,
     });
   }
+}
+function labelTail() {
+  const n = W * H;
   applyBg(true);
   findPage();
   applyBg(false);
@@ -857,13 +1053,24 @@ function labelCells() {
 // (v313) the byte order of a Uint32 write into a canvas's pixels (render): little-endian on every device the app runs on
 const LITTLE_END = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 function segment() {
-  const n = W * H;
+  segBegin();
+  segInk();
+  segSpeck();
+  labelFill();
+  segEnd();
+}
+// (v318.14) segment()'s steps, run one after another (segment) or with a paint between each (segRun)
+function segBegin() {
   // (sections found afresh: ticks held for an Undo of a merge were the old sections', 65-edit)
   _tickHeld = {};
   // (a section picked to merge is a number in the old sections, v304)
   mergeSel = -1;
   // (where the zones were, pixel by pixel, to place them again on the new sections: 34-zones)
   zonePixCapture();
+}
+// the ink: -1 for a line's pixel, 0 for paper
+function segInk() {
+  const n = W * H;
   labels = new Int32Array(n);
   if (enhance) {
     const src = denoise(autoStretch(gray, n)),
@@ -875,10 +1082,17 @@ function segment() {
   }
   // (v308: faint grey marks ignored, when asked: the ink lighter than faintCut is paper)
   if (faintCut > 0) for (let i = 0; i < n; i++) if (labels[i] === -1 && gray[i] > faintCut) labels[i] = 0;
+}
+function segSpeck() {
   despeckle(labels);
   // (whether to offer to ignore them: measured while they're still there)
   if (!faintCut) faintOffer = faintSplitFast();
-  labelCells();
+}
+function segEnd() {
+  // (v318.15: the new picture's sections are in place: render() draws them, not the photo shown meanwhile)
+  _preview = false;
+  labelTail();
+  speckClean();
   adj = null;
   edgeDist = null;
   labelPts = null;
@@ -893,7 +1107,171 @@ function segment() {
   _lostKeys = {};
   _gone = {};
 }
+/* ---- (v318.14) finding the sections with the page free between steps ----
+   A 12-megapixel photo's sections took the page for 0.7-1.1 s in one go (on a computer; 2-3 s on an iPad): nothing
+   moved, and a tap waited. segRun does the same steps, the same code, with a paint between each, so no step holds the
+   page for long. The steps work on a picture of their own (pic: W, H, gray, srcK and what they make, labels, comps,
+   the despeckle's figures and the faint offer), put in place of the open one's only while a step runs (picIn/picOut,
+   all in one task), so until the last step everything on the page is the open guide as it was, whole. The last step
+   puts the new picture and its sections in place in one task (commit), then the rest of segment() and the caller's
+   own after-steps (then). A newer run (another Sensitivity, another photo, a guide opened: segStop) stops an older
+   one between steps, before it puts anything in place. While one runs (segBusy), the picture and its controls can't
+   be used (inert), and Undo/Redo, Build and the photo's own buttons wait. */
+let segGen = 0,
+  segBusy = false;
+const PIC_KEYS = ['W', 'H', 'gray', 'srcK', 'labels', 'comps', '_faintStats', 'faintOffer', '_speckCands'];
+function picOut() {
+  return {
+    W: W,
+    H: H,
+    gray: gray,
+    srcK: srcK,
+    labels: labels,
+    comps: comps,
+    _faintStats: _faintStats,
+    faintOffer: faintOffer,
+    _speckCands: _speckCands,
+  };
+}
+function picIn(p) {
+  W = p.W;
+  H = p.H;
+  gray = p.gray;
+  srcK = p.srcK;
+  labels = p.labels;
+  comps = p.comps;
+  _faintStats = p._faintStats;
+  faintOffer = p.faintOffer;
+  _speckCands = p._speckCands;
+}
+// fn run on pic (its results kept in it), the open picture back in place after
+function onPic(pic, fn) {
+  const was = picOut();
+  picIn(pic);
+  try {
+    fn();
+  } finally {
+    const got = picOut();
+    for (let i = 0; i < PIC_KEYS.length; i++) pic[PIC_KEYS[i]] = got[PIC_KEYS[i]];
+    picIn(was);
+  }
+}
+// (the tests' geoSet and autoCrop, which change the picture and read it in the same breath: the steps all at once, as
+// before v318.14, and the caller's after-steps straight after; 99-close)
+let segSync = false;
+// run(): the steps (a promise from segRun); once(): the same in one go; after(ok) the caller's after-steps; fail(err)
+function segThen(run, once, after, fail) {
+  if (segSync) {
+    segStop();
+    try {
+      once();
+    } catch (e) {
+      fail(e);
+      return;
+    }
+    after(true);
+    return;
+  }
+  run().then(after, fail);
+}
+function segStop() {
+  segGen++;
+  segBusySet(false);
+}
+// (hide: the controls out of sight meanwhile, for a new picture, whose controls are drawn once it's ready. ctl: the
+// controls can't be used either, for a picture that changes; not when only the sections are found again, so the
+// Sensitivity slider being dragged or stepped with the keyboard keeps going: each change takes over (Build, Undo and
+// Redo are held by segBusy). The keyboard goes back where it was after.)
+let _segFocus = null;
+function segBusySet(on, hide, ctl) {
+  segBusy = on;
+  const v = document.getElementById('sfView');
+  if (v) v.inert = on;
+  if (ctlEl) {
+    if (on && ctl && workEl && workEl.contains(document.activeElement)) _segFocus = document.activeElement;
+    ctlEl.inert = on && !!ctl;
+    ctlEl.style.visibility = on && hide ? 'hidden' : '';
+    // (the bar of the controls' buttons, Build among them, is docked below the picture: 72-frame dockBar)
+    const bar = barEl();
+    if (bar) {
+      bar.inert = on && !!ctl;
+      bar.style.visibility = on && hide ? 'hidden' : '';
+    }
+    if (!on && _segFocus) {
+      const f = _segFocus;
+      _segFocus = null;
+      if (f.isConnected && document.activeElement !== f) f.focus({ preventScroll: true });
+    }
+  }
+}
+// prep(): a new picture (W, H, gray, srcK, and anything else its commit needs), or null to find the sections again on
+// the open one; commit(pic): put it in place (before the sections). Resolves true when done, false when a newer run
+// took over; rejects on an error (nothing put in place). hide: the controls out of sight meanwhile (segBusySet).
+function segRun(prep, commit, hide) {
+  const my = ++segGen;
+  segBusySet(true, hide, !!prep);
+  let pic = null;
+  const steps = [
+    function () {
+      pic = prep ? prep() : { W: W, H: H, gray: gray, srcK: srcK };
+      pic.labels = null;
+      pic.comps = null;
+      pic._faintStats = null;
+      pic._speckCands = null;
+      // (kept as it is when faint marks are ignored: segSpeck measures it only when they aren't)
+      pic.faintOffer = faintOffer;
+      if (!pic.gray) throw new Error('no picture');
+    },
+    function () {
+      onPic(pic, segInk);
+    },
+    function () {
+      onPic(pic, segSpeck);
+    },
+    function () {
+      onPic(pic, labelFill);
+    },
+    function () {
+      if (commit) commit(pic);
+      segBegin();
+      picIn(pic);
+      segEnd();
+    },
+  ];
+  return new Promise(function (res, rej) {
+    let i = 0;
+    const next = function () {
+      if (my !== segGen) return res(false);
+      try {
+        steps[i++]();
+      } catch (e) {
+        if (my === segGen) {
+          segBusySet(false);
+          // (v318.15: a new photo shown meanwhile, photoPreview, goes: the open picture is drawn again as it was)
+          if (_preview) {
+            _preview = false;
+            try {
+              render();
+            } catch (e2) {
+              /* drawn with the next change */
+            }
+          }
+        }
+        rej(e);
+        return;
+      }
+      if (i < steps.length) afterPaint(next);
+      else {
+        segBusySet(false);
+        res(true);
+      }
+    };
+    afterPaint(next);
+  });
+}
 function render() {
+  // (v318.15: a new photo shown while its sections are found: photoPreview, 20-image-input)
+  if (_preview) return;
   _rg = null;
   positionPhoto();
   positionSun();

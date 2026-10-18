@@ -39,6 +39,16 @@ GitHub Actions runs both on every push to any branch but `release`
 
 - the unit tests, then the browser tests on Chromium in 2 parts side by side.
   These decide whether the run passes;
+- (part 1, after its browser tests) the colour benchmark's gates, quick
+  (`node scripts/bench/colour.mjs --quick`, about 2–5 minutes): a guide is
+  always built, laying it again gives the same guide, Random never puts one
+  marker on two sections the app sees touching, "keep touching sections clearly
+  different" leaves no touching pair too alike, and a Gradient makes no twins.
+  A gate that fails fails the run, listed on its page with each page's true
+  section count (a page drawn differently on GitHub shows there as a truth
+  change), and the report is kept. The bench's pages are kept between runs,
+  drawn afresh when anything that draws them or finds their sections changes.
+  These also decide whether the run passes;
 - the same browser tests on WebKit (Safari's engine), in 10 parts side by side,
   one test file at a time. This job reports but doesn't fail the build. A failed
   test is run once more (`e2e/ci-retry.mjs`): one that then passes is reported

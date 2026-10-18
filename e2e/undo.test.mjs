@@ -325,9 +325,9 @@ test('Blend anchors, shading and filters are undone too', async () => {
   assert.equal(await page.evaluate(() => __mstest.anchors.length), n0);
   assert.deepEqual(await assignMap(page), a0);
   // shading
-  await tab(page, 'shading'); await page.click('#sfShade [data-v="shadow"]'); await idle(page);
+  await tab(page, 'shading'); await page.evaluate(() => __mstest.shadeTo('shadow')); await idle(page);
   assert.equal(await page.evaluate(() => __mstest.shadeMode), 'shadow');
-  assert.equal(await page.evaluate(() => __mstest.planLabel), 'Shading: Shadows');
+  assert.equal(await page.evaluate(() => __mstest.planLabel), 'Highlights: None (shadows only)');
   await page.keyboard.press('Control+z'); await idle(page);
   assert.equal(await page.evaluate(() => __mstest.shadeMode), 'off');
   // filters (they belong to the whole app, and come back with the step)
@@ -351,7 +351,7 @@ test('Blend anchors, shading and filters are undone too', async () => {
 test('Undo after Change colour, Unpin and Paint brings back part-done tones', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await page.click('.sftabbtn[data-t="colours"]').catch(() => {});
   await scrollTop(page);
   const l = await page.evaluate(() => { const t = __mstest, g = t.shadeGeom(); return t.assignData.order.filter((l) => t.shadeable(l, g)).sort((a, b) => t.comps[b].area - t.comps[a].area)[0]; });
@@ -411,10 +411,10 @@ test('Plan: pattern, shading and colour changes make no toast (↶ Undo says wha
   assert.equal(await undoLabel(page), 'Undo: Pattern: Random');
   assert.equal(await live(page), 'Pattern: Random');
   await pause(page, 100, 'a step within 100 ms of an announcement keeps the earlier words');
-  await tab(page, 'shading'); await page.click('#sfShade [data-v="shadow"]'); await idle(page);
+  await tab(page, 'shading'); await page.evaluate(() => __mstest.shadeTo('shadow')); await idle(page);
   assert.equal(await toastOnText(page), '');
-  assert.equal(await undoLabel(page), 'Undo: Shading: Shadows');
-  assert.equal(await live(page), 'Shading: Shadows');
+  assert.equal(await undoLabel(page), 'Undo: Highlights: None (shadows only)');
+  assert.equal(await live(page), 'Highlights: None (shadows only)');
   // a section's colour, from its tip and the picker
   await scrollTop(page);
   const l = await page.evaluate(() => __mstest.assignData.order.slice().sort((a, b) => __mstest.comps[b].area - __mstest.comps[a].area)[0]);
@@ -481,7 +481,7 @@ test('Redo takes the plan forward again step by step (↷ beside ↶, Ctrl+Shift
 test('Redo of Change colour clears the part-done tones its Undo brought back', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await scrollTop(page);
   const l = await page.evaluate(() => { const t = __mstest, g = t.shadeGeom(); return t.assignData.order.filter((l) => t.shadeable(l, g)).sort((a, b) => t.comps[b].area - t.comps[a].area)[0]; });
   const part = () => page.evaluate((l) => [__mstest.colored[l], __mstest.tonePart[l], __mstest.assignData.assign[l].mkey], l);

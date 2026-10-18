@@ -84,7 +84,7 @@ async function walkScreens(page) {
   // the marker picker: its codes are never cut short with an ellipsis (up to five characters)
   await pickerCodes(page);
   // Shading with shading on and its suggestions opened, Share, and the Print sheet
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   if (await page.isVisible('#sfShNoteT')) await page.click('#sfShNoteT');
   await page.evaluate(() => document.getElementById('msToast')?.classList.remove('on'));
   await checkScreen(page, 'guide: Shading');

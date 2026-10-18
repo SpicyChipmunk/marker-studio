@@ -381,7 +381,7 @@ test('sheets: the markers list counts its shading markers in the title; a sidewa
   {
     const { page, errors, ctx } = await openApp();
     await sampleGuide(page);
-    await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+    await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
     await page.click('.sftabbtn[data-t="colours"]'); await idle(page);
     await page.click('#sfMkList'); await page.waitForSelector('#sfSheet', { state: 'visible' }); await idle(page);
     const n = await page.$$eval('#sfSheet button.sfmlrow', (b) => b.length), t = await page.$$eval('#sfSheet .sfmlgrp ~ .sfmlrow', (b) => b.length);

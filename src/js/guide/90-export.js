@@ -2821,7 +2821,8 @@ function _buildPDF(dry) {
           ? { c: t.light, o: true }
           : t.paper
             ? { t: '— leave the paper white' }
-            : shadeMode === 'full'
+            : // (v318.17: by the row's own tones: a zone with Highlights None has no H)
+              !t.noHi
               ? { t: '— base is the lightest' }
               : null,
         t.dark
@@ -2913,7 +2914,7 @@ function _buildPDF(dry) {
     g.fillText('SECTIONS', x + X.cnt, y + PX(10));
     g.textAlign = 'left';
     if (withBlend) {
-      if (!withShade || shadeMode === 'full') g.fillText(hdrLt, x + X.lt, y + PX(10));
+      if (!withShade || shAnyHi()) g.fillText(hdrLt, x + X.lt, y + PX(10));
       g.fillText(hdrDk, x + X.dk, y + PX(10));
     }
     g.strokeStyle = '#ddd';

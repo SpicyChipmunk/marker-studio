@@ -252,7 +252,7 @@ test('the Shading tab’s Highlights and Shadows drop-downs are readable (their 
   const { page, errors } = await openApp({ width: 1180, height: 820 });
   await sampleGuide(page);
   await page.click('.sftabbtn[data-t="shading"]');
-  await page.click('#sfShade [data-v="full"]');
+  await page.evaluate(() => __mstest.shadeTo('full'));
   await idle(page);
   for (const id of ['sfHiStyle', 'sfShStyle']) {
     const el = page.locator('#' + id);

@@ -156,7 +156,7 @@ test('v284: labels on the colouring page never overlap; a section with no room h
 test('shading marks still work with numbers: H/S circles and tone lines, key keeps its tones', async () => {
   const { page, errors } = await openApp({ storage: { 'ms-pdf-labels': 'numbers' } });
   await sampleGuide(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   const r = await probe(page);
   const zones = r.onArt.filter((t) => t === 'H' || t === 'S'), nums = r.onArt.filter((t) => /^\d+$/.test(t));
   assert.ok(zones.length > 3, `H/S circles drawn (${zones.length})`);
@@ -220,7 +220,7 @@ test('A5 and Half Letter: right page shape, smaller pages, nothing runs off the 
     if (p !== 'a4') assert.ok(r.pages.length >= letter.pages.length, `${p}: the key may need more pages (${r.pages.length})`);
   }
   // shading on the smallest page, with the key's widest cells
-  await closePrint(page); await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await closePrint(page); await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await sharePrint(page); await pick(page, '[data-paper="half"]');
   checkInside(await probe(page), 'half shading');
   await pick(page, '[data-pwhat="ref"]');

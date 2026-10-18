@@ -327,8 +327,8 @@ export const SESSIONS = [
         await click(page, '#sfFam [data-v="gradient"]');
       });
       await step('plan-shading', () => tab(page, 'shading'));
-      await step('plan-shading-shadow', () => click(page, '#sfShade [data-v="shadow"]'));
-      await step('plan-shading-full', () => click(page, '#sfShade [data-v="full"]'));
+      await step('plan-shading-shadow', () => page.evaluate(() => __mstest.shadeTo('shadow')));
+      await step('plan-shading-full', () => page.evaluate(() => __mstest.shadeTo('full')));
       await step('plan-shading-flat', () => click(page, '#sfShFlat'));
       await step('plan-shading-flat-done', () => click(page, '#sfShFlat'));
       await step('plan-shading-lines-off', () => click(page, '#sfShLines'));
@@ -462,10 +462,10 @@ export const SESSIONS = [
       await step('photo-paper', () => click(page, '#sfPhPaper'));
       await step('photo-shading', async () => {
         await tab(page, 'shading');
-        await click(page, '#sfShade [data-v="shadow"]');
+        await page.evaluate(() => __mstest.shadeTo('shadow'));
       });
       await step('photo-shading-sun', () => click(page, '#sfShLight [data-v="sun"]'));
-      await step('photo-shading-full', () => click(page, '#sfShade [data-v="full"]'));
+      await step('photo-shading-full', () => page.evaluate(() => __mstest.shadeTo('full')));
       await step('photo-shading-photo', () => click(page, '#sfShLight [data-v="photo"]'));
       await step('photo-colours', () => tab(page, 'colours'));
       await step('photo-share', () => tab(page, 'share'));
@@ -548,7 +548,7 @@ export const SESSIONS = [
       await step('seen-manual-paint-off', () => click(page, '#sfPaint'));
       await step('seen-shading', async () => {
         await tab(page, 'shading');
-        await click(page, '#sfShade [data-v="full"]');
+        await page.evaluate(() => __mstest.shadeTo('full'));
       });
       await step('seen-along', () => click(page, '#sfColor'));
       await step('seen-along-open', () => click(page, '#sfAlist .sfarow .sfah'));

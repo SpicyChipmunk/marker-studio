@@ -1,3 +1,5 @@
+// (v318.13) the photo tips again (60-persist.js photoTips)
+const PT_LINK = '<button type="button" class="sflink" data-pttips="1">Photo tips</button>';
 function isDemo() {
   return !!(api.isDemo && api.isDemo());
 }
@@ -8,7 +10,8 @@ function metaText() {
     return (
       'You haven\u2019t added your markers yet, so guides use the full Ohuhu + Copic range (' +
       coll.length +
-      ' markers). <button class="sflink" data-gomk="1">Add markers</button> to match what you own.'
+      ' markers). <button class="sflink" data-gomk="1">Add markers</button> to match what you own. ' +
+      PT_LINK
     );
   // (only the brands you have: "120 Ohuhu", not "120 Ohuhu, 0 Copic", v287)
   const br =
@@ -19,7 +22,8 @@ function metaText() {
     (coll.length === 1 ? '</b> marker' : '</b> markers') +
     ' from your collection' +
     br +
-    'Lay the page flat in even light, and get all of it in the frame.'
+    'Lay the page flat in even light, and get all of it in the frame. ' +
+    PT_LINK
   );
 }
 // The Resume card offers the new guide kept in the autosave slot. Dismiss only hides it for this visit (the slot
@@ -230,6 +234,7 @@ function mount() {
   metaEl = document.getElementById('sfMeta');
   root.addEventListener('click', function (e) {
     if (e.target.closest('[data-gomk]') && api.goMarkers) api.goMarkers();
+    if (e.target.closest('[data-pttips]')) photoTips(null, true);
     if (e.target.closest('[data-clearpal]')) clearPal();
   });
   workEl = document.getElementById('sfWork');
@@ -244,6 +249,13 @@ function mount() {
   metaEl.innerHTML = metaText();
   renderControls();
   document.getElementById('sfPick').addEventListener('click', function () {
+    if (photoTips(null)) return;
+    _pickCb = null;
+    fileEl.click();
+  });
+  // (v318.13) the warning box's Choose another photo: the picker opened in the tap itself, as Home's is (iOS)
+  ctlEl.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#sfRetake')) return;
     _pickCb = null;
     fileEl.click();
   });

@@ -150,7 +150,7 @@ test('drag to scroll: pan-y at zoom 1; none when zoomed, painting, a sheet is op
   assert.equal(await touchAction(page), 'pan-y', 'Manual, Paint off');
   await page.click('#sfPaint'); assert.equal(await touchAction(page), 'none', 'Paint on');
   await page.click('#sfPaint'); await page.click('#sfFam [data-v="gradient"]'); await idle(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('sfSun')).touchAction), 'none', 'a drag on the sun never scrolls');
   // a finger dragged up the picture scrolls the page; two fingers still pinch it (touch is driven through Chromium's
   // own protocol, so Safari's engine skips this part)
@@ -222,7 +222,7 @@ test('side by side (landscape phones and wide screens): the picture fills its co
 test('overlays stay on the shrunk picture: the sun, the tip over a tapped section, and taps in Blend', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await page.evaluate(() => { __mstest.shadeSun = { x: 0.5, y: 0.45 }; __mstest.renderGuide(); });
   const top0 = await page.evaluate(() => document.getElementById('sfView').getBoundingClientRect().top + scrollY);
   for (const d of [0, 40, 84]) {

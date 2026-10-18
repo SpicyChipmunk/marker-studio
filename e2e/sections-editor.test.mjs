@@ -98,7 +98,7 @@ test('crop and rotate rebuild the picture at the new shape', async () => {
 test('back in the sections editor there is no sun or colour picker left over', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   assert.ok(await page.isVisible('#sfSun'));
   await page.click('#sfBack2'); await idle(page);
   assert.ok(!(await page.isVisible('#sfSun')), 'sun hidden');

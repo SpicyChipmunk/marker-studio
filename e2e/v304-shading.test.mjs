@@ -11,7 +11,7 @@ after(teardown);
 
 async function shadeOn(page) {
   await page.click('.sftabbtn[data-t="shading"]');
-  await page.click('#sfShade [data-v="full"]');
+  await page.evaluate(() => __mstest.shadeTo('full'));
   await idle(page);
 }
 async function sharePrint(page) {

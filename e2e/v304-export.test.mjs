@@ -111,7 +111,7 @@ test('Test strip PDF: pages drawn one at a time, on the paper it was started on 
   // (each page's compressing slowed, so Paper is tapped while the PDF is being written)
   const { page, errors } = await openApp({ init: () => { const ab = Response.prototype.arrayBuffer; Response.prototype.arrayBuffer = function () { return new Promise((r) => setTimeout(r, Number(window.__slow || 0))).then(() => ab.call(this)); }; } });
   await sampleGuide(page); await idle(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await sharePrint(page);
   await page.click('[data-paper="a5"]'); await idle(page);
   await page.click('[data-pwhat="strip"]'); await idle(page);
@@ -236,7 +236,7 @@ test('PDF zone outlines on a 2400 px guide: the same outline as a plain flood, w
   assert.ok(Math.max(...(await page.evaluate(() => [__mstest.W, __mstest.H]))) >= 2300, 'a big picture');
   // shading, and two zones (top and bottom thirds) shaded differently from Main
   const selectVal = (id, v) => page.evaluate(([id, v]) => { const el = document.getElementById(id); el.value = v; el.dispatchEvent(new Event('change', { bubbles: true })); }, [id, v]);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await selectVal('sfShStyle', 'grey'); await idle(page);
   for (const [name, lo, hi] of [['Top', 0, 0.34], ['Bottom', 0.66, 1]]) {
     await page.click('.sftabbtn[data-t="pattern"]'); await idle(page);

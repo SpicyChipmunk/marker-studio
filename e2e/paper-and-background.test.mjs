@@ -33,8 +33,9 @@ test('grainy paper: the grain is not read as ink, so the page has just its drawn
   for (const grain of [40, 70]) {
     const { r, errors } = await fromPage({ grain });
     // (21 since v277's smaller smallest section, 10 px: the 21st is a sliver of about 40 px where two circles cross,
-    // the same size and place at both grains and with the table, so drawn, not grain; the grain's specks are 1-3 px)
-    assert.equal(r.n, 21, `grain ${grain}: ${r.n} sections`);
+    // the same size and place at both grains and with the table, so drawn, not grain; the grain's specks are 1-3 px.
+    // v318.13: 20, the sliver left out: a new photo's Min section size is about 1 mm on the page, 51 px in this one)
+    assert.equal(r.n, 20, `grain ${grain}: ${r.n} sections`);
     assert.equal(r.warn, '');
     assert.deepEqual(errors, []);
   }

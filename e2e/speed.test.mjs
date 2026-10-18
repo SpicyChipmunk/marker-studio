@@ -26,7 +26,7 @@ test('partial redraws match a full redraw (colour along, focus mode, shading, to
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await page.click('.sftabbtn[data-t="shading"]');
-  await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await page.click('.sftabbtn[data-t="colours"]');
   await page.click('#sfColor'); await idle(page);
   await same(page, 'entering colour along');
@@ -154,7 +154,7 @@ test('pinning colours (labels that stick out of their section) still redraws pix
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await page.click('.sftabbtn[data-t="shading"]');
-  await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await page.evaluate(() => document.getElementById('sfLock').click()); await idle(page);
   await scrollTop(page);
   const ls = await page.evaluate(() => __mstest.assignData.order.slice(10, 14));

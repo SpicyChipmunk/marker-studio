@@ -101,7 +101,88 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.12
+## New in this release: v318.17
+
+- [ ] ★ On iPhone, **Pattern** (Gradient) → the patterns, Flow (each with a small picture), Look, then **More
+      options** (Direction, Start colour, Scatter), then Shuffle · Pin, then **＋ Zone** at the end. Do the Flow
+      pictures read at a glance? On iPad nothing is folded.
+- [ ] A mandala page → Pattern › Gradient › Radial → "Looks like a mandala" with Matching shapes alike and Try Around.
+- [ ] ★ **Colours** › More options › **Lean towards** → Sunset, Forest, Candy → the picture takes those colours from
+      your markers. Does each look like its name? A small set says "Few … colours: the nearest N added".
+- [ ] ★ With a Colorless Blender in your markers: **Shading** › Highlights › **Blender (0)** → H on the guide is "0";
+      the line says to put the 0 down first, then the base. Try it on paper: does the highlight come out?
+- [ ] With a zone: choose the zone's chip in Shading › Highlights › **None** → that zone has no H, the rest keep
+      theirs. **Undo** → back.
+
+Then v318.16's checks, if not done:
+
+## v318.16
+
+- [ ] ★ **Shading** → one row: **Off · Soft · Dramatic · Rounded · Neuro**. Tap each → the picture's shading changes
+      and that one is chosen. Move **Roundness** → none is chosen, and the line under the row says Custom. **Undo** →
+      back to the style.
+- [ ] **Highlights** › **None** → shadows only (no H in the guide, the PDF's key has no highlight column). Choose
+      **Same colour** again → highlights back.
+- [ ] ★ On iPhone: **Shading** and **Colours** each show **More options** under their main choices → tap it → the
+      rest opens; tap again → shut. On iPad, upright and on its side, no More options bar: everything shows.
+- [ ] With zones: a style changes every zone's shading; a zone's own sliders (under its chip) still change only it.
+- [ ] Guide buttons feel easier to hit, and row labels (Flow, Light from…) easier to read. **Radial** › the Rings
+      choice sits on one line beside its label.
+
+Then v318.15's checks, if not done (its Style row is now the Shading row):
+
+## v318.15
+
+- [ ] ★ With a guide open, choose a new photo of a page → the new photo shows on the picture straight away (not the
+      old guide), with the controls hidden until its sections are ready; then the controls come back as usual.
+- [ ] ★ A photo of a printed page with a blank margin → the margin's specks of grain or dust aren't drawn as lines
+      (zoom in on the margin in **Adjust photo**); a dark full stop or signature there stays.
+- [ ] A sketchbook page photographed with its spiral binding (or a strip of table) along an edge, not coloured in →
+      "Binding or table at the edge? · **Trim it**" shows above the sections → tap it → the crop leaves the binding out.
+      **Undo** → back as it was, and the line is offered again.
+- [ ] ★ **Shading** → **Style** › **Neurographic** → each section is darker along its lines and in its corners, lighter
+      in its middle; **Light from** shows **The edges**. Move a slider → no Style chosen. **Undo** → back.
+- [ ] **Shading** › **Light from** › **The sun** → as before, with the sun to drag.
+- [ ] **Pattern** › **Gradient** › **Flow** › **Radial** › **Rings** › **Follow the drawing** → the colours step out from
+      the section under the centre mark; drag the mark → they start from there. On iPhone, both rows fit on one line.
+- [ ] On iPhone, **Shading** is taller now (Style and Light from): check it still feels fine to scroll.
+- [ ] A mandala page → **Pattern** › **Gradient** → tick **Matching shapes alike** → each ring's matching petals or
+      cells share one marker. Untick → as before. Pin one petal a colour first → its ring takes that colour.
+
+Then v318.14's checks, if not done:
+
+## v318.14
+
+- [ ] ★ Choose a big photo of a page (from the camera, not a screenshot) → while "Detecting sections…" shows, the
+      screen doesn't freeze: the status line and buttons around the picture still respond (the picture itself and its
+      controls wait). The sections come out as before.
+- [ ] In **Adjust photo**, drag **Sensitivity** a few steps quickly → the page stays smooth, and the sections match
+      the last setting. **Undo** once → back to before.
+- [ ] Turn or crop the photo → the same: no freeze, then the new sections.
+- [ ] If you have Ohuhu markers: **Photograph your caps** on a tray with BG, BV, YG, YR or RV codes → their codes read
+      whole (BG24, not G24).
+
+Then v318.13's checks, if not done:
+
+## v318.13
+
+- [ ] ★ The first time you choose a photo after updating (Home's **Choose a photo** or **New colouring guide**) → a
+      card of photo tips first → its **Choose a photo** opens the photo picker straight away. Choose a photo → the
+      next time, straight to the picker.
+- [ ] ★ Photograph one of your pages from right above → **Edit sections**: Min section size says "about 1 mm"; move
+      Sensitivity (Adjust photo) from low to high → the section count stays about the same (no hundreds of specks).
+- [ ] Photograph a page **at a steep angle** (about 45°) → in the sections' warning box: hold the phone flatter, with
+      **Choose another photo** → it opens the picker. No toast.
+- [ ] Photograph a page on a **marble or patterned** surface → if the corner handles open, they start near the
+      photo's edges, not on a stray shape.
+- [ ] Photograph a **busy but unhatched** page (a mandala or a detailed one) from right above → no "looks hatched"
+      warning.
+- [ ] On the Guide screen's start card, **Photo tips** → the card; the cross closes it without opening the picker.
+- [ ] Open a guide you saved before this release → its sections as they were.
+
+Then v318.12's checks, if not done:
+
+## v318.12
 
 - [ ] ★ Photograph one of your **sketchbook drawings** (line art, before colouring) from right above → no corner
       handles; the guide is built, and the shapes along the page's edges are sections (not left white).

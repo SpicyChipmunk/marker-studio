@@ -140,7 +140,7 @@ test('screen readers: glyphs are not read out, and a tone line says base and sha
   await page.click('.sftabbtn[data-t="pattern"]'); await idle(page);
   assert.equal(await page.getByRole('button', { name: 'Shuffle', exact: true }).count(), 1, 'Shuffle');
   // shading on: the tone line of each row in Colour along
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await page.click('#sfColor'); await idle(page);
   const t = await page.$eval('#sfAlist .sfarow .sfatones', (e) => ({ vis: e.querySelector('[aria-hidden="true"]')?.textContent, sr: e.querySelector('.sfsr')?.textContent }));
   assert.match(t.vis, /B \S+/);

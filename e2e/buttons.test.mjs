@@ -184,7 +184,8 @@ test('at 1.6x text, buttons grow with their labels rather than cutting them', as
 });
 
 // ---- From the fourth review (v263 guide screen) ----
-test('buttons in the guide are 40px (choices) or 44px (actions), never the app\'s 54px', async () => {
+// (v318.16: the guide's choices 44px too, from 40)
+test('buttons in the guide are 44px (choices and actions), never the app\'s 54px', async () => {
   const { page, errors } = await openApp();
   await welcome(page, 'look'); await page.click('#mSections'); await idle(page);
   const hs = (sel) => page.$$eval(sel, (b) => b.filter((x) => x.getClientRects().length).map((x) => (x.id || x.textContent.trim()) + ':' + Math.round(x.getBoundingClientRect().height)));
@@ -193,14 +194,14 @@ test('buttons in the guide are 40px (choices) or 44px (actions), never the app\'
   const none54 = async (what) => { const all = await hs('#sfRoot button'); assert.deepEqual(all.filter((x) => x.endsWith(':54')), [], what); };
   for (const t of ['colours', 'pattern', 'shading', 'share']) { await page.click(`.sftabbtn[data-t="${t}"]`); await none54(t); }
   await page.click('.sftabbtn[data-t="pattern"]'); await page.click('#sfFam [data-v="manual"]'); await idle(page); await page.click('#sfPaint'); await idle(page);
-  assert.deepEqual(await hs('#sfPaint,#sfBrush'), ['sfPaint:40', 'sfBrush:40']);
+  assert.deepEqual(await hs('#sfPaint,#sfBrush'), ['sfPaint:44', 'sfBrush:44']);
   await page.click('#sfBrush'); await page.waitForSelector('#sfSheet.sfpicksh');
   assert.deepEqual(await hs('#sfSheet .sfshft button'), ['sfPopCancel:44', 'sfPopConfirm:44'], 'sheet footers match the bar');
   await page.click('#sfPopCancel'); await page.click('#sfPaint');
   await answerAsks(page);
   await page.click('#sfBack2'); await idle(page); await page.click('#sfAdjToggle'); await idle(page);
   assert.deepEqual(await hs('#sfRotL,#sfRotR,#sfCrop,#sfAutoCrop'), ['sfRotL:44', 'sfRotR:44', 'sfCrop:44', 'sfAutoCrop:44']);
-  assert.deepEqual(await hs('#sfEdit button'), ['sfEmToggle:40', 'sfEmMerge:40', 'sfEmSplit:40', 'sfEmAdd:40']);
+  assert.deepEqual(await hs('#sfEdit button'), ['sfEmToggle:44', 'sfEmMerge:44', 'sfEmSplit:44', 'sfEmAdd:44']);
   await none54('Edit sections');
   await page.click('#sfCrop'); await idle(page);
   assert.deepEqual(await hs('#sfCropApply,#sfCropReset,#sfCropCancel'), ['sfCropApply:44', 'sfCropReset:44', 'sfCropCancel:44']);

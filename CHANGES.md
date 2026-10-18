@@ -1518,3 +1518,204 @@ a saved guide lays as it did.
 - **Measured and not built:** closing pen gaps of 2–4 px everywhere (a radius-1 closing fixed half the gaps on the
   gap pages but cost 5 times the defects elsewhere: tessellations, mosaics, fine botanicals); the marble counter
   (the finder takes the stone's light veins for paper; the corner handles cover it).
+
+## v318.13
+
+Taking a photo of a page, from the point of view of someone doing it.
+
+- **Min section size in real size.** A new photo's Min section size starts at about 1 mm across on the page (taking
+  the picture's long side as a Letter page's: (L / 279.4)² pixels in the picture as it came), shown beside the slider
+  ("about 1 mm"). It had been 10 px whatever the photo's size, so on a 12-megapixel photo Sensitivity turned paper
+  grain and pen texture into hundreds of specks: Ben's jellyfish drawing went from 255 to 759 sections across the
+  Sensitivity range, now 227–241; his scribble page 127–142. Moving the slider keeps the choice for that picture; a
+  small download keeps the old default (1 mm under 10 px); the sample keeps Min section size as it was (a clean
+  drawing at its own size, 166 sections); a guide saved before opens with its own. Checked at 1 mm against Ben's note
+  that some markers are thinner than 1.5 mm (1.5 mm had been tried first). Guide benchmark: clean pages' matched
+  share unchanged (98.41%); photos as taken much better (table pieces gone: t02 from 1,349 sections counted to 158,
+  t19 91% matched to 98%), one hard photo a little worse (h17 77.3% to 75.0%). Ben's printed set: as taken, mean
+  matched 83.5% to 90.3%, spurious sections 8,417 to 1,389; straightened 90.0% to 90.8%, spurious 9,812 to 2,956.
+  A photo with a lot of table round the page still takes 1 mm of the photo, not of the page (a little smaller), and
+  so does a picture cropped by hand to part of a page (1 mm of the crop). The "looks hatched" warning still counts
+  slivers against the live Min section size: on the printed set it now fires on the zentangle (hatched, rightly) and
+  one tessellation photo as taken (told "noisy" before), on no other photo.
+- **The coloured-page warning** counts specks at the size it was tuned at (the old default), whatever Min section size
+  is: with the bigger minimum, a line page photographed on a wooden table, as taken, had been told it was coloured in.
+- **A busy surface's corner handles.** When the finder isn't sure and the surface round its outline flickers (marble,
+  a grained table: over 5), the corner handles start at the photo's own rectangle 3% in rather than at its outline:
+  on Ben's 6 marble photos the outline was 17–30% of the diagonal off, the rectangle 5–7%. The good unsure finds sit
+  on tables flickering 3.8–4.3. When the finder is sure, it still straightens by itself.
+- **The steep-angle note** is in the sections' warning box now (last of the warnings, as the others say more), not a
+  toast, and stays while the photo does.
+- **Choose another photo** in the warning box for a photo chosen now (small, faint, dark, coloured, noisy, steep): the
+  picker opened in the tap. The faint warning's tip says "raise Sensitivity" when Enhance is on (it is for a new
+  photo), not "turn on Enhance".
+- **Photo tips.** The first time a photo is chosen on a device (Home, the welcome, the Guide screen and its ⋯ menu,
+  a palette's Use in a new guide), a card of five tips comes first: flat, right above, even light with no shadow or
+  glare, the whole page in the frame, and the original photo (one sent by message can come back smaller). Its Choose
+  a photo opens the picker in its own tap (iOS); its close, Escape, Back or the backdrop open nothing. Once seen it
+  doesn't come back by itself; **Photo tips** on the Guide screen's start card shows it again. Not for a PDF, the
+  sample or the Photo pattern's photo. Stored on the device (ms-photo-tips).
+- **Measured and not built:** warnings for a blurred photo, a shadow across the page and a page cut off by the frame.
+  None of Ben's photos is clearly bad in those ways (paper light ratio 0.75–0.92 on the printed set; the sketchbook
+  photos' numbers are confounded by colour and table strips), so there was nothing to set them against without
+  false alarms. Deliberately bad photos would let them be tuned. The coloured-page warning was checked: it fires on
+  his 5 fully coloured sketchbook pages and on none of the line-only ones.
+- **Tests:** test/v31813-photo; e2e/v31813-photo (the tips, in Chromium and WebKit); e2e/straighten's steep test now
+  expects the warning box and its Choose another photo; e2e/paper-and-background's grainy page has 20 sections (a
+  sliver of about 0.8 mm² where two circles cross is under the new minimum).
+
+## v318.14
+
+- **A big photo no longer freezes the screen** while its sections are found. Finding them (the picture turned,
+  cropped and put in grey, the lines, the specks, the flood fill, then the background and the page) ran in one go:
+  on a 12-megapixel photo of a page filling the frame, the page was held for 0.65 s in Chromium here and 1.1 s in
+  WebKit (Safari's engine), 2–3 s on Ben's iPad. Now the same steps, the same code, run with a paint between each
+  (segRun, 10-segment): the longest hold is about 0.2 s in both (finding the page in the photo, or clearing specks on
+  a dense page). The steps work on a picture of their own, put in place in one go at the end, so until then the open
+  guide is whole as it was; a newer change (another Sensitivity, another photo, a guide opened) takes over from an
+  older one before it puts anything in place. Meanwhile the picture and its controls can't be used (inert; for a new
+  photo they're out of sight until it's ready; see below for Sensitivity), and Undo, Redo and Build wait. Changing Sensitivity: 0.38 s to
+  0.16 s held in Chromium, 0.34 s to 0.15 s in WebKit. The photo is also decoded away from the page first
+  (img.decode). Sections exactly as before: the guide benchmark's digest is unchanged (ffb1af238d03), and a test
+  checks the steps against segment() in one go after a photo and after Sensitivity changes.
+- **Measured and not built:** moving the work into the background worker (Fable's pressure test: the steps give most
+  of the gain with none of the worker's risks; the code is now split so it can move later, step by step, if the iPad
+  still shows a hold), and the page finder and the straightening (about 0.17 s and 0.1 s, each already a step of its
+  own).
+- **Photograph your caps: Ohuhu's lost first letters** too (G24 for BG24, CG24 or GG24; YR25, RV08, BV18, YG36 and 34
+  more): as v318.12 did for Copic, a code that is the tail of a longer one of the same brand is read again with its
+  box grown at its start. Whose codes: the brand chosen, else the only brand you own, else both; a code waits to go
+  in exactly when it's read again. Ben's 26 Ohuhu photos: 2 more caps read right (a YR015 and a YR215 that were missed before), no new wrong reads, no time added (measured on a quiet machine); his 16 Copic photos read exactly as before. A small gain: most of his Ohuhu caps' first letters were read already.
+- **The colour benchmark's gates on GitHub** (part 1 of the Chromium job, after its browser tests): a guide is
+  always built, laying it again gives the same guide, Random never puts one marker on two sections the app sees
+  touching, "keep touching sections clearly different" leaves no touching pair too alike, and a Gradient makes no
+  twins. A failure fails the run, listed on its page with each page's true section count, and keeps the report. The
+  bench's pages are kept between runs, keyed on what draws them and finds their sections. About 2 minutes with the
+  pages kept, 4.5 without, here.
+- **"Find my set from 3 caps" in Markers** was already there (Markers › Add markers › "Not sure which set you have?
+  Find it from 3 caps", since v311): nothing built.
+- **Keyboard and the Sensitivity slider:** while the sections are found again for a new Sensitivity (or Enhance, or
+  Ignore faint marks), only the picture waits: the slider keeps going, by drag or keys, each change taking over (from
+  Fable's review). For a picture that changes (turned, cropped, straightened), the controls wait too, and the keyboard
+  goes back where it was after.
+- **Fixed:** e2e/v308-beta still looked for v318.13's old Help wording ("above the page"; now "right above the
+  page"): v318.13's GitHub run will have shown it failing.
+- **Tests:** e2e/v31814-steps (the steps against one go; a newer change taking over; Undo, Build and the picture
+  waiting; another picture opened meanwhile), test/v31814-widen. The tests' geoSet and autoCrop run the steps in one
+  go (segSync), as before, so they can read the picture straight after.
+
+## v318.15
+
+From a debugging pass of Ben's new uncoloured drawings and printed pages through the whole app, and three of the
+colouring ideas (pressure-tested by me, then by Fable).
+
+- **A new photo shows straight away.** Choosing a photo with a guide open left that guide's picture on screen,
+  under "Detecting sections…", until the new one's sections were in place. Now the photo is drawn on the picture as
+  soon as it's opened (photoPreview), and the work starts after a paint, so the first hold is split in two: the
+  longest hold here is about 0.17 s in Chromium. The controls and Build stay out of sight until it's ready, as in
+  v318.14.
+- **Specks in the blank paper go.** Grain, dust and a printer's specks round a page were too big for the old speck
+  filter and were drawn as the line, printed with the guide. A blob that touches only the paper round the drawing
+  (or crumbs of paper it closes in) becomes paper when it's faint (as Ignore faint grey marks counts faint) and under
+  3 mm² on the page, or when it's in the margin, outside the box round the drawing, lighter than the lines and under
+  10 mm². On Ben's photos of printed pages: 9,555 and 35,951 px cleared; on his drawings, 20–61 px. A full stop, a
+  signature's dot or a caption's letter as dark as the drawing stays, and so do dark marks on a page's frame or
+  squares in the margin (six on one printed page). Only for a new picture or Detect again: saved guides keep their
+  sections. The guide benchmark: matched sections, defects and warnings all as before; how much ink is found moves
+  by at most 0.13% on 46 of 356 runs.
+- **Binding or table at the edge? · Trim it.** A sketchbook page photographed as it is kept its spiral binding or a
+  strip of table, which Auto crop kept as ink. For a photo as taken, not coloured in (under 5% colour), a dark grey
+  or brownish band along an edge (up to 6% of the picture) is found as it's prepared, and a line above the sections
+  offers to crop it off; Undo puts it back and offers it again. Only offered, never done for you: on Ben's coloured
+  sketchbook pages the colour ran into the bands. On his three line-only drawings it's offered on all three; one
+  trims cleanly and two leave part of the binding at the top, so it's a suggestion to check.
+- **Light from › The edges** (Shading): each section darker along its lines and into its corners, lighter in its
+  middle, as neurographic drawings are rounded; Roundness sets how far in the shadow reaches, Highlights and Shadows
+  work as with the sun. Saved as "the sun" to an older copy of the app.
+- **Shading › Style:** Soft, Dramatic, Rounded and Neurographic set the mode, the light and the chosen zone's
+  Roundness, Highlights and Shadows in one tap, shown as chosen while they all still match. One Undo step. With
+  Light from now always shown, the Shading tab on a phone is 138 px taller (589 px, about two screens of room under
+  the tabs; the tabs test allows for it).
+- **Radial › Rings › Follow the drawing** (Gradient's Flow): out from the section under the centre mark, a step at a time through the sections
+  touching it, so the colours follow the drawing's own rings rather than circles; a section cut off from the others
+  takes the step after its nearest. A choice under Radial (Circles, as before, or Follow the drawing) rather than a sixth Flow, which didn't fit on a phone's row; saved as its own flow, so an older copy opens it as Serpentine. Judged by eye: on Ben's pages it jumps more than Radial on some and follows the
+  drawing better on others.
+- **Matching shapes alike** (a tick box under Flow and in Random's options, on a page that looks like a mandala):
+  each ring's matching shapes (the same size and the same roundness, set evenly round) take one marker: a pinned or
+  coloured one's, else the one most of them got. Saved only when on. On Ben's photographed mandala page: 15 groups, each one marker with Radial and Around.
+- **The colour benchmark** is unchanged with the new options off (digest c49afc53b9ae, all gates pass).
+- **From Fable's review:** Matching shapes alike now updates each section's own pattern marker too, so Unpin brings
+  back the ring's marker, not the one from before; if a new photo fails to process, the open picture is drawn again
+  (it stayed frozen on the photo); and Trim it is offered only when Auto crop would then crop (a thin band on a
+  drawing that fills the page gave "Nothing to trim"). Specks cleared can only ever take away the Ignore faint grey
+  marks offer, not add it (the benchmark's doodles-and-text page was offered it).
+- **Tests:** test/v31815-specks, test/v31815-shading-flow; e2e/v31815 (the new photo shown at once, specks found in
+  steps as in one go, Trim it and Undo, presets and The edges, Follow the drawing at phone width, Matching shapes
+  alike), in Chromium and WebKit. e2e/straighten reads its own line, not Trim it (offered on its page square to the
+  camera, with a strip of table round it); e2e/help's glossary has Matching shapes alike.
+
+## v318.16
+
+The guide's controls made calmer, from a UI pressure test of the whole guide (mine, then Fable's) and Ben's choices
+from mock-ups.
+
+- **Shading is one row:** Off · Soft · Dramatic · Rounded · Neuro. A style is the whole picture's look: it turns
+  shading on and sets Main's and every zone's Roundness, Highlights and Shadows amounts (v318.15's presets set only the
+  chosen zone's, from a row that looked global), and Light from between the sun and the edges; a photo's light is
+  kept (Neuro is the edges, and a sun style after it is the sun). Move a slider and the line under the row says Custom (a line, not a sixth button: it
+  didn't fit a phone's row, and can't be chosen). One Undo step each, named ("Shading: Dramatic").
+- **Shadows only is Highlights › None** (the mode it always was: saved guides open unchanged, and an older copy reads
+  it as before). With zones, a line says it's the whole picture's.
+- **More options on a phone** (a screen whose short side is under 600 px: a phone either way round, or an iPad's
+  narrow split view; iPads keep everything open): Shading keeps its row, Light from, the how-to and the shading note,
+  and folds tone lines, Leave sections flat, the zones' own shading and texture; Colours keeps Mood, the marker count
+  and Colours from, and folds Filters, Temperature, Include and the count of markers. Open or shut for the session;
+  open by itself while Leave sections flat or the Filters panel is in use. On a 390 × 844 phone, Shading went from
+  589 px to 309, and Colours from about 700 (everything open) to 431.
+- **Radial's rings on one line** ("Rings [Circles] [Follow the drawing]"), the Undo step named "Rings: Follow the
+  drawing", and the mandala tip shown with either kind of ring.
+- **Words:** the "COLOUR PATTERN" and "SHADING" headings, which repeated the tab's own name, are heard by a screen
+  reader but no longer shown; "· 0" after Pin colours and Leave sections flat is gone until there's one; the shading
+  note is a plain line, not the guide's one dashed box; "All 120 markers you own" no longer sits above "36 of your
+  markers" (the second is the one that counts); "Within your filters, lean towards…" is "Lean towards…";
+  Neurographic is Neuro.
+- **Easier to tap and read:** the guide's choices are 44 px tall (40 before, under Apple's 44), and row names and
+  notes 13 px and a step clearer (12 px at 52%). Pattern is about 15 px taller on a phone for it.
+- **Tests:** test/v31816-shading-row; e2e/v31816 (the row, Custom, Off and Undo; Highlights › None both ways; More
+  options at 390 and not at 820; Rings on one line, 44 px), in Chromium and WebKit. The tests turn shading to a mode
+  through the test seam (shadeTo, one Undo step, as the old buttons did), and open More options unless a test asks
+  for the phone as it comes (moreShut). Height allowances: Shading's v318.15 140 px removed; Pattern 20 px.
+
+## v318.17
+
+Planned with Fable, then the plan pressure-tested again by a fresh reviewer (which found three things that would have
+broken: coloured sections getting highlights back, the blender breaking Colour along's steps, and the new row breaking
+Mood's fitting).
+
+- **Pattern on a phone:** Look comes before Direction; Direction, Start colour and Scatter (with its speck line) fold
+  under More options, as do Random's two tick boxes and Blend's Spread and Mix; Photo and Manual don't fold. On a
+  390 × 844 phone the Gradient tab is about 425 px folded (678 before). **＋ Zone moves to the tab's end** with a line
+  saying what it does; its heading is heard first, as before, zones or not.
+- **Flow pictures:** each Flow button has a small picture of its path above its word (heard as the word).
+- **A mandala page:** one group, "Looks like a mandala", with Matching shapes alike and, with Radial's rings, Try
+  Around (the Around tip and the tick box were two separate lines).
+- **Shadows only per zone:** with zones, Highlights › None is the chosen zone's own (no H there; the rest keep
+  theirs); without zones it's the whole picture's, as before. A zone choosing a highlight while the whole picture is
+  shadows only turns it on there alone: the other zones, and every section already coloured, stay without one.
+  Sections coloured under Shadows only are held without a highlight, so turning highlights on later doesn't put one
+  on paper that's already done (with shading off they're held as before). An older copy shows a zone's None as
+  Main's kind of highlight, and forgets what a section coloured with None or the blender was held with (its shading
+  then follows the settings).
+- **Blender highlights:** with a Colorless Blender (0) in your markers, Highlights › Blender (0): the 0 on the
+  highlight first, then the base over the whole section (it takes less there); while it's wet, touch the 0 again to
+  lift more. The H is your blender (its own brand's first), shown as the base lifted; nothing to buy for it; Colour
+  along has its step. Without one, a guide using it takes a lighter marker instead and says so. An older copy reads it
+  as Same colour.
+- **Themes in Lean towards** (Colours, was Temperature): Any · Cool · Warm · **Sunset · Forest · Candy**, a six-wide
+  row as Mood's. A theme keeps your markers inside its hues (L*C*h° windows), and with fewer than 8 adds the nearest,
+  with a line saying so. The full Ohuhu 320, Honolulu 120 and all-Copic sets have at least 6 inside each. Not in
+  Surprise yet; an older copy reads a theme as Any.
+- **Shading styles under the photo's light** no longer read Custom for a Roundness the photo doesn't use.
+- **Tests:** test/v31817, e2e/v31817 (Chromium and WebKit); targeted e2e locally (the files that touch the guide's
+  controls), the full suite on GitHub. Updated: e2e/help (Lean towards in the glossary), e2e/v308-colour (Try
+  Around).

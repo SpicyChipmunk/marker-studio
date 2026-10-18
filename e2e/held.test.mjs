@@ -110,7 +110,7 @@ test('every way the plan is laid again keeps them: Blend’s Spread too (v284 re
 test('a coloured section keeps its Shadows and Highlights when they change; saved with the guide, it opens the same', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   const { done } = await colourSome(page, 4, 0);
   const tones = () => page.evaluate(() => { const o = {}; __mstest.assignData.order.forEach((l) => { const t = __mstest.shadeSec(l); if (t) o[l] = (t.dark ? t.dark.mkey : '-') + '/' + (t.light ? t.light.mkey : '-'); }); return o; });
   const t0 = await tones();
@@ -133,7 +133,7 @@ test('a coloured section keeps its Shadows and Highlights when they change; save
 test('v285: a section part-way coloured keeps its Highlights, its Shadows follow until its shadow is coloured; saved that way, and a v284 save keeps both', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await page.click('#sfColor'); await idle(page);
   // shaded sections with both a lighter and a darker tone: one with its base coloured, one with its shadow coloured too
   const [a, b] = await page.evaluate(() => {

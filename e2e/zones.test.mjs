@@ -335,9 +335,10 @@ test('Colour along zone by zone: each zone\'s markers under its name; a row ligh
 });
 
 test('with zones, Pattern, Colours and Shading fit in about one and a half screens of room at 390×844 besides their row of chips (and Shading’s “Shade Bell”)', notOnWebKit(WK.font), async () => {
-  const { page, errors } = await openApp();
+  // (v318.16: as the app comes on a phone, More options shut)
+  const { page, errors } = await openApp({ moreShut: true });
   await sampleGuide(page); await idle(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await makeZone(page, await bigSecs(page, 2, 'top'), 'Bell');
   // (as tabs.test.mjs measures: the helper lines already seen, the tabs pinned under the picture at its floor size)
   await page.evaluate(() => document.querySelectorAll('.sfinfo.open').forEach((b) => b.click()));
@@ -352,7 +353,9 @@ test('with zones, Pattern, Colours and Shading fit in about one and a half scree
     assert.ok(tb !== 'shading' || (m.shade > 0 && m.shade <= 40), `shading: "Shade Bell" is one line (${m.shade}px)`);
     // (v288: Colours has the "N markers on this page ›" button too, 44px and its margin)
     // (v308: Colours' 120px more, the marker count's 44px − and + and Include's row of chips)
-    assert.ok(m.h - m.chips - m.shade <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 + 120 : 0), `${tb}: ${m.h}px (${m.chips}px of chips, ${m.shade}px of Shade Bell) against ${m.room}px of room`);
+    // (v318.16: Shading's rows under More options on a phone, so v318.15's 140px for them is gone; Pattern 20px more for
+    // the 44px choices and 13px row names, as e2e/tabs allows)
+    assert.ok(m.h - m.chips - m.shade <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 + 120 : 0) + (tb === 'pattern' ? 20 : 0), `${tb}: ${m.h}px (${m.chips}px of chips, ${m.shade}px of Shade Bell) against ${m.room}px of room`);
   }
   assert.deepEqual(errors, []);
 });

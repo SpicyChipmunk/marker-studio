@@ -112,7 +112,7 @@ test('the blend plan and the shading note add their suggestions', async () => {
   assert.equal((await wish(page)).length, 1);
   await page.keyboard.press('Escape'); await idle(page);
   // shading: "Richer with" markers, inside the one-line suggestions once it's opened
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   assert.match(await page.textContent('.sfshnote .sfonelh'), /\d+ markers? would make the shading richer/);
   assert.equal(await page.isVisible('.sfshnote .wishchip'), false, 'collapsed at first');
   await page.click('#sfShNoteT');
@@ -387,7 +387,7 @@ test('To buy in the guide: the start card, blend plan, shading and photo notes',
   await page.click('#sfPlanBuy .wishall'); await idle(page);
   assert.match(await toastText(page), /They’re all on your To buy list already\./);
   await page.keyboard.press('Escape'); await idle(page);
-  await page.click('.sftabbtn[data-t="shading"]'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.click('.sftabbtn[data-t="shading"]'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   await page.click('#sfShNoteT'); await idle(page);
   if (await page.locator('.sfshnote .wishall').count()) assert.match((await page.textContent('.sfshnote .wishall')).trim(), /^(Add all to To buy|✓ All on your To buy list)$/);
   assert.match(await page.getAttribute('.sfshnote .wishchip', 'aria-label'), /To buy list: /);

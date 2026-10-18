@@ -38,7 +38,7 @@ test('Colours · Pattern · Shading · Share & print, one pane each: Colours the
   assert.equal(await page.evaluate(() => localStorage.getItem('ms-plan-tab')), 'shading');
   assert.ok(await page.isVisible(pane('shading')) && !(await page.isVisible(pane('colours'))));
   // a rebuild of the controls keeps the tab
-  await page.click('#sfShade [data-v="shadow"]'); await idle(page);
+  await page.evaluate(() => __mstest.shadeTo('shadow')); await idle(page);
   assert.equal(await page.getAttribute('.sftabbtn.on', 'data-t'), 'shading');
   await reopen(page);
   assert.equal(await page.getAttribute('.sftabbtn.on', 'data-t'), 'shading', 'the last tab used, after a reload');
@@ -60,10 +60,11 @@ test('Pattern: the chooser on one row, that pattern\'s options, then Shuffle and
   assert.ok(await page.isVisible('#sfDir'));
   const sh = await rect(page, '#sfVary'), pin = await rect(page, '#sfLock');
   assert.equal((await page.textContent('#sfVary')).trim(), 'Shuffle');
-  assert.match(await page.textContent('#sfLock'), /^Pin colours · 0$/);
+  assert.match(await page.textContent('#sfLock'), /^Pin colours$/, '(v318.16: no count until one is pinned)');
   assert.ok(Math.abs(sh.top - pin.top) < 1 && sh.right <= pin.left, 'Shuffle and Pin side by side');
-  const last = await page.evaluate((s) => document.querySelector(s).lastElementChild.contains(document.getElementById('sfLock')), pane('pattern'));
-  assert.ok(last, 'Shuffle and Pin come last');
+  // (v318.17: then ＋ Zone, the tab's last line)
+  const last = await page.evaluate((s) => { const p = document.querySelector(s), z = p.lastElementChild; return z.contains(document.getElementById('sfZoneAdd')) && z.previousElementSibling.contains(document.getElementById('sfLock')); }, pane('pattern'));
+  assert.ok(last, 'Shuffle and Pin come last, then ＋ Zone');
   // nothing from Shading or Display in here
   for (const sel of ['#sfShade', '#sfTex', '#sfShLines', '#sfPrint']) assert.equal(await page.locator(`${pane('pattern')} ${sel}`).count(), 0, sel);
   // Random: its option, and Shuffle + Pin
@@ -106,7 +107,7 @@ test('Shading: the modes, sliders, tone guides, Leave sections flat, the suggest
   assert.ok(await page.isVisible('#sfShade') && await page.isVisible('#sfTex'), 'texture shows with shading off');
   assert.ok(await lastIsTexture(), 'texture at the bottom');
   assert.equal(await page.locator('#sfRound, #sfShLo, .sfshnote').count(), 0);
-  await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   for (const id of ['#sfRound', '#sfShHi', '#sfShLo', '#sfShLines', '#sfShFlat', '.sfshnote', '#sfTex']) assert.ok(await page.isVisible(`${pane('shading')} ${id}`), id);
   assert.ok(await lastIsTexture(), 'still at the bottom');
   // texture still works from here
@@ -142,7 +143,7 @@ test('helper text: in full the first time on this device, then a one-line ⓘ th
   const { page, errors } = await app();
   await sampleGuide(page);
   const info = (id) => page.evaluate((id) => { const b = document.querySelector(`.sftab:not([style*="none"]) .sfinfo[data-info="${id}"]`); return b && { open: b.getAttribute('aria-expanded'), text: b.textContent }; }, id);
-  await tab(page, 'shading'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await tab(page, 'shading'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   let s = await info('shade');
   assert.equal(s.open, 'true', 'the shading explanation in full the first time');
   assert.match(s.text, /Drag the .* on the picture to move the light/);
@@ -234,10 +235,11 @@ test('Share: Show it off, Print…, Plan & keep; the Print sheet opens under the
 });
 
 test('each tab stays within about one and a half screens of room at 390×844, with the picture at its floor size', notOnWebKit(WK.font), async (t) => {
-  const { page, errors } = await app();
+  // (v318.16: as the app comes on a phone, More options shut)
+  const { page, errors } = await app({ moreShut: true });
   await sampleGuide(page);
   // the steady state: shading on, and the helper text already seen (one line each)
-  await tab(page, 'shading'); await page.click('#sfShade [data-v="full"]'); await idle(page);
+  await tab(page, 'shading'); await page.evaluate(() => __mstest.shadeTo('full')); await idle(page);
   const out = {};
   for (const pass of ['first', 'later']) {
     if (pass === 'later') await reopen(page);
@@ -256,7 +258,10 @@ test('each tab stays within about one and a half screens of room at 390×844, wi
       // (v316, deliberately: the Gradient's Start colour and Scatter sliders 36px tall each, a 22px ring riding on the
       //  strip or line, easier to catch with a finger: 26px more; 30 allowed)
       // (v318 review, deliberately: + Zone beside Colour pattern 32px tall with a 44px tap area, its row 13px taller)
-      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 + 120 + 56 : 0) + (tb === 'pattern' ? 74 + 30 + 14 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
+      // (v318.15 allowed Shading 140px more for its Style row and Light from; v318.16 takes it back: one row, the rest
+      //  under More options on a phone, 589 to 309px. Deliberately, v318.16's 44px choices and 13px row names make
+      //  Pattern about 15px taller: 20 allowed)
+      if (pass === 'later') assert.ok(m.h <= m.room * 1.5 + 2 + 16 * m.info + (tb === 'colours' ? 54 + 120 + 56 : 0) + (tb === 'pattern' ? 74 + 30 + 14 + 20 : 0), `${tb}: ${out[pass + ' ' + tb]}`);
     }
   }
   t.diagnostic(JSON.stringify(out));

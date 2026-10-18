@@ -1249,7 +1249,8 @@ function balMore(p, ms) {
       ' counted.</div>';
   return t;
 }
-function balHTML() {
+// (mf: Keep touching sections clearly different and No repeats under More options, on a phone: v318.17)
+function balHTML(mf) {
   let h =
     '<div class="sfsublbl">Balance</div><div id="sfBal" role="group" aria-label="Balance" class="sfc-segs">' +
     ctlSeg('mixed', 'Mixed', balance === 'mixed') +
@@ -1322,6 +1323,9 @@ function balHTML() {
   }
   // (v308: each on its own row, flex not inline-flex: side by side on a wide panel they read as one run-on line,
   // "…clearly differentNo repeats…")
+  // (v318.17: the mandala's group first, outside the fold)
+  h += mandalaHTML(false);
+  if (mf) h += moreBarHTML('pattern', morePatternSum()) + moreIn('pattern');
   h +=
     '<label class="sfchk sfc-check sfc-flex sfc-mt10"><input type="checkbox" id="sfNoAdj"' +
     (noAdj ? ' checked' : '') +
@@ -1349,6 +1353,7 @@ function balHTML() {
         '</div>';
     }
   }
+  if (mf) h += '</div>';
   return h;
 }
 // the sheet a part of the bar opens: Auto, then each colour family there is (a strip of the markers and how many);
@@ -1376,7 +1381,9 @@ function balChoose(r) {
       ? p.seeded
         ? 'the palette’s biggest colour'
         : palette !== 'all' && !otherHand
-          ? 'a ' + palette + ' colour, as Temperature says'
+          ? 'a ' +
+            (THEMES[palette] ? THEMES[palette].n.toLowerCase() : palette) +
+            ' colour, as Lean towards says'
           : 'chosen for you'
       : r === 'a'
         ? 'across the colour wheel, bright'

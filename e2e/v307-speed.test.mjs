@@ -50,7 +50,7 @@ test('the PDF is drawn a page at a time ("Page 2 of 3…"), packed in the worker
   for (const shade of [false, true]) {
     if (shade) {
       await page.click('.sftabbtn[data-t="shading"]');
-      await page.click('#sfShade [data-v="full"]');
+      await page.evaluate(() => __mstest.shadeTo('full'));
       await idle(page);
     }
     await sharePrint(page);

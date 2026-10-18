@@ -140,7 +140,7 @@ function shadeLabel(sa, sb) {
   if (sa.main !== sb.main) return 'Shading: ' + (sb.main ? 'Shaded' : 'Flat');
   if (sa.round !== sb.round) return 'Roundness changed';
   if (sa.shadow !== sb.shadow) return 'Shadows: ' + (SHADE_SHADOW_LABEL[sb.shadow] || sb.shadow);
-  if (sa.hilite !== sb.hilite) return 'Highlights: ' + (SHADE_HILITE_LABEL[sb.hilite] || sb.hilite);
+  if (sa.hilite !== sb.hilite) return 'Highlights: ' + (SHADE_HILITE_LABEL_ALL[sb.hilite] || sb.hilite);
   // (v308: as the controls are named: each kind's Amount slider)
   if (sa.hi !== sb.hi) return 'Highlight amount: ' + Math.round(sb.hi * 100) + '%';
   if (sa.lo !== sb.lo) return 'Shadow amount: ' + Math.round(sb.lo * 100) + '%';
@@ -188,14 +188,23 @@ function planLabel1(p, q) {
     return 'Include changed';
   }
   if (a.palette !== b.palette)
-    return 'Temperature: ' + ({ cool: 'Cool', warm: 'Warm', all: 'Any' }[b.palette] || b.palette);
+    return (
+      'Lean towards: ' +
+      ({ cool: 'Cool', warm: 'Warm', all: 'Any' }[b.palette] ||
+        (THEMES[b.palette] ? THEMES[b.palette].n : b.palette))
+    );
   if (a.emphasis !== b.emphasis) return 'Mood: ' + (MOODS[b.emphasis] ? MOODS[b.emphasis].label : b.emphasis);
   if (a.expand !== b.expand) return 'Nearby markers ' + onoff(b.expand);
   if (a.expandChar !== b.expandChar) return 'Nearby colours changed';
-  if (a.gradShape !== b.gradShape) return 'Flow: ' + cap(b.gradShape);
+  if (a.gradShape !== b.gradShape) {
+    // (v318.16: Radial's rings, Circles or Follow the drawing, are a choice under Radial: gradShape 'rings')
+    const rk = { radial: 'Circles', rings: 'Follow the drawing' };
+    if (rk[a.gradShape] && rk[b.gradShape]) return 'Rings: ' + rk[b.gradShape];
+    return 'Flow: ' + (b.gradShape === 'rings' ? 'Radial, following the drawing' : cap(b.gradShape));
+  }
   if (JSON.stringify(a.radC) !== JSON.stringify(b.radC))
     return (
-      (b.gradShape === 'around' ? 'Centre' : 'Radial centre') + (b.radC ? ' moved' : ' back to the middle')
+      (b.gradShape === 'radial' ? 'Radial centre' : 'Centre') + (b.radC ? ' moved' : ' back to the middle')
     );
   if (a.dir !== b.dir) return 'Direction: ' + (b.dir < 0 ? 'Reversed' : 'Forward');
   if (a.look !== b.look) return 'Look: ' + (LOOK_LABEL[b.look] || b.look);
@@ -218,7 +227,10 @@ function planLabel1(p, q) {
       ? 'Anchor colour changed'
       : 'Anchor moved';
   if (sa.mode !== sb.mode)
-    return 'Shading: ' + ({ off: 'Off', shadow: 'Shadows', full: 'Light & shadow' }[sb.mode] || sb.mode);
+    // (v318.16: Shadows only is Highlights › None; the styles name their own steps, planWhy)
+    return sb.mode === 'shadow'
+      ? 'Highlights: None (shadows only)'
+      : 'Shading: ' + ({ off: 'Off', full: 'On' }[sb.mode] || sb.mode);
   if (sa.lightSrc !== sb.lightSrc)
     return (
       'Light from ' +
@@ -226,7 +238,9 @@ function planLabel1(p, q) {
         ? 'the sun'
         : sb.lightSrc === 'photo'
           ? 'the photo'
-          : 'the photo if Main uses it')
+          : sb.lightSrc === 'edges'
+            ? 'the edges'
+            : 'the photo if Main uses it')
     );
   if (sa.x !== sb.x || sa.y !== sb.y) return 'Light moved';
   const _sl = shadeLabel(sa, sb);

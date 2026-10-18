@@ -43,7 +43,8 @@ async function pick(page, ph, name = 'page.jpg') {
 }
 async function fresh() { const a = await openApp(); await haveSet(a.page); await a.page.check('#wcSets input[data-i="3"]'); await a.page.click('#wcAdd'); return a; }
 const sections = (page) => page.waitForSelector('#sfBuild', { state: 'visible', timeout: 40000 });
-const info = (page) => page.evaluate(() => { const t = __mstest; return { W: t.W, H: t.H, line: document.querySelector('.sfpgline') ? document.querySelector('.sfpgline').textContent : '', q: t.pgQ, src: t.srcSize }; });
+// (the straightening's line: not v318.15's Trim it, offered for the strip of table round a page square to the camera)
+const info = (page) => page.evaluate(() => { const t = __mstest; return { W: t.W, H: t.H, line: document.querySelector('.sfpgline:not(#sfTrimLine)') ? document.querySelector('.sfpgline:not(#sfTrimLine)').textContent : '', q: t.pgQ, src: t.srcSize }; });
 
 test('a page photographed at an angle is found and flattened to its true shape', async () => {
   for (const o of [{ tilt: 25, roll: 8, size: 0.6 }, { tilt: 20, yaw: 12, bleed: 1, bg: 'dark', size: 0.65 }]) {
@@ -184,7 +185,7 @@ test('Adjust corners, then Cancel, leaves the straightened page and its section 
   const before = await page.evaluate(() => ({ W: __mstest.W, H: __mstest.H, src: __mstest.srcSize, sig: __mstest.labelsSig() }));
   await page.click('#sfPgAdj'); await page.waitForSelector('#sfPgGo');
   await page.click('#sfPgNo'); await sections(page); await idle(page);
-  const r = await page.evaluate(() => ({ W: __mstest.W, H: __mstest.H, src: __mstest.srcSize, sig: __mstest.labelsSig(), line: document.querySelector('.sfpgline') ? document.querySelector('.sfpgline').textContent : '' }));
+  const r = await page.evaluate(() => ({ W: __mstest.W, H: __mstest.H, src: __mstest.srcSize, sig: __mstest.labelsSig(), line: document.querySelector('.sfpgline:not(#sfTrimLine)') ? document.querySelector('.sfpgline:not(#sfTrimLine)').textContent : '' }));
   assert.deepEqual({ W: r.W, H: r.H, src: r.src, sig: r.sig }, before);
   assert.match(r.line, /Page straightened/);
   assert.deepEqual(errors, []);
@@ -192,8 +193,9 @@ test('Adjust corners, then Cancel, leaves the straightened page and its section 
 
 // v318.11: a page photographed at a steep angle (its far edge much shorter than its near edge, the finder sure) is
 // straightened as before, then told once to hold the phone flatter; a gentle angle says nothing (the guide benchmark's
-// printed set: at about 45° half the sections were lost)
-test('a steep angle: straightened, then a note to hold the phone flatter; a gentle one says nothing', async () => {
+// printed set: at about 45° half the sections were lost). (v318.13) Said in the sections' warning box, with Choose
+// another photo (the picker, in the tap), rather than a toast that went.
+test('a steep angle: straightened, then a note to hold the phone flatter with Choose another photo; a gentle one says nothing', async () => {
   for (const [o, steep] of [
     [{ tilt: 35, size: 0.7 }, true],
     [{ tilt: 25, roll: 8, size: 0.6 }, false],
@@ -203,12 +205,17 @@ test('a steep angle: straightened, then a note to hold the phone flatter; a gent
     const f = await page.evaluate(async (b64) => { const img = new Image(); await new Promise((r) => { img.onload = r; img.src = 'data:image/jpeg;base64,' + b64; }); const r = __mstest.pgFind(img); return { tier: r.tier, k: r.q ? __mstest.pgKeystone(r.q) : 1 }; }, ph.b64);
     assert.equal(f.tier, 'sure', JSON.stringify(o));
     assert.equal(f.k < 0.67, steep, `keystone ${f.k.toFixed(3)}`);
-    await page.evaluate(() => { window.__toasts = []; const t = document.getElementById('msToast'); if (t) new MutationObserver(() => window.__toasts.push(t.textContent)).observe(t, { childList: true, subtree: true, characterData: true }); });
     await pick(page, ph);
     await sections(page); await idle(page);
     assert.match((await info(page)).line, /Page straightened/);
-    const said = await page.evaluate(() => (window.__toasts || []).concat([document.getElementById('msToast') ? document.getElementById('msToast').textContent : '']).some((x) => /steep angle/.test(x)));
-    assert.equal(said, steep, JSON.stringify(o));
+    const box = await page.evaluate(() => { const b = document.querySelector('.sfc-segwarn'); return b && b.getClientRects().length ? b.textContent : ''; });
+    assert.equal(/steep angle/.test(box), steep, JSON.stringify(o) + ' ' + box);
+    assert.equal(/steep angle/.test(await page.textContent('#msToast')), false, 'not a toast');
+    if (steep) {
+      assert.match(box, /holding the phone flatter/);
+      const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#sfRetake')]);
+      assert.ok(fc, 'Choose another photo opens the picker');
+    }
     assert.deepEqual(errors, []);
   }
 });

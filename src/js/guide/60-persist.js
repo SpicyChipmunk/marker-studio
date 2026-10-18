@@ -308,6 +308,7 @@ function sampleFromAnywhere() {
 }
 function pickPhoto() {
   if (!document.getElementById('sfPick')) mount();
+  if (photoTips(null)) return;
   _pickCb = null;
   if (fileEl) fileEl.click();
 }
@@ -317,8 +318,65 @@ function pickPhoto() {
 let _pickCb = null;
 function pickPhotoHome(onPick) {
   if (!document.getElementById('sfPick')) mount();
+  if (photoTips(onPick || null)) return;
   _pickCb = onPick || null;
   if (fileEl) fileEl.click();
+}
+// (v318.13) The photo tips (dialogs.html #ptOverlay): the first time a photo is chosen on this device (Home's Choose a
+// photo or New colouring guide, the welcome's, the Guide screen's and its ⋯ menu's, a palette's Use in a new guide),
+// the card comes first, and its Choose a photo opens the
+// picker in its own tap (iOS opens it only from a tap). Its close, Escape, Back or the backdrop: nothing more (seen,
+// all the same). Not for a PDF, the sample, the Photo pattern's photo or the warning box's Choose another photo.
+// The Guide screen's start card has a Photo tips link that shows it again. Stored on this device only; storage that
+// can't be read or written shows it each time, which is harmless. Not in the browser tests unless one sets
+// window.__MS_PHOTO_TIPS.
+const PT_KEY = 'ms-photo-tips';
+let _ptCb = null,
+  _ptWired = false;
+function ptSeen() {
+  try {
+    return localStorage.getItem(PT_KEY) === '1';
+  } catch (e) {
+    return false;
+  }
+}
+function ptMark() {
+  try {
+    localStorage.setItem(PT_KEY, '1');
+  } catch (e) {}
+}
+function ptWire(ov) {
+  if (_ptWired) return;
+  _ptWired = true;
+  const shut = function () {
+    ptMark();
+    _ptCb = null;
+    closeDialog(ov);
+  };
+  document.getElementById('ptClose').addEventListener('click', shut);
+  ov.addEventListener('click', function (e) {
+    if (e.target === ov) shut();
+  });
+  document.getElementById('ptGo').addEventListener('click', function () {
+    const cb = _ptCb;
+    ptMark();
+    _ptCb = null;
+    closeDialog(ov);
+    _pickCb = cb;
+    if (fileEl) fileEl.click();
+  });
+}
+// true when the card is shown (the caller stops: the card's button goes on to the picker); again: shown whether or
+// not it was seen (the Photo tips link)
+function photoTips(onPick, again) {
+  const ov = document.getElementById('ptOverlay');
+  if (!ov || ov.classList.contains('on')) return !!ov;
+  if (!again && (ptSeen() || (window.__MS_TEST && !window.__MS_PHOTO_TIPS))) return false;
+  ptWire(ov);
+  _ptCb = onPick || null;
+  if (typeof hideToast === 'function') hideToast();
+  openDialog(ov);
+  return true;
 }
 // (v313) Home's "Open a PDF": the PDF picker, the same way
 function pickPdfHome(onPick) {

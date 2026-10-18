@@ -109,12 +109,19 @@ const STYLE_FIELDS = [
     save: famSaved,
     snap: famSaved,
   },
-  { key: 'palette', in: 'style', def: 'all', check: styleOne(['all', 'cool', 'warm']), undo: true },
+  // (v318.17: the themes too, Lean towards' Sunset, Forest and Candy; an older copy reads them as Any)
+  {
+    key: 'palette',
+    in: 'style',
+    def: 'all',
+    check: styleOne(['all', 'cool', 'warm', 'sunset', 'forest', 'candy']),
+    undo: true,
+  },
   {
     key: 'gradShape',
     in: 'style',
     def: 'serpentine',
-    check: styleOne(['serpentine', 'vertical', 'diagonal', 'radial', 'around']),
+    check: styleOne(['serpentine', 'vertical', 'diagonal', 'radial', 'around', 'rings']),
     undo: true,
   },
   { key: 'dir', in: 'style', def: 1, check: styleOne([1, -1]), undo: true },
@@ -152,6 +159,17 @@ const STYLE_FIELDS = [
   { key: 'balA', in: 'style', def: 'auto', check: styleOne(BAL_CHOICES), undo: true },
   { key: 'balSeed', in: 'style', def: 0, check: styleNum(0, 1), undo: true },
   { key: 'noRep', in: 'style', def: false, check: styleBool, undo: true },
+  // (v318.15) written only when on, so a guide that doesn't use it saves exactly as before
+  {
+    key: 'matchAlike',
+    in: 'style',
+    def: false,
+    check: styleBool,
+    undo: true,
+    save: function () {
+      return matchAlike ? true : undefined;
+    },
+  },
   { key: 'gradSeed', in: 'style', def: 0, check: styleNum(0, 1), undo: true },
   // the Gradient's Scatter (v306): a guide saved before it re-lays as Polished (what it was laid with since v305).
   // Written only when it's used (gradJit only from Textured up, gradFix only when on), so a guide that doesn't use them
@@ -237,7 +255,8 @@ const STYLE_FIELDS = [
     in: 'shade',
     def: 'auto',
     check: function (v, d, src) {
-      if (v === 'auto' || v === 'sun' || v === 'photo') return v;
+      // (v318.15: 'edges', Light from the edges)
+      if (v === 'auto' || v === 'sun' || v === 'photo' || v === 'edges') return v;
       return src && src.light === 'sun' ? 'sun' : d;
     },
     undo: true,
@@ -249,14 +268,23 @@ const STYLE_FIELDS = [
     in: 'shade',
     undo: false,
     save: function () {
-      return shadeLight === 'sun' ? 'sun' : 'photo';
+      // (the edges: the sun, to an older copy)
+      return shadeLight === 'sun' || shadeLight === 'edges' ? 'sun' : 'photo';
     },
   },
   // with zones, whether Main is shaded ("Shade Main"; each other zone has its own, in payload.zones)
   { key: 'main', in: 'shade', def: true, check: styleBool, undo: true },
   // what kind of shadow and highlight: the same colour, a cooler or grey shadow, a warmer highlight or the paper
   { key: 'shadow', in: 'shade', def: 'same', check: styleOne(['same', 'cool', 'grey']), undo: true },
-  { key: 'hilite', in: 'shade', def: 'same', check: styleOne(['same', 'warm', 'paper']), undo: true },
+  // (v318.17: 'none', Highlights None for a zone (Shadows only there); 'blender', the Colorless Blender's lift. An older
+  // copy reads either as the kind before it: Main's for a zone, Same colour for Main)
+  {
+    key: 'hilite',
+    in: 'shade',
+    def: 'same',
+    check: styleOne(['same', 'warm', 'paper', 'blender', 'none']),
+    undo: true,
+  },
   // sections left flat, by section number
   {
     key: 'flat',
@@ -541,6 +569,12 @@ const STYLE_VAR = {
   },
   set noRep(v) {
     noRep = v;
+  },
+  get matchAlike() {
+    return matchAlike;
+  },
+  set matchAlike(v) {
+    matchAlike = v;
   },
   get gradSeed() {
     return gradSeed;

@@ -573,11 +573,12 @@ function fitPairs() {
   });
   balFit(ctlEl);
   // Mood's six choices: one row where every label fits, else two rows of three
-  const six = ctlEl.querySelector('.sfsix');
-  if (six && six.offsetParent !== null) {
+  // (v318.17: and Lean towards' six)
+  ctlEl.querySelectorAll('.sfsix').forEach(function (six) {
+    if (six.offsetParent === null) return;
     six.classList.remove('sfsix3');
     six.classList.toggle('sfsix3', [].some.call(six.children, labelTooWide));
-  }
+  });
 }
 // Drag to scroll: at zoom 1 a vertical drag on the picture scrolls the page, unless the picture needs one-finger drags
 // (zoomed in, Paint, a sheet open, drawing in Edit sections, cropping or straightening, lining up a photo). The sun
@@ -1217,6 +1218,7 @@ function menuDo(m) {
   closeSheet();
   const imp = document.getElementById('sfImpFile');
   if (m === 'pick') {
+    if (photoTips(null)) return;
     _pickCb = null;
     if (fileEl) fileEl.click();
   } else if (m === 'sample') loadSample();
@@ -1384,6 +1386,8 @@ function frameInit() {
       fitPairs();
       paneMin();
       placeSheet();
+      // (v318.16: More options folds only where the controls are narrow, 51-controls-plan)
+      moreCheck();
     });
   });
 }

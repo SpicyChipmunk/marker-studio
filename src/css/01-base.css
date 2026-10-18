@@ -10,6 +10,8 @@
   --raise: #141419;
   --ink: #f4f2ec;
   --sub: rgba(244, 242, 236, 0.52);
+  /* (v318.16) the guide's row names and notes, a step clearer than --sub: they name every control */
+  --sub-guide: rgba(244, 242, 236, 0.62);
   --line: rgba(255, 255, 255, 0.09);
   --glass: rgba(255, 255, 255, 0.035);
   --amb: transparent;

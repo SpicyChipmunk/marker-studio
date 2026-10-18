@@ -142,7 +142,7 @@ test('the help sheet: from the guide and Home, glossary, your data, About with t
   await page.click('#helpGloss > summary'); await idle(page);
   const terms = await page.evaluate(() => [...document.querySelectorAll('#helpGloss dt')].map((d) => d.textContent));
   // (v308: Flow, Look, Scatter, Rough spots, Mood, Include, Surprise and Colour along added)
-  assert.deepEqual(terms, ['Section', 'Background / left out', 'Colour pattern', 'Flow', 'Look', 'Scatter', 'Rough spots', 'Mood', 'Include', 'Surprise', 'Zone', 'Pin', 'Kept', 'Blend companions', 'Shading', 'Highlight / Base / Shadow (H/B/S)', 'Greyscale', 'Colour along', 'Focus mode', 'Reveal', 'Your page']);
+  assert.deepEqual(terms, ['Section', 'Background / left out', 'Colour pattern', 'Flow', 'Matching shapes alike', 'Look', 'Scatter', 'Rough spots', 'Mood', 'Lean towards', 'Include', 'Surprise', 'Zone', 'Pin', 'Kept', 'Blend companions', 'Shading', 'Highlight / Base / Shadow (H/B/S)', 'Greyscale', 'Colour along', 'Focus mode', 'Reveal', 'Your page']);
   const pattern = await page.textContent('#helpGloss dd:nth-of-type(3)');
   for (const p of ['Gradient', 'Random', 'Blend', 'Photo', 'Manual']) assert.ok(pattern.includes(p), p);
   assert.ok(await page.isVisible('#helpGloss dt >> text=Focus mode'));

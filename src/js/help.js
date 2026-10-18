@@ -5,6 +5,26 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.17',
+    t: 'Themes in Colours › Lean towards: Sunset, Forest and Candy, from your markers. Blender highlights: with a Colorless Blender (0), it can be the highlight. Shadows only can now be for one zone. Pattern is tidier on a phone (More options, ＋ Zone at the end), and each Flow has a little picture.',
+  },
+  {
+    v: 'v318.16',
+    t: 'Tidier guide controls. Shading is one row (Off, Soft, Dramatic, Rounded, Neuro), with shadows only as Highlights › None. On a phone, Shading and Colours keep their main choices up front and the rest under More options. Buttons are a little bigger, and labels clearer.',
+  },
+  {
+    v: 'v318.15',
+    t: 'Shading can now take its light from the edges, darker along each section’s lines as neurographic drawings are rounded, and Style sets it all in one tap (Soft, Dramatic, Rounded, Neuro). Radial’s rings can follow the drawing, and on a mandala Matching shapes alike gives each ring’s matching shapes one marker. A new photo shows straight away, specks in the blank paper are cleared, and a sketchbook’s binding can be trimmed off.',
+  },
+  {
+    v: 'v318.14',
+    t: 'A big photo no longer freezes the screen while its sections are found: the work is done in short steps, so the page keeps moving. Photographing your caps now also reads Ohuhu codes whose first letter is at the rim (BG24, not G24).',
+  },
+  {
+    v: 'v318.13',
+    t: 'Photos of a page make far fewer specks: the smallest section is about 1 mm on the page, however big the photo. The first time you choose a photo, a card of tips comes first (Photo tips on the Guide screen shows it again). A warning about the photo now has Choose another photo beside it, and on a marble or patterned table the corner handles start round the whole photo.',
+  },
+  {
     v: 'v318.12',
     t: 'Drawings that run right to the edge of the page keep their edge shapes as sections, and a sketchbook page photographed from above no longer opens the corner handles when there’s no page edge to find. Photographing your caps reads Copic codes whose first letter is at the rim (YG03, not G03) more often.',
   },

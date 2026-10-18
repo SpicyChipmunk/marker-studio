@@ -84,7 +84,8 @@ function zoneEditEnd(quiet) {
     const b = zoneChipEl(zoneCur) || document.getElementById('sfZoneAdd');
     if (b)
       try {
-        b.focus({ preventScroll: true });
+        // (v318.17: ＋ Zone is at the tab's end now: brought into view)
+        b.focus({ preventScroll: b.id !== 'sfZoneAdd' });
       } catch (_) {}
   }
 }
@@ -136,12 +137,13 @@ function zoneEmptyNote() {
     '</p>'
   );
 }
-// the Pattern tab's first line without zones: its label and ＋ Zone
+// (v318.17) ＋ Zone, at the Pattern tab's end without zones, its words beside it
 function zoneAddHTML() {
+  // (v318.17: at the tab's end, its words beside it naming what it does; the heading is ctlPlanPattern's)
   return (
-    '<div class="sfglbl sfpatlbl sfzlbl"><span role="heading" aria-level="3">Colour pattern</span><button type="button" id="sfZoneAdd" class="sfzfirst" aria-label="Add a zone: give part of the picture its own pattern and colours">' +
+    '<div class="sfzaddl sfc-mt12"><button type="button" id="sfZoneAdd" class="sfzfirst" aria-label="Add a zone" aria-describedby="sfZoneAddW">' +
     ic('plus') +
-    ' Zone</button></div>'
+    ' Zone</button><span class="sfc-note" id="sfZoneAddW">Give part of the picture its own pattern and colours</span></div>'
   );
 }
 // the zone editor, in the Pattern tab's place: the name with Done beside it, so Done is in sight without scrolling,
@@ -508,7 +510,8 @@ function zoneKbSync() {
     const b = zoneChipEl(zoneCur) || document.getElementById('sfZoneAdd');
     if (b)
       try {
-        b.focus({ preventScroll: true });
+        // (v318.17: ＋ Zone is at the tab's end now: brought into view)
+        b.focus({ preventScroll: b.id !== 'sfZoneAdd' });
       } catch (_) {}
   }
 }

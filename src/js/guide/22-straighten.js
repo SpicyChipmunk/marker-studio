@@ -285,6 +285,8 @@ function pgFind(img, opt) {
 // the 14 real photos found 'sure' 1.5-2.8; patterned cloths a page was found 'sure' on 15.6-22.6 (one of those 7
 // wrong by 3%), the others not found at all.
 const PG_CLOTH = 10;
+// (v318.13) a surface busy enough round an unsure outline that the outline isn't worth starting from: pgBegin
+const PG_BUSY = 5;
 // The paper view's threshold: Otsu's over every block. (v315) On a coloured page the drawing's blocks (dark, or
 // colourful: a low paperS) are a third mode under the table's and the paper's, and the one split can fall between
 // them and everything else, so the whole photo passes as paper (judged 'fills': a finished page on a light wood, grey
@@ -959,7 +961,7 @@ const PG_WHY = {
   adjust: 'Drag a corner to move it.',
 };
 let _pgT = 0;
-// (v318.11) a page photographed at a steep angle: the far end of the page has few of the photo's pixels, and half its
+// (v318.11; v318.13 in the warning box, segQuality) a page photographed at a steep angle: the far end of the page has few of the photo's pixels, and half its
 // sections were lost (the guide benchmark's printed set: flat on the desk 94-97% of the sections found, at about 45°
 // 52%). Found by how much shorter the page's far edge is than its near edge in the finder's corners (pgKeystone): on
 // the maintainer's photos the finder sure, flat ones 0.92-0.99, steep ones 0.57-0.62; a made-up photo tilted 25° in
@@ -988,6 +990,18 @@ function pgReset() {
   const z = document.getElementById('sfZoomCtl');
   if (z) z.style.display = '';
 }
+// (v318.13) where an unsure find's corner handles start, in a photo iw x ih: its outline, or on a busy surface the
+// photo's own rectangle 3% in
+function pgStartQ(found, iw, ih) {
+  if (!(found.flick > PG_BUSY)) return found.q;
+  const m = 0.03;
+  return [
+    [iw * m, ih * m],
+    [iw * (1 - m), ih * m],
+    [iw * (1 - m), ih * (1 - m)],
+    [iw * m, ih * (1 - m)],
+  ];
+}
 // a fresh photo: srcImg holds it at working size, f35 is its lens (0 if unknown)
 function pgBegin(f35) {
   pgOrig = srcImg;
@@ -1005,7 +1019,15 @@ function pgBegin(f35) {
     return;
   }
   if (found.tier === 'unsure') {
-    pgOpen(found.q, found.why, 'first');
+    // (v318.13) on a busy surface (marble, a grained or patterned table: the finder's pgFlicker just outside its
+    // outline over PG_BUSY) its unsure outline was 17–30% of the photo's diagonal off on all 6 of the maintainer's
+    // marble photos, where the photo's own rectangle 3% in was 5–7% off: the handles start there. Its good unsure
+    // finds (the benchmark's zentangle, 0.7% off) sit on tables flickering 3.8–4.3
+    pgOpen(
+      pgStartQ(found, pgOrig.naturalWidth || pgOrig.width, pgOrig.naturalHeight || pgOrig.height),
+      found.why,
+      'first',
+    );
     return;
   }
   // (v285) a photo from a camera (it says what lens took it) that the finder left as it was: Straighten is offered on
@@ -1043,15 +1065,30 @@ function pgProceed(msg) {
   rot90 = 0;
   tilt = 0;
   cropRect = null;
-  processSrc();
-  sfmode = 'review';
-  editMode = 'toggle';
-  hasEdits = false;
-  geoUndoOK();
-  resetZoom();
-  renderControls();
-  render();
-  note(msg || metaText());
+  // (v318.14: with a paint between its steps, segRun; a newer photo takes over from it)
+  note('Detecting sections\u2026');
+  segThen(
+    function () {
+      return processSrcAsync(true);
+    },
+    processSrc,
+    function (ok) {
+      if (!ok) return;
+      sfmode = 'review';
+      editMode = 'toggle';
+      hasEdits = false;
+      geoUndoOK();
+      resetZoom();
+      renderControls();
+      render();
+      note(msg || metaText());
+    },
+    function (err) {
+      note(
+        errNote('Couldn’t process that photo. Try it again, or another photo.', 'Processing a photo', err),
+      );
+    },
+  );
 }
 function pgFlat(q) {
   const iw = pgOrig.naturalWidth || pgOrig.width,
@@ -1078,13 +1115,8 @@ function pgApply(q, auto, flat) {
   if (!sensUser) adaptC = SENS_PHOTO;
   pgProceed(pgOrig ? null : 'Page straightened.');
   sayLive(auto ? 'Straightened the page so the drawing is flat and square.' : 'Page straightened.');
-  if (auto && pgSteep) {
-    pgSteep = false;
-    const m =
-      'This page was photographed at a steep angle, so some sections may be missed. For best results, hold the phone flatter, right above the page.';
-    // (the toast is a polite live region of its own: no sayLive, which would say over "Straightened the page…")
-    toastHTML(esc(m), 7000);
-  }
+  // (v318.13: a steep photo's note is the warning box's now, segQuality 'steep', with Choose another photo: no toast
+  // to stack with it)
 }
 function pgUndo() {
   if (!pgOrig || !pgQ) return;
