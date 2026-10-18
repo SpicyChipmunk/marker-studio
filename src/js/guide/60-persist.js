@@ -130,7 +130,7 @@ function lmapWarm() {
 }
 // background by the edge rule alone (applyBg), as a guide opened again works it out
 function bgByEdge(c) {
-  return bgMaxB > 0 && c.bpx >= (0.6 - (bgTrim / 100) * 0.5) * bgMaxB;
+  return !bgEdgeAll && bgMaxB > 0 && c.bpx >= (0.6 - (bgTrim / 100) * 0.5) * bgMaxB;
 }
 function guideStale() {
   return !!(assignData && guideSig && labels && labelsSig() !== guideSig);

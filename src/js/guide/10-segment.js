@@ -305,6 +305,41 @@ function faintSplit() {
   return Math.max(160, c - 32);
 }
 /* ---- connected components ---- */
+// (v318.12) an edge-to-edge drawing: its lines run off the picture's edges at many points, the picture's edge is
+// mostly paper, and no region holds much of it. The edge rule below takes the regions with the most edge as the
+// background, as it should for a page with a margin; here they're the drawing's own edge shapes, a sixth to a
+// quarter of the page (the guide benchmark: 7–11 lost a page). On the benchmark's pages: edge-to-edge ones 28–44 runs
+// of ink along the edge, the longest region 7–13% of it, ink 5–9% of it; pages with a margin 0–4 runs, one region
+// 69–100% (or a margin cut by a few lines: 4 runs, 33%; straightened, 33–91%). A photo with the table round it is
+// never one: its edge is 18–74% dark (wood, stone, the binding).
+function bgEdgeTest() {
+  if (!labels || !(W > 8 && H > 8) || !(bgMaxB > 0)) return false;
+  const P = 2 * (W + H) - 4;
+  if (bgMaxB > 0.2 * P) return false;
+  // (along a ring a little inside the picture's edge: a straightened photo keeps a sliver of table or shadow at its
+  // very edge, the page's corners found to within a few pixels)
+  const d = Math.max(1, Math.min(Math.round(0.01 * Math.min(W, H)), (Math.min(W, H) >> 2) - 1)),
+    x0 = d,
+    y0 = d,
+    x1 = W - 1 - d,
+    y1 = H - 1 - d;
+  let ink = 0,
+    runs = 0,
+    n = 0,
+    prev = labels[y0 * W + x0 + 1] <= 0;
+  const at = function (p) {
+    const i = labels[p] <= 0;
+    n++;
+    if (i) ink++;
+    if (i && !prev) runs++;
+    prev = i;
+  };
+  for (let x = x0; x <= x1; x++) at(y0 * W + x);
+  for (let y = y0 + 1; y <= y1; y++) at(y * W + x1);
+  for (let x = x1 - 1; x >= x0; x--) at(y1 * W + x);
+  for (let y = y1 - 1; y > y0; y--) at(y * W + x0);
+  return runs >= 12 && ink <= 0.15 * n;
+}
 function applyBg(fresh) {
   const n = comps.length,
     bgRel = 0.6 - (bgTrim / 100) * 0.5;
@@ -315,11 +350,12 @@ function applyBg(fresh) {
       if (c && !c.merged && c.bpx > mx) mx = c.bpx;
     }
     bgMaxB = mx;
+    bgEdgeAll = bgRule >= 1 && bgEdgeTest();
   }
   for (let l = 1; l < n; l++) {
     const c = comps[l];
     if (!c || c.merged) continue;
-    c.bg = bgMaxB > 0 && c.bpx >= bgRel * bgMaxB;
+    c.bg = !bgEdgeAll && bgMaxB > 0 && c.bpx >= bgRel * bgMaxB;
   }
   let pl = 0;
   for (let l = 1; l < n; l++) {

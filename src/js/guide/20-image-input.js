@@ -33,6 +33,8 @@ function resetForNewPicture() {
   // touching sections kept off near twins; v318.10: no near twins picked for the run while other markers will do;
   // v318.11: Shuffle on a light-to-dark run moves its handovers)
   gradArea = 5;
+  // (v318.12: an edge-to-edge drawing keeps its edge shapes)
+  bgRule = 1;
   _mkOpened = {};
   _blendSel = {};
   relWake();
@@ -709,6 +711,7 @@ function keepObj(geo) {
       // (v308: and whether faint grey marks were ignored)
       det: _reFrom ? { e: _reFrom.e, c: _reFrom.c, f: _reFrom.f } : { e: enhance, c: adaptC, f: faintCut },
       bgMaxB: bgMaxB,
+      bgEdgeAll: bgEdgeAll,
       // (v308: the offer to ignore faint grey marks, as it was for those sections)
       fo: faintOffer,
       ad: ad,

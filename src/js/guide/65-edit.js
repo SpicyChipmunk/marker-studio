@@ -243,6 +243,7 @@ function secApply(u, redo) {
         _reFrom = null;
       }
       bgMaxB = u.keep.bgMaxB;
+      bgEdgeAll = !!u.keep.bgEdgeAll;
       if (u.keep.fo !== undefined) faintOffer = u.keep.fo;
       _origKeys = u.keep.orig || {};
       _lostKeys = u.keep.lost || {};

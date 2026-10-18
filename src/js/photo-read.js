@@ -292,6 +292,8 @@ function ocrLineRead(r, it) {
     // letter for a digit: they wait for the end of the photo, its generation and its names. "W60g" had gone in at once as
     // WG06)
     !cs[0].old &&
+    // (v318.12: nor a Copic code that may be a longer one's tail: it waits for its read again, ocrWidenWait)
+    !ocrWidenWait(cs[0].i) &&
     (!/[A-Za-z]/.test(it.text) || ocrAsRead(it.text, scanKey(COLORS[cs[0].i].code)))
   ) {
     const was = scanList.length;
@@ -671,6 +673,40 @@ function ocrNamedOther(r, lines) {
       scanList[0].photo = r.n;
   });
   return out.size ? lines.filter((x) => !out.has(x.id) && !out.has(x.nameOf)) : lines;
+}
+// (v318.12) the Copic codes that are the tail of a longer one with a letter more at its head (G03 of YG03, R20 of
+// YR20, V04 of BV04, RV04): short, read again by the engine with its box grown at the code's start (o.widen); long,
+// what such a read may turn it into. Worked out once from the markers
+let _ocrWiden = null;
+function ocrWidenSets() {
+  if (_ocrWiden) return _ocrWiden;
+  const cc = new Set();
+  COLORS.forEach(function (c) {
+    if (c.brand === 'Copic') cc.add(scanKey(c.code));
+  });
+  const short = [],
+    long = [];
+  cc.forEach(function (k) {
+    let any = false;
+    for (let L = 65; L <= 90; L++) {
+      const w = String.fromCharCode(L) + k;
+      if (cc.has(w)) {
+        long.push(w);
+        any = true;
+      }
+    }
+    if (any) short.push(k);
+  });
+  _ocrWiden = { short: short.sort(), long: long.sort() };
+  return _ocrWiden;
+}
+// a code to hold back from going in at once, as the engine reads it again for a lost first letter (not when the brand
+// chosen is Ohuhu: no read again then)
+function ocrWidenWait(i) {
+  const c = COLORS[i];
+  return (
+    !!c && c.brand === 'Copic' && scanBrand !== 'Ohuhu' && ocrWidenSets().short.indexOf(scanKey(c.code)) >= 0
+  );
 }
 // (v318.4 e2e) a line of words read with a "|" for an l, "R|ush" of Blush cut by the photo's edge: the l it is, not a 1
 // (read as R1, Ohuhu's old code for R210, it had been asked about with no right answer and no picture)
@@ -1585,6 +1621,9 @@ async function ocrGo(r) {
       minConf: 0.5,
       second: true,
       words: ocrWords(),
+      // (v318.12: a Copic code that's a longer one's tail read again for its lost first letter; not when the brand is
+      // Ohuhu)
+      widen: scanBrand === 'Ohuhu' ? null : ocrWidenSets(),
     };
   // (v318.9) a photo bigger than its 2048 copy, not read gently: the first look tells whether its codes are small
   if (!r.detail && !r.noDetail && !low && Math.max(r.img.ow || 0, r.img.oh || 0) > OCR_DETAIL_MIN)

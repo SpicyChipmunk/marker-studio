@@ -51,7 +51,9 @@ test('a code inside a longer one read in the same place is that cap read short: 
       ['V91', false, 0, [312, 302, 64, 32, 12], 2],
     ]),
   );
-  assert.ok(o.streamed.includes('Copic|V91'), 'it went in as it was read');
+  // (v318.12: a code that's a longer one's tail, V91 of RV91, no longer goes in at once: it waits for the end, read
+  // again for its lost first letter, ocrWidenWait)
+  assert.ok(!o.streamed.includes('Copic|V91'), 'it waited');
   assert.ok(o.list.includes('Copic|RV91'));
   assert.ok(!o.list.includes('Copic|V91'), o.list.join(' '));
   assert.equal(o.added, o.list.length);
@@ -104,7 +106,7 @@ test('a code read for sure with another marker’s name is asked about, not kept
       ['Grayish Cherry', false, CO.length + 1, [250, 50, 110, 22, 30]],
     ]),
   );
-  assert.ok(o.streamed.includes('Copic|V91'));
+  assert.ok(!o.streamed.includes('Copic|V91'), 'it waited (v318.12)');
   assert.ok(!o.list.includes('Copic|V91') && !o.list.includes('Copic|RV91'), o.list.join(' '));
   assert.equal(o.titles.length, 1, o.titles.join(' | '));
   assert.match(o.titles[0], /don’t match.*Copic\|V91.*Copic\|RV91|don’t match.*Copic\|RV91.*Copic\|V91/);

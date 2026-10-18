@@ -209,6 +209,12 @@ let smpTry = 0;
 // marker's share counting for nothing, and no two markers too alike in the run (gradPickSpread); a guide made in v314
 // keeps 1. Written by: 05-style-fields, 20-image-input, 99-close (test)
 let gradArea = 0;
+// (v318.12) the background rule's generation: 1 for a guide made since, whose drawing, when it runs off the picture's
+// edges (an edge-to-edge page), leaves its edge shapes as sections (applyBg); 0 for a guide saved before, whose
+// background is worked out again as it was on opening. bgEdgeAll: this picture is one (applyBg). Written by:
+// 05-style-fields, 10-segment (bgEdgeAll), 20-image-input, 99-close (test)
+let bgRule = 0;
+let bgEdgeAll = false;
 // (v308) the zones of a guide opened from the Library, Main 0 too, not laid since: { id: 1 } (mkOwnCount)
 // Written by: 20-image-input, 30-palette-assign, 97-open
 let _mkOpened = {};

@@ -257,7 +257,7 @@ function pgFind(img, opt) {
   });
   if (!cands.length) return { tier: 'none', why: 'nothing' };
   cands.forEach(function (f) {
-    pgJudge(f, iw, ih);
+    pgJudge(f, iw, ih, opt);
   });
   // the drawing's own outline wins a tie: on a spiral pad or an open book the paper runs on past the drawing's sheet.
   // (v313) Only when its four sides fit the drawing (its region fills its box as a page would): a diamond drawn round a
@@ -699,7 +699,7 @@ function pgCross(q, dm, hi, gw, gh, B) {
 const PG_CROSS_MAX = 0.2,
   PG_SHARP_MIN = 0.5;
 // how sure we are, and why not
-function pgJudge(f, iw, ih) {
+function pgJudge(f, iw, ih, opt) {
   // (v313) the drawing runs across this outline, or the light changes gently across it rather than in a step: uneven
   // light on a page (its bright half under a lamp), not a page's edge. Nothing is offered to straighten.
   if (f.kind === 'paper' && (f.cross > PG_CROSS_MAX || (f.sharpN >= 8 && f.sharp < PG_SHARP_MIN))) {
@@ -763,6 +763,20 @@ function pgJudge(f, iw, ih) {
   if (f.step < 25) {
     f.tier = 'none';
     f.why = 'plain';
+    return;
+  }
+  // (v318.12) not sure of an outline that is the drawing's, not the paper's: a page photographed from above that fills
+  // the photo (Ben's sketchbook pages, drawn to the edge: 2 of his 3 line-only ones opened the corner handles on the
+  // drawing's own shape). Built as taken, with Straighten offered on its line; nothing the benchmark's photos found changes (their
+  // unsure finds are all the paper's)
+  // (not for a photo of a finished page, opt.coloured: its corner handles start from the drawing's outline as before)
+  if (
+    f.kind === 'drawing' &&
+    !(opt && opt.coloured) &&
+    (out || (f.touch > 0.04 && minCov < 0.3) || minCov < 0.6 || f.fill < 0.85 || f.fill > 1.12)
+  ) {
+    f.tier = 'none';
+    f.why = 'drawing';
     return;
   }
   // a corner beyond the photo's edge, or a side lying along it (the page runs off the photo there)
@@ -1343,7 +1357,10 @@ function pgAdjust() {
       // (v308) the photo's own rectangle, 3% in, when the finder's guess is the drawing rather than a page: a photo
       // the page fills, or plain paper whose outline came from the drawing (Ben's pages: the drawing's diagonal band,
       // which Straighten stretched into a strip)
-      if (f.tier === 'none' && (f.why === 'fills' || (f.why === 'plain' && f.kind === 'drawing'))) {
+      if (
+        f.tier === 'none' &&
+        (f.why === 'fills' || f.why === 'drawing' || (f.why === 'plain' && f.kind === 'drawing'))
+      ) {
         const iw = pgOrig.naturalWidth || pgOrig.width,
           ih = pgOrig.naturalHeight || pgOrig.height,
           m = 0.03;

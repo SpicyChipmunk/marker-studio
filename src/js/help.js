@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.12',
+    t: 'Drawings that run right to the edge of the page keep their edge shapes as sections, and a sketchbook page photographed from above no longer opens the corner handles when there’s no page edge to find. Photographing your caps reads Copic codes whose first letter is at the rim (YG03, not G03) more often.',
+  },
+  {
     v: 'v318.11',
     t: 'Shuffle always changes a new Gradient now, even with Pastel or Deep colours that run light to dark (it had sometimes given the same guide back). And a page photographed at a steep angle gets a tip to hold the phone flatter, as some of its sections can be missed.',
   },

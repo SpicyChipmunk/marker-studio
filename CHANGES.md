@@ -1493,3 +1493,28 @@ a saved guide lays as it did.
 - **README for people using the app:** getting started, photographing a page, adding markers, your data, what it
   covers, feedback. Building, testing and the code's layout moved to docs/DEVELOPING.md (internal), as the licence
   doesn't allow reuse.
+
+## v318.12
+
+- **An edge-to-edge drawing keeps its edge shapes** (bgRule 1, new guides). The background rule took the regions
+  with the most of the picture's edge as background, right for a page with a margin, but on a drawing that runs off
+  the page (neurographic pages) those are its own edge shapes, a sixth to a quarter of the page. A picture whose lines
+  run off its edge at 12 or more points, whose edge is mostly paper (ink at most 15% of a ring just inside it) and
+  where no region holds over a fifth of the edge, now has no background by that rule; a margin, a drawn frame and the
+  page found in a photo still are. Guide benchmark: on the 6 edge-to-edge pages every edge shape kept (bgDropped:edge
+  from 7–11 a page to 0; matched 89–96% to 98–100%), straightened photos of them too (92–95% to 95–100%); no other
+  page or photo changed. A guide saved before opens with its background as it was (bgRule 0, also in bgByEdge).
+- **A sketchbook page photographed from above isn't sent to the corner handles** when the only outline the finder
+  could find, and wasn't sure of, is the drawing's own (not the paper's): it's built as taken, with Straighten on its
+  line. Ben's line-only sketchbook pages: 2 of 3 had opened the corner handles; now none. (His coloured pages still
+  can: the finder takes a light patch of colour for paper. Coloured pages are a known limit.) No photo in the
+  benchmark changes.
+- **Photograph your caps: a Copic code's lost first letter** (G03 for YG03, R20 for YR20, V04 for BV04): a code that
+  is a longer one's tail is read again with its box grown by a character at the end it starts, and the longer code
+  taken when it reads surely, its first character a letter and the rest the same. Such codes wait for that read
+  rather than going in at once. Not when the brand chosen is Ohuhu. Ben's 16 Copic photos: wrong 9 to 6, 5 more caps
+  read; no right code made longer. His 26 Ohuhu photos read exactly as before, in the same time. Ohuhu's own lost
+  letters (39 such pairs, G24 with three: BG24, CG24, GG24) are for later.
+- **Measured and not built:** closing pen gaps of 2–4 px everywhere (a radius-1 closing fixed half the gaps on the
+  gap pages but cost 5 times the defects elsewhere: tessellations, mosaics, fine botanicals); the marble counter
+  (the finder takes the stone's light veins for paper; the corner handles cover it).

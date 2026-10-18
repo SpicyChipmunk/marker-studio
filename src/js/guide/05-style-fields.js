@@ -437,6 +437,18 @@ const STYLE_FIELDS = [
       return gradArea || undefined;
     },
   },
+  // (v318.12) the background rule (bgRule, 00-state): written only for a guide made since, so a guide saved before
+  // saves exactly as it was and opens with its background as it was
+  {
+    key: 'bgRule',
+    in: 'payload',
+    def: 0,
+    check: styleOne([0, 1]),
+    undo: false,
+    save: function () {
+      return bgRule || undefined;
+    },
+  },
 ];
 // each setting's variable, by its key (x and y are the sun's; setting one keeps the other)
 const STYLE_VAR = {
@@ -727,6 +739,12 @@ const STYLE_VAR = {
   },
   set gradArea(v) {
     gradArea = v;
+  },
+  get bgRule() {
+    return bgRule;
+  },
+  set bgRule(v) {
+    bgRule = v;
   },
 };
 // what is saved in `where`: 'style' gives payload.style (with its shade), 'payload' the section settings

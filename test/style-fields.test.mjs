@@ -9,7 +9,7 @@ import { createApp } from './harness.mjs';
 const NAMES = ['family', 'palette', 'gradShape', 'dir', 'look', 'emphasis', 'limitN', 'gradIncl', 'noAdj', 'balance', 'balM', 'balS', 'balA', 'balSeed', 'noRep', 'gradSeed', 'blendFall', 'blendMix',
   'texAmt', 'radC', 'shadeMode', 'shadeSun', 'shadeRound', 'shadeLines', 'shadeHi', 'shadeLo', 'shadeLight', 'shadeMain', 'shadeShadow', 'shadeHilite', 'shadeFlat', 'photoXf',
   'photoOp', 'photoPaper', 'expand', 'expandChar', 'paletteSource', 'savedPalId', 'genHarmony', 'genPal', 'fromPal', 'minPos', 'bgTrim',
-  'addAutoClose', 'famRule', 'lowX', 'smpTry', 'gradArea'];
+  'addAutoClose', 'famRule', 'lowX', 'smpTry', 'gradArea', 'bgRule'];
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
 test('each style setting’s first value (a guide that changes nothing is saved with these)', () => {
@@ -36,6 +36,8 @@ test('each style setting’s first value (a guide that changes nothing is saved 
     smpTry: 0,
     // (v314: a guide saved before keeps v313's Gradient area rule)
     gradArea: 0,
+    // (v318.12: a guide saved before keeps its background as it was)
+    bgRule: 0,
   });
 });
 
@@ -143,8 +145,9 @@ test('STYLE_FIELDS: every default is its variable’s first value, and what a fi
   // (v306: 42, with Scatter's gradScat, gradJit and gradFix; v308: 43, with the Gradient's Include row; 44 with
   // fromPal, the palette Palette's Use in a guide handed over, which Mood and Shuffle keep as it is; v313:
   // 45 with famRule, the family rule; 46 with lowX, the running-low lines closed;
-  // 47 with smp, the sample not yet printed or renamed; v314: 48 with gradArea, the Gradient's area rule)
-  assert.equal(n, 48);
+  // 47 with smp, the sample not yet printed or renamed; v314: 48 with gradArea, the Gradient's area rule; v318.12: 49
+  // with bgRule, the background rule)
+  assert.equal(n, 49);
 });
 
 test('STYLE_FIELDS: where each setting is saved (in the order written) and which ones Undo keeps', () => {
@@ -156,7 +159,7 @@ test('STYLE_FIELDS: where each setting is saved (in the order written) and which
     'shade.hilite', 'shade.flat',
     'style.photo (no undo)', 'style.expand', 'style.expandChar', 'style.paletteSource', 'style.savedPalId',
     'style.genHarmony', 'style.genPal', 'style.fromPal', 'payload.minPos (no undo)', 'payload.minSize (no undo)', 'payload.bgTrim (no undo)',
-    'payload.addAutoClose (no undo)', 'payload.famRule (no undo)', 'payload.lowX (no undo)', 'payload.smp (no undo)', 'payload.gradArea (no undo)',
+    'payload.addAutoClose (no undo)', 'payload.famRule (no undo)', 'payload.lowX (no undo)', 'payload.smp (no undo)', 'payload.gradArea (no undo)', 'payload.bgRule (no undo)',
   ]);
 });
 

@@ -25,6 +25,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     segment: segment,
     labelCells: labelCells,
     applyBg: applyBg,
+    bgByEdge: bgByEdge,
     // (the paper inside a drawn frame, v305)
     frameLeft: frameLeft,
     frameColour: frameColour,
@@ -360,6 +361,10 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     stepFaint: stepFaint,
     pgFind: pgFind,
     pgKeystone: pgKeystone,
+    pgJudge: pgJudge,
+    get bgEdgeAll() {
+      return bgEdgeAll;
+    },
     get cropMode() {
       return cropMode;
     },
@@ -1242,6 +1247,12 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       },
       set gradArea(v) {
         gradArea = v;
+      },
+      get bgRule() {
+        return bgRule;
+      },
+      set bgRule(v) {
+        bgRule = v;
       },
     },
     get undoTop() {

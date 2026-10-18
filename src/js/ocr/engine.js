@@ -898,6 +898,76 @@ const OCR2 = (function () {
             }
           });
         }
+        // (v318.12, o.widen: { short, long }) a Copic code that's the tail of a longer one with a letter more at its
+        // head (G03 of YG03, R20 of YR20): read again with its box grown by a character at the end the code starts, and
+        // the longer code taken when it reads surely, its first character a letter and the rest the code as read. A cap's
+        // first letter, at the rim, is the one most often lost. Ben's Copic photos: wrong 9 -> 6, +5 caps, no right code
+        // made longer. (The page holds such codes back until this has run: photo-read.js ocrWidenWait)
+        if (o.widen && !aborted()) {
+          const K = (tx) =>
+              tx
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, '')
+                .replace(/O/g, '0'),
+            sh = new Set(o.widen.short),
+            lg = new Set(o.widen.long),
+            cand = items.filter(
+              (it) => it.best && !it.nameOf && codeLike(it.best.text) && sh.has(K(it.best.text)),
+            );
+          const wide = cand.map((it) => {
+            const b = it.box,
+              q = it.best.flip % 180 !== 0,
+              e = (o.widenBy || 1) * (q ? b.w : b.h),
+              // (level text: the box grows on the side the code starts, the left, or the right when it's upside down;
+              // turned a quarter, both ends, as which end is its head isn't known here)
+              s = it.best.flip === 180 ? 1 : -1;
+            return {
+              id: 0,
+              look: lookN,
+              all: [],
+              best: null,
+              quiet: true,
+              done: false,
+              names: [],
+              nameOf: null,
+              of: it,
+              rot: it.best.flip,
+              box: q
+                ? { cx: b.cx, cy: b.cy, w: b.w, h: b.h + 2 * e, a: b.a }
+                : {
+                    cx: b.cx + (s * e * Math.cos(b.a)) / 2,
+                    cy: b.cy + (s * e * Math.sin(b.a)) / 2,
+                    w: b.w + e,
+                    h: b.h,
+                    a: b.a,
+                  },
+            };
+          });
+          if (wide.length) await pass(wide, (h) => h.rot, 'widen');
+          // (over both looks)
+          stat.widen = stat.widen || { tried: 0, took: 0 };
+          stat.widen.tried += wide.length;
+          wide.forEach((h) => {
+            const it = h.of,
+              a = K(it.best.text),
+              w = h.best ? K(h.best.text) : '';
+            if (
+              h.best &&
+              h.best.conf >= (o.widenConf || 0.8) &&
+              lg.has(w) &&
+              w.length === a.length + 1 &&
+              w.slice(1) === a &&
+              /[A-Z]/.test(w[0])
+            ) {
+              h.best.flip = it.best.flip;
+              it.all.push(h.best);
+              it.best = h.best;
+              it.widened = true;
+              stat.widen.took++;
+              if (hooks.line) hooks.line(it);
+            }
+          });
+        }
         // phase 2: the names, each turned as its code was read (cls'd when the code is unsure), once
         if (o.names !== false && !aborted()) {
           const nm = items.filter((it) => it.nameOf);

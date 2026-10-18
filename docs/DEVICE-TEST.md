@@ -101,7 +101,18 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.11
+## New in this release: v318.12
+
+- [ ] ★ Photograph one of your **sketchbook drawings** (line art, before colouring) from right above → no corner
+      handles; the guide is built, and the shapes along the page's edges are sections (not left white).
+- [ ] A **downloaded edge-to-edge** neurographic page → its edge shapes are sections. A page **with a white margin**
+      → the margin stays white.
+- [ ] Open a guide you saved before this release → its sections and background as they were.
+- [ ] If you have Copic markers: **Photograph your caps** on a tray of YG, YR or BV markers → their codes read whole.
+
+Then v318.11's checks, if not done:
+
+## v318.11
 
 - [ ] ★ A new **Gradient** with Mood **Pastel** → tap **Shuffle** 3 times → the guide changes every time (same
       colours, moved along).
