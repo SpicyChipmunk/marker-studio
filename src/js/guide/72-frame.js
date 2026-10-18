@@ -245,6 +245,8 @@ function frameSize() {
   paneMin();
   touchRule();
   planFit();
+  // (v318.18: the column beside the picture can make Colours fold, 51-controls-plan)
+  moreCheck();
 }
 // (v318 review) Where a toast goes in the Plan: over the foot of the picture, just above its tool row (beside the
 // picture's ↶ Undo), not over the tabs and their controls, where it had sat for Surprise's 8 seconds over the tab

@@ -35,7 +35,7 @@ function ctlPlan() {
   ctlEl.innerHTML =
     ctlPlanHead() + ctlPlanColours() + ctlPlanPattern() + ctlPlanShading() + ctlPlanShare() + ctlPlanBar();
   ctlPlanWire();
-  _moreNarrow = moreNarrow();
+  _moreNarrow = moreState();
   frameLineWire();
   ctlEl.setAttribute('data-tab', gTab);
   mpAfterPlan();
@@ -68,9 +68,18 @@ function moreNarrow() {
   if (typeof innerWidth !== 'number' || !innerWidth) return false;
   return Math.min(innerWidth, innerHeight || innerWidth) < MORE_W;
 }
+// (v318.18) an iPad on its side whose controls column, beside the picture, is narrow (an 11" with a portrait page):
+// Colours folds as on a phone, as Theme's grid made it taller than the screen there (Shading and Pattern don't)
+const MORE_COL_W = 420;
+function moreColNarrow() {
+  return !!(geo && geo.side && ctlEl && ctlEl.offsetWidth && ctlEl.offsetWidth < MORE_COL_W);
+}
+function moreState() {
+  return moreNarrow() + '|' + moreColNarrow();
+}
 // whether the tab folds (the bar shown): its folded part exists and it's narrow
 function moreFold(tab) {
-  if (!moreNarrow()) return false;
+  if (!moreNarrow() && !(tab === 'colours' && moreColNarrow())) return false;
   if (tab === 'shading') return shadeMode !== 'off';
   if (tab === 'colours') return family !== 'manual' && family !== 'photo' && paletteSource === 'owned';
   // (v318.17: Gradient's Direction, Start colour and Scatter, Random's two tick boxes, Blend's Spread and Mix)
@@ -112,11 +121,11 @@ function moreIn(tab, n) {
     '>'
   );
 }
-// (on a resize across MORE_W: drawn again, 72-frame)
+// (on a resize across MORE_W, or the column beside the picture across MORE_COL_W: drawn again, 72-frame)
 function moreCheck() {
-  const n = moreNarrow();
+  const n = moreState();
   if (_moreNarrow !== null && n !== _moreNarrow && sfmode === 'guide' && assignData) renderControls();
-  _moreNarrow = n;
+  _moreNarrow = moreState();
 }
 // what's folded in Colours that isn't as it starts, said on the bar ("Warm · 2 filters · Browns on")
 function moreColoursSum() {

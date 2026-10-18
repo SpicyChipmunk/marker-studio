@@ -228,7 +228,8 @@ test('v285 iPad portrait: one column on the 11" and the 13", using the width; th
 
 test('v285 iPad landscape: the picture and its tools fully on screen as the guide opens, its column fitted to it; tabs as tall as the tallest', async () => {
   for (const [w, h] of [[1194, 834], [1366, 1024]]) {
-    const { page, errors, ctx } = await openApp({ width: w, height: h });
+    // (v318.18: More options as it starts, shut: Colours folds where the column beside the picture is narrow)
+    const { page, errors, ctx } = await openApp({ width: w, height: h, moreShut: true });
     await sampleGuide(page); await letterGuide(page);
     await page.evaluate(() => scrollTo(0, 0)); await idle(page);
     const g = await geom(page);
@@ -237,6 +238,8 @@ test('v285 iPad landscape: the picture and its tools fully on screen as the guid
     assert.ok(g.picL + g.picW <= g.ctlL, 'picture left of the controls');
     assert.ok(g.ctlL - (g.picL + g.picW) < 120, `the picture's column fits it (gap ${g.ctlL - (g.picL + g.picW)})`);
     assert.ok(g.ctlW >= 340 && g.ctlW <= 561, `controls ${g.ctlW}`);
+    // (v318.18: Colours folds under More options where the column is under 420px, as on a phone; not wider)
+    assert.equal(!!(await page.$('#sfMore-colours')), g.ctlW < 420, `${w}×${h}: Colours folded at ${g.ctlW}px`);
     // every tab: nothing to scroll into but the room the page needs, and switching moves nothing (once the first
     // visit's "tap a section" line has gone, at the first change of tab, v289)
     await page.evaluate(() => document.querySelector('.sftabbtn[data-t="pattern"]').click()); await idle(page);
@@ -248,19 +251,29 @@ test('v285 iPad landscape: the picture and its tools fully on screen as the guid
     assert.ok(heights.every((x) => x === heights[0]), 'the same page height on every tab: ' + heights);
     // (v308: the Colours tab grew about 120px — the marker count's −/+ row and the Include row with its status line,
     // as Ben chose — so on the 11" the page now scrolls about 110px to reach Colour along. That scroll must be the
-    // tallest tab's own content: the Colours panel filled to its end, and the page ending at the card's last button,
-    // not empty space under it. It had been "within 40px of the screen", from before Colours was taller than it.)
-    await page.evaluate(() => document.querySelector('.sftabbtn[data-t="colours"]').click()); await idle(page);
+    // tallest tab's own content: its panel filled to its end, and the page ending at the card's last button, not empty
+    // space under it. It had been "within 40px of the screen", from before Colours was taller than it. v318.18: the
+    // tallest tab's, whichever it is: Colours folds on the 11" now, which can leave Pattern the tallest.)
+    const content = {};
+    for (const t of ['colours', 'pattern', 'shading', 'share']) {
+      await page.evaluate((t) => document.querySelector(`.sftabbtn[data-t="${t}"]`).click(), t); await idle(page);
+      content[t] = await page.evaluate((t) => {
+        const p = document.getElementById('sfPanel-' + t), top = p.getBoundingClientRect().top;
+        return [...p.querySelectorAll('*')].filter((x) => x.getClientRects().length).reduce((m, x) => Math.max(m, x.getBoundingClientRect().bottom), 0) - top;
+      }, t);
+    }
+    const tallest = Object.keys(content).sort((a, b) => content[b] - content[a])[0];
+    await page.evaluate((t) => document.querySelector(`.sftabbtn[data-t="${t}"]`).click(), tallest); await idle(page);
     await page.evaluate(() => scrollTo(0, 5000)); await idle(page);
-    const fill = await page.evaluate(() => {
-      const p = document.getElementById('sfPanel-colours'), pb = p.getBoundingClientRect().bottom;
+    const fill = await page.evaluate((t) => {
+      const p = document.getElementById('sfPanel-' + t), pb = p.getBoundingClientRect().bottom;
       const last = [...p.querySelectorAll('*')].filter((x) => x.getClientRects().length).reduce((m, x) => Math.max(m, x.getBoundingClientRect().bottom), 0);
       // (Colour along's bar stays at the foot of the screen: scrolled to the end, the tab's last line sits just above it)
       return { slack: pb - last, end: document.getElementById('sfColor').getBoundingClientRect().top - last };
-    });
+    }, tallest);
     await page.evaluate(() => scrollTo(0, 0)); await idle(page);
-    assert.ok(heights[0] - h <= 40 || fill.slack <= 12, `${w}×${h}: the scroll is the Colours tab's content, not empty space (${heights[0] - h}px, ${Math.round(fill.slack)}px unused)`);
-    assert.ok(heights[0] - h <= 40 || (fill.end >= 0 && fill.end <= 60), `${w}×${h}: scrolled to the end, the Colours tab's last line just above the bar (${Math.round(fill.end)}px)`);
+    assert.ok(heights[0] - h <= 40 || fill.slack <= 12, `${w}×${h}: the scroll is the ${tallest} tab's content, not empty space (${heights[0] - h}px, ${Math.round(fill.slack)}px unused)`);
+    assert.ok(heights[0] - h <= 40 || (fill.end >= 0 && fill.end <= 60), `${w}×${h}: scrolled to the end, the ${tallest} tab's last line just above the bar (${Math.round(fill.end)}px)`);
     assert.ok(heights[0] - h <= 160, `${w}×${h}: no long scroll (${heights[0] - h}px)`);
     assert.deepEqual(errors, []);
     await ctx.close();

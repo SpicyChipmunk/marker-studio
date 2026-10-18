@@ -1748,4 +1748,10 @@ Mood's fitting).
   that minimum; the short Shading tab (v318.16) made the page shorter for that moment, and Safari's engine pulled the
   scroll up with it. The page now keeps its height while the tabs are measured (e2e/guide-frame). And
   e2e/rough-count's big-collection test waits up to 90 s for its line (it once missed 30 s there, then passed).
+- **From the v318.18 run on GitHub (Chromium part 1, WebKit part 8):** on an 11" iPad on its side with a portrait page,
+  the controls column beside the picture is about 380px wide, and Theme's grid made Colours taller than the screen
+  (the page changed height between tabs, and Colours needed ~300px of scrolling). There, Colours now folds under
+  **More options** as on a phone (Ben's choice): where that column is under 420px. Shading and Pattern stay open; a
+  12.9" or a wider page keeps everything open. e2e/guide-frame-2 checks the fold, opens with More options shut as the
+  app starts, and checks the tallest tab's scroll is its own content (Colours may no longer be the tallest).
 - Cache bumped to `marker-studio-v318.18`.
