@@ -76,7 +76,11 @@ function scanReread() {
   if (raw === scanListRaw) return false;
   scanListRaw = raw;
   scanList = scanParseList(raw);
-  if (typeof ocrPhotos !== 'undefined') ocrPhotos = scanPhotoMax();
+  // (v318.22 debug: and the questions answered by earlier photos, their numbers maybe another's now)
+  if (typeof ocrPhotos !== 'undefined') {
+    ocrPhotos = scanPhotoMax();
+    ocrAnswered = [];
+  }
   try {
     scanPics.load(scanPicsShow);
   } catch (_) {}

@@ -590,6 +590,38 @@ function paletteOpts() {
     for (let pos = state.palSize - 1; pos >= 0 && out.length; pos--)
       if (opts.locked[pos] == null) opts.locked[pos] = out.shift();
   }
+  // (v318.22 debug) the base from the locked colours, each at the hue its place in the palette has, as genSlots lays the
+  // places out (keep the two in step): it had been the last palette's first colour, so with a colour locked each
+  // Generate moved the scheme on, and an Analogous five ended as four greens 94–115° from the violet locked
+  if (opts.seedIdx == null && state.harmony !== 'mono' && state.harmony !== 'rainbow') {
+    const n = state.palSize,
+      A = ANCH[state.harmony];
+    let x = 0,
+      y = 0;
+    for (const ps in opts.locked) {
+      const p = +ps,
+        i = opts.locked[ps];
+      if (LCH[i][1] < GREY_C) continue;
+      let off = 0;
+      if (state.harmony === 'analogous') {
+        const span = n <= 2 ? 20 : n <= 4 ? 30 : 40;
+        off = n === 1 ? 0 : -span + (2 * span * p) / (n - 1);
+      } else if (A) {
+        let q = 0,
+          a = 0;
+        for (; a < A.length - 1; a++) {
+          const k = Math.floor(n / A.length) + (a < n % A.length ? 1 : 0);
+          if (p < q + k) break;
+          q += k;
+        }
+        off = A[a];
+      }
+      const r = ((LCH[i][2] - off) * Math.PI) / 180;
+      x += Math.cos(r);
+      y += Math.sin(r);
+    }
+    if (x || y) opts.baseHue = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+  }
   return opts;
 }
 // Palette › From photo: the photo, the colour each band came from, and the lighting correction from its paper (when
@@ -1150,6 +1182,11 @@ function genPalette(n, harmony, opts) {
    size or filter change makes the Gradient's own. Locked colours stay, and the free ones are picked round them. At
    most as many colours as there are clear markers in play; null when fewer than its smallest size. (v308) Shown in
    rainbow order from red (rainbowOrder), locked colours with the rest. */
+const _rbSeed = new WeakMap();
+// whether pal was built from marker si: first in its place, or a Rainbow made from it
+function palFrom(pal, si) {
+  return si != null && pal && (state.harmony === 'rainbow' ? _rbSeed.get(pal) === si : pal[0] === si);
+}
 function genRainbow(n, opts) {
   if (!window.SF || !SF.rainbowPick) return null;
   const pool = [];
@@ -1162,6 +1199,9 @@ function genRainbow(n, opts) {
     });
   if (!pal || pal.length < Math.min(n, HARM_RANGE.rainbow[0])) return null;
   rainbowOrder(pal);
+  // (fourth pass: a Rainbow puts its base where its hue falls, so which marker it was built from is kept with it, not
+  // read from its place; a palette that merely holds the marker chosen later isn't built from it)
+  if (opts.seedIdx != null) _rbSeed.set(pal, opts.seedIdx);
   if (opts.report) {
     const fixed = new Set(Object.values(opts.locked || {})),
       minDE = palMinDE(pal, fixed);
@@ -1374,7 +1414,8 @@ function closeNote() {
     if (pal && pal.length > 1) {
       const fixed = new Set(state.locked),
         si = keyIdx(state.seed);
-      if (si != null && pal[0] === si) fixed.add(si);
+      // (v318.22 debug: a Rainbow puts its base where its hue falls, not first)
+      if (palFrom(pal, si)) fixed.add(si);
       const d = palMinDE(pal, fixed);
       // (v306) a Rainbow stops at the clear markers in play
       if (state.harmony === 'rainbow' && pal.length < state.palSize)
@@ -1481,7 +1522,7 @@ function palSub(pal) {
   // (v296) "… base" only for the marker you chose to build from (Start from): otherwise the first colour is just the
   // lightest of the scheme's first hue, and the base the palette was built round isn't in it
   const si = keyIdx(state.seed);
-  return si != null && pal[0] === si
+  return palFrom(pal, si)
     ? HARM[state.harmony] + ' \u00b7 ' + COLORS[si].brand + ' ' + capName(si) + ' base'
     : HARM[state.harmony];
 }

@@ -1050,11 +1050,27 @@ function filterChanged() {
 }
 // Generate's palette can't be made from the markers in play (v304: a Finder selection has no filters to loosen)
 function palFailToast() {
+  // (fourth pass: what would help, as it is: with no filter on and nothing selected, "loosen the filters" had been said)
+  const fix = state.pool
+    ? 'clear the selection.'
+    : ['brand', 'tone', 'sat', 'fam'].every(fgIsAll)
+      ? 'add markers with more colours.'
+      : 'loosen the filters.';
+  // (v318.22 debug: a Rainbow fails for want of clear colours, not size: "try fewer colours" was said at its smallest)
+  if (state.harmony === 'rainbow')
+    return toast(
+      'Your markers in play don\u2019t have the ' +
+        HARM_RANGE.rainbow[0] +
+        ' clear colours a rainbow needs \u2014 ' +
+        fix,
+      5000,
+    );
   toast(
     'Couldn\u2019t make a ' +
       state.palSize +
-      '-colour palette from the markers in play \u2014 try fewer colours or ' +
-      (state.pool ? 'clear the selection.' : 'loosen the filters.'),
+      '-colour palette from the markers in play \u2014 try fewer colours' +
+      (fix === 'add markers with more colours.' ? ', or ' : ' or ') +
+      fix,
     5000,
   );
 }

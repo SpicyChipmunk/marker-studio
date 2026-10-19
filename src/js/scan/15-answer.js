@@ -24,7 +24,7 @@ function scanZoom(e, from) {
     esc(e.crop) +
     '" alt="The cap in the photo"><span class="sczring" hidden></span></div>' +
     (shot
-      ? '<button type="button" class="sflink sczwhere" data-a="where" aria-pressed="false">Where in the photo?</button><div class="sczwords" role="status"></div>'
+      ? '<button type="button" class="sflink sczwhere" data-a="where">Where in the photo?</button><div class="sczwords" role="status"></div>'
       : '') +
     '<div class="dsub" id="sczTitle">' +
     esc(e.title) +
@@ -100,8 +100,8 @@ function scanZoom(e, from) {
       ring.style.top = e.where[1] * 100 + '%';
       ring.style.width = Math.max(4, e.where[2] * 200) + '%';
     }
+    // (v318.22 debug: its name says what it does; not a toggle as well, read "Back to the close-up, pressed")
     b.textContent = on ? 'Back to the close-up' : 'Where in the photo?';
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
     w.textContent = on ? scanWhereWords(e) : '';
   }
   document.body.appendChild(o);

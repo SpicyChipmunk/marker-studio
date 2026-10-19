@@ -527,7 +527,8 @@ function onUp(e) {
       lpFired = false;
     } else if (before === 1 && !multi) {
       const P = evPt(e);
-      if (blendHit >= 0 && !blendMoved) {
+      // (v318.22 debug: not a touch the system took back, a palm or an edge swipe)
+      if (blendHit >= 0 && !blendMoved && e.type !== 'pointercancel') {
         openAnchorPop(blendHit);
         renderGuide();
       } else if (blendHit < 0 && !blendMoved && !ptMoved && e.type !== 'pointercancel') {
@@ -555,7 +556,13 @@ function onUp(e) {
     }
     blendHit = -1;
     blendMoved = false;
-    if (ptrs.size === 0) {
+    // (v318.22 debug: the finger left after a pinch pans on from where it is now, as in the other modes: the picture had
+    // jumped back to where it was before the pinch)
+    if (ptrs.size === 1) {
+      const rem = [...ptrs.values()][0];
+      pStart = { x: rem.x, y: rem.y, panX: panX, panY: panY };
+      ptMoved = false;
+    } else if (ptrs.size === 0) {
       pStart = null;
       multi = false;
     }

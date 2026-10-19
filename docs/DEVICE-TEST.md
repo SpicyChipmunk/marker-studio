@@ -101,7 +101,43 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.21
+## New in this release: v318.22
+
+- [ ] ★ **Photograph your caps**, about 12 photos one after another without closing Scan, on the iPad: every photo is
+      read and the page never reloads. If you can, the same in Chrome on the Mac (Chrome had stopped reading after about
+      10 photos; fixed here).
+- [ ] ★ **Look closer** under a photo with caps left without a box (an older tray, or a whole case): it says "Looking
+      closer…", then "Looked closer: N more added"; time it (about a fifth to half again as long as the photo took).
+      **Undo look closer** takes them back out. Try Stop part way: what it read stays, and Look closer is offered again.
+- [ ] Under a photo, the hint reads "Caps without a box weren't read. Half a tray at a time, with no glare on the caps,
+      reads best."
+- [ ] Lent profile (as below): a tray with the CGⅡ/BGⅡ greys → most go straight into the list, "read as …" on their
+      rows; a BGⅡ cap whose name wasn't read is asked about (BGⅡ05 or BG05).
+- [ ] Your own caps: nothing different from v318.21 (the same markers listed, no new questions).
+- [ ] ★ **A Copic code typed with Ohuhu set for you** (a fresh install, Honolulu added, so Ohuhu is set for you):
+      Markers › + Add markers › Scan or type codes, type `RV10` and Enter → a row in the list asking "RV10: Copic's,
+      or an Ohuhu code misread (RV18, RV19)?" with Add Copic RV10, and the box clears. Type `Y06` and Enter → it's
+      added and the RV10 question is still there (before this release RV10 vanished). Type `RV10` again → "Waiting in
+      the list below", still one question. Tap **Add** with a code left in the box that raises a question → the
+      question shows and nothing is added until you answer it.
+- [ ] **Scan, typed:** type `RV10` and close Scan with × without pressing Enter → open Scan again: RV10 is a question in
+      the list. Tap **Ohuhu** above the box, type `C-3` and Enter → a question naming Copic C-3, and the box is empty for
+      the next code.
+- [ ] **Tick colours on a chart:** tick two colours, then tap beside the card → "Keep your ticks?"; **Keep ticking**
+      keeps them, **Discard** closes with nothing added.
+- [ ] ★ **Colour along:** open the last marker in the list and tap ✓ Mark all coloured → the toast sits below the row,
+      not over its Clear and Blends.
+- [ ] **Look closer** (lent profile): after it, its caps have green boxes on the photo; Undo look closer takes them off.
+      On an older tray, caps already listed are green when the photo finishes (not amber with what was read).
+- [ ] **Palette:** lock one colour, Analogous, Generate five times → the other colours stay near the one locked.
+- [ ] **Zones:** ＋ Zone, tap two sections, Done, then Undo twice → no empty zone chip left; Redo twice → the zone is back.
+- [ ] With a keyboard (iPad Magic Keyboard or the Mac): Full screen from the keyboard → Tab goes round the guide's
+      name, ⋯ and the picture's controls (never the Plan underneath); Escape gives it back to Full screen.
+- [ ] **Two tabs, two versions** (only if it's easy): open the app in Safari and in Chrome, add a marker in one, then
+      save in the other → neither loses what the other did. Nothing visible should change here; it's a check that it
+      didn't break.
+
+## v318.21
 
 Your own caps are all current, so try the older-cap checks with the lent collection's backup in a **separate Safari
 profile** (Safari › Settings › Profiles), never in your own Home Screen app: a restore replaces your markers.

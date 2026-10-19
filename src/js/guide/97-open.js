@@ -884,6 +884,13 @@ function standInsSync() {
     if (byKey[k]) {
       // (yours again: the marker it had, back)
       if (o) {
+        // (coloured with the stand-in: that ink is on the paper, so the stand-in is its marker now; fourth pass: and
+        // pinned to the stand-in, which is a choice made for it: it had gone back to the marker refilled, its pin
+        // still on the stand-in)
+        if ((inkOn(l) || (locks[l] !== undefined && locks[l] !== k)) && m.mkey !== k) {
+          delete _origKeys[l];
+          continue;
+        }
         if (o.s.indexOf(m.mkey) >= 0 && m.mkey !== k) {
           assign[ls] = byKey[k];
           changed = true;

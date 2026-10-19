@@ -72,6 +72,10 @@
 }
 #sfRoot .sfalist {
   margin: 6px -6px 0;
+  /* (v318.22) room after the last row for a toast and its Undo above the bar, growing with the text: the open row is
+     kept above it (alongReveal, 83-along.js, reads this padding), so Mark all's Undo, which takes the tap, is never
+     over the row's own Clear and Blends */
+  padding-bottom: calc(66 * var(--tpx0));
 }
 #sfRoot .sfarow {
   border-bottom: 1px solid var(--line);

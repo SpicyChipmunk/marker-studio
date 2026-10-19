@@ -106,8 +106,14 @@ function famOrd(a, b) {
   return (
     _brandAt[A.brand] - _brandAt[B.brand] ||
     (famLight() ? LAB[b][0] - LAB[a][0] : 0) ||
-    (A.code < B.code ? -1 : A.code > B.code ? 1 : a - b)
+    // (v318.22 debug: by the codes shown, your caps')
+    cmpCap(a, b)
   );
+}
+function cmpCap(a, b) {
+  const x = capCode(a),
+    y = capCode(b);
+  return x < y ? -1 : x > y ? 1 : a - b;
 }
 // the grid's groups in order: the markers whose code the search names exactly, as "Best match", then those whose old
 // code it names, as "Old code" (v304: "g410" had shown G24, once G410, first), then each family, brand by brand and by
@@ -615,9 +621,9 @@ results.addEventListener('click', (e) => {
   // (v308.3) "Also: the … family": its filter on, as its chip would, and the search cleared
   const fg = e.target.closest('.mkfamgo');
   if (fg) {
-    fg.dataset.fams.split('|').forEach((n) => {
-      if (families.some((f) => f.name === n) && !fgSel('fam', n)) fgTap('fam', n);
-    });
+    // (v318.22 debug: that family only, as the line says: a family filter on before stayed on beside it)
+    const ns = fg.dataset.fams.split('|').filter((n) => families.some((f) => f.name === n));
+    if (ns.length) FG.fam.set(new Set(ns));
     searchInput.value = '';
     searchStr = '';
     filterChanged();

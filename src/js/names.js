@@ -565,9 +565,11 @@ function usedSavedNames() {
 // name it was copied from (a trailing " (n)", or v307's " (copy)", is taken off first). Within 120 characters.
 // (v308: the one naming for every name clash: Save a copy, Duplicate, a guide imported again; was "(copy)", "(copy 2)")
 function copyName(name, used) {
+  // (v318.22 debug: not a year in brackets, part of the name: "Garden (2024)" had become "Garden (2)". A copy's own
+  // number has at most three figures; four or more are the name's, "Kew (1759)" too)
   var base =
     String(name || '')
-      .replace(/\s*\((?:copy(?: \d+)?|\d+)\)\s*$/i, '')
+      .replace(/\s*\((?:copy(?: \d+)?|\d{1,3})\)\s*$/i, '')
       .trim() || 'Colouring guide';
   used = used || usedSavedNames();
   for (var i = 2; i < 100000; i++) {

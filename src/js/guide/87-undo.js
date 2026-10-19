@@ -101,6 +101,8 @@ function planSnap() {
     // (v310.2) the markers sections show a stand-in for (dry, or no longer yours: 97-open), beside the plan: Undo
     // back to a plan with stand-ins brings back what the guide keeps for them
     ok: Object.keys(_origKeys).length ? JSON.parse(JSON.stringify(_origKeys)) : null,
+    // (v318.22, fourth pass) the zone being made in its editor when this was taken, beside the plan (not a change)
+    zEdit: typeof zoneEdit !== 'undefined' && zoneEdit ? zoneCur : 0,
   };
 }
 function planSame(p, q, noFilt) {
@@ -607,7 +609,8 @@ function lowSwap(k) {
   normalizeTones();
   renderGuide();
   renderControls();
-  const why = 'Swapped ' + capLabel(om) + ' for ' + capLabel(to) + ' in ' + nWord(secs.length, 'section');
+  const pl = capPair(om, to),
+    why = 'Swapped ' + pl[0] + ' for ' + pl[1] + ' in ' + nWord(secs.length, 'section');
   planCommit(why);
   ctlRefocus('#sfTab-' + gTab);
   // (v314.1) said, with the marker it now takes and an Undo, as Mark all is: the line went and only the picture changed
@@ -1127,6 +1130,13 @@ function planRestore(e, noFilt) {
   hideTip();
   normalizeTones();
   if (e.ticks) updateProgress();
+  // (v318.22 debug) the zone a step was taken in the middle of making, come back with no sections once its editor has
+  // closed, isn't kept, as Done doesn't keep one: Undo of a new zone's first sections after Done had left "Zone 1, 0
+  // sections" selected, which no Undo took away. In its editor it stays (Undo of a mis-tap there leaves the editor
+  // open on it); Redo brings it back with its sections. Fourth pass: only that zone — a zone you kept empty yourself
+  // (its sections taken by another's editor) had been deleted by any Undo
+  const zm = e.zEdit && !zoneEdit ? zoneById(e.zEdit) : null;
+  if (zm && !zoneSecs(zm.id).length && !Object.keys(zm.secs).length) zoneDelete(zm.id);
   renderGuide();
   renderControls();
   positionPhoto();

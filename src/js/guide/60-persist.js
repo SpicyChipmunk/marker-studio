@@ -163,7 +163,10 @@ function currentDesignObj(share, edits) {
       o = _origKeys[l],
       b = assignData.base && assignData.base[l];
     // a section showing a stand-in for a dry marker keeps the saved one until it is changed (or pinned)
-    abl[l] = o && locks[l] === undefined && o.s.indexOf(m.mkey) >= 0 ? o.k : m.mkey;
+    abl[l] =
+      o && (locks[l] === undefined || locks[l] === o.k) && !inkOn(l) && o.s.indexOf(m.mkey) >= 0
+        ? o.k
+        : m.mkey;
     // a pinned section's pattern colour, so Unpin can go back to it after reopening
     if (locks[l] !== undefined && b && b.mkey !== m.mkey) bas[l] = b.mkey;
     if (colored[l]) prog.push(l);

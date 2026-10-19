@@ -277,7 +277,8 @@ test('Scan with Ohuhu chosen: a Copic fluorescent’s cap code, typed, is anothe
   assert.match(await stat(page), /Copic FY /);
   assert.match(await stat(page), /Another brand than the one chosen \(Ohuhu\)/);
   assert.doesNotMatch(await stat(page), /FY01|not read|No marker code/);
-  await page.click('#scStat .scpick button');
+  // (v318.22: typed, a question in the list, not a card the next code typed would replace)
+  await page.click('#scList .scask .scchoose');
   await idle(page);
   assert.deepEqual(await rows(page), ['FY']);
   assert.match(await page.textContent('#scList .scrow'), /Copic/);

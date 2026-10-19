@@ -38,6 +38,7 @@ resetBtn.textContent = 'Clear';
 resetBtn.addEventListener('click', () => {
   if (!clearable()) return;
   if (resetBtn.dataset.arm === '1') {
+    const had = document.activeElement === resetBtn;
     disarm();
     if (state.mode === 'palette') {
       if (state.harmony === 'custom') state.customPal = state.customPal.map(() => null);
@@ -51,6 +52,12 @@ resetBtn.addEventListener('click', () => {
     } else state.drawn = [];
     save();
     fullRender();
+    // (v318.22 debug: Clear is off now there's nothing to clear: the keyboard on Generate, not left on the page)
+    focusKept(had, null, '', 0, [
+      drawBtn,
+      document.querySelector('#harm button[aria-pressed="true"]'),
+      document.querySelector('#harm button'),
+    ]);
     return;
   }
   resetBtn.dataset.arm = '1';

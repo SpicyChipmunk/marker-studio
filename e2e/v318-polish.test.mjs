@@ -566,10 +566,23 @@ test('the reader decodes a big photo straight to the size it reads, upright, wit
     let sum = 0;
     for (let i = 0; i < b.length; i++) sum += Math.abs(a.data.data[i] - b[i]);
     const px = (x, y) => Array.from(a.data.data.slice((y * a.w + x) * 4, (y * a.w + x) * 4 + 3));
-    return { size: [a.w, a.h], asked, diff: sum / b.length, topRight: px(a.w - 20, 20), topLeft: px(20, 20) };
+    return {
+      size: [a.w, a.h],
+      asked,
+      whole: ocrBmpWhole(),
+      diff: sum / b.length,
+      topRight: px(a.w - 20, 20),
+      topLeft: px(20, 20),
+    };
   });
   assert.deepEqual(r.size, [1365, 2048], 'upright: taller than wide, 2048 px tall');
-  assert.deepEqual(r.asked, [[1365, 2048]], 'decoded at the size it reads');
+  // (v318.22: Chrome decodes it whole into a bitmap of its own and shrinks it on a canvas: its resize kept every
+  // photo's full-size decode in its image cache)
+  assert.deepEqual(
+    r.asked,
+    r.whole ? [null] : [[1365, 2048]],
+    'decoded at the size it reads, or whole in Chrome',
+  );
   assert.ok(
     r.topRight[1] > 200 && r.topRight[0] < 60,
     'the green corner at the top right, as taken: ' + r.topRight,

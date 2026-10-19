@@ -429,6 +429,27 @@ function scanRead(text, brand) {
     longer = (w) =>
       ix.names.some((n) => n[2].length > 1 && n[2].indexOf(w) >= 0 && n[2].every((x) => twSet.has(x))) ||
       scanCapNames().some((ws) => ws.length > 1 && ws.indexOf(w) >= 0 && ws.every((x) => twSet.has(x))),
+    // (v318.22) on a photo, an older cap's name told by a word of it alone, the code read being that cap's old code
+    // and another brand's code now: a word of five letters or more, no plain colour word, read whole or all but its
+    // first or last two letters, and no word of the other brand's marker's name. "Y13" with "Chestnut" is Ohuhu
+    // E515's older cap (Chestnut Brown), not Copic Y13 Lemon Yellow; "R11" with "Mauve" Ohuhu V13's (Mauve Shadow).
+    // A code of three characters or more: never a two-character one (R6, G4) by this
+    capPart = (i, others) => {
+      const theirs = new Set([].concat(...(others || []).map((j) => scanWords(COLORS[j].name || ''))));
+      return (COLORS[i].cap || []).some((nm) =>
+        scanWords(nm).some(
+          (w) =>
+            w.length >= 5 &&
+            /^[A-Z]+$/.test(w) &&
+            !OCR_PLAIN.has(w.toLowerCase()) &&
+            !theirs.has(w) &&
+            tw.some(
+              (x) =>
+                x === w || (x.length >= 5 && x.length >= w.length - 2 && (w.startsWith(x) || w.endsWith(x))),
+            ),
+        ),
+      );
+    },
     capOf = (i) =>
       (COLORS[i].cap || []).find((nm) => {
         const ws = scanWords(nm);
@@ -531,7 +552,10 @@ function scanRead(text, brand) {
         // (v318.19: on a photo too, when the name on its older cap is read with it: "R21 Fruit Pink" is Ohuhu R16,
         // not Copic's R21 Sardonyx)
         oldMine =
-          (!scanPhoto || (ix.byOld.get(t) || []).some((i) => chosen(i) && capOf(i))) &&
+          (!scanPhoto ||
+            (ix.byOld.get(t) || []).some(
+              (i) => chosen(i) && (capOf(i) || (t.length >= 3 && capPart(i, ex))),
+            )) &&
           !otherNamed.length &&
           (ix.byOld.get(t) || []).some(chosen);
       if (((ex.length && !ex.some(chosen)) || otherNamed.length) && !oldMine) {
@@ -580,7 +604,8 @@ function scanRead(text, brand) {
         inside = (b, a) => nw(a).length > nw(b).length && nw(b).every((w) => nw(a).indexOf(w) >= 0),
         // (v318.19) an older cap: its old code with the name printed beside it then (capOf, above). Only with the old
         // code
-        capName = (i) => old.indexOf(i) >= 0 && capOf(i),
+        capName = (i) =>
+          old.indexOf(i) >= 0 && (capOf(i) || (scanPhoto && v === t && v.length >= 3 && capPart(i, cur))),
         capHit = opts.filter(capName);
       if (allRead.length === 1) withName = allRead;
       else if (capHit.length === 1) withName = capHit;

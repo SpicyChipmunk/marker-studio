@@ -56,7 +56,8 @@ function swGroups(idxs, order) {
   const cmp =
     order === 'code'
       ? function (a, b) {
-          return COLORS[a].code.localeCompare(COLORS[b].code, 'en', { numeric: true }) || a - b;
+          // (v318.22 debug: by the codes printed, your caps': it had sorted by the codes of now and printed older ones)
+          return capCode(a).localeCompare(capCode(b), 'en', { numeric: true }) || a - b;
         }
       : function (a, b) {
           return (fp[COLORS[a].fam] || 0) - (fp[COLORS[b].fam] || 0) || a - b;
@@ -80,7 +81,8 @@ function swGroups(idxs, order) {
 }
 // page geometry in mm: margins, corner marks (R), the grid's cells (a box big enough for a brush or chisel nib, the
 // screen-colour strip beside it, code and name below) and the band a brand heading takes
-function swGeom(pap, labels) {
+// note: a line more under the title (the * explained, swStars)
+function swGeom(pap, labels, note) {
   const pk = SF.pdfKit,
     P = pk.PAPERS[pap] || pk.PAPERS.letter,
     pw = (P[0] / 72) * 25.4,
@@ -92,7 +94,7 @@ function swGeom(pap, labels) {
     box = sm ? 16 : 18,
     cols = Math.max(2, Math.floor((pw - 2 * m + gap) / ((sm ? 30 : 34) + gap))),
     cw = (pw - 2 * m - gap * (cols - 1)) / cols,
-    top = m + R + 7,
+    top = m + R + 7 + (note ? 3 : 0),
     bot = ph - m - R - 2,
     hh = 7,
     ch = box + (labels === 'code' ? 4.4 : 7.6) + 2.8;
@@ -153,6 +155,33 @@ function swLayout(groups, g) {
     col = 0;
   });
   return pages;
+}
+// (v318.22 debug) the markers whose box shows a code another box on the chart shows too, an older cap's: their code
+// gets the *, as in guides (an older cap's R22, RV17 now, and the R22 of now). With codes only they had been two "R22"
+function swStars(idxs) {
+  const by = new Map();
+  idxs.forEach(function (i) {
+    const k =
+      COLORS[i].brand +
+      '|' +
+      String(capCode(i))
+        .toUpperCase()
+        .replace(/[-.\s]/g, '');
+    by.set(k, (by.get(k) || 0) + 1);
+  });
+  return new Set(
+    idxs.filter(function (i) {
+      return (
+        by.get(
+          COLORS[i].brand +
+            '|' +
+            String(capCode(i))
+              .toUpperCase()
+              .replace(/[-.\s]/g, ''),
+        ) > 1 && capIsOld(i)
+      );
+    }),
+  );
 }
 function swTrunc(x, t, max) {
   if (x.measureText(t).width <= max) return t;
@@ -216,6 +245,13 @@ function swDraw(pg, pi, np, g, info) {
     M(g.m),
     M(g.m + g.R + 3.6),
   );
+  // (fourth pass: a line of its own, which a small paper had cut off at the end of the one above)
+  if (info.star && info.star.size)
+    x.fillText(
+      swTrunc(x, '* Your older cap: another box shows the same code.', M(g.pw - 2 * g.m)),
+      M(g.m),
+      M(g.m + g.R + 6.6),
+    );
   x.fillStyle = '#888';
   F('500', 7);
   const fy = M(g.ph - g.m - 0.5);
@@ -263,7 +299,15 @@ function swDraw(pg, pi, np, g, info) {
     x.textAlign = 'left';
     x.fillStyle = '#111';
     F('700', 8.5);
-    x.fillText(swTrunc(x, capCode(cc), M(g.box + 0.8 + g.sw - 1.5) - nw), M(bx), M(by + g.box + 3.5));
+    x.fillText(
+      swTrunc(
+        x,
+        capCode(cc) + (info.star && info.star.has(it.i) ? '*' : ''),
+        M(g.box + 0.8 + g.sw - 1.5) - nw,
+      ),
+      M(bx),
+      M(by + g.box + 3.5),
+    );
     if (g.labels !== 'code') {
       x.fillStyle = '#444';
       F('400', 6.5);
@@ -284,7 +328,8 @@ async function swDownload() {
   const pk = SF.pdfKit,
     pap = pk.paper(),
     P = pk.PAPERS[pap] || pk.PAPERS.letter,
-    g = swGeom(pap, swOpt.labels),
+    star = swStars(idxs),
+    g = swGeom(pap, swOpt.labels, star.size > 0),
     pages = swLayout(swGroups(idxs, swOpt.order), g),
     d = new Date(),
     day =
@@ -296,6 +341,7 @@ async function swDownload() {
     nm = swTitle(swOpt.what);
   const info = {
       paper: pap,
+      star: star,
       title:
         'Swatch chart · ' +
         nm +
@@ -392,7 +438,9 @@ function swSync() {
   });
   const idxs = swList(swOpt.what),
     n = idxs.length,
-    np = n ? swLayout(swGroups(idxs, swOpt.order), swGeom(pap, swOpt.labels)).length : 0;
+    np = n
+      ? swLayout(swGroups(idxs, swOpt.order), swGeom(pap, swOpt.labels, swStars(idxs).size > 0)).length
+      : 0;
   sum.classList.toggle('empty', !n);
   sum.innerHTML = n
     ? '<b>' + np + ' page' + (np === 1 ? '' : 's') + '</b> · ' + n + ' marker' + (n === 1 ? '' : 's')

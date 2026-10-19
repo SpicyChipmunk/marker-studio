@@ -520,16 +520,22 @@ function capQClick(e) {
     document.querySelector('#sfAlist .sfarow .sfah');
   if (to) to.focus({ preventScroll: true });
   if (!undo || a === 'close') return;
-  const say =
-    a === 'old'
-      ? 'Your Ohuhu markers show the codes on older caps (R6, not R213), here and everywhere'
-      : a === 'mix'
-        ? 'Codes as they are now for now: Markers › Add markers › Photograph your caps sorts them cap by cap'
-        : a === 'new'
-          ? 'Your Ohuhu markers show the codes as they are now'
-          : state.capQ
-            ? 'Not asked again'
-            : 'Asked about another of your markers instead';
+  // (v318.22 debug: said of the markers whose caps aren't known when Scan has told some, which keep theirs; and Scan's
+  // way in as this device has it, Photograph your caps only where the reader runs)
+  const some = Object.keys(state.cap).some((k) => k.indexOf('Ohuhu|') === 0 && k !== mkey(+q.dataset.i)),
+    whose = some ? 'Ohuhu markers whose caps aren’t known' : 'Your Ohuhu markers',
+    say =
+      a === 'old'
+        ? whose + ' show the codes on older caps (R6, not R213), here and everywhere'
+        : a === 'mix'
+          ? 'Today’s codes until then: Markers › Add markers › ' +
+            (typeof ocrCan === 'function' && ocrCan() ? 'Photograph your caps' : 'Scan or type codes') +
+            ' sorts them cap by cap'
+          : a === 'new'
+            ? whose + ' show the codes as they are now'
+            : state.capQ
+              ? 'Not asked again'
+              : 'Asked about another of your markers instead';
   toastActions(say, [{ label: 'Undo', fn: undo }], 8000);
 }
 // (v313) a marker just finished (its last section ticked, or Mark all coloured): its row's "All 10 coloured ✓" lights up
@@ -635,7 +641,12 @@ function alongReveal(again) {
       safeTop() +
       (geo.side ? 0 : parseFloat(document.documentElement.style.getPropertyValue('--pinH')) || 0) +
       6,
-    bot = (bar ? bar.getBoundingClientRect().top : window.innerHeight) - 6;
+    // (v318.22: and above the room kept there for a toast, the list's own padding after its last row, 04-along.css:
+    // Mark all's toast sat over the open row's Clear and Blends whenever the row was at the foot of the list, at every
+    // size, and its Undo took the tap meant for Blends)
+    list = document.getElementById('sfAlist'),
+    room = list ? parseFloat(getComputedStyle(list).paddingBottom) || 0 : 0,
+    bot = (bar ? bar.getBoundingClientRect().top : window.innerHeight) - 6 - room;
   let dy = 0;
   if (r.bottom > bot) dy = r.bottom - bot;
   if (r.top - dy < top) dy = r.top - top;

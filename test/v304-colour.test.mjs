@@ -266,8 +266,13 @@ test('v304: the palette screen’s “can’t” toasts say what to do: loosen t
   E('regenReplace()');
   assert.match(
     last(),
-    /^Couldn’t make a 12-colour palette from the markers in play — try fewer colours or loosen the filters\.$/,
+    // (v318.22: no filter on here, so not "loosen the filters")
+    /^Couldn’t make a 12-colour palette from the markers in play — try fewer colours, or add markers with more colours\.$/,
   );
+  // (with a filter on, it says so)
+  E('fgTap("tone", "pale"); palFailToast()');
+  assert.match(last(), /try fewer colours or loosen the filters\.$/);
+  E('fgClear("tone")');
   E(`setPool([...state.owned].map(keyIdx).slice(0, 6))`);
   E('regenReplace()');
   assert.match(last(), /or clear the selection\.$/);

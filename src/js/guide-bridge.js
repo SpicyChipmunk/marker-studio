@@ -1186,6 +1186,8 @@ function mkSnap() {
     cap: Object.assign({}, state.cap),
     capDef: state.capDef,
     capQ: state.capQ,
+    // (v318.22 debug: and the offer's flag: a restore's Undo had left it as the restore set it)
+    capOffer: state.capOffer,
   };
 }
 // the markers, To buy, ink and Brands I'd buy now, as a short fingerprint
@@ -1284,6 +1286,7 @@ function restoreUndo(snap) {
     state.cap = cleanCap(snap.cap);
     state.capDef = snap.capDef === 'old' ? 'old' : '';
     state.capQ = snap.capQ ? 1 : 0;
+    state.capOffer = snap.capOffer ? 1 : 0;
   }
   if (!save(true)) {
     state.owned = new Set(was.owned);
@@ -1292,6 +1295,9 @@ function restoreUndo(snap) {
     state.buyBrands = was.buy;
     state.cap = was.cap;
     state.capDef = was.capDef;
+    // (v318.22 debug: and the question's and the offer's flags, as the rest)
+    state.capQ = was.capQ;
+    state.capOffer = was.capOffer;
     toast('Couldn’t put your markers back — this browser’s storage is full.', 6000);
     return false;
   }
@@ -1355,6 +1361,8 @@ function applyCollectionBackup(o, fts, replace) {
       buy: state.buyBrands,
       cap: Object.assign({}, state.cap),
       capDef: state.capDef,
+      capQ: state.capQ,
+      capOffer: state.capOffer,
     },
     snap = mkSnap(),
     sig0 = mkSig(snap),
@@ -1366,6 +1374,9 @@ function applyCollectionBackup(o, fts, replace) {
       state.buyBrands = was.buy;
       state.cap = was.cap;
       state.capDef = was.capDef;
+      // (v318.22 debug: the question's and the offer's flags too: a restore that failed for room left them changed)
+      state.capQ = was.capQ;
+      state.capOffer = was.capOffer;
       if (typeof buySumSync === 'function') buySumSync();
       if (savedOverlay.classList.contains('on')) renderSaved();
       return { failed: true };
@@ -1862,12 +1873,8 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
   fin = fin || function () {};
   // (v318 review) the Tester tasks answers a backup carries: yours stay, the ones you haven't given come in
   // (v318 polish: and the summary says they came back, tw)
-  var tn = 0;
-  if (d && typeof d === 'object' && d.tester && typeof window.testerRestore === 'function')
-    try {
-      tn = +window.testerRestore(d.tester) || 0;
-    } catch (_) {}
-  var tw = tn ? TESTER_BACK : '';
+  var tn = 0,
+    tw = '';
   {
     var col = collection ? applyCollectionBackup(d, fts, rep) : null;
     if (col && col.failed) {
@@ -1882,6 +1889,13 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
       errCard(fb && fb.parentNode, RESTORE_FULL);
       return;
     }
+    // (v318.22 debug: the Tester tasks' answers only once the collection came in: a restore that failed for room, which
+    // says nothing was changed, had changed them)
+    if (d && typeof d === 'object' && d.tester && typeof window.testerRestore === 'function')
+      try {
+        tn = +window.testerRestore(d.tester) || 0;
+      } catch (_) {}
+    tw = tn ? TESTER_BACK : '';
     var got = function (g, x, copies) {
       x = x || {};
       return {

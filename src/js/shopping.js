@@ -366,7 +366,10 @@ function guideBuysSig() {
     '|' +
     JSON.stringify(state.ink) +
     '|' +
-    JSON.stringify(state.buyBrands || null)
+    JSON.stringify(state.buyBrands || null) +
+    // (fourth pass: and what your caps say, as its lines name your markers by them: "Lighter than R6")
+    '|' +
+    JSON.stringify([state.cap, state.capDef])
   );
 }
 function guideBuys() {
@@ -661,11 +664,22 @@ function wishBought(k) {
   v.addEventListener('click', function (e) {
     const t = e.target.closest('button,[data-open]');
     if (!t) return;
+    // (v318.22 debug: the keyboard on the next row's same button once its row has gone, else the list's first)
+    const kept = function (sel) {
+      const at = [...v.querySelectorAll(sel)].indexOf(t),
+        had = document.activeElement === t;
+      return function () {
+        focusKept(had, v, sel, at, v.querySelector('button'));
+      };
+    };
     if (t.dataset.bought) {
+      const k = kept('[data-bought]');
       wishBought(t.dataset.bought);
+      k();
       return;
     }
     if (t.dataset.rm) {
+      const kr = kept('[data-rm]');
       const k = t.dataset.rm,
         r = removeWish(k, true);
       if (
@@ -676,6 +690,7 @@ function wishBought(k) {
       )
         return;
       wishRefresh();
+      kr();
       if (r)
         toastAction('Removed ' + wishName(k) + ' from your To buy list.', 'Undo', function () {
           if (!isWished(k)) state.wish.splice(Math.min(r.j, state.wish.length), 0, r.w);

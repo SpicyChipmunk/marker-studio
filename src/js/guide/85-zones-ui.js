@@ -217,7 +217,8 @@ function zoneWire() {
   const del = document.getElementById('sfZoneDel');
   if (del)
     del.addEventListener('click', function () {
-      const id = zoneCur,
+      const kbd = document.activeElement === del,
+        id = zoneCur,
         nm = zoneName(id),
         had = zoneSecs(id).length;
       zoneEdit = false;
@@ -232,6 +233,8 @@ function zoneWire() {
         renderGuide();
       }
       sayLive('Zone ' + nm + ' deleted' + (had ? ': its sections are back in Main' : ''));
+      // (v318.22 debug: the keyboard on Main's chip, or ＋ Zone with no zones left; it was left on the page)
+      focusKept(kbd, null, '', 0, zoneChipEl(0) || document.getElementById('sfZoneAdd'));
     });
   const nm = document.getElementById('sfZoneName');
   if (nm) {

@@ -157,6 +157,14 @@
     st.q = st.q && typeof st.q === 'object' ? st.q : {};
     return st;
   }
+  // (v318.22 debug) another tab's answers read in at once, so this one's next answer doesn't write over them with what
+  // it read when it opened (a rating and a note given in one tab were gone after the next answer in another). Read
+  // again in place, never left empty: everything here reads the record as it is
+  addEventListener('storage', function (e) {
+    if (e.key !== TT_KEY || !st) return;
+    st = null;
+    load();
+  });
   function save() {
     try {
       localStorage.setItem(TT_KEY, JSON.stringify(st));

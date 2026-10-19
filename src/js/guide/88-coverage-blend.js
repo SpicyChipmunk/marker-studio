@@ -300,7 +300,9 @@ function guideWants(keys, rule, list, memo) {
         const m = c[s[0]];
         if (!m || c[s[0] + 'Owned']) return;
         if (!want[m.mkey]) want[m.mkey] = { m: m, for: [], side: s[1] };
-        if (want[m.mkey].for.indexOf(want4.code) < 0) want[m.mkey].for.push(want4.code);
+        // (v318.22 debug: named by your cap's code, as everywhere else: "Lighter than R6", not R213 for an older cap)
+        const fc = capCode(want4);
+        if (want[m.mkey].for.indexOf(fc) < 0) want[m.mkey].for.push(fc);
       });
     });
   } finally {
@@ -431,11 +433,11 @@ function renderBlendPlan() {
     var c = e.c;
     if (c.light && !c.lightOwned) {
       want[c.light.mkey] = c.light;
-      wantFor[c.light.mkey] = wantFor[c.light.mkey] || e.m.code;
+      wantFor[c.light.mkey] = wantFor[c.light.mkey] || capCode(e.m);
     }
     if (c.dark && !c.darkOwned) {
       want[c.dark.mkey] = c.dark;
-      wantFor[c.dark.mkey] = wantFor[c.dark.mkey] || e.m.code;
+      wantFor[c.dark.mkey] = wantFor[c.dark.mkey] || capCode(e.m);
     }
     var ix = keyIdx(e.m.mkey),
       fam = ix != null && COLORS[ix] ? COLORS[ix].fam : 'Other';

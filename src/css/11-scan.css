@@ -679,6 +679,9 @@
    (15-answer.js scanZoom). The ring sits over the picture by the cap's place as fractions of the photo */
 .sczpic {
   position: relative;
+  /* (v318.22 debug: .dcard's align-items: stretch made it as tall as the five rows it spans in a phone's landscape
+     grid, so the ring's top % was of that, not of the picture: 37 px below the cap) */
+  align-self: center;
   width: fit-content;
   margin: 0 auto 12px;
 }

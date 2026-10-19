@@ -52,6 +52,31 @@ function capIsOld(x) {
   if (v) return v === 'old';
   return state.capDef === 'old' && c.brand === 'Ohuhu';
 }
+// (v318.22 debug) the same where you say what you have — Tick colours on a chart, and a search by a cap's name — for a
+// marker not yours yet too: its cap as known (kept when unticked), else as the setting says. With older codes set, the
+// chart had shown the markers you hadn't ticked by the codes sold now, so an older cap's R23 was ticked as today's R23
+// (RV270 on older caps), not as the R38 it is
+function capIsOldAny(x) {
+  const i = capIdx(x);
+  if (i == null) return false;
+  const c = COLORS[i];
+  if (!capHasOld(c)) return false;
+  const k = c.brand + '|' + c.code;
+  if (state.owned.has(k)) return capIsOld(i);
+  const v = state.cap[k];
+  if (v) return v === 'old';
+  return state.capDef === 'old' && c.brand === 'Ohuhu';
+}
+function capCodeAny(x) {
+  const i = capIdx(x);
+  if (i == null) return '';
+  return capIsOldAny(i) ? oldCode(COLORS[i]) : COLORS[i].code;
+}
+function capNameAny(x) {
+  const i = capIdx(x);
+  if (i == null) return '';
+  return capIsOldAny(i) ? capOldName(COLORS[i]) : COLORS[i].name || '';
+}
 // the marker's name on an older cap: the one printed with its old code (cap-names.json; a short one the reader leaves
 // out, "Teal", from cap-shown.json), else the same as now
 function capOldName(c) {

@@ -307,9 +307,10 @@
       owned.length
         ? rword(owned[0]) +
             (rword(owned[0]) === 'Same colour' ? ': ' : ' match: ') +
-            COLORS[owned[0].i].code +
+            // (v318.22 debug: your cap's code and name, as shown)
+            capCode(owned[0].i) +
             ' ' +
-            (COLORS[owned[0].i].name || '')
+            capName(owned[0].i)
         : res.textContent.replace(/\s+/g, ' ').trim(),
     );
   }

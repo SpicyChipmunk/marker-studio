@@ -5,7 +5,7 @@
 //
 //   OUT=/private/place/reads.jsonl node scripts/bench/reader/record.mjs PHOTO.jpg [PHOTO2.jpg ...]
 //   env: HTML=another build's index.html; IOS=0 to read as a desktop does (default: as an iPad, in two strips);
-//        BRAND=Ohuhu|Copic chosen first; WEBKIT=1
+//        BRAND=Ohuhu|Copic chosen first; WEBKIT=1; EVERY=5 photos to a fresh page (0: one page for all)
 //
 // The photos and the recordings are the owners' own: keep them out of the repo (OUT is required, nothing is written
 // here). Builds the page with two small hooks for the recording (the read copy's size, the text handed to Scan); an
@@ -36,31 +36,37 @@ rep(
   "window.__imgWH = [r.img.w, r.img.h];\n  ocrW.postMessage({ t: 'read', img: { width: r.img.w, height: r.img.h, data: px }, o: o }, [px]);",
 );
 const ios = process.env.IOS !== '0';
+// (v318.22) a fresh page every EVERY photos: one recording doesn't depend on how long the page has been reading, and a
+// leak in the page (Chrome's, fixed in v318.22, ended reading after about 10 photos) can't spoil the photos after it
+const EVERY = process.env.EVERY === undefined ? 5 : Number(process.env.EVERY);
 const srv = await startServer();
 const br = await (process.env.WEBKIT ? webkit : chromium).launch();
-const ctx = await br.newContext({ viewport: { width: 820, height: 1180 }, serviceWorkers: 'block' });
 // (WebKit: a route breaks the worker's blob: loads, so the page is served from a file of its own)
 const zz = ROOT + 'zz-reader-bench.html';
 if (process.env.WEBKIT) writeFileSync(zz, html);
-else
-  await ctx.route(/\/index\.html$/, (route) =>
-    route.fulfill({ status: 200, contentType: 'text/html', body: html }),
-  );
-await ctx.addInitScript((ios) => {
-  window.__MS_RESULTS_FORM = '';
-  window.__MS_TEST = true;
-  if (ios) {
-    Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 5 });
-    Object.defineProperty(navigator, 'userAgent', {
-      get: () =>
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
-    });
-  }
-}, ios);
-const page = await ctx.newPage();
 const errs = [];
-page.on('pageerror', (e) => errs.push(e.message));
-try {
+let ctx = null,
+  page = null;
+async function open() {
+  if (ctx) await ctx.close();
+  ctx = await br.newContext({ viewport: { width: 820, height: 1180 }, serviceWorkers: 'block' });
+  if (!process.env.WEBKIT)
+    await ctx.route(/\/index\.html$/, (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: html }),
+    );
+  await ctx.addInitScript((ios) => {
+    window.__MS_RESULTS_FORM = '';
+    window.__MS_TEST = true;
+    if (ios) {
+      Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 5 });
+      Object.defineProperty(navigator, 'userAgent', {
+        get: () =>
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+      });
+    }
+  }, ios);
+  page = await ctx.newPage();
+  page.on('pageerror', (e) => errs.push(e.message));
   await page.goto(srv.url + (process.env.WEBKIT ? 'zz-reader-bench.html' : 'index.html'));
   await page.waitForTimeout(800);
   await page.click('#wcOneByOne');
@@ -70,13 +76,17 @@ try {
   await page.click('#ocrOpen');
   await page.click('#ocrGet');
   await page.waitForSelector('#ocrPick', { timeout: 60000 });
-  let first = true;
+}
+try {
+  let n = 0;
   for (const f of files) {
+    const first = !page || (EVERY > 0 && n % EVERY === 0);
+    if (first) await open();
+    n++;
     const [fc] = await Promise.all([
       page.waitForEvent('filechooser'),
       page.click(first ? '#ocrPick' : '#ocrMore'),
     ]);
-    first = false;
     const t = Date.now();
     await fc.setFiles([f]);
     await page.waitForSelector('#ocrDone', { timeout: 900000 });
@@ -85,6 +95,7 @@ try {
       imgWH: window.__imgWH,
       txt: window.__txt || '',
       lines: (window.__ocrLast || {}).lines || [],
+      failed: !!(ocrRun && ocrRun.failed),
       list: scanList
         .filter((e) => e.photo === ocrPhotos)
         .map((e) =>
@@ -93,6 +104,8 @@ try {
             : COLORS[e.i].brand + '|' + COLORS[e.i].code,
         ),
     }));
+    // (a photo that "finished" without being read: the page's reading had stopped; say so rather than record it)
+    if (ms < 1500 || d.failed) throw new Error(f + ': not read (' + ms + ' ms)');
     appendFileSync(
       OUT,
       JSON.stringify(Object.assign({ file: [f.split('/').pop()], ios: ios, ms: ms }, d)) + '\n',

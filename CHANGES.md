@@ -1834,3 +1834,177 @@ Mood's fitting).
 - **Tests:** test/v31821-reader, test/v31821-caps, e2e/v31821-reader, e2e/v31821-caps, e2e/v31821-where; v306-along,
   v311-markers, v3187-brands and v318-scan updated (sameCodeScan's {b, s}; answers by an old code as their caps say
   them, "now YR47"). Cache bumped to `marker-studio-v318.21`.
+
+# Changes — v318.22 (cap reader: Look closer, older caps' names, the Ⅱ greys; Chrome reads on past ten photos)
+
+- **Look closer**, under a photo read (or a batch): the caps without a box read again from the photo decoded larger
+  (2700 px on its long side, its text about a third bigger than in the 2048 copy: bigger still read worse), in squares
+  round the lines that didn't settle into a marker, and settled with the photo's own lines as one read. What that adds
+  goes in under the photo's number; a question the photo had asked, a marker taken off the list since, or a question
+  about a marker already listed are left as they are; a code only it read, with no name of its own, is asked about
+  rather than added when every reading of it was unsure or the photo's own read had another code on that cap. Stop keeps
+  what it has read; **Undo look closer** takes it back. Only when asked: it takes about a fifth to a half again as long
+  as the photo did on the bench, too long for every photo. Not for a photo read closer already, read gently, or no
+  bigger than its copy; a page that ended while it looked doesn't offer it again that visit.
+  Measured (recorded reads plus the closer squares read live): Ben's 81 photos HELD 93.6% → 94.1% (+16 caps), TUNE
+  81.6% → 83.2% (+42), no new wrong marker; 77 more questions, 74 of them offering a marker not otherwise found (without
+  the asking rule above it listed +115 but added 8 wrong). Eight lent photos: listed 91.2% → 93.7%, wrong 6 → 5.
+
+- **Photograph your caps reads more older Ohuhu caps.** Measured on the recorded reads (scripts/bench/reader): the lent
+  collection listed 92.9% → 93.8%, listed or asked 95.8% → 96.5%, wrong 9 → 9, questions 80 → 77; Ben's 81 photos the
+  same as v318.21 (+1 and +2 caps, no new wrong marker or question). docs/READER-CAP-NAMES.md has each rule.
+  - An older cap's code that's another brand's code now, told by a word of that cap's name: "Y13" with "Chestnut" is
+    Ohuhu E515, not Copic Y13 (on a Copic tray it stays Copic's).
+  - The CGⅡ/BGⅡ greys with the Ⅱ misread ("CGé08", "cclo8", "BG期05"): CG listed, BG with its name, else asked; never
+    taken for BG05 as read.
+  - A cap whose name alone was read, its first line a word of it: the Colorless Blender is asked about by name.
+  - The near-miss fix takes a name misread by a letter, and a code whose last digit was read as a letter ("GYS").
+- **Chrome stopped reading after about ten photos** (reading ended, or the page crashed): Chrome kept every photo's
+  full-size decode in its image cache when createImageBitmap resized it (~48 MB a 12 MP photo), and every photo's shown
+  copy and box canvases after they'd gone. In Chrome the photo is now decoded whole into a bitmap of its own and shrunk
+  on a canvas, and the photo's canvases are emptied as the view changes: 40 reads in one page, memory flat. Safari's
+  decode is unchanged (its memory was flat already).
+- **The photo hint** says how: "Caps without a box weren't read. Half a tray at a time, with no glare on the caps,
+  reads best." (A hint only for photos read badly was tried and dropped: what the reader can count of a photo's misses
+  is as high on good photos as on bad ones.)
+- **Tried and not built:** asking instead of adding in three doubtful cases (each took out a few wrong markers but turned
+  as many right ones or more into questions); the closer read for every photo, automatically (the first trial: +13 caps
+  on the four hard photos, the bar was 15, for 60-140% more reading time; seven more versions tried, none both found
+  enough and kept the time down, so it's Look closer, when asked).
+- **Reader bench:** six caps the transcriptions had missed added after checking by eye (the reader had them right); the
+  recorder opens a fresh page every 5 photos and stops on a photo that wasn't read.
+- **Debugging pass across the whole app** (five reviewers: Scan and the reader twice, one who knew the plan and one who
+  didn't; the guide; data and the app shell; the interface), fixed:
+  - The Ⅱ-grey rule by brand: with Copic chosen and too few caps to tell the photo's brand, "BG期05" was neither listed
+    nor asked (Copic's BG05 before); a stop or dash in a code ("BG.05") isn't a Ⅱ; a BG cap of now with its own name
+    read beside it is that cap.
+  - Clear list in Scan's Find mode renumbered the photos of the list kept for Add (the next photo shared "Photo 1" with
+    the first tray, and its Undo took that tray's markers out too) and ended the Add list's switch to both brands.
+  - Undo this photo could put back a question an earlier, cleared photo had answered (the answered questions were kept
+    all visit, with their pictures); they go with a new batch, Clear list and the photo view.
+  - Scan closed while the reader was starting left a worker running beside the next (its memory with it), whose
+    'ready' could be taken for the next one's ("The reader stopped with a problem"). A photo still opening when Scan
+    closed went on into a view no longer there.
+  - A pasted list, after a reload, counted as caps read: the older-codes offer could come from an order email.
+  - Change colour and the low-marker swap between an older cap's R22 and the R22 of now said "Replaced R22 with R22";
+    both are named by their caps now. VoiceOver read the * as "star" on section and swatch labels: "your older cap".
+  - A restore that failed for room left the cap question's and offer's flags changed, and the Tester answers merged.
+  - On a phone held sideways, Where in the photo?'s ring sat 37 px below its cap (the picture's box stretched).
+  - Colour along's cap question toasts: "markers whose caps aren't known" when Scan has told some; Scan or type codes
+    where the photo reader doesn't run.
+  - Look closer (a review of its own): a worker that crashed while it read a square left it waiting for good; a failed
+    worker was kept for the next photo; an error in its settling left it unoffered for the visit; Stop part way through
+    a photo marked it done; × while the photo decoded started a worker for nobody; Done's count left out what it added;
+    nothing it said was heard (Scan's status line is hidden under the photo); its other-brand question named the wrong
+    brand as chosen; offered for a photo with nothing to look at.
+  - **Second full pass** (five more reviewers: photo reading end to end, the app driven in a browser, the guide engine,
+    data across versions, words against behaviour with keyboard and screen reader), fixed:
+    - Look closer hung for good when the iPad app was put away while it read (the reader was ended when the app went
+      out of view, and the square it waited on never came back): the reader stays while it reads, and an ended reader
+      ends a closer look waiting on it. Stop now stops the square being read too.
+    - Look closer could switch a photo's brand (Copic chosen, the first read not plainly one brand's), saying its own
+      caps again as new: it reads under the brand the photo's own read found. What it answered stays out of the photo's
+      counts; the words under the photo (counts, the hint, now naming Look closer) are said again after it and its Undo;
+      Stop before it read anything says so.
+    - A larger decode failing after × was taken for the next photo's failure, its codes taken out.
+    - Another tab still on a version before v318.21 saving made this one forget every cap known; a restore's Undo left
+      the caps offer as the restore set it; the update toast in a tab out of view was never seen.
+    - Plan › Blend: a pinch ending with one finger down threw the picture back; a touch the system took back opened an
+      anchor's picker.
+    - "Where in the photo?" was read as "Back to the close-up, pressed"; "Codes as they are now for now" reworded.
+  - **Then, pressure-tested one at a time**, two of the calls left open above were taken:
+    - **A typed code of the other brand that could be one of yours misread is asked in the list**, not only on a card.
+      With Ohuhu set for you, typing a Copic code that sits near an Ohuhu one (RV10, beside RV18/RV19) showed a card
+      and put nothing in the list, so the next code typed replaced the card and RV10 was lost without a word — while a
+      Copic code with no near Ohuhu neighbour (E000) became a list question. The card was meant for the camera, where
+      you hold the cap still and it's read again; typed, there's no cap to hold. The same code typed again says it's
+      waiting in the list. The camera's reads keep their card, as they should.
+    - **Fields only a newer version wrote live through this version's save.** A save rebuilds the stored state from the
+      fields it knows, so a tab on an older version — a second device on a stale cache, or this app before it reloads —
+      wiped a setting a newer one had written. Those fields are now kept as they were. It costs no extra reading: the
+      stored state is already read at every save. A field this version gave up writing is not put back.
+  - **Third full pass** (six more reviewers: the Palette and colour engine, what Markers makes, the guide after it's
+    built, the app's saved data, Scan's typing, and the flows the browser hadn't been driven through; each fix tried on
+    a copy first and pressure-tested), fixed:
+    - **The fields a newer version wrote were kept only up to 4 KB each**, so one with an entry per marker — as caps
+      are — was dropped for a collection of more than about 216 markers: the loss the change above was made to stop.
+      No limit now: a field goes back exactly as it was read, so it can't grow.
+    - **Codes typed into Scan kept:** one typed and left in the box as Scan is closed (no Enter) is asked in the list,
+      not shown on a card as Scan closes; with a brand tapped above the box, another brand's code typed is a question
+      in the list that names its marker ("Copic C-3 Cool Gray No.3: add it? Another brand than the one chosen (Ohuhu)"), where its
+      card had stayed in the box and the next code typed ran into it ("RV10Y06", both lost); a question about another
+      brand's marker goes once that marker is in the list (after Keep Ohuhu it had been asked twice).
+    - **Tick colours on a chart** asks before its ticks are thrown away — a tap beside the card, Escape, Back or × —
+      with Add, Discard or Keep ticking; Save changes only what was ticked or unticked there (a marker another tab added
+      while it was open had been removed); with older codes set, markers not ticked yet show the code their caps would
+      (an older cap's R23, R38 now, had shown as today's R23, a different marker).
+    - **Your caps' codes everywhere:** Markers' search finds the name on an older cap ("Dark Blush"); To buy's From your
+      guides and the reason it keeps say "Lighter than R6", not R213; the swatch chart's and Markers' Code order is the
+      order of the codes shown; two boxes on a swatch chart with one code (an older cap's R22 and the R22 of now) have
+      the older cap's marked *, said under the title.
+    - **Palette:** with a colour locked, Generate keeps the scheme round it: each Generate had moved it on from the last
+      palette's first colour, so an Analogous five ended as four greens 94–115° from the violet locked (38 runs in 40;
+      none now). A Rainbow without six clear colours in play says so ("try fewer colours" had been said at its
+      smallest); one built from a marker names that base wherever its hue puts it.
+    - **The guide:** a section coloured with the stand-in for a marker gone dry is saved as the stand-in (it reopened
+      as the dry marker, and went back to it when the marker was refilled); a section pinned to a marker that goes dry
+      keeps its pin's marker when saved (it was lost for good); Undo of a new zone's first sections after Done takes the
+      empty zone away (it stayed, selected, and no Undo removed it), while in the zone's editor Undo of a mis-tap still
+      leaves the editor open on it.
+    - **Colour along keeps the open row clear of Mark all's toast:** the list has room for the toast after its last row,
+      and the open row is kept above it. With the open row at the foot of the list the toast's Undo had sat over its
+      Clear and Blends at every size, and took the tap meant for Blends.
+    - **Look closer's caps are boxed on the photo** where they were read, in place of what the photo had read there, one
+      box a cap; Undo look closer takes the boxes back. And the photo's boxes at Done are drawn as every later drawing
+      is: on older caps a code listed by its old code had been boxed amber with what was read ("R21" with R16 listed).
+    - **The keyboard kept off the page:** after To buy's Bought ✓ and ×, Palette's Clear, Library's Duplicate and Delete
+      zone; Full screen takes the keyboard to its X, keeps Tab to what it shows — the guide's header (its name and ⋯,
+      reached behind full screen as before), the picture's controls and a section's tip — where it had gone on to the
+      Plan's controls hidden under the picture, and gives it back to Full screen.
+    - Smaller: Tester answers given in two tabs no longer wipe each other's; a page opened with a hard reload is told of
+      an update; "Also: the Red family" shows that family only; Match says your cap's code; a copy of "Garden (2024)" is
+      "Garden (2024) (2)".
+  - **Fourth full pass**, of this round's changes (four more reviewers, told to measure every limit against real data,
+    as the 4 KB one should have been, and to say which new tests would pass with the bug still in), fixed:
+    - **A count limit of 20 on the fields kept for a newer version**: the 21st and later were dropped, about five weeks
+      of releases at this autumn's pace. No limit of count or size now; a test keeps 40.
+    - **Undo this photo lost a question about another brand's marker that the photo took** (a code typed and asked
+      about, or an earlier photo's question): the question goes once its marker is in only for what's typed; a photo's
+      own pass keeps it for its Undo.
+    - **Look closer's boxes at real spacing**: whether two boxes were one cap's was tested square to the photo, so with
+      caps 60–80 px apart and codes read upright or slanted a neighbour counted, and a cap read closer, or a neighbour the
+      photo had read, was drawn with no box. Now tested along and across the code's own line; a box the photo placed as
+      another marker is never replaced; a second Look closer after Stop numbers its lines after the first's.
+    - **To buy's From your guides kept an old code after a cap changed**, until the collection did: what caps say is
+      part of when it's worked out again.
+    - **Undo deleted an empty zone you kept** (its sections taken by another zone's editor) at any step, and Redo didn't
+      bring it back: only the zone a step was taken in the middle of making goes. **A section pinned to a dry marker's
+      stand-in** went back to the marker when it was refilled, its pin still on the stand-in: it keeps the stand-in.
+    - **Full screen's Tab** counted Undo and Full screen, there but hidden, so the keyboard stayed on the X; and the
+      first version made the guide's header inert, which full screen had always let you reach (renaming the guide and
+      its ⋯ behind full screen). Now as above.
+    - **A page that already had the new release from a hard reload was told to reload** when its new version took over:
+      not when the version that took over is its own.
+    - Smaller: Palette's Clear in Custom left the keyboard on the page; a Rainbow made before a marker in it was chosen
+      to build from said it was that base after Undo; with no filter on, "loosen the filters" was said (now "add markers
+      with more colours"); "Kew (1759)" copied as "Kew (2)"; the swatch chart's * note had been cut off on A5 and Half
+      Letter (a line of its own now); Tick colours on a chart showed two swatches "R23" in one family with your new R23
+      and an older cap's (the older one's marked *).
+  - Left as they are: Undo this photo keeps a switch to both brands it made (switching back changes other entries);
+    a set's name left in the box at Add; marker codes a newer version wrote in another tab are still dropped by this
+    one's next save, as codes no longer in the data are (the two can't be told apart), and so are a guide's own payload
+    fields when an older version autosaves a guide a newer one saved.
+  - Measured and deliberately not built: **a code alone that Copic shares on an Ohuhu tray is still dropped.** Asking
+    about it was in the plan. Measured on the 20-photo set: of 85 caps printed with one of the 14 shared codes, 74 are
+    listed and 6 asked about; each of the 5 missed had something read as its name, so asking when no name is read
+    gains no cap. Where that rule would fire it fires 9 times on that set (each on a photo where the cap is listed from
+    another read) and 23 times on a set with no older caps, where they are misreads. The 5 are missed because their
+    names were read in part or upside down ("Brown", "Bro", "nestnut", "UMOIg"), one code was never read, and one Copic
+    cap's name was garbled: matching names by a letter or two more would gain one.
+- **Tests:** test/v31822-reader (the rules), test/v31822-debug, test/v31822-closer (Look closer), test/v31822-third
+  (the third pass), and in test/v3187-brands the typed other-brand code kept in the list; e2e/v31822-third (the third
+  pass in the browser); e2e/scan and e2e/v3083-data answer a typed other-brand code in the list now; e2e/v31822-reader (the canvases emptied, the hint, the ring sideways, Find mode's Clear list, Look closer and its
+  Undo); e2e/v318-polish's decode
+  test (whole in Chrome). Cache bumped to
+  `marker-studio-v318.22`.
+

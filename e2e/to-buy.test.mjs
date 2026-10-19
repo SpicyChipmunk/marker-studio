@@ -292,8 +292,11 @@ test('dry markers: the guide keeps them; sections still to colour show a stand-i
   const done = await page.evaluate((k) => __mstest.assignData.order.filter((l) => __mstest.colored[l] && __mstest.assignData.assign[l].mkey === k).length, k);
   assert.ok(done >= 1, 'a done section still shows the dry marker');
   assert.ok(await page.evaluate((k) => __mstest.assignData.order.some((l) => !__mstest.colored[l] && __mstest.assignData.assign[l].mkey !== k), k));
-  // a tick elsewhere saves; the saved markers are unchanged
-  await tickN(page, 1, 10); await idle(page, AUTO);
+  // a tick elsewhere saves; the saved markers are unchanged (v318.22: elsewhere, a section showing the marker it's saved
+  // with: one coloured with a stand-in is saved as the stand-in, the ink on the paper)
+  const plain = await page.evaluate((sa) => { const t = __mstest; return t.assignData.order.find((l) => !t.colored[l] && sa[l] === t.assignData.assign[l].mkey); }, s0.assign);
+  await page.evaluate((l) => { const t = __mstest; t.colored[l] = 1; t.guideDirty = true; t.renderGuide(); }, plain);
+  await idle(page, AUTO);
   const s1 = await stored(page, id);
   assert.deepEqual(s1.assign, s0.assign, 'the saved markers are kept');
   assert.equal(s1.prog, 5);

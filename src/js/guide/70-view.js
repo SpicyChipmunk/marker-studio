@@ -36,6 +36,7 @@ function baseVH() {
 // full screen: the picture fills the screen (above the tool row) until closed with the X or Escape
 function enterFull() {
   if (!cv || focus || root.classList.contains('sfrev') || cropMode) return;
+  const had = document.activeElement && document.activeElement !== document.body;
   closeSheet();
   hideToast();
   holdScroll();
@@ -43,14 +44,93 @@ function enterFull() {
   resetZoom();
   sizeCanvas();
   applyXform();
+  // (v318.22 debug) only the picture and its tool row while it's full screen, as Focus mode keeps to its own: Tab had
+  // gone on to the Plan's controls hidden under it; the keyboard on the X that closes it
+  fullModal(true);
+  const x = document.getElementById('sfFullX');
+  if (had && x)
+    try {
+      x.focus({ preventScroll: true });
+    } catch (_) {}
 }
 function exitFull() {
   if (!root || !root.classList.contains('sffull')) return;
+  const a = document.activeElement,
+    had = a && (a === document.body || !a.isConnected || (sfView && sfView.contains(a)));
+  fullModal(false);
   root.classList.remove('sffull');
   resetZoom();
   sizeCanvas();
   applyXform();
   backScroll();
+  // (and back on Full screen once it's closed)
+  const b = document.getElementById('sfFull');
+  if (had && b && b.getClientRects().length && document.activeElement !== b)
+    try {
+      b.focus({ preventScroll: true });
+    } catch (_) {}
+}
+// (v318.22 debug) Tab and Shift+Tab go round what full screen shows — the guide's header (its name and ⋯ reached behind
+// full screen, as before), the picture's controls and a section's tip — as in Focus mode (a dialog or a sheet over it
+// keeps its own): past the X it had gone on to the Plan's controls hidden under the picture. Fourth pass: only what is
+// seen (Undo and Full screen are there but hidden in full screen, and the keyboard had stayed on the X)
+document.addEventListener(
+  'keydown',
+  function (e) {
+    if (e.key !== 'Tab' || !root || !sfView || !root.classList.contains('sffull')) return;
+    if (document.querySelector('.overlay.on') || document.getElementById('sfSheet')) return;
+    const f = [];
+    [document.getElementById('sfHead'), sfView, tipEl].forEach(function (p) {
+      if (!p) return;
+      [].forEach.call(
+        p.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])'),
+        function (x) {
+          if (
+            !x.disabled &&
+            !x.inert &&
+            !(x instanceof SVGElement) &&
+            x.getClientRects().length &&
+            getComputedStyle(x).visibility !== 'hidden'
+          )
+            f.push(x);
+        },
+      );
+    });
+    if (!f.length) return;
+    const i = f.indexOf(document.activeElement),
+      n = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : i < 0 || i >= f.length - 1 ? 0 : i + 1;
+    e.preventDefault();
+    f[n].focus({ preventScroll: true });
+  },
+  true,
+);
+// (v318.22 debug) what's hidden under the picture made inert while full screen — the Plan's controls, the bar, the
+// app's own tabs — not the guide's header, reached behind full screen as before (its name, ⋯), nor dialogs, sheets, the
+// toast or the spoken line; as focusModal does for Focus mode
+let _fullInert = [];
+function fullModal(on) {
+  _fullInert.forEach(function (el) {
+    el.inert = false;
+  });
+  _fullInert = [];
+  if (!on || !sfView) return;
+  const head = document.getElementById('sfHead');
+  for (let n = sfView; n && n !== document.body && n.parentElement; n = n.parentElement)
+    [].forEach.call(n.parentElement.children, function (c) {
+      if (
+        c === n ||
+        c === head ||
+        c.id === 'sfSheet' ||
+        c.inert ||
+        /^(SCRIPT|STYLE|LINK)$/.test(c.tagName) ||
+        c.classList.contains('overlay') ||
+        c.id === 'msToast' ||
+        c.id === 'sfLive'
+      )
+        return;
+      c.inert = true;
+      _fullInert.push(c);
+    });
 }
 function sizeCanvas() {
   if (!cv || !sfView) return;

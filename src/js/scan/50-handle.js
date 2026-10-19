@@ -155,6 +155,12 @@ function scanTake(i, how, loud, batch, at) {
   const entry = Object.assign({ i: i, how: how || '' }, at && at.with);
   if (at && at.n >= 0 && at.n <= scanList.length) scanList.splice(at.n, 0, entry);
   else scanList.unshift(entry);
+  // (v318.22 debug) a question waiting about this marker as another brand's, whose one answer it is, goes now it's in
+  // (after the switch to both brands it was taken and still asked; Keep Ohuhu then asked it a second time)
+  // (fourth pass: not while a photo is read, whose own pass answers such a question and keeps it for Undo this photo:
+  // taken here, Undo had lost it for good)
+  const qk = 'other ' + mkey(i);
+  if (!scanPhoto && scanList.some((e) => e.ask === qk)) scanList = scanList.filter((e) => e.ask !== qk);
   if (batch) return true;
   const mine = state.owned.has(mkey(i));
   scanSay(

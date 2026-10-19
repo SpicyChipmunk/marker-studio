@@ -440,7 +440,7 @@ function showTip(l, btns, quiet) {
       : '');
   if (btns) {
     d.setAttribute('role', 'group');
-    d.setAttribute('aria-label', 'Section marker ' + capLabel(m));
+    d.setAttribute('aria-label', 'Section marker ' + msay(m));
     d.addEventListener('pointerdown', function (e) {
       e.stopPropagation();
     });
@@ -463,7 +463,7 @@ function showTip(l, btns, quiet) {
   }
   if (ask) {
     d.setAttribute('role', 'group');
-    d.setAttribute('aria-label', 'Section of ' + capLabel(m) + ', not the marker that’s open');
+    d.setAttribute('aria-label', 'Section of ' + msay(m) + ', not the marker that’s open');
     d.addEventListener('pointerdown', function (e) {
       e.stopPropagation();
     });

@@ -2078,6 +2078,14 @@ function capStar(m) {
 function capLabel(m) {
   return capCode(m) + (capStar(m) ? '*' : '');
 }
+// (v318.22 debug) the labels of a change from marker a to b, said once it's made: where the two show one code (an older
+// cap's R22, RV17 now, and the R22 of now) the * may have gone with a, so each is named by its cap's name as well.
+// "Replaced R22 with R22" had been said
+function capPair(a, b) {
+  if (a && b && a.mkey !== b.mkey && codeNorm(capCode(a)) === codeNorm(capCode(b)))
+    return [capLabel(a) + ' ' + capName(a), capLabel(b) + ' ' + capName(b), true];
+  return [capLabel(a), capLabel(b), false];
+}
 // a key's name for a marker: your cap's, and an older cap's code as it is now ("Rose Red, now R213")
 function capKeyName(m) {
   const n = capName(m),

@@ -129,6 +129,28 @@ function hideToast() {
 }
 // toasts sit just above whichever bar is docked at the bottom of the screen (the guide's action bar, focus mode's
 // buttons, Reveal's bar), or near the bottom edge when there isn't one; only their buttons catch taps
+// (v318.22 debug) the keyboard's place after an action that took away, or turned off, the control that had it: had, it
+// had the focus when acted on (a tap leaves the focus where it was); then the same kind of control at the same place in
+// `root` (the next one along, or the last), else `fallback`. It had been left on the page itself
+function focusKept(had, root, sel, at, fallback) {
+  if (!had) return;
+  const a = document.activeElement;
+  if (a && a !== document.body && a.isConnected && !a.disabled) return;
+  const all =
+      root && sel
+        ? [...root.querySelectorAll(sel)].filter((b) => !b.disabled && b.getClientRects().length)
+        : [],
+    // (fallback: one control, or several, the first of them shown)
+    t = all.length
+      ? all[Math.min(Math.max(at, 0), all.length - 1)]
+      : [].concat(fallback).find(function (b) {
+          return b && b.getClientRects && b.getClientRects().length && !b.disabled;
+        });
+  if (t && t.focus && t.isConnected)
+    try {
+      t.focus({ preventScroll: true });
+    } catch (_) {}
+}
 function toastBottom() {
   let b = 0;
   const H = window.innerHeight;

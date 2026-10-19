@@ -16,7 +16,10 @@ node scripts/bench/reader/compare.mjs "$READER_BENCH/lent/baseline.jsonl" /tmp/a
 ```
 
 - `record.mjs`: each photo through the app with the OCR; appends every line read (text, box, the name line it belongs
-  to), the read copy's size and the list. Re-record when the OCR changes (engine, worker, detector, sizes).
+  to), the read copy's size and the list. Re-record when the OCR changes (engine, worker, detector, sizes). A fresh
+  page every 5 photos (`EVERY=`), and a photo the page didn't read stops the run rather than being recorded. Since
+  v318.22 Chrome decodes a photo whole and shrinks it on a canvas (its resize leaked): recordings made before then
+  differ from new ones by a line or two a photo.
 - `replay.mjs`: the recorded lines through a build's end-of-photo reading (`ocrLine`, `ocrDone`), Scan's parser
   included. `--harness` points at another build's `test/harness.mjs` (its `index.html` beside `test/`) for "before".
 - `score.mjs`: against transcriptions. `--caps DIR`: one `PHOTO.json` per photo, `{caps: [{code, name, brand?}]}`,

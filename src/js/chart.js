@@ -12,6 +12,8 @@ const CHART_SHORT = {
 let chartBrand = 'Ohuhu',
   chartFam = '',
   chartOn = new Set(),
+  // (v318.22 debug) the markers you had when it opened: what Save changes is reckoned from these
+  chartBase = new Set(),
   chartAfter = null,
   chartUndone = null,
   chartOpener = null,
@@ -44,14 +46,17 @@ function chartFams(brand) {
     })
     .filter(Boolean);
 }
+// what Save would change: ticked here and not had, unticked here and had, from the markers had when it opened and as
+// they are now (v318.22 debug: a marker another tab added while the chart was open was removed by Save, as it wasn't
+// ticked here, and "Added 1, removed 1" said for a tick alone)
 function chartChanges() {
   const add = [],
     del = [];
   chartOn.forEach((k) => {
-    if (!state.owned.has(k)) add.push(k);
+    if (!chartBase.has(k) && !state.owned.has(k)) add.push(k);
   });
-  state.owned.forEach((k) => {
-    if (!chartOn.has(k)) del.push(k);
+  chartBase.forEach((k) => {
+    if (!chartOn.has(k) && state.owned.has(k)) del.push(k);
   });
   return { add: add, del: del };
 }
@@ -105,21 +110,29 @@ function chartGrid(f) {
     $('chFamLbl').textContent = '';
     return;
   }
+  // (fourth pass: two swatches of the family showing one code — your new R23, and R38 with an older cap's R23 — the
+  // older cap's marked *, as on a swatch chart and in guides)
+  const seen = {};
+  f.idxs.forEach(function (i) {
+    const k = capCodeAny(i);
+    seen[k] = (seen[k] || 0) + 1;
+  });
   g.innerHTML = f.idxs
     .map(function (i) {
       const c = COLORS[i],
-        on = chartOn.has(mkey(i));
+        on = chartOn.has(mkey(i)),
+        star = seen[capCodeAny(i)] > 1 && capIsOldAny(i);
       return (
         '<button type="button" class="chsw" data-i="' +
         i +
         '" aria-pressed="' +
         on +
         '" aria-label="' +
-        esc(capCode(c) + ' ' + capName(c)) +
+        esc(capCodeAny(c) + ' ' + capNameAny(c) + (star ? ', an older cap' : '')) +
         '"><i style="background:' +
         c.hex +
         '"></i><span>' +
-        esc(capCode(c)) +
+        esc(capCodeAny(c) + (star ? '*' : '')) +
         '</span></button>'
       );
     })
@@ -168,6 +181,7 @@ function openChart(opts) {
   chartUndone = o.undone || null;
   chartOpener = document.activeElement;
   chartOn = new Set(state.owned);
+  chartBase = new Set(state.owned);
   chartMiss(o.missing && state.owned.size ? new Set(state.owned) : null);
   // the brand of most of your markers (Ohuhu with none)
   const n = {};
@@ -201,6 +215,22 @@ function closeChart() {
   chartUndone = null;
   openerBack(chartOpener);
   chartOpener = null;
+}
+// (v318.22 debug) closed with ticks not saved — a tap beside the card, Escape, Back or ×: asked first. They had all gone
+// without a word (twenty ticks over four families, in a test), where Scan keeps its list
+function chartLeave() {
+  const ch = chartChanges();
+  if ((!ch.add.length && !ch.del.length) || !(window.SF && SF.askBox) || $('sfEdAsk')) return closeChart();
+  SF.askBox(
+    'Keep your ticks?',
+    'You’ve ticked or unticked colours here that aren’t saved yet.',
+    '<button type="button" class="btn-primary" data-a="save">' +
+      esc($('chSave').textContent) +
+      '</button><button type="button" data-a="drop">Discard</button><button type="button" class="sfghost" data-a="stay">Keep ticking</button>',
+  ).then(function (a) {
+    if (a === 'save') chartSave();
+    else if (a === 'drop') closeChart();
+  });
 }
 function chartSave() {
   const ch = chartChanges(),
@@ -245,7 +275,7 @@ function chartSave() {
 (function () {
   const ov = $('chartOverlay');
   if (!ov) return;
-  $('chClose').addEventListener('click', closeChart);
+  $('chClose').addEventListener('click', chartLeave);
   $('chSave').addEventListener('click', chartSave);
   // (Some are missing: every colour, to tick one bought on its own too)
   $('chAll').addEventListener('click', function () {
@@ -257,7 +287,7 @@ function chartSave() {
     if (first) first.focus({ preventScroll: true });
   });
   ov.addEventListener('click', function (e) {
-    if (e.target === ov) return closeChart();
+    if (e.target === ov) return chartLeave();
     const t = e.target.closest ? e.target : null;
     if (!t) return;
     const sw = t.closest('.chsw');

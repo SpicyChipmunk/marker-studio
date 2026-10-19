@@ -68,7 +68,8 @@ function swTile(m, cur, mixed) {
     '" title="' +
     esc(capLabel(m) + ' ' + (capName(m) || '')) +
     '" aria-label="' +
-    esc(m.brand + ' ' + capLabel(m) + ' ' + (capName(m) || '')) +
+    // (v318.22 debug: the * said in words, as msay says it, not read out as "star")
+    esc(m.brand + ' ' + capCode(m) + ' ' + (capName(m) || '') + (capStar(m) ? ', your older cap' : '')) +
     '"><span class="sfswc" style="background:' +
     esc(m.hex) +
     '">' +
@@ -1025,22 +1026,21 @@ function openSectionPop(l, opt) {
       // what changed is said on Done, e.g. "R16 → R28, 9 sections"
       if (ch) {
         guideDirty = true;
+        const pl = capPair(_om, m);
         if (all && ch > 1)
           o.why =
             'Replaced ' +
-            capLabel(_om) +
+            pl[0] +
             ' with ' +
-            capLabel(m) +
+            pl[1] +
             ' in ' +
             ch +
             ' sections' +
             (_kept.length ? ' (' + _kept.length + ' coloured kept ' + capLabel(_om) + ')' : '');
         sayLive(
-          capLabel(_om) +
+          pl[0] +
             ' \u2192 ' +
-            capLabel(m) +
-            ' ' +
-            (capName(m) || '') +
+            (pl[2] ? pl[1] : pl[1] + ' ' + (capName(m) || '')) +
             ', ' +
             ch +
             ' section' +

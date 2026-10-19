@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.22',
+    t: 'Photograph your caps: Look closer, under a photo, reads the caps without a box again from the photo at a larger size. It reads more older Ohuhu caps too: the greys whose Ⅱ it misread (CGⅡ08), codes Copic uses too told apart by a word of the cap’s name (Y13 Chestnut Brown is Ohuhu’s), names misread by a letter, and the Colorless Blender by its name. In Chrome, reading no longer stops after about ten photos.',
+  },
+  {
     v: 'v318.21',
     t: 'The code on your cap: older Ohuhu caps say R6 where the marker is R213 now, and the app now shows each marker by the code on your cap, in guides, keys, Colour along and Markers (Scan notes it as it reads your caps; a marker’s details switch it). Photograph your caps puts right a code misread by one character from the name beside it, and a question’s close-up shows where the cap is in the photo.',
   },

@@ -631,15 +631,23 @@ function scanAddCaps() {
     scanUnread = 0;
     scanSetIn = false;
     scanLast = { i: -1, at: 0 };
-    // (v318.7 debug: and numbers its photos afresh, Photo 1 next, not Photo 3 over an empty list; not while a photo's
-    // being read, whose number stands)
-    if (typeof ocrPhotos !== 'undefined' && !(typeof ocrRun !== 'undefined' && ocrRun && !ocrRun.done))
-      ocrPhotos = scanPhotoMax();
-    // (v303: a cleared list asks afresh)
-    scanTookAt.clear();
-    scanAnsweredAt.clear();
-    // (v318.7: and the sweep's brand afresh, the brand set for you back)
-    scanSwitchEnd(true);
+    // (v318.22 debug: in Find mode only its own list goes; the list kept for Add, its photos' numbers and its sweep's
+    // brand stand. Clear list there had numbered the next photo 1 again, sharing Photo 1 with the kept list's first
+    // tray, whose markers its Undo would then take out too)
+    if (!scanFind) {
+      // (v318.7 debug: and numbers its photos afresh, Photo 1 next, not Photo 3 over an empty list; not while a
+      // photo's being read, whose number stands. v318.22 debug: with the questions answered by earlier photos, which
+      // Undo this photo could otherwise put back by a number now another photo's)
+      if (typeof ocrPhotos !== 'undefined' && !(typeof ocrRun !== 'undefined' && ocrRun && !ocrRun.done)) {
+        ocrPhotos = scanPhotoMax();
+        ocrAnswered = [];
+      }
+      // (v303: a cleared list asks afresh)
+      scanTookAt.clear();
+      scanAnsweredAt.clear();
+      // (v318.7: and the sweep's brand afresh, the brand set for you back)
+      scanSwitchEnd(true);
+    }
     scanSay('', 'Ready', 'List cleared', -1);
     scanRender();
     scanFocusBox();

@@ -107,7 +107,7 @@ test('Where in the photo?: the whole photo, the cap ringed, words for where; bac
   assert.equal(await page.textContent('.sczwhere'), 'Where in the photo?');
   await pause(page, 350, 'past the moment the tap that opened it is ignored for');
   await page.click('.sczwhere');
-  assert.equal(await page.getAttribute('.sczwhere', 'aria-pressed'), 'true');
+  assert.equal(await page.textContent('.sczwhere'), 'Back to the close-up');
   assert.match(await page.textContent('.sczwords'), /^Near the top left · beside \S+ and \S+$/);
   const ring = await page.evaluate(() => {
     const r = document.querySelector('.sczring').getBoundingClientRect(),

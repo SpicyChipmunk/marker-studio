@@ -94,7 +94,16 @@ function scanHandleCodes0(text, loud, named, list) {
   // (v318.7) a single quiet read of an old code of the brand set or chosen that's another brand's code now, where the
   // code could be a code of this brand read wrong (Y13 of BGY13): a card with every choice, never a question in the
   // list (the cap, held still, is read whole)
-  if (!loud && !list && !r.many && r.codes.length === 1 && r.codes[0].s0 && r.codes[0].opts.length > 1) {
+  // (v318.22 debug: not for text left in the box as Scan closes, whose card no one would see: asked in the list)
+  if (
+    !loud &&
+    !scanMute &&
+    !list &&
+    !r.many &&
+    r.codes.length === 1 &&
+    r.codes[0].s0 &&
+    r.codes[0].opts.length > 1
+  ) {
     const c = r.codes[0],
       w = scanNotWhole(c.code, brand);
     if (w) {
@@ -144,7 +153,13 @@ function scanHandleCodes0(text, loud, named, list) {
   // (v318 review: not in Find mode, whose list is of the brand chosen there: another brand's marker in it matches no set.
   // Left out, and said)
   // (v318.7: and, with the brand set for you, another brand's cap read whole on its own)
-  const others = scanFind ? [] : r.many || r.codes.length || (auto && !scanSw.on) ? r.other : [],
+  // (v318.22 debug: and with a brand chosen, one typed or left in the box as Scan closes: on a card it was lost to the
+  // next code typed, which ran into it in the box, "RV10Y06")
+  const others = scanFind
+      ? []
+      : r.many || r.codes.length || (auto && !scanSw.on) || loud || scanMute
+        ? r.other
+        : [],
     otherOut = scanFind && (r.many || r.codes.length) ? r.other.length : 0,
     many =
       r.codes.length +
@@ -255,9 +270,17 @@ function scanHandleCodes0(text, loud, named, list) {
       'other ' + mkey(i),
       auto
         ? COLORS[i].brand + ' ' + scanName(i) + ': add it? ' + auto + ' was set for you'
-        : (brand === scanBrand
-            ? 'Another brand than the one chosen (' + brand + ')'
-            : 'Another brand than the rest of the list (' + brand + ')') + ': add it?',
+        : // (v318.22 debug: one code on its own, typed, names its marker, as its card had, v298)
+          !r.many && !r.codes.length && brand === scanBrand
+          ? COLORS[i].brand +
+            ' ' +
+            scanName(i) +
+            ': add it? Another brand than the one chosen (' +
+            brand +
+            ')'
+          : (brand === scanBrand
+              ? 'Another brand than the one chosen (' + brand + ')'
+              : 'Another brand than the rest of the list (' + brand + ')') + ': add it?',
       [{ i: i, how: 'chosen' }],
     );
   });
@@ -386,6 +409,26 @@ function scanHandleCodes0(text, loud, named, list) {
   // (v318.7) with the brand set for you, another brand's code read that could be one of this brand's read wrong: a
   // card, with what it could be (the cap held still is read whole; typed, there's no cap to hold)
   if (noisy) {
+    // (v318.22 review H) typed, Entered, or read from a list of one code: nothing was misread, there's no cap to hold
+    // still, and the next code typed replaced the card, so a Copic RV10 typed with Ohuhu set for you was lost without
+    // a word. A question in the list instead, as a cap read whole as the other brand's is; `ask` says it when the
+    // question or its answer is in the list already
+    // (v318.22 debug: and text left in the box when Scan is closed, read on the way out: no card would be seen)
+    if (loud || scanMute) {
+      noisy.forEach(function (i) {
+        ask(
+          'other ' + mkey(i),
+          COLORS[i].code +
+            ': ' +
+            COLORS[i].brand +
+            '\u2019s, or ' +
+            scanNotWholeWhy(scanNotWhole(scanKey(COLORS[i].code), auto), auto) +
+            '?',
+          [{ i: i, how: 'chosen' }],
+        );
+      });
+      return 1;
+    }
     if (scanCardAgain('noisy ' + noisy.join(','), loud)) return 0;
     const i = noisy[0],
       w = scanNotWhole(scanKey(COLORS[i].code), auto);

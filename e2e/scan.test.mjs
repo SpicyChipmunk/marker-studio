@@ -138,7 +138,8 @@ test('asks when it cannot be sure, in the list (sweeping on loses no question); 
   await type(page, 'C-3');
   assert.match(await stat(page), /Copic C-3 /);
   assert.match(await stat(page), /Another brand than the one chosen \(Ohuhu\)/);
-  await page.click('#scStat .scpick button'); await idle(page);
+  // (v318.22: typed, a question in the list, not a card the next code typed would replace)
+  await page.click('#scList .scask .scchoose:has-text("C-3")'); await idle(page);
   assert.equal((await list(page))[0], 'C-3');
   // the brand chosen is remembered
   await page.keyboard.press('Escape'); await idle(page);

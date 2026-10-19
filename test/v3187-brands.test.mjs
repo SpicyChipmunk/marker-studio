@@ -49,13 +49,28 @@ function studio() {
   return {
     a,
     ev,
-    reset: (brand, chosen, owned) => a.__eval('T.reset(' + JSON.stringify(brand) + ',' + !!chosen + ',' + JSON.stringify(owned || []) + '); T.kept = false;'),
+    reset: (brand, chosen, owned) =>
+      a.__eval(
+        'T.reset(' +
+          JSON.stringify(brand) +
+          ',' +
+          !!chosen +
+          ',' +
+          JSON.stringify(owned || []) +
+          '); T.kept = false;',
+      ),
     read: (t, loud) => a.__eval('T.read(' + JSON.stringify(t) + ',' + !!loud + ')'),
     list: () => ev('return T.list();'),
     asks: () => ev('return T.asks();'),
     last: () => ev('return T.last();'),
-    sweep: (mk, keepAt) => ev('return T.sweep((function () { ' + mk + ' })()' + (keepAt === undefined ? '' : ', ' + keepAt) + ');'),
-    sw: () => ev('return { on: scanSw.on, off: scanSw.off, row: scanSw.row, brand: scanBrand, whole: scanSw.whole.size, other: scanSw.other.size, autoOnly: scanSw.autoOnly };'),
+    sweep: (mk, keepAt) =>
+      ev(
+        'return T.sweep((function () { ' + mk + ' })()' + (keepAt === undefined ? '' : ', ' + keepAt) + ');',
+      ),
+    sw: () =>
+      ev(
+        'return { on: scanSw.on, off: scanSw.off, row: scanSw.row, brand: scanBrand, whole: scanSw.whole.size, other: scanSw.other.size, autoOnly: scanSw.autoOnly };',
+      ),
   };
 }
 
@@ -63,7 +78,9 @@ function studio() {
 
 test('the ten old Ohuhu codes that are Copic codes now: with Ohuhu chosen, asked with both, the Ohuhu marker first; Either asks both; Copic as before', () => {
   const s = studio();
-  const rows = s.ev(`const out = {}; for (const k of ['Y13','R21','R11','R17','R24','Y11','R20','R29','R30','YR20']) { out[k] = {}; for (const b of ['', 'Ohuhu', 'Copic']) { const r = scanRead(k, b); out[k][b || 'Either'] = { asked: r.codes.map((c) => c.asked).join(), opts: [].concat(...r.codes.map((c) => c.opts.map((i) => COLORS[i].brand + ' ' + COLORS[i].code))), other: r.other.map((i) => COLORS[i].brand + ' ' + COLORS[i].code) }; } } return out;`);
+  const rows = s.ev(
+    `const out = {}; for (const k of ['Y13','R21','R11','R17','R24','Y11','R20','R29','R30','YR20']) { out[k] = {}; for (const b of ['', 'Ohuhu', 'Copic']) { const r = scanRead(k, b); out[k][b || 'Either'] = { asked: r.codes.map((c) => c.asked).join(), opts: [].concat(...r.codes.map((c) => c.opts.map((i) => COLORS[i].brand + ' ' + COLORS[i].code))), other: r.other.map((i) => COLORS[i].brand + ' ' + COLORS[i].code) }; } } return out;`,
+  );
   for (const k of Object.keys(rows)) {
     const o = rows[k].Ohuhu;
     // (v318.6: other [Copic k], the Ohuhu marker not offered at all)
@@ -110,7 +127,11 @@ test('typed, pasted or swept with Ohuhu chosen: "Which R29?" in the list with bo
   // a paste of one line: each a question with both
   s.reset('Ohuhu', true);
   s.read('R29, R30, YR20', true);
-  assert.deepEqual(s.asks().sort(), ['Which R29? [Ohuhu YR47/old|Copic R29/chosen]', 'Which R30? [Ohuhu E81/old|Copic R30/chosen]', 'Which YR20? [Ohuhu YR37/old|Copic YR20/chosen]']);
+  assert.deepEqual(s.asks().sort(), [
+    'Which R29? [Ohuhu YR47/old|Copic R29/chosen]',
+    'Which R30? [Ohuhu E81/old|Copic R30/chosen]',
+    'Which YR20? [Ohuhu YR37/old|Copic YR20/chosen]',
+  ]);
   // the old-code Skin Tones list pasted with Ohuhu chosen: no "another brand" trap at all (v318.6: six of them)
   s.reset('Ohuhu', true);
   s.read(s.ev(`return T.set('36 Skin Tones').map((c) => c.old || c.code).join('\\n');`), true);
@@ -156,14 +177,20 @@ test('a Copic set’s codes pasted with Ohuhu chosen: read as Copic, said; set f
   s.reset('Ohuhu', true);
   s.read(s.ev(CIAO + '.join("\\n");'), true);
   assert.equal(s.list().length, 36, s.asks().join(' | '));
-  assert.ok(s.list().every((k) => /^Copic/.test(k)), s.list().join(' '));
+  assert.ok(
+    s.list().every((k) => /^Copic/.test(k)),
+    s.list().join(' '),
+  );
   assert.equal(s.last().small, 'Read as Copic, though Ohuhu is chosen above the box');
   assert.equal(s.sw().brand, 'Ohuhu', 'the brand chosen stays');
   // set for you: the switch to both brands, said on the same card
   s.reset('Ohuhu', false);
   s.read(s.ev(CIAO + '.join("\\n");'), true);
   assert.equal(s.list().length, 36);
-  assert.equal(s.last().small, 'Read as Copic: its codes are plainly Copic’s · both brands are read from now on');
+  assert.equal(
+    s.last().small,
+    'Read as Copic: its codes are plainly Copic’s · both brands are read from now on',
+  );
   assert.deepEqual([s.sw().on, s.sw().brand], [true, '']);
   // Either brand: the ten codes both brands have go in as Copic's, not asked (v318.6: 13 questions)
   s.reset('', true);
@@ -184,13 +211,24 @@ test('a list of both brands’ codes is read as either (its shared codes asked);
   s.reset('Ohuhu', true);
   s.read(s.ev(CIAO + '.concat(["B015"]).join("\\n");'), true);
   assert.ok(s.list().includes('Ohuhu|B015'));
-  assert.equal(s.asks().filter((t) => /: Ohuhu or Copic\?|: Copic or Ohuhu\?/.test(t)).length, 10, s.asks().join(' | '));
+  assert.equal(
+    s.asks().filter((t) => /: Ohuhu or Copic\?|: Copic or Ohuhu\?/.test(t)).length,
+    10,
+    s.asks().join(' | '),
+  );
   assert.ok(!s.asks().some((t) => /Another brand/.test(t)), s.asks().join(' | '));
-  assert.match(s.last().small, /^Codes of both brands: those both have are asked · A brand tapped above answers them at once/);
+  assert.match(
+    s.last().small,
+    /^Codes of both brands: those both have are asked · A brand tapped above answers them at once/,
+  );
   // four Copic-only codes with Ohuhu chosen: asked as another brand's, as before
   s.reset('Ohuhu', true);
   s.read('E71\nC-3\nE21\nE29\nY06', true);
-  assert.equal(s.asks().filter((t) => /^Another brand than the one chosen \(Ohuhu\)/.test(t)).length, 4, s.asks().join(' | '));
+  assert.equal(
+    s.asks().filter((t) => /^Another brand than the one chosen \(Ohuhu\)/.test(t)).length,
+    4,
+    s.asks().join(' | '),
+  );
   assert.deepEqual(s.list(), ['Ohuhu|Y06']);
   // a line naming its brand decides, whatever is chosen, and doesn't make the list mixed: "Ohuhu B02" among a Copic
   // set's codes with Ohuhu chosen goes in as Ohuhu's, said, and the rest are read as Copic
@@ -218,21 +256,34 @@ test('a list of both brands’ codes is read as either (its shared codes asked);
 test('a set’s name in the text: its card carries how the list was read; every built-in set’s list, current and old codes, is its own brand’s', () => {
   const s = studio();
   s.reset('Ohuhu', true);
-  s.read(s.ev(`return ['COPIC ciao', '36 colors', 'Set A'].concat(T.set('Ciao 36 - Set A').flatMap((c) => [c.code, c.name])).join('\\n');`), true);
+  s.read(
+    s.ev(
+      `return ['COPIC ciao', '36 colors', 'Set A'].concat(T.set('Ciao 36 - Set A').flatMap((c) => [c.code, c.name])).join('\\n');`,
+    ),
+    true,
+  );
   assert.equal(s.list().length, 36);
   assert.match(s.last().big, /^Copic Ciao 36: which one\?/);
   assert.match(s.last().small, /Read as Copic, though Ohuhu is chosen above the box/);
-  const sets = s.ev(`return MARKER_SETS.map((p) => { const cs = presetMkeys(p).map((k) => COLORS[keyIdx(k)]).filter(Boolean); if (!cs.length) return null; const cur = scanListBrand(cs.map((c) => c.code).join('\\n')), old = scanListBrand(cs.map((c) => c.old || c.code).join('\\n')); return [p.n, cs[0].brand, cur && cur.brand, old && old.brand]; }).filter(Boolean);`);
+  const sets = s.ev(
+    `return MARKER_SETS.map((p) => { const cs = presetMkeys(p).map((k) => COLORS[keyIdx(k)]).filter(Boolean); if (!cs.length) return null; const cur = scanListBrand(cs.map((c) => c.code).join('\\n')), old = scanListBrand(cs.map((c) => c.old || c.code).join('\\n')); return [p.n, cs[0].brand, cur && cur.brand, old && old.brand]; }).filter(Boolean);`,
+  );
   assert.ok(sets.length >= 32);
   for (const [n, b, cur, old] of sets) assert.deepEqual([cur, old], [b, b], n);
 });
 
 test('a long paste isn’t read twice for its brand: 122 KB in no more than 1.3 times one reading', () => {
   const s = studio();
-  const text = s.ev(`let t = ''; const cs = COLORS.map((c) => c.code + ' ' + c.name); while (t.length < 122000) t += cs.join('\\n') + '\\n'; return t;`);
+  const text = s.ev(
+    `let t = ''; const cs = COLORS.map((c) => c.code + ' ' + c.name); while (t.length < 122000) t += cs.join('\\n') + '\\n'; return t;`,
+  );
   assert.ok(text.length > 120000);
   s.reset('Ohuhu', true);
-  assert.equal(s.ev('return scanListBrand(' + JSON.stringify(text) + ');'), null, 'over 20 KB: not classified');
+  assert.equal(
+    s.ev('return scanListBrand(' + JSON.stringify(text) + ');'),
+    null,
+    'over 20 KB: not classified',
+  );
   const t0 = cpuMs();
   s.a.__eval('scanRead(' + JSON.stringify(text) + ', "Ohuhu")');
   const one = cpuMs() - t0;
@@ -247,7 +298,11 @@ test('a long paste isn’t read twice for its brand: 122 KB in no more than 1.3 
 
 test('a Copic set swept cap by cap with Ohuhu set for you: nothing wrong goes in, the reading switches to both brands by the third cap, and codes both brands use are asked', () => {
   const s = studio();
-  for (const [n, q] of [['Ciao 36 - Set A', 14], ['Ciao 12', 8], ['Ciao 72 - Set A', 24]]) {
+  for (const [n, q] of [
+    ['Ciao 36 - Set A', 14],
+    ['Ciao 12', 8],
+    ['Ciao 72 - Set A', 24],
+  ]) {
     s.reset('Ohuhu', false);
     const m = s.sweep(`return T.caps(${JSON.stringify(n)});`);
     // (v318.6: Ciao 36 A → 10 Ohuhu markers in the list, 26 vanishing cards)
@@ -263,7 +318,9 @@ test('a Copic set swept cap by cap with Ohuhu set for you: nothing wrong goes in
   }
   // the ten shared codes first: held as Ohuhu's, then asked at the switch (hold-since: all ten)
   s.reset('Ohuhu', false);
-  const m = s.sweep(`const R = T.caps('Ciao 36 - Set A'); const sh = (r) => COLORS.some((c) => c.brand === 'Copic' && c.brand !== 'x' && T.key(c) === r.k) && COLORS.some((c) => c.brand === 'Ohuhu' && scanKey(c.code) === r.k.split('|')[1]); return R.filter(sh).concat(R.filter((r) => !sh(r)));`);
+  const m = s.sweep(
+    `const R = T.caps('Ciao 36 - Set A'); const sh = (r) => COLORS.some((c) => c.brand === 'Copic' && c.brand !== 'x' && T.key(c) === r.k) && COLORS.some((c) => c.brand === 'Ohuhu' && scanKey(c.code) === r.k.split('|')[1]); return R.filter(sh).concat(R.filter((r) => !sh(r)));`,
+  );
   assert.deepEqual(m.wrong, []);
   assert.ok(m.at >= 11, 'switched at ' + m.at);
   assert.equal(s.asks().filter((t) => /: Ohuhu or Copic\?/.test(t)).length, 10, s.asks().join(' | '));
@@ -297,17 +354,25 @@ test('an Ohuhu set swept with its caps misread as Copic codes (short, a digit, a
   assert.equal(s.last().small, 'Hold the cap still');
   assert.deepEqual(s.last().labels, ['Add Copic BG11']);
   assert.deepEqual(s.asks(), []);
+  // (v318.22 review H) typed, it goes in the list as a question instead: nothing was misread and there's no cap to
+  // hold still, and the next code typed used to replace the card and lose it
   s.reset('Ohuhu', false);
   s.read('B00', true);
   assert.equal(s.last().big, 'B00: Copic’s, or an Ohuhu code misread (B06, B08)?');
-  assert.equal(s.last().small, '');
+  assert.equal(s.last().small, 'Choose in the list below');
+  assert.deepEqual(s.last().labels, []);
+  assert.deepEqual(s.asks(), ['B00: Copic’s, or an Ohuhu code misread (B06, B08)? [Copic B00/chosen]']);
   // the same cap held in view, read again and again, is one; and a plain word of the name is no name
   s.reset('Ohuhu', false);
-  const m = s.sweep(`const R = T.caps('Honolulu 120', true); R.splice(20, 0, { t: 'E71 Champagne', k: 'Copic|E71', again: true }); return R;`);
+  const m = s.sweep(
+    `const R = T.caps('Honolulu 120', true); R.splice(20, 0, { t: 'E71 Champagne', k: 'Copic|E71', again: true }); return R;`,
+  );
   assert.deepEqual([m.wrong, m.at], [[], 0]);
   assert.equal(s.sw().whole, 1);
   s.reset('Ohuhu', false);
-  const p = s.sweep(`return T.caps('Honolulu 320 (complete set)', true, { B411: 'B41 Rich Slate Blue', YG012: 'YG01 Yellow Green' });`);
+  const p = s.sweep(
+    `return T.caps('Honolulu 320 (complete set)', true, { B411: 'B41 Rich Slate Blue', YG012: 'YG01 Yellow Green' });`,
+  );
   assert.deepEqual([p.wrong, p.at], [[], 0]);
 });
 
@@ -323,14 +388,24 @@ test('the first cap read whole as Copic’s is a question in the list, said as s
   assert.equal(s.sw().on, false);
   s.read('BG11 Moon White', false);
   assert.deepEqual([s.sw().on, s.sw().brand], [true, '']);
-  assert.deepEqual(s.list().sort(), ['Copic|BG11', 'Copic|E71', 'Ohuhu|B015', 'Ohuhu|B04'], s.list().join(' '));
+  assert.deepEqual(
+    s.list().sort(),
+    ['Copic|BG11', 'Copic|E71', 'Ohuhu|B015', 'Ohuhu|B04'],
+    s.list().join(' '),
+  );
   assert.deepEqual(s.asks(), ['YR07: Ohuhu or Copic? [Ohuhu YR07/chosen|Copic YR07/chosen]']);
   assert.equal(s.last().big, 'Reading both brands: Copic caps were read');
-  assert.equal(s.last().small, 'Codes both brands use are asked from now on · Keep Ohuhu is at the top of the list');
+  assert.equal(
+    s.last().small,
+    'Codes both brands use are asked from now on · Keep Ohuhu is at the top of the list',
+  );
   assert.equal(s.sw().row, true);
   // from now on a code both brands use is asked, and a Copic-only code goes in
   s.read('Y06', false);
-  assert.ok(s.asks().some((t) => /^Y06: /.test(t)), s.asks().join(' | '));
+  assert.ok(
+    s.asks().some((t) => /^Y06: /.test(t)),
+    s.asks().join(' | '),
+  );
   s.read('C-3', false);
   assert.ok(s.list().includes('Copic|C3'));
   // Keep Ohuhu: the brand back, the held questions answered as Ohuhu's, the Copic markers taken since asked about
@@ -338,7 +413,11 @@ test('the first cap read whole as Copic’s is a question in the list, said as s
   assert.deepEqual([s.sw().on, s.sw().off, s.sw().brand, s.sw().row], [false, true, 'Ohuhu', false]);
   assert.ok(s.list().includes('Ohuhu|YR07') && s.list().includes('Ohuhu|Y06'), s.list().join(' '));
   assert.ok(!s.list().some((k) => /^Copic/.test(k)), s.list().join(' '));
-  assert.deepEqual(s.asks().sort(), ['Copic BG11 Moon White: add it? Ohuhu was set for you [Copic BG11/name]', 'Copic C-3 Cool Gray No.3: add it? Ohuhu was set for you [Copic C-3/chosen]', 'Copic E71 Champagne: add it? Ohuhu was set for you [Copic E71/chosen]']);
+  assert.deepEqual(s.asks().sort(), [
+    'Copic BG11 Moon White: add it? Ohuhu was set for you [Copic BG11/name]',
+    'Copic C-3 Cool Gray No.3: add it? Ohuhu was set for you [Copic C-3/chosen]',
+    'Copic E71 Champagne: add it? Ohuhu was set for you [Copic E71/chosen]',
+  ]);
   assert.equal(s.last().big, 'Ohuhu again');
   assert.equal(s.last().small, 'Copic codes read since are asked below');
   // switched again only after two more distinct Copic reads
@@ -349,28 +428,48 @@ test('the first cap read whole as Copic’s is a question in the list, said as s
   assert.equal(s.sw().row, true);
   // (the whole reads' questions went in again; the questions about codes both brands use came back)
   assert.ok(s.list().includes('Copic|E71') && s.list().includes('Copic|BG11'), s.list().join(' '));
-  assert.ok(s.asks().some((t) => /^YR07: /.test(t)), s.asks().join(' | '));
+  assert.ok(
+    s.asks().some((t) => /^YR07: /.test(t)),
+    s.asks().join(' | '),
+  );
 });
 
 test('a noisy read that makes the switch stays a card; two misreads first switch too, and Keep Ohuhu puts it right; three other-brand codes in a row switch mid-sweep', () => {
   const s = studio();
   // the first two reads of the visit misreads: switched (no Ohuhu-only code yet), nothing wrong in the list
   s.reset('Ohuhu', false);
-  const m = s.sweep(`const M = { BG114: 'BG11', B08: 'B00' }; const R = T.caps('Honolulu 120', false, M); const first = R.filter((r) => !r.k); return first.concat(R.filter((r) => r.k));`);
+  const m = s.sweep(
+    `const M = { BG114: 'BG11', B08: 'B00' }; const R = T.caps('Honolulu 120', false, M); const first = R.filter((r) => !r.k); return first.concat(R.filter((r) => r.k));`,
+  );
   assert.equal(m.at, 2);
   assert.deepEqual(m.wrong, []);
-  assert.ok(!s.list().includes('Copic|B00') && !s.list().includes('Copic|BG11'), 'the noisy reads stayed cards: ' + s.list().filter((k) => /Copic/.test(k)).join(' '));
+  assert.ok(
+    !s.list().includes('Copic|B00') && !s.list().includes('Copic|BG11'),
+    'the noisy reads stayed cards: ' +
+      s
+        .list()
+        .filter((k) => /Copic/.test(k))
+        .join(' '),
+  );
   // the same with Keep Ohuhu tapped at the switch: five questions, nothing wrong, no switch again
   s.reset('Ohuhu', false);
-  const k = s.sweep(`const M = { BG114: 'BG11', B08: 'B00' }; const R = T.caps('Honolulu 120', false, M); const first = R.filter((r) => !r.k); return first.concat(R.filter((r) => r.k));`, 0);
+  const k = s.sweep(
+    `const M = { BG114: 'BG11', B08: 'B00' }; const R = T.caps('Honolulu 120', false, M); const first = R.filter((r) => !r.k); return first.concat(R.filter((r) => r.k));`,
+    0,
+  );
   assert.deepEqual([k.wrong, k.on], [[], false]);
   assert.ok(k.q <= 6, k.q + ' questions');
   // three misreads in a row after twenty right: the sequence rule switches; Keep Ohuhu takes it back
   s.reset('Ohuhu', false);
-  const t = s.sweep(`const M = { BG114: 'BG11', B08: 'B00', G49: 'G40' }; const R = T.caps('Honolulu 120', false, M); const mis = R.filter((r) => !r.k), rest = R.filter((r) => r.k); return rest.slice(0, 20).concat(mis, rest.slice(20));`);
+  const t = s.sweep(
+    `const M = { BG114: 'BG11', B08: 'B00', G49: 'G40' }; const R = T.caps('Honolulu 120', false, M); const mis = R.filter((r) => !r.k), rest = R.filter((r) => r.k); return rest.slice(0, 20).concat(mis, rest.slice(20));`,
+  );
   assert.deepEqual([t.at, t.wrong], [23, []]);
   s.reset('Ohuhu', false);
-  const u = s.sweep(`const M = { BG114: 'BG11', B08: 'B00', G49: 'G40' }; const R = T.caps('Honolulu 120', false, M); const mis = R.filter((r) => !r.k), rest = R.filter((r) => r.k); return rest.slice(0, 20).concat(mis, rest.slice(20));`, 0);
+  const u = s.sweep(
+    `const M = { BG114: 'BG11', B08: 'B00', G49: 'G40' }; const R = T.caps('Honolulu 120', false, M); const mis = R.filter((r) => !r.k), rest = R.filter((r) => r.k); return rest.slice(0, 20).concat(mis, rest.slice(20));`,
+    0,
+  );
   assert.deepEqual([u.wrong, u.on], [[], false]);
   assert.ok(u.q <= 6, u.q + ' questions');
   // an Ohuhu tray then a Copic one: switched at the third Copic cap, nothing wrong, the Ohuhu tray's shared codes not asked
@@ -406,7 +505,10 @@ test('a brand word read with the code, and a code typed with Enter, count as rea
     ocrRun = r; ocrFinish();
     return { brand: r.brand, switched: !!r.switched, on: scanSw.on, sb: scanBrand, list: T.list().length, card: T.last() };`);
   assert.deepEqual([o.brand, o.switched, o.on, o.sb, o.list], ['Copic', true, true, '', 10]);
-  assert.match(o.card.small, /Read as Copic: these look like Copic caps, so both brands are read from now on/);
+  assert.match(
+    o.card.small,
+    /Read as Copic: these look like Copic caps, so both brands are read from now on/,
+  );
   // Clear list: the brand set for you is back; a brand tapped ends it for good
   s.a.__eval('scanSwitchEnd(true)');
   assert.deepEqual([s.sw().on, s.sw().brand, s.sw().row], [false, 'Ohuhu', false]);
@@ -431,7 +533,10 @@ test('a code both brands use read in the box after a list of that brand was past
   s.read('BG23', false);
   s.read('YR07', false);
   assert.deepEqual(s.asks(), [], 'not asked: Copic YR07 is in the list from the paste');
-  assert.deepEqual([s.last().k, s.last().big, s.last().small], ['same', 'YR07 Cadmium Orange', 'Already in the list · Copic']);
+  assert.deepEqual(
+    [s.last().k, s.last().big, s.last().small],
+    ['same', 'YR07 Cadmium Orange', 'Already in the list · Copic'],
+  );
   assert.equal(s.list().length, 36, 'nothing added');
   // the same list typed on one line (without 100, a number beside other codes, asked about): a list too
   s.reset('', true);
@@ -457,12 +562,51 @@ test('a code both brands use read in the box after a list of that brand was past
 
 test('the noisy card with Copic set for you says "a Copic code", not "an Copic code"', () => {
   const s = studio();
-  assert.equal(s.ev(`return scanNotWholeWhy(scanNotWhole('B08', 'Copic'), 'Copic');`), 'a Copic code misread (E08, R08)');
-  assert.equal(s.ev(`return scanNotWholeWhy(scanNotWhole('E71', 'Ohuhu'), 'Ohuhu');`), 'an Ohuhu code read short (E713, E711)');
+  assert.equal(
+    s.ev(`return scanNotWholeWhy(scanNotWhole('B08', 'Copic'), 'Copic');`),
+    'a Copic code misread (E08, R08)',
+  );
+  assert.equal(
+    s.ev(`return scanNotWholeWhy(scanNotWhole('E71', 'Ohuhu'), 'Ohuhu');`),
+    'an Ohuhu code read short (E713, E711)',
+  );
   s.reset('Copic', false);
   s.read('B08', true);
   assert.equal(s.last().big, 'B08: Ohuhu’s, or a Copic code misread (E08, R08)?');
+  // (v318.22 review H: typed, the choice is in the list, so the card carries no Add of its own)
+  assert.deepEqual(s.last().labels, []);
+  assert.deepEqual(s.asks(), ['B08: Ohuhu’s, or a Copic code misread (E08, R08)? [Ohuhu B08/chosen]']);
+  // quiet, as a cap held in the box: the card with its Add, nothing in the list
+  s.reset('Copic', false);
+  s.read('B08', false);
   assert.deepEqual(s.last().labels, ['Add Ohuhu B08']);
+  assert.deepEqual(s.asks(), []);
+});
+
+test('(v318.22) a typed other-brand code that could be a misread is kept: the next code typed doesn’t lose it', () => {
+  const s = studio();
+  s.reset('Ohuhu', false);
+  // RV10 is a Copic marker, and near Ohuhu's RV18/RV19, so it used to be a card only and the next code replaced it
+  s.read('RV10', true);
+  assert.deepEqual(s.asks(), ['RV10: Copic’s, or an Ohuhu code misread (RV18, RV19)? [Copic RV10/chosen]']);
+  // (what Add looks at: a question raised by the box is shown before anything is added, 70-dialog.js scanAdd)
+  assert.equal(s.ev('return scanAsks();'), 1);
+  s.read('Y06', true);
+  assert.deepEqual(s.list(), ['Ohuhu|Y06']);
+  assert.deepEqual(s.asks(), ['RV10: Copic’s, or an Ohuhu code misread (RV18, RV19)? [Copic RV10/chosen]']);
+  // the same code typed again: said, not asked twice, and no Add of its own on the card
+  s.read('RV10', true);
+  assert.equal(s.last().small, 'Waiting in the list below');
+  assert.deepEqual(s.last().labels, []);
+  assert.equal(s.asks().length, 1);
+  // two of them, then the switch to both brands at the second: both kept, and a Copic cap goes in from then on
+  s.reset('Ohuhu', false);
+  s.read('RV10', true);
+  s.read('RV11', true);
+  assert.equal(s.sw().on, true);
+  assert.equal(s.asks().length, 2);
+  s.read('E71 Champagne', true);
+  assert.deepEqual(s.list(), ['Copic|E71']);
 });
 
 test('a photo not plainly one brand’s, with Ohuhu set for you: another brand’s cap is asked about as Scan’s own reads say it, "set for you", not "chosen"', () => {
@@ -483,14 +627,26 @@ test('a photo not plainly one brand’s, with Ohuhu set for you: another brand�
   })()`),
     );
   // (v318.7 as built: "Another brand than the one chosen (Ohuhu): add it?", though nothing was chosen)
-  assert.deepEqual(photo(false), { seen: '', list: 3, asks: ['Copic BG11 Moon White: add it? Ohuhu was set for you', 'Copic E71 Champagne: add it? Ohuhu was set for you'] });
+  assert.deepEqual(photo(false), {
+    seen: '',
+    list: 3,
+    asks: [
+      'Copic BG11 Moon White: add it? Ohuhu was set for you',
+      'Copic E71 Champagne: add it? Ohuhu was set for you',
+    ],
+  });
   // Ohuhu tapped: as before
-  assert.deepEqual(photo(true).asks, ['Another brand than the one chosen (Ohuhu): add it?', 'Another brand than the one chosen (Ohuhu): add it?']);
+  assert.deepEqual(photo(true).asks, [
+    'Another brand than the one chosen (Ohuhu): add it?',
+    'Another brand than the one chosen (Ohuhu): add it?',
+  ]);
 });
 
 test('a long paste under the switch to both brands is read in no more than 1.3 times Either’s time: its words are worked out once, not again for each marker; the names still make the markers whole', () => {
   const s = studio();
-  const text = s.ev(`let t = ''; const cs = COLORS.map((c) => c.code + ' ' + c.name); while (t.length < 122000) t += cs.join('\\n') + '\\n'; return t;`);
+  const text = s.ev(
+    `let t = ''; const cs = COLORS.map((c) => c.code + ' ' + c.name); while (t.length < 122000) t += cs.join('\\n') + '\\n'; return t;`,
+  );
   s.reset('', true);
   const t0 = cpuMs();
   s.read(text, true);
@@ -503,17 +659,34 @@ test('a long paste under the switch to both brands is read in no more than 1.3 t
   const t1 = cpuMs();
   s.read(text, true);
   const sw = cpuMs() - t1;
-  assert.ok(sw <= 1.3 * either + 150, 'Either ' + either.toFixed(0) + ' ms, under the switch ' + sw.toFixed(0) + ' ms');
+  assert.ok(
+    sw <= 1.3 * either + 150,
+    'Either ' + either.toFixed(0) + ' ms, under the switch ' + sw.toFixed(0) + ' ms',
+  );
   // the paste's Copic markers are read whole by their names, as the text searched for each would have them (Keep Ohuhu
   // asks about them so; a switch again puts them in); a name of plain words alone, Light Blue, makes none whole, as before
-  const whole = s.ev(`const t = ${JSON.stringify(text)}; return scanList.filter((e) => !e.ask && COLORS[e.i].brand === 'Copic').map((e) => [COLORS[e.i].code, !!e.whole, !!scanWholeOther(e.i, t, 'Ohuhu')]);`);
+  const whole = s.ev(
+    `const t = ${JSON.stringify(text)}; return scanList.filter((e) => !e.ask && COLORS[e.i].brand === 'Copic').map((e) => [COLORS[e.i].code, !!e.whole, !!scanWholeOther(e.i, t, 'Ohuhu')]);`,
+  );
   assert.ok(whole.length > 300);
-  assert.deepEqual(whole.filter((w) => w[1] !== w[2]), [], 'read whole as the text searched would have it');
-  assert.ok(whole.filter((w) => w[1]).length > 300 && whole.some((w) => !w[1]), 'most whole by their names, some not');
+  assert.deepEqual(
+    whole.filter((w) => w[1] !== w[2]),
+    [],
+    'read whole as the text searched would have it',
+  );
+  assert.ok(
+    whole.filter((w) => w[1]).length > 300 && whole.some((w) => !w[1]),
+    'most whole by their names, some not',
+  );
   // codes alone: a code that could be an Ohuhu code read wrong isn't whole, one that couldn't is
   s.reset('Ohuhu', false);
   s.read('E71 Champagne', false);
   s.read('BG11 Moon White', false);
   s.read(['B18', 'B26', 'B37', 'B41'].join('\n'), true);
-  assert.deepEqual(s.ev(`return scanList.filter((e) => !e.ask && COLORS[e.i].brand === 'Copic').map((e) => COLORS[e.i].code + ':' + !!e.whole).sort();`), ['B18:true', 'B26:false', 'B37:true', 'B41:false', 'BG11:true', 'E71:true']);
+  assert.deepEqual(
+    s.ev(
+      `return scanList.filter((e) => !e.ask && COLORS[e.i].brand === 'Copic').map((e) => COLORS[e.i].code + ':' + !!e.whole).sort();`,
+    ),
+    ['B18:true', 'B26:false', 'B37:true', 'B41:false', 'BG11:true', 'E71:true'],
+  );
 });

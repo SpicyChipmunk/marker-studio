@@ -66,6 +66,8 @@ function scanSaveList() {
                   { k: mkey(e.i), how: e.how },
                   e.as ? { as: e.as } : null,
                   e.cv ? { cv: e.cv } : null,
+                  // (v318.22 debug: a list's, not a cap's, after a reload too: no caps offer from it, scanAsk's 'again')
+                  e.pasted ? { pa: 1 } : null,
                 ),
             // (v318.7: its photo, for the headings over each photo's markers after a reload)
             e.photo ? { p: e.photo } : null,
@@ -124,6 +126,7 @@ function scanParseList(raw) {
               { i: i, how: typeof e.how === 'string' ? e.how : '' },
               typeof e.as === 'string' && e.as ? { as: e.as.slice(0, 12) } : null,
               e.cv === 'old' || e.cv === 'new' ? { cv: e.cv } : null,
+              e.pa === 1 ? { pasted: true } : null,
               photo(e),
             );
       })

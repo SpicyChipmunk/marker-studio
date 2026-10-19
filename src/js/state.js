@@ -1,10 +1,20 @@
 var _saveHold = false,
   _lastRaw = null,
+  // (v318.22) the stored state as it was read, for the fields FUT_GONE describes below (futureKeep/futurePut)
+  _future = {},
   // (v296) the unreadable original, when there wasn't room to keep a copy of it: for Download the original, this time
   _lossRaw = null;
 const _savedGone = new Set(),
   STATE_BK = 'ms-state-backup',
-  LOAD_NOTE = 'ms-load-note';
+  LOAD_NOTE = 'ms-load-note',
+  // (v318.22 review J) fields this version doesn't write but a stored state may hold: kept as they are so an older
+  // tab's save doesn't wipe what a newer one wrote (a second device on a stale cache, or this app before it
+  // reloads). It can't tell a newer version's field from one an older version gave up, so a field retired from
+  // save() goes in FUT_GONE, or it would be put back for ever. No limit of size or count: a field is put back exactly
+  // as it was read, so the stored state can't grow by it (a limit of 4 KB had dropped a field with an entry per marker
+  // for a collection of 216 or more, as `cap` and `owned` already are; one of 20 fields, the 21st a newer version
+  // added, about five weeks of releases at the pace of autumn 2026)
+  FUT_GONE = ['finderView'];
 let state = load();
 if (!state.palSize) state.palSize = 4;
 if (!state.harmony) state.harmony = 'complementary';
@@ -337,6 +347,24 @@ function knownMkey(k) {
 // person taps or types (holdSaves), so just opening the app can't write over it.
 // lost counts what the person would miss: markers, and palettes and guides (Library entries) that had to be left out
 // (-1: that whole list was unreadable). Settings put back to their defaults are repairs, not losses.
+// (v318.22) the stored state, as read: held so save() can put back the fields it doesn't know (FUT_GONE above).
+// `saved` is left out: the Library is rebuilt from state.saved, and holding the read copy would keep it in memory
+function futureKeep(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return;
+  const o = {};
+  Object.keys(v).forEach(function (k) {
+    if (k !== 'saved' && k !== '__proto__') o[k] = v[k];
+  });
+  _future = o;
+}
+// those fields into the object save() has just built: only ones it doesn't write itself, never a retired one
+function futurePut(o) {
+  Object.keys(_future).forEach(function (k) {
+    if (Object.prototype.hasOwnProperty.call(o, k) || FUT_GONE.indexOf(k) >= 0) return;
+    o[k] = _future[k];
+  });
+  return o;
+}
 function parseState(raw) {
   let v;
   try {
@@ -345,6 +373,7 @@ function parseState(raw) {
     return { v: null, bad: [], broken: true };
   }
   if (!v || typeof v !== 'object' || Array.isArray(v)) return { v: null, bad: [], broken: true };
+  futureKeep(v);
   const TK = ['pale', 'light', 'mid', 'dark'],
     SK = ['neutral', 'muted', 'medium', 'vivid'],
     bad = [],
@@ -568,6 +597,8 @@ function savedMerge() {
   } catch (e) {
     return;
   }
+  // (v318.22 review J: another tab's save read here before syncFromStorage has seen it)
+  futureKeep(v);
   if (!v || !Array.isArray(v.saved)) return;
   const have = new Set(state.saved.map((s) => s.id));
   v.saved.forEach((e) => {
@@ -583,42 +614,44 @@ function save(quiet) {
   if (STORE_BLOCKED || _saveHold) return true;
   try {
     savedMerge();
-    const s = JSON.stringify({
-      mode: state.mode,
-      palSize: state.palSize,
-      harmony: state.harmony,
-      tones: [...state.tones],
-      sats: [...state.sats],
-      drawn: state.drawn,
-      excluded: [...state.excluded],
-      palettes: state.palettes,
-      palH: state.palH,
-      pool: state.pool,
-      brands: [...state.brands],
-      buyBrands: state.buyBrands,
-      owned: [...state.owned],
-      collView: state.collView,
-      finderScope: state.finderScope,
-      scopeFlipped: state.scopeFlipped,
-      satsUpgraded: state.satsUpgraded,
-      seed: state.seed,
-      locked: state.locked,
-      filtersOpen: state.filtersOpen,
-      gapSort: state.gapSort,
-      customPal: state.customPal,
-      saved: state.saved,
-      ownedSeedV: state.ownedSeedV,
-      copicAdd1: state.copicAdd1,
-      libAdj1: state.libAdj1,
-      setFix1: state.setFix1,
-      ordLight1: state.ordLight1,
-      wish: state.wish,
-      ink: state.ink,
-      cap: state.cap,
-      capDef: state.capDef,
-      capQ: state.capQ,
-      capOffer: state.capOffer,
-    });
+    const s = JSON.stringify(
+      futurePut({
+        mode: state.mode,
+        palSize: state.palSize,
+        harmony: state.harmony,
+        tones: [...state.tones],
+        sats: [...state.sats],
+        drawn: state.drawn,
+        excluded: [...state.excluded],
+        palettes: state.palettes,
+        palH: state.palH,
+        pool: state.pool,
+        brands: [...state.brands],
+        buyBrands: state.buyBrands,
+        owned: [...state.owned],
+        collView: state.collView,
+        finderScope: state.finderScope,
+        scopeFlipped: state.scopeFlipped,
+        satsUpgraded: state.satsUpgraded,
+        seed: state.seed,
+        locked: state.locked,
+        filtersOpen: state.filtersOpen,
+        gapSort: state.gapSort,
+        customPal: state.customPal,
+        saved: state.saved,
+        ownedSeedV: state.ownedSeedV,
+        copicAdd1: state.copicAdd1,
+        libAdj1: state.libAdj1,
+        setFix1: state.setFix1,
+        ordLight1: state.ordLight1,
+        wish: state.wish,
+        ink: state.ink,
+        cap: state.cap,
+        capDef: state.capDef,
+        capQ: state.capQ,
+        capOffer: state.capOffer,
+      }),
+    );
     localStorage.setItem(KEY, s);
     _lastRaw = s;
     return true;
@@ -671,10 +704,14 @@ function syncFromStorage() {
   state.wish = cleanWish(v.wish);
   state.ink = cleanInk(v.ink);
   state.buyBrands = cleanBuy(v.buyBrands);
-  state.cap = cleanCap(v.cap);
-  state.capDef = v.capDef === 'old' ? 'old' : '';
-  state.capQ = v.capQ ? 1 : 0;
-  state.capOffer = v.capOffer ? 1 : 0;
+  // (v318.22 debug: a save by a version before v318.21, in another tab, has no caps: this tab's stay, and its next save
+  // writes them back. They had all been forgotten)
+  if (v.cap !== undefined) {
+    state.cap = cleanCap(v.cap);
+    state.capDef = v.capDef === 'old' ? 'old' : '';
+    state.capQ = v.capQ ? 1 : 0;
+    state.capOffer = v.capOffer ? 1 : 0;
+  }
   if (sig() === was) return; // only another tab's screen or settings changed
   // (v318.21 debug: what caps say changed there: an open guide's labels and keys drawn again whole)
   if (JSON.stringify([state.cap, state.capDef]) !== capWas && typeof capChanged === 'function') capChanged();
@@ -823,7 +860,7 @@ const sCompact = (s) => sFold(s).replace(/[-.\s]/g, '');
 let _sHay = null;
 function sHay(i) {
   if (!_sHay)
-    _sHay = COLORS.map((c) => {
+    _sHay = COLORS.map((c, i) => {
       const codes = [sCompact(c.code)];
       if (c.old && c.old !== c.code) {
         const o = sCompact(oldCode(c));
@@ -835,6 +872,15 @@ function sHay(i) {
         nums: codes.map((x) => x.replace(/^[a-z]+/, '')),
         // (the name as written too: "gre" still finds Grey on the way to "grey")
         text: sFold(c.name) + '\n' + String(c.name).normalize('NFKC').toLowerCase(),
+        // (v318.22 debug: the names printed on its older caps, found where its cap is shown older: Markers showed
+        // "R22 Dark Blush" for an older-cap RV17, and searching "Dark Blush" found nothing)
+        capText: capHasOld(c)
+          ? []
+              .concat(c.cap || [], c.capN || [])
+              .map((n) => sFold(n))
+              .join('\n')
+          : '',
+        i: i,
         brand: sFold(c.brand),
       };
     });
@@ -865,6 +911,7 @@ function sQueryOf(str) {
 }
 function sWord(h, w, multi) {
   if (h.text.includes(w) || (w.length >= 4 && h.brand.startsWith(w))) return true;
+  if (h.capText && h.capText.includes(w) && capIsOldAny(h.i)) return true;
   const k = w.replace(/[-.]/g, '');
   if (!k) return false;
   if (h.codes.some((x) => x.startsWith(k))) return true;

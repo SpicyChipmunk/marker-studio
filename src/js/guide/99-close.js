@@ -194,6 +194,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     sameName: sameName,
     // (v318.21 tests: the code on your cap, its * and a key's name)
     capLabel: capLabel,
+    capPair: capPair,
     capStar: capStar,
     capKeyName: capKeyName,
     mcode: mcode,

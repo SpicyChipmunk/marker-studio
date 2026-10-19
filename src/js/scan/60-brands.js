@@ -283,6 +283,17 @@ function ocrWholeName(names, brand) {
 // digit is often read as (O for 0, I, L or T for 1, S for 5, Z for 2). "W60g" isn't WG06, nor "Eg9" E69: Scan puts those
 // right, but from a photo they're asked about
 function ocrAsRead(text, code) {
+  // (v318.22: nor an older grey cap's code with its Ⅱ misread, "BG期05", as BG05 a cap now: photo-read.js ocrTwoLike)
+  if (
+    typeof ocrTwoLike === 'function' &&
+    /^[CB]G\d/.test(code) &&
+    scanIndex().byCode.has(code) &&
+    ocrTwoLike(text) &&
+    // (v318.22 debug: not on Copic's caps, chosen or the photo's: Copic has no Ⅱ greys, its BG05 is BG05)
+    scanBrand !== 'Copic' &&
+    !(typeof ocrRun !== 'undefined' && ocrRun && ocrBrandOf(ocrRun) === 'Copic')
+  )
+    return false;
   const t = scanKey(text),
     like = { 0: 'O', 1: 'ILT', 5: 'S', 2: 'Z' };
   for (let k = 0; k + code.length <= t.length; k++) {

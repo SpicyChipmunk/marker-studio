@@ -1417,6 +1417,9 @@ function libDuplicate(id) {
         renderSaved();
         renderRecent();
         chrome();
+        // (v318.22 debug: the keyboard on the copy's ⋯, as Delete puts it on the next one's; it was left on the page)
+        if (savedOverlay.classList.contains('on'))
+          focusKept(true, null, '', 0, savedList.querySelector('.srow[data-id="' + nid + '"] .smore'));
         toastAction('Duplicated as \u201c' + nm + '\u201d, ticks start fresh', 'Open', function () {
           const x = state.saved.find((s) => s.id === nid);
           if (x) loadGuide(x);
