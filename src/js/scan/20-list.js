@@ -61,7 +61,12 @@ function scanSaveList() {
                   // (all its answers, when the brand chosen has narrowed them: Either brand brings them back)
                   opts0: e.opts0 ? e.opts0.map((o) => ({ k: mkey(o.i), how: o.how })) : undefined,
                 }
-              : { k: mkey(e.i), how: e.how },
+              : // (v318.21: a code put right by its name, as it was read: "read as “5110”" on its row)
+                Object.assign(
+                  { k: mkey(e.i), how: e.how },
+                  e.as ? { as: e.as } : null,
+                  e.cv ? { cv: e.cv } : null,
+                ),
             // (v318.7: its photo, for the headings over each photo's markers after a reload)
             e.photo ? { p: e.photo } : null,
           ),
@@ -115,7 +120,12 @@ function scanParseList(raw) {
         const i = idx(e.k);
         return i == null
           ? null
-          : Object.assign({ i: i, how: typeof e.how === 'string' ? e.how : '' }, photo(e));
+          : Object.assign(
+              { i: i, how: typeof e.how === 'string' ? e.how : '' },
+              typeof e.as === 'string' && e.as ? { as: e.as.slice(0, 12) } : null,
+              e.cv === 'old' || e.cv === 'new' ? { cv: e.cv } : null,
+              photo(e),
+            );
       })
       .filter(Boolean);
   } catch (_) {

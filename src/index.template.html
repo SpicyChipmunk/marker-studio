@@ -59,6 +59,21 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
 @@include(html/dialogs.html)
 <script>
 const COLORS=@@json(data/markers.json);
+// (v318.19) the names printed on older caps, beside the old codes (Ohuhu's "R6 Rose Red" is R213 Pomegranate): the
+// reader takes them as the marker's own names, with their old codes only (docs/READER-CAP-NAMES.md)
+(function (cn) {
+  COLORS.forEach(function (c) {
+    const n = cn[c.brand] && cn[c.brand][c.code];
+    if (n) c.cap = n;
+  });
+})(@@json(data/cap-names.json));
+// (v318.21) a short name printed on an older cap that the reader leaves out ("BG8 Teal", now BG215): shown only
+(function (cn) {
+  COLORS.forEach(function (c) {
+    const n = cn[c.brand] && cn[c.brand][c.code];
+    if (n && !c.cap) c.capN = n;
+  });
+})(@@json(data/cap-shown.json));
 @@include(js/safety.js)
 @@include(js/brands.js)
 @@include(js/names.js)
@@ -66,6 +81,7 @@ const COLORS=@@json(data/markers.json);
 @@include(js/layers.js)
 @@include(js/colour.js)
 @@include(js/state.js)
+@@include(js/caps.js)
 @@include(js/picker.js)
 @@include(js/library.js)
 @@include(js/finder.js)

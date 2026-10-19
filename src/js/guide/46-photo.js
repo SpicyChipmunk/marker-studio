@@ -1625,7 +1625,7 @@ function photoStatsHTML0() {
               '<span><i style="background:' +
               esc(m.hex) +
               '"></i>' +
-              esc((mixed ? bTag(m.brand) + ' ' : '') + m.code) +
+              esc((mixed ? bTag(m.brand) + ' ' : '') + capLabel(m)) +
               '</span>';
             return api.wishChip ? api.wishChip(m.mkey, 'closer to your photo', inner) : inner;
           })

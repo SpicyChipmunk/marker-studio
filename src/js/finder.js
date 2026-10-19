@@ -33,7 +33,7 @@ function showCustom() {
       'aria-label',
       idx == null
         ? 'Empty slot ' + (k + 1) + ', choose a marker'
-        : COLORS[idx].brand + ' ' + COLORS[idx].code + ' ' + COLORS[idx].name + ', change',
+        : COLORS[idx].brand + ' ' + capCode(idx) + ' ' + capName(idx) + ', change',
     );
     if (idx == null) {
       b.classList.add('empty');
@@ -54,9 +54,10 @@ function showCustom() {
       b.classList.remove('empty');
       b.classList.toggle('unowned', !own);
       b.style.background = c.hex;
-      cd.textContent = c.code;
+      cd.textContent = capCode(idx);
       cd.style.color = txt(c.hex);
-      b.title = c.brand + ' ' + c.code + ' · ' + c.name + (own ? '' : ' · ' + why) + ' · tap to change';
+      b.title =
+        c.brand + ' ' + capCode(idx) + ' · ' + capName(idx) + (own ? '' : ' · ' + why) + ' · tap to change';
       if (!own)
         b.insertAdjacentHTML(
           'beforeend',
@@ -191,7 +192,10 @@ function cellHtml(i, rank) {
   const c = COLORS[i];
   const col = state.mode === 'collection';
   const own = isOwned(i);
-  const old = c.old && c.old !== c.code ? ' · old ' + oldCode(c) : '';
+  // (v318.21: your older cap's code and name, "now R213"; else the old code, as before)
+  const cc = capCode(i),
+    cn = capName(i),
+    old = capIsOld(i) ? ' · ' + capNow(i) : c.old && c.old !== c.code ? ' · old ' + oldCode(c) : '';
   const rk = rank ? '<span class="rankb">' + rank + '</span>' : '';
   const cls =
     'cell' + (col && !own && state.collView !== 'unowned' ? ' notown' : '') + (col && own ? ' own' : '');
@@ -207,18 +211,13 @@ function cellHtml(i, rank) {
     esc(
       c.brand +
         ' ' +
-        c.code +
+        cc +
         ' ' +
-        c.name +
+        cn +
         (col ? (own ? ', owned. Activate to untick' : ', not owned. Activate to tick') : ''),
     ) +
     '" aria-description="Shift+F10 for details" title="' +
-    c.brand +
-    ' ' +
-    c.code +
-    ' · ' +
-    c.name +
-    old +
+    esc(c.brand + ' ' + cc + ' · ' + cn + old) +
     ' · tap to ' +
     act +
     '">' +
@@ -229,7 +228,7 @@ function cellHtml(i, rank) {
     '<div class="sq" style="background:' +
     c.hex +
     '"></div><div class="cc">' +
-    c.code +
+    esc(cc) +
     '</div></div>'
   );
 }

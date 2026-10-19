@@ -352,14 +352,14 @@ function planRow(m, n, c, tg) {
         '<div class="bslot"><span class="bsw" style="background:' +
         mm.hex +
         '"></span><span class="bcd">' +
-        mm.code +
+        capLabel(mm) +
         '</span></div>'
       );
     return (
       '<div class="bslot sugg"><span class="bsw" style="background:' +
       mm.hex +
       '"></span><span class="bcd">' +
-      mm.code +
+      capLabel(mm) +
       '</span><span class="bnote">buy</span></div>'
     );
   }
@@ -369,7 +369,7 @@ function planRow(m, n, c, tg) {
     '<div class="bslot base"><span class="bsw" style="background:' +
     m.hex +
     '"></span><span class="bcd">' +
-    m.code +
+    capLabel(m) +
     '</span></div>' +
     slot(c.dark, c.darkOwned) +
     '</div><div class="planmeta"><span class="pmc">' +
@@ -380,9 +380,9 @@ function planRow(m, n, c, tg) {
         esc(m.brand) +
         ' </span>'
       : '') +
-    m.code +
+    capLabel(m) +
     '</span>' +
-    (m.name ? '<span class="pmn">' + m.name + '</span>' : '') +
+    (capName(m) ? '<span class="pmn">' + capName(m) + '</span>' : '') +
     '<span class="pmn">' +
     n +
     ' section' +
@@ -511,7 +511,7 @@ function renderBlendPlan() {
                 mm2.hex +
                 '"></span>' +
                 (tg ? bTag(mm2.brand) + ' ' : '') +
-                mm2.code;
+                capCode(mm2);
             return api.wishChip
               ? api.wishChip(k2, 'blend for ' + wantFor[k2], inner, 'buychip')
               : '<span class="buychip">' + inner + '</span>';
@@ -591,11 +591,12 @@ function lowShown() {
   return !!(api.lowInk && api.ownsAny && api.ownsAny() && assignData && pageDone());
 }
 // (a code you own in both brands: its chip says which)
+// (v318.21 debug: by the codes shown, your caps': the chip shows an older cap's)
 function lowCodeBoth(code) {
   const q = codeNorm(code),
     b = {};
   COLORS.forEach(function (c, i) {
-    if (codeNorm(c.code) === q && api.lowInk(mkey(i)) != null) b[c.brand] = 1;
+    if (codeNorm(capCode(i)) === q && api.lowInk(mkey(i)) != null) b[c.brand] = 1;
   });
   return Object.keys(b).length > 1;
 }
@@ -604,12 +605,12 @@ function lowChip(k) {
     c = i != null ? COLORS[i] : null,
     v = api.lowInk(k);
   if (!c || v == null) return '';
-  const nm = (lowCodeBoth(c.code) ? c.brand + ' ' : '') + c.code,
+  const nm = (lowCodeBoth(capCode(i)) ? c.brand + ' ' : '') + capCode(i),
     sw = '<i style="background:' + esc(c.hex) + '"></i>';
   if (v === 'dry')
     return (
       '<span class="sflowb dry" role="img" aria-label="' +
-      esc(c.brand + ' ' + c.code + ' is marked dry') +
+      esc(c.brand + ' ' + capCode(i) + ' is marked dry') +
       '">' +
       sw +
       esc(nm) +
@@ -624,7 +625,7 @@ function lowChip(k) {
     '" aria-pressed="' +
     on +
     '" aria-label="' +
-    esc(c.brand + ' ' + c.code + ' ' + (c.name || '') + ', running low') +
+    esc(c.brand + ' ' + capCode(i) + ' ' + (capName(i) || '') + ', running low') +
     '">' +
     sw +
     esc(nm) +
@@ -708,7 +709,7 @@ function lowTap(k) {
   if (!c) return;
   // (named as its chip is: the brand too for a code you own in both)
   const v = api.lowInk(k),
-    nm = (lowCodeBoth(c.code) ? c.brand + ' ' : '') + c.code;
+    nm = (lowCodeBoth(capCode(i)) ? c.brand + ' ' : '') + capCode(i);
   if (v === 'low') {
     if (api.lowUnmark(k, !!st.added[k])) {
       delete st.added[k];
@@ -740,7 +741,8 @@ function lowFind(w, raw) {
   let known = false,
     blender = false;
   COLORS.forEach(function (c, i) {
-    if (codeNorm(c.code) !== q) return;
+    // (v318.21: or the code on your older cap, R6 for R213)
+    if (codeNorm(c.code) !== q && !(capIsOld(i) && codeNorm(capCode(i)) === q)) return;
     known = true;
     const k = mkey(i);
     if (api.lowInk(k) != null) found.push(k);
@@ -775,7 +777,7 @@ function lowFind(w, raw) {
   if (v1) {
     const i = keyIdx(found[0]),
       c = COLORS[i];
-    st.line[w] = c.brand + ' ' + c.code + (v1 === 'dry' ? ' is dry' : ' is already marked low');
+    st.line[w] = c.brand + ' ' + capCode(i) + (v1 === 'dry' ? ' is dry' : ' is already marked low');
   }
   lowRefresh();
   sayLive(st.line[w]);

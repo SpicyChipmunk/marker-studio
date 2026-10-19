@@ -244,7 +244,11 @@ function exportLegend(g, ex, uniq, one, K, note) {
     g.fillText(
       trunc(
         g,
-        (one ? '' : bTag(mk.brand) + '  ') + mk.code + (mk.name && !K.codes ? '   ' + mk.name : ''),
+        // (v318.21: the code on your cap, "now R213" by its name; with codes only, two markers that show the same code
+        // keep their caps' names, R22* Dark Blush and R22 Ballet Pink)
+        (one ? '' : bTag(mk.brand) + '  ') +
+          capLabel(mk) +
+          (capName(mk) && (!K.codes || capSame(mk)) ? '   ' + capKeyName(mk) : ''),
         colw - sw - 16,
       ),
       x + sw + 8,
@@ -2660,7 +2664,9 @@ function _buildPDF(dry) {
     const mm = _want[k];
     return Math.min(
       bw,
-      PX(14) + g.measureText(tagOf(mm) + mm.code + (mm.name ? ' ' + mm.name : '')).width + PX(14),
+      PX(14) +
+        g.measureText(tagOf(mm) + capLabel(mm) + (capName(mm) ? ' ' + capName(mm) : '')).width +
+        PX(14),
     );
   });
   // dry run: how many pages does the key need if the table starts at `start`?
@@ -2808,7 +2814,7 @@ function _buildPDF(dry) {
   // (the code column as wide as the longest code, so the names keep the rest: v284 review)
   g.font = '700 ' + PX(9.5) + 'px ' + LFONT;
   const codeW = rows.reduce(function (w, r) {
-    return Math.max(w, g.measureText(r.m.code).width);
+    return Math.max(w, g.measureText(capLabel(r.m)).width);
   }, 0);
   // (v308: never cut short; the name is cut instead. Half Letter's key cut "Process B…" for both B05 and B112)
   X.name = X.code + Math.max(PX(30), codeW + PX(8));
@@ -2855,7 +2861,8 @@ function _buildPDF(dry) {
     g.font = '700 ' + PX(8.5) + 'px ' + LFONT;
     return (
       PX(14) +
-      g.measureText(e.coat ? '2nd coat of ' + tagOf(e.coat) + e.coat.code : tagOf(e.c) + e.c.code).width +
+      g.measureText(e.coat ? '2nd coat of ' + tagOf(e.coat) + capLabel(e.coat) : tagOf(e.c) + capLabel(e.c))
+        .width +
       (e.c && !e.o ? buyW() : 0)
     );
   };
@@ -2968,13 +2975,13 @@ function _buildPDF(dry) {
     if (e.coat) {
       g.fillStyle = '#111';
       g.font = '700 ' + PX(8.5) + 'px ' + LFONT;
-      g.fillText(pdfTrunc(g, '2nd coat of ' + tagOf(e.coat) + e.coat.code, w - PX(14)), x + PX(14), ty);
+      g.fillText(pdfTrunc(g, '2nd coat of ' + tagOf(e.coat) + capLabel(e.coat), w - PX(14)), x + PX(14), ty);
       return;
     }
     const bu = e.o ? 0 : buyW();
     g.fillStyle = '#111';
     g.font = '700 ' + PX(8.5) + 'px ' + LFONT;
-    const s = pdfTrunc(g, tagOf(e.c) + e.c.code, w - PX(14) - bu),
+    const s = pdfTrunc(g, tagOf(e.c) + capLabel(e.c), w - PX(14) - bu),
       tw = g.measureText(s).width;
     g.fillText(s, x + PX(14), ty);
     if (!e.o) {
@@ -3050,12 +3057,12 @@ function _buildPDF(dry) {
     }
     g.fillStyle = '#111';
     g.font = '700 ' + PX(9.5) + 'px ' + LFONT;
-    g.fillText(pdfTrunc(g, mm.code, X.name - X.code - PX(4)), x + X.code, y + PX(12.5));
+    g.fillText(pdfTrunc(g, capLabel(mm), X.name - X.code - PX(4)), x + X.code, y + PX(12.5));
     const nmW = X.cnt - X.name - PX(30);
     if (nmW > PX(16)) {
       g.fillStyle = '#333';
       g.font = '400 ' + PX(9) + 'px ' + LFONT;
-      g.fillText(pdfTrunc(g, mm.name || '', nmW), x + X.name, y + PX(12.5));
+      g.fillText(pdfTrunc(g, capKeyName(mm), nmW), x + X.name, y + PX(12.5));
     }
     g.fillStyle = '#777';
     g.font = '500 ' + PX(8.5) + 'px ' + LFONT;
@@ -3084,7 +3091,7 @@ function _buildPDF(dry) {
         // (a line that starts a column or a page says whose it is)
         g.fillStyle = '#111';
         g.font = '700 ' + PX(9.5) + 'px ' + LFONT;
-        g.fillText(pdfTrunc(g, mm.code, X.name - X.code - PX(4)), colX() + X.code, y + PX(12.5));
+        g.fillText(pdfTrunc(g, capLabel(mm), X.name - X.code - PX(4)), colX() + X.code, y + PX(12.5));
       }
       const xs = colX(),
         ids = zoneIds().filter(function (id) {
@@ -3145,7 +3152,7 @@ function _buildPDF(dry) {
     wk.forEach(function (k) {
       const mm = want[k];
       g.font = '600 ' + PX(8.5) + 'px ' + LFONT;
-      const t = pdfTrunc(g, tagOf(mm) + mm.code + (mm.name ? ' ' + mm.name : ''), bw - PX(28)),
+      const t = pdfTrunc(g, tagOf(mm) + capLabel(mm) + (capName(mm) ? ' ' + capName(mm) : ''), bw - PX(28)),
         w = PX(14) + g.measureText(t).width + PX(14);
       if (x + w > m + bw) {
         x = x0;
@@ -3814,7 +3821,7 @@ function testStripPages(dry, lazy) {
   });
   const oneB = Object.keys(bs).length === 1,
     tag = function (c) {
-      return oneB ? c.code : bTag(c.brand) + ' ' + c.code;
+      return oneB ? capLabel(c) : bTag(c.brand) + ' ' + capLabel(c);
     };
   // the page in millimetres
   const pap = paper,
@@ -3939,7 +3946,7 @@ function testStripPages(dry, lazy) {
       g.fillText(pdfTrunc(g, tag(x.m), M(lwid)), M(lx), M(Y0 + 6.3));
       g.fillStyle = '#555';
       F('400', 6);
-      g.fillText(pdfTrunc(g, x.m.name || '', M(lwid)), M(lx), M(Y0 + 9.1));
+      g.fillText(pdfTrunc(g, capKeyName(x.m), M(lwid)), M(lx), M(Y0 + 9.1));
       if (x.zones) {
         g.fillStyle = x.zones.length === 1 ? pdfZoneCol(x.zones[0]) : '#666';
         F('italic 700', 6);

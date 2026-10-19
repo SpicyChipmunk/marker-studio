@@ -119,7 +119,10 @@ function scanRender() {
           '</li>'
         );
       const c = COLORS[e.i],
-        mine = state.owned.has(mkey(e.i));
+        mine = state.owned.has(mkey(e.i)),
+        // (v318.21) the cap as read: an older one's code and name, "now R213" (caps.js); else, one of yours, what its
+        // cap says
+        old = e.cv ? e.cv === 'old' && capHasOld(c) : e.how === 'old' ? capHasOld(c) : capIsOld(e.i);
       return (
         '<li class="scrow' +
         (mine ? ' mine' : '') +
@@ -128,18 +131,24 @@ function scanRender() {
         '"><span class="scsw" style="background:' +
         c.hex +
         '"></span><span class="sccode">' +
-        esc(c.code) +
+        esc(old ? oldCode(c) : c.code) +
         '</span><span class="scname">' +
-        esc(c.name) +
+        esc(old ? capOldName(c) : c.name) +
         '<small>' +
         esc(c.brand) +
+        (old ? ' · <i>now ' + esc(c.code) + '</i>' : '') +
         (mine
           ? ' · <i>already yours</i>'
           : e.how === 'upside'
             ? ' · <i>read upside down</i>'
             : e.how === 'old'
-              ? ' · <i>by its old code</i>'
-              : '') +
+              ? old
+                ? ''
+                : ' · <i>by its old code</i>'
+              : // (v318.21) a code misread by a character, put right by the name read beside it
+                e.how === 'fixed' && e.as
+                ? ' · <i>read as “' + esc(e.as) + '”</i>'
+                : '') +
         '</small></span>' +
         del +
         '</li>'
@@ -174,7 +183,10 @@ function scanAddState() {
   const add = $('scAdd'),
     bx = $('scBox');
   if (add)
-    add.disabled = !(scanFind ? scanList.some((e) => !e.ask) : scanNew().length) && !(bx && bx.value.trim());
+    // (v318.21: or what caps you have already say, read with their codes: caps.js)
+    add.disabled =
+      !(scanFind ? scanList.some((e) => !e.ask) : scanNew().length || capPending()) &&
+      !(bx && bx.value.trim());
 }
 // (v309) Find mode's line under the list: which set the caps read so far fit, best first (findSets, events.js)
 function scanFindNote(marks) {
@@ -412,9 +424,11 @@ function scanAdd() {
   const asks0 = scanAsks();
   scanFlushBox(true);
   const fresh = scanNew();
-  if (!fresh.length) return;
-  // (v303: the text left in the box raised a question: shown, with the dialog left open, before anything's added)
+  // (v303: the text left in the box raised a question: shown, with the dialog left open, before anything's added;
+  // v318.21 debug: before the caps-only Add too, which had closed Scan over the new question)
   if (scanAsks() > asks0) return;
+  // (v318.21: nothing new, but what caps you have already say, read with their codes: noted)
+  if (!fresh.length) return capPending() ? scanAddCaps() : undefined;
   // (v318.7) the set nearly all here, with what's missing, worked out while the list still holds the markers: said by
   // the toast, and by the card when Scan's opened next (scanGapPending)
   const gaps = scanSetGaps(true);
@@ -425,6 +439,11 @@ function scanAdd() {
     // should the sweep turn out to be the other brand's (scanSw), as they aren't rewritten then
     autoIn = scanAuto() && !scanSw.on ? fresh.filter((e) => e.auto).map((e) => COLORS[e.i].code) : [];
   keys.forEach((k) => state.owned.add(k));
+  // (v318.21) what each cap in the list says, by the code read: on the markers yours now (caps.js)
+  const capCh = capFromList(scanList),
+    offer = capOfferFor(scanList);
+  capApply(capCh);
+  if (offer) state.capOffer = 1;
   scanSw.added = scanSw.added.concat(autoIn);
   // (bought: off the To buy list, as its Bought button does, and fresh: a Running low or Dry mark from before it was
   // unticked goes, v308.3; Undo gives it back)
@@ -436,9 +455,12 @@ function scanAdd() {
       keys.forEach((k) => state.owned.delete(k));
       state.wish = wishWas;
       inkPutBack(ink);
+      capApply(capCh, true);
+      if (offer) state.capOffer = 0;
     })
   )
     return;
+  if (Object.keys(capCh).length) capChanged();
   // (questions not yet answered stay for next time; what was added, and what was already yours, go; Undo brings
   // the list back too, to put right and add again)
   const listWas = scanList.slice(),
@@ -478,13 +500,14 @@ function scanAdd() {
           : scanGapCodes(gaps) + (gaps.miss.length === 1 ? ' wasn\u2019t' : ' weren\u2019t') + ' read')
       : '');
   toastActions(
-    said,
+    said + (offer ? capOfferSay(offer) : ''),
     // (v309.1: Open from the welcome's Scan is the welcome's again: what's added then is counted there)
     // (v318.7: and Open for the set's missing markers, the card with Add these 2 when Scan opens)
-    [{ label: 'Undo', fn: scanUndoAdd }].concat(
-      left || gaps ? [{ label: 'Open', fn: () => openScan({ added: after, undone: undone }) }] : [],
-    ),
-    left || unread || gaps ? 10000 : 8000,
+    [{ label: 'Undo', fn: scanUndoAdd }]
+      .concat(left || gaps ? [{ label: 'Open', fn: () => openScan({ added: after, undone: undone }) }] : [])
+      // (v318.21) most caps read show the other codes than your other Ohuhu markers do: once, to switch them
+      .concat(offer ? [capOfferAction(offer)] : []),
+    offer ? 14000 : left || unread || gaps ? 10000 : 8000,
   );
   if (after) after(cols || keys.length, 0, setIn);
   function scanUndoAdd() {
@@ -507,6 +530,9 @@ function scanAdd() {
     keys.forEach((k) => state.owned.delete(k));
     const inkNow = Object.assign({}, state.ink);
     inkPutBack(ink);
+    // (what the caps said goes back with them, and the offer, once, is to be made again)
+    capApply(capCh, true);
+    if (offer) state.capOffer = 0;
     // (back on the To buy list, unless put back there since: v303, where they were in it, not at its end)
     const back = wishWas.filter((w) => keys.indexOf(w.k) >= 0 && !state.wish.some((x) => x.k === w.k));
     if (back.length) {
@@ -522,14 +548,61 @@ function scanAdd() {
         keys.forEach((k) => state.owned.add(k));
         state.wish = wishNow;
         state.ink = inkNow;
+        capApply(capCh);
+        if (offer) state.capOffer = 1;
       })
     ) {
       fullRender();
       if (typeof presetRelist === 'function') presetRelist();
       wishChanged();
+      capChanged();
       if (undone) undone();
     }
   }
+}
+// (v318.21) Add with nothing new in the list, but what caps you have already say, read with their codes: noted, the
+// list emptied of them as Add empties it, with Undo
+function scanAddCaps() {
+  const capCh = capFromList(scanList),
+    offer = capOfferFor(scanList),
+    n = Object.keys(capCh).length;
+  capApply(capCh);
+  if (offer) state.capOffer = 1;
+  if (
+    !keep(function () {
+      capApply(capCh, true);
+      if (offer) state.capOffer = 0;
+    })
+  )
+    return;
+  const listWas = scanList.slice();
+  scanList = scanList.filter((e) => e.ask);
+  scanSaveList();
+  capChanged();
+  fullRender();
+  closeScan();
+  toastActions(
+    'Noted what ' +
+      nWord(n, 'cap') +
+      ' of yours ' +
+      (n === 1 ? 'says' : 'say') +
+      (offer ? capOfferSay(offer) : ''),
+    [
+      {
+        label: 'Undo',
+        fn: function () {
+          capApply(capCh, true);
+          if (offer) state.capOffer = 0;
+          scanList = scanList.concat(listWas.filter((e) => !e.ask && !scanList.some((x) => x.i === e.i)));
+          scanSaveList();
+          save(true);
+          capChanged();
+          fullRender();
+        },
+      },
+    ].concat(offer ? [capOfferAction(offer)] : []),
+    offer ? 14000 : 8000,
+  );
 }
 (function () {
   const ov = $('scanOverlay'),

@@ -654,9 +654,17 @@
     text-align: left;
   }
   .sczoomcard img {
-    grid-row: 1 / span 3;
     width: min(320px, 40vw, 60vh);
     margin: 0;
+  }
+  .sczoomcard .sczpic {
+    grid-row: 1 / span 5;
+    margin: 0;
+  }
+  .sczoomcard .sczpic.where img {
+    width: auto;
+    max-width: min(320px, 40vw);
+    max-height: 80vh;
   }
   .sczpick,
   .sczrow {
@@ -665,4 +673,40 @@
   .sczrow {
     margin-top: 6px;
   }
+}
+
+/* (v318.21) "Where in the photo?": the close-up flips to the whole photo, the cap ringed, with words for where it is
+   (15-answer.js scanZoom). The ring sits over the picture by the cap's place as fractions of the photo */
+.sczpic {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto 12px;
+}
+.sczoomcard .sczpic img {
+  margin: 0;
+}
+.sczpic.where img {
+  width: auto;
+  max-width: min(320px, 72vw);
+  max-height: min(56vh, 480px);
+}
+.sczring {
+  position: absolute;
+  aspect-ratio: 1;
+  min-width: 28px;
+  border: 3px solid #ffb454;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.55);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.sczwhere {
+  min-height: 44px;
+}
+.sczwords {
+  margin: 2px 0 6px;
+  font-size: var(--t-sm);
+  color: var(--sub);
 }

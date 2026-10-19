@@ -123,10 +123,10 @@ async function makeCard(idxs, kind) {
       x.fillStyle = tc;
       x.font = '500 22px Fraunces, Georgia, serif';
       x.textAlign = 'left';
-      x.fillText(c.code, pad + 16, y + 41);
+      x.fillText(capCode(c), pad + 16, y + 41);
       x.fillStyle = '#f2efe9';
       x.font = '500 17px "Hanken Grotesk", system-ui, sans-serif';
-      x.fillText(trunc(x, c.name, W - pad - (pad + 172) - 78), pad + 172, y + 30);
+      x.fillText(trunc(x, capName(c), W - pad - (pad + 172) - 78), pad + 172, y + 30);
       x.fillStyle = 'rgba(244,242,236,.5)';
       x.font = '500 13px "Hanken Grotesk", system-ui, sans-serif';
       x.fillText(c.brand, pad + 172, y + 50);
@@ -154,7 +154,7 @@ async function makeCard(idxs, kind) {
       x.fillStyle = 'rgba(244,242,236,.72)';
       x.font = '600 10px "Hanken Grotesk", system-ui, sans-serif';
       x.textAlign = 'center';
-      x.fillText((one ? '' : bTag(c.brand) + ' ') + c.code, cx + cellW / 2, y + sqH + 14);
+      x.fillText((one ? '' : bTag(c.brand) + ' ') + capCode(c), cx + cellW / 2, y + sqH + 14);
       x.textAlign = 'left';
       col++;
       if (col >= cols) {

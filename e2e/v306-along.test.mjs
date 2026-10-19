@@ -26,7 +26,7 @@ async function benGuide(page) {
   });
   await idle(page);
 }
-const sameKeys = (page) => page.evaluate(() => Object.keys(__mstest.sameCodeScan()).sort());
+const sameKeys = (page) => page.evaluate(() => Object.keys(__mstest.sameCodeScan().b).sort());
 // every brand tag drawn: its box's fill, its letter and the code drawn just before it (what: 'screen', 'pdf', 'image')
 const tagsOf = (page, what) =>
   page.evaluate((what) => {

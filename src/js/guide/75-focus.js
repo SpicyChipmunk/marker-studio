@@ -776,8 +776,8 @@ function renderFocusUI() {
     });
     sw.style.background = st ? st.hex : a.hex;
     // (v307: the brand as a badge, as the list shows it; a screen reader hears its name, focusSay)
-    nm.innerHTML = st ? st.nameH : m ? mcodeEye(m) + (m.name ? ' · ' + esc(m.name) : '') : esc(k);
-    nm.setAttribute('data-say', st ? st.say : m ? msay(m) + (m.name ? ' · ' + m.name : '') : k);
+    nm.innerHTML = st ? st.nameH : m ? mcodeEye(m) + (capName(m) ? ' · ' + esc(capName(m)) : '') : esc(k);
+    nm.setAttribute('data-say', st ? st.say : m ? msay(m) + (capName(m) ? ' · ' + capName(m) : '') : k);
     var tip = '';
     if (tt) {
       var gg = shadeGeom();

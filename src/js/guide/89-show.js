@@ -177,7 +177,7 @@ function showModel() {
     codes:
       mk.length <= SHOW_CODES
         ? mk.map(function (m) {
-            return { t: m.code, tag: one ? '' : bTag(m.brand), c: m.hex };
+            return { t: capLabel(m), tag: one ? '' : bTag(m.brand), c: m.hex };
           })
         : null,
     mixed: !one,

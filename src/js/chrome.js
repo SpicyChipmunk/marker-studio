@@ -139,11 +139,11 @@ function chrome() {
             ? '<s>' +
               COLORS[si].brand +
               ' ' +
-              COLORS[si].code +
+              capCode(si) +
               '</s> <span class="seednote">' +
               why +
               ', not used</span>'
-            : COLORS[si].brand + ' ' + COLORS[si].code) +
+            : COLORS[si].brand + ' ' + capCode(si)) +
           ' <span class="sx">' +
           ic('x') +
           '</span>'
@@ -478,19 +478,19 @@ function chrome() {
             '<div class="cell" data-i="' +
             i +
             '" role="button" tabindex="0" aria-label="' +
-            esc(c.brand + ' ' + c.code + ' ' + c.name + ', put it back') +
+            esc(c.brand + ' ' + capCode(c) + ' ' + capName(c) + ', put it back') +
             '" title="' +
             c.brand +
             ' ' +
-            c.code +
+            capCode(c) +
             ' · ' +
-            c.name +
+            capName(c) +
             ' — tap to return">' +
             btHTML(c.brand, dmix) +
             '<div class="sq" style="background:' +
             c.hex +
             '"></div><div class="cc">' +
-            c.code +
+            capCode(c) +
             '</div></div>'
           );
         })
@@ -513,13 +513,13 @@ function chrome() {
             const c = COLORS[i];
             return (
               '<div class="cell cellro" role="img" aria-label="' +
-              esc(c.brand + ' ' + c.code + ' ' + c.name) +
+              esc(c.brand + ' ' + capCode(c) + ' ' + capName(c)) +
               '" title="' +
               c.brand +
               ' ' +
-              c.code +
+              capCode(c) +
               ' · ' +
-              c.name +
+              capName(c) +
               ' · ' +
               c.hex.toUpperCase() +
               '">' +
@@ -527,7 +527,7 @@ function chrome() {
               '<div class="sq" style="background:' +
               c.hex +
               '"></div><div class="cc">' +
-              c.code +
+              capCode(c) +
               '</div></div>'
             );
           })
@@ -826,7 +826,7 @@ function doReRollBand(k) {
     save();
     const c = COLORS[pick];
     b.style.background = c.hex;
-    cd.textContent = c.code;
+    cd.textContent = capCode(c);
     cd.style.color = txt(c.hex);
     bandLabel(b, pick);
     if (!reduce) {
@@ -906,7 +906,7 @@ function locksUsable() {
             ? own && !isDry(i)
             : buyOk(i);
     if (ok) return true;
-    (own && isDry(i) ? out.dry : state.pool ? out.sel : out.gone).push(COLORS[i].code);
+    (own && isDry(i) ? out.dry : state.pool ? out.sel : out.gone).push(capCode(i));
     return false;
   });
   const all = out.dry.concat(out.gone, out.sel);
@@ -967,7 +967,7 @@ function doGenerate() {
       b.style.background = c.hex;
       b.classList.add('locked');
       const cd = b.querySelector('.bcode');
-      cd.textContent = c.code;
+      cd.textContent = capCode(c);
       cd.style.color = txt(c.hex);
     }
   });

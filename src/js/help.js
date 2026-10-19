@@ -5,6 +5,18 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.21',
+    t: 'The code on your cap: older Ohuhu caps say R6 where the marker is R213 now, and the app now shows each marker by the code on your cap, in guides, keys, Colour along and Markers (Scan notes it as it reads your caps; a marker’s details switch it). Photograph your caps puts right a code misread by one character from the name beside it, and a question’s close-up shows where the cap is in the photo.',
+  },
+  {
+    v: 'v318.20',
+    t: 'Photograph your caps: older caps whose names are everyday words (Y11 Brown Grey, BG2 Deep Green) go straight into the list, and a name read as a code no longer adds a wrong marker.',
+  },
+  {
+    v: 'v318.19',
+    t: 'Photograph your caps reads older Ohuhu caps far better: it knows the old names printed beside their old codes (R6 Rose Red is R213 now), so far fewer questions.',
+  },
+  {
     v: 'v318.18',
     t: 'Theme, under Colours › Lean towards: twelve themes, from Blossom to Twilight, each with a strip of the colours it takes from your markers. Tap one again for none. With Cool or Warm, a theme takes those colours only.',
   },

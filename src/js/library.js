@@ -272,7 +272,12 @@ function homeNext(pl) {
   try {
     if (state.owned.size && (pi == null || !isOwned(pi) || isDry(pi))) return null;
   } catch (_) {}
-  return { hex: pick.c.hex, code: pick.c.code, name: pick.c.name || '' };
+  // (v318.21: your cap's code and name, caps.js)
+  return {
+    hex: pick.c.hex,
+    code: pi != null ? capCode(pi) : pick.c.code,
+    name: (pi != null ? capName(pi) : pick.c.name) || '',
+  };
 }
 function homeName(g) {
   var nm =

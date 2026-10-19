@@ -571,6 +571,8 @@ function renderWish() {
                   own && !ink
                   ? ' · already yours'
                   : '') +
+              // (v318.21: sold now by its code as it is; your older cap says another, caps.js)
+              (capIsOld(o.i) ? ' · your cap: ' + capCode(o.i) : '') +
               '</div></div><button type="button" class="wbought" data-bought="' +
               esc(o.w.k) +
               '">Bought ✓</button><button type="button" class="wrm" data-rm="' +
@@ -611,17 +613,29 @@ function wishBought(k) {
   if (i == null) return;
   const had = state.owned.has(k),
     ink = state.ink[k],
-    r = removeWish(k, true);
+    r = removeWish(k, true),
+    // (v318.21: a pen bought now has the cap of now, R213 not R6: caps.js)
+    cap = state.cap[k],
+    capNew = capHasOld(COLORS[i]);
   state.owned.add(k);
   delete state.ink[k];
+  if (capNew) state.cap[k] = 'new';
+  const capBack = function () {
+    if (!capNew) return;
+    if (cap) state.cap[k] = cap;
+    else delete state.cap[k];
+  };
   if (
     !keep(function () {
       if (!had) state.owned.delete(k);
       if (ink) state.ink[k] = ink;
       if (r) state.wish.splice(r.j, 0, r.w);
+      capBack();
     })
   )
     return;
+  // (v318.21 debug: everything that shows its code, not only an open guide: Markers, palettes)
+  if (capNew) capRedraw();
   wishRefresh();
   toastAction(
     had && ink
@@ -634,7 +648,9 @@ function wishBought(k) {
       if (!had) state.owned.delete(k);
       if (ink) state.ink[k] = ink;
       if (r && !isWished(k)) state.wish.splice(Math.min(r.j, state.wish.length), 0, r.w);
+      capBack();
       save();
+      if (capNew) capRedraw();
       wishRefresh();
     },
   );
@@ -841,10 +857,10 @@ function lowUnmark(k, dropWish) {
     if (!ok) return;
     toast(
       v === 'dry'
-        ? COLORS[i].code + ' marked dry — left out of new palettes and guides.'
+        ? capCode(i) + ' marked dry — left out of new palettes and guides.'
         : v === 'low'
-          ? COLORS[i].code + ' marked running low.'
-          : COLORS[i].code + ' ink set back to OK.',
+          ? capCode(i) + ' marked running low.'
+          : capCode(i) + ' ink set back to OK.',
       2400,
     );
   });

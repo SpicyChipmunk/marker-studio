@@ -32,6 +32,7 @@ function guideOf(t, keys) {
 }
 const sorted = (o) => Object.keys(o).sort();
 
+// (v318.21: sameCodeScan gives {b: another brand's, s: the same brand's, an older cap's and one of now}; b here)
 test('same code: every code Ben owns in both brands (18) is marked when the guide has both, whatever the colour difference', () => {
   const { E, t } = benApp();
   const both = JSON.parse(
@@ -44,7 +45,7 @@ test('same code: every code Ben owns in both brands (18) is marked when the guid
   for (const c of ['Y06', 'B21', 'Y19', 'B02', 'Y26', 'RV19']) assert.ok(both.includes(c), c);
   for (const c of both) {
     guideOf(t, ['Ohuhu|' + c, 'Copic|' + c, 'Copic|R20']);
-    const s = t.sameCodeScan();
+    const s = t.sameCodeScan().b;
     assert.deepEqual(sorted(s), ['Copic|' + c, 'Ohuhu|' + c], c);
     assert.deepEqual(
       [...s['Ohuhu|' + c]].map((m) => m.mkey),
@@ -58,10 +59,10 @@ test('same code: every code Ben owns in both brands (18) is marked when the guid
 test('same code: one brand of a code is no warning; two sections of the same marker are none either', () => {
   const { t } = benApp();
   guideOf(t, ['Ohuhu|Y26', 'Ohuhu|Y26', 'Ohuhu|Y28']);
-  assert.deepEqual(sorted(t.sameCodeScan()), []);
+  assert.deepEqual(sorted(t.sameCodeScan().b), []);
   // (zones: each zone's sections are the guide's too, so a Copic Y26 laid in another zone counts)
   guideOf(t, ['Ohuhu|Y26', 'Ohuhu|G24', 'Copic|Y26', 'Copic|G24']);
-  assert.deepEqual(sorted(t.sameCodeScan()), ['Copic|G24', 'Copic|Y26', 'Ohuhu|G24', 'Ohuhu|Y26']);
+  assert.deepEqual(sorted(t.sameCodeScan().b), ['Copic|G24', 'Copic|Y26', 'Ohuhu|G24', 'Ohuhu|Y26']);
 });
 
 test('find by code: the exact current code, both brands, codes that start another code, old codes left out, unknown codes', () => {

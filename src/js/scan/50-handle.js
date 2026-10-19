@@ -88,7 +88,15 @@ function scanSay(kind, big, small, i, choices) {
       b.addEventListener('click', function () {
         // (v318: or a set's markers)
         if (c.go) c.go();
-        else scanTake(c.i, c.how, true);
+        // (v318.21 debug: an answer by its old code tells its older cap, as a list chip's does)
+        else
+          scanTake(
+            c.i,
+            c.how,
+            true,
+            false,
+            c.how === 'old' ? { with: { cv: capCvRead(c.i, true, true) } } : undefined,
+          );
         // (v303) the text the card was about goes from the box (typed, and not cleared as it had no code in it): it
         // had run on into the next code typed ("Honey BrownB015")
         const bx = $('scBox');
@@ -135,6 +143,9 @@ function scanTake(i, how, loud, batch, at) {
     if (scanList.length !== n0) scanRender();
   }
   if (scanList.some((e) => e.i === i)) {
+    // (v318.21 debug: read again, what its cap says is the latest read's, caps.js)
+    const cv = at && at.with && at.with.cv;
+    if (cv) scanList.forEach((e) => !e.ask && e.i === i && (e.cv = cv));
     if (!again && !batch) {
       scanSay('same', scanName(i), 'Already in the list' + scanBrandOf(i), i);
       scanBeep('same');

@@ -52,10 +52,13 @@ const SCAN_FLIP = {
   ク: 'R',
 };
 let _scanIx = null;
+// (v318.21: a Π read for the grey caps' Ⅱ, "CG∏04" or "CGΠ04", is that Ⅱ: no code has a Π, and Ⅱ's two strokes
+// under a bar is how it's printed)
 const scanKey = (s) =>
   String(s)
     .normalize('NFKC')
     .toUpperCase()
+    .replace(/[∏Π]/g, 'II')
     .replace(/[^A-Z0-9]/g, '');
 // codes as they are now; Ohuhu's old codes (on the caps of older sets) as well; the colour names
 function scanIndex() {
@@ -76,7 +79,10 @@ function scanIndex() {
       // Ohuhu is chosen, as FB is. Only these: other old codes stay the brand's own ("R4" is noise, or Ohuhu's R412)
       if (c.brand === 'Copic' && c.fam === 'Fluorescent') put(capOld, scanKey(c.old), i);
       // (v303: an old code with Ⅱ, "CGⅡ00", is printed in a font where it looks like two l's or 1's: read so too)
-      if (/Ⅱ/.test(c.old)) ['LL', '11'].forEach((r) => put(byOld, scanKey(c.old.replace(/Ⅱ/g, r)), i));
+      // (v318.19: or as one stroke, I, L or 1, or an H, as photos of the caps read it: "CGI09", "CGlO7", "CGHo8"; none
+      // is a code of its own. v318.21: a Π, "CG∏04", is read as Ⅱ by scanKey itself)
+      if (/Ⅱ/.test(c.old))
+        ['LL', '11', 'I', 'L', '1', 'H'].forEach((r) => put(byOld, scanKey(c.old.replace(/Ⅱ/g, r)), i));
     }
     const n = scanKey(c.name || ''),
       ws = scanWords(c.name || '');
@@ -95,11 +101,32 @@ const scanWords = (s) =>
     .toUpperCase()
     .split(/[^A-Z0-9]+/)
     .filter(Boolean);
+// (v318.19) a marker's names: its own, and those printed on its older caps (COLORS[i].cap)
+function scanNamesOf(i) {
+  const c = COLORS[i];
+  return c.cap ? [c.name || ''].concat(c.cap) : [c.name || ''];
+}
+// the words of all its names
+function scanNameW(i) {
+  const c = COLORS[i];
+  return c.cap ? scanWords([c.name || ''].concat(c.cap).join(' ')) : scanWords(c.name || '');
+}
+// (v318.19) every older cap's name, as its words
+let _scanCapN = null;
+function scanCapNames() {
+  if (!_scanCapN) {
+    _scanCapN = [];
+    COLORS.forEach((c) => (c.cap || []).forEach((nm) => _scanCapN.push(scanWords(nm))));
+  }
+  return _scanCapN;
+}
 // (v318.2) every word of the markers' names
 let _scanNameW = null;
 function scanNameWords() {
   if (!_scanNameW) {
     _scanNameW = new Set();
+    // (the names they have now only: an older cap's words would make a misread word, "Graen", near two, GREEN and
+    // Y150's old GRAIN, and settle nothing)
     COLORS.forEach((c) => scanWords(c.name || '').forEach((w) => _scanNameW.add(w)));
   }
   return _scanNameW;
@@ -272,7 +299,12 @@ function scanRead(text, brand) {
           c.oldOf = c.old ? m : [];
         }
       });
-      const byCode = [].concat(...out.codes.map((c) => c.opts)).map((j) => scanWords(COLORS[j].name || '')),
+      // (v318.19: a code's marker by its old code, with the names on its older caps too)
+      const byCode = [].concat(
+          ...out.codes.map((c) =>
+            c.opts.map((j) => (c.oldSet && c.oldSet.has(j) ? scanNameW(j) : scanWords(COLORS[j].name || ''))),
+          ),
+        ),
         told = (i) => {
           const nw = scanWords(COLORS[i].name || '');
           return byCode.some((jw) => nw.every((w) => jw.indexOf(w) >= 0));
@@ -286,11 +318,12 @@ function scanRead(text, brand) {
   const ix = scanIndex(),
     chosen = (i) => !brand || COLORS[i].brand === brand,
     has = (c) => ix.byCode.has(c) && ix.byCode.get(c).some(chosen);
-  // (full-width letters and digits as plain ones; a turned Y read as ¥)
+  // (full-width letters and digits as plain ones; a turned Y read as ¥; v318.21: a Π as the grey caps' Ⅱ, scanKey)
   let up = String(text || '')
     .normalize('NFKC')
     .toUpperCase()
-    .replace(/¥/g, 'Y');
+    .replace(/¥/g, 'Y')
+    .replace(/[∏Π]/g, 'II');
   // (v303) a price or any number with a decimal point ("$2.99", "3.5"; a comma only after a currency sign: "100,110"
   // is two codes) is no code: gone, so its digits aren't read as
   // one ("99" as G9, Ohuhu's old code for G112); a dot inside a code joins it up ("WG0.5", Ohuhu's old code for YR02);
@@ -363,6 +396,49 @@ function scanRead(text, brand) {
     // markers below, a line of 20,000 codes had taken three times as long as before v318.2)
     twSet = new Set(tw),
     noNums = new Set(tw.filter((w, k) => /^\d+$/.test(w) && tw[k - 1] === 'NO'));
+  // (v318.19) the name printed on one of a marker's older caps ("R6 Rose Red", R213 Pomegranate now), read whole: a
+  // name of two words or more, or one of five letters or more. Its numbers are the name's ("Green Grey 02", "Cool
+  // Grey Ⅱ 5": the Ⅱ read as II, 11 or LL; 02 as 2)
+  // (the words read run together with a Ⅱ after them, "Greyll9", worked out once, when first needed: a long line stays
+  // quick)
+  let runT = null;
+  const runs = () => {
+      if (!runT) {
+        runT = { base: new Set(), num: new Set(), two: false };
+        tw.forEach((x) => {
+          const m = /^([A-Z]+?)([IL1H]+)(\d*)$/.exec(x);
+          if (!m) return;
+          runT.base.add(m[1]);
+          if (m[3]) runT.num.add(String(+m[3]));
+          // (the Ⅱ as two strokes, or one after Grey, the only word it follows: "Greyl 4")
+          if (m[2].length >= 2 || /^GR[AE]Y$/.test(m[1])) runT.two = true;
+        });
+      }
+      return runT;
+    },
+    capRead = (w) =>
+      twSet.has(w) ||
+      (/^\d+$/.test(w)
+        ? twSet.has(String(+w)) || twSet.has(w.padStart(2, '0')) || runs().num.has(String(+w))
+        : w === 'II'
+          ? runs().two
+          : // ("Cool Greyll 5": Grey run together with the Ⅱ after it)
+            runs().base.has(w)),
+    // (a one-word name, "Pansy", not when it's a word of a longer name read whole: "P4 Lavender Mist" isn't V010,
+    // once P4 "Lavender": that's another cap's name)
+    longer = (w) =>
+      ix.names.some((n) => n[2].length > 1 && n[2].indexOf(w) >= 0 && n[2].every((x) => twSet.has(x))) ||
+      scanCapNames().some((ws) => ws.length > 1 && ws.indexOf(w) >= 0 && ws.every((x) => twSet.has(x))),
+    capOf = (i) =>
+      (COLORS[i].cap || []).find((nm) => {
+        const ws = scanWords(nm);
+        // (the cheap test first: a long line of codes is read in good time)
+        return (
+          (ws.length > 1 || (ws[0] || '').length >= 5) &&
+          ws.every(capRead) &&
+          (ws.length > 1 || !longer(ws[0]))
+        );
+      });
   const inRow = (nw) => {
     for (let k = 0; k + nw.length <= tw.length; k++) if (nw.every((w, j) => tw[k + j] === w)) return true;
     return false;
@@ -417,6 +493,8 @@ function scanRead(text, brand) {
       own.forEach((w) => strayW.has(w) && n++);
       return strayW.size > n;
     };
+  // (v318.19) the words of older caps' names, of the old codes read ("Cobalt Blue" with PB3, BV314 now)
+  const capW = new Set();
   const codes = [],
     seen = {},
     other = new Set();
@@ -450,7 +528,12 @@ function scanRead(text, brand) {
         // (v318.7) an old code of the brand chosen that's another brand's code now (R29, Ohuhu YR47's old code and
         // Copic's R29): asked, "Which R29?", with both, as Either brand asks it; it had been "another brand than the
         // one chosen" with Copic's offered and Ohuhu's not at all. Not a photo's lines, which the photo settles
-        oldMine = !scanPhoto && !otherNamed.length && (ix.byOld.get(t) || []).some(chosen);
+        // (v318.19: on a photo too, when the name on its older cap is read with it: "R21 Fruit Pink" is Ohuhu R16,
+        // not Copic's R21 Sardonyx)
+        oldMine =
+          (!scanPhoto || (ix.byOld.get(t) || []).some((i) => chosen(i) && capOf(i))) &&
+          !otherNamed.length &&
+          (ix.byOld.get(t) || []).some(chosen);
       if (((ex.length && !ex.some(chosen)) || otherNamed.length) && !oldMine) {
         (otherNamed.length ? otherNamed : ex).forEach((i) => other.add(i));
         continue;
@@ -494,10 +577,25 @@ function scanRead(text, brand) {
       const nw = (i) => scanWords(COLORS[i].name || ''),
         isRead = (w) => (/^\d+$/.test(w) ? noNums.has(w) : twSet.has(w)),
         allRead = opts.filter((i) => nw(i).length > 1 && nw(i).every(isRead)),
-        inside = (b, a) => nw(a).length > nw(b).length && nw(b).every((w) => nw(a).indexOf(w) >= 0);
+        inside = (b, a) => nw(a).length > nw(b).length && nw(b).every((w) => nw(a).indexOf(w) >= 0),
+        // (v318.19) an older cap: its old code with the name printed beside it then (capOf, above). Only with the old
+        // code
+        capName = (i) => old.indexOf(i) >= 0 && capOf(i),
+        capHit = opts.filter(capName);
       if (allRead.length === 1) withName = allRead;
+      else if (capHit.length === 1) withName = capHit;
       else if (withName.length === 1 && opts.some((j) => j !== withName[0] && inside(withName[0], j)))
         withName = [];
+      // (the words of the older cap's names, for a code that is one marker's old code, when that name is read, whole or
+      // two of its words at least: another marker named now by some of them settles nothing, below. "CG5 Cool Grey Ⅱ
+      // 5", read "CG5 Cool Greyll 5", isn't asked about against CG17 Cool Grey)
+      const one = withName.length ? withName : opts;
+      if (one.length === 1 && old.indexOf(one[0]) >= 0)
+        (COLORS[one[0]].cap || []).forEach((nm) => {
+          const ws = scanWords(nm);
+          if (ws.length > 1 ? ws.filter(capRead).length >= 2 : capOf(one[0]) === nm)
+            ws.forEach((w) => capW.add(w));
+        });
       cands.push({
         code: v,
         opts: withName.length ? withName : opts,
@@ -554,7 +652,14 @@ function scanRead(text, brand) {
         (j) => j !== i && scanWords(COLORS[i].name).every((w) => scanWords(COLORS[j].name).indexOf(w) >= 0),
       ),
     );
-  const loose = namedOk.filter((i) => !told.has(i) && !partOf(i) && (!hint || ofHint(i))),
+  const loose = namedOk.filter(
+      (i) =>
+        !told.has(i) &&
+        !partOf(i) &&
+        (!hint || ofHint(i)) &&
+        // (v318.19: "Cobalt Blue", BV315's name now, read with PB3, whose old cap it was: no question)
+        !(capW.size && scanWords(COLORS[i].name || '').every((w) => capW.has(w))),
+    ),
     // (nor a word of another marker's whole name read, "Light" of B06 Light Cerulean beside B02)
     looseWords = new Set([].concat(...loose.map((i) => scanWords(COLORS[i].name || '')))),
     // (v303) the words read that may be a word of a code's markers' names (not a word of a name read whole, another
@@ -566,12 +671,25 @@ function scanRead(text, brand) {
           w.length >= 3 && !SCAN_NOISE.test(w) && !scanIsCode(w) && !toldWords.has(w) && !looseWords.has(w),
       ),
     ),
-    byWord = (opts) => {
-      const m0 = opts.filter((j) => scanWords(COLORS[j].name).some((w) => pw.has(w))),
+    cur = (j) => scanWords(COLORS[j].name || ''),
+    byWord = (opts, oldSet) => {
+      // (v318.19) an older cap's words, for a marker by its old code, when they're words no name the code's markers
+      // have now has: "R16 Deep Violet" is RV316, once R16; "G410 Light Holly Green" is G24, once G410, but "G410
+      // Green" is still G410 Grass Green, as before
+      if (oldSet && oldSet.size) {
+        const now = new Set([].concat(...opts.map(cur))),
+          mc = opts.filter(
+            (j) =>
+              oldSet.has(j) &&
+              (COLORS[j].cap || []).some((nm) => scanWords(nm).some((w) => !now.has(w) && pw.has(w))),
+          );
+        if (mc.length) return mc;
+      }
+      const m0 = opts.filter((j) => cur(j).some((w) => pw.has(w))),
         // (v318.3) from a photo, with no word of theirs read as it is: a word misread by one letter ("Yelliow"), of 5
         // letters or more, that's one name's word and no other's, chooses between the code's own markers only
         fw = scanPhoto && !m0.length ? new Set([...pw].map(scanNameNear).filter(Boolean)) : null;
-      return fw && fw.size ? opts.filter((j) => scanWords(COLORS[j].name).some((w) => fw.has(w))) : m0;
+      return fw && fw.size ? opts.filter((j) => cur(j).some((w) => fw.has(w))) : m0;
     };
   codes.forEach(function (c) {
     // (v318.2) a photo plainly of the codes as they are now (scanGen): a code that's only an old one is likely a scrap of
@@ -581,7 +699,7 @@ function scanRead(text, brand) {
     if (scanGen && !c.named && c.oldSet.size && !ix.capOld.has(c.code)) {
       // (v318.4 review: the photo's unsure lines too, 'strict': "Y210 Golden" unsure had gone in as Y416 unasked)
       const cur = c.opts.filter((i) => !c.oldSet.has(i)),
-        w = pw.size ? byWord(c.opts) : [];
+        w = pw.size ? byWord(c.opts, c.oldSet) : [];
       if (!cur.length) c.oldOnly = true;
       // (v318.3 debug: not when a word read with it is of the old one's name alone: "Y210 Golden", Brown missed, an old
       // cap's, had gone in as Y210 Pumpkin Yellow, and read unsure as Y416: the code and the name disagree, asked below)
@@ -615,7 +733,7 @@ function scanRead(text, brand) {
     // (v303) a word of one of its markers' names read beside a code more than one marker has ("B21 Porcelain": Ohuhu's
     // B21 Porcelain Blue, not Copic's): that one
     if (!c.named && c.opts.length > 1 && !c.byOld) {
-      const m = byWord(c.opts);
+      const m = byWord(c.opts, c.oldSet);
       if (pw.size && m.length === 1) {
         c.opts = m;
         c.old = c.oldSet.has(m[0]);

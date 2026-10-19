@@ -45,21 +45,22 @@ function showColor(idx, animate) {
   code.style.color = txt(c.hex);
   if (animate) {
     flood(c.hex);
-    code.textContent = c.code;
+    code.textContent = capCode(idx);
     retrigger(code, 'pop');
     pulse();
     shine();
   } else {
     swatch.style.background = c.hex;
-    code.textContent = c.code;
+    code.textContent = capCode(idx);
   }
-  const old = c.old && c.old !== c.code ? ' — was ' + oldCode(c) : '';
+  // (v318.21: your older cap's code and name shown, "now R213" beside; else the old code, as before)
+  const old = capIsOld(idx) ? ' — ' + capNow(idx) : c.old && c.old !== c.code ? ' — was ' + oldCode(c) : '';
   const tl = (TONE_DEFS.find((t) => t.k === TONE[idx]) || {}).t || '',
     sl = (SAT_DEFS.find((s) => s.k === SAT[idx]) || {}).t || '';
   readout.classList.remove('rpal');
   readout.innerHTML =
     '<div><div class="name">' +
-    c.name +
+    esc(capName(idx)) +
     '</div><div class="fam">' +
     c.brand +
     ' · ' +
@@ -1419,9 +1420,9 @@ function bandLabel(b, idx) {
     'aria-label',
     c.brand +
       ' ' +
-      c.code +
+      capCode(idx) +
       ' ' +
-      c.name +
+      capName(idx) +
       (state.locked.includes(idx)
         ? ', locked'
         : state.harmony === 'photo'
@@ -1455,12 +1456,12 @@ function showPalette(pal, animate) {
       if (_lk) {
         _lk.setAttribute('aria-pressed', state.locked.includes(pal[k]) ? 'true' : 'false');
         // (which colour it locks, v287)
-        _lk.setAttribute('aria-label', 'Lock ' + c.code);
+        _lk.setAttribute('aria-label', 'Lock ' + capCode(pal[k]));
       }
     }
     bandLabel(b, pal[k]);
     const cd = b.querySelector('.bcode');
-    cd.textContent = c.code;
+    cd.textContent = capCode(pal[k]);
     cd.style.color = txt(c.hex);
     if (animate && !reduce) {
       b.style.animationDelay = k * 55 + 'ms';
@@ -1481,7 +1482,7 @@ function palSub(pal) {
   // lightest of the scheme's first hue, and the base the palette was built round isn't in it
   const si = keyIdx(state.seed);
   return si != null && pal[0] === si
-    ? HARM[state.harmony] + ' \u00b7 ' + COLORS[si].brand + ' ' + COLORS[si].name + ' base'
+    ? HARM[state.harmony] + ' \u00b7 ' + COLORS[si].brand + ' ' + capName(si) + ' base'
     : HARM[state.harmony];
 }
 // a palette's name, its line, and its codes under them (each code kept whole; brand letters as on the bands, when
@@ -1506,7 +1507,7 @@ function palReadout(name, sub, idxs) {
               esc(COLORS[i].brand) +
               ' </span>'
             : '') +
-          esc(COLORS[i].code) +
+          esc(capCode(i)) +
           '</span>',
       )
       .join(' ') +

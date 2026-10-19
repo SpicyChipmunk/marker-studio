@@ -10,10 +10,33 @@ before(setup);
 after(teardown);
 
 const KEY = 'ohuhu-hb320-picker-v3';
-const onboarded = (extra = {}) => ({ 'ms-onboarded': '1', 'ms-setup-tip': '1', 'ms-last-ver': 'v318', ...extra });
-const OHUHU = ['Ohuhu|R014', 'Ohuhu|Y111', 'Ohuhu|B08', 'Ohuhu|G36', 'Ohuhu|BV310', 'Ohuhu|YR313', 'Ohuhu|RV08', 'Ohuhu|B04'];
+const onboarded = (extra = {}) => ({
+  'ms-onboarded': '1',
+  'ms-setup-tip': '1',
+  'ms-last-ver': 'v318',
+  ...extra,
+});
+const OHUHU = [
+  'Ohuhu|R014',
+  'Ohuhu|Y111',
+  'Ohuhu|B08',
+  'Ohuhu|G36',
+  'Ohuhu|BV310',
+  'Ohuhu|YR313',
+  'Ohuhu|RV08',
+  'Ohuhu|B04',
+];
 const appState = (extra = {}) =>
-  JSON.stringify({ mode: 'collection', ownedSeedV: 2, copicAdd1: 1, libAdj1: 1, setFix1: 1, owned: OHUHU, saved: [], ...extra });
+  JSON.stringify({
+    mode: 'collection',
+    ownedSeedV: 2,
+    copicAdd1: 1,
+    libAdj1: 1,
+    setFix1: 1,
+    owned: OHUHU,
+    saved: [],
+    ...extra,
+  });
 const scanOpen = async (page) => {
   await page.click('#mCollection');
   await idle(page);
@@ -37,11 +60,17 @@ const type = async (page, text) => {
   await idle(page);
 };
 const rows = (page) =>
-  page.$$eval('#scList .scrow', (rs) => rs.map((r) => (r.querySelector('.sccode') || r.querySelector('b')).textContent));
+  page.$$eval('#scList .scrow', (rs) =>
+    rs.map((r) => (r.querySelector('.sccode') || r.querySelector('b')).textContent),
+  );
 const row = (page) => page.$('#scList .scswitch');
 
 test('Scan with Ohuhu set for you: two Copic caps read whole switch to both brands, said on a row with Keep Ohuhu; the row is no question and isn’t saved; Keep Ohuhu takes it back', async () => {
-  const { page, errors } = await openApp({ width: 820, height: 1180, storage: onboarded({ [KEY]: appState() }) });
+  const { page, errors } = await openApp({
+    width: 820,
+    height: 1180,
+    storage: onboarded({ [KEY]: appState() }),
+  });
   await scanOpen(page);
   assert.equal(await pressed(page), 'Ohuhu');
   // a code both brands use, Ohuhu's for now; then a Copic cap read whole: a question in the list, not a vanishing card
@@ -57,8 +86,16 @@ test('Scan with Ohuhu set for you: two Copic caps read whole switch to both bran
   assert.ok(await row(page), 'the row');
   assert.match(await page.textContent('#scList .scswitch'), /Reading both brands: Copic caps were read/);
   assert.equal(await page.textContent('#scList .scswitch .scswkeep'), 'Keep Ohuhu');
-  assert.deepEqual(await rows(page), ['Reading both brands: Copic caps were read', 'BG11', 'E71', 'YR07: Ohuhu or Copic?']);
-  assert.match(await page.textContent('#scStat'), /Reading both brands: Copic caps were read.*Codes both brands use are asked from now on · Keep Ohuhu is at the top of the list/);
+  assert.deepEqual(await rows(page), [
+    'Reading both brands: Copic caps were read',
+    'BG11',
+    'E71',
+    'YR07: Ohuhu or Copic?',
+  ]);
+  assert.match(
+    await page.textContent('#scStat'),
+    /Reading both brands: Copic caps were read.*Codes both brands use are asked from now on · Keep Ohuhu is at the top of the list/,
+  );
   // counted as the one question it is, the row not among them; nor saved for a reload
   assert.match(await page.textContent('#scCount'), /2.markers · 1.to.choose/);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('ms-scan-list')));
@@ -68,7 +105,11 @@ test('Scan with Ohuhu set for you: two Copic caps read whole switch to both bran
   await idle(page);
   assert.equal(await pressed(page), 'Ohuhu');
   assert.equal(await row(page), null);
-  assert.deepEqual(await rows(page), ['Copic BG11 Moon White: add it? Ohuhu was set for you', 'Copic E71 Champagne: add it? Ohuhu was set for you', 'YR07']);
+  assert.deepEqual(await rows(page), [
+    'Copic BG11 Moon White: add it? Ohuhu was set for you',
+    'Copic E71 Champagne: add it? Ohuhu was set for you',
+    'YR07',
+  ]);
   assert.match(await page.textContent('#scStat'), /Ohuhu again.*Copic codes read since are asked below/);
   // two more distinct Copic caps: switched again, the row back; × takes the row off, the reading stays
   await scanText(page, 'B000');
@@ -93,7 +134,11 @@ test('Scan with Ohuhu set for you: two Copic caps read whole switch to both bran
 });
 
 test('Scan: a brand tapped on the switch ends the switch and its row, kept from then on; Clear list brings the brand set for you back', async () => {
-  const { page, errors } = await openApp({ width: 820, height: 1180, storage: onboarded({ [KEY]: appState() }) });
+  const { page, errors } = await openApp({
+    width: 820,
+    height: 1180,
+    storage: onboarded({ [KEY]: appState() }),
+  });
   await scanOpen(page);
   await scanText(page, 'E71 Champagne');
   await scanText(page, 'BG11 Moon White');
@@ -119,14 +164,19 @@ test('Scan: a brand tapped on the switch ends the switch and its row, kept from 
 });
 
 test('Scan with Ohuhu chosen: "Which R29?" offers Ohuhu YR47 by its old code and Copic R29; a brand tapped answers it', async () => {
-  const { page, errors } = await openApp({ width: 820, height: 1180, storage: onboarded({ [KEY]: appState() }) });
+  const { page, errors } = await openApp({
+    width: 820,
+    height: 1180,
+    storage: onboarded({ [KEY]: appState() }),
+  });
   await scanOpen(page);
   await page.click('#scBrand button[data-b="Ohuhu"]');
   await idle(page);
   await type(page, 'R29');
   assert.deepEqual(await rows(page), ['Which R29?']);
   const chips = await page.$$eval('#scList .scask .scchoose', (b) => b.map((x) => x.textContent));
-  assert.deepEqual(chips, ['YR47 Dusty Peach · Ohuhu · was R29', 'R29 Lipstick Red · Copic']);
+  // (v318.21: by its old code, as its older cap says it, the code it has now beside)
+  assert.deepEqual(chips, ['R29 Pear Color · Ohuhu · now YR47', 'R29 Lipstick Red · Copic']);
   await page.click('#scBrand button[data-b="Copic"]');
   await idle(page);
   assert.deepEqual(await rows(page), ['R29']);
@@ -137,15 +187,20 @@ test('Scan with Ohuhu chosen: "Which R29?" offers Ohuhu YR47 by its old code and
   await idle(page);
   await type(page, 'R30');
   assert.deepEqual(await rows(page), ['Which R30?', 'R29']);
-  await page.click('#scList .scask .scchoose:has-text("was R30")');
+  // (v318.21: the answer and its row as the older cap says it, R30, "now E81")
+  await page.click('#scList .scask .scchoose:has-text("now E81")');
   await idle(page);
-  assert.deepEqual(await rows(page), ['E81', 'R29']);
-  assert.match(await page.textContent('#scList .scrow'), /by its old code/);
+  assert.deepEqual(await rows(page), ['R30', 'R29']);
+  assert.match(await page.textContent('#scList .scrow'), /now E81/);
   assert.deepEqual(errors, []);
 });
 
 test('Scan: codes both brands use added to the collection as Ohuhu’s before the switch are named on the row, not rewritten', async () => {
-  const { page, errors } = await openApp({ width: 820, height: 1180, storage: onboarded({ [KEY]: appState() }) });
+  const { page, errors } = await openApp({
+    width: 820,
+    height: 1180,
+    storage: onboarded({ [KEY]: appState() }),
+  });
   await scanOpen(page);
   await scanText(page, 'YR07');
   await scanText(page, 'B015');
@@ -158,7 +213,10 @@ test('Scan: codes both brands use added to the collection as Ohuhu’s before th
   await scanText(page, 'E71 Champagne');
   await scanText(page, 'BG11 Moon White');
   assert.ok(await row(page));
-  assert.match(await page.textContent('#scList .scswitch small'), /^YR07 went into your collection as Ohuhu$/);
+  assert.match(
+    await page.textContent('#scList .scswitch small'),
+    /^YR07 went into your collection as Ohuhu$/,
+  );
   assert.ok(await page.evaluate(() => state.owned.has('Ohuhu|YR07')), 'not rewritten');
   assert.deepEqual(errors, []);
 });

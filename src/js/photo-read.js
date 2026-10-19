@@ -297,7 +297,11 @@ function ocrLineRead(r, it) {
     (!/[A-Za-z]/.test(it.text) || ocrAsRead(it.text, scanKey(COLORS[cs[0].i].code)))
   ) {
     const was = scanList.length;
-    if (scanTake(cs[0].i, '', true, true) && scanList.length > was) scanList[0].photo = r.n;
+    if (
+      scanTake(cs[0].i, '', true, true, { with: { cv: capCvRead(cs[0].i, false, false) } }) &&
+      scanList.length > was
+    )
+      scanList[0].photo = r.n;
     r.taken.add(it.id);
     r.sure++;
   }
@@ -434,9 +438,55 @@ function ocrCropQuestions(r, lines) {
     if (!line) return;
     try {
       const c = ocrCrop(r.img.data, line.box, line.turn || 0);
-      if (c) e.crop = c;
+      if (c) {
+        e.crop = c;
+        // (v318.21) where the cap is in the photo, for "Where in the photo?" (scan/15-answer.js): its place and the
+        // close-up's size as fractions of the copy it was cut from (read at 2048, closer at 4096, or again: each its
+        // own), and the codes printed on the two caps read nearest, as their caps say them
+        ocrWhere(r, e, line, lines);
+      }
     } catch (_) {}
   });
+  // (and the photo, as shown, kept while its questions wait: scan/30-pictures.js)
+  if (scanList.some((e) => e.ask && e.photo === r.n && e.where)) ocrKeepPhoto(r);
+}
+// (v318.21) a question's cap in its photo: e.pid (the photo's own id, kept across reloads, where its number isn't),
+// e.where [x, y, r] (the cap's centre and the close-up's half-side, fractions of the photo's width and height), e.near
+// (the two nearest caps read for sure, as printed)
+function ocrWhere(r, e, line, lines) {
+  const d = r.img.data,
+    [cx, cy, w, h] = line.box,
+    R = Math.ceil(Math.max(1.25 * Math.max(w, h), 3 * Math.min(w, h)) * 1.45);
+  if (!d || !d.width || !d.height) return;
+  if (!r.pid) r.pid = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  e.pid = r.pid;
+  e.where = [+(cx / d.width).toFixed(4), +(cy / d.height).toFixed(4), +(R / d.width).toFixed(4)];
+  const ix = scanIndex(),
+    far = Math.max(w, h) * 6,
+    seen = new Set([scanKey(line.text)]),
+    near = lines
+      .filter((x) => {
+        if (x === line || x.nameOf || x.unsure || !x.box || !/\d/.test(x.text)) return false;
+        const k = scanKey(x.text);
+        return (
+          (ix.byCode.has(k) || ix.byOld.has(k)) && Math.hypot(x.box[0] - cx, x.box[1] - cy) > Math.max(w, h)
+        );
+      })
+      .map((x) => ({ t: x.text.trim().toUpperCase(), d: Math.hypot(x.box[0] - cx, x.box[1] - cy) }))
+      .filter((x) => x.d < far)
+      .sort((a, b) => a.d - b.d)
+      .filter((x) => !seen.has(scanKey(x.t)) && seen.add(scanKey(x.t)));
+  e.near = near.slice(0, 2).map((x) => x.t.slice(0, 10));
+}
+// the photo as shown (its copy up to 900 px), a small JPEG, kept for its questions by its id (scanPics)
+function ocrKeepPhoto(r) {
+  if (!r.pid || scanPics.photo(r.pid)) return;
+  const sc = (r.img && r.img.show) || document.querySelector('#ocrPic canvas');
+  if (!sc || !sc.width) return;
+  try {
+    const u = sc.toDataURL('image/jpeg', 0.6);
+    if (/^data:image\/jpeg/.test(u)) scanPics.keepPhoto(r.pid, u);
+  } catch (_) {}
 }
 // a square of the photo round a box (a cap's code or name and some of the cap round it), upright, as a small JPEG
 function ocrCrop(img, box, turn) {
@@ -533,7 +583,7 @@ function ocrParts(r, lines) {
     const k = key(x.text),
       own = markers(x.text),
       nm = names(x),
-      mine = own.length && own.some((i) => ocrNameAgrees(i, nm));
+      mine = own.length && own.some((i) => ocrNameAgrees(i, nm, x.text));
     if (r.taken.has(x.id) && nm.length) {
       const o = scanRead([x.text].concat(nm).join(' '), brand);
       if (!(o.codes || []).some((c) => c.opts.length) && (o.other || []).length) return again.add(x.id);
@@ -625,7 +675,7 @@ function ocrNamedOther(r, lines) {
     if (!r.taken.has(x.id)) return;
     const nm = lines.filter((y) => y.nameOf === x.id).map((y) => y.text),
       t = ocrCodes(x.text, scanBrand).map((c) => c.i);
-    if (!nm.length || !t.length || t.some((i) => ocrNameAgrees(i, nm))) return;
+    if (!nm.length || !t.length || t.some((i) => ocrNameAgrees(i, nm, x.text))) return;
     // (by a word of its name, or by Scan's own reading of the code and the names: "Deep Orange" is all plain words)
     const other = scanRead([x.text].concat(nm).join(' '), scanBrand).other || [],
       o = [...new Set([].concat(...(scanRead(x.text, '').codes || []).map((c) => c.opts)))].filter(
@@ -673,6 +723,94 @@ function ocrNamedOther(r, lines) {
       scanList[0].photo = r.n;
   });
   return out.size ? lines.filter((x) => !out.has(x.id) && !out.has(x.nameOf)) : lines;
+}
+// (v318.21) A code misread by one character, put right by the name read beside it: "5110" with "Dark Suntan" is E110
+// (YR312's older cap), "F400" with "Cocoa Brown" E400, "8114" with "Cerulean Blue" B114, "RVO70" with "Sakura Pink"
+// RV070. Only a reading that is no code at all, of three characters or more; one character off by a look-alike (5 for
+// E, S or G; F for E; 7 for 1; 8 for B; O for 0; A for 4…), or one dropped or added in a code of four or more; and only
+// when exactly one marker of the brand fits, its whole name (as it is now, or on its older caps) read within about a
+// cap of the code. The code decides as much as the name: "Cocoa Brown" is also Copic E74's name, "Sardonyx" Copic
+// R21's. Listed with "read as “5110”" on its row. On the recorded reads of 101 photos: 26 caps, none wrong.
+const OCR_LIKE = [
+  ['5', 'E'],
+  ['5', 'S'],
+  ['5', 'G'],
+  ['F', 'E'],
+  ['7', '1'],
+  ['L', '1'],
+  ['I', '1'],
+  ['O', '0'],
+  ['A', '4'],
+  ['8', 'B'],
+  ['E', 'B'],
+  ['S', 'B'],
+  ['3', '8'],
+  ['6', 'G'],
+  ['2', 'Z'],
+  ['V', 'Y'],
+];
+function ocrNearCode(a, b) {
+  if (a === b) return false;
+  const like = (p, q) => p === q || OCR_LIKE.some(([x, y]) => (p === x && q === y) || (p === y && q === x));
+  if (a.length === b.length) {
+    let d = 0;
+    for (let i = 0; i < a.length; i++)
+      if (a[i] !== b[i]) {
+        if (!like(a[i], b[i])) return false;
+        d++;
+      }
+    return d === 1;
+  }
+  const [s, l] = a.length < b.length ? [a, b] : [b, a];
+  if (s.length < 4 || l.length - s.length !== 1) return false;
+  for (let i = 0; i < l.length; i++) if (l.slice(0, i) + l.slice(i + 1) === s) return true;
+  return false;
+}
+function ocrNameFix(r, lines, brand) {
+  const ix = scanIndex(),
+    codeLike = (t) => {
+      const k = scanKey(t);
+      return k.length >= 3 && k.length <= 6 && /\d/.test(k) && scanWords(t).length === 1;
+    },
+    done = new Set();
+  lines.forEach((x) => {
+    if (!x.box || r.taken.has(x.id) || !codeLike(x.text)) return;
+    const k = scanKey(x.text);
+    if (ix.byCode.has(k) || ix.byOld.has(k)) return;
+    const R = 2.5 * Math.max(x.box[2], x.box[3], 20),
+      words = new Set();
+    lines.forEach((y) => {
+      if (y === x || !y.box || codeLike(y.text)) return;
+      if (y.nameOf === x.id || Math.hypot(y.box[0] - x.box[0], y.box[1] - x.box[1]) < R)
+        scanWords(y.text).forEach((w) => words.add(w));
+    });
+    if (!words.size) return;
+    const fit = [];
+    COLORS.forEach((c, i) => {
+      if (brand && c.brand !== brand) return;
+      if (!(ocrNearCode(k, scanKey(c.code)) || (c.old && ocrNearCode(k, scanKey(c.old))))) return;
+      if (
+        scanNamesOf(i).some((nm) => {
+          const ws = scanWords(nm);
+          return ws.length && ws.every((w) => words.has(w));
+        })
+      )
+        fit.push(i);
+    });
+    if (fit.length !== 1 || done.has(fit[0]) || scanList.some((e) => !e.ask && e.i === fit[0])) return;
+    done.add(fit[0]);
+    // (v318.21: what its cap says, only when the name settles it: a name of its older cap's, not its own now, is an older
+    // cap; its own name now, with a code one off its code now, its current cap; caps.js)
+    const c = COLORS[fit[0]],
+      whole = (nm) => {
+        const ws = scanWords(nm);
+        return ws.length > 0 && ws.every((w) => words.has(w));
+      },
+      byNow = whole(c.name || ''),
+      byOld = (c.cap || []).some(whole) && !byNow,
+      cv = !capHasOld(c) ? '' : byOld ? 'old' : byNow && ocrNearCode(k, scanKey(c.code)) ? 'new' : '';
+    scanTake(fit[0], 'fixed', false, true, { with: cv ? { as: x.text, cv: cv } : { as: x.text } });
+  });
 }
 // (v318.12) the codes that are the tail of a longer one of the same brand with a letter more at its head (Copic: G03 of
 // YG03, R20 of YR20, V04 of BV04, RV04; v318.14 Ohuhu too: G24 of BG24, CG24, GG24, R25, V08, Y00…): short, read again
@@ -890,6 +1028,18 @@ function ocrSettle(r, m) {
       m.lines
         .filter((y) => y.nameOf === l.id)
         .sort((p, q) => off(p) - off(q))
+        // (v318.19 debug: not a name line read unsure that is another code, "e020)" and "e030" beside "00", E400 Cocoa
+        // Brown's turned cap: Scan's reading of the code and its names had listed E020 and E030 unasked)
+        .filter(
+          (y) =>
+            !(
+              y.unsure &&
+              /\d/.test(y.text) &&
+              /[A-Za-z]/.test(y.text) &&
+              key(y.text) !== g.k &&
+              codesIn(y.text).length
+            ),
+        )
         .forEach((y) => {
           if (names.every((n) => key(n) !== key(y.text))) names.push(y.text);
         });
@@ -912,7 +1062,9 @@ function ocrSettle(r, m) {
     codesIn(x.text).forEach((c) =>
       c.opts.forEach(
         (i) =>
-          (ocrNameAgrees(i, names) || (names.length && ocrNamed(names, seen || scanBrand).indexOf(i) >= 0)) &&
+          (ocrNameAgrees(i, names, x.text) ||
+            ocrCapNamed(i, names, x.text) ||
+            (names.length && ocrNamed(names, seen || scanBrand).indexOf(i) >= 0)) &&
           named.indexOf(i) < 0 &&
           named.push(i),
       ),
@@ -1056,6 +1208,8 @@ function ocrSettle(r, m) {
         // them, are asked about, not taken for Ohuhu's E711 read short; v318.6 debug: nor one whose name was read)
         (!ocrNoise(e, seen) || e.opts.some((o) => agreed.has(o.i)))),
   );
+  // (v318.21) a code misread by one character, put right by its whole name read beside it
+  ocrNameFix(r, read0, seen || was);
   const auto = scanAuto();
   scanList.forEach((e) => {
     if (before.has(e)) return;
@@ -1654,7 +1808,8 @@ function ocrWords() {
   if (_ocrWords) return _ocrWords;
   const s = new Set();
   COLORS.forEach((c) =>
-    String(c.name || '')
+    // (v318.19: an older cap's names too)
+    String((c.name || '') + ' ' + (c.cap || []).join(' '))
       .toLowerCase()
       .split(/[^a-z]+/)
       .forEach((w) => w.length >= 3 && s.add(w)),

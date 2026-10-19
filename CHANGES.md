@@ -1755,3 +1755,82 @@ Mood's fitting).
   12.9" or a wider page keeps everything open. e2e/guide-frame-2 checks the fold, opens with More options shut as the
   app starts, and checks the tallest tab's scroll is its own content (Colours may no longer be the tallest).
 - Cache bumped to `marker-studio-v318.18`.
+
+# Changes — v318.19 (older Ohuhu caps: the names printed on them)
+
+- **Photograph your caps reads older Ohuhu caps** (old codes, with the colour names they had then: "R6 Rose Red" is
+  R213 Pomegranate now). The app knew each marker's old code but not its old name, so it asked about nearly every
+  other cap. It now knows the old names of 309 markers (src/data/cap-names.json: the June 2025 change list, which takes
+  priority, checked against the app's codes and against real older caps; docs/READER-CAP-NAMES.md) and counts one only together with
+  its old code. On 8 transcribed photos of a lent collection: listed correctly 65% → 89%, questions 185 → 39, wrong
+  reads unchanged; on all 20 photos, questions 536 → 88.
+- A code that's one marker's now and another's old code (R16, G410) goes by the older cap's words only it has
+  ("R16 Deep Violet" is RV316); a word both have leaves it as before.
+- An old Ohuhu code that is a Copic code now (R21, Y13, R17, R11), read with its cap's name, is the Ohuhu marker; it
+  had been dropped on a photo as another brand's.
+- The older grey caps' Ⅱ read as I, l, 1 or H ("CGI09", "CGlO7") is understood, as is "Greyll" for "Grey Ⅱ".
+- Unchanged: typed and pasted text with codes as they are now, and the maintainer's 81 bench photos (newer caps), photo
+  for photo.
+- **Tests:** test/v31819 (old code + cap name, shared codes, current code + cap name, a pasted list, a photo of older
+  caps, the data). Noted, not changed: the change list has WG140 Peach Silk (old WG0.5), which the app's markers lack. Reader suites and the full unit suite; e2e for the scan and photo files.
+- Cache bumped to `marker-studio-v318.19`.
+
+# Changes — v318.20 (cap reader: a debugging pass)
+
+- An old Ohuhu code read with its older cap's whole name made only of everyday words ("Y11 Brown Grey", "BG2 Deep
+  Green", "Y13 Chestnut Brown") was missed on a photo: the photo's own check of a name leaves out words every family
+  has. It now takes an older cap's whole name (ocrCapNamed, 60-brands.js).
+- A name line read unsure that is itself a code ("e030" and "e020)" on a turned E400 Cocoa Brown cap) is no longer
+  read as part of the cap's text: E030 and E020 had gone in unasked as YR45 and YR05.
+- Measured: the lent collection's 8 checked photos, listed 89% → 90%, wrong 7 → 5, questions 39; Ben's 81 bench photos
+  (recorded reads replayed): 3 questions now listed, all three right; nothing else changed.
+- Looked at and left: asking when two unsure readings of one cap disagree removed 2 wrong reads here but turned 10
+  right reads of Ben's photos into questions; a cut-at-the-edge check for old codes dropped 8 reads at photos' edges.
+- **Tests:** test/v31819 (both). Cache bumped to `marker-studio-v318.20`.
+
+# Changes — v318.21 (the code on your cap; the reader puts near-misses right; where a question's cap is)
+
+- **The code on your cap.** Ohuhu renamed 362 markers in June 2025 (R6 Rose Red is R213 Pomegranate now) and older
+  caps still say the old code. Each marker now remembers what its cap says, from how it came in: a code read by Scan
+  (photo, typed or pasted: an old code is an older cap, a code as it is now the cap of now; a code that's one marker's
+  now and another's old code, R22, only with its name), **Bought ✓** on To buy (a new pen: the cap of now), or **My cap
+  says** in the marker's details. What's known nothing of follows one setting, **Markers › ⋯ › Show the codes on older
+  Ohuhu caps**, asked once at the top of Colour along ("Does this cap say R213 Pomegranate or R6 Rose Red?", with
+  Some of each and I don't have it), and offered once by Scan's Add when most caps read are the other kind. The code
+  and name shown are then your cap's, with "now R213" beside, in Markers, the marker's details, palettes, the guide's
+  labels and tips, Colour along (whose search finds either code), Focus, Change colour, the blend plan, the PDF and
+  image keys, swatch charts and cards, Match and Scan's own rows and answers; the shopping list leads with the code
+  sold now ("your cap: R6"). Saved collections, guides and backups keep the codes as they are now; backups carry what
+  caps say (a restore replacing your markers takes it, one adding merges, yours win; v318.20's put-back still
+  works). **Forget what my caps say** in ⋯. src/js/caps.js; src/data/cap-shown.json (seven short old names).
+- **Two markers that show the same code.** 16 old codes are another Ohuhu marker's code now: an older cap's R22 (RV17
+  now) and the R22 of now can be in one guide. v306's same-code marks now go by the codes shown: the older cap's labels
+  carry a *, counted in the label's width, and the key, Colour along ("2 caps"), Focus and Change colour name both by
+  their caps' names ("R22* Dark Blush cap"); a codes-only key keeps such pairs' names.
+- **Photograph your caps: a code misread by one character, put right by its name.** "5110" with "Dark Suntan" read
+  beside it is E110 (YR312's older cap), "F400" with "Cocoa Brown" E400, "8114" with "Cerulean Blue" B114: only a
+  reading that's no code, one look-alike character off, exactly one marker of the photo's brand, its whole name read
+  within about a cap. Listed with "read as “5110”" on its row. A Π read for the grey caps' Ⅱ ("CG∏04") is that Ⅱ.
+  Measured on recorded reads: the lent collection +18 caps listed, Ben's 81 photos +6, none wrong.
+- **Where in the photo?** Under a question's close-up: the whole photo (as shown, about 100–150 KB) with that cap
+  ringed, and "Near the top left · beside YR2 and R10"; a tap on the photo goes back. Kept with its questions in Scan's
+  picture store, through reloads, at most 30 photos, gone with the last question of each.
+- **The reader bench** (scripts/bench/reader: record, replay, score, compare): recorded OCR reads replayed through any
+  build in about a second a photo, the photos and recordings kept outside the repo.
+- **Debugging pass** (two reviewers, one who knew the plan and one who didn't), fixed:
+  - A section's * went stale when another section changed (the picture's redraw didn't look at the label drawn):
+    the label as drawn is now part of what tells a section changed.
+  - Another tab's change of what caps say, and a restore's put-back, didn't reach an open guide.
+  - Add with nothing new but caps to note closed Scan over a question the box's text had just raised; an Add's Undo
+    left the one-time offer used up.
+  - Bought ✓ redrew only the guide (Markers and palettes kept the old code); Change colour's code filter didn't find
+    an older cap's marker by its code now; running-low chips chose their brand letter by the code now.
+  - A code read upside down, and a card's answer by an old code, told nothing of the cap; a cap read again now tells
+    its latest read.
+  - "I don't have it" now asks about another of your markers (three such and it's asked no more); the keyboard goes
+    to the next question or the list when the card goes. Backups and the put-back carry the offer and the question.
+  - Smaller: the photos kept after a reload let the newest go first at 30; the palette line's base marker by its cap's
+    name; the * left out of Colour along's search suggestions; wording "whose caps aren't known".
+- **Tests:** test/v31821-reader, test/v31821-caps, e2e/v31821-reader, e2e/v31821-caps, e2e/v31821-where; v306-along,
+  v311-markers, v3187-brands and v318-scan updated (sameCodeScan's {b, s}; answers by an old code as their caps say
+  them, "now YR47"). Cache bumped to `marker-studio-v318.21`.

@@ -192,6 +192,11 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     // (v306: the same code in both brands, worked out from the guide as shown)
     sameCodeScan: sameCodeScan,
     sameName: sameName,
+    // (v318.21 tests: the code on your cap, its * and a key's name)
+    capLabel: capLabel,
+    capStar: capStar,
+    capKeyName: capKeyName,
+    mcode: mcode,
     codeNorm: codeNorm,
     openSectionPop: openSectionPop,
     // (v306: the marker strokes when a page is finished in Focus mode)
@@ -345,6 +350,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     shadeable: shadeable,
     shadeZone: shadeZone,
     setCollection: setCollection,
+    capChanged: capChanged,
     nextUndone: nextUndone,
     set focusPos(v) {
       focusPos = v;
@@ -1401,6 +1407,8 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
 }
 return {
   setCollection,
+  // (v318.21) what a marker's cap says changed (caps.js): the open guide shows the codes again
+  capChanged,
   collRefresh,
   configure,
   enter,

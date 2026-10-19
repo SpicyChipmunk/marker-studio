@@ -569,7 +569,9 @@ function zoneKbStep(dx, dy) {
 }
 function zoneKbSay(l) {
   const m = assignData.assign[l];
-  return (m ? m.code + (m.name ? ' ' + m.name : '') : 'Left white') + ', in ' + zoneName(zoneOf(l));
+  return (
+    (m ? capCode(m) + (capName(m) ? ' ' + capName(m) : '') : 'Left white') + ', in ' + zoneName(zoneOf(l))
+  );
 }
 // the ring on the section (in sight when zoomed in), and what it is said
 function zoneKbShow(say) {

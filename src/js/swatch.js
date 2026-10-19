@@ -263,11 +263,11 @@ function swDraw(pg, pi, np, g, info) {
     x.textAlign = 'left';
     x.fillStyle = '#111';
     F('700', 8.5);
-    x.fillText(swTrunc(x, cc.code, M(g.box + 0.8 + g.sw - 1.5) - nw), M(bx), M(by + g.box + 3.5));
+    x.fillText(swTrunc(x, capCode(cc), M(g.box + 0.8 + g.sw - 1.5) - nw), M(bx), M(by + g.box + 3.5));
     if (g.labels !== 'code') {
       x.fillStyle = '#444';
       F('400', 6.5);
-      x.fillText(swTrunc(x, cc.name || '', M(g.cw)), M(bx), M(by + g.box + 6.5));
+      x.fillText(swTrunc(x, capName(cc) || '', M(g.cw)), M(bx), M(by + g.box + 6.5));
     }
   });
   return c;

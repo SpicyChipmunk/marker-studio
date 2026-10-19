@@ -248,7 +248,13 @@ test('Clear collection in ⋯: the first tap asks with the menu open, a double t
     await page.$$eval('#mkMenu button', (b) =>
       b.filter((x) => x.style.display !== 'none').map((x) => x.textContent.trim()),
     ),
-    ['Untick all shown', 'Clear collection', 'Back up & restore (in the Library)'],
+    // (v318.21: and the codes on your caps, with Ohuhu markers of yours)
+    [
+      'Untick all shown',
+      'Clear collection',
+      'Show the codes on older Ohuhu caps (R6, not R213)',
+      'Back up & restore (in the Library)',
+    ],
   );
   assert.match(await page.getAttribute('#mkMore', 'aria-label'), /Clear collection/);
   await page.dblclick('#mkClear');

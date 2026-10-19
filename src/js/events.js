@@ -107,7 +107,7 @@ pile.addEventListener('click', (e) => {
 // the toast for ticking or unticking one marker (v306: short enough for one line at 390, "Added Ohuhu B04 · taken off
 // To buy", "Removed Copic BG0000"; v305's "… to your collection and took it off your To buy list" wrapped at 820 too)
 function addedLine(had, c, off) {
-  const name = c.brand + ' ' + c.code;
+  const name = c.brand + ' ' + capCode(c);
   if (had) return 'Removed ' + name;
   return 'Added ' + name + (off ? ' \u00b7 taken off To buy' : ' to your collection');
 }
@@ -280,12 +280,13 @@ results.addEventListener('contextmenu', (e) => {
 function mkFill(i) {
   const c = COLORS[i];
   $('mkSw').style.background = c.hex;
-  $('mkCode').textContent = c.brand + ' ' + c.code;
-  $('mkName').textContent = c.name || '';
+  // (v318.21: your older cap's code and name, "now R213"; caps.js)
+  $('mkCode').textContent = c.brand + ' ' + capCode(i);
+  $('mkName').textContent = capName(i);
   $('mkMeta').textContent = [
     c.fam || '',
     c.hex.toUpperCase(),
-    c.old && c.old !== c.code ? 'old code ' + oldCode(c) : '',
+    capIsOld(i) ? capNow(i) : c.old && c.old !== c.code ? 'old code ' + oldCode(c) : '',
   ]
     .filter(Boolean)
     .join(' \u00b7 ');
@@ -293,6 +294,7 @@ function mkFill(i) {
   // (v304: nothing is like the Colorless Blender, which lays down no colour; it was matched to a warm grey)
   $('mkSimilar').style.display = NOINK.has(i) ? 'none' : '';
   mkWishFill(i);
+  mkCapFill(i);
 }
 function openMarkerSheet(i) {
   if (!COLORS[i]) return;
@@ -636,19 +638,19 @@ function renderSeedGrid() {
             '<div class="cell" data-i="' +
             i +
             '" role="button" tabindex="0" aria-label="' +
-            esc(c.brand + ' ' + c.code + ' ' + c.name) +
+            esc(c.brand + ' ' + capCode(c) + ' ' + capName(c)) +
             '" title="' +
             c.brand +
             ' ' +
-            c.code +
+            capCode(c) +
             ' · ' +
-            c.name +
+            capName(c) +
             '">' +
             btHTML(c.brand, mix) +
             '<div class="sq" style="background:' +
             c.hex +
             '"></div><div class="cc">' +
-            c.code +
+            capCode(c) +
             '</div></div>'
           );
         })
@@ -1672,7 +1674,10 @@ const mkMore = document.createElement('button'),
 mkMoreWrap.className = 'libmore mkmore';
 mkMore.type = 'button';
 mkMore.id = 'mkMore';
-mkMore.setAttribute('aria-label', 'More: Untick all shown, Clear collection, Back up & restore');
+mkMore.setAttribute(
+  'aria-label',
+  'More: Untick all shown, Clear collection, the codes on your caps, Back up & restore',
+);
 mkMore.setAttribute('aria-haspopup', 'menu');
 mkMore.setAttribute('aria-expanded', 'false');
 mkMore.setAttribute('aria-controls', 'mkMenu');
@@ -1683,7 +1688,56 @@ mkMenu.setAttribute('role', 'menu');
 mkMenu.setAttribute('aria-label', 'More');
 mkMenu.hidden = true;
 mkLabel(backupBtn, 'library-big', 'Back up & restore', '(in the Library)');
-[ownNoneBtn, clearBtn, backupBtn].forEach((b) => {
+// (v318.21) the code on your caps (caps.js): what Ohuhu markers Scan hasn't read show, the codes on older caps (R6) or
+// as they are now (R213), with Undo; and Forget what my caps say, while any is known
+const capDefBtn = document.createElement('button'),
+  capForgetBtn = document.createElement('button');
+capDefBtn.type = capForgetBtn.type = 'button';
+capDefBtn.id = 'mkCapDef';
+capForgetBtn.id = 'mkCapForget';
+function capMenuSync() {
+  mkLabel(
+    capDefBtn,
+    'codes',
+    state.capDef === 'old' ? 'Show Ohuhu codes as they are now' : 'Show the codes on older Ohuhu caps',
+    state.capDef === 'old' ? '(R213, not R6)' : '(R6, not R213)',
+  );
+  mkLabel(capForgetBtn, 'rotate-ccw', 'Forget what my caps say');
+  capForgetBtn.style.display = Object.keys(state.cap).length ? '' : 'none';
+  // (only with an Ohuhu marker of yours that has an older code: nothing to switch otherwise)
+  capDefBtn.style.display = [...state.owned].some(
+    (k) => k.indexOf('Ohuhu|') === 0 && capHasOld(COLORS[keyIdx(k)] || null),
+  )
+    ? ''
+    : 'none';
+}
+capMenuSync();
+capDefBtn.addEventListener('click', () => {
+  const v = state.capDef === 'old' ? '' : 'old',
+    undo = capSetDef(v, 'menu');
+  if (!undo) return;
+  capMenuSync();
+  toastActions(
+    v === 'old'
+      ? 'Ohuhu markers whose caps aren’t known show the codes on older caps (R6, not R213)'
+      : 'Ohuhu markers whose caps aren’t known show the codes as they are now',
+    [
+      {
+        label: 'Undo',
+        fn: () => {
+          undo();
+          capMenuSync();
+        },
+      },
+    ],
+    8000,
+  );
+});
+capForgetBtn.addEventListener('click', () => {
+  capForget();
+  capMenuSync();
+});
+[ownNoneBtn, clearBtn, capDefBtn, capForgetBtn, backupBtn].forEach((b) => {
   b.setAttribute('role', 'menuitem');
   b.tabIndex = -1;
   mkMenu.appendChild(b);
@@ -1702,6 +1756,7 @@ function mkMenuOpen(on, focusFirst) {
     if (clearBtn.dataset.arm === '1') clearDisarm();
     return;
   }
+  capMenuSync();
   const it = mkItems();
   if (focusFirst && it[0]) it[0].focus({ preventScroll: true });
   mkMenu.scrollIntoView({ block: 'nearest', behavior: 'instant' });
@@ -1777,6 +1832,10 @@ function openBackup() {
     owned: [...state.owned],
     wish: state.wish,
     ink: state.ink,
+    cap: state.cap,
+    capDef: state.capDef,
+    capQ: state.capQ,
+    capOffer: state.capOffer,
     buyBrands: state.buyBrands,
     saved: state.saved.filter(function (s) {
       return s.type !== 'guide';

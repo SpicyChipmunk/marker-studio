@@ -59,19 +59,22 @@ function swTile(m, cur, mixed) {
     '" data-k="' +
     esc(m.mkey) +
     '" data-code="' +
+    esc((capCode(m) || '').toUpperCase()) +
+    // (v318.21 debug: an older cap's marker found by its code now too, R213 as well as R6, as codeFind finds it)
+    '" data-code2="' +
     esc((m.code || '').toUpperCase()) +
     '" aria-pressed="' +
     on +
     '" title="' +
-    esc(m.code + ' ' + (m.name || '')) +
+    esc(capLabel(m) + ' ' + (capName(m) || '')) +
     '" aria-label="' +
-    esc(m.brand + ' ' + m.code + ' ' + (m.name || '')) +
+    esc(m.brand + ' ' + capLabel(m) + ' ' + (capName(m) || '')) +
     '"><span class="sfswc" style="background:' +
     esc(m.hex) +
     '">' +
     (mixed ? '<span class="sfswb">' + esc(bTag(m.brand)) + '</span>' : '') +
     '</span><span class="sfswt">' +
-    esc(m.code) +
+    esc(capLabel(m)) +
     '</span></button>'
   );
 }
@@ -306,7 +309,10 @@ function openSwatchPop(o) {
         }
         var n = 0;
         g.querySelectorAll('.sfsw').forEach(function (b) {
-          var ok = !q || (b.getAttribute('data-code') || '').indexOf(q) === 0;
+          var ok =
+            !q ||
+            (b.getAttribute('data-code') || '').indexOf(q) === 0 ||
+            (b.getAttribute('data-code2') || '').indexOf(q) === 0;
           b.hidden = !ok;
           if (ok) n++;
         });
@@ -473,7 +479,7 @@ function pickTap(l) {
     return;
   }
   const m = assignData.assign[l];
-  sayLive((had ? 'Done. ' : '') + 'Now changing the section with ' + msay(m) + ' ' + (m.name || ''));
+  sayLive((had ? 'Done. ' : '') + 'Now changing the section with ' + msay(m) + ' ' + (capName(m) || ''));
 }
 // press and hold (or right-click) a section in Blend: its tip, or the open picker moves to it
 function holdSec(l) {
@@ -961,7 +967,7 @@ function openSectionPop(l, opt) {
             _kept.length +
             ' coloured section' +
             (_kept.length === 1 ? ' keeps ' : 's keep ') +
-            esc(_om.code) +
+            esc(capLabel(_om)) +
             '</div>'
           : '')
       : '';
@@ -978,9 +984,9 @@ function openSectionPop(l, opt) {
       '<i style="background:' +
       esc(_om.hex) +
       '"></i><span>Now <b>' +
-      esc(_om.code) +
+      esc(capLabel(_om)) +
       '</b> ' +
-      esc(_om.name || '') +
+      esc(capName(_om) || '') +
       (brandsMixed() ? ' · ' + esc(_om.brand) : '') +
       '</span>',
     // (v306: a line that says when the marker's code is in the guide in the other brand too)
@@ -1022,19 +1028,19 @@ function openSectionPop(l, opt) {
         if (all && ch > 1)
           o.why =
             'Replaced ' +
-            _om.code +
+            capLabel(_om) +
             ' with ' +
-            m.code +
+            capLabel(m) +
             ' in ' +
             ch +
             ' sections' +
-            (_kept.length ? ' (' + _kept.length + ' coloured kept ' + _om.code + ')' : '');
+            (_kept.length ? ' (' + _kept.length + ' coloured kept ' + capLabel(_om) + ')' : '');
         sayLive(
-          _om.code +
+          capLabel(_om) +
             ' \u2192 ' +
-            m.code +
+            capLabel(m) +
             ' ' +
-            (m.name || '') +
+            (capName(m) || '') +
             ', ' +
             ch +
             ' section' +
@@ -1107,7 +1113,7 @@ function togglePin(l) {
   renderGuide();
   renderControls();
   var m = assignData.assign[l];
-  sayLive((locks[l] !== undefined ? 'Pinned ' : 'Unpinned ') + msay(m) + ' ' + (m.name || ''));
+  sayLive((locks[l] !== undefined ? 'Pinned ' : 'Unpinned ') + msay(m) + ' ' + (capName(m) || ''));
   planCommit();
 }
 // Fill: every unpinned section still to colour takes the marker (one ticked done keeps its own, as with Everywhere:
@@ -1230,7 +1236,7 @@ function markerListSheet() {
         notes = [];
       Object.keys(e.for || {}).forEach(function (k) {
         const i = keyIdx(k);
-        notes.push('for ' + (i != null && COLORS[i] ? COLORS[i].code : k) + ' (dry)');
+        notes.push('for ' + (i != null && COLORS[i] ? capLabel(i) : k) + ' (dry)');
       });
       if (!owned(m)) notes.push('To buy');
       // (v313)
@@ -1246,9 +1252,9 @@ function markerListSheet() {
         '"></span><span class="nm">' +
         (brandsMixed() ? '<b class="btag" aria-hidden="true">' + esc(bTag(m.brand)) + '</b> ' : '') +
         '<b>' +
-        esc(m.code) +
+        esc(capLabel(m)) +
         '</b> ' +
-        esc(m.name || '') +
+        esc(capName(m) || '') +
         (notes.length ? '<small>' + esc(notes.join(' \u00b7 ')) + '</small>' : '') +
         '</span><span class="cnt">' +
         nWord(e.n, 'section') +

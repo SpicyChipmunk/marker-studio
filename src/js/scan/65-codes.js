@@ -179,7 +179,12 @@ function scanHandleCodes0(text, loud, named, list) {
       return;
     }
     if (c.opts.length === 1) {
-      if (scanTake(c.opts[0], c.old ? 'old' : c.named ? 'name' : '', loud, many)) {
+      // (v318.21: and what its cap says, by the code read, caps.js)
+      if (
+        scanTake(c.opts[0], c.old ? 'old' : c.named ? 'name' : '', loud, many, {
+          with: { cv: capCvRead(c.opts[0], !!c.old, !!c.named) },
+        })
+      ) {
         took++;
         if (state.owned.has(mkey(c.opts[0]))) mine++;
       }
@@ -366,7 +371,9 @@ function scanHandleCodes0(text, loud, named, list) {
   }
   r.flips.forEach(function (f) {
     n++;
-    if (f.opts.length === 1) scanTake(f.opts[0], 'upside', loud);
+    // (v318.21 debug: a code read upside down is one as it is now: its cap too, caps.js)
+    if (f.opts.length === 1)
+      scanTake(f.opts[0], 'upside', loud, false, { with: { cv: capCvRead(f.opts[0], false, false) } });
     // (v303: through ask, so on Enter a question already waiting is said so)
     else
       ask(

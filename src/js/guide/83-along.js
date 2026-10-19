@@ -267,7 +267,7 @@ function alongList(sort) {
         ? famCmp(a.m, b.m)
         : sort === 'brand'
           ? a.m.brand.localeCompare(b.m.brand) ||
-            a.m.code.localeCompare(b.m.code, 'en', { numeric: true, sensitivity: 'base' })
+            capLabel(a.m).localeCompare(capLabel(b.m), 'en', { numeric: true, sensitivity: 'base' })
           : 0) ||
       _lum(b.m.hex) - _lum(a.m.hex) ||
       b.n - a.n
@@ -303,18 +303,22 @@ function alongRow(e, inDone) {
         ' </span>'
       : '') +
     '<b>' +
-    esc(m.code) +
+    esc(capLabel(m)) +
     '</b> ' +
     // (v313: marked running low, in Markers or Did any run low?)
     (inkLowNow(m.mkey)
       ? '<span class="sflowtag" aria-hidden="true">low</span><span class="sfsr">(running low) </span>'
       : '') +
     (sn
-      ? '<span class="sf2b" aria-hidden="true">2 brands</span><span class="sfsr">(' +
+      ? '<span class="sf2b" aria-hidden="true">' +
+        (sameOf(m) ? '2 brands' : '2 caps') +
+        '</span><span class="sfsr">(' +
         esc(sn) +
         ' is in this guide too) </span>'
       : '') +
-    esc(m.name || '') +
+    esc(capName(m) || '') +
+    // (v318.21: an older cap's code shown, and the code it has now)
+    (capIsOld(m) ? ' <span class="sfazt">· ' + esc(capNow(m)) + '</span>' : '') +
     (inDone && e.z != null ? ' <span class="sfazt">· ' + esc(zoneName(e.z)) + '</span>' : '') +
     '</span><span class="cnt">' +
     (full
@@ -359,7 +363,7 @@ function alongRow(e, inDone) {
   if (open)
     r +=
       '<div class="sfacts" role="group" aria-label="' +
-      esc(m.code) +
+      esc(capLabel(m)) +
       '"><button type="button" id="sfMarkAll" class="sfedit">' +
       (full ? 'Clear' : '<span aria-hidden="true">✓</span> Mark all coloured') +
       '</button>' +
@@ -460,9 +464,73 @@ function renderAlong() {
             })
             .join('')
         : '');
-  el.innerHTML = h;
+  el.innerHTML = capQHTML(list) + h;
+  if (!el._capQ) {
+    el._capQ = true;
+    el.addEventListener('click', capQClick);
+  }
   alongFlash(el, full);
   alongRefocus(el, fid, fk);
+}
+// (v318.21) Once, at the top of the list: which codes your Ohuhu caps show, asked of a marker you're colouring with,
+// "Does this cap say R213 Pomegranate or R6 Rose Red?" (caps.js capQPick, capAnswer). Never takes the keyboard; ×
+// closes it for good. Only in a guide with such a marker of yours, and not once Scan has told enough caps
+function capQHTML(list) {
+  const i = capQPick(
+    list.map(function (e) {
+      return e.m.mkey;
+    }),
+  );
+  if (i == null) return '';
+  const c = COLORS[i],
+    b = function (a, t) {
+      return '<button type="button" class="sfedit" data-capq="' + a + '">' + esc(t) + '</button>';
+    };
+  return (
+    '<div class="sfcapq" role="group" aria-labelledby="sfCapQT" data-i="' +
+    i +
+    '"><button type="button" class="sfcapqx" data-capq="close" aria-label="Close: don’t ask">' +
+    ic('x') +
+    '</button><div class="sfcapqt" id="sfCapQT"><i style="background:' +
+    esc(c.hex) +
+    '"></i>Ohuhu changed its codes in 2025. Does this cap say <b>' +
+    esc(c.code + ' ' + (c.name || '')) +
+    '</b> or <b>' +
+    esc(oldCode(c) + ' ' + capOldName(c)) +
+    '</b>?</div><div class="sfcapqb">' +
+    b('new', c.code) +
+    b('old', oldCode(c)) +
+    b('mix', 'Some of each') +
+    b('none', 'I don’t have it') +
+    '</div></div>'
+  );
+}
+function capQClick(e) {
+  const t = e.target.closest('[data-capq]');
+  if (!t) return;
+  const q = t.closest('.sfcapq');
+  if (!q) return;
+  e.stopPropagation();
+  const a = t.dataset.capq,
+    undo = capAnswer(+q.dataset.i, a);
+  // (v318.21 debug: the card's gone, the button with it: the keyboard goes to the list, not the page; another marker
+  // asked about after "I don't have it", to its question)
+  const to =
+    document.querySelector('#sfAlist .sfcapq button[data-capq="new"]') ||
+    document.querySelector('#sfAlist .sfarow .sfah');
+  if (to) to.focus({ preventScroll: true });
+  if (!undo || a === 'close') return;
+  const say =
+    a === 'old'
+      ? 'Your Ohuhu markers show the codes on older caps (R6, not R213), here and everywhere'
+      : a === 'mix'
+        ? 'Codes as they are now for now: Markers › Add markers › Photograph your caps sorts them cap by cap'
+        : a === 'new'
+          ? 'Your Ohuhu markers show the codes as they are now'
+          : state.capQ
+            ? 'Not asked again'
+            : 'Asked about another of your markers instead';
+  toastActions(say, [{ label: 'Undo', fn: undo }], 8000);
 }
 // (v313) a marker just finished (its last section ticked, or Mark all coloured): its row's "All 10 coloured ✓" lights up
 // for a moment, the list's own "that one's done". Only for a change seen here, not on opening the list.
@@ -497,7 +565,7 @@ function alongEntry(k) {
   return r;
 }
 function alongName(m) {
-  return msay(m) + (m.name ? ' ' + m.name : '');
+  return msay(m) + (capName(m) ? ' ' + capName(m) : '');
 }
 function alongClick(e) {
   const b = e.target.closest('button');
@@ -685,10 +753,12 @@ function codeFind(raw) {
     pre = {},
     sh = shadeOn();
   for (const l in assignData.assign) {
+    // (v318.21: by the code on your cap too, R6 for R213, caps.js)
     const m = assignData.assign[l],
-      c = codeNorm(m.code);
-    if (c === q) B[m.mkey] = m;
-    else if (c.indexOf(q) === 0) pre[m.code] = 1;
+      c = codeNorm(m.code),
+      cc = codeNorm(capCode(m));
+    if (c === q || cc === q) B[m.mkey] = m;
+    else if (c.indexOf(q) === 0 || cc.indexOf(q) === 0) pre[capCode(m)] = 1;
     const t = sh ? shadeSec(+l) : null;
     if (t)
       [
@@ -696,7 +766,7 @@ function codeFind(raw) {
         ['dark', 'shadow'],
       ].forEach(function (p) {
         const x = t[p[0]];
-        if (!x || codeNorm(x.code) !== q) return;
+        if (!x || (codeNorm(x.code) !== q && codeNorm(capCode(x)) !== q)) return;
         const e =
           P[x.mkey] || (P[x.mkey] = { m: x, highlight: {}, shadow: {}, zn: { highlight: {}, shadow: {} } });
         e[p[1]][m.mkey] = m;
@@ -717,7 +787,7 @@ function codeFind(raw) {
     return a.localeCompare(b, 'en', { numeric: true });
   });
   r.known = COLORS.some(function (c) {
-    return codeNorm(c.code) === q;
+    return codeNorm(c.code) === q || (capHasOld(c) && codeNorm(oldCode(c)) === q);
   });
   return r;
 }
@@ -759,14 +829,14 @@ function findLine(r) {
   if (!r.q) return '';
   const two = findBrands(r).length > 1,
     nm = function (m) {
-      return (two ? m.brand + ' ' : '') + m.code;
+      return (two ? m.brand + ' ' : '') + capLabel(m);
     },
     few = function (a) {
       return a.slice(0, 4).join(', ') + (a.length > 4 ? ' +' + (a.length - 4) + ' more' : '');
     },
     out = [];
   r.base.forEach(function (m) {
-    out.push(nm(m) + (m.name ? ' ' + m.name : ''));
+    out.push(nm(m) + (capName(m) ? ' ' + capName(m) : ''));
   });
   r.part.forEach(function (p) {
     const own = r.base.some(function (m) {
@@ -783,7 +853,7 @@ function findLine(r) {
             ' for ' +
             few(
               Object.keys(p[k]).map(function (x) {
-                return p[k][x].code;
+                return capLabel(p[k][x]);
               }),
             )
           );
@@ -807,7 +877,7 @@ function findPartLine(r) {
       by[p.m.brand] || (by[p.m.brand] = { highlight: [], shadow: [], zn: { highlight: {}, shadow: {} } });
     kinds.forEach(function (k) {
       for (const x in p[k]) {
-        const c = p[k][x].code;
+        const c = capLabel(p[k][x]);
         if (e[k].indexOf(c) < 0) e[k].push(c);
         has[k] = 1;
       }
@@ -900,7 +970,8 @@ function findGo() {
   });
   if (!Object.keys(rank).length)
     list.forEach(function (e) {
-      if (codeNorm(e.m.code).indexOf(r.q) === 0) rank[e.m.mkey] = 2;
+      if (codeNorm(e.m.code).indexOf(r.q) === 0 || codeNorm(capCode(e.m)).indexOf(r.q) === 0)
+        rank[e.m.mkey] = 2;
     });
   if (!Object.keys(rank).length) {
     alFind = null;

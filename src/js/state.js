@@ -250,6 +250,8 @@ if (state.libAdj1 !== 1) {
 if (!['owned', 'unowned', 'all', 'wish'].includes(state.collView)) state.collView = 'owned';
 state.wish = cleanWish(state.wish);
 state.ink = cleanInk(state.ink);
+state.cap = cleanCap(state.cap);
+state.capDef = state.capDef === 'old' ? 'old' : '';
 if (typeof state.filtersOpen !== 'boolean') state.filtersOpen = false;
 // (v316: 'light', lightest first in each family, is the order for every view; the three rankings are Unowned's)
 if (!['light', 'code', 'gap', 'complete', 'ramps'].includes(state.gapSort)) state.gapSort = 'light';
@@ -435,6 +437,11 @@ function parseState(raw) {
       ordLight1: v.ordLight1 || null,
       wish: v.wish,
       ink: v.ink,
+      // (v318.21) what each marker's cap says, and the setting for the rest (caps.js)
+      cap: v.cap,
+      capDef: v.capDef === 'old' ? 'old' : '',
+      capQ: v.capQ ? 1 : 0,
+      capOffer: v.capOffer ? 1 : 0,
     },
   };
 }
@@ -607,6 +614,10 @@ function save(quiet) {
       ordLight1: state.ordLight1,
       wish: state.wish,
       ink: state.ink,
+      cap: state.cap,
+      capDef: state.capDef,
+      capQ: state.capQ,
+      capOffer: state.capOffer,
     });
     localStorage.setItem(KEY, s);
     _lastRaw = s;
@@ -644,14 +655,29 @@ function syncFromStorage() {
     G = (a) => new Map(a.filter((s) => s.type === 'guide').map((s) => [s.id, s])),
     g0 = G(state.saved),
     sig = () =>
-      JSON.stringify([[...state.owned].sort(), state.saved, state.wish, state.ink, state.buyBrands]),
-    was = sig();
+      JSON.stringify([
+        [...state.owned].sort(),
+        state.saved,
+        state.wish,
+        state.ink,
+        state.buyBrands,
+        state.cap,
+        state.capDef,
+      ]),
+    was = sig(),
+    capWas = JSON.stringify([state.cap, state.capDef]);
   if (Array.isArray(v.owned)) state.owned = new Set(v.owned);
   if (Array.isArray(v.saved)) state.saved = v.saved.map(cleanSaved).filter(Boolean);
   state.wish = cleanWish(v.wish);
   state.ink = cleanInk(v.ink);
   state.buyBrands = cleanBuy(v.buyBrands);
+  state.cap = cleanCap(v.cap);
+  state.capDef = v.capDef === 'old' ? 'old' : '';
+  state.capQ = v.capQ ? 1 : 0;
+  state.capOffer = v.capOffer ? 1 : 0;
   if (sig() === was) return; // only another tab's screen or settings changed
+  // (v318.21 debug: what caps say changed there: an open guide's labels and keys drawn again whole)
+  if (JSON.stringify([state.cap, state.capDef]) !== capWas && typeof capChanged === 'function') capChanged();
   const g1 = G(state.saved),
     S = window.SF;
   if (S) {

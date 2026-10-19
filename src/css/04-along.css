@@ -545,3 +545,60 @@
     margin: 8px 0 2px 14px;
   }
 }
+
+/* (v318.21) Once, at the top of Colour along: which codes your Ohuhu caps show (caps.js, 83-along.js capQHTML) */
+#sfRoot .sfcapq {
+  position: relative;
+  margin: 4px 0 10px;
+  padding: 10px 40px 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 180, 84, 0.08);
+}
+#sfRoot .sfcapqt {
+  font-size: var(--t-sm);
+  line-height: 1.4;
+  color: var(--sub-guide);
+}
+#sfRoot .sfcapqt b {
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+#sfRoot .sfcapqt i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+#sfRoot .sfcapqb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+#sfRoot .sfcapqb .sfedit {
+  flex: 1 1 0;
+  min-width: max-content;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  transform: none;
+}
+#sfRoot .sfcapqx {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -215,7 +215,8 @@ test('a question’s answer that is a marker by its old code says so: "Which R14
   await idle(page);
   const choices = await page.$$eval('#scList .scask .scchoose', (bs) => bs.map((b) => b.textContent));
   assert.ok(
-    choices.some((c) => /^RV18 Bubblegum · Ohuhu · was R14$/.test(c)),
+    // (v318.21: as its older cap says it, R14 Pale Purple, the code it has now beside)
+    choices.some((c) => /^R14 Pale Purple · Ohuhu · now RV18$/.test(c)),
     choices.join(' / '),
   );
   assert.ok(
@@ -229,6 +230,6 @@ test('a question’s answer that is a marker by its old code says so: "Which R14
     scanRender();
     return document.querySelector('#scList .scask .scchoose').textContent;
   });
-  assert.match(roman, / · was BGII03$/);
+  assert.match(roman, /^BGII03 .+ · now B310$/);
   assert.deepEqual(errors, []);
 });

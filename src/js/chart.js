@@ -115,11 +115,11 @@ function chartGrid(f) {
         '" aria-pressed="' +
         on +
         '" aria-label="' +
-        esc(c.code + ' ' + c.name) +
+        esc(capCode(c) + ' ' + capName(c)) +
         '"><i style="background:' +
         c.hex +
         '"></i><span>' +
-        esc(c.code) +
+        esc(capCode(c)) +
         '</span></button>'
       );
     })

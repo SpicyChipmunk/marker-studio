@@ -101,7 +101,33 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.17
+## New in this release: v318.21
+
+Your own caps are all current, so try the older-cap checks with the lent collection's backup in a **separate Safari
+profile** (Safari › Settings › Profiles), never in your own Home Screen app: a restore replaces your markers.
+
+- [ ] ★ Your own app, after the update: nothing looks different. Markers, a guide, Colour along and the PDF key show the
+      codes as they are now. Colour along asks nothing (it asks only with an Ohuhu marker of yours that has an older
+      code and nothing known of its cap: answer **R213** once if it does).
+- [ ] ★ Lent profile: restore the backup → Markers shows the older caps' codes (R6, YR170, CGII04), a marker's details
+      say "now R213" and **My cap says** switches it; a guide's labels, Colour along and the PDF key show them too.
+- [ ] Lent profile: a guide with RV17 (older cap R22) and the R22 of now → the older one's label has a **\***, the key
+      and Colour along name both caps (Dark Blush, Ballet Pink).
+- [ ] ★ **Photograph your caps** on an older tray: a question's close-up has **Where in the photo?** → the whole photo
+      with the cap ringed and "Near the … · beside …"; tap the photo to go back. Close Scan, reopen: still there.
+- [ ] Older tray: a code misread by one character ("5110" for E110) with its name read shows "read as “5110”" on its
+      row, already listed.
+- [ ] Markers › ⋯ → **Show the codes on older Ohuhu caps** (with Undo), **Forget what my caps say**.
+
+## New in v318.19
+
+- [ ] ★ **Markers › Add markers › Photograph your caps** on OLDER Ohuhu caps (old codes like R6, YR170, PB3, CGⅡ07,
+      with their old names): most go straight into the list, few questions. Compare with how many v318.18 asked.
+- [ ] The same on your newer Honolulu caps: nothing different from before.
+
+Then v318.17 and v318.18's checks, if not done:
+
+## v318.17 and v318.18
 
 - [ ] ★ On iPhone, **Pattern** (Gradient) → the patterns, Flow (each with a small picture), Look, then **More
       options** (Direction, Start colour, Scatter), then Shuffle · Pin, then **＋ Zone** at the end. Do the Flow

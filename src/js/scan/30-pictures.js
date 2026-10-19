@@ -9,8 +9,12 @@
 // are kept. The database is deleted with Delete all my data (safety.js wipeAllData), and nothing's written after.
 // Opened as the guides' is (guide-bridge.js IDB): an open given up after 8 s, the connection let go when it closes or
 // a delete asks, every failure quiet
+// (v318.21) And each photo with a question waiting, as it was shown (its copy up to 900 px, a JPEG of about 100–150
+// KB), for "Where in the photo?" (15-answer.js): kept by its id, 'photo:' + e.pid, as long as a question of it waits,
+// at most 30, the newest; each question's row keeps where its cap is (e.where) and the caps read beside it (e.near)
 const SCAN_PICS_DB = 'ms-scan-pics',
-  SCAN_PICS_MAX = 60;
+  SCAN_PICS_MAX = 60,
+  SCAN_PHOTOS_MAX = 30;
 const scanPics = (function () {
   const OPEN_MS = 8000;
   let dbp = null,
@@ -23,6 +27,8 @@ const scanPics = (function () {
     // it came during)
     dirty = null,
     last = null;
+  // (v318.21) the photos kept, by id: a data URL each
+  const photos = new Map();
   const S = { writes: 0, deletes: 0, loads: 0 };
   function db() {
     if (dbp) return dbp;
@@ -115,7 +121,16 @@ const scanPics = (function () {
     }
     last = entries;
     const want = new Map();
-    entries.forEach((e) => e.ask && e.crop && want.set(e.ask, e.crop));
+    entries.forEach(function (e) {
+      if (!e.ask || !e.crop) return;
+      want.set(
+        e.ask,
+        e.where ? { crop: e.crop, pid: e.pid, where: e.where, near: e.near || [] } : { crop: e.crop },
+      );
+      if (e.pid && photos.has(e.pid)) want.set('photo:' + e.pid, { photo: photos.get(e.pid) });
+    });
+    // (a photo no question of which waits: let go of here too)
+    [...photos.keys()].forEach((pid) => !want.has('photo:' + pid) && photos.delete(pid));
     const add = [...want.keys()].filter((k) => !written.has(k) && !pending.has(k)),
       del = [...written].filter((k) => !want.has(k) && !pending.has(k));
     if (!add.length && !del.length) return;
@@ -124,7 +139,7 @@ const scanPics = (function () {
     const now = Date.now();
     tx('readwrite', function (st) {
       add.forEach(function (k) {
-        st.put({ crop: want.get(k), at: now }, k);
+        st.put(Object.assign({ at: now }, want.get(k)), k);
         S.writes++;
       });
       del.forEach(function (k) {
@@ -190,21 +205,47 @@ const scanPics = (function () {
       }
       const asks = new Set(scanList.filter((e) => e.ask).map((e) => e.ask)),
         keep = [],
-        drop = [];
+        drop = [],
+        shots = [];
       let hit = 0;
       got.keys.forEach(function (k, n) {
         const row = got.rows[n];
         if (asks.has(k) && row && typeof row.crop === 'string')
-          keep.push({ k: k, at: +row.at || 0, crop: row.crop });
+          keep.push({ k: k, at: +row.at || 0, crop: row.crop, row: row });
+        // (v318.21: a photo, kept below while a question of it is)
+        else if (typeof k === 'string' && k.indexOf('photo:') === 0 && row && typeof row.photo === 'string')
+          shots.push({ k: k, at: +row.at || 0, photo: row.photo });
         else drop.push(k);
       });
       keep.sort((x, y) => y.at - x.at);
       keep.splice(SCAN_PICS_MAX).forEach((x) => drop.push(x.k));
-      written = new Set(keep.map((x) => x.k));
+      // (the photos of the questions kept, at most SCAN_PHOTOS_MAX, the newest; the rest go)
+      const pids = new Set(
+        keep
+          .map((x) => (Array.isArray(x.row.where) && typeof x.row.pid === 'string' ? x.row.pid : null))
+          .filter(Boolean),
+      );
+      shots.sort((x, y) => y.at - x.at);
+      const shotKeep = shots.filter((x) => pids.has(x.k.slice(6))).slice(0, SCAN_PHOTOS_MAX);
+      shots.forEach((x) => shotKeep.indexOf(x) < 0 && drop.push(x.k));
+      // (v318.21 debug: oldest first, as keepPhoto lets go of the first: newest-first had let a reload's newest go)
+      shotKeep
+        .slice()
+        .reverse()
+        .forEach((x) => photos.set(x.k.slice(6), x.photo));
+      written = new Set(keep.map((x) => x.k).concat(shotKeep.map((x) => x.k)));
       keep.forEach(function (x) {
         scanList.forEach(function (e) {
           if (e.ask === x.k && !e.crop) {
             e.crop = x.crop;
+            // (v318.21: where its cap is, when its photo's kept too)
+            if (Array.isArray(x.row.where) && x.row.where.length === 3 && typeof x.row.pid === 'string') {
+              e.where = x.row.where.map(Number);
+              e.pid = x.row.pid;
+              e.near = Array.isArray(x.row.near)
+                ? x.row.near.filter((t) => typeof t === 'string').slice(0, 2)
+                : [];
+            }
             hit++;
           }
         });
@@ -229,6 +270,7 @@ const scanPics = (function () {
   // Delete all my data: nothing written from now on, the connection let go (the delete isn't blocked by it)
   function wipe() {
     wiped = true;
+    photos.clear();
     const p = dbp;
     dbp = null;
     if (p)
@@ -244,6 +286,18 @@ const scanPics = (function () {
   function forget() {
     written = new Set();
   }
+  // (v318.21) a photo kept for its questions, and one asked for (null: none kept, or no longer); the rest of this page's
+  // photos are let go of once no question of theirs waits (at the next save)
+  function keepPhoto(pid, url) {
+    if (wiped) return;
+    photos.set(pid, url);
+    while (photos.size > SCAN_PHOTOS_MAX) photos.delete(photos.keys().next().value);
+  }
+  function photo(pid) {
+    return (pid && photos.get(pid)) || null;
+  }
+  S.keepPhoto = keepPhoto;
+  S.photo = photo;
   S.sync = sync;
   S.load = load;
   S.forget = forget;

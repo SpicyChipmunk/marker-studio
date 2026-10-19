@@ -72,7 +72,7 @@
     if (mpick) mpick.classList.toggle('empty', on);
   }
   function cpText(c) {
-    return (c.brand + ' ' + c.code + (c.name ? ' ' + c.name : '')).replace(/"/g, '');
+    return (c.brand + ' ' + capCode(c) + (capName(c) ? ' ' + capName(c) : '')).replace(/"/g, '');
   }
   var rowBt = true; // brand letters on the rows when the result or your collection mixes brands
   // (v304) Find similar: the marker it was opened from, left out of the result while its colour is the one shown
@@ -103,9 +103,9 @@
       '"></span>' +
       (tag ? '<span class="mtag" aria-hidden="true">' + bTag(c.brand) + '</span>' : '') +
       '<span class="mnm"><b>' +
-      esc((full ? c.brand + ' ' : '') + c.code) +
+      esc((full ? c.brand + ' ' : '') + capCode(c)) +
       '</b>' +
-      esc(c.name || '') +
+      esc(capName(c) || '') +
       '</span><span class="mq">' +
       meter(o.d) +
       rword(o) +
@@ -220,7 +220,7 @@
     lastSig = sig;
     var from = simFrom === null ? null : COLORS[simFrom];
     // (v304: Find similar says what it's similar to, and leaves that marker out)
-    html = from ? '<div class="msimh">Similar to ' + esc(from.brand + ' ' + from.code) + '</div>' : '';
+    html = from ? '<div class="msimh">Similar to ' + esc(from.brand + ' ' + capCode(from)) + '</div>' : '';
     if (owned.length) {
       var b = owned[0],
         c = COLORS[b.i],
@@ -233,7 +233,7 @@
         ';color:' +
         txt(hex) +
         '"><i>' +
-        esc(from ? from.code : 'You') +
+        esc(from ? capCode(from) : 'You') +
         '</i></span><span style="background:' +
         c.hex +
         ';color:' +
@@ -246,9 +246,9 @@
         '">' +
         (bw === 'Same colour' ? bw : bw + ' match') +
         '</div><div class="mbname"><b>' +
-        esc(c.code) +
+        esc(capCode(c)) +
         '</b> ' +
-        esc(c.name || '') +
+        esc(capName(c) || '') +
         '</div><div class="mbbrand">' +
         esc(c.brand) +
         ' marker</div></div>' +
@@ -317,7 +317,7 @@
     return (
       (simFrom === null
         ? 'Your colour ' + hex.toUpperCase()
-        : COLORS[simFrom].brand + ' ' + COLORS[simFrom].code) +
+        : COLORS[simFrom].brand + ' ' + capCode(simFrom)) +
       ' (left) vs the marker ' +
       c.hex.toUpperCase() +
       ' (right)'

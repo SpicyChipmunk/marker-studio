@@ -16,10 +16,17 @@ function scanZoom(e, from) {
   o.setAttribute('role', 'dialog');
   o.setAttribute('aria-modal', 'true');
   o.setAttribute('aria-label', 'The cap in the photo');
+  // (v318.21) "Where in the photo?": the whole photo with the cap ringed, while its photo is kept (scanPics), to find the
+  // real marker in a tray; the words say where, for everyone and for screen readers. A tap on the photo flips back
+  const shot = e.where && e.pid ? scanPics.photo(e.pid) : null;
   o.innerHTML =
-    '<div class="ocard dcard sczoomcard"><img src="' +
+    '<div class="ocard dcard sczoomcard"><div class="sczpic"><img src="' +
     esc(e.crop) +
-    '" alt="The cap in the photo"><div class="dsub" id="sczTitle">' +
+    '" alt="The cap in the photo"><span class="sczring" hidden></span></div>' +
+    (shot
+      ? '<button type="button" class="sflink sczwhere" data-a="where" aria-pressed="false">Where in the photo?</button><div class="sczwords" role="status"></div>'
+      : '') +
+    '<div class="dsub" id="sczTitle">' +
     esc(e.title) +
     '</div><div class="scpick sczpick">' +
     (e.opts || [])
@@ -56,6 +63,7 @@ function scanZoom(e, from) {
       ch = t.closest ? t.closest('.scchoose') : null;
     if (soon) return;
     if (a && a.dataset.a === 'close') return end();
+    if (a && a.dataset.a === 'where') return flip();
     if (ch || (a && a.dataset.a === 'not')) {
       const n = scanList.indexOf(e);
       end(false);
@@ -71,8 +79,31 @@ function scanZoom(e, from) {
       scanFocusAfter(n);
       return;
     }
+    if (t.tagName === 'IMG' && t.closest('.sczoomcard') && o.querySelector('.sczpic.where')) return flip();
     if (t === o || (t.tagName === 'IMG' && t.closest('.sczoomcard'))) end();
   });
+  // the close-up or the whole photo, ringed
+  function flip() {
+    const pic = o.querySelector('.sczpic'),
+      img = pic.querySelector('img'),
+      ring = pic.querySelector('.sczring'),
+      b = o.querySelector('.sczwhere'),
+      w = o.querySelector('.sczwords'),
+      on = !pic.classList.contains('where');
+    if (!b) return;
+    pic.classList.toggle('where', on);
+    img.src = on ? shot : e.crop;
+    img.alt = on ? 'The photo, the cap ringed' : 'The cap in the photo';
+    ring.hidden = !on;
+    if (on) {
+      ring.style.left = e.where[0] * 100 + '%';
+      ring.style.top = e.where[1] * 100 + '%';
+      ring.style.width = Math.max(4, e.where[2] * 200) + '%';
+    }
+    b.textContent = on ? 'Back to the close-up' : 'Where in the photo?';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    w.textContent = on ? scanWhereWords(e) : '';
+  }
   document.body.appendChild(o);
   o.querySelector('[data-a="close"]').focus({ preventScroll: true });
 }
@@ -83,14 +114,19 @@ function scanChip(o) {
     COLORS[o.i].hex +
     // (v309.2: the words in one span, wrapping as a line: "already yours" had become a column of its own)
     '"></span><span class="scchtx">' +
-    esc(scanName(o.i)) +
+    // (v318.21) an answer that's the marker by its old code: as its older cap says it, "R14 Pale Purple · now RV18"
+    // (caps.js), the code it has now beside, as everywhere an older cap's code is shown
+    esc(
+      o.how === 'old' && capHasOld(COLORS[o.i])
+        ? oldCode(COLORS[o.i]) + ' ' + capOldName(COLORS[o.i])
+        : scanName(o.i),
+    ) +
     ' · ' +
     esc(COLORS[o.i].brand) +
     // (v318.1: an answer that's the marker by its old code, or the code upside down, says so: "Which R14?"
-    // had offered RV18 Bubblegum with no word of why. v318 audit: "was", as the marker picker says it, and
-    // the old code as shown everywhere, CGII00 not CGⅡ00)
+    // had offered RV18 Bubblegum with no word of why)
     (o.how === 'old'
-      ? ' · <i>' + (oldCode(COLORS[o.i]) ? 'was ' + esc(oldCode(COLORS[o.i])) : 'by its old code') + '</i>'
+      ? ' · <i>' + (capHasOld(COLORS[o.i]) ? 'now ' + esc(COLORS[o.i].code) : 'by its old code') + '</i>'
       : o.how === 'upside'
         ? ' · <i>upside down</i>'
         : '') +
@@ -108,7 +144,18 @@ function scanAnswer(q, i, how) {
   if (n < 0) return -1;
   scanAnsweredAt.set(q.ask, Date.now());
   scanList.splice(n, 1);
-  scanTake(i, how, true, false, { n: n, with: q.photo ? { photo: q.photo } : null });
+  // (v318.21: an answer that's a marker by its old code is its older cap; the marker as it is now, of a code that's one
+  // marker's now and another's old code, "Which R22?", its current cap; caps.js)
+  const cv =
+    how === 'old'
+      ? capCvRead(i, true, true)
+      : how === 'chosen' && /^old /.test(q.ask)
+        ? capCvRead(i, false, true)
+        : '';
+  scanTake(i, how, true, false, {
+    n: n,
+    with: Object.assign(q.photo ? { photo: q.photo } : {}, cv ? { cv: cv } : null),
+  });
   scanRender();
   return n;
 }
@@ -168,4 +215,21 @@ function scanFocusAfter(n, del) {
   // (v318.7 debug: with the list emptied, the count is empty too, and a screen reader heard nothing: the line that
   // says so instead, "Nothing yet. Each marker read joins this list")
   go(scanList.length ? $('scCount') : $('scEmpty') || $('scCount'));
+}
+// (v318.21) where a question's cap is, in words: "Near the top left · beside YR2 and R10" (its place in thirds of the
+// photo, and the codes printed on the two caps read nearest)
+function scanWhereWords(e) {
+  const w = e.where || [0.5, 0.5],
+    col = w[0] < 1 / 3 ? 'left' : w[0] > 2 / 3 ? 'right' : '',
+    row = w[1] < 1 / 3 ? 'top' : w[1] > 2 / 3 ? 'bottom' : '',
+    at =
+      row && col
+        ? 'Near the ' + row + ' ' + col
+        : row
+          ? 'Near the ' + row
+          : col
+            ? 'On the ' + col
+            : 'Near the middle',
+    nb = (e.near || []).filter(Boolean);
+  return at + (nb.length ? ' \u00b7 beside ' + nb.join(' and ') : '');
 }

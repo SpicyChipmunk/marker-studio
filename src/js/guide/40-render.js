@@ -303,16 +303,19 @@ function drawTag(g, tg, outlined, x, y, w, fs, col, same) {
 function codeLayout(g, l, m, o) {
   const c = comps[l],
     p = labelPos(l),
-    tg = (o.bt != null ? o.bt : brandsMixed()) ? bTag(m.brand) : '';
+    tg = (o.bt != null ? o.bt : brandsMixed()) ? bTag(m.brand) : '',
+    // (v318.21: the code on your cap, R6 for R213, and its * where another marker in the guide shows the same code;
+    // measured as drawn, so it fits its section)
+    t = capLabel(m);
   let fs = Math.max(o.base, Math.min(Math.sqrt(c.area) * 0.5, o.max || 30));
   const meas = function (f) {
-    const k1 = o.w + '|' + m.code,
+    const k1 = o.w + '|' + t,
       k2 = '700|' + tg;
     let a = _mw.get(k1),
       b = _mw.get(k2);
     if (a == null) {
       g.font = o.w + ' 100px ' + LFONT;
-      a = g.measureText(m.code).width;
+      a = g.measureText(t).width;
       _mw.set(k1, a);
     }
     if (b == null) {
@@ -337,6 +340,7 @@ function codeLayout(g, l, m, o) {
     y: p.y,
     cw: mm.cw,
     tg: tg,
+    t: t,
     gw: mm.gw,
     lw: lw,
     box: [x0 - lw - 2, p.y - fs * 0.9 - lw - 2, x0 + mm.tw + lw + 2, p.y + fs * 0.75 + lw + 2],
@@ -360,7 +364,7 @@ function drawCode(g, l, m, o) {
   if (o.halo) {
     g.lineWidth = L.lw * o.halo;
     g.strokeStyle = '#fff';
-    g.strokeText(m.code, x0, y);
+    g.strokeText(L.t, x0, y);
     if (L.tg) {
       const hx = x0 + L.cw + fs * TAG.gap,
         hh = fs * TAG.h + L.lw * o.halo;
@@ -371,8 +375,8 @@ function drawCode(g, l, m, o) {
     g.lineWidth = L.lw;
     g.strokeStyle = o.stroke;
   }
-  g.strokeText(m.code, x0, y);
-  g.fillText(m.code, x0, y);
+  g.strokeText(L.t, x0, y);
+  g.fillText(L.t, x0, y);
   if (L.tg)
     drawTag(g, L.tg, tagOutlined(m.brand), x0 + L.cw + fs * TAG.gap, y, L.gw, fs, o.tag || TAG, !!sameOf(m));
   g.textAlign = 'center';
@@ -416,9 +420,9 @@ function showTip(l, btns, quiet) {
     '<i style="background:' +
     esc(m.hex) +
     '"></i><b>' +
-    esc(m.code) +
+    esc(capLabel(m)) +
     '</b> ' +
-    esc(m.name || '') +
+    esc(capName(m) || '') +
     ' <span class="sftipbr">' +
     esc(m.brand) +
     '</span>' +
@@ -436,7 +440,7 @@ function showTip(l, btns, quiet) {
       : '');
   if (btns) {
     d.setAttribute('role', 'group');
-    d.setAttribute('aria-label', 'Section marker ' + m.code);
+    d.setAttribute('aria-label', 'Section marker ' + capLabel(m));
     d.addEventListener('pointerdown', function (e) {
       e.stopPropagation();
     });
@@ -459,7 +463,7 @@ function showTip(l, btns, quiet) {
   }
   if (ask) {
     d.setAttribute('role', 'group');
-    d.setAttribute('aria-label', 'Section of ' + m.code + ', not the marker that’s open');
+    d.setAttribute('aria-label', 'Section of ' + capLabel(m) + ', not the marker that’s open');
     d.addEventListener('pointerdown', function (e) {
       e.stopPropagation();
     });
@@ -511,7 +515,7 @@ function showTip(l, btns, quiet) {
     );
     return;
   }
-  if (!quiet) sayLive(m.code + ' ' + (m.name || '') + ', ' + m.brand + (pin ? ', pinned' : ''));
+  if (!quiet) sayLive(capCode(m) + ' ' + (capName(m) || '') + ', ' + m.brand + (pin ? ', pinned' : ''));
   if (!btns) tipT = setTimeout(hideTip, shadeOn() ? 3600 : 2200);
 }
 // (v318 review) the open row's marker, for "not Y28"
@@ -529,9 +533,9 @@ function askTipHTML(l) {
     h = hlM(),
     zn = h && h.mkey === m.mkey && hlZone != null ? ' in ' + esc(zoneName(hlZone)) : '';
   return (
-    (h ? '<span class="sftipnot">not ' + esc(h.code) + zn + '</span>' : '') +
+    (h ? '<span class="sftipnot">not ' + esc(capLabel(h)) + zn + '</span>' : '') +
     '<div class="sftipbtns"><button type="button" class="sftipbtn" data-a="open">Open ' +
-    esc(m.code) +
+    esc(capLabel(m)) +
     (zn ? ' in ' + esc(zoneName(zoneOf(l))) : '') +
     '</button><button type="button" class="sftipbtn sftipgo" data-a="tick">' +
     (colored[l] ? 'Untick it' : 'Tick it') +
@@ -1198,7 +1202,10 @@ function renderGuide() {
       (lk === 2 && locks[l] && sfmode !== 'color' ? 'L' : '') +
       (lk === 2 && +l === fcur && stepFaint(+l) ? 'f' : '') +
       // (a ✓ fading out: each step drawn again, v307)
-      (lk === 1 && dim ? 't' + tkStep(l) : '');
+      (lk === 1 && dim ? 't' + tkStep(l) : '') +
+      // (v318.21 debug: the label as drawn, the code on your cap and its *, and the same-code tag: another section's
+      // change can give an unchanged one its R22*, which an incremental draw had left as R22)
+      (lk === 2 ? '|' + capLabel(assign[l]) + (sameOf(assign[l]) ? '~' : '') : '');
   }
   const gk = [
     W,

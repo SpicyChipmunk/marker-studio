@@ -596,12 +596,12 @@ function gradStartHTML() {
 }
 function gradStartSay(gs, r) {
   const m = gs.cols[r];
-  return msay(m) + (m.name ? ' ' + m.name : '');
+  return msay(m) + (capName(m) ? ' ' + capName(m) : '');
 }
 // the colour it starts with, beside "Start colour:" ("R16 Light Salmon")
 function gradStartName(gs, r) {
   const m = gs.cols[r];
-  return '<b>' + mcodeHTML(m) + '</b>' + (m.name ? ' ' + esc(m.name) : '');
+  return '<b>' + mcodeHTML(m) + '</b>' + (capName(m) ? ' ' + esc(capName(m)) : '');
 }
 // once turned from the smoothest start, where the loop's biggest colour step now falls (nothing at the smoothest
 // start, where it is at the two ends of the flow)
@@ -827,13 +827,13 @@ function ctlPlanPattern() {
       '</button>' +
       (_pb
         ? '<button id="sfBrush" class="sfbrush" aria-label="Brush ' +
-          esc(_pb.brand + ' ' + _pb.code + ' ' + (_pb.name || '')) +
+          esc(_pb.brand + ' ' + capCode(_pb) + ' ' + (capName(_pb) || '')) +
           ', change"><i style="background:' +
           esc(_pb.hex) +
           '"></i><b>' +
-          esc(_pb.code) +
+          esc(capCode(_pb)) +
           '</b><span>' +
-          esc(_pb.name || '') +
+          esc(capName(_pb) || '') +
           '</span><em>Change</em></button>'
         : '') +
       '</div>' +

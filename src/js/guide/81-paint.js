@@ -182,7 +182,7 @@ function paintEnd(tap) {
     );
   }
   if (!s.n || !assignData) return;
-  const w = 'Painted ' + s.n + ' section' + (s.n === 1 ? '' : 's') + ' with ' + s.m.code;
+  const w = 'Painted ' + s.n + ' section' + (s.n === 1 ? '' : 's') + ' with ' + capLabel(s.m);
   normalizeTones();
   renderGuide();
   renderControls();

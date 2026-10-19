@@ -561,9 +561,9 @@ function lowLineHTML() {
     '</span>' +
     (to
       ? '<button type="button" id="sfLowSwap" class="sflink" aria-label="Swap ' +
-        esc(r.m.code) +
+        esc(capLabel(r.m)) +
         ' for ' +
-        esc(to.code) +
+        esc(capLabel(to)) +
         '">Swap it</button>'
       : '') +
     '<button type="button" id="sfLowX" class="sfheldx" aria-label="Close">' +
@@ -607,7 +607,7 @@ function lowSwap(k) {
   normalizeTones();
   renderGuide();
   renderControls();
-  const why = 'Swapped ' + om.code + ' for ' + to.code + ' in ' + nWord(secs.length, 'section');
+  const why = 'Swapped ' + capLabel(om) + ' for ' + capLabel(to) + ' in ' + nWord(secs.length, 'section');
   planCommit(why);
   ctlRefocus('#sfTab-' + gTab);
   // (v314.1) said, with the marker it now takes and an Undo, as Mark all is: the line went and only the picture changed

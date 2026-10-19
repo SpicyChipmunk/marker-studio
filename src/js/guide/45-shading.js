@@ -1392,7 +1392,7 @@ function shadeNoteHTML() {
       w
         .slice(0, 8)
         .map(function (m) {
-          const lab = esc((mixed ? bTag(m.brand) + ' ' : '') + m.code);
+          const lab = esc((mixed ? bTag(m.brand) + ' ' : '') + capCode(m));
           return api.wishChip
             ? api.wishChip(
                 m.mkey,
@@ -1964,8 +1964,9 @@ function brandsMixed() {
   mixCache();
   return _mixVal || _mixColl;
 }
+// (v318.21: the code on your cap, with a * when another marker in the guide shows the same code: capLabel)
 function mcode(m) {
-  return (brandsMixed() ? bTag(m.brand) + ' ' : '') + m.code;
+  return (brandsMixed() ? bTag(m.brand) + ' ' : '') + capLabel(m);
 }
 // (v307) the brand as a badge for the eye, as Colour along's rows show it (hidden from screen readers), or ''
 function mbadge(m) {
@@ -1974,14 +1975,18 @@ function mbadge(m) {
 // as HTML: the badge is for the eye, a screen reader hears the brand's name (and for speech: msay). v307: the letter
 // was bare ("O R46"), and read out as a letter
 function mcodeHTML(m) {
-  return (brandsMixed() ? mbadge(m) + '<span class="sfsr">' + esc(m.brand) + ' </span>' : '') + esc(m.code);
+  return (
+    (brandsMixed() ? mbadge(m) + '<span class="sfsr">' + esc(m.brand) + ' </span>' : '') +
+    esc(capCode(m)) +
+    (capStar(m) ? '<span aria-hidden="true">*</span><span class="sfsr">, your older cap,</span>' : '')
+  );
 }
 // (for something hidden from screen readers, which hear msay's words elsewhere: the badge and the code)
 function mcodeEye(m) {
-  return mbadge(m) + esc(m.code);
+  return mbadge(m) + esc(capLabel(m));
 }
 function msay(m) {
-  return (brandsMixed() ? m.brand + ' ' : '') + m.code;
+  return (brandsMixed() ? m.brand + ' ' : '') + capCode(m) + (capStar(m) ? ', your older cap' : '');
 }
 /* (v306) Same code, two brands. 18 of Ben's codes are both an Ohuhu and a Copic marker (Y26 is Ohuhu Light Gold and
    Copic Mustard), and a guide can use both: a Gradient at one marker per section, Random, zones each laying their
@@ -1995,14 +2000,18 @@ function codeNorm(c) {
     .toUpperCase()
     .replace(/[-.\s]/g, '');
 }
-// { marker key: [the guide's markers of the same code in another brand] }, for every such marker in the guide
+// { b: {marker key: [the guide's markers of the same code in another brand]}, s: {marker key: [the same brand's]} },
+// for every such marker in the guide. (v318.21) By the code on your cap (caps.js): an older cap's R22, RV17 now, and
+// the R22 of now, both Ohuhu, are two markers that show the same code: the older cap's labels carry a *, and both
+// are named by their caps' names, "R22 Ballet Pink cap", where the code alone would leave you to guess
 function sameCodeScan() {
   const by = {},
-    out = {};
-  if (!assignData) return out;
+    out = {},
+    same = {};
+  if (!assignData) return { b: out, s: same };
   const put = function (m) {
       if (!m || !m.mkey || !m.code) return;
-      const k = codeNorm(m.code);
+      const k = codeNorm(capCode(m));
       (by[k] || (by[k] = {}))[m.mkey] = m;
     },
     sh = shadeOn();
@@ -2023,12 +2032,17 @@ function sameCodeScan() {
     if (ms.length < 2) continue;
     ms.forEach(function (m) {
       const o = ms.filter(function (x) {
-        return x.brand !== m.brand;
-      });
+          return x.brand !== m.brand;
+        }),
+        // (other markers, by their codes now: the same marker held twice isn't two)
+        s = ms.filter(function (x) {
+          return x.brand === m.brand && x.code !== m.code;
+        });
       if (o.length) out[m.mkey] = o;
+      if (s.length) same[m.mkey] = s;
     });
   }
-  return out;
+  return { b: out, s: same };
 }
 // (worked out once for everything drawn in one go: every label asks. Forgotten at each redraw of the picture, where
 // a change to the markers always ends, and once the task that asked is over)
@@ -2047,19 +2061,47 @@ function sameCodeReset() {
 }
 // the guide's other markers with m's code (another brand), or null
 function sameOf(m) {
-  const o = m && assignData ? sameCodes()[m.mkey] : null;
+  const o = m && assignData ? sameCodes().b[m.mkey] : null;
   return o && o.length ? o : null;
 }
-// "Ohuhu Y26" (the others with m's code), or ''
+// (v318.21) the guide's other markers of m's brand that show the same code (an older cap's and one of now), or null
+function capSame(m) {
+  // (a marker as the guide holds it, or by its index or key: caps.js capIdx)
+  const k = m == null ? null : typeof m === 'object' ? m.mkey : capIdx(m) != null ? mkey(capIdx(m)) : null,
+    o = k && assignData ? sameCodes().s[k] : null;
+  return o && o.length ? o : null;
+}
+// an older cap's code shown where another marker in the guide shows the same: its * (the labels, keys, rows)
+function capStar(m) {
+  return !!capSame(m) && capIsOld(m);
+}
+function capLabel(m) {
+  return capCode(m) + (capStar(m) ? '*' : '');
+}
+// a key's name for a marker: your cap's, and an older cap's code as it is now ("Rose Red, now R213")
+function capKeyName(m) {
+  const n = capName(m),
+    w = capNow(m);
+  return n + (w ? (n ? ', ' : '') + w : '');
+}
+// "Ohuhu Y26" (the others with m's code), or ''; (v318.21) of the same brand, by their caps: "R22 Ballet Pink cap"
 function sameName(m) {
-  const o = sameOf(m);
-  return o
-    ? o
-        .map(function (x) {
-          return x.brand + ' ' + x.code;
-        })
-        .join(' or ')
-    : '';
+  const o = sameOf(m),
+    s = capSame(m);
+  return []
+    .concat(
+      o
+        ? o.map(function (x) {
+            return x.brand + ' ' + capLabel(x);
+          })
+        : [],
+      s
+        ? s.map(function (x) {
+            return capLabel(x) + ' ' + capName(x) + ' cap';
+          })
+        : [],
+    )
+    .join(' or ');
 }
 // "1 E69 › 2 E713 › 3 R215" (or "… › 3 2nd coat") for a colour's tones t (a section's: shadeSec; Main's if not
 // given) (as HTML the letters and › are hidden from screen readers, which hear "highlight R11, base R16, shadow R28")
@@ -2229,7 +2271,7 @@ function stepText1(l, bits, cd, html) {
     t = shadeSec(l);
   if (!t || bits === shadeReq(l)) return null;
   const nm = function (x) {
-    return cd(x) + (x.name ? ' ' + (html ? esc(x.name) : x.name) : '');
+    return cd(x) + (capName(x) ? ' ' + (html ? esc(capName(x)) : capName(x)) : '');
   };
   if (bits === 4)
     return t.dark

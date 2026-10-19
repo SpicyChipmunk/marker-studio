@@ -1,0 +1,931 @@
+{
+ "Ohuhu": {
+  "B015": [
+   "Pebble Blue"
+  ],
+  "B02": [
+   "Mint Blue"
+  ],
+  "B03": [
+   "Frost Blue"
+  ],
+  "B04": [
+   "Baby Blue"
+  ],
+  "B05": [
+   "Robin's Egg Blue"
+  ],
+  "B06": [
+   "Crystal Blue"
+  ],
+  "B08": [
+   "Pastel Blue"
+  ],
+  "B111": [
+   "Cerulean Blue"
+  ],
+  "B114": [
+   "Indian Blue"
+  ],
+  "B115": [
+   "Royal Blue"
+  ],
+  "B21": [
+   "Blue Grey 02"
+  ],
+  "B27": [
+   "Blue Grey 03"
+  ],
+  "B28": [
+   "Light Blue"
+  ],
+  "B310": [
+   "Blue Grey II 3"
+  ],
+  "B311": [
+   "Blue Grey 06"
+  ],
+  "B315": [
+   "Marine Blue"
+  ],
+  "B411": [
+   "Blue Grey II 5"
+  ],
+  "B412": [
+   "Blue Grey 09"
+  ],
+  "B415": [
+   "Blue Grey II 09"
+  ],
+  "BG011": [
+   "Peacock Blue"
+  ],
+  "BG04": [
+   "Pale Aqua Mint"
+  ],
+  "BG05": [
+   "Turquoise Blue"
+  ],
+  "BG09": [
+   "Bright Blue"
+  ],
+  "BG114": [
+   "Cloud Blue"
+  ],
+  "BG19": [
+   "Aqua Blue"
+  ],
+  "BG21": [
+   "Jade Green"
+  ],
+  "BG211": [
+   "Pond Green"
+  ],
+  "BG212": [
+   "Mint Green Light"
+  ],
+  "BG24": [
+   "Green Shadow"
+  ],
+  "BG310": [
+   "Horizon Green"
+  ],
+  "BG311": [
+   "Turquoise Green Light"
+  ],
+  "BG315": [
+   "Forest Green"
+  ],
+  "BGY00": [
+   "Cool Grey 05"
+  ],
+  "BGY02": [
+   "Pigeon Blue"
+  ],
+  "BGY13": [
+   "Green Grey 06"
+  ],
+  "BGY15": [
+   "Green Grey 5"
+  ],
+  "BGY18": [
+   "Green Grey 9"
+  ],
+  "BGY24": [
+   "Cool Grey II 07"
+  ],
+  "BGY25": [
+   "Cool Grey II 8"
+  ],
+  "BGY35": [
+   "Cool Grey II 9"
+  ],
+  "BGY38": [
+   "Neutral Grey 9"
+  ],
+  "BV013": [
+   "Capri Blue"
+  ],
+  "BV05": [
+   "Lavender Mist"
+  ],
+  "BV08": [
+   "Cornflower Blue"
+  ],
+  "BV115": [
+   "Dark Lavender"
+  ],
+  "BV15": [
+   "Lavender Blue"
+  ],
+  "BV210": [
+   "Dark Slate Blue"
+  ],
+  "BV28": [
+   "Blue Bell"
+  ],
+  "BV29": [
+   "Clematis"
+  ],
+  "BV31": [
+   "Blue Grey 3"
+  ],
+  "BV311": [
+   "Vienna Blue"
+  ],
+  "BV312": [
+   "Ultramarine"
+  ],
+  "BV314": [
+   "Cobalt Blue"
+  ],
+  "BV315": [
+   "Napoleon Blue"
+  ],
+  "BV32": [
+   "Pale Grayish Blue"
+  ],
+  "BV35": [
+   "Pale Blue"
+  ],
+  "BV39": [
+   "Hyacinth"
+  ],
+  "BV414": [
+   "Vivid Blue"
+  ],
+  "BV45": [
+   "Phthalo Blue"
+  ],
+  "BV48": [
+   "Smoky Blue"
+  ],
+  "BV514": [
+   "Prussian Blue"
+  ],
+  "BV515": [
+   "Marina"
+  ],
+  "BV58": [
+   "Aquamarine"
+  ],
+  "CG01": [
+   "Neutral Grey 02"
+  ],
+  "CG02": [
+   "Neutral Grey 03"
+  ],
+  "CG17": [
+   "Cool Grey II 5"
+  ],
+  "CG18": [
+   "Cool Grey II 4"
+  ],
+  "CG24": [
+   "Neutral Grey 05"
+  ],
+  "CG25": [
+   "Neutral Grey 03"
+  ],
+  "CG28": [
+   "Neutral Grey 07"
+  ],
+  "E011": [
+   "Dragon Well Tea"
+  ],
+  "E05": [
+   "Lime Green"
+  ],
+  "E06": [
+   "Vert Celadon"
+  ],
+  "E111": [
+   "Yellow Grey 100"
+  ],
+  "E14": [
+   "Yellow Grey 04"
+  ],
+  "E19": [
+   "Yellow Grey 08"
+  ],
+  "E211": [
+   "Khaki"
+  ],
+  "E212": [
+   "Dull Yellow"
+  ],
+  "E22": [
+   "Dim Green"
+  ],
+  "E26": [
+   "Deep Cream"
+  ],
+  "E313": [
+   "Fennel Seed"
+  ],
+  "E415": [
+   "Raw Umber"
+  ],
+  "E44": [
+   "Soft Sun"
+  ],
+  "E47": [
+   "Hazelnuts"
+  ],
+  "E49": [
+   "Bettercup Yellow"
+  ],
+  "E511": [
+   "Mahogany"
+  ],
+  "E513": [
+   "Burnt Sienna"
+  ],
+  "E514": [
+   "Chocolate"
+  ],
+  "E515": [
+   "Chestnut Brown"
+  ],
+  "E58": [
+   "Caribe Cocoa"
+  ],
+  "E59": [
+   "Yellow Ochre"
+  ],
+  "E614": [
+   "Copper"
+  ],
+  "E615": [
+   "Natural Oak"
+  ],
+  "E66": [
+   "Thin Persimmon"
+  ],
+  "E69": [
+   "Reddish Brass"
+  ],
+  "E711": [
+   "Pale Mauve"
+  ],
+  "E713": [
+   "Clove"
+  ],
+  "E75": [
+   "Honey"
+  ],
+  "E81": [
+   "Pale Cherry Pink"
+  ],
+  "E814": [
+   "Colocasia Tonoimo"
+  ],
+  "E85": [
+   "Lipstick Natural"
+  ],
+  "E914": [
+   "Pecan"
+  ],
+  "E97": [
+   "Cocoa Brown"
+  ],
+  "FY02": [
+   "Flourescent Red"
+  ],
+  "G013": [
+   "Dolphin Blue"
+  ],
+  "G112": [
+   "Meadow Green"
+  ],
+  "G114": [
+   "Turquoise Ink Blue"
+  ],
+  "G210": [
+   "Viridian"
+  ],
+  "G24": [
+   "Light Holly Green"
+  ],
+  "G310": [
+   "Vivid Green"
+  ],
+  "G311": [
+   "Ocean Green"
+  ],
+  "G315": [
+   "Turquoise Green"
+  ],
+  "G316": [
+   "Deep Green"
+  ],
+  "G34": [
+   "Yellowish Green"
+  ],
+  "G41": [
+   "Mignonette"
+  ],
+  "G43": [
+   "Spectrum Green"
+  ],
+  "G44": [
+   "Leaf Green"
+  ],
+  "G47": [
+   "Horseradish"
+  ],
+  "G48": [
+   "Lettuce Green"
+  ],
+  "G49": [
+   "Pale Green"
+  ],
+  "GG03": [
+   "Green Grey 1"
+  ],
+  "GG05": [
+   "Green Grey 3"
+  ],
+  "GG07": [
+   "Toner Gray"
+  ],
+  "GG10": [
+   "Cool Grey II 2"
+  ],
+  "GG11": [
+   "Deep Cool Grey"
+  ],
+  "GG12": [
+   "Cool Grey 07"
+  ],
+  "GG15": [
+   "Neutral Grey 7"
+  ],
+  "GG16": [
+   "Neutral Grey 06"
+  ],
+  "GG24": [
+   "Green Grey 02"
+  ],
+  "GG25": [
+   "Light Jade Green Grey"
+  ],
+  "R012": [
+   "Agate"
+  ],
+  "R013": [
+   "Rouge Orange"
+  ],
+  "R014": [
+   "Vermillion"
+  ],
+  "R015": [
+   "Coral Red"
+  ],
+  "R016": [
+   "Bright Red"
+  ],
+  "R112": [
+   "Zinnober"
+  ],
+  "R12": [
+   "Blush"
+  ],
+  "R14": [
+   "Spring Orange"
+  ],
+  "R15": [
+   "Sardonyx"
+  ],
+  "R16": [
+   "Fruit Pink"
+  ],
+  "R210": [
+   "Coral Pink"
+  ],
+  "R211": [
+   "Strong Red"
+  ],
+  "R212": [
+   "Lipstick Red"
+  ],
+  "R213": [
+   "Rose Red"
+  ],
+  "R215": [
+   "Geranium"
+  ],
+  "R23": [
+   "Shadow Pink"
+  ],
+  "R26": [
+   "Bougainvillaea"
+  ],
+  "R27": [
+   "Light Prawn"
+  ],
+  "R28": [
+   "Pastel Rose"
+  ],
+  "R310": [
+   "Strawberry Pink"
+  ],
+  "R312": [
+   "Crimson"
+  ],
+  "R410": [
+   "Cadmium Red"
+  ],
+  "R412": [
+   "Deep Red"
+  ],
+  "R413": [
+   "Cherry Pink"
+  ],
+  "R46": [
+   "Rose Buvard"
+  ],
+  "R48": [
+   "Coralessence"
+  ],
+  "R50": [
+   "Grayish Cherry"
+  ],
+  "R513": [
+   "Cardinal"
+  ],
+  "R514": [
+   "Old Red"
+  ],
+  "R54": [
+   "Antique Fuchsia"
+  ],
+  "R56": [
+   "Baby Blossoms"
+  ],
+  "R57": [
+   "Currant"
+  ],
+  "R59": [
+   "Garnet"
+  ],
+  "R612": [
+   "Argyle Purple"
+  ],
+  "R615": [
+   "Dark Purple Grey"
+  ],
+  "R69": [
+   "Colocasia Torino"
+  ],
+  "RV02": [
+   "Pale Pink"
+  ],
+  "RV04": [
+   "Light Hot Pink"
+  ],
+  "RV05": [
+   "Light Pink"
+  ],
+  "RV07": [
+   "Lavender Pink"
+  ],
+  "RV09": [
+   "Sakura Pink"
+  ],
+  "RV111": [
+   "Vivid Pink"
+  ],
+  "RV17": [
+   "Dark Blush"
+  ],
+  "RV18": [
+   "Pale Purple"
+  ],
+  "RV19": [
+   "Cerise"
+  ],
+  "RV212": [
+   "Vivid Reddish Purple"
+  ],
+  "RV23": [
+   "Queen Pink"
+  ],
+  "RV25": [
+   "Hollyhock"
+  ],
+  "RV28": [
+   "Dark Orchid"
+  ],
+  "RV29": [
+   "Apricot Pink"
+  ],
+  "RV310": [
+   "Red Onion"
+  ],
+  "RV311": [
+   "Light Violet"
+  ],
+  "RV314": [
+   "Vivid Purple"
+  ],
+  "RV316": [
+   "Deep Violet"
+  ],
+  "RV32": [
+   "Begonia"
+  ],
+  "RV34": [
+   "Pale Lilac"
+  ],
+  "RV35": [
+   "Mallow"
+  ],
+  "RV39": [
+   "Bright Pink"
+  ],
+  "RV514": [
+   "Bronze Purple"
+  ],
+  "RV515": [
+   "Peony"
+  ],
+  "RV57": [
+   "Deep Lilac"
+  ],
+  "V010": [
+   "Lavender"
+  ],
+  "V013": [
+   "Signal Violet"
+  ],
+  "V015": [
+   "Dark Violet"
+  ],
+  "V016": [
+   "Deep Purple"
+  ],
+  "V08": [
+   "Pearl Violet"
+  ],
+  "V112": [
+   "Eggplant Purple"
+  ],
+  "V13": [
+   "Mauve Shadow"
+  ],
+  "V14": [
+   "Mauve"
+  ],
+  "V18": [
+   "Pastel Violet"
+  ],
+  "V216": [
+   "Pansy"
+  ],
+  "V22": [
+   "Viola"
+  ],
+  "V29": [
+   "Amethyst"
+  ],
+  "V32": [
+   "Rain Flower Purple"
+  ],
+  "V34": [
+   "Prune"
+  ],
+  "V38": [
+   "Dark Violet Light"
+  ],
+  "V414": [
+   "Gentian Violet"
+  ],
+  "V416": [
+   "Aubergine"
+  ],
+  "V46": [
+   "Light Lavender"
+  ],
+  "WG01": [
+   "Red Grey 11"
+  ],
+  "WG04": [
+   "Red Grey 12"
+  ],
+  "WG06": [
+   "Red Grey 150"
+  ],
+  "WG08": [
+   "Red Grey 08"
+  ],
+  "WG10": [
+   "Cool Grey II 0"
+  ],
+  "WG26": [
+   "Warm Grey 3"
+  ],
+  "WG27": [
+   "Warm Grey 4"
+  ],
+  "WG37": [
+   "Warm Grey 9"
+  ],
+  "WG38": [
+   "Warm Grey 13"
+  ],
+  "Y00": [
+   "Primrose"
+  ],
+  "Y03": [
+   "Crescent Yellow"
+  ],
+  "Y06": [
+   "Calamansi"
+  ],
+  "Y07": [
+   "Anise"
+  ],
+  "Y110": [
+   "Deep Lemon"
+  ],
+  "Y111": [
+   "Sunflower"
+  ],
+  "Y17": [
+   "Lightning Yellow"
+  ],
+  "Y19": [
+   "Acid Yellow"
+  ],
+  "Y210": [
+   "Yellow"
+  ],
+  "Y212": [
+   "Grain Yellow"
+  ],
+  "Y213": [
+   "Marigold"
+  ],
+  "Y215": [
+   "Shallow Orange Cafe"
+  ],
+  "Y216": [
+   "Dark Yellow"
+  ],
+  "Y26": [
+   "Barium Yellow"
+  ],
+  "Y27": [
+   "Pastel Yellow"
+  ],
+  "Y28": [
+   "Lemon Yellow"
+  ],
+  "Y311": [
+   "Pale Ocre"
+  ],
+  "Y34": [
+   "Prmrose"
+  ],
+  "Y39": [
+   "Yellow Dahlia"
+  ],
+  "Y410": [
+   "Yellowish Brown"
+  ],
+  "Y412": [
+   "Deep Orange"
+  ],
+  "Y413": [
+   "Chamois"
+  ],
+  "Y415": [
+   "Yellow Orche"
+  ],
+  "Y416": [
+   "Deep Teak"
+  ],
+  "Y42": [
+   "Grayish Yellow"
+  ],
+  "Y43": [
+   "Milk White"
+  ],
+  "Y46": [
+   "Moccasin"
+  ],
+  "Y48": [
+   "Primary Yellow"
+  ],
+  "Y49": [
+   "Nugget"
+  ],
+  "Y55": [
+   "Buttercup Yellow"
+  ],
+  "Y56": [
+   "Light Reddish Orange"
+  ],
+  "Y59": [
+   "Mustard"
+  ],
+  "Y611": [
+   "Brown Grey"
+  ],
+  "Y62": [
+   "Sand White"
+  ],
+  "Y69": [
+   "Brick Beige"
+  ],
+  "YG015": [
+   "Bronze Green"
+  ],
+  "YG07": [
+   "Celadon Green"
+  ],
+  "YG111": [
+   "Celery Yellow"
+  ],
+  "YG112": [
+   "Lemon Green"
+  ],
+  "YG113": [
+   "Limeade"
+  ],
+  "YG211": [
+   "Absinthe"
+  ],
+  "YG212": [
+   "Petits Pois"
+  ],
+  "YG215": [
+   "Dark Olive"
+  ],
+  "YG35": [
+   "Willow"
+  ],
+  "YG413": [
+   "Pine Tree Green"
+  ],
+  "YG414": [
+   "Deep Olive Green"
+  ],
+  "YG415": [
+   "Chromium Oxide Green"
+  ],
+  "YG610": [
+   "May Green"
+  ],
+  "YG611": [
+   "Olive Green"
+  ],
+  "YG66": [
+   "Acid Green"
+  ],
+  "YGY02": [
+   "Red Grey 03"
+  ],
+  "YGY05": [
+   "Red Grey 05"
+  ],
+  "YGY11": [
+   "Warm Grey 1"
+  ],
+  "YGY13": [
+   "Warm Grey 05"
+  ],
+  "YGY17": [
+   "Warm Grey 07"
+  ],
+  "YGY18": [
+   "Warm Grey 09"
+  ],
+  "YR00": [
+   "Pale Fruit Pink"
+  ],
+  "YR01": [
+   "Milky White"
+  ],
+  "YR015": [
+   "Tiger Lily"
+  ],
+  "YR03": [
+   "Yellowish Shade"
+  ],
+  "YR06": [
+   "Eggshell White"
+  ],
+  "YR07": [
+   "Salmon Pink"
+  ],
+  "YR09": [
+   "Cadmium Yellow"
+  ],
+  "YR11": [
+   "Mellow Peach"
+  ],
+  "YR111": [
+   "Apricot"
+  ],
+  "YR17": [
+   "Quince"
+  ],
+  "YR19": [
+   "Chrome Orange"
+  ],
+  "YR213": [
+   "Lipstick Orange"
+  ],
+  "YR214": [
+   "Brown"
+  ],
+  "YR215": [
+   "Praline"
+  ],
+  "YR25": [
+   "Powdery Orange"
+  ],
+  "YR29": [
+   "Salmon"
+  ],
+  "YR312": [
+   "Dark Suntan"
+  ],
+  "YR314": [
+   "Leather"
+  ],
+  "YR33": [
+   "Barely Beige"
+  ],
+  "YR34": [
+   "Powder Pink"
+  ],
+  "YR37": [
+   "Morin"
+  ],
+  "YR38": [
+   "Reddish Yellow"
+  ],
+  "YR39": [
+   "Rose Beige"
+  ],
+  "YR45": [
+   "Pink Flamingo"
+  ],
+  "YR47": [
+   "Pear Color"
+  ],
+  "YR511": [
+   "Peach Pie"
+  ],
+  "YR513": [
+   "Cadmium Orange"
+  ],
+  "YR515": [
+   "Terra Cotta"
+  ],
+  "YR52": [
+   "Carmine Red"
+  ],
+  "YR54": [
+   "Light Salmon Pink"
+  ],
+  "YR55": [
+   "Tea Rose"
+  ],
+  "YR56": [
+   "Light Tea Rose"
+  ],
+  "YR57": [
+   "Black Brown"
+  ],
+  "YR58": [
+   "Chocolate Pink"
+  ],
+  "YR59": [
+   "Light Orange"
+  ]
+ }
+}

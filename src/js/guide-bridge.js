@@ -1029,6 +1029,11 @@ function backupAll(btnId) {
               owned: [...state.owned],
               wish: state.wish,
               ink: state.ink,
+              // (v318.21: what each marker's cap says, and the setting for the rest: caps.js)
+              cap: state.cap,
+              capDef: state.capDef,
+              capQ: state.capQ,
+              capOffer: state.capOffer,
               buyBrands: state.buyBrands,
               saved: state.saved.filter(function (s) {
                 return s.type !== 'guide';
@@ -1178,24 +1183,41 @@ function mkSnap() {
     }),
     ink: Object.assign({}, state.ink),
     buy: state.buyBrands == null ? null : state.buyBrands.slice(),
+    cap: Object.assign({}, state.cap),
+    capDef: state.capDef,
+    capQ: state.capQ,
   };
 }
 // the markers, To buy, ink and Brands I'd buy now, as a short fingerprint
 function mkSig(s) {
   s = s || mkSnap();
   return leaveHash(
-    JSON.stringify([
-      s.owned.slice().sort(),
-      s.wish.map(function (w) {
-        return w.k;
-      }),
-      Object.keys(s.ink)
-        .sort()
-        .map(function (k) {
-          return k + s.ink[k];
+    JSON.stringify(
+      [
+        s.owned.slice().sort(),
+        s.wish.map(function (w) {
+          return w.k;
         }),
-      s.buy,
-    ]),
+        Object.keys(s.ink)
+          .sort()
+          .map(function (k) {
+            return k + s.ink[k];
+          }),
+        s.buy,
+      ].concat(
+        // (v318.21: what caps say, only when there's any: a fingerprint kept by v318.20 still matches)
+        (s.cap && Object.keys(s.cap).length) || s.capDef
+          ? [
+              Object.keys(s.cap || {})
+                .sort()
+                .map(function (k) {
+                  return k + s.cap[k];
+                }),
+              s.capDef || '',
+            ]
+          : [],
+      ),
+    ),
   );
 }
 function preRestoreGet() {
@@ -1258,17 +1280,26 @@ function restoreUndo(snap) {
   state.wish = cleanWish(snap.wish);
   state.ink = cleanInk(snap.ink);
   state.buyBrands = cleanBuy(snap.buy);
+  if (snap.cap) {
+    state.cap = cleanCap(snap.cap);
+    state.capDef = snap.capDef === 'old' ? 'old' : '';
+    state.capQ = snap.capQ ? 1 : 0;
+  }
   if (!save(true)) {
     state.owned = new Set(was.owned);
     state.wish = was.wish;
     state.ink = was.ink;
     state.buyBrands = was.buy;
+    state.cap = was.cap;
+    state.capDef = was.capDef;
     toast('Couldn’t put your markers back — this browser’s storage is full.', 6000);
     return false;
   }
   preRestoreDrop();
   wishChanged();
   if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
+  // (v318.21 debug: the caps put back: the open guide's labels drawn again)
+  if (snap.cap) capChanged();
   if (typeof buySumSync === 'function') buySumSync();
   fullRender();
   preRestoreRender();
@@ -1322,6 +1353,8 @@ function applyCollectionBackup(o, fts, replace) {
       wish: state.wish.slice(),
       ink: Object.assign({}, state.ink),
       buy: state.buyBrands,
+      cap: Object.assign({}, state.cap),
+      capDef: state.capDef,
     },
     snap = mkSnap(),
     sig0 = mkSig(snap),
@@ -1331,6 +1364,8 @@ function applyCollectionBackup(o, fts, replace) {
       state.wish = was.wish;
       state.ink = was.ink;
       state.buyBrands = was.buy;
+      state.cap = was.cap;
+      state.capDef = was.capDef;
       if (typeof buySumSync === 'function') buySumSync();
       if (savedOverlay.classList.contains('on')) renderSaved();
       return { failed: true };
@@ -1360,7 +1395,8 @@ function applyCollectionBackup(o, fts, replace) {
   if (added || (!same && (!own.size || (state.owned.size && !replace)))) {
     // (v305: your markers stay, and the backup's To buy and ink marks merge in for them; its Brands I'd buy is taken
     // only when yours is automatic. Before, all three were dropped.)
-    const wr = wishRestore(o, false, state.owned);
+    const wr = wishRestore(o, false, state.owned),
+      capN = capRestore(o, false);
     // (Add: your To buy entries for the markers it brought come off, unless marked running low or dry, its marks
     // having come in first)
     if (got.size)
@@ -1374,13 +1410,14 @@ function applyCollectionBackup(o, fts, replace) {
     }
     const n = mergeBackupPals(pals),
       ink = wr.low + wr.dry;
-    if (n || wr.wish || ink || bb || added) {
+    if (n || wr.wish || ink || bb || added || capN) {
       if (!save(true)) return back();
       if (wr.wish || ink || added) wishChanged();
       if (bb || added) {
         if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
         if (typeof buySumSync === 'function') buySumSync();
       }
+      if (capN) capChanged();
       fullRender();
     }
     const r = { mk: false, pals: n, wish: wr.wish, low: wr.low, dry: wr.dry, buy: bb };
@@ -1390,6 +1427,7 @@ function applyCollectionBackup(o, fts, replace) {
   if (!same) state.owned = own;
   // (the same markers: the lists merge as for Keep mine, v305)
   const wr = wishRestore(o, !same, same ? state.owned : null);
+  if (capRestore(o, !same)) capChanged();
   // (Brands I'd buy goes with the collection it was chosen for, when the file has it, v304)
   let bb = false;
   if (o && 'buyBrands' in o) {

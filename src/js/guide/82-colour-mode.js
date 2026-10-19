@@ -241,7 +241,7 @@ function renderFocusMarkers() {
         '"><span class="fmc">' +
         // (v307: a screen reader hears the brand too)
         (brandsMixed() ? '<span class="sfsr">' + esc(e.m.brand) + ' </span>' : '') +
-        esc(e.m.code) +
+        esc(capLabel(e.m)) +
         '</span>' +
         (e.z != null ? '<span class="fmz">' + esc(zoneName(e.z)) + '</span>' : '') +
         '<span class="fmn">' +

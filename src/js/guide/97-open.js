@@ -826,6 +826,20 @@ function setCollection(list) {
   // (v310.2) an open guide follows at once, as opening it again would
   standInsSync();
 }
+// (v318.21) what a marker's cap says changed (caps.js): an open guide's labels, keys and rows show the codes again
+function capChanged() {
+  sameCodeReset();
+  // (the labels' codes change with the markers as they are: the picture drawn again whole, not only what's changed)
+  _rg = null;
+  if (!assignData) return;
+  if (document.getElementById('sfPick') && root.style.display !== 'none') {
+    if (sfmode === 'guide' || sfmode === 'color') {
+      renderGuide();
+      renderControls();
+      if (sfmode === 'color') updateProgress();
+    }
+  } else _standDraw = true;
+}
 // What opening a guide says of markers now dry or no longer yours (nd, ng: how many of each)
 function standInSay(nd, ng) {
   const pl = function (k, w) {

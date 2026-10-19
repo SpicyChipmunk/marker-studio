@@ -308,8 +308,8 @@ function ocrForeign(text, names, brand) {
   }
   const V = _ocrVocab[b],
     is = [].concat(...(scanRead(text, brand).codes || []).filter((c) => c.opts.length).map((c) => c.opts));
-  if (!is.length || is.some((i) => ocrNameAgrees(i, names))) return false;
-  const own = [].concat(...is.map((i) => ocrWordsOf(COLORS[i].name)));
+  if (!is.length || is.some((i) => ocrNameAgrees(i, names, text))) return false;
+  const own = [].concat(...is.map((i) => ocrWordsOf(ocrNameOf(i, text))));
   return ocrWordsOf(names.join(' ')).some(
     (w) => V.has(w) && !own.some((o) => o.indexOf(w) >= 0 || w.indexOf(o) >= 0),
   );
@@ -319,7 +319,7 @@ function ocrExact(text, names, brand) {
   const cs = (scanRead([text].concat(names).join(' '), brand).codes || []).filter((c) => c.opts.length);
   return (
     !cs.length ||
-    cs.every((c) => c.named || ocrAsRead(text, c.code) || c.opts.some((i) => ocrNameAgrees(i, names)))
+    cs.every((c) => c.named || ocrAsRead(text, c.code) || c.opts.some((i) => ocrNameAgrees(i, names, text)))
   );
 }
 // (v318.2) a question that's noise: only a name read, a one-word name that's a word of two or more of its brand's other
@@ -364,7 +364,28 @@ function ocrWordsOf(t) {
     .split(/[^a-z]+/)
     .filter((w) => w.length >= 4 && !OCR_PLAIN.has(w));
 }
-function ocrNameAgrees(i, names) {
-  const mine = ocrWordsOf(COLORS[i].name);
+// (v318.19) a marker's name, and with the code read (text) its OLD code, the names on its older caps too: "R6" with
+// "Rose Red" is R213's old cap; "R213" with "Rose Red" isn't (that's Copic R85's name)
+function ocrNameOf(i, text) {
+  const c = COLORS[i];
+  if (!c.cap || !text) return c.name || '';
+  const k = scanKey(text);
+  return (scanIndex().byOld.get(k) || []).indexOf(i) >= 0 ? scanNamesOf(i).join(' ') : c.name || '';
+}
+// (v318.19 debug) with the code read (text) as i's OLD code, one of the names on i's older caps read whole: plain
+// words count here ("Y11 Brown Grey", "BG2 Deep Green": every word of them is one every family has, which
+// ocrNameAgrees leaves out)
+function ocrCapNamed(i, names, text) {
+  const c = COLORS[i];
+  if (!c.cap || !text || !names || !names.length) return false;
+  if ((scanIndex().byOld.get(scanKey(text)) || []).indexOf(i) < 0) return false;
+  const read = new Set(scanWords(names.join(' ')));
+  return c.cap.some((nm) => {
+    const ws = scanWords(nm);
+    return (ws.length > 1 || (ws[0] || '').length >= 5) && ws.every((w) => read.has(w));
+  });
+}
+function ocrNameAgrees(i, names, text) {
+  const mine = ocrWordsOf(ocrNameOf(i, text));
   return ocrWordsOf(names.join(' ')).some((f) => mine.some((w) => w.indexOf(f) >= 0 || f.indexOf(w) >= 0));
 }
