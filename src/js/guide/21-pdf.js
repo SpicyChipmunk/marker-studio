@@ -210,12 +210,19 @@ function pdfUse(c) {
     note(errNote('Couldn’t process that PDF page.' + PDF_SHOT, 'Opening a PDF', err));
   }
 }
-// several pages: which one? A small picture of each (drawn one after another), up to PDF_PAGES_MAX. Resolves to the
-// page's number, or 0 for Cancel.
-function pdfChoose(doc, gen) {
-  const n = Math.min(doc.numPages, PDF_PAGES_MAX);
+// several pages: which one? A small picture of each (drawn one after another), up to PDF_PAGES_MAX at a time from
+// page `from` (1). Resolves to the page's number, or 0 for Cancel. (v318.28) A longer PDF has a step to the next
+// pages and back: past page 60 of a colouring book there had been no way to choose one.
+function pdfChoose(doc, gen, from) {
+  from = from || 1;
+  const N = doc.numPages,
+    n = Math.min(N, from + PDF_PAGES_MAX - 1),
+    span = function (a) {
+      const b = Math.min(N, a + PDF_PAGES_MAX - 1);
+      return a === b ? 'Page ' + a : 'Pages ' + a + '\u2013' + b;
+    };
   let btns = '<div class="sfpdfpgs">';
-  for (let i = 1; i <= n; i++)
+  for (let i = from; i <= n; i++)
     btns +=
       '<button type="button" class="sfpdfpg" data-a="' +
       i +
@@ -226,23 +233,33 @@ function pdfChoose(doc, gen) {
       '"></span><span aria-hidden="true">' +
       i +
       '</span></button>';
-  btns += '</div><button type="button" class="btn-soft" data-a="cancel">Cancel</button>';
+  btns += '</div>';
+  if (from > 1)
+    btns +=
+      '<button type="button" class="btn-soft" data-a="prev">' +
+      span(Math.max(1, from - PDF_PAGES_MAX)) +
+      '</button>';
+  if (n < N) btns += '<button type="button" class="btn-soft" data-a="next">' + span(n + 1) + '</button>';
+  btns += '<button type="button" class="btn-soft" data-a="cancel">Cancel</button>';
   let open = true;
   const p = askBox(
     'Which page?',
     'This PDF has ' +
-      doc.numPages +
+      N +
       ' pages.' +
-      (doc.numPages > n ? ' The first ' + n + ' are shown here.' : '') +
+      (N > PDF_PAGES_MAX ? ' ' + span(from) + (from === n ? ' is' : ' are') + ' shown here.' : '') +
       ' Choose the colouring page.',
     btns,
   ).then(function (a) {
     open = false;
+    if (gen !== loadGen) return 0;
+    if (a === 'next' && n < N) return pdfChoose(doc, gen, n + 1);
+    if (a === 'prev' && from > 1) return pdfChoose(doc, gen, Math.max(1, from - PDF_PAGES_MAX));
     const k = parseInt(a, 10);
-    return k >= 1 && k <= n && gen === loadGen ? k : 0;
+    return k >= from && k <= n ? k : 0;
   });
   // the small pictures, one after another, while it's open
-  let i = 1;
+  let i = from;
   const next = function () {
     if (!open || i > n || gen !== loadGen) return;
     const at = i++;

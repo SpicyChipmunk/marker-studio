@@ -73,8 +73,21 @@ async function ready(opts) {
   // (each read the page sends the worker, as sent; and, when asked, the closer read answered with a memory failure)
   await a.page.evaluate(() => {
     window.__reads = [];
-    const pm = Worker.prototype.postMessage;
+    const pm = Worker.prototype.postMessage,
+      T0 = performance.now(),
+      at = () => Math.round((performance.now() - T0) / 100) / 10;
+    // (v318.28) what was sent to the reader and what came back, in seconds, for a wait that times out to say where
+    // it stopped (told)
+    window.__tl = [];
     Worker.prototype.postMessage = function (m, t) {
+      if (!this.__tl) {
+        this.__tl = true;
+        this.addEventListener('message', (e) => {
+          const k = e.data && e.data.t;
+          if (k !== 'line' && k !== 'progress') window.__tl.push(at() + ' ' + k);
+        });
+      }
+      window.__tl.push(at() + ' sent ' + (m && m.t) + (m && m.o && m.o.maxSide ? ' ' + m.o.maxSide : ''));
       if (m && m.t === 'read') {
         window.__reads.push({
           w: m.img.width,
@@ -105,6 +118,15 @@ async function choose(page, trays, button) {
   );
 }
 const reads = (page) => page.evaluate(() => window.__reads);
+// (v318.28) a wait that times out says how far the reads got: GitHub's WebKit timed out twice in these (at 120 s in
+// Stop's first wait, at 240 s in two photos'), where those steps take 15 and 50 s here on two busy CPUs (WebKit, 4
+// runs each) and the whole file 160 s on GitHub (ci-durations): a read that stalled, not one that was slow
+const told = (page, p) =>
+  p.catch(async (e) => {
+    const tl = await page.evaluate(() => window.__tl).catch(() => null);
+    e.message += '\nthe reads so far (seconds since Scan was ready): ' + JSON.stringify(tl);
+    throw e;
+  });
 
 test('small codes: read again closer, at the photo’s size with the detector at 3200 in 16 strips, said on screen', async () => {
   const { page, errors } = await ready();
@@ -160,16 +182,19 @@ test('Stop during the closer read lands within a moment; out of memory in it, th
   const { page, errors } = await ready();
   const t = await tray(page, SMALL);
   await choose(page, [t]);
-  await page.waitForFunction(
-    () => {
-      const b = document.getElementById('ocrStop');
-      if (!b || window.__reads.length < 2 || !ocrRun || !ocrRun.sent) return false;
-      window.__stopAt = performance.now();
-      b.click();
-      return true;
-    },
-    null,
-    { timeout: 120000, polling: 50 },
+  await told(
+    page,
+    page.waitForFunction(
+      () => {
+        const b = document.getElementById('ocrStop');
+        if (!b || window.__reads.length < 2 || !ocrRun || !ocrRun.sent) return false;
+        window.__stopAt = performance.now();
+        b.click();
+        return true;
+      },
+      null,
+      { timeout: 120000, polling: 50 },
+    ),
   );
   await page.waitForFunction(() => !ocrRun || ocrRun.done, null, { timeout: 60000, polling: 20 });
   const ms = await page.evaluate(() => performance.now() - window.__stopAt);
@@ -182,7 +207,7 @@ test('Stop during the closer read lands within a moment; out of memory in it, th
     window.__failCloser = true;
   });
   await choose(page, [t], '#ocrMore');
-  await page.waitForSelector('#ocrDone', { timeout: 240000 });
+  await told(page, page.waitForSelector('#ocrDone', { timeout: 240000 }));
   const rs = await reads(page);
   assert.equal(rs.length, 3, JSON.stringify(rs));
   assert.deepEqual(rs[2], { w: 2048, h: 1536, maxSide: 1600, detTiles: 4, detailCheck: 0 });
@@ -194,14 +219,13 @@ test('Stop during the closer read lands within a moment; out of memory in it, th
 test('two photos at once, the first read closer: both read, one summary', async () => {
   const { page, errors } = await ready();
   await choose(page, [await tray(page, SMALL), await tray(page, LARGE)]);
-  await page.waitForFunction(
-    () => /^Photo 2 of 2 · /.test(document.getElementById('ocrSay').textContent),
-    null,
-    {
+  await told(
+    page,
+    page.waitForFunction(() => /^Photo 2 of 2 · /.test(document.getElementById('ocrSay').textContent), null, {
       timeout: 240000,
-    },
+    }),
   );
-  await page.waitForSelector('#ocrDone', { timeout: 240000 });
+  await told(page, page.waitForSelector('#ocrDone', { timeout: 240000 }));
   const rs = await reads(page);
   assert.deepEqual(
     rs.map((r) => [r.maxSide, r.detailCheck]),

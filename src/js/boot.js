@@ -374,7 +374,8 @@ document.addEventListener('keydown', function (e) {
   // (v309.1: none new, a set or caps already yours, says so, not "0 more markers added")
   function added(n, names, del, set) {
     // (v318.27: all the colours owned, as Home's Markers card counts them; the blender aside)
-    var all = inkKeys([...state.owned]).length || state.owned.size,
+    // (v318.28: setKeys, as Home's card: inkKeys had left Copic's 0 out, "358 markers added" and "357 … in your collection")
+    var all = setKeys([...state.owned]).length || state.owned.size,
       // (the first markers: all the colours owned are these; a set's blender aside)
       first = setKeys([...state.owned]).length === n;
     // (v309.1: added on "Anything else?" itself (Scan's toast Open): what it said, for Undo to put back)

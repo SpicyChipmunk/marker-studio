@@ -95,7 +95,9 @@ palette.addEventListener('click', (e) => {
     const pal = state.palettes[state.palettes.length - 1];
     if (pal && state.locked.includes(pal[k])) return;
     if (k >= 0) {
-      if (state.harmony === 'photo') swapPhotoBand(k);
+      // (v318.28: by the palette's own scheme: under From photo, a photo with no usable colours leaves the scheme's
+      // palette on the card, and its bands' taps did nothing, swapPhotoBand finding no photo colours for them)
+      if (currentPaletteHarm() === 'photo') swapPhotoBand(k);
       else doReRollBand(k);
     }
   } else if (state.harmony === 'photo') {
@@ -204,6 +206,8 @@ function setOwned(i, on, back, inkBack) {
     el.replaceWith(n);
     if (f) n.focus({ preventScroll: true });
   }
+  // (v318.28) Tick all shown kept to what's shown (gridActs) as one is ticked or unticked: the grid isn't redrawn
+  if (state.mode === 'collection') ownAllBtn.disabled = !shownMatches().some((j) => !isOwned(j));
   chrome.keepGrid = true;
   try {
     chrome();

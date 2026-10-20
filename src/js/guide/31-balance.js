@@ -844,14 +844,35 @@ function buildBalance(cl, p) {
     left = adjRepair(assign, free, a, function (l, m) {
       return [rm(roleOf[m.mkey] || 'm')];
     });
-    if (left)
+    if (left) {
+      // (v318.28: to the other role only while both roles stay within 4.5 points of their shares: moving sections across
+      // freely had let Main colour grow 6 points past its share on about 1 roll in 20 of a small palette; as many
+      // sections put right as before)
+      const tol = 0.045 * total,
+        isFree = new Set(free),
+        pg = { m: 0, s: 0, a: 0 };
+      order.forEach(function (l) {
+        if (isFree.has(l) || !assign[l]) return;
+        const r = roleOf[assign[l].mkey] || balRoleOf(p, assign[l]);
+        if (r) pg[r] += area(l);
+      });
       left = adjRepair(assign, free, a, function (l, m) {
         const r = roleOf[m.mkey] || 'm',
-          L = [rm(r)];
-        if (r === 'a') L.push(rm('m'), rm('s'));
-        else L.push(rm(r === 'm' ? 's' : 'm'));
+          L = [rm(r)],
+          g = Object.assign({}, pg),
+          ar = area(l);
+        free.forEach(function (q) {
+          if (assign[q]) g[roleOf[assign[q].mkey] || 'm'] += area(q);
+        });
+        const fits = function (o) {
+          return g[o] + ar <= want[o] + tol && g[r] - ar >= want[r] - tol;
+        };
+        (r === 'a' ? ['m', 's'] : [r === 'm' ? 's' : 'm']).forEach(function (o) {
+          if (fits(o)) L.push(rm(o));
+        });
         return L;
       });
+    }
   }
   adjLeft[balZoneKey()] = left;
   balStat[balZoneKey()] = { plan: plan, total: total, big: big, all: order.length };

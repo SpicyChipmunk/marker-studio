@@ -352,6 +352,12 @@ html.noamb .ambient {
   display: inline-grid;
   grid-template-columns: repeat(var(--segcols, 7), auto);
 }
+/* (v318.28) where the label and a row of 7 don't fit side by side (a 320px phone; 360 with 1.6× text) the sizes go
+   on a line of their own under "Colours": beside it the last ones ran past the screen's edge, cut off and untappable */
+#sizeWrap {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
 #segs button {
   width: 34px;
 }
@@ -6946,12 +6952,11 @@ button.sffoccols::after {
 #sfRoot .sfpopscope .sfedit {
   flex: 1 1 auto;
   min-width: 0;
-  height: 40px;
-  padding: 0 8px;
+  /* (v318.28) words that don't fit on one line take two, the button growing to hold them (44px, .sfedit's least, on
+     one): at 320px with 1.6× text they were cut to "Only this sect…" and "Everywhere (9 secti…", the count lost */
+  padding: 4px 8px;
   font-size: var(--t-sm);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 #sfRoot .sfpopnote {
   flex: none;
@@ -10404,6 +10409,12 @@ img.paperpick {
 #gapSort {
   min-width: 17.8em;
 }
+/* (v318.28) that width where the row has it, narrower where it hasn't (a phone with larger text, an iPhone's 16px
+   drop-downs): at 17.8em beside "Order" it ran up to 88px past the screen's edge */
+#gapWrap #gapSort {
+  flex: 0 1 17.8em;
+  min-width: 0;
+}
 /* (v316) every drop-down (Markers' Order, the Library's sort, the guide's Saved palette, Harmony and tone) with the app's
    own chevron, not the browser's arrow: the picture is Lucide's chevron-down in the ink colour (a background can't take
    currentColor); the rules come after each one's own background shorthand, which would otherwise clear it */
@@ -13242,7 +13253,7 @@ button.wrm {
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New guide from a photo</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v318.27</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v318.28</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="light">Lightest first</option><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -13275,7 +13286,7 @@ button.wrm {
  </div><div id="findResults" style="display:none">
   <div class="pile-head"><span class="lbl" id="matchLbl">Matches</span><span class="n" id="matchn"></span><button class="copybtn" id="copyBtn">Copy codes</button></div>
   <div id="mkHint" class="mkhint" style="display:none"></div><div id="results"></div>
- </div><div id="wishView" class="wishview" style="display:none"></div><div class="findactions" id="ownStateWrap" style="display:none"><button id="ownAll">Tick all shown</button><button id="ownNone">Untick all shown</button></div><div class="findactions" id="findActions"><button id="toPalette">Palette from these</button></div><div id="backupWrap" style="display:none"><button id="backupBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Back up &amp; restore</span></button><button id="swatchBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>Print a swatch chart</span></button></div></div>
+ </div><div id="wishView" class="wishview" style="display:none"></div><div class="findactions" id="ownStateWrap" style="display:none"><button id="ownAll">Tick all shown</button><button id="ownNone">Untick all shown</button></div><div class="findactions" id="findActions"><button id="toPalette">Palette from these</button></div><div id="backupWrap" style="display:none"><button id="backupBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Back up &amp; restore</span></button><button id="swatchBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>Print a swatch chart</span></button></div></div><div id="msLive" class="sfsr" role="status" aria-live="polite"></div><div id="msSay" class="sfsr" role="status" aria-live="polite"></div>
 
 <div class="overlay" id="imgOverlay" role="dialog" aria-modal="true" aria-labelledby="imgTitle"><div class="ocard dcard"><div class="mhead"><h2 class="mtitle" id="imgTitle">Swatch card</h2><button id="ovClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><img id="cardImg" alt="Swatch card"><div class="dsub">Press and hold the image to save it to your photos, or download it.</div><a id="dlLink" class="btn-primary dbtn" download="marker-studio-card.png">Save image</a></div></div>
 <div class="overlay" id="mkOverlay" role="dialog" aria-modal="true" aria-labelledby="mkTitle"><div class="ocard dcard mkcard"><div class="mhead"><h2 class="mtitle" id="mkTitle">Marker</h2><button id="mkClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="mkhero"><div class="mksw" id="mkSw"></div><div class="mkinfo"><div class="mkcode" id="mkCode" tabindex="-1"></div><div class="mkname" id="mkName"></div><div class="mkmeta" id="mkMeta"></div></div></div><label class="mkown"><span>In my collection</span><input type="checkbox" id="mkOwn" role="switch"></label><div id="mkInk" class="mkink"></div><div id="mkCap" class="mkink" hidden></div><div id="mkWish" class="mkwish"></div><div id="mkBlend" class="mkblend" role="group" aria-label="Blends with" hidden></div><div class="mkrow"><button id="mkSimilar" class="btn-soft">Find similar</button><button id="mkCopy" class="btn-soft">Copy code</button></div></div></div>
@@ -15082,8 +15093,9 @@ function toastShow(m, ms, html) {
     t = document.createElement('div');
     t.id = 'msToast';
     t.className = 'mstoast';
-    t.setAttribute('role', 'status');
-    t.setAttribute('aria-live', 'polite');
+    // (v318.28) not a live region itself: hidden between toasts (visibility), it was out of the accessibility tree
+    // when each new toast's words arrived, and the first was created holding them; #msSay, in the page from the
+    // start and never hidden, says them (below)
     document.body.appendChild(t);
     const hold = function () {
         if (t.classList.contains('on')) clearTimeout(toast._t);
@@ -15104,6 +15116,8 @@ function toastShow(m, ms, html) {
   }
   if (html) t.innerHTML = m;
   else t.textContent = m == null ? '' : String(m);
+  const say = document.getElementById('msSay');
+  if (say) say.textContent = t.textContent;
   // (v288: on the guide's Share tab the buttons are at the bottom, so a toast sits just under the pinned picture)
   // (the Share panel itself showing: the Plan, not Colour along or Edit sections after it)
   const sh = document.querySelector('#sfCtl .sftab[data-tab="share"]');
@@ -15167,6 +15181,9 @@ function toastActions(m, acts, ms, html) {
       { once: true },
     );
   });
+  // (v318.28) said with its buttons' words, as the toast was when it was the live region ("… Undo")
+  const say = document.getElementById('msSay');
+  if (say) say.textContent = t.textContent;
 }
 // A file for the person to keep. On a phone or tablet it goes to the share sheet (on an iPhone: Save to Files, iCloud
 // Drive, AirDrop or Mail); on a computer, or where files can't be shared, it downloads. Phones only allow sharing
@@ -17668,7 +17685,11 @@ function sQueryOf(str) {
   return q;
 }
 function sWord(h, w, multi) {
-  if (h.text.includes(w) || (w.length >= 4 && h.brand.startsWith(w))) return true;
+  // (v318.28) a number with other words is found in a name only as the whole number: "copic 0" had found Cool Gray
+  // No.10 and No.00 by their names, eleven markers, not the 0s the rule below finds
+  const inName =
+    multi && /^\d+$/.test(w) ? new RegExp('(^|\\D)' + w + '(?!\\d)').test(h.text) : h.text.includes(w);
+  if (inName || (w.length >= 4 && h.brand.startsWith(w))) return true;
   if (h.capText && h.capText.includes(w) && capIsOldAny(h.i)) return true;
   const k = w.replace(/[-.]/g, '');
   if (!k) return false;
@@ -19212,8 +19233,7 @@ function applyPhotoPalette() {
     return;
   }
   var pal = _res.markers;
-  _photoLabs = _res.labs;
-  _photoTried = {};
+  // (v318.28: the photo's colours only once it has a palette: kept for the palette on the card, v318.25)
   if (!pal.length) {
     errCard(
       document.getElementById('photoPick'),
@@ -19225,6 +19245,8 @@ function applyPhotoPalette() {
     );
     return;
   }
+  _photoLabs = _res.labs;
+  _photoTried = {};
   _photoLabsOf.set(pal, _res.labs);
   palPush(pal, 20);
   state.locked = [];
@@ -19375,6 +19397,10 @@ function palFrom(pal, si, h) {
   // (v318.25: `h`, the palette's own scheme when it isn't the one chosen, currentPaletteHarm)
   return si != null && pal && ((h || state.harmony) === 'rainbow' ? _rbSeed.get(pal) === si : pal[0] === si);
 }
+// (v318.28) a copy of a Rainbow (a band re-rolled, the preview adopted) still built from its base while it holds it
+function rbSeedCarry(from, to) {
+  if (_rbSeed.has(from) && to.includes(_rbSeed.get(from))) _rbSeed.set(to, _rbSeed.get(from));
+}
 function genRainbow(n, opts) {
   if (!window.SF || !SF.rainbowPick) return null;
   const pool = [];
@@ -19443,6 +19469,17 @@ function rerollPick(pal, k, harmony) {
     if (x || y) ctx.bh = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
     ctx.fam = COLORS[cur].fam;
     ctx.greyFam = LCH[cur][1] < GREY_C || famGreyish(cur);
+    // (v318.28) a Monochrome from a near-grey base (first, genPalette's greyBase: a black) is a ramp of greys, and
+    // its re-rolls stay greys, of the family most of its other greys are in: from the tapped band's own family (the
+    // black's holds only blacks) clear blues, greens and violets near a grey's meaningless hue had won
+    if (LCH[pal[0]][1] < GREY_C) {
+      ctx.greyBase = true;
+      ctx.greyFam = true;
+      const nf = {};
+      for (let p = 1; p < pal.length; p++)
+        if (p !== k && LCH[pal[p]][1] < GREY_C) nf[COLORS[pal[p]].fam] = (nf[COLORS[pal[p]].fam] || 0) + 1;
+      for (const f in nf) if (nf[f] > (nf[ctx.fam] || 0)) ctx.fam = f;
+    }
   }
   const slot = { h: LCH[cur][2], L: LCH[cur][0] };
   // (v306) Rainbow: aimed at the middle of the gap round the wheel this colour fills (between its neighbours in hue
@@ -19616,6 +19653,13 @@ function closeNote() {
           ' clear colours for a rainbow, not ' +
           state.palSize +
           '.';
+      // (v318.28) greys in a colour scheme: the last resort of its picks (genPick), said as the other loosenings are
+      // (report.grey's test); Monochrome's greys are its steps, a Rainbow's are counted above
+      else if (h !== 'mono' && h !== 'rainbow' && pal.some((i) => !fixed.has(i) && LCH[i][1] < GREY_C))
+        t =
+          'Some colours are greys: your markers in play don\u2019t have ' +
+          pal.length +
+          ' clear colours for this scheme.';
       else if (d != null && d < genNeed(h))
         t =
           'Two colours are close: your markers don\u2019t have ' +
@@ -19659,7 +19703,7 @@ function bandLabel(b, idx) {
       (customWhy(idx) ? ', ' + customWhy(idx) : '') +
       (state.locked.includes(idx)
         ? ', locked'
-        : state.harmony === 'photo'
+        : currentPaletteHarm() === 'photo'
           ? ', tap for the next nearest'
           : ', tap for another like it'),
   );
@@ -19674,7 +19718,7 @@ function bandWarn(b, idx) {
   b.classList.toggle('unowned', !!why);
   b.title =
     (why ? why.charAt(0).toUpperCase() + why.slice(1) + ' \u00b7 ' : '') +
-    (state.harmony === 'photo'
+    (currentPaletteHarm() === 'photo'
       ? 'Tap for the next-nearest owned marker'
       : 'Tap for another like it · lock to keep');
   if (why)
@@ -21204,6 +21248,9 @@ function libDuplicate(id) {
           H: src.H,
           keys: src.keys || [],
           n: src.n,
+          // (v318.28) the shading's markers beyond its own colours, as the original's ("+ N for shading" on Home): the
+          // row is built from what's passed and a new id has no row to take them from
+          sk: src.sk,
           thumb: src.thumb || '',
           payload: p,
           quiet: true,
@@ -21850,8 +21897,15 @@ function searchOutside() {
   )
     return [];
   const own = state.collView === 'owned',
-    out = [];
-  for (let i = 0; i < COLORS.length; i++) if (avail(i) && isOwned(i) !== own) out.push(i);
+    out = [],
+    // (v318.28) "skin" counts the skin tones searchSkin shows, not names with the word: Owned's "Skin tones (12)" had
+    // no "60 more in All", and with none of them yours it said "No markers match" though All has 72
+    sk =
+      typeof skinIdx === 'function' && SKIN_Q.test(sQueryOf(searchStr).words.join(' '))
+        ? new Set(skinIdx())
+        : null;
+  for (let i = 0; i < COLORS.length; i++)
+    if ((sk ? sk.has(i) && passes(i) : avail(i)) && isOwned(i) !== own) out.push(i);
   return out;
 }
 function moreInAllHTML(n, none) {
@@ -22049,7 +22103,8 @@ function shownMatches() {
 }
 function gridActs(list) {
   gridShown = list;
-  ownAllBtn.disabled = !list.length;
+  // (v318.28) only with one not yours among them: every one shown yours, its tap had done nothing, without a word
+  ownAllBtn.disabled = !list.some((i) => !isOwned(i));
   // (v318.25) only with one of yours among them: in All, or a search of none of yours, it had armed "Untick 5
   // markers?" and its second tap did nothing
   ownNoneBtn.disabled = !list.some((i) => isOwned(i));
@@ -22061,7 +22116,10 @@ function renderGrid(more) {
   cellBt = brandsMixedIn(m);
   gridActs(m);
   matchHead(m.length, 'marker');
-  if (!m.length && more.length && state.owned.size) {
+  // (v318.28) the skin tones here first: some of them yours, "None of the markers matching “skin” are in your
+  // collection" isn't said over them
+  const sk = searchSkin();
+  if (!m.length && more.length && state.owned.size && !sk) {
     results.innerHTML = searchElsewhereHTML(more);
     return;
   }
@@ -22075,8 +22133,7 @@ function renderGrid(more) {
   }
   // (v308.3) the families the search names: shown when nothing else is, else offered in a line
   // (v318.26: "skin" shows the skin tones, with the family as a link)
-  const sk = searchSkin(),
-    sf = sk ? null : searchFams();
+  const sf = sk ? null : searchFams();
   if (sk) {
     m = sk.list;
     cellBt = brandsMixedIn(m);
@@ -22578,7 +22635,9 @@ function chrome() {
         // (v318.27) the colours, as the guide's card ("Built from your 120 colours") and the welcome ("120 markers
         // added") count them: a set's Colorless Blender had made Home say 121 (v309.2 counted it here). Only a
         // blender owned: it, still counted, so the card doesn't ask to set up markers that are there
-        const n = inkKeys([...state.owned]).length || state.owned.size;
+        // (v318.28) the colours as a set's size counts them (setKeys): Ohuhu's blender aside, Copic's 0 counted, as it
+        // is in its set (Ciao 36 Set B, All Copic markers 358). inkKeys had made All Copic markers 357 and Set B 35
+        const n = setKeys([...state.owned]).length || state.owned.size;
         hc.classList.toggle('attn', !n);
         const sb = hc.querySelector('.hcsub');
         if (sb) sb.textContent = n ? n + (n === 1 ? ' marker' : ' markers') : 'Set up your markers';
@@ -23226,7 +23285,9 @@ function poolSig() {
 function palAdopt() {
   const p = palPreview();
   if (!p) return false;
-  palPush(p.slice(), 24);
+  const np = p.slice();
+  palPush(np, 24);
+  rbSeedCarry(p, np);
   palPv = null;
   palPvOff = true;
   save();
@@ -23330,7 +23391,11 @@ function doReRollBand(k) {
   if (rolling || state.mode !== 'palette') return;
   const pal = state.palettes[state.palettes.length - 1];
   if (!pal || k >= pal.length) return;
-  const pick = rerollPick(pal, k, state.harmony);
+  // (v318.28) by the palette's own scheme, and pushed as it: a scheme chosen since that couldn't be made (five clear
+  // markers and Rainbow, or a photo with no usable colours) leaves the palette before it on the card, and one tap had
+  // re-rolled it by the new scheme's rules and called it that scheme (its line, its note, Save), v318.25's C4/C5 back
+  const h = currentPaletteHarm();
+  const pick = rerollPick(pal, k, h);
   // (said, not a tap that does nothing or a colour off the scheme, v304)
   if (pick < 0) {
     toast(
@@ -23349,7 +23414,9 @@ function doReRollBand(k) {
     // (a new step in the history, so Undo brings the colour back, v299: it was gone for good)
     const np = pal.slice();
     np[k] = pick;
-    palPush(np, 24);
+    palPush(np, 24, false, h);
+    // (v318.28: a Rainbow built from a base is still built from it, while it holds it: "· X base" had gone)
+    rbSeedCarry(pal, np);
     save();
     const c = COLORS[pick];
     b.style.background = c.hex;
@@ -23520,10 +23587,10 @@ function action() {
   state.mode === 'palette' ? doGenerate() : state.mode === 'random' ? doDraw() : 0;
 }
 // The palette history, with each palette's scheme beside it (state.palH; `auto`: made by a size, scheme or filter
-// change, palHarm)
-function palPush(pal, max, auto) {
+// change, palHarm; v318.28 `harm`: a palette re-rolled by its own scheme, not the one chosen, doReRollBand)
+function palPush(pal, max, auto, harm) {
   state.palettes.push(pal);
-  state.palH.push(state.harmony + (auto ? '+' : ''));
+  state.palH.push((harm || state.harmony) + (auto ? '+' : ''));
   while (state.palettes.length > max) {
     state.palettes.shift();
     state.palH.shift();
@@ -23899,7 +23966,9 @@ palette.addEventListener('click', (e) => {
     const pal = state.palettes[state.palettes.length - 1];
     if (pal && state.locked.includes(pal[k])) return;
     if (k >= 0) {
-      if (state.harmony === 'photo') swapPhotoBand(k);
+      // (v318.28: by the palette's own scheme: under From photo, a photo with no usable colours leaves the scheme's
+      // palette on the card, and its bands' taps did nothing, swapPhotoBand finding no photo colours for them)
+      if (currentPaletteHarm() === 'photo') swapPhotoBand(k);
       else doReRollBand(k);
     }
   } else if (state.harmony === 'photo') {
@@ -24008,6 +24077,8 @@ function setOwned(i, on, back, inkBack) {
     el.replaceWith(n);
     if (f) n.focus({ preventScroll: true });
   }
+  // (v318.28) Tick all shown kept to what's shown (gridActs) as one is ticked or unticked: the grid isn't redrawn
+  if (state.mode === 'collection') ownAllBtn.disabled = !shownMatches().some((j) => !isOwned(j));
   chrome.keepGrid = true;
   try {
     chrome();
@@ -26587,6 +26658,11 @@ function sfLeaveApply() {
   IDB.hold(
     IDB.getNow('guide-' + j.id)
       .then(function (old) {
+        // (v318.28) the stored guide is already what was kept aside (put away: the save begun then landed, and the
+        // copy, made from the same state, stayed with its base moved to that save's row, leaveRebase): nothing to
+        // put in. Writing it again gave the row a new time, so a guide backed up since read "not in a backup", was
+        // taken as newer by a restore, and reloaded in another tab
+        if (old && typeof old === 'object' && JSON.stringify(leaveSlim(old)) === JSON.stringify(j.pl)) return;
         // (v318.23: a newer version's settings in the stored guide kept, as its autosave keeps them. SF is there by
         // now: this runs once the database has answered, after the guide's code has loaded)
         let pl = old && leaveFill(j.pl, old);
@@ -28189,15 +28265,20 @@ function restoreGuideList(guides, _fts, done, prog) {
           // backup's copy takes its place, as before
           // (v304) a Library guide changed here since its last backup, about to be replaced by the backup's newer copy, is
           // kept first as "… (before restore)"
-          var pend =
-              !_ex &&
-              !!_gid &&
-              libPendList().some(function (x) {
-                return x.id === _gid;
-              }),
+          var pe =
+              !_ex && _gid
+                ? libPendList().find(function (x) {
+                    return x.id === _gid;
+                  })
+                : null,
+            pend = !!pe,
             // (v318.25: past its Undo, waiting in Recently deleted for a week since v318.1: its stored copy may hold
             // more than the backup's, so it is read as a lost guide's is, and left there when it differs)
-            binned = pend && !(libPend && libPend.entry && libPend.entry.id === _gid),
+            // (v318.28: only one with its row kept (e), as Recently deleted lists them: a delete with none, still
+            // finishing (an import that never opened, one from before v318.1), isn't there and is finished at the next
+            // start; the backup's copy takes its place, as before, rather than come in as "(from backup)" beside a
+            // guide said to be "left there")
+            binned = pend && !!pe.e && !(libPend && libPend.entry && libPend.entry.id === _gid),
             bust = !!_ex && _damaged.has(_ex.id),
             atRisk =
               !bust &&
@@ -32938,12 +33019,19 @@ function pdfUse(c) {
     note(errNote('Couldn’t process that PDF page.' + PDF_SHOT, 'Opening a PDF', err));
   }
 }
-// several pages: which one? A small picture of each (drawn one after another), up to PDF_PAGES_MAX. Resolves to the
-// page's number, or 0 for Cancel.
-function pdfChoose(doc, gen) {
-  const n = Math.min(doc.numPages, PDF_PAGES_MAX);
+// several pages: which one? A small picture of each (drawn one after another), up to PDF_PAGES_MAX at a time from
+// page `from` (1). Resolves to the page's number, or 0 for Cancel. (v318.28) A longer PDF has a step to the next
+// pages and back: past page 60 of a colouring book there had been no way to choose one.
+function pdfChoose(doc, gen, from) {
+  from = from || 1;
+  const N = doc.numPages,
+    n = Math.min(N, from + PDF_PAGES_MAX - 1),
+    span = function (a) {
+      const b = Math.min(N, a + PDF_PAGES_MAX - 1);
+      return a === b ? 'Page ' + a : 'Pages ' + a + '\u2013' + b;
+    };
   let btns = '<div class="sfpdfpgs">';
-  for (let i = 1; i <= n; i++)
+  for (let i = from; i <= n; i++)
     btns +=
       '<button type="button" class="sfpdfpg" data-a="' +
       i +
@@ -32954,23 +33042,33 @@ function pdfChoose(doc, gen) {
       '"></span><span aria-hidden="true">' +
       i +
       '</span></button>';
-  btns += '</div><button type="button" class="btn-soft" data-a="cancel">Cancel</button>';
+  btns += '</div>';
+  if (from > 1)
+    btns +=
+      '<button type="button" class="btn-soft" data-a="prev">' +
+      span(Math.max(1, from - PDF_PAGES_MAX)) +
+      '</button>';
+  if (n < N) btns += '<button type="button" class="btn-soft" data-a="next">' + span(n + 1) + '</button>';
+  btns += '<button type="button" class="btn-soft" data-a="cancel">Cancel</button>';
   let open = true;
   const p = askBox(
     'Which page?',
     'This PDF has ' +
-      doc.numPages +
+      N +
       ' pages.' +
-      (doc.numPages > n ? ' The first ' + n + ' are shown here.' : '') +
+      (N > PDF_PAGES_MAX ? ' ' + span(from) + (from === n ? ' is' : ' are') + ' shown here.' : '') +
       ' Choose the colouring page.',
     btns,
   ).then(function (a) {
     open = false;
+    if (gen !== loadGen) return 0;
+    if (a === 'next' && n < N) return pdfChoose(doc, gen, n + 1);
+    if (a === 'prev' && from > 1) return pdfChoose(doc, gen, Math.max(1, from - PDF_PAGES_MAX));
     const k = parseInt(a, 10);
-    return k >= 1 && k <= n && gen === loadGen ? k : 0;
+    return k >= from && k <= n ? k : 0;
   });
   // the small pictures, one after another, while it's open
-  let i = 1;
+  let i = from;
   const next = function () {
     if (!open || i > n || gen !== loadGen) return;
     const at = i++;
@@ -41570,14 +41668,35 @@ function buildBalance(cl, p) {
     left = adjRepair(assign, free, a, function (l, m) {
       return [rm(roleOf[m.mkey] || 'm')];
     });
-    if (left)
+    if (left) {
+      // (v318.28: to the other role only while both roles stay within 4.5 points of their shares: moving sections across
+      // freely had let Main colour grow 6 points past its share on about 1 roll in 20 of a small palette; as many
+      // sections put right as before)
+      const tol = 0.045 * total,
+        isFree = new Set(free),
+        pg = { m: 0, s: 0, a: 0 };
+      order.forEach(function (l) {
+        if (isFree.has(l) || !assign[l]) return;
+        const r = roleOf[assign[l].mkey] || balRoleOf(p, assign[l]);
+        if (r) pg[r] += area(l);
+      });
       left = adjRepair(assign, free, a, function (l, m) {
         const r = roleOf[m.mkey] || 'm',
-          L = [rm(r)];
-        if (r === 'a') L.push(rm('m'), rm('s'));
-        else L.push(rm(r === 'm' ? 's' : 'm'));
+          L = [rm(r)],
+          g = Object.assign({}, pg),
+          ar = area(l);
+        free.forEach(function (q) {
+          if (assign[q]) g[roleOf[assign[q].mkey] || 'm'] += area(q);
+        });
+        const fits = function (o) {
+          return g[o] + ar <= want[o] + tol && g[r] - ar >= want[r] - tol;
+        };
+        (r === 'a' ? ['m', 's'] : [r === 'm' ? 's' : 'm']).forEach(function (o) {
+          if (fits(o)) L.push(rm(o));
+        });
         return L;
       });
+    }
   }
   adjLeft[balZoneKey()] = left;
   balStat[balZoneKey()] = { plan: plan, total: total, big: big, all: order.length };
@@ -42968,9 +43087,11 @@ function zoneSecs(id, cl) {
   });
 }
 // the sections of the zone being built, or else the one being edited: what the pattern, the pool and the notes under
-// the controls work on
+// the controls work on. (v318.28) Not those left white: the laying never has them (zoneRun), and the notes and counts
+// had (No repeats' "Every section has its own marker: 15" with 5 left white; Main colour's "why the shares miss"
+// gone for good, its count no longer the laying's; the Gradient's count, the marker slider's top)
 function zoneList() {
-  return zoneSecs(zoneBuilding != null ? zoneBuilding : zoneCur);
+  return zoneSecs(zoneBuilding != null ? zoneBuilding : zoneCur).filter(notWhite);
 }
 // the box around a zone's sections (null without zones: the whole picture)
 function zoneBoxOf(secs) {
@@ -56188,7 +56309,10 @@ function fullModal(on) {
         /^(SCRIPT|STYLE|LINK)$/.test(c.tagName) ||
         c.classList.contains('overlay') ||
         c.id === 'msToast' ||
-        c.id === 'sfLive'
+        c.id === 'sfLive' ||
+        // (v318.28) the live regions in the page from the start
+        c.id === 'msSay' ||
+        c.id === 'msLive'
       )
         return;
       c.inert = true;
@@ -58383,7 +58507,10 @@ function focusModal(on) {
           /^(SCRIPT|STYLE|LINK)$/.test(c.tagName) ||
           c.classList.contains('overlay') ||
           c.id === 'msToast' ||
-          c.id === 'sfLive'
+          c.id === 'sfLive' ||
+          // (v318.28) the live regions in the page from the start
+          c.id === 'msSay' ||
+          c.id === 'msLive'
         )
           return;
         c.inert = true;
@@ -59400,7 +59527,12 @@ function paintSec(s, l) {
   const A = assignData.assign,
     m = A[l],
     b = s.m;
-  if (!m) return;
+  if (!m) {
+    // (v318.28) a section left white keeps the paper (Colour it gives it a marker): said when the stroke ends, as a
+    // zone's are, where it had done nothing at all
+    if (whitePins[l] !== undefined && !(zones.length && zoneOf(l) !== zoneCur)) s.white = (s.white || 0) + 1;
+    return;
+  }
   // (only the zone being edited: another zone's sections are its own pattern's)
   if (zones.length && zoneOf(l) !== zoneCur) {
     s.skip = (s.skip || 0) + 1;
@@ -59435,6 +59567,14 @@ function paintEnd(tap) {
     cancelAnimationFrame(paintRaf);
     paintRaf = 0;
   }
+  if (s.white && !s.skip && assignData)
+    toast(
+      (s.white === 1
+        ? (s.n ? 'One section you went over is' : 'That section is') + ' left white. To colour it:'
+        : s.white + ' sections you went over are left white. To colour one:') +
+        ' Done painting, then tap it.',
+      3200,
+    );
   if (s.skip && assignData) {
     const zn = zoneName(zoneCur);
     toast(
@@ -59727,6 +59867,8 @@ function enterColor(paint) {
   zoneEditEnd(true);
   heldNoteClear();
   if (!assignData || guideWhite()) return;
+  // (v318.28) a plan step's toast Undo does nothing in Colour along: it goes
+  planToastOff();
   if (popOpen()) closeSwatchPop();
   hideTip();
   normalizeTones();
@@ -63453,7 +63595,10 @@ function revModal(on) {
           /^(SCRIPT|STYLE|LINK)$/.test(c.tagName) ||
           c.classList.contains('overlay') ||
           c.id === 'msToast' ||
-          c.id === 'sfLive'
+          c.id === 'sfLive' ||
+          // (v318.28) the live regions in the page from the start
+          c.id === 'msSay' ||
+          c.id === 'msLive'
         )
           return;
         c.inert = true;
@@ -63889,6 +64034,7 @@ function planCommit(why, quiet, more) {
   planFwd = [];
   planLast = cur;
   planBtn();
+  planToastOff();
   if (quiet) return;
   // coloured sections kept their markers where the change would have recoloured them: say so, with Recolour them too
   // (once per visit to the plan, and again when more are kept)
@@ -63917,7 +64063,8 @@ function planCommit(why, quiet, more) {
   }
   const ub = document.getElementById('sfPlanUndo');
   if (/^Surprise\b/.test(prev.label) || !ub || ub.style.display === 'none' || !ub.getClientRects().length) {
-    toastAction(prev.label, 'Undo', planUndo);
+    toastAction(prev.label, 'Undo', planToastUndo(prev));
+    planToastMark();
     return;
   }
   // (a change that has just said what it did in its own words, like a picker's Done, keeps them: said in this same
@@ -63925,6 +64072,27 @@ function planCommit(why, quiet, more) {
   // "B03 → Y315 …, 1 section" with the vaguer "Section colour changed")
   if (!sayLive.now && !(Date.now() - (sayLive.at || 0) < 100))
     sayLive(prev.label + (held ? '. ' + heldNoteText(held) + '.' : ''));
+}
+// (v318.28) A toast's Undo for one plan step (Surprise's, always; any step's while ↶ Undo is hidden; a swap's): it
+// undoes that step while it is still the last one. A pin, Leave white or Change colour taken in its 8 s says nothing
+// of its own while ↶ Undo shows, and the toast's Undo had undone that instead, leaving the step it names; a later step
+// now takes the toast away (planToastOff, from planCommit), as Colour along does, and in another guide it does nothing.
+// (Checked by step, not by the stack's length: at PLANMAX a new step shifts the oldest off and the length stays)
+let _planToastBtn = null;
+function planToastUndo(st) {
+  const g = loadGen;
+  return function () {
+    if (g === loadGen && sfmode === 'guide' && assignData && planStack[planStack.length - 1] === st)
+      planUndo();
+  };
+}
+function planToastMark() {
+  _planToastBtn = document.getElementById('toastAct');
+}
+function planToastOff() {
+  const b = _planToastBtn;
+  _planToastBtn = null;
+  if (b && b.isConnected) hideToast();
 }
 // The line under the Plan's tabs saying which coloured sections a change kept, with Recolour them too and ✕: shown
 // until it's used, closed, or the plan is left (_heldNote)
@@ -64192,8 +64360,6 @@ function lowSwap(k) {
   ctlRefocus('#sfTab-' + gTab);
   // (v314.1) said, with the marker it now takes and an Undo, as Mark all is: the line went and only the picture changed
   // (the toast is read out; its Undo is the Plan's own, while this is still the last change)
-  const n = planStack.length,
-    g = loadGen;
   toastActionHTML(
     'Swapped ' +
       mcodeHTML(om) +
@@ -64203,10 +64369,9 @@ function lowSwap(k) {
       nWord(secs.length, 'section') +
       ', pinned',
     'Undo',
-    function () {
-      if (g === loadGen && sfmode === 'guide' && assignData && planStack.length === n) planUndo();
-    },
+    planToastUndo(planStack[planStack.length - 1]),
   );
+  planToastMark();
 }
 /* (v313) Screens and ink differ: a one-time line under the tabs, "Screens and ink differ. Print a test strip of these
    16 markers to see them on your paper", whose link opens Print with Test strip chosen. Once ever (with the hints),
@@ -70046,8 +70211,12 @@ async function _exportPDF() {
         const b = document.getElementById('sfPDF');
         if (b && b.disabled && _pdfProg) b.textContent = _pdfProg;
       });
+    // (v318.28: Key + reference's named apart from Page + key's, as the test strip's is: printed one after the other,
+    // the second had come as "… (1).pdf" on a computer, and an iPad's Save to Files offered to replace the first)
     const fname =
-      fileSlug(name, 'colour-guide', 80).toLowerCase() + (what === 'strip' ? '-test-strip' : '') + '.pdf';
+      fileSlug(name, 'colour-guide', 80).toLowerCase() +
+      (what === 'strip' ? '-test-strip' : what === 'ref' ? '-reference' : '') +
+      '.pdf';
     shareOrSave(blob, fname, name || 'Colouring guide', 'PDF', 'PDF downloaded.');
     // (v313: the sample's page printed, not just its test strip: a page being coloured, for Home's Continue card)
     if (smpTry && what !== 'strip' && gen === loadGen) {
@@ -77632,12 +77801,17 @@ function scanCardAgain(key, loud) {
 // more when it doesn't (Ciao 36 with no letter read: Set A to E). Only a size the range comes in counts, and not a price
 // ($48.99, 48.99) or part of an order number; a size said as colours ("120 Colors") first. A line, or a line and the
 // next, at a time (an order of two sets is two names); the whole text when no line says (a box's words a line each).
-// brand: only that brand's sets.
-function scanSets(text, brand) {
+// brand: only that brand's sets. hint: the brand chosen in Scan (its sets read without their brand's word too).
+function scanSets(text, brand, hint) {
   const lines = String(text).normalize('NFKC').replace(/[‐-―]/g, '-').split(/\r?\n/),
     all = lines.join(' '),
-    ohuhu = /\b(ohuhu|honolulu)\b/i.test(all),
-    copic = /\bcopic\b/i.test(all),
+    saysO = /\b(ohuhu|honolulu)\b/i.test(all),
+    saysC = /\bcopic\b/i.test(all),
+    // (v318.28) with a brand chosen, or Find mode's, and neither brand named: that brand's ("6 Skin Tones" with Ohuhu
+    // chosen, "Sketch 72 Set A" in Copic's Find mode had found no set)
+    b = brand || hint,
+    ohuhu = saysO || (b === 'Ohuhu' && !saysC),
+    copic = saysC || (b === 'Copic' && !saysO),
     // (v318.1) a tray's text (two or more codes read off caps): a number near the range's word on another line is a
     // cap's code, not the set's size, unless said as colours ("HONOLULU" on the case, then R014, 120 — Ohuhu's Black —
     // and Y28 had offered Honolulu 120 and dropped the 120 from the codes). A line of its own still says it.
@@ -77675,7 +77849,8 @@ function scanSets(text, brand) {
       // (v318.1: "Honolulu B 120" is the range's second series, not a code "B 120")
       if (
         /[.,]/.test(v) ||
-        /[A-Za-z\d]$|[$£€#-]\s?$/.test(before) ||
+        // (v318.28: a dash an order number's only touching the number before it: "Markers - 120 Colors" is a size)
+        /[A-Za-z\d]$|[$£€#]\s?$|\S-$/.test(before) ||
         (/\b[A-Z]{1,3}\s$/.test(before) && !/\b(SET|OF|HONOLULU\s+B)\s$/i.test(before)) ||
         /^(-\d|\s?%)/.test(after)
       )
@@ -77729,20 +77904,26 @@ function scanSets(text, brand) {
   // (whether w named a set, new or not)
   const rules = function (w, into) {
     let hit = false;
+    // (v318.28) the sizes a themed set took: Honolulu's own read beside them ("Honolulu 72 Colors + 6 Skin Tones")
+    const took = new Set(),
+      th = (ns) => (ns.forEach((n) => took.add(n)), ns);
     if (ohuhu) {
-      if (/\bmid[\s-]?tones?\b/i.test(w) && sizes(w, [48], /mid[\s-]?tones?/).length)
+      if (/\bmid[\s-]?tones?\b/i.test(w) && th(sizes(w, [48], /mid[\s-]?tones?/)).length)
         hit = put(['48 Mid-tone Set'], into) || hit;
       // (v318.27) Ohuhu's three skin sets: the shop names the 24 "Honolulu 24 Skin Tone Colors", which had read as
       // Honolulu 24 (the app's "24 Portrait"); "6 Skin Tones" is the small one
+      // (v318.28: as Honolulu's, a size each when said as colours, else one question: "24 Skin Tone Colors (Pack of 6)"
+      // had offered both sets)
       if (/\bskin\b/i.test(w))
-        sizes(w, [6, 24, 36], /skin/).forEach(
-          (n) =>
-            (hit =
-              put([n === 36 ? '36 Skin Tones' : n === 24 ? '24 Portrait' : '6 Skin Tones'], into) || hit),
-        );
-      if (/\bgr[ae]ys?\b/i.test(w) && sizes(w, [36], /gr[ae]ys?/).length)
+        hit =
+          named(
+            th(sizes(w, [6, 24, 36], /skin/)),
+            (n) => [n === 36 ? '36 Skin Tones' : n === 24 ? '24 Portrait' : '6 Skin Tones'],
+            into,
+          ) || hit;
+      if (/\bgr[ae]ys?\b/i.test(w) && th(sizes(w, [36], /gr[ae]ys?/)).length)
         hit = put(['36 Gray Tones'], into) || hit;
-      if (/\bpastels?\b/i.test(w) && sizes(w, [48], /pastels?/).length)
+      if (/\bpastels?\b/i.test(w) && th(sizes(w, [48], /pastels?/)).length)
         hit =
           put(
             /sweet/i.test(w)
@@ -77752,16 +77933,19 @@ function scanSets(text, brand) {
                 : ['48 Pastel - Sweetness', '48 Pastel - Blossoming'],
             into,
           ) || hit;
-      if (/\bportraits?\b/i.test(w) && sizes(w, [24], /portraits?/).length)
+      if (/\bportraits?\b/i.test(w) && th(sizes(w, [24], /portraits?/)).length)
         hit = put(['24 Portrait'], into) || hit;
       if (sizes(w, [104], /ohuhu/).length) hit = put(['104 Colors Set'], into) || hit;
-      // (a line naming one of those isn't also Honolulu 48: "Honolulu Mid-tone 48 Colors")
-      if (!hit && /\bhonolulu\b/i.test(w))
-        hit = named(
-          sizes(w, [24, 48, 72, 120, 168, 216, 320], /honolulu/),
-          (n) => [n === 320 ? 'Honolulu 320 (complete set)' : 'Honolulu ' + n],
-          into,
-        );
+      // (a line naming one of those isn't also Honolulu 48: "Honolulu Mid-tone 48 Colors". v318.28: only the size it
+      // took is left out, not every size on the line: "Honolulu 72 Colors + 6 Skin Tones" had read only the 6)
+      if (/\bhonolulu\b/i.test(w)) {
+        const hs = sizes(w, [24, 48, 72, 120, 168, 216, 320], /honolulu/),
+          left = hs.filter((n) => !took.has(n));
+        left.each = hs.each;
+        if (left.length)
+          hit =
+            named(left, (n) => [n === 320 ? 'Honolulu 320 (complete set)' : 'Honolulu ' + n], into) || hit;
+      }
     }
     if (/\bciao\b/i.test(w))
       hit =
@@ -77804,7 +77988,10 @@ function scanHandle(text, loud) {
   // (v318: a set's name, in text pasted or typed: its box, an order email)
   // (v318 review: and read by Scan Text from a set's box, quietly: "HONOLULU 120" had added Ohuhu's 120, Black. Not in
   // Find mode, where a set's name goes straight on to Is this your set?: only on Enter or a paste there)
-  let sets = String(text).trim() && (loud || !scanFind) ? scanSets(text, scanFind ? scanFind.brand : '') : [];
+  let sets =
+    String(text).trim() && (loud || !scanFind)
+      ? scanSets(text, scanFind ? scanFind.brand : '', scanBrand)
+      : [];
   // (read quietly with the name of the marker whose code is the size, "HONOLULU 120 Black": that cap, not the set)
   if (!loud && sets.length) {
     const tw = scanWords(text),
@@ -77891,8 +78078,12 @@ function scanSetCard(groups, codes, took, offer) {
   });
   if (took) {
     scanSay(
-      took.took && took.mine < took.took ? 'ok' : 'same',
-      took.took ? took.took + ' added to the list' : 'All already in the list',
+      (took.took && took.mine < took.took) || took.bl ? 'ok' : 'same',
+      took.took
+        ? took.took + (took.bl ? ' and a Colorless Blender' : '') + ' added to the list'
+        : took.bl
+          ? 'Its Colorless Blender added to the list'
+          : 'All already in the list',
       [
         took.p.n,
         took.mine ? took.mine + ' already yours' : '',
@@ -77944,19 +78135,26 @@ function scanSetTake(si, rest) {
   const p = MARKER_SETS[si];
   let took = 0,
     mine = 0,
-    same = 0;
+    same = 0,
+    bl = false;
   presetMkeys(p).forEach(function (k) {
     const i = keyIdx(k);
     if (i == null) return;
     if (scanTake(i, '', true, true)) {
+      // (v318.28) the Colorless Blender an Ohuhu set brings said apart, as the card's "Add all 24" and Add's toast
+      // count it: "25 added to the list" had followed "Add all 24 to the list"
+      if (k === 'Ohuhu|0') {
+        bl = true;
+        return;
+      }
       took++;
       if (state.owned.has(k)) mine++;
     } else same++;
   });
   scanSetIn = true;
   scanRender();
-  scanSetCard(rest, false, { p: p, took: took, mine: mine, same: same });
-  scanBeep(took && mine < took ? 'ok' : 'same');
+  scanSetCard(rest, false, { p: p, took: took, mine: mine, same: same, bl: bl });
+  scanBeep((took && mine < took) || bl ? 'ok' : 'same');
 }
 /* ===== Scan: the brand rules (scan.js 2040–2264, 1513–1520 and 2916–2924, and photo-read.js 344–377 and 486–574, until v318.8) =====
    What a piece of text says about its brand (scanBrandWord, scanListBrand), the codes both brands share, a code read
@@ -77975,26 +78173,38 @@ function scanSetTake(si, rest) {
 // part's reading isn't kept (r null: the whole is read under the brand found). A shop's list of all 358 Copic markers,
 // a line each with a few words, is 20,242 characters: it had been told no brand, so with Ohuhu chosen 357 questions
 // and the code both brands have put in as Ohuhu's, unasked
+// (v318.28) and from the last SCAN_LIST_BRAND_MAX, from a line's start, too: a list of both brands one after the other
+// (364 Ohuhu lines, then 358 Copic, 41,058 characters) had been told Ohuhu from its start, and each Copic line asked
 const SCAN_LIST_BRAND_MAX = 20000;
 function scanListBrand(text) {
-  let part = String(text);
-  const cut = part.length > SCAN_LIST_BRAND_MAX;
+  const all = String(text),
+    cut = all.length > SCAN_LIST_BRAND_MAX,
+    parts = [all];
   if (cut) {
-    part = part.slice(0, SCAN_LIST_BRAND_MAX);
-    const nl = Math.max(part.lastIndexOf('\n'), part.lastIndexOf('\r'));
-    if (nl > 0) part = part.slice(0, nl);
+    let head = all.slice(0, SCAN_LIST_BRAND_MAX),
+      tail = all.slice(-SCAN_LIST_BRAND_MAX);
+    const nl = Math.max(head.lastIndexOf('\n'), head.lastIndexOf('\r'));
+    if (nl > 0) head = head.slice(0, nl);
+    const tl = tail.search(/[\r\n]/);
+    if (tl >= 0) tail = tail.slice(tl + 1);
+    parts[0] = head;
+    // (not twice over the same lines: a list just past the limit is read once more only for what the start didn't hold)
+    if (all.length - tail.length < head.length) tail = all.slice(head.length).replace(/^[\r\n]+/, '');
+    if (tail) parts.push(tail);
   }
   const n = {};
-  scanLineBrand = true;
   let r;
-  try {
-    r = scanRead(part, '');
-  } finally {
-    scanLineBrand = false;
-  }
-  (r.codes || []).forEach(function (c) {
-    const bs = [...new Set(c.opts.map((i) => COLORS[i].brand))];
-    if (bs.length === 1 && !c.lb) n[bs[0]] = (n[bs[0]] || 0) + 1;
+  parts.forEach(function (part) {
+    scanLineBrand = true;
+    try {
+      r = scanRead(part, '');
+    } finally {
+      scanLineBrand = false;
+    }
+    (r.codes || []).forEach(function (c) {
+      const bs = [...new Set(c.opts.map((i) => COLORS[i].brand))];
+      if (bs.length === 1 && !c.lb) n[bs[0]] = (n[bs[0]] || 0) + 1;
+    });
   });
   const bs = Object.keys(n);
   if (bs.reduce((s, b) => s + n[b], 0) < 5) return null;
@@ -82235,6 +82445,9 @@ async function ocrOne(file) {
   try {
     r.img = await ocrPhoto(file);
   } catch (_) {
+    // (v318.28) Scan closed, or another photo started, while this one failed to open: nothing of it said. Its failure
+    // had taken over the next photo's view, and Done there dropped that photo without a word
+    if (ocrRun !== r) return;
     r.done = true;
     r.failed = true;
     r.note = 'That photo couldn’t be opened. Try another, or a screenshot of it.';
@@ -82675,7 +82888,8 @@ function ocrButtons(r) {
       ocrCloserList = [];
       ocrClLast = null;
       ocrHide();
-      scanSay('same', (many ? 'Photos' : 'Photo') + ' taken back out', off + ' off the list', -1);
+      // (v318.28: as its button counted them, "Undo this photo" with one of a batch read)
+      scanSay('same', (nRead > 1 ? 'Photos' : 'Photo') + ' taken back out', off + ' off the list', -1);
       ocrFocusList(false);
     });
   $('ocrDone').focus({ preventScroll: true });
@@ -82729,7 +82943,13 @@ function ocrFinish() {
     else
       scanSay(
         added ? 'ok' : 'same',
-        'From ' + ocrNPhotos(q.per.length) + ': ' + (added ? added + ' added to the list' : 'nothing new'),
+        // (v318.28) a batch that ended early, stopped or the reader failing: "From 2 of 5 photos", the rest not read
+        'From ' +
+          (q.per.length < q.files.length
+            ? q.per.length + ' of ' + q.files.length + ' photos'
+            : ocrNPhotos(q.per.length)) +
+          ': ' +
+          (added ? added + ' added to the list' : 'nothing new'),
         [
           failed ? failed + ' not read' : '',
           same ? same + ' already in the list' : '',
@@ -82750,6 +82970,12 @@ function ocrFinish() {
         r.same ? r.same + ' already in the list' : '',
         r.asked ? r.asked + ' to choose in the list below' : '',
         r.switched ? ocrSwitchNote(r.brand) : '',
+        // (v318.28: a batch stopped at its first photo, as its line said it)
+        q && q.files.length > 1
+          ? q.files.length === 2
+            ? 'the other photo not read'
+            : 'the other ' + (q.files.length - 1) + ' photos not read'
+          : '',
       ]
         .filter(Boolean)
         .join(' · ') || 'Check them below, then Add',
@@ -84742,7 +84968,8 @@ document.addEventListener('keydown', function (e) {
   // (v309.1: none new, a set or caps already yours, says so, not "0 more markers added")
   function added(n, names, del, set) {
     // (v318.27: all the colours owned, as Home's Markers card counts them; the blender aside)
-    var all = inkKeys([...state.owned]).length || state.owned.size,
+    // (v318.28: setKeys, as Home's card: inkKeys had left Copic's 0 out, "358 markers added" and "357 … in your collection")
+    var all = setKeys([...state.owned]).length || state.owned.size,
       // (the first markers: all the colours owned are these; a set's blender aside)
       first = setKeys([...state.owned]).length === n;
     // (v309.1: added on "Anything else?" itself (Scan's toast Open): what it said, for Undo to put back)
@@ -87066,6 +87293,10 @@ function renderHomeNotes() {
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.28',
+    t: 'Fixes from a second debugging pass. Among them: Home counts Copic’s 0 among your markers, as the set list does; a long list pasted with both brands reads both again; shop names like “Markers - 120 Colors” and “72 Colors + 6 Skin Tones” read as their sets; a palette band keeps its scheme when tapped; a PDF with more than 60 pages shows the rest; a plan step’s Undo undoes only that step; screen readers hear every toast, not only the first; the colour sizes fit a small phone at large text.',
+  },
+  {
     v: 'v318.27',
     t: 'Keep touching sections clearly different now keeps its word on every Shuffle, with Main colour and No repeats too, and says so when you have too few markers for it. Ohuhu’s 6 Skin Tones set is in the set list; if your 24 Portrait came with a Colorless Blender, tick the blender in Markers. On a phone, Print’s Paper choices come straight after Pages. With a guide open, ⋯ › Open a PDF.',
   },
@@ -88469,10 +88700,18 @@ const WHATS_NEW = [
     const n = answered();
     D.getElementById('ttCount').textContent = n + ' of ' + TASKS.length + ' answered';
     D.getElementById('ttBarFill').style.width = Math.round((n / TASKS.length) * 100) + '%';
-    const t = formTarget();
+    const t = formTarget(),
+      // (v318.28) the same details either way, all that context() adds: the share sheet's said only the version and
+      // device, and the form's left out the tester number and Home Screen app or tab
+      det =
+        'a few details (a tester number made on this device, the app’s version, your device, Home Screen app or browser tab, how many markers of each brand, and how many guides and palettes you’ve saved)';
     D.getElementById('ttWhat').textContent = t
-      ? 'Send results sends your answers, your name if you give it, and a few details (the app’s version, your device, how many markers of each brand, and how many guides and palettes you’ve saved) to Marker Studio’s maker. Nothing else, and nothing until you tap it.'
-      : 'Send results opens the share sheet with your answers and a few details (the app’s version and your device), for you to send to Marker Studio’s maker.';
+      ? 'Send results sends your answers, your name if you give it, and ' +
+        det +
+        ' to Marker Studio’s maker. Nothing else, and nothing until you tap it.'
+      : 'Send results opens the share sheet with your answers, your name if you give it, and ' +
+        det +
+        ', for you to send to Marker Studio’s maker.';
   }
   function said(t) {
     D.getElementById('ttSaid').textContent = t || '';
@@ -88814,15 +89053,22 @@ if ('serviceWorker' in navigator) {
       if (!h) return;
       h.insertAdjacentHTML(
         'beforeend',
-        '<div class="msblocked msupd" id="msUpd" role="status"><b>A new version of Marker Studio is ready.</b> ' +
+        '<div class="msblocked msupd" id="msUpd"><b>A new version of Marker Studio is ready.</b> ' +
           '<button type="button" class="sflink" id="msUpdGo">Reload</button>' +
           '<button type="button" class="msupdx" id="msUpdX" aria-label="Not now">\u2715</button></div>',
       );
+      // (v318.28) said from #msSay, a live region there from the start: the banner, inserted holding its words, was
+      // a live region that didn't exist before they did, which screen readers (iOS VoiceOver) don't announce
+      var say = document.getElementById('msSay');
+      if (say) say.textContent = 'A new version of Marker Studio is ready.';
       document.getElementById('msUpdGo').addEventListener('click', function () {
         location.reload();
       });
       document.getElementById('msUpdX').addEventListener('click', function () {
         var b = document.getElementById('msUpd');
+        // (v318.28) the keyboard's focus, on the ✕ going with it, to the tab that's open (it fell to the page's start)
+        var tab = document.querySelector('.modes button.on');
+        if (b && tab && b.contains(document.activeElement)) tab.focus();
         if (b) b.remove();
         shut = true;
       });

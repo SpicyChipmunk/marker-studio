@@ -262,6 +262,8 @@ function enterColor(paint) {
   zoneEditEnd(true);
   heldNoteClear();
   if (!assignData || guideWhite()) return;
+  // (v318.28) a plan step's toast Undo does nothing in Colour along: it goes
+  planToastOff();
   if (popOpen()) closeSwatchPop();
   hideTip();
   normalizeTones();

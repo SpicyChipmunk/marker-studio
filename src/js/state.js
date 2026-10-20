@@ -985,7 +985,11 @@ function sQueryOf(str) {
   return q;
 }
 function sWord(h, w, multi) {
-  if (h.text.includes(w) || (w.length >= 4 && h.brand.startsWith(w))) return true;
+  // (v318.28) a number with other words is found in a name only as the whole number: "copic 0" had found Cool Gray
+  // No.10 and No.00 by their names, eleven markers, not the 0s the rule below finds
+  const inName =
+    multi && /^\d+$/.test(w) ? new RegExp('(^|\\D)' + w + '(?!\\d)').test(h.text) : h.text.includes(w);
+  if (inName || (w.length >= 4 && h.brand.startsWith(w))) return true;
   if (h.capText && h.capText.includes(w) && capIsOldAny(h.i)) return true;
   const k = w.replace(/[-.]/g, '');
   if (!k) return false;

@@ -1403,6 +1403,9 @@ function libDuplicate(id) {
           H: src.H,
           keys: src.keys || [],
           n: src.n,
+          // (v318.28) the shading's markers beyond its own colours, as the original's ("+ N for shading" on Home): the
+          // row is built from what's passed and a new id has no row to take them from
+          sk: src.sk,
           thumb: src.thumb || '',
           payload: p,
           quiet: true,

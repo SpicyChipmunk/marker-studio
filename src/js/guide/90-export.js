@@ -3376,8 +3376,12 @@ async function _exportPDF() {
         const b = document.getElementById('sfPDF');
         if (b && b.disabled && _pdfProg) b.textContent = _pdfProg;
       });
+    // (v318.28: Key + reference's named apart from Page + key's, as the test strip's is: printed one after the other,
+    // the second had come as "… (1).pdf" on a computer, and an iPad's Save to Files offered to replace the first)
     const fname =
-      fileSlug(name, 'colour-guide', 80).toLowerCase() + (what === 'strip' ? '-test-strip' : '') + '.pdf';
+      fileSlug(name, 'colour-guide', 80).toLowerCase() +
+      (what === 'strip' ? '-test-strip' : what === 'ref' ? '-reference' : '') +
+      '.pdf';
     shareOrSave(blob, fname, name || 'Colouring guide', 'PDF', 'PDF downloaded.');
     // (v313: the sample's page printed, not just its test strip: a page being coloured, for Home's Continue card)
     if (smpTry && what !== 'strip' && gen === loadGen) {

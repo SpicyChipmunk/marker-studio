@@ -848,6 +848,12 @@ img.paperpick {
 #gapSort {
   min-width: 17.8em;
 }
+/* (v318.28) that width where the row has it, narrower where it hasn't (a phone with larger text, an iPhone's 16px
+   drop-downs): at 17.8em beside "Order" it ran up to 88px past the screen's edge */
+#gapWrap #gapSort {
+  flex: 0 1 17.8em;
+  min-width: 0;
+}
 /* (v316) every drop-down (Markers' Order, the Library's sort, the guide's Saved palette, Harmony and tone) with the app's
    own chevron, not the browser's arrow: the picture is Lucide's chevron-down in the ink colour (a background can't take
    currentColor); the rules come after each one's own background shorthand, which would otherwise clear it */

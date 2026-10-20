@@ -15,26 +15,38 @@
 // part's reading isn't kept (r null: the whole is read under the brand found). A shop's list of all 358 Copic markers,
 // a line each with a few words, is 20,242 characters: it had been told no brand, so with Ohuhu chosen 357 questions
 // and the code both brands have put in as Ohuhu's, unasked
+// (v318.28) and from the last SCAN_LIST_BRAND_MAX, from a line's start, too: a list of both brands one after the other
+// (364 Ohuhu lines, then 358 Copic, 41,058 characters) had been told Ohuhu from its start, and each Copic line asked
 const SCAN_LIST_BRAND_MAX = 20000;
 function scanListBrand(text) {
-  let part = String(text);
-  const cut = part.length > SCAN_LIST_BRAND_MAX;
+  const all = String(text),
+    cut = all.length > SCAN_LIST_BRAND_MAX,
+    parts = [all];
   if (cut) {
-    part = part.slice(0, SCAN_LIST_BRAND_MAX);
-    const nl = Math.max(part.lastIndexOf('\n'), part.lastIndexOf('\r'));
-    if (nl > 0) part = part.slice(0, nl);
+    let head = all.slice(0, SCAN_LIST_BRAND_MAX),
+      tail = all.slice(-SCAN_LIST_BRAND_MAX);
+    const nl = Math.max(head.lastIndexOf('\n'), head.lastIndexOf('\r'));
+    if (nl > 0) head = head.slice(0, nl);
+    const tl = tail.search(/[\r\n]/);
+    if (tl >= 0) tail = tail.slice(tl + 1);
+    parts[0] = head;
+    // (not twice over the same lines: a list just past the limit is read once more only for what the start didn't hold)
+    if (all.length - tail.length < head.length) tail = all.slice(head.length).replace(/^[\r\n]+/, '');
+    if (tail) parts.push(tail);
   }
   const n = {};
-  scanLineBrand = true;
   let r;
-  try {
-    r = scanRead(part, '');
-  } finally {
-    scanLineBrand = false;
-  }
-  (r.codes || []).forEach(function (c) {
-    const bs = [...new Set(c.opts.map((i) => COLORS[i].brand))];
-    if (bs.length === 1 && !c.lb) n[bs[0]] = (n[bs[0]] || 0) + 1;
+  parts.forEach(function (part) {
+    scanLineBrand = true;
+    try {
+      r = scanRead(part, '');
+    } finally {
+      scanLineBrand = false;
+    }
+    (r.codes || []).forEach(function (c) {
+      const bs = [...new Set(c.opts.map((i) => COLORS[i].brand))];
+      if (bs.length === 1 && !c.lb) n[bs[0]] = (n[bs[0]] || 0) + 1;
+    });
   });
   const bs = Object.keys(n);
   if (bs.reduce((s, b) => s + n[b], 0) < 5) return null;

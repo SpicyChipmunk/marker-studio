@@ -244,7 +244,10 @@ function revModal(on) {
           /^(SCRIPT|STYLE|LINK)$/.test(c.tagName) ||
           c.classList.contains('overlay') ||
           c.id === 'msToast' ||
-          c.id === 'sfLive'
+          c.id === 'sfLive' ||
+          // (v318.28) the live regions in the page from the start
+          c.id === 'msSay' ||
+          c.id === 'msLive'
         )
           return;
         c.inert = true;

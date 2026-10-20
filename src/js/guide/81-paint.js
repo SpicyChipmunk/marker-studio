@@ -127,7 +127,12 @@ function paintSec(s, l) {
   const A = assignData.assign,
     m = A[l],
     b = s.m;
-  if (!m) return;
+  if (!m) {
+    // (v318.28) a section left white keeps the paper (Colour it gives it a marker): said when the stroke ends, as a
+    // zone's are, where it had done nothing at all
+    if (whitePins[l] !== undefined && !(zones.length && zoneOf(l) !== zoneCur)) s.white = (s.white || 0) + 1;
+    return;
+  }
   // (only the zone being edited: another zone's sections are its own pattern's)
   if (zones.length && zoneOf(l) !== zoneCur) {
     s.skip = (s.skip || 0) + 1;
@@ -162,6 +167,14 @@ function paintEnd(tap) {
     cancelAnimationFrame(paintRaf);
     paintRaf = 0;
   }
+  if (s.white && !s.skip && assignData)
+    toast(
+      (s.white === 1
+        ? (s.n ? 'One section you went over is' : 'That section is') + ' left white. To colour it:'
+        : s.white + ' sections you went over are left white. To colour one:') +
+        ' Done painting, then tap it.',
+      3200,
+    );
   if (s.skip && assignData) {
     const zn = zoneName(zoneCur);
     toast(

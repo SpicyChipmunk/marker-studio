@@ -327,6 +327,7 @@ function planCommit(why, quiet, more) {
   planFwd = [];
   planLast = cur;
   planBtn();
+  planToastOff();
   if (quiet) return;
   // coloured sections kept their markers where the change would have recoloured them: say so, with Recolour them too
   // (once per visit to the plan, and again when more are kept)
@@ -355,7 +356,8 @@ function planCommit(why, quiet, more) {
   }
   const ub = document.getElementById('sfPlanUndo');
   if (/^Surprise\b/.test(prev.label) || !ub || ub.style.display === 'none' || !ub.getClientRects().length) {
-    toastAction(prev.label, 'Undo', planUndo);
+    toastAction(prev.label, 'Undo', planToastUndo(prev));
+    planToastMark();
     return;
   }
   // (a change that has just said what it did in its own words, like a picker's Done, keeps them: said in this same
@@ -363,6 +365,27 @@ function planCommit(why, quiet, more) {
   // "B03 → Y315 …, 1 section" with the vaguer "Section colour changed")
   if (!sayLive.now && !(Date.now() - (sayLive.at || 0) < 100))
     sayLive(prev.label + (held ? '. ' + heldNoteText(held) + '.' : ''));
+}
+// (v318.28) A toast's Undo for one plan step (Surprise's, always; any step's while ↶ Undo is hidden; a swap's): it
+// undoes that step while it is still the last one. A pin, Leave white or Change colour taken in its 8 s says nothing
+// of its own while ↶ Undo shows, and the toast's Undo had undone that instead, leaving the step it names; a later step
+// now takes the toast away (planToastOff, from planCommit), as Colour along does, and in another guide it does nothing.
+// (Checked by step, not by the stack's length: at PLANMAX a new step shifts the oldest off and the length stays)
+let _planToastBtn = null;
+function planToastUndo(st) {
+  const g = loadGen;
+  return function () {
+    if (g === loadGen && sfmode === 'guide' && assignData && planStack[planStack.length - 1] === st)
+      planUndo();
+  };
+}
+function planToastMark() {
+  _planToastBtn = document.getElementById('toastAct');
+}
+function planToastOff() {
+  const b = _planToastBtn;
+  _planToastBtn = null;
+  if (b && b.isConnected) hideToast();
 }
 // The line under the Plan's tabs saying which coloured sections a change kept, with Recolour them too and ✕: shown
 // until it's used, closed, or the plan is left (_heldNote)
@@ -630,8 +653,6 @@ function lowSwap(k) {
   ctlRefocus('#sfTab-' + gTab);
   // (v314.1) said, with the marker it now takes and an Undo, as Mark all is: the line went and only the picture changed
   // (the toast is read out; its Undo is the Plan's own, while this is still the last change)
-  const n = planStack.length,
-    g = loadGen;
   toastActionHTML(
     'Swapped ' +
       mcodeHTML(om) +
@@ -641,10 +662,9 @@ function lowSwap(k) {
       nWord(secs.length, 'section') +
       ', pinned',
     'Undo',
-    function () {
-      if (g === loadGen && sfmode === 'guide' && assignData && planStack.length === n) planUndo();
-    },
+    planToastUndo(planStack[planStack.length - 1]),
   );
+  planToastMark();
 }
 /* (v313) Screens and ink differ: a one-time line under the tabs, "Screens and ink differ. Print a test strip of these
    16 markers to see them on your paper", whose link opens Print with Test strip chosen. Once ever (with the hints),

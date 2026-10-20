@@ -59,7 +59,9 @@ function chrome() {
         // (v318.27) the colours, as the guide's card ("Built from your 120 colours") and the welcome ("120 markers
         // added") count them: a set's Colorless Blender had made Home say 121 (v309.2 counted it here). Only a
         // blender owned: it, still counted, so the card doesn't ask to set up markers that are there
-        const n = inkKeys([...state.owned]).length || state.owned.size;
+        // (v318.28) the colours as a set's size counts them (setKeys): Ohuhu's blender aside, Copic's 0 counted, as it
+        // is in its set (Ciao 36 Set B, All Copic markers 358). inkKeys had made All Copic markers 357 and Set B 35
+        const n = setKeys([...state.owned]).length || state.owned.size;
         hc.classList.toggle('attn', !n);
         const sb = hc.querySelector('.hcsub');
         if (sb) sb.textContent = n ? n + (n === 1 ? ' marker' : ' markers') : 'Set up your markers';
@@ -707,7 +709,9 @@ function poolSig() {
 function palAdopt() {
   const p = palPreview();
   if (!p) return false;
-  palPush(p.slice(), 24);
+  const np = p.slice();
+  palPush(np, 24);
+  rbSeedCarry(p, np);
   palPv = null;
   palPvOff = true;
   save();
@@ -811,7 +815,11 @@ function doReRollBand(k) {
   if (rolling || state.mode !== 'palette') return;
   const pal = state.palettes[state.palettes.length - 1];
   if (!pal || k >= pal.length) return;
-  const pick = rerollPick(pal, k, state.harmony);
+  // (v318.28) by the palette's own scheme, and pushed as it: a scheme chosen since that couldn't be made (five clear
+  // markers and Rainbow, or a photo with no usable colours) leaves the palette before it on the card, and one tap had
+  // re-rolled it by the new scheme's rules and called it that scheme (its line, its note, Save), v318.25's C4/C5 back
+  const h = currentPaletteHarm();
+  const pick = rerollPick(pal, k, h);
   // (said, not a tap that does nothing or a colour off the scheme, v304)
   if (pick < 0) {
     toast(
@@ -830,7 +838,9 @@ function doReRollBand(k) {
     // (a new step in the history, so Undo brings the colour back, v299: it was gone for good)
     const np = pal.slice();
     np[k] = pick;
-    palPush(np, 24);
+    palPush(np, 24, false, h);
+    // (v318.28: a Rainbow built from a base is still built from it, while it holds it: "· X base" had gone)
+    rbSeedCarry(pal, np);
     save();
     const c = COLORS[pick];
     b.style.background = c.hex;
@@ -1001,10 +1011,10 @@ function action() {
   state.mode === 'palette' ? doGenerate() : state.mode === 'random' ? doDraw() : 0;
 }
 // The palette history, with each palette's scheme beside it (state.palH; `auto`: made by a size, scheme or filter
-// change, palHarm)
-function palPush(pal, max, auto) {
+// change, palHarm; v318.28 `harm`: a palette re-rolled by its own scheme, not the one chosen, doReRollBand)
+function palPush(pal, max, auto, harm) {
   state.palettes.push(pal);
-  state.palH.push(state.harmony + (auto ? '+' : ''));
+  state.palH.push((harm || state.harmony) + (auto ? '+' : ''));
   while (state.palettes.length > max) {
     state.palettes.shift();
     state.palH.shift();

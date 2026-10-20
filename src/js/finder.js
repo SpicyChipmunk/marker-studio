@@ -325,8 +325,15 @@ function searchOutside() {
   )
     return [];
   const own = state.collView === 'owned',
-    out = [];
-  for (let i = 0; i < COLORS.length; i++) if (avail(i) && isOwned(i) !== own) out.push(i);
+    out = [],
+    // (v318.28) "skin" counts the skin tones searchSkin shows, not names with the word: Owned's "Skin tones (12)" had
+    // no "60 more in All", and with none of them yours it said "No markers match" though All has 72
+    sk =
+      typeof skinIdx === 'function' && SKIN_Q.test(sQueryOf(searchStr).words.join(' '))
+        ? new Set(skinIdx())
+        : null;
+  for (let i = 0; i < COLORS.length; i++)
+    if ((sk ? sk.has(i) && passes(i) : avail(i)) && isOwned(i) !== own) out.push(i);
   return out;
 }
 function moreInAllHTML(n, none) {
@@ -524,7 +531,8 @@ function shownMatches() {
 }
 function gridActs(list) {
   gridShown = list;
-  ownAllBtn.disabled = !list.length;
+  // (v318.28) only with one not yours among them: every one shown yours, its tap had done nothing, without a word
+  ownAllBtn.disabled = !list.some((i) => !isOwned(i));
   // (v318.25) only with one of yours among them: in All, or a search of none of yours, it had armed "Untick 5
   // markers?" and its second tap did nothing
   ownNoneBtn.disabled = !list.some((i) => isOwned(i));
@@ -536,7 +544,10 @@ function renderGrid(more) {
   cellBt = brandsMixedIn(m);
   gridActs(m);
   matchHead(m.length, 'marker');
-  if (!m.length && more.length && state.owned.size) {
+  // (v318.28) the skin tones here first: some of them yours, "None of the markers matching “skin” are in your
+  // collection" isn't said over them
+  const sk = searchSkin();
+  if (!m.length && more.length && state.owned.size && !sk) {
     results.innerHTML = searchElsewhereHTML(more);
     return;
   }
@@ -550,8 +561,7 @@ function renderGrid(more) {
   }
   // (v308.3) the families the search names: shown when nothing else is, else offered in a line
   // (v318.26: "skin" shows the skin tones, with the family as a link)
-  const sk = searchSkin(),
-    sf = sk ? null : searchFams();
+  const sf = sk ? null : searchFams();
   if (sk) {
     m = sk.list;
     cellBt = brandsMixedIn(m);

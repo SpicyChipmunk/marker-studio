@@ -704,6 +704,11 @@ function sfLeaveApply() {
   IDB.hold(
     IDB.getNow('guide-' + j.id)
       .then(function (old) {
+        // (v318.28) the stored guide is already what was kept aside (put away: the save begun then landed, and the
+        // copy, made from the same state, stayed with its base moved to that save's row, leaveRebase): nothing to
+        // put in. Writing it again gave the row a new time, so a guide backed up since read "not in a backup", was
+        // taken as newer by a restore, and reloaded in another tab
+        if (old && typeof old === 'object' && JSON.stringify(leaveSlim(old)) === JSON.stringify(j.pl)) return;
         // (v318.23: a newer version's settings in the stored guide kept, as its autosave keeps them. SF is there by
         // now: this runs once the database has answered, after the guide's code has loaded)
         let pl = old && leaveFill(j.pl, old);
@@ -2306,15 +2311,20 @@ function restoreGuideList(guides, _fts, done, prog) {
           // backup's copy takes its place, as before
           // (v304) a Library guide changed here since its last backup, about to be replaced by the backup's newer copy, is
           // kept first as "… (before restore)"
-          var pend =
-              !_ex &&
-              !!_gid &&
-              libPendList().some(function (x) {
-                return x.id === _gid;
-              }),
+          var pe =
+              !_ex && _gid
+                ? libPendList().find(function (x) {
+                    return x.id === _gid;
+                  })
+                : null,
+            pend = !!pe,
             // (v318.25: past its Undo, waiting in Recently deleted for a week since v318.1: its stored copy may hold
             // more than the backup's, so it is read as a lost guide's is, and left there when it differs)
-            binned = pend && !(libPend && libPend.entry && libPend.entry.id === _gid),
+            // (v318.28: only one with its row kept (e), as Recently deleted lists them: a delete with none, still
+            // finishing (an import that never opened, one from before v318.1), isn't there and is finished at the next
+            // start; the backup's copy takes its place, as before, rather than come in as "(from backup)" beside a
+            // guide said to be "left there")
+            binned = pend && !!pe.e && !(libPend && libPend.entry && libPend.entry.id === _gid),
             bust = !!_ex && _damaged.has(_ex.id),
             atRisk =
               !bust &&

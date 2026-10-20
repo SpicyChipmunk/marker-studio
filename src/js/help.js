@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.28',
+    t: 'Fixes from a second debugging pass. Among them: Home counts Copic’s 0 among your markers, as the set list does; a long list pasted with both brands reads both again; shop names like “Markers - 120 Colors” and “72 Colors + 6 Skin Tones” read as their sets; a palette band keeps its scheme when tapped; a PDF with more than 60 pages shows the rest; a plan step’s Undo undoes only that step; screen readers hear every toast, not only the first; the colour sizes fit a small phone at large text.',
+  },
+  {
     v: 'v318.27',
     t: 'Keep touching sections clearly different now keeps its word on every Shuffle, with Main colour and No repeats too, and says so when you have too few markers for it. Ohuhu’s 6 Skin Tones set is in the set list; if your 24 Portrait came with a Colorless Blender, tick the blender in Markers. On a phone, Print’s Paper choices come straight after Pages. With a guide open, ⋯ › Open a PDF.',
   },

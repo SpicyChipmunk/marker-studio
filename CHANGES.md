@@ -2275,3 +2275,51 @@ The rest of the list after v318.26, planned and pressure-tested, then built by t
 - **Tests:** test/v31827-v1 (5), -v2 (5); e2e/v31827-v1 (3), -v2 (3); changed on purpose: tabs, v289, print,
   guide-header, v3092 (120 markers), home (a set found by name), test/sets, v310-moodpics, straighten. Cache bumped to
   `marker-studio-v318.27`.
+
+# Changes — v318.28 (a second debugging pass)
+
+Eight reviewers went over the whole app again (markers, Scan, palettes, making and using a guide, saving, output,
+layout and screen readers); 31 findings, each checked on v318.27 by one of four fixers, 29 fixed with a test that fails
+on v318.27, one not a bug, one left for data.
+
+- **Markers.** Home's count uses the set's own markers, so Copic's 0 counts (all Copic: 358, as the set list and the
+  welcome say; Ohuhu's Colorless Blender still apart: Honolulu 120 is 120). Searching "skin tones" in Owned says how
+  many more are in All, not "none elsewhere". Tick all shown is greyed when every marker shown is already yours. A
+  number searched with other words ("copic 0") matches a name only as the whole number. Not changed: Ohuhu RV33 and RV34
+  still share one colour (#efd4e7): no published source; needs a swatch.
+- **Scan.** A long pasted list (over 20,000 characters) with both brands reads its end too, so the second brand isn't
+  lost (a v318.25 regression: 357 Copic lines became questions). "Honolulu 72 Colors + 6 Skin Tones" finds both sets;
+  "Markers - 120 Colors" (a dash with spaces) reads as a size; Find mode's or Scan's brand turns on that brand's set
+  names when the text names neither ("6 Skin Tones" with Ohuhu chosen); Ohuhu's blender is said apart in "N added to the
+  list". A photo read stopped and replaced no longer lets the old photo's error show on the new one. A batch that ended
+  early says "From 2 of 5 photos"; Undo's toast counts the photos read.
+- **Palettes.** Tapping a band re-rolls it under the palette's own scheme (Rainbow chosen but not makeable had taken the
+  band over); Monochrome from a black keeps its grey family on a band tap; a palette that had to use greys says so; a
+  Rainbow's base marker stays named after a band tap (not across a reload); From photo's bands work after a scheme.
+- **Making a guide.** A PDF with more than 60 pages shows them 60 at a time with "Pages 61–120" (it showed only the
+  first 60). Sections left white are out of the counts that guide the marker slider, the Gradient counts, "Every section
+  has its own marker" and Main colour's note (balance percentages are now of the coloured area).
+- **Random, found while testing this pass:** with Keep touching sections clearly different on, v318.27's repair could
+  move sections from the second colour to the main one past its share (Main colour 62% for 57% asked, about 1 roll in
+  75 of a small palette; a unit test failed 1 run in 20). It now moves a section across only while both stay within 4.5
+  points: no roll past 5 in 300, as many sections kept apart as before (381 left vs 378 in 300 rolls of 8 markers on
+  210 sections). test/balance has a seeded test for it.
+- **Using a guide.** A plan step's toast Undo undoes only that step, while it's the newest (it could undo a later Pin);
+  lowSwap's Undo too, also at the 30-step limit. Paint on a white section says how to colour it.
+- **Saving and output.** A guide only put away no longer reads "not in a backup" after a restart; Duplicate keeps
+  "+ N for shading"; a restore with an unfinished delete leaves the guide in the Library, not a "Recently deleted" it
+  isn't in. Key + reference's PDF is "…-reference.pdf" (it had Page + key's name). Tester tasks list the details sent.
+- **Layout and screen readers.** The colour sizes wrap under "Colours" when they don't fit (320 px, and 360 px at 1.6×,
+  had cut 7, 8 and 16). Screen readers hear every toast and the update banner (a status region there from the start; a
+  faded toast had left the accessibility tree); dismissing the update banner leaves the focus on the mode button.
+  Markers' Order drop-down fits the column; the Change colour scope buttons wrap their words at 320 px 1.6×. Checked and
+  fine: the inline link's tap area (51 × 44).
+- **Choices left for you:** Paint could colour a white section instead of explaining (changes what Leave white means);
+  at 320 px the colour sizes now sit under their label; the Change colour sheet's heading still truncates at 320 px 1.6×
+  (a header row shared by other sheets).
+- **v318.27's run on GitHub** passed; two WebKit flakes: v3189-detail (a long wait ran out at 5–9× its usual time, two
+  runs in a row: a stalled read on GitHub; not reproduced in five loaded runs here; the test now prints what was sent
+  to the reader and what came back if it times out) and v3101-d1 (WebKit's page process crashed).
+- **Tests:** test/v31828-y1 (5), -y2 (4), balance (+1); e2e/v31828-y1 (6), -y2 (4), -y3 (7), -y4 (5); changed on purpose:
+  test/v31827-v1 (Home's count), e2e/v318-scan ("120 and a Colorless Blender added"), v31823 (the banner's words in the
+  status region), v3189-detail (diagnostics). Cache bumped to `marker-studio-v318.28`.

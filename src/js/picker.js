@@ -1044,8 +1044,7 @@ function applyPhotoPalette() {
     return;
   }
   var pal = _res.markers;
-  _photoLabs = _res.labs;
-  _photoTried = {};
+  // (v318.28: the photo's colours only once it has a palette: kept for the palette on the card, v318.25)
   if (!pal.length) {
     errCard(
       document.getElementById('photoPick'),
@@ -1057,6 +1056,8 @@ function applyPhotoPalette() {
     );
     return;
   }
+  _photoLabs = _res.labs;
+  _photoTried = {};
   _photoLabsOf.set(pal, _res.labs);
   palPush(pal, 20);
   state.locked = [];
@@ -1207,6 +1208,10 @@ function palFrom(pal, si, h) {
   // (v318.25: `h`, the palette's own scheme when it isn't the one chosen, currentPaletteHarm)
   return si != null && pal && ((h || state.harmony) === 'rainbow' ? _rbSeed.get(pal) === si : pal[0] === si);
 }
+// (v318.28) a copy of a Rainbow (a band re-rolled, the preview adopted) still built from its base while it holds it
+function rbSeedCarry(from, to) {
+  if (_rbSeed.has(from) && to.includes(_rbSeed.get(from))) _rbSeed.set(to, _rbSeed.get(from));
+}
 function genRainbow(n, opts) {
   if (!window.SF || !SF.rainbowPick) return null;
   const pool = [];
@@ -1275,6 +1280,17 @@ function rerollPick(pal, k, harmony) {
     if (x || y) ctx.bh = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
     ctx.fam = COLORS[cur].fam;
     ctx.greyFam = LCH[cur][1] < GREY_C || famGreyish(cur);
+    // (v318.28) a Monochrome from a near-grey base (first, genPalette's greyBase: a black) is a ramp of greys, and
+    // its re-rolls stay greys, of the family most of its other greys are in: from the tapped band's own family (the
+    // black's holds only blacks) clear blues, greens and violets near a grey's meaningless hue had won
+    if (LCH[pal[0]][1] < GREY_C) {
+      ctx.greyBase = true;
+      ctx.greyFam = true;
+      const nf = {};
+      for (let p = 1; p < pal.length; p++)
+        if (p !== k && LCH[pal[p]][1] < GREY_C) nf[COLORS[pal[p]].fam] = (nf[COLORS[pal[p]].fam] || 0) + 1;
+      for (const f in nf) if (nf[f] > (nf[ctx.fam] || 0)) ctx.fam = f;
+    }
   }
   const slot = { h: LCH[cur][2], L: LCH[cur][0] };
   // (v306) Rainbow: aimed at the middle of the gap round the wheel this colour fills (between its neighbours in hue
@@ -1448,6 +1464,13 @@ function closeNote() {
           ' clear colours for a rainbow, not ' +
           state.palSize +
           '.';
+      // (v318.28) greys in a colour scheme: the last resort of its picks (genPick), said as the other loosenings are
+      // (report.grey's test); Monochrome's greys are its steps, a Rainbow's are counted above
+      else if (h !== 'mono' && h !== 'rainbow' && pal.some((i) => !fixed.has(i) && LCH[i][1] < GREY_C))
+        t =
+          'Some colours are greys: your markers in play don\u2019t have ' +
+          pal.length +
+          ' clear colours for this scheme.';
       else if (d != null && d < genNeed(h))
         t =
           'Two colours are close: your markers don\u2019t have ' +
@@ -1491,7 +1514,7 @@ function bandLabel(b, idx) {
       (customWhy(idx) ? ', ' + customWhy(idx) : '') +
       (state.locked.includes(idx)
         ? ', locked'
-        : state.harmony === 'photo'
+        : currentPaletteHarm() === 'photo'
           ? ', tap for the next nearest'
           : ', tap for another like it'),
   );
@@ -1506,7 +1529,7 @@ function bandWarn(b, idx) {
   b.classList.toggle('unowned', !!why);
   b.title =
     (why ? why.charAt(0).toUpperCase() + why.slice(1) + ' \u00b7 ' : '') +
-    (state.harmony === 'photo'
+    (currentPaletteHarm() === 'photo'
       ? 'Tap for the next-nearest owned marker'
       : 'Tap for another like it · lock to keep');
   if (why)

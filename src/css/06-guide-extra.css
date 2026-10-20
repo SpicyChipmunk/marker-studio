@@ -1339,12 +1339,11 @@
 #sfRoot .sfpopscope .sfedit {
   flex: 1 1 auto;
   min-width: 0;
-  height: 40px;
-  padding: 0 8px;
+  /* (v318.28) words that don't fit on one line take two, the button growing to hold them (44px, .sfedit's least, on
+     one): at 320px with 1.6× text they were cut to "Only this sect…" and "Everywhere (9 secti…", the count lost */
+  padding: 4px 8px;
   font-size: var(--t-sm);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 #sfRoot .sfpopnote {
   flex: none;

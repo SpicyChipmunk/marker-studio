@@ -324,3 +324,37 @@ test('speed: 3,600 sections and the whole catalogue (721 markers) lay out in wel
   assert.ok(cpuMs() - t < 3000, 'No repeats ' + Math.round(cpuMs() - t) + 'ms');
   sv.noAdj = false;
 });
+
+test('v318.28: Keep touching sections clearly different with Main colour keeps the shares within 5 points, roll after roll', () => {
+  const { core, sv, E } = appWith(['Honolulu 320 (complete set)']);
+  const by = {};
+  core.coll.forEach((m) => { const f = core.balFamOf(m); (by[f] = by[f] || []).push(m); });
+  const mid = (f, i) => by[f].slice().sort((a, b) => Math.abs(core.colour.lch(a)[0] - 60) - Math.abs(core.colour.lch(b)[0] - 60))[i];
+  const pink = by.pink.slice().sort((a, b) => hd(okH(b), 53) - hd(okH(a), 53))[0];
+  const keys = [mid('blue', 0), mid('blue', 1), mid('blue', 2), mid('teal', 0), mid('teal', 1), mid('orange', 0), pink, mid('yellow', 0)].map((m) => m.mkey);
+  withPalette(core, E, sv, keys);
+  const cl = grid(core, 15, 14);
+  // (the repair after the laying, v318.27, had moved sections from the second to the main colour past its share:
+  // about 1 roll in 75; seeded, so the same rolls every run)
+  const r0 = Math.random;
+  let s = 7, worst = 0;
+  Math.random = () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  try {
+    sv.noAdj = true;
+    for (let k = 0; k < 200; k++) {
+      sv.balSeed = k % 2 ? 0.6 : 0.2;
+      const p = core.balPlan();
+      core.buildBalance(cl, p);
+      worst = Math.max(worst, core.balMeasure(p).miss);
+    }
+  } finally {
+    Math.random = r0;
+    sv.noAdj = false;
+  }
+  assert.ok(worst <= 0.05, 'worst miss ' + (worst * 100).toFixed(1) + ' points');
+});

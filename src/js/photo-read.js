@@ -2330,6 +2330,9 @@ async function ocrOne(file) {
   try {
     r.img = await ocrPhoto(file);
   } catch (_) {
+    // (v318.28) Scan closed, or another photo started, while this one failed to open: nothing of it said. Its failure
+    // had taken over the next photo's view, and Done there dropped that photo without a word
+    if (ocrRun !== r) return;
     r.done = true;
     r.failed = true;
     r.note = 'That photo couldn’t be opened. Try another, or a screenshot of it.';
@@ -2770,7 +2773,8 @@ function ocrButtons(r) {
       ocrCloserList = [];
       ocrClLast = null;
       ocrHide();
-      scanSay('same', (many ? 'Photos' : 'Photo') + ' taken back out', off + ' off the list', -1);
+      // (v318.28: as its button counted them, "Undo this photo" with one of a batch read)
+      scanSay('same', (nRead > 1 ? 'Photos' : 'Photo') + ' taken back out', off + ' off the list', -1);
       ocrFocusList(false);
     });
   $('ocrDone').focus({ preventScroll: true });
@@ -2824,7 +2828,13 @@ function ocrFinish() {
     else
       scanSay(
         added ? 'ok' : 'same',
-        'From ' + ocrNPhotos(q.per.length) + ': ' + (added ? added + ' added to the list' : 'nothing new'),
+        // (v318.28) a batch that ended early, stopped or the reader failing: "From 2 of 5 photos", the rest not read
+        'From ' +
+          (q.per.length < q.files.length
+            ? q.per.length + ' of ' + q.files.length + ' photos'
+            : ocrNPhotos(q.per.length)) +
+          ': ' +
+          (added ? added + ' added to the list' : 'nothing new'),
         [
           failed ? failed + ' not read' : '',
           same ? same + ' already in the list' : '',
@@ -2845,6 +2855,12 @@ function ocrFinish() {
         r.same ? r.same + ' already in the list' : '',
         r.asked ? r.asked + ' to choose in the list below' : '',
         r.switched ? ocrSwitchNote(r.brand) : '',
+        // (v318.28: a batch stopped at its first photo, as its line said it)
+        q && q.files.length > 1
+          ? q.files.length === 2
+            ? 'the other photo not read'
+            : 'the other ' + (q.files.length - 1) + ' photos not read'
+          : '',
       ]
         .filter(Boolean)
         .join(' · ') || 'Check them below, then Add',

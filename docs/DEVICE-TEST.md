@@ -102,7 +102,18 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.27
+## New in this release: v318.28 (a debugging pass)
+
+- [ ] ★ VoiceOver on: Shuffle in a guide, wait for the toast to fade, Shuffle again → both toasts are read. The update
+      banner (if one appears) is read; ✕ leaves the focus on a mode button.
+- [ ] ★ Palette › Complementary, then tap each band → it stays Complementary. Monochrome from a black, tap a band →
+      greys.
+- [ ] Home's Markers card with all Copic markers → 358.
+- [ ] Open a PDF with more than 60 pages → "Pages 61–…" shows the rest.
+- [ ] Shuffle, then Pin within a few seconds, then the Shuffle toast's Undo → it's gone (only ↶ undoes now).
+- [ ] On a phone at large text: Palette's colour sizes all visible (they may sit under "Colours").
+
+## v318.27
 
 - [ ] ★ Random, Main colour, 8 markers, **Keep touching sections clearly different** on → Shuffle 10 times: no two
       touching sections look alike, or a note under the box says how many couldn't be kept apart. Set markers to 2 →

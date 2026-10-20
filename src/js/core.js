@@ -286,8 +286,9 @@ function toastShow(m, ms, html) {
     t = document.createElement('div');
     t.id = 'msToast';
     t.className = 'mstoast';
-    t.setAttribute('role', 'status');
-    t.setAttribute('aria-live', 'polite');
+    // (v318.28) not a live region itself: hidden between toasts (visibility), it was out of the accessibility tree
+    // when each new toast's words arrived, and the first was created holding them; #msSay, in the page from the
+    // start and never hidden, says them (below)
     document.body.appendChild(t);
     const hold = function () {
         if (t.classList.contains('on')) clearTimeout(toast._t);
@@ -308,6 +309,8 @@ function toastShow(m, ms, html) {
   }
   if (html) t.innerHTML = m;
   else t.textContent = m == null ? '' : String(m);
+  const say = document.getElementById('msSay');
+  if (say) say.textContent = t.textContent;
   // (v288: on the guide's Share tab the buttons are at the bottom, so a toast sits just under the pinned picture)
   // (the Share panel itself showing: the Plan, not Colour along or Edit sections after it)
   const sh = document.querySelector('#sfCtl .sftab[data-tab="share"]');
@@ -371,6 +374,9 @@ function toastActions(m, acts, ms, html) {
       { once: true },
     );
   });
+  // (v318.28) said with its buttons' words, as the toast was when it was the live region ("… Undo")
+  const say = document.getElementById('msSay');
+  if (say) say.textContent = t.textContent;
 }
 // A file for the person to keep. On a phone or tablet it goes to the share sheet (on an iPhone: Save to Files, iCloud
 // Drive, AirDrop or Mail); on a computer, or where files can't be shared, it downloads. Phones only allow sharing

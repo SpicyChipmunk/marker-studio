@@ -232,12 +232,17 @@ function scanCardAgain(key, loud) {
 // more when it doesn't (Ciao 36 with no letter read: Set A to E). Only a size the range comes in counts, and not a price
 // ($48.99, 48.99) or part of an order number; a size said as colours ("120 Colors") first. A line, or a line and the
 // next, at a time (an order of two sets is two names); the whole text when no line says (a box's words a line each).
-// brand: only that brand's sets.
-function scanSets(text, brand) {
+// brand: only that brand's sets. hint: the brand chosen in Scan (its sets read without their brand's word too).
+function scanSets(text, brand, hint) {
   const lines = String(text).normalize('NFKC').replace(/[‐-―]/g, '-').split(/\r?\n/),
     all = lines.join(' '),
-    ohuhu = /\b(ohuhu|honolulu)\b/i.test(all),
-    copic = /\bcopic\b/i.test(all),
+    saysO = /\b(ohuhu|honolulu)\b/i.test(all),
+    saysC = /\bcopic\b/i.test(all),
+    // (v318.28) with a brand chosen, or Find mode's, and neither brand named: that brand's ("6 Skin Tones" with Ohuhu
+    // chosen, "Sketch 72 Set A" in Copic's Find mode had found no set)
+    b = brand || hint,
+    ohuhu = saysO || (b === 'Ohuhu' && !saysC),
+    copic = saysC || (b === 'Copic' && !saysO),
     // (v318.1) a tray's text (two or more codes read off caps): a number near the range's word on another line is a
     // cap's code, not the set's size, unless said as colours ("HONOLULU" on the case, then R014, 120 — Ohuhu's Black —
     // and Y28 had offered Honolulu 120 and dropped the 120 from the codes). A line of its own still says it.
@@ -275,7 +280,8 @@ function scanSets(text, brand) {
       // (v318.1: "Honolulu B 120" is the range's second series, not a code "B 120")
       if (
         /[.,]/.test(v) ||
-        /[A-Za-z\d]$|[$£€#-]\s?$/.test(before) ||
+        // (v318.28: a dash an order number's only touching the number before it: "Markers - 120 Colors" is a size)
+        /[A-Za-z\d]$|[$£€#]\s?$|\S-$/.test(before) ||
         (/\b[A-Z]{1,3}\s$/.test(before) && !/\b(SET|OF|HONOLULU\s+B)\s$/i.test(before)) ||
         /^(-\d|\s?%)/.test(after)
       )
@@ -329,20 +335,26 @@ function scanSets(text, brand) {
   // (whether w named a set, new or not)
   const rules = function (w, into) {
     let hit = false;
+    // (v318.28) the sizes a themed set took: Honolulu's own read beside them ("Honolulu 72 Colors + 6 Skin Tones")
+    const took = new Set(),
+      th = (ns) => (ns.forEach((n) => took.add(n)), ns);
     if (ohuhu) {
-      if (/\bmid[\s-]?tones?\b/i.test(w) && sizes(w, [48], /mid[\s-]?tones?/).length)
+      if (/\bmid[\s-]?tones?\b/i.test(w) && th(sizes(w, [48], /mid[\s-]?tones?/)).length)
         hit = put(['48 Mid-tone Set'], into) || hit;
       // (v318.27) Ohuhu's three skin sets: the shop names the 24 "Honolulu 24 Skin Tone Colors", which had read as
       // Honolulu 24 (the app's "24 Portrait"); "6 Skin Tones" is the small one
+      // (v318.28: as Honolulu's, a size each when said as colours, else one question: "24 Skin Tone Colors (Pack of 6)"
+      // had offered both sets)
       if (/\bskin\b/i.test(w))
-        sizes(w, [6, 24, 36], /skin/).forEach(
-          (n) =>
-            (hit =
-              put([n === 36 ? '36 Skin Tones' : n === 24 ? '24 Portrait' : '6 Skin Tones'], into) || hit),
-        );
-      if (/\bgr[ae]ys?\b/i.test(w) && sizes(w, [36], /gr[ae]ys?/).length)
+        hit =
+          named(
+            th(sizes(w, [6, 24, 36], /skin/)),
+            (n) => [n === 36 ? '36 Skin Tones' : n === 24 ? '24 Portrait' : '6 Skin Tones'],
+            into,
+          ) || hit;
+      if (/\bgr[ae]ys?\b/i.test(w) && th(sizes(w, [36], /gr[ae]ys?/)).length)
         hit = put(['36 Gray Tones'], into) || hit;
-      if (/\bpastels?\b/i.test(w) && sizes(w, [48], /pastels?/).length)
+      if (/\bpastels?\b/i.test(w) && th(sizes(w, [48], /pastels?/)).length)
         hit =
           put(
             /sweet/i.test(w)
@@ -352,16 +364,19 @@ function scanSets(text, brand) {
                 : ['48 Pastel - Sweetness', '48 Pastel - Blossoming'],
             into,
           ) || hit;
-      if (/\bportraits?\b/i.test(w) && sizes(w, [24], /portraits?/).length)
+      if (/\bportraits?\b/i.test(w) && th(sizes(w, [24], /portraits?/)).length)
         hit = put(['24 Portrait'], into) || hit;
       if (sizes(w, [104], /ohuhu/).length) hit = put(['104 Colors Set'], into) || hit;
-      // (a line naming one of those isn't also Honolulu 48: "Honolulu Mid-tone 48 Colors")
-      if (!hit && /\bhonolulu\b/i.test(w))
-        hit = named(
-          sizes(w, [24, 48, 72, 120, 168, 216, 320], /honolulu/),
-          (n) => [n === 320 ? 'Honolulu 320 (complete set)' : 'Honolulu ' + n],
-          into,
-        );
+      // (a line naming one of those isn't also Honolulu 48: "Honolulu Mid-tone 48 Colors". v318.28: only the size it
+      // took is left out, not every size on the line: "Honolulu 72 Colors + 6 Skin Tones" had read only the 6)
+      if (/\bhonolulu\b/i.test(w)) {
+        const hs = sizes(w, [24, 48, 72, 120, 168, 216, 320], /honolulu/),
+          left = hs.filter((n) => !took.has(n));
+        left.each = hs.each;
+        if (left.length)
+          hit =
+            named(left, (n) => [n === 320 ? 'Honolulu 320 (complete set)' : 'Honolulu ' + n], into) || hit;
+      }
     }
     if (/\bciao\b/i.test(w))
       hit =
@@ -404,7 +419,10 @@ function scanHandle(text, loud) {
   // (v318: a set's name, in text pasted or typed: its box, an order email)
   // (v318 review: and read by Scan Text from a set's box, quietly: "HONOLULU 120" had added Ohuhu's 120, Black. Not in
   // Find mode, where a set's name goes straight on to Is this your set?: only on Enter or a paste there)
-  let sets = String(text).trim() && (loud || !scanFind) ? scanSets(text, scanFind ? scanFind.brand : '') : [];
+  let sets =
+    String(text).trim() && (loud || !scanFind)
+      ? scanSets(text, scanFind ? scanFind.brand : '', scanBrand)
+      : [];
   // (read quietly with the name of the marker whose code is the size, "HONOLULU 120 Black": that cap, not the set)
   if (!loud && sets.length) {
     const tw = scanWords(text),
@@ -491,8 +509,12 @@ function scanSetCard(groups, codes, took, offer) {
   });
   if (took) {
     scanSay(
-      took.took && took.mine < took.took ? 'ok' : 'same',
-      took.took ? took.took + ' added to the list' : 'All already in the list',
+      (took.took && took.mine < took.took) || took.bl ? 'ok' : 'same',
+      took.took
+        ? took.took + (took.bl ? ' and a Colorless Blender' : '') + ' added to the list'
+        : took.bl
+          ? 'Its Colorless Blender added to the list'
+          : 'All already in the list',
       [
         took.p.n,
         took.mine ? took.mine + ' already yours' : '',
@@ -544,17 +566,24 @@ function scanSetTake(si, rest) {
   const p = MARKER_SETS[si];
   let took = 0,
     mine = 0,
-    same = 0;
+    same = 0,
+    bl = false;
   presetMkeys(p).forEach(function (k) {
     const i = keyIdx(k);
     if (i == null) return;
     if (scanTake(i, '', true, true)) {
+      // (v318.28) the Colorless Blender an Ohuhu set brings said apart, as the card's "Add all 24" and Add's toast
+      // count it: "25 added to the list" had followed "Add all 24 to the list"
+      if (k === 'Ohuhu|0') {
+        bl = true;
+        return;
+      }
       took++;
       if (state.owned.has(k)) mine++;
     } else same++;
   });
   scanSetIn = true;
   scanRender();
-  scanSetCard(rest, false, { p: p, took: took, mine: mine, same: same });
-  scanBeep(took && mine < took ? 'ok' : 'same');
+  scanSetCard(rest, false, { p: p, took: took, mine: mine, same: same, bl: bl });
+  scanBeep((took && mine < took) || bl ? 'ok' : 'same');
 }

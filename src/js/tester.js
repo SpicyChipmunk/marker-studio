@@ -542,10 +542,18 @@
     const n = answered();
     D.getElementById('ttCount').textContent = n + ' of ' + TASKS.length + ' answered';
     D.getElementById('ttBarFill').style.width = Math.round((n / TASKS.length) * 100) + '%';
-    const t = formTarget();
+    const t = formTarget(),
+      // (v318.28) the same details either way, all that context() adds: the share sheet's said only the version and
+      // device, and the form's left out the tester number and Home Screen app or tab
+      det =
+        'a few details (a tester number made on this device, the app’s version, your device, Home Screen app or browser tab, how many markers of each brand, and how many guides and palettes you’ve saved)';
     D.getElementById('ttWhat').textContent = t
-      ? 'Send results sends your answers, your name if you give it, and a few details (the app’s version, your device, how many markers of each brand, and how many guides and palettes you’ve saved) to Marker Studio’s maker. Nothing else, and nothing until you tap it.'
-      : 'Send results opens the share sheet with your answers and a few details (the app’s version and your device), for you to send to Marker Studio’s maker.';
+      ? 'Send results sends your answers, your name if you give it, and ' +
+        det +
+        ' to Marker Studio’s maker. Nothing else, and nothing until you tap it.'
+      : 'Send results opens the share sheet with your answers, your name if you give it, and ' +
+        det +
+        ', for you to send to Marker Studio’s maker.';
   }
   function said(t) {
     D.getElementById('ttSaid').textContent = t || '';

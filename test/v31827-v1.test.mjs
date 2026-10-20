@@ -78,7 +78,8 @@ test('Print: PRINT_OPTS keeps Paper third (printSummary, PAPER_OPTS); the sheet 
 
 test('Home’s Markers card counts colours, as the guide’s card does; the button says it starts from a photo', () => {
   const chrome = read('src/js/chrome.js');
-  assert.match(chrome, /const n = inkKeys\(\[\.\.\.state\.owned\]\)\.length \|\| state\.owned\.size;/);
+  // (v318.28: setKeys, Copic's 0 counted as in its set; test/v31828-y1 checks the card's count itself)
+  assert.match(chrome, /const n = setKeys\(\[\.\.\.state\.owned\]\)\.length \|\| state\.owned\.size;/);
   assert.match(
     read('src/html/app.html'),
     /<button id="homeNew" class="btn-primary homenew">New guide from a photo<\/button>/,

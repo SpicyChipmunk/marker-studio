@@ -25,7 +25,8 @@ test('a new version: a banner that stays through an Undo toast, only one, ✕ un
   await updated(page);
   await page.waitForSelector('#msUpd');
   assert.match(await page.textContent('#msUpd'), /A new version of Marker Studio is ready\./);
-  assert.equal(await page.getAttribute('#msUpd', 'role'), 'status');
+  // (v318.28: said from #msSay, a live region in the page from the start, not by the banner inserted holding its words)
+  assert.equal(await page.textContent('#msSay'), 'A new version of Marker Studio is ready.');
   // a toast with Undo comes and goes: the banner stays
   await page.evaluate(() => toastAction('Section cleared.', 'Undo', () => {}));
   assert.equal(await page.isVisible('#toastAct'), true);

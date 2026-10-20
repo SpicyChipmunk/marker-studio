@@ -46,7 +46,8 @@ test('a box’s text pasted: the set named, asked first; its markers into the li
   assert.deepEqual((await marks(page)).sort(), want.slice().sort());
   assert.match(
     await page.textContent('#scStat'),
-    new RegExp('^.*' + want.length + ' added to the list.*Honolulu 120'),
+    // (v318.28: its colours, the blender said apart, as "Add all 120" counted them)
+    /^.*120 and a Colorless Blender added to the list.*Honolulu 120/,
   );
   // (a box's other words aren't "lines not read" on Add's toast)
   await page.click('#scAdd');

@@ -32,15 +32,22 @@ if ('serviceWorker' in navigator) {
       if (!h) return;
       h.insertAdjacentHTML(
         'beforeend',
-        '<div class="msblocked msupd" id="msUpd" role="status"><b>A new version of Marker Studio is ready.</b> ' +
+        '<div class="msblocked msupd" id="msUpd"><b>A new version of Marker Studio is ready.</b> ' +
           '<button type="button" class="sflink" id="msUpdGo">Reload</button>' +
           '<button type="button" class="msupdx" id="msUpdX" aria-label="Not now">\u2715</button></div>',
       );
+      // (v318.28) said from #msSay, a live region there from the start: the banner, inserted holding its words, was
+      // a live region that didn't exist before they did, which screen readers (iOS VoiceOver) don't announce
+      var say = document.getElementById('msSay');
+      if (say) say.textContent = 'A new version of Marker Studio is ready.';
       document.getElementById('msUpdGo').addEventListener('click', function () {
         location.reload();
       });
       document.getElementById('msUpdX').addEventListener('click', function () {
         var b = document.getElementById('msUpd');
+        // (v318.28) the keyboard's focus, on the ✕ going with it, to the tab that's open (it fell to the page's start)
+        var tab = document.querySelector('.modes button.on');
+        if (b && tab && b.contains(document.activeElement)) tab.focus();
         if (b) b.remove();
         shut = true;
       });

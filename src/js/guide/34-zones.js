@@ -105,9 +105,11 @@ function zoneSecs(id, cl) {
   });
 }
 // the sections of the zone being built, or else the one being edited: what the pattern, the pool and the notes under
-// the controls work on
+// the controls work on. (v318.28) Not those left white: the laying never has them (zoneRun), and the notes and counts
+// had (No repeats' "Every section has its own marker: 15" with 5 left white; Main colour's "why the shares miss"
+// gone for good, its count no longer the laying's; the Gradient's count, the marker slider's top)
 function zoneList() {
-  return zoneSecs(zoneBuilding != null ? zoneBuilding : zoneCur);
+  return zoneSecs(zoneBuilding != null ? zoneBuilding : zoneCur).filter(notWhite);
 }
 // the box around a zone's sections (null without zones: the whole picture)
 function zoneBoxOf(secs) {
