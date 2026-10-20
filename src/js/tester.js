@@ -164,6 +164,8 @@
     if (e.key !== TT_KEY || !st) return;
     st = null;
     load();
+    // (v318.25) and Home's card and the foot line with them: they had said what this tab last saw until it reloaded
+    footSync();
   });
   function save() {
     try {

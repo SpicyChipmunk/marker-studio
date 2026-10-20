@@ -726,6 +726,49 @@
 #sfRoot .sfprchk {
   margin: 14px 0 12px;
 }
+/* (v318.24) the pages in order, under the choices */
+#sfRoot .sfprord {
+  margin-top: 10px;
+}
+#sfRoot .sfprordr {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: flex-end;
+}
+#sfRoot .sfprordg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+#sfRoot .sfprordt {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+}
+#sfRoot .sfprordp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(26 * var(--tpx));
+  border: 1.4px solid var(--sub);
+  border-radius: 2px;
+  font-size: calc(10 * var(--tpx));
+  font-weight: 600;
+  color: var(--sub);
+  line-height: 1;
+}
+#sfRoot .sfprordp.land {
+  height: auto;
+  width: calc(26 * var(--tpx));
+}
+#sfRoot .sfprordw {
+  font-size: var(--t-sm);
+  color: var(--sub);
+  white-space: nowrap;
+  line-height: 1.2;
+}
 #sfRoot .sfprchk .sfchk {
   display: flex;
   align-items: flex-start;

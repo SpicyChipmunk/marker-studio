@@ -44,7 +44,7 @@ async function makeCard(idxs, kind) {
     pal = kind === 'palette',
     title = pal ? shownPaletteName(idxs) : 'Drawn markers',
     sub =
-      (pal ? HARM[state.harmony] + ' \u00b7 ' : '') +
+      (pal ? HARM[currentPaletteHarm()] + ' \u00b7 ' : '') +
       idxs.length +
       ' colour' +
       (idxs.length > 1 ? 's' : '') +

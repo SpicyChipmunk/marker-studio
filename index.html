@@ -820,6 +820,16 @@ input[type='radio'] {
   z-index: 3;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
 }
+/* (v318.25) a scheme's band has its lock in that corner: the sign goes under it (bandWarn) */
+#palette:not(.custommode) .band .uwarn {
+  top: 42px;
+  right: 14px;
+}
+/* (a grid's tile is short: beside the lock, clear of the code) */
+#palette:not(.custommode) .bands.grid .band .uwarn {
+  top: 9px;
+  right: 35px;
+}
 .band.empty .bcode {
   font-family: 'Hanken Grotesk', sans-serif;
   font-size: var(--t-2xl);
@@ -1861,8 +1871,12 @@ button:focus-visible {
   font-size: var(--t-xl);
   line-height: 1;
 }
+/* (v318.25: one line an item as before, but never wider than the screen, the words wrapping then: mkMenuOpen keeps
+   it on the screen) */
 #mkMenu {
-  min-width: 230px;
+  min-width: min(230px, calc(100vw - 32px));
+  width: max-content;
+  max-width: calc(100vw - 32px);
 }
 #mkMenu button {
   flex: none;
@@ -1876,7 +1890,7 @@ button:focus-visible {
   border: none;
   border-radius: var(--r-sm);
   background: transparent;
-  white-space: nowrap;
+  white-space: normal;
   opacity: 1;
   color: var(--ink);
   font-size: var(--t-base);
@@ -2922,6 +2936,49 @@ html.ms-ovl body {
 }
 #sfRoot .sfprchk {
   margin: 14px 0 12px;
+}
+/* (v318.24) the pages in order, under the choices */
+#sfRoot .sfprord {
+  margin-top: 10px;
+}
+#sfRoot .sfprordr {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: flex-end;
+}
+#sfRoot .sfprordg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+#sfRoot .sfprordt {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+}
+#sfRoot .sfprordp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(26 * var(--tpx));
+  border: 1.4px solid var(--sub);
+  border-radius: 2px;
+  font-size: calc(10 * var(--tpx));
+  font-weight: 600;
+  color: var(--sub);
+  line-height: 1;
+}
+#sfRoot .sfprordp.land {
+  height: auto;
+  width: calc(26 * var(--tpx));
+}
+#sfRoot .sfprordw {
+  font-size: var(--t-sm);
+  color: var(--sub);
+  white-space: nowrap;
+  line-height: 1.2;
 }
 #sfRoot .sfprchk .sfchk {
   display: flex;
@@ -5475,6 +5532,34 @@ button.sffoccols::after {
   display: block;
   margin-top: 8px;
   color: #ffb454;
+}
+/* (v318.25) the short card, when the full one leaves some of the sections under it wherever it goes (handFrame): no big
+   swatch, "Pick up" and the marker on one line, and not "shown on the picture" */
+.sfhtight .sfhcard {
+  padding: 8px 14px 10px;
+}
+.sfhtight .sfhsw,
+.sfhtight .sfhshown {
+  display: none;
+}
+.sfhtight .sfhlbl {
+  display: inline;
+}
+.sfhtight .sfhlbl::after {
+  content: ' ';
+}
+.sfhtight .sfhname {
+  display: inline;
+  margin: 0;
+  font-size: var(--t-md);
+}
+.sfhtight .sfhsub {
+  margin-top: 2px;
+}
+/* (beside the sections, half as wide: a tall picture at its smallest can sit next to it on a small phone) */
+.sfhtight.sfhleft .sfhcard,
+.sfhtight.sfhright .sfhcard {
+  width: min(320px, 50%);
 }
 /* (v315: a phone held sideways: a shorter card, so it fits between the bars above the zoom buttons) */
 @media (max-height: 430px) {
@@ -10777,11 +10862,15 @@ button.hlpq:focus-visible {
 }
 .hiwdots {
   flex: 1;
+  /* (v318.25: the dots give way before Next leaves the card, at 320 wide with large text) */
+  min-width: 0;
   display: flex;
   justify-content: center;
   gap: 0;
 }
 button.hiwdot {
+  flex: 0 1 28px;
+  min-width: 20px;
   width: 28px;
   height: 44px;
   padding: 0;
@@ -10805,6 +10894,14 @@ button.hiwdot::before {
 button.hiwdot.on::before {
   width: 20px;
   background: #b9a8ff;
+}
+/* (v318.25: Back and Next as wide as their words on the smallest phones, so the row fits the card) */
+@media (max-width: 359px) {
+  .hiwnav .hiwback,
+  .hiwnav .hiwnext {
+    min-width: 0;
+    padding: 0 12px;
+  }
 }
 .hlpcard {
   gap: 10px;
@@ -11061,6 +11158,30 @@ button.wnx::after,
 }
 .msblocked span {
   color: var(--sub);
+}
+/* (v318.23) a new version is ready: the words, Reload and ✕ on a row */
+.msupd {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.msupd b {
+  flex: 1 1 14em;
+}
+.msupd .sflink {
+  min-height: 44px;
+}
+.msupdx {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--sub);
+  font-size: var(--t-lg);
+  cursor: pointer;
 }
 /* Help › About: what's new in this version */
 .hlpwn {
@@ -12992,7 +13113,7 @@ button.wrm {
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New colouring guide</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v318.22</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v318.25</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="light">Lightest first</option><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -13280,6 +13401,37 @@ function scanTraceAdd(s) {
   scanTrace.push(((now - scanTrace0) / 1000).toFixed(2) + ' ' + s);
   if (scanTrace.length > SCAN_TRACE_MAX) scanTrace.splice(0, scanTrace.length - SCAN_TRACE_MAX);
 }
+// (v318.23) how long the page was held by the longest pieces of work this visit (finding a photo's page and sections,
+// Sensitivity, Build): the longest HOLD_MAX, each a label, its time and the picture's size, for Copy diagnostics and
+// Copy details, so an iPad's own numbers can be seen. Kept in memory only, never saved or sent: not in Send feedback
+const HOLD_MAX = 8,
+  holds = [];
+function holdAdd(label, ms, size) {
+  if (!(ms >= 50)) return;
+  holds.push({ label: String(label), ms: Math.round(ms), size: size || '' });
+  holds.sort(function (a, b) {
+    return b.ms - a.ms;
+  });
+  if (holds.length > HOLD_MAX) holds.length = HOLD_MAX;
+}
+// fn() timed as one hold (its result returned; a throw still counts its time)
+function holdTime(label, fn, size) {
+  const now =
+      typeof performance !== 'undefined' && performance.now ? performance.now.bind(performance) : Date.now,
+    t0 = now();
+  try {
+    return fn();
+  } finally {
+    try {
+      holdAdd(label, now() - t0, typeof size === 'function' ? size() : size);
+    } catch (e) {}
+  }
+}
+function holdLines() {
+  return holds.map(function (h) {
+    return h.label + ' ' + h.ms + ' ms' + (h.size ? ' (' + h.size + ')' : '');
+  });
+}
 function errDetails() {
   return diagHead()
     .concat(
@@ -13296,6 +13448,7 @@ function errDetails() {
       }),
     )
     .concat(scanTrace.length ? ['\nScan box, this visit:'].concat(scanTrace) : [])
+    .concat(holds.length ? ['\nLongest waits, this visit:'].concat(holdLines()) : [])
     .join('\n');
 }
 // the last few errors, a line each (Send feedback's report, and the form's Message)
@@ -15000,6 +15153,13 @@ function saveFailNotice(now_) {
     8000,
   );
 }
+// (v318.23) a stored Library thumbnail's size: the long side at most THUMB_PX (tiles are 150–260 CSS px; the stored
+// picture only shows until the guide is drawn again for the tile, so it's small on purpose: 128 looked blocky at 2×)
+const THUMB_PX = 144;
+function thumbSize(w, h) {
+  const k = THUMB_PX / Math.max(1, w, h);
+  return [Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k))];
+}
 function safeThumb(t) {
   return typeof t === 'string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(t) ? t : '';
 }
@@ -16371,6 +16531,7 @@ function paperSpot(lin, loose) {
   };
 }
 var _saveHold = false,
+  _roomFull = false,
   _lastRaw = null,
   // (v318.22) the stored state as it was read, for the fields FUT_GONE describes below (futureKeep/futurePut)
   _future = {},
@@ -16981,55 +17142,123 @@ function savedMerge() {
     }
   });
 }
+// (v318.23) Safari counts a stored string at 2 bytes a character once any character in it is past U+00FF (a ’ in one
+// name doubled the whole Library's share): what's written is plain ASCII, wider characters as \uXXXX, which JSON.parse
+// reads as before (older versions too). The round trip makes WebKit hold it 1 byte a character again: a string made
+// from a wide one by replace stays wide inside, however plain it reads
+function narrow(s) {
+  const t = s.replace(/[\u007f-\uffff]/g, function (c) {
+    return '\\u' + ('000' + c.charCodeAt(0).toString(16)).slice(-4);
+  });
+  if (typeof TextEncoder !== 'function' || typeof TextDecoder !== 'function') return t;
+  try {
+    return new TextDecoder().decode(new TextEncoder().encode(t));
+  } catch (e) {
+    return t;
+  }
+}
 // With storage blocked nothing can be kept (the banner says so): changes still count for this visit
-function save(quiet) {
+function save(quiet, noDrop) {
   if (STORE_BLOCKED || _saveHold) return true;
+  let e = saveTry();
+  // (once leaving out every thumbnail hasn't made room, not tried again until a save works: it would cost ~1 s a save)
+  if (e && !noDrop && !_roomFull && quotaErr(e)) {
+    e = saveRoom();
+    _roomFull = !!e;
+  }
+  if (!e) {
+    _roomFull = false;
+    return true;
+  }
+  if (!quiet) saveFailNotice();
+  return false;
+}
+function quotaErr(e) {
+  return (
+    !!e &&
+    (e.name === 'QuotaExceededError' ||
+      e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      e.code === 22 ||
+      e.code === 1014)
+  );
+}
+// (v318.23) storage full: the oldest stored thumbnails (by when each was saved) are left out, a growing batch at a time,
+// until it fits; they're drawn again from the guides. Nothing else goes. None left and still full: they're put back
+// (as stored) and it fails as before
+function saveRoom() {
+  const th = state.saved
+      .filter(function (x) {
+        return x && x.thumb;
+      })
+      .sort(function (a, b) {
+        return (+a.ts || 0) - (+b.ts || 0);
+      }),
+    gone = [];
+  let n = 1,
+    e = null;
+  while (th.length) {
+    th.splice(0, n).forEach(function (x) {
+      gone.push([x, x.thumb]);
+      x.thumb = '';
+    });
+    e = saveTry();
+    if (!e) return null;
+    if (!quotaErr(e)) break;
+    n *= 2;
+  }
+  gone.forEach(function (g) {
+    g[0].thumb = g[1];
+  });
+  return e || new Error('full');
+}
+function saveTry() {
   try {
     savedMerge();
-    const s = JSON.stringify(
-      futurePut({
-        mode: state.mode,
-        palSize: state.palSize,
-        harmony: state.harmony,
-        tones: [...state.tones],
-        sats: [...state.sats],
-        drawn: state.drawn,
-        excluded: [...state.excluded],
-        palettes: state.palettes,
-        palH: state.palH,
-        pool: state.pool,
-        brands: [...state.brands],
-        buyBrands: state.buyBrands,
-        owned: [...state.owned],
-        collView: state.collView,
-        finderScope: state.finderScope,
-        scopeFlipped: state.scopeFlipped,
-        satsUpgraded: state.satsUpgraded,
-        seed: state.seed,
-        locked: state.locked,
-        filtersOpen: state.filtersOpen,
-        gapSort: state.gapSort,
-        customPal: state.customPal,
-        saved: state.saved,
-        ownedSeedV: state.ownedSeedV,
-        copicAdd1: state.copicAdd1,
-        libAdj1: state.libAdj1,
-        setFix1: state.setFix1,
-        ordLight1: state.ordLight1,
-        wish: state.wish,
-        ink: state.ink,
-        cap: state.cap,
-        capDef: state.capDef,
-        capQ: state.capQ,
-        capOffer: state.capOffer,
-      }),
+    const s = narrow(
+      JSON.stringify(
+        futurePut({
+          mode: state.mode,
+          palSize: state.palSize,
+          harmony: state.harmony,
+          tones: [...state.tones],
+          sats: [...state.sats],
+          drawn: state.drawn,
+          excluded: [...state.excluded],
+          palettes: state.palettes,
+          palH: state.palH,
+          pool: state.pool,
+          brands: [...state.brands],
+          buyBrands: state.buyBrands,
+          owned: [...state.owned],
+          collView: state.collView,
+          finderScope: state.finderScope,
+          scopeFlipped: state.scopeFlipped,
+          satsUpgraded: state.satsUpgraded,
+          seed: state.seed,
+          locked: state.locked,
+          filtersOpen: state.filtersOpen,
+          gapSort: state.gapSort,
+          customPal: state.customPal,
+          saved: state.saved,
+          ownedSeedV: state.ownedSeedV,
+          copicAdd1: state.copicAdd1,
+          libAdj1: state.libAdj1,
+          setFix1: state.setFix1,
+          ordLight1: state.ordLight1,
+          wish: state.wish,
+          ink: state.ink,
+          cap: state.cap,
+          capDef: state.capDef,
+          capQ: state.capQ,
+          capOffer: state.capOffer,
+        }),
+      ),
     );
     localStorage.setItem(KEY, s);
     _lastRaw = s;
-    return true;
+    return null;
   } catch (e) {
-    if (!quiet) saveFailNotice();
-    return false;
+    return e;
   }
 }
 // a change the person just made: kept, or (storage full) put back with `undo` and said so, returning false so no
@@ -18004,6 +18233,7 @@ function genCtx(harmony, mood, exclude) {
     bh: 0,
     fam: null,
     greyFam: false,
+    greyBase: false,
   };
 }
 // the colour difference between two markers, worked out once per palette (tries and steps ask again)
@@ -18053,6 +18283,8 @@ function genBase(ctx, n) {
 function genNear(ctx, i, h) {
   const L = LCH[i];
   if (L[1] < GREY_C) return ctx.greyFam && COLORS[i].fam === ctx.fam;
+  // (v318.25: a near-grey base's ramp is of greys, genPalette)
+  if (ctx.greyBase) return false;
   if (ctx.harmony === 'analogous') return hueDist(L[2], ctx.bh) <= 60;
   return hueDist(L[2], h) <= ctx.levels[0][1];
 }
@@ -18190,7 +18422,8 @@ function genPick(ctx, slot, lv, st) {
     if (L[1] < GREY_C) {
       if (!lv[2] && !(ctx.greyFam && COLORS[i].fam === ctx.fam)) continue;
       hc = ctx.greyFam ? 0 : 1; // a near-grey's hue means little
-    } else if (ana) {
+    } else if (ctx.greyBase && !lv[2]) continue;
+    else if (ana) {
       const o = hueOff(L[2], ctx.bh);
       if (Math.max(st.hi, o) - Math.min(st.lo, o) > lv[1]) continue;
       hc = hueDist(L[2], slot.h) / 30;
@@ -18861,6 +19094,21 @@ function genPalette(n, harmony, opts) {
     ctx.fam = COLORS[bi].fam;
     ctx.greyFam = LCH[bi][1] < GREY_C || famGreyish(bi);
     ctx.bh = LCH[bi][2];
+    // (v318.25) a near-grey base (a black: Ohuhu 120, Copic 100) is a ramp of greys. Its hue means nothing at that
+    // chroma, and its family (Neutral / Black) holds only blacks, so other families' greys were kept out and the
+    // ramp had been four greens, violets or reds near the black's hue. Clear colours wait for the grey steps (the
+    // last ones), and a family without the steps for the ramp (greys at least 8 lighter or darker than the base:
+    // blacks are all near it) gives way to the grey family with most markers in play, one temperature of greys
+    if (LCH[bi][1] < GREY_C) {
+      ctx.greyBase = true;
+      const nf = {};
+      for (const i of ctx.pool)
+        if (i !== bi && LCH[i][1] < GREY_C && Math.abs(LCH[i][0] - LCH[bi][0]) >= 8)
+          nf[COLORS[i].fam] = (nf[COLORS[i].fam] || 0) + 1;
+      let top = ctx.fam;
+      for (const f in nf) if (nf[f] > (nf[top] || 0)) top = f;
+      if ((nf[ctx.fam] || 0) < n - 1) ctx.fam = top;
+    }
   } else if (opts.baseHue != null) ctx.bh = opts.baseHue;
   else {
     bi = genBase(ctx, n);
@@ -18943,8 +19191,9 @@ function genPalette(n, harmony, opts) {
    rainbow order from red (rainbowOrder), locked colours with the rest. */
 const _rbSeed = new WeakMap();
 // whether pal was built from marker si: first in its place, or a Rainbow made from it
-function palFrom(pal, si) {
-  return si != null && pal && (state.harmony === 'rainbow' ? _rbSeed.get(pal) === si : pal[0] === si);
+function palFrom(pal, si, h) {
+  // (v318.25: `h`, the palette's own scheme when it isn't the one chosen, currentPaletteHarm)
+  return si != null && pal && ((h || state.harmony) === 'rainbow' ? _rbSeed.get(pal) === si : pal[0] === si);
 }
 function genRainbow(n, opts) {
   if (!window.SF || !SF.rainbowPick) return null;
@@ -19169,27 +19418,30 @@ function closeNote() {
   if (!el) return;
   let t = '';
   if (state.mode === 'palette' && state.harmony !== 'custom' && state.harmony !== 'photo') {
-    const pal = state.palettes[state.palettes.length - 1];
-    if (pal && pal.length > 1) {
+    const pal = state.palettes[state.palettes.length - 1],
+      // (v318.25) judged by its own scheme: the one chosen since may not have been made (currentPaletteHarm), and
+      // a Complementary left on the card had been told it was "4 clear colours for a rainbow, not 6"
+      h = currentPaletteHarm();
+    if (pal && pal.length > 1 && h !== 'photo') {
       const fixed = new Set(state.locked),
         si = keyIdx(state.seed);
       // (v318.22 debug: a Rainbow puts its base where its hue falls, not first)
-      if (palFrom(pal, si)) fixed.add(si);
+      if (palFrom(pal, si, h)) fixed.add(si);
       const d = palMinDE(pal, fixed);
       // (v306) a Rainbow stops at the clear markers in play
-      if (state.harmony === 'rainbow' && pal.length < state.palSize)
+      if (h === 'rainbow' && pal.length < state.palSize)
         t =
           'Your markers in play have ' +
           pal.length +
           ' clear colours for a rainbow, not ' +
           state.palSize +
           '.';
-      else if (d != null && d < genNeed(state.harmony))
+      else if (d != null && d < genNeed(h))
         t =
           'Two colours are close: your markers don\u2019t have ' +
           pal.length +
           ' clearly different colours for this scheme.';
-      else if (!palOnScheme(pal, state.harmony, fixed))
+      else if (!palOnScheme(pal, h, fixed))
         t =
           'Some colours stray from the scheme: your markers don\u2019t have ' + pal.length + ' that fit it.';
     }
@@ -19223,12 +19475,38 @@ function bandLabel(b, idx) {
       capCode(idx) +
       ' ' +
       capName(idx) +
+      // (v318.25: and a marker since marked dry or taken out, bandWarn)
+      (customWhy(idx) ? ', ' + customWhy(idx) : '') +
       (state.locked.includes(idx)
         ? ', locked'
         : state.harmony === 'photo'
           ? ', tap for the next nearest'
           : ', tap for another like it'),
   );
+}
+// (v318.25) a scheme's or a photo's band for a marker since marked dry, taken out of your collection or out of the
+// selection: marked as Custom marks one (the sign, its title, "N not in play" under the name, palSub). The palette
+// stays until the next is made (v310.2), and had shown such a marker as fine
+function bandWarn(b, idx) {
+  const why = customWhy(idx),
+    old = b.querySelector('.uwarn');
+  if (old) old.remove();
+  b.classList.toggle('unowned', !!why);
+  b.title =
+    (why ? why.charAt(0).toUpperCase() + why.slice(1) + ' \u00b7 ' : '') +
+    (state.harmony === 'photo'
+      ? 'Tap for the next-nearest owned marker'
+      : 'Tap for another like it · lock to keep');
+  if (why)
+    b.insertAdjacentHTML(
+      'beforeend',
+      '<span class="uwarn" title="' +
+        why.charAt(0).toUpperCase() +
+        why.slice(1) +
+        '">' +
+        ic('triangle-alert') +
+        '<span class="sfsr">(warning)</span></span>',
+    );
 }
 function showPalette(pal, animate) {
   phint.style.display = 'none';
@@ -19246,10 +19524,7 @@ function showPalette(pal, animate) {
       _bt.textContent = mixed ? bTag(c.brand) : '';
       _bt.style.display = mixed ? '' : 'none';
     }
-    b.title =
-      state.harmony === 'photo'
-        ? 'Tap for the next-nearest owned marker'
-        : 'Tap for another like it · lock to keep';
+    bandWarn(b, pal[k]);
     b.classList.toggle('locked', state.locked.includes(pal[k]));
     {
       const _lk = b.querySelector('.blk');
@@ -19277,13 +19552,19 @@ function showPalette(pal, animate) {
 }
 // the line under a palette's name: its scheme, and the marker it was built from (a photo's is just "From photo")
 function palSub(pal) {
-  if (state.harmony === 'photo') return HARM.photo;
+  // (v318.25: the palette's own scheme, currentPaletteHarm)
+  const h = pal === state.palettes[state.palettes.length - 1] ? currentPaletteHarm() : state.harmony,
+    // (v318.25: markers since marked dry or taken out, as Custom says them, bandWarn)
+    miss = pal.filter((i) => !customOk(i)).length,
+    out = miss ? ' \u00b7 ' + miss + ' not in play' : '';
+  if (h === 'photo') return HARM.photo + out;
   // (v296) "… base" only for the marker you chose to build from (Start from): otherwise the first colour is just the
   // lightest of the scheme's first hue, and the base the palette was built round isn't in it
   const si = keyIdx(state.seed);
-  return palFrom(pal, si)
-    ? HARM[state.harmony] + ' \u00b7 ' + COLORS[si].brand + ' ' + capName(si) + ' base'
-    : HARM[state.harmony];
+  return (
+    (palFrom(pal, si, h) ? HARM[h] + ' \u00b7 ' + COLORS[si].brand + ' ' + capName(si) + ' base' : HARM[h]) +
+    out
+  );
 }
 // a palette's name, its line, and its codes under them (each code kept whole; brand letters as on the bands, when
 // the palette or your collection mixes brands)
@@ -19320,6 +19601,14 @@ function clearPalette() {
   setAmb(null);
   var _pel = document.getElementById('palette');
   if (_pel) _pel.classList.remove('gridmode');
+}
+// (v318.25) the scheme of the palette on the card: its own, from the history beside it. A scheme chosen since that
+// couldn't be made (five clear markers and Rainbow) leaves the palette before it on the card, and Save, Use in a guide,
+// the card's line and its notes had called that palette by the scheme chosen. Custom, and the first visit's preview
+// (nothing made yet), are the scheme chosen.
+function currentPaletteHarm() {
+  if (state.harmony === 'custom' || !state.palettes.length) return state.harmony;
+  return palHarm(state.palH[state.palH.length - 1]) || state.harmony;
 }
 function currentPaletteIdxs() {
   if (state.mode !== 'palette') return [];
@@ -19380,8 +19669,9 @@ function doSave() {
     name: nameForSave(idxs),
     keys: idxs.map(mkey),
     ts: Date.now(),
-    // (v308) its scheme, so it opens as that again (it had always opened as Custom)
-    h: state.harmony,
+    // (v308) its scheme, so it opens as that again (it had always opened as Custom); (v318.25) the palette's own,
+    // not one chosen since that couldn't be made (currentPaletteHarm)
+    h: currentPaletteHarm(),
   };
   state.saved.unshift(entry);
   saveNew(entry);
@@ -20234,7 +20524,7 @@ function renderRecent() {
       SF.thumbFor(g.id).then(function (t) {
         if (!t) return;
         g.thumb = t;
-        if (!save(true)) g.thumb = '';
+        if (!save(true, true)) g.thumb = '';
       });
   });
 }
@@ -21067,6 +21357,16 @@ function customOk(i) {
     ? poolSet.has(i) && !(isOwned(i) && isDry(i))
     : !state.owned.size || (isOwned(i) && !isDry(i));
 }
+// why a marker on the card isn't in play now ('' when it is): (v318.25) a scheme's or a photo's palette says so too
+function customWhy(i) {
+  return customOk(i)
+    ? ''
+    : isOwned(i) && isDry(i)
+      ? 'marked dry'
+      : state.pool
+        ? 'not in the selection'
+        : 'no longer in your collection';
+}
 function showCustom() {
   ensureCustomSize();
   palette.classList.add('custommode');
@@ -21098,14 +21398,8 @@ function showCustom() {
       b.title = 'Tap to choose a marker';
     } else {
       const c = COLORS[idx],
-        own = customOk(idx),
-        why = own
-          ? ''
-          : isOwned(idx) && isDry(idx)
-            ? 'marked dry'
-            : state.pool
-              ? 'not in the selection'
-              : 'no longer in your collection';
+        why = customWhy(idx),
+        own = !why;
       b.classList.remove('empty');
       b.classList.toggle('unowned', !own);
       b.style.background = c.hex;
@@ -21532,7 +21826,9 @@ function shownMatches() {
 function gridActs(list) {
   gridShown = list;
   ownAllBtn.disabled = !list.length;
-  ownNoneBtn.disabled = !list.length;
+  // (v318.25) only with one of yours among them: in All, or a search of none of yours, it had armed "Untick 5
+  // markers?" and its second tap did nothing
+  ownNoneBtn.disabled = !list.some((i) => isOwned(i));
   // (a palette needs a colour: not only the Colorless Blender, v304)
   toPalette.disabled = !list.some((i) => !NOINK.has(i));
 }
@@ -21577,6 +21873,8 @@ function renderGrid(more) {
   if (state.mode === 'collection' && state.collView === 'unowned' && state.gapSort === 'gap') {
     const order = gapRank(m);
     gridActs(order);
+    // (v318.25) the heading counts what's shown: it had said "Showing 601 markers" over 295
+    matchHead(order.length, 'marker');
     results.innerHTML =
       '<div class="rgroup"><div class="pile">' +
       order.map((i, idx) => cellHtml(i, idx + 1)).join('') +
@@ -21587,8 +21885,11 @@ function renderGrid(more) {
     let html = '',
       s = 0;
     const gps = completeGroups(m);
-    gridActs([].concat(...gps.map((g) => g.un)));
-    cellBt = brandsMixedIn([].concat(...gps.map((g) => g.un)));
+    const un = [].concat(...gps.map((g) => g.un));
+    gridActs(un);
+    cellBt = brandsMixedIn(un);
+    // (v318.25) the heading counts what's shown (your brands' families, no fluorescents): it had said 601 over 239
+    matchHead(un.length, 'marker');
     for (const gp of gps) {
       const rep = families.find((f) => f.name === gp.fam);
       html +=
@@ -21763,19 +22064,30 @@ async function copyText(text) {
     await navigator.clipboard.writeText(text);
     return true;
   } catch (e) {}
+  // (v318.25: focus goes back where it was, for the keyboard and VoiceOver; read-only at 16 px, so iOS neither zooms
+  // nor brings up its keyboard)
+  const was = document.activeElement;
   try {
     const ta = document.createElement('textarea');
     ta.value = text;
+    ta.readOnly = true;
     ta.style.position = 'fixed';
     ta.style.opacity = '0';
+    ta.style.fontSize = 'max(16px, var(--t-lg))';
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
+    ta.setSelectionRange(0, text.length);
     const ok = document.execCommand('copy');
     ta.remove();
     return ok;
   } catch (e) {
     return false;
+  } finally {
+    if (was && was !== document.body && was.isConnected && document.activeElement !== was)
+      try {
+        was.focus({ preventScroll: true });
+      } catch (_) {}
   }
 }
 /* export image */
@@ -21824,7 +22136,7 @@ async function makeCard(idxs, kind) {
     pal = kind === 'palette',
     title = pal ? shownPaletteName(idxs) : 'Drawn markers',
     sub =
-      (pal ? HARM[state.harmony] + ' \u00b7 ' : '') +
+      (pal ? HARM[currentPaletteHarm()] + ' \u00b7 ' : '') +
       idxs.length +
       ' colour' +
       (idxs.length > 1 ? 's' : '') +
@@ -22065,7 +22377,9 @@ function chrome() {
   secondaryRow.style.display = browse ? 'none' : 'flex';
   swapBtn.style.display = rnd ? '' : 'none';
   undoBtn.textContent = rnd ? 'Remove' : 'Undo';
-  undoBtn.style.display = pal && (state.harmony === 'custom' || state.harmony === 'photo') ? 'none' : '';
+  // (v318.25) Photo has Undo too, while there's a step before its palette (photoUndoable): hidden there, From photo had
+  // cut off every palette made before it
+  undoBtn.style.display = pal && state.harmony === 'custom' ? 'none' : '';
   trackWrap.style.display = rnd ? '' : 'none';
   drawnWrap.style.display = rnd ? '' : 'none';
   harmWrap.style.display = pal ? 'flex' : 'none';
@@ -22316,7 +22630,10 @@ function chrome() {
     drawBtn.disabled = !!bad;
     drawFocusBack();
     drawBtn.textContent = bad || 'Generate palette';
-    undoBtn.disabled = state.harmony === 'custom' || state.palettes.length === 0;
+    undoBtn.disabled =
+      state.harmony === 'custom' ||
+      state.palettes.length === 0 ||
+      (state.harmony === 'photo' && !photoUndoable());
   }
   const countView =
     rnd || pal
@@ -22796,6 +23113,7 @@ function doReRollBand(k) {
     b.style.background = c.hex;
     cd.textContent = capCode(c);
     cd.style.color = txt(c.hex);
+    bandWarn(b, pick);
     bandLabel(b, pick);
     if (!reduce) {
       b.style.animationDelay = '0ms';
@@ -22973,10 +23291,17 @@ function palPop() {
   state.palettes.pop();
   state.palH.pop();
 }
+// (v318.25) Undo in From photo: a step back (a band swap, the photo's palette before it, or the scheme's palette From
+// photo was opened over: Undo goes back to its scheme, as from any other). Not its only palette: the photo would be
+// left with nothing under it
+function photoUndoable() {
+  return state.mode === 'palette' && state.harmony === 'photo' && !!_photoImg && state.palettes.length > 1;
+}
 function undo() {
   if (rolling) return;
   if (state.mode === 'palette') {
     if (!state.palettes.length) return;
+    if (state.harmony === 'photo' && !photoUndoable()) return;
     palPop();
     // (v308) a photo's palette whose photo has gone (the page was opened again since) can't be shown as one: skipped
     const lastH = () => palHarm(state.palH[state.palH.length - 1]);
@@ -23033,11 +23358,13 @@ function palFailToast() {
         fix,
       5000,
     );
+  // (v318.25) at the scheme's smallest size there are no fewer to try (three markers and Tetradic, 4 only)
+  const fewer = state.palSize > (HARM_RANGE[state.harmony] || [2, 6])[0];
   toast(
     'Couldn\u2019t make a ' +
       state.palSize +
-      '-colour palette from the markers in play \u2014 try fewer colours' +
-      (fix === 'add markers with more colours.' ? ', or ' : ' or ') +
+      '-colour palette from the markers in play \u2014 ' +
+      (fewer ? 'try fewer colours' + (fix === 'add markers with more colours.' ? ', or ' : ' or ') : '') +
       fix,
     5000,
   );
@@ -23061,6 +23388,26 @@ function regenReplace() {
   // 6, then 3, then Undo had lost the palette before both)
   if (state.palettes.length && palAuto(state.palH[state.palH.length - 1])) palPop();
   palPush(pal, 24, true);
+  // (v318.25) more colours locked than the new size has places for (8 with five locked, then 4): the one left out is
+  // said, as locksUsable says its own, not dropped silently
+  const seat = state.palSize - (keyIdx(state.seed) != null && pal.includes(keyIdx(state.seed)) ? 1 : 0),
+    off = state.locked.filter((i) => !pal.includes(i) && i !== keyIdx(state.seed));
+  if (off.length && state.locked.filter((i) => i !== keyIdx(state.seed)).length > seat) {
+    const list =
+      off.length > 1
+        ? off.slice(0, -1).map(capCode).join(', ') + ' and ' + capCode(off[off.length - 1])
+        : capCode(off[0]);
+    toast(
+      'Unlocked ' +
+        list +
+        ': no room for ' +
+        (off.length > 1 ? 'them' : 'it') +
+        ' at ' +
+        state.palSize +
+        ' colours.',
+      4500,
+    );
+  }
   state.locked = state.locked.filter((i) => pal.includes(i));
   save();
   showPalette(pal, true);
@@ -23161,7 +23508,17 @@ harmDesc.className = 'harmdesc';
   col.appendChild(harmDesc);
 }
 function harmDescSync(pal) {
-  const t = pal ? HARM_DESC[state.harmony] || '' : '';
+  let t = pal ? HARM_DESC[state.harmony] || '' : '';
+  // (v318.25) Monochrome from a base (Start from) has it first, as every scheme does (palFrom, "… base" under the
+  // name), and the rest light to dark: "light to dark" alone had read as wrong (C-3, then the lighter C-2)
+  const top = pal && state.palettes[state.palettes.length - 1];
+  if (
+    state.harmony === 'mono' &&
+    top &&
+    currentPaletteHarm() === 'mono' &&
+    palFrom(top, keyIdx(state.seed), 'mono')
+  )
+    t = 'One colour: your base first, then light to dark';
   if (harmDesc.textContent !== t) harmDesc.textContent = t;
 }
 
@@ -23355,9 +23712,9 @@ results.addEventListener('click', async (e) => {
       setOwned(i, had, off, ink);
     });
   } else {
-    const c = COLORS[i];
-    const ok = await copyText(c.code);
-    flashCopy(ok ? 'Copied ' + c.code : 'Couldn\u2019t copy');
+    // (v318.25: the code shown, your cap's)
+    const ok = await copyText(capCode(i));
+    flashCopy(ok ? 'Copied ' + capCode(i) : 'Couldn\u2019t copy');
   }
 });
 // Tick or untick one marker. The swatch stays where it is (dimmed when unticked) until the list is next redrawn
@@ -23537,11 +23894,11 @@ $('mkOwn').addEventListener('change', (e) => {
 });
 $('mkCopy').addEventListener('click', async () => {
   if (mkOpenIdx == null) return;
-  const ok = await copyText(COLORS[mkOpenIdx].code);
+  // (v318.25) the code the sheet shows, your cap's ("R6", now R213), as Match's Copy does: it had copied the code of now
+  const cc = capCode(mkOpenIdx);
+  const ok = await copyText(cc);
   toast(
-    ok
-      ? 'Copied ' + COLORS[mkOpenIdx].code
-      : 'Couldn\u2019t copy \u2014 select the code and copy it yourself.',
+    ok ? 'Copied ' + cc : 'Couldn\u2019t copy \u2014 select the code and copy it yourself.',
     ok ? 2200 : 5000,
   );
 });
@@ -23560,13 +23917,22 @@ copyBtn.addEventListener('click', async () => {
   }
   const _bs = new Set(m.map((i) => COLORS[i].brand));
   const ok = await copyText(
-    m.map((i) => (_bs.size > 1 ? COLORS[i].brand + ' ' : '') + COLORS[i].code).join(', '),
+    // (v318.25: the codes shown, your caps')
+    m.map((i) => (_bs.size > 1 ? COLORS[i].brand + ' ' : '') + capCode(i)).join(', '),
   );
   flashCopy(ok ? 'Copied ' + m.length : 'Couldn\u2019t copy');
 });
+// (v318.25: how many match, said to screen readers once typing stops; the heading itself isn't live, as ticks change it)
+let searchSayT = 0;
 searchInput.addEventListener('input', () => {
   searchStr = (searchInput.value || '').trim().toLowerCase();
   if (state.mode === 'finder' || state.mode === 'collection') renderResults(true);
+  clearTimeout(searchSayT);
+  searchSayT = setTimeout(() => {
+    const l = $('matchLbl');
+    if (!l || !l.offsetParent || typeof liveSay !== 'function') return;
+    liveSay((l.textContent + ' ' + matchn.textContent).trim());
+  }, 800);
 });
 toPalette.addEventListener('click', () => handoff('palette'));
 poolClear.addEventListener('click', () => {
@@ -23976,7 +24342,8 @@ if (_uig)
 // and isn't saved (every palette tried in a guide had been added to the Library)
 function useInGuideGo(idxs, keys, ex, fresh) {
   {
-    var id = ex ? ex.id : { keys: keys, name: shownPaletteName(idxs), h: state.harmony };
+    // (v318.25: the palette's own scheme, currentPaletteHarm)
+    var id = ex ? ex.id : { keys: keys, name: shownPaletteName(idxs), h: currentPaletteHarm() };
     // a new guide: the palette is held for it, the open guide left as it is
     if (fresh) {
       if (window.SF && SF.setNextPal) SF.setNextPal(id);
@@ -24605,8 +24972,11 @@ function findSets(brand, bucket, keys) {
   var b = FIND_BUCKETS[bucket],
     out = [],
     inSets = new Set();
+  // (v318.25) without Ohuhu's blender (setKeys): presetMkeys puts it in every blender set, so it had counted, and a
+  // Honolulu 24's caps with the blender scanned had shown the 48 first and the 24 not at all. Copic's 0 is a real
+  // member of its sets and still counts
   MARKER_SETS.forEach(function (p) {
-    if (p.b === brand && !p.allbrand) presetMkeys(p).forEach((k) => inSets.add(k));
+    if (p.b === brand && !p.allbrand) setKeys(presetMkeys(p)).forEach((k) => inSets.add(k));
   });
   var counted = keys.filter((k) => inSets.has(k));
   if (counted.length) keys = counted;
@@ -24847,7 +25217,8 @@ function unownDisarm() {
 }
 let unownAt = 0;
 ownNoneBtn.addEventListener('click', () => {
-  const m = shownMatches();
+  // (v318.25) only your markers among those shown: the confirm had counted every one ("Untick 722 markers?" for 121)
+  const m = shownMatches().filter((i) => isOwned(i));
   if (!m.length) return;
   // (the second tap of a double tap isn't the confirming one: as Clear ticks, 400 ms)
   if (ownNoneBtn.dataset.arm === '1' && Date.now() - unownAt < 400) return;
@@ -24969,6 +25340,17 @@ function mkMenuOpen(on, focusFirst) {
     return;
   }
   capMenuSync();
+  // (v318.25) Untick all shown on with one of yours shown, as they are now: a swatch ticked or unticked doesn't redraw
+  // the grid (gridActs), so ticking one in All had left it off
+  if (ownNoneBtn.dataset.arm !== '1') ownNoneBtn.disabled = !shownMatches().some((i) => isOwned(i));
+  // (v318.25: under its ⋯ at the right, unless that runs it off the left edge, as when ⋯ wraps to the left of a
+  // phone, or its words are large: then it starts 16 px in from the screen's edge)
+  mkMenu.style.left = mkMenu.style.right = '';
+  const mr = mkMenu.getBoundingClientRect();
+  if (mr.left < 16 && mkMenu.offsetParent) {
+    mkMenu.style.left = Math.round(16 - mkMenu.offsetParent.getBoundingClientRect().left) + 'px';
+    mkMenu.style.right = 'auto';
+  }
   const it = mkItems();
   if (focusFirst && it[0]) it[0].focus({ preventScroll: true });
   mkMenu.scrollIntoView({ block: 'nearest', behavior: 'instant' });
@@ -25685,6 +26067,8 @@ function sfSaveDesign(d) {
       : Promise.resolve(null)
   )
     .then(function (prevPl) {
+      // (v318.23: the guide's own autosave keeps a newer version's settings it doesn't know: plCarry, 60-persist)
+      if (prevPl && d.carry) d = Object.assign({}, d, { payload: d.carry(prevPl, d.payload) });
       return IDB.put('guide-' + id, d.payload || {}).then(function () {
         const meta = guideMeta(d, id);
         const ix = state.saved.findIndex((s) => s.id === id),
@@ -25692,12 +26076,8 @@ function sfSaveDesign(d) {
         if (ix < 0 && d.mustExist) return null;
         if (ix >= 0) state.saved[ix] = meta;
         else state.saved.unshift(meta);
-        if (!save(true)) {
-          meta.thumb = '';
-          if (save(!!d.quiet)) {
-            askPersist();
-            return id;
-          }
+        // (v318.23: storage full, save() itself leaves out the oldest thumbnails, this one's too if need be)
+        if (!save(!!d.quiet)) {
           const j = state.saved.indexOf(meta);
           if (prev) {
             state.saved[j] = prev;
@@ -25712,6 +26092,10 @@ function sfSaveDesign(d) {
         }
         askPersist();
         leaveDrop(id, leaveAt);
+        // (v318.25: a copy this page kept aside while this save ran stays, and now starts from the row this save
+        // wrote: else, the page stopped before its next save, the next start took that row for another tab's save and
+        // threw the copy away. Another tab's copy, or a later save from another tab, still fails the check)
+        leaveRebase(id, leaveAt, +meta.ts);
         return id;
       });
     })
@@ -25741,6 +26125,17 @@ function leaveDrop(id, upTo) {
     const j = JSON.parse(localStorage.getItem(LEAVE_KEY) || 'null');
     if (j && (id == null || j.id === id) && (upTo == null || !(j.seq > upTo)))
       localStorage.removeItem(LEAVE_KEY);
+  } catch (_) {}
+}
+// (v318.25: which page kept a copy aside, so only its own saves move the copy's base on)
+const _leaveTab = Math.random().toString(36).slice(2) + Date.now().toString(36);
+function leaveRebase(id, upTo, ts) {
+  try {
+    const j = JSON.parse(localStorage.getItem(LEAVE_KEY) || 'null');
+    if (j && j.id === id && j.tab === _leaveTab && j.seq > upTo && ts > 0 && +j.base !== ts) {
+      j.base = ts;
+      localStorage.setItem(LEAVE_KEY, JSON.stringify(j));
+    }
   } catch (_) {}
 }
 function leaveHash(s) {
@@ -25794,6 +26189,7 @@ function sfSaveDesignNow(d) {
       JSON.stringify({
         id: d.id,
         seq: ++_leaveN,
+        tab: _leaveTab,
         base: +e.ts || 0,
         name: d.name,
         W: d.W,
@@ -25830,7 +26226,10 @@ function sfLeaveApply() {
   IDB.hold(
     IDB.getNow('guide-' + j.id)
       .then(function (old) {
-        const pl = old && leaveFill(j.pl, old);
+        // (v318.23: a newer version's settings in the stored guide kept, as its autosave keeps them. SF is there by
+        // now: this runs once the database has answered, after the guide's code has loaded)
+        let pl = old && leaveFill(j.pl, old);
+        if (pl && window.SF && SF.plCarry) pl = SF.plCarry(old, pl);
         if (!pl || typeof pl.lmap !== 'string') return;
         return IDB.put('guide-' + j.id, pl).then(function () {
           // the row follows (new time: another tab open on it reloads it)
@@ -26040,6 +26439,11 @@ function _btnFlash(id, txt, back, ms) {
     if (x) {
       x.textContent = back;
       x.disabled = false;
+      // (v318.25: a button the keyboard was on, which the browser left as it was disabled: focus back on it, not the
+      // page's start)
+      if (x._kf && (!document.activeElement || document.activeElement === document.body))
+        x.focus({ preventScroll: true });
+      x._kf = false;
     }
   }, ms || 1600);
 }
@@ -26052,6 +26456,7 @@ function backupAll(btnId) {
     b0 = document.getElementById(bid),
     label = b0 ? b0.textContent : '';
   if (b0) {
+    b0._kf = document.activeElement === b0;
     b0.textContent = 'Preparing…';
     b0.disabled = true;
   }
@@ -27013,6 +27418,16 @@ function restoreKeptWords(x) {
       ' — add ' +
       (x.lost > 1 ? 'them' : 'it') +
       ' back from Home.';
+  // (v318.25: a guide waiting in Recently deleted that differs from the backup's: left there, the backup's beside it)
+  if (x.bin)
+    s +=
+      ' ' +
+      nWord(x.bin, 'guide') +
+      ' in Recently deleted ' +
+      (x.bin > 1
+        ? 'were left there (Put back brings them back as they were)'
+        : 'was left there (Put back brings it back as it was)') +
+      ', and the backup’s version added as “(from backup)”.';
   return s;
 }
 // restoreAny once the question about markers (if any) is answered; fin: the restore is over (called once)
@@ -27054,7 +27469,7 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
         dry: col ? col.dry || 0 : 0,
         buy: !!(col && col.buy),
         // (v308: the guides restored as they were in the file; ones added beside a guide here are said apart)
-        guides: Math.max(0, g - (copies || 0) - (x.lost || 0)),
+        guides: Math.max(0, g - (copies || 0) - (x.lost || 0) - (x.bin || 0)),
         dup: x.dup || 0,
         ahead: x.ahead || 0,
         bad: x.bad || 0,
@@ -27064,6 +27479,7 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
         copies: copies || 0,
         kept: x.kept || 0,
         lost: x.lost || 0,
+        bin: x.bin || 0,
         undo: col && col.undo ? col.undo : null,
         // (nothing came back: your markers matched the backup's, or were kept)
         same: !!(col && col.same),
@@ -27125,8 +27541,10 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
           label,
           1800,
         );
-        var msg = guideRestoreWords(col, Math.max(0, ok - (copies || 0) - (x.lost || 0)), x),
-          kw = restoreKeptWords({ copies: copies, kept: x.kept, lost: x.lost }) + (tw ? ' ' + tw : '');
+        var msg = guideRestoreWords(col, Math.max(0, ok - (copies || 0) - (x.lost || 0) - (x.bin || 0)), x),
+          kw =
+            restoreKeptWords({ copies: copies, kept: x.kept, lost: x.lost, bin: x.bin }) +
+            (tw ? ' ' + tw : '');
         if (cap) cap.textContent = (msg + kw).trim();
         if (done) {
           done(collection || ok || x.dup || x.ahead || x.bad || x.full ? got(ok, x, copies) : null);
@@ -27142,7 +27560,7 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
           );
           return;
         }
-        restoreToast(msg, copies || x.bad || x.kept || x.lost || x.ahead ? 7000 : 3500, col);
+        restoreToast(msg, copies || x.bad || x.kept || x.lost || x.bin || x.ahead ? 7000 : 3500, col);
       },
       prog,
     );
@@ -27153,6 +27571,8 @@ function dropKept(id) {
   state.saved = state.saved.filter(function (s) {
     return s.id !== id;
   });
+  // (v318.25: and not brought back by the merge with another tab's save, as an empty row once its guide is deleted)
+  forgetSaved(id);
   if (save(true))
     IDB.del('guide-' + id).catch(function () {
       return null;
@@ -27276,6 +27696,7 @@ function restoreGuideList(guides, _fts, done, prog) {
     full = 0,
     kept = 0,
     lost = 0,
+    bin = 0,
     ahead = 0;
   function same(js, lm, ids) {
     var k = 0;
@@ -27320,6 +27741,7 @@ function restoreGuideList(guides, _fts, done, prog) {
           openRep: openRep,
           kept: kept,
           lost: lost,
+          bin: bin,
         });
       // (a lost guide left beside the backup's copy is offered on Home, v304)
       if (lost && typeof lostRefresh === 'function') lostRefresh();
@@ -27398,6 +27820,7 @@ function restoreGuideList(guides, _fts, done, prog) {
           }
           var copy = false,
             isLost = false,
+            isBin = false,
             kid = null;
           // (v304) a guide stored under this id that no Library row points to (a lost guide: its row couldn't be read) may
           // be newer than the backup's: it is left as it is, to be added back from Home, and the backup's copy comes in
@@ -27411,6 +27834,9 @@ function restoreGuideList(guides, _fts, done, prog) {
               libPendList().some(function (x) {
                 return x.id === _gid;
               }),
+            // (v318.25: past its Undo, waiting in Recently deleted for a week since v318.1: its stored copy may hold
+            // more than the backup's, so it is read as a lost guide's is, and left there when it differs)
+            binned = pend && !(libPend && libPend.entry && libPend.entry.id === _gid),
             bust = !!_ex && _damaged.has(_ex.id),
             atRisk =
               !bust &&
@@ -27420,7 +27846,7 @@ function restoreGuideList(guides, _fts, done, prog) {
           // (v318 review) a guide called damaged as it opened whose stored section map is a whole PNG may only have
           // failed to open for want of memory: it is kept as "… (before restore)" too, when it differs from the
           // backup's, rather than replaced unseen by an older copy
-          ((!_ex && _gid && !pend) || atRisk || bust
+          ((!_ex && _gid && (!pend || binned)) || atRisk || bust
             ? IDB.get('guide-' + (_ex ? _ex.id : _gid)).catch(function () {
                 return null;
               })
@@ -27431,7 +27857,8 @@ function restoreGuideList(guides, _fts, done, prog) {
               if (!_ex && differs) {
                 _gid = _newGuideId();
                 _nm = _cn;
-                isLost = true;
+                if (binned) isBin = true;
+                else isLost = true;
                 return;
               }
               if (_ex && !bust && (+_ex.ts || 0) > (+g.ts || 0)) {
@@ -27520,6 +27947,7 @@ function restoreGuideList(guides, _fts, done, prog) {
                   if (bust) _damaged.delete(_ex.id);
                   if (kid) kept++;
                   if (isLost) lost++;
+                  else if (isBin) bin++;
                   else if (copy) copies++;
                   // (the guide open on the Guide screen, replaced by the backup's newer copy: said in the summary, v289)
                   else if (_ex && open && open.id === id) openRep = _ex.name || open.name;
@@ -29292,28 +29720,27 @@ function boxBlur(g, r) {
       if (x - r >= 0) s -= g[ro + x - r];
     }
   }
-  for (let x = 0; x < W; x++) {
-    const cw = Math.min(W - 1, x + r) - Math.max(0, x - r) + 1;
-    let s = 0;
-    for (let y = 0; y <= Math.min(r, H - 1); y++) s += mid[y * W + x];
-    for (let y = 0; y < H; y++) {
-      const ch = Math.min(H - 1, y + r) - Math.max(0, y - r) + 1;
-      out[y * W + x] = (s / (cw * ch) + 0.5) | 0;
-      if (y + r + 1 < H) s += mid[(y + r + 1) * W + x];
-      if (y - r >= 0) s -= mid[(y - r) * W + x];
+  const col = new Int32Array(W),
+    cw = new Int32Array(W);
+  for (let x = 0; x < W; x++) cw[x] = Math.min(W - 1, x + r) - Math.max(0, x - r) + 1;
+  for (let y = 0; y <= Math.min(r, H - 1); y++) {
+    const o = y * W;
+    for (let x = 0; x < W; x++) col[x] += mid[o + x];
+  }
+  for (let y = 0; y < H; y++) {
+    const ch = Math.min(H - 1, y + r) - Math.max(0, y - r) + 1,
+      o = y * W,
+      ad = y + r + 1 < H ? (y + r + 1) * W : -1,
+      sb = y - r >= 0 ? (y - r) * W : -1;
+    for (let x = 0; x < W; x++) {
+      out[o + x] = (col[x] / (cw[x] * ch) + 0.5) | 0;
+      if (ad >= 0) col[x] += mid[ad + x];
+      if (sb >= 0) col[x] -= mid[sb + x];
     }
   }
   return out;
 }
-function denoise(g) {
-  const nl = noiseLevel(g);
-  const passes = nl < 3 ? 0 : nl < 7 ? 1 : 2;
-  // (v303: a 3 x 3 box on an enlarged picture too, measured on it as it is. Measured and blurred on the picture as it
-  // came instead, a downloaded page's JPEG grain called for a blur that ran close lines together again, undoing what
-  // enlarging it is for: the zentangle 1,423 sections -> 1,040, the otter 238 -> 199)
-  for (let i = 0; i < passes; i++) g = boxBlur(g, 1);
-  return g;
-}
+
 // grainy paper and camera noise leave specks of 'ink' that chop the paper into crumbs: drop any ink blob too
 // small to be part of a line (lines are long and connected; a dot eye is still far bigger than a speck)
 // (v313) despeckle's figures for the faint-marks split (faintSplitFast), valid straight after it, as segment uses them
@@ -30227,12 +30654,29 @@ function segBegin() {
   zonePixCapture();
 }
 // the ink: -1 for a line's pixel, 0 for paper
-function segInk() {
+// (v318.23) segInk in parts, so segRun can paint between them: the grey stretched and its noise measured (inkPrep),
+// each blur pass (inkBlur), the ink (inkDone). segInk() runs them in one go, the same code
+function inkPrep() {
   const n = W * H;
+  if (!enhance) return { n: n, src: null, passes: 0 };
+  const st = autoStretch(gray, n),
+    nl = noiseLevel(st);
+  // (the noise measured on the stretched grey, and up to two 3 × 3 box blurs: denoise, until v318.23)
+  // (v303: a 3 x 3 box on an enlarged picture too, measured on it as it is. Measured and blurred on the picture as it
+  // came instead, a downloaded page's JPEG grain called for a blur that ran close lines together again, undoing what
+  // enlarging it is for: the zentangle 1,423 sections -> 1,040, the otter 238 -> 199)
+  return { n: n, src: st, passes: nl < 3 ? 0 : nl < 7 ? 1 : 2 };
+}
+function inkBlur(k) {
+  k.src = boxBlur(k.src, 1);
+  k.passes--;
+}
+function inkDone(k) {
+  const n = k.n;
   labels = new Int32Array(n);
-  if (enhance) {
-    const src = denoise(autoStretch(gray, n)),
-      ink = adaptiveInk(src, n);
+  if (k.src) {
+    const ink = adaptiveInk(k.src, n);
+    k.src = null;
     for (let i = 0; i < n; i++) labels[i] = ink[i] ? -1 : 0;
   } else {
     const thr = otsu(gray, n);
@@ -30240,6 +30684,11 @@ function segInk() {
   }
   // (v308: faint grey marks ignored, when asked: the ink lighter than faintCut is paper)
   if (faintCut > 0) for (let i = 0; i < n; i++) if (labels[i] === -1 && gray[i] > faintCut) labels[i] = 0;
+}
+function segInk() {
+  const k = inkPrep();
+  while (k.passes > 0) inkBlur(k);
+  inkDone(k);
 }
 function segSpeck() {
   despeckle(labels);
@@ -30330,7 +30779,12 @@ function segThen(run, once, after, fail) {
     after(true);
     return;
   }
-  run().then(after, fail);
+  run().then(function (ok) {
+    // (the after-steps run in the last step's own task: timed with it, as one wait)
+    holdTime('Sections drawn', function () {
+      after(ok);
+    });
+  }, fail);
 }
 function segStop() {
   segGen++;
@@ -30365,6 +30819,8 @@ function segBusySet(on, hide, ctl) {
 // prep(): a new picture (W, H, gray, srcK, and anything else its commit needs), or null to find the sections again on
 // the open one; commit(pic): put it in place (before the sections). Resolves true when done, false when a newer run
 // took over; rejects on an error (nothing put in place). hide: the controls out of sight meanwhile (segBusySet).
+// (v318.23: the steps' names, for the waits Copy diagnostics lists)
+const SEG_STEP_NAMES = ['prepare', 'ink', 'smooth', 'specks', 'sections', 'put in place'];
 function segRun(prep, commit, hide) {
   const my = ++segGen;
   segBusySet(true, hide, !!prep);
@@ -30381,7 +30837,19 @@ function segRun(prep, commit, hide) {
       if (!pic.gray) throw new Error('no picture');
     },
     function () {
-      onPic(pic, segInk);
+      onPic(pic, function () {
+        pic._ink = inkPrep();
+        if (!pic._ink.passes) inkDone(pic._ink);
+      });
+    },
+    function () {
+      const k = pic._ink;
+      if (!k.passes) return;
+      onPic(pic, function () {
+        inkBlur(k);
+        if (!k.passes) inkDone(k);
+      });
+      if (k.passes) return 'again';
     },
     function () {
       onPic(pic, segSpeck);
@@ -30401,7 +30869,17 @@ function segRun(prep, commit, hide) {
     const next = function () {
       if (my !== segGen) return res(false);
       try {
-        steps[i++]();
+        // (v318.23: each step timed for Copy diagnostics, holdTime in safety.js)
+        const r = holdTime(
+          (prep ? 'New photo: ' : 'Sections again: ') + SEG_STEP_NAMES[i],
+          function () {
+            return steps[i]();
+          },
+          function () {
+            return pic && pic.W ? pic.W + '×' + pic.H : '';
+          },
+        );
+        if (r !== 'again') i++;
       } catch (e) {
         if (my === segGen) {
           segBusySet(false);
@@ -31321,8 +31799,22 @@ function resegment() {
   reseg();
   return true;
 }
+// (v318.25) while sections are being found again: the settings the sections still in place were found with, and the
+// Undo step this re-detection made (s: none when it shares an earlier one). A turn, crop or tilt before they're found
+// keeps those settings with those sections (it had kept the new ones, so its Undo brought back the old sections with
+// the new Sensitivity), and takes the place of that step (whose Undo then changed nothing on the picture). n: the
+// newest re-detection, which alone clears it when done (or taken over)
+let _segIn = null,
+  _resegN = 0;
 function reseg() {
-  keepSnap(false);
+  const s = keepSnap(false),
+    my = ++_resegN;
+  // (a re-detection taking over from one still under way: the sections in place are still those the first found)
+  if (!segBusy || !_segIn)
+    _segIn = {
+      det: _reFrom ? { e: _reFrom.e, c: _reFrom.c, f: _reFrom.f } : { e: enhance, c: adaptC, f: faintCut },
+      s: s,
+    };
   _reFrom = null;
   // (v318.14: with a paint between its steps; a newer change takes over from it, segRun)
   note('Detecting sections\u2026');
@@ -31332,6 +31824,7 @@ function reseg() {
     },
     segment,
     function (ok) {
+      if (my === _resegN) _segIn = null;
       if (!ok) return;
       hasEdits = false;
       if (sfmode === 'review') {
@@ -31342,6 +31835,7 @@ function reseg() {
       note('Sections detected again \u2014 tap Undo to go back.');
     },
     function (err) {
+      if (my === _resegN) _segIn = null;
       note(errNote('Couldn’t detect the sections again.', 'Detecting sections', err));
     },
   );
@@ -31364,8 +31858,12 @@ function keepSnap(geo) {
     secFwd = [];
     return null;
   }
+  // (v318.25: a turn, crop or tilt while sections are found again: in place of the step that re-detection made, which
+  // holds the same sections, _segIn; kept with it, put back should the change come to nothing, geoCancel)
+  const was = geo && segBusy && _segIn && _segIn.s && top === _segIn.s ? popUndo(true) : null;
   const s = keepObj(geo);
   pushUndo(s);
+  if (was) s._was = was;
   return s;
 }
 // the step keepSnap keeps: the sections and all that hangs on them as they are now (also for Redo, 65-edit secNow)
@@ -31420,7 +31918,13 @@ function keepObj(geo) {
       edits: hasEdits,
       // (Enhance and Sensitivity as they were, v304)
       // (v308: and whether faint grey marks were ignored)
-      det: _reFrom ? { e: _reFrom.e, c: _reFrom.c, f: _reFrom.f } : { e: enhance, c: adaptC, f: faintCut },
+      // (v318.25: and while they're being found again, those of the sections still in place, _segIn)
+      det:
+        segBusy && _segIn
+          ? Object.assign({}, _segIn.det)
+          : _reFrom
+            ? { e: _reFrom.e, c: _reFrom.c, f: _reFrom.f }
+            : { e: enhance, c: adaptC, f: faintCut },
       bgMaxB: bgMaxB,
       bgEdgeAll: bgEdgeAll,
       // (v308: the offer to ignore faint grey marks, as it was for those sections)
@@ -31498,11 +32002,17 @@ function okGeom(go) {
 // okGeom said yes but nothing changed after all: its Undo step goes again
 function geoCancel() {
   // (and Redo as it was before it, v311)
-  if (_geoSnap && undoStack[undoStack.length - 1] === _geoSnap) popUndo(true);
+  if (_geoSnap && undoStack[undoStack.length - 1] === _geoSnap) {
+    popUndo(true);
+    // (v318.25: and the re-detection's step it took the place of, keepSnap: the way back from those sections)
+    if (_geoSnap._was) pushUndo(_geoSnap._was);
+  }
   _geoSnap = null;
 }
 // the picture changed: an Undo step from okGeom leads back to it; without one the older steps no longer fit the picture
 function geoUndoOK() {
+  // (v318.25: the change is made: the step it took the place of isn't needed again, keepSnap)
+  if (_geoSnap) delete _geoSnap._was;
   const top = undoStack[undoStack.length - 1];
   if (!(top && top.reseg && !top.sealed && top.keep.geo)) clearUndo();
 }
@@ -31732,7 +32242,13 @@ function _loadImage(file) {
         // (v318 polish: drawn before the work below holds the page, or "Reading photo…" stayed up throughout)
         afterPaint(function () {
           if (gen !== loadGen) return;
-          detect(f35);
+          holdTime(
+            'New photo: open',
+            function () {
+              detect(f35);
+            },
+            img.naturalWidth ? img.naturalWidth + '×' + img.naturalHeight : '',
+          );
         });
       });
     };
@@ -31764,7 +32280,9 @@ function _loadImage(file) {
         if (tok !== loadGen) return;
         segBusySet(false);
         try {
-          pgBegin(f35);
+          holdTime('New photo: find the page', function () {
+            pgBegin(f35);
+          });
         } catch (err) {
           _preview = false;
           note(
@@ -32021,8 +32539,10 @@ function pdfBlank(c) {
     const g = t.getContext('2d');
     g.drawImage(c, 0, 0, w, h);
     const d = g.getImageData(0, 0, w, h).data;
+    // (v318.25) anything that isn't paper white counts as drawn, not only what's darker than mid grey: a page drawn in
+    // grey lines (light-line pages for alcohol markers) had been refused as blank, though it opens as a picture
     let dark = 0;
-    for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] < 384) dark++;
+    for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] < 720) dark++;
     freeCanvas(t);
     return dark < (w * h) / 2000;
   } catch (_) {
@@ -33141,20 +33661,29 @@ function pgBegin(f35) {
 // (v313: what's about to happen shows before it does, as when it's sure)
 function pgReveal(q, auto) {
   pgOpen(q, '', 'reveal');
-  const t0 = Date.now();
-  _pgT = setTimeout(function () {
-    if (!(pgMode && pgEd && pgEd.how === 'reveal')) return;
+  const t0 = Date.now(),
+    ed = pgEd,
+    g = loadGen,
+    live = function () {
+      return pgMode && pgEd === ed && g === loadGen;
+    };
+  clearTimeout(_pgT);
+  afterPaint(function () {
+    if (!live()) return;
     let flat = null;
     try {
-      flat = pgFlat(q);
+      flat = holdTime('New photo: straighten', function () {
+        return pgFlat(q);
+      });
     } catch (e) {}
+    clearTimeout(_pgT);
     _pgT = setTimeout(
       function () {
-        if (pgMode && pgEd && pgEd.how === 'reveal') pgApply(q, auto, flat);
+        if (live()) pgApply(q, auto, flat);
       },
       Math.max(0, 750 - (Date.now() - t0)),
     );
-  }, 60);
+  });
 }
 // build the sections from srcImg as it is now
 function pgProceed(msg) {
@@ -51997,20 +52526,32 @@ function ctlSections() {
     afterPaint(function () {
       // (v307: the label points worked out in the worker first, while "Building…" shows: lptsReady, 40-render)
       lptsReady().then(function () {
-        // (the first Build of a new picture blooms: 41-bloom.js)
-        const first = !assignData;
-        try {
-          if (g !== loadGen) return;
-          buildGuide();
-          if (first && assignData && sfmode === 'guide') bloomStart();
-        } finally {
-          if (b.isConnected) {
-            b.disabled = false;
-            b.textContent = 'Build guide \u2192';
-            b.setAttribute('aria-label', 'Build guide');
-            edBarSync();
+        // (v318.23: what depends on the sections alone, the texture's distances and the mood pictures' lines, in a task
+        // of its own first, so Build's own hold is shorter; both are kept for the sections, so buildGuide finds them.
+        // Not after the bloom starts: it's drawn frame by frame, and work there makes it stutter or turn itself off)
+        if (g === loadGen)
+          try {
+            if (texAmt > 0 && !edgeDist) buildTexFields();
+            if (mpOn()) mpLinesImage();
+          } catch (e) {}
+        afterPaint(function () {
+          // (the first Build of a new picture blooms: 41-bloom.js)
+          const first = !assignData;
+          try {
+            if (g !== loadGen) return;
+            holdTime('Build', function () {
+              buildGuide();
+            });
+            if (first && assignData && sfmode === 'guide') bloomStart();
+          } finally {
+            if (b.isConnected) {
+              b.disabled = false;
+              b.textContent = 'Build guide \u2192';
+              b.setAttribute('aria-label', 'Build guide');
+              edBarSync();
+            }
           }
-        }
+        });
       });
     });
   }); // show "Building…" before the work starts
@@ -52385,6 +52926,74 @@ function currentDesignObj(share, edits) {
       configurable: true,
     });
   return o;
+}
+// (v318.23) the payload keys this version writes, at the top, in style and in style.shade. Anything else in the stored
+// payload was written by a newer version (opened in another tab): carried into this one's save as it was, so its
+// settings aren't lost when this older tab saves the guide. Only while the sections are the same (the same section
+// map): a key per section would point at the wrong ones after Edit sections or a rebuild. Keys written only when
+// they're used (held, dates, zones, matchAlike…) are in the lists, so one cleared here isn't brought back. Not for a
+// restore (it puts the backup back as it was) or a copy: only the guide's own autosave and its leave copy.
+// PL_GONE: keys a later version stops writing, so they aren't carried for ever.
+const PL_TOP = [
+    'lmap',
+    'ref',
+    'paper',
+    'assign',
+    'style',
+    'anchors',
+    'prog',
+    'tones',
+    'held',
+    'dates',
+    'out',
+    'edits',
+    'base',
+    'locks',
+    'upk',
+    'frame',
+    'zones',
+    'secStates',
+  ],
+  PL_GONE = [];
+let _plKnown = null;
+function plKnown() {
+  if (_plKnown) return _plKnown;
+  const top = new Set(PL_TOP),
+    st = new Set(['shade']),
+    sh = new Set();
+  STYLE_FIELDS.forEach(function (f) {
+    (f.in === 'payload' ? top : f.in === 'shade' ? sh : st).add(f.key);
+  });
+  _plKnown = { top: top, style: st, shade: sh };
+  return _plKnown;
+}
+function plCarry(prev, pl) {
+  if (!prev || typeof prev !== 'object' || !pl || typeof pl !== 'object') return pl;
+  if (typeof prev.lmap !== 'string' || prev.lmap !== pl.lmap) return pl;
+  const K = plKnown(),
+    obj = function (o) {
+      return !!o && typeof o === 'object' && !Array.isArray(o);
+    },
+    more = function (from, into, known) {
+      let out = null;
+      for (const k in from)
+        if (!known.has(k) && PL_GONE.indexOf(k) < 0 && !(k in into))
+          (out || (out = Object.assign({}, into)))[k] = from[k];
+      return out;
+    };
+  let out = more(prev, pl, K.top) || pl;
+  if (obj(prev.style) && obj(out.style)) {
+    let s = more(prev.style, out.style, K.style);
+    if (obj(prev.style.shade) && obj((s || out.style).shade)) {
+      const h = more(prev.style.shade, (s || out.style).shade, K.shade);
+      if (h) (s || (s = Object.assign({}, out.style))).shade = h;
+    }
+    if (s) {
+      if (out === pl) out = Object.assign({}, pl);
+      out.style = s;
+    }
+  }
+  return out;
 }
 // Share › Guide file: handed over as the backup is (handOver: the share sheet on a phone, a download on a computer)
 function shareGuideFile() {
@@ -53451,6 +54060,7 @@ function libAutosave(q) {
       return Promise.resolve(
         api.saveDesign({
           id: id,
+          carry: plCarry,
           name: nm,
           W: d.W,
           H: d.H,
@@ -53488,6 +54098,7 @@ function libAutosave(q) {
   const p = Promise.resolve(
     api.saveDesign({
       id: id,
+      carry: plCarry,
       name: nm,
       W: d.W,
       H: d.H,
@@ -53851,13 +54462,18 @@ function makeThumb() {
       root.classList.contains('sfrev')
     )
       return '';
-    var tw = 140,
-      th = Math.max(1, Math.round((tw * H) / W)),
+    // (v318.23: the long side at most THUMB_PX, not 140 wide whatever the height: a tall page's was 140×370, ~23K
+    // characters of the app's 5 MB. It's a placeholder: the Library draws the guide again as it comes into view)
+    const ts = thumbSize(W, H),
+      tw = ts[0],
+      th = ts[1],
       tc = document.createElement('canvas');
     tc.width = tw;
     tc.height = th;
-    tc.getContext('2d').drawImage(cv, 0, 0, tw, th);
-    const u = tc.toDataURL('image/jpeg', 0.62);
+    const tg = tc.getContext('2d');
+    tg.imageSmoothingQuality = 'high';
+    tg.drawImage(cv, 0, 0, tw, th);
+    const u = tc.toDataURL('image/jpeg', 0.6);
     freeCanvas(tc);
     return u;
   } catch (e) {
@@ -53995,12 +54611,16 @@ function firstSave(auto) {
           sayLive.last && /^Page finished\./.test(sayLive.last) && Date.now() - (sayLive.at || 0) < 5000
             ? sayLive.last + ' '
             : '';
-        sayLive(
+        const said =
           fin +
-            (back != null
-              ? 'Put back in your Library.'
-              : 'Saved in your Library. Changes now save automatically.'),
-        );
+          (back != null
+            ? 'Put back in your Library.'
+            : 'Saved in your Library. Changes now save automatically.');
+        // (v318.25: saved as the guide's screen was left by the main tabs: its live region is hidden then, and so is
+        // the header's status line, so it's the app's toast, which is seen and heard on the screen that opened)
+        const rt = document.getElementById('sfRoot');
+        if (rt && !rt.getClientRects().length && typeof toast === 'function') toast(said, 3500);
+        else sayLive(said);
         btnBusy(null);
         renderHead();
         saveStatus();
@@ -56636,7 +57256,8 @@ function finishFocus() {
   animXform(true);
   renderGuide();
   renderFocusUI();
-  var was = celebrated;
+  // (v318.25: finished before but not now, a tick taken back since: checkComplete no longer counts that as finished)
+  var was = celebrated && pageDone();
   checkComplete();
   // (just finished: the toast says so instead)
   if (celebrated === was) focusSay();
@@ -56709,7 +57330,8 @@ function handOpen(from, nx) {
       : mcodeHTML(m);
   el.querySelector('.sfhsub').innerHTML =
     (nxt.n - nxt.d === 1 ? '1 section' : nxt.n - nxt.d + ' sections') +
-    ', shown on the picture. Tap <b>Done</b> when it’s in your hand.' +
+    // (v318.25: not said by the short card, which can leave some of them under it all the same: handFrame)
+    '<span class="sfhshown">, shown on the picture</span>. Tap <b>Done</b> when it’s in your hand.' +
     (low ? '<span class="sfhlow">' + mcodeHTML(m) + ' is running low.</span>' : '');
   el.hidden = false;
   el.classList.remove('in');
@@ -56761,7 +57383,8 @@ function handFrame(u, el) {
   var sides = ['top', 'bot', 'left', 'right'],
     last = handFrame.last;
   if (last && sides.indexOf(last) > 0) (sides.splice(sides.indexOf(last), 1), sides.unshift(last));
-  sides.forEach(function (side) {
+  el.classList.remove('sfhtight');
+  var tryAt = function (side) {
     el.classList.remove('sfhbot', 'sfhleft', 'sfhright');
     if (side !== 'top') el.classList.add('sfh' + side);
     // (the room ends above the zoom buttons only where the card would meet them: beside them it needn't)
@@ -56832,7 +57455,16 @@ function handFrame(u, el) {
         (z > best.z * (keep ? 1.15 : 1.02) || (z >= best.z / 1.02 && pv < best.pv * (keep ? 0.5 : 0.9) - 1)))
     )
       best = { side: side, o: o, z: z, pv: pv, x: panX, y: panY, cut: cut, R: R };
-  });
+  };
+  sides.forEach(tryAt);
+  // (v318.25) every side still leaves some of the sections under the card (a small phone with large text: on an
+  // iPhone SE at 1.6x text it covered 9 of the 20 it said were "shown on the picture"): the short card, the marker on
+  // one line under how the last went (the bar above names it too, with its swatch), placed again
+  if (best.o > 0) {
+    el.classList.add('sfhtight');
+    best = null;
+    sides.forEach(tryAt);
+  }
   zoom = best.z;
   panX = best.x;
   panY = best.y;
@@ -65765,7 +66397,7 @@ function openPrint() {
     b += '</div></div>';
   });
   b +=
-    '</div><div class="sfshhint" id="sfPrWhat">' +
+    '</div><div id="sfPrOrd" class="sfprord"></div><div class="sfshhint" id="sfPrWhat">' +
     printWhatNote() +
     '</div><div class="sfprchk"><label class="sfchk"><input type="checkbox" id="sfPdfDark"' +
     (pdfDark ? ' checked' : '') +
@@ -65934,6 +66566,79 @@ function printOptsSync() {
     sm.classList.remove('empty');
     sm.innerHTML = printSummary();
   }
+  // (after the summary: its dry run noted each page's kind, _pdfKinds)
+  const od = document.getElementById('sfPrOrd');
+  if (od) od.innerHTML = assignData ? printOrder(_pdfKinds) : '';
+}
+// the pages in order, as small page shapes in the paper's shape (page 1 on its side when it is), a run of one kind
+// under one word; a screen reader hears one line ("Page 1: your picture with codes; pages 2–4: close-ups; …")
+function printOrder(K) {
+  const P = PAPERS[paper] || PAPERS.letter,
+    W0 = {
+      pic: 'Picture',
+      ref: 'Picture',
+      close: 'Close-ups',
+      key: 'Key',
+      keymore: 'Key',
+      refkey: 'Picture + key',
+      strip: 'Test strip',
+    },
+    say = function (k) {
+      const w = k.lab === 'numbers' ? 'numbers' : 'codes';
+      return k.k === 'pic'
+        ? 'your picture ' + (k.lab === 'none' ? 'unlabelled' : 'with ' + w) + (k.land ? ', on its side' : '')
+        : k.k === 'ref'
+          ? 'your picture in colour with ' + w + (k.land ? ', on its side' : '')
+          : k.k === 'close'
+            ? 'close-ups'
+            : k.k === 'refkey'
+              ? 'your picture in colour beside the colour key'
+              : k.k === 'strip'
+                ? 'the test strip'
+                : 'the colour key';
+    },
+    gs = [];
+  K.forEach(function (k, i) {
+    const w = W0[k.k] || '',
+      g = gs[gs.length - 1];
+    if (g && g.w === w) g.p.push(k);
+    else gs.push({ w: w, a: i + 1, s: say(k), p: [k] });
+  });
+  return (
+    '<span class="sfsr">' +
+    gs
+      .map(function (g, n) {
+        const b = g.a + g.p.length - 1,
+          t = (b > g.a ? 'pages ' + g.a + '–' + b : 'page ' + g.a) + ': ' + g.s;
+        return n ? t : t.charAt(0).toUpperCase() + t.slice(1);
+      })
+      .join('; ') +
+    '.</span><span class="sfprordr" aria-hidden="true">' +
+    gs
+      .map(function (g) {
+        return (
+          '<span class="sfprordg"><span class="sfprordt">' +
+          g.p
+            .map(function (k, j) {
+              return (
+                '<span class="sfprordp' +
+                (k.land ? ' land' : '') +
+                '" style="aspect-ratio:' +
+                (k.land ? P[1] + '/' + P[0] : P[0] + '/' + P[1]) +
+                '">' +
+                (g.a + j) +
+                '</span>'
+              );
+            })
+            .join('') +
+          '</span><span class="sfprordw">' +
+          g.w +
+          '</span></span>'
+        );
+      })
+      .join('') +
+    '</span>'
+  );
 }
 function printOptSet(k, v) {
   let key, val;
@@ -66734,6 +67439,7 @@ function pdfKeyRows() {
 }
 // ---- the colouring page's labels, placed so none covers another (v284) ----
 // how many sections the last PDF built put in close-ups (the Print sheet's summary says so)
+let _pdfKinds = [];
 let _pdfCloseN = 0,
   // (on how many pages, and how many small sections none of them could label)
   _pdfCloseP = 0,
@@ -67228,6 +67934,7 @@ function pdfCloseMark(g, cr, letter, k, ink, mk) {
 // (v307: lazy, the guide's pages too, each noted down as it's laid out and drawn when the PDF writer comes to it)
 function buildPDFPages(dry, lazy) {
   _pdfDry = !!dry;
+  _pdfKinds = [];
   try {
     if (pdfWhat === 'strip') return testStripPages(!!dry, !!lazy);
     if (!lazy || dry) return _buildPDF(!!dry);
@@ -67366,6 +68073,7 @@ function _buildPDF(dry) {
       // (page 1's own width for the picture and its lines: on its side it's wider than the other pages)
       bw1 = p1.w - 2 * m;
     pages.push(dry ? null : p1);
+    _pdfKinds.push({ k: refPic ? 'ref' : 'pic', lab: lab, land: p1.w > p1.h });
     g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
     // (the picture's place, from the longest the lines under the title can be)
     // (long: the longest they can be, for the estimate; v284 review: the real lines could be longer than it)
@@ -67628,6 +68336,7 @@ function _buildPDF(dry) {
           if (i % cell.per === 0) {
             cp = pdfPage();
             pages.push(cp);
+            _pdfKinds.push({ k: 'close' });
             const gc = cp.g;
             gc.fillStyle = '#111';
             gc.font = '700 ' + PX(15) + 'px ' + LFONT;
@@ -67704,7 +68413,11 @@ function _buildPDF(dry) {
       }
       // (a whole-picture canvas: handed back now, not when the browser gets round to it — iPad's limit, v298)
       pdfFree(art1);
-    } else for (let i = 0; i < closeP; i++) pages.push(null);
+    } else
+      for (let i = 0; i < closeP; i++) {
+        pages.push(null);
+        _pdfKinds.push({ k: 'close' });
+      }
   }
   _pdfCloseN = Object.keys(shown).length;
   _pdfCloseP = closeP;
@@ -67724,6 +68437,7 @@ function _buildPDF(dry) {
   let pg = pdfPage(),
     g = pg.g;
   pages.push(pg);
+  _pdfKinds.push({ k: refOne ? 'refkey' : 'key' });
   g.fillStyle = '#111';
   g.font = '700 ' + PX(15) + 'px ' + LFONT;
   g.fillText(pdfTrunc(g, refOne ? nm : 'Colour key', bw), m, m + PX(12));
@@ -68073,6 +68787,7 @@ function _buildPDF(dry) {
     pg = pdfPage();
     g = pg.g;
     pages.push(pg);
+    _pdfKinds.push({ k: 'keymore' });
     g.fillStyle = '#111';
     g.font = '700 ' + PX(12) + 'px ' + LFONT;
     g.fillText('Colour key (continued)', m, m + PX(10));
@@ -68408,6 +69123,12 @@ async function _exportPDF() {
   await new Promise(function (r) {
     setTimeout(r, 30);
   });
+  // (v318.25) what is printed and the guide it's from, as the pages are laid out: the choices stay live while it's
+  // written, and a change to Pages then (or another guide opened) had named the file, and marked the sample printed,
+  // after that instead
+  const what = pdfWhat,
+    name = curName,
+    gen = loadGen;
   try {
     const P = PAPERS[paper] || PAPERS.letter,
       // (v307) each page drawn in turn, the button saying which (the Print sheet's, opened again meanwhile too)
@@ -68417,12 +69138,10 @@ async function _exportPDF() {
         if (b && b.disabled && _pdfProg) b.textContent = _pdfProg;
       });
     const fname =
-      fileSlug(curName, 'colour-guide', 80).toLowerCase() +
-      (pdfWhat === 'strip' ? '-test-strip' : '') +
-      '.pdf';
-    shareOrSave(blob, fname, curName || 'Colouring guide', 'PDF', 'PDF downloaded.');
+      fileSlug(name, 'colour-guide', 80).toLowerCase() + (what === 'strip' ? '-test-strip' : '') + '.pdf';
+    shareOrSave(blob, fname, name || 'Colouring guide', 'PDF', 'PDF downloaded.');
     // (v313: the sample's page printed, not just its test strip: a page being coloured, for Home's Continue card)
-    if (smpTry && pdfWhat !== 'strip') {
+    if (smpTry && what !== 'strip' && gen === loadGen) {
       smpTry = 0;
       guideDirty = true;
       scheduleAutosave();
@@ -68539,6 +69258,9 @@ function finishSay() {
 }
 function checkComplete() {
   progStamp();
+  // (v318.25) a section unticked (or Cleared) since it was finished: no longer finished, so finishing it again says so
+  // again (a screen reader had heard nothing the second time, and the open row and zoom stayed), as markBack does
+  if (celebrated && !pageDone()) celebrated = false;
   if (celebrated || sfmode !== 'color' || !assignData) return;
   const ord = assignData.order;
   let d = 0;
@@ -69016,6 +69738,7 @@ function testStripPages(dry, lazy) {
     pr++;
   });
   const np = Math.max(1, at.length ? at[at.length - 1].p + 1 : 1);
+  for (let i = 0; i < np; i++) _pdfKinds.push({ k: 'strip' });
   if (dry) return np;
   const out = [];
   for (let pi = 0; pi < np; pi++) out.push(lazy ? stripPage.bind(null, pi) : stripPage(pi));
@@ -69331,16 +70054,18 @@ function thumbFor(id) {
               p[j + 3] = 255;
             }
             g.putImageData(id2, 0, 0);
-            var tw = 140,
-              tth = Math.max(1, Math.round((tw * dh) / dw)),
+            var ts = thumbSize(dw, dh),
+              tw = ts[0],
+              tth = ts[1],
               t = document.createElement('canvas');
             t.width = tw;
             t.height = tth;
             var tg = t.getContext('2d');
             tg.imageSmoothingEnabled = true;
+            tg.imageSmoothingQuality = 'high';
             tg.drawImage(c, 0, 0, tw, tth);
             freeCanvas(c);
-            var url = t.toDataURL('image/jpeg', 0.62);
+            var url = t.toDataURL('image/jpeg', 0.6);
             freeCanvas(t);
             res(url);
           } catch (e) {
@@ -71430,6 +72155,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     sheetOpen: sheetOpen,
     checkComplete: checkComplete,
+    get pdfKinds() {
+      return _pdfKinds;
+    },
     get pdfCloseN() {
       return _pdfCloseN;
     },
@@ -71828,6 +72556,11 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     gradStartSay: gradStartSay,
     styleSave: styleSave,
     styleFields: STYLE_FIELDS,
+    plCarry: plCarry,
+    inkPasses: function () {
+      return inkPrep().passes;
+    },
+    plKnown: plKnown,
     // laying a guide out and changing it, for test/v304-assign.test.mjs
     assign: {
       buildGuide: buildGuide,
@@ -72333,6 +73066,7 @@ return {
   showHome,
   hasGuide,
   thumbFor,
+  plCarry,
   maybeResume: maybeShowResume,
   renamed: renamed,
   pdfKit: pdfKit,
@@ -74121,7 +74855,17 @@ function scanFlipped(t, has) {
 const SCAN_TURNED = '人⅄Λ日とᴚɹレタクﾚЧ';
 // the codes a word could be read upside down, with the longer codes whose first letter could have been lost
 // (YR213 read as R213): [] when it isn't worth trying (no digit and no turned character: "Sea" isn't Y35)
+// (v318.24) a Copic grey upside down: its number, a dash, then the family turned ("8-N" is N-8, "L-M" W-7 or W-1):
+// only that shape, and only a grey, of the words with a dash ("6-13", a date, isn't Copic E19)
+const SCAN_GREY_TURNED = /^[0-9A-Z]{1,2}-[CNM]$/;
 function scanTurned(t, has) {
+  if (/-/.test(t)) {
+    if (!SCAN_GREY_TURNED.test(t)) return [];
+    const ix = scanIndex();
+    return scanFlipped(t.replace('-', ''), has).filter((x) =>
+      ix.byCode.get(x).some((i) => /-/.test(COLORS[i].code)),
+    );
+  }
   if (!/[0-9]/.test(t) && ![...t].some((c) => SCAN_TURNED.indexOf(c) >= 0)) return [];
   const f = scanFlipped(t, has);
   if (!f.length || f.length > 4) return [];
@@ -74728,12 +75472,38 @@ function scanRead(text, brand) {
   // both ways up already, and a scrap of a line, "001", had become Ohuhu 100)
   if (scanNoFlip) return { codes: [], byName: -1, flips: [], other: [] };
   const flips = [];
-  for (const t of words) {
-    // (a number-only code as read, 120, isn't BG21 upside down; nor is a word on every cap, v299)
-    if ((/^\d+$/.test(t) && ix.byCode.has(t)) || SCAN_NOISE.test(t)) continue;
+  // (v318.24: a dash of another kind, or with spaces round it, "8 – N", as a grey's)
+  const fw = up
+    .replace(/(^|[^A-Z0-9])([A-Z0-9]{1,2}) *[-\u2010-\u2015\u2212] *([CNM])(?![A-Z0-9])/g, '$1$2-$3')
+    .split(new RegExp('[^A-Z0-9' + SCAN_TURNED + '-]+'))
+    .filter((w) => w && !/^-+$/.test(w));
+  for (const t of fw) {
+    // (a number-only code as read, 120, isn't BG21 upside down; nor is a word on every cap, v299; nor a run of zeros,
+    // v318.24: "00000" isn't Copic G0000, whose G turned reads 9)
+    if ((/^\d+$/.test(t) && ix.byCode.has(t)) || SCAN_NOISE.test(t) || /^0+$/.test(t)) continue;
     const like = scanTurned(t, has);
     if (like.length)
-      flips.push({ as: t, opts: [].concat(...like.map((x) => ix.byCode.get(x).filter(chosen))) });
+      flips.push({
+        as: t,
+        opts: [].concat(...like.map((x) => ix.byCode.get(x).filter(chosen))),
+        // (v318.24) asked even when it's one marker: digits only, bent into a code ("1100" isn't surely Ohuhu GG11),
+        // or a grey turned with no digit ("S-M", a size, isn't surely W-5)
+        sure: !/^\d+$/.test(t) && !/^[A-Z]+-[A-Z]+$/.test(t),
+      });
+  }
+  // (v318.25) with a brand chosen and nothing of its turned: another brand's marker turned, one read surely, is that
+  // brand's (asked in the list, as one the right way up is). "8-N" with Ohuhu chosen had been "No marker code found",
+  // while "N-8" asks about Copic N-8
+  if (brand && !flips.length) {
+    const any = new Set(),
+      hasAny = (c) => ix.byCode.has(c);
+    for (const t of fw) {
+      if ((/^\d+$/.test(t) && ix.byCode.has(t)) || SCAN_NOISE.test(t) || /^0+$/.test(t)) continue;
+      if (/^\d+$/.test(t) || /^[A-Z]+-[A-Z]+$/.test(t)) continue;
+      const is = [].concat(...scanTurned(t, hasAny).map((x) => ix.byCode.get(x)));
+      if (is.length === 1) any.add(is[0]);
+    }
+    if (any.size) return { codes: [], byName: -1, flips: [], other: [...any] };
   }
   return { codes: [], byName: -1, flips: flips, other: [] };
 }
@@ -75131,15 +75901,18 @@ const scanPhotoMax = () => scanList.reduce((m, e) => Math.max(m, e.photo || 0), 
 // question (ask) with when it was written. Written as the list is saved (scanSaveList), only what's changed: the
 // questions not yet written are put, those gone from the list deleted, and nothing at all when nothing's changed (the
 // list is saved at every draw). On load, the pictures of the questions restored come a moment later ("?" until then, as
-// when there's none, or when the storage fails); the rest are pruned, and at most 60, the newest by the row's time,
-// are kept. The database is deleted with Delete all my data (safety.js wipeAllData), and nothing's written after.
+// when there's none, or when the storage fails); the rest are pruned. (v318.25) Every question's still in the list is
+// kept: at most 60 had been, the newest, and the rest deleted for good at a reload, though a sweep of a whole
+// collection leaves more waiting (one photo's all have one time, so which went was anyone's guess). Not more than the
+// page held and wrote before it (sync has no limit): 10–50 KB a question, 200 measured at 6 MB, far under Safari's
+// quota. The database is deleted with Delete all my data (safety.js wipeAllData), and nothing's written after.
+// (The photos' cap of 30 stays: it holds in the page too, keepPhoto, so a reload loses none it kept.)
 // Opened as the guides' is (guide-bridge.js IDB): an open given up after 8 s, the connection let go when it closes or
 // a delete asks, every failure quiet
 // (v318.21) And each photo with a question waiting, as it was shown (its copy up to 900 px, a JPEG of about 100–150
 // KB), for "Where in the photo?" (15-answer.js): kept by its id, 'photo:' + e.pid, as long as a question of it waits,
 // at most 30, the newest; each question's row keeps where its cap is (e.where) and the caps read beside it (e.near)
 const SCAN_PICS_DB = 'ms-scan-pics',
-  SCAN_PICS_MAX = 60,
   SCAN_PHOTOS_MAX = 30;
 const scanPics = (function () {
   const OPEN_MS = 8000;
@@ -75285,8 +76058,8 @@ const scanPics = (function () {
       if (last !== entries && !wiped) sync(last);
     });
   }
-  // the pictures of the questions in the list now, from the database, a moment later; the rest pruned, and at most
-  // SCAN_PICS_MAX kept, the newest. then(): the list drawn again where it's showing
+  // the pictures of the questions in the list now, from the database, a moment later; the rest pruned (v318.25: all of
+  // the list's kept). then(): the list drawn again where it's showing
   function load(then) {
     if (wiped) return Promise.resolve(false);
     S.loads++;
@@ -75344,7 +76117,6 @@ const scanPics = (function () {
         else drop.push(k);
       });
       keep.sort((x, y) => y.at - x.at);
-      keep.splice(SCAN_PICS_MAX).forEach((x) => drop.push(x.k));
       // (the photos of the questions kept, at most SCAN_PHOTOS_MAX, the newest; the rest go)
       const pids = new Set(
         keep
@@ -76250,14 +77022,24 @@ function scanSetTake(si, rest) {
 // about the other 26 one by one); codes only one brand has and codes only the other has, five or more together →
 // mixed, read as either brand (each brand's codes as its, those both have asked); fewer → null, read as before.
 // Not more text than a long list (a web page pasted is read once, not twice): the reading is kept for the mixed case
+// (v318.25) Past that, the brand is told from the first SCAN_LIST_BRAND_MAX characters, cut at a line's end, and that
+// part's reading isn't kept (r null: the whole is read under the brand found). A shop's list of all 358 Copic markers,
+// a line each with a few words, is 20,242 characters: it had been told no brand, so with Ohuhu chosen 357 questions
+// and the code both brands have put in as Ohuhu's, unasked
 const SCAN_LIST_BRAND_MAX = 20000;
 function scanListBrand(text) {
-  if (String(text).length > SCAN_LIST_BRAND_MAX) return null;
+  let part = String(text);
+  const cut = part.length > SCAN_LIST_BRAND_MAX;
+  if (cut) {
+    part = part.slice(0, SCAN_LIST_BRAND_MAX);
+    const nl = Math.max(part.lastIndexOf('\n'), part.lastIndexOf('\r'));
+    if (nl > 0) part = part.slice(0, nl);
+  }
   const n = {};
   scanLineBrand = true;
   let r;
   try {
-    r = scanRead(text, '');
+    r = scanRead(part, '');
   } finally {
     scanLineBrand = false;
   }
@@ -76267,6 +77049,7 @@ function scanListBrand(text) {
   });
   const bs = Object.keys(n);
   if (bs.reduce((s, b) => s + n[b], 0) < 5) return null;
+  if (cut) r = null;
   return bs.length === 1 ? { brand: bs[0], r: r } : { brand: '', mixed: true, r: r };
 }
 // the other brand's name
@@ -76691,7 +77474,7 @@ function scanHandleCodes0(text, loud, named, list) {
   if (scanLineBrand && !lb && one && scanBrandWord(text)) brand = scanBrandWord(text);
   let r;
   try {
-    r = lb && brand === '' ? lb.r : scanRead(text, brand);
+    r = lb && brand === '' && lb.r ? lb.r : scanRead(text, brand);
   } finally {
     scanLineBrand = false;
   }
@@ -77036,13 +77819,13 @@ function scanHandleCodes0(text, loud, named, list) {
   r.flips.forEach(function (f) {
     n++;
     // (v318.21 debug: a code read upside down is one as it is now: its cap too, caps.js)
-    if (f.opts.length === 1)
+    if (f.opts.length === 1 && f.sure)
       scanTake(f.opts[0], 'upside', loud, false, { with: { cv: capCvRead(f.opts[0], false, false) } });
     // (v303: through ask, so on Enter a question already waiting is said so)
     else
       ask(
         'upside ' + f.as,
-        'Upside down: which one?',
+        f.opts.length === 1 ? 'Read upside down: is it this one?' : 'Upside down: which one?',
         f.opts.map((i) => ({ i: i, how: 'upside' })),
       );
   });
@@ -77545,12 +78328,21 @@ function scanAdd() {
   if (scanFind) return scanFindDone();
   const after = scanAfter,
     undone = scanUndone;
-  const asks0 = scanAsks();
+  const asks0 = scanAsks(),
+    // (v318.25) the questions waiting, and whether both brands were read, before the box is read
+    waiting0 = scanList.filter((e) => e.ask).map((e) => e.ask),
+    sw0 = scanSw.on;
   scanFlushBox(true);
   const fresh = scanNew();
   // (v303: the text left in the box raised a question: shown, with the dialog left open, before anything's added;
   // v318.21 debug: before the caps-only Add too, which had closed Scan over the new question)
   if (scanAsks() > asks0) return;
+  // (v318.25) or turned both brands on, or took a question off the list (made it a marker, its answer unseen): shown
+  // too. Another brand's code left in the box (E000, a Copic B000 asked about) had switched to both brands, the B000
+  // question become a marker, and Add had closed Scan with both added, the "Reading both brands" card never seen
+  if (scanSw.on && !sw0) return;
+  const waiting = new Set(scanList.filter((e) => e.ask).map((e) => e.ask));
+  if (waiting0.some((k) => !waiting.has(k))) return;
   // (v318.21: nothing new, but what caps you have already say, read with their codes: noted)
   if (!fresh.length) return capPending() ? scanAddCaps() : undefined;
   // (v318.7) the set nearly all here, with what's missing, worked out while the list still holds the markers: said by
@@ -80304,6 +81096,9 @@ function ocrHide() {
     v = ocrV();
   card.classList.remove('ocron', 'ocrwide');
   v.hidden = true;
+  // (v318.25) its canvases let go of their pixels here too, as ocrShow does (v318.22): Done, Back, Undo this photo and
+  // closing Scan had dropped them whole, which Chrome held on to
+  v.querySelectorAll('#ocrPic canvas').forEach((c) => (c.width = c.height = 0));
   v.innerHTML = '';
   if ($('ocrLive')) $('ocrLive').textContent = '';
   $('scTitle').textContent = scanFind ? 'Scan 3 caps' : 'Scan or type codes';
@@ -83830,7 +84625,7 @@ function addLost(ids) {
             });
             if (!t || !s || safeThumb(s.thumb)) return;
             s.thumb = t;
-            if (!save(true)) s.thumb = '';
+            if (!save(true, true)) s.thumb = '';
             libRowChanged(m.id);
           });
       });
@@ -85242,6 +86037,18 @@ function renderHomeNotes() {
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.25',
+    t: 'Fixes from a debugging pass of the whole app. Among them: Monochrome from a black makes a grey ramp; Undo reaches the palettes before From photo; a palette shows a marker you’ve marked dry or removed, as Custom does; ticks made just as the app was put away are kept; a backup restored over a guide in Recently deleted leaves that guide there; the Markers ⋯ menu fits a phone; Focus mode’s next-marker card no longer covers that marker’s sections on a small phone with large text.',
+  },
+  {
+    v: 'v318.24',
+    t: 'Print shows the pages in order under its choices (the picture, close-ups, the key), changing as you choose. Scan or type codes reads Copic’s greys upside down too (8-N is N-8), and a number read upside down as a marker is asked about, not added.',
+  },
+  {
+    v: 'v318.23',
+    t: 'Quicker to open a photo: the longest waits while its page and sections are found are shorter, and the page outline shows before it’s straightened. The Library holds more guides (a ’ in a guide’s name no longer halves the room), and when storage is full the oldest stored previews make way. When a new version is ready, it’s said until you reload.',
+  },
+  {
     v: 'v318.22',
     t: 'Photograph your caps: Look closer, under a photo, reads the caps without a box again from the photo at a larger size. It reads more older Ohuhu caps too: the greys whose Ⅱ it misread (CGⅡ08), codes Copic uses too told apart by a word of the cap’s name (Y13 Chestnut Brown is Ohuhu’s), names misread by a letter, and the Colorless Blender by its name. In Chrome, reading no longer stops after about ten photos.',
   },
@@ -85910,6 +86717,9 @@ const WHATS_NEW = [
           return false;
         }
       } else if (last === v) return false;
+      // (v318.25) a newer version seen already: this is an older copy (another tab not yet updated). Nothing to show,
+      // and the newer one is kept: writing this one's over it brought back a What's new dismissed there
+      else if (verNum(last) > verNum(v)) return false;
       const t = wnShownAt(v);
       if (!wnSince(last).length || (t && Date.now() - t >= WN_DAYS * 864e5)) {
         put(LAST, v);
@@ -86244,6 +87054,8 @@ const WHATS_NEW = [
     if (e.key !== TT_KEY || !st) return;
     st = null;
     load();
+    // (v318.25) and Home's card and the foot line with them: they had said what this tab last saw until it reloaded
+    footSync();
   });
   function save() {
     try {
@@ -86893,21 +87705,75 @@ if ('serviceWorker' in navigator) {
         })
         .catch(function () {});
     } catch (e) {}
+    var stale = false,
+      // (v318.25: closed with ✕: not brought back by the next screen change, only when the page next comes back)
+      shut = false;
+    var updShow = function () {
+      if (!stale || document.visibilityState !== 'visible' || document.getElementById('msUpd')) return;
+      var w = document.querySelector('.wrap');
+      if (w && w.classList.contains('sfmode')) {
+        var t = document.getElementById('msToast');
+        if (t && t.classList.contains('on') && document.getElementById('toastAct')) return;
+        if (window.toastHTML)
+          toastHTML(
+            'A new version of Marker Studio is ready. <button class="sflink" onclick="location.reload()">Reload</button>',
+            15000,
+          );
+        return;
+      }
+      var h = document.querySelector('.head');
+      if (!h) return;
+      h.insertAdjacentHTML(
+        'beforeend',
+        '<div class="msblocked msupd" id="msUpd" role="status"><b>A new version of Marker Studio is ready.</b> ' +
+          '<button type="button" class="sflink" id="msUpdGo">Reload</button>' +
+          '<button type="button" class="msupdx" id="msUpdX" aria-label="Not now">\u2715</button></div>',
+      );
+      document.getElementById('msUpdGo').addEventListener('click', function () {
+        location.reload();
+      });
+      document.getElementById('msUpdX').addEventListener('click', function () {
+        var b = document.getElementById('msUpd');
+        if (b) b.remove();
+        shut = true;
+      });
+    };
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') shut = false;
+      updShow();
+    });
+    // (leaving the guide's screen, where it was a toast: the banner, on the screen that opens)
+    try {
+      var wr = document.querySelector('.wrap');
+      if (wr && window.MutationObserver)
+        new MutationObserver(function () {
+          if (!stale) return;
+          if (!wr.classList.contains('sfmode')) {
+            if (!shut) updShow();
+            return;
+          }
+          // (v318.25: a banner shown before a guide opened would sit above its picture and move it: there it's the
+          // toast, and the banner comes back on leaving the guide's screen)
+          var b = document.getElementById('msUpd');
+          if (b) {
+            b.remove();
+            updShow();
+          }
+        }).observe(wr, { attributes: true, attributeFilter: ['class'] });
+    } catch (e) {}
     navigator.serviceWorker.addEventListener('controllerchange', function () {
       if (!had) {
         had = true;
         return;
       }
-      // (v318.22 debug: a tab out of view when another tab updated it is told when it next comes into view: told while
-      // hidden, it never saw the toast, and kept running the old code)
+      // (v318.23) this page is now older than the app it came from: said until it's reloaded, not for 15 s once. A
+      // banner under the title, as storage that can't be written is (not a toast: the next Undo toast would take its
+      // place). On the guide's screen a banner above the picture moves it (Safari keeps no scroll place), so there it's
+      // the toast it was, not over an Undo, and said again each time the page comes back to the screen. Closed with ✕,
+      // it's back the next time too. (v318.22 debug: one out of view is told when it next comes into view)
       var say = function () {
-        if (document.visibilityState !== 'visible')
-          return document.addEventListener('visibilitychange', say, { once: true });
-        if (window.toastHTML)
-          toastHTML(
-            'Marker Studio was updated. <button class="sflink" onclick="location.reload()">Reload</button>',
-            15000,
-          );
+        stale = true;
+        updShow();
       };
       // (v318.22, fourth pass) not a page that's the version which took it over already: a hard reload that fetched the
       // new release was told to reload. The new worker has deleted the other versions' caches before it takes over, so

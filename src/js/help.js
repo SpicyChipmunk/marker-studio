@@ -5,6 +5,18 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.25',
+    t: 'Fixes from a debugging pass of the whole app. Among them: Monochrome from a black makes a grey ramp; Undo reaches the palettes before From photo; a palette shows a marker you’ve marked dry or removed, as Custom does; ticks made just as the app was put away are kept; a backup restored over a guide in Recently deleted leaves that guide there; the Markers ⋯ menu fits a phone; Focus mode’s next-marker card no longer covers that marker’s sections on a small phone with large text.',
+  },
+  {
+    v: 'v318.24',
+    t: 'Print shows the pages in order under its choices (the picture, close-ups, the key), changing as you choose. Scan or type codes reads Copic’s greys upside down too (8-N is N-8), and a number read upside down as a marker is asked about, not added.',
+  },
+  {
+    v: 'v318.23',
+    t: 'Quicker to open a photo: the longest waits while its page and sections are found are shorter, and the page outline shows before it’s straightened. The Library holds more guides (a ’ in a guide’s name no longer halves the room), and when storage is full the oldest stored previews make way. When a new version is ready, it’s said until you reload.',
+  },
+  {
     v: 'v318.22',
     t: 'Photograph your caps: Look closer, under a photo, reads the caps without a box again from the photo at a larger size. It reads more older Ohuhu caps too: the greys whose Ⅱ it misread (CGⅡ08), codes Copic uses too told apart by a word of the cap’s name (Y13 Chestnut Brown is Ohuhu’s), names misread by a letter, and the Colorless Blender by its name. In Chrome, reading no longer stops after about ten photos.',
   },
@@ -673,6 +685,9 @@ const WHATS_NEW = [
           return false;
         }
       } else if (last === v) return false;
+      // (v318.25) a newer version seen already: this is an older copy (another tab not yet updated). Nothing to show,
+      // and the newer one is kept: writing this one's over it brought back a What's new dismissed there
+      else if (verNum(last) > verNum(v)) return false;
       const t = wnShownAt(v);
       if (!wnSince(last).length || (t && Date.now() - t >= WN_DAYS * 864e5)) {
         put(LAST, v);

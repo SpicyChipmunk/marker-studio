@@ -245,6 +245,7 @@ function genCtx(harmony, mood, exclude) {
     bh: 0,
     fam: null,
     greyFam: false,
+    greyBase: false,
   };
 }
 // the colour difference between two markers, worked out once per palette (tries and steps ask again)
@@ -294,6 +295,8 @@ function genBase(ctx, n) {
 function genNear(ctx, i, h) {
   const L = LCH[i];
   if (L[1] < GREY_C) return ctx.greyFam && COLORS[i].fam === ctx.fam;
+  // (v318.25: a near-grey base's ramp is of greys, genPalette)
+  if (ctx.greyBase) return false;
   if (ctx.harmony === 'analogous') return hueDist(L[2], ctx.bh) <= 60;
   return hueDist(L[2], h) <= ctx.levels[0][1];
 }
@@ -431,7 +434,8 @@ function genPick(ctx, slot, lv, st) {
     if (L[1] < GREY_C) {
       if (!lv[2] && !(ctx.greyFam && COLORS[i].fam === ctx.fam)) continue;
       hc = ctx.greyFam ? 0 : 1; // a near-grey's hue means little
-    } else if (ana) {
+    } else if (ctx.greyBase && !lv[2]) continue;
+    else if (ana) {
       const o = hueOff(L[2], ctx.bh);
       if (Math.max(st.hi, o) - Math.min(st.lo, o) > lv[1]) continue;
       hc = hueDist(L[2], slot.h) / 30;
@@ -1102,6 +1106,21 @@ function genPalette(n, harmony, opts) {
     ctx.fam = COLORS[bi].fam;
     ctx.greyFam = LCH[bi][1] < GREY_C || famGreyish(bi);
     ctx.bh = LCH[bi][2];
+    // (v318.25) a near-grey base (a black: Ohuhu 120, Copic 100) is a ramp of greys. Its hue means nothing at that
+    // chroma, and its family (Neutral / Black) holds only blacks, so other families' greys were kept out and the
+    // ramp had been four greens, violets or reds near the black's hue. Clear colours wait for the grey steps (the
+    // last ones), and a family without the steps for the ramp (greys at least 8 lighter or darker than the base:
+    // blacks are all near it) gives way to the grey family with most markers in play, one temperature of greys
+    if (LCH[bi][1] < GREY_C) {
+      ctx.greyBase = true;
+      const nf = {};
+      for (const i of ctx.pool)
+        if (i !== bi && LCH[i][1] < GREY_C && Math.abs(LCH[i][0] - LCH[bi][0]) >= 8)
+          nf[COLORS[i].fam] = (nf[COLORS[i].fam] || 0) + 1;
+      let top = ctx.fam;
+      for (const f in nf) if (nf[f] > (nf[top] || 0)) top = f;
+      if ((nf[ctx.fam] || 0) < n - 1) ctx.fam = top;
+    }
   } else if (opts.baseHue != null) ctx.bh = opts.baseHue;
   else {
     bi = genBase(ctx, n);
@@ -1184,8 +1203,9 @@ function genPalette(n, harmony, opts) {
    rainbow order from red (rainbowOrder), locked colours with the rest. */
 const _rbSeed = new WeakMap();
 // whether pal was built from marker si: first in its place, or a Rainbow made from it
-function palFrom(pal, si) {
-  return si != null && pal && (state.harmony === 'rainbow' ? _rbSeed.get(pal) === si : pal[0] === si);
+function palFrom(pal, si, h) {
+  // (v318.25: `h`, the palette's own scheme when it isn't the one chosen, currentPaletteHarm)
+  return si != null && pal && ((h || state.harmony) === 'rainbow' ? _rbSeed.get(pal) === si : pal[0] === si);
 }
 function genRainbow(n, opts) {
   if (!window.SF || !SF.rainbowPick) return null;
@@ -1410,27 +1430,30 @@ function closeNote() {
   if (!el) return;
   let t = '';
   if (state.mode === 'palette' && state.harmony !== 'custom' && state.harmony !== 'photo') {
-    const pal = state.palettes[state.palettes.length - 1];
-    if (pal && pal.length > 1) {
+    const pal = state.palettes[state.palettes.length - 1],
+      // (v318.25) judged by its own scheme: the one chosen since may not have been made (currentPaletteHarm), and
+      // a Complementary left on the card had been told it was "4 clear colours for a rainbow, not 6"
+      h = currentPaletteHarm();
+    if (pal && pal.length > 1 && h !== 'photo') {
       const fixed = new Set(state.locked),
         si = keyIdx(state.seed);
       // (v318.22 debug: a Rainbow puts its base where its hue falls, not first)
-      if (palFrom(pal, si)) fixed.add(si);
+      if (palFrom(pal, si, h)) fixed.add(si);
       const d = palMinDE(pal, fixed);
       // (v306) a Rainbow stops at the clear markers in play
-      if (state.harmony === 'rainbow' && pal.length < state.palSize)
+      if (h === 'rainbow' && pal.length < state.palSize)
         t =
           'Your markers in play have ' +
           pal.length +
           ' clear colours for a rainbow, not ' +
           state.palSize +
           '.';
-      else if (d != null && d < genNeed(state.harmony))
+      else if (d != null && d < genNeed(h))
         t =
           'Two colours are close: your markers don\u2019t have ' +
           pal.length +
           ' clearly different colours for this scheme.';
-      else if (!palOnScheme(pal, state.harmony, fixed))
+      else if (!palOnScheme(pal, h, fixed))
         t =
           'Some colours stray from the scheme: your markers don\u2019t have ' + pal.length + ' that fit it.';
     }
@@ -1464,12 +1487,38 @@ function bandLabel(b, idx) {
       capCode(idx) +
       ' ' +
       capName(idx) +
+      // (v318.25: and a marker since marked dry or taken out, bandWarn)
+      (customWhy(idx) ? ', ' + customWhy(idx) : '') +
       (state.locked.includes(idx)
         ? ', locked'
         : state.harmony === 'photo'
           ? ', tap for the next nearest'
           : ', tap for another like it'),
   );
+}
+// (v318.25) a scheme's or a photo's band for a marker since marked dry, taken out of your collection or out of the
+// selection: marked as Custom marks one (the sign, its title, "N not in play" under the name, palSub). The palette
+// stays until the next is made (v310.2), and had shown such a marker as fine
+function bandWarn(b, idx) {
+  const why = customWhy(idx),
+    old = b.querySelector('.uwarn');
+  if (old) old.remove();
+  b.classList.toggle('unowned', !!why);
+  b.title =
+    (why ? why.charAt(0).toUpperCase() + why.slice(1) + ' \u00b7 ' : '') +
+    (state.harmony === 'photo'
+      ? 'Tap for the next-nearest owned marker'
+      : 'Tap for another like it · lock to keep');
+  if (why)
+    b.insertAdjacentHTML(
+      'beforeend',
+      '<span class="uwarn" title="' +
+        why.charAt(0).toUpperCase() +
+        why.slice(1) +
+        '">' +
+        ic('triangle-alert') +
+        '<span class="sfsr">(warning)</span></span>',
+    );
 }
 function showPalette(pal, animate) {
   phint.style.display = 'none';
@@ -1487,10 +1536,7 @@ function showPalette(pal, animate) {
       _bt.textContent = mixed ? bTag(c.brand) : '';
       _bt.style.display = mixed ? '' : 'none';
     }
-    b.title =
-      state.harmony === 'photo'
-        ? 'Tap for the next-nearest owned marker'
-        : 'Tap for another like it · lock to keep';
+    bandWarn(b, pal[k]);
     b.classList.toggle('locked', state.locked.includes(pal[k]));
     {
       const _lk = b.querySelector('.blk');
@@ -1518,13 +1564,19 @@ function showPalette(pal, animate) {
 }
 // the line under a palette's name: its scheme, and the marker it was built from (a photo's is just "From photo")
 function palSub(pal) {
-  if (state.harmony === 'photo') return HARM.photo;
+  // (v318.25: the palette's own scheme, currentPaletteHarm)
+  const h = pal === state.palettes[state.palettes.length - 1] ? currentPaletteHarm() : state.harmony,
+    // (v318.25: markers since marked dry or taken out, as Custom says them, bandWarn)
+    miss = pal.filter((i) => !customOk(i)).length,
+    out = miss ? ' \u00b7 ' + miss + ' not in play' : '';
+  if (h === 'photo') return HARM.photo + out;
   // (v296) "… base" only for the marker you chose to build from (Start from): otherwise the first colour is just the
   // lightest of the scheme's first hue, and the base the palette was built round isn't in it
   const si = keyIdx(state.seed);
-  return palFrom(pal, si)
-    ? HARM[state.harmony] + ' \u00b7 ' + COLORS[si].brand + ' ' + capName(si) + ' base'
-    : HARM[state.harmony];
+  return (
+    (palFrom(pal, si, h) ? HARM[h] + ' \u00b7 ' + COLORS[si].brand + ' ' + capName(si) + ' base' : HARM[h]) +
+    out
+  );
 }
 // a palette's name, its line, and its codes under them (each code kept whole; brand letters as on the bands, when
 // the palette or your collection mixes brands)
@@ -1561,6 +1613,14 @@ function clearPalette() {
   setAmb(null);
   var _pel = document.getElementById('palette');
   if (_pel) _pel.classList.remove('gridmode');
+}
+// (v318.25) the scheme of the palette on the card: its own, from the history beside it. A scheme chosen since that
+// couldn't be made (five clear markers and Rainbow) leaves the palette before it on the card, and Save, Use in a guide,
+// the card's line and its notes had called that palette by the scheme chosen. Custom, and the first visit's preview
+// (nothing made yet), are the scheme chosen.
+function currentPaletteHarm() {
+  if (state.harmony === 'custom' || !state.palettes.length) return state.harmony;
+  return palHarm(state.palH[state.palH.length - 1]) || state.harmony;
 }
 function currentPaletteIdxs() {
   if (state.mode !== 'palette') return [];

@@ -11,14 +11,24 @@
 // about the other 26 one by one); codes only one brand has and codes only the other has, five or more together →
 // mixed, read as either brand (each brand's codes as its, those both have asked); fewer → null, read as before.
 // Not more text than a long list (a web page pasted is read once, not twice): the reading is kept for the mixed case
+// (v318.25) Past that, the brand is told from the first SCAN_LIST_BRAND_MAX characters, cut at a line's end, and that
+// part's reading isn't kept (r null: the whole is read under the brand found). A shop's list of all 358 Copic markers,
+// a line each with a few words, is 20,242 characters: it had been told no brand, so with Ohuhu chosen 357 questions
+// and the code both brands have put in as Ohuhu's, unasked
 const SCAN_LIST_BRAND_MAX = 20000;
 function scanListBrand(text) {
-  if (String(text).length > SCAN_LIST_BRAND_MAX) return null;
+  let part = String(text);
+  const cut = part.length > SCAN_LIST_BRAND_MAX;
+  if (cut) {
+    part = part.slice(0, SCAN_LIST_BRAND_MAX);
+    const nl = Math.max(part.lastIndexOf('\n'), part.lastIndexOf('\r'));
+    if (nl > 0) part = part.slice(0, nl);
+  }
   const n = {};
   scanLineBrand = true;
   let r;
   try {
-    r = scanRead(text, '');
+    r = scanRead(part, '');
   } finally {
     scanLineBrand = false;
   }
@@ -28,6 +38,7 @@ function scanListBrand(text) {
   });
   const bs = Object.keys(n);
   if (bs.reduce((s, b) => s + n[b], 0) < 5) return null;
+  if (cut) r = null;
   return bs.length === 1 ? { brand: bs[0], r: r } : { brand: '', mixed: true, r: r };
 }
 // the other brand's name

@@ -182,8 +182,10 @@ function pdfBlank(c) {
     const g = t.getContext('2d');
     g.drawImage(c, 0, 0, w, h);
     const d = g.getImageData(0, 0, w, h).data;
+    // (v318.25) anything that isn't paper white counts as drawn, not only what's darker than mid grey: a page drawn in
+    // grey lines (light-line pages for alcohol markers) had been refused as blank, though it opens as a picture
     let dark = 0;
-    for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] < 384) dark++;
+    for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] < 720) dark++;
     freeCanvas(t);
     return dark < (w * h) / 2000;
   } catch (_) {

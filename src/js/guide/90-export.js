@@ -628,7 +628,7 @@ function openPrint() {
     b += '</div></div>';
   });
   b +=
-    '</div><div class="sfshhint" id="sfPrWhat">' +
+    '</div><div id="sfPrOrd" class="sfprord"></div><div class="sfshhint" id="sfPrWhat">' +
     printWhatNote() +
     '</div><div class="sfprchk"><label class="sfchk"><input type="checkbox" id="sfPdfDark"' +
     (pdfDark ? ' checked' : '') +
@@ -797,6 +797,79 @@ function printOptsSync() {
     sm.classList.remove('empty');
     sm.innerHTML = printSummary();
   }
+  // (after the summary: its dry run noted each page's kind, _pdfKinds)
+  const od = document.getElementById('sfPrOrd');
+  if (od) od.innerHTML = assignData ? printOrder(_pdfKinds) : '';
+}
+// the pages in order, as small page shapes in the paper's shape (page 1 on its side when it is), a run of one kind
+// under one word; a screen reader hears one line ("Page 1: your picture with codes; pages 2–4: close-ups; …")
+function printOrder(K) {
+  const P = PAPERS[paper] || PAPERS.letter,
+    W0 = {
+      pic: 'Picture',
+      ref: 'Picture',
+      close: 'Close-ups',
+      key: 'Key',
+      keymore: 'Key',
+      refkey: 'Picture + key',
+      strip: 'Test strip',
+    },
+    say = function (k) {
+      const w = k.lab === 'numbers' ? 'numbers' : 'codes';
+      return k.k === 'pic'
+        ? 'your picture ' + (k.lab === 'none' ? 'unlabelled' : 'with ' + w) + (k.land ? ', on its side' : '')
+        : k.k === 'ref'
+          ? 'your picture in colour with ' + w + (k.land ? ', on its side' : '')
+          : k.k === 'close'
+            ? 'close-ups'
+            : k.k === 'refkey'
+              ? 'your picture in colour beside the colour key'
+              : k.k === 'strip'
+                ? 'the test strip'
+                : 'the colour key';
+    },
+    gs = [];
+  K.forEach(function (k, i) {
+    const w = W0[k.k] || '',
+      g = gs[gs.length - 1];
+    if (g && g.w === w) g.p.push(k);
+    else gs.push({ w: w, a: i + 1, s: say(k), p: [k] });
+  });
+  return (
+    '<span class="sfsr">' +
+    gs
+      .map(function (g, n) {
+        const b = g.a + g.p.length - 1,
+          t = (b > g.a ? 'pages ' + g.a + '–' + b : 'page ' + g.a) + ': ' + g.s;
+        return n ? t : t.charAt(0).toUpperCase() + t.slice(1);
+      })
+      .join('; ') +
+    '.</span><span class="sfprordr" aria-hidden="true">' +
+    gs
+      .map(function (g) {
+        return (
+          '<span class="sfprordg"><span class="sfprordt">' +
+          g.p
+            .map(function (k, j) {
+              return (
+                '<span class="sfprordp' +
+                (k.land ? ' land' : '') +
+                '" style="aspect-ratio:' +
+                (k.land ? P[1] + '/' + P[0] : P[0] + '/' + P[1]) +
+                '">' +
+                (g.a + j) +
+                '</span>'
+              );
+            })
+            .join('') +
+          '</span><span class="sfprordw">' +
+          g.w +
+          '</span></span>'
+        );
+      })
+      .join('') +
+    '</span>'
+  );
 }
 function printOptSet(k, v) {
   let key, val;
@@ -1597,6 +1670,7 @@ function pdfKeyRows() {
 }
 // ---- the colouring page's labels, placed so none covers another (v284) ----
 // how many sections the last PDF built put in close-ups (the Print sheet's summary says so)
+let _pdfKinds = [];
 let _pdfCloseN = 0,
   // (on how many pages, and how many small sections none of them could label)
   _pdfCloseP = 0,
@@ -2091,6 +2165,7 @@ function pdfCloseMark(g, cr, letter, k, ink, mk) {
 // (v307: lazy, the guide's pages too, each noted down as it's laid out and drawn when the PDF writer comes to it)
 function buildPDFPages(dry, lazy) {
   _pdfDry = !!dry;
+  _pdfKinds = [];
   try {
     if (pdfWhat === 'strip') return testStripPages(!!dry, !!lazy);
     if (!lazy || dry) return _buildPDF(!!dry);
@@ -2229,6 +2304,7 @@ function _buildPDF(dry) {
       // (page 1's own width for the picture and its lines: on its side it's wider than the other pages)
       bw1 = p1.w - 2 * m;
     pages.push(dry ? null : p1);
+    _pdfKinds.push({ k: refPic ? 'ref' : 'pic', lab: lab, land: p1.w > p1.h });
     g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
     // (the picture's place, from the longest the lines under the title can be)
     // (long: the longest they can be, for the estimate; v284 review: the real lines could be longer than it)
@@ -2491,6 +2567,7 @@ function _buildPDF(dry) {
           if (i % cell.per === 0) {
             cp = pdfPage();
             pages.push(cp);
+            _pdfKinds.push({ k: 'close' });
             const gc = cp.g;
             gc.fillStyle = '#111';
             gc.font = '700 ' + PX(15) + 'px ' + LFONT;
@@ -2567,7 +2644,11 @@ function _buildPDF(dry) {
       }
       // (a whole-picture canvas: handed back now, not when the browser gets round to it — iPad's limit, v298)
       pdfFree(art1);
-    } else for (let i = 0; i < closeP; i++) pages.push(null);
+    } else
+      for (let i = 0; i < closeP; i++) {
+        pages.push(null);
+        _pdfKinds.push({ k: 'close' });
+      }
   }
   _pdfCloseN = Object.keys(shown).length;
   _pdfCloseP = closeP;
@@ -2587,6 +2668,7 @@ function _buildPDF(dry) {
   let pg = pdfPage(),
     g = pg.g;
   pages.push(pg);
+  _pdfKinds.push({ k: refOne ? 'refkey' : 'key' });
   g.fillStyle = '#111';
   g.font = '700 ' + PX(15) + 'px ' + LFONT;
   g.fillText(pdfTrunc(g, refOne ? nm : 'Colour key', bw), m, m + PX(12));
@@ -2936,6 +3018,7 @@ function _buildPDF(dry) {
     pg = pdfPage();
     g = pg.g;
     pages.push(pg);
+    _pdfKinds.push({ k: 'keymore' });
     g.fillStyle = '#111';
     g.font = '700 ' + PX(12) + 'px ' + LFONT;
     g.fillText('Colour key (continued)', m, m + PX(10));
@@ -3271,6 +3354,12 @@ async function _exportPDF() {
   await new Promise(function (r) {
     setTimeout(r, 30);
   });
+  // (v318.25) what is printed and the guide it's from, as the pages are laid out: the choices stay live while it's
+  // written, and a change to Pages then (or another guide opened) had named the file, and marked the sample printed,
+  // after that instead
+  const what = pdfWhat,
+    name = curName,
+    gen = loadGen;
   try {
     const P = PAPERS[paper] || PAPERS.letter,
       // (v307) each page drawn in turn, the button saying which (the Print sheet's, opened again meanwhile too)
@@ -3280,12 +3369,10 @@ async function _exportPDF() {
         if (b && b.disabled && _pdfProg) b.textContent = _pdfProg;
       });
     const fname =
-      fileSlug(curName, 'colour-guide', 80).toLowerCase() +
-      (pdfWhat === 'strip' ? '-test-strip' : '') +
-      '.pdf';
-    shareOrSave(blob, fname, curName || 'Colouring guide', 'PDF', 'PDF downloaded.');
+      fileSlug(name, 'colour-guide', 80).toLowerCase() + (what === 'strip' ? '-test-strip' : '') + '.pdf';
+    shareOrSave(blob, fname, name || 'Colouring guide', 'PDF', 'PDF downloaded.');
     // (v313: the sample's page printed, not just its test strip: a page being coloured, for Home's Continue card)
-    if (smpTry && pdfWhat !== 'strip') {
+    if (smpTry && what !== 'strip' && gen === loadGen) {
       smpTry = 0;
       guideDirty = true;
       scheduleAutosave();
@@ -3402,6 +3489,9 @@ function finishSay() {
 }
 function checkComplete() {
   progStamp();
+  // (v318.25) a section unticked (or Cleared) since it was finished: no longer finished, so finishing it again says so
+  // again (a screen reader had heard nothing the second time, and the open row and zoom stayed), as markBack does
+  if (celebrated && !pageDone()) celebrated = false;
   if (celebrated || sfmode !== 'color' || !assignData) return;
   const ord = assignData.order;
   let d = 0;
@@ -3879,6 +3969,7 @@ function testStripPages(dry, lazy) {
     pr++;
   });
   const np = Math.max(1, at.length ? at[at.length - 1].p + 1 : 1);
+  for (let i = 0; i < np; i++) _pdfKinds.push({ k: 'strip' });
   if (dry) return np;
   const out = [];
   for (let pi = 0; pi < np; pi++) out.push(lazy ? stripPage.bind(null, pi) : stripPage(pi));

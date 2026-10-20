@@ -5,15 +5,18 @@
 // question (ask) with when it was written. Written as the list is saved (scanSaveList), only what's changed: the
 // questions not yet written are put, those gone from the list deleted, and nothing at all when nothing's changed (the
 // list is saved at every draw). On load, the pictures of the questions restored come a moment later ("?" until then, as
-// when there's none, or when the storage fails); the rest are pruned, and at most 60, the newest by the row's time,
-// are kept. The database is deleted with Delete all my data (safety.js wipeAllData), and nothing's written after.
+// when there's none, or when the storage fails); the rest are pruned. (v318.25) Every question's still in the list is
+// kept: at most 60 had been, the newest, and the rest deleted for good at a reload, though a sweep of a whole
+// collection leaves more waiting (one photo's all have one time, so which went was anyone's guess). Not more than the
+// page held and wrote before it (sync has no limit): 10–50 KB a question, 200 measured at 6 MB, far under Safari's
+// quota. The database is deleted with Delete all my data (safety.js wipeAllData), and nothing's written after.
+// (The photos' cap of 30 stays: it holds in the page too, keepPhoto, so a reload loses none it kept.)
 // Opened as the guides' is (guide-bridge.js IDB): an open given up after 8 s, the connection let go when it closes or
 // a delete asks, every failure quiet
 // (v318.21) And each photo with a question waiting, as it was shown (its copy up to 900 px, a JPEG of about 100–150
 // KB), for "Where in the photo?" (15-answer.js): kept by its id, 'photo:' + e.pid, as long as a question of it waits,
 // at most 30, the newest; each question's row keeps where its cap is (e.where) and the caps read beside it (e.near)
 const SCAN_PICS_DB = 'ms-scan-pics',
-  SCAN_PICS_MAX = 60,
   SCAN_PHOTOS_MAX = 30;
 const scanPics = (function () {
   const OPEN_MS = 8000;
@@ -159,8 +162,8 @@ const scanPics = (function () {
       if (last !== entries && !wiped) sync(last);
     });
   }
-  // the pictures of the questions in the list now, from the database, a moment later; the rest pruned, and at most
-  // SCAN_PICS_MAX kept, the newest. then(): the list drawn again where it's showing
+  // the pictures of the questions in the list now, from the database, a moment later; the rest pruned (v318.25: all of
+  // the list's kept). then(): the list drawn again where it's showing
   function load(then) {
     if (wiped) return Promise.resolve(false);
     S.loads++;
@@ -218,7 +221,6 @@ const scanPics = (function () {
         else drop.push(k);
       });
       keep.sort((x, y) => y.at - x.at);
-      keep.splice(SCAN_PICS_MAX).forEach((x) => drop.push(x.k));
       // (the photos of the questions kept, at most SCAN_PHOTOS_MAX, the newest; the rest go)
       const pids = new Set(
         keep

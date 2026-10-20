@@ -2008,3 +2008,176 @@ Mood's fitting).
   test (whole in Chrome). Cache bumped to
   `marker-studio-v318.22`.
 
+
+# Changes — v318.23 (storage that holds more, shorter waits on a photo, the update said until reloaded)
+
+The three engineering items from the beta list, each pressure-tested (measured, then a plan, then the plan
+pressure-tested again) before it was built. "Find my set from 3 caps" in Markers, also on the list, was already there
+(Markers › Add markers › "Not sure which set you have?", since v311).
+
+- **The Library holds twice as much in Safari when a name has a curly quote.** Safari counts a stored string at
+  2 bytes a character once any character in it is past U+00FF, and the app keeps its markers, palettes and Library
+  rows (with each guide's small stored picture) in one: one ’ in one guide's name (iPadOS types ’ for ') halved the
+  room, from about 440 guides to about 220, and past half full, a rename to "Ben’s page" failed with "storage full",
+  and a restored guide with a curly name could be left out of the Library. What's written is now plain ASCII, wider
+  characters as `\uXXXX`, which JSON reads as before (older versions too). Measured in WebKit through the app's own
+  save: 93 → 186 guides with 28K-character pictures and one ’; the stored copy counted at 1 byte a character after a
+  restart too. Found on the way, in WebKit: a string made from a wide one stays wide inside however plain it reads, so
+  escaping alone left it at 2 bytes (2.62M characters at most); a TextEncoder → TextDecoder round trip makes it narrow.
+  It costs about 1 ms a save at a usual 100–300K characters, 30–45 ms at a full 5M.
+- **Storage full: the oldest stored pictures make way.** A save that doesn't fit leaves out the Library's stored
+  pictures, oldest first (by when each guide was saved), 1, then 2, 4… at a time, until it fits; nothing else goes, and
+  the Library draws them again from the guides as they come into view. If even that doesn't fit, they're all put back
+  and it fails as before, and that isn't tried again until a save works (it would cost about 1 s a save). A picture
+  being stored again never pushes another out. Restored guides keep their old dates, so theirs go first: they're
+  redrawn the same way.
+- **Smaller stored pictures**: the long side at most 144 px (they were 140 wide whatever the height: a tall page's
+  was 140 × 370, 23K characters). Square pages as before, Letter pages about 40% smaller, tall ones about 5×. They show
+  only until the tile is drawn again (at up to 480 px); 128 looked blocky at 2×. Pictures already stored stay as they
+  are until they're drawn again.
+- **Shorter waits while a photo's sections are found.** The ink's blur, the longest single wait (0.48–0.6 s a pass in
+  WebKit, up to two passes on a grainy photo), now walks the picture in memory order (a third quicker, the same sums
+  and division, so the same pixels) and each pass is a step of its own with a paint between. WebKit's longest wait
+  there: about 1.15 s → 0.4 s. Sections exactly as before: the guide benchmark's digest is unchanged (49e9f9dacdc7,
+  all 356 rows identical), and a test checks steps against one go on photos needing no blur, one pass and two.
+- **The page's outline shows before it's straightened** (WebKit): the straightening waited 60 ms, not for a paint,
+  so in Safari's engine finding and straightening ran as one wait with the outline never drawn. Now after a paint,
+  stopped by a newer photo or guide (its own corner editor and picture checked, not only that one is open). WebKit's
+  longest wait opening a photo of a page: about 0.84 s → 0.57 s.
+- **Build**: the texture's distances and the mood pictures' lines (they depend on the sections alone) are worked out
+  in a task of their own before Build's, so its own wait is shorter (estimated a quarter at 4× slowed CPU; not
+  measured on the iPad). Not during the bloom: it's drawn frame by frame, and work there makes it stutter or switch
+  itself off. Profiled (Chromium, CPU slowed 4×, a 12 MP page): Build 1.5 s — the plan 0.2, drawing the guide 0.74
+  (texture 0.28, pixels 0.27), the controls 0.49 (the mood pictures 0.3).
+- **The longest waits, in Copy diagnostics and Copy details**: the 8 longest pieces of work this visit (each step of
+  finding a photo's page and sections, Sensitivity, straightening, Build), with the picture's size, so an iPad's own
+  numbers can be seen ("New photo: smooth 412 ms (2400×1800)"). In memory only: not saved, not in Send feedback.
+- **A new version is said until you reload**: a banner under the title ("A new version of Marker Studio is ready.
+  Reload ✕"), not a 15-second toast that the next Undo toast replaced. ✕ hides it until the page next comes back to
+  the screen. On a guide's screen a banner above the picture would move it (Safari keeps no scroll place: 49 px), so
+  there it's the toast, not over an Undo, and again each time the page comes back; leaving the guide's screen shows
+  the banner. (It shows from the release after this one: v318.22 says this one's update the old way.)
+- **A guide's settings from a newer version are kept by an older tab's autosave.** With the app open in two windows
+  on one browser, one updated and one not, the older one's next save of a guide dropped the settings it didn't know
+  (measured: a style key, a top-level key). Its autosave (and the copy kept as a page goes away) now carries any key it
+  doesn't write, at the top, in style and in style.shade, from the stored guide, while the sections are the same (the
+  same section map: a key per section would be wrong after Edit sections or a rebuild). Not a restore (it puts the
+  backup back as it was), a copy, or a guide file. Every key this version writes, those written only when used too
+  (held, dates, zones, matchAlike…), is in its list, checked against currentDesignObj's own text by a test, so one
+  cleared isn't brought back. A key a later version stops writing goes in PL_GONE (none yet).
+- **Not built, measured or decided:** moving the page and section finding into the worker (a prototype gave the same
+  sections with no wait, but takes away 3 of about 8 waits; decide on the iPad's own numbers, now in Copy diagnostics);
+  the straightening in bands (identical pixels, but in WebKit most of it is one draw and read that can't be split:
+  0.17–0.38 s); the Library's stored pictures in IndexedDB (2–3 days for what the two changes above give); settings a
+  newer version wrote with values this one can't read (put back to their defaults as the guide opens, before any save:
+  a new Palette value, say), keys inside zones and photo, and a guide whose sections were renumbered; a version stamp
+  or a forced reload; marker codes a newer version added (D1, as in v318.22).
+- **Tests:** test/v31823 (10: the stored text, storage full, picture sizes, the waits, the carried keys and the list of
+  known ones), e2e/v31823 (6: the update banner and toast, a page that already is the new version, a curly-named
+  Library past half of Safari's 5 MB, the ink in steps with 0/1/2 blur passes, a newer version's keys through ticks and
+  the autosave). **A flaky test on GitHub's WebKit** (v318.22's run): v307-markers measured the Print sheet's Numbers
+  icon part-way through its 250 ms fade-in (4.32:1 for an 8.1:1 icon); the contrast helper (and v307-dbg-ui's) now
+  waits for a fade on the element or behind it to finish. The run's two other retries were WebKit's page process
+  crashing, not the tests. Cache bumped to `marker-studio-v318.23`.
+
+# Changes — v318.24 (the pages in order in Print; Copic greys read upside down in Scan's box)
+
+From the list after v318.23, each planned and pressure-tested before it was built.
+
+- **Print shows the pages in order**, under its choices: a small page shape for each page, in the paper's shape (page
+  1 on its side when it prints so), a run of one kind under one word: Picture, Close-ups, Key, Picture + key (Key +
+  reference with no labels), Test strip. It changes with each choice, from the same layout the "N pages" count already
+  made on every tap (no layout of its own; the PDF byte for byte as before, measured on six option sets). A screen
+  reader hears one line ("Page 1: your picture with codes; pages 2–3: close-ups; page 4: the colour key."), not in the
+  count's live region, so it isn't read out on every tap. It sits under Paper, which it doesn't move: in the foot it
+  would have taken 51–76 px from a phone's sheet. (The lighter version of v318.1's page previews; drawing each page
+  took 0.3–0.5 s on a big guide.) Found on the way, for later: on a phone the Paper choices are already 9–149 px below
+  the sheet's first screen (v289 had them on it), and at 320 × 568 with 1.6× text "Download PDF" wraps inside its
+  button.
+- **Scan's box reads a Copic grey upside down**: "8-N" is N-8, "01-N" N-10, "00-M" W-00, "E-C" C-3, and "L-M" is W-1 or
+  W-7 (a turned 7 reads as L: asked); a dash of another kind or with spaces round it ("8 – N") too. Only that shape,
+  and only a grey: a date, a time or a range ("6-13", "9-10", "123-456") is still nothing. The photo reader is
+  unchanged (it reads each line both ways up itself and never takes Scan's upside-down guesses).
+- **A number read upside down as one marker is asked, not added**: typed or pasted on its own, "1100" had gone in as
+  Ohuhu GG11 and "123" as Copic E21, against v318.2's rule that digits bent into a code are asked. A grey's shape with
+  no digit ("S-M", a size) is asked too. "00000" no longer asks about Copic G0000 (a turned G0000 reads "00009", which
+  still does).
+- **Tests:** test/v31824 (4), e2e/v31824 (2: the pages in order and their count through the choices; a 320 px phone at
+  1× and 1.6× text, Paper not moved, nothing past the sheet's edge). Cache bumped to `marker-studio-v318.24`.
+
+# Changes — v318.25 (a deep debugging pass of the whole app)
+
+Eight reviewers, one per area (Markers; Scan and photos; Palette; making a guide; using a guide; saving, versions and
+offline; output, help and testers; layout, keyboard and screen readers), then four more who reproduced every finding
+on v318.24 before fixing it, with a test for each that fails on v318.24. 36 findings: 1 must-fix, 19 should-fix, 15
+minor, 1 deliberate (E3: each "Mark all" toast repeats its own button's words). Where a fix was a choice, the option
+that loses nothing was built and the other is named.
+
+**Saving and versions**
+- **Ticks made while a save was running were lost if the page was then stopped** (must-fix): the copy kept aside as the
+  iPad was put away failed its own check at the next start (the save that landed meanwhile looked like another tab's)
+  and was thrown away. The copy now knows which page made it, and that page's own saves move its starting point on;
+  another tab's save still wins. (Measured: ticks A and B, B lost before, kept now.)
+- **A backup restored over a guide in Recently deleted** replaced it with the backup's older copy and took it out of
+  Recently deleted. Now, if the stored guide differs from the backup's, it stays in Recently deleted (Put back brings it
+  back as it was) and the backup's copy comes in as "Name (from backup)", said in the toast. (Choice: keep only one of
+  them.) One the same as the backup's, or still within its 6-second Undo, comes back as itself, as before.
+- A "(before restore)" copy taken out while another tab saved could come back as an empty row.
+- The new-version banner: ✕ now hides it until the page comes back to the screen (a screen change had brought it back),
+  and a banner showing as a guide opens gives way to the toast there (it had stayed above the picture).
+- An older tab no longer lowers the version last seen, so a dismissed What's new card doesn't come back.
+- Home's Tester tasks card follows answers given in another tab.
+
+**Markers**
+- Find my set: a scanned Ohuhu Colorless Blender cap counted against the sets, so a Honolulu 24 with a blender bought
+  apart showed the 48, 72 and 120 and not the 24.
+- ⋯ › Untick all shown asked "Untick 722 markers?" and unticked 121: it counts yours, and is off when none are shown.
+- Unowned's "biggest gaps" and "complete" orders said "Showing 601 markers" over 295 or 239.
+- Copy on a marker (and Copy codes) copies the code on your cap, as the details show (R6, not R213).
+
+**Scan and photos**
+- Past 60 questions, a reload deleted the rest's cap pictures for good. Every question keeps its picture now (200
+  pictures measured at 6 MB in IndexedDB); the 30-photo limit stays.
+- Add with another brand's code left in the box could add an unanswered question's marker unseen (reading the box
+  turned both brands on). Scan stays open with the card when that happens; a second Add adds.
+- A pasted list over 20,000 characters lost its brand (357 questions for a shop's list of every Copic marker): the
+  brand is decided from its first 20,000 characters, cut at a line end.
+- A Copic grey typed upside down with Ohuhu chosen found nothing: it's asked as another brand's, as upright.
+- A photo's canvases are emptied when its view closes, not only when the next opens.
+
+**Palette**
+- Monochrome from a black gave the black and four greens (Ohuhu 120), violets (Copic 100) or reds (Copic 110): a black's
+  hue means nothing. From a near-grey, greys only, from the grey family with most markers in play when the base's own
+  family hasn't enough (blacks never do). The guide's Generate palette too.
+- Undo after From photo landed in Photo, which had no Undo, so earlier palettes couldn't be reached: Photo has Undo,
+  one step at a time, back to the scheme's palette.
+- A scheme's palette showed a marker since marked dry or removed as if it were fine: the warning sign and "N not in
+  play", as Custom has.
+- Save, Use in a guide and Save image recorded the scheme selected, not the palette's own (a Complementary palette left
+  on the card when a Rainbow couldn't be made was saved as "Rainbow").
+- Rainbow's note counted the palette left on the card, not your clear colours; "try fewer colours" isn't said at a
+  scheme's smallest size; a lock with no room at a smaller size is said ("Unlocked B08: no room for it at 4 colours.");
+  Monochrome from your base says "your base first, then light to dark".
+
+**Making and using a guide; output**
+- Turn, crop or tilt while the sections were being found again for a new Sensitivity left an Undo step with the new
+  Sensitivity over the old sections, and an Undo that did nothing visible. One Undo now goes back to both as they were.
+- A PDF page drawn in mid or light grey lines was refused as "came out blank" (it counted only pixels darker than
+  50% grey).
+- Focus mode's next-marker card covered most of that marker's sections on a small phone with large text (9 of 20 at
+  375 × 667 with 1.6× text; all of them at 320 × 568) while saying they were "shown on the picture": a shorter card,
+  beside the picture when that keeps them clear.
+- Finishing the page again after unticking a section is said and celebrated again.
+- A PDF is named for the Pages choice it was made with (a change while it was written renamed it).
+
+**Layout, keyboard, screen readers**
+- The Markers ⋯ menu ran off a phone's left edge (from 375 px wide; almost wholly off at larger text): it fits.
+- How it works scrolled sideways at 320 px wide with 1.6× text.
+- Library › Back up from the keyboard put focus back on the page's start; it stays on the button.
+- Markers' search says how many it found, once typing stops.
+- "Saved in your Library" when leaving a guide by the main tabs is a toast (it went to a hidden screen-reader line).
+- A copy that falls back to selecting text gives the focus back where it was.
+
+- **Tests:** test/v31825-x1, -x2 (9), e2e/v31825-x1 … -x4 (28); changed on purpose: e2e/v3187-pics (pictures kept
+  past 60), test/v3187-brands (a long list keeps its brand), test/v304-colour (the wording at the smallest size).
+  Cache bumped to `marker-studio-v318.25`.

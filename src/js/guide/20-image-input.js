@@ -809,8 +809,22 @@ function resegment() {
   reseg();
   return true;
 }
+// (v318.25) while sections are being found again: the settings the sections still in place were found with, and the
+// Undo step this re-detection made (s: none when it shares an earlier one). A turn, crop or tilt before they're found
+// keeps those settings with those sections (it had kept the new ones, so its Undo brought back the old sections with
+// the new Sensitivity), and takes the place of that step (whose Undo then changed nothing on the picture). n: the
+// newest re-detection, which alone clears it when done (or taken over)
+let _segIn = null,
+  _resegN = 0;
 function reseg() {
-  keepSnap(false);
+  const s = keepSnap(false),
+    my = ++_resegN;
+  // (a re-detection taking over from one still under way: the sections in place are still those the first found)
+  if (!segBusy || !_segIn)
+    _segIn = {
+      det: _reFrom ? { e: _reFrom.e, c: _reFrom.c, f: _reFrom.f } : { e: enhance, c: adaptC, f: faintCut },
+      s: s,
+    };
   _reFrom = null;
   // (v318.14: with a paint between its steps; a newer change takes over from it, segRun)
   note('Detecting sections\u2026');
@@ -820,6 +834,7 @@ function reseg() {
     },
     segment,
     function (ok) {
+      if (my === _resegN) _segIn = null;
       if (!ok) return;
       hasEdits = false;
       if (sfmode === 'review') {
@@ -830,6 +845,7 @@ function reseg() {
       note('Sections detected again \u2014 tap Undo to go back.');
     },
     function (err) {
+      if (my === _resegN) _segIn = null;
       note(errNote('Couldn’t detect the sections again.', 'Detecting sections', err));
     },
   );
@@ -852,8 +868,12 @@ function keepSnap(geo) {
     secFwd = [];
     return null;
   }
+  // (v318.25: a turn, crop or tilt while sections are found again: in place of the step that re-detection made, which
+  // holds the same sections, _segIn; kept with it, put back should the change come to nothing, geoCancel)
+  const was = geo && segBusy && _segIn && _segIn.s && top === _segIn.s ? popUndo(true) : null;
   const s = keepObj(geo);
   pushUndo(s);
+  if (was) s._was = was;
   return s;
 }
 // the step keepSnap keeps: the sections and all that hangs on them as they are now (also for Redo, 65-edit secNow)
@@ -908,7 +928,13 @@ function keepObj(geo) {
       edits: hasEdits,
       // (Enhance and Sensitivity as they were, v304)
       // (v308: and whether faint grey marks were ignored)
-      det: _reFrom ? { e: _reFrom.e, c: _reFrom.c, f: _reFrom.f } : { e: enhance, c: adaptC, f: faintCut },
+      // (v318.25: and while they're being found again, those of the sections still in place, _segIn)
+      det:
+        segBusy && _segIn
+          ? Object.assign({}, _segIn.det)
+          : _reFrom
+            ? { e: _reFrom.e, c: _reFrom.c, f: _reFrom.f }
+            : { e: enhance, c: adaptC, f: faintCut },
       bgMaxB: bgMaxB,
       bgEdgeAll: bgEdgeAll,
       // (v308: the offer to ignore faint grey marks, as it was for those sections)
@@ -986,11 +1012,17 @@ function okGeom(go) {
 // okGeom said yes but nothing changed after all: its Undo step goes again
 function geoCancel() {
   // (and Redo as it was before it, v311)
-  if (_geoSnap && undoStack[undoStack.length - 1] === _geoSnap) popUndo(true);
+  if (_geoSnap && undoStack[undoStack.length - 1] === _geoSnap) {
+    popUndo(true);
+    // (v318.25: and the re-detection's step it took the place of, keepSnap: the way back from those sections)
+    if (_geoSnap._was) pushUndo(_geoSnap._was);
+  }
   _geoSnap = null;
 }
 // the picture changed: an Undo step from okGeom leads back to it; without one the older steps no longer fit the picture
 function geoUndoOK() {
+  // (v318.25: the change is made: the step it took the place of isn't needed again, keepSnap)
+  if (_geoSnap) delete _geoSnap._was;
   const top = undoStack[undoStack.length - 1];
   if (!(top && top.reseg && !top.sealed && top.keep.geo)) clearUndo();
 }
@@ -1220,7 +1252,13 @@ function _loadImage(file) {
         // (v318 polish: drawn before the work below holds the page, or "Reading photo…" stayed up throughout)
         afterPaint(function () {
           if (gen !== loadGen) return;
-          detect(f35);
+          holdTime(
+            'New photo: open',
+            function () {
+              detect(f35);
+            },
+            img.naturalWidth ? img.naturalWidth + '×' + img.naturalHeight : '',
+          );
         });
       });
     };
@@ -1252,7 +1290,9 @@ function _loadImage(file) {
         if (tok !== loadGen) return;
         segBusySet(false);
         try {
-          pgBegin(f35);
+          holdTime('New photo: find the page', function () {
+            pgBegin(f35);
+          });
         } catch (err) {
           _preview = false;
           note(

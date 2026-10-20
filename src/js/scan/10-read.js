@@ -215,7 +215,17 @@ function scanFlipped(t, has) {
 const SCAN_TURNED = '人⅄Λ日とᴚɹレタクﾚЧ';
 // the codes a word could be read upside down, with the longer codes whose first letter could have been lost
 // (YR213 read as R213): [] when it isn't worth trying (no digit and no turned character: "Sea" isn't Y35)
+// (v318.24) a Copic grey upside down: its number, a dash, then the family turned ("8-N" is N-8, "L-M" W-7 or W-1):
+// only that shape, and only a grey, of the words with a dash ("6-13", a date, isn't Copic E19)
+const SCAN_GREY_TURNED = /^[0-9A-Z]{1,2}-[CNM]$/;
 function scanTurned(t, has) {
+  if (/-/.test(t)) {
+    if (!SCAN_GREY_TURNED.test(t)) return [];
+    const ix = scanIndex();
+    return scanFlipped(t.replace('-', ''), has).filter((x) =>
+      ix.byCode.get(x).some((i) => /-/.test(COLORS[i].code)),
+    );
+  }
   if (!/[0-9]/.test(t) && ![...t].some((c) => SCAN_TURNED.indexOf(c) >= 0)) return [];
   const f = scanFlipped(t, has);
   if (!f.length || f.length > 4) return [];
@@ -822,12 +832,38 @@ function scanRead(text, brand) {
   // both ways up already, and a scrap of a line, "001", had become Ohuhu 100)
   if (scanNoFlip) return { codes: [], byName: -1, flips: [], other: [] };
   const flips = [];
-  for (const t of words) {
-    // (a number-only code as read, 120, isn't BG21 upside down; nor is a word on every cap, v299)
-    if ((/^\d+$/.test(t) && ix.byCode.has(t)) || SCAN_NOISE.test(t)) continue;
+  // (v318.24: a dash of another kind, or with spaces round it, "8 – N", as a grey's)
+  const fw = up
+    .replace(/(^|[^A-Z0-9])([A-Z0-9]{1,2}) *[-\u2010-\u2015\u2212] *([CNM])(?![A-Z0-9])/g, '$1$2-$3')
+    .split(new RegExp('[^A-Z0-9' + SCAN_TURNED + '-]+'))
+    .filter((w) => w && !/^-+$/.test(w));
+  for (const t of fw) {
+    // (a number-only code as read, 120, isn't BG21 upside down; nor is a word on every cap, v299; nor a run of zeros,
+    // v318.24: "00000" isn't Copic G0000, whose G turned reads 9)
+    if ((/^\d+$/.test(t) && ix.byCode.has(t)) || SCAN_NOISE.test(t) || /^0+$/.test(t)) continue;
     const like = scanTurned(t, has);
     if (like.length)
-      flips.push({ as: t, opts: [].concat(...like.map((x) => ix.byCode.get(x).filter(chosen))) });
+      flips.push({
+        as: t,
+        opts: [].concat(...like.map((x) => ix.byCode.get(x).filter(chosen))),
+        // (v318.24) asked even when it's one marker: digits only, bent into a code ("1100" isn't surely Ohuhu GG11),
+        // or a grey turned with no digit ("S-M", a size, isn't surely W-5)
+        sure: !/^\d+$/.test(t) && !/^[A-Z]+-[A-Z]+$/.test(t),
+      });
+  }
+  // (v318.25) with a brand chosen and nothing of its turned: another brand's marker turned, one read surely, is that
+  // brand's (asked in the list, as one the right way up is). "8-N" with Ohuhu chosen had been "No marker code found",
+  // while "N-8" asks about Copic N-8
+  if (brand && !flips.length) {
+    const any = new Set(),
+      hasAny = (c) => ix.byCode.has(c);
+    for (const t of fw) {
+      if ((/^\d+$/.test(t) && ix.byCode.has(t)) || SCAN_NOISE.test(t) || /^0+$/.test(t)) continue;
+      if (/^\d+$/.test(t) || /^[A-Z]+-[A-Z]+$/.test(t)) continue;
+      const is = [].concat(...scanTurned(t, hasAny).map((x) => ix.byCode.get(x)));
+      if (is.length === 1) any.add(is[0]);
+    }
+    if (any.size) return { codes: [], byName: -1, flips: [], other: [...any] };
   }
   return { codes: [], byName: -1, flips: flips, other: [] };
 }

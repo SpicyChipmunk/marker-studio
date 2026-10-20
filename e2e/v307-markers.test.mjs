@@ -278,8 +278,21 @@ test('Help › Your data: for an iPhone or iPad, the Home Screen app’s own sto
 // ---- contrast ----------------------------------------------------------------------------------------------------
 // the text's contrast with what is behind it, as seen: colours and opacities composited down from the page
 const contrastOf = (page, sel) =>
-  page.evaluate((sel) => {
+  page.evaluate(async (sel) => {
     const el = document.querySelector(sel);
+    // (v318.23: a colour or fade still running on it, or on what's behind it, finished first: measured part-way
+    // through the Print sheet's 250 ms fade-in, WebKit on GitHub read 4.32:1 for an 8.1:1 icon)
+    const up = [];
+    for (let n = el; n; n = n.parentElement) up.push(n);
+    const runs = document
+      .getAnimations()
+      .filter(
+        (a) => up.includes(a.effect && a.effect.target) && isFinite(a.effect.getComputedTiming().endTime),
+      );
+    await Promise.race([
+      Promise.all(runs.map((a) => a.finished.catch(() => {}))),
+      new Promise((r) => setTimeout(r, 3000)),
+    ]);
     const P = (s) => {
       const m = /rgba?\(([^)]+)\)/.exec(s);
       if (!m) return [0, 0, 0, 0];

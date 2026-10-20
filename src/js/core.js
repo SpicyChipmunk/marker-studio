@@ -508,6 +508,13 @@ function saveFailNotice(now_) {
     8000,
   );
 }
+// (v318.23) a stored Library thumbnail's size: the long side at most THUMB_PX (tiles are 150–260 CSS px; the stored
+// picture only shows until the guide is drawn again for the tile, so it's small on purpose: 128 looked blocky at 2×)
+const THUMB_PX = 144;
+function thumbSize(w, h) {
+  const k = THUMB_PX / Math.max(1, w, h);
+  return [Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k))];
+}
 function safeThumb(t) {
   return typeof t === 'string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(t) ? t : '';
 }

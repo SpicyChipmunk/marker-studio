@@ -1,4 +1,5 @@
 var _saveHold = false,
+  _roomFull = false,
   _lastRaw = null,
   // (v318.22) the stored state as it was read, for the fields FUT_GONE describes below (futureKeep/futurePut)
   _future = {},
@@ -609,55 +610,123 @@ function savedMerge() {
     }
   });
 }
+// (v318.23) Safari counts a stored string at 2 bytes a character once any character in it is past U+00FF (a ’ in one
+// name doubled the whole Library's share): what's written is plain ASCII, wider characters as \uXXXX, which JSON.parse
+// reads as before (older versions too). The round trip makes WebKit hold it 1 byte a character again: a string made
+// from a wide one by replace stays wide inside, however plain it reads
+function narrow(s) {
+  const t = s.replace(/[\u007f-\uffff]/g, function (c) {
+    return '\\u' + ('000' + c.charCodeAt(0).toString(16)).slice(-4);
+  });
+  if (typeof TextEncoder !== 'function' || typeof TextDecoder !== 'function') return t;
+  try {
+    return new TextDecoder().decode(new TextEncoder().encode(t));
+  } catch (e) {
+    return t;
+  }
+}
 // With storage blocked nothing can be kept (the banner says so): changes still count for this visit
-function save(quiet) {
+function save(quiet, noDrop) {
   if (STORE_BLOCKED || _saveHold) return true;
+  let e = saveTry();
+  // (once leaving out every thumbnail hasn't made room, not tried again until a save works: it would cost ~1 s a save)
+  if (e && !noDrop && !_roomFull && quotaErr(e)) {
+    e = saveRoom();
+    _roomFull = !!e;
+  }
+  if (!e) {
+    _roomFull = false;
+    return true;
+  }
+  if (!quiet) saveFailNotice();
+  return false;
+}
+function quotaErr(e) {
+  return (
+    !!e &&
+    (e.name === 'QuotaExceededError' ||
+      e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      e.code === 22 ||
+      e.code === 1014)
+  );
+}
+// (v318.23) storage full: the oldest stored thumbnails (by when each was saved) are left out, a growing batch at a time,
+// until it fits; they're drawn again from the guides. Nothing else goes. None left and still full: they're put back
+// (as stored) and it fails as before
+function saveRoom() {
+  const th = state.saved
+      .filter(function (x) {
+        return x && x.thumb;
+      })
+      .sort(function (a, b) {
+        return (+a.ts || 0) - (+b.ts || 0);
+      }),
+    gone = [];
+  let n = 1,
+    e = null;
+  while (th.length) {
+    th.splice(0, n).forEach(function (x) {
+      gone.push([x, x.thumb]);
+      x.thumb = '';
+    });
+    e = saveTry();
+    if (!e) return null;
+    if (!quotaErr(e)) break;
+    n *= 2;
+  }
+  gone.forEach(function (g) {
+    g[0].thumb = g[1];
+  });
+  return e || new Error('full');
+}
+function saveTry() {
   try {
     savedMerge();
-    const s = JSON.stringify(
-      futurePut({
-        mode: state.mode,
-        palSize: state.palSize,
-        harmony: state.harmony,
-        tones: [...state.tones],
-        sats: [...state.sats],
-        drawn: state.drawn,
-        excluded: [...state.excluded],
-        palettes: state.palettes,
-        palH: state.palH,
-        pool: state.pool,
-        brands: [...state.brands],
-        buyBrands: state.buyBrands,
-        owned: [...state.owned],
-        collView: state.collView,
-        finderScope: state.finderScope,
-        scopeFlipped: state.scopeFlipped,
-        satsUpgraded: state.satsUpgraded,
-        seed: state.seed,
-        locked: state.locked,
-        filtersOpen: state.filtersOpen,
-        gapSort: state.gapSort,
-        customPal: state.customPal,
-        saved: state.saved,
-        ownedSeedV: state.ownedSeedV,
-        copicAdd1: state.copicAdd1,
-        libAdj1: state.libAdj1,
-        setFix1: state.setFix1,
-        ordLight1: state.ordLight1,
-        wish: state.wish,
-        ink: state.ink,
-        cap: state.cap,
-        capDef: state.capDef,
-        capQ: state.capQ,
-        capOffer: state.capOffer,
-      }),
+    const s = narrow(
+      JSON.stringify(
+        futurePut({
+          mode: state.mode,
+          palSize: state.palSize,
+          harmony: state.harmony,
+          tones: [...state.tones],
+          sats: [...state.sats],
+          drawn: state.drawn,
+          excluded: [...state.excluded],
+          palettes: state.palettes,
+          palH: state.palH,
+          pool: state.pool,
+          brands: [...state.brands],
+          buyBrands: state.buyBrands,
+          owned: [...state.owned],
+          collView: state.collView,
+          finderScope: state.finderScope,
+          scopeFlipped: state.scopeFlipped,
+          satsUpgraded: state.satsUpgraded,
+          seed: state.seed,
+          locked: state.locked,
+          filtersOpen: state.filtersOpen,
+          gapSort: state.gapSort,
+          customPal: state.customPal,
+          saved: state.saved,
+          ownedSeedV: state.ownedSeedV,
+          copicAdd1: state.copicAdd1,
+          libAdj1: state.libAdj1,
+          setFix1: state.setFix1,
+          ordLight1: state.ordLight1,
+          wish: state.wish,
+          ink: state.ink,
+          cap: state.cap,
+          capDef: state.capDef,
+          capQ: state.capQ,
+          capOffer: state.capOffer,
+        }),
+      ),
     );
     localStorage.setItem(KEY, s);
     _lastRaw = s;
-    return true;
+    return null;
   } catch (e) {
-    if (!quiet) saveFailNotice();
-    return false;
+    return e;
   }
 }
 // a change the person just made: kept, or (storage full) put back with `undo` and said so, returning false so no

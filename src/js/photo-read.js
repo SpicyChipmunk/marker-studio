@@ -2140,6 +2140,9 @@ function ocrHide() {
     v = ocrV();
   card.classList.remove('ocron', 'ocrwide');
   v.hidden = true;
+  // (v318.25) its canvases let go of their pixels here too, as ocrShow does (v318.22): Done, Back, Undo this photo and
+  // closing Scan had dropped them whole, which Chrome held on to
+  v.querySelectorAll('#ocrPic canvas').forEach((c) => (c.width = c.height = 0));
   v.innerHTML = '';
   if ($('ocrLive')) $('ocrLive').textContent = '';
   $('scTitle').textContent = scanFind ? 'Scan 3 caps' : 'Scan or type codes';

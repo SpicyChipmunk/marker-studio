@@ -48,8 +48,9 @@ function doSave() {
     name: nameForSave(idxs),
     keys: idxs.map(mkey),
     ts: Date.now(),
-    // (v308) its scheme, so it opens as that again (it had always opened as Custom)
-    h: state.harmony,
+    // (v308) its scheme, so it opens as that again (it had always opened as Custom); (v318.25) the palette's own,
+    // not one chosen since that couldn't be made (currentPaletteHarm)
+    h: currentPaletteHarm(),
   };
   state.saved.unshift(entry);
   saveNew(entry);
@@ -902,7 +903,7 @@ function renderRecent() {
       SF.thumbFor(g.id).then(function (t) {
         if (!t) return;
         g.thumb = t;
-        if (!save(true)) g.thumb = '';
+        if (!save(true, true)) g.thumb = '';
       });
   });
 }

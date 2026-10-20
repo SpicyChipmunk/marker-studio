@@ -97,7 +97,9 @@ function chrome() {
   secondaryRow.style.display = browse ? 'none' : 'flex';
   swapBtn.style.display = rnd ? '' : 'none';
   undoBtn.textContent = rnd ? 'Remove' : 'Undo';
-  undoBtn.style.display = pal && (state.harmony === 'custom' || state.harmony === 'photo') ? 'none' : '';
+  // (v318.25) Photo has Undo too, while there's a step before its palette (photoUndoable): hidden there, From photo had
+  // cut off every palette made before it
+  undoBtn.style.display = pal && state.harmony === 'custom' ? 'none' : '';
   trackWrap.style.display = rnd ? '' : 'none';
   drawnWrap.style.display = rnd ? '' : 'none';
   harmWrap.style.display = pal ? 'flex' : 'none';
@@ -348,7 +350,10 @@ function chrome() {
     drawBtn.disabled = !!bad;
     drawFocusBack();
     drawBtn.textContent = bad || 'Generate palette';
-    undoBtn.disabled = state.harmony === 'custom' || state.palettes.length === 0;
+    undoBtn.disabled =
+      state.harmony === 'custom' ||
+      state.palettes.length === 0 ||
+      (state.harmony === 'photo' && !photoUndoable());
   }
   const countView =
     rnd || pal
@@ -828,6 +833,7 @@ function doReRollBand(k) {
     b.style.background = c.hex;
     cd.textContent = capCode(c);
     cd.style.color = txt(c.hex);
+    bandWarn(b, pick);
     bandLabel(b, pick);
     if (!reduce) {
       b.style.animationDelay = '0ms';
@@ -1005,10 +1011,17 @@ function palPop() {
   state.palettes.pop();
   state.palH.pop();
 }
+// (v318.25) Undo in From photo: a step back (a band swap, the photo's palette before it, or the scheme's palette From
+// photo was opened over: Undo goes back to its scheme, as from any other). Not its only palette: the photo would be
+// left with nothing under it
+function photoUndoable() {
+  return state.mode === 'palette' && state.harmony === 'photo' && !!_photoImg && state.palettes.length > 1;
+}
 function undo() {
   if (rolling) return;
   if (state.mode === 'palette') {
     if (!state.palettes.length) return;
+    if (state.harmony === 'photo' && !photoUndoable()) return;
     palPop();
     // (v308) a photo's palette whose photo has gone (the page was opened again since) can't be shown as one: skipped
     const lastH = () => palHarm(state.palH[state.palH.length - 1]);
@@ -1065,11 +1078,13 @@ function palFailToast() {
         fix,
       5000,
     );
+  // (v318.25) at the scheme's smallest size there are no fewer to try (three markers and Tetradic, 4 only)
+  const fewer = state.palSize > (HARM_RANGE[state.harmony] || [2, 6])[0];
   toast(
     'Couldn\u2019t make a ' +
       state.palSize +
-      '-colour palette from the markers in play \u2014 try fewer colours' +
-      (fix === 'add markers with more colours.' ? ', or ' : ' or ') +
+      '-colour palette from the markers in play \u2014 ' +
+      (fewer ? 'try fewer colours' + (fix === 'add markers with more colours.' ? ', or ' : ' or ') : '') +
       fix,
     5000,
   );
@@ -1093,6 +1108,26 @@ function regenReplace() {
   // 6, then 3, then Undo had lost the palette before both)
   if (state.palettes.length && palAuto(state.palH[state.palH.length - 1])) palPop();
   palPush(pal, 24, true);
+  // (v318.25) more colours locked than the new size has places for (8 with five locked, then 4): the one left out is
+  // said, as locksUsable says its own, not dropped silently
+  const seat = state.palSize - (keyIdx(state.seed) != null && pal.includes(keyIdx(state.seed)) ? 1 : 0),
+    off = state.locked.filter((i) => !pal.includes(i) && i !== keyIdx(state.seed));
+  if (off.length && state.locked.filter((i) => i !== keyIdx(state.seed)).length > seat) {
+    const list =
+      off.length > 1
+        ? off.slice(0, -1).map(capCode).join(', ') + ' and ' + capCode(off[off.length - 1])
+        : capCode(off[0]);
+    toast(
+      'Unlocked ' +
+        list +
+        ': no room for ' +
+        (off.length > 1 ? 'them' : 'it') +
+        ' at ' +
+        state.palSize +
+        ' colours.',
+      4500,
+    );
+  }
   state.locked = state.locked.filter((i) => pal.includes(i));
   save();
   showPalette(pal, true);
@@ -1193,7 +1228,17 @@ harmDesc.className = 'harmdesc';
   col.appendChild(harmDesc);
 }
 function harmDescSync(pal) {
-  const t = pal ? HARM_DESC[state.harmony] || '' : '';
+  let t = pal ? HARM_DESC[state.harmony] || '' : '';
+  // (v318.25) Monochrome from a base (Start from) has it first, as every scheme does (palFrom, "… base" under the
+  // name), and the rest light to dark: "light to dark" alone had read as wrong (C-3, then the lighter C-2)
+  const top = pal && state.palettes[state.palettes.length - 1];
+  if (
+    state.harmony === 'mono' &&
+    top &&
+    currentPaletteHarm() === 'mono' &&
+    palFrom(top, keyIdx(state.seed), 'mono')
+  )
+    t = 'One colour: your base first, then light to dark';
   if (harmDesc.textContent !== t) harmDesc.textContent = t;
 }
 

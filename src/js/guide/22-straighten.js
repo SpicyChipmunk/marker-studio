@@ -1041,20 +1041,29 @@ function pgBegin(f35) {
 // (v313: what's about to happen shows before it does, as when it's sure)
 function pgReveal(q, auto) {
   pgOpen(q, '', 'reveal');
-  const t0 = Date.now();
-  _pgT = setTimeout(function () {
-    if (!(pgMode && pgEd && pgEd.how === 'reveal')) return;
+  const t0 = Date.now(),
+    ed = pgEd,
+    g = loadGen,
+    live = function () {
+      return pgMode && pgEd === ed && g === loadGen;
+    };
+  clearTimeout(_pgT);
+  afterPaint(function () {
+    if (!live()) return;
     let flat = null;
     try {
-      flat = pgFlat(q);
+      flat = holdTime('New photo: straighten', function () {
+        return pgFlat(q);
+      });
     } catch (e) {}
+    clearTimeout(_pgT);
     _pgT = setTimeout(
       function () {
-        if (pgMode && pgEd && pgEd.how === 'reveal') pgApply(q, auto, flat);
+        if (live()) pgApply(q, auto, flat);
       },
       Math.max(0, 750 - (Date.now() - t0)),
     );
-  }, 60);
+  });
 }
 // build the sections from srcImg as it is now
 function pgProceed(msg) {

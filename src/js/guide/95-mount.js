@@ -145,16 +145,18 @@ function thumbFor(id) {
               p[j + 3] = 255;
             }
             g.putImageData(id2, 0, 0);
-            var tw = 140,
-              tth = Math.max(1, Math.round((tw * dh) / dw)),
+            var ts = thumbSize(dw, dh),
+              tw = ts[0],
+              tth = ts[1],
               t = document.createElement('canvas');
             t.width = tw;
             t.height = tth;
             var tg = t.getContext('2d');
             tg.imageSmoothingEnabled = true;
+            tg.imageSmoothingQuality = 'high';
             tg.drawImage(c, 0, 0, tw, tth);
             freeCanvas(c);
-            var url = t.toDataURL('image/jpeg', 0.62);
+            var url = t.toDataURL('image/jpeg', 0.6);
             freeCanvas(t);
             res(url);
           } catch (e) {

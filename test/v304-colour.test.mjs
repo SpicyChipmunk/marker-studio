@@ -277,10 +277,10 @@ test('v304: the palette screen’s “can’t” toasts say what to do: loosen t
   E('regenReplace()');
   assert.match(last(), /or clear the selection\.$/);
   // (v308: Generate first brings the size down to what the markers in play can fill, palCap; three can't fill
-  // Tetradic's smallest, 4)
+  // Tetradic's smallest, 4; v318.25: so no "try fewer colours" there)
   E(`setPool([...state.owned].map(keyIdx).slice(0, 3))`);
   E('doGenerate()');
-  assert.match(last(), /or clear the selection\.$/);
+  assert.match(last(), /in play — clear the selection\.$/);
   // a band with no other marker that fits
   E(
     `rerollPick = function () { return -1; }; state.palettes = [state.pool.slice(0, 4)]; state.palH = ['tetradic']`,

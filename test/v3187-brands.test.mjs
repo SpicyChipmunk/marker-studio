@@ -279,10 +279,15 @@ test('a long paste isn’t read twice for its brand: 122 KB in no more than 1.3 
   );
   assert.ok(text.length > 120000);
   s.reset('Ohuhu', true);
+  // (v318.25: over 20 KB, told from its first 20,000 characters, and that part's reading not kept)
   assert.equal(
-    s.ev('return scanListBrand(' + JSON.stringify(text) + ');'),
-    null,
-    'over 20 KB: not classified',
+    s.ev(
+      'const lb = scanListBrand(' +
+        JSON.stringify(text) +
+        '); return JSON.stringify(lb && [lb.brand, !!lb.mixed, lb.r]);',
+    ),
+    JSON.stringify(['', true, null]),
+    'over 20 KB: its first part classified',
   );
   const t0 = cpuMs();
   s.a.__eval('scanRead(' + JSON.stringify(text) + ', "Ohuhu")');

@@ -1366,11 +1366,15 @@ button.hlpq:focus-visible {
 }
 .hiwdots {
   flex: 1;
+  /* (v318.25: the dots give way before Next leaves the card, at 320 wide with large text) */
+  min-width: 0;
   display: flex;
   justify-content: center;
   gap: 0;
 }
 button.hiwdot {
+  flex: 0 1 28px;
+  min-width: 20px;
   width: 28px;
   height: 44px;
   padding: 0;
@@ -1394,6 +1398,14 @@ button.hiwdot::before {
 button.hiwdot.on::before {
   width: 20px;
   background: #b9a8ff;
+}
+/* (v318.25: Back and Next as wide as their words on the smallest phones, so the row fits the card) */
+@media (max-width: 359px) {
+  .hiwnav .hiwback,
+  .hiwnav .hiwnext {
+    min-width: 0;
+    padding: 0 12px;
+  }
 }
 .hlpcard {
   gap: 10px;
@@ -1650,6 +1662,30 @@ button.wnx::after,
 }
 .msblocked span {
   color: var(--sub);
+}
+/* (v318.23) a new version is ready: the words, Reload and ✕ on a row */
+.msupd {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.msupd b {
+  flex: 1 1 14em;
+}
+.msupd .sflink {
+  min-height: 44px;
+}
+.msupdx {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--sub);
+  font-size: var(--t-lg);
+  cursor: pointer;
 }
 /* Help › About: what's new in this version */
 .hlpwn {

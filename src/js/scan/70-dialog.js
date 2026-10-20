@@ -421,12 +421,21 @@ function scanAdd() {
   if (scanFind) return scanFindDone();
   const after = scanAfter,
     undone = scanUndone;
-  const asks0 = scanAsks();
+  const asks0 = scanAsks(),
+    // (v318.25) the questions waiting, and whether both brands were read, before the box is read
+    waiting0 = scanList.filter((e) => e.ask).map((e) => e.ask),
+    sw0 = scanSw.on;
   scanFlushBox(true);
   const fresh = scanNew();
   // (v303: the text left in the box raised a question: shown, with the dialog left open, before anything's added;
   // v318.21 debug: before the caps-only Add too, which had closed Scan over the new question)
   if (scanAsks() > asks0) return;
+  // (v318.25) or turned both brands on, or took a question off the list (made it a marker, its answer unseen): shown
+  // too. Another brand's code left in the box (E000, a Copic B000 asked about) had switched to both brands, the B000
+  // question become a marker, and Add had closed Scan with both added, the "Reading both brands" card never seen
+  if (scanSw.on && !sw0) return;
+  const waiting = new Set(scanList.filter((e) => e.ask).map((e) => e.ask));
+  if (waiting0.some((k) => !waiting.has(k))) return;
   // (v318.21: nothing new, but what caps you have already say, read with their codes: noted)
   if (!fresh.length) return capPending() ? scanAddCaps() : undefined;
   // (v318.7) the set nearly all here, with what's missing, worked out while the list still holds the markers: said by

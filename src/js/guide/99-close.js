@@ -548,6 +548,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     sheetOpen: sheetOpen,
     checkComplete: checkComplete,
+    get pdfKinds() {
+      return _pdfKinds;
+    },
     get pdfCloseN() {
       return _pdfCloseN;
     },
@@ -946,6 +949,11 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     gradStartSay: gradStartSay,
     styleSave: styleSave,
     styleFields: STYLE_FIELDS,
+    plCarry: plCarry,
+    inkPasses: function () {
+      return inkPrep().passes;
+    },
+    plKnown: plKnown,
     // laying a guide out and changing it, for test/v304-assign.test.mjs
     assign: {
       buildGuide: buildGuide,
@@ -1451,6 +1459,7 @@ return {
   showHome,
   hasGuide,
   thumbFor,
+  plCarry,
   maybeResume: maybeShowResume,
   renamed: renamed,
   pdfKit: pdfKit,

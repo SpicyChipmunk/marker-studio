@@ -216,6 +216,37 @@ function scanTraceAdd(s) {
   scanTrace.push(((now - scanTrace0) / 1000).toFixed(2) + ' ' + s);
   if (scanTrace.length > SCAN_TRACE_MAX) scanTrace.splice(0, scanTrace.length - SCAN_TRACE_MAX);
 }
+// (v318.23) how long the page was held by the longest pieces of work this visit (finding a photo's page and sections,
+// Sensitivity, Build): the longest HOLD_MAX, each a label, its time and the picture's size, for Copy diagnostics and
+// Copy details, so an iPad's own numbers can be seen. Kept in memory only, never saved or sent: not in Send feedback
+const HOLD_MAX = 8,
+  holds = [];
+function holdAdd(label, ms, size) {
+  if (!(ms >= 50)) return;
+  holds.push({ label: String(label), ms: Math.round(ms), size: size || '' });
+  holds.sort(function (a, b) {
+    return b.ms - a.ms;
+  });
+  if (holds.length > HOLD_MAX) holds.length = HOLD_MAX;
+}
+// fn() timed as one hold (its result returned; a throw still counts its time)
+function holdTime(label, fn, size) {
+  const now =
+      typeof performance !== 'undefined' && performance.now ? performance.now.bind(performance) : Date.now,
+    t0 = now();
+  try {
+    return fn();
+  } finally {
+    try {
+      holdAdd(label, now() - t0, typeof size === 'function' ? size() : size);
+    } catch (e) {}
+  }
+}
+function holdLines() {
+  return holds.map(function (h) {
+    return h.label + ' ' + h.ms + ' ms' + (h.size ? ' (' + h.size + ')' : '');
+  });
+}
 function errDetails() {
   return diagHead()
     .concat(
@@ -232,6 +263,7 @@ function errDetails() {
       }),
     )
     .concat(scanTrace.length ? ['\nScan box, this visit:'].concat(scanTrace) : [])
+    .concat(holds.length ? ['\nLongest waits, this visit:'].concat(holdLines()) : [])
     .join('\n');
 }
 // the last few errors, a line each (Send feedback's report, and the form's Message)

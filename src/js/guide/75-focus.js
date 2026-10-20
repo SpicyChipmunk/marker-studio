@@ -234,7 +234,8 @@ function finishFocus() {
   animXform(true);
   renderGuide();
   renderFocusUI();
-  var was = celebrated;
+  // (v318.25: finished before but not now, a tick taken back since: checkComplete no longer counts that as finished)
+  var was = celebrated && pageDone();
   checkComplete();
   // (just finished: the toast says so instead)
   if (celebrated === was) focusSay();
@@ -307,7 +308,8 @@ function handOpen(from, nx) {
       : mcodeHTML(m);
   el.querySelector('.sfhsub').innerHTML =
     (nxt.n - nxt.d === 1 ? '1 section' : nxt.n - nxt.d + ' sections') +
-    ', shown on the picture. Tap <b>Done</b> when it’s in your hand.' +
+    // (v318.25: not said by the short card, which can leave some of them under it all the same: handFrame)
+    '<span class="sfhshown">, shown on the picture</span>. Tap <b>Done</b> when it’s in your hand.' +
     (low ? '<span class="sfhlow">' + mcodeHTML(m) + ' is running low.</span>' : '');
   el.hidden = false;
   el.classList.remove('in');
@@ -359,7 +361,8 @@ function handFrame(u, el) {
   var sides = ['top', 'bot', 'left', 'right'],
     last = handFrame.last;
   if (last && sides.indexOf(last) > 0) (sides.splice(sides.indexOf(last), 1), sides.unshift(last));
-  sides.forEach(function (side) {
+  el.classList.remove('sfhtight');
+  var tryAt = function (side) {
     el.classList.remove('sfhbot', 'sfhleft', 'sfhright');
     if (side !== 'top') el.classList.add('sfh' + side);
     // (the room ends above the zoom buttons only where the card would meet them: beside them it needn't)
@@ -430,7 +433,16 @@ function handFrame(u, el) {
         (z > best.z * (keep ? 1.15 : 1.02) || (z >= best.z / 1.02 && pv < best.pv * (keep ? 0.5 : 0.9) - 1)))
     )
       best = { side: side, o: o, z: z, pv: pv, x: panX, y: panY, cut: cut, R: R };
-  });
+  };
+  sides.forEach(tryAt);
+  // (v318.25) every side still leaves some of the sections under the card (a small phone with large text: on an
+  // iPhone SE at 1.6x text it covered 9 of the 20 it said were "shown on the picture"): the short card, the marker on
+  // one line under how the last went (the bar above names it too, with its swatch), placed again
+  if (best.o > 0) {
+    el.classList.add('sfhtight');
+    best = null;
+    sides.forEach(tryAt);
+  }
   zoom = best.z;
   panX = best.x;
   panY = best.y;

@@ -50,7 +50,7 @@ function scanHandleCodes0(text, loud, named, list) {
   if (scanLineBrand && !lb && one && scanBrandWord(text)) brand = scanBrandWord(text);
   let r;
   try {
-    r = lb && brand === '' ? lb.r : scanRead(text, brand);
+    r = lb && brand === '' && lb.r ? lb.r : scanRead(text, brand);
   } finally {
     scanLineBrand = false;
   }
@@ -395,13 +395,13 @@ function scanHandleCodes0(text, loud, named, list) {
   r.flips.forEach(function (f) {
     n++;
     // (v318.21 debug: a code read upside down is one as it is now: its cap too, caps.js)
-    if (f.opts.length === 1)
+    if (f.opts.length === 1 && f.sure)
       scanTake(f.opts[0], 'upside', loud, false, { with: { cv: capCvRead(f.opts[0], false, false) } });
     // (v303: through ask, so on Enter a question already waiting is said so)
     else
       ask(
         'upside ' + f.as,
-        'Upside down: which one?',
+        f.opts.length === 1 ? 'Read upside down: is it this one?' : 'Upside down: which one?',
         f.opts.map((i) => ({ i: i, how: 'upside' })),
       );
   });

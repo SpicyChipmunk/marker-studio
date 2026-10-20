@@ -282,6 +282,74 @@ function currentDesignObj(share, edits) {
     });
   return o;
 }
+// (v318.23) the payload keys this version writes, at the top, in style and in style.shade. Anything else in the stored
+// payload was written by a newer version (opened in another tab): carried into this one's save as it was, so its
+// settings aren't lost when this older tab saves the guide. Only while the sections are the same (the same section
+// map): a key per section would point at the wrong ones after Edit sections or a rebuild. Keys written only when
+// they're used (held, dates, zones, matchAlike…) are in the lists, so one cleared here isn't brought back. Not for a
+// restore (it puts the backup back as it was) or a copy: only the guide's own autosave and its leave copy.
+// PL_GONE: keys a later version stops writing, so they aren't carried for ever.
+const PL_TOP = [
+    'lmap',
+    'ref',
+    'paper',
+    'assign',
+    'style',
+    'anchors',
+    'prog',
+    'tones',
+    'held',
+    'dates',
+    'out',
+    'edits',
+    'base',
+    'locks',
+    'upk',
+    'frame',
+    'zones',
+    'secStates',
+  ],
+  PL_GONE = [];
+let _plKnown = null;
+function plKnown() {
+  if (_plKnown) return _plKnown;
+  const top = new Set(PL_TOP),
+    st = new Set(['shade']),
+    sh = new Set();
+  STYLE_FIELDS.forEach(function (f) {
+    (f.in === 'payload' ? top : f.in === 'shade' ? sh : st).add(f.key);
+  });
+  _plKnown = { top: top, style: st, shade: sh };
+  return _plKnown;
+}
+function plCarry(prev, pl) {
+  if (!prev || typeof prev !== 'object' || !pl || typeof pl !== 'object') return pl;
+  if (typeof prev.lmap !== 'string' || prev.lmap !== pl.lmap) return pl;
+  const K = plKnown(),
+    obj = function (o) {
+      return !!o && typeof o === 'object' && !Array.isArray(o);
+    },
+    more = function (from, into, known) {
+      let out = null;
+      for (const k in from)
+        if (!known.has(k) && PL_GONE.indexOf(k) < 0 && !(k in into))
+          (out || (out = Object.assign({}, into)))[k] = from[k];
+      return out;
+    };
+  let out = more(prev, pl, K.top) || pl;
+  if (obj(prev.style) && obj(out.style)) {
+    let s = more(prev.style, out.style, K.style);
+    if (obj(prev.style.shade) && obj((s || out.style).shade)) {
+      const h = more(prev.style.shade, (s || out.style).shade, K.shade);
+      if (h) (s || (s = Object.assign({}, out.style))).shade = h;
+    }
+    if (s) {
+      if (out === pl) out = Object.assign({}, pl);
+      out.style = s;
+    }
+  }
+  return out;
+}
 // Share › Guide file: handed over as the backup is (handOver: the share sheet on a phone, a download on a computer)
 function shareGuideFile() {
   const d = currentDesignObj(true);
@@ -1347,6 +1415,7 @@ function libAutosave(q) {
       return Promise.resolve(
         api.saveDesign({
           id: id,
+          carry: plCarry,
           name: nm,
           W: d.W,
           H: d.H,
@@ -1384,6 +1453,7 @@ function libAutosave(q) {
   const p = Promise.resolve(
     api.saveDesign({
       id: id,
+      carry: plCarry,
       name: nm,
       W: d.W,
       H: d.H,
@@ -1747,13 +1817,18 @@ function makeThumb() {
       root.classList.contains('sfrev')
     )
       return '';
-    var tw = 140,
-      th = Math.max(1, Math.round((tw * H) / W)),
+    // (v318.23: the long side at most THUMB_PX, not 140 wide whatever the height: a tall page's was 140×370, ~23K
+    // characters of the app's 5 MB. It's a placeholder: the Library draws the guide again as it comes into view)
+    const ts = thumbSize(W, H),
+      tw = ts[0],
+      th = ts[1],
       tc = document.createElement('canvas');
     tc.width = tw;
     tc.height = th;
-    tc.getContext('2d').drawImage(cv, 0, 0, tw, th);
-    const u = tc.toDataURL('image/jpeg', 0.62);
+    const tg = tc.getContext('2d');
+    tg.imageSmoothingQuality = 'high';
+    tg.drawImage(cv, 0, 0, tw, th);
+    const u = tc.toDataURL('image/jpeg', 0.6);
     freeCanvas(tc);
     return u;
   } catch (e) {
@@ -1891,12 +1966,16 @@ function firstSave(auto) {
           sayLive.last && /^Page finished\./.test(sayLive.last) && Date.now() - (sayLive.at || 0) < 5000
             ? sayLive.last + ' '
             : '';
-        sayLive(
+        const said =
           fin +
-            (back != null
-              ? 'Put back in your Library.'
-              : 'Saved in your Library. Changes now save automatically.'),
-        );
+          (back != null
+            ? 'Put back in your Library.'
+            : 'Saved in your Library. Changes now save automatically.');
+        // (v318.25: saved as the guide's screen was left by the main tabs: its live region is hidden then, and so is
+        // the header's status line, so it's the app's toast, which is seen and heard on the screen that opened)
+        const rt = document.getElementById('sfRoot');
+        if (rt && !rt.getClientRects().length && typeof toast === 'function') toast(said, 3500);
+        else sayLive(said);
         btnBusy(null);
         renderHead();
         saveStatus();

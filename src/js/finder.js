@@ -12,6 +12,16 @@ function customOk(i) {
     ? poolSet.has(i) && !(isOwned(i) && isDry(i))
     : !state.owned.size || (isOwned(i) && !isDry(i));
 }
+// why a marker on the card isn't in play now ('' when it is): (v318.25) a scheme's or a photo's palette says so too
+function customWhy(i) {
+  return customOk(i)
+    ? ''
+    : isOwned(i) && isDry(i)
+      ? 'marked dry'
+      : state.pool
+        ? 'not in the selection'
+        : 'no longer in your collection';
+}
 function showCustom() {
   ensureCustomSize();
   palette.classList.add('custommode');
@@ -43,14 +53,8 @@ function showCustom() {
       b.title = 'Tap to choose a marker';
     } else {
       const c = COLORS[idx],
-        own = customOk(idx),
-        why = own
-          ? ''
-          : isOwned(idx) && isDry(idx)
-            ? 'marked dry'
-            : state.pool
-              ? 'not in the selection'
-              : 'no longer in your collection';
+        why = customWhy(idx),
+        own = !why;
       b.classList.remove('empty');
       b.classList.toggle('unowned', !own);
       b.style.background = c.hex;
@@ -477,7 +481,9 @@ function shownMatches() {
 function gridActs(list) {
   gridShown = list;
   ownAllBtn.disabled = !list.length;
-  ownNoneBtn.disabled = !list.length;
+  // (v318.25) only with one of yours among them: in All, or a search of none of yours, it had armed "Untick 5
+  // markers?" and its second tap did nothing
+  ownNoneBtn.disabled = !list.some((i) => isOwned(i));
   // (a palette needs a colour: not only the Colorless Blender, v304)
   toPalette.disabled = !list.some((i) => !NOINK.has(i));
 }
@@ -522,6 +528,8 @@ function renderGrid(more) {
   if (state.mode === 'collection' && state.collView === 'unowned' && state.gapSort === 'gap') {
     const order = gapRank(m);
     gridActs(order);
+    // (v318.25) the heading counts what's shown: it had said "Showing 601 markers" over 295
+    matchHead(order.length, 'marker');
     results.innerHTML =
       '<div class="rgroup"><div class="pile">' +
       order.map((i, idx) => cellHtml(i, idx + 1)).join('') +
@@ -532,8 +540,11 @@ function renderGrid(more) {
     let html = '',
       s = 0;
     const gps = completeGroups(m);
-    gridActs([].concat(...gps.map((g) => g.un)));
-    cellBt = brandsMixedIn([].concat(...gps.map((g) => g.un)));
+    const un = [].concat(...gps.map((g) => g.un));
+    gridActs(un);
+    cellBt = brandsMixedIn(un);
+    // (v318.25) the heading counts what's shown (your brands' families, no fluorescents): it had said 601 over 239
+    matchHead(un.length, 'marker');
     for (const gp of gps) {
       const rep = families.find((f) => f.name === gp.fam);
       html +=
@@ -708,18 +719,29 @@ async function copyText(text) {
     await navigator.clipboard.writeText(text);
     return true;
   } catch (e) {}
+  // (v318.25: focus goes back where it was, for the keyboard and VoiceOver; read-only at 16 px, so iOS neither zooms
+  // nor brings up its keyboard)
+  const was = document.activeElement;
   try {
     const ta = document.createElement('textarea');
     ta.value = text;
+    ta.readOnly = true;
     ta.style.position = 'fixed';
     ta.style.opacity = '0';
+    ta.style.fontSize = 'max(16px, var(--t-lg))';
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
+    ta.setSelectionRange(0, text.length);
     const ok = document.execCommand('copy');
     ta.remove();
     return ok;
   } catch (e) {
     return false;
+  } finally {
+    if (was && was !== document.body && was.isConnected && document.activeElement !== was)
+      try {
+        was.focus({ preventScroll: true });
+      } catch (_) {}
   }
 }

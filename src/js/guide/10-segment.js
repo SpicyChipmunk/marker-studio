@@ -134,28 +134,27 @@ function boxBlur(g, r) {
       if (x - r >= 0) s -= g[ro + x - r];
     }
   }
-  for (let x = 0; x < W; x++) {
-    const cw = Math.min(W - 1, x + r) - Math.max(0, x - r) + 1;
-    let s = 0;
-    for (let y = 0; y <= Math.min(r, H - 1); y++) s += mid[y * W + x];
-    for (let y = 0; y < H; y++) {
-      const ch = Math.min(H - 1, y + r) - Math.max(0, y - r) + 1;
-      out[y * W + x] = (s / (cw * ch) + 0.5) | 0;
-      if (y + r + 1 < H) s += mid[(y + r + 1) * W + x];
-      if (y - r >= 0) s -= mid[(y - r) * W + x];
+  const col = new Int32Array(W),
+    cw = new Int32Array(W);
+  for (let x = 0; x < W; x++) cw[x] = Math.min(W - 1, x + r) - Math.max(0, x - r) + 1;
+  for (let y = 0; y <= Math.min(r, H - 1); y++) {
+    const o = y * W;
+    for (let x = 0; x < W; x++) col[x] += mid[o + x];
+  }
+  for (let y = 0; y < H; y++) {
+    const ch = Math.min(H - 1, y + r) - Math.max(0, y - r) + 1,
+      o = y * W,
+      ad = y + r + 1 < H ? (y + r + 1) * W : -1,
+      sb = y - r >= 0 ? (y - r) * W : -1;
+    for (let x = 0; x < W; x++) {
+      out[o + x] = (col[x] / (cw[x] * ch) + 0.5) | 0;
+      if (ad >= 0) col[x] += mid[ad + x];
+      if (sb >= 0) col[x] -= mid[sb + x];
     }
   }
   return out;
 }
-function denoise(g) {
-  const nl = noiseLevel(g);
-  const passes = nl < 3 ? 0 : nl < 7 ? 1 : 2;
-  // (v303: a 3 x 3 box on an enlarged picture too, measured on it as it is. Measured and blurred on the picture as it
-  // came instead, a downloaded page's JPEG grain called for a blur that ran close lines together again, undoing what
-  // enlarging it is for: the zentangle 1,423 sections -> 1,040, the otter 238 -> 199)
-  for (let i = 0; i < passes; i++) g = boxBlur(g, 1);
-  return g;
-}
+
 // grainy paper and camera noise leave specks of 'ink' that chop the paper into crumbs: drop any ink blob too
 // small to be part of a line (lines are long and connected; a dot eye is still far bigger than a speck)
 // (v313) despeckle's figures for the faint-marks split (faintSplitFast), valid straight after it, as segment uses them
@@ -1069,12 +1068,29 @@ function segBegin() {
   zonePixCapture();
 }
 // the ink: -1 for a line's pixel, 0 for paper
-function segInk() {
+// (v318.23) segInk in parts, so segRun can paint between them: the grey stretched and its noise measured (inkPrep),
+// each blur pass (inkBlur), the ink (inkDone). segInk() runs them in one go, the same code
+function inkPrep() {
   const n = W * H;
+  if (!enhance) return { n: n, src: null, passes: 0 };
+  const st = autoStretch(gray, n),
+    nl = noiseLevel(st);
+  // (the noise measured on the stretched grey, and up to two 3 × 3 box blurs: denoise, until v318.23)
+  // (v303: a 3 x 3 box on an enlarged picture too, measured on it as it is. Measured and blurred on the picture as it
+  // came instead, a downloaded page's JPEG grain called for a blur that ran close lines together again, undoing what
+  // enlarging it is for: the zentangle 1,423 sections -> 1,040, the otter 238 -> 199)
+  return { n: n, src: st, passes: nl < 3 ? 0 : nl < 7 ? 1 : 2 };
+}
+function inkBlur(k) {
+  k.src = boxBlur(k.src, 1);
+  k.passes--;
+}
+function inkDone(k) {
+  const n = k.n;
   labels = new Int32Array(n);
-  if (enhance) {
-    const src = denoise(autoStretch(gray, n)),
-      ink = adaptiveInk(src, n);
+  if (k.src) {
+    const ink = adaptiveInk(k.src, n);
+    k.src = null;
     for (let i = 0; i < n; i++) labels[i] = ink[i] ? -1 : 0;
   } else {
     const thr = otsu(gray, n);
@@ -1082,6 +1098,11 @@ function segInk() {
   }
   // (v308: faint grey marks ignored, when asked: the ink lighter than faintCut is paper)
   if (faintCut > 0) for (let i = 0; i < n; i++) if (labels[i] === -1 && gray[i] > faintCut) labels[i] = 0;
+}
+function segInk() {
+  const k = inkPrep();
+  while (k.passes > 0) inkBlur(k);
+  inkDone(k);
 }
 function segSpeck() {
   despeckle(labels);
@@ -1172,7 +1193,12 @@ function segThen(run, once, after, fail) {
     after(true);
     return;
   }
-  run().then(after, fail);
+  run().then(function (ok) {
+    // (the after-steps run in the last step's own task: timed with it, as one wait)
+    holdTime('Sections drawn', function () {
+      after(ok);
+    });
+  }, fail);
 }
 function segStop() {
   segGen++;
@@ -1207,6 +1233,8 @@ function segBusySet(on, hide, ctl) {
 // prep(): a new picture (W, H, gray, srcK, and anything else its commit needs), or null to find the sections again on
 // the open one; commit(pic): put it in place (before the sections). Resolves true when done, false when a newer run
 // took over; rejects on an error (nothing put in place). hide: the controls out of sight meanwhile (segBusySet).
+// (v318.23: the steps' names, for the waits Copy diagnostics lists)
+const SEG_STEP_NAMES = ['prepare', 'ink', 'smooth', 'specks', 'sections', 'put in place'];
 function segRun(prep, commit, hide) {
   const my = ++segGen;
   segBusySet(true, hide, !!prep);
@@ -1223,7 +1251,19 @@ function segRun(prep, commit, hide) {
       if (!pic.gray) throw new Error('no picture');
     },
     function () {
-      onPic(pic, segInk);
+      onPic(pic, function () {
+        pic._ink = inkPrep();
+        if (!pic._ink.passes) inkDone(pic._ink);
+      });
+    },
+    function () {
+      const k = pic._ink;
+      if (!k.passes) return;
+      onPic(pic, function () {
+        inkBlur(k);
+        if (!k.passes) inkDone(k);
+      });
+      if (k.passes) return 'again';
     },
     function () {
       onPic(pic, segSpeck);
@@ -1243,7 +1283,17 @@ function segRun(prep, commit, hide) {
     const next = function () {
       if (my !== segGen) return res(false);
       try {
-        steps[i++]();
+        // (v318.23: each step timed for Copy diagnostics, holdTime in safety.js)
+        const r = holdTime(
+          (prep ? 'New photo: ' : 'Sections again: ') + SEG_STEP_NAMES[i],
+          function () {
+            return steps[i]();
+          },
+          function () {
+            return pic && pic.W ? pic.W + '×' + pic.H : '';
+          },
+        );
+        if (r !== 'again') i++;
       } catch (e) {
         if (my === segGen) {
           segBusySet(false);

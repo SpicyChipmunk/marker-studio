@@ -1246,7 +1246,7 @@ function addLost(ids) {
             });
             if (!t || !s || safeThumb(s.thumb)) return;
             s.thumb = t;
-            if (!save(true)) s.thumb = '';
+            if (!save(true, true)) s.thumb = '';
             libRowChanged(m.id);
           });
       });

@@ -17,8 +17,9 @@ sheet, paper, and how it feels.
 
 ## 1. Update, install, offline (3 min)
 
-- [ ] ★ Open the Home Screen app → "Marker Studio was updated" shows, **Reload** → Home's foot says the new version
-      (e.g. "v318.1 · Beta").
+- [ ] ★ Open the Home Screen app → "Marker Studio was updated" shows (from the release after v318.23: "A new version of
+      Marker Studio is ready" under the title, a toast on a guide's screen), **Reload** → Home's foot says the new
+      version (e.g. "v318.23 · Beta").
 - [ ] ★ Airplane mode on, close the app fully, reopen → it opens, your markers and guides are there; open a guide and
       make a PDF. Airplane mode off.
 - [ ] In a Safari **Private** tab, open the app's address → the welcome shows; Share › Add to Home Screen → the icon is
@@ -101,7 +102,37 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.22
+## New in this release: v318.25 (a debugging pass)
+
+- [ ] ★ Tick a few sections in a Library guide, then at once swipe up to the Home Screen and close the app fully →
+      reopen: the ticks are there.
+- [ ] ★ Palette › Monochrome, start from a black (Ohuhu 120) → greys, not greens. From photo, then back to a scheme,
+      Undo → you reach the palettes from before the photo.
+- [ ] Markers › ⋯ on the iPad upright, and on a phone if you have one → the whole menu shows.
+- [ ] Delete a guide you've coloured in since your last backup, then restore that backup → the guide stays in Recently
+      deleted, and "Name (from backup)" is in the Library.
+
+## v318.24
+
+- [ ] ★ A guide › Share › **Print**: under Paper, the pages in order (1 Picture, 2–3 Close-ups, 4 Key); tap Numbers,
+      A5, Key + reference and Test strip → it changes each time, and the count matches "N pages" at the foot. Upright and
+      sideways on the iPad, it shows without scrolling.
+- [ ] **Scan or type codes** with Scan Text, a Copic grey cap held upside down (N-8 or W-3) → it goes in as that grey
+      (or asks between two, for W-1/W-7). Type "6-13" → nothing happens (a date isn't a marker).
+
+## v318.23
+
+- [ ] ★ Open a big photo of a page (12 MP from the camera), then **Help › About › Copy diagnostics** and paste it into
+      Notes → it ends with "Longest waits, this visit:" and a few lines ("New photo: smooth 412 ms (2400×1800)"). Send
+      those lines: they say whether the photo work needs moving off the page.
+- [ ] ★ The same photo: the page's outline shows for a moment before it's straightened (before, on the iPad it could go
+      straight to the flattened page).
+- [ ] ★ Rename a guide with an apostrophe typed on the iPad ("Ben's page": iPadOS types ’) → it saves, and the Library
+      still shows every guide with its picture.
+
+(The new update banner shows from the next release on: this one's update is still said the old way, by v318.22.)
+
+## v318.22
 
 - [ ] ★ **Photograph your caps**, about 12 photos one after another without closing Scan, on the iPad: every photo is
       read and the page never reloads. If you can, the same in Chrome on the Mac (Chrome had stopped reading after about

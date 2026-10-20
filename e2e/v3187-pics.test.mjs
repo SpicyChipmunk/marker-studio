@@ -1,7 +1,8 @@
 // v318.7 Scan, section 3: the pictures of the questions waiting (a photo's question's cap) are kept in a small database
 // of the app's own, 'ms-scan-pics', through a reload: the list shows first, the pictures a moment later ("?" until
 // then, and for good when the storage fails); only what's changed is written (nothing at a draw that changed nothing);
-// a question answered or taken off, or the list cleared, takes its picture out; at most 60 are kept; and Delete all my
+// a question answered or taken off, or the list cleared, takes its picture out; every waiting one's kept (v318.25:
+// at most 60 had been); and Delete all my
 // data deletes the database. Each test fails on v318.6 (the pictures lived only in memory: "?" after a reload).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -238,7 +239,7 @@ test('the list shows first, the picture a moment later; when the storage fails, 
   assert.deepEqual(errors, []);
 });
 
-test('Clear list takes the pictures out; at most 60 are kept, the newest, and those of no question waiting are pruned', async () => {
+test('Clear list takes the pictures out; every question waiting keeps its picture, and those of no question waiting are pruned', async () => {
   const { page, errors } = await opened();
   await read(page);
   await page.waitForFunction(() => scanPics.writes === 1);
@@ -248,7 +249,7 @@ test('Clear list takes the pictures out; at most 60 are kept, the newest, and th
   await page.waitForFunction(() => scanPics.deletes === 1);
   assert.deepEqual(await rows(page), []);
   // 63 questions waiting, their pictures in the database with their times (the rows put here), and 2 rows of
-  // questions long gone: a reload keeps the 60 newest and prunes the rest
+  // questions long gone: a reload keeps all 63 (v318.25: it had kept the 60 newest) and prunes the 2
   await page.evaluate(
     () =>
       new Promise((res) => {
@@ -282,16 +283,16 @@ test('Clear list takes the pictures out; at most 60 are kept, the newest, and th
       }),
   );
   await reopen(page);
-  await page.waitForFunction(() => scanPics.deletes === 5, null, { timeout: 5000 });
+  await page.waitForFunction(() => scanPics.deletes === 2, null, { timeout: 5000 });
   const left = await rows(page);
-  assert.equal(left.length, 60);
+  assert.equal(left.length, 63);
   const ats = left.map((r) => r[1]).sort((a, b) => a - b);
-  assert.equal(ats[0], 1003, 'the three oldest pruned');
+  assert.equal(ats[0], 1000, 'the oldest kept too');
   assert.ok(
     !left.some((r) => r[0] === 'confirm 999' || r[0] === 'brands ZZZ'),
     'no question waiting: pruned',
   );
-  assert.equal(await page.locator('#scList .scask.sccropped').count(), 60);
+  assert.equal(await page.locator('#scList .scask.sccropped').count(), 63);
   assert.equal(await page.locator('#scList .scask').count(), 63);
   assert.deepEqual(errors, []);
 });

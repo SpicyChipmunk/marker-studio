@@ -639,20 +639,32 @@ function ctlSections() {
     afterPaint(function () {
       // (v307: the label points worked out in the worker first, while "Building…" shows: lptsReady, 40-render)
       lptsReady().then(function () {
-        // (the first Build of a new picture blooms: 41-bloom.js)
-        const first = !assignData;
-        try {
-          if (g !== loadGen) return;
-          buildGuide();
-          if (first && assignData && sfmode === 'guide') bloomStart();
-        } finally {
-          if (b.isConnected) {
-            b.disabled = false;
-            b.textContent = 'Build guide \u2192';
-            b.setAttribute('aria-label', 'Build guide');
-            edBarSync();
+        // (v318.23: what depends on the sections alone, the texture's distances and the mood pictures' lines, in a task
+        // of its own first, so Build's own hold is shorter; both are kept for the sections, so buildGuide finds them.
+        // Not after the bloom starts: it's drawn frame by frame, and work there makes it stutter or turn itself off)
+        if (g === loadGen)
+          try {
+            if (texAmt > 0 && !edgeDist) buildTexFields();
+            if (mpOn()) mpLinesImage();
+          } catch (e) {}
+        afterPaint(function () {
+          // (the first Build of a new picture blooms: 41-bloom.js)
+          const first = !assignData;
+          try {
+            if (g !== loadGen) return;
+            holdTime('Build', function () {
+              buildGuide();
+            });
+            if (first && assignData && sfmode === 'guide') bloomStart();
+          } finally {
+            if (b.isConnected) {
+              b.disabled = false;
+              b.textContent = 'Build guide \u2192';
+              b.setAttribute('aria-label', 'Build guide');
+              edBarSync();
+            }
           }
-        }
+        });
       });
     });
   }); // show "Building…" before the work starts

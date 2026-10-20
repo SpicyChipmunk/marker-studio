@@ -150,9 +150,9 @@ results.addEventListener('click', async (e) => {
       setOwned(i, had, off, ink);
     });
   } else {
-    const c = COLORS[i];
-    const ok = await copyText(c.code);
-    flashCopy(ok ? 'Copied ' + c.code : 'Couldn\u2019t copy');
+    // (v318.25: the code shown, your cap's)
+    const ok = await copyText(capCode(i));
+    flashCopy(ok ? 'Copied ' + capCode(i) : 'Couldn\u2019t copy');
   }
 });
 // Tick or untick one marker. The swatch stays where it is (dimmed when unticked) until the list is next redrawn
@@ -332,11 +332,11 @@ $('mkOwn').addEventListener('change', (e) => {
 });
 $('mkCopy').addEventListener('click', async () => {
   if (mkOpenIdx == null) return;
-  const ok = await copyText(COLORS[mkOpenIdx].code);
+  // (v318.25) the code the sheet shows, your cap's ("R6", now R213), as Match's Copy does: it had copied the code of now
+  const cc = capCode(mkOpenIdx);
+  const ok = await copyText(cc);
   toast(
-    ok
-      ? 'Copied ' + COLORS[mkOpenIdx].code
-      : 'Couldn\u2019t copy \u2014 select the code and copy it yourself.',
+    ok ? 'Copied ' + cc : 'Couldn\u2019t copy \u2014 select the code and copy it yourself.',
     ok ? 2200 : 5000,
   );
 });
@@ -355,13 +355,22 @@ copyBtn.addEventListener('click', async () => {
   }
   const _bs = new Set(m.map((i) => COLORS[i].brand));
   const ok = await copyText(
-    m.map((i) => (_bs.size > 1 ? COLORS[i].brand + ' ' : '') + COLORS[i].code).join(', '),
+    // (v318.25: the codes shown, your caps')
+    m.map((i) => (_bs.size > 1 ? COLORS[i].brand + ' ' : '') + capCode(i)).join(', '),
   );
   flashCopy(ok ? 'Copied ' + m.length : 'Couldn\u2019t copy');
 });
+// (v318.25: how many match, said to screen readers once typing stops; the heading itself isn't live, as ticks change it)
+let searchSayT = 0;
 searchInput.addEventListener('input', () => {
   searchStr = (searchInput.value || '').trim().toLowerCase();
   if (state.mode === 'finder' || state.mode === 'collection') renderResults(true);
+  clearTimeout(searchSayT);
+  searchSayT = setTimeout(() => {
+    const l = $('matchLbl');
+    if (!l || !l.offsetParent || typeof liveSay !== 'function') return;
+    liveSay((l.textContent + ' ' + matchn.textContent).trim());
+  }, 800);
 });
 toPalette.addEventListener('click', () => handoff('palette'));
 poolClear.addEventListener('click', () => {
@@ -771,7 +780,8 @@ if (_uig)
 // and isn't saved (every palette tried in a guide had been added to the Library)
 function useInGuideGo(idxs, keys, ex, fresh) {
   {
-    var id = ex ? ex.id : { keys: keys, name: shownPaletteName(idxs), h: state.harmony };
+    // (v318.25: the palette's own scheme, currentPaletteHarm)
+    var id = ex ? ex.id : { keys: keys, name: shownPaletteName(idxs), h: currentPaletteHarm() };
     // a new guide: the palette is held for it, the open guide left as it is
     if (fresh) {
       if (window.SF && SF.setNextPal) SF.setNextPal(id);
@@ -1400,8 +1410,11 @@ function findSets(brand, bucket, keys) {
   var b = FIND_BUCKETS[bucket],
     out = [],
     inSets = new Set();
+  // (v318.25) without Ohuhu's blender (setKeys): presetMkeys puts it in every blender set, so it had counted, and a
+  // Honolulu 24's caps with the blender scanned had shown the 48 first and the 24 not at all. Copic's 0 is a real
+  // member of its sets and still counts
   MARKER_SETS.forEach(function (p) {
-    if (p.b === brand && !p.allbrand) presetMkeys(p).forEach((k) => inSets.add(k));
+    if (p.b === brand && !p.allbrand) setKeys(presetMkeys(p)).forEach((k) => inSets.add(k));
   });
   var counted = keys.filter((k) => inSets.has(k));
   if (counted.length) keys = counted;
@@ -1642,7 +1655,8 @@ function unownDisarm() {
 }
 let unownAt = 0;
 ownNoneBtn.addEventListener('click', () => {
-  const m = shownMatches();
+  // (v318.25) only your markers among those shown: the confirm had counted every one ("Untick 722 markers?" for 121)
+  const m = shownMatches().filter((i) => isOwned(i));
   if (!m.length) return;
   // (the second tap of a double tap isn't the confirming one: as Clear ticks, 400 ms)
   if (ownNoneBtn.dataset.arm === '1' && Date.now() - unownAt < 400) return;
@@ -1764,6 +1778,17 @@ function mkMenuOpen(on, focusFirst) {
     return;
   }
   capMenuSync();
+  // (v318.25) Untick all shown on with one of yours shown, as they are now: a swatch ticked or unticked doesn't redraw
+  // the grid (gridActs), so ticking one in All had left it off
+  if (ownNoneBtn.dataset.arm !== '1') ownNoneBtn.disabled = !shownMatches().some((i) => isOwned(i));
+  // (v318.25: under its ⋯ at the right, unless that runs it off the left edge, as when ⋯ wraps to the left of a
+  // phone, or its words are large: then it starts 16 px in from the screen's edge)
+  mkMenu.style.left = mkMenu.style.right = '';
+  const mr = mkMenu.getBoundingClientRect();
+  if (mr.left < 16 && mkMenu.offsetParent) {
+    mkMenu.style.left = Math.round(16 - mkMenu.offsetParent.getBoundingClientRect().left) + 'px';
+    mkMenu.style.right = 'auto';
+  }
   const it = mkItems();
   if (focusFirst && it[0]) it[0].focus({ preventScroll: true });
   mkMenu.scrollIntoView({ block: 'nearest', behavior: 'instant' });

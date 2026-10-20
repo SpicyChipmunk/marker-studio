@@ -538,6 +538,8 @@ function sfSaveDesign(d) {
       : Promise.resolve(null)
   )
     .then(function (prevPl) {
+      // (v318.23: the guide's own autosave keeps a newer version's settings it doesn't know: plCarry, 60-persist)
+      if (prevPl && d.carry) d = Object.assign({}, d, { payload: d.carry(prevPl, d.payload) });
       return IDB.put('guide-' + id, d.payload || {}).then(function () {
         const meta = guideMeta(d, id);
         const ix = state.saved.findIndex((s) => s.id === id),
@@ -545,12 +547,8 @@ function sfSaveDesign(d) {
         if (ix < 0 && d.mustExist) return null;
         if (ix >= 0) state.saved[ix] = meta;
         else state.saved.unshift(meta);
-        if (!save(true)) {
-          meta.thumb = '';
-          if (save(!!d.quiet)) {
-            askPersist();
-            return id;
-          }
+        // (v318.23: storage full, save() itself leaves out the oldest thumbnails, this one's too if need be)
+        if (!save(!!d.quiet)) {
           const j = state.saved.indexOf(meta);
           if (prev) {
             state.saved[j] = prev;
@@ -565,6 +563,10 @@ function sfSaveDesign(d) {
         }
         askPersist();
         leaveDrop(id, leaveAt);
+        // (v318.25: a copy this page kept aside while this save ran stays, and now starts from the row this save
+        // wrote: else, the page stopped before its next save, the next start took that row for another tab's save and
+        // threw the copy away. Another tab's copy, or a later save from another tab, still fails the check)
+        leaveRebase(id, leaveAt, +meta.ts);
         return id;
       });
     })
@@ -594,6 +596,17 @@ function leaveDrop(id, upTo) {
     const j = JSON.parse(localStorage.getItem(LEAVE_KEY) || 'null');
     if (j && (id == null || j.id === id) && (upTo == null || !(j.seq > upTo)))
       localStorage.removeItem(LEAVE_KEY);
+  } catch (_) {}
+}
+// (v318.25: which page kept a copy aside, so only its own saves move the copy's base on)
+const _leaveTab = Math.random().toString(36).slice(2) + Date.now().toString(36);
+function leaveRebase(id, upTo, ts) {
+  try {
+    const j = JSON.parse(localStorage.getItem(LEAVE_KEY) || 'null');
+    if (j && j.id === id && j.tab === _leaveTab && j.seq > upTo && ts > 0 && +j.base !== ts) {
+      j.base = ts;
+      localStorage.setItem(LEAVE_KEY, JSON.stringify(j));
+    }
   } catch (_) {}
 }
 function leaveHash(s) {
@@ -647,6 +660,7 @@ function sfSaveDesignNow(d) {
       JSON.stringify({
         id: d.id,
         seq: ++_leaveN,
+        tab: _leaveTab,
         base: +e.ts || 0,
         name: d.name,
         W: d.W,
@@ -683,7 +697,10 @@ function sfLeaveApply() {
   IDB.hold(
     IDB.getNow('guide-' + j.id)
       .then(function (old) {
-        const pl = old && leaveFill(j.pl, old);
+        // (v318.23: a newer version's settings in the stored guide kept, as its autosave keeps them. SF is there by
+        // now: this runs once the database has answered, after the guide's code has loaded)
+        let pl = old && leaveFill(j.pl, old);
+        if (pl && window.SF && SF.plCarry) pl = SF.plCarry(old, pl);
         if (!pl || typeof pl.lmap !== 'string') return;
         return IDB.put('guide-' + j.id, pl).then(function () {
           // the row follows (new time: another tab open on it reloads it)
@@ -893,6 +910,11 @@ function _btnFlash(id, txt, back, ms) {
     if (x) {
       x.textContent = back;
       x.disabled = false;
+      // (v318.25: a button the keyboard was on, which the browser left as it was disabled: focus back on it, not the
+      // page's start)
+      if (x._kf && (!document.activeElement || document.activeElement === document.body))
+        x.focus({ preventScroll: true });
+      x._kf = false;
     }
   }, ms || 1600);
 }
@@ -905,6 +927,7 @@ function backupAll(btnId) {
     b0 = document.getElementById(bid),
     label = b0 ? b0.textContent : '';
   if (b0) {
+    b0._kf = document.activeElement === b0;
     b0.textContent = 'Preparing…';
     b0.disabled = true;
   }
@@ -1866,6 +1889,16 @@ function restoreKeptWords(x) {
       ' — add ' +
       (x.lost > 1 ? 'them' : 'it') +
       ' back from Home.';
+  // (v318.25: a guide waiting in Recently deleted that differs from the backup's: left there, the backup's beside it)
+  if (x.bin)
+    s +=
+      ' ' +
+      nWord(x.bin, 'guide') +
+      ' in Recently deleted ' +
+      (x.bin > 1
+        ? 'were left there (Put back brings them back as they were)'
+        : 'was left there (Put back brings it back as it was)') +
+      ', and the backup’s version added as “(from backup)”.';
   return s;
 }
 // restoreAny once the question about markers (if any) is answered; fin: the restore is over (called once)
@@ -1907,7 +1940,7 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
         dry: col ? col.dry || 0 : 0,
         buy: !!(col && col.buy),
         // (v308: the guides restored as they were in the file; ones added beside a guide here are said apart)
-        guides: Math.max(0, g - (copies || 0) - (x.lost || 0)),
+        guides: Math.max(0, g - (copies || 0) - (x.lost || 0) - (x.bin || 0)),
         dup: x.dup || 0,
         ahead: x.ahead || 0,
         bad: x.bad || 0,
@@ -1917,6 +1950,7 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
         copies: copies || 0,
         kept: x.kept || 0,
         lost: x.lost || 0,
+        bin: x.bin || 0,
         undo: col && col.undo ? col.undo : null,
         // (nothing came back: your markers matched the backup's, or were kept)
         same: !!(col && col.same),
@@ -1978,8 +2012,10 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
           label,
           1800,
         );
-        var msg = guideRestoreWords(col, Math.max(0, ok - (copies || 0) - (x.lost || 0)), x),
-          kw = restoreKeptWords({ copies: copies, kept: x.kept, lost: x.lost }) + (tw ? ' ' + tw : '');
+        var msg = guideRestoreWords(col, Math.max(0, ok - (copies || 0) - (x.lost || 0) - (x.bin || 0)), x),
+          kw =
+            restoreKeptWords({ copies: copies, kept: x.kept, lost: x.lost, bin: x.bin }) +
+            (tw ? ' ' + tw : '');
         if (cap) cap.textContent = (msg + kw).trim();
         if (done) {
           done(collection || ok || x.dup || x.ahead || x.bad || x.full ? got(ok, x, copies) : null);
@@ -1995,7 +2031,7 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
           );
           return;
         }
-        restoreToast(msg, copies || x.bad || x.kept || x.lost || x.ahead ? 7000 : 3500, col);
+        restoreToast(msg, copies || x.bad || x.kept || x.lost || x.bin || x.ahead ? 7000 : 3500, col);
       },
       prog,
     );
@@ -2006,6 +2042,8 @@ function dropKept(id) {
   state.saved = state.saved.filter(function (s) {
     return s.id !== id;
   });
+  // (v318.25: and not brought back by the merge with another tab's save, as an empty row once its guide is deleted)
+  forgetSaved(id);
   if (save(true))
     IDB.del('guide-' + id).catch(function () {
       return null;
@@ -2129,6 +2167,7 @@ function restoreGuideList(guides, _fts, done, prog) {
     full = 0,
     kept = 0,
     lost = 0,
+    bin = 0,
     ahead = 0;
   function same(js, lm, ids) {
     var k = 0;
@@ -2173,6 +2212,7 @@ function restoreGuideList(guides, _fts, done, prog) {
           openRep: openRep,
           kept: kept,
           lost: lost,
+          bin: bin,
         });
       // (a lost guide left beside the backup's copy is offered on Home, v304)
       if (lost && typeof lostRefresh === 'function') lostRefresh();
@@ -2251,6 +2291,7 @@ function restoreGuideList(guides, _fts, done, prog) {
           }
           var copy = false,
             isLost = false,
+            isBin = false,
             kid = null;
           // (v304) a guide stored under this id that no Library row points to (a lost guide: its row couldn't be read) may
           // be newer than the backup's: it is left as it is, to be added back from Home, and the backup's copy comes in
@@ -2264,6 +2305,9 @@ function restoreGuideList(guides, _fts, done, prog) {
               libPendList().some(function (x) {
                 return x.id === _gid;
               }),
+            // (v318.25: past its Undo, waiting in Recently deleted for a week since v318.1: its stored copy may hold
+            // more than the backup's, so it is read as a lost guide's is, and left there when it differs)
+            binned = pend && !(libPend && libPend.entry && libPend.entry.id === _gid),
             bust = !!_ex && _damaged.has(_ex.id),
             atRisk =
               !bust &&
@@ -2273,7 +2317,7 @@ function restoreGuideList(guides, _fts, done, prog) {
           // (v318 review) a guide called damaged as it opened whose stored section map is a whole PNG may only have
           // failed to open for want of memory: it is kept as "… (before restore)" too, when it differs from the
           // backup's, rather than replaced unseen by an older copy
-          ((!_ex && _gid && !pend) || atRisk || bust
+          ((!_ex && _gid && (!pend || binned)) || atRisk || bust
             ? IDB.get('guide-' + (_ex ? _ex.id : _gid)).catch(function () {
                 return null;
               })
@@ -2284,7 +2328,8 @@ function restoreGuideList(guides, _fts, done, prog) {
               if (!_ex && differs) {
                 _gid = _newGuideId();
                 _nm = _cn;
-                isLost = true;
+                if (binned) isBin = true;
+                else isLost = true;
                 return;
               }
               if (_ex && !bust && (+_ex.ts || 0) > (+g.ts || 0)) {
@@ -2373,6 +2418,7 @@ function restoreGuideList(guides, _fts, done, prog) {
                   if (bust) _damaged.delete(_ex.id);
                   if (kid) kept++;
                   if (isLost) lost++;
+                  else if (isBin) bin++;
                   else if (copy) copies++;
                   // (the guide open on the Guide screen, replaced by the backup's newer copy: said in the summary, v289)
                   else if (_ex && open && open.id === id) openRep = _ex.name || open.name;

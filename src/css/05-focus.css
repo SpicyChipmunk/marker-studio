@@ -391,6 +391,34 @@ button.sffoccols::after {
   margin-top: 8px;
   color: #ffb454;
 }
+/* (v318.25) the short card, when the full one leaves some of the sections under it wherever it goes (handFrame): no big
+   swatch, "Pick up" and the marker on one line, and not "shown on the picture" */
+.sfhtight .sfhcard {
+  padding: 8px 14px 10px;
+}
+.sfhtight .sfhsw,
+.sfhtight .sfhshown {
+  display: none;
+}
+.sfhtight .sfhlbl {
+  display: inline;
+}
+.sfhtight .sfhlbl::after {
+  content: ' ';
+}
+.sfhtight .sfhname {
+  display: inline;
+  margin: 0;
+  font-size: var(--t-md);
+}
+.sfhtight .sfhsub {
+  margin-top: 2px;
+}
+/* (beside the sections, half as wide: a tall picture at its smallest can sit next to it on a small phone) */
+.sfhtight.sfhleft .sfhcard,
+.sfhtight.sfhright .sfhcard {
+  width: min(320px, 50%);
+}
 /* (v315: a phone held sideways: a shorter card, so it fits between the bars above the zoom buttons) */
 @media (max-height: 430px) {
   .sfhcard {
