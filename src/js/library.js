@@ -738,8 +738,8 @@ function renderRecent() {
           '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a photo of a colouring page into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a photo</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button><button type="button" class="homelink hcalt hcpdf" data-start="pdf">Page in a PDF? Open the PDF</button></div></div>';
       }
       var own = cel.querySelector('.hcown'),
-        // (v309.1: the colours; a set's Colorless Blender builds nothing. v309.2: said as colours, as Home counts
-        // the blender among your markers)
+        // (v309.1: the colours; a set's Colorless Blender builds nothing. v318.27: Home's Markers card counts the
+        // same colours, the blender aside)
         // (v310.2: what guides use: not those marked dry, said as left out)
         ink = inkKeys([...state.owned]),
         nDry = ink.filter(function (k) {

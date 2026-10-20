@@ -107,6 +107,8 @@ function mpSave() {
     bsCopy: Object.assign({}, _blendSel),
     bst: balStat,
     bstCopy: Object.assign({}, balStat),
+    adjL: adjLeft,
+    adjLCopy: Object.assign({}, adjLeft),
     held: heldSh,
     heldCopy: Object.assign({}, heldSh),
     heldVer: _heldVer,
@@ -146,6 +148,8 @@ function mpRestore(s) {
   _blendSel = s.bs;
   mpRefill(s.bst, s.bstCopy);
   balStat = s.bst;
+  mpRefill(s.adjL, s.adjLCopy);
+  adjLeft = s.adjL;
   // (the held shading only through heldReset, whose count the caches go by: a count never goes back, v304)
   if (_heldVer !== s.heldVer || heldSh !== s.held) heldReset(s.heldCopy);
   mpRefill(s.phNone, s.phNoneCopy);

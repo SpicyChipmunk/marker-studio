@@ -918,7 +918,8 @@ function morePatternSum() {
     return bits.length ? bits.join(' \u00b7 ') : 'Direction, start colour, scatter';
   }
   if (family === 'random') {
-    if (noAdj) bits.push('Kept apart');
+    // (v318.27: not all of them, when too few different markers left some alike: the note under the box says how many)
+    if (noAdj) bits.push(adjLeft[String(zoneCur)] ? 'Mostly kept apart' : 'Kept apart');
     if (balance === 'mixed' && noRep) bits.push('No repeats');
     return bits.length ? bits.join(' \u00b7 ') : 'Touching sections, repeats';
   }

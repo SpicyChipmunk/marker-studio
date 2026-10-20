@@ -15,7 +15,7 @@ test('Home names the app once, and the header names the brands you own', async (
   const count = await page.evaluate(() => [...document.querySelectorAll('body *')].filter((e) => e.offsetParent && e.children.length === 0 && /^Marker Studio$/.test(e.textContent.trim())).length);
   assert.equal(count, 1, '"Marker Studio" shows once');
   assert.equal(await page.textContent('.head .set'), 'Ohuhu · your collection');
-  await page.evaluate(() => { presetMkeys(MARKER_SETS[14]).forEach((k) => state.owned.add(k)); save(); fullRender(); });
+  await page.evaluate(() => { presetMkeys(MARKER_SETS.find((p) => p.n === 'Ciao 12')).forEach((k) => state.owned.add(k)); save(); fullRender(); });
   assert.equal(await page.textContent('.head .set'), 'Ohuhu + Copic · your collection');
   assert.deepEqual(errors, []);
 });
@@ -243,7 +243,7 @@ test('v285: with no guides, Home is the intro line, New colouring guide and the 
   assert.equal(await page.isVisible('#homeNew'), false);
   const c = await hrect(page, '#homeCont'), g = await hrect(page, '.homegrid');
   assert.ok(c.right <= g.left + 1 && Math.abs(c.top - g.top) < 24, 'side by side: ' + JSON.stringify([c, g]));
-  // (v309.2: the colours, as a set's Colorless Blender builds nothing and Home's count includes it)
+  // (v309.2: the colours, as a set's Colorless Blender builds nothing; v318.27: Home's Markers card counts them too)
   assert.match(await page.textContent('#homeCont .hcstart'), /Built from your \d+ colours\./);
   // the whole sample page in the picture, not cut off
   const fit = await page.evaluate(() => { const i = document.querySelector('#homeCont .hcstart img'), b = i.parentElement.getBoundingClientRect(), r = i.getBoundingClientRect(); return r.top >= b.top - 1 && r.bottom <= b.bottom + 1 && i.complete; });

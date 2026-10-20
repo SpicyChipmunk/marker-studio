@@ -24,8 +24,8 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
 
 - **Ohuhu and Copic markers only.**
   - **Ohuhu:** 364 markers, among them every colour in the Honolulu sets (24 up to the complete 320) and in the
-    48 Mid-tone, 104 Colors, 36 Skin Tones, 36 Gray Tones, 48 Pastel and 24 Portrait sets. Other Ohuhu markers with
-    these codes work too, and Scan also knows Ohuhu's older codes.
+    48 Mid-tone, 104 Colors, 36 Skin Tones, 36 Gray Tones, 48 Pastel, 24 Portrait and 6 Skin Tones sets. Other Ohuhu
+    markers with these codes work too, and Scan also knows Ohuhu's older codes.
   - **Copic:** all 358 markers, by the codes Sketch, Ciao and Classic share.
   - Other brands aren't supported yet.
 - **Colours on screen are approximate.** Screens and inks differ. **Markers › Print a swatch chart** makes a page
@@ -38,8 +38,9 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
 ## Getting a picture in
 
 - Clear, closed lines work best: a page downloaded from the internet, a scan, or a photo of a page.
-- **A colouring page that came as a PDF:** in Guide, tap **Open the PDF** (under Choose a photo) and choose it. If it
-  won't open, or comes out blank, take a screenshot of the page and choose the screenshot.
+- **A colouring page that came as a PDF:** in Guide, tap **Open the PDF** (under Choose a photo), or **⋯ › Open a
+  PDF** with a guide open, and choose it. If it won't open, or comes out blank, take a screenshot of the page and
+  choose the screenshot.
 - **Photographing a page:**
   - Lay it flat and smooth out any curl.
   - Use even light, such as daylight near a window. Keep your shadow, your hand and shiny glare off the page.

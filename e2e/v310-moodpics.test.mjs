@@ -195,6 +195,12 @@ test('nothing is said, saved or made a step while the pictures are made; the gui
       characterData: true,
       subtree: true,
     });
+    // (v318.27: the toast's element is made with the first toast; since v318.26 the welcome shows none, so it may not
+    // be there yet: made here, empty, as the first toast would)
+    if (!document.getElementById('msToast')) {
+      toastShow('', 1);
+      document.getElementById('msToast').classList.remove('on');
+    }
     const tst = document.getElementById('msToast');
     new MutationObserver(() => tst.textContent && __said.push('toast: ' + tst.textContent)).observe(tst, {
       childList: true,

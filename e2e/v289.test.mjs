@@ -407,7 +407,9 @@ test('sheets: the markers list counts its shading markers in the title; a sidewa
     const { page, errors, ctx } = await openApp({ width: 320, height: 568 });
     await sampleGuide(page);
     await page.click('.sftabbtn[data-t="share"]'); await page.click('#sfPrint'); await page.waitForSelector('#sfSheet.sfprsh'); await idle(page);
-    assert.match(await page.textContent('#sfPrSum'), /^\d+ pages · Letter · Codes\d+ small sections on \d+ close-up pages?\.$/);
+    // (v318.27: the close-ups note under Pages, in full, and the summary one line)
+    assert.match(await page.textContent('#sfPrSum'), /^\d+ pages · Letter · Codes$/);
+    assert.match(await page.textContent('#sfPrWhat'), /colour key\.\d+ small sections are on \d+ close-up pages?\./);
     assert.deepEqual(errors, []);
     await ctx.close();
   }

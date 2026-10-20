@@ -44,7 +44,7 @@ Marker Studio isn't affiliated with or endorsed by Ohuhu or Copic.
   Taken at an angle? The app finds the page and straightens it, but a steep angle loses detail at the far end.
 - If the app isn't sure where the page is, drag its corners, then tap **Straighten**.
 - Clear, dark, closed lines work best. Scans and screenshots work too, and a page that came as a PDF opens with
-  **Open the PDF** (under Choose a photo).
+  **Open the PDF** (under Choose a photo, or **⋯ › Open a PDF** with a guide open).
 - If some sections come out wrong, **← Edit sections** lets you merge, split or add them.
 
 ## Adding your markers
@@ -70,8 +70,8 @@ Marker Studio isn't affiliated with or endorsed by Ohuhu or Copic.
 ## What it covers, and its limits
 
 - **Ohuhu:** 364 markers, among them every colour in the Honolulu sets (24 up to the complete 320) and in the 48
-  Mid-tone, 104 Colors, 36 Skin Tones, 36 Gray Tones, 48 Pastel and 24 Portrait sets. **Copic:** all 358 markers, by
-  the codes Sketch, Ciao and Classic share. Other brands aren't supported yet.
+  Mid-tone, 104 Colors, 36 Skin Tones, 36 Gray Tones, 48 Pastel, 24 Portrait and 6 Skin Tones sets. **Copic:** all
+  358 markers, by the codes Sketch, Ciao and Classic share. Other brands aren't supported yet.
 - **Colours on screen are approximate:** screens and inks differ. **Markers › Print a swatch chart** makes a page you
   can colour in to compare.
 - Very detailed pages, hatched or already-coloured pages, and faint or broken lines can give poor sections.

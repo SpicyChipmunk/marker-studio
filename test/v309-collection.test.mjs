@@ -78,7 +78,7 @@ test('measured: with the right count and 3 caps, the set is first almost always 
 });
 
 // v309.1: a cap in none of the brand's sets (a colour sold on its own, such as Ohuhu B04) says nothing about the set:
-// it doesn't count. The Colorless Blender comes with most Ohuhu sets (not the 24 or 24 Portrait), so it counts.
+// it doesn't count. The Colorless Blender comes with most Ohuhu sets (not the 24, nor the 6 Skin Tones), so it counts.
 test('a cap in no set is left out of the count; with only such caps, nothing fits; the blender comes with the sets', () => {
   const caps = [key('Ohuhu', 'B04'), key('Ohuhu', 'R014'), key('Ohuhu', 'BG314')];
   for (const p of app.__eval("MARKER_SETS.filter((p) => p.b === 'Ohuhu').map((p) => p.n)"))

@@ -1192,6 +1192,9 @@ function openMenu() {
   let b =
     '<div class="sfmenu" role="group" aria-labelledby="sfMh1"><div class="sfmh" id="sfMh1">New</div>' +
     it('pick', 'image', 'Choose a photo') +
+    // (v318.27) a page that came as a PDF: the start card's Open the PDF shows only with no guide open, and the photo
+    // picker takes pictures only, so with a guide open a phone had no way to one
+    it('pdf', 'file-down', 'Open a PDF') +
     it('sample', 'sparkles', 'Try the sample') +
     it('lib', 'library-big', 'Open from Library') +
     it('import', 'file-down', 'Import a guide') +
@@ -1238,6 +1241,11 @@ function menuDo(m) {
     if (photoTips(null)) return;
     _pickCb = null;
     if (fileEl) fileEl.click();
+  } else if (m === 'pdf') {
+    // (no photo tips: they're for photos)
+    const pdfEl = document.getElementById('sfPdfFile');
+    _pickCb = null;
+    if (pdfEl) pdfEl.click();
   } else if (m === 'sample') loadSample();
   else if (m === 'lib') {
     if (api.openLibrary) api.openLibrary();

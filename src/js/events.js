@@ -1282,6 +1282,9 @@ const OHUHU_SETS = {
     'Y00 Y03 Y06 Y07 Y26 Y42 YR00 YR03 YR05 YR06 YR33 YR45 YR47 YR56 YR57 YR58 E22 R25 R50 RV01 RV23 RV35 V32 V34 V38 BV26 BV31 BV38 B02 B06 B310 BG04 BG09 BG21 G24 G36 G41 G43 G49 YG06 YG07 YG66 CG02 BGY02 YGY11 WG10 GG03 GG10',
   '24portrait':
     'Y415 YR02 YR04 YR09 YR17 YR33 YR34 YR37 YR38 YR313 YR47 YR515 E47 E49 E511 E513 E66 E612 E615 E75 E711 E81 E814 R16',
+  // (v318.27) Ohuhu's 6 Skin Tones, sold on its own (no blender listed): Ohuhu's page gives the old codes E010 E470 E020
+  // E110 E090 E130, these six in the new ones (Dick Blick's "EG14" is E614, old E130).
+  '6skin': 'YR00 YR05 YR06 YR312 YR55 E614',
 };
 // (v318.26) Skin tones: Change colour's row in a guide (84-popovers) and Markers' search "skin" (finder.js). Ohuhu's
 // own 36 Skin Tones set, and for Copic 36: the 21 from Copic's own skin picks (the Ciao 6 Skin set, the Skin/Portrait
@@ -1346,6 +1349,7 @@ const MARKER_SETS = [
   { b: 'Ohuhu', n: '48 Pastel - Sweetness', oh: '48pastelS' },
   { b: 'Ohuhu', n: '48 Pastel - Blossoming', oh: '48pastelB' },
   { b: 'Ohuhu', n: '24 Portrait', oh: '24portrait' },
+  { b: 'Ohuhu', n: '6 Skin Tones', oh: '6skin' },
   { b: 'Copic', n: 'Ciao 12', c: 'BV08 V09 RV04 R29 YR07 Y06 YG06 G17 BG09 B29 E29 100' },
   {
     b: 'Copic',
@@ -1429,7 +1433,8 @@ function normCode(x) {
   return x.replace(/^([CW])(\d)/, '$1-$2');
 }
 // (v309.1) The Ohuhu sets that come with a Colorless Blender (0), as Ohuhu's pages for the Honolulu small and large sets
-// say ("+ 1 Colorless Blender"): added with the set. Not the 24 (sold only inside the 48) nor 24 Portrait, unconfirmed.
+// say ("+ 1 Colorless Blender"): added with the set. Not the 24 (sold only inside the 48). (v318.27) 24 Portrait too, as
+// Ohuhu's and Dick Blick's pages for its 24 Skin Tone Colors say; the 6 Skin Tones lists none.
 // The blender isn't a colour: a set's size (presetSize) and what's said as added leave it out (NOINK, core.js).
 const OHUHU_BLENDER = new Set([
   '48',
@@ -1444,6 +1449,7 @@ const OHUHU_BLENDER = new Set([
   '36gray',
   '48pastelS',
   '48pastelB',
+  '24portrait',
 ]);
 function inkKeys(keys) {
   return keys.filter(function (k) {

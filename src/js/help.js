@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.27',
+    t: 'Keep touching sections clearly different now keeps its word on every Shuffle, with Main colour and No repeats too, and says so when you have too few markers for it. Ohuhu’s 6 Skin Tones set is in the set list; if your 24 Portrait came with a Colorless Blender, tick the blender in Markers. On a phone, Print’s Paper choices come straight after Pages. With a guide open, ⋯ › Open a PDF.',
+  },
+  {
     v: 'v318.26',
     t: 'Leave white: tap a section, then Leave white, and it stays the paper through Shuffle, Mood, patterns and zones (tap it, then Colour it, to bring its colour back). A marker’s details show the lighter and darker markers it blends with. Change colour has a Skin tones row, and searching “skin tones” in Markers finds them. Searching an older cap’s printed name finds its marker.',
   },

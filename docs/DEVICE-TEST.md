@@ -102,7 +102,18 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.26
+## New in this release: v318.27
+
+- [ ] ★ Random, Main colour, 8 markers, **Keep touching sections clearly different** on → Shuffle 10 times: no two
+      touching sections look alike, or a note under the box says how many couldn't be kept apart. Set markers to 2 →
+      the note shows.
+- [ ] ★ On a phone if you have one (or the iPad's Print sheet): Pages, Paper, Labels in that order; the close-ups count
+      under the Pages line.
+- [ ] With a guide open, ⋯ › **Open a PDF** → the Files picker for PDFs; a PDF goes on to its sections.
+- [ ] Home's Markers card says 120 after adding Honolulu 120 in the welcome (the blender isn't counted there now).
+- [ ] Markers › Add a set: **6 Skin Tones** is in the Ohuhu list; 24 Portrait now comes with the blender.
+
+## v318.26
 
 - [ ] ★ In a guide, tap a section › **Leave white** → it's white, not in the key; Shuffle, Mood, another pattern and
       Print → it stays white. Tap it › **Colour it** → its marker is back. Undo / Redo both. The tap box's three buttons

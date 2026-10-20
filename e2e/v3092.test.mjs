@@ -16,7 +16,7 @@ const visible = (page, id) =>
   page.evaluate((id) => document.getElementById(id).getClientRects().length > 0, id);
 const KEY = 'ohuhu-hb320-picker-v3';
 
-test('a set from the welcome: its blender is said; Home counts it, its guide card counts colours', async () => {
+test('a set from the welcome: its blender is said; Home and its guide card count colours', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await page.click('#wcHaveSet');
   await page.check('#wcSets input[data-i="3"]');
@@ -29,7 +29,8 @@ test('a set from the welcome: its blender is said; Home counts it, its guide car
   );
   await page.click('#wcLook');
   await idle(page);
-  assert.equal(await page.textContent('#homeView .hcsub'), '121 markers');
+  // (v318.27: Home counts the colours too, as the guide's card and the welcome do; v309.2 had counted the blender)
+  assert.equal(await page.textContent('#homeView .hcsub'), '120 markers');
   assert.match(await page.textContent('#homeCont .hcstart'), /Built from your 120 colours\./);
   assert.deepEqual(errors, []);
 });

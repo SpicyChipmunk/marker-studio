@@ -56,7 +56,10 @@ function chrome() {
     {
       const hc = document.querySelector('.homecard[data-go="collection"]');
       if (hc) {
-        const n = state.owned.size;
+        // (v318.27) the colours, as the guide's card ("Built from your 120 colours") and the welcome ("120 markers
+        // added") count them: a set's Colorless Blender had made Home say 121 (v309.2 counted it here). Only a
+        // blender owned: it, still counted, so the card doesn't ask to set up markers that are there
+        const n = inkKeys([...state.owned]).length || state.owned.size;
         hc.classList.toggle('attn', !n);
         const sb = hc.querySelector('.hcsub');
         if (sb) sb.textContent = n ? n + (n === 1 ? ' marker' : ' markers') : 'Set up your markers';

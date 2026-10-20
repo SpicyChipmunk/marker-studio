@@ -507,10 +507,14 @@ function balPlan() {
 // what each role would have had by the sections' sizes alone, and what it has painted, the last time each zone was laid
 // (for the note when the shares miss: the sizes, or too few markers to keep touching sections apart)
 let balStat = {};
+// (v318.27) how many sections Keep touching sections clearly different couldn't keep clear of every section they touch,
+// the last time each zone was laid (too few different markers for them: adjRepair), for the note under the box
+let adjLeft = {};
 // (what the last laying worked out, which the controls say: another picture or guide, or Undo, has none of it yet; the
 // one before told of the guide before, v304)
 function layStatReset() {
   balStat = {};
+  adjLeft = {};
   lastPoolN = 0;
 }
 function balZoneKey() {
@@ -743,6 +747,8 @@ function buildBalance(cl, p) {
         }
     }
   }
+  // (v318.27: a section laid with no marker clear of its neighbours, for the repair after: adjRepair)
+  let rough = false;
   const a = adj || (adj = buildAdj()),
     uses = {},
     alike = balAlike(),
@@ -811,7 +817,10 @@ function buildBalance(cl, p) {
       tryR(function (x) {
         return notSame(x) && clear(x);
       });
-    if (!m) tryR(notSame);
+    if (!m) {
+      rough = true;
+      tryR(notSame);
+    }
     if (!m && acc && prefs[0] !== 'a' && area(l) <= accHi) {
       prefs.push('a');
       tryR(notSame);
@@ -824,6 +833,27 @@ function buildBalance(cl, p) {
     uses[m.mkey] = (uses[m.mkey] || 0) + 1;
     got[roleOf[m.mkey]] += area(l);
   });
+  // (v318.27) what the laying couldn't keep clear, put right (adjRepair): first within each section's own role, swaps
+  // too, so the shares stay as they were; only then from the other of the main colour and the second (an accent's
+  // from either). Never an accent's marker for a main or second section, or the accent grows past its share.
+  let left = 0;
+  if (noAdj && a && rough) {
+    const rm = function (r) {
+      return p.roles[r] ? p.roles[r].markers : [];
+    };
+    left = adjRepair(assign, free, a, function (l, m) {
+      return [rm(roleOf[m.mkey] || 'm')];
+    });
+    if (left)
+      left = adjRepair(assign, free, a, function (l, m) {
+        const r = roleOf[m.mkey] || 'm',
+          L = [rm(r)];
+        if (r === 'a') L.push(rm('m'), rm('s'));
+        else L.push(rm(r === 'm' ? 's' : 'm'));
+        return L;
+      });
+  }
+  adjLeft[balZoneKey()] = left;
   balStat[balZoneKey()] = { plan: plan, total: total, big: big, all: order.length };
   assignData = { assign: assign, order: order, N: order.length, base: Object.assign({}, assign) };
   applyLocks();
@@ -917,7 +947,9 @@ function buildNoRep(cl, pool) {
     const u = uses[m.mkey] || 0;
     if (u) (byUse[u] = byUse[u] || []).push(m);
   });
-  let low = 0;
+  let low = 0,
+    // (v318.27: a section laid with no marker clear of its neighbours, for the repair after: adjRepair)
+    rough = false;
   const lowUp = function () {
     while (low < byUse.length && !(byUse[low] && byUse[low].length)) low++;
   };
@@ -967,11 +999,15 @@ function buildNoRep(cl, pool) {
           )
         : [];
       const ns = c.length ? c : some(g, notSame, K);
-      if (ns.length) cand = ns;
+      if (ns.length) {
+        cand = ns;
+        if (!c.length) rough = true;
+      }
     }
     // (v318.10: none of the least used will do: the least used of the rest of the pool that isn't on a neighbour, and
     // only when every marker is, the one on the fewest of them)
     if (!cand) {
+      rough = true;
       const ok = pool.filter(notSame);
       if (ok.length) {
         let lo = Infinity;
@@ -1019,6 +1055,13 @@ function buildNoRep(cl, pool) {
     (byUse[was + 1] = byUse[was + 1] || []).push(m);
     put(l, m);
   });
+  // (v318.27: what the laying couldn't keep clear, put right where any marker will do: adjRepair)
+  adjLeft[balZoneKey()] =
+    noAdj && a && rough
+      ? adjRepair(assign, free, a, function () {
+          return [pool];
+        })
+      : 0;
   assignData = { assign: assign, order: order, N: order.length, base: Object.assign({}, assign) };
   applyLocks();
 }
@@ -1350,7 +1393,8 @@ function balHTML(mf) {
   h +=
     '<label class="sfchk sfc-check sfc-flex sfc-mt10"><input type="checkbox" id="sfNoAdj"' +
     (noAdj ? ' checked' : '') +
-    '> Keep touching sections clearly different</label>';
+    '> Keep touching sections clearly different</label>' +
+    adjNoteHTML();
   if (balance === 'mixed') {
     h +=
       '<label class="sfchk sfc-check sfc-flex sfc-mt8"><input type="checkbox" id="sfNoRep"' +
@@ -1376,6 +1420,20 @@ function balHTML(mf) {
   }
   if (mf) h += '</div>';
   return h;
+}
+// (v318.27) under Keep touching sections clearly different: the sections it couldn't keep clear of every section they
+// touch on the last laying (a section touching many others on a small set, where every marker is alike to one of
+// theirs), said, rather than the box claiming it. Nothing when they all are, or after an Undo (layStatReset).
+function adjNoteHTML() {
+  const n = noAdj ? adjLeft[String(zoneCur)] || 0 : 0;
+  if (!n) return '';
+  return (
+    '<div id="sfNoAdjNote" class="sfc-note sfc-mt6">' +
+    (n === 1
+      ? '1 section couldn’t be kept clearly different from every section it touches'
+      : n + ' touching sections couldn’t be kept clearly different') +
+    ': too few different markers.</div>'
+  );
 }
 // the sheet a part of the bar opens: Auto, then each colour family there is (a strip of the markers and how many);
 // one that can't fill the role even borrowing from next to it is shown, greyed

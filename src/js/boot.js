@@ -373,7 +373,8 @@ document.addEventListener('keydown', function (e) {
   // markers added: step 2 says how many, and asks if there's anything else
   // (v309.1: none new, a set or caps already yours, says so, not "0 more markers added")
   function added(n, names, del, set) {
-    var all = state.owned.size,
+    // (v318.27: all the colours owned, as Home's Markers card counts them; the blender aside)
+    var all = inkKeys([...state.owned]).length || state.owned.size,
       // (the first markers: all the colours owned are these; a set's blender aside)
       first = setKeys([...state.owned]).length === n;
     // (v309.1: added on "Anything else?" itself (Scan's toast Open): what it said, for Undo to put back)
@@ -394,7 +395,7 @@ document.addEventListener('keydown', function (e) {
             t2: $('wcT2').textContent,
             msg: $('wcDone').textContent,
           };
-    // (v309.2: the Colorless Blender a set brought is said, so Home's count, which includes it, adds up)
+    // (v309.2: the Colorless Blender a set brought is said apart; v318.27: Home counts colours, as said here)
     var bl = names && ownBlender;
     step2(
       (names

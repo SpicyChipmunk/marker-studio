@@ -67,7 +67,8 @@ test('labels: Codes, Numbers or None on the colouring page, light grey unless Da
 
   // (v318.1: a line under What to print says what it prints)
   const what = () => page.textContent('#sfPrWhat');
-  assert.equal(await what(), 'Your picture with light codes to colour on, then the colour key.');
+  // (v318.27: then, on a line of its own, what the close-ups hold)
+  assert.match(await what(), /^Your picture with light codes to colour on, then the colour key\.(\d+ small sections? |$)/);
   const codes = await probe(page, 'codes');
   // (v284: every section is labelled on the page, or has a dot there and is labelled in a close-up; none overlap)
   const nSec = Object.keys(await page.evaluate(() => __mstest.assignData.assign)).length, onP1 = codes.onArt.filter((t) => !/^[A-Z]{1,2}$/.test(t));

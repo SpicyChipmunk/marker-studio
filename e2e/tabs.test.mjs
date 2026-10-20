@@ -194,28 +194,30 @@ test('Share: Show it off, Print…, Plan & keep; the Print sheet opens under the
   assert.equal(Math.round(cv.height), 380, 'the picture at its floor size');
   assert.ok(cv.top >= -1, 'the picture stays on screen');
   assert.equal(await page.textContent('#sfSheetT'), 'Print');
-  assert.deepEqual(await page.$$eval('#sfSheet [role="group"]', (g) => g.map((x) => x.getAttribute('aria-label'))), ['What to print', 'Labels on the picture', 'Paper size']);
+  assert.deepEqual(await page.$$eval('#sfSheet [role="group"]', (g) => g.map((x) => x.getAttribute('aria-label'))), ['What to print', 'Paper size', 'Labels on the picture']);
   assert.ok(await page.isVisible('#sfPdfDark') && await page.isVisible('#sfPdfBlend'));
   // (v318.26: the foot's own buttons; the summary's paper is a link to the Paper choices)
   assert.deepEqual(await page.$$eval('#sfSheet .sfshft > button', (b) => b.map((x) => x.textContent)), ['Cancel', 'Download PDF']);
   // the summary follows the choices, and its page count matches the PDF's
-  const sum = () => page.textContent('#sfPrSum');
+  const sum = () => page.textContent('#sfPrSum'), what = () => page.textContent('#sfPrWhat');
   const count = async () => { const n = await page.evaluate(() => __mstest.buildPDFPages().length); const m = /^(\d+) pages?/.exec(await sum()); return [+m[1], n]; };
-  // (v284: with any close-ups of small sections, how many and on how many pages)
+  // (v284: with any close-ups of small sections, how many and on how many pages; v318.27: said under Pages, #sfPrWhat)
   const CL = '(\\d+ small sections? (is|are) on \\d+ close-up pages?\\.( Numbers would fit more of (it|them) on page 1\\.)?)?$';
-  assert.match(await sum(), new RegExp('^\\d+ pages · Letter · Codes' + CL));
+  assert.match(await sum(), /^\d+ pages · Letter · Codes$/);
+  assert.match(await what(), new RegExp('to colour on, then the colour key\\.' + CL));
   let [said, real] = await count(); assert.equal(said, real, 'Letter, codes');
   await page.click('[data-plabels="numbers"]');
-  assert.match(await sum(), new RegExp('^\\d+ pages · Letter · Numbers' + CL));
+  assert.match(await sum(), /^\d+ pages · Letter · Numbers$/);
   await page.click('[data-paper="a4"]');
-  assert.match(await sum(), new RegExp('^\\d+ pages · A4 · Numbers' + CL));
+  assert.match(await sum(), /^\d+ pages · A4 · Numbers$/);
   await page.check('#sfPdfBlend');
   [said, real] = await count(); assert.equal(said, real, 'A4 with blend companions');
   await page.click('[data-paper="a5"]');
   [said, real] = await count(); assert.equal(said, real, 'A5 with blend companions');
   await page.click('[data-pwhat="ref"]');
   // (v318.1: with labels, the picture in colour with them, then the key)
-  assert.match(await sum(), new RegExp("^\\d+ pages? · A5 · Key \\+ reference · Numbers in colour" + CL));
+  assert.match(await sum(), /^\d+ pages? · A5 · Key \+ reference · Numbers in colour$/);
+  assert.match(await what(), new RegExp('the colour key: to read beside the page you’re colouring\\.' + CL));
   [said, real] = await count(); assert.equal(said, real, 'Key + reference');
   assert.deepEqual(await page.evaluate(() => ['ms-pdf-labels', 'ms-paper', 'ms-pdf-what', 'ms-pdf-blend'].map((k) => localStorage.getItem(k))), ['numbers', 'a5', 'ref', '1']);
   // Cancel closes it, focus goes back to Print…, and the choices are there next time

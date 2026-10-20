@@ -2236,3 +2236,42 @@ them; then merged and tested together.
   for the new words or behaviour: tasks-card, v31825-x3, colour-along, help, v318-ocr, v31823, tabs, v309-1, v3092,
   v318, v3091-d4, v3083-data, pins-and-change-colour, paint, v289, test/style-fields, test/v31822-third. Cache bumped to
   `marker-studio-v318.26`.
+
+# Changes — v318.27 (Random keeps touching sections apart; the skin sets; Print's Paper on a phone)
+
+The rest of the list after v318.26, planned and pressure-tested, then built by two builders and merged.
+
+- **Random's "Keep touching sections clearly different" now holds roll after roll.** Measured (100 rolls a page, the
+  app's own adjacency; a clash = two touching sections with one marker or under ΔE2000 10): Main colour left alike
+  pairs on 74 of 100 rolls of the sample at 16 markers and on every roll at 8; No repeats on up to every roll of a big
+  page; Mixed only at 8 markers (≤ 3%). The e2e passed on a lucky seed. The cause was the order the markers are laid in
+  painting itself into a corner. A repair after the laying puts right any section left alike to one it touches (the
+  least-used marker clear of all its neighbours, or a one-step swap), in Mixed, Main colour (within its role first; an
+  accent's marker never goes to a Main or Second section) and No repeats: 0 clashing rolls in 10,500 tried on the
+  benchmark's pages, Main colour's share unchanged. It runs only when a section was laid with no clear marker, so a
+  roll that already kept the rule, or the rule off, lays exactly as before (colour benchmark: every row identical,
+  digest b8237b31ced3). Where too few different markers make it impossible, a note under the box says how many
+  sections, and More options reads "Mostly kept apart". (bench/colour-baseline.json was already out of date at
+  v318.26 — 751 of 9,880 rows — before this; to be refreshed as its own reviewed step, with rows for the rule on in
+  Main colour and No repeats.)
+- **Ohuhu's 6 Skin Tones set** (YR00, YR05, YR06, YR312, YR55, E614; Dick Blick's "EG14" is E614: Ohuhu's own
+  old-code pages), in the set list, Find my set, Help, README and TESTERS. **24 Portrait** checked against Dick Blick's
+  list (all 24, same order) and Ohuhu's old/new code pages (15 of 24): right; it comes with a Colorless Blender, now
+  added with it (owners from before: tick it). Scan reads Ohuhu's shop name "Honolulu 24 Skin Tone Colors" as 24
+  Portrait (it had added Honolulu 24's markers), and "6 Skin Tone" as the new set.
+- **Print on a phone**: the rows are Pages, Paper, Labels, and the close-ups count moved from the foot's summary to
+  under the Pages line, so Paper's buttons are on the sheet's first screen at 390 × 844 and 375 × 667, also at 1.6×
+  text (at 320 × 568 its label and the summary's link are). Screen readers no longer hear the close-ups count on each
+  tap (the summary line still is).
+- **One marker count**: Home's Markers card counts colours, the blender aside (120 with Honolulu 120 and its blender),
+  as the guide and the welcome do; reverses v309.2, which counted it there. Counts of what's stored, shown, printed or
+  cleared stay as they are.
+- Home's button reads **New guide from a photo** (what it does once a guide is in progress, phone or iPad); the guide's
+  ⋯ menu has **Open a PDF** (a phone with guides made had no way to open one).
+- **v318.26's run on GitHub**: v310-moodpics and straighten failed in both engines because they expected the toast's
+  element to exist: it's made by the first toast, and since v318.26 the welcome shows none. The app was right; the
+  tests now allow for it. One WebKit test (v3189-detail's Stop during a closer read, a 120 s out-of-memory simulation)
+  passed on its retry: slowness on GitHub, no app fault found.
+- **Tests:** test/v31827-v1 (5), -v2 (5); e2e/v31827-v1 (3), -v2 (3); changed on purpose: tabs, v289, print,
+  guide-header, v3092 (120 markers), home (a set found by name), test/sets, v310-moodpics, straighten. Cache bumped to
+  `marker-studio-v318.27`.

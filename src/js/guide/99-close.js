@@ -986,11 +986,16 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       guideWhite: guideWhite,
       resetForNewPicture: resetForNewPicture,
       colours: ctlPlanColours,
+      // (v318.27: the Pattern tab's, as Colours')
+      pattern: ctlPlanPattern,
       get planStack() {
         return planStack;
       },
       get balStat() {
         return balStat;
+      },
+      get adjLeft() {
+        return adjLeft;
       },
       get lastPoolN() {
         return lastPoolN;

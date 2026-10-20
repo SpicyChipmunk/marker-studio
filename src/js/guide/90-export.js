@@ -598,7 +598,11 @@ function openPrint() {
     JOBS.run('pdf', { buf: px.buffer, n: 256 * 256, z: false }, [px.buffer]).catch(function () {});
   }
   let b = '<div class="swopts">';
-  PRINT_OPTS.forEach(function (o) {
+  // (v318.27) Paper the second row, after Pages: on a phone it had started below the sheet's first screen, under the
+  // Labels row's drawings (390×844: its buttons 53 px under the foot). Drawn in this order only: PRINT_OPTS keeps
+  // Paper third, as printSummary and PAPER_OPTS read it
+  const byKey = (k) => PRINT_OPTS.find((o) => o[0] === k);
+  [byKey('pwhat'), byKey('paper'), byKey('plabels')].forEach(function (o) {
     b +=
       '<div class="swrow"><span class="swlbl" aria-hidden="true">' +
       o[1] +
@@ -709,10 +713,8 @@ function printSummary() {
         : { codes: 'Codes', numbers: 'Numbers', none: 'No labels' }[pdfLabels]) +
     // (v318 review: a wide picture's colouring page is printed on its side, pdfLandFirst; the paper as set by the
     // count just made)
-    (printPic() && n && pdfLandFirst(PX(pdfS < 1 ? 30 : 36)) ? ' · page 1 landscape' : '') +
-    // (sections too small to label, in close-ups: with Codes, Numbers would fit more on the page itself)
-    // (v289: the short form on a small phone, so the Paper choices start on the sheet's first screen)
-    (printPic() && (_pdfCloseN || _pdfLeft) ? '<br>' + printCloseNote((window.innerHeight || 0) < 700) : '')
+    (printPic() && n && pdfLandFirst(PX(pdfS < 1 ? 30 : 36)) ? ' · page 1 landscape' : '')
+    // (v318.27: the close-ups note, its second line since v284, is under Pages now: printOptsSync, #sfPrWhat)
   );
 }
 // (v318.1) whether the PDF's page 1 is the labelled picture: Page + key's to colour on, or Key + reference's in colour
@@ -735,23 +737,11 @@ function printWhatNote() {
         : 'Your picture with ' + (pdfDark ? 'dark ' : 'light ') + w + ' to colour on, then the colour key.';
 }
 // what the close-ups hold, for the Print sheet: how many small sections on how many pages, and any too small even there
-// (short: the counts only — "19 small sections on 2 close-up pages; 3 only as a dot")
-function printCloseNote(short) {
+// (v318.27: under Pages, with room for the whole note: v289's short form for a small phone's foot is gone)
+function printCloseNote() {
   const pl = function (n, one, more) {
     return n + ' ' + (n === 1 ? one : more);
   };
-  if (short)
-    return (
-      (_pdfCloseN
-        ? pl(_pdfCloseN, 'small section', 'small sections') +
-          ' on ' +
-          pl(_pdfCloseP, 'close-up page', 'close-up pages')
-        : '') +
-      (_pdfLeft
-        ? (_pdfCloseN ? '; ' + _pdfLeft : pl(_pdfLeft, 'small section', 'small sections')) + ' only as a dot'
-        : '') +
-      '.'
-    );
   let t = _pdfCloseN
     ? pl(_pdfCloseN, 'small section is', 'small sections are') +
       ' on ' +
@@ -788,8 +778,6 @@ function printOptsSync() {
     x.setAttribute('aria-pressed', on ? 'true' : 'false');
     if (k === 'plabels') x.disabled = pdfWhat === 'strip';
   });
-  const wn = document.getElementById('sfPrWhat');
-  if (wn) wn.textContent = printWhatNote();
   const dk = document.getElementById('sfPdfDark');
   if (dk) {
     dk.disabled = pdfWhat !== 'page' || pdfLabels === 'none';
@@ -808,6 +796,15 @@ function printOptsSync() {
     sm.classList.remove('empty');
     sm.innerHTML = printSummary();
   }
+  // (v318.27) what Pages prints, and under it what the close-ups hold: the close-ups note was the summary's second line
+  // in the foot, which with Paper took the phone's first screen. After the summary: its dry run counts the close-ups
+  const wn = document.getElementById('sfPrWhat');
+  if (wn)
+    wn.innerHTML =
+      esc(printWhatNote()) +
+      (printPic() && (_pdfCloseN || _pdfLeft)
+        ? '<br><span class="sfprclose">' + esc(printCloseNote()) + '</span>'
+        : '');
   // (after the summary: its dry run noted each page's kind, _pdfKinds)
   const od = document.getElementById('sfPrOrd');
   if (od) od.innerHTML = assignData ? printOrder(_pdfKinds) : '';

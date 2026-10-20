@@ -210,7 +210,9 @@ test('a steep angle: straightened, then a note to hold the phone flatter with Ch
     assert.match((await info(page)).line, /Page straightened/);
     const box = await page.evaluate(() => { const b = document.querySelector('.sfc-segwarn'); return b && b.getClientRects().length ? b.textContent : ''; });
     assert.equal(/steep angle/.test(box), steep, JSON.stringify(o) + ' ' + box);
-    assert.equal(/steep angle/.test(await page.textContent('#msToast')), false, 'not a toast');
+    // (v318.27: no toast at all is fine too: the welcome makes none since v318.26, so #msToast may not exist yet)
+    const tt = await page.evaluate(() => (document.getElementById('msToast') || {}).textContent || '');
+    assert.equal(/steep angle/.test(tt), false, 'not a toast');
     if (steep) {
       assert.match(box, /holding the phone flatter/);
       const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#sfRetake')]);

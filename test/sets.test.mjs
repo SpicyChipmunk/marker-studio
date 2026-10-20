@@ -9,7 +9,7 @@ const set = (k) => new Set(SETS[k].split(' '));
 const codes = new Set(app.__eval('COLORS').filter((c) => c.brand === 'Ohuhu').map((c) => c.code));
 
 test('every set has as many colours as its name says (blenders are extra)', () => {
-  const size = { 24: 24, 48: 48, 72: 72, 104: 104, 120: 120, 168: 168, 216: 216, 320: 320, '48mid': 48, '36skin': 36, '36gray': 36, '48pastelS': 48, '48pastelB': 48, '24portrait': 24 };
+  const size = { 24: 24, 48: 48, 72: 72, 104: 104, 120: 120, 168: 168, 216: 216, 320: 320, '48mid': 48, '36skin': 36, '36gray': 36, '48pastelS': 48, '48pastelB': 48, '24portrait': 24, '6skin': 6 };
   for (const [k, n] of Object.entries(size)) {
     const list = SETS[k].split(' ');
     assert.equal(new Set(list).size, list.length, `${k} has a duplicate`);

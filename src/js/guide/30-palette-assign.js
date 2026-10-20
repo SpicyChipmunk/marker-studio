@@ -3086,7 +3086,9 @@ const ADJ_DE = 10,
 function buildRandom(cl, pool) {
   const order = cl.slice(),
     assign = {};
-  let a = null;
+  let a = null,
+    left = 0,
+    rough = false;
   // (touching sections never share a marker, or one as good as it (TWIN_DE), while another would do; "clearly
   // different" (noAdj) keeps them ADJ_DE apart too, v304)
   if (pool.length > 1) a = adj || (adj = buildAdj());
@@ -3179,11 +3181,161 @@ function buildRandom(cl, pool) {
         else other.push(pool[i]);
       }
       const src = clear.length ? clear : other.length ? other : pool;
+      if (!clear.length) rough = true;
       assign[l] = src[(Math.random() * src.length) | 0];
     }
+    // (v318.27: what the laying couldn't keep clear, put right where any marker will do: adjRepair. Only when a section
+    // had no clear marker as it was laid: else they all are, and the look over every section is spared)
+    if (noAdj && rough)
+      left = adjRepair(
+        assign,
+        order.filter(function (l) {
+          return !(locks[l] !== undefined && bk[locks[l]]);
+        }),
+        a,
+        function () {
+          return [pool];
+        },
+      );
   }
+  adjLeft[balZoneKey()] = left;
   assignData = { assign: assign, order: order, N: order.length, base: Object.assign({}, assign) };
   applyLocks();
+}
+/* (v318.27) Keep touching sections clearly different, made good. Laid one by one, a section could find every marker
+   alike to one of its neighbours' (the order had painted itself into a corner): on the sample with Main colour, 3 rolls
+   in 4 left touching sections alike, and No repeats on a small set nearly every roll. After the laying, each section of
+   ls still alike to a neighbour takes, from the first of lists(l, its marker) that has one, a marker clear of all its
+   neighbours (the least used of those, at random among equals). Where none is, a swap: a marker in the way of only one
+   or two neighbours of ls that can each take another clear of theirs. A change never makes a new clash, so twice
+   through is enough. Pinned sections aren't in ls. Nothing is drawn (Math.random) unless a section clashes, so a
+   laying that kept the rule is as before. Returns how many sections of ls are still alike to a neighbour (no marker
+   would do: too few different markers), which the note under the box says (adjLeft). */
+function adjRepair(assign, ls, a, lists) {
+  const alike = balAlike(),
+    uses = {},
+    inLs = new Set(ls);
+  ls.forEach(function (l) {
+    const m = assign[l];
+    if (m) uses[m.mkey] = (uses[m.mkey] || 0) + 1;
+  });
+  const nbsOf = function (l) {
+      const out = [];
+      if (a[l])
+        a[l].forEach(function (nb) {
+          const x = nbOf(assign, nb);
+          if (x) out.push(x);
+        });
+      return out;
+    },
+    clearOf = function (x, nbs) {
+      for (let k = 0; k < nbs.length; k++) if (alike(x, nbs[k])) return false;
+      return true;
+    },
+    use = function (m, d) {
+      uses[m.mkey] = (uses[m.mkey] || 0) + d;
+    },
+    // (no marker will do: one in the way of only one or two neighbours of ls, each of which can take another marker
+    // clear of its own neighbours; from a random place among the markers lists(l) has)
+    adjSwap = function (l, Ls) {
+      const seen = new Set(),
+        flat = [];
+      Ls.forEach(function (L) {
+        L.forEach(function (x) {
+          if (seen.has(x.mkey)) return;
+          seen.add(x.mkey);
+          flat.push(x);
+        });
+      });
+      const s0 = (Math.random() * flat.length) | 0;
+      for (let j = 0; j < flat.length; j++) {
+        const x = flat[(s0 + j) % flat.length],
+          was = assign[l],
+          by = [];
+        let fine = true;
+        a[l].forEach(function (nb) {
+          const y = nbOf(assign, nb);
+          if (fine && y && alike(x, y)) {
+            if (!inLs.has(nb) || by.length >= 2) fine = false;
+            else by.push(nb);
+          }
+        });
+        if (!fine || !by.length) continue;
+        assign[l] = x;
+        const moved = [];
+        for (let b = 0; b < by.length && fine; b++) {
+          const q = by[b],
+            nq = nbsOf(q),
+            c = [];
+          lists(q, assign[q]).forEach(function (L) {
+            if (!c.length)
+              L.forEach(function (z) {
+                if (clearOf(z, nq)) c.push(z);
+              });
+          });
+          if (!c.length) fine = false;
+          else {
+            moved.push([q, assign[q]]);
+            assign[q] = c[(Math.random() * c.length) | 0];
+          }
+        }
+        if (fine) {
+          use(was, -1);
+          use(x, 1);
+          moved.forEach(function (e) {
+            use(e[1], -1);
+            use(assign[e[0]], 1);
+          });
+          return true;
+        }
+        // (one of them couldn't move: all back as it was)
+        moved.forEach(function (e) {
+          assign[e[0]] = e[1];
+        });
+        assign[l] = was;
+      }
+      return false;
+    },
+    stuck = function (l) {
+      return !!(assign[l] && a[l] && !clearOf(assign[l], nbsOf(l)));
+    };
+  let left = 0;
+  for (let pass = 0; pass < 2; pass++) {
+    left = 0;
+    for (let q = 0; q < ls.length; q++) {
+      const l = ls[q],
+        m = assign[l];
+      if (!m || !a[l]) continue;
+      const nbs = nbsOf(l);
+      if (clearOf(m, nbs)) continue;
+      const Ls = lists(l, m);
+      let ok = null;
+      for (let i = 0; i < Ls.length && !ok; i++) {
+        const c = Ls[i].filter(function (x) {
+          return clearOf(x, nbs);
+        });
+        if (c.length) ok = c;
+      }
+      if (!ok) {
+        if (!adjSwap(l, Ls)) left++;
+        continue;
+      }
+      let lo = Infinity;
+      ok.forEach(function (x) {
+        lo = Math.min(lo, uses[x.mkey] || 0);
+      });
+      ok = ok.filter(function (x) {
+        return (uses[x.mkey] || 0) === lo;
+      });
+      const n = ok[(Math.random() * ok.length) | 0];
+      use(m, -1);
+      use(n, 1);
+      assign[l] = n;
+    }
+    if (!left) return 0;
+  }
+  // (counted afresh: one counted as stuck early in the pass may have been freed by a neighbour's change after it)
+  return ls.filter(stuck).length;
 }
 /* The marker in `pool` closest to a colour (L*a*b*) by eye: the one lookup Blend, the Photo pattern and stand-ins
    for dry or missing markers all use. By eye is CIEDE2000; for speed, a pool of more than NEAR_WHOLE is first

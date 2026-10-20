@@ -332,7 +332,14 @@ function scanSets(text, brand) {
     if (ohuhu) {
       if (/\bmid[\s-]?tones?\b/i.test(w) && sizes(w, [48], /mid[\s-]?tones?/).length)
         hit = put(['48 Mid-tone Set'], into) || hit;
-      if (/\bskin\b/i.test(w) && sizes(w, [36], /skin/).length) hit = put(['36 Skin Tones'], into) || hit;
+      // (v318.27) Ohuhu's three skin sets: the shop names the 24 "Honolulu 24 Skin Tone Colors", which had read as
+      // Honolulu 24 (the app's "24 Portrait"); "6 Skin Tones" is the small one
+      if (/\bskin\b/i.test(w))
+        sizes(w, [6, 24, 36], /skin/).forEach(
+          (n) =>
+            (hit =
+              put([n === 36 ? '36 Skin Tones' : n === 24 ? '24 Portrait' : '6 Skin Tones'], into) || hit),
+        );
       if (/\bgr[ae]ys?\b/i.test(w) && sizes(w, [36], /gr[ae]ys?/).length)
         hit = put(['36 Gray Tones'], into) || hit;
       if (/\bpastels?\b/i.test(w) && sizes(w, [48], /pastels?/).length)
