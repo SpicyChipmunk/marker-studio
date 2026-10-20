@@ -95,7 +95,7 @@ The stages are **Edit sections → Plan → Colour along**. "Plan" is the built 
 - At most two buttons, in one row at every text size. They are 44px tall, with 8px padding, and the bottom padding is `max(8px, safe-area-inset-bottom)`, not added on top of the safe area.
   - **Edit sections (v288):** a new picture: **Build guide →** (`#sfBuild`). Back from the Plan with nothing edited: **← Plan** (`#sfToPlan`) as the one primary button, no rebuild. Once something is edited (sliders too): **← Plan** as a ghost (it asks Build again / Discard) and **Build again →**; a line says coloured sections are kept, when there are any. Undo back to no edits flips it back.
   - **Plan:** ← Edit sections (`#sfBack2`), then **Colour along** (`#sfColor`, primary). If both don't fit on one row, the back button reads "← Sections".
-  - **Colour along:** ← Plan (`#sfDoneBtn`, "Back to the plan"; "Done colouring" until v284), then **⛶ Focus mode** (`#sfFocus`, primary). A finished page has **✨ Reveal & share** (`#sfAlongRev`) instead of Focus mode (v288).
+  - **Colour along:** ← Plan (`#sfDoneBtn`, "Back to the Plan" (v318.26; "Back to the plan" before); "Done colouring" until v284), then **⛶ Focus mode** (`#sfFocus`, primary). A finished page has **✨ Reveal & share** (`#sfAlongRev`) instead of Focus mode (v288).
 - Save and Save a copy are not in the bar (see #5). `#sfSaveC` goes.
 
 ## Sheets (shared component)

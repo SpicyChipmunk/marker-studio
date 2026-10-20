@@ -33,8 +33,8 @@ test('a set on the welcome, then Some are missing: the chart with its markers ti
   assert.equal(await page.evaluate(() => state.owned.size), 119);
   assert.equal(await page.textContent('#wcT2'), '2 markers removed');
   assert.ok(await shown(page, 'wcMoreMiss'), 'still offered, for more');
-  // the toast's Undo: both back, and the card as it was
-  await page.click('#toastAct');
+  // the Undo (v318.26: a link under "Anything else?", not the toast's): both back, and the card as it was
+  await page.click('#wcUndoBtn');
   await idle(page);
   assert.equal(await page.evaluate(() => state.owned.size), 121);
   assert.equal(await page.textContent('#wcT2'), '120 markers added');
@@ -60,7 +60,8 @@ test('caps or the chart alone: no Some are missing; the set’s Undo takes it aw
   await page.click('#wcAdd');
   await idle(page);
   assert.ok(await shown(page, 'wcMoreMiss'), 'after the set');
-  await page.click('#toastAct');
+  // (v318.26: the set's Undo is the link under "Anything else?")
+  await page.click('#wcUndoBtn');
   await idle(page);
   assert.equal(await page.evaluate(() => state.owned.size), 2);
   assert.ok(await shown(page, 'wcStep1'), 'back on the list it was added from');

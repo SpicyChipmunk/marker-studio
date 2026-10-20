@@ -366,10 +366,16 @@ let zoneNb = null;
 function nbOf(assign, q) {
   return assign[q] || (zoneNb && zoneNb[q]) || null;
 }
+// (v318.26) The sections left white (whitePins) are left out of every laying, and made white again after it
+// (whiteApply): the one place each pattern, Shuffle, Mood, Blend, the Photo pattern and Recolour them too go through.
 function zoneRun(ids, build) {
-  if (!zones.length) return build(countedList()) !== false;
+  if (!zones.length) {
+    const ok = build(countedList().filter(notWhite)) !== false;
+    whiteApply();
+    return ok;
+  }
   const prev = assignData,
-    all = countedList(),
+    all = countedList().filter(notWhite),
     order = ids
       .filter(function (id) {
         return id !== zoneCur;
@@ -410,6 +416,7 @@ function zoneRun(ids, build) {
   });
   assignData = zoneMerge(prev, parts, all);
   applyLocks();
+  whiteApply();
   return ok;
 }
 // one assignment from the zones' parts (built now) and the rest of prev (the other zones' sections as they were)

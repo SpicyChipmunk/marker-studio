@@ -43,8 +43,8 @@ test('Change colour → Everywhere replaces the marker in every section that use
   const mkN = () => page.evaluate(() => +document.querySelector('#sfStat .sfsp2 b').textContent);
   const m0 = await mkN();
   await tap(page, l);
-  // the tip keeps its two buttons: the choice lives in the picker
-  assert.deepEqual(await page.$$eval('.sftip [data-a]', (b) => b.map((x) => x.textContent)), ['Change colour', 'Pin']);
+  // the tip keeps its buttons (v318.26: and Leave white): the choice lives in the picker
+  assert.deepEqual(await page.$$eval('.sftip [data-a]', (b) => b.map((x) => x.textContent)), ['Change colour', 'Pin', 'Leave white']);
   await page.click('.sftip [data-a="change"]');
   assert.deepEqual(await page.$$eval('.sfpopscope [data-sc]', (b) => b.map((x) => [x.textContent, x.getAttribute('aria-pressed')])), [['Only this section', 'true'], [`Everywhere (${same.length} sections)`, 'false']]);
   // a pick previews on this section only; Everywhere spreads it; Only this section takes it back

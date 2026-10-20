@@ -189,9 +189,12 @@ test('grainy photos (no blur, one pass, two): the ink found a step per pass, the
     assert.ok(r.steps.n > 20, grain + ': sections ' + r.steps.n);
     assert.deepEqual(r.steps, r.once, 'grain ' + grain);
     passes.push(r.passes);
-    // what held the page longest is listed (in memory only: nothing in Send feedback)
+    // what held the page longest is listed (in memory only; v318.26: and in Send feedback, by Ben's decision)
     assert.match(r.d, /\nLongest waits, this visit:\n(New photo|Sections)/);
-    assert.ok(!(await page.evaluate(() => feedbackReport())).includes('Longest waits'));
+    assert.match(
+      await page.evaluate(() => feedbackReport()),
+      /\nLongest waits, this visit:\n(New photo|Sections)/,
+    );
     assert.deepEqual(errors, []);
     await page.context().close();
   }

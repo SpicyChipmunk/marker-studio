@@ -309,6 +309,8 @@ document.addEventListener('keydown', function (e) {
   // the keyboard back there, wherever the step was reached from; Safari doesn't focus a button that's tapped)
   function show(id, back, from) {
     if (id === cur) return;
+    // (v318.26) the Undo link on "Anything else?" goes once the step is left
+    if (cur === 'wcStep2') undoLink(null);
     if (!back) trail.push({ id: cur, el: from || document.activeElement });
     $(cur).style.display = 'none';
     $(id).style.display = '';
@@ -347,6 +349,7 @@ document.addEventListener('keydown', function (e) {
   });
   // (v306) the fan of markers on step 2
   function step2(msg, title, keys, more) {
+    undoLink(null);
     if (keys) fan(keys);
     $('wcT2').textContent = title || 'You’re all set';
     $('wcDone').textContent = msg;
@@ -428,7 +431,26 @@ document.addEventListener('keydown', function (e) {
     // big collections are a set less a few, plus some singles). It stays after the chart or extra markers from there.
     if (names || set) setIn = true;
     $('wcMoreMiss').style.display = setIn ? '' : 'none';
+    // (v318.26) this add's Undo, as a link under the sentence (own() and the chart hand it on; Scan's toast stays)
+    if (pendUndo) undoLink(pendUndo);
+    pendUndo = null;
   }
+  // (v318.26) the welcome's Undo of the last add: a link on "Anything else?" in place of v309.1's toast, which on a
+  // phone covered the step's own choices. It's beside #wcDone, not in it: that sentence is kept and put back as text.
+  // u: { fn, label }, or null to take it away. Only the latest add: the link goes after Undo, on leaving the step, and
+  // on adding again
+  var pendUndo = null,
+    undoFn = null;
+  function undoLink(u) {
+    undoFn = u ? u.fn : null;
+    $('wcUndo').hidden = !u;
+    if (u) $('wcUndoBtn').setAttribute('aria-label', u.label);
+  }
+  $('wcUndoBtn').addEventListener('click', function () {
+    var f = undoFn;
+    undoLink(null);
+    if (f) f();
+  });
   // add markers (a set, a set found, the caps read) with Undo through keep; how many were new
   // (v309.1: the colours new to the collection are counted, a set's blender not; and the toast's Undo, as Markers' Add
   // a set has, takes them back out and the welcome back to where they were added from)
@@ -437,6 +459,7 @@ document.addEventListener('keydown', function (e) {
   var ownBlender = false,
     ownFresh = 0;
   function own(keys) {
+    pendUndo = null;
     var before = new Set(state.owned),
       wishWas = state.wish.slice(),
       fresh = [];
@@ -460,22 +483,31 @@ document.addEventListener('keydown', function (e) {
     ownBlender = fresh.indexOf('Ohuhu|0') >= 0;
     ownFresh = fresh.length;
     var n = setKeys(fresh).length;
-    // (v311: the Colorless Blender a set brought, said as Markers' Add a set says it, v310.1)
-    if (fresh.length)
-      toastAction(addedManyLine(n || fresh.length, off.length, ownBlender && n > 0), 'Undo', function () {
-        fresh.forEach(function (k) {
-          state.owned.delete(k);
-        });
-        inkPutBack(ink);
-        wishPutBack(off);
-        if (off.length || Object.keys(ink).length) wishChanged();
-        save();
-        fullRender();
-        if (typeof presetRelist === 'function') presetRelist();
-        sets.innerHTML = presetListHTML();
-        upd();
-        undoneBack();
+    var undo = function () {
+      fresh.forEach(function (k) {
+        state.owned.delete(k);
       });
+      inkPutBack(ink);
+      wishPutBack(off);
+      if (off.length || Object.keys(ink).length) wishChanged();
+      save();
+      fullRender();
+      if (typeof presetRelist === 'function') presetRelist();
+      sets.innerHTML = presetListHTML();
+      upd();
+      undoneBack();
+    };
+    // (v311: the Colorless Blender a set brought, said as Markers' Add a set says it, v310.1)
+    // (v318.26: Markers' Add markers sheet keeps the toast; the welcome has a link on "Anything else?" instead)
+    if (fresh.length && mk)
+      toastAction(addedManyLine(n || fresh.length, off.length, ownBlender && n > 0), 'Undo', undo);
+    else if (fresh.length) {
+      var m = n || fresh.length;
+      pendUndo = {
+        fn: undo,
+        label: 'Undo: take ' + (m === 1 ? 'this marker' : 'these ' + m + ' markers') + ' back out',
+      };
+    }
     return n;
   }
   // where the markers were added from (the step, and the steps before it), for the toast's Undo
@@ -776,8 +808,11 @@ document.addEventListener('keydown', function (e) {
     $('wcT1').focus({ preventScroll: true });
   });
   // (v318: set, a set's markers came from Scan, by its name)
-  function oneAdded(n, del, set) {
+  // (v318.26: undo, the chart's Undo for the link on "Anything else?")
+  function oneAdded(n, del, set, undo) {
+    pendUndo = (!mk && undo) || null;
     if (n > 0 || del > 0) added(n, null, del || 0, set);
+    pendUndo = null;
   }
   // (v309.1) Scan's or the chart's Undo took them back out: the welcome back where they were added from (it had gone
   // on saying "2 markers added")
@@ -794,7 +829,8 @@ document.addEventListener('keydown', function (e) {
   $('wcOnePhoto').addEventListener('click', function () {
     if (typeof openScan === 'function') openScan({ added: oneAdded, undone: oneUndone, photo: true });
   });
-  // (v318 review) Scan the caps, said for an Android phone or tablet: Gboard's Scan text, a photo of a cap at a time
+  // (v318 review) Scan caps one at a time (v318.26: was "Scan the caps"), said for an Android phone or tablet: Gboard's
+  // Scan text, a photo of a cap at a time
   if (/Android/i.test(navigator.userAgent || ''))
     $('wcOneScan').querySelector('.wct span').textContent =
       'With Gboard’s Scan text: photograph each cap and tap Insert, and its code is read.';
@@ -806,10 +842,11 @@ document.addEventListener('keydown', function (e) {
       'Bought on their own? Photograph or scan their caps, or tick them.';
   }
   $('wcOneChart').addEventListener('click', function () {
-    if (typeof openChart === 'function') openChart({ added: oneAdded, undone: oneUndone });
+    if (typeof openChart === 'function') openChart({ added: oneAdded, undone: oneUndone, welcome: true });
   });
   $('wcMoreMiss').addEventListener('click', function () {
-    if (typeof openChart === 'function') openChart({ added: oneAdded, undone: oneUndone, missing: true });
+    if (typeof openChart === 'function')
+      openChart({ added: oneAdded, undone: oneUndone, missing: true, welcome: true });
   });
   // Restore a backup: the file picker opens in the same tap (an iPhone allows it only then). The welcome stays until a
   // restore worked; a problem is said just above the buttons (pinned to the card's bottom edge) until the next file is
@@ -860,6 +897,8 @@ document.addEventListener('keydown', function (e) {
     mk = true;
     mkFrom = document.activeElement;
     snap = null;
+    pendUndo = null;
+    undoLink(null);
     setIn = false;
     trail = [];
     ov.classList.add('wcmk');

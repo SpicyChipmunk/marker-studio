@@ -116,6 +116,7 @@ function resetForNewPicture() {
   anchors = [];
   selAnchor = -1;
   locks = {};
+  whitePins = {};
   layStatReset();
   lockMode = false;
   revealF = null;
@@ -923,6 +924,8 @@ function keepObj(geo) {
       progAt: Object.assign({}, progAt),
       held: Object.assign({}, heldSh),
       locks: Object.assign({}, locks),
+      // (v318.26: the sections left white)
+      white: Object.assign({}, whitePins),
       flat: Object.assign({}, shadeFlat),
       fresh: _segFresh,
       edits: hasEdits,
@@ -975,7 +978,8 @@ function keepObj(geo) {
 }
 // anything of the guide's own that redrawing the sections would clear
 function hasProgress() {
-  if (Object.keys(locks).length || Object.keys(shadeFlat).length) return true;
+  if (Object.keys(locks).length || Object.keys(shadeFlat).length || Object.keys(whitePins).length)
+    return true;
   if (!assignData || !colored) return false;
   const P = tonePart && tonePart._c === colored ? tonePart : null;
   for (let l = 1; l < colored.length; l++) if (colored[l] || (P && P[l])) return true;

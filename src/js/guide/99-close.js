@@ -515,6 +515,17 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get locks() {
       return locks;
     },
+    // (v318.26) Leave white
+    get whitePins() {
+      return whitePins;
+    },
+    set whitePins(v) {
+      whitePins = v;
+    },
+    whiteApply: whiteApply,
+    whiteOpen: whiteOpen,
+    leaveWhite: leaveWhite,
+    colourWhite: colourWhite,
     get undoBytes() {
       return undoBytes;
     },
@@ -1469,6 +1480,8 @@ return {
   focusOnOpen: focusOnOpen,
   // (v316: Buy next, from your guides: what a saved guide's markers want, from its Library row)
   guideWants: guideWants,
+  // (v318.26: Blends with, in a marker's details)
+  blendFor: blendFor,
   // (v318 review: where a toast goes in the Plan, toastShow in core.js)
   toastSpot: toastSpot,
 };

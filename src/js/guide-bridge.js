@@ -599,7 +599,14 @@ function leaveDrop(id, upTo) {
   } catch (_) {}
 }
 // (v318.25: which page kept a copy aside, so only its own saves move the copy's base on)
-const _leaveTab = Math.random().toString(36).slice(2) + Date.now().toString(36);
+// (v318.26: not from Math.random: drawing one as the page loads moved every seeded test's rolls on — e2e
+// random-and-blend's Random check landed on a roll with two alike pairs on GitHub)
+const _leaveTab =
+  Date.now().toString(36) +
+  '.' +
+  Math.round((typeof performance !== 'undefined' && performance.now ? performance.now() : 0) * 1000).toString(
+    36,
+  );
 function leaveRebase(id, upTo, ts) {
   try {
     const j = JSON.parse(localStorage.getItem(LEAVE_KEY) || 'null');

@@ -4387,6 +4387,19 @@ function buildGuide(keepPlan) {
     if (_segFresh) _zLost = !zoneAfterFresh();
     else zoneAfterEdit(cl, prev);
   }
+  // (v318.26) the sections left white that are still in the guide stay white; a part split off one is white too, as a
+  // part split off a pinned section keeps its pin (keepMarkers). One left out and brought back is coloured again: it
+  // was white, not a marker, when it went (_gone keeps markers)
+  const _w0 = whitePins,
+    _w = {};
+  cl.forEach(function (l) {
+    if (whitePins[l] !== undefined) _w[l] = whitePins[l];
+    else {
+      const f = splitFrom(l);
+      if (f >= 0 && whitePins[f] !== undefined) _w[l] = whitePins[f];
+    }
+  });
+  whitePins = _w;
   // (the sections keeping their markers (keepMarkers) are laid as pinned for the moment, so the ones new to the guide
   // keep clear of them: v303 laid them all afresh, then put the old markers back next to the new ones, v304)
   const _lk0 = locks;
@@ -4404,7 +4417,10 @@ function buildGuide(keepPlan) {
   } finally {
     locks = _lk0;
   }
-  if (!_built) return;
+  if (!_built) {
+    whitePins = _w0;
+    return;
+  }
   if (_zLost)
     toast(
       'The zones were cleared: turning, straightening or cropping the picture finds its sections afresh.',
@@ -4412,6 +4428,7 @@ function buildGuide(keepPlan) {
     );
   if (prev) {
     keepMarkers(prev, cl);
+    whiteApply();
     // (its markers are the old guide's, not a layout that can turn to face the light)
     delete assignData.lit;
     delete assignData.lits;
@@ -4498,6 +4515,37 @@ function buildGuide(keepPlan) {
         ]).then(save);
       });
     }, 60);
+}
+// (v318.26) Leave white: a section left white by hand (whitePins, 00-state) is no section to lay
+function notWhite(l) {
+  return whitePins[l] === undefined;
+}
+// ...and after any laying it is white again: no marker, base, pin or place in the order (so not in the key, Colour
+// along, Focus or the counts), in assignData.paper (drawn as the paper, as the Photo pattern's white areas are). A pin
+// on a section no longer there (merged, or past the sections) goes.
+function whiteApply() {
+  const ks = Object.keys(whitePins);
+  if (!ks.length || !assignData) return;
+  const A = assignData.assign,
+    B = assignData.base;
+  let any = false;
+  ks.forEach(function (k) {
+    const l = +k,
+      c = comps && comps[l];
+    if (!c || c.merged) {
+      delete whitePins[k];
+      return;
+    }
+    delete A[l];
+    if (B) delete B[l];
+    delete locks[l];
+    delete _origKeys[l];
+    (assignData.paper || (assignData.paper = {}))[l] = 1;
+    any = true;
+  });
+  if (!any) return;
+  assignData.order = assignData.order.filter(notWhite);
+  assignData.N = assignData.order.length;
 }
 // the sections the guide had keep their markers (or stay white), the rest keep what the pattern just gave them
 function keepMarkers(prev, cl) {

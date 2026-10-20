@@ -31,9 +31,9 @@ const card = async (page) => {
 
 test('the card: 0/6 with the first task, 2/6 with the third; it opens the tasks at the next one', async () => {
   let { page, errors } = await openApp({ storage: ONB });
-  assert.deepEqual(await card(page), { card: '0/6 Beta tester tasks Next: 1 · Add your markers ›', foot: 'Tester tasks · 0 of 6' });
+  assert.deepEqual(await card(page), { card: '0/6 Beta tester tasks Next to answer: 1 · Add your markers ›', foot: 'Tester tasks · 0 of 6' });
   ({ page, errors } = await openApp({ storage: { ...ONB, 'ms-tester': tester(2) } }));
-  assert.equal((await card(page)).card, '2/6 Beta tester tasks Next: 3 · Make the plan yours ›');
+  assert.equal((await card(page)).card, '2/6 Beta tester tasks Next to answer: 3 · Make the plan yours ›');
   await page.click('#homeTaskCard');
   await idle(page);
   assert.ok(await page.isVisible('#ttOverlay'), 'the tasks open');

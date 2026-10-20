@@ -102,7 +102,22 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.25 (a debugging pass)
+## New in this release: v318.26
+
+- [ ] ★ In a guide, tap a section › **Leave white** → it's white, not in the key; Shuffle, Mood, another pattern and
+      Print → it stays white. Tap it › **Colour it** → its marker is back. Undo / Redo both. The tap box's three buttons
+      fit at your text size. (Manual pattern: Leave white is beside "Unpin (allow fill)" in Change colour.)
+- [ ] ★ Markers: press and hold a marker → **Blends with** shows a lighter and a darker one; tap one → its details, with
+      "← Back to …". VoiceOver reads "Lighter: …, you have it".
+- [ ] ★ In a guide, tap a section › Change colour → a **Skin tones** row. In Markers, search "skin tones" → them, lightest
+      first, with the Earth / Skin / Brown family as a link.
+- [ ] The welcome: add a set → no toast; the **Undo** link under "Anything else?" takes it back out.
+- [ ] Send feedback after opening a big photo → the message ends with "Longest waits, this visit" (in the form's sheet).
+- [ ] Search "Rose Red" in Markers with today's codes shown → Ohuhu R213 (older cap R6 Rose Red).
+- [ ] Tester tasks: the two new last questions; Send results → the answers are in the sheet's Message column until the new
+      form link is in.
+
+## v318.25 (a debugging pass)
 
 - [ ] ★ Tick a few sections in a Library guide, then at once swipe up to the Home Screen and close the app fully →
       reopen: the ticks are there.

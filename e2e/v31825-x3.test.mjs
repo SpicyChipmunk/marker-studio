@@ -357,6 +357,9 @@ test('X3 G3: a tester task answered in another tab shows on Home’s card and fo
   await b.goto(page.url());
   await b.evaluate((v) => localStorage.setItem('ms-tester', v), tester(3));
   await page.waitForFunction(() => /3 of 6/.test(document.getElementById('homeTasks').textContent));
-  assert.deepEqual(await card(), ['3/6 Beta tester tasks Next: 4 · Colour along ›', 'Tester tasks · 3 of 6']);
+  assert.deepEqual(await card(), [
+    '3/6 Beta tester tasks Next to answer: 4 · Colour along ›',
+    'Tester tasks · 3 of 6',
+  ]);
   assert.deepEqual(errors, []);
 });

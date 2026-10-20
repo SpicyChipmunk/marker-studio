@@ -45,6 +45,12 @@ function createMarkerStudioForm() {
     ['Colours matched', 'p'],
     ['Next page', 't'],
     ['Message', 'p'],
+    // (v318.26) two more questions. To add them to a form made before (no need to run this again): in the form, add
+    // two Paragraph questions at the very end, titled Other brands and Colour most, NOT required (a send from an
+    // older version of the app leaves them empty, and a required one would be refused without a word). Then ⋮ ›
+    // Get pre-filled link, type x in every field, Get link › Copy link, and send that link to Claude.
+    ['Other brands', 'p'],
+    ['Colour most', 'p'],
   ];
 
   var resp = form.createResponse();

@@ -257,6 +257,9 @@ function currentDesignObj(share, edits) {
         edits: edits ? 1 : undefined,
         base: Object.keys(bas).length ? bas : undefined,
         locks: locks,
+        // (v318.26: the sections left white by hand, each with the marker it had, for Colour it. An older version
+        // opens them white, as the Photo pattern's white areas (paper), and colours them at its next laying)
+        white: Object.keys(whitePins).length ? Object.assign({}, whitePins) : undefined,
         // (v303: how much its picture was enlarged, a small download, so Min section size means what it did)
         upk: srcK > 1 ? Math.round(srcK * 1000) / 1000 : undefined,
         // (v306: the paper inside a frame, so a guide opened again knows it: its line to Colour it is back. Not found
@@ -304,6 +307,7 @@ const PL_TOP = [
     'edits',
     'base',
     'locks',
+    'white',
     'upk',
     'frame',
     'zones',

@@ -1,6 +1,6 @@
 /* ===== Tester tasks, and Send feedback's form (v312) =====
    In the beta only (APP_BETA, safety.js). Tester tasks: six things to try, each answered Easy / OK / Hard / Didn't try
-   with a note, three more if there's time, and four last questions. The answers stay on this device (TT_KEY) until
+   with a note, three more if there's time, and six last questions. The answers stay on this device (TT_KEY) until
    Send results. Ways in: the foot of Home ("Tester tasks · 2 of 6", "ready to send" once all six are answered and not
    sent), the thanks card and Help's Beta tester guide ([data-tasks]).
    Where answers go: the Google Form in RESULTS_FORM (safety.js; docs/tester-form-setup.gs makes it, with a sheet that
@@ -13,7 +13,8 @@
   const D = document,
     TT_KEY = 'ms-tester',
     POST_MS = 20000;
-  // the form's fields, in the order docs/tester-form-setup.gs makes them (its pre-filled link lists them in this order)
+  // the form's fields, in the order docs/tester-form-setup.gs makes them (its pre-filled link lists them in this order).
+  // (v318.26) Other brands and Colour most are new, at the end; a form made before has the first OLD_N, up to Message
   const FIELDS = [
     'Kind',
     'Tester',
@@ -42,7 +43,10 @@
     'Colours matched',
     'Next page',
     'Message',
+    'Other brands',
+    'Colour most',
   ];
+  const OLD_N = 27;
   const TASKS = [
     {
       k: 'add',
@@ -119,7 +123,13 @@
   const QS = [
     ['confused', 'What confused you most?'],
     ['change', 'What would you change first?'],
-    ['colours', 'Did the colours on paper match the screen well enough?'],
+    // (v318.26: which markers, too; and two questions about the tester, for what to build for next)
+    [
+      'colours',
+      'Did the colours on paper match the screen well enough? Which markers looked most different?',
+    ],
+    ['brands', 'Which other marker brands do you use?'],
+    ['subjects', 'What do you colour most (people, animals, flowers, patterns…)?'],
   ];
   const NEXT = [
     ['yes', 'Yes'],
@@ -260,6 +270,11 @@
   // --- the form ---
   // RESULTS_FORM's pre-filled link: the form's id, and its fields' entry numbers in order. null if it isn't set, or
   // doesn't have the fields this version sends. (window.__MS_RESULTS_FORM: the browser tests' own)
+  // (v318.26) The form of v318.25 (OLD_N fields, up to Message) or the form with the two new questions (all of FIELDS):
+  // the app and the live form needn't change on the same day. Sent to the older form, the new answers go in Message
+  // (post). Any other count is a link copied wrongly: said once in the console, as without it Send results and Send
+  // feedback quietly use the share sheet.
+  let warned = false;
   function formTarget() {
     const u = String(
       window.__MS_RESULTS_FORM != null
@@ -275,7 +290,23 @@
       ids.push(d);
       return _;
     });
-    if (ids.length !== FIELDS.length) return null;
+    if (ids.length !== FIELDS.length && ids.length !== OLD_N) {
+      if (!warned) {
+        warned = true;
+        try {
+          console.warn(
+            'Marker Studio: RESULTS_FORM has ' +
+              ids.length +
+              ' fields; this version sends ' +
+              OLD_N +
+              ' or ' +
+              FIELDS.length +
+              '. Send results and Send feedback will use the share sheet.',
+          );
+        } catch (e) {}
+      }
+      return null;
+    }
     return { action: 'https://docs.google.com/forms/d/e/' + m[1] + '/formResponse', ids: ids };
   }
   // posts the values ({field: text}); resolves true once it got through, false offline or on a network error
@@ -283,9 +314,23 @@
     const t = formTarget();
     if (!t) return Promise.resolve(false);
     if (navigator.onLine === false) return Promise.resolve(false);
-    const body = new URLSearchParams();
-    FIELDS.forEach(function (f, i) {
-      body.append('entry.' + t.ids[i], String(values[f] == null ? '' : values[f]).slice(0, 4000));
+    const body = new URLSearchParams(),
+      v = Object.assign({}, values);
+    // (v318.26) one entry per field the form has; to the older form, the answers it has no field for go in Message
+    // ("Other brands: …"), which a Results row leaves empty
+    if (t.ids.length < FIELDS.length) {
+      const more = FIELDS.slice(t.ids.length)
+        .filter(function (f) {
+          return v[f];
+        })
+        .map(function (f) {
+          return f + ': ' + v[f];
+        });
+      if (more.length) v.Message = (v.Message ? v.Message + '\n\n' : '') + more.join('\n');
+    }
+    t.ids.forEach(function (id, i) {
+      const f = FIELDS[i];
+      body.append('entry.' + id, String(v[f] == null ? '' : v[f]).slice(0, 4000));
     });
     // (v312.1: given up after POST_MS, as when offline: a stalled connection had left "Sending…" for good)
     const ac = typeof AbortController === 'function' ? new AbortController() : null;
@@ -370,6 +415,8 @@
     v['Change first'] = st.q.change || '';
     v['Colours matched'] = st.q.colours || '';
     v['Next page'] = (NEXT.find((y) => y[0] === st.q.next) || ['', ''])[1];
+    v['Other brands'] = st.q.brands || '';
+    v['Colour most'] = st.q.subjects || '';
     return v;
   }
   // the same as text, to copy (or share) when there's no form or no network
@@ -680,7 +727,8 @@
     foot.insertAdjacentElement('afterend', row);
   }
   // (v318 review, prototype) a card on Home, under its cards, while there are tasks to answer or send: how
-  // many are done and the next one ("Next: 2 · Make a guide"), or "ready to send";
+  // many are done and the next one ("Next to answer: 2 · Make a guide"; v318.26: "Next" alone read as a button to go
+  // on), or "ready to send";
   // it opens the tasks at that one. Gone once they're sent as they are (the line at the foot stays, as a way in)
   let card = null;
   {
@@ -712,7 +760,7 @@
       '</span><span class="ttct"><b>Beta tester tasks</b><span>' +
       (all
         ? 'All ' + TASKS.length + ' answered: ready to send'
-        : 'Next: ' + (TASKS.indexOf(nx) + 1) + ' \u00b7 ' + nx.t) +
+        : 'Next to answer: ' + (TASKS.indexOf(nx) + 1) + ' \u00b7 ' + nx.t) +
       ' <span aria-hidden="true">\u203a</span></span></span>';
     card.setAttribute(
       'aria-label',
@@ -721,7 +769,7 @@
         ' of ' +
         TASKS.length +
         ' answered. ' +
-        (all ? 'Ready to send.' : 'Next: ' + nx.t + '.'),
+        (all ? 'Ready to send.' : 'Next to answer: ' + nx.t + '.'),
     );
   }
   // "Tester tasks · 2 of 6"; "ready to send" once all six are answered and not sent as they are; "sent" after
@@ -780,12 +828,16 @@
       // (v318.1: not the name given in Tester tasks, which was given for the results; the tester number made on this
       // device still links a note to them in the sheet)
       v.Name = '';
-      v.Message =
-        text +
+      // (v318.26: and this visit's longest waits, after the Screen line; the details made first and kept whole, the
+      // words cut to fit the form's 4000 in place of the end of the details)
+      const det =
         '\n\n' +
         (typeof feedbackErrLines === 'function' ? feedbackErrLines() : '') +
         '\nScreen: ' +
-        (typeof screenWords === 'function' ? screenWords() : '');
+        (typeof screenWords === 'function' ? screenWords() : '') +
+        (typeof feedbackWaitLines === 'function' ? feedbackWaitLines() : '');
+      v.Message =
+        typeof feedbackFit === 'function' ? feedbackFit(text, det, 4000) : (text + det).slice(0, 4000);
       t.disabled = true;
       fbSaid('Sending…');
       post(v).then(function (ok) {

@@ -182,12 +182,14 @@ function lowCount() {
   return { n: n, dry: dry };
 }
 // fams (v308.3): a Set of family names, in place of the search: those families' markers in the view, as filtered
-function finderMatches(fams) {
+// (v318.26) only: a Set of the markers to look at (the skin tones' search), with the filters, not the search
+function finderMatches(fams, only) {
   const view = state.mode === 'collection' ? state.collView : state.finderScope === 'owned' ? 'owned' : 'all';
   const out = [],
     low = view === 'owned' && state.mode === 'collection' && lowOnly;
   for (let i = 0; i < COLORS.length; i++) {
-    if (fams ? !(passes(i) && fams.has(COLORS[i].fam)) : !avail(i)) continue;
+    if (only ? !(only.has(i) && passes(i)) : fams ? !(passes(i) && fams.has(COLORS[i].fam)) : !avail(i))
+      continue;
     if (view === 'owned' && !isOwned(i)) continue;
     if (low && !state.ink[mkey(i)]) continue;
     if (view === 'unowned' && isOwned(i)) continue;
@@ -205,7 +207,12 @@ function cellHtml(i, rank) {
   // (v318.21: your older cap's code and name, "now R213"; else the old code, as before)
   const cc = capCode(i),
     cn = capName(i),
-    old = capIsOld(i) ? ' · ' + capNow(i) : c.old && c.old !== c.code ? ' · old ' + oldCode(c) : '';
+    old = capIsOld(i) ? ' · ' + capNow(i) : c.old && c.old !== c.code ? ' · old ' + oldCode(c) : '',
+    // (v318.26) found by its older cap's name (sByCap): that cap named, as the cell shows only today's code
+    byCap =
+      !capIsOld(i) && searchStr && sByCap(i, searchStr)
+        ? ', older cap ' + oldCode(c) + ' ' + capOldName(c)
+        : '';
   const rk = rank ? '<span class="rankb">' + rank + '</span>' : '';
   const cls =
     'cell' + (col && !own && state.collView !== 'unowned' ? ' notown' : '') + (col && own ? ' own' : '');
@@ -224,10 +231,11 @@ function cellHtml(i, rank) {
         cc +
         ' ' +
         cn +
+        byCap +
         (col ? (own ? ', owned. Activate to untick' : ', not owned. Activate to tick') : ''),
     ) +
     '" aria-description="Shift+F10 for details" title="' +
-    esc(c.brand + ' ' + cc + ' · ' + cn + old) +
+    esc(c.brand + ' ' + cc + ' · ' + cn + old + byCap) +
     ' · tap to ' +
     act +
     '">' +
@@ -426,6 +434,42 @@ function searchFams() {
   const shown = names.filter((n) => list.some((i) => COLORS[i].fam === n));
   return { names: shown, list: list };
 }
+// (v318.26) Markers' search "skin", "skin tone(s)" or "skintone(s)": the skin tones (skinIdx, events.js: Ohuhu's 36 Skin
+// Tones set and Copic's picks), lightest first, within the view and filters, with a line naming the Earth / Skin /
+// Brown family as a link to its filter (it had shown only that family, and "skin tones" nothing: every word must be a
+// family's). null for any other search, or none of them here.
+const SKIN_Q = /^skin(\s?tones?)?$/;
+function searchSkin() {
+  if (state.mode !== 'collection' || !searchStr || typeof skinIdx !== 'function') return null;
+  if (!SKIN_Q.test(sQueryOf(searchStr).words.join(' '))) return null;
+  const sk = skinIdx(),
+    at = new Map(
+      sk.map(function (i, n) {
+        return [i, n];
+      }),
+    ),
+    list = finderMatches(null, new Set(sk)).sort(function (a, b) {
+      return at.get(a) - at.get(b);
+    });
+  if (!list.length) return null;
+  const fam = 'Earth / Skin / Brown';
+  return { list: list, fam: { names: [fam], list: finderMatches(new Set([fam])) } };
+}
+function skinLineHTML(sk) {
+  return (
+    '<div class="famline">Skin tones (' +
+    sk.list.length +
+    ')' +
+    (sk.fam.list.length
+      ? ' \u00b7 <button type="button" class="moreshow mkfamgo" data-fams="' +
+        esc(sk.fam.names[0]) +
+        '">' +
+        famPhrase(sk.fam) +
+        ' \u203a</button>'
+      : '') +
+    '</div>'
+  );
+}
 // "the Earth / Skin / Brown family (94)", "the Red, Red-Violet and Yellow-Red / Orange families (191)"; more than three
 // named briefly: "the Blue Grey, Cool Grey and 5 other families (87)"
 function famPhrase(sf) {
@@ -505,8 +549,16 @@ function renderGrid(more) {
     return;
   }
   // (v308.3) the families the search names: shown when nothing else is, else offered in a line
-  const sf = searchFams();
-  if (sf && !m.length) {
+  // (v318.26: "skin" shows the skin tones, with the family as a link)
+  const sk = searchSkin(),
+    sf = sk ? null : searchFams();
+  if (sk) {
+    m = sk.list;
+    cellBt = brandsMixedIn(m);
+    gridActs(m);
+    matchHead(m.length, 'marker');
+    gridFamLine = skinLineHTML(sk);
+  } else if (sf && !m.length) {
     m = sf.list;
     cellBt = brandsMixedIn(m);
     gridActs(m);
@@ -523,6 +575,13 @@ function renderGrid(more) {
             ? 'No markers match \u201c' + esc(searchStr) + '\u201d with the current filters.'
             : 'No markers match these filters.') +
           '</div>';
+    return;
+  }
+  // (v318.26) the skin tones as one group, lightest first, whatever the Order (not split into their families), under
+  // their line ("Skin tones (60) · the Earth / Skin / Brown family")
+  if (sk) {
+    results.innerHTML =
+      '<div class="rgroup"><div class="pile">' + m.map((i) => cellHtml(i)).join('') + '</div></div>';
     return;
   }
   if (state.mode === 'collection' && state.collView === 'unowned' && state.gapSort === 'gap') {

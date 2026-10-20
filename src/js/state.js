@@ -973,7 +973,13 @@ function sQueryOf(str) {
       )
         words.splice(k, 2, w);
     }
-    q = { s: str, words: words, whole: f.replace(/[-.\s]/g, '') };
+    // (v318.26) cap: the whole query, 4 letters or more, for the start of an older cap's name (sCapStart)
+    q = {
+      s: str,
+      words: words,
+      whole: f.replace(/[-.\s]/g, ''),
+      cap: f.replace(/[^a-z]/g, '').length >= 4 ? f.replace(/\s+/g, ' ') : '',
+    };
     _sQs = [q].concat(_sQs.slice(0, 1));
   }
   return q;
@@ -993,7 +999,30 @@ function sMatch(i, str) {
   const q = sQueryOf(str),
     h = sHay(i);
   if (q.whole && h.codes.some((x) => x.startsWith(q.whole))) return true;
-  return q.words.length > 0 && q.words.every((w) => sWord(h, w, q.words.length > 1));
+  if (q.words.length > 0 && q.words.every((w) => sWord(h, w, q.words.length > 1))) return true;
+  return sCapStart(h, q);
+}
+// (v318.26) an older Ohuhu cap's printed name, found with the setting as it is (codes of now): "Rose Red" finds R213
+// Pomegranate, whose older cap says R6 Rose Red. The whole query from 4 letters, as the start of the name and reaching
+// its last word ("rose r" on the way): as a word anywhere, "blue" had found 17 more markers and "gray" 28 that their
+// names didn't explain, and as any start, "light" 11, "cool grey" 7 and "yellow grey" 3 (Yellow Grey 04…)
+function sCapStart(h, q) {
+  return (
+    !!q.cap &&
+    !!h.capText &&
+    h.capText.split('\n').some(function (n) {
+      return n.startsWith(q.cap) && q.cap.length > n.lastIndexOf(' ');
+    })
+  );
+}
+// whether marker i is found by its older cap's name alone: Markers names that cap on its cell (finder.js)
+function sByCap(i, str) {
+  if (!str) return false;
+  const q = sQueryOf(str),
+    h = sHay(i);
+  if (!sCapStart(h, q)) return false;
+  if (q.whole && h.codes.some((x) => x.startsWith(q.whole))) return false;
+  return !(q.words.length > 0 && q.words.every((w) => sWord(h, w, q.words.length > 1)));
 }
 function matchesSearch(i) {
   return sMatch(i, searchStr);

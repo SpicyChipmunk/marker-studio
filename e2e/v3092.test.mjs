@@ -122,8 +122,12 @@ test('a set added in the welcome comes off To buy and loses its Running low mark
     [true, 0, null],
   );
   // (v311: the Colorless Blender the set brings is said, as Markers' Add a set says it)
-  assert.match(await page.textContent('#msToast'), /^Added 120 markers and a Colorless Blender\s·\s1\soff\sTo\sbuy/);
-  await page.click('#toastAct');
+  assert.equal(
+    await page.textContent('#wcDone'),
+    'Honolulu 120 and its Colorless Blender are in your collection. Anything else?',
+  );
+  // (v318.26: the welcome's Undo is a link under that sentence, not a toast)
+  await page.click('#wcUndoBtn');
   await idle(page);
   assert.deepEqual(
     await page.evaluate(() => [state.owned.size, state.wish.map((w) => w.k), state.ink['Ohuhu|R014']]),

@@ -1121,6 +1121,7 @@ function segEnd() {
   segWarn = segQuality();
   // sections were found afresh, so their numbers mean different shapes now: per-section choices can't carry over
   locks = {};
+  whitePins = {};
   shadeFlat = {};
   _flatVer++;
   _segFresh = true;

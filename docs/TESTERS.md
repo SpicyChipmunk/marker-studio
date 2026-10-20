@@ -59,7 +59,7 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
 
 **Tester tasks** (at the foot of Home, and in **Help › Beta tester guide**) has six things to try, in your own time:
 add your markers, make a guide, make the plan yours, colour along, come back to it, and share or print. Three more are
-there if you have time, then four last questions.
+there if you have time, then six last questions.
 
 - Answer each one **Easy**, **OK**, **Hard** or **Didn't try**, and add a note if you like. Your answers stay on your
   device until you send them, so it's fine to spread them over a few days.
@@ -69,7 +69,8 @@ there if you have time, then four last questions.
 ## How to report a problem
 
 - **Send feedback** is at the foot of Home, in the guide's **⋯** menu, and in **Help › About**. Write what you did, what
-  happened and what you expected, then tap **Send**. Your device, the app's version and any recent errors go with it.
+  happened and what you expected, then tap **Send**. Your device, the app's version, any recent errors and how long
+  the slowest steps took this visit (times and picture sizes only) go with it.
 - **To add a screenshot,** tap **Share it instead**: it opens a message with the same details, and you can attach the
   screenshot there.
 - When something goes wrong, the message has **Copy details** beside it. **Help › About › Copy diagnostics** copies

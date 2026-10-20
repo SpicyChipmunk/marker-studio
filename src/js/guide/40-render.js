@@ -403,6 +403,11 @@ function hideTip() {
 }
 function showTip(l, btns, quiet) {
   const m = assignData && assignData.assign[l];
+  // (v318.26) a section left white, in the plan: Left white, and Colour it
+  if (!m && btns === true && sfmode === 'guide' && cv && sfView && whitePins[l] !== undefined) {
+    showWhiteTip(l, quiet);
+    return;
+  }
   if (!m || !cv || !sfView) {
     hideTip();
     return;
@@ -436,7 +441,7 @@ function showTip(l, btns, quiet) {
         pin +
         '">' +
         (pin ? 'Unpin' : 'Pin') +
-        '</button></div>'
+        '</button><button type="button" class="sftipbtn" data-a="white">Leave white</button></div>'
       : '');
   if (btns) {
     d.setAttribute('role', 'group');
@@ -448,7 +453,9 @@ function showTip(l, btns, quiet) {
       const b = e.target.closest('[data-a]');
       if (!b) return;
       if (b.dataset.a === 'change') openSectionPop(l);
-      else if (b.dataset.a === 'zone') {
+      else if (b.dataset.a === 'white') {
+        if (leaveWhite(l)) whiteTip(l);
+      } else if (b.dataset.a === 'zone') {
         // to the zone this section is in (85-zones-ui): on the tab that's open if it has the chips (Pattern, Colours,
         // Shading with shading on), else on Pattern
         // (the tab first, so the zone's chip is there to take the keyboard, v287)
@@ -485,16 +492,7 @@ function showTip(l, btns, quiet) {
   tipBtns = btns;
   tipY = window.scrollY;
   positionTip();
-  if (!_tipSc) {
-    _tipSc = true;
-    window.addEventListener(
-      'scroll',
-      function () {
-        if (tipL >= 0 && Math.abs(window.scrollY - tipY) > 2) hideTip();
-      },
-      { passive: true },
-    );
-  }
+  tipScrollWatch();
   if (fa) {
     const nb = d.querySelector('[data-a="' + fa + '"]');
     if (nb)
@@ -517,6 +515,78 @@ function showTip(l, btns, quiet) {
   }
   if (!quiet) sayLive(capCode(m) + ' ' + (capName(m) || '') + ', ' + m.brand + (pin ? ', pinned' : ''));
   if (!btns) tipT = setTimeout(hideTip, shadeOn() ? 3600 : 2200);
+}
+// a scroll of the page closes the tip (one listener, added with the first tip)
+function tipScrollWatch() {
+  if (_tipSc) return;
+  _tipSc = true;
+  window.addEventListener(
+    'scroll',
+    function () {
+      if (tipL >= 0 && Math.abs(window.scrollY - tipY) > 2) hideTip();
+    },
+    { passive: true },
+  );
+}
+// (v318.26) the tip over a section left white: a paper swatch, "Left white", and Colour it (with zones, which zone)
+function showWhiteTip(l, quiet) {
+  const ae = document.activeElement,
+    fa = ae && ae.closest && ae.closest('.sftip') && ae.dataset ? ae.dataset.a : null;
+  hideTip();
+  const d = document.createElement('div');
+  d.className = 'sftip sftipb sftipw';
+  d.innerHTML =
+    '<i class="sftippaper"></i><b>Left white</b>' +
+    zoneTipHTML(l) +
+    '<div class="sftipbtns"><button type="button" class="sftipbtn" data-a="colour">Colour it</button></div>';
+  d.setAttribute('role', 'group');
+  d.setAttribute('aria-label', 'Section left white');
+  d.addEventListener('pointerdown', function (e) {
+    e.stopPropagation();
+  });
+  d.addEventListener('click', function (e) {
+    const b = e.target.closest('[data-a]');
+    if (!b) return;
+    if (b.dataset.a === 'zone') {
+      if (gTab !== 'pattern' && gTab !== 'colours' && !(gTab === 'shading' && shadeMode !== 'off'))
+        planTab('pattern');
+      zoneSwitch(+b.dataset.z);
+      return;
+    }
+    const kb = document.activeElement === b;
+    if (!colourWhite(l)) return;
+    showTip(l, true, true);
+    // (to its tip's Change colour, as the keyboard was on Colour it)
+    const nb = kb && tipEl && tipEl.querySelector('[data-a="change"]');
+    if (nb)
+      try {
+        nb.focus({ preventScroll: true });
+      } catch (_) {}
+  });
+  sfView.insertAdjacentElement('afterend', d);
+  tipEl = d;
+  tipL = l;
+  tipBtns = true;
+  tipY = window.scrollY;
+  positionTip();
+  tipScrollWatch();
+  if (fa) {
+    const nb = d.querySelector('[data-a="' + fa + '"]') || d.querySelector('[data-a="colour"]');
+    if (nb)
+      try {
+        nb.focus({ preventScroll: true });
+      } catch (_) {}
+  }
+  if (!quiet) sayLive('Section left white. Colour it to give it a marker again.');
+}
+// just after Leave white: the white tip, the keyboard on its Colour it
+function whiteTip(l) {
+  showTip(l, true, true);
+  const b = tipEl && tipL === l && tipEl.querySelector('[data-a="colour"]');
+  if (b)
+    try {
+      b.focus({ preventScroll: true });
+    } catch (_) {}
 }
 // (v318 review) the open row's marker, for "not Y28"
 function hlM() {
@@ -553,7 +623,7 @@ function positionTip() {
     tipEl = null;
     return;
   }
-  if (!assignData || !assignData.assign[tipL] || !labels) {
+  if (!assignData || (!assignData.assign[tipL] && whitePins[tipL] === undefined) || !labels) {
     hideTip();
     return;
   }

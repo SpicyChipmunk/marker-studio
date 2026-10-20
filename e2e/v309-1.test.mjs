@@ -53,7 +53,12 @@ test('the chart from the welcome: an untick alone is said as removed; its Undo t
   await idle(page);
   assert.equal(await page.textContent('#wcT2'), '1 marker removed');
   assert.equal(await page.textContent('#wcDone'), '0 markers are in your collection. Anything else?');
-  await page.click('#toastAct');
+  // (v318.26: the welcome's Undo is a link under that sentence, not the toast's)
+  assert.equal(
+    await page.getAttribute('#wcUndoBtn', 'aria-label'),
+    'Undo: put your collection back as it was',
+  );
+  await page.click('#wcUndoBtn');
   await idle(page);
   assert.equal(await page.evaluate(() => state.owned.size), 1);
   assert.ok(await visible(page, 'wcStepOne'));
@@ -105,8 +110,9 @@ test('a set from the welcome: its blender comes with it, uncounted; the toast’
   await idle(page);
   assert.equal(await page.textContent('#wcT2'), '120 markers added');
   assert.ok(await page.evaluate(() => state.owned.has('Ohuhu|0') && state.owned.size === 121));
-  assert.match(await page.textContent('#msToast'), /^Added 120 markers/);
-  await page.click('#toastAct');
+  // (v318.26: no toast in the welcome; its Undo is a link under "Anything else?")
+  assert.equal(await page.getAttribute('#wcUndoBtn', 'aria-label'), 'Undo: take these 120 markers back out');
+  await page.click('#wcUndoBtn');
   await idle(page);
   assert.equal(await page.evaluate(() => state.owned.size), 0);
   assert.ok(await visible(page, 'wcStep1'), 'back on the list');

@@ -830,10 +830,11 @@ function renderFocusUI() {
           return c.toUpperCase();
         });
     var isDone = stepDone(l, bits);
+    // (v318.26) Back in words beside its arrow, as the hand-off card's "← Back": an arrow alone was easy to miss
     bot.innerHTML =
       '<button id="sfFBack" aria-label="Back"' +
       (focusPos <= 0 && !focusHist.length ? ' disabled' : '') +
-      '>←</button><button id="sfFDone" class="fdone' +
+      '><span aria-hidden="true">←</span> Back</button><button id="sfFDone" class="fdone' +
       (isDone ? ' undo' : '') +
       '">' +
       (isDone ? ic('undo-2') + ' Undo' : '<span aria-hidden="true">✓</span> Done') +

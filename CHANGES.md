@@ -2181,3 +2181,58 @@ that loses nothing was built and the other is named.
 - **Tests:** test/v31825-x1, -x2 (9), e2e/v31825-x1 … -x4 (28); changed on purpose: e2e/v3187-pics (pictures kept
   past 60), test/v3187-brands (a long list keeps its brand), test/v304-colour (the wording at the smallest size).
   Cache bumped to `marker-studio-v318.25`.
+
+# Changes — v318.26 (Leave white, Blends with, skin tones, the beta's polish and questions)
+
+Ben's choices from the list after v318.25, each planned and pressure-tested (three testers) before three builders built
+them; then merged and tested together.
+
+- **Leave white.** Tap a section, then **Leave white**: it stays the paper (as the Photo pattern's white does) through
+  Shuffle, Surprise, Mood and its pictures, every pattern, Blend, zones laid again, and is out of the key, Colour along,
+  Focus mode, the PDF and the counts. Its tick goes with it and Undo brings both back ("Section left white"). Tapped,
+  a white section says **Left white · Colour it**: its marker comes back (the closest you own if it's gone). Not the
+  last section with a marker. In the Manual pattern it's a link in Change colour beside "Unpin (allow fill)". Kept as
+  its own set (`white`: section → the marker it had), not as a kind of pin: a pin-shaped one needed guards in 84 places
+  and older versions showed it as a pin. Older versions (v318.23–25) open such a guide with those sections white; their
+  next Shuffle colours them, and the guide then opens coloured here too (a white kept only where the section is still
+  paper). A white section taken out in Edit sections and brought back comes back coloured. A part split off a white
+  section stays white. The tap box's buttons wrap to a second row when three don't fit (the third was clipped at every
+  width). In tests, a white section given a marker by any path throws, so a missed path shows at once.
+- **Blends with** in a marker's details (press and hold it in Markers, or tap it in To buy): the lighter and darker
+  markers it blends with, as a guide made now picks them from your markers (not dry), each with "you have it", "dry"
+  or "not yours", the brand named when it's the other one's. Tap one for its details, with "← Back to …".
+- **Skin tones**: a row in Change colour (with 3 or more in play), and Markers' search "skin", "skin tones" shows them,
+  lightest first, with the Earth / Skin / Brown family as a link. Ohuhu's are its own 36 Skin Tones set; Copic's are 36
+  picked: 21 from Copic's own skin sets and its colouring-faces guide (Ciao 6 Skin, the Skin/Portrait 12, "How to
+  Color Faces"), 15 the nearest Copic markers to Ohuhu's set (ΔE2000 ≤ 5.7). Before, "skin" showed the Earth family,
+  which holds 14 of Ohuhu's 36 and 41 browns, and missed every deep skin tone with a colour-range rule.
+- **Tester tasks**: the colours question asks which markers looked most different; two new last questions (other marker
+  brands you use; what you colour most). The app sends to the form as it is (27 fields: the new answers in Message,
+  which Results rows leave empty) or to the new one (29) once its link is in; any other link warns in the console and
+  falls back to sharing. For Ben: add "Other brands" and "Colour most" at the END of the form as Paragraph questions,
+  NOT required (a rejected send can't be seen by the app, so older versions' sends would be lost), then send a
+  pre-filled link with every field "x" (docs/tester-form-setup.gs).
+- **Send feedback carries this visit's longest waits** (times and picture sizes only), in the form and when shared,
+  by Ben's decision (v318.23 kept them out). Details go first; the note is cut to fit the form's 4,000 characters.
+  Said in the dialog, Help (How to report, Your data) and TESTERS.md.
+- **The welcome's Undo** is a link under "Anything else?" after adding markers there, not a toast over the step's
+  buttons (it covered them on phones); reverses v309.1's toast for the welcome only. Markers' Add a set and Scan keep
+  theirs.
+- **Markers' search finds an older cap's printed name** with today's codes shown ("Rose Red" finds Ohuhu R213, older
+  cap R6 Rose Red), when what's typed reaches the name's last word, so "light" or "dark" alone add nothing; the
+  marker's label says "older cap R6 Rose Red".
+- Smaller: Send feedback can't fail on an error kept without a time; a batch's Done says "N not read" (and "None of the
+  N photos could be read"), its Undo counts the photos read; Focus mode's back button reads "← Back"; "Plan" in the
+  Help glossary, "Back to the Plan" everywhere; the Tester card says "Next to answer"; the welcome's "Scan caps one at
+  a time"; Print's paper name in the summary is a link to the Paper choices (on a phone they're below the first
+  screen); "Download PDF" no longer wraps at 320 × 568 with 1.6× text (v318.24's note said so; it did still wrap).
+- **v318.25's run on GitHub** (both engines): three failures, none flaky, all from this week's changes. The Print
+  sheet's page numbers were 10 px (the app's smallest text is 12: now 12). A backup restored over a guide deleted while
+  open now leaves that guide as it was (v318.25's rule); e2e/v289 expected the old way and was changed. And Random's
+  "Keep touching sections clearly different" check failed because v318.25 drew a random number as the page loaded,
+  moving the test's seeded rolls on to one with two alike pairs: the page's own id no longer uses Math.random. That roll
+  shows Random's rule isn't absolute (2 alike pairs on one roll in about 10 tried; the others none): noted for later.
+- **Tests:** test/v31826-w1 (5), -w2 (4), -w3 (10); e2e/v31826-w1 (8), -w2 (8), -w3 (6); changed on purpose, each
+  for the new words or behaviour: tasks-card, v31825-x3, colour-along, help, v318-ocr, v31823, tabs, v309-1, v3092,
+  v318, v3091-d4, v3083-data, pins-and-change-colour, paint, v289, test/style-fields, test/v31822-third. Cache bumped to
+  `marker-studio-v318.26`.

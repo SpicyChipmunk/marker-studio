@@ -120,7 +120,9 @@ test('Change colour open as an iPad turns from landscape to portrait (or a phone
   }
 });
 
-test('a backup restored over a guide deleted while open: the open guide becomes the restored one, saved as it shows', async () => {
+// (v318.25: a guide in Recently deleted that differs from the backup's stays there, and the backup's comes in beside it
+// as "(from backup)": the open guide, deleted, is shown as it was; before, it became the restored one)
+test('a backup restored over a guide deleted while open: the deleted one stays as it was, the backup’s comes in beside it', async () => {
   const { page, errors } = await openApp();
   await answerAsks(page);
   await sampleGuide(page); await saveGuide(page);
@@ -135,9 +137,11 @@ test('a backup restored over a guide deleted while open: the open guide becomes 
   await page.evaluate((id) => { openLibrary(); libDelete(id); libFinish(); }, id); await idle(page);
   await page.keyboard.press('Escape'); await idle(page);
   await page.setInputFiles('#guidesFile', file); await idle(page, 2000);
-  assert.equal(await page.evaluate(() => [...__mstest.colored].reduce((a, b) => a + b, 0)), 3, 'the open guide is the restored one');
-  assert.equal((await stored(page, id)).prog, 3);
-  assert.doesNotMatch(await page.textContent('#sfSaveSt'), /Removed/);
+  assert.equal(await page.evaluate(() => [...__mstest.colored].reduce((a, b) => a + b, 0)), 6, 'the open guide as it was');
+  assert.equal((await stored(page, id)).prog, 6, 'its stored copy kept, for Put back');
+  assert.match(await page.textContent('#sfSaveSt'), /Removed/);
+  const nid = await page.evaluate(() => state.saved.find((s) => / \(from backup\)$/.test(s.name)).id);
+  assert.equal((await stored(page, nid)).prog, 3, 'the backup’s copy beside it');
   assert.deepEqual(errors, []);
 });
 

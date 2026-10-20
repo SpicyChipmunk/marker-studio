@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.26',
+    t: 'Leave white: tap a section, then Leave white, and it stays the paper through Shuffle, Mood, patterns and zones (tap it, then Colour it, to bring its colour back). A marker’s details show the lighter and darker markers it blends with. Change colour has a Skin tones row, and searching “skin tones” in Markers finds them. Searching an older cap’s printed name finds its marker.',
+  },
+  {
     v: 'v318.25',
     t: 'Fixes from a debugging pass of the whole app. Among them: Monochrome from a black makes a grey ramp; Undo reaches the palettes before From photo; a palette shows a marker you’ve marked dry or removed, as Custom does; ticks made just as the app was put away are kept; a backup restored over a guide in Recently deleted leaves that guide there; the Markers ⋯ menu fits a phone; Focus mode’s next-marker card no longer covers that marker’s sections on a small phone with large text.',
   },

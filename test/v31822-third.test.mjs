@@ -90,7 +90,11 @@ test('Search finds a marker by its older cap’s name where its cap is shown old
   a.__eval('state.owned = new Set(["Ohuhu|RV17"]); state.cap = { "Ohuhu|RV17": "old" }; state.capDef = ""');
   assert.equal(J(a, 'sMatch(keyIdx("Ohuhu|RV17"), "dark blush")'), true);
   a.__eval('state.cap = { "Ohuhu|RV17": "new" }');
-  assert.equal(J(a, 'sMatch(keyIdx("Ohuhu|RV17"), "dark blush")'), false, 'not with the cap of now');
+  // (v318.26: found with the cap of now too, by the older cap's name typed whole (sByCap), its cell saying that cap;
+  // it had been "not with the cap of now")
+  assert.equal(J(a, 'sMatch(keyIdx("Ohuhu|RV17"), "dark blush")'), true, 'with the cap of now too (v318.26)');
+  assert.equal(J(a, 'sByCap(keyIdx("Ohuhu|RV17"), "dark blush")'), true);
+  assert.equal(J(a, 'sMatch(keyIdx("Ohuhu|RV17"), "dark")'), false, 'not by its first word alone');
   a.__eval('state.owned = new Set(); state.cap = {}; state.capDef = "old"');
   assert.equal(J(a, 'sMatch(keyIdx("Ohuhu|R213"), "rose red")'), true, 'nor yours yet, with older codes set');
 });

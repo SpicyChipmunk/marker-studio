@@ -11,7 +11,7 @@
    (shading in 45-shading, the photo in 46-photo, Undo in 87-undo, saving in 60-persist...). */
 
 // ---- the module's links to the rest of the app ----
-let coll = []; // written by: 97-open (setCollection), 99-close (test): the markers the guide may use
+let coll = []; // written by: 97-open (setCollection), 88-coverage-blend (set aside for a call), 99-close (test): the markers the guide may use
 let api = {}; // written by: 97-open (configure): the shell's callbacks
 const root = document.getElementById('sfRoot');
 
@@ -200,7 +200,7 @@ let gradIncl = null;
 // digit (Ohuhu Y213 with Y26, as Ohuhu numbers them); 0 for a guide saved before, which keeps v312's rule (Y213 with
 // Y210-Y216 only) for good, so the markers it shows for a section's tones never change under someone part-way through.
 // 2 for a guide made since v315: Copic's greys (N-3, C-6…) in families too (famVal); a guide made in v313/v314 keeps 1.
-// Written by: 05-style-fields, 20-image-input, 99-close (test)
+// Written by: 05-style-fields, 20-image-input, 88-coverage-blend (set aside for a call), 99-close (test)
 let famRule = 0;
 // (v313) the markers whose running-low line was closed in this guide: { mkey: 1 }, saved with it (lowLineUp, 87-undo);
 // null when none. Written by: 05-style-fields, 20-image-input, 87-undo, 99-close (test)
@@ -277,6 +277,11 @@ let blendRaf = 0; // written by: 30-palette-assign
 // ---- pinned sections ----
 let locks = {}; // written by: 10-segment, 20-image-input, 30-palette-assign, 65-edit, 87-undo, 97-open
 let lockMode = false; // written by: 20-image-input, 30-palette-assign, 50-controls, 87-undo, 97-open
+// (v318.26) sections left white by hand (Leave white, 84-popovers): { section: the marker key it had, for Colour it }.
+// A white section has no marker, base, pin or place in the order, and is in assignData.paper; every laying of the plan
+// leaves it so (whiteApply, after zoneRun). Saved as payload `white`. Written by: 10-segment, 20-image-input,
+// 30-palette-assign, 65-edit, 84-popovers, 87-undo, 97-open
+let whitePins = {};
 
 // ---- colouring along and Focus ----
 let celebrated = false; // written by: 10-segment, 30-palette-assign, 75-focus, 82-colour-mode, 90-export, 97-open

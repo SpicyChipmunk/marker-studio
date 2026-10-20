@@ -751,17 +751,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: calc(26 * var(--tpx));
+  height: calc(28 * var(--tpx));
   border: 1.4px solid var(--sub);
   border-radius: 2px;
-  font-size: calc(10 * var(--tpx));
+  /* (v318.26: 12 px, the app's smallest text: 10 failed e2e/text-size on GitHub) */
+  font-size: calc(12 * var(--tpx));
   font-weight: 600;
   color: var(--sub);
   line-height: 1;
 }
 #sfRoot .sfprordp.land {
   height: auto;
-  width: calc(26 * var(--tpx));
+  width: calc(28 * var(--tpx));
 }
 #sfRoot .sfprordw {
   font-size: var(--t-sm);
@@ -796,8 +797,37 @@
   flex: 1 0 100%;
   min-height: 0;
 }
+/* (v318.26) the paper's name in the summary, a link to the Paper choices: kept to the line's own height (a 44px
+   button made the sheet's foot 12px taller on a small phone, and its scroll area that much shorter), its tap area a
+   ::after over the line */
+#sfRoot .sfprsh .swsum .sflink {
+  position: relative;
+  display: inline;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  font: inherit;
+  line-height: inherit;
+}
+#sfRoot .sfprsh .swsum .sflink::after {
+  content: '';
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
+}
 #sfRoot .sfprsh .sfshft .sfprimary {
   padding: 0 14px;
+}
+/* (v318.26) on a small phone, Download PDF takes the width its words need and Cancel the rest: sharing the width
+   evenly, at 320px with 1.6× text "PDF" wrapped onto a second line, cut off at the button's foot */
+@media (max-width: 370px) {
+  #sfRoot .sfprsh .sfshft .sfprimary {
+    flex: 0 1 auto;
+    white-space: nowrap;
+  }
 }
 @media (max-width: 370px) {
   #sfRoot .sfrow2 button {

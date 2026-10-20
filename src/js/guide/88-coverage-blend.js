@@ -311,6 +311,47 @@ function guideWants(keys, rule, list, memo) {
   }
   return { want: want, gone: gone };
 }
+/* (v318.26) Blends with, in a marker's details (Markers, mkBlendFill in events.js): the lighter and darker markers k
+   blends with, as a guide made now would pick them (blendCompanions, the current rule, 4), from your collection: the
+   markers you own that aren't dry. Not sfCollection's list, which is every marker when you own none (the demo): with
+   nothing owned, both are markers to buy. The list is made here for each call (0.2 ms), as the sheet asks again when
+   a marker's Own is ticked, maybe before setCollection has run. The open guide's collection and rule are set aside
+   for the call, as guideWants does. null for a Colorless Blender or a key that isn't a marker. */
+function blendFor(k) {
+  const i = keyIdx(k);
+  if (i == null || NOINK.has(i)) return null;
+  const c0 = coll,
+    r0 = famRule,
+    list = [];
+  for (let j = 0; j < COLORS.length; j++) {
+    if (NOINK.has(j) || !isOwned(j) || isDry(j)) continue;
+    const c = COLORS[j];
+    list.push({
+      mkey: mkey(j),
+      code: c.code,
+      brand: c.brand,
+      hex: c.hex,
+      name: c.name,
+      lab: LAB[j],
+      fam: c.fam,
+    });
+  }
+  coll = list;
+  famRule = 4;
+  try {
+    return blendCompanions({
+      mkey: k,
+      code: COLORS[i].code,
+      brand: COLORS[i].brand,
+      hex: COLORS[i].hex,
+      lab: LAB[i],
+      fam: COLORS[i].fam,
+    });
+  } finally {
+    coll = c0;
+    famRule = r0;
+  }
+}
 // a marker's lighter and darker companions (from blendCompanions), shown under its open row in Colour along
 function blendStrip(base) {
   var c = blendCompanions(base);

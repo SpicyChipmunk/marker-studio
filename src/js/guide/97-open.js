@@ -466,6 +466,9 @@ function openDesignObj(d, id, resumed, quiet, col) {
           const nl = map[ol];
           if (nl && assign[nl] && typeof d.locks[ol] === 'string') locks[nl] = d.locks[ol];
         }
+      // (v318.26) the sections left white: only where the guide has them white (paper). An older version that laid
+      // the plan again coloured them, and carried `white` as it was (plCarry): that pin is stale
+      whitePins = whiteOpen(d.white, map, assignData.paper);
       lockMode = false;
       normalizeTones();
       curId = id;
@@ -864,6 +867,18 @@ function standInSay(nd, ng) {
    follows, so the next change isn't taken for one. Said once the guide shows. */
 let _standSay = null,
   _standDraw = false;
+// (v318.26) a saved guide's `white` ({ section: marker key }) through the section map: a section counts only where the
+// guide opens it white (paper, no marker), with a key that is a string
+function whiteOpen(w, map, paper) {
+  const o = {};
+  if (!w || typeof w !== 'object' || Array.isArray(w) || !paper) return o;
+  for (const ol in w) {
+    if (!Object.prototype.hasOwnProperty.call(w, ol)) continue;
+    const nl = map[ol];
+    if (nl && paper[nl] && typeof w[ol] === 'string' && w[ol].length < 64) o[nl] = w[ol];
+  }
+  return o;
+}
 function standInsSync() {
   if (!assignData || !assignData.assign || !labels || !coll.length) return;
   const byKey = Object.create(null),

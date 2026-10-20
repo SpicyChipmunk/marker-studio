@@ -1,5 +1,5 @@
 // v309.1 (review 4): the welcome. The toast's Undo of a set, tapped after the welcome went on (another set, extra
-// markers), leaves no way Back to "120 markers added"; the chosen brand's small print on the find step reads at 4.5:1.
+// markers), leaves no way Back to "120 markers added" (v318.26: Scan's toast; a set's Undo is a link on its step); the chosen brand's small print on the find step reads at 4.5:1.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { setup, teardown, openApp, idle } from './helpers.mjs';
@@ -14,40 +14,42 @@ const where = (page) =>
     focus: document.activeElement && (document.activeElement.id || document.activeElement.tagName),
   }));
 
-test('Undo of a set after the welcome went on: Back no longer shows it as added', async () => {
+// (v318.26: a set's Undo in the welcome is a link on "Anything else?", gone once the welcome goes on, so a set can't be
+// undone from another step now; Scan's toast still can be, after the welcome went on: tested with caps typed in Scan)
+test('Undo after the welcome went on: Back no longer shows it as added (Scan’s toast); a set’s link goes with its step', async () => {
   const { page, errors, ctx } = await openApp({ width: 820, height: 1180 });
   await page.click('#wcHaveSet');
   await page.check('#wcSets input[data-i="3"]');
   await page.click('#wcAdd');
   await idle(page);
   assert.equal(await page.textContent('#wcT2'), '120 markers added');
-  // I have another set, then the toast's Undo (still showing)
+  // I have another set, then Back: still added, its Undo link gone with the step it was on
   await page.click('#wcMoreSet');
   await idle(page);
-  await page.click('#msToast button:text-is("Undo")');
-  await idle(page);
-  assert.deepEqual(await where(page), { step: 'wcStep1', owned: 0, focus: 'wcT1' });
-  // Back: to the ways in, where the set was added from, not to "120 markers added … Anything else?"
   await page.click('#wcStep1 .wcback');
   await idle(page);
-  assert.deepEqual(await where(page), { step: 'wcStep0', owned: 0, focus: 'wcHaveSet' });
-  // and through the find step too: extra markers › … the set list › Find it from 3 caps, then Undo
-  await page.click('#wcHaveSet');
-  await page.check('#wcSets input[data-i="3"]');
-  await page.click('#wcAdd');
+  assert.equal((await where(page)).step, 'wcStep2');
+  assert.equal(await page.textContent('#wcT2'), '120 markers added');
+  assert.equal(await page.isVisible('#wcUndoBtn'), false);
+  assert.equal((await where(page)).owned, 121);
+  // caps typed in Scan, then on to another set, then Scan's toast's Undo: Back leads to what was said before them
+  await page.click('#wcMoreExtra');
+  await page.click('#wcOneType');
+  await page.fill('#scBox', 'B04');
+  await page.press('#scBox', 'Enter');
+  await page.click('#scAdd');
   await idle(page);
+  assert.equal(await page.textContent('#wcT2'), '1 more marker added');
   await page.click('#wcMoreSet');
-  await page.click('#wcToFind');
   await idle(page);
   await page.click('#msToast button:text-is("Undo")');
   await idle(page);
-  assert.deepEqual(await where(page), { step: 'wcStepFind', owned: 0, focus: 'wcTF' });
-  await page.keyboard.press('Escape');
+  assert.deepEqual(await where(page), { step: 'wcStep1', owned: 121, focus: 'wcT1' });
+  await page.click('#wcStep1 .wcback');
   await idle(page);
-  assert.equal((await where(page)).step, 'wcStep1');
-  await page.keyboard.press('Escape');
-  await idle(page);
-  assert.equal((await where(page)).step, 'wcStep0');
+  // (back to "Anything else?" as it was before the caps)
+  assert.equal((await where(page)).step, 'wcStep2');
+  assert.equal(await page.textContent('#wcT2'), '120 markers added', 'not "1 more marker added"');
   assert.deepEqual(errors, []);
   await ctx.close();
 });

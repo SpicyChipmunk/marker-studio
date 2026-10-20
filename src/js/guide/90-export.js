@@ -660,7 +660,14 @@ function openPrint() {
       printOptSet(k, x.dataset[k]);
       return;
     }
-    if (e.target.closest('[data-pr="cancel"]')) closeSheet();
+    if (e.target.closest('[data-pr="topaper"]')) {
+      // (the paper chosen brought into view and focused, so its row is where the keyboard is too)
+      const pb = el.querySelector('[data-paper][aria-pressed="true"]') || el.querySelector('[data-paper]');
+      if (pb) {
+        pb.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        pb.focus({ preventScroll: true });
+      }
+    } else if (e.target.closest('[data-pr="cancel"]')) closeSheet();
     else if (e.target.closest('#sfPDF')) exportPDF();
   });
   el.addEventListener('change', function (e) {
@@ -688,7 +695,11 @@ function printSummary() {
     ' page' +
     (n === 1 ? '' : 's') +
     '</b> · ' +
-    (pp ? pp[1] : paper) +
+    // (v318.26) the paper's name a link to the Paper choices: on a phone they're below the sheet's first screen, and
+    // the summary's "Letter" looked like the only place it was said (the same words: tests reading the text pass)
+    '<button type="button" class="sflink" data-pr="topaper">' +
+    esc(pp ? pp[1] : paper) +
+    '</button>' +
     ' · ' +
     (pdfWhat === 'ref'
       ? 'Key + reference' +

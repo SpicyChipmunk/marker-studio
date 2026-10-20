@@ -350,7 +350,9 @@ async function shot(page, name) {
   await page.screenshot({ path: SHOTS + '/' + name + '.png' });
 }
 
-test('Markers’ search: no names match “skin”, so the Earth / Skin / Brown family is shown, with a line saying so', async () => {
+// (v318.26: "skin" shows the skin tones, Ohuhu's 36 Skin Tones set and Copic's picks, lightest first, with the family
+// as a link; with none of them in the view, the family as before)
+test('Markers’ search: “skin” shows the skin tones, with the Earth / Skin / Brown family as a link', async () => {
   for (const width of [820, 390]) {
     const { ctx, page, errors } = await openApp({
       width,
@@ -360,19 +362,19 @@ test('Markers’ search: no names match “skin”, so the Earth / Skin / Brown 
     await page.click('#mCollection');
     await idle(page);
     await search(page, 'skin');
-    assert.equal(await famLine(page), 'No names match “skin” · showing the Earth / Skin / Brown family (94)');
-    assert.equal(await cells(page), 94);
+    assert.equal(await famLine(page), 'Skin tones (72) · the Earth / Skin / Brown family (94) ›');
+    assert.equal(await cells(page), 72);
     assert.ok(
-      await page.evaluate(() =>
-        [...document.querySelectorAll('#results .cell')].every(
-          (c) => COLORS[+c.dataset.i].fam === 'Earth / Skin / Brown',
-        ),
-      ),
+      await page.evaluate(() => {
+        const sk = skinIdx(),
+          got = [...document.querySelectorAll('#results .cell')].map((c) => +c.dataset.i);
+        return got.join() === sk.join();
+      }),
+      'the skin tones, lightest first',
     );
-    assert.equal((await page.textContent('#matchn')).trim(), '(94 markers)');
-    assert.ok(!(await page.isVisible('#results .famline button')), 'no link: the results are the family');
+    assert.equal((await page.textContent('#matchn')).trim(), '(72 markers)');
     await shot(page, 'skin-' + width);
-    // Owned: the family's markers you own, counted so
+    // Owned (none of the skin tones yours here): the family's markers you own, counted so, as before
     await page.click('#ownView [data-v="owned"]');
     await idle(page);
     const own = await page.evaluate(
@@ -455,9 +457,10 @@ test('Markers’ search: the counts follow the filters, and a family the filters
   const n = await page.evaluate(
     () => COLORS.filter((c) => c.brand === 'Copic' && c.fam === 'Earth / Skin / Brown').length,
   );
-  assert.equal(await famLine(page), `No names match “skin” · showing the Earth / Skin / Brown family (${n})`);
-  assert.equal(await cells(page), n);
-  // the Blue family only: Earth / Skin / Brown is left out, so "skin" is as before
+  // (v318.26: the skin tones, Copic's 36, with the family's count in the link)
+  assert.equal(await famLine(page), `Skin tones (36) · the Earth / Skin / Brown family (${n}) ›`);
+  assert.equal(await cells(page), 36);
+  // the Blue family only: Earth / Skin / Brown and every skin tone are left out, so "skin" is as before
   await page.evaluate(() => {
     state.brands = new Set(['Ohuhu', 'Copic']);
     fgTap('fam', 'Blue');

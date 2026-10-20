@@ -337,7 +337,7 @@ function mount() {
       const P = evPt(e);
       if (P.x < 0 || P.y < 0 || P.x >= W || P.y >= H) return;
       const l = labels[P.y * W + P.x];
-      if (l > 0 && assignData.assign[l]) {
+      if (l > 0 && (assignData.assign[l] || whitePins[l] !== undefined)) {
         clearTimeout(lpT);
         lpFired = ptrs.size > 0;
         holdSec(l);

@@ -97,7 +97,7 @@ function editTapAt(P) {
     if (l > 0 && assignData && assignData.assign[l]) {
       openSectionPop(l, { manual: true });
       renderGuide();
-    }
+    } else if (l > 0 && assignData && whitePins[l] !== undefined) showTip(l, true);
     return;
   }
   if (sfmode === 'color') {
@@ -143,7 +143,7 @@ function editTapAt(P) {
     return;
   }
   if (sfmode === 'guide') {
-    if (l > 0 && assignData && assignData.assign[l]) showTip(l, true);
+    if (l > 0 && assignData && (assignData.assign[l] || whitePins[l] !== undefined)) showTip(l, true);
     else if (l > 0 && assignData && assignData.paper && assignData.paper[l])
       toast('Leave this section white \u2014 the photo is white there.', 2200);
     return;
@@ -338,7 +338,7 @@ function onDown(e) {
           return;
         if (P.x < 0 || P.y < 0 || P.x >= W || P.y >= H) return;
         const l = labels[P.y * W + P.x];
-        if (l > 0 && assignData && assignData.assign[l]) {
+        if (l > 0 && assignData && (assignData.assign[l] || whitePins[l] !== undefined)) {
           lpFired = true;
           if (navigator.vibrate)
             try {

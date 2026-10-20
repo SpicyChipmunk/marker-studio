@@ -266,7 +266,7 @@ test('focus mode is still entered from the bar and comes back to the list', asyn
   assert.ok(await page.isVisible('#sfAlist'), 'the list is back');
   assert.match(await toolStatus(page), /^1 of \d+ coloured$/);
   assert.equal(await page.textContent('#sfDoneBtn'), '← Plan');
-  assert.equal(await page.getAttribute('#sfDoneBtn', 'aria-label'), 'Back to the plan');
+  assert.equal(await page.getAttribute('#sfDoneBtn', 'aria-label'), 'Back to the Plan');
   assert.deepEqual(errors, []);
 });
 

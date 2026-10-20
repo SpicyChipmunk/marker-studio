@@ -196,7 +196,8 @@ test('Share: Show it off, Print…, Plan & keep; the Print sheet opens under the
   assert.equal(await page.textContent('#sfSheetT'), 'Print');
   assert.deepEqual(await page.$$eval('#sfSheet [role="group"]', (g) => g.map((x) => x.getAttribute('aria-label'))), ['What to print', 'Labels on the picture', 'Paper size']);
   assert.ok(await page.isVisible('#sfPdfDark') && await page.isVisible('#sfPdfBlend'));
-  assert.deepEqual(await page.$$eval('#sfSheet .sfshft button', (b) => b.map((x) => x.textContent)), ['Cancel', 'Download PDF']);
+  // (v318.26: the foot's own buttons; the summary's paper is a link to the Paper choices)
+  assert.deepEqual(await page.$$eval('#sfSheet .sfshft > button', (b) => b.map((x) => x.textContent)), ['Cancel', 'Download PDF']);
   // the summary follows the choices, and its page count matches the PDF's
   const sum = () => page.textContent('#sfPrSum');
   const count = async () => { const n = await page.evaluate(() => __mstest.buildPDFPages().length); const m = /^(\d+) pages?/.exec(await sum()); return [+m[1], n]; };

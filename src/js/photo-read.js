@@ -2728,8 +2728,11 @@ function ocrButtons(r) {
     $('ocrStop').focus({ preventScroll: true });
     return;
   }
+  // (v318.26) the photos Undo takes out counted without those not read (a photo that couldn't be opened, or ran out
+  // of memory): "Undo these 3 photos" had counted a broken one, which had nothing to take out
   const undo = many ? q.per.some((x) => x.added || x.asked) : r.added || r.asked,
-    photos = many && q.per.length > 1 ? 'these ' + q.per.length + ' photos' : 'this photo';
+    nRead = many ? q.per.filter((x) => !x.failed).length : 1,
+    photos = nRead > 1 ? 'these ' + nRead + ' photos' : 'this photo';
   b.innerHTML =
     '<button type="button" class="btn-primary" id="ocrDone">Done</button>' +
     '<button type="button" class="obSecond" id="ocrMore">' +
@@ -2807,21 +2810,33 @@ function ocrFinish() {
     const added = q.per.reduce((s, x) => s + x.added, 0),
       asked = q.per.reduce((s, x) => s + x.asked, 0),
       same = q.per.reduce((s, x) => s + (x.same || 0), 0),
-      sw = q.per.find((x) => x.switched);
-    scanSay(
-      added ? 'ok' : 'same',
-      'From ' + ocrNPhotos(q.per.length) + ': ' + (added ? added + ' added to the list' : 'nothing new'),
-      [
-        same ? same + ' already in the list' : '',
-        asked ? asked + ' to choose in the list below' : '',
-        sw ? ocrSwitchNote(sw.brand) : '',
-      ]
-        .filter(Boolean)
-        .join(' · ') || 'Check them below, then Add',
-      -1,
-      // (v318.7: the set nearly all here, with what's missing: "Honolulu 120: all but 2 are here", scan.js)
-      scanGapChoices(),
-    );
+      sw = q.per.find((x) => x.switched),
+      // (v318.26) the photos not read said on Done's card, as the batch's line says them ("· 1 not read"); and every
+      // photo not read said as that, not as "nothing new"
+      failed = q.per.filter((x) => x.failed).length;
+    if (failed && failed === q.per.length)
+      scanSay(
+        'none',
+        'None of the ' + q.per.length + ' photos could be read',
+        (r && r.note) || 'Try them again, or a screenshot of each',
+        -1,
+      );
+    else
+      scanSay(
+        added ? 'ok' : 'same',
+        'From ' + ocrNPhotos(q.per.length) + ': ' + (added ? added + ' added to the list' : 'nothing new'),
+        [
+          failed ? failed + ' not read' : '',
+          same ? same + ' already in the list' : '',
+          asked ? asked + ' to choose in the list below' : '',
+          sw ? ocrSwitchNote(sw.brand) : '',
+        ]
+          .filter(Boolean)
+          .join(' · ') || 'Check them below, then Add',
+        -1,
+        // (v318.7: the set nearly all here, with what's missing: "Honolulu 120: all but 2 are here", scan.js)
+        scanGapChoices(),
+      );
   } else if (r && r.done && !r.failed)
     scanSay(
       r.added ? 'ok' : 'same',

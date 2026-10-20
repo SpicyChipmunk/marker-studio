@@ -235,6 +235,7 @@ function secApply(u, redo) {
     }
     if (u.keep) {
       locks = u.keep.locks;
+      whitePins = u.keep.white || {};
       shadeFlat = u.keep.flat;
       _flatVer++;
       _segFresh = u.keep.fresh;

@@ -74,3 +74,8 @@ older commit going out by mistake.
   `src/js/safety.js`. `docs/tester-form-setup.gs` makes the form and its results sheet (run it once at
   script.google.com, signed in to the account that should own them; it logs the link). With `RESULTS_FORM` empty,
   both open the share sheet instead. A form made again (or another account's) only needs the new link there.
+  (v318.26) The app sends to a form of 27 fields (v318.25's) or 29 (with Other brands and Colour most at the end; to
+  the older form those two answers go in Message). To add the two to the live form: two Paragraph questions at the
+  very end, titled as above, **not required** (posts are no-cors: a required field left empty is refused without a
+  word, and v318.25 leaves them empty); then a pre-filled link with every field "x" goes in `RESULTS_FORM`. Any other
+  count is passed over, with a warning in the console, and both buttons use the share sheet.

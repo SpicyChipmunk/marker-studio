@@ -539,6 +539,15 @@ button.sfSeeAll {
   font-size: var(--t-md);
   line-height: 1.5;
 }
+/* (v318.26) the welcome's Undo of the last add: a link on its own line under "Anything else?" (its 44px tap area is
+   .wcscan's, 11-scan.css), with room above and below so that area doesn't reach the choices under it */
+.wcundo {
+  display: block;
+  margin: 8px 0 4px;
+}
+.wcundo[hidden] {
+  display: none;
+}
 .wcsets {
   flex: none;
   overflow: auto;

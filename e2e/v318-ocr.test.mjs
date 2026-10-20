@@ -332,7 +332,7 @@ test('Photograph your caps: first in the welcome’s one by one, and in Markers�
   await idle(page);
   assert.deepEqual(await page.$$eval('#wcStepOne .wcc b', (b) => b.map((x) => x.textContent)), [
     'Photograph your caps',
-    'Scan the caps',
+    'Scan caps one at a time',
     'Tick colours on a chart',
     'Type or paste codes',
   ]);
@@ -392,7 +392,7 @@ test('where the reader can’t run: no Photograph your caps, and the welcome rea
   });
   assert.match(
     await page.textContent('#wcOneByOne'),
-    /Scan the caps, tick colours on a chart, or type the codes\./,
+    /Scan caps one at a time, tick colours on a chart, or type the codes\./,
   );
   await page.click('#wcOneByOne');
   await idle(page);

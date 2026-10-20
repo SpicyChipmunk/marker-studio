@@ -16,6 +16,9 @@ let chartBrand = 'Ohuhu',
   chartBase = new Set(),
   chartAfter = null,
   chartUndone = null,
+  // (v318.26) opened from the welcome: its Undo is a link on "Anything else?" (the after callback's 4th argument), not
+  // a toast over the step's choices
+  chartWelcome = false,
   chartOpener = null,
   // (v318 review) Some are missing (the welcome, after a set): only the markers you had when it opened, to untick the
   // few lost or used up; null for every colour. Kept as they were, so a swatch unticked stays where it was
@@ -172,13 +175,15 @@ function chartFoot() {
             ? 'Add ' + ch.add.length + ' marker' + (ch.add.length === 1 ? '' : 's')
             : 'Tick your colours';
 }
-// opts: { added(n) } from the welcome: called after a save that added markers
+// opts: { added(n, del, set, undo), undone, missing, welcome } from the welcome: added called after a save that changed
+// your markers
 function openChart(opts) {
   const ov = $('chartOverlay');
   if (!ov) return;
   const o = opts && !opts.type ? opts : {};
   chartAfter = o.added || null;
   chartUndone = o.undone || null;
+  chartWelcome = !!o.welcome;
   chartOpener = document.activeElement;
   chartOn = new Set(state.owned);
   chartBase = new Set(state.owned);
@@ -213,6 +218,7 @@ function closeChart() {
   closeDialog(ov);
   chartAfter = null;
   chartUndone = null;
+  chartWelcome = false;
   openerBack(chartOpener);
   chartOpener = null;
 }
@@ -236,6 +242,7 @@ function chartSave() {
   const ch = chartChanges(),
     after = chartAfter,
     undone = chartUndone,
+    welcome = chartWelcome,
     opener = chartOpener;
   if (!ch.add.length && !ch.del.length) return closeChart();
   ch.add.forEach((k) => state.owned.add(k));
@@ -259,7 +266,7 @@ function chartSave() {
       : ch.del.length
         ? 'Removed ' + ch.del.length + ' marker' + (ch.del.length === 1 ? '' : 's')
         : addedManyLine(ch.add.length, off.length);
-  toastAction(said, 'Undo', function () {
+  const undoAll = function () {
     undo();
     save();
     fullRender();
@@ -268,9 +275,27 @@ function chartSave() {
     // (the toast's button goes: the keyboard back on what opened the chart, as after the save)
     if (opener && opener.isConnected && opener.offsetParent) opener.focus({ preventScroll: true });
     if (undone) undone();
-  });
+  };
+  // (v318.26) from the welcome, no toast: on a phone it covered the step's own choices. Its Undo goes to the welcome,
+  // a link there, named for what it does (the chart can untick as well as tick)
+  if (!welcome) toastAction(said, 'Undo', undoAll);
   // (v309.1: removals said too, not as "added")
-  if (after) after(ch.add.length, ch.del.length);
+  if (after)
+    after(
+      ch.add.length,
+      ch.del.length,
+      0,
+      welcome
+        ? {
+            fn: undoAll,
+            label: ch.del.length
+              ? 'Undo: put your collection back as it was'
+              : 'Undo: take ' +
+                (ch.add.length === 1 ? 'this marker' : 'these ' + ch.add.length + ' markers') +
+                ' back out',
+          }
+        : null,
+    );
 }
 (function () {
   const ov = $('chartOverlay');

@@ -75,6 +75,8 @@ function planSnap() {
       return { x: x.x, y: x.y, mkey: x.mkey };
     }),
   });
+  // (v318.26: the sections left white, only when there are any, so a step's snapshot is as before without)
+  if (Object.keys(whitePins).length) s.w = Object.assign({}, whitePins);
   // the zones: which sections each has, and the settings of those not being edited (34-zones)
   const z = zoneSnap();
   if (z) s.z = z;
@@ -253,6 +255,11 @@ function planLabel1(p, q) {
   if (a.op !== b.op) return 'See-through changed';
   if (a.ppaper !== b.ppaper) return b.ppaper ? 'White areas left white' : 'White areas coloured';
   if (p.ref !== q.ref) return 'Lighting correction ' + onoff(q.ref.lit && q.ref.lit.on);
+  // (v318.26) Leave white and Colour it
+  const wa = a.w || {},
+    wb = b.w || {};
+  for (const l in wb) if (wa[l] === undefined) return 'Section left white';
+  for (const l in wa) if (wb[l] === undefined) return 'Section coloured again';
   const lk = {};
   Object.keys(a.locks)
     .concat(Object.keys(b.locks))
@@ -282,6 +289,14 @@ function planCommit(why, quiet, more) {
   const w = why || planWhy;
   planWhy = null;
   if (planDrag || popCtx || sfmode !== 'guide' || !assignData || !labels) return;
+  // (v318.26, the browser and unit tests only) a section left white with a marker again: a laying of the plan that
+  // didn't go through zoneRun (whiteApply). Thrown, so every test that reaches one fails on the page's error
+  if (window.__MS_TEST)
+    for (const l in whitePins)
+      if (assignData.assign[l])
+        throw new Error(
+          'Leave white: section ' + l + ' has a marker again (' + assignData.assign[l].mkey + ')',
+        );
   const cur = planSnap();
   if (!cur) return;
   const lost = _toneLost,
@@ -1057,9 +1072,20 @@ function planRestore(e, noFilt) {
     }
   });
   for (const l in keep) if (assign[l]) assign[l] = keep[l];
-  const order = s.o.filter(function (l) {
-    return !!assign[l];
-  });
+  // (v318.26) the sections the step had left white, but one with ink on the paper now (coloured since Colour it)
+  // keeps its marker, as any coloured section does
+  const wh = {},
+    back = [];
+  for (const l in s.w || {})
+    if (keep[l]) {
+      assign[l] = base[l] = keep[l];
+      back.push(+l);
+    } else wh[l] = s.w[l];
+  const order = s.o
+    .filter(function (l) {
+      return !!assign[l];
+    })
+    .concat(back);
   assignData = { assign: assign, order: order, N: order.length, base: base };
   if (e.shp) assignData.shp = 1;
   if (e.shps) assignData.shps = Object.assign({}, e.shps);
@@ -1077,11 +1103,13 @@ function planRestore(e, noFilt) {
   if (s.p && s.p.length) {
     const pp = {};
     s.p.forEach(function (l) {
-      pp[l] = 1;
+      if (!assign[l]) pp[l] = 1;
     });
-    assignData.paper = pp;
+    if (Object.keys(pp).length) assignData.paper = pp;
   }
   locks = Object.assign({}, s.locks);
+  whitePins = wh;
+  whiteApply();
   _origKeys = e.ok ? JSON.parse(JSON.stringify(e.ok)) : {};
   // (v312.1) a step from before a marker was marked dry or unticked has no record of the marker its sections had: they
   // show the closest you own, and the guide keeps the marker (as standInsSync does, 97-open), so it's saved as it was

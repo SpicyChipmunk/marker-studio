@@ -164,6 +164,14 @@ function openSwatchPop(o) {
       .map(function (k) {
         return bk[k];
       }),
+    // (v318.26) Skin tones, after Recently used: the markers here from Ohuhu's 36 Skin Tones set and Copic's skin picks
+    // (skinIdx, events.js), lightest first; only with 3 or more of them (all of them, even those shown above: a row
+    // to choose a face's or a hand's from in one place)
+    skin = (typeof skinIdx === 'function' ? skinIdx() : [])
+      .map(function (i) {
+        return bk[mkey(i)];
+      })
+      .filter(Boolean),
     gi = 0;
   var grp = function (name, list, cls) {
     var id = 'sfPopG' + gi++;
@@ -188,14 +196,23 @@ function openSwatchPop(o) {
   var field =
       '<input id="sfPopFilter" type="text" aria-label="Filter by marker code" placeholder="Code (B, RV, YR\u2026)" autocomplete="off" autocapitalize="characters" spellcheck="false">',
     body =
-      (o.sub || o.extraLabel
-        ? '<div class="sfpops">' +
+      (o.sub || o.extraLabel || o.whiteLabel
+        ? '<div class="sfpops' +
+          (o.extraLabel && o.whiteLabel ? ' sfpops2' : '') +
+          '">' +
           (o.sub || '') +
+          (o.extraLabel && o.whiteLabel ? '<div class="sfpopxw">' : '') +
           (o.extraLabel
             ? '<button type="button" id="sfPopExtra" class="sfghost sfpopx">' +
               esc(o.extraLabel) +
               '</button>'
             : '') +
+          (o.whiteLabel
+            ? '<button type="button" id="sfPopWhite" class="sfghost sfpopx">' +
+              esc(o.whiteLabel) +
+              '</button>'
+            : '') +
+          (o.extraLabel && o.whiteLabel ? '</div>' : '') +
           '</div>'
         : '') +
       (o.opts || '') +
@@ -203,6 +220,7 @@ function openSwatchPop(o) {
       (near.length ? grp('Closest', near, 'sfswrec sfswrow') : '') +
       (inGuide.length > 1 ? grp('In this guide', inGuide, 'sfswrec sfswrow') : '') +
       (rec.length ? grp('Recently used', rec, 'sfswrec sfswrow') : '') +
+      (skin.length >= 3 ? grp('Skin tones', skin, 'sfswrec sfswrow sfswskin') : '') +
       fams
         .map(function (f) {
           return grp(f, groups[f].slice().sort(light));
@@ -343,6 +361,11 @@ function openSwatchPop(o) {
     ex.addEventListener('click', function () {
       guideDirty = true;
       if (popCtx === o && o.onExtra) o.onExtra();
+    });
+  var wb = el.querySelector('#sfPopWhite');
+  if (wb)
+    wb.addEventListener('click', function () {
+      if (popCtx === o && o.onWhite) o.onWhite();
     });
 }
 function swFade(r) {
@@ -1000,6 +1023,14 @@ function openSectionPop(l, opt) {
       popSame(mkByKey(k));
     },
     extraLabel: opt.manual && _sv[l].p ? 'Unpin (allow fill)' : null,
+    // (v318.26) in Manual a tap opens this, not the tip: Leave white is here too
+    whiteLabel: opt.manual ? 'Leave white' : null,
+    onWhite: function () {
+      o._cancel = true;
+      for (var x in _sv) back(+x);
+      closeSwatchPop(false);
+      if (leaveWhite(l)) whiteTip(l);
+    },
     onExtra: function () {
       for (var x in _sv) if (+x !== l) back(+x);
       delete locks[l];
@@ -1115,6 +1146,81 @@ function togglePin(l) {
   var m = assignData.assign[l];
   sayLive((locks[l] !== undefined ? 'Pinned ' : 'Unpinned ') + msay(m) + ' ' + (capName(m) || ''));
   planCommit();
+}
+// (v318.26) Leave white: the section stays white (the paper) through Shuffle, Surprise, Mood and pattern changes, out
+// of the key, Colour along and the counts, until Colour it. Its marker is kept for that (whitePins, 00-state). A
+// section with ink on it is unticked (its tick, tones and kept shading back on Undo, as Recolour them too's are). The
+// last section with a marker stays: a guide with none is the Photo pattern's "every section left white".
+function leaveWhite(l) {
+  if (sfmode !== 'guide' || !assignData || !assignData.assign[l]) return false;
+  if (assignData.N <= 1) {
+    toast('This is the last section with a colour: it can’t be left white too.', 2600);
+    return false;
+  }
+  const m = assignData.assign[l];
+  if (colored && inkOn(l)) {
+    const P = tp();
+    _tickLost[l] = { c: colored[l], t: P[l], h: heldSh[l] || null };
+    colored[l] = 0;
+    P[l] = 0;
+    heldSet(l, null);
+  }
+  // (the marker it had; for a stand-in, the marker the guide keeps for it, 97-open)
+  whitePins[l] = _origKeys[l] ? _origKeys[l].k : m.mkey;
+  whiteApply();
+  guideDirty = true;
+  normalizeTones();
+  renderGuide();
+  renderControls();
+  updateProgress();
+  planCommit();
+  sayLive('Section left white. Colour it brings ' + msay(m) + ' back.');
+  return true;
+}
+// Colour it: a section left white has a marker again, the one it had if you can use it (else the closest you own),
+// unpinned, so the pattern lays it from the next change on
+function colourWhite(l) {
+  if (sfmode !== 'guide' || !assignData || whitePins[l] === undefined) return false;
+  const k = whitePins[l];
+  let m = mkByKey(k);
+  if (!m && k) {
+    const info = api.markerInfo ? api.markerInfo(k) : null;
+    if (info && info.lab && coll.length) m = nearestInPool(info.lab, coll);
+  }
+  if (!m) m = activePool()[0] || coll[0];
+  if (!m) return false;
+  delete whitePins[l];
+  const A = assignData.assign,
+    c = comps[l];
+  A[l] = m;
+  (assignData.base || (assignData.base = {}))[l] = m;
+  // (a stand-in for a marker marked dry or no longer yours: the guide keeps that marker for it, as on opening)
+  const cm = m.mkey !== k ? catMarker(k) : null;
+  if (cm) _origKeys[l] = { k: k, s: [cm.mkey, m.mkey] };
+  if (assignData.paper) {
+    delete assignData.paper[l];
+    if (!Object.keys(assignData.paper).length) delete assignData.paper;
+  }
+  // (into the order where it sits on the page, top to bottom, as Manual and an opened guide have it)
+  const o = assignData.order;
+  let at = o.length;
+  for (let i = 0; i < o.length; i++) {
+    const q = comps[o[i]];
+    if (q && (q.cy > c.cy || (q.cy === c.cy && q.cx > c.cx))) {
+      at = i;
+      break;
+    }
+  }
+  o.splice(at, 0, l);
+  assignData.N = o.length;
+  guideDirty = true;
+  normalizeTones();
+  renderGuide();
+  renderControls();
+  updateProgress();
+  planCommit();
+  sayLive('Coloured again: ' + msay(m) + ' ' + (capName(m) || ''));
+  return true;
 }
 // Fill: every unpinned section still to colour takes the marker (one ticked done keeps its own, as with Everywhere:
 // that ink is on the paper); a section that changes marker starts its tones afresh, and Undo brings them back. With

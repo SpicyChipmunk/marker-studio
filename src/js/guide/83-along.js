@@ -73,7 +73,8 @@ function alongControls() {
     ic('search') +
     '</button></div>' +
     findBoxHTML() +
-    '<div id="sfAlist" class="sfalist"></div></div><div class="sfbar"><button id="sfDoneBtn" class="sfghost" aria-label="Back to the plan" data-long="← Plan" data-short="← Plan">← Plan</button><button id="sfFocus" class="sfprimary" aria-label="Focus mode" data-ic="focus" data-long="Focus mode" data-short="Focus">' +
+    // (v318.26: "Back to the Plan", as Edit sections' own; the Plan is in Help's glossary)
+    '<div id="sfAlist" class="sfalist"></div></div><div class="sfbar"><button id="sfDoneBtn" class="sfghost" aria-label="Back to the Plan" data-long="← Plan" data-short="← Plan">← Plan</button><button id="sfFocus" class="sfprimary" aria-label="Focus mode" data-ic="focus" data-long="Focus mode" data-short="Focus">' +
     ic('focus') +
     // (v288: a finished page's bar offers Reveal & share instead, updateProgress)
     ' Focus mode</button><button id="sfAlongRev" class="sfprimary" style="display:none" data-ic="sparkles" data-long="Reveal &amp; share" data-short="Reveal">' +

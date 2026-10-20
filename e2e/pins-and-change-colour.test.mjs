@@ -98,7 +98,8 @@ test('Change colour: pick, Done pins it through Shuffle and every pattern; Cance
   assert.ok(idx.every((v, i) => v >= 0 && (i === 0 || v > idx[i - 1])), 'groups follow the family order: ' + lay.groups.join(', '));
   assert.ok(lay.light, 'each group runs light to dark');
   assert.equal(lay.recent, false, 'nothing recently used yet');
-  assert.deepEqual(lay.short, ['Closest', 'In this guide'], 'v288: the shortcuts first');
+  // (v318.26: and Skin tones, as Honolulu 120 has 3 or more of them)
+  assert.deepEqual(lay.short, ['Closest', 'In this guide', 'Skin tones'], 'v288: the shortcuts first');
   assert.equal(lay.n, lay.coll, 'every marker in the collection');
   assert.equal(lay.confirmBg, 'rgb(111, 78, 245)', 'Done is the primary button');
   assert.equal(await page.textContent('#sfPopConfirm'), 'Done');

@@ -11,7 +11,8 @@ const APP_BETA = true;
 const FEEDBACK_EMAIL = '';
 // (v312) The Google Form that Send results (Tester tasks) and Send feedback post to: its pre-filled link, as
 // docs/tester-form-setup.gs logs it (every field "x", in the order tester.js's FIELDS has them). Empty: Send results
-// and Send feedback open the share sheet (or copy) instead.
+// and Send feedback open the share sheet (or copy) instead. (v318.26) The form of v318.25 (27 fields) or the one with
+// the two new questions at its end (29) both work (tester.js formTarget): swap in the new link once it's made.
 const RESULTS_FORM =
   'https://docs.google.com/forms/d/e/1FAIpQLSc4V4fb4-FbDWEqpKsv7ZGh05d04qta_rmZBGu9Gw-XrUkFww/viewform?usp=pp_url&entry.154335765=x&entry.1458459355=x&entry.4498281=x&entry.948816975=x&entry.757643837=x&entry.1053318030=x&entry.593081015=x&entry.990370073=x&entry.882586814=x&entry.40761276=x&entry.2032943376=x&entry.1318595819=x&entry.871716211=x&entry.1555463495=x&entry.262103555=x&entry.139153216=x&entry.2050720170=x&entry.1122665941=x&entry.712017838=x&entry.976242040=x&entry.304256101=x&entry.1426842893=x&entry.2019164931=x&entry.797027600=x&entry.1643258516=x&entry.1615734485=x&entry.594365445=x';
 // (v308) the last ERR_MAX errors, kept across reloads (ERR_KEY) for Copy details, Copy diagnostics and Send feedback:
@@ -124,10 +125,19 @@ function diagHead() {
 function errStored() {
   try {
     const a = JSON.parse(localStorage.getItem(ERR_KEY) || '[]');
+    // (v318.26) when and where made strings: one kept by an older version (or written by hand) without them made
+    // Send feedback throw (when.slice) and Copy details print "undefined"
     return Array.isArray(a)
-      ? a.filter(function (x) {
-          return x && typeof x === 'object' && typeof x.msg === 'string';
-        })
+      ? a
+          .filter(function (x) {
+            return x && typeof x === 'object' && typeof x.msg === 'string';
+          })
+          .map(function (x) {
+            return Object.assign({}, x, {
+              when: typeof x.when === 'string' ? x.when : '',
+              where: typeof x.where === 'string' ? x.where : '',
+            });
+          })
       : [];
   } catch (e) {
     return [];
@@ -218,7 +228,9 @@ function scanTraceAdd(s) {
 }
 // (v318.23) how long the page was held by the longest pieces of work this visit (finding a photo's page and sections,
 // Sensitivity, Build): the longest HOLD_MAX, each a label, its time and the picture's size, for Copy diagnostics and
-// Copy details, so an iPad's own numbers can be seen. Kept in memory only, never saved or sent: not in Send feedback
+// Copy details, so an iPad's own numbers can be seen. Kept in memory only, never saved. (v318.26: and in Send feedback,
+// feedbackWaitLines, by Ben's decision: a tester's slow steps reach the maker without Copy diagnostics. Times and sizes
+// only; gone after a reload, so "this visit")
 const HOLD_MAX = 8,
   holds = [];
 function holdAdd(label, ms, size) {
@@ -266,6 +278,15 @@ function errDetails() {
     .concat(holds.length ? ['\nLongest waits, this visit:'].concat(holdLines()) : [])
     .join('\n');
 }
+// (v318.26) this visit's longest waits, for Send feedback (its report, and the form's Message): '' when there are none
+function feedbackWaitLines() {
+  return holds.length ? '\nLongest waits, this visit:\n' + holdLines().join('\n') : '';
+}
+// (v318.26) what was written, cut to leave room for the details within max (the form takes 4000 a field): the details
+// made first and kept whole, as they had been cut off at the end (a long note, three errors and eight waits)
+function feedbackFit(text, det, max) {
+  return String(text).slice(0, Math.max(0, max - det.length)) + det;
+}
 // the last few errors, a line each (Send feedback's report, and the form's Message)
 function feedbackErrLines() {
   const errs = feedbackErrs();
@@ -293,7 +314,8 @@ function feedbackReport(msg) {
     '— Details for Marker Studio’s maker (please keep) —\n' +
     head.join('\n').slice(0, 900) +
     '\n' +
-    feedbackErrLines()
+    feedbackErrLines() +
+    feedbackWaitLines()
   );
 }
 function feedbackCopy(text) {

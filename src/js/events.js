@@ -302,16 +302,96 @@ function mkFill(i) {
   $('mkSimilar').style.display = NOINK.has(i) ? 'none' : '';
   mkWishFill(i);
   mkCapFill(i);
+  mkBlendFill(i);
 }
+// (v318.26) Blends with: the lighter and darker markers this one blends with, as a guide made now would pick them from
+// your markers (SF.blendFor), each a button to that marker's own details, where Own and To buy are; one you don't have
+// says so ("not yours"), as does one of yours that's dry. Another brand's is named with its brand ("Darker: Ohuhu
+// E44"). Hidden for a Colorless Blender and when there's neither. mkFrom: the marker whose details a companion's were
+// opened from: a "Back to Ohuhu R27" link takes the heading's place (one level back).
+let mkFrom = null;
+function mkBlendFill(i) {
+  const el = $('mkBlend');
+  if (!el) return;
+  let c = null;
+  try {
+    c = window.SF && SF.blendFor ? SF.blendFor(mkey(i)) : null;
+  } catch (_) {
+    c = null;
+  }
+  const base = COLORS[i],
+    slots = c
+      ? [
+          [c.light, 'Lighter'],
+          [c.dark, 'Darker'],
+        ].filter((s) => s[0] && keyIdx(s[0].mkey) != null)
+      : [];
+  el.hidden = !slots.length;
+  if (!slots.length) {
+    el.innerHTML = '';
+    return;
+  }
+  const back = mkFrom != null && mkFrom !== i && COLORS[mkFrom] ? mkFrom : null;
+  el.innerHTML =
+    (back != null
+      ? '<button type="button" class="mkblback" data-mkback="' +
+        back +
+        '"><span aria-hidden="true">\u2190</span> Back to ' +
+        esc(COLORS[back].brand + ' ' + capCode(back)) +
+        '</button>'
+      : '<div class="mkblh" aria-hidden="true">Blends with</div>') +
+    '<div class="mkblrow">' +
+    slots
+      .map(function (s) {
+        const j = keyIdx(s[0].mkey),
+          m = COLORS[j],
+          own = isOwned(j),
+          word = own && isDry(j) ? 'dry' : own ? 'you have it' : 'not yours',
+          code = (m.brand !== base.brand ? m.brand + ' ' : '') + capCode(j);
+        return (
+          '<button type="button" class="mkbl' +
+          (own && word !== 'dry' ? '' : ' sugg') +
+          '" data-mkbl="' +
+          j +
+          '" aria-label="' +
+          esc(s[1] + ': ' + m.brand + ' ' + capCode(j) + ' ' + capName(j) + ', ' + word) +
+          '"><span class="mkblsw" style="background:' +
+          m.hex +
+          '"></span><span class="mkblt"><span class="mkbll">' +
+          s[1] +
+          '</span> <b>' +
+          esc(code) +
+          '</b><span class="mkbls">' +
+          word +
+          '</span></span></button>'
+        );
+      })
+      .join('') +
+    '</div>';
+}
+// a companion opens its own details in the same sheet (it's open already: openDialog does nothing more), and the
+// focus goes to its code, as the button tapped is gone with the redraw
+$('mkBlend').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b || mkOpenIdx == null) return;
+  const to = b.dataset.mkbl != null ? +b.dataset.mkbl : b.dataset.mkback != null ? +b.dataset.mkback : null;
+  if (to == null || !COLORS[to]) return;
+  mkFrom = b.dataset.mkbl != null ? mkOpenIdx : null;
+  mkOpenIdx = to;
+  mkFill(to);
+  $('mkCode').focus();
+});
 function openMarkerSheet(i) {
   if (!COLORS[i]) return;
   mkOpenIdx = i;
+  mkFrom = null;
   mkFill(i);
   openDialog($('mkOverlay'));
 }
 function closeMarkerSheet() {
   closeDialog($('mkOverlay'));
   mkOpenIdx = null;
+  mkFrom = null;
 }
 $('mkClose').addEventListener('click', closeMarkerSheet);
 $('mkOverlay').addEventListener('click', (e) => {
@@ -1203,6 +1283,32 @@ const OHUHU_SETS = {
   '24portrait':
     'Y415 YR02 YR04 YR09 YR17 YR33 YR34 YR37 YR38 YR313 YR47 YR515 E47 E49 E511 E513 E66 E612 E615 E75 E711 E81 E814 R16',
 };
+// (v318.26) Skin tones: Change colour's row in a guide (84-popovers) and Markers' search "skin" (finder.js). Ohuhu's
+// own 36 Skin Tones set, and for Copic 36: the 21 from Copic's own skin picks (the Ciao 6 Skin set, the Skin/Portrait
+// 12, "How to Color Faces") and 15 nearest by eye (CIEDE2000 5.7 or less) to a marker of Ohuhu's set. Left out on
+// purpose: warm greys, red-violet pinks, strong oranges and yellows, near-duplicates, hair and wood browns, olive greys
+// and the very deepest (E59, E79, E77: the first to add if asked). Kept in no order: skinIdx sorts them.
+const COPIC_SKIN =
+  'YR30 E0000 E000 E50 YR0000 E51 E00 YR000 R00 R30 E21 R11 R12 R20 E02 E53 E93 R02 E11 YR02 R32 E55 E33 E13 E35 E23 E04 E15 E25 E74 E27 E37 E57 E47 E18 E49';
+// both lists' markers, lightest first (by the app's own lightness, LAB), as indices into COLORS; made once
+let _skinIdx = null;
+function skinIdx() {
+  if (_skinIdx) return _skinIdx;
+  const out = [];
+  [
+    ['Ohuhu', OHUHU_SETS['36skin']],
+    ['Copic', COPIC_SKIN],
+  ].forEach(function (b) {
+    b[1].split(' ').forEach(function (c) {
+      const i = keyIdx(b[0] + '|' + c);
+      if (i != null && out.indexOf(i) < 0) out.push(i);
+    });
+  });
+  _skinIdx = out.sort(function (a, b) {
+    return LAB[b][0] - LAB[a][0] || a - b;
+  });
+  return _skinIdx;
+}
 /* v244: four set lists were one colour short (checked against Ohuhu's charts). If someone already added
    one of those sets - they own every other colour in it - add the colour they were missing. Runs once. */
 if (state.setFix1 !== 1) {
