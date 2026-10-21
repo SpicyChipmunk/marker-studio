@@ -698,8 +698,12 @@ function mount() {
   // again only when its size or the layout differs, then the overlays as transitionend has them. Not with a finger
   // down (a Paint stroke, a pinch) or the iPad's keyboard up over the code box (findKbd sizes it as that goes): a
   // moment later. Still easing (the size on the screen isn't the one set): the next pass, a few at most.
+  // (v318.30, from GitHub's run: with the keyboard up it had armed itself again every 250 ms for as long as the
+  // keyboard stayed, a timer that never ended (the page never idle). Now it waits without a timer: the finger lifted
+  // (pointerup) or the keyboard going down (focusout, and the visual viewport's resize) brings it back.)
   let _stlT = 0,
-    _stlN = 0;
+    _stlN = 0,
+    _stlWait = false;
   function settleSoon() {
     clearTimeout(_stlT);
     _stlT = setTimeout(settleNow, 250);
@@ -711,9 +715,10 @@ function mount() {
       return;
     }
     if (ptrs.size || workEl.classList.contains('sfkbd')) {
-      settleSoon();
+      _stlWait = true;
       return;
     }
+    _stlWait = false;
     const ow = cv.style.width,
       oh = cv.style.height,
       sd = geo.side,
@@ -738,6 +743,11 @@ function mount() {
     placeOverlays();
   }
   window.addEventListener('orientationchange', settleSoon);
+  ['pointerup', 'pointercancel', 'focusout'].forEach(function (ev) {
+    window.addEventListener(ev, function () {
+      if (_stlWait) settleSoon();
+    });
+  });
   try {
     if (window.visualViewport) window.visualViewport.addEventListener('resize', settleSoon);
   } catch (_) {}

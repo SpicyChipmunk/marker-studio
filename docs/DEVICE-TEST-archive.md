@@ -1,7 +1,8 @@
-# Device test pass: the old checklist (v264 to v311)
+# Device test pass: the old checklists (v264 to v318.30)
 
 > **Archive.** Replaced in v312 by [DEVICE-TEST.md](DEVICE-TEST.md). Kept for reference: what each release asked to be
-> checked by hand, release by release. Many lines describe screens that have changed since.
+> checked by hand, release by release. Many lines describe screens that have changed since. At the end: the
+> per-release checks DEVICE-TEST.md carried from v318.1 to v318.30, moved here when it was rewritten (v318.30).
 
 ## 1. Install and first run (3 min)
 
@@ -596,3 +597,362 @@ On a finished guide, open the **Share** tab.
 ## Report back
 
 Send the ❌ lines, plus anything in focus mode that felt slow, confusing or jumpy.
+
+# The per-release checks from DEVICE-TEST.md, v318.1 to v318.30 (moved here in v318.30)
+
+## v318.30
+
+- [ ] ★ Remove Marker Studio from the Home Screen (back up first) and add it again → the new drop icon, crisp, on the
+      Home Screen and in the app switcher; restore the backup.
+- [ ] Help › **More you can do** and **If something goes wrong**: each button named is where it says.
+- [ ] ★ On an iPhone if you have one (or the iPad turned): Colour along with a marker open, turn the device and back →
+      the outlines sit on their sections. The Plan with rough spots showing: same for the rings.
+- [ ] Welcome (private window) › one by one › **Type or paste codes** on a phone: the box is on the first screen. Type
+      a typo (R2T) among others, Add → "1 still to choose: Open · Undo" under "Anything else?", no toast over it.
+- [ ] Palette › Rainbow from one marker → "Rainbow · … base"; reload → still says the base.
+
+## v318.29
+
+- [ ] ★ On a phone if you have one: Turn the phone sideways and back in Colour along with a marker chosen → the
+      picture and its outlines are right (one checker saw them offset; tell me if you do).
+- [ ] Welcome (in a private window): a set, then "I have extra markers" › type B000, R27, YG17 → "Which R27?" offers
+      Copic R27 too. Typed codes added → "Undo: take these … back out" under "Anything else?", no toast over it.
+- [ ] Markers: Ohuhu RV33 and RV34 side by side → two slightly different swatches; RV33 › Find similar → RV34 near
+      the top, no "Same colour".
+
+## v318.28 (a debugging pass)
+
+- [ ] ★ VoiceOver on: Shuffle in a guide, wait for the toast to fade, Shuffle again → both toasts are read. The update
+      banner (if one appears) is read; ✕ leaves the focus on a mode button.
+- [ ] ★ Palette › Complementary, then tap each band → it stays Complementary. Monochrome from a black, tap a band →
+      greys.
+- [ ] Home's Markers card with all Copic markers → 358.
+- [ ] Open a PDF with more than 60 pages → "Pages 61–…" shows the rest.
+- [ ] Shuffle, then Pin within a few seconds, then the Shuffle toast's Undo → it's gone (only ↶ undoes now).
+- [ ] On a phone at large text: Palette's colour sizes all visible (they may sit under "Colours").
+
+## v318.27
+
+- [ ] ★ Random, Main colour, 8 markers, **Keep touching sections clearly different** on → Shuffle 10 times: no two
+      touching sections look alike, or a note under the box says how many couldn't be kept apart. Set markers to 2 →
+      the note shows.
+- [ ] ★ On a phone if you have one (or the iPad's Print sheet): Pages, Paper, Labels in that order; the close-ups count
+      under the Pages line.
+- [ ] With a guide open, ⋯ › **Open a PDF** → the Files picker for PDFs; a PDF goes on to its sections.
+- [ ] Home's Markers card says 120 after adding Honolulu 120 in the welcome (the blender isn't counted there now).
+- [ ] Markers › Add a set: **6 Skin Tones** is in the Ohuhu list; 24 Portrait now comes with the blender.
+
+## v318.26
+
+- [ ] ★ In a guide, tap a section › **Leave white** → it's white, not in the key; Shuffle, Mood, another pattern and
+      Print → it stays white. Tap it › **Colour it** → its marker is back. Undo / Redo both. The tap box's three buttons
+      fit at your text size. (Manual pattern: Leave white is beside "Unpin (allow fill)" in Change colour.)
+- [ ] ★ Markers: press and hold a marker → **Blends with** shows a lighter and a darker one; tap one → its details, with
+      "← Back to …". VoiceOver reads "Lighter: …, you have it".
+- [ ] ★ In a guide, tap a section › Change colour → a **Skin tones** row. In Markers, search "skin tones" → them, lightest
+      first, with the Earth / Skin / Brown family as a link.
+- [ ] The welcome: add a set → no toast; the **Undo** link under "Anything else?" takes it back out.
+- [ ] Send feedback after opening a big photo → the message ends with "Longest waits, this visit" (in the form's sheet).
+- [ ] Search "Rose Red" in Markers with today's codes shown → Ohuhu R213 (older cap R6 Rose Red).
+- [ ] Tester tasks: the two new last questions; Send results → the answers are in the sheet's Message column until the new
+      form link is in.
+
+## v318.25 (a debugging pass)
+
+- [ ] ★ Tick a few sections in a Library guide, then at once swipe up to the Home Screen and close the app fully →
+      reopen: the ticks are there.
+- [ ] ★ Palette › Monochrome, start from a black (Ohuhu 120) → greys, not greens. From photo, then back to a scheme,
+      Undo → you reach the palettes from before the photo.
+- [ ] Markers › ⋯ on the iPad upright, and on a phone if you have one → the whole menu shows.
+- [ ] Delete a guide you've coloured in since your last backup, then restore that backup → the guide stays in Recently
+      deleted, and "Name (from backup)" is in the Library.
+
+## v318.24
+
+- [ ] ★ A guide › Share › **Print**: under Paper, the pages in order (1 Picture, 2–3 Close-ups, 4 Key); tap Numbers,
+      A5, Key + reference and Test strip → it changes each time, and the count matches "N pages" at the foot. Upright and
+      sideways on the iPad, it shows without scrolling.
+- [ ] **Scan or type codes** with Scan Text, a Copic grey cap held upside down (N-8 or W-3) → it goes in as that grey
+      (or asks between two, for W-1/W-7). Type "6-13" → nothing happens (a date isn't a marker).
+
+## v318.23
+
+- [ ] ★ Open a big photo of a page (12 MP from the camera), then **Help › About › Copy diagnostics** and paste it into
+      Notes → it ends with "Longest waits, this visit:" and a few lines ("New photo: smooth 412 ms (2400×1800)"). Send
+      those lines: they say whether the photo work needs moving off the page.
+- [ ] ★ The same photo: the page's outline shows for a moment before it's straightened (before, on the iPad it could go
+      straight to the flattened page).
+- [ ] ★ Rename a guide with an apostrophe typed on the iPad ("Ben's page": iPadOS types ’) → it saves, and the Library
+      still shows every guide with its picture.
+
+(The new update banner shows from the next release on: this one's update is still said the old way, by v318.22.)
+
+## v318.22
+
+- [ ] ★ **Photograph your caps**, about 12 photos one after another without closing Scan, on the iPad: every photo is
+      read and the page never reloads. If you can, the same in Chrome on the Mac (Chrome had stopped reading after about
+      10 photos; fixed here).
+- [ ] ★ **Look closer** under a photo with caps left without a box (an older tray, or a whole case): it says "Looking
+      closer…", then "Looked closer: N more added"; time it (about a fifth to half again as long as the photo took).
+      **Undo look closer** takes them back out. Try Stop part way: what it read stays, and Look closer is offered again.
+- [ ] Under a photo, the hint reads "Caps without a box weren't read. Half a tray at a time, with no glare on the caps,
+      reads best."
+- [ ] Lent profile (as below): a tray with the CGⅡ/BGⅡ greys → most go straight into the list, "read as …" on their
+      rows; a BGⅡ cap whose name wasn't read is asked about (BGⅡ05 or BG05).
+- [ ] Your own caps: nothing different from v318.21 (the same markers listed, no new questions).
+- [ ] ★ **A Copic code typed with Ohuhu set for you** (a fresh install, Honolulu added, so Ohuhu is set for you):
+      Markers › + Add markers › Scan or type codes, type `RV10` and Enter → a row in the list asking "RV10: Copic's,
+      or an Ohuhu code misread (RV18, RV19)?" with Add Copic RV10, and the box clears. Type `Y06` and Enter → it's
+      added and the RV10 question is still there (before this release RV10 vanished). Type `RV10` again → "Waiting in
+      the list below", still one question. Tap **Add** with a code left in the box that raises a question → the
+      question shows and nothing is added until you answer it.
+- [ ] **Scan, typed:** type `RV10` and close Scan with × without pressing Enter → open Scan again: RV10 is a question in
+      the list. Tap **Ohuhu** above the box, type `C-3` and Enter → a question naming Copic C-3, and the box is empty for
+      the next code.
+- [ ] **Tick colours on a chart:** tick two colours, then tap beside the card → "Keep your ticks?"; **Keep ticking**
+      keeps them, **Discard** closes with nothing added.
+- [ ] ★ **Colour along:** open the last marker in the list and tap ✓ Mark all coloured → the toast sits below the row,
+      not over its Clear and Blends.
+- [ ] **Look closer** (lent profile): after it, its caps have green boxes on the photo; Undo look closer takes them off.
+      On an older tray, caps already listed are green when the photo finishes (not amber with what was read).
+- [ ] **Palette:** lock one colour, Analogous, Generate five times → the other colours stay near the one locked.
+- [ ] **Zones:** ＋ Zone, tap two sections, Done, then Undo twice → no empty zone chip left; Redo twice → the zone is back.
+- [ ] With a keyboard (iPad Magic Keyboard or the Mac): Full screen from the keyboard → Tab goes round the guide's
+      name, ⋯ and the picture's controls (never the Plan underneath); Escape gives it back to Full screen.
+- [ ] **Two tabs, two versions** (only if it's easy): open the app in Safari and in Chrome, add a marker in one, then
+      save in the other → neither loses what the other did. Nothing visible should change here; it's a check that it
+      didn't break.
+
+## v318.21
+
+Your own caps are all current, so try the older-cap checks with the lent collection's backup in a **separate Safari
+profile** (Safari › Settings › Profiles), never in your own Home Screen app: a restore replaces your markers.
+
+- [ ] ★ Your own app, after the update: nothing looks different. Markers, a guide, Colour along and the PDF key show the
+      codes as they are now. Colour along asks nothing (it asks only with an Ohuhu marker of yours that has an older
+      code and nothing known of its cap: answer **R213** once if it does).
+- [ ] ★ Lent profile: restore the backup → Markers shows the older caps' codes (R6, YR170, CGII04), a marker's details
+      say "now R213" and **My cap says** switches it; a guide's labels, Colour along and the PDF key show them too.
+- [ ] Lent profile: a guide with RV17 (older cap R22) and the R22 of now → the older one's label has a **\***, the key
+      and Colour along name both caps (Dark Blush, Ballet Pink).
+- [ ] ★ **Photograph your caps** on an older tray: a question's close-up has **Where in the photo?** → the whole photo
+      with the cap ringed and "Near the … · beside …"; tap the photo to go back. Close Scan, reopen: still there.
+- [ ] Older tray: a code misread by one character ("5110" for E110) with its name read shows "read as “5110”" on its
+      row, already listed.
+- [ ] Markers › ⋯ → **Show the codes on older Ohuhu caps** (with Undo), **Forget what my caps say**.
+
+## New in v318.19
+
+- [ ] ★ **Markers › Add markers › Photograph your caps** on OLDER Ohuhu caps (old codes like R6, YR170, PB3, CGⅡ07,
+      with their old names): most go straight into the list, few questions. Compare with how many v318.18 asked.
+- [ ] The same on your newer Honolulu caps: nothing different from before.
+
+Then v318.17 and v318.18's checks, if not done:
+
+## v318.17 and v318.18
+
+- [ ] ★ On iPhone, **Pattern** (Gradient) → the patterns, Flow (each with a small picture), Look, then **More
+      options** (Direction, Start colour, Scatter), then Shuffle · Pin, then **＋ Zone** at the end. Do the Flow
+      pictures read at a glance? On iPad nothing is folded.
+- [ ] A mandala page → Pattern › Gradient › Radial → "Looks like a mandala" with Matching shapes alike and Try Around.
+- [ ] ★ **Colours** › More options › **Theme** (v318.18): twelve chips, 3 across on iPhone, 4 on iPad, each with a
+      strip of its colours. Tap a few → the picture takes those colours; tap it again → none. Does each strip and
+      picture look like its name on your markers? Then **Warm** → Winter, Ocean (and others) greyed; with Ocean on,
+      Warm turns it off and says so. A small set says "Few … colours: the nearest N added".
+- [ ] ★ With a Colorless Blender in your markers: **Shading** › Highlights › **Blender (0)** → H on the guide is "0";
+      the line says to put the 0 down first, then the base. Try it on paper: does the highlight come out?
+- [ ] With a zone: choose the zone's chip in Shading › Highlights › **None** → that zone has no H, the rest keep
+      theirs. **Undo** → back.
+
+Then v318.16's checks, if not done:
+
+## v318.16
+
+- [ ] ★ **Shading** → one row: **Off · Soft · Dramatic · Rounded · Neuro**. Tap each → the picture's shading changes
+      and that one is chosen. Move **Roundness** → none is chosen, and the line under the row says Custom. **Undo** →
+      back to the style.
+- [ ] **Highlights** › **None** → shadows only (no H in the guide, the PDF's key has no highlight column). Choose
+      **Same colour** again → highlights back.
+- [ ] ★ On iPhone: **Shading** and **Colours** each show **More options** under their main choices → tap it → the
+      rest opens; tap again → shut. On iPad, upright and on its side, no More options bar: everything shows.
+- [ ] With zones: a style changes every zone's shading; a zone's own sliders (under its chip) still change only it.
+- [ ] Guide buttons feel easier to hit, and row labels (Flow, Light from…) easier to read. **Radial** › the Rings
+      choice sits on one line beside its label.
+
+Then v318.15's checks, if not done (its Style row is now the Shading row):
+
+## v318.15
+
+- [ ] ★ With a guide open, choose a new photo of a page → the new photo shows on the picture straight away (not the
+      old guide), with the controls hidden until its sections are ready; then the controls come back as usual.
+- [ ] ★ A photo of a printed page with a blank margin → the margin's specks of grain or dust aren't drawn as lines
+      (zoom in on the margin in **Adjust photo**); a dark full stop or signature there stays.
+- [ ] A sketchbook page photographed with its spiral binding (or a strip of table) along an edge, not coloured in →
+      "Binding or table at the edge? · **Trim it**" shows above the sections → tap it → the crop leaves the binding out.
+      **Undo** → back as it was, and the line is offered again.
+- [ ] ★ **Shading** → **Style** › **Neurographic** → each section is darker along its lines and in its corners, lighter
+      in its middle; **Light from** shows **The edges**. Move a slider → no Style chosen. **Undo** → back.
+- [ ] **Shading** › **Light from** › **The sun** → as before, with the sun to drag.
+- [ ] **Pattern** › **Gradient** › **Flow** › **Radial** › **Rings** › **Follow the drawing** → the colours step out from
+      the section under the centre mark; drag the mark → they start from there. On iPhone, both rows fit on one line.
+- [ ] On iPhone, **Shading** is taller now (Style and Light from): check it still feels fine to scroll.
+- [ ] A mandala page → **Pattern** › **Gradient** → tick **Matching shapes alike** → each ring's matching petals or
+      cells share one marker. Untick → as before. Pin one petal a colour first → its ring takes that colour.
+
+Then v318.14's checks, if not done:
+
+## v318.14
+
+- [ ] ★ Choose a big photo of a page (from the camera, not a screenshot) → while "Detecting sections…" shows, the
+      screen doesn't freeze: the status line and buttons around the picture still respond (the picture itself and its
+      controls wait). The sections come out as before.
+- [ ] In **Adjust photo**, drag **Sensitivity** a few steps quickly → the page stays smooth, and the sections match
+      the last setting. **Undo** once → back to before.
+- [ ] Turn or crop the photo → the same: no freeze, then the new sections.
+- [ ] If you have Ohuhu markers: **Photograph your caps** on a tray with BG, BV, YG, YR or RV codes → their codes read
+      whole (BG24, not G24).
+
+Then v318.13's checks, if not done:
+
+## v318.13
+
+- [ ] ★ The first time you choose a photo after updating (Home's **Choose a photo** or **New colouring guide**) → a
+      card of photo tips first → its **Choose a photo** opens the photo picker straight away. Choose a photo → the
+      next time, straight to the picker.
+- [ ] ★ Photograph one of your pages from right above → **Edit sections**: Min section size says "about 1 mm"; move
+      Sensitivity (Adjust photo) from low to high → the section count stays about the same (no hundreds of specks).
+- [ ] Photograph a page **at a steep angle** (about 45°) → in the sections' warning box: hold the phone flatter, with
+      **Choose another photo** → it opens the picker. No toast.
+- [ ] Photograph a page on a **marble or patterned** surface → if the corner handles open, they start near the
+      photo's edges, not on a stray shape.
+- [ ] Photograph a **busy but unhatched** page (a mandala or a detailed one) from right above → no "looks hatched"
+      warning.
+- [ ] On the Guide screen's start card, **Photo tips** → the card; the cross closes it without opening the picker.
+- [ ] Open a guide you saved before this release → its sections as they were.
+
+Then v318.12's checks, if not done:
+
+## v318.12
+
+- [ ] ★ Photograph one of your **sketchbook drawings** (line art, before colouring) from right above → no corner
+      handles; the guide is built, and the shapes along the page's edges are sections (not left white).
+- [ ] A **downloaded edge-to-edge** neurographic page → its edge shapes are sections. A page **with a white margin**
+      → the margin stays white.
+- [ ] Open a guide you saved before this release → its sections and background as they were.
+- [ ] If you have Copic markers: **Photograph your caps** on a tray of YG, YR or BV markers → their codes read whole.
+
+Then v318.11's checks, if not done:
+
+## v318.11
+
+- [ ] ★ A new **Gradient** with Mood **Pastel** → tap **Shuffle** 3 times → the guide changes every time (same
+      colours, moved along).
+- [ ] Photograph a page **at a steep angle** (about 45°) → it's straightened, then a tip to hold the phone flatter.
+      Photograph it again from **right above** → no tip.
+
+Then v318.10's checks, if not done:
+
+## v318.10
+
+New guides colour more cleanly (measured on the benchmark; nothing new to tap). On the iPad, with one of your pages:
+
+- [ ] ★ A new **Gradient** guide with 32 markers, and one with Pastel → no two neighbouring sections in colours you
+      can't tell apart.
+- [ ] A new **Random** guide with No repeats → no two touching sections share a marker (unless a section touches more
+      sections than you have markers).
+- [ ] Open a guide saved before this release → it looks as it did.
+
+Then v318.9's checks, if not done:
+
+## v318.9
+
+Photos whose codes are small are read again closer. On the iPad, with **Photograph your caps** (time each read; note
+the seconds):
+
+- [ ] ★ A photo of the **whole Ohuhu bag** → "The codes are small: reading the photo closer…", then "Reading closer ·
+      …" → it finishes, no reload; far more caps than before. Seconds: ___
+- [ ] ★ A photo of the **Copic case** → read closer too. Seconds: ___
+- [ ] A **close-up of one pocket or tray** → no "closer"; as quick as before. Seconds: ___
+- [ ] The same whole-bag photo **twice more** in one visit → each finishes, no reload.
+- [ ] Put the app away (Home) **while** a whole-bag photo is being read closer, then come back → it carries on and
+      finishes, or, if iPadOS ended the page, the next photo says "The last photo didn’t finish reading: reading more
+      gently for a while…" and reads without "closer". (Whenever the page reloads on its own during a closer read, the
+      next photo must say this.)
+
+Then v318.8's smoke test, if not done:
+
+## v318.8 (with v318.2 to v318.7)
+
+v318.8 changes nothing you should see: the code for adding markers was reorganised (proved the same as v318.7's by the
+build). A 2-minute smoke test first:
+
+- [ ] Markers › + Add markers › Scan or type codes: type two codes and Enter, paste a short list, answer a question, Add
+      → all as before. Photograph your caps with one tray → markers and questions as before.
+
+Then, if v318.7's checks weren't done yet:
+
+
+The photo reader is more careful (a cap it can't read for sure is asked about, with its picture), and adding markers is
+safer and quicker to check. Checked on captured reads of your photos and in Safari's engine; on a real iPad:
+
+- [ ] ★ **Photograph your caps** with a tray of your markers (Markers › + Add markers) → every marker added is one in
+      the photo; no "Which Y210?" on a photo of your current caps. Photograph the same tray again → its caps go green
+      and the card says "… already in the list".
+- [ ] ★ A **question** from a photo shows its cap in place of the "?". Tap the picture → shown larger with the question
+      and its answers: tap an answer, "Not this cap" or "Not now". A tap on the picture or outside closes it; a tap on
+      the card's text doesn't.
+- [ ] ★ **The keyboard after answering:** with the keyboard down (after a photo), answer a question in the list → the
+      keyboard stays down and the next question is ready. With AutoFill › Scan Text running, answer one → the keyboard
+      (and Scan Text) stays.
+- [ ] ★ **A Copic list pasted** (Ohuhu-only collection, the brand set for you) → read as Copic: all of it in as Copic,
+      the card says "Read as Copic: its codes are plainly Copic's".
+- [ ] ★ **Sweep a few Copic caps with Scan Text** (Ohuhu-only collection) → after two or three, the card says "Reading
+      both brands: Copic caps were read" and a row at the top of the list has **Keep Ohuhu**; codes both brands use are
+      asked "Ohuhu or Copic?". Tap Keep Ohuhu → back to Ohuhu. A sweep of your Ohuhu caps never shows that row.
+- [ ] Type **R29** with Ohuhu set → asked "Which R29?" with Ohuhu YR47 (was R29) first and Copic R29, not "Another
+      brand than the one chosen".
+- [ ] Leave a question unanswered, tap Add, close the app fully (swipe it away) and open it again → Markers › + Add
+      markers says "1 question still to answer · Answer them"; Answer them opens the list at it **without the keyboard**,
+      and its picture comes back a moment later.
+- [ ] Two photos in the list → a small heading over each ("Photo 1 · 58 markers"); still there after a reload.
+- [ ] Photograph a set's tray with a cap or two hidden → the card names them: "Honolulu 120: all but 2 are here — …
+      Not read, or not yours?". "Add these 2" puts them in the list, not your collection; "I don't have them" isn't
+      asked again.
+- [ ] Help › Your data › Delete all my data → nothing of Scan's list or pictures comes back after the reload.
+- [ ] Photograph a cap of **R22 Ballet Pink** among others → R22 is added, not RV17 Pink.
+
+## From v318.1
+
+Most of v318.1 is fixes found by a deep review and checked in Chromium and Safari's engine. These are the parts only a
+real iPad (or iPhone) can show.
+
+- [ ] ★ **Test print first:** print the sample's PDF with **Page + key** (Share & print › Print or save PDF), colour
+      a few of its smallest sections with your palest markers (light yellows, blush pinks) → the darker grey of the
+      smallest codes doesn't show through. (If it does, say so: they go back to the lighter grey.) The same codes are
+      easier to read than before.
+- [ ] ★ **Colour along**, a marker's row open → tap a section of another marker → a small question beside it: **Open
+      …** / **Tick it**; nothing ticked until you choose. Tap it again → it closes. A done one says **Untick it**. It
+      feels right under a finger, not in the way.
+- [ ] ★ **Taps on the picture:** tick sections quickly with a fingertip, a little carelessly → each tap ticks (a small
+      roll of the finger no longer counts as a drag); zoomed in, small pans still move the picture.
+- [ ] ★ **Scan with the keyboard up:** Markers › + Add markers › Scan or type codes, type a code and Enter → the "✓
+      added" card and the count stay in view above the keyboard (the paste line and photo card put away while it's up).
+      The same with the iPad on its side, and with AutoFill › Scan Text's camera.
+- [ ] ★ **Back in a Safari tab** (not the Home Screen app): Markers, then swipe in from the left edge → Home, still in
+      the app; once more → Safari's previous page. On the Plan, panning the picture near its left edge doesn't go Home.
+      On the welcome: **I have a set**, then the swipe → back on the first step.
+- [ ] ★ **Key + reference** with Codes, printed → page 1 is your picture in colour with dark codes you can read at arm's
+      length beside the page you're colouring; small sections in close-ups after it, then the key. Labels **None** →
+      one page, the picture beside the key.
+- [ ] **Print or save PDF** in the Print sheet → the share sheet offers Print. A wide picture's page 1 prints on its
+      side, and the sheet said "page 1 landscape".
+- [ ] Delete a guide in the Library, wait past the Undo → **Recently deleted (1)** at the Library's foot → **Put
+      back** → it's back with its ticks and page photo.
+- [ ] **Surprise** in the Plan → its message sits over the foot of the picture, the tabs and controls clear, and it's
+      short.
+- [ ] Settings › Display › Text Size larger (on an iPhone, if you have one to try) → the Plan's picture is smaller and
+      its controls have room.
+- [ ] Home shows **Beta tester tasks** with the next task; it says "ready to send" when all six are answered.
+- [ ] Some are missing (after adding a set on the welcome) → the chart shows just your markers, "Untick any you've
+      lost".
+- [ ] With a keyboard: **Edit sections › Crop**, then Escape → back as Cancel.

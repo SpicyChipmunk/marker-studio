@@ -2405,3 +2405,13 @@ and Send feedback. Nothing stopped either. Then two fixers checked each finding 
   toast kept), -w2 (7: overlays after a turn in Colour along, Focus mode and the Plan at two sizes, Rainbow's base after
   a reload); changed on purpose: e2e/help and e2e/v308-beta (the Help sections' list), e2e/v3091-d4 (the step's Open),
   e2e/helpers (openApp's touch option). Cache bumped to `marker-studio-v318.30`.
+
+# Changes — v318.31 (a fix from v318.30's run on GitHub)
+
+- **The settle pass after a resize (v318.30) armed itself again every 250 ms while the iPad's keyboard was up over a
+  guide's code box** (and while a finger stayed down), a timer that never ended until the keyboard went: on GitHub,
+  v306-along's "the keyboard up over the code box" timed out waiting for the page to go idle, in Chromium and WebKit.
+  It now waits without a timer: the finger lifted (pointerup, pointercancel) or the keyboard going down (focusout, the
+  visual viewport's resize) brings it back. That test fails on v318.30 and passes now; e2e/v31830-w2 still passes in
+  both engines.
+- Cache bumped to `marker-studio-v318.31`.
