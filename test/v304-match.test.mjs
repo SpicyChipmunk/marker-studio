@@ -82,9 +82,10 @@ test('the Markers screen’s brand filter doesn’t change a match', () => {
   assert.deepEqual(near(a, '#3a7bd5'), before);
 });
 
-test('Find similar: the marker itself left out, and only it (Ohuhu RV33 and RV34 are the same colour)', () => {
+test('Find similar: the marker itself left out, and only it (a same-colour twin, as Ohuhu RV33 and RV34 were until v318.29)', () => {
   const a = appWith(preset('Honolulu 320 (complete set)')), E = a.__eval;
   const i = E(`COLORS.findIndex((c) => c.brand === 'Ohuhu' && c.code === 'RV33')`), j = E(`COLORS.findIndex((c) => c.brand === 'Ohuhu' && c.code === 'RV34')`);
+  E(`COLORS[${i}].hex = COLORS[${j}].hex; LAB[${i}] = LAB[${j}]`);
   const hex = E(`COLORS[${i}].hex`);
   assert.equal(hex, E(`COLORS[${j}].hex`));
   const plain = near(a, hex), sim = near(a, hex, { exclude: i });

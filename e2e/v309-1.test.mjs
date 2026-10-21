@@ -17,7 +17,7 @@ const type = async (page, codes) => {
 const visible = (page, id) =>
   page.evaluate((id) => document.getElementById(id).getClientRects().length > 0, id);
 
-test('one by one › Scan › Add, then the toast’s Undo: the welcome goes back to the ways to add, not "2 markers added"', async () => {
+test('one by one › Scan › Add, then its Undo (v318.29: the link on "Anything else?", not a toast): the welcome goes back to the ways to add, not "2 markers added"', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await page.click('#wcOneByOne');
   await page.click('#wcOneScan');
@@ -25,7 +25,7 @@ test('one by one › Scan › Add, then the toast’s Undo: the welcome goes bac
   await page.click('#scAdd');
   await idle(page);
   assert.equal(await page.textContent('#wcT2'), '2 markers added');
-  await page.click('#toastAct');
+  await page.click('#wcUndoBtn');
   await idle(page);
   assert.equal(await page.evaluate(() => state.owned.size), 0);
   assert.ok(await visible(page, 'wcStepOne'), 'back on one by one');

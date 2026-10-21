@@ -172,6 +172,25 @@ function scanSwitchOn(why) {
             ? null
             : { i: o.i, how: o.how === 'name' ? 'name' : 'chosen', photo: e.photo, flip: true, whole: true };
         }
+        // (v318.29) a question about a code, asked while the brand set for you read it, offers the other brand's markers
+        // of that code too, as one asked from now on does: "Which R27?" typed with Ohuhu set for you, then the sweep's
+        // switch, had offered Ohuhu's R27 and E711 (once R27) only, never Copic R27, and a Copic brand tapped after
+        // couldn't answer it. After each of its markers by that code, as Either brand asks it; Keep Ohuhu takes them off
+        if (/^(old|fix|turned|num) /.test(e.ask)) {
+          const os = [],
+            wide = [];
+          e.opts.forEach(function (o) {
+            os.push(o);
+            if (o.how === 'old' || COLORS[o.i].brand !== auto) return;
+            const k = scanKey(COLORS[o.i].code);
+            (scanIndex().byCode.get(k) || []).forEach(function (j) {
+              if (COLORS[j].brand !== other || e.opts.some((x) => x.i === j) || wide.indexOf(j) >= 0) return;
+              os.push({ i: j, how: o.how });
+              wide.push(j);
+            });
+          });
+          if (wide.length) return Object.assign({}, e, { opts: os, wide: wide });
+        }
         return e;
       }
       if (!e.auto || e.autoAt !== scanSw.autoOnly) return e;
@@ -226,6 +245,11 @@ function scanSwitchOff() {
         return was.some((y) => !y.ask && y.i === o.i)
           ? null
           : { i: o.i, how: 'chosen', photo: e.photo, crop: e.crop, auto: true, autoAt: scanSw.autoOnly };
+      }
+      // (v318.29) the other brand's markers the switch added to a question about a code: taken off again
+      if (e.ask && e.wide) {
+        const os = e.opts.filter((x) => e.wide.indexOf(x.i) < 0);
+        return Object.assign({}, e, { opts: os, wide: undefined });
       }
       if (!e.ask && e.flip)
         return {

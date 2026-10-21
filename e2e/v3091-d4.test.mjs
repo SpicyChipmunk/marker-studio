@@ -15,8 +15,8 @@ const where = (page) =>
   }));
 
 // (v318.26: a set's Undo in the welcome is a link on "Anything else?", gone once the welcome goes on, so a set can't be
-// undone from another step now; Scan's toast still can be, after the welcome went on: tested with caps typed in Scan)
-test('Undo after the welcome went on: Back no longer shows it as added (Scan’s toast); a set’s link goes with its step', async () => {
+// undone from another step now; v318.29: nor caps typed in Scan, whose toast had covered the step's choices on a phone)
+test('Undo after the welcome went on: a set’s link, and Scan’s (v318.29), go with their step', async () => {
   const { page, errors, ctx } = await openApp({ width: 820, height: 1180 });
   await page.click('#wcHaveSet');
   await page.check('#wcSets input[data-i="3"]');
@@ -32,7 +32,8 @@ test('Undo after the welcome went on: Back no longer shows it as added (Scan’s
   assert.equal(await page.textContent('#wcT2'), '120 markers added');
   assert.equal(await page.isVisible('#wcUndoBtn'), false);
   assert.equal((await where(page)).owned, 121);
-  // caps typed in Scan, then on to another set, then Scan's toast's Undo: Back leads to what was said before them
+  // caps typed in Scan (v318.29: its Undo a link on the step too, no toast over the step's choices), then on to
+  // another set and Back: still added, the link gone with the step it was on, as a set's
   await page.click('#wcMoreExtra');
   await page.click('#wcOneType');
   await page.fill('#scBox', 'B04');
@@ -40,16 +41,16 @@ test('Undo after the welcome went on: Back no longer shows it as added (Scan’s
   await page.click('#scAdd');
   await idle(page);
   assert.equal(await page.textContent('#wcT2'), '1 more marker added');
+  assert.equal(await page.isVisible('#msToast'), false, 'no toast');
+  assert.equal(await page.getAttribute('#wcUndoBtn', 'aria-label'), 'Undo: take this marker back out');
   await page.click('#wcMoreSet');
   await idle(page);
-  await page.click('#msToast button:text-is("Undo")');
-  await idle(page);
-  assert.deepEqual(await where(page), { step: 'wcStep1', owned: 121, focus: 'wcT1' });
   await page.click('#wcStep1 .wcback');
   await idle(page);
-  // (back to "Anything else?" as it was before the caps)
   assert.equal((await where(page)).step, 'wcStep2');
-  assert.equal(await page.textContent('#wcT2'), '120 markers added', 'not "1 more marker added"');
+  assert.equal(await page.textContent('#wcT2'), '1 more marker added');
+  assert.equal(await page.isVisible('#wcUndoBtn'), false);
+  assert.equal((await where(page)).owned, 122);
   assert.deepEqual(errors, []);
   await ctx.close();
 });
@@ -104,8 +105,8 @@ test('a question left in Scan from the welcome, answered through the toast’s O
   assert.equal(await page.evaluate(() => state.owned.size), 2);
   assert.equal(await page.textContent('#wcT2'), '1 more marker added');
   assert.equal(await page.textContent('#wcDone'), '2 markers are in your collection. Anything else?');
-  // its Undo: the welcome says what it said before
-  await page.click('#msToast button:text-is("Undo")');
+  // its Undo (v318.29: the link on "Anything else?"): the welcome says what it said before
+  await page.click('#wcUndoBtn');
   await idle(page);
   assert.equal(await page.evaluate(() => state.owned.size), 1);
   assert.equal(await page.evaluate(() => document.querySelector('#welcome .wcard').dataset.step), 'wcStep2');

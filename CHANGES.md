@@ -2323,3 +2323,44 @@ on v318.27, one not a bug, one left for data.
 - **Tests:** test/v31828-y1 (5), -y2 (4), balance (+1); e2e/v31828-y1 (6), -y2 (4), -y3 (7), -y4 (5); changed on purpose:
   test/v31827-v1 (Home's count), e2e/v318-scan ("120 and a Colorless Blender added"), v31823 (the banner's words in the
   status region), v3189-detail (diagnostics). Cache bumped to `marker-studio-v318.28`.
+
+# Changes — v318.29 (a new tester's first hour on an iPhone; Ohuhu RV33 and RV34 apart)
+
+Two checkers used the app as brand-new testers on iPhone-sized screens in Safari's engine (390 × 844, and 375 × 667 with
+Larger Text), touch: the welcome, adding markers, a first guide, Colour along, Print, the Library, backup, Tester tasks
+and Send feedback. Nothing stopped either. Then two fixers checked each finding on v318.28.
+
+- **"Which R27?" offers Copic R27 too.** Adding an Ohuhu set, then typing a Copic code Ohuhu also uses (R27), then a
+  Copic-only one (YG17): the question already waiting offered only Ohuhu's two R27s, and choosing Copic left it
+  unanswered. When Scan switches to reading both brands, questions already waiting now gain the other brand's markers
+  of that code (Keep Ohuhu takes them off again), so choosing Copic answers it. Scan's box, paste, Scan Text and the
+  photo reader go through the same switch.
+- **The welcome's typed codes, Scan and photos: the Undo is a link in the step, not a toast.** The toast "Added 10
+  markers · Undo" sat over "Look around first" on a small phone at Larger Text (a tap there would undo them). As
+  v318.26 did for a set and the chart: "Undo: take these 10 markers back out" under "Anything else?". A toast still
+  says what's left to do (questions to choose, lines not read), without Undo. Scan from Markers keeps its toast.
+- **One count of a guide's markers.** A section changed to a marker outside the palette: the Colours tab said "all · 3"
+  while the button under it said "4 markers on this page". The tab now says the guide's own count, as an opened guide's
+  does ("all · 4").
+- **Rough spots' rings on the line, not on a code.** A shape inside another meets it all the way round, so the middle
+  of their line was the shape's own middle, where its code is ("V◯16"). The ring now goes on the line, at the point of
+  it nearest that middle.
+- **Ohuhu RV33 Thistle and RV34 Faded Lilac** shared one colour (#efd4e7). Ohuhu's own colour chart (Honolulu & Honolulu
+  B, 344 colours) has #efd4e7 as RV34's chip (0.7 ΔE2000 from it, the app's colours being that chart's, slightly
+  lighter: RV25 1.1, V14 1.6), so the list had RV34's colour on RV33 too. RV33 is now its own chip on that chart,
+  lightened as RV34's is: #edd5e5, 1.4 from RV34. Ben's scanned swatch card (1.25 apart) and Ohuhu's photo of a
+  hand-swatched chart (2.2) agree they're that close; they disagree on which way RV33 leans. The tests that used them
+  as the "Same colour" example make a twin for the test. No two inked markers now share a colour.
+- Found while measuring, not changed: Ben's scan disagrees with the app's colours by 2–11 for 14 neighbouring markers
+  (RV25 Rosy Lilac 11, RV57 8, RV04 7), scattered in every direction. The app's colours are Ohuhu's own chart's: screen
+  colours, not measured ink. Measuring ink is for after the beta.
+- **Not reproduced:** Colour along's highlight outlines left offset after turning the phone sideways and back (seen
+  once by a checker, once more in eight tries by a fixer, never reliably). A settle pass after the last resize is the
+  candidate fix; it needs an iPhone to confirm first. **Left for the form link:** with no form, Send feedback copies the
+  report and says to paste it, without saying where.
+- **Benchmarks:** guide digest unchanged (49e9f9dacdc7). Colour benchmark: digest 9300c532c0e5 (was b8237b31ced3,
+  which RV33's old colour alone gives back): 15 of 9,880 rows differ, all with Honolulu 320 or Large mixed (which hold
+  RV33): 14 fewer rough pairs over 13 rows, 2 more low-contrast pairs over 2 rows.
+- **Tests:** test/v31829 (2), v31829-z1 (1); e2e/v31829-z1 (2), -z2 (1); changed on purpose: test/v304-match,
+  e2e/v304-match (a twin made for the test), e2e/v309-1, v3091-d4, v318-scan (the welcome's Undo link). Cache bumped to
+  `marker-studio-v318.29`.

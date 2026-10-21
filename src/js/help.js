@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.29',
+    t: 'Typing a code both brands use, after adding a set, offers the Copic marker too. In the welcome, Undo for markers you typed or scanned is a link under “Anything else?”, not a toast over the buttons. Ohuhu RV33 Thistle and RV34 Faded Lilac are no longer the same colour, as on Ohuhu’s own chart.',
+  },
+  {
     v: 'v318.28',
     t: 'Fixes from a second debugging pass. Among them: Home counts Copic’s 0 among your markers, as the set list does; a long list pasted with both brands reads both again; shop names like “Markers - 120 Colors” and “72 Colors + 6 Skin Tones” read as their sets; a palette band keeps its scheme when tapped; a PDF with more than 60 pages shows the rest; a plan step’s Undo undoes only that step; screen readers hear every toast, not only the first; the colour sizes fit a small phone at large text.',
   },

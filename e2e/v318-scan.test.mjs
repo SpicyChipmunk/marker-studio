@@ -49,13 +49,12 @@ test('a box’s text pasted: the set named, asked first; its markers into the li
     // (v318.28: its colours, the blender said apart, as "Add all 120" counted them)
     /^.*120 and a Colorless Blender added to the list.*Honolulu 120/,
   );
-  // (a box's other words aren't "lines not read" on Add's toast)
+  // (a box's other words aren't "lines not read" on Add's toast; v318.29: from the welcome there's a toast only when
+  // there's more to say than what was added, Undo being the link on "Anything else?", so none at all here)
   await page.click('#scAdd');
   await idle(page);
-  assert.match(
-    await page.textContent('#msToast'),
-    /^Added 120 markers and a Colorless Blender to your collection(?!.*not read)/,
-  );
+  assert.equal(await page.isVisible('#msToast.on'), false, 'no toast: nothing not read');
+  assert.equal(await page.isVisible('#wcUndoBtn'), true);
   assert.equal(await page.evaluate(() => state.owned.size), want.length);
   // the welcome: Some are missing, as after a set ticked
   assert.equal(await page.textContent('#wcT2'), '120 markers added');

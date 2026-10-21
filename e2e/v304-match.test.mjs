@@ -247,8 +247,14 @@ test('Find similar leaves the marker out and says what it’s like; a same-colou
   // the same colour typed again is an ordinary match, R014 first
   await page.fill('#matchHex', ''); await page.fill('#matchHex', await page.evaluate(() => COLORS.find((m) => m.code === 'R014' && m.brand === 'Ohuhu').hex)); await idle(page);
   assert.equal(await page.locator('#matchResult .msimh').count(), 0);
-  // RV33 (not owned) and RV34 (owned) are the same colour
+  // RV33 (not owned) made the same colour as RV34 (owned), as they were until v318.29
   await page.click('#matchClose');
+  await page.evaluate(() => {
+    const i = COLORS.findIndex((m) => m.brand === 'Ohuhu' && m.code === 'RV33'),
+      j = COLORS.findIndex((m) => m.brand === 'Ohuhu' && m.code === 'RV34');
+    COLORS[i].hex = COLORS[j].hex;
+    LAB[i] = LAB[j];
+  });
   await sheet('Ohuhu', 'RV33');
   await page.click('#mkSimilar'); await idle(page);
   assert.match(await page.textContent('#matchResult .mbname'), /^RV34 /);

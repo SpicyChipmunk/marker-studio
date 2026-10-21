@@ -193,7 +193,7 @@
 {"code":"RV311","name":"Pansy","hex":"#c64994","old":"P2","fam":"Red-Violet","brand":"Ohuhu"},
 {"code":"RV314","name":"Grape Juice","hex":"#9d4574","old":"P1","fam":"Red-Violet","brand":"Ohuhu"},
 {"code":"RV316","name":"Grape Jelly","hex":"#7e447e","old":"R16","fam":"Red-Violet","brand":"Ohuhu"},
-{"code":"RV33","name":"Thistle","hex":"#efd4e7","old":"RV160","fam":"Red-Violet","brand":"Ohuhu"},
+{"code":"RV33","name":"Thistle","hex":"#edd5e5","old":"RV160","fam":"Red-Violet","brand":"Ohuhu"},
 {"code":"RV34","name":"Faded Lilac","hex":"#efd4e7","old":"V020","fam":"Red-Violet","brand":"Ohuhu"},
 {"code":"RV35","name":"Bright Lilac","hex":"#e6c9df","old":"V150","fam":"Red-Violet","brand":"Ohuhu"},
 {"code":"RV39","name":"Bright Fuchsia","hex":"#e176aa","old":"RV080","fam":"Red-Violet","brand":"Ohuhu"},

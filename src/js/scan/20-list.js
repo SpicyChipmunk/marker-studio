@@ -35,7 +35,10 @@ let scanFind = null,
   scanKept = null,
   scanAfter = null,
   // (v309.1) and after the toast's Undo of that Add: the welcome goes back
-  scanUndone = null;
+  scanUndone = null,
+  // (v318.29) opened from the welcome: Add's Undo is a link on "Anything else?" (after's 4th argument), as the chart's
+  // and a set's are since v318.26, not a toast over the step's choices
+  scanWelcome = false;
 // (v318.7) the list as last saved or read here, to tell another tab's save from this one's own (scanReread)
 let scanListRaw = null;
 function scanSaveList() {

@@ -245,13 +245,35 @@ function mkCap() {
   return Math.max(2, N >= 2 ? Math.min(N, p) : p);
 }
 // how many markers the sections of the zone being edited have, while it's as it opened (not laid since); else -1
-function mkOwnCount() {
-  if (!assignData || !_mkOpened[zoneCur]) return -1;
+// (v318.29: any, however it was laid: mkCountLabel, with a pinned marker it isn't laid from)
+function mkOwnCount(any) {
+  if (!assignData || (!any && !_mkOpened[zoneCur])) return -1;
   const seen = {};
   let k = 0;
   zoneList().forEach(function (l) {
     const m = assignData.assign[l];
     if (m && !seen[m.mkey]) {
+      seen[m.mkey] = 1;
+      k++;
+    }
+  });
+  return k;
+}
+// (v318.29) the markers you pinned in the zone being edited that the markers it's laid from don't have (Change
+// colour to a 4th marker in a guide from a 3-marker palette): in the guide all the same, so the count adds them
+function mkPinExtra() {
+  if (!assignData || !labels || !comps) return 0;
+  const N = zoneList().length;
+  if (!N) return 0;
+  const from = {},
+    seen = {};
+  poolSource(Math.min(limitN, N), true).items.forEach(function (m) {
+    from[m.mkey] = 1;
+  });
+  let k = 0;
+  zoneList().forEach(function (l) {
+    const m = assignData.assign[l];
+    if (m && locks[l] !== undefined && !from[m.mkey] && !seen[m.mkey]) {
       seen[m.mkey] = 1;
       k++;
     }
@@ -264,6 +286,13 @@ function mkCountLabel() {
     own = mkOwnCount();
   if (own >= 0)
     return all ? 'all \u00b7 ' + own : own !== limitN ? limitN + ' \u00b7 ' + own : String(limitN);
+  // (v318.29: with them the count is the guide's own, as a guide just opened says it: "all · 4" over "4 markers on this
+  // page", not "all · 3"; "3 · 4" for a count of 3)
+  if (mkPinExtra()) {
+    const has = mkOwnCount(true);
+    if (!all) return has !== limitN ? limitN + ' \u00b7 ' + has : String(limitN);
+    return 'all \u00b7 ' + has;
+  }
   if (!all) return String(limitN);
   return 'all \u00b7 ' + (gradFamily() && labels && comps ? gradCountNow().M : cap);
 }

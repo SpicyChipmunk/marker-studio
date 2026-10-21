@@ -433,7 +433,7 @@ document.addEventListener('keydown', function (e) {
     // big collections are a set less a few, plus some singles). It stays after the chart or extra markers from there.
     if (names || set) setIn = true;
     $('wcMoreMiss').style.display = setIn ? '' : 'none';
-    // (v318.26) this add's Undo, as a link under the sentence (own() and the chart hand it on; Scan's toast stays)
+    // (v318.26) this add's Undo, as a link under the sentence (own(), the chart and, v318.29, Scan hand it on)
     if (pendUndo) undoLink(pendUndo);
     pendUndo = null;
   }
@@ -823,13 +823,15 @@ document.addEventListener('keydown', function (e) {
   }
   ['wcOneScan', 'wcOneType'].forEach(function (id) {
     $(id).addEventListener('click', function () {
-      if (typeof openScan === 'function') openScan({ added: oneAdded, undone: oneUndone });
+      // (v318.29: welcome, Add's Undo a link on "Anything else?", as the chart's)
+      if (typeof openScan === 'function') openScan({ added: oneAdded, undone: oneUndone, welcome: true });
     });
   });
   // (v318) Photograph your caps: Scan, straight on to its photo reader. Offered, and named on the cards before it, only
   // where the reader runs
   $('wcOnePhoto').addEventListener('click', function () {
-    if (typeof openScan === 'function') openScan({ added: oneAdded, undone: oneUndone, photo: true });
+    if (typeof openScan === 'function')
+      openScan({ added: oneAdded, undone: oneUndone, photo: true, welcome: true });
   });
   // (v318 review) Scan caps one at a time (v318.26: was "Scan the caps"), said for an Android phone or tablet: Gboard's
   // Scan text, a photo of a cap at a time

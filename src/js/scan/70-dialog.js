@@ -267,6 +267,7 @@ function openScan(opts) {
   const o = opts && !opts.type ? opts : {};
   scanAfter = o.added || null;
   scanUndone = o.undone || null;
+  scanWelcome = !!(o.welcome && o.added);
   if (o.find && !scanFind) {
     scanKept = { list: scanList, brand: scanBrand, last: scanLast };
     scanList = [];
@@ -379,6 +380,7 @@ function closeScan() {
   bx.dispatchEvent(new Event('scanreset'));
   scanAfter = null;
   scanUndone = null;
+  scanWelcome = false;
   if (scanFind) {
     // (v309) Find mode over: the list kept for Add, and its brand, come back
     scanFind = null;
@@ -420,7 +422,8 @@ function scanFindDone() {
 function scanAdd() {
   if (scanFind) return scanFindDone();
   const after = scanAfter,
-    undone = scanUndone;
+    undone = scanUndone,
+    welcome = scanWelcome;
   const asks0 = scanAsks(),
     // (v318.25) the questions waiting, and whether both brands were read, before the box is read
     waiting0 = scanList.filter((e) => e.ask).map((e) => e.ask),
@@ -508,17 +511,39 @@ function scanAdd() {
           ? gaps.miss.length + ' weren\u2019t read'
           : scanGapCodes(gaps) + (gaps.miss.length === 1 ? ' wasn\u2019t' : ' weren\u2019t') + ' read')
       : '');
-  toastActions(
-    said + (offer ? capOfferSay(offer) : ''),
-    // (v309.1: Open from the welcome's Scan is the welcome's again: what's added then is counted there)
-    // (v318.7: and Open for the set's missing markers, the card with Add these 2 when Scan opens)
-    [{ label: 'Undo', fn: scanUndoAdd }]
-      .concat(left || gaps ? [{ label: 'Open', fn: () => openScan({ added: after, undone: undone }) }] : [])
-      // (v318.21) most caps read show the other codes than your other Ohuhu markers do: once, to switch them
-      .concat(offer ? [capOfferAction(offer)] : []),
-    offer ? 14000 : left || unread || gaps ? 10000 : 8000,
-  );
-  if (after) after(cols || keys.length, 0, setIn);
+  // (v318.29) from the welcome, its Undo is the link on "Anything else?" (below): on a phone the toast's Undo sat
+  // over the step's last choice, Look around first, and a tap there took the markers back out. The toast only when
+  // there's more to say (questions still to choose, lines not read, the set's missing markers, the caps' offer)
+  if (!welcome || left || unread || gaps || offer)
+    toastActions(
+      said + (offer ? capOfferSay(offer) : ''),
+      // (v309.1: Open from the welcome's Scan is the welcome's again: what's added then is counted there)
+      // (v318.7: and Open for the set's missing markers, the card with Add these 2 when Scan opens)
+      (welcome ? [] : [{ label: 'Undo', fn: scanUndoAdd }])
+        .concat(
+          left || gaps
+            ? [{ label: 'Open', fn: () => openScan({ added: after, undone: undone, welcome: welcome }) }]
+            : [],
+        )
+        // (v318.21) most caps read show the other codes than your other Ohuhu markers do: once, to switch them
+        .concat(offer ? [capOfferAction(offer)] : []),
+      offer ? 14000 : left || unread || gaps ? 10000 : 8000,
+    );
+  if (after)
+    after(
+      cols || keys.length,
+      0,
+      setIn,
+      welcome
+        ? {
+            fn: scanUndoAdd,
+            label:
+              'Undo: take ' +
+              (keys.length === 1 ? 'this marker' : 'these ' + (cols || keys.length) + ' markers') +
+              ' back out',
+          }
+        : null,
+    );
   function scanUndoAdd() {
     const wishNow = state.wish.slice();
     scanSw.added = scanSw.added.filter((c) => autoIn.indexOf(c) < 0);

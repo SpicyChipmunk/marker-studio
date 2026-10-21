@@ -856,11 +856,16 @@ function roughSmooth() {
 }
 // where each rough pair meets: the middle of the places the two are seen across their line (as buildAdj sees them),
 // else between their label points
+// (v318.29: the place on their line nearest that middle. A shape inside another meets it all the way round, so the
+// middle of its line was the shape's own middle, where its code is: the ring sat on the code, "V◯16")
 function roughPts(pairs) {
   const K = comps.length,
     at = new Map(),
     acc = pairs.map(function () {
       return [0, 0, 0];
+    }),
+    seen = pairs.map(function () {
+      return [];
     }),
     D = adjReach();
   pairs.forEach(function (p, i) {
@@ -872,6 +877,7 @@ function roughPts(pairs) {
     acc[i][0] += x;
     acc[i][1] += y;
     acc[i][2]++;
+    seen[i].push(x, y);
   };
   for (let y = 0; y < H; y += 2) {
     let last = 0,
@@ -900,7 +906,23 @@ function roughPts(pairs) {
     }
   }
   return pairs.map(function (p, i) {
-    if (acc[i][2]) return { x: acc[i][0] / acc[i][2], y: acc[i][1] / acc[i][2] };
+    if (acc[i][2]) {
+      const mx = acc[i][0] / acc[i][2],
+        my = acc[i][1] / acc[i][2],
+        s = seen[i];
+      let bx = mx,
+        by = my,
+        bd = Infinity;
+      for (let j = 0; j < s.length; j += 2) {
+        const d = (s[j] - mx) * (s[j] - mx) + (s[j + 1] - my) * (s[j + 1] - my);
+        if (d < bd) {
+          bd = d;
+          bx = s[j];
+          by = s[j + 1];
+        }
+      }
+      return { x: bx, y: by };
+    }
     const a = labelPos(p[0]),
       b = labelPos(p[1]);
     return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };

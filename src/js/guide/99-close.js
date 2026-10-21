@@ -732,6 +732,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       rough: gradRough,
       fixRun: gradFixRun,
       roughNow: roughNow,
+      roughPts: roughPts,
       roughSmooth: roughSmooth,
       mkCountLabel: mkCountLabel,
     },

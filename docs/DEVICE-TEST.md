@@ -102,7 +102,16 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.28 (a debugging pass)
+## New in this release: v318.29
+
+- [ ] ★ On a phone if you have one: Turn the phone sideways and back in Colour along with a marker chosen → the
+      picture and its outlines are right (one checker saw them offset; tell me if you do).
+- [ ] Welcome (in a private window): a set, then "I have extra markers" › type B000, R27, YG17 → "Which R27?" offers
+      Copic R27 too. Typed codes added → "Undo: take these … back out" under "Anything else?", no toast over it.
+- [ ] Markers: Ohuhu RV33 and RV34 side by side → two slightly different swatches; RV33 › Find similar → RV34 near
+      the top, no "Same colour".
+
+## v318.28 (a debugging pass)
 
 - [ ] ★ VoiceOver on: Shuffle in a guide, wait for the toast to fade, Shuffle again → both toasts are read. The update
       banner (if one appears) is read; ✕ leaves the focus on a mode button.
