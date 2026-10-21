@@ -304,6 +304,8 @@ test('Help: the beta tester guide first, the new glossary entries, “phone or i
     'Beta tester guide',
     'Photographing a page',
     'Adding markers by code',
+    'More you can do',
+    'If something goes wrong',
     'Glossary',
     'Keyboard and screen readers',
     'Your data',

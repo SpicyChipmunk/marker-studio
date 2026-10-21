@@ -268,6 +268,10 @@ function openScan(opts) {
   scanAfter = o.added || null;
   scanUndone = o.undone || null;
   scanWelcome = !!(o.welcome && o.added);
+  scanTyped = !!o.typed && !o.find && !scanFind;
+  // (v318.30) from the welcome's Type or paste codes: the three steps folded into one line (11-scan.css); the box
+  // scrolled into view below, as it sat under the Photograph card, off a phone's first screen
+  ov.querySelector('.sccard').classList.toggle('sctyped', scanTyped);
   if (o.find && !scanFind) {
     scanKept = { list: scanList, brand: scanBrand, last: scanLast };
     scanList = [];
@@ -340,6 +344,15 @@ function openScan(opts) {
   }
   // (straight into the box: what's done here is typing or Scan Text, which the box's own menu starts)
   scanFocusBox();
+  // (v318.30) Type or paste codes: the box in view (not raised to the keyboard: an iPhone's comes up from a tap only).
+  // Under the card's sticky Add (375 x 667 at 1.3x text: below the Photograph card, off the first screen), the card
+  // scrolls just enough to clear it, so the line above stays in view where it can
+  if (scanTyped) {
+    const card = ov.querySelector('.sccard'),
+      br = $('scBox').getBoundingClientRect(),
+      at = $('scAdd').getBoundingClientRect().top;
+    if (br.bottom > at) card.scrollTop += br.bottom - at + 10;
+  }
 }
 // (v303) text still in the box, typed without Enter or just put in by Scan Text, is read before the box is let go of
 // (Add and Close had thrown it away)
@@ -381,6 +394,7 @@ function closeScan() {
   scanAfter = null;
   scanUndone = null;
   scanWelcome = false;
+  scanTyped = false;
   if (scanFind) {
     // (v309) Find mode over: the list kept for Add, and its brand, come back
     scanFind = null;
@@ -423,7 +437,8 @@ function scanAdd() {
   if (scanFind) return scanFindDone();
   const after = scanAfter,
     undone = scanUndone,
-    welcome = scanWelcome;
+    welcome = scanWelcome,
+    typed = scanTyped;
   const asks0 = scanAsks(),
     // (v318.25) the questions waiting, and whether both brands were read, before the box is read
     waiting0 = scanList.filter((e) => e.ask).map((e) => e.ask),
@@ -498,8 +513,9 @@ function scanAdd() {
   const cols = setKeys(keys).length,
     bl = cols > 0 && keys.indexOf('Ohuhu|0') >= 0;
   if (gaps) scanGapPending = gaps;
-  const said =
-    addedManyLine(cols || keys.length, offList, bl) +
+  // (v318.30) what's still to do after this Add, said after what was added: by the toast, or from the welcome in the
+  // step's own line (below)
+  const todo =
     (left ? ' \u00b7 ' + left + ' still to choose' : '') +
     (unread ? ' \u00b7 ' + unread + (unread === 1 ? ' line' : ' lines') + ' not read' : '') +
     // (v318.7: "Honolulu 120: B64 and G1 weren't read"; more than four, their number)
@@ -510,21 +526,23 @@ function scanAdd() {
         (gaps.miss.length > 4
           ? gaps.miss.length + ' weren\u2019t read'
           : scanGapCodes(gaps) + (gaps.miss.length === 1 ? ' wasn\u2019t' : ' weren\u2019t') + ' read')
-      : '');
+      : '') +
+    (offer ? capOfferSay(offer) : '');
+  const said = addedManyLine(cols || keys.length, offList, bl) + todo;
+  // (v309.1: Open from the welcome's Scan is the welcome's again: what's added then is counted there)
+  // (v318.7: and Open for the set's missing markers, the card with Add these 2 when Scan opens)
+  // (v318.30: and as the welcome's Type or paste codes opened it, its one line and the box in view)
+  const reopen =
+    left || gaps ? () => openScan({ added: after, undone: undone, welcome: welcome, typed: typed }) : null;
   // (v318.29) from the welcome, its Undo is the link on "Anything else?" (below): on a phone the toast's Undo sat
-  // over the step's last choice, Look around first, and a tap there took the markers back out. The toast only when
-  // there's more to say (questions still to choose, lines not read, the set's missing markers, the caps' offer)
-  if (!welcome || left || unread || gaps || offer)
+  // over the step's last choice, Look around first, and a tap there took the markers back out. (v318.30: and what's
+  // still to do, with its Open and the caps' offer, is in the step's line beside it, "2 still to choose: Open · Undo",
+  // no toast at all from the welcome: that one, for 10 s, sat over the step's choices as the Undo had)
+  if (!welcome)
     toastActions(
-      said + (offer ? capOfferSay(offer) : ''),
-      // (v309.1: Open from the welcome's Scan is the welcome's again: what's added then is counted there)
-      // (v318.7: and Open for the set's missing markers, the card with Add these 2 when Scan opens)
-      (welcome ? [] : [{ label: 'Undo', fn: scanUndoAdd }])
-        .concat(
-          left || gaps
-            ? [{ label: 'Open', fn: () => openScan({ added: after, undone: undone, welcome: welcome }) }]
-            : [],
-        )
+      said,
+      [{ label: 'Undo', fn: scanUndoAdd }]
+        .concat(reopen ? [{ label: 'Open', fn: reopen }] : [])
         // (v318.21) most caps read show the other codes than your other Ohuhu markers do: once, to switch them
         .concat(offer ? [capOfferAction(offer)] : []),
       offer ? 14000 : left || unread || gaps ? 10000 : 8000,
@@ -541,6 +559,18 @@ function scanAdd() {
               'Undo: take ' +
               (keys.length === 1 ? 'this marker' : 'these ' + (cols || keys.length) + ' markers') +
               ' back out',
+            say: todo.slice(3),
+            acts: (reopen
+              ? [
+                  {
+                    id: 'wcOpenBtn',
+                    label: 'Open',
+                    aria: 'Open Scan or type codes: ' + todo.slice(3),
+                    fn: reopen,
+                  },
+                ]
+              : []
+            ).concat(offer ? [Object.assign({ id: 'wcCapBtn', once: true }, capOfferAction(offer))] : []),
           }
         : null,
     );
@@ -893,6 +923,11 @@ function scanAddCaps() {
         '<li><b>Tap the box</b>The keyboard opens. To type a code, tap \u2713 after it.</li>' +
         '<li><b>Gboard \u203a Scan text</b>With Gboard (free on Google Play): open its tools (the four squares, left of its toolbar) and tap Scan text.</li>' +
         '<li><b>Snap, then Insert</b>Photograph one cap and tap Insert: its code is read, with a beep. Then \u2190 for the next cap.</li>';
+    // (v318.30) and the one line from the welcome's Type or paste codes, Gboard's way too
+    const ty = $('scType');
+    if (ty)
+      ty.innerHTML =
+        'Type a code and tap \u2713 after it. Or scan caps with Gboard: open its tools (the four squares, left of its toolbar), tap <b>Scan text</b>, snap a cap and tap Insert.';
     // (the paragraph a mouse and keyboard see, an Android tablet's or Chromebook's)
     const hint = ov.querySelector('.schint');
     if (hint)

@@ -322,7 +322,7 @@ test('Help › Keyboard and screen readers: what needs touch or a mouse, what wo
   await page.click('#homeHelp'); await page.waitForSelector('#helpOverlay.on');
   const secs = await page.$$eval('#helpOverlay .hlpsec > summary', (l) => l.map((s) => s.textContent));
   // (v308: the beta tester guide first)
-  assert.deepEqual(secs, ['Beta tester guide', 'Photographing a page', 'Adding markers by code', 'Glossary', 'Keyboard and screen readers', 'Your data', 'About']);
+  assert.deepEqual(secs, ['Beta tester guide', 'Photographing a page', 'Adding markers by code', 'More you can do', 'If something goes wrong', 'Glossary', 'Keyboard and screen readers', 'Your data', 'About']);
   await page.click('#helpKeys > summary'); await page.waitForSelector('#helpKeys .hlpbody', { state: 'visible' });
   const t = await page.textContent('#helpKeys .hlpbody');
   assert.match(t, /needs touch or a mouse: Change colour, Pin, Leave white, Paint and ticking off one section/);

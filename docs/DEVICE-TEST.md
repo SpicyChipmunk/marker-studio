@@ -102,7 +102,18 @@ sheet, paper, and how it feels.
 - [ ] Every few weeks: VoiceOver on, open a guide and Colour along → buttons are named sensibly, no emoji or arrows read
       out.
 
-## New in this release: v318.29
+## New in this release: v318.30
+
+- [ ] ★ Remove Marker Studio from the Home Screen (back up first) and add it again → the new drop icon, crisp, on the
+      Home Screen and in the app switcher; restore the backup.
+- [ ] Help › **More you can do** and **If something goes wrong**: each button named is where it says.
+- [ ] ★ On an iPhone if you have one (or the iPad turned): Colour along with a marker open, turn the device and back →
+      the outlines sit on their sections. The Plan with rough spots showing: same for the rings.
+- [ ] Welcome (private window) › one by one › **Type or paste codes** on a phone: the box is on the first screen. Type
+      a typo (R2T) among others, Add → "1 still to choose: Open · Undo" under "Anything else?", no toast over it.
+- [ ] Palette › Rainbow from one marker → "Rainbow · … base"; reload → still says the base.
+
+## v318.29
 
 - [ ] ★ On a phone if you have one: Turn the phone sideways and back in Colour along with a marker chosen → the
       picture and its outlines are right (one checker saw them offset; tell me if you do).

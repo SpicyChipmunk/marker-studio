@@ -2364,3 +2364,44 @@ and Send feedback. Nothing stopped either. Then two fixers checked each finding 
 - **Tests:** test/v31829 (2), v31829-z1 (1); e2e/v31829-z1 (2), -z2 (1); changed on purpose: test/v304-match,
   e2e/v304-match (a twin made for the test), e2e/v309-1, v3091-d4, v318-scan (the welcome's Undo link). Cache bumped to
   `marker-studio-v318.29`.
+
+# Changes — v318.30 (a new icon; Help's More you can do and If something goes wrong)
+
+- **A new app icon**: an ink drop drawn like a colouring page, its 12 sections in 11 colours of their own (one from each
+  colour family, at its most vivid; the closest two 15.5 apart in ΔE2000, touching ones at least 32) and one left
+  white to colour, on the dark ground of the old one. Chosen by Ben from rounds of options (brush, gem, drop; fan,
+  stained glass, swirl, rings, leaf, flower inside it). src/assets/icon.svg is now the source, drawn once, and
+  scripts/make-icons.mjs renders the PNGs from it; the maskable one is the art at 86%, inside Android's 80% safe circle.
+  iOS keeps the icon it saw when the app was added to the Home Screen: testers who added it before see the new one
+  only after adding it again.
+- **Help › More you can do**: Leave white and Pin, zones, Paint, Shading and Greyscale, Focus mode and Reveal & share,
+  Print's three kinds and Guide file, a marker's details (Blends with, Find similar), Match a colour, To buy, the swatch
+  chart, and the Library's Duplicate and Recently deleted: what each is for and where it is.
+- **Help › If something goes wrong**: wrong sections, a colour that doesn't match your marker, markers or guides
+  missing (the Home Screen app and a tab keep their own; Safari's seven days), a slow big photo, a change by mistake, a
+  stuck screen or an error, the update line. The README has both lists too.
+- **Colours on screen**: README, the tester guide and Help now say they're Ohuhu's and Copic's own published colours,
+  and that some markers look quite different on paper (v318.29's measuring), with the swatch chart to compare.
+- The README and tester guide: designed for the iPad and checked on iPhone-sized screens (v318.29's check); "a few last
+  questions" (five and a name: it said six).
+- **The welcome's Type or paste codes**: on a small phone with Larger Text, Scan opened with "1 · Tap the box" while the
+  box was below the Photograph card, off the first screen (v318.29's iPhone check). From the welcome's Type, on touch
+  screens, Scan's three steps fold into one line (typing, and Scan Text on an iPhone or Gboard's Scan text on Android)
+  and the box is scrolled into view above Add. The welcome's Scan caps one at a time and Markers' Scan are as before.
+- **The welcome's leftover toast**: after typed, scanned or photographed markers are added with something still to do
+  (questions to choose, lines not read, a set's missing markers, the older-codes offer), it's said in the "Anything
+  else?" step's own line with Open and Undo ("1 still to choose: Open · Undo"), not in a 10 s toast over its buttons.
+  Open reopens Scan as the welcome's. Markers' Scan keeps its toast.
+- **After the screen turns or resizes**: the picture's overlays (Colour along's outlines, rough-spot rings, zones,
+  specks, the tap box, the sun) are measured again 250 ms after the last resize, turn or visual-viewport change, not
+  only when the picture's resize animation ends, which Safari doesn't always report when a phone turns (v318.29's
+  checker saw Colour along's outlines left offset). Nothing is redrawn when nothing changed; it waits while a finger
+  is down or the iPad keyboard is up.
+- **Rainbow's base after a reload**: "Rainbow · Ohuhu Shamrock Green base" (v318.28 kept it across band taps) now
+  survives a reload: saved beside the palettes' schemes (palB), dropped where the palette no longer holds that marker.
+  Versions before v318.22 ignore it; v318.22–29 carry it unchanged.
+- **Tests:** test/v31830 (4: the sections' place, every label they name is one on screen, the colour line in all
+  four places, the icon); e2e/v31830-w1 (4: the typed layout at four sizes, Android's words, the leftover line, Markers'
+  toast kept), -w2 (7: overlays after a turn in Colour along, Focus mode and the Plan at two sizes, Rainbow's base after
+  a reload); changed on purpose: e2e/help and e2e/v308-beta (the Help sections' list), e2e/v3091-d4 (the step's Open),
+  e2e/helpers (openApp's touch option). Cache bumped to `marker-studio-v318.30`.

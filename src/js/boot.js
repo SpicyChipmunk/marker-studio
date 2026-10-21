@@ -441,12 +441,35 @@ document.addEventListener('keydown', function (e) {
   // phone covered the step's own choices. It's beside #wcDone, not in it: that sentence is kept and put back as text.
   // u: { fn, label }, or null to take it away. Only the latest add: the link goes after Undo, on leaving the step, and
   // on adding again
+  // (v318.30) and Scan's "still to do" before it, with its links: say, acts [{ id, label, aria, fn, once }], as
+  // "2 still to choose: Open · Undo"; it had been a 10 s toast over the step's choices. once: the link goes when tapped
   var pendUndo = null,
     undoFn = null;
   function undoLink(u) {
     undoFn = u ? u.fn : null;
     $('wcUndo').hidden = !u;
     if (u) $('wcUndoBtn').setAttribute('aria-label', u.label);
+    var acts = (u && u.acts) || [];
+    $('wcUndoSay').textContent = u && u.say ? u.say + (acts.length ? ': ' : ' \u00b7 ') : '';
+    var el = $('wcUndoActs');
+    el.innerHTML = acts
+      .map(function (a) {
+        return (
+          '<button type="button" class="sflink wcscan"' +
+          (a.id ? ' id="' + esc(a.id) + '"' : '') +
+          (a.aria ? ' aria-label="' + esc(a.aria) + '"' : '') +
+          '>' +
+          esc(a.label) +
+          '</button> \u00b7 '
+        );
+      })
+      .join('');
+    acts.forEach(function (a, n) {
+      el.children[n].addEventListener('click', function () {
+        if (a.once) undoLink(Object.assign({}, u, { acts: acts.filter((x) => x !== a) }));
+        a.fn();
+      });
+    });
   }
   $('wcUndoBtn').addEventListener('click', function () {
     var f = undoFn;
@@ -824,7 +847,9 @@ document.addEventListener('keydown', function (e) {
   ['wcOneScan', 'wcOneType'].forEach(function (id) {
     $(id).addEventListener('click', function () {
       // (v318.29: welcome, Add's Undo a link on "Anything else?", as the chart's)
-      if (typeof openScan === 'function') openScan({ added: oneAdded, undone: oneUndone, welcome: true });
+      // (v318.30: typed, from Type or paste codes: Scan Text's steps in one line, the box in view)
+      if (typeof openScan === 'function')
+        openScan({ added: oneAdded, undone: oneUndone, welcome: true, typed: id === 'wcOneType' });
     });
   });
   // (v318) Photograph your caps: Scan, straight on to its photo reader. Offered, and named on the cards before it, only

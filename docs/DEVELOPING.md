@@ -112,8 +112,8 @@ Screenshots and PDFs from the browser tests land in `e2e/.artifacts/`
     and `assets/sample-plain.webp` (without codes, on the welcome) are the
     app's own output from it.
 - `scripts/build.mjs` — the build (no dependencies; `--check` and `--watch`).
-- `scripts/make-icons.mjs` — draws the app icon and writes the icon PNGs and
-  `src/assets/icon.svg` (needs `npm install`).
+- `scripts/make-icons.mjs` — renders the icon PNGs from `src/assets/icon.svg` and `icon-maskable.svg` (the
+  source, drawn once) (needs `npm install`).
 - `service-worker.js` — offline caching for the PWA. Bump the cache version
   (and the matching `v…` on Home in `src/html/app.html`) with each release.
 - `manifest.webmanifest`, `icon-192.png`, `icon-512.png`,

@@ -84,7 +84,8 @@ test('the chosen brand’s small print on "Let’s find your set" reads at 4.5:1
   await ctx.close();
 });
 
-test('a question left in Scan from the welcome, answered through the toast’s Open: the welcome counts it, and its Undo goes back to the count before', async () => {
+// (v318.30: Open is a link in the step's line, "1 still to choose: Open · Undo", not the toast's)
+test('a question left in Scan from the welcome, answered through the step’s Open: the welcome counts it, and its Undo goes back to the count before', async () => {
   const { page, errors, ctx } = await openApp({ width: 820, height: 1180 });
   await page.click('#wcOneByOne');
   await page.click('#wcOneScan');
@@ -96,8 +97,9 @@ test('a question left in Scan from the welcome, answered through the toast’s O
   await page.click('#scAdd');
   await idle(page);
   assert.equal(await page.textContent('#wcT2'), '1 marker added');
-  // the toast's Open: Scan again, the question answered, Add
-  await page.click('#msToast button:text-is("Open")');
+  // the step's Open (v318.30; was the toast's): Scan again, the question answered, Add
+  assert.equal(await page.textContent('#wcUndo'), '1 still to choose: Open · Undo');
+  await page.click('#wcOpenBtn');
   await idle(page);
   await page.click('#scList .scchoose >> nth=0');
   await page.click('#scAdd');

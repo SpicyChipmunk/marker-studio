@@ -1,6 +1,6 @@
 /* ===== Tester tasks, and Send feedback's form (v312) =====
    In the beta only (APP_BETA, safety.js). Tester tasks: six things to try, each answered Easy / OK / Hard / Didn't try
-   with a note, three more if there's time, and six last questions. The answers stay on this device (TT_KEY) until
+   with a note, three more if there's time, and five last questions. The answers stay on this device (TT_KEY) until
    Send results. Ways in: the foot of Home ("Tester tasks · 2 of 6", "ready to send" once all six are answered and not
    sent), the thanks card and Help's Beta tester guide ([data-tasks]).
    Where answers go: the Google Form in RESULTS_FORM (safety.js; docs/tester-form-setup.gs makes it, with a sheet that

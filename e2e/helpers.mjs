@@ -123,6 +123,8 @@ export async function teardown() {
 
 // A fresh profile (empty storage) at a given screen size. `errors` collects uncaught page errors.
 // Optional: `userAgent` (e.g. an iPhone's) and `init`, a function run in the page before the app (to stub browser APIs).
+// (v318.30) `touch`: a touch screen, so the page's (pointer: coarse) styles apply (Chromium's touch emulation; WebKit
+// needs isMobile too)
 export async function openApp({
   width = 390,
   height = 844,
@@ -130,13 +132,15 @@ export async function openApp({
   userAgent = undefined,
   init = null,
   moreShut = false,
+  touch = false,
 } = {}) {
   const ctx = await browser.newContext({
     viewport: { width, height },
     deviceScaleFactor: 2,
     serviceWorkers: 'block',
     acceptDownloads: true,
-    hasTouch: false,
+    hasTouch: touch,
+    ...(touch && ENGINE === 'webkit' ? { isMobile: true } : {}),
     ...(userAgent ? { userAgent } : {}),
   });
   _open.add(ctx);

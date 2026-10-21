@@ -38,7 +38,10 @@ let scanFind = null,
   scanUndone = null,
   // (v318.29) opened from the welcome: Add's Undo is a link on "Anything else?" (after's 4th argument), as the chart's
   // and a set's are since v318.26, not a toast over the step's choices
-  scanWelcome = false;
+  scanWelcome = false,
+  // (v318.30) opened from the welcome's Type or paste codes: Scan Text's steps folded into one line and the box
+  // scrolled into view (the card's .sctyped); kept for the step's Open
+  scanTyped = false;
 // (v318.7) the list as last saved or read here, to tell another tab's save from this one's own (scanReread)
 let scanListRaw = null;
 function scanSaveList() {

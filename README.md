@@ -58,6 +58,42 @@ Marker Studio isn't affiliated with or endorsed by Ohuhu or Copic.
   On an iPad or iPhone you can also scan each cap with the keyboard's **Scan Text**.
 - **Ohuhu's older codes** (from before Ohuhu renumbered its markers) are recognised when you scan or photograph caps.
 
+## More you can do
+
+- **Leave white:** tap a section, then **Leave white**, and it stays the paper through every change (**Colour it** brings
+  its colour back). **Pin** keeps a section's marker when you shuffle.
+- **Zones:** give part of the picture its own pattern and colours, like a flower against its background. At the end of
+  **Pattern**, tap **Zone**, then tap or drag across sections.
+- **Paint:** in the **Manual** pattern, turn on **Paint** and drag across sections to fill them with one marker.
+- **Shading:** lighter and darker markers you own for light and shadow, in one tap. **Greyscale** (the three grey bars
+  under the picture) shows where the guide is light and dark.
+- **Print** (in **Share & print**): the page with its key, the key with a coloured reference, or a **Test strip** to try
+  the shading tones on your paper first. **Guide file** saves a guide to keep or send.
+- **In Markers,** press and hold a marker for its details: the markers it **Blends with**, and **Find similar**. **Match
+  a colour** finds your nearest marker to a colour you pick, **To buy** keeps a shopping list, and **Print a swatch
+  chart** makes a page of every code to colour in.
+- **In the Library,** **Duplicate** a guide to try something else, and **Recently deleted** puts back one you deleted.
+
+The app's **Help › Glossary** explains every pattern, setting and word it uses.
+
+## If something goes wrong
+
+- **The sections are wrong:** **← Edit sections** merges, splits or adds them. A clearer photo helps most (see
+  Photographing a page, above).
+- **A colour doesn't match your marker:** the app shows Ohuhu's and Copic's own published colours, and screens and inks
+  differ: some markers look quite different on paper. Colour in a swatch chart (**Markers › Print a swatch chart**) to
+  compare, and tell us which ones with **Send feedback**.
+- **Your markers or guides are missing:** the Home Screen app and a Safari tab each keep their own, so check the other
+  one. Safari also clears a tab's data after about seven days without a visit. **Library › Restore** brings back a
+  backup.
+- **A big photo is slow to open:** finding its page and sections can take a few seconds; the app says what it's doing.
+- **You changed something by mistake:** **Undo** steps back, and **Redo** forward again. A section ticked by mistake in
+  Colour along: tap it again to untick it.
+- **Something looks stuck, or an error shows:** close the app and open it again (your work saves itself), then tap
+  **Send feedback**, or **Copy details** beside the message.
+
+The same list is in the app, under **Help › If something goes wrong**.
+
 ## Your data
 
 - Everything stays on your device: there's no account, and nothing you add is uploaded. The only things that leave it
@@ -72,11 +108,13 @@ Marker Studio isn't affiliated with or endorsed by Ohuhu or Copic.
 - **Ohuhu:** 364 markers, among them every colour in the Honolulu sets (24 up to the complete 320) and in the 48
   Mid-tone, 104 Colors, 36 Skin Tones, 36 Gray Tones, 48 Pastel, 24 Portrait and 6 Skin Tones sets. **Copic:** all
   358 markers, by the codes Sketch, Ciao and Classic share. Other brands aren't supported yet.
-- **Colours on screen are approximate:** screens and inks differ. **Markers › Print a swatch chart** makes a page you
-  can colour in to compare.
+- **Colours on screen are approximate:** they're Ohuhu's and Copic's own published colours, and screens and inks differ,
+  so some markers look quite different on paper. **Markers › Print a swatch chart** makes a page you can colour in to
+  compare.
 - Very detailed pages, hatched or already-coloured pages, and faint or broken lines can give poor sections.
 - Picking one section on the picture needs touch or a mouse; with a keyboard, use Colour along's list.
-- It's tuned for the iPad, in portrait and landscape. Phones and computers work, but have had less testing.
+- It's designed for the iPad, in portrait and landscape, and checked on iPhone-sized screens. Android phones and
+  computers work too, but have had less testing.
 
 ## Feedback
 

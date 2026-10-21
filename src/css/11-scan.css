@@ -435,12 +435,24 @@
   .schint {
     display: none;
   }
+  /* (v318.30) opened from the welcome's Type or paste codes (scan.js, .sctyped): the three steps folded into one line,
+     so the box isn't below the Photograph card, off a phone's first screen */
+  .sccard.sctyped .schow {
+    display: none;
+  }
+  .sccard.sctyped .sctype {
+    display: block;
+  }
+}
+.sctype {
+  display: none;
 }
 /* (v318 review) while the keyboard or Scan Text's camera is up (scan.js scanKb): the paste line and the photo card go,
    and the steps once the list has a marker, so what was just read and the count stay above it */
 .sccard.sckb .sclens,
 .sccard.sckb .ocrbtn,
-.sccard.sckb.scsome .schow {
+.sccard.sckb.scsome .schow,
+.sccard.sckb.scsome .sctype {
   display: none !important;
 }
 @media (pointer: coarse) and (max-width: 560px) {

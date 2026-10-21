@@ -1203,6 +1203,22 @@ function genPalette(n, harmony, opts) {
    most as many colours as there are clear markers in play; null when fewer than its smallest size. (v308) Shown in
    rainbow order from red (rainbowOrder), locked colours with the rest. */
 const _rbSeed = new WeakMap();
+// (v318.30) the bases kept with the saved state (state.palB, state.js): put back on the palettes they belong to, where
+// the palette is still a Rainbow holding its base (an older version's save, or a palette changed meanwhile: not), then
+// no longer held on state; rbSeedList gives the list a save writes
+(function rbSeedLoad() {
+  const b = state.palB;
+  delete state.palB;
+  if (!Array.isArray(b) || b.length !== state.palettes.length) return;
+  b.forEach((si, j) => {
+    const p = state.palettes[j];
+    if (Number.isInteger(si) && Array.isArray(p) && p.includes(si) && palHarm(state.palH[j]) === 'rainbow')
+      _rbSeed.set(p, si);
+  });
+})();
+function rbSeedList() {
+  return state.palettes.map((p) => (_rbSeed.has(p) ? _rbSeed.get(p) : null));
+}
 // whether pal was built from marker si: first in its place, or a Rainbow made from it
 function palFrom(pal, si, h) {
   // (v318.25: `h`, the palette's own scheme when it isn't the one chosen, currentPaletteHarm)

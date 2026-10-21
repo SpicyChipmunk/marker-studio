@@ -430,6 +430,8 @@ function parseState(raw) {
             bad.push('palettes');
             // (its scheme goes with it)
             if (arr(v.palH) && v.palH.length === a.length) v.palH[j] = undefined;
+            // (v318.30: and its base)
+            if (arr(v.palB) && v.palB.length === a.length) v.palB[j] = undefined;
           }
           return ok;
         }),
@@ -440,6 +442,9 @@ function parseState(raw) {
             .filter((x) => x !== undefined)
             .map((x) => (typeof x === 'string' && HARM[palHarm(x)] ? x : null))
         : [],
+      // (v318.30) the marker each Rainbow was built from, in step with palettes (null: not from one, or not a Rainbow);
+      // an older save has none. Read as it is: picker.js (rbSeedLoad) puts it back only where it still fits
+      palB: arr(v.palB) ? v.palB.filter((x) => x !== undefined) : null,
       pool: f('pool', arr, null, (a) => {
         const o = idxs('pool', a);
         return o.length ? o : null;
@@ -694,6 +699,9 @@ function saveTry() {
           excluded: [...state.excluded],
           palettes: state.palettes,
           palH: state.palH,
+          // (v318.30: each Rainbow's base, "Rainbow · Ohuhu G310 base" kept across a reload; a version before this
+          // one reads past it, or carries it as it was: futurePut)
+          palB: typeof rbSeedList === 'function' ? rbSeedList() : null,
           pool: state.pool,
           brands: [...state.brands],
           buyBrands: state.buyBrands,

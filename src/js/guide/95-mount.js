@@ -552,17 +552,21 @@ function mount() {
   });
   // the picture eases to a new size: overlays and the sticky offset measured at the start of that would be off,
   // so measure again once it has settled
+  // (v318.30: the overlays' pass is settleNow's too, when transitionend never comes)
+  function placeOverlays() {
+    if (sunEl || radEl) positionSun();
+    if (photoEl) positionPhoto();
+    if (zoneEl) positionZones();
+    if (roughEl) positionRough();
+    if (speckEl) positionSpecks();
+    if (tipL >= 0) positionTip();
+    if (olSet) positionOutline();
+  }
   if (cv)
     cv.addEventListener('transitionend', function (e) {
       if (e.propertyName !== 'width' && e.propertyName !== 'height') return;
       sizeCanvas();
-      if (sunEl || radEl) positionSun();
-      if (photoEl) positionPhoto();
-      if (zoneEl) positionZones();
-      if (roughEl) positionRough();
-      if (speckEl) positionSpecks();
-      if (tipL >= 0) positionTip();
-      if (olSet) positionOutline();
+      placeOverlays();
     });
   if (cv)
     ['contextlost', 'contextrestored'].forEach(function (ev) {
@@ -655,6 +659,23 @@ function mount() {
   });
   document.getElementById('sfFull').addEventListener('click', enterFull);
   document.getElementById('sfFullX').addEventListener('click', exitFull);
+  // focus mode, the screen another shape: the picture fitted and framed again for it
+  // (v318.30: from the resize handler, and from settleNow when the settled size differs)
+  function resizeFocus() {
+    fitFocus();
+    if (focusCur() >= 0) {
+      focusZ = focusZoomFor(focusCur());
+      // (v315: the hand-off card up: placed again for the new shape)
+      if (handOn()) handReframe();
+      else frameFocus(false);
+      renderGuide();
+    } else {
+      zoom = 1;
+      panX = 0;
+      panY = 0;
+      applyXform();
+    }
+  }
   // turning into side by side pins the picture, as opening a guide that way does
   window.addEventListener('resize', function () {
     const _sd = geo.side;
@@ -665,23 +686,61 @@ function mount() {
     if (olSet) requestAnimationFrame(positionOutline);
     if (photoEl) requestAnimationFrame(positionPhoto);
     var rt = document.getElementById('sfRoot');
-    if (rt && rt.classList.contains('sffoc'))
-      requestAnimationFrame(function () {
-        fitFocus();
-        if (focusCur() >= 0) {
-          focusZ = focusZoomFor(focusCur());
-          // (v315: the hand-off card up: placed again for the new shape)
-          if (handOn()) handReframe();
-          else frameFocus(false);
-          renderGuide();
-        } else {
-          zoom = 1;
-          panX = 0;
-          panY = 0;
-          applyXform();
-        }
-      });
+    if (rt && rt.classList.contains('sffoc')) requestAnimationFrame(resizeFocus);
+    settleSoon();
   });
+  // (v318.30) A settle pass a moment after the last resize (and a turn: orientationchange, the visual viewport's
+  // resize). Above, the overlays are placed a frame after the resize, while the picture is still easing to its size
+  // (04-guide.css: 0.18 s), and the picture's transitionend puts them right; but Safari doesn't always send it as a
+  // phone turns, or sends resize before the screen has its final size, and then the outlines, rings and zones stayed
+  // where the easing picture had been, the rough rings not placed at all, once the layout itself stale (side by side's
+  // sftoolsv, a landscape-size picture in portrait; v318.29 Q3). Cheap: the sizes measured again, the picture laid
+  // again only when its size or the layout differs, then the overlays as transitionend has them. Not with a finger
+  // down (a Paint stroke, a pinch) or the iPad's keyboard up over the code box (findKbd sizes it as that goes): a
+  // moment later. Still easing (the size on the screen isn't the one set): the next pass, a few at most.
+  let _stlT = 0,
+    _stlN = 0;
+  function settleSoon() {
+    clearTimeout(_stlT);
+    _stlT = setTimeout(settleNow, 250);
+  }
+  function settleNow() {
+    _stlT = 0;
+    if (!cv || !workEl || workEl.style.display === 'none' || root.style.display === 'none') {
+      _stlN = 0;
+      return;
+    }
+    if (ptrs.size || workEl.classList.contains('sfkbd')) {
+      settleSoon();
+      return;
+    }
+    const ow = cv.style.width,
+      oh = cv.style.height,
+      sd = geo.side,
+      tv = workEl.classList.contains('sftoolsv');
+    sizeCanvas();
+    const changed =
+      cv.style.width !== ow ||
+      cv.style.height !== oh ||
+      geo.side !== sd ||
+      tv !== workEl.classList.contains('sftoolsv');
+    if (changed) {
+      if (geo.side && !sd) pinPicture();
+      if (root.classList.contains('sffoc')) resizeFocus();
+    }
+    const want = parseFloat(cv.style.width);
+    if (want > 0 && Math.abs(cv.offsetWidth - want) > 1 && _stlN < 4) {
+      _stlN++;
+      settleSoon();
+      return;
+    }
+    _stlN = 0;
+    placeOverlays();
+  }
+  window.addEventListener('orientationchange', settleSoon);
+  try {
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', settleSoon);
+  } catch (_) {}
   planInit();
   maybeShowResume();
   renderRecent();

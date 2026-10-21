@@ -28,8 +28,9 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
     markers with these codes work too, and Scan also knows Ohuhu's older codes.
   - **Copic:** all 358 markers, by the codes Sketch, Ciao and Classic share.
   - Other brands aren't supported yet.
-- **Colours on screen are approximate.** Screens and inks differ. **Markers › Print a swatch chart** makes a page
-  you can colour in to compare.
+- **Colours on screen are approximate.** They're Ohuhu's and Copic's own published colours, and screens and inks
+  differ, so some markers look quite different on paper. **Markers › Print a swatch chart** makes a page you can
+  colour in to compare. Which markers looked most different is one of the last questions in Tester tasks.
 - **Your data stays on your device.** There's no account, no ads and no tracking, and nothing you add is uploaded.
   The only things that leave it are what you choose to send with **Send results** and **Send feedback**. It works
   offline. The camera is used only when you scan or photograph caps (**Markers › + Add markers**) or match a colour.
@@ -54,13 +55,16 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
 - **No account or sync.** Each device, and the Home Screen app, has its own data. Move it with Back up and Restore.
 - **Some pages come out poorly:** very detailed pages, hatched or already-coloured pages, and faint or broken lines.
 - **Picking one section on the picture needs touch or a mouse.** With a keyboard, use Colour along's list instead.
-- **It's tuned for the iPad** (portrait and landscape). Phones and computers work, but have had less testing.
+- **It's designed for the iPad** (portrait and landscape) and checked on iPhone-sized screens. Android phones and
+  computers work too, but have had less testing.
+- **If something goes wrong:** **Help › If something goes wrong** covers wrong sections, colours that don't match,
+  missing markers or guides, and what to do when something looks stuck.
 
 ## What to try: Tester tasks
 
 **Tester tasks** (at the foot of Home, and in **Help › Beta tester guide**) has six things to try, in your own time:
 add your markers, make a guide, make the plan yours, colour along, come back to it, and share or print. Three more are
-there if you have time, then six last questions.
+there if you have time, then a few last questions.
 
 - Answer each one **Easy**, **OK**, **Hard** or **Didn't try**, and add a note if you like. Your answers stay on your
   device until you send them, so it's fine to spread them over a few days.

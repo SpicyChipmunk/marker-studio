@@ -5,6 +5,10 @@
 // version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v318.30',
+    t: 'A new icon: an ink drop drawn like a colouring page (on the Home Screen once you add the app again). Help has two new parts: More you can do, and If something goes wrong. In the welcome, typing codes on a small phone starts with the box in view, and what’s still to choose is said under “Anything else?”, not in a toast over it. A Rainbow palette keeps its base marker’s name after a reload.',
+  },
+  {
     v: 'v318.29',
     t: 'Typing a code both brands use, after adding a set, offers the Copic marker too. In the welcome, Undo for markers you typed or scanned is a link under “Anything else?”, not a toast over the buttons. Ohuhu RV33 Thistle and RV34 Faded Lilac are no longer the same colour, as on Ohuhu’s own chart.',
   },
