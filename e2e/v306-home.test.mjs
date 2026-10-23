@@ -440,11 +440,12 @@ test('Home’s latest piece: Continue keeps priority, a reset or a newer unfinis
   await page.evaluate(() => libDelete(9203));
   await goHome(page);
   assert.equal(await heroName(page), 'Newer finished');
-  // deleted: the next newest is not finished (reset): the start card, no latest piece
+  // deleted: the next newest is not finished (reset): no latest piece; (v318.32) it's on the card, as Open, where the
+  // start card was
   await copyOf(page, a, 9204, 'Reset', 'none', -2000);
   await goHome(page);
   assert.equal(await heroName(page), null, 'the newest isn’t finished');
-  assert.ok(await page.isVisible('#homeCont .hcstart'));
+  assert.ok(await page.isVisible('#homeCont .hccard[data-gid="9204"]:not([data-cont])'));
   await page.evaluate(() => {
     libDelete(9204);
     libDelete(9202);

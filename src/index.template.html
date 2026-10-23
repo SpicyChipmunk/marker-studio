@@ -33,7 +33,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
 <meta name="application-name" content="Marker Studio">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" href="icon-192.png">
+<!-- (v318.32) the tab icon's address names the icon's version: browsers keep a tab icon by its address long after
+     the file changes (v318.30's new icon showed on the Home Screen, the old one in Safari's tab) -->
+<link rel="icon" type="image/png" href="icon-192.png?v=318.30">
 <title>Marker Studio</title>
 <link rel="preload" href="src/assets/fonts/hanken-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="src/assets/fonts/fraunces-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -98,6 +100,7 @@ window.SF=(function(){ /* guide module (window.SF): the js/guide files below sha
 @@include(js/guide/21-pdf.js)
 @@include(js/guide/22-straighten.js)
 @@include(js/guide/24-page-photo.js)
+@@include(js/guide/25-source-photo.js)
 @@include(js/guide/30-palette-assign.js)
 @@include(js/guide/31-balance.js)
 @@include(js/guide/32-mood-pics.js)

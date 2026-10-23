@@ -63,6 +63,12 @@ const harmShown = (page) =>
     const s = document.getElementById('sfHarm');
     return s.options[s.selectedIndex].textContent;
   });
+// (v318.34) the palette's card on the Colours tab: its name and line (count · scheme · where from)
+const cardShown = (page) =>
+  page.evaluate(() => {
+    const c = document.getElementById('sfPalCard');
+    return c.querySelector('.sfpntx b').textContent + ' · ' + c.querySelector('.sfpntx span').textContent;
+  });
 
 test('Use in a guide: Mood and Shuffle keep the palette’s markers; a harmony or Generate palette makes a new one; Undo goes back to it', async () => {
   const { page, errors } = await openApp();
@@ -79,10 +85,12 @@ test('Use in a guide: Mood and Shuffle keep the palette’s markers; a harmony o
   let s = await sv(page);
   assert.deepEqual(s.genPal, keys, 'the palette’s markers after a Mood tap');
   assert.deepEqual(s.fromPal, { name, h: 'rainbow' });
-  // used as it is, as a saved palette is: Mood greyed out, the line says so, the harmony list shows the palette
+  // used as it is, as a saved palette is: Mood greyed out, the line says so, the card shows the palette (v318.34:
+  // the card, with its swatches, in place of a greyed option in the harmony select)
   assert.equal(await moodOff(page), true, 'Mood greyed out');
   assert.equal(await poolLine(page), 'All 6 of your palette’s markers, as it is');
-  assert.equal(await harmShown(page), name + ' (Rainbow)');
+  assert.equal(await cardShown(page), name + ' · 6 markers · Rainbow · From Palette');
+  assert.equal(await harmShown(page), 'Rainbow');
   assert.ok(
     (await pageKeys(page)).every((k) => keys.includes(k)),
     'the page uses only the palette',
@@ -120,8 +128,12 @@ test('Use in a guide: Mood and Shuffle keep the palette’s markers; a harmony o
   assert.deepEqual(s.genPal, keys);
   assert.deepEqual(s.fromPal, { name, h: 'rainbow' });
   assert.equal(await moodOff(page), true);
-  // Generate palette, tapped while it shows the handed-over palette, makes a new one (one Undo step, so named)
-  await page.evaluate(() => document.querySelector('#sfSrc [data-v="generate"]').click());
+  // New palette, tapped while the card shows the handed-over palette, makes a new one (one Undo step, so named)
+  // (v318.34: the A palette segment, lit for it, leaves it as it is: New palette asks for another)
+  await page.evaluate(() => document.querySelector('#sfSrc [data-v="palette"]').click());
+  await idle(page);
+  assert.deepEqual((await sv(page)).genPal, keys, 'A palette tapped again: kept');
+  await page.evaluate(() => document.querySelector('#sfGenNew').click());
   await idle(page);
   s = await sv(page);
   assert.equal(s.fromPal, null);
@@ -132,14 +144,16 @@ test('Use in a guide: Mood and Shuffle keep the palette’s markers; a harmony o
   await page.evaluate(() => document.querySelector('#sfMood [data-v="pastel"]').click());
   await idle(page);
   assert.notDeepEqual((await sv(page)).genPal, g, 'made again for the Mood');
-  // Surprise is a new palette too
+  // (v318.34) Surprise keeps a handed-over palette (a palette you chose) and surprises the rest; before, it made a
+  // new palette in its place
   await page.evaluate(() => __mstest.assign.planUndo());
   await page.evaluate(() => __mstest.assign.planUndo());
   await idle(page);
   assert.deepEqual((await sv(page)).fromPal, { name, h: 'rainbow' });
   await page.evaluate(() => __mstest.surprise());
   await idle(page);
-  assert.equal((await sv(page)).fromPal, null, 'Surprise: the guide’s own palette');
+  assert.deepEqual((await sv(page)).fromPal, { name, h: 'rainbow' }, 'Surprise: the palette kept');
+  assert.deepEqual((await sv(page)).genPal, keys);
   assert.deepEqual(errors, []);
 });
 

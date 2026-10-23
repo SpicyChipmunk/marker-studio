@@ -146,12 +146,12 @@ test('a start-up screen that fails to draw is reported, and the welcome, Match a
 test('toasts stay with their screen, and go when a dialog opens', async () => {
   const { page, errors } = await openApp({ storage: onboardedV263({ [KEY]: appState({ mode: 'collection' }) }) });
   await page.click('#results .cell'); await page.waitForSelector('#msToast.on');
-  assert.match(await toastText(page), /Removed/);
+  assert.match(await toastText(page), /unticked/); // (v318.32: "… unticked · Undo")
   await page.click('#mPalette'); await idle(page);
   assert.equal(await toastText(page), '', 'gone on Palette');
   await page.click('#mCollection'); await page.click('#results .cell'); await idle(page);
   await pause(page, 200, 'a toast under 150 ms old is kept by a dialog opening (it came with it); this one is older');
-  assert.match(await toastText(page), /Added|Removed/);
+  assert.match(await toastText(page), /Added|Removed|unticked/);
   await page.click('#mkMatchBtn'); await idle(page);
   assert.equal(await toastText(page), '', 'gone when Match opens');
   assert.deepEqual(errors, []);

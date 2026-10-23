@@ -202,6 +202,8 @@ function pdfUse(c) {
     pgOrig = null;
     pgQ = null;
     pgHint = null;
+    // (v318.34: the page kept with the guide once it's saved, 25-source-photo)
+    srcFrom = 'pdf';
     enterWork();
     const rs = document.getElementById('sfResume');
     if (rs) rs.style.display = 'none';

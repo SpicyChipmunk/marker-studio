@@ -9,7 +9,7 @@ import { createApp } from './harness.mjs';
 const NAMES = ['family', 'palette', 'theme', 'gradShape', 'dir', 'look', 'emphasis', 'limitN', 'gradIncl', 'noAdj', 'balance', 'balM', 'balS', 'balA', 'balSeed', 'noRep', 'matchAlike', 'gradSeed', 'blendFall', 'blendMix',
   'texAmt', 'radC', 'shadeMode', 'shadeSun', 'shadeRound', 'shadeLines', 'shadeHi', 'shadeLo', 'shadeLight', 'shadeMain', 'shadeShadow', 'shadeHilite', 'shadeFlat', 'photoXf',
   'photoOp', 'photoPaper', 'expand', 'expandChar', 'paletteSource', 'savedPalId', 'genHarmony', 'genPal', 'fromPal', 'minPos', 'bgTrim',
-  'addAutoClose', 'famRule', 'lowX', 'smpTry', 'gradArea', 'bgRule'];
+  'addAutoClose', 'famRule', 'lowX', 'smpTry', 'gradArea', 'bgRule', 'hatchOne'];
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
 test('each style setting’s first value (a guide that changes nothing is saved with these)', () => {
@@ -38,6 +38,8 @@ test('each style setting’s first value (a guide that changes nothing is saved 
     gradArea: 0,
     // (v318.12: a guide saved before keeps its background as it was)
     bgRule: 0,
+    // (v318.35: Treat hatching as one section, on unless turned off)
+    hatchOne: true,
   });
 });
 
@@ -80,8 +82,11 @@ test('the saved style: its exact text, nesting and order', () => {
       '"genPal":["Ohuhu|R16","' + k0 + '","Ohuhu|B06"],"fromPal":{"name":"Sunset strip","h":"photo"}}',
   );
   // the section settings are saved beside the style, in this place among the rest
+  // (v318.34: `src`, the picture's settings, after frame; undefined here, as for the sample: written only for a guide
+  // built from a picture of the person's own)
   assert.deepEqual(Object.keys(d.payload), ['lmap', 'ref', 'paper', 'assign', 'style', 'anchors', 'prog', 'tones', 'held', 'dates', 'out',
-    'edits', 'base', 'locks', 'white', 'upk', 'frame', 'minPos', 'minSize', 'bgTrim', 'addAutoClose', 'secStates']);
+    'edits', 'base', 'locks', 'white', 'upk', 'frame', 'src', 'minPos', 'minSize', 'bgTrim', 'addAutoClose', 'secStates']);
+  assert.equal(d.payload.src, undefined);
   // (the smallest section: minSize on the slider's scale since v277, minPos on the old one for older copies)
   assert.deepEqual([d.payload.minSize, d.payload.minPos, d.payload.bgTrim, d.payload.addAutoClose], [12, 3, 64, true]);
   // a guide file to share has the same style
@@ -146,8 +151,9 @@ test('STYLE_FIELDS: every default is its variable’s first value, and what a fi
   // fromPal, the palette Palette's Use in a guide handed over, which Mood and Shuffle keep as it is; v313:
   // 45 with famRule, the family rule; 46 with lowX, the running-low lines closed;
   // 47 with smp, the sample not yet printed or renamed; v314: 48 with gradArea, the Gradient's area rule; v318.12: 49
-  // with bgRule, the background rule; v318.15: 50 with matchAlike, Matching shapes alike; v318.18: 51 with theme)
-  assert.equal(n, 51);
+  // with bgRule, the background rule; v318.15: 50 with matchAlike, Matching shapes alike; v318.18: 51 with theme;
+  // v318.35: 52 with hatchOne, Treat hatching as one section)
+  assert.equal(n, 52);
 });
 
 test('STYLE_FIELDS: where each setting is saved (in the order written) and which ones Undo keeps', () => {
@@ -160,6 +166,7 @@ test('STYLE_FIELDS: where each setting is saved (in the order written) and which
     'style.photo (no undo)', 'style.expand', 'style.expandChar', 'style.paletteSource', 'style.savedPalId',
     'style.genHarmony', 'style.genPal', 'style.fromPal', 'payload.minPos (no undo)', 'payload.minSize (no undo)', 'payload.bgTrim (no undo)',
     'payload.addAutoClose (no undo)', 'payload.famRule (no undo)', 'payload.lowX (no undo)', 'payload.smp (no undo)', 'payload.gradArea (no undo)', 'payload.bgRule (no undo)',
+    'payload.hatchOne (no undo)',
   ]);
 });
 

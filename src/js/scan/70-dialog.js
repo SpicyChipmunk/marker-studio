@@ -221,6 +221,46 @@ function scanFindNote(marks) {
         : '') +
     more;
 }
+// (v318.32 D1-2) a list file's bytes as text: UTF-16 when it says so (a byte-order mark FF FE or FE FF) or looks so (NUL
+// bytes among its first 64: the high byte of every letter and digit), the order from where the NULs fall; else UTF-8.
+// TextDecoder drops the mark itself
+function scanDecode(buf) {
+  const b = new Uint8Array(buf || 0);
+  let enc = 'utf-8';
+  if (b.length >= 2 && b[0] === 0xff && b[1] === 0xfe) enc = 'utf-16le';
+  else if (b.length >= 2 && b[0] === 0xfe && b[1] === 0xff) enc = 'utf-16be';
+  else {
+    let odd = 0,
+      even = 0;
+    for (let i = 0; i < Math.min(64, b.length); i++) if (!b[i]) i & 1 ? odd++ : even++;
+    if (odd || even) enc = odd >= even ? 'utf-16le' : 'utf-16be';
+  }
+  try {
+    return new TextDecoder(enc).decode(b);
+  } catch (_) {
+    return new TextDecoder().decode(b);
+  }
+}
+// (v318.32 decision 6.9) a picture pasted into the box (an iPad's Photos, Copy): read by the reader, when it can run
+// here and is stored; else said, with where to go. Nothing had happened: getData('text') is empty for a picture
+function scanPasteFiles(e) {
+  const files = e.clipboardData && e.clipboardData.files ? [...e.clipboardData.files] : [],
+    pics = files.filter((f) => /^image\//.test(f.type));
+  if (!pics.length) return;
+  e.preventDefault();
+  const no = function () {
+    scanSay('none', 'Paste text, or use Photograph your caps', 'A picture was pasted', -1);
+    scanBeep('none');
+  };
+  if (typeof ocrCan !== 'function' || !ocrCan() || scanFind) return no();
+  (ocrOk ? Promise.resolve(true) : ocrStored()).then(function (stored) {
+    // (Scan closed, or a photo being read, meanwhile: not started)
+    if (!$('scanOverlay').classList.contains('on')) return;
+    if (!stored) return no();
+    ocrOk = true;
+    ocrChosen(pics);
+  });
+}
 // (v318 review) text too long to be a list of markers: 200,000 characters, ten times a list of every Ohuhu and Copic
 // code with its name; reading that much takes about a second in Chrome on a desktop, more on an iPad
 const SCAN_MAX = 200000;
@@ -733,15 +773,19 @@ function scanAddCaps() {
     if (f.size > 2e6) return no('Too big for a list of markers');
     const rd = new FileReader();
     rd.onload = function () {
-      if (scanTooBig(String(rd.result || ''), f.name)) return;
-      scanHandle(String(rd.result || '').replace(/^\uFEFF/, ''), true);
+      // (v318.32 D1-2: the bytes decoded as what they are, not always UTF-8: a UTF-16 file (Excel's "Unicode Text",
+      // an older Notepad's "Unicode") had its codes read a letter at a time, "R16" as R, 1, 6, and added the wrong
+      // markers without a word)
+      const text = scanDecode(rd.result);
+      if (scanTooBig(text, f.name)) return;
+      scanHandle(text.replace(/^\uFEFF/, ''), true);
       scanRender();
       scanFocusBox();
     };
     rd.onerror = function () {
       no('That file couldn’t be read');
     };
-    rd.readAsText(f);
+    rd.readAsArrayBuffer(f);
   });
   ov.addEventListener('click', function (e) {
     if (e.target === ov) return closeScan();
@@ -1068,7 +1112,7 @@ function scanAddCaps() {
   // a paste is read at once, as pasted (a one-line box would run a list's lines together)
   box.addEventListener('paste', function (e) {
     const text = e.clipboardData && e.clipboardData.getData('text');
-    if (!text) return;
+    if (!text) return scanPasteFiles(e);
     e.preventDefault();
     // (v318 review) more text than any list of markers (a whole web page copied): said, not read, as a file too big is;
     // reading it froze the page for seconds

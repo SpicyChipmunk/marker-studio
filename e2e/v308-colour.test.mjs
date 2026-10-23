@@ -283,20 +283,21 @@ test('an opened guide’s count says its own markers until it’s laid again; Sa
   await page.click('#sfMkPlus');
   await idle(page);
   assert.equal(await label(page), 'all · 130');
-  // Saved palette, none saved: your markers, the count as it is (it said "all (1)"), no Expand
+  // (v318.34) A palette with none saved: one is made here, which caps the count at its size (the cap note says so),
+  // and Expand is offered. (Before: Saved palette with none saved used your markers at the count as it was, no Expand)
   await page.evaluate(() => {
     __mstest.styleVars.limitN = 16;
     __mstest.reassign();
   });
   await idle(page);
-  const pals = await page.evaluate(() => (state.palettes || []).length);
-  if (!pals) {
-    await page.click('#sfSrc [data-v="saved"]');
-    await idle(page);
-    assert.equal(await label(page), '16');
-    assert.equal(await page.isDisabled('#sfMkCount'), false);
-    assert.equal(await page.isVisible('#sfExpand'), false);
-  }
+  await page.click('#sfSrc [data-v="palette"]');
+  await idle(page);
+  const gn = await page.evaluate(() => __mstest.styleVars.genPal.length);
+  assert.ok(gn >= 3 && gn <= 8, 'a palette made: ' + gn);
+  assert.match(await label(page), new RegExp('(^|· )' + gn + '$'));
+  assert.equal(await page.isDisabled('#sfMkCount'), false);
+  assert.equal(await page.isVisible('#sfExpand'), true);
+  assert.equal(await page.textContent('#sfPalCap'), 'A palette of ' + gn + ': tick Expand for more.');
   assert.deepEqual(errors, []);
 });
 

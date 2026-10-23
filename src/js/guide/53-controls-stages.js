@@ -1,9 +1,10 @@
 // Colour along's focus mode: the bar at the top, the Colours sheet and the bottom row (filled in by renderFocusUI)
 function ctlFocus() {
   ctlEl.innerHTML =
-    '<div class="sffocbar"><div class="sffocrow"><button id="sfExitFoc" class="sfz" aria-label="Exit focus mode">' +
-    ic('x') +
-    '</button><span id="sfFocSw" class="sffocsw"></span><div class="sffocname"><b id="sfFocName"></b><span id="sfFocSub"></span></div><button id="sfFocCols" class="sffoccols" aria-expanded="false">Colours</button></div><div id="sfFocChips" class="sffocchips" aria-hidden="true"></div><div id="sfFocTip" class="sffoctip"></div><div class="sffocprog" id="sfFocProg" role="progressbar" aria-label="Page" aria-valuemin="0" aria-valuemax="100"><div id="sfProgBar"></div></div></div>' +
+    // (v318.32) Exit in a word, a pill like Colours at the other end of the row: on the iPad the bare ✕ it was wasn't
+    // read as the way out, only the back swipe was. (Not "✕ Exit": at 390 wide the ✕ would push "Not the Copic Y26" to
+    // a second line, v306.) Escape and the back swipe leave the same way (layers.js: exitFocus).
+    '<div class="sffocbar"><div class="sffocrow"><button id="sfExitFoc" class="sfexit" aria-label="Exit focus mode">Exit</button><span id="sfFocSw" class="sffocsw"></span><div class="sffocname"><b id="sfFocName"></b><span id="sfFocSub"></span></div><button id="sfFocCols" class="sffoccols" aria-expanded="false">Colours</button></div><div id="sfFocChips" class="sffocchips" aria-hidden="true"></div><div id="sfFocTip" class="sffoctip"></div><div class="sffocprog" id="sfFocProg" role="progressbar" aria-label="Page" aria-valuemin="0" aria-valuemax="100"><div id="sfProgBar"></div></div></div>' +
     '<div id="sfFocSheet" class="sffocsheet" style="display:none"><button id="sfFocAll" class="fsall"></button>' +
     (shadeUse().on
       ? '<label class="sfchk fsteps"><input type="checkbox" id="sfToneSteps"' +
@@ -87,6 +88,28 @@ function edBarHTML(quick) {
     (quick ? '<button type="button" id="sfFix" class="sfghost">Edit sections</button>' : '') +
     '<button id="sfToPlan" class="sfghost" style="display:none" aria-label="Back to the Plan">\u2190 Plan</button><button id="sfBuild" class="sfprimary" aria-label="Build guide">Build guide \u2192</button></div>'
   );
+}
+// (v318.32 U1-1) Adjust photo opened: its rows brought into view between the pinned picture and the Build bar. On a
+// phone, and an iPad held upright, the panel had opened under the sticky bar or below the fold, so nothing seemed to
+// happen (as alongReveal does for the open row, 83-along)
+function adjReveal() {
+  const tg = document.getElementById('sfAdjToggle'),
+    pn = document.getElementById('sfAdjPanel') || document.getElementById('sfAdjNone'),
+    bar = barEl();
+  if (!tg || !pn || tg.offsetParent === null) return;
+  const top =
+      safeTop() +
+      (geo.side ? 0 : parseFloat(document.documentElement.style.getPropertyValue('--pinH')) || 0) +
+      6,
+    bot = (bar ? bar.getBoundingClientRect().top : window.innerHeight) - 6,
+    t = tg.getBoundingClientRect(),
+    p = pn.getBoundingClientRect();
+  let dy = 0;
+  if (p.bottom > bot) dy = p.bottom - bot;
+  // (never the toggle itself out of sight above: the first rows win over the last)
+  if (t.top - dy < top) dy = t.top - top;
+  if (Math.abs(dy) < 1) return;
+  window.scrollTo(0, Math.max(0, Math.round(window.scrollY + dy)));
 }
 function edBarSync() {
   const tp = document.getElementById('sfToPlan'),
@@ -357,6 +380,50 @@ function faintWire() {
     sayLive(faintCut ? 'Faint grey marks ignored' : 'Faint grey marks kept');
   });
 }
+// (v318.35) Treat hatching as one section (hatchMerge, 10-segment): on Edit sections under Background trim, on by
+// default and saved with the guide. Turning it off (or on) finds the sections again without (with) the merge, one
+// Undo step as Sensitivity is. The note says how many hatched patches the last detection merged, when any.
+function hatchLineHTML() {
+  if (sfmode !== 'review') return '';
+  return (
+    '<div id="sfHatchLine" class="sffaint sfc-mt8"><label class="sffaintchk"><input type="checkbox" id="sfHatch"' +
+    (hatchOne ? ' checked' : '') +
+    '> Treat hatching as one section</label><div class="sfc-sub" id="sfHatchNote">' +
+    hatchNoteText() +
+    '</div></div>'
+  );
+}
+// (v318.37: on a camera photo kept as photographed the merge waits for the page to be straightened, hatchUnsure: the
+// note says so, X1-2)
+function hatchNoteText() {
+  return (
+    'Close parallel shading lines become one section, their lines kept.' +
+    (hatchOne && hatchUnsure()
+      ? ' Not until the page is straightened: its scale isn\u2019t known as photographed.'
+      : hatchOne && hatchMade > 0
+        ? ' Found ' + hatchMade + (hatchMade === 1 ? ' hatched patch' : ' hatched patches') + ' on this page.'
+        : '')
+  );
+}
+function hatchWire() {
+  const b = document.getElementById('sfHatch');
+  if (!b) return;
+  b.addEventListener('change', function () {
+    reFrom();
+    hatchOne = b.checked;
+    hatchSet = true;
+    if (resegment() === false) return;
+    sayLive(hatchOne ? 'Hatching treated as one section' : 'Hatching kept as separate sections');
+  });
+}
+// (in step after the sections are found again: the count, and the box after an Undo)
+function hatchLineSync() {
+  if (sfmode !== 'review' || !ctlEl) return;
+  const b = document.getElementById('sfHatch'),
+    nt = document.getElementById('sfHatchNote');
+  if (b) b.checked = hatchOne;
+  if (nt) nt.textContent = hatchNoteText();
+}
 // (in step after the sections are found again without the controls being drawn again: Sensitivity, Enhance)
 function faintLineSync() {
   if (sfmode !== 'review' || !ctlEl) return;
@@ -510,16 +577,28 @@ function ctlSections() {
       '>Edit sections</h3><div class="sfc-note sfedline"' +
       (quick ? ' hidden' : '') +
       '>Merge, split or add where the lines didn\u2019t come out right.</div>',
+    // (v318.32) a guide opened again from the Library (or Resume, or a guide file) has no photo: a saved guide keeps its
+    // section map, not the photo (97-open: srcImg = null). Adjust photo had gone from Edit sections without a word
+    // (Ben: "the crop tools disappear"); now it stays, and opens to say why, with the picker for a new guide from the
+    // photo (sfRetake's wiring, 95-mount). The picture made up by the app (the sample, a PDF's page) has its tools
+    // (v318.34) a guide saved since keeps its picture (25-source-photo): opened here, it's read and made ready first
+    // ("Getting the photo ready…"), then the tools come back as on a first build. The note stays for a guide without
+    // one (saved before, the sample, a guide file, or a write that failed)
+    srcWait = showAdjust && !srcImg && srcMay(),
     adjust =
       '<button id="sfAdjToggle" class="sfexp sfc-mt12" aria-expanded="' +
       !!showAdjust +
-      '"' +
-      (srcImg ? '' : ' style="display:none"') +
-      '>' +
+      '">' +
       ic(showAdjust ? 'chevron-down' : 'chevron-right') +
       ' Adjust photo</button>' +
+      (srcWait
+        ? '<div class="sfc-note sfc-mt8" id="sfAdjLoad" role="status">Getting the photo ready\u2026</div>'
+        : '') +
+      (showAdjust && !srcImg && !srcWait
+        ? '<div class="sfc-note sfc-mt8" id="sfAdjNone">The photo isn’t kept with a saved guide, so this one can’t be turned, straightened or cropped again. For a different crop or angle, choose the photo again: it makes a new guide.<br><button type="button" class="sflink sfc-retake" id="sfRetake">Choose the photo again</button></div>'
+        : '') +
       (showAdjust && srcImg
-        ? '<div class="sfc-adjrow"><button id="sfRotL" class="sfghost" aria-label="Turn left 90\u00b0">' +
+        ? '<div id="sfAdjPanel"><div class="sfc-adjrow"><button id="sfRotL" class="sfghost" aria-label="Turn left 90\u00b0">' +
           ic('rotate-ccw') +
           ' 90\u00b0</button><button id="sfRotR" class="sfghost" aria-label="Turn right 90\u00b0">' +
           ic('rotate-cw') +
@@ -537,7 +616,7 @@ function ctlSections() {
           Math.round((16 - adaptC) / 1.4) +
           '</b><input type="range" id="sfSens" min="1" max="9" step="1" value="' +
           Math.round((16 - adaptC) / 1.4) +
-          '" class="sfc-range" aria-describedby="sfSensHint"></label><div id="sfSensHint" class="sfrnghint">Higher: fainter lines count as lines</div></div>'
+          '" class="sfc-range" aria-describedby="sfSensHint"></label><div id="sfSensHint" class="sfrnghint">Higher: fainter lines count as lines</div></div></div>'
         : '');
   ctlEl.innerHTML =
     '<div class="sfpane">' +
@@ -568,6 +647,7 @@ function ctlSections() {
     '</span><label class="sfrng">Background trim<input type="range" id="sfBg" min="0" max="100" value="' +
     bgTrim +
     '" aria-describedby="sfBgHint"></label><div id="sfBgHint" class="sfrnghint">Higher: more of what touches the edges counts as background</div>' +
+    hatchLineHTML() +
     adjust +
     '</div><div id="sfKeepLine" class="sfc-note sfc-mt10" style="display:none"></div></div>' +
     edBarHTML(quick);
@@ -684,13 +764,17 @@ function ctlSections() {
   wire('sfAdjToggle', 'click', function () {
     showAdjust = !showAdjust;
     renderControls();
+    if (showAdjust) adjReveal();
   });
+  // (v318.34: the kept picture read and made ready while "Getting the photo ready…" shows; draws the controls again)
+  if (srcWait) srcLoad();
   wire('sfCrop', 'click', enterCrop);
   wire('sfPgOpen', 'click', pgAdjust);
   wire('sfPgAdj', 'click', pgAdjust);
   wire('sfPgUndo', 'click', pgUndo);
   frameLineWire();
   faintWire();
+  hatchWire();
   wire('sfAutoCrop', 'click', autoCrop);
   wire('sfTrim', 'click', autoCrop);
   wire('sfRotL', 'click', function () {

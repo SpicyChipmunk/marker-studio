@@ -18,11 +18,14 @@ test('Colours from is a row across the controls, as Temperature is: even on an i
     await sampleGuide(page);
     await page.click('.sftabbtn[data-t="colours"]'); await idle(page);
     const src = await boxes(page, '#sfSrc button'), pal = await rect(page, '#sfPal');
-    assert.equal(src.length, 3);
+    // (v318.34: two, Your markers | A palette)
+    assert.equal(src.length, 2);
     assert.equal(rows(src), 1, w + ': one row');
     // (even where there's room; on a phone each as wide as its words need, filling the row)
     if (w > 700) assert.ok(even(src), w + ': even ' + src.map((b) => b.width));
-    assert.ok(Math.abs(src[0].left - pal.left) < 2 && Math.abs(src[2].right - pal.right) < 2, w + ': as wide as Temperature');
+    // (v318.33: Colours from is a track, its buttons inside it: the track is as wide as Temperature)
+    const row = await rect(page, '#sfSrc');
+    assert.ok(Math.abs(row.left - pal.left) < 2 && Math.abs(row.right - pal.right) < 2, w + ': as wide as Temperature ' + JSON.stringify([row.left, row.right, pal.left, pal.right]));
     assert.ok(await page.$$eval('#sfSrc button', (b) => b.every((x) => x.scrollWidth <= x.clientWidth + 1)), 'labels fit');
     assert.deepEqual(errors, []);
     await ctx.close();

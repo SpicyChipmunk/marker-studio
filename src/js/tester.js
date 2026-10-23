@@ -96,7 +96,7 @@
       k: 'palette',
       t: 'Palette',
       s: 'Make a palette and use it in a guide',
-      d: 'In <b>Palette</b>, make a palette you like, then tap <b>Use in a guide</b>.',
+      d: 'In <b>Palette</b>, make a palette you like, then tap <b>Use in a guide</b>. Or, in a guide, <b>Colours › Colours from › A palette</b>, then <b>New palette</b>.',
       p: ['Anything go wrong?'],
     },
     {
@@ -760,16 +760,22 @@
       return !(st.t[x.k] && st.t[x.k].r);
     });
     card.classList.toggle('ttready', all);
+    // (v318.32) the line's last word and the › in one nowrap span, so the › never wraps alone (V1-9: it did on an
+    // iPad in portrait). A span, not a no-break space: the tests compare the text
+    const line = all
+        ? 'All ' + TASKS.length + ' answered: ready to send'
+        : 'Next to answer: ' + (TASKS.indexOf(nx) + 1) + ' \u00b7 ' + nx.t,
+      sp = line.lastIndexOf(' ');
     card.innerHTML =
       '<span class="ttcn" aria-hidden="true">' +
       n +
       '/' +
       TASKS.length +
       '</span><span class="ttct"><b>Beta tester tasks</b><span>' +
-      (all
-        ? 'All ' + TASKS.length + ' answered: ready to send'
-        : 'Next to answer: ' + (TASKS.indexOf(nx) + 1) + ' \u00b7 ' + nx.t) +
-      ' <span aria-hidden="true">\u203a</span></span></span>';
+      line.slice(0, sp + 1) +
+      '<span class="ttnw">' +
+      line.slice(sp + 1) +
+      ' <span aria-hidden="true">\u203a</span></span></span></span>';
     card.setAttribute(
       'aria-label',
       'Beta tester tasks, ' +
@@ -791,6 +797,9 @@
       'Tester tasks · ' + (sent ? 'sent' : all ? 'ready to send' : n + ' of ' + TASKS.length);
     footBtn.classList.toggle('ttready', all && !sent);
     cardSync(n, all, sent);
+    // (v318.36: v318.32 had put the foot's line away while the card showed, V1-8; it's back. It's the one way into the
+    // tasks that's always there and opens them at the top, which a dozen tester flows rely on: the card opens them at
+    // the next task)
   }
   footSync();
 

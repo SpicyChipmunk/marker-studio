@@ -538,6 +538,7 @@ function gridActs(list) {
   ownNoneBtn.disabled = !list.some((i) => isOwned(i));
   // (a palette needs a colour: not only the Colorless Blender, v304)
   toPalette.disabled = !list.some((i) => !NOINK.has(i));
+  $('toRandom').disabled = toPalette.disabled;
 }
 function renderGrid(more) {
   let m = finderMatches();
@@ -731,16 +732,20 @@ results.addEventListener('click', (e) => {
   if (a) a.focus({ preventScroll: true });
 });
 // (v311) Add markers, at the top: the ways to add in a sheet (the welcome's card: boot.js openAddMarkers). With no
-// markers yet they're in a card at the top instead (chrome.js), so it shows only with a collection. And a link down
+// markers yet they're in a card at the top instead (chrome.js), so it shows only with a collection. And a way down
 // to Brands I'd buy and Print a swatch chart, below the grid (as v300's link to the sets and the chart, which the
 // sheet has now taken the sets from).
+// (v318.33) both in the tools row with Random and Match a colour, as matching buttons (Fable V1-1: five idioms
+// stacked before the first swatch; an underlined link, a 40px gap and Filters after a bordered button)
+const mkDraw = $('mkDraw');
 const mkAddBtn = document.createElement('button');
 mkAddBtn.type = 'button';
 mkAddBtn.id = 'mkAddBtn';
 mkAddBtn.className = 'mkaddbtn';
 mkAddBtn.innerHTML = ic('plus') + 'Add markers';
 mkAddBtn.style.display = 'none';
-ownHint.insertAdjacentElement('afterend', mkAddBtn);
+if (mkDraw) mkDraw.appendChild(mkAddBtn);
+else ownHint.insertAdjacentElement('afterend', mkAddBtn);
 mkAddBtn.addEventListener('click', function () {
   addWay('add', mkAddBtn);
 });
@@ -758,7 +763,7 @@ mkJump.type = 'button';
 mkJump.id = 'mkJump';
 mkJump.className = 'mkjump';
 mkJump.style.display = 'none';
-mkJump.innerHTML = 'Swatch chart<span aria-hidden="true">\u2193</span>';
+mkJump.innerHTML = ic('printer') + 'Swatch chart';
 mkAddBtn.insertAdjacentElement('afterend', mkJump);
 function mkJumpSync(col) {
   // (not in To buy: Print a swatch chart is just under it there, v300)

@@ -2415,3 +2415,298 @@ and Send feedback. Nothing stopped either. Then two fixers checked each finding 
   visual viewport's resize) brings it back. That test fails on v318.30 and passes now; e2e/v31830-w2 still passes in
   both engines.
 - Cache bumped to `marker-studio-v318.31`.
+
+# Changes — v318.32 (the photo specks; Ben's iPad findings; fixes from Fable's review round)
+
+- **Phantom specks in a guide from a photo** (Ben: purple specks unless Sensitivity was slid to 1). Two parts:
+  - **Sensitivity starts at 5 for a straightened photo** (was 7; SENS_PHOTO adaptC 6 → 9). On Ben's 36 printed-page
+    photos specks fell 295 → 226 and spurious sections 474 → 380, matched 92.65% → 92.71%; on his 5 zentangle photos
+    matched 77.8% → 77.2% (fine detail likes a higher Sensitivity: raising it brings that back). Below 5 there were no
+    fewer specks and more splits.
+  - **crumbClean** (10-segment.js, its own step after the sections are drawn): the paper between grain dots, and a
+    photographed page edge in shadow pocked with holes, become paper. Away from the edge band a crumb must be under
+    3 mm² on the page and lie between two or more pieces of ink, so a small shape drawn on its own (a ring, a bead, a
+    flower's petal, a letter's hole) keeps its section; its limits come from the page's size, never the user's Min
+    section size; the edge band goes only when it's a solid strip of small holes (lace or hatching along an edge keeps
+    its ink). Fable's pressure test found the first version deleted such shapes (a dotted mandala lost all 682
+    sections): those drawings are now tests. On Ben's Specks photos the default now gives what Sensitivity 1 gave
+    (IMG_0070 225/225, 0069 102/103, 0071 234/232; 0068 437/431, its extra specks in the table outside the page).
+  - The "coloured in already" warning counts only the small crumbs it took (a clean photo with a shaded edge had been
+    told it was coloured), and the count travels with the detection (Undo).
+- **Focus mode**: an **Exit** pill; the next-marker card never runs off screen or under the bars, and on a small phone
+  at large text a side that would clip it loses to one that shows it whole; it reframes once the bars have measured.
+- **Home** features your newest unfinished guide, started or not ("Your latest guide · not started · Open").
+- **Edit sections after a guide is opened again**: Adjust photo says the photo isn't kept with a saved guide and offers
+  Choose the photo again (keeping it is planned for v318.34). Opening Adjust photo scrolls it into view above the
+  Build bar.
+- **Palette › Start from** on an iPad held upright: the colour cards were 2 px slivers in Safari (grid rows sized to
+  nothing in the first layout). The button reads "Start from a marker… (random)".
+- **Guide › Pattern › Random**: Balance's row fills like the others, with a line saying what it does; the role bar is
+  a named group for screen readers; No repeats' note is plainer; Colours says why its count is greyed.
+- **The browser tab's icon** is the new one.
+- **The welcome**: Done in "Add your markers one by one". **Straightening when the app isn't sure of the page**: the
+  note says to drag the yellow corners; with a sensible outline Straighten is the main button. **What's new** has its
+  own Help section, and after an update Home says so once. **Markers chart**: "… unticked · Undo". **Shading**: hints
+  for Marker texture and Neuro. **Gradient**: "Matching shapes get the same colour (mandalas)". **Home's tester card**:
+  the footer's Tester tasks link hides while the card shows; its › no longer wraps alone.
+- **Scan**: closing it while the reader was starting left the read waiting for good, holding the photo's pixels; a list
+  file saved as Unicode (UTF-16, Excel's Unicode Text) was read as UTF-8 and added the wrong markers; a reload in the
+  middle of a read was taken for a memory failure and read gently for 14 days; a photo pasted into the box is now read.
+- **The service worker** stores only the app's own files. **No repeats**' bookkeeping can't drop a marker if a pool
+  ever held one twice.
+- **Fable's review round** (eight checkers: the plan, the speck fix, debugging passes of the reader, the guide engine
+  and the shell, UI, engine and design reviews) found no bug in the guide engine and none in saving, the keyboard
+  settle pass or Focus; its findings are in docs/PLAN-v31832.md, built over v318.32–v318.36.
+- **Benchmarks:** guide digest 847270804501 (was 49e9f9dacdc7): every clean row as v318.31; photo rows t17 better
+  (matched 88.1% → 90.5%), h08 zentangle 61.8% → 56.8% (Sensitivity 5), others within one spurious section. Photo
+  benchmark as above. Colour benchmark: 0 gate failures.
+- **Tests:** test/v31832-crumbs (12), v31832-fixes (3); e2e/v31832-g1…g4, -fixes, -ocr-start, -ui-wins; changed on
+  purpose: e2e/balance, home, v306-home, v308-intake (Sensitivity 5), v313-photo, help, v308-beta, tasks-card, v306-smalls,
+  v3083-data, v305-tobuy, v31832-g1; test/v306-smalls, v31830 (Help's order), v307-markers (the worker's origin).
+  Cache bumped to `marker-studio-v318.32`.
+
+# Changes — v318.33 (the design pass: a design system and screen polish)
+
+From Fable's design review (round R32, V1), built in two parts and compared screen by screen before and after (phone
+390×844, iPad 820×1180 and 1180×820 in Safari's engine, Larger text 1.3).
+
+- **Tokens** (src/css/01-base.css): spacing --s1…--s6 (4, 8, 12, 16, 24, 32), heights --h-ctl 44 (buttons and fields),
+  --h-seg 40 (a choice inside a 3 px track), --h-sm 36, line heights --lh-tight 1.2 and --lh 1.45. The shared rules use
+  them: rows 12 apart, groups 16; the search box 48 → 44, Markers' Order 40 → 44, the top tabs 38 → 40.
+- **Corners**: one rule — 6 badges, 8 nested segments, 12 every standalone control (the button default was 16), 16
+  cards, tracks and sheets (sheets were 18).
+- **One "chosen" look**: the white pill only for where you are (the main tabs); every setting is a teal choice inside
+  a track (Colours from, Lean towards, Mood words, Light from, Fit, Shading presets, Pattern's family, Look, Direction,
+  Mix and Balance, the edit tools, Colour along's order); cards only where there's a picture (Mood, Flow, Theme).
+- **Palette › Harmony** is a grid of three columns (two at Larger text on a phone, so "Complementary" is never broken
+  mid-word); on a phone the label sits above it.
+- **Markers**: Random, Match a colour, Add markers and Swatch chart are one row of matching buttons (Swatch chart was
+  an underlined link, Add markers a bigger button of its own): the first swatch is 70 px higher on a phone.
+- **A guide**: Colours / Pattern / Shading / Share & print are underline tabs (they looked like a second copy of the
+  main tabs), 44 px, still pinned when you scroll; the picture dims behind the guide's sheets (the ⋯ menu, Change
+  colour): taps pass through as before; the guide's name is in the title font (Fraunces).
+- **The Library, empty**: its icon in a tinted ring above the text and Try the sample.
+- **Found on the way**: Focus mode's Exit pill was 40 px with no 44 px tap area (fixed); Colour along's order row as a
+  track had pushed the first row under the bar at 375×667 (fixed); the ⋯ menu doesn't close on a tap outside it (as in
+  v318.31; left as is, and the backdrop lets those taps through).
+- **Tests:** e2e/v31833-design (5), v31833-polish (5); changed on purpose: e2e/buttons (tool heights, the tabs 44, a
+  second guide in its fixture so Your guides shows), e2e/markers (Swatch chart without ↓). Chromium 290/291 then the
+  last fixed; WebKit 113 pass, 6 skipped by design. Cache bumped to `marker-studio-v318.33`.
+
+# Changes — v318.34 (the five features: the photo kept with each guide, three harmonies, Colours from, Random's rows, Markers › Random)
+
+- **Edit sections after a guide is opened again keeps Adjust photo** (Ben's finding; plan C, decisions 3a–3e): the
+  picture a guide was built from — a photo as taken, a scan, a download or a PDF page, at the size it was built at
+  (up to 2400 px; JPEG q 0.9, PNG for line art when smaller) — is kept on this device in a record of its own
+  (`src-<id>`, src/js/guide/25-source-photo.js), and its settings (corners, page shape, turn, tilt, crop, Enhance,
+  Sensitivity, faint marks) in the guide itself (`src`), so the two can never disagree. Nothing is read when a guide
+  opens; Adjust photo says "Getting the photo ready…" and then works as on the first build. Changing it after
+  colouring has started warns that progress is cleared, with Undo, as on a first build. Save a copy, "(section
+  edits)" copies and Duplicate carry it; it goes with the guide when deleted for good, and stays through Recently
+  deleted. Backups leave these pictures out unless "Include guide photos (bigger backup)" is ticked (off by default:
+  restoring a big backup is done all in memory); finished-page photos are in backups as before. A picture that can't
+  be kept (storage full) never stops the guide saving: it says so once, and Edit sections shows v318.32's note. Not
+  in shared guide files. Guides from before v318.34 have no picture kept and show that note.
+- **Three new harmonies** (plan D, decisions 4a–4e), after Monochrome in Palette and in a guide's New palette:
+  **Light to shadow** (one ramp from the base's lightest to a hue 90–120° away at the dark end, turning toward blue-
+  violet, as shadows do), **Analogous + accent** (a fan round the base and one accent from across the wheel) and
+  **Greys + accent** (greys in a lightness ramp, from one family where it can, and one clear colour). Greys + accent
+  needs 3 greys among the markers in play: below that its button is greyed with the reason, Surprise never picks it,
+  and a guide whose greys drop below 3 makes Analogous + accent instead, with a note. One definition of grey
+  everywhere (chroma under 12). On sets under 72 markers the three go up to 6 colours, 8 from 72.
+- **Evenly stepped ramps** (E1-4): Monochrome, Analogous, Light to shadow and Greys + accent's greys now choose their
+  ramp as a whole (the most even steps the markers allow, a little randomness among the best), not one colour at a
+  time. Median ratio of the biggest to the smallest lightness step over 60 rolls: Honolulu 320 Monochrome 6 6.8 → 1.8,
+  8 8.3 → 2.8, Analogous 6 8.6 → 1.6; Honolulu 120 Monochrome 6 → 2.3. Saved palettes keep their markers.
+- **Guide › Colours › Colours from: Your markers | A palette** (plan F, decisions 5b, 5c). A palette shows as a card:
+  its swatches, name, how many markers, its scheme and where it came from (Made here, From Palette, From your
+  Library), ✕ back to your markers. Under it: New palette (with its harmony), Change it in Palette › (opens it in
+  Palette; Use in a guide › Recolour comes back), Choose a saved palette…, and Save to Library (keeps the palette on
+  the card). When the palette holds fewer markers than the guide asks for: "A palette of 8: tick Expand for more".
+  Choosing a saved palette now copies its markers into the guide, so deleting it from the Library changes nothing;
+  a guide from before whose palette was deleted says "Palette deleted · Choose another". Surprise keeps a palette
+  you chose and surprises the rest ("Kept your palette"). Help's Glossary has Colours from; the tester task mentions
+  the guide's own way.
+
+
+- **Markers › Random, tidied (plan G1–G9):** a line says what it's for ("A marker you wouldn't have picked: draw one
+  at random, as a prompt or a challenge"), with a Help bullet under More you can do. A shorter card (about 200 px on
+  an iPad upright, 160 on a phone), no empty band under an undrawn card, the back control at the left. The buttons
+  say what they act on: Draw a marker · Swap this one · Remove this one · Clear all (armed). The Drawn pile sits
+  right under the buttons; the markers left to draw are folded away ("Show the N left to draw"), grouped by family,
+  lightest first. Held sideways on an iPad, two columns: the card and buttons, then the pile, count, Filters and the
+  fold (chrome.js rndSidePlace, as Palette's palFiltersPlace). The count takes every drawn marker ("5 drawn, 138
+  left to draw · 2 not in the filter"; state.js counts() d/out). Use in a guide for a draw of two or more (handed
+  over as a palette of chosen markers); Remove this one and Clear all have Undo. Markers' tools: "Draw from these"
+  beside "Palette from these" (Random from the markers shown, as a selection).
+- **Prefer markers you haven't used yet** (remembered: state.rndFresh): a draw leaves out the markers of every guide
+  you've worked with — the guide row's additive flag `wk` (guide-bridge guideMeta, library.js guideWorked), set on a
+  tick or tone (at the guide's save: done/tn), Colour along, Focus mode, Print, Save image, Share (guide file, Reveal
+  clip) and a finished photo; older rows count with done > 0, tn > 0 or fn (state.js usedKeys). When every marker
+  left has been used it says so and draws from all. A line under the box says how many of those left are unused.
+- **Guide › Pattern › Random, the roles as rows (plan E, decision 5a):** with Main colour, a thin strip of the
+  shares and then a 44 px row for each role, "Main colour · pinks · about 60% · Auto ›" (or "Your choice" for a
+  family picked by hand), each opening the role's sheet as before; a screen reader hears "Main colour: pinks, about
+  60%, Auto. Change". The bar of three coloured buttons it replaces dropped the accent's name where it didn't fit and
+  had no word for Auto. Random's own action row holds Shuffle and, with Main colour laid, ↻ Other pairings, with a
+  line telling them apart ("Shuffle lays the same colours again · Other pairings picks new colours for the roles on
+  Auto"); Pin colours stays below, shared by every pattern (e2e/tabs updated: Shuffle is no longer beside Pin for
+  Random).
+- **Tests:** e2e/v31834-source-photo (5), -harmonies (3), -colours-from (5), -balance-rows (3), -random (7);
+  test/v31834-source-photo (2), -harmonies (5), -random (4). Changed on purpose: e2e/v31832-g2 (the A3 note is for an
+  older guide now), palette, style-fields, gradient, held, v308-colour, controls-wiring, v308-handover, v310-moodpics,
+  v306-dbg-home, v31833-design (12 harmonies), balance, tabs, v31832-g4; test/style-fields (`src` after `frame`),
+  palette-generator; e2e/fixtures/style-golden.json regenerated (the saved-palette copy; Surprise's ramp). Cache
+  bumped to `marker-studio-v318.34`.
+
+# Changes — v318.35 (engine upgrades: the page finder, part-coloured pages, hatching, smaller PDFs)
+
+- **The page finder's edge fallback (Fable E1-1, plan Stage 4 › 1; 22-straighten pgEdges):** a page on a desk nearly
+  as bright as the paper (a light grey or white table, the light falling off across the photo) had no paper/table
+  split the block views could find: the paper candidate "filled" and nothing was offered (bench HELD h17 "medium RGB"
+  found none, corners 55% off; TUNE t07 unsure on a wrong outline, t08 none). Now, when no candidate is sure, the
+  gradient of the white-balanced grey on the 720 px copy is thinned to its ridges, each ridge that is a step (not a
+  drawn line: 4 px past it either way the dark side stays dark) votes for the lines through it running its own way,
+  the strongest few lines per side whose step rises inward make the quads, and a quad with every side at least half
+  covered by its ridge goes to pgJudge as any other candidate (its step measured at the edge itself, since the page as a
+  whole hardly stands out there). A page cut off by the photo's edge has no line along it and gets no quad. Bench photo
+  rows: h17 found sure (corners 0.4% off; matched 75.0 → 85.1%, defects 20 → 13), t07 sure (0.25%; 86.1 → 100%,
+  defects 52 → 0), h08 sure (0.12%, was unsure at 0.69%), t08 sure (0.26%, was none); every other row unchanged. The
+  fallback costs about 75–110 ms on the 720 px copy (it does not run when a candidate is already sure).
+  `node scripts/bench/run.mjs --photos-only` runs the photo rows alone. Tests: test/v31835-page-edges (5: a light page
+  on a light desk under falling light, a shadowed edge, a page turned 22°, a page cut off by the photo's edge, a grid
+  drawn to the edge of a plain copy). The quad found this way is set 3 px (on the 720 px copy) inside its edges, onto
+  the paper: on Ben's IMG_0071 the warped page had kept a frame of the desk's shadow as ink, closing in its margins as
+  sections to colour.
+- **Part-coloured pages (Fable E1-3):** on a page with colour in it (colourShare over 1%), ink is now dark AND
+  colourless (each pixel's spread of R, G, B after the paper's white balance, `chroma`): a section coloured in with a
+  mid or dark marker stays a section instead of being read as ink and lost. A greyscale page runs exactly as before.
+  After Build guide, sections already coloured on the page (half or more of their pixels clearly coloured) get an
+  offer, never a tick by itself: "N sections look coloured in already · Mark them done", with Undo. The "coloured in
+  already" warning now says a partly coloured page works. Guide bench: the coloured pages at 1,200 px h17 84.1% →
+  100% (defects 14 → 0), t17 91.7% → 100%; photographed, t17 90.5% → 98.8%, h17 as taken 75.0% → 97.5%; every
+  greyscale page identical.
+- **Hatching as one section (Fable E1-2):** close parallel shading lines, and cross-hatching, had left every gap between
+  the lines a section of its own (the bench's zentangle page: 1,594 "hatch slivers" at 1,200 px). A step of its own
+  after the crumbs (`hatchMerge`) merges each hatched patch into one section, its lines kept: gaps under 1.5 mm on the
+  page and over four times as long as wide (or small cells both ways, for cross-hatching), side by side across one of
+  the patch's own lines, running the same way (±15°), six or more, evenly spaced. Wide stripes, a five-rung ladder and
+  a patch beside one hatched alike across a thicker outline stay apart. Edit sections has "Treat hatching as one
+  section" (one Undo step to change, as Sensitivity). It starts **on for a scan, a download or a PDF page and off for a
+  camera photo** (straightened, lens known, or kept as photographed): on Ben's photographed zentangle pages it took real
+  cells together (54–61 merged sections a page), while on clean pages it lost no match. Guide bench, clean zentangle
+  pages: spurious 1,594 → 131 at 1,200 px (1,605 → 76 at 2,400), matched 99.3% → 99.8–100%.
+- **Smaller PDFs (Fable E1-8):** pages carrying the picture in colour (the key page with the reference, Key +
+  reference, their close-ups) are stored as JPEG (q 0.9) where that's smaller than the lossless copy; the colouring
+  page stays lossless. The sample's Key + reference 2.13 → 1.36 MB, Page + key 1.68 → 1.56 MB.
+- **Measured and not shipped:** the reader on several threads (cross-origin isolation from the service worker): two
+  threads read a tray 0.5–0.7× as fast in Chromium on this machine and stalled in WebKit, and isolation would block the
+  tester form's send on an iPad. Guards on the Copic lost-first-letter re-read (docs/READER-DETAIL.md): on the 16
+  bench photos with Copic caps, the same wrong reads and 2 caps fewer found. A 2-opt pass on Limited gradients' order:
+  as many builds rougher as smoother (their rough steps are where one band meets the next, not within a band).
+- **Benchmarks:** guide benchmark at 1,200 px, all pages: tuning set matched 98.4% → 99.0%, defects 31 → 16, spurious
+  1,664 → 172; held-out set 98.0% → 98.8%, 36 → 21, 680 → 161 (digest a4e6b091e901). Colour benchmark: 0 gate failures (digest 5d6964ea83ca). Of 348 rows, 54 better, 293 the
+  same, 1 worse (the zentangle page at 400 px, one defect: its hatched patch is one section the scorer counts as
+  missed). Ben's printed-page photos: see the CHANGES line under the finder (matched 92.7% → 93.4% on the 36
+  non-zentangle photos; zentangle 77.2% → 78.1%); two photos score lower now that the finder straightens them (a
+  faint page far away in the frame, IMG_0047 botanical 74% → 59%; IMG_0048 zentangle 57% → 56%).
+
+# Changes — v318.36 (Stage 5: the sections found off the page)
+
+- **A photo's sections found in the worker (plan Stage 5, decision 8.9; 03-jobs, 10-segment, 22-straighten):** a big
+  photo froze the screen while it loaded (Ben's note, Oct 2026: 2–3 s on an iPad). The steps that take the time and
+  read nothing of the page — the page finder's finding on the 720 px copy (pgFindCore), then the ink, its smoothing,
+  the specks and the flood fill — now run in the guide's JOBS worker (jobs 'pgf' and 'seg'), the page only painting
+  meanwhile; the steps that need the page (the background, page and frame; the crumbs; the hatching) stay on it, with
+  a paint between them as before. The worker runs the page's own functions, copied in with the same constants and the
+  detection settings sent with each job, on the same picture, so the sections, their figures, the faint-marks and
+  speck findings and the page's corners are exactly what the page would find (e2e `v31836-worker`: the same on a
+  1800 × 2400 grainy photo with colour, the fixtures and the sample, at another Sensitivity and with faint marks
+  ignored; the guide benchmark runs the page's own path and is unchanged). A new picture's grey and colour are handed
+  over to the worker and back, not copied (the page makes them again from the photo should the worker lose them);
+  when the sections are found again on the open picture, its grey stays in place and the worker gets a copy (a few
+  ms). The labels and the ink blobs come back handed over too. A newer run takes over in the worker as well: the older
+  job stops at its next step (the thread is free between steps) and is dropped, so a Sensitivity slider dragged
+  quickly costs no more than its last position. Where there's no worker, or it fails or gives no answer in time
+  ('seg' is given 4 s and 2 s more per million pixels), the page does the steps itself, as before, said nowhere. On the
+  test machine the page's longest hold while a 1800 × 2400 photo opened fell from 225 ms (the page finder; the blur
+  150, specks 119, sections 109) to 150 ms (the photo prepared from its canvas, which only the page can read) in
+  Chromium, and from 376 ms (the blur; the page finder 243) to 322 ms (prepared) in WebKit.
+- A test hook: `jobs.hang(ms, kind)` makes only jobs of one kind go unanswered. `e2e/v307-final`: a new photo's first
+  job is now the page finder's, so that is the one that times out when the worker never answers.
+
+- **A test fixed from v318.35:** e2e/v307-speed's "the same file byte for byte" built its reference PDF without the
+  JPEG choice exportPDF now makes for pages in colour (v318.35's smaller PDFs); it now passes the same choice.
+- **The page finder's edge fallback (v318.35) took a thick drawn line for a page edge:** a download with a grid drawn
+  in 24 px lines had its inner lines taken for the page, and the guide kept 16 of its 48 boxes (e2e random-and-blend).
+  A page edge's step now has to last: 12 and 24 px past it on the 720 px copy the desk is still darker than the paper,
+  where a drawn line ends and the paper comes back.
+- **Home's Tester tasks line stays** while the tester card shows (v318.32 had put it away, V1-8): it's the one way
+  into the tasks that's always there and opens them at the top, and a dozen tester flows rely on it.
+- **A full local run of every browser test** (Chromium, 1,561 tests in two halves side by side) for the beta, which
+  the releases since v318.32 had only run in part, found tests left behind by those releases, now brought up to date:
+  e2e/help (the Glossary's Colours from, v318.34), toasts-and-errors (the untick toast's words, v318.32), v302 (two
+  Colours from segments, a track, v318.33–34), v304-segmentation (its dense pages of tiny cells are cross-hatching to
+  Treat hatching as one section, so those tests untick it, v318.35), v315 (guide building now finds the page on a grey
+  table too, with the right corners, v318.35); and the tester-flow files (v312-tester, v3121, v318-review-ux,
+  v31826-w2, v31828-y3) pass again with the line back. e2e/v31836-worker's timing claim is "less", not "15% less":
+  under two runs side by side it held 332 against 375 ms.
+- Cache bumped to `marker-studio-v318.36`.
+
+# Changes — v319, the beta (fixes from Fable's debugging passes R36 and R37)
+
+- **Coloured outlines (v318.35's regression):** the part-coloured-pages rule took ink in colour for marker fill, so a
+  page drawn in red, blue or green lines lost every section whenever Enhance was off or the page had a dark area (a
+  black title). inkLinesColoured now asks first whether the page's thin ink, its lines, is the coloured ink; when it
+  is, no colour cut and no mark-done offer for that picture. Black-line pages with coloured fills keep v318.35's gain.
+- **A cropped guide kept its photo but couldn't use it (v318.34):** the crop and corners were saved rounded to 1/100,
+  so the picture rebuilt on reopening came out a few pixels off the saved sections and was refused ("isn't kept").
+  They're saved exactly now; a picture within 2 px of the saved size is fitted to it, so guides saved by v318.34–36
+  with a crop mostly recover. Two rare first-save paths (another tab adopting the guide; a picture changed during the
+  first save) now keep the photo too. The worker's queue no longer stretches a hung job's timeout behind superseded
+  ones.
+- **Palette:** a colour locked in Analogous + accent or Light to shadow keeps its place in the scheme (the base had
+  been taken from the locked colour's own hue: lock the accent and Generate made five greens). Greys + accent started
+  from a grey puts the grey on the ramp and finds an accent; with no clear colour among your markers it says so. The
+  guide's Greys + accent fallback note goes with Undo; a guide's palette deleted from the Library says so on its card
+  and can be saved again.
+- **Markers › Random:** the Undo after Remove this one or Clear all goes as soon as you draw again, and can't undo a
+  later draw.
+- **Hatching:** the switch works after Keep as is on a scan or download (only a camera photo waits for straightening,
+  and the note says so); "Found N hatched patches" no longer carries over to the next guide; Undo of a re-detection
+  shows the right wording; a cross-hatched page with the switch off is told to try it, not that it's "a photo or
+  textured image"; Undo's memory budget counts the colour copy.
+- **The ⋯ menu's dim (Ben's decision):** a tap on it closes the menu and nothing else; the colour picker still lets
+  taps reach the picture.
+- **What's new (Ben's decision):** after an update, Help lists every version since the one last seen (up to 8).
+- **Tap areas:** checkbox rows in the guide, Colour along's More, the Library's search and sort, and the guide's
+  drop-downs reach 44 px; Home's three cards line up at 320 px.
+- **Tests:** test/v31837-segment (10), v31837-palettes (6), v31837-jobs (3); e2e/v31837-coloured-lines (1),
+  v31837-src-crop (6), v31837-palettes (9), v31837-shell (5). Changed on purpose: test/v31835-hatching (a lens-less
+  kept picture merges), e2e/v31833-polish and sheet (the dim takes taps), v31832-ui-wins (the tester line stays; What's
+  new since), v31834-colours-from (deleted palette), v31836-worker (its timing measured twice when close).
+- **From the second pass (R37):**
+  - **Coloured ink, decided per patch (replaces v318.37's page-wide verdict):** a page with coloured outlines lost every
+    section once about five cells were coloured with a dark marker, or when its lines were 2 mm or thicker. Coloured
+    ink is now cut as fill only where it is a patch bordered mostly by black ink (a fill in an outlined cell); coloured
+    ink running along open paper is a line and stays, however many cells are coloured in. Paper gaps under 1 mm inside
+    a coloured patch are closed first, so a fill coloured in strokes with gaps stays one fill. The picture's colour is
+    never dropped, so the mark-done offer and later re-detections keep it. About 0.25 s more per detection at 2400 px,
+    in the worker. Guide benchmark rows on the coloured, hatched and plain pages: identical.
+  - **The dim's tap (v318.37's own):** on a touch screen the tap that closed the menu went on to click whatever the
+    page scrolled under the finger as the menu closed (the Markers tab). The dim now swallows the touch's click and
+    stays, unseen, until it lands (or 350 ms).
+  - A camera photo's "kept as photographed" state no longer carries over to the sample or an older guide; the dry
+    hatching check runs once per detection, not on every Min section size change.
+  - Palette: Greys + accent from a grey with the accent locked keeps the lock. In a guide, choosing Greys + accent
+    while Include › Greys & black is off turns the greys on with it (one Undo step, and Undo says so); it is greyed,
+    with its reason, only when the set has too few greys. With the greys turned off afterwards it falls back to
+    Analogous + accent per palette made, not for good, and pale tints no longer stand in for greys. Random: a tap on a
+    pile cell gives its own Undo.
+  - Help's What's new over several versions with the last seen unknown is headed "What's new". A guide saved by
+    v318.34–36 with a crop recovers its photo when the rebuilt picture is within 1% of the saved size (97–100% of
+    simulated crops; v319 saves exactly and marks it). A photo too big to keep says so rather than blaming storage.
+  - **Tests:** test/v319-colour-ink (7), v319-palettes (4), v319-src-fit (2); e2e/v319-colour-ink (1), v319-palettes (6),
+    v319-scrim-tap (5), v319-shell (3), v319-src-fit (6). Changed on purpose: test/v31837-segment, e2e/v31837-coloured-
+    lines, v31837-src-crop, v31834-harmonies, v31837-palettes, palette.
+- Cache bumped to `marker-studio-v319`.

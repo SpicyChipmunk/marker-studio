@@ -53,7 +53,7 @@ test('a page lit unevenly by a lamp: its bright half isn’t taken for the page,
   assert.deepEqual(errors, []);
 });
 
-test('a page on a table under a lamp: the paper’s outline, not a diamond round the drawing; Keep as is first; Straighten shows what it’s about to do, then does it', async () => {
+test('a page on a table under a lamp: the paper’s outline, not a diamond round the drawing; Straighten first (v318.32: the corners cover most of the photo); it shows what it’s about to do, then does it', async () => {
   const { page, errors } = await fresh();
   const f = await find(page, 'lit-mandala-table.png');
   assert.equal(f.tier, 'unsure');
@@ -68,13 +68,14 @@ test('a page on a table under a lamp: the paper’s outline, not a diamond round
   assert.ok(err < 20, 'the page’s corners, within ' + err.toFixed(1) + ' px');
   await pick(page, 'lit-mandala-table.png');
   await page.waitForSelector('#sfPgGo', { timeout: 40000 });
-  // Keep as is first, and the main button; Straighten beside it
+  // (v313: Keep as is first, the main button, Straighten beside it. v318.32: Straighten is the main button when the
+  // corners are a convex quad inside the photo covering most of it, as here; Keep as is beside it. U1-3)
   const btns = await page.evaluate(() =>
     [...document.querySelectorAll('.sfpgbtns button')].map(
       (b) => b.id + ':' + b.className + ':' + b.textContent,
     ),
   );
-  assert.deepEqual(btns, ['sfPgNo:btn-primary:Keep as is', 'sfPgGo:btn-soft:Straighten']);
+  assert.deepEqual(btns, ['sfPgGo:btn-primary:Straighten', 'sfPgNo:btn-soft:Keep as is']);
   await page.click('#sfPgGo');
   await page.waitForFunction(
     () => {

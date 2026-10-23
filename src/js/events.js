@@ -31,10 +31,11 @@ function disarm() {
     armT = null;
   }
   resetBtn.dataset.arm = '0';
-  resetBtn.textContent = 'Clear';
+  // (v318.34) "Clear all" in Random: it empties the pile (G3)
+  resetBtn.textContent = state.mode === 'random' ? 'Clear all' : 'Clear';
 }
 // Clear (it was Reset: what it does is empty the palettes, or Random's drawn markers), on a second tap
-resetBtn.textContent = 'Clear';
+resetBtn.textContent = state.mode === 'random' ? 'Clear all' : 'Clear';
 resetBtn.addEventListener('click', () => {
   if (!clearable()) return;
   if (resetBtn.dataset.arm === '1') {
@@ -49,7 +50,17 @@ resetBtn.addEventListener('click', () => {
         // (an empty card after Clear, not another preview)
         palPvOff = true;
       }
-    } else state.drawn = [];
+    } else {
+      // (v318.34) with Undo (G7)
+      const was = state.drawn.slice();
+      state.drawn = [];
+      save();
+      fullRender();
+      // (v318.37: drawnToast, chrome.js: Undo only while the pile stays empty)
+      drawnToast('Cleared ' + was.length + ' drawn marker' + (was.length === 1 ? '' : 's'), was);
+      focusKept(had, null, '', 0, [drawBtn]);
+      return;
+    }
     save();
     fullRender();
     // (v318.22 debug: Clear is off now there's nothing to clear: the keyboard on Generate, not left on the page)
@@ -109,15 +120,21 @@ pile.addEventListener('click', (e) => {
   const cell = e.target.closest('.cell');
   if (!cell) return;
   const idx = +cell.dataset.i;
+  const was = state.drawn.slice();
   state.drawn = state.drawn.filter((x) => x !== idx);
   save();
   fullRender();
+  // (v319) with Undo, as Remove this one has (the tap is the same removal); its toast takes the place of an earlier
+  // Remove or Clear all toast, whose Undo could no longer apply once the pile had changed (Y3-4)
+  drawnToast('Removed ' + COLORS[idx].brand + ' ' + capCode(idx), was);
 });
 // the toast for ticking or unticking one marker (v306: short enough for one line at 390, "Added Ohuhu B04 · taken off
 // To buy", "Removed Copic BG0000"; v305's "… to your collection and took it off your To buy list" wrapped at 820 too)
 function addedLine(had, c, off) {
   const name = c.brand + ' ' + capCode(c);
-  if (had) return 'Removed ' + name;
+  // (v318.32) "Copic R16 unticked": a tap meant to open a marker unticks it (details are press and hold), so the
+  // toast says what the tap did in the grid's own word, with Undo beside it (U1-6; it said "Removed Copic R16")
+  if (had) return name + ' unticked';
   return 'Added ' + name + (off ? ' \u00b7 taken off To buy' : ' to your collection');
 }
 // and for several (Tick all shown, Scan's Add): "Added 12 markers · 3 off To buy"
@@ -457,6 +474,15 @@ searchInput.addEventListener('input', () => {
   }, 800);
 });
 toPalette.addEventListener('click', () => handoff('palette'));
+// (v318.34) Draw from these: Random from the markers shown (G8; a selection had been reachable only from an old saved
+// draw)
+$('toRandom').addEventListener('click', () => handoff('random'));
+// (v318.34) Prefer markers you haven't used yet, remembered
+$('rndFresh').addEventListener('change', (e) => {
+  state.rndFresh = e.target.checked ? 1 : 0;
+  save();
+  chrome();
+});
 poolClear.addEventListener('click', () => {
   setPool(null);
   save();
@@ -505,6 +531,11 @@ segs.addEventListener('click', (e) => {
 harm.addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (!b) return;
+  // (v318.34) a scheme greyed for want of markers says why instead (Greys + accent below 3 greys, chrome.js)
+  if (b.getAttribute('aria-disabled') === 'true') {
+    toast(b.title || 'Not available with the markers in play', 4000);
+    return;
+  }
   setHarmony(b.dataset.h);
 });
 (function () {
@@ -807,8 +838,9 @@ saveBtn.addEventListener('click', () => {
 var _uig = document.getElementById('useInGuide');
 if (_uig)
   _uig.addEventListener('click', function () {
-    var idxs = currentPaletteIdxs();
-    if (!idxs.length) return;
+    // (v318.34) Random's draw of two or more, as a palette (G7)
+    var idxs = state.mode === 'random' ? state.drawn.slice() : currentPaletteIdxs();
+    if (!idxs.length || (state.mode === 'random' && idxs.length < 2)) return;
     var keys = idxs.map(mkey);
     var ex = state.saved.filter(function (s) {
       return (
@@ -865,7 +897,14 @@ if (_uig)
 function useInGuideGo(idxs, keys, ex, fresh) {
   {
     // (v318.25: the palette's own scheme, currentPaletteHarm)
-    var id = ex ? ex.id : { keys: keys, name: shownPaletteName(idxs), h: currentPaletteHarm() };
+    // (v318.34: a Random draw is a palette of chosen markers, as Custom is)
+    var id = ex
+      ? ex.id
+      : {
+          keys: keys,
+          name: shownPaletteName(idxs),
+          h: state.mode === 'random' ? 'custom' : currentPaletteHarm(),
+        };
     // a new guide: the palette is held for it, the open guide left as it is
     if (fresh) {
       if (window.SF && SF.setNextPal) SF.setNextPal(id);
@@ -979,6 +1018,15 @@ if (_pO)
   _pO.addEventListener('click', function (e) {
     if (e.target === _pO) closeDialog(_pO);
   });
+// (v318.34) "Include guide photos" is one choice shown in both places (Library, Back up & restore)
+['bkPhotos', 'bkPhotos2'].forEach((id) => {
+  const el = $(id);
+  if (el)
+    el.addEventListener('change', () => {
+      const o = $(id === 'bkPhotos' ? 'bkPhotos2' : 'bkPhotos');
+      if (o) o.checked = el.checked;
+    });
+});
 $('guidesBackup').addEventListener('click', () => {
   backupAll('guidesBackup');
 });

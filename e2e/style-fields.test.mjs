@@ -144,7 +144,7 @@ async function captureAll() {
     await step(page, 'limitN', () => slide(page, 'sfMkCount', 10));
     await step(page, 'palette', () => click(page, '#sfPal [data-v="warm"]'));
     await step(page, 'emphasis', () => click(page, '#sfMood [data-v="vivid"]'));
-    await step(page, 'generate', async () => { await seed(page, 11); await click(page, '#sfSrc [data-v="generate"]'); });
+    await step(page, 'generate', async () => { await seed(page, 11); await click(page, '#sfSrc [data-v="palette"]'); });
     await step(page, 'harmony', async () => { await seed(page, 12); await choose(page, 'sfHarm', 'triadic'); });
     await step(page, 'expand', () => click(page, '#sfExpand'));
     await step(page, 'expandChar', () => slide(page, 'sfExpChar', 80));
@@ -177,7 +177,8 @@ async function captureAll() {
     await step(page, 'surprise', async () => { await seed(page, 16); await click(page, '#sfSurprise'); });
     await answerAsks(page);
     await step(page, 'savedPalette', () => page.evaluate(() => { const id = 777001; state.saved.unshift({ id, type: 'palette', name: 'P', keys: [...state.owned].slice(0, 6), ts: id }); save(); SF.setSavedSource(id); }));
-    await step(page, 'savedPalette-render', () => click(page, '#sfSrc [data-v="saved"]'));
+    // (v318.34: the segment is A palette, lit already: tapped again it lays the plan again, as before)
+    await step(page, 'savedPalette-render', () => click(page, '#sfSrc [data-v="palette"]'));
     // section edits not built yet: saved only as the "edits" copy
     await page.click('#sfBack2'); await idle(page);
     await page.evaluate(() => { const t = __mstest, l = t.assignData.order[6]; t.secState[l] = 2; t.guideDirty = true; t.render(); });
@@ -393,7 +394,7 @@ const CONTROLS = [
   // (v318.18: a theme the warm markers have)
   ['theme', 'colours', (p) => click(p, '#sfTheme [data-v="sunset"]')],
   ['emphasis', 'colours', (p) => click(p, '#sfMood [data-v="muted"]')],
-  ['paletteSource', 'colours', async (p) => { await seed(p, 21); await click(p, '#sfSrc [data-v="generate"]'); }],
+  ['paletteSource', 'colours', async (p) => { await seed(p, 21); await click(p, '#sfSrc [data-v="palette"]'); }],
   ['genHarmony', 'colours', async (p) => { await seed(p, 22); await choose(p, 'sfHarm', 'tetradic'); }],
   ['expand', 'colours', (p) => click(p, '#sfExpand')],
   ['expandChar', 'colours', (p) => slide(p, 'sfExpChar', 70)],

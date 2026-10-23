@@ -759,7 +759,8 @@ function matchAlikeHTML() {
   return (
     '<label class="sfchk sfc-check sfc-flex sfc-mt8"><input type="checkbox" id="sfMatchAlike"' +
     (matchAlike ? ' checked' : '') +
-    '> Matching shapes alike</label>'
+    // (v318.32) one sentence for the box: "Looks like a mandala" over "Matching shapes alike" read as two labels (U1-9)
+    '> Matching shapes get the same colour (mandalas)</label>'
   );
 }
 function gradMandala(cl) {
@@ -4015,10 +4016,24 @@ function genSize(h, n) {
 function generatePalette(reroll) {
   fromPal = null;
   if (GEN_HARMS.indexOf(genHarmony) < 0) genHarmony = 'analogous';
+  // (v318.34) Greys + accent with fewer than 3 greys among the markers (a saved guide whose greys went, or a group
+  // turned off): Analogous + accent instead, with a note under the select and in the step's name
+  // (v319) The fallback is this call's alone (h): genHarmony stays 'neutral', so the select keeps the chosen scheme
+  // (greyed with its why while it can't be made) and Greys + accent comes back by itself once the greys do; the note
+  // returns each time it falls back. It had set genHarmony to 'accent' for good, with no note after (Y3-3)
+  genNote = '';
+  let h = genHarmony;
+  const why = h === 'neutral' ? genNeutralWhy() : null;
+  if (why) {
+    h = 'accent';
+    genNote = HARM.neutral + ' ' + lcFirst(why) + ': ' + HARM.accent + ' instead';
+    planWhy = genNote;
+  }
+  genFell = !!why;
   // (the Colours tab's Mood goes to the generator, which keeps to it where it can)
   if (api.genPalette)
     genPal =
-      api.genPalette(genSize(genHarmony, limitN), genHarmony, {
+      api.genPalette(genSize(h, limitN), h, {
         mood: emphasis,
         reroll: reroll === true,
         exclude: inclExclude(),
@@ -4026,18 +4041,51 @@ function generatePalette(reroll) {
 }
 // (v308) a guide made since v308: the markers of the Include row's groups that are off (marker indexes), which a
 // generated palette leaves out (Surprise never brings greys while they're off); null before v308
-function inclExclude() {
+// (v319: with Greys & black off, the generator's own greys too, chroma under GREY_C, whatever their family: the pale
+// tints that remained counted as greys, and Greys + accent came out as a ramp of them, Y3-2)
+function inclExclude(greysOn) {
   if (gradIncl == null || typeof keyIdx !== 'function') return null;
   const on = inclOn(gradIncl, emphasis),
     out = new Set();
+  // (v319: greysOn, as it would be with Greys & black on: genNeutralShort)
+  if (greysOn) on.greys = true;
   coll.forEach(function (m) {
     const g = inclGroup(m);
-    if (g && !on[g]) {
+    if ((g && !on[g]) || (!on.greys && mLch(m)[1] < GREY_C)) {
       const i = keyIdx(m.mkey);
       if (i != null) out.add(i);
     }
   });
   return out.size ? out : null;
+}
+// (v319) why Greys + accent can't be made in this guide, or null: Include › Greys & black off keeps every grey out of a
+// generated palette (inclExclude), said as that; else the generator's own reason (too few greys among the markers left).
+// The option in the select is greyed with it, and generatePalette falls back to Analogous + accent (Y3-2)
+function genNeutralWhy() {
+  if (!api.neutralWhy) return null;
+  if (gradIncl != null && !inclOn(gradIncl, emphasis).greys) return 'Needs Include \u203a Greys & black on';
+  return api.neutralWhy(inclExclude());
+}
+// (v319, Ben's choice) Greys + accent while Greys & black is off: choosing it turns the greys on (the harmony select,
+// 52-controls-plan-wire), so the option is greyed only for a reason that wouldn't change: too few greys among the
+// markers even with the greys on. Null when it can be made with them on
+function genNeutralChipOff() {
+  return gradIncl != null && !inclOn(gradIncl, emphasis).greys;
+}
+function genNeutralShort() {
+  if (!api.neutralWhy) return null;
+  return api.neutralWhy(inclExclude(true));
+}
+// the reason as the select and the note say it, after "Greys + accent": its first letter lowered, the rest as it is
+// (Include and Greys keep their capitals)
+function lcFirst(s) {
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}
+// (v319) the scheme genPal was made with: genHarmony, or Analogous + accent while Greys + accent falls back (genFell;
+// before anything is made in this session, the greys as they stand): the card's name and Save to Library's scheme
+function genHarmUsed() {
+  if (genHarmony !== 'neutral') return genHarmony;
+  return (genFell == null ? !!genNeutralWhy() : genFell) ? 'accent' : genHarmony;
 }
 function genPalKeys(a) {
   return (a || [])
@@ -4124,8 +4172,18 @@ function expandToN(seed, N, c, ok) {
 function genMade() {
   return paletteSource === 'generate' && !fromPal;
 }
+// (v318.34) a palette chosen from the Library since v318.34: its keys were copied into genPal (fromPal.from), so it
+// is used from there and a deleted Library palette changes nothing; an older guide reads the Library by savedPalId
+function palLinked() {
+  return paletteSource === 'saved' && !!fromPal && fromPal.from === 'library' && genPal.length > 0;
+}
+// (v318.34) a palette you chose, used as it is: a saved one, or one handed over from Palette or the Library (not one
+// made here by New palette, which Mood, Shuffle and Surprise make again)
+function palChosen() {
+  return paletteSource === 'saved' || (paletteSource === 'generate' && !!fromPal);
+}
 function seedPool(peek) {
-  if (paletteSource === 'saved') return palettePoolFromSaved();
+  if (paletteSource === 'saved') return palLinked() ? resolveKeys(genPal) : palettePoolFromSaved();
   if (paletteSource === 'generate') {
     if (!genPal.length && !peek) generatePalette();
     return resolveKeys(genPal);
@@ -4519,6 +4577,9 @@ function buildGuide(keepPlan) {
   if (palette !== 'all' && !activePool().length) palette = 'all';
   const _had = !!assignData,
     _pc = colored,
+    // (v318.35: sections found afresh, on a page with colour on it: the ones coloured in are offered as done once
+    // the guide is up, colourOffer)
+    _fresh = _segFresh,
     prev = _had && !_segFresh ? assignData : null,
     same = !!prev && guideSig === labelsSig(),
     was = same ? planSnap() : null,
@@ -4642,6 +4703,7 @@ function buildGuide(keepPlan) {
   } else if (keepPlan !== true) planReset();
   markBuilt();
   saveStatus();
+  if (_fresh) colourOffer();
   // (a new guide from your photo goes into the Library straight away, not after the usual pause: a page closed or
   // reloaded just after Build lost it, v287)
   // (v305: once the first Build's bloom is over, 41-bloom.js: about a second, the save's work held up its frames)
@@ -4885,6 +4947,16 @@ function layPlan(ids, moved) {
 function setSavedSource(id) {
   paletteSource = 'saved';
   savedPalId = id;
+  // (v318.34) its keys copied into the guide (genPal, fromPal.from 'library'), savedPalId kept as the link: the
+  // Colours tab's card has them to draw, and the guide keeps them if the Library palette is deleted
+  var pl = null,
+    list = api.listPalettes ? api.listPalettes() : [];
+  for (var i = 0; i < list.length; i++) if (list[i].id === id) pl = list[i];
+  if (pl && pl.keys && pl.keys.length) {
+    genPal = genPalKeys(pl.keys.slice(0, 64));
+    if (GEN_HARMS.indexOf(pl.h) >= 0) genHarmony = pl.h;
+    fromPal = { name: pl.name || 'Palette', h: HARM[pl.h] ? pl.h : null, from: 'library' };
+  }
   palNote();
   return true;
 }
@@ -5005,22 +5077,34 @@ function palNote() {
 function surprise() {
   if (sfmode !== 'guide' || !labels) return;
   family = 'gradient';
-  paletteSource = 'generate';
+  // (v318.34) a palette you chose (saved, or handed over) is kept, used as it is: Surprise draws the rest. Before,
+  // it was set aside for a generated one, and the toast didn't say (U1-5)
+  var kept = palChosen();
+  if (!kept) paletteSource = 'generate';
   // (v308: the marker count is kept when it's 9 or more, "all" too; else 8 to 23 as before. Drawn either way, so the
   // rest is drawn as it was. A guide saved before v308 gets the Include row, as the Mood has it: its expansion never
   // brings greys while they're off)
   const nDraw = 8 + ((Math.random() * 16) | 0);
-  if (!(limitN >= 9)) limitN = nDraw;
+  if (!kept && !(limitN >= 9)) limitN = nDraw;
   if (!gradIncl) gradIncl = {};
-  var harms = ['analogous', 'analogous', 'split', 'split', 'complementary', 'triadic', 'tetradic'].filter(
-      function (h) {
-        return GEN_HARMS.indexOf(h) >= 0 && HARM_RANGE[h][0] <= limitN;
-      },
-    ),
+  // (v318.34: Light to shadow and Analogous + accent too, once each; never Greys + accent, a look to ask for)
+  var harms = [
+      'analogous',
+      'analogous',
+      'split',
+      'split',
+      'complementary',
+      'triadic',
+      'tetradic',
+      'shadow',
+      'accent',
+    ].filter(function (h) {
+      return GEN_HARMS.indexOf(h) >= 0 && HARM_RANGE[h][0] <= limitN;
+    }),
     hp = harms.filter(function (x) {
       return x !== genHarmony;
     });
-  genHarmony = (hp.length ? hp : harms)[(Math.random() * (hp.length || harms.length)) | 0];
+  if (!kept) genHarmony = (hp.length ? hp : harms)[(Math.random() * (hp.length || harms.length)) | 0];
   var ar = W / H,
     shapes;
   if (ar > 1.4) shapes = ['serpentine', 'diagonal', 'serpentine'];
@@ -5033,10 +5117,13 @@ function surprise() {
   gradSeed = Math.random();
   // a Mood and a Look, mostly Any and Auto
   var moods = ['neutral', 'neutral', 'neutral', 'vivid', 'muted', 'pastel', 'deep', 'earthy'];
-  emphasis = moods[(Math.random() * moods.length) | 0];
-  expand = true;
-  expandChar = Math.random();
-  generatePalette();
+  // (a kept palette's Mood is greyed, used as it is: left; its Expand too, as more markers would change its colours)
+  if (!kept) {
+    emphasis = moods[(Math.random() * moods.length) | 0];
+    expand = true;
+    expandChar = Math.random();
+    generatePalette();
+  }
   // (drawn after the palette, so the palette a given run of random numbers makes is as it was before there were Looks)
   var looks = ['auto', 'auto', 'auto', 'smooth', 'ltd'];
   look = looks[(Math.random() * looks.length) | 0];
@@ -5049,7 +5136,7 @@ function surprise() {
     balSeed = Math.random();
     noRep = false;
   }
-  surpriseNote = true;
+  surpriseNote = kept ? 'kept' : true;
   planWhy = 'Surprise';
   reassign();
 }

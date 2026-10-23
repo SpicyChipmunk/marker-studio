@@ -72,11 +72,34 @@
   align-items: center;
   gap: 10px;
 }
-.sffocrow .sfz {
-  width: 40px;
+/* (v318.32) Exit: a pill like Colours at the other end of the row (the bare ✕ it was wasn't read as the way out on the
+   iPad); 43 px wide at 390, so the name line between keeps its room (v306: "Not the Copic Y26" on one line) */
+button.sfexit {
+  position: relative;
   height: 40px;
+  min-height: 0;
   flex: none;
-  font-size: var(--t-lg);
+  padding: 0 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* (v318.33) a 40px pill with the app's 44px tap area (the design system's --h-ctl: 02-picker.css' rule for pill
+   buttons; the bar's 10px padding gives it the room) */
+button.sfexit::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--h-ctl);
+  transform: translateY(-50%);
 }
 .sffocsw {
   width: 30px;
@@ -298,6 +321,16 @@ button.sffoccols::after {
   outline-offset: 2px;
 }
 
+/* (v318.32) Focus mode's bars, sheet and card: taps only, no double-tap zoom of the whole page (Safari on an iPad
+   zooms the page on a quick second tap on a plain button; Done is tapped twice in a row at every hand-off, and a page
+   zoomed that way leaves the card, the bars and the picture's edge off the screen; the picture itself has none,
+   04-frame) */
+.sffocbar,
+.sffocbot,
+.sffocsheet,
+.sfhand {
+  touch-action: manipulation;
+}
 /* (v313) the hand-off card between one marker and the next: over the middle of the picture, between the bars. A tap on
    it (or anywhere on the picture) closes it */
 .sfhand {
@@ -334,6 +367,10 @@ button.sffoccols::after {
   pointer-events: auto;
   width: min(320px, 100%);
   padding: 14px 18px 16px;
+  /* (v318.32) never taller than the room between the bars (a short window with large text: an iPad's Stage Manager, a
+     keyboard up): its text scrolls inside rather than the card running under the bars and off the screen */
+  max-height: calc(100% - 30px);
+  overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: #12171a;
@@ -395,6 +432,7 @@ button.sffoccols::after {
    swatch, "Pick up" and the marker on one line, and not "shown on the picture" */
 .sfhtight .sfhcard {
   padding: 8px 14px 10px;
+  max-height: calc(100% - 18px);
 }
 .sfhtight .sfhsw,
 .sfhtight .sfhshown {
@@ -419,10 +457,26 @@ button.sffoccols::after {
 .sfhtight.sfhright .sfhcard {
   width: min(320px, 50%);
 }
+/* (v318.32 D3-1) a small phone (320 wide) at the largest text: the short card's words a step smaller, so the whole of
+   it shows between the bars (at 1.6x it had 13 px cut off the foot, "your hand" sliced) */
+@media (max-width: 340px) {
+  .sfhtight .sfhcard {
+    padding: 6px 12px 8px;
+  }
+  .sfhtight .sfhname {
+    font-size: var(--t-base);
+  }
+  .sfhtight .sfhhead,
+  .sfhtight .sfhlbl,
+  .sfhtight .sfhsub {
+    font-size: calc(11 * var(--tpx));
+  }
+}
 /* (v315: a phone held sideways: a shorter card, so it fits between the bars above the zoom buttons) */
 @media (max-height: 430px) {
   .sfhcard {
     padding: 10px 16px 12px;
+    max-height: calc(100% - 22px);
   }
   .sfhsw {
     width: 36px;

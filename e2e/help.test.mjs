@@ -142,7 +142,8 @@ test('the help sheet: from the guide and Home, glossary, your data, About with t
   await page.click('#helpGloss > summary'); await idle(page);
   const terms = await page.evaluate(() => [...document.querySelectorAll('#helpGloss dt')].map((d) => d.textContent));
   // (v308: Flow, Look, Scatter, Rough spots, Mood, Include, Surprise and Colour along added; v318.26: Skin tones)
-  assert.deepEqual(terms, ['Section', 'Background / left out', 'Plan', 'Colour pattern', 'Flow', 'Matching shapes alike', 'Look', 'Scatter', 'Rough spots', 'Mood', 'Lean towards', 'Include', 'Surprise', 'Zone', 'Pin', 'Kept', 'Blend companions', 'Skin tones', 'Shading', 'Highlight / Base / Shadow (H/B/S)', 'Greyscale', 'Colour along', 'Focus mode', 'Reveal', 'Your page']);
+  // (v318.34: Colours from in the Glossary, before Mood)
+  assert.deepEqual(terms, ['Section', 'Background / left out', 'Plan', 'Colour pattern', 'Flow', 'Matching shapes alike', 'Look', 'Scatter', 'Rough spots', 'Colours from', 'Mood', 'Lean towards', 'Include', 'Surprise', 'Zone', 'Pin', 'Kept', 'Blend companions', 'Skin tones', 'Shading', 'Highlight / Base / Shadow (H/B/S)', 'Greyscale', 'Colour along', 'Focus mode', 'Reveal', 'Your page']);
   // (v318.26: Colour pattern is the fourth, after Plan)
   const pattern = await page.textContent('#helpGloss dd:nth-of-type(4)');
   for (const p of ['Gradient', 'Random', 'Blend', 'Photo', 'Manual']) assert.ok(pattern.includes(p), p);
@@ -194,6 +195,7 @@ test('the help sheet: from the guide and Home, glossary, your data, About with t
   assert.deepEqual(errors, []);
 });
 
+// (v318.32: one line, "Updated to v318.32 · What’s new", in place of the card of items; the items are in Help › What’s new)
 test('What’s new: shown after an update, not on a fresh install, and stays dismissed', async () => {
   // fresh install: nothing shown, the version is just remembered
   {
@@ -217,15 +219,9 @@ test('What’s new: shown after an update, not on a fresh install, and stays dis
     await withAutoHelp(ctx, page);
     const ver = (await page.textContent('#appVer')).trim();
     assert.ok(await page.isVisible('#whatsNew'), 'shown on Home');
-    assert.equal((await page.textContent('#wnTitle')).trim(), `What’s new in ${ver}`);
-    const n = await page.evaluate(() => document.querySelectorAll('#whatsNew li').length);
-    assert.ok(n >= 1 && n <= 4, `${n} bullets`);
-    // (the newest first, the first four of the list: v307.1 checks them against the list itself, where it named
-    // v304's and v303's lines, which each new release's line pushes out of the four; v308: each with its version, the
-    // list's own text)
-    const want = await page.evaluate(() => WHATS_NEW.slice(0, 4).map((x) => x.t));
-    assert.ok(want.length >= 1);
-    assert.deepEqual(await page.$$eval('#whatsNew li', (ls) => ls.map((l) => l.textContent)), want);
+    assert.equal((await page.textContent('#wnTitle')).trim(), `Updated to ${ver}`);
+    assert.equal(await page.$('#whatsNew li'), null, 'a line, not the card (v318.32)');
+    assert.equal((await page.textContent('#wnOpen')).trim(), 'What’s new');
     assert.equal(await page.getAttribute('#wnClose', 'aria-label'), 'Dismiss what’s new');
     await shot(page, 'help-whatsnew');
     await page.reload(); await idle(page);
@@ -271,7 +267,7 @@ const onboarded = (extra = {}) => ({ 'ms-onboarded': '1', 'ms-setup-tip': '1', .
 const autoHelpInit = () => { window.__MS_HELP_AUTO = true; };
 const shown = (page, id) => page.evaluate((id) => { const e = document.getElementById(id); return !!e && e.style.display !== 'none' && e.getClientRects().length > 0; }, id);
 
-test('What’s new: counts as shown only once on screen, goes by itself after 7 days, and is always in Help › About', async () => {
+test('What’s new: counts as shown only once on screen, goes by itself after 7 days, and is always in Help › What’s new', async () => {
   // due, but the app opens on Markers: made, not yet shown
   const { ctx, page, errors } = await openApp({ init: autoHelpInit, storage: onboarded({ [KEY]: appState({ mode: 'collection' }), 'ms-last-ver': 'v200' }) });
   await idle(page);
@@ -299,12 +295,12 @@ test('What’s new: counts as shown only once on screen, goes by itself after 7 
   await page.reload(); await idle(page);
   assert.ok(await shown(page, 'whatsNew'), 'an older version’s time is not this one’s');
 
-  // Help › About lists the same items, any time
+  // Help › What's new lists the items, any time (v318.32: its own section; it had been in About)
   await page.click('#wnClose');
   await page.click('#homeHelp'); await page.waitForSelector('#helpOverlay.on');
-  await page.click('#helpAbout > summary'); await page.waitForSelector('#helpAbout .hlpwnt', { state: 'visible' });
+  await page.click('#helpNews > summary'); await page.waitForSelector('#helpNews .hlpwnt', { state: 'visible' });
   // (v308: this version's items only, each tagged with its version)
-  assert.equal((await page.textContent('#helpAbout .hlpwnt')).trim(), `What’s new in ${ver}`);
+  assert.equal((await page.textContent('#helpNews .hlpwnt')).trim(), `What’s new in ${ver}`);
   const items = await page.$$eval('#helpWnList li', (l) => l.map((x) => x.textContent));
   assert.deepEqual(items, await page.evaluate((v) => WHATS_NEW.filter((x) => x.v === v).map((x) => x.t), ver));
   assert.ok(items.length >= 1);
@@ -322,7 +318,8 @@ test('Help › Keyboard and screen readers: what needs touch or a mouse, what wo
   await page.click('#homeHelp'); await page.waitForSelector('#helpOverlay.on');
   const secs = await page.$$eval('#helpOverlay .hlpsec > summary', (l) => l.map((s) => s.textContent));
   // (v308: the beta tester guide first)
-  assert.deepEqual(secs, ['Beta tester guide', 'Photographing a page', 'Adding markers by code', 'More you can do', 'If something goes wrong', 'Glossary', 'Keyboard and screen readers', 'Your data', 'About']);
+  // (v318.32: What's new second, its own section, after the beta tester guide, which v308 put first)
+  assert.deepEqual(secs, ['Beta tester guide', 'What’s new', 'Photographing a page', 'Adding markers by code', 'More you can do', 'If something goes wrong', 'Glossary', 'Keyboard and screen readers', 'Your data', 'About']);
   await page.click('#helpKeys > summary'); await page.waitForSelector('#helpKeys .hlpbody', { state: 'visible' });
   const t = await page.textContent('#helpKeys .hlpbody');
   assert.match(t, /needs touch or a mouse: Change colour, Pin, Leave white, Paint and ticking off one section/);

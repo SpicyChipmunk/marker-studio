@@ -264,6 +264,8 @@ state.ink = cleanInk(state.ink);
 state.cap = cleanCap(state.cap);
 state.capDef = state.capDef === 'old' ? 'old' : '';
 if (typeof state.filtersOpen !== 'boolean') state.filtersOpen = false;
+// (v318.34) Random's Prefer markers you haven't used yet, off until chosen
+state.rndFresh = state.rndFresh ? 1 : 0;
 // (v316: 'light', lightest first in each family, is the order for every view; the three rankings are Unowned's)
 if (!['light', 'code', 'gap', 'complete', 'ramps'].includes(state.gapSort)) state.gapSort = 'light';
 // (v316) Code order was the only order a grid had before, so a saved 'code' is moved to Lightest first once; Code order
@@ -477,6 +479,8 @@ function parseState(raw) {
       capDef: v.capDef === 'old' ? 'old' : '',
       capQ: v.capQ ? 1 : 0,
       capOffer: v.capOffer ? 1 : 0,
+      // (v318.34) Random's Prefer markers you haven't used yet
+      rndFresh: v.rndFresh ? 1 : 0,
     },
   };
 }
@@ -727,6 +731,7 @@ function saveTry() {
           capDef: state.capDef,
           capQ: state.capQ,
           capOffer: state.capOffer,
+          rndFresh: state.rndFresh ? 1 : 0,
         }),
       ),
     );
@@ -1069,6 +1074,9 @@ function inPool(i) {
 function buyOk(i) {
   return !state.buyBrands || state.buyBrands.indexOf(COLORS[i].brand) >= 0;
 }
+// t: in play; u: drawn and in play; left: in play, not drawn; (v318.34) d: every drawn marker, out: drawn but not in
+// play (a filter or selection leaves them out: "5 drawn · 2 not in the filter"; u alone had said "0 drawn" over a pile
+// of five, G6)
 function counts() {
   const dn = new Set(state.drawn);
   let t = 0,
@@ -1079,7 +1087,19 @@ function counts() {
       if (dn.has(i)) u++;
     }
   });
-  return { t, u, left: t - u };
+  const d = state.drawn.length;
+  return { t, u, left: t - u, d, out: d - u };
+}
+// (v318.34) the keys of every guide you've worked with, for Random's Prefer markers you haven't used yet: a guide
+// with the worked flag (wk: guideWorked, library.js), or, from before the flag, sections ticked (done) or toned (tn)
+// or a photo of its finished page (fn)
+function usedKeys() {
+  const u = new Set();
+  state.saved.forEach((s) => {
+    if (s.type !== 'guide' || !(s.wk || s.done > 0 || s.tn > 0 || s.fn)) return;
+    (s.keys || []).forEach((k) => u.add(k));
+  });
+  return u;
 }
 const anyFam = () => families.some((f) => !state.excluded.has(f.name));
 const anyTone = () => state.tones.size > 0;

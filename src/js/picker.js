@@ -186,7 +186,42 @@ const GEN_LEVELS = {
     [2, 180, 1],
     [0, 180, 1],
   ],
+  // (v318.34) Greys + accent: its greys are a ramp (genPath, no hue), its one clear colour keeps within a window of the
+  // base hue, as the anchored schemes' colours do; greys may stand in for it only last
+  neutral: [
+    [10, 30],
+    [8, 30],
+    [6, 45],
+    [4, 60],
+    [0, 90],
+    [0, 180],
+    [0, 180, 1],
+  ],
 };
+// (v318.34) a scheme's steps: its own row, else the anchored schemes' (Light to shadow and Analogous + accent keep each
+// colour within a window of its own slot's hue, as those do)
+function genLevels(h) {
+  return GEN_LEVELS[h] || GEN_LEVELS.anchors;
+}
+/* (v318.34) The schemes built on evenly stepped ramps (genPath): Monochrome and Analogous, and the three added in
+   v318.34 — Light to shadow (`shadow`: one hue's lights down to the shadows of a hue up to 120° cooler), Analogous +
+   accent (`accent`: a fan of n − 1 neighbours and one accent at the complement) and Greys + accent (`neutral`: n − 1
+   greys lightest first, after one clear colour). The three offer 3–6 colours below RAMP_BIG markers in play and 3–8
+   from there (P2-8: a smaller collection relaxed closeness in most rolls at 8). Greys + accent needs NEUTRAL_GREYS
+   near-greys in play (one grey threshold: GREY_C), else it isn't offered. */
+const RAMP_BIG = 72,
+  NEUTRAL_GREYS = 3,
+  RAMP_NEW = { shadow: 1, accent: 1, neutral: 1 };
+function rampMax(nPool) {
+  return nPool < RAMP_BIG ? 6 : 8;
+}
+// the near-greys in play (minus `exclude`, the guide's groups that are off): what Greys + accent builds its ramp from
+function genGreys(exclude) {
+  let n = 0;
+  for (let i = 0; i < COLORS.length; i++)
+    if (LCH[i][1] < GREY_C && inPool(i) && !(exclude && exclude.has(i))) n++;
+  return n;
+}
 // A family is greyish when its typical marker (the middle chroma of the brand's family) is a near-grey: Ohuhu's
 // Blue Grey and Yellow Grey (BGY, YGY) as well as the other greys. A Monochrome of one may use its near-greys.
 let _famMidC = null;
@@ -241,11 +276,13 @@ function genCtx(harmony, mood, exclude) {
     off,
     des: new Map(),
     cum: null,
-    levels: GEN_LEVELS[harmony === 'mono' || harmony === 'analogous' ? harmony : 'anchors'],
+    levels: genLevels(harmony),
     bh: 0,
     fam: null,
     greyFam: false,
     greyBase: false,
+    // (v318.34) Greys + accent: the grey family with most markers in play, which its ramp prefers (one temperature)
+    greyPref: null,
   };
 }
 // the colour difference between two markers, worked out once per palette (tries and steps ask again)
@@ -345,7 +382,66 @@ function genSlots(ctx, n) {
     const order = slots.map((_, p) => p);
     if (ctx.harmony === 'analogous')
       order.sort((a, b) => Math.abs(a - (n - 1) / 2) - Math.abs(b - (n - 1) / 2));
-    return { slots, order, groups: [order.slice().sort((a, b) => a - b)] };
+    // (v318.34: the whole palette is one ramp, picked as a path: genPath)
+    const ramp = order.slice().sort((a, b) => a - b);
+    return { slots, order, groups: [ramp], ramp };
+  }
+  // (v318.34) Light to shadow: one ramp from the base hue's lights to the shadows of a hue D° away, the way round that
+  // heads for blue-violet (270°), as shadows go cooler; each colour's hue steps along the sweep as it darkens
+  if (ctx.harmony === 'shadow') {
+    const sgn = hueOff(270, bh) >= 0 ? 1 : -1,
+      D = n <= 3 ? 90 : 120,
+      eh = (bh + sgn * D + 360) % 360,
+      r0 = genRange(ctx, bh),
+      r1 = genRange(ctx, eh),
+      hi = Math.max(r0[1], r1[1]),
+      lo = Math.min(r0[0], r1[0]);
+    for (let p = 0; p < n; p++) {
+      const t = n === 1 ? 0 : p / (n - 1);
+      slots.push({ h: (bh + sgn * D * t + 360) % 360, L: hi - (hi - lo) * t });
+    }
+    const order = slots.map((_, p) => p);
+    return { slots, order, groups: [order.slice()], ramp: order.slice() };
+  }
+  // (v318.34) Analogous + accent: a fan of n − 1 within Analogous's span of the base, and one accent at the complement,
+  // a clear colour (minC) of middling lightness. The accent is placed first, so the fan keeps clear of it.
+  if (ctx.harmony === 'accent') {
+    const k = n - 1,
+      span = k <= 2 ? 20 : k <= 4 ? 30 : 40,
+      Ls = genRamp(genRange(ctx, bh), k),
+      fan = [];
+    for (let p = 0; p < k; p++) {
+      fan.push(slots.length);
+      slots.push({ h: (bh + (k === 1 ? 0 : -span + (2 * span * p) / (k - 1)) + 360) % 360, L: Ls[p] });
+    }
+    const ah = (bh + 180) % 360,
+      r = genRange(ctx, ah);
+    slots.push({ h: ah, L: (r[0] + r[1]) / 2, minC: 30 });
+    return { slots, order: [k].concat(fan), groups: [fan, [k]], ramp: fan };
+  }
+  // (v318.34) Greys + accent: one clear colour at the base hue first (its place as every scheme's base, palFrom), then
+  // n − 1 greys in a lightness ramp over the greys in play, one family of greys where it can (ctx.greyPref)
+  if (ctx.harmony === 'neutral') {
+    const k = n - 1,
+      gl = [],
+      nf = {};
+    for (const i of ctx.pool)
+      if (LCH[i][1] < GREY_C) {
+        gl.push(LCH[i][0]);
+        nf[COLORS[i].fam] = (nf[COLORS[i].fam] || 0) + 1;
+      }
+    for (const f in nf) if (ctx.greyPref == null || nf[f] > nf[ctx.greyPref]) ctx.greyPref = f;
+    gl.sort((a, b) => a - b);
+    const r = gl.length >= 2 ? [Math.max(gl[0], 20), Math.min(gl[gl.length - 1], 92)] : [25, 90],
+      ar = genRange(ctx, bh),
+      Ls = genRamp(r[0] < r[1] ? r : [25, 90], k),
+      greys = [];
+    slots.push({ h: bh, L: (ar[0] + ar[1]) / 2, minC: 35 });
+    for (let p = 0; p < k; p++) {
+      greys.push(slots.length);
+      slots.push({ h: bh, L: Ls[p], grey: true });
+    }
+    return { slots, order: [0].concat(greys), groups: [[0], greys], ramp: greys };
   }
   const anchors = ANCH[ctx.harmony] || ANCH.complementary,
     A = anchors.length,
@@ -431,10 +527,16 @@ function genPick(ctx, slot, lv, st) {
     const i = P[j],
       L = LCH[i];
     let hc;
-    if (L[1] < GREY_C) {
+    // (v318.34) a grey slot (Greys + accent's ramp, re-rolled a band at a time: genPath lays the ramp): near-greys
+    // only, truer and from the preferred family for choice; a slot with minC (its accent) wants a clear colour
+    if (slot.grey) {
+      if (L[1] >= GREY_C) continue;
+      hc = L[1] / 30 + (ctx.greyPref && COLORS[i].fam !== ctx.greyPref ? 0.6 : 0);
+    } else if (L[1] < GREY_C) {
       if (!lv[2] && !(ctx.greyFam && COLORS[i].fam === ctx.fam)) continue;
       hc = ctx.greyFam ? 0 : 1; // a near-grey's hue means little
     } else if (ctx.greyBase && !lv[2]) continue;
+    else if (slot.minC && L[1] < slot.minC && !lv[2]) continue;
     else if (ana) {
       const o = hueOff(L[2], ctx.bh);
       if (Math.max(st.hi, o) - Math.min(st.lo, o) > lv[1]) continue;
@@ -445,7 +547,10 @@ function genPick(ctx, slot, lv, st) {
       hc = mono ? d / 15 : d / 30;
     }
     // (a greyish family's Monochrome keeps to its greys: less colour is better there)
-    let c = hc + Math.abs(L[0] - slot.L) / 18 + (ctx.greyFam ? L[1] / 30 : genChromaCost(ctx.mood, L[1]));
+    let c =
+      hc +
+      Math.abs(L[0] - slot.L) / 18 +
+      (slot.grey ? 0 : ctx.greyFam ? L[1] / 30 : genChromaCost(ctx.mood, L[1]));
     if (mono && COLORS[i].fam !== ctx.fam) c += 0.6;
     if (st.avoid >= 0 && genDE(ctx, st.avoid, i) < 5) c += 0.8;
     const out = ctx.off && ctx.off[j] > 0,
@@ -461,6 +566,238 @@ function genPick(ctx, slot, lv, st) {
   const ok = B.filter((b) => b[0] <= B[0][0] + 0.6);
   return ok[(Math.random() * ok.length) | 0][1];
 }
+/* (v318.34) The ramp as a path (Fable E1-4). Filling a ramp's slots one at a time, each with one of the three markers
+   nearest its target, let the set drift: Monochrome 6 on the Honolulu 320 had a median largest-to-smallest lightness
+   step of 6.8 (R15 L84, R46 67, R48 61, R014 51, R213 49, R215 43). Now the ramp's free slots are filled together:
+   the markers that pass the step's rules (greys, the hue window, closeness to colours already placed), lightest
+   first, and a dynamic programme over the slots finds the path through them that makes its smallest step as large
+   as it can be — a step's value is its lightness difference less a hue jump (Monochrome) and the two ends' own
+   small penalties (how far from the slot's hue, chroma against the mood) — then, as genPick does, one path at random
+   among those within PATH_SLACK of the best. Neighbours on the path must be the step's ΔE apart (a pair whose
+   lightness difference alone makes that is, by the formula's S_L, and isn't measured); every other pair is checked
+   on the path found. A Monochrome's own family makes a path of its own, taken unless the one through every family
+   in its window is clearly more even.
+   Only markers inside the mood (and its lightness band) are on a path: where they don't make one, the slots are
+   filled one at a time as before (genTry), which reaches outside the mood a colour at a time. Locked colours
+   aren't picked by the path, but they are on the ramp: it fills the free slots round them (a step across a locked
+   colour's lightness is the shorter of its two parts: `fixL`) and keeps clear of them.
+   Returns the markers for `free` (slot indexes, lightest first), or null when no path has that many. */
+const PATH_SLACK = 2;
+function genPath(ctx, plan, free, fixL, lv, st) {
+  const P = ctx.pool,
+    m = free.length,
+    mono = ctx.harmony === 'mono',
+    ana = ctx.harmony === 'analogous',
+    slots = free.map((q) => plan.slots[q]),
+    grey = !!slots[0].grey,
+    band = genBand(ctx.mood),
+    // the penalties, in units of lightness, are kept small against the steps (about 10 at six colours), as each
+    // bends the ramp: the chroma cost at a third of genPick's weight, a hue's fit at a tenth of a unit per degree
+    // for Monochrome (a fan holds each colour to its own slot's hue more loosely), Monochrome's hue jump the same;
+    // a ramp of greys has none. (Monochrome's own family is a pass of its own, below, not a penalty)
+    F = mono ? 0.1 : grey ? 0 : 0.04,
+    J = mono ? 0.1 : 0,
+    cand = [];
+  for (let j = 0; j < P.length; j++) {
+    if (st.used[j]) continue;
+    const i = P[j],
+      L = LCH[i],
+      g = L[1] < GREY_C;
+    let pen = 0;
+    if (grey) {
+      if (!g) continue;
+      pen = L[1] * 0.6 + (ctx.greyPref && COLORS[i].fam !== ctx.greyPref ? 4 : 0);
+    } else if (g) {
+      if (!lv[2] && !(ctx.greyFam && COLORS[i].fam === ctx.fam)) continue;
+      pen = ctx.greyFam ? L[1] * 0.6 : 18;
+    } else if (ctx.greyBase && !lv[2]) continue;
+    else {
+      if (ana) {
+        const o = hueOff(L[2], ctx.bh);
+        if (Math.abs(o) > lv[1] / 2 || Math.max(st.hi, o) - Math.min(st.lo, o) > lv[1]) continue;
+      } else if (mono && hueDist(L[2], ctx.bh) > lv[1]) continue;
+      pen = ctx.greyFam ? L[1] * 0.6 : genChromaCost(ctx.mood, L[1]) * 6;
+    }
+    if (lv[0] > 0 && genMinD(ctx, st, j) < lv[0]) continue;
+    const off = ctx.off ? ctx.off[j] : L[0] < band[0] ? band[0] - L[0] : L[0] > band[1] ? L[0] - band[1] : 0;
+    cand.push({ i, L: L[0], h: L[2], g, pen, off, own: COLORS[i].fam === ctx.fam });
+  }
+  cand.sort((a, b) => b.L - a.L);
+  // a slot's hue window (the fan's and the sweep's hues differ by slot); a grey standing in has no hue to judge
+  const fit = (c, k) => (grey || c.g ? 0 : hueDist(c.h, mono ? ctx.bh : slots[k].h)),
+    admits = (c, k) => grey || mono || ana || c.g || fit(c, k) <= lv[1],
+    run = (cs) => {
+      const N = cs.length;
+      if (N < m) return null;
+      // the candidates' lightness, hue and penalty in flat arrays (the inner loop runs N² × m times)
+      const Lc = new Float64Array(N),
+        H = new Float64Array(N),
+        pens = [];
+      for (let x = 0; x < N; x++) {
+        Lc[x] = cs[x].L;
+        H[x] = cs[x].h;
+      }
+      // each slot's node penalties: the fan's and the sweep's fit differs by slot
+      for (let k = 0; k < m; k++) {
+        const pk = new Float64Array(N);
+        for (let x = 0; x < N; x++) pk[x] = admits(cs[x], k) ? cs[x].pen + fit(cs[x], k) * F : NaN;
+        pens.push(pk);
+      }
+      // (the colour difference is the costly check, asked only of a step that would be the best so far; a pair
+      // whose lightness alone puts it apart — ΔE00 is at least ΔL over its lightness weighting S_L — isn't measured)
+      const apart = (x, y) => {
+        if (!(lv[0] > 0)) return true;
+        const dL = Lc[x] - Lc[y],
+          mL = (Lc[x] + Lc[y]) / 2 - 50,
+          sL = 1 + (0.015 * mL * mL) / Math.sqrt(20 + mL * mL);
+        return dL / sL >= lv[0] || genDE(ctx, cs[x].i, cs[y].i) >= lv[0];
+      };
+      // the lightness steps between a and b (a lighter) once the locked colours between them cut it: the shortest
+      const nf = fixL.length,
+        cut = (a, b) => {
+          let s = a - b,
+            last = a;
+          for (let f = 0; f < nf; f++) {
+            const L = fixL[f];
+            if (L >= a) continue;
+            if (L <= b) break;
+            if (last - L < s) s = last - L;
+            last = L;
+          }
+          if (last - b < s) s = last - b;
+          return s;
+        },
+        // and the steps from the lightest of them down to a (none above: no step), or from b to the darkest
+        above = (a) => (nf && fixL[0] > a ? cut(fixL[0], a) : Infinity),
+        below = (b) => (nf && fixL[nf - 1] < b ? cut(b, fixL[nf - 1]) : Infinity);
+      // x lighter than y (or as light), y at slot k
+      const stepV = (x, y, k) => {
+        let v = (nf ? cut(Lc[x], Lc[y]) : Lc[x] - Lc[y]) - (pens[k - 1][x] + pens[k][y]) / 2;
+        if (J) {
+          const d = Math.abs(H[x] - H[y]);
+          v -= (d > 180 ? 360 - d : d) * J;
+        }
+        return v;
+      };
+      const rows = [];
+      let prev = new Float64Array(N);
+      for (let x = 0; x < N; x++)
+        prev[x] =
+          pens[0][x] === pens[0][x]
+            ? m === 1
+              ? Math.min(above(Lc[x]), below(Lc[x])) - pens[0][x]
+              : above(Lc[x])
+            : -Infinity;
+      rows.push(prev);
+      for (let k = 1; k < m; k++) {
+        const cur = new Float64Array(N).fill(-Infinity),
+          pp = pens[k - 1],
+          pk = pens[k],
+          // the lighter markers with the best paths so far (a handful, kept up as y goes down): tried first for
+          // each y, so the scan down from the lightest starts with a good step in hand and skips the rest
+          by = [];
+        // the least penalty a lighter marker can bring: with it, a step's value is bounded by its lightness
+        // difference, so the scan down from the lightest stops once no nearer marker can do better
+        let pmin = Infinity;
+        for (let x = 0; x < N; x++) if (pp[x] < pmin) pmin = pp[x];
+        for (let y = 0; y < N; y++) {
+          if (y > 0 && prev[y - 1] > -Infinity) {
+            let q = by.length;
+            while (q > 0 && prev[by[q - 1]] < prev[y - 1]) q--;
+            by.splice(q, 0, y - 1);
+            if (by.length > 6) by.length = 6;
+          }
+          const py = pk[y];
+          if (py !== py) continue;
+          const Ly = Lc[y],
+            Hy = H[y],
+            B = -(pmin + py) / 2;
+          let best = -Infinity;
+          for (let q = -by.length; q < y; q++) {
+            const x = q < 0 ? by[q + by.length] : q;
+            if (q >= 0 && Lc[x] - Ly + B <= best) break;
+            const px = prev[x];
+            if (px <= best) continue;
+            let v = (nf ? cut(Lc[x], Ly) : Lc[x] - Ly) - (pp[x] + py) / 2;
+            if (J) {
+              const d = Math.abs(H[x] - Hy);
+              v -= (d > 180 ? 360 - d : d) * J;
+            }
+            const sv = v < px ? v : px;
+            if (sv > best && apart(x, y)) best = sv;
+          }
+          cur[y] = best;
+        }
+        rows.push(cur);
+        prev = cur;
+      }
+      // the end: its path, and the steps down to any locked colour darker than it
+      const last = new Float64Array(N);
+      let top = -Infinity;
+      for (let y = 0; y < N; y++) {
+        last[y] = m === 1 ? prev[y] : Math.min(prev[y], below(Lc[y]));
+        if (last[y] > top) top = last[y];
+      }
+      if (top === -Infinity) return null;
+      // (the slack is a share of the best where that is small: two units off a step of three let the ramp fold)
+      const thr = top - Math.min(PATH_SLACK, 0.2 * Math.abs(top)),
+        ends = [];
+      for (let y = 0; y < N; y++) if (last[y] >= thr) ends.push(y);
+      // a path back from a random end, through random steps within the slack; the step's closeness holds between
+      // its neighbours by construction, and is asked of every other pair (two apart is the one that can miss:
+      // two short steps at similar hues): another walk back when it fails, a few times; then the caller drops one
+      // of the close pair and runs again
+      let close = null;
+      for (let t = 0; t < 6; t++) {
+        let y = ends[(Math.random() * ends.length) | 0];
+        const path = [y];
+        for (let k = m - 1; k > 0; k--) {
+          const ok = [],
+            ok2 = [];
+          for (let x = 0; x < y; x++)
+            if (rows[k - 1][x] >= thr && stepV(x, y, k) >= thr && apart(x, y)) {
+              ok.push(x);
+              if (path.length < 2 || apart(x, path[1])) ok2.push(x);
+            }
+          const from = ok2.length ? ok2 : ok;
+          y = from[(Math.random() * from.length) | 0];
+          path.unshift(y);
+        }
+        let fine = true;
+        if (lv[0] > 0)
+          for (let a = 0; a < m && fine; a++)
+            for (let b = a + 2; b < m; b++)
+              if (genDE(ctx, cs[path[a]].i, cs[path[b]].i) < lv[0]) {
+                fine = false;
+                close = [path[a], path[b]];
+                break;
+              }
+        if (fine) return { path: path.map((x) => cs[x]), top };
+      }
+      return close && { close };
+    },
+    // (a pair two apart that the walks can't keep apart: again without the costlier of the two, up to four times)
+    runFrom = (cs) => {
+      for (let t = 0; t < 4; t++) {
+        const r = run(cs);
+        if (!r) return null;
+        if (r.path) return r;
+        const [a, b] = r.close;
+        cs = cs.filter((_, x) => x !== (cs[a].pen > cs[b].pen ? a : b));
+      }
+      return null;
+    };
+  const inMood = cand.filter((c) => c.off === 0);
+  let res = runFrom(inMood);
+  // a Monochrome keeps to its base's family where the family has the steps: its own family's path first, and the
+  // path through every family in its hue window only when that one is clearly more even (its smallest step better
+  // by PATH_SLACK) — a penalty on the other families had bent the ramp wherever two families share a hue
+  if (mono && (!ctx.greyBase || ctx.greyFam)) {
+    const own = runFrom(inMood.filter((c) => c.own));
+    if (own && (!res || res.top <= own.top + PATH_SLACK)) res = own;
+  }
+  return res ? res.path.map((c) => c.i) : null;
+}
 // one try at filling every colour at one step; the palette, or null when a colour found no marker
 function genTry(ctx, plan, locked, lv) {
   const fixed = [],
@@ -472,6 +809,24 @@ function genTry(ctx, plan, locked, lv) {
   const st = genState(ctx, lv, fixed);
   for (const p of plan.order) {
     if (out[p] >= 0) continue;
+    // (v318.34) a ramp's free slots are filled together, as a path, when the order reaches the first of them;
+    // where no path keeps the step's rules (a tight mood: Pastel's band is 16 of lightness), one slot at a time
+    // as before, which may still fill them
+    if (plan.ramp && plan.ramp.indexOf(p) >= 0) {
+      const free = plan.ramp.filter((q) => out[q] < 0),
+        fixL = plan.ramp
+          .filter((q) => out[q] >= 0)
+          .map((q) => LCH[out[q]][0])
+          .sort((a, b) => b - a),
+        picks = genPath(ctx, plan, free, fixL, lv, st);
+      if (picks) {
+        free.forEach((q, k) => {
+          out[q] = picks[k];
+          genPlace(ctx, st, picks[k], true);
+        });
+        continue;
+      }
+    }
     const j = genPick(ctx, plan.slots[p], lv, st);
     if (j < 0) return null;
     out[p] = ctx.pool[j];
@@ -524,6 +879,12 @@ function palCap(h) {
     if (!inPool(i)) continue;
     if (LCH[i][1] < GREY_C) greys++;
     else P.push(i);
+  }
+  // (v318.34) the ramp schemes: by the markers in play (rampMax); Greys + accent by its greys too
+  if (RAMP_NEW[h]) {
+    let best = rampMax(P.length + greys);
+    if (h === 'neutral') best = Math.min(best, greys + 1);
+    return (_cap[h] = Math.max(R[0], Math.min(R[1], best)));
   }
   if (P.length >= CAP_BIG) return (_cap[h] = R[1]);
   // the clear markers within w degrees of hue c, counting only those clearly different from one counted
@@ -610,6 +971,30 @@ function paletteOpts() {
       if (state.harmony === 'analogous') {
         const span = n <= 2 ? 20 : n <= 4 ? 30 : 40;
         off = n === 1 ? 0 : -span + (2 * span * p) / (n - 1);
+      } else if (state.harmony === 'accent') {
+        // (v318.37) Analogous + accent: the fan of n − 1 over its span, the accent (last) at the complement. The
+        // v318.34 schemes had no offsets here, so a locked accent became the base and the fan was rebuilt round it:
+        // five greens and "Some colours stray from the scheme" every Generate (X3-1)
+        const k = n - 1,
+          span = k <= 2 ? 20 : k <= 4 ? 30 : 40;
+        off = p >= k ? 180 : k === 1 ? 0 : -span + (2 * span * p) / (k - 1);
+      } else if (state.harmony === 'shadow') {
+        // (v318.37) Light to shadow: the sweep of D° from the base, the way round that heads for 270° (genSlots).
+        // Which way depends on the base, which is what's wanted: of the two bases that put this place on the
+        // locked hue, the one whose own sweep lands nearest it (at a tie, the nearer to the base so far)
+        const D = n <= 3 ? 90 : 120,
+          t = n === 1 ? 0 : p / (n - 1),
+          h = LCH[i][2];
+        let best = null;
+        for (const s of [1, -1]) {
+          const b = (h - s * D * t + 720) % 360,
+            at = (b + (hueOff(270, b) >= 0 ? 1 : -1) * D * t + 360) % 360,
+            err = hueDist(at, h),
+            near = opts.baseHue != null ? hueDist(b, opts.baseHue) : 0;
+          if (!best || err < best.err - 1e-6 || (Math.abs(err - best.err) <= 1e-6 && near < best.near))
+            best = { err, near, off: s * D * t };
+        }
+        off = best.off;
       } else if (A) {
         let q = 0,
           a = 0;
@@ -1095,10 +1480,35 @@ function genPalette(n, harmony, opts) {
   harmony = harmony || state.harmony;
   if (harmony === 'rainbow') return genRainbow(n, opts);
   const mood = MOODS[opts.mood] && MOOD_KEYS.includes(opts.mood) ? opts.mood : 'neutral',
-    locked = opts.locked || {},
     // (v308: opts.exclude, a Set of marker indexes kept out: the guide's Include row's groups that are off)
     ctx = genCtx(harmony, mood, opts.exclude || null);
+  let locked = opts.locked || {};
+  // (v318.34) the ramp schemes' sizes follow the markers in play (rampMax), whoever asks (the guide's genSize asks for
+  // the range's most); Greys + accent has a grey for each colour but its accent, and needs NEUTRAL_GREYS of them
+  if (RAMP_NEW[harmony]) {
+    n = Math.min(n, rampMax(ctx.pool.length));
+    if (harmony === 'neutral') {
+      let g = 0;
+      for (const i of ctx.pool) if (LCH[i][1] < GREY_C) g++;
+      if (g < NEUTRAL_GREYS) return null;
+      n = Math.min(n, g + 1);
+    }
+    n = Math.max(n, HARM_RANGE[harmony][0]);
+  }
   let bi = null;
+  // (v318.37) Greys + accent started from a grey: the grey is one of the ramp (the step nearest its lightness, below),
+  // and the accent is found as it is with no base, from a random clear colour's hue. The seed had taken slot 0, the
+  // accent's, and its hue became the base: a palette of greys only, said to be "… base" (X3-2)
+  const greySeed =
+    harmony === 'neutral' &&
+    opts.seedIdx != null &&
+    locked[0] === opts.seedIdx &&
+    LCH[opts.seedIdx][1] < GREY_C;
+  if (greySeed) {
+    locked = Object.assign({}, locked);
+    delete locked[0];
+    opts = Object.assign({}, opts, { baseHue: null });
+  }
   if (harmony === 'mono') {
     bi = opts.seedIdx != null ? opts.seedIdx : null;
     for (let p = 0; p < n && bi == null; p++) if (locked[p] != null) bi = locked[p];
@@ -1133,7 +1543,42 @@ function genPalette(n, harmony, opts) {
   // the step nearest its lightness), not the first one (the fan's end, the lightest step): the other colours were
   // lopsided round it, two thirds of them on one side
   const si = opts.seedIdx;
-  if (si != null && locked[0] === si && n > 1 && (harmony === 'analogous' || harmony === 'mono')) {
+  if (greySeed && plan.ramp.length) {
+    // (v318.37: the grey seed's step of the ramp, as Monochrome's; the accent keeps slot 0)
+    let best = plan.ramp[0];
+    for (const p of plan.ramp)
+      if (Math.abs(plan.slots[p].L - LCH[si][0]) < Math.abs(plan.slots[best].L - LCH[si][0])) best = p;
+    // (v319) the other locks keep their colours: paletteOpts gave the seed slot 0, so a locked clear colour (the
+    // accent) sat on the ramp, in the last free slot, which for a black is its own step: `locked[best] = si`
+    // overwrote it and the lock was lost (Y3-1). A locked clear colour goes to slot 0, the accent's, now the seed
+    // has left it; a grey in the seed's step moves to the free step nearest its lightness
+    for (const p of plan.ramp)
+      if (locked[p] != null && locked[0] == null && LCH[locked[p]][1] >= GREY_C) {
+        locked[0] = locked[p];
+        delete locked[p];
+      }
+    const had = locked[best];
+    if (had != null) {
+      delete locked[best];
+      let to = locked[0] == null ? 0 : null;
+      for (const p of plan.ramp)
+        if (
+          p !== best &&
+          locked[p] == null &&
+          (to == null ||
+            to === 0 ||
+            Math.abs(plan.slots[p].L - LCH[had][0]) < Math.abs(plan.slots[to].L - LCH[had][0]))
+        )
+          to = p;
+      if (to != null) locked[to] = had;
+    }
+    locked[best] = si;
+  } else if (
+    si != null &&
+    locked[0] === si &&
+    n > 1 &&
+    (harmony === 'analogous' || harmony === 'mono' || harmony === 'accent' || harmony === 'shadow')
+  ) {
     let best = 0,
       bd = Infinity;
     plan.slots.forEach(function (sl, p) {
@@ -1157,13 +1602,19 @@ function genPalette(n, harmony, opts) {
   }
   if (!res) return null;
   const pal = res.out;
+  // (v318.37: a Greys + accent built from a grey holds it on the ramp, not first: kept with the palette, as a Rainbow's)
+  if (greySeed) _rbSeed.set(pal, si);
   // Each scheme hue's colours lightest first (Analogous: along its hues), as their targets were, whichever colour got
   // which marker: the palette reads as a ramp even where the collection skipped a step. Locked ones stay put.
   for (const g of plan.groups) {
-    const free = g.filter((p) => locked[p] == null),
+    // (v318.37: a grey seed is sorted with its ramp, to the step its lightness falls on, not left where it was placed)
+    const free = g.filter((p) => locked[p] == null || (greySeed && locked[p] === si)),
       picks = free.map((p) => pal[p]);
+    // (v318.34: Analogous + accent's fan along its hues too)
     picks.sort((a, b) =>
-      harmony === 'analogous' ? hueOff(LCH[a][2], ctx.bh) - hueOff(LCH[b][2], ctx.bh) : LCH[b][0] - LCH[a][0],
+      (harmony === 'analogous' || harmony === 'accent') && g.length > 1
+        ? hueOff(LCH[a][2], ctx.bh) - hueOff(LCH[b][2], ctx.bh)
+        : LCH[b][0] - LCH[a][0],
     );
     free.forEach((p, q) => (pal[p] = picks[q]));
   }
@@ -1191,7 +1642,12 @@ function genPalette(n, harmony, opts) {
       relaxed: minDE != null && minDE < need,
       hueWidened,
       moodWidened: res.widened,
-      grey: !ctx.greyFam && chroma.length < free.length,
+      // (v318.34: Greys + accent's greys are its ramp; v318.37: its accent a grey, for want of a clear colour, X3-5)
+      grey: ctx.greyFam
+        ? false
+        : harmony === 'neutral'
+          ? locked[0] == null && LCH[pal[0]][1] < GREY_C
+          : chroma.length < free.length,
     });
   }
   return pal;
@@ -1212,17 +1668,26 @@ const _rbSeed = new WeakMap();
   if (!Array.isArray(b) || b.length !== state.palettes.length) return;
   b.forEach((si, j) => {
     const p = state.palettes[j];
-    if (Number.isInteger(si) && Array.isArray(p) && p.includes(si) && palHarm(state.palH[j]) === 'rainbow')
+    // (v318.37: and a Greys + accent's grey base, palFrom)
+    if (
+      Number.isInteger(si) &&
+      Array.isArray(p) &&
+      p.includes(si) &&
+      (palHarm(state.palH[j]) === 'rainbow' || palHarm(state.palH[j]) === 'neutral')
+    )
       _rbSeed.set(p, si);
   });
 })();
 function rbSeedList() {
   return state.palettes.map((p) => (_rbSeed.has(p) ? _rbSeed.get(p) : null));
 }
-// whether pal was built from marker si: first in its place, or a Rainbow made from it
+// whether pal was built from marker si: first in its place, or a Rainbow made from it (v318.37: or a Greys + accent
+// from a grey, which is on its ramp: _rbSeed too)
 function palFrom(pal, si, h) {
   // (v318.25: `h`, the palette's own scheme when it isn't the one chosen, currentPaletteHarm)
-  return si != null && pal && ((h || state.harmony) === 'rainbow' ? _rbSeed.get(pal) === si : pal[0] === si);
+  if (si == null || !pal) return false;
+  h = h || state.harmony;
+  return h === 'rainbow' || (h === 'neutral' && _rbSeed.has(pal)) ? _rbSeed.get(pal) === si : pal[0] === si;
 }
 // (v318.28) a copy of a Rainbow (a band re-rolled, the preview adopted) still built from its base while it holds it
 function rbSeedCarry(from, to) {
@@ -1309,6 +1774,16 @@ function rerollPick(pal, k, harmony) {
     }
   }
   const slot = { h: LCH[cur][2], L: LCH[cur][0] };
+  // (v318.34) Greys + accent: a grey band re-rolls to another grey (of the family its other greys are mostly in),
+  // its accent to another clear colour near its hue
+  if (harmony === 'neutral') {
+    if (LCH[cur][1] < GREY_C) {
+      slot.grey = true;
+      const nf = {};
+      for (const i of others) if (LCH[i][1] < GREY_C) nf[COLORS[i].fam] = (nf[COLORS[i].fam] || 0) + 1;
+      for (const f in nf) if (ctx.greyPref == null || nf[f] > nf[ctx.greyPref]) ctx.greyPref = f;
+    } else slot.minC = 35;
+  }
   // (v306) Rainbow: aimed at the middle of the gap round the wheel this colour fills (between its neighbours in hue
   // among the other clear colours), at their middle lightness
   if (harmony === 'rainbow') {
@@ -1435,8 +1910,32 @@ function palOnScheme(pal, harmony, fixed) {
     // between green and blue: up to RAINBOW_GAP)
     return gap < RAINBOW_GAP;
   }
-  const win = GEN_LEVELS[harmony === 'mono' || harmony === 'analogous' ? harmony : 'anchors'][0][1],
-    A = harmony === 'analogous' ? [0] : ANCH[harmony] || [0],
+  const win = genLevels(harmony)[0][1];
+  // (v318.34) Light to shadow: its hues sweep up to 120° one way, each within its window: all within half the wheel
+  if (harmony === 'shadow') {
+    const E = 1e-6,
+      arc = 120 + 2 * win;
+    return hs.some((b) => hs.every((h) => (((h - b) % 360) + 360) % 360 <= arc + E));
+  }
+  // (v318.34) Analogous + accent: all but one within the fan's reach of some base (its span and window), that one
+  // within the window of the base's complement
+  // (v318.37: a colour you locked can be the accent, on the hue it takes, as the anchored schemes count theirs: with
+  // the accent locked, the free colours are the fan alone, and were called off the scheme for having no accent, X3-1)
+  if (harmony === 'accent') {
+    const E = 1e-6,
+      reach = 40 + win,
+      cands = pal.filter((i) => LCH[i][1] >= GREY_C).map((i) => LCH[i][2]);
+    for (let q = 0; q < cands.length; q++) {
+      const acc = cands[q],
+        fan = hs.filter((h) => h !== acc),
+        bases = [acc - 180 - win, acc - 180 + win, acc - 180];
+      for (const h of fan) bases.push(h - reach, h + reach, h);
+      if (bases.some((b) => hueDist(acc, b + 180) <= win + E && fan.every((h) => hueDist(h, b) <= reach + E)))
+        return true;
+    }
+    return false;
+  }
+  const A = harmony === 'analogous' ? [0] : ANCH[harmony] || [0],
     E = 1e-6,
     fits =
       harmony === 'analogous'
@@ -1482,11 +1981,21 @@ function closeNote() {
           '.';
       // (v318.28) greys in a colour scheme: the last resort of its picks (genPick), said as the other loosenings are
       // (report.grey's test); Monochrome's greys are its steps, a Rainbow's are counted above
-      else if (h !== 'mono' && h !== 'rainbow' && pal.some((i) => !fixed.has(i) && LCH[i][1] < GREY_C))
+      // (v318.34: nor Greys + accent's, which are its ramp)
+      else if (
+        h !== 'mono' &&
+        h !== 'rainbow' &&
+        h !== 'neutral' &&
+        pal.some((i) => !fixed.has(i) && LCH[i][1] < GREY_C)
+      )
         t =
           'Some colours are greys: your markers in play don\u2019t have ' +
           pal.length +
           ' clear colours for this scheme.';
+      // (v318.37) Greys + accent's accent (first) a grey: the markers in play (all greys, or a mood with no clear
+      // colour in its band) had none for it, and the card said nothing (X3-2, X3-5)
+      else if (h === 'neutral' && !fixed.has(pal[0]) && LCH[pal[0]][1] < GREY_C)
+        t = 'All greys: your markers in play don\u2019t have a clear colour for the accent.';
       else if (d != null && d < genNeed(h))
         t =
           'Two colours are close: your markers don\u2019t have ' +

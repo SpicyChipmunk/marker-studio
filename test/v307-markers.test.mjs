@@ -304,6 +304,8 @@ function swSandbox() {
     self: null,
   };
   ctx.self = {
+    // (v318.32: the worker stores only its own origin's files, D3-2)
+    location: { origin: ORIGIN.slice(0, -1), href: ORIGIN + 'service-worker.js' },
     addEventListener: (t, f) => (handlers[t] = f),
     skipWaiting: () => Promise.resolve(),
     clients: { claim: () => Promise.resolve() },

@@ -1,4 +1,4 @@
-const CACHE='marker-studio-v318.31';
+const CACHE='marker-studio-v319';
 // (v313) PDF.js, for opening a PDF (vendor/pdfjs/<version>/): a cache of its own, named after its version, which a new
 // release leaves alone, so its 2 MB are downloaded once, not with every update. Stored when the app is installed, as
 // far as it can be (not waiting for it: the app works without it), and kept as it's used.
@@ -17,6 +17,8 @@ self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(function
  // (PDF.js: only what isn't stored yet, after the app itself)
  caches.open(PDFC).then(function(c){return Promise.allSettled(PDFFILES.map(function(u){return c.match(u).then(function(h){return h||c.add(u);});}));}).catch(function(){});});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE&&x!==PDFC&&x!==OCRC).map(x=>caches.delete(x)))).then(()=>self.clients.claim()));});
+// (v318.32 D3-2) only the app's own origin's files are stored: an opaque cross-origin response would take about 7 MB of
+// quota each in Chrome. Nothing cross-origin is fetched by GET today; this keeps it so
 // (v307) a page load is the app whatever its query (?back=1 …): a page with a query is never stored
 // (v308) the app's own page (this folder, or its index.html) comes from the one copy; another page here (a doc) from the
 // network as before, or the app when offline
@@ -26,5 +28,5 @@ self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;
  // (PDF.js's files from their own cache, stored there as they're fetched)
  if(r.url.indexOf('/vendor/pdfjs/'+PDFJS+'/')>=0){e.respondWith(caches.open(PDFC).then(function(c){return c.match(r).then(function(h){return h||fetch(r).then(function(res){if(res&&res.ok)c.put(r,res.clone()).catch(function(){});return res;});});}));return;}
  const nav=r.mode==='navigate',u=new URL(r.url),q=nav&&u.search,
- app=nav&&(APP?u.pathname===APP||u.pathname===APP+'index.html':/\/(index\.html)?$/.test(u.pathname));
- e.respondWith((app?caches.match('./index.html'):caches.match(r,nav?{ignoreSearch:true}:undefined)).then(hit=>hit||fetch(r).then(res=>{if(res&&(res.ok||res.type==='opaque')&&!q){const cp=res.clone();caches.open(CACHE).then(c=>c.put(app?'./index.html':r,cp)).catch(()=>{});}return res;}).catch(()=>caches.match('./index.html'))));});
+ app=nav&&(APP?u.pathname===APP||u.pathname===APP+'index.html':/\/(index\.html)?$/.test(u.pathname)),same=u.origin===self.location.origin||u.origin===new URL(self.location.href).origin;
+ e.respondWith((app?caches.match('./index.html'):caches.match(r,nav?{ignoreSearch:true}:undefined)).then(hit=>hit||fetch(r).then(res=>{if(res&&(res.ok||res.type==='opaque')&&!q&&same){const cp=res.clone();caches.open(CACHE).then(c=>c.put(app?'./index.html':r,cp)).catch(()=>{});}return res;}).catch(()=>caches.match('./index.html'))));});

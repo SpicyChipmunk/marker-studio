@@ -10,6 +10,7 @@
 //   --baseline               write bench/baseline.json (numbers only) from this run
 //   --compare                compare this run with bench/baseline.json, row by row
 //   --no-photos              the clean path only
+//   --photos-only            (v318.35) the photo rows only: the page finder's gate while builders share a machine
 //
 // Needs the built index.html (npm run build). Pictures, the page cache and the report go to DIR; nothing is written in
 // the repo except bench/baseline.json with --baseline.
@@ -36,7 +37,8 @@ const argv = process.argv.slice(2),
   };
 const quick = has('--quick'),
   pics = has('--pics'),
-  noPhotos = has('--no-photos');
+  noPhotos = has('--no-photos'),
+  photosOnly = has('--photos-only');
 const OUT = path.resolve(
   arg('--out', process.env.BENCH_OUT || path.join(os.tmpdir(), 'marker-studio-bench')),
 );
@@ -84,7 +86,7 @@ const rgbaOf = (input, n, rgb) => {
 };
 
 for (const set of sets) {
-  const specs = (set === 'TUNE' ? TUNE : HELD).filter((s) => want(s.id));
+  const specs = photosOnly ? [] : (set === 'TUNE' ? TUNE : HELD).filter((s) => want(s.id));
   for (const spec of specs) {
     const dl = jpeg ? [[600, 0.75], ...(spec.p.lw && spec.p.lw < 2.4 ? [[400, 0.5]] : [])] : [];
     const need = [...new Set([...sizes, ...sens6, 1200, ...dl.map((d) => d[0])])].sort((a, b) => a - b);

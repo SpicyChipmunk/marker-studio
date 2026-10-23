@@ -43,10 +43,17 @@ cap's curve, outside the detector's box (G03 for YG03).
   reads; on Copic, catching 2 of 12 cost 5% of right reads turned into questions. The "clearly different colours"
   cases (a red cap read as B05) were 2–3 of 22, and the light varies too much to tell them reliably. Don't re-try
   without new evidence.
-- **A Copic "prefix" re-read, not yet.** A code that is the tail of a longer one (G03 of YG03) read again with its box
-  widened along the line, the longer code taken when it reads surely and exists: Copic wrong reads 12 → 9, but one
-  real R20 read as YR20. With the closer read most of those caps read right anyway; to be measured again on top of
-  v318.9 before it's designed.
+- **A Copic "prefix" re-read (v318.12).** A code that is the tail of a longer one (G03 of YG03) read again with its box
+  widened along the line, the longer code taken when it reads surely and exists: measured first on v318.8, Copic wrong
+  reads 12 → 9, but one real R20 read as YR20. Built in v318.12 on top of the closer read (`o.widen`: the box grown by
+  a character at the code's start, read again by the same pass as the halves, taken at conf ≥ 0.8 with a letter at
+  the head and the code as its tail; Copic wrong 9 → 6, +5 caps), and in v318.14 for Ohuhu's first letters too (G24
+  of BG24, CG24, GG24). **Guards measured in v318.35, not shipped:** the longer Copic code taken only when the wider
+  read holds the code's own characters surely, no other line's box lies in the grown part, and the grown part holds a
+  glyph on the code's line (height, baseline, gap). Recorded on the 16 bench photos with Copic caps, guards on vs off
+  from one build: wrong reads the same (HELD 3, TUNE 6), 2 caps fewer found with the guards (TUNE 508 → 506); the
+  remaining Copic wrong reads (V06, Y06, R00, YR27, G03/YG03, B14, E55) are mostly not of the lost-letter kind. Left
+  as v318.12 has it; don't re-try without new photos that show the R20 → YR20 kind.
 - **The code-as-name fix (in v318.9).** Before reading, the shorter of two boxes one above the other is taken as the
   taller one's name; an Ohuhu cap's two-word name is often the taller, so a code read surely ended as a name. The
   engine already swapped them back for a zoomed box's lines; now for any pair. +11 caps on the new photos at 2048,

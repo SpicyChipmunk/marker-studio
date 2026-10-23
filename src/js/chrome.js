@@ -42,6 +42,10 @@ function chrome() {
   palFiltersPlace();
   // (Markers: the search and the view on one row, the tools and the line about the view on the next, on a wide screen)
   document.querySelector('.wrap').classList.toggle('mkmode', state.mode === 'collection');
+  // (v318.34) Random: the card and its buttons in a column beside the Drawn pile, Filters and the markers left on a
+  // wide screen held sideways (02-picker.css, rndSidePlace)
+  document.querySelector('.wrap').classList.toggle('rndmode', state.mode === 'random');
+  rndSidePlace();
   // (the Guide tab's start card: the sample's picture until there's a guide, also after one is deleted or put back)
   if (window.SF && SF.startPic) SF.startPic();
   // (v288: the palette's glow belongs to Palette, and Random's draw; elsewhere the plain background)
@@ -95,18 +99,26 @@ function chrome() {
   hero.style.display = browse ? 'none' : '';
   var _rb = document.getElementById('rndBack');
   if (_rb) _rb.style.display = rnd ? '' : 'none';
+  // (v318.34) what the screen is for, over the card (G1: nothing had said it)
+  var _rw = document.getElementById('rndWhy');
+  if (_rw) _rw.style.display = rnd ? '' : 'none';
   swatch.style.display = rnd ? '' : 'none';
   palette.style.display = pal ? '' : 'none';
   primaryRow.style.display =
     browse || (pal && (state.harmony === 'custom' || state.harmony === 'photo')) ? 'none' : 'flex';
   secondaryRow.style.display = browse ? 'none' : 'flex';
   swapBtn.style.display = rnd ? '' : 'none';
-  undoBtn.textContent = rnd ? 'Remove' : 'Undo';
+  // (v318.34) "Remove this one": it takes the latest draw only (G3; it said "Remove", and three ways to remove read
+  // as one). Clear is "Clear all" here, as it empties the pile (disarm, events.js)
+  undoBtn.textContent = rnd ? 'Remove this one' : 'Undo';
+  if (resetBtn.dataset.arm !== '1') resetBtn.textContent = rnd ? 'Clear all' : 'Clear';
   // (v318.25) Photo has Undo too, while there's a step before its palette (photoUndoable): hidden there, From photo had
   // cut off every palette made before it
   undoBtn.style.display = pal && state.harmony === 'custom' ? 'none' : '';
   trackWrap.style.display = rnd ? '' : 'none';
   drawnWrap.style.display = rnd ? '' : 'none';
+  var _rf = document.getElementById('remFold');
+  if (_rf) _rf.style.display = rnd ? '' : 'none';
   harmWrap.style.display = pal ? 'flex' : 'none';
   sizeWrap.style.display = pal && state.harmony !== 'photo' ? 'flex' : 'none';
   seedWrap.style.display = pal && state.harmony !== 'custom' && state.harmony !== 'photo' ? 'flex' : 'none';
@@ -154,7 +166,10 @@ function chrome() {
           ' <span class="sx">' +
           ic('x') +
           '</span>'
-        : 'Random base';
+        : // (v318.32) an action, not a state: "Start from a marker… (random)" until one is chosen; the row's "Start
+          // from" label then goes, as the button says it (U1-10: "Start from [Random base]" read as a state)
+          'Start from a marker\u2026 <span class="seedrnd">(random)</span>';
+    seedWrap.classList.toggle('noseed', si == null);
   }
   findWrap.style.display = browse ? '' : 'none';
   findResults.style.display = browse ? '' : 'none';
@@ -255,7 +270,37 @@ function chrome() {
     }
   }
   var _ug = document.getElementById('useGuideWrap');
-  if (_ug) _ug.style.display = pal && currentPaletteIdxs().length ? '' : 'none';
+  // (v318.34) and Random's draw of two or more, as a palette (G7)
+  if (_ug)
+    _ug.style.display =
+      (pal && currentPaletteIdxs().length) || (rnd && state.drawn.length >= 2) ? '' : 'none';
+  // (v318.34) Prefer markers you haven't used yet (G9): remembered (state.rndFresh); the line under it says how many of
+  // those left to draw are unused, or that all have been used and the draw is from all of them
+  var _fw = document.getElementById('rndFreshWrap'),
+    _fn = document.getElementById('rndFreshNote');
+  if (_fw) {
+    _fw.style.display = rnd ? '' : 'none';
+    var _fc = document.getElementById('rndFresh');
+    if (_fc && _fc.checked !== !!state.rndFresh) _fc.checked = !!state.rndFresh;
+  }
+  if (_fn) {
+    var _ft = '';
+    if (rnd && state.rndFresh) {
+      var _dp = drawPool();
+      _ft = !_dp.all.length
+        ? ''
+        : _dp.allUsed
+          ? 'Every marker left to draw has been used: drawing from all of them'
+          : _dp.list.length +
+            ' of the ' +
+            _dp.all.length +
+            ' left to draw ' +
+            (_dp.list.length === 1 ? 'hasn\u2019t' : 'haven\u2019t') +
+            ' been used yet';
+    }
+    _fn.style.display = _ft ? '' : 'none';
+    if (_fn.textContent !== _ft) _fn.textContent = _ft;
+  }
   saveBtn.disabled = (pal && !currentPaletteIdxs().length) || (rnd && !state.drawn.length);
   exportBtn.disabled = (rnd && !state.drawn.length) || (pal && !currentPaletteIdxs().length);
   // Photo before a photo is chosen: nothing to save or clear yet, so no Save, Save image or Clear (and no ⋯ left on
@@ -288,6 +333,17 @@ function chrome() {
   }
   closeNote();
   harm.querySelectorAll('button').forEach((b) => segOn(b, b.dataset.h === state.harmony));
+  // (v318.34) Greys + accent needs NEUTRAL_GREYS greys in play: below that its button is greyed and says why (a tap
+  // toasts it, events.js; not disabled, which would swallow the tap)
+  {
+    const nb = harm.querySelector('button[data-h="neutral"]');
+    if (nb) {
+      const why = neutralWhy();
+      nb.setAttribute('aria-disabled', why ? 'true' : 'false');
+      if (why) nb.title = why;
+      else nb.removeAttribute('title');
+    }
+  }
   // Clear only when there's something to clear
   if (rnd || pal) {
     const has = clearable();
@@ -309,9 +365,17 @@ function chrome() {
     as = anySat(),
     ab = anyBrand();
   if (rnd) {
-    const { t, u, left } = counts();
+    const { t, u, left, d, out } = counts();
     fill.style.width = (t ? (u / t) * 100 : 0) + '%';
-    statusEl.innerHTML = '<b>' + u + '</b> drawn, <b>' + left + '</b> left to draw';
+    // (v318.34) every drawn marker counted, the ones a filter or selection leaves out said beside (G6: "0 drawn" over
+    // a pile of five)
+    statusEl.innerHTML =
+      '<b>' +
+      d +
+      '</b> drawn, <b>' +
+      left +
+      '</b> left to draw' +
+      (out ? ' \u00b7 <b>' + out + '</b> not in the ' + (pooled ? 'selection' : 'filter') : '');
     // (nothing in play at all isn't "All drawn": a brand filtered out, every marker dry, v299)
     const none = t === 0 ? 'No markers to draw' : 'All drawn',
       bad = pooled
@@ -337,7 +401,7 @@ function chrome() {
   } else if (pal) {
     let avail = 0;
     for (let i = 0; i < COLORS.length && avail < state.palSize; i++) if (inPool(i)) avail++;
-    const bad = pooled
+    let bad = pooled
       ? avail < state.palSize
         ? 'Only ' + avail + ' marker' + (avail === 1 ? '' : 's') + ' to choose from'
         : null
@@ -352,6 +416,8 @@ function chrome() {
               : avail < state.palSize
                 ? 'Only ' + avail + ' marker' + (avail === 1 ? '' : 's') + ' to choose from'
                 : null;
+    // (v318.34) Greys + accent below its greys: the button says why, as the filters' reasons are said
+    if (!bad && state.harmony === 'neutral') bad = neutralWhy();
     drawBtn.disabled = !!bad;
     drawFocusBack();
     drawBtn.textContent = bad || 'Generate palette';
@@ -510,34 +576,61 @@ function chrome() {
       pile.appendChild(pileEmpty);
       pileEmpty.style.display = '';
     }
+    // (v318.34) the markers left to draw, folded away ("Show the N left to draw"), by family as Markers groups them,
+    // lightest first (G4: a grid of 138 in code order)
     const dn = new Set(state.drawn),
       rem = [];
     for (let i = 0; i < COLORS.length; i++) {
       if (inPool(i) && !dn.has(i)) rem.push(i);
     }
-    pooln.textContent = rem.length ? '(' + rem.length + ')' : '';
-    const pmix = brandsMixedIn(rem);
+    const _rs = document.getElementById('remSumT');
+    if (_rs)
+      _rs.textContent = rem.length ? 'Show the ' + rem.length + ' left to draw' : 'Nothing left to draw';
+    const pmix = brandsMixedIn(rem),
+      byFam = new Map();
+    rem.forEach((i) => {
+      const f = COLORS[i].fam;
+      if (!byFam.has(f)) byFam.set(f, []);
+      byFam.get(f).push(i);
+    });
+    const light = (a, b) => LAB[b][0] - LAB[a][0] || cmpCap(a, b);
     poolGrid.innerHTML = rem.length
-      ? rem
-          .map((i) => {
-            const c = COLORS[i];
+      ? families
+          .filter((f) => byFam.has(f.name))
+          .map((f) => {
+            const l = byFam.get(f.name).sort(light);
             return (
-              '<div class="cell cellro" role="img" aria-label="' +
-              esc(c.brand + ' ' + capCode(c) + ' ' + capName(c)) +
-              '" title="' +
-              c.brand +
-              ' ' +
-              capCode(c) +
-              ' · ' +
-              capName(c) +
-              ' · ' +
-              c.hex.toUpperCase() +
-              '">' +
-              btHTML(c.brand, pmix) +
-              '<div class="sq" style="background:' +
-              c.hex +
-              '"></div><div class="cc">' +
-              capCode(c) +
+              '<div class="rgroup"><div class="rghead"><span class="rgdot" style="background:' +
+              f.repHex +
+              '"></span>' +
+              esc(f.name) +
+              ' <span class="rgn">' +
+              l.length +
+              '</span></div><div class="pile">' +
+              l
+                .map((i) => {
+                  const c = COLORS[i];
+                  return (
+                    '<div class="cell cellro" role="img" aria-label="' +
+                    esc(c.brand + ' ' + capCode(c) + ' ' + capName(c)) +
+                    '" title="' +
+                    c.brand +
+                    ' ' +
+                    capCode(c) +
+                    ' \u00b7 ' +
+                    capName(c) +
+                    ' \u00b7 ' +
+                    c.hex.toUpperCase() +
+                    '">' +
+                    btHTML(c.brand, pmix) +
+                    '<div class="sq" style="background:' +
+                    c.hex +
+                    '"></div><div class="cc">' +
+                    capCode(c) +
+                    '</div></div>'
+                  );
+                })
+                .join('') +
               '</div></div>'
             );
           })
@@ -718,18 +811,35 @@ function palAdopt() {
   return true;
 }
 let rolling = false;
+// (v318.34) the markers a draw picks from: in play and not drawn; with Prefer markers you haven't used yet on, those
+// not in the keys of any guide you've worked with (usedKeys), unless every one left has been (allUsed: all of them)
+function drawPool() {
+  const dn = new Set(state.drawn),
+    all = [];
+  COLORS.forEach((c, i) => {
+    if (inPool(i) && !dn.has(i)) all.push(i);
+  });
+  let list = all,
+    allUsed = false;
+  if (state.rndFresh && all.length) {
+    const used = usedKeys();
+    list = all.filter((i) => !used.has(mkey(i)));
+    if (!list.length) {
+      list = all;
+      allUsed = true;
+    }
+  }
+  return { all: all, list: list, allUsed: allUsed };
+}
 function doDraw() {
   if (rolling) return;
   disarm();
-  const dn = new Set(state.drawn),
-    pool = [];
-  COLORS.forEach((c, i) => {
-    if (inPool(i) && !dn.has(i)) pool.push(i);
-  });
+  const pool = drawPool().list;
   if (!pool.length) return;
   const pick = pool[(Math.random() * pool.length) | 0];
   retrigger(drawBtn, 'flash');
   const commit = () => {
+    drawnToastOff();
     state.drawn.unshift(pick);
     save();
     showColor(pick, true);
@@ -764,11 +874,7 @@ function doDraw() {
 function doReDraw() {
   if (rolling || state.mode !== 'random' || !state.drawn.length) return;
   disarm();
-  const dn = new Set(state.drawn),
-    pool = [];
-  COLORS.forEach((c, i) => {
-    if (inPool(i) && !dn.has(i)) pool.push(i);
-  });
+  const pool = drawPool().list;
   if (!pool.length) return;
   const pick = pool[(Math.random() * pool.length) | 0];
   retrigger(drawBtn, 'flash');
@@ -779,6 +885,7 @@ function doReDraw() {
         chrome();
         return;
       }
+      drawnToastOff();
       state.drawn[at] = pick;
       save();
       showColor(pick, true);
@@ -1063,8 +1170,38 @@ function undo() {
     state.locked = state.locked.filter((i) => top && top.includes(i));
   } else if (state.mode === 'random') {
     if (!state.drawn.length) return;
-    state.drawn.shift();
+    // (v318.34) with Undo, as Clear all has (G7: a mis-tap lost the draw)
+    const was = state.drawn.slice(),
+      gone = state.drawn.shift();
+    save();
+    fullRender();
+    drawnToast('Removed ' + COLORS[gone].brand + ' ' + capCode(gone), was);
+    return;
   } else return;
+  save();
+  fullRender();
+}
+// (v318.34) the drawn pile put back as it was, from an Undo (Remove this one, Clear all). (v318.37) Only while the
+// pile is as the removal left it (`after`): the toast lives 8 s, and Undo after a draw or two had put the pile back
+// wholesale, losing the new draws (X3-3). The toast itself goes when a Draw or Swap lands (drawnToastOff)
+let _drawnToastBtn = null;
+function drawnToast(said, was) {
+  const after = state.drawn.slice();
+  toastAction(said, 'Undo', () => drawnBack(was, after));
+  _drawnToastBtn = document.getElementById('toastAct');
+}
+function drawnToastOff() {
+  const b = _drawnToastBtn;
+  _drawnToastBtn = null;
+  if (b && b.isConnected) hideToast();
+}
+function drawnBack(was, after) {
+  if (state.mode !== 'random' || rolling) return;
+  if (after && (after.length !== state.drawn.length || after.some((i, k) => i !== state.drawn[k]))) {
+    toast('The pile has changed since: nothing put back.');
+    return;
+  }
+  state.drawn = was.filter((i) => Number.isInteger(i) && COLORS[i]);
   save();
   fullRender();
 }
@@ -1168,6 +1305,10 @@ function setSize(n) {
   }
   chrome();
 }
+// (v318.34) why Greys + accent can't be made from the markers in play, or null (NEUTRAL_GREYS near-greys: GREY_C)
+function neutralWhy() {
+  return genGreys(null) < NEUTRAL_GREYS ? 'Needs ' + NEUTRAL_GREYS + ' greys among your markers' : null;
+}
 function setHarmony(h) {
   if (rolling || state.harmony === h) return;
   state.harmony = h;
@@ -1225,6 +1366,10 @@ const HARM_DESC = {
   split: 'One colour and the two either side of its opposite',
   tetradic: 'Two pairs of opposites',
   mono: 'One colour, light to dark',
+  // (v318.34)
+  shadow: 'One colour\u2019s lights down to a cooler hue\u2019s shadows',
+  accent: 'Neighbours on the wheel, plus one accent from across it',
+  neutral: 'Greys light to dark, plus one clear colour',
   rainbow: 'Round the rainbow from red',
   custom: 'Markers you choose: tap a slot to pick one',
   photo: 'A photo\u2019s main colours, matched to markers',
@@ -1276,6 +1421,39 @@ try {
   const _pq = matchMedia(PAL_SIDEQ);
   if (_pq.addEventListener) _pq.addEventListener('change', palFiltersPlace);
   else if (_pq.addListener) _pq.addListener(palFiltersPlace);
+} catch (_) {}
+// (v318.34) Random held sideways on an iPad: the card with its buttons left, and the Drawn pile, the count, Filters
+// and the markers left to draw in a column beside it (#rndSide in .palsplit; the grid: 02-picker.css .rndmode).
+// Everywhere else they go back under the card, in their order. Only what is in the column is moved back: Filters may
+// already be with Palette's settings (palFiltersPlace, which runs first)
+function rndSidePlace() {
+  const split = document.querySelector('.palsplit'),
+    els = ['drawnWrap', 'trackWrap', 'filterBar', 'filters', 'remFold'].map((id) =>
+      document.getElementById(id),
+    );
+  if (!split || els.some((e) => !e)) return;
+  let side = false;
+  try {
+    side = state.mode === 'random' && matchMedia(PAL_SIDEQ).matches;
+  } catch (_) {}
+  let col = document.getElementById('rndSide');
+  if (side) {
+    if (!col) {
+      col = document.createElement('div');
+      col.id = 'rndSide';
+      col.className = 'rndside';
+      split.appendChild(col);
+    }
+    if (els.some((e) => e.parentNode !== col)) col.append(...els);
+  } else if (col) {
+    const back = els.filter((e) => e.parentNode === col);
+    if (back.length) split.after(...back);
+  }
+}
+try {
+  const _rq = matchMedia(PAL_SIDEQ);
+  if (_rq.addEventListener) _rq.addEventListener('change', rndSidePlace);
+  else if (_rq.addListener) _rq.addListener(rndSidePlace);
 } catch (_) {}
 
 // (v308) Owned's "Running low · 3", while any of yours are marked (v308.2: also straight after a marker's ink is set in

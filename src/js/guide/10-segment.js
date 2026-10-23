@@ -164,6 +164,10 @@ let _faintStats = null;
 // speckClean (segEnd) decides once the background is known. And the lines' own typical grey (the ink-weighted median
 // of the bigger blobs' cores). Valid straight after despeckle, as _faintStats is.
 let _speckCands = null;
+// (v318.32) despeckle's labelling of the ink blobs (8-connected), kept for crumbClean so it needn't walk the ink again
+// (E1-7): each pixel's blob number (0: paper), each blob's size, box and how much of it lies within EDGE_BAND of each
+// edge (left, right, top, bottom). Valid from despeckle to crumbClean, which takes it.
+let _inkBlobs = null;
 // (faint specks anywhere in the background up to SPECK_MM mm², grain lighter than the lines in the margin up to
 // SPECK_MARGIN_MM: a clump of grain on a photographed page, with crumbs of paper in it, runs to 5-6 mm²)
 const SPECK_MM = 3,
@@ -181,7 +185,12 @@ function despeckle(L) {
     cap = Math.max(sp, speckCap()),
     cands = [],
     lh = new Float64Array(256),
-    seen = new Uint8Array(n),
+    // (v318.32: the blob each pixel is in, in place of a seen flag: crumbClean reads it, _inkBlobs)
+    bid = new Int32Array(n),
+    bsz = [0],
+    bbox = [null],
+    bandX = EDGE_BAND * W,
+    bandY = EDGE_BAND * H,
     st = new Int32Array(n),
     blob = new Int32Array(cap + 1),
     // (v313) the faint-marks split's figures, gathered on this same walk over the ink blobs (faintSplit walked them all
@@ -194,14 +203,25 @@ function despeckle(L) {
     dark = 0,
     mid = 0,
     faint = 0,
-    tot = 0;
+    tot = 0,
+    nb = 0;
   for (let p = 0; p < n; p++) {
-    if (L[p] !== -1 || seen[p]) continue;
+    if (L[p] !== -1 || bid[p]) continue;
+    nb++;
     let sn = 0,
       bn = 0,
+      cnt = 0,
+      bx0 = W,
+      by0 = H,
+      bx1 = -1,
+      by1 = -1,
+      nL = 0,
+      nR = 0,
+      nT = 0,
+      nB = 0,
       big = false;
     st[sn++] = p;
-    seen[p] = 1;
+    bid[p] = nb;
     if (stats) hs.fill(0);
     while (sn > 0) {
       const q = st[--sn];
@@ -212,6 +232,15 @@ function despeckle(L) {
       if (stats) hs[gray[q]]++;
       const x = q % W,
         y = (q / W) | 0;
+      cnt++;
+      if (x < bx0) bx0 = x;
+      if (x > bx1) bx1 = x;
+      if (y < by0) by0 = y;
+      if (y > by1) by1 = y;
+      if (x < bandX) nL++;
+      if (x > W - 1 - bandX) nR++;
+      if (y < bandY) nT++;
+      if (y > H - 1 - bandY) nB++;
       for (let dy = -1; dy <= 1; dy++) {
         const yy = y + dy;
         if (yy < 0 || yy >= H) continue;
@@ -219,13 +248,15 @@ function despeckle(L) {
           const xx = x + dx;
           if (xx < 0 || xx >= W) continue;
           const r = yy * W + xx;
-          if (L[r] === -1 && !seen[r]) {
-            seen[r] = 1;
+          if (L[r] === -1 && !bid[r]) {
+            bid[r] = nb;
             st[sn++] = r;
           }
         }
       }
     }
+    bsz.push(cnt);
+    bbox.push([bx0, by0, bx1, by1, nL, nR, nT, nB]);
     if (!big && bn <= sp) {
       for (let k = 0; k < bn; k++) L[blob[k]] = 0;
       gone += bn;
@@ -269,6 +300,7 @@ function despeckle(L) {
     while (lc < 255 && acc + lh[lc] < all / 2) acc += lh[lc++];
   }
   _speckCands = stats ? { list: cands, line: lc } : null;
+  _inkBlobs = { bid: bid, sz: bsz, box: bbox };
   return gone;
 }
 // (v318.15) Specks in the blank paper. Grain, dust and a printer's specks round a page became ink blobs too big for
@@ -388,6 +420,588 @@ function speckClean() {
   return gone;
 }
 let speckGone = 0;
+// (v318.32) Crumbs in a cluster of specks. On a photo, a lighting gradient along the page's edge, a crease's shadow, a
+// perforated strip or the table at the edge read as many small ink blobs as dark as the lines (so speckClean keeps
+// them), and the paper between them as crumbs bigger than Min section size: tiny sections, given markers, drawn in
+// clusters along the edge (Ben's photos: purple specks at Sensitivity 7, gone only at 1). A crumb is a section under
+// 12 mm² (3 mm² away from the edge's band) closed in only by ink blobs too small to be the drawing's lines (under
+// CLUSTER_MM mm² each). The sizes are the page's (mmPx: the picture's long side as a Letter page's), never Min section
+// size, which only says what's counted: a hole counted at a hand-set Min is never taken (P1-2).
+// Away from the edge's band a crumb must lie between two or more pieces of ink (P1-1): grain is dots that touch at a
+// corner, with paper between them; a hole drawn inside one ring, bead, letter or flower is one piece's and stays. (The
+// pieces are 4-connected: the ink round any hole is one 8-connected blob, so the blobs can't tell them apart.)
+// Crumbs reached from the background through such blobs (a blob touching the background and nothing but crumbs, then
+// the crumbs beside it, and so on) become background; the blobs stay as they are (a letter's hole goes white, the
+// letter stays). The drawing's own small sections touch its lines and are never crumbs. And the textured band along
+// the picture's edge (the page's own edge in shadow, a strip of table or binding the corners took in): one big ink blob
+// touching the edge, three quarters of it within EDGE_BAND of it, pocked with EDGE_CRUMBS holes or more, is made
+// background with its holes, as the margin's specks are, when its holes are mostly under 3 mm² (lines leave bigger
+// cells; the pocks of a photographed edge run from a few pixels to 2 mm²), it's a solid strip (EDGE_INK times as much
+// ink as holes, and ink over EDGE_FILL of its box: lace or hatching along the edge is mostly paper, a lace's line long
+// and thin, and they keep their ink, P1-5) and it's under EDGE_CAP of the picture. Saved guides keep their sections:
+// only a new build or a re-detection does this. A crumb that went keeps its size in c.crumb (segQuality counts the
+// small ones; an Undo snapshot carries it, P1-4). The ink blobs are despeckle's (_inkBlobs): the ink isn't walked
+// again (E1-7).
+const CLUSTER_MM = 40,
+  EDGE_BAND = 0.05,
+  EDGE_CRUMBS = 20,
+  EDGE_SUB = 0.75,
+  EDGE_INK = 1.5,
+  // (0.3: a photographed edge band, its ink broken by the paper's grain, fills 37–44% of its box on the owner's photos;
+  // lace and fine hatching along an edge are kept by the holes' size and the ink-to-holes test in any case)
+  EDGE_FILL = 0.3,
+  EDGE_CAP = 0.1;
+// (v318.32) one mm² on the page, in the picture's pixels: Min section size's own first place, never under MIN_DEF's
+// (minPosAuto), from the picture itself rather than srcDims
+function mmPx() {
+  const pad = Math.round((MIN_MM * Math.max(W, H)) / PAGE_MM);
+  return Math.max(minPx(MIN_DEF), pad * pad);
+}
+// (v318.32) the crumbs crumbClean made paper, under lim pixels when they went (all of them without lim)
+function crumbCount(lim) {
+  let k = 0;
+  if (comps)
+    for (let l = 1; l < comps.length; l++) {
+      const c = comps[l];
+      if (c && c.crumb && (lim == null || c.crumb < lim)) k++;
+    }
+  return k;
+}
+function crumbClean() {
+  const B = _inkBlobs;
+  _inkBlobs = null;
+  if (!labels || !comps || !B) return 0;
+  const n = W * H,
+    mm1 = mmPx(),
+    cap = speckCap(CLUSTER_MM),
+    small = 12 * mm1,
+    tiny = 3 * mm1,
+    bid = B.bid,
+    bsz = B.sz,
+    bbox = B.box;
+  // who touches whom (4-neighbours): each section's blobs, each blob's sections (the ink as it is now: the specks
+  // speckClean made paper are no blob's)
+  const secB = new Map(),
+    bSec = new Map(),
+    link = function (l, b) {
+      let a = secB.get(l);
+      if (!a) secB.set(l, (a = new Set()));
+      a.add(b);
+      let c = bSec.get(b);
+      if (!c) bSec.set(b, (c = new Set()));
+      c.add(l);
+    };
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if (labels[i] !== -1) continue;
+      const b = bid[i];
+      if (x > 0 && labels[i - 1] > 0) link(labels[i - 1], b);
+      if (x < W - 1 && labels[i + 1] > 0) link(labels[i + 1], b);
+      if (y > 0 && labels[i - W] > 0) link(labels[i - W], b);
+      if (y < H - 1 && labels[i + W] > 0) link(labels[i + W], b);
+    }
+  if (!bSec.size) return 0;
+  // the edge's textured band: a blob along one edge, shallow, pocked with holes under 3 mm², a solid strip
+  const edgeB = new Set(),
+    inkCap = EDGE_CAP * n;
+  for (const [b, ls] of bSec) {
+    const q = bbox[b],
+      m = 0.75 * bsz[b];
+    if (bsz[b] > inkCap) continue;
+    const along =
+      (q[0] === 0 && q[4] >= m) ||
+      (q[2] === W - 1 && q[5] >= m) ||
+      (q[1] === 0 && q[6] >= m) ||
+      (q[3] === H - 1 && q[7] >= m);
+    if (!along) continue;
+    let k = 0,
+      kb = 0,
+      holes = 0;
+    for (const l of ls) {
+      const c = comps[l];
+      if (!c || c.bg || c.merged) continue;
+      holes += c.area;
+      if (c.area < tiny) k++;
+      else kb++;
+    }
+    if (
+      k >= EDGE_CRUMBS &&
+      k >= EDGE_SUB * (k + kb) &&
+      bsz[b] >= EDGE_INK * holes &&
+      bsz[b] >= EDGE_FILL * (q[2] - q[0] + 1) * (q[3] - q[1] + 1)
+    )
+      edgeB.add(b);
+  }
+  const isBg = function (l) {
+      const c = comps[l];
+      return !!(c && c.bg);
+    },
+    loose = function (b) {
+      return bsz[b] < cap || edgeB.has(b);
+    };
+  // the pieces of ink (4-connected) round a crumb away from the edge, numbered as they're met: two or more, and the
+  // crumb lies between dots (a piece is walked once; the walk stays inside one loose blob, so it's short)
+  let pid = null,
+    np = 0;
+  const pst = [],
+    piece = function (r) {
+      const id = ++np;
+      pid[r] = id;
+      pst.push(r);
+      while (pst.length) {
+        const q = pst.pop(),
+          qx = q % W,
+          qy = (q / W) | 0;
+        if (qx > 0 && labels[q - 1] === -1 && !pid[q - 1]) {
+          pid[q - 1] = id;
+          pst.push(q - 1);
+        }
+        if (qx < W - 1 && labels[q + 1] === -1 && !pid[q + 1]) {
+          pid[q + 1] = id;
+          pst.push(q + 1);
+        }
+        if (qy > 0 && labels[q - W] === -1 && !pid[q - W]) {
+          pid[q - W] = id;
+          pst.push(q - W);
+        }
+        if (qy < H - 1 && labels[q + W] === -1 && !pid[q + W]) {
+          pid[q + W] = id;
+          pst.push(q + W);
+        }
+      }
+      return id;
+    },
+    pieces = function (c, l) {
+      if (!pid) pid = new Int32Array(n);
+      const seen = new Set();
+      for (let y = c.y0; y <= c.y1 && seen.size < 2; y++)
+        for (let x = c.x0; x <= c.x1 && seen.size < 2; x++) {
+          const i = y * W + x;
+          if (labels[i] !== l) continue;
+          if (x > 0 && labels[i - 1] === -1) seen.add(pid[i - 1] || piece(i - 1));
+          if (x < W - 1 && labels[i + 1] === -1) seen.add(pid[i + 1] || piece(i + 1));
+          if (y > 0 && labels[i - W] === -1) seen.add(pid[i - W] || piece(i - W));
+          if (y < H - 1 && labels[i + W] === -1) seen.add(pid[i + W] || piece(i + W));
+        }
+      return seen.size;
+    },
+    crumbTest = function (l) {
+      const c = comps[l];
+      if (!c || c.bg || c.merged || c.area >= small) return false;
+      const bs = secB.get(l);
+      if (!bs) return false;
+      let edge = false;
+      for (const b of bs) {
+        if (!loose(b)) return false;
+        if (edgeB.has(b)) edge = true;
+      }
+      if (edge) return true;
+      // away from the edge's band: under 3 mm² (a small heart drawn on its own, at 400 px, is a section of about 4 and
+      // stays) and between two or more pieces of ink
+      return c.area < tiny && pieces(c, l) >= 2;
+    },
+    crumbMemo = new Map(),
+    crumb = function (l) {
+      let r = crumbMemo.get(l);
+      if (r === undefined) crumbMemo.set(l, (r = crumbTest(l)));
+      return r;
+    };
+  // from the background inwards: a small blob whose sections are all background or crumbs, touching the background or a
+  // crumb already reached; then the crumbs beside it whose blobs are all such blobs
+  const okB = new Map(),
+    goneTo = new Map();
+  let grew = true;
+  for (let pass = 0; grew && pass < 12; pass++) {
+    grew = false;
+    for (const [b, ls] of bSec) {
+      if (okB.has(b) || !loose(b)) continue;
+      let to = 0,
+        fine = true;
+      for (const l of ls) {
+        if (isBg(l)) {
+          if (!to) to = l;
+        } else if (goneTo.has(l)) {
+          if (!to) to = goneTo.get(l);
+        } else if (!crumb(l)) {
+          fine = false;
+          break;
+        }
+      }
+      if (fine && to) {
+        okB.set(b, to);
+        grew = true;
+      }
+    }
+    for (const [b, to] of okB)
+      for (const l of bSec.get(b)) {
+        if (isBg(l) || goneTo.has(l) || !crumb(l)) continue;
+        let all = true;
+        for (const b2 of secB.get(l))
+          if (!okB.has(b2)) {
+            all = false;
+            break;
+          }
+        if (all) {
+          goneTo.set(l, to);
+          grew = true;
+        }
+      }
+  }
+  let inkGone = 0;
+  for (const b of edgeB) if (okB.has(b)) inkGone += bsz[b];
+  if (!goneTo.size && !inkGone) return 0;
+  for (let i = 0; i < n; i++) {
+    const l = labels[i];
+    if (l > 0 && goneTo.has(l)) labels[i] = goneTo.get(l);
+    else if (l === -1 && edgeB.has(bid[i]) && okB.has(bid[i])) {
+      const to = okB.get(bid[i]);
+      labels[i] = to;
+      comps[to].area++;
+    }
+  }
+  goneTo.forEach(function (to, l) {
+    const c = comps[l];
+    comps[to].area += c.area;
+    c.crumb = c.area;
+    c.area = 0;
+    c.bg = true;
+    c.merged = true;
+    c.into = to;
+  });
+  return goneTo.size;
+}
+/* ---- (v318.35) hatching as one section (Fable E1-2; plan Stage 4.3) ----
+   Hatching or shading drawn as close parallel lines (and cross-hatching) left every gap between its lines a section
+   of its own: the zentangle page of the guide benchmark counted 1,594 "hatch slivers" at 1200 px, and the app's only
+   answer was the "hatched" warning (raise Min section size, which loses real small cells too). hatchMerge, a step of
+   its own after crumbClean, merges each hatched patch into one section, its ink lines kept as drawn, while a striped
+   motif meant to be coloured stripe by stripe keeps its stripes. A section is a sliver when it's elongated (its minor
+   axis, from its second moments, under HATCH_MM on the page, taking the picture as a Letter page as Min section size
+   does, and HATCH_ASPECT times shorter than its length), or a cell when both its axes are that small (cross-hatching
+   leaves near-square cells). Slivers are neighbours when a probe across one of them along its normal, through a run
+   of ink no longer than HATCH_LINE times the thinner one's own lines (the hatched patch's outline is thicker than its
+   hatching), reaches the other, and they run within HATCH_ANGLE degrees of each other; cells, probed in eight
+   directions, are neighbours of cells (never of slivers: a cross-hatched patch beside a hatched one stays its own).
+   A connected group of HATCH_GROUP or more merges when its spacing is regular (HATCH_EVEN: most of its members' widths
+   within that share of the median) and its gaps are at most HATCH_LW of its own line widths wide (hairlines far apart
+   are stripes, not shading). The widths were measured on the benchmark's zentangle pages at 400-2400 px: hatching
+   0.5-1.3 mm wide, cross-hatch cells 1.2 mm, its wavy stripes meant to be coloured 1.7-2.0 mm, a pattern fill's
+   cells 3 mm and more; the gap-to-line ratio alone didn't separate them (hatching 1.7-5.7, the stripes 2.5-3.7). */
+const HATCH_MM = 1.5,
+  HATCH_ASPECT = 4,
+  HATCH_CELL = 1.8,
+  HATCH_SIDES = 3,
+  HATCH_GROUP = 6,
+  HATCH_ANGLE = 15,
+  HATCH_LINE = 1.6,
+  HATCH_LINK = 1.3,
+  HATCH_STEP = 1.15,
+  HATCH_LW = 6,
+  HATCH_EVEN = 0.4;
+// (the hatched patches merged by the last detection, for Edit sections' line and the softened warning; a section made
+// this way has c.hatch, the number of slivers in it, and each sliver merged away c.merged, c.into and c.hatched)
+let hatchMade = 0;
+// (v319) how many patches the last detection would have merged with Treat hatching as one section off (hatchMerge
+// dry, once, in segHatch): segQuality's 'hatched' test had run the dry merge on every call, a 0.4 s stall on a
+// closely hatched 2400 px page at each Min section size release and each Undo (Y1-6). Kept with hatchMade in Undo
+let hatchWould = 0;
+// (v318.35) a photo kept as photographed (pgHint, 22-straighten: a camera photo the finder left as it was, Keep as is
+// on its outline, or Undo of a straightening): the page's scale in it isn't known, and a pattern fill's cells, 3 mm
+// and more on the page, had come under the cap at the far end of a tilted page and merged (the benchmark's zentangle
+// photo as taken: 95 merged sections became 292). Such a photo keeps its slivers, and the "hatched" warning, until
+// the page is straightened. (A photo without a lens in its file that the finder sees no page in gets no hint, as it
+// gets no Straighten offer, and is taken for a page as it is: its hatching merges at the picture's scale.)
+// (v318.37: a camera photo only, pgF35: Keep as is on the unsure outline of a scan or a download, a drawn frame or
+// grid the finder took for a page, had left it 'kept' too, and the switch a silent no-op on it, X1-2. The note on
+// Edit sections says when the merge waits, hatchNoteText)
+function hatchUnsure() {
+  return pgHint === 'kept' && !pgQ && pgF35 > 0;
+}
+// (v318.37: dry, how many patches it would merge, the sections left as they are: segQuality asks before it calls a
+// page noisy, X1-5)
+function hatchMerge(dry) {
+  if (!dry) hatchMade = 0;
+  if (!labels || !comps) return 0;
+  if (hatchUnsure()) return 0;
+  const n = W * H,
+    N = comps.length,
+    // (one mm in pixels: the picture as a Letter page, as Min section size takes it)
+    mmpx = Math.max(W, H) / PAGE_MM,
+    capW = Math.max(3, HATCH_MM * mmpx),
+    runCap = Math.max(3, Math.round(mmpx));
+  // the second moments of every section (one pass; the centre is known from labelFill)
+  const sxx = new Float64Array(N),
+    syy = new Float64Array(N),
+    sxy = new Float64Array(N),
+    cxs = new Float64Array(N),
+    cys = new Float64Array(N);
+  for (let l = 1; l < N; l++)
+    if (comps[l]) {
+      cxs[l] = comps[l].cx;
+      cys[l] = comps[l].cy;
+    }
+  for (let y = 0, i = 0; y < H; y++)
+    for (let x = 0; x < W; x++, i++) {
+      const l = labels[i];
+      if (l <= 0) continue;
+      const dx = x - cxs[l],
+        dy = y - cys[l];
+      sxx[l] += dx * dx;
+      syy[l] += dy * dy;
+      sxy[l] += dx * dy;
+    }
+  // kind: 1 a sliver, 2 a cell; its width (minor axis), length and direction
+  const kind = new Uint8Array(N),
+    wid = new Float32Array(N),
+    len = new Float32Array(N),
+    ang = new Float32Array(N);
+  let cands = 0;
+  for (let l = 1; l < N; l++) {
+    const c = comps[l];
+    if (!c || c.bg || c.merged || c.area < 2) continue;
+    const a = c.area,
+      xx = sxx[l] / a,
+      yy = syy[l] / a,
+      xy = sxy[l] / a,
+      tr = xx + yy,
+      d = Math.sqrt(Math.max(0, (tr * tr) / 4 - (xx * yy - xy * xy))),
+      w = Math.sqrt(12 * Math.max(1 / 12, tr / 2 - d)),
+      L = Math.sqrt(12 * Math.max(1 / 12, tr / 2 + d));
+    if (w >= capW) continue;
+    if (L > HATCH_ASPECT * w) kind[l] = 1;
+    else if (L <= HATCH_CELL * w && L < 2 * capW) kind[l] = 2;
+    else continue;
+    wid[l] = w;
+    len[l] = L;
+    ang[l] = 0.5 * Math.atan2(2 * xy, xx - yy);
+    cands++;
+  }
+  if (cands < HATCH_GROUP) return 0;
+  // the probes: from a point inside l, step by (dx, dy) out of it and through ink to the next section; the run of
+  // ink crossed and the section reached (0: nothing within runCap, or paper that is background)
+  const lwSum = new Float32Array(N),
+    lwN = new Uint16Array(N),
+    edges = new Map(),
+    probe = function (l, x0, y0, dx, dy) {
+      let x = x0,
+        y = y0,
+        inside = true,
+        run = 0;
+      for (let t = 0; t < 4 * capW + runCap + 2; t++) {
+        x += dx;
+        y += dy;
+        const px = Math.round(x),
+          py = Math.round(y);
+        if (px < 0 || py < 0 || px >= W || py >= H) return;
+        const v = labels[py * W + px];
+        if (inside) {
+          if (v === l) continue;
+          inside = false;
+        }
+        if (v === -1) {
+          if (++run > runCap) return;
+          continue;
+        }
+        if (v === l) continue;
+        if (!run || v <= 0 || !comps[v] || comps[v].bg || comps[v].merged) return;
+        lwSum[l] += run;
+        lwN[l]++;
+        if (kind[v] && kind[v] === kind[l]) {
+          const k = l < v ? l * N + v : v * N + l,
+            was = edges.get(k);
+          if (was === undefined || run < was) edges.set(k, run);
+        }
+        return;
+      }
+    };
+  for (let l = 1; l < N; l++) {
+    if (!kind[l]) continue;
+    const c = comps[l];
+    if (kind[l] === 1) {
+      const ux = Math.cos(ang[l]),
+        uy = Math.sin(ang[l]),
+        h = len[l] / 2;
+      for (let f = -0.6; f <= 0.61; f += 0.3) {
+        const x = c.cx + f * h * ux,
+          y = c.cy + f * h * uy,
+          px = Math.round(x),
+          py = Math.round(y);
+        if (px < 0 || py < 0 || px >= W || py >= H || labels[py * W + px] !== l) continue;
+        probe(l, x, y, -uy, ux);
+        probe(l, x, y, uy, -ux);
+      }
+    } else {
+      const px = Math.round(c.cx),
+        py = Math.round(c.cy);
+      if (labels[py * W + px] !== l) continue;
+      for (let k = 0; k < 8; k++) {
+        const t = (k * Math.PI) / 4;
+        probe(l, c.cx, c.cy, Math.cos(t), Math.sin(t));
+      }
+    }
+  }
+  if (!edges.size) return 0;
+  // each member's own line width: the mean run of ink its probes crossed
+  const lw = new Float32Array(N);
+  for (let l = 1; l < N; l++) if (lwN[l]) lw[l] = lwSum[l] / lwN[l];
+  // the links: slivers side by side across one line, running the same way; with the run of ink crossed and the step
+  // between the two (centre to centre for cells; across the slivers, along their normal)
+  const lim = (HATCH_ANGLE * Math.PI) / 180,
+    links = [];
+  edges.forEach(function (run, k) {
+    const a = (k / N) | 0,
+      b = k % N;
+    if (run > HATCH_LINE * Math.min(lw[a], lw[b]) + 0.5) return;
+    const A = comps[a],
+      B = comps[b];
+    let step;
+    if (kind[a] === 1) {
+      // (directions are modulo a half turn)
+      let dd = Math.abs(ang[a] - ang[b]) % Math.PI;
+      if (dd > Math.PI / 2) dd = Math.PI - dd;
+      if (dd > lim) return;
+      step = Math.abs(-(B.cx - A.cx) * Math.sin(ang[a]) + (B.cy - A.cy) * Math.cos(ang[a]));
+    } else step = Math.hypot(B.cx - A.cx, B.cy - A.cy);
+    links.push([a, b, run, step]);
+  });
+  // the groups, twice: all the links first, for each patch's own line and spacing (their medians); then only the
+  // links no thicker or farther than those, so a patch doesn't take the one beside it across its outline (two
+  // cross-hatched cells of a circle and the shape round it, hatched alike, had joined across the circle's line)
+  const par = new Int32Array(N),
+    find = function (l) {
+      while (par[l] !== l) l = par[l] = par[par[l]];
+      return l;
+    },
+    med = function (arr) {
+      const s = arr.slice().sort(function (a, b) {
+        return a - b;
+      });
+      return s[s.length >> 1];
+    };
+  for (let l = 0; l < N; l++) par[l] = l;
+  links.forEach(function (e) {
+    const ra = find(e[0]),
+      rb = find(e[1]);
+    if (ra !== rb) par[ra] = rb;
+  });
+  const runsOf = new Map(),
+    stepsOf = new Map();
+  links.forEach(function (e) {
+    const r = find(e[0]);
+    let a = runsOf.get(r);
+    if (!a) {
+      runsOf.set(r, (a = []));
+      stepsOf.set(r, []);
+    }
+    a.push(e[2]);
+    stepsOf.get(r).push(e[3]);
+  });
+  const runCapOf = new Map(),
+    stepCapOf = new Map();
+  runsOf.forEach(function (runs, r) {
+    runCapOf.set(r, HATCH_LINK * med(runs) + 0.5);
+    stepCapOf.set(r, HATCH_STEP * med(stepsOf.get(r)) + 0.5);
+  });
+  const root1 = new Int32Array(N);
+  for (let l = 1; l < N; l++) if (kind[l]) root1[l] = find(l);
+  for (let l = 0; l < N; l++) par[l] = l;
+  const deg = new Uint8Array(N);
+  links.forEach(function (e) {
+    const r = root1[e[0]];
+    if (e[2] > runCapOf.get(r) || e[3] > stepCapOf.get(r)) return;
+    if (deg[e[0]] < 255) deg[e[0]]++;
+    if (deg[e[1]] < 255) deg[e[1]]++;
+    const ra = find(e[0]),
+      rb = find(e[1]);
+    if (ra !== rb) par[ra] = rb;
+  });
+  // (a cell of cross-hatching has cells on three or four sides; one with fewer is a corner, or a scrap of paper at
+  // a junction outside the patch that reached in across its outline: left as it is)
+  const groups = new Map();
+  for (let l = 1; l < N; l++) {
+    if (!kind[l] || (kind[l] === 2 && deg[l] < HATCH_SIDES)) continue;
+    const r = find(l);
+    let g = groups.get(r);
+    if (!g) groups.set(r, (g = []));
+    g.push(l);
+  }
+  const goneTo = new Int32Array(N);
+  let made = 0;
+  groups.forEach(function (g) {
+    if (g.length < HATCH_GROUP) return;
+    const ws = g.map(function (l) {
+        return wid[l];
+      }),
+      mw = med(ws),
+      lws = g
+        .map(function (l) {
+          return lw[l];
+        })
+        .filter(function (v) {
+          return v > 0;
+        });
+    // (regular spacing: a member wider or narrower than the rest by more than HATCH_EVEN of the median is left out,
+    // a scrap of paper at a junction on the patch's edge among them)
+    // (and cells are all of a size: their length too, as a clipped cell on the patch's edge isn't)
+    const ml =
+      kind[g[0]] === 2
+        ? med(
+            g.map(function (l) {
+              return len[l];
+            }),
+          )
+        : 0;
+    g = g.filter(function (l) {
+      return Math.abs(wid[l] - mw) <= HATCH_EVEN * mw && (!ml || Math.abs(len[l] - ml) <= HATCH_EVEN * ml);
+    });
+    if (g.length < HATCH_GROUP) return;
+    if (!lws.length || mw > HATCH_LW * med(lws)) return;
+    made++;
+    if (dry) return;
+    // into the biggest of them
+    let to = g[0];
+    for (let i = 1; i < g.length; i++) if (comps[g[i]].area > comps[to].area) to = g[i];
+    const A = comps[to];
+    let area = A.area,
+      sx = A.cx * A.area,
+      sy = A.cy * A.area;
+    for (let i = 0; i < g.length; i++) {
+      const l = g[i];
+      if (l === to) continue;
+      const B = comps[l];
+      goneTo[l] = to;
+      area += B.area;
+      sx += B.cx * B.area;
+      sy += B.cy * B.area;
+      A.bpx = (A.bpx || 0) + (B.bpx || 0);
+      A.x0 = Math.min(A.x0, B.x0);
+      A.y0 = Math.min(A.y0, B.y0);
+      A.x1 = Math.max(A.x1, B.x1);
+      A.y1 = Math.max(A.y1, B.y1);
+      B.merged = true;
+      B.hatched = true;
+      B.into = to;
+      B.area = 0;
+    }
+    A.area = area;
+    A.cx = sx / area;
+    A.cy = sy / area;
+    A.h = A.y1 - A.y0;
+    A.hatch = g.length;
+  });
+  if (!made || dry) return made;
+  for (let i = 0; i < n; i++) {
+    const l = labels[i];
+    if (l > 0 && goneTo[l]) labels[i] = goneTo[l];
+  }
+  adj = null;
+  edgeDist = null;
+  labelPts = null;
+  texField = null;
+  hatchMade = made;
+  return made;
+}
 // the faint-marks split from the figures despeckle gathered (the same answer as faintSplit, without the second walk;
 // faintSplit stays, for when there are none and for the tests)
 function faintSplitFast() {
@@ -820,6 +1434,51 @@ function colourShare(d, n) {
   }
   return m ? c / m : null;
 }
+// (v318.35) Each pixel's colour: max - min of its RGB once the paper's tint is taken out (paperGains, as colourShare),
+// 0-255. For a picture with colour on it (its colourShare over COLOUR_PAGE: a page with a few sections coloured in is
+// 1-3%, a clean page well under 1%); null otherwise, so a greyscale page's sections are found exactly as before. The
+// ink reads it (inkDone): a mid or dark marker fill is darker than the paper, so on the grey alone it was ink and the
+// section vanished (E1-3); and the offer to mark the coloured sections done counts it (colourSecs).
+const COLOUR_PAGE = 0.01,
+  // (a pixel this dark stays ink whatever its colour: a line's pixel beside a fill, the fill's colour smeared onto it
+  // by a JPEG, had cut the line and let the fill leak into the next section)
+  INK_DARK = 48;
+function chromaOf(d, n, share) {
+  if (!d || !n || !(share > COLOUR_PAGE)) return null;
+  const st = Math.max(1, Math.floor(n / 250000)),
+    k = paperGains(d, n, st) || [1, 1, 1],
+    out = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    const j = i * 4,
+      r = Math.min(255, d[j] * k[0]),
+      g = Math.min(255, d[j + 1] * k[1]),
+      b = Math.min(255, d[j + 2] * k[2]);
+    out[i] = Math.max(r, g, b) - Math.min(r, g, b);
+  }
+  return out;
+}
+// (v318.35) The sections coloured in already: those in the guide (countedList) over COLOUR_SEC of whose pixels are
+// clearly coloured (chroma over COLOUR_CHROMA), as a list of section numbers; [] for a page without colour. Read from
+// the sections as they are, so merges and splits since count their own pixels. Offered as done after Build, never
+// marked so by itself (30-palette-assign colourOffer).
+const COLOUR_SEC = 0.5;
+function colourSecs() {
+  if (!chroma || !labels || !comps || chroma.length !== labels.length) return [];
+  const n = labels.length,
+    cnt = new Uint32Array(comps.length),
+    tot = new Uint32Array(comps.length);
+  for (let i = 0; i < n; i++) {
+    const l = labels[i];
+    if (l <= 0) continue;
+    tot[l]++;
+    if (chroma[i] > COLOUR_CHROMA) cnt[l]++;
+  }
+  const out = [];
+  countedList().forEach(function (l) {
+    if (tot[l] && cnt[l] >= COLOUR_SEC * tot[l]) out.push(l);
+  });
+  return out;
+}
 // (v309.2) The least picture, on its shorter side as it came (before it's enlarged), that's worth finding sections in.
 // A page scaled down to a short side of 24–48 px gave 0–11 sections of the 125 it has at full size; 64 px, 24; 80, 55;
 // 120, 70 (e2e/fixtures/letter-page.png; a photo of a page went the same way). Under it, the warning says the picture is
@@ -905,18 +1564,28 @@ function segQuality() {
   // (v308) a page coloured in already: much of it coloured (the paper's tint taken out) and its colour broken into
   // specks, more than 3 for every section. Real line-art pages are under 1% and 2 specks a section. Only with the
   // picture itself to look at (srcColour): a guide opened again without it isn't checked. Before the warning about
-  // fragments: it says more.
-  if (srcColour != null && srcColour > 0.15 && specksRef > 3 * keptRef)
+  // fragments: it says more. (v318.32: the crumbs crumbClean made paper count as specks, those under ref: a page
+  // scribbled over to its margins had lost most of them, and its warning, to the clean-up. Read off the sections, so an
+  // Undo or a guide opened again counts its own, P1-3/4)
+  // (v318.35: softened. A partly coloured page works now: its fills are paper to the ink, and after Build the
+  // sections coloured in are offered as done, colourOffer. The page that still gets here is mostly coloured, or
+  // coloured in a way that breaks up: it says what works)
+  if (srcColour != null && srcColour > 0.15 && specksRef + crumbCount(ref) > 3 * keptRef)
     return {
       ok: false,
       code: 'coloured',
       retake: true,
-      msg: 'This page looks coloured in already — its colours break up into specks.',
-      tip: 'Use the page before it was coloured, with plain outlines on white.',
+      msg: 'This page looks coloured in already.',
+      tip: 'A partly coloured page works: its coloured sections stay sections, and after Build guide you can mark them done. For a page that\u2019s mostly coloured, use the page before it was coloured, with plain outlines on white.',
     };
   // (v303: only when the fragments are in the guide, not just left out by Min section size: a clean page with a
   // scanner's specks, all left out, had been told it was a photo or textured image)
-  if (tinyFrac > 0.8 && (kept === 0 || keptTiny > 0.3 * kept)) {
+  // (v318.37: a page cross-hatched closely enough to be mostly tiny cells is hatched, not a photo: it gets the
+  // 'hatched' warning below, which names Treat hatching as one section, when the merge made patches of it or, with the
+  // switch off, would (hatchMerge dry), X1-5)
+  // (v319: the dry merge's answer is the detection's, hatchWould, not run again here)
+  const hatchy = kept >= 200 && keptSmall > 0.5 * kept && (hatchMade > 0 || (!hatchOne && hatchWould > 0));
+  if (!hatchy && tinyFrac > 0.8 && (kept === 0 || keptTiny > 0.3 * kept)) {
     if (srcDims && Math.min(w0, h0) < SMALLISH_PIC) return tooSmall;
     return {
       ok: false,
@@ -928,13 +1597,26 @@ function segQuality() {
   }
   // (v308) hatching or shading lines: 200 sections or more, over half of them under 3x Min section size (a
   // hatched page 72%; the most of any real page tried, 29%)
+  // (v318.35: softer once hatched patches were merged into one section each, hatchMerge: what's left is the hatching
+  // it couldn't tell from stripes; with Treat hatching as one section off, the tip names it)
   if (kept >= 200 && keptSmall > 0.5 * kept)
-    return {
-      ok: false,
-      code: 'hatched',
-      msg: 'Lots of slivers — this page looks hatched or shaded with lines.',
-      tip: 'The lines between the hatching become sections. Raise Min section size in Edit sections, or use a page with plain outlines.',
-    };
+    return hatchMade > 0
+      ? {
+          ok: false,
+          code: 'hatched',
+          msg: 'Still lots of slivers — some hatching or shading lines were kept as separate sections.',
+          tip: 'Raise Min section size in Edit sections to leave the smallest out, or merge them by hand.',
+        }
+      : {
+          ok: false,
+          code: 'hatched',
+          msg: 'Lots of slivers — this page looks hatched or shaded with lines.',
+          tip:
+            'The lines between the hatching become sections. ' +
+            (hatchOne
+              ? 'Raise Min section size in Edit sections, or use a page with plain outlines.'
+              : 'Turn on Treat hatching as one section or raise Min section size in Edit sections, or use a page with plain outlines.'),
+        };
   // (v318.13) a page the finder was sure of, photographed at a steep angle (pgSteep, pgBegin): last, as the others
   // say more; once said here it stays for this photo
   if (pgSteep && pgOrig)
@@ -1088,6 +1770,7 @@ function inkBlur(k) {
 function inkDone(k) {
   const n = k.n;
   labels = new Int32Array(n);
+  const src = k.src;
   if (k.src) {
     const ink = adaptiveInk(k.src, n);
     k.src = null;
@@ -1098,6 +1781,237 @@ function inkDone(k) {
   }
   // (v308: faint grey marks ignored, when asked: the ink lighter than faintCut is paper)
   if (faintCut > 0) for (let i = 0; i < n; i++) if (labels[i] === -1 && gray[i] > faintCut) labels[i] = 0;
+  // (v318.35) ink is dark AND colourless: on a page with colour on it (chroma), a pixel clearly coloured (over
+  // COLOUR_CHROMA, the paper's tint taken out) is paper, a marker's fill, unless it's as dark as a line (INK_DARK on
+  // the grey the ink was read from, stretched when Enhance is on). A section coloured in with a mid or dark marker
+  // had read as ink and vanished (E1-3)
+  // (v318.37: not when the page's lines are themselves coloured: the cut had erased red, blue or green outlines, 0
+  // sections, X1-1. v319: that was a page-level verdict, and a cliff between the two kinds of page; the cut is per
+  // patch now, inkColourCut, and the picture keeps its colour for the mark-done offer, Y1-1/2/5)
+  if (chroma && chroma.length === n) inkColourCut(src || gray, n);
+}
+// (v319) The colour cut, patch by patch: the coloured ink (labels -1, clearly coloured and not as dark as INK_DARK on
+// g, the grey the ink was read from) is taken out as a marker's fill, all but a coloured line. A line is coloured
+// ink within COLOUR_LINE_MM of open paper (uncoloured paper no nearer than that to black ink and not inside the
+// coloured ink) in a patch of coloured ink bordered more by paper than by black ink: the outlines of a page drawn in
+// colour, which face open paper on both sides, so a line up to twice COLOUR_LINE_MM wide stays whole beside any
+// number of fills; a fill's side facing an uncoloured cell across a coloured line keeps that much of the fill as
+// ink, the outline thicker there. A patch bordered mostly by black ink, a fill in a black-outlined cell, is cut
+// whole, however thin, run over the line or not, so a black-line page's fills are as v318.35 cut them. Before
+// (v318.37, inkLinesColoured) one verdict for the whole page cut every coloured line as soon as the fills' wide ink
+// outweighed the lines' thin ink (five fills, or lines over 2 mm, Y1-1/2). Paper gaps under COLOUR_GAP_MM inside the
+// coloured ink are closed first (a box closing), so a fill scribbled in strokes with hairline gaps, or one a JPEG
+// has speckled, is one patch (Y1-4); the gaps themselves are paper already. Only coloured ink is ever changed: black
+// ink and paper are as the ink read them. Each step is a sliding box count along the rows or down the columns
+// (boxPass, 12 passes) and one walk of the patches; ~0.3 s at 2400 px (in the JOBS worker where there is one,
+// v318.36); a page with no coloured ink to speak of skips it. Known limits: a coloured line between two fills is cut
+// with them (the two cells merge: the eye tells them apart by hue, the ink by shape only); a line lighter than the
+// dark fills either side of it was never ink to Enhance (as before); a coloured stripe over twice COLOUR_LINE_MM wide
+// is hollowed to its two edges
+const COLOUR_LINE_MM = 2,
+  COLOUR_GAP_MM = 1;
+function inkColourCut(g, n) {
+  const mmpx = Math.max(W, H) / PAGE_MM,
+    R = Math.max(3, Math.round(COLOUR_LINE_MM * mmpx)),
+    G = Math.max(2, Math.round(COLOUR_GAP_MM * mmpx)),
+    a = new Uint8Array(n);
+  let any = 0;
+  for (let i = 0; i < n; i++)
+    if (labels[i] === -1 && chroma[i] > COLOUR_CHROMA && g[i] >= INK_DARK) {
+      a[i] = 1;
+      any++;
+    }
+  // (fewer coloured pixels than a line's width squared: nothing to cut)
+  if (any < R * R) return 0;
+  const b = new Uint8Array(n),
+    c = new Uint8Array(n),
+    d = new Uint8Array(n);
+  // the closing: dilate by G, then erode by G (the picture's edge counts as ink for it, so a fill at the edge keeps
+  // its rim); kept in c
+  boxPass(a, b, G, false, false, false, false);
+  boxPass(b, d, G, false, false, false, true);
+  boxPass(d, b, G, true, true, true, false);
+  boxPass(b, c, G, true, true, true, true);
+  // the black ink (d), and the uncoloured paper outside the closed coloured ink (b)
+  for (let i = 0; i < n; i++) {
+    d[i] = labels[i] === -1 && !(chroma[i] > COLOUR_CHROMA && g[i] >= INK_DARK) ? 1 : 0;
+    b[i] = labels[i] === 0 && chroma[i] <= COLOUR_CHROMA && !c[i] ? 1 : 0;
+  }
+  // the patches of the closed coloured ink (cid, from 1), and for each how many of its pixels border black ink and
+  // how many paper: the lines of a coloured-outline page border paper, a fill in a black-outlined cell black
+  const cid = new Int32Array(n),
+    stack = new Int32Array(n),
+    nBlack = [0],
+    nPaper = [0];
+  for (let p = 0; p < n; p++) {
+    if (!c[p] || cid[p]) continue;
+    const id = nBlack.length;
+    let sp = 0,
+      kb = 0,
+      kp = 0;
+    stack[sp++] = p;
+    cid[p] = id;
+    while (sp > 0) {
+      const q = stack[--sp],
+        x = q % W,
+        y = (q / W) | 0;
+      let tb = 0,
+        tp = 0;
+      if (x > 0) {
+        const r = q - 1;
+        if (c[r]) {
+          if (!cid[r]) {
+            cid[r] = id;
+            stack[sp++] = r;
+          }
+        } else if (d[r]) tb = 1;
+        else if (b[r]) tp = 1;
+      }
+      if (x < W - 1) {
+        const r = q + 1;
+        if (c[r]) {
+          if (!cid[r]) {
+            cid[r] = id;
+            stack[sp++] = r;
+          }
+        } else if (d[r]) tb = 1;
+        else if (b[r]) tp = 1;
+      }
+      if (y > 0) {
+        const r = q - W;
+        if (c[r]) {
+          if (!cid[r]) {
+            cid[r] = id;
+            stack[sp++] = r;
+          }
+        } else if (d[r]) tb = 1;
+        else if (b[r]) tp = 1;
+      }
+      if (y < H - 1) {
+        const r = q + W;
+        if (c[r]) {
+          if (!cid[r]) {
+            cid[r] = id;
+            stack[sp++] = r;
+          }
+        } else if (d[r]) tb = 1;
+        else if (b[r]) tp = 1;
+      }
+      kb += tb;
+      kp += tp;
+    }
+    nBlack.push(kb);
+    nPaper.push(kp);
+  }
+  // the black ink widened by R each way (a box of 2R + 1 centred); in d
+  boxPass(d, b, R + 1, false, false, false, false);
+  boxPass(b, d, R + 1, false, false, false, true);
+  boxPass(d, b, R + 1, false, false, true, false);
+  boxPass(b, d, R + 1, false, false, true, true);
+  // open paper: uncoloured paper outside the closed coloured ink and away from black ink (the inside of a big dark
+  // fill reads as paper to the adaptive ink, with its edge as ink: coloured, so no line is kept round it); then
+  // everything within R of it, in c
+  for (let i = 0; i < n; i++) c[i] = labels[i] === 0 && chroma[i] <= COLOUR_CHROMA && !c[i] && !d[i] ? 1 : 0;
+  boxPass(c, b, R + 1, false, false, false, false);
+  boxPass(b, d, R + 1, false, false, false, true);
+  boxPass(d, b, R + 1, false, false, true, false);
+  boxPass(b, c, R + 1, false, false, true, true);
+  let cut = 0;
+  for (let i = 0; i < n; i++)
+    if (a[i]) {
+      // (near open paper, in a patch that borders paper more than black ink: a line, kept)
+      if (c[i] && !(nBlack[cid[i]] > nPaper[cid[i]])) continue;
+      labels[i] = 0;
+      cut++;
+    }
+  return cut;
+}
+// (v319) one pass of a box filter over src (0/1, W x H) into dst: along each row (cols false) or down each column, a
+// window of k pixels from each pixel on (back false) or up to it (back true); dst is 1 where the window holds only
+// 1s (all) or any 1 (not all). A window cut short by the picture's edge is taken as the shorter window when pad is
+// true (the edge counts as inside), or never all 1s when pad is false (the window must fit). Row by row down the
+// columns too, with a count for each column, so the picture is read in order; the edge's short windows are loops
+// of their own, so the main loops are plain (a pass is 15-25 ms at 2400 px)
+function boxPass(src, dst, k, all, pad, back, cols) {
+  const thr = all ? k : 1;
+  if (!cols) {
+    if (back)
+      for (let y = 0, o = 0; y < H; y++, o += W) {
+        let c = 0,
+          x = 0;
+        for (; x < k - 1 && x < W; x++) {
+          c += src[o + x];
+          dst[o + x] = all ? (pad && c === x + 1 ? 1 : 0) : c > 0 ? 1 : 0;
+        }
+        if (x < W) {
+          c += src[o + x];
+          dst[o + x] = c >= thr ? 1 : 0;
+          x++;
+        }
+        for (; x < W; x++) {
+          c += src[o + x] - src[o + x - k];
+          dst[o + x] = c >= thr ? 1 : 0;
+        }
+      }
+    else
+      for (let y = 0, o = 0; y < H; y++, o += W) {
+        let c = 0,
+          x = 0;
+        for (; x < k && x < W; x++) c += src[o + x];
+        for (x = 0; x < W - k; x++) {
+          dst[o + x] = c >= thr ? 1 : 0;
+          c += src[o + x + k] - src[o + x];
+        }
+        for (; x < W; x++) {
+          dst[o + x] = all ? (c === W - x && (pad || W - x === k) ? 1 : 0) : c > 0 ? 1 : 0;
+          c -= src[o + x];
+        }
+      }
+    return;
+  }
+  const cnt = new Int32Array(W),
+    kW = k * W;
+  if (back) {
+    let y = 0,
+      o = 0;
+    for (; y < k - 1 && y < H; y++, o += W)
+      for (let x = 0; x < W; x++) {
+        const c = (cnt[x] += src[o + x]);
+        dst[o + x] = all ? (pad && c === y + 1 ? 1 : 0) : c > 0 ? 1 : 0;
+      }
+    if (y < H) {
+      for (let x = 0; x < W; x++) {
+        const c = (cnt[x] += src[o + x]);
+        dst[o + x] = c >= thr ? 1 : 0;
+      }
+      y++;
+      o += W;
+    }
+    for (; y < H; y++, o += W)
+      for (let x = 0; x < W; x++) {
+        const c = (cnt[x] += src[o + x] - src[o + x - kW]);
+        dst[o + x] = c >= thr ? 1 : 0;
+      }
+  } else {
+    let y = 0,
+      o = 0;
+    for (; y < k && y < H; y++, o += W) for (let x = 0; x < W; x++) cnt[x] += src[o + x];
+    for (y = 0, o = 0; y < H - k; y++, o += W)
+      for (let x = 0; x < W; x++) {
+        const c = cnt[x];
+        dst[o + x] = c >= thr ? 1 : 0;
+        cnt[x] = c + src[o + x + kW] - src[o + x];
+      }
+    for (; y < H; y++, o += W) {
+      const m = H - y,
+        fit = pad || m === k;
+      for (let x = 0; x < W; x++) {
+        const c = cnt[x];
+        dst[o + x] = all ? (fit && c === m ? 1 : 0) : c > 0 ? 1 : 0;
+        cnt[x] = c - src[o + x];
+      }
+    }
+  }
 }
 function segInk() {
   const k = inkPrep();
@@ -1110,6 +2024,12 @@ function segSpeck() {
   if (!faintCut) faintOffer = faintSplitFast();
 }
 function segEnd() {
+  segPlace();
+  segTidy();
+}
+// (v318.32) segEnd in two, so segRun can paint between them: the sections put in place (segPlace), then the crumbs
+// cleaned up and the picture judged (segTidy, P1-6)
+function segPlace() {
   // (v318.15: the new picture's sections are in place: render() draws them, not the photo shown meanwhile)
   _preview = false;
   labelTail();
@@ -1118,7 +2038,6 @@ function segEnd() {
   edgeDist = null;
   labelPts = null;
   texField = null;
-  segWarn = segQuality();
   // sections were found afresh, so their numbers mean different shapes now: per-section choices can't carry over
   locks = {};
   whitePins = {};
@@ -1128,6 +2047,22 @@ function segEnd() {
   _origKeys = {};
   _lostKeys = {};
   _gone = {};
+}
+function segTidy() {
+  crumbClean();
+  segHatch();
+}
+// (v318.35) the hatched patches merged into one section each, when Treat hatching as one section is on (hatchMerge),
+// then the picture judged: a step of its own in segRun, after the crumbs
+function segHatch() {
+  hatchWould = 0;
+  if (hatchOne) hatchMerge();
+  else {
+    hatchMade = 0;
+    // (v319: what the switch would merge, asked once here for segQuality's 'hatched' test, Y1-6)
+    hatchWould = hatchMerge(true);
+  }
+  segWarn = segQuality();
 }
 /* ---- (v318.14) finding the sections with the page free between steps ----
    A 12-megapixel photo's sections took the page for 0.7-1.1 s in one go (on a computer; 2-3 s on an iPad): nothing
@@ -1141,30 +2076,46 @@ function segEnd() {
    be used (inert), and Undo/Redo, Build and the photo's own buttons wait. */
 let segGen = 0,
   segBusy = false;
-const PIC_KEYS = ['W', 'H', 'gray', 'srcK', 'labels', 'comps', '_faintStats', 'faintOffer', '_speckCands'];
+const PIC_KEYS = [
+  'W',
+  'H',
+  'gray',
+  'chroma',
+  'srcK',
+  'labels',
+  'comps',
+  '_faintStats',
+  'faintOffer',
+  '_speckCands',
+  '_inkBlobs',
+];
 function picOut() {
   return {
     W: W,
     H: H,
     gray: gray,
+    chroma: chroma,
     srcK: srcK,
     labels: labels,
     comps: comps,
     _faintStats: _faintStats,
     faintOffer: faintOffer,
     _speckCands: _speckCands,
+    _inkBlobs: _inkBlobs,
   };
 }
 function picIn(p) {
   W = p.W;
   H = p.H;
   gray = p.gray;
+  chroma = p.chroma;
   srcK = p.srcK;
   labels = p.labels;
   comps = p.comps;
   _faintStats = p._faintStats;
   faintOffer = p.faintOffer;
   _speckCands = p._speckCands;
+  _inkBlobs = p._inkBlobs;
 }
 // fn run on pic (its results kept in it), the open picture back in place after
 function onPic(pic, fn) {
@@ -1177,6 +2128,303 @@ function onPic(pic, fn) {
     for (let i = 0; i < PIC_KEYS.length; i++) pic[PIC_KEYS[i]] = got[PIC_KEYS[i]];
     picIn(was);
   }
+}
+/* ---- (v318.36) the steps up to the sections in the JOBS worker (Stage 5, decision 8.9) ----
+   The ink, its smoothing, the specks and the flood fill are the bulk of finding a photo's sections (at 2400 px, 0.5 s
+   or more a step on an iPad), and they read nothing of the page but the picture and the detection settings. They run
+   in the JOBS worker (03-jobs), whose code is this file's own functions copied in (segWorkerSrc) with the same
+   constants, on the same picture, in the same order: what comes back is what the page would have worked out itself,
+   pixel for pixel (the e2e test v31836-worker runs both and compares). The page only paints meanwhile. The steps
+   that need the page (segPlace: the background, the page and the frame; the crumbs; the hatching) stay on it, after
+   the paint between them as before. A new picture's grey and colour are handed over to the worker and handed back
+   (transferred, not copied; the page makes them again with prep() should the worker lose them); the open picture's
+   own grey stays in place when the sections are found again on it, so it's copied for the worker (a few ms). The
+   labels and the ink blobs come back handed over too. A newer run's job supersedes an older one in the worker as well
+   (self.segWkLatest): the older job stops at its next step and answers 'superseded', which the page ignores (the run was
+   stopped already, segGen). Anywhere there's no worker, or it fails or gives no answer in time (JOBS), the steps run on
+   the page as before v318.36, said nowhere. */
+// the worker's copy of the finder: its functions, the state they read and write (picIn/picOut's keys, the detection
+// settings) and the constants, as this page has them
+function segWorkerSrc() {
+  return (
+    [
+      otsu,
+      autoStretch,
+      adaptiveInk,
+      noiseLevel,
+      boxBlur,
+      speckCap,
+      despeckle,
+      faintSplitFast,
+      faintSplit,
+      labelFill,
+      inkPrep,
+      inkBlur,
+      inkDone,
+      inkColourCut,
+      boxPass,
+      segSpeck,
+      picOut,
+      picIn,
+      onPic,
+      segPack,
+      segWork,
+    ]
+      .map(function (f) {
+        return f.toString();
+      })
+      .join('\n') +
+    '\nlet W, H, gray, chroma, srcK, labels, comps, _faintStats, faintOffer, _speckCands, _inkBlobs,' +
+    ' enhance, adaptC, faintCut;' +
+    '\nconst PIC_KEYS = ' +
+    JSON.stringify(PIC_KEYS) +
+    ', MIN_MM = ' +
+    MIN_MM +
+    ', PAGE_MM = ' +
+    PAGE_MM +
+    ', EDGE_BAND = ' +
+    EDGE_BAND +
+    ', SPECK_MM = ' +
+    SPECK_MM +
+    ', SPECK_MARGIN_MM = ' +
+    SPECK_MARGIN_MM +
+    ', COLOUR_CHROMA = ' +
+    COLOUR_CHROMA +
+    ', INK_DARK = ' +
+    INK_DARK +
+    ', COLOUR_LINE_MM = ' +
+    COLOUR_LINE_MM +
+    ', COLOUR_GAP_MM = ' +
+    COLOUR_GAP_MM +
+    ';\n'
+  );
+}
+// (runs in the worker) the steps on the picture sent (m), the thread free between them so a newer picture's message
+// is seen (self.segWkLatest, the newest job's gen) and this one dropped; each step on the picture's own state, with
+// the settings it was sent (onPic), so two jobs' steps may follow each other. Resolves to the packed answer (segPack)
+// and what's handed back
+async function segWork(m) {
+  if (!(m.gen <= self.segWkLatest)) self.segWkLatest = m.gen;
+  const pic = {
+    W: m.W,
+    H: m.H,
+    gray: m.gray,
+    chroma: m.chroma || null,
+    srcK: m.srcK,
+    labels: null,
+    comps: null,
+    _faintStats: null,
+    faintOffer: m.faintOffer,
+    _speckCands: null,
+    _inkBlobs: null,
+  };
+  const step = function (fn) {
+    if (m.gen !== self.segWkLatest) throw new Error('superseded');
+    enhance = m.enhance;
+    adaptC = m.adaptC;
+    faintCut = m.faintCut;
+    onPic(pic, fn);
+  };
+  const free = function () {
+    return new Promise(function (r) {
+      setTimeout(r, 0);
+    });
+  };
+  let k = null;
+  step(function () {
+    k = inkPrep();
+    if (!k.passes) inkDone(k);
+  });
+  while (k.passes) {
+    await free();
+    step(function () {
+      inkBlur(k);
+      if (!k.passes) inkDone(k);
+    });
+  }
+  await free();
+  step(segSpeck);
+  await free();
+  step(labelFill);
+  return segPack(pic, m.back);
+}
+// (runs in the worker) the steps' results as typed arrays, so they cross to the page handed over rather than built up
+// object by object (a grainy photo has tens of thousands of blobs and crumbs): the labels; the sections (comps, nine
+// numbers each); the faint-marks figures; the speck candidates (their pixels end to end, and six numbers each); the
+// ink blobs (each pixel's, their sizes, their boxes, eight numbers each); and the grey and colour back when they were
+// handed over (back). segUnpack puts them together again as despeckle and labelFill made them
+function segPack(pic, back) {
+  const comps = pic.comps,
+    nc = comps.length,
+    cm = new Float64Array(nc * 9),
+    t = [pic.labels.buffer, cm.buffer];
+  for (let l = 1; l < nc; l++) {
+    const c = comps[l],
+      o = l * 9;
+    cm[o] = c.area;
+    cm[o + 1] = c.bpx;
+    cm[o + 2] = c.cx;
+    cm[o + 3] = c.cy;
+    cm[o + 4] = c.h;
+    cm[o + 5] = c.x0;
+    cm[o + 6] = c.y0;
+    cm[o + 7] = c.x1;
+    cm[o + 8] = c.y1;
+  }
+  const r = {
+    labels: pic.labels,
+    cm: cm,
+    fo: pic.faintOffer,
+    fs: null,
+    sc: null,
+    ib: null,
+    gray: null,
+    chroma: null,
+  };
+  const fs = pic._faintStats;
+  if (fs) {
+    r.fs = { dark: fs.dark, mid: fs.mid, faint: fs.faint, tot: fs.tot, fh: fs.fh };
+    t.push(fs.fh.buffer);
+  }
+  const S = pic._speckCands;
+  if (S) {
+    const L = S.list,
+      meta = new Int32Array(L.length * 6);
+    let np = 0;
+    for (let i = 0; i < L.length; i++) np += L[i].px.length;
+    const px = new Int32Array(np);
+    for (let i = 0, o = 0; i < L.length; i++) {
+      const b = L[i],
+        j = i * 6;
+      px.set(b.px, o);
+      o += b.px.length;
+      meta[j] = b.px.length;
+      meta[j + 1] = b.core;
+      meta[j + 2] = b.x0;
+      meta[j + 3] = b.y0;
+      meta[j + 4] = b.x1;
+      meta[j + 5] = b.y1;
+    }
+    r.sc = { meta: meta, px: px, line: S.line };
+    t.push(meta.buffer, px.buffer);
+  }
+  const B = pic._inkBlobs;
+  if (B) {
+    const nb = B.sz.length,
+      sz = new Int32Array(nb),
+      box = new Int32Array(nb * 8);
+    for (let i = 1; i < nb; i++) {
+      sz[i] = B.sz[i];
+      const b = B.box[i];
+      for (let j = 0; j < 8; j++) box[i * 8 + j] = b[j];
+    }
+    r.ib = { bid: B.bid, sz: sz, box: box };
+    t.push(B.bid.buffer, sz.buffer, box.buffer);
+  }
+  if (back) {
+    r.gray = pic.gray;
+    t.push(pic.gray.buffer);
+    if (pic.chroma) {
+      r.chroma = pic.chroma;
+      t.push(pic.chroma.buffer);
+    }
+  }
+  return { v: r, t: t };
+}
+// the worker's answer put into pic, as the steps leave it on the page (segPack's opposite)
+function segUnpack(pic, r) {
+  if (r.gray) pic.gray = r.gray;
+  // (v318.37-v319: the colour had come back null, cn, when the ink dropped it for a coloured-line page; it keeps it now)
+  if (r.chroma) pic.chroma = r.chroma;
+  pic.labels = r.labels;
+  const cm = r.cm,
+    nc = cm.length / 9,
+    comps = [null];
+  for (let l = 1; l < nc; l++) {
+    const o = l * 9;
+    comps.push({
+      area: cm[o],
+      bg: false,
+      bpx: cm[o + 1],
+      cx: cm[o + 2],
+      cy: cm[o + 3],
+      h: cm[o + 4],
+      x0: cm[o + 5],
+      y0: cm[o + 6],
+      x1: cm[o + 7],
+      y1: cm[o + 8],
+    });
+  }
+  pic.comps = comps;
+  pic.faintOffer = r.fo;
+  pic._faintStats = r.fs
+    ? { dark: r.fs.dark, mid: r.fs.mid, faint: r.fs.faint, tot: r.fs.tot, fh: r.fs.fh }
+    : null;
+  if (r.sc) {
+    const meta = r.sc.meta,
+      px = r.sc.px,
+      list = [];
+    for (let i = 0, o = 0; i * 6 < meta.length; i++) {
+      const j = i * 6,
+        n = meta[j];
+      list.push({
+        px: px.slice(o, o + n),
+        core: meta[j + 1],
+        x0: meta[j + 2],
+        y0: meta[j + 3],
+        x1: meta[j + 4],
+        y1: meta[j + 5],
+      });
+      o += n;
+    }
+    pic._speckCands = { list: list, line: r.sc.line };
+  } else pic._speckCands = null;
+  if (r.ib) {
+    const nb = r.ib.sz.length,
+      sz = [0],
+      box = [null];
+    for (let i = 1; i < nb; i++) {
+      sz.push(r.ib.sz[i]);
+      box.push(Array.prototype.slice.call(r.ib.box, i * 8, i * 8 + 8));
+    }
+    pic._inkBlobs = { bid: r.ib.bid, sz: sz, box: box };
+  } else pic._inkBlobs = null;
+}
+// the steps up to the sections on pic in the worker: resolves true with pic filled in (segUnpack), false when the page
+// is to do them itself (no worker, or the job failed, timed out or was superseded). fresh: pic is a new picture of
+// its own (prep), whose grey and colour are handed over and back; otherwise they're the open picture's, and copied.
+// gen: this run's segGen, so the worker drops it for a newer one. (for the tests: segOffCount, how many ran there)
+let segOffCount = 0;
+function segOff(pic, gen, fresh) {
+  if (!JOBS.on) return Promise.resolve(false);
+  const d = {
+      W: pic.W,
+      H: pic.H,
+      gray: pic.gray,
+      chroma: pic.chroma || null,
+      srcK: pic.srcK,
+      enhance: enhance,
+      adaptC: adaptC,
+      faintCut: faintCut,
+      faintOffer: pic.faintOffer,
+      gen: gen,
+      back: !!fresh,
+    },
+    tr = [];
+  if (fresh) {
+    tr.push(pic.gray.buffer);
+    if (pic.chroma) tr.push(pic.chroma.buffer);
+  }
+  return JOBS.run('seg', d, tr).then(
+    function (r) {
+      segUnpack(pic, r);
+      segOffCount++;
+      return true;
+    },
+    function () {
+      return false;
+    },
+  );
 }
 // (the tests' geoSet and autoCrop, which change the picture and read it in the same breath: the steps all at once, as
 // before v318.14, and the caller's after-steps straight after; 99-close)
@@ -1203,6 +2451,8 @@ function segThen(run, once, after, fail) {
 }
 function segStop() {
   segGen++;
+  // (v318.32: a run stopped between its last two steps leaves no blob labelling behind, _inkBlobs)
+  _inkBlobs = null;
   segBusySet(false);
 }
 // (hide: the controls out of sight meanwhile, for a new picture, whose controls are drawn once it's ready. ctl: the
@@ -1235,21 +2485,49 @@ function segBusySet(on, hide, ctl) {
 // the open one; commit(pic): put it in place (before the sections). Resolves true when done, false when a newer run
 // took over; rejects on an error (nothing put in place). hide: the controls out of sight meanwhile (segBusySet).
 // (v318.23: the steps' names, for the waits Copy diagnostics lists)
-const SEG_STEP_NAMES = ['prepare', 'ink', 'smooth', 'specks', 'sections', 'put in place'];
+const SEG_STEP_NAMES = [
+  'prepare',
+  'off the page',
+  'ink',
+  'smooth',
+  'specks',
+  'sections',
+  'put in place',
+  'crumbs',
+  'hatching',
+];
 function segRun(prep, commit, hide) {
   const my = ++segGen;
   segBusySet(true, hide, !!prep);
   let pic = null;
+  // (v318.36: the 'put in place' step's place, where the run goes on once the worker has found the sections)
+  const PLACE = SEG_STEP_NAMES.indexOf('put in place');
   const steps = [
     function () {
-      pic = prep ? prep() : { W: W, H: H, gray: gray, srcK: srcK };
+      // (v318.35: the picture's colour goes with its grey, chroma)
+      pic = prep ? prep() : { W: W, H: H, gray: gray, chroma: chroma, srcK: srcK };
       pic.labels = null;
       pic.comps = null;
       pic._faintStats = null;
       pic._speckCands = null;
+      pic._inkBlobs = null;
       // (kept as it is when faint marks are ignored: segSpeck measures it only when they aren't)
       pic.faintOffer = faintOffer;
       if (!pic.gray) throw new Error('no picture');
+    },
+    // (v318.36: the ink, smooth, specks and sections steps in the JOBS worker, segOff; a promise, which next waits on.
+    // Done there, the run goes on at 'put in place'; otherwise with 'ink', on the page as before)
+    function () {
+      return segOff(pic, my, !!prep).then(function (off) {
+        if (off) return PLACE;
+        // (a new picture handed to a worker that then failed: its grey went with it, so it's made again)
+        if (prep && !pic.gray.byteLength) {
+          const p = prep();
+          pic.gray = p.gray;
+          pic.chroma = p.chroma;
+        }
+        return PLACE - 4;
+      });
     },
     function () {
       onPic(pic, function () {
@@ -1276,26 +2554,20 @@ function segRun(prep, commit, hide) {
       if (commit) commit(pic);
       segBegin();
       picIn(pic);
-      segEnd();
+      segPlace();
+    },
+    // (v318.32: the crumbs on the picture in place, after a paint: at 2400 px they took a third of the time, P1-6)
+    function () {
+      crumbClean();
+    },
+    // (v318.35: the hatching merged, and the picture judged, after another)
+    function () {
+      segHatch();
     },
   ];
   return new Promise(function (res, rej) {
     let i = 0;
-    const next = function () {
-      if (my !== segGen) return res(false);
-      try {
-        // (v318.23: each step timed for Copy diagnostics, holdTime in safety.js)
-        const r = holdTime(
-          (prep ? 'New photo: ' : 'Sections again: ') + SEG_STEP_NAMES[i],
-          function () {
-            return steps[i]();
-          },
-          function () {
-            return pic && pic.W ? pic.W + '×' + pic.H : '';
-          },
-        );
-        if (r !== 'again') i++;
-      } catch (e) {
+    const fail = function (e) {
         if (my === segGen) {
           segBusySet(false);
           // (v318.15: a new photo shown meanwhile, photoPreview, goes: the open picture is drawn again as it was)
@@ -1309,14 +2581,44 @@ function segRun(prep, commit, hide) {
           }
         }
         rej(e);
-        return;
-      }
-      if (i < steps.length) afterPaint(next);
-      else {
-        segBusySet(false);
-        res(true);
-      }
-    };
+      },
+      go = function () {
+        if (i < steps.length) afterPaint(next);
+        else {
+          segBusySet(false);
+          res(true);
+        }
+      },
+      next = function () {
+        if (my !== segGen) return res(false);
+        let r;
+        try {
+          // (v318.23: each step timed for Copy diagnostics, holdTime in safety.js)
+          r = holdTime(
+            (prep ? 'New photo: ' : 'Sections again: ') + SEG_STEP_NAMES[i],
+            function () {
+              return steps[i]();
+            },
+            function () {
+              return pic && pic.W ? pic.W + '×' + pic.H : '';
+            },
+          );
+        } catch (e) {
+          fail(e);
+          return;
+        }
+        // (v318.36: a step that waits on the worker says which step comes next; the page is free meanwhile)
+        if (r && typeof r.then === 'function') {
+          r.then(function (at) {
+            if (my !== segGen) return res(false);
+            i = at;
+            go();
+          }, fail);
+          return;
+        }
+        if (r !== 'again') i++;
+        go();
+      };
     afterPaint(next);
   });
 }

@@ -201,15 +201,19 @@ test('Photo: a size it doesn’t offer moves to the nearest, which is highlighte
 });
 
 // ---- From v265 ----
-test('Generate palette: the Palette screen’s harmonies in its order, each at a size its range allows', async () => {
+test('A palette › New palette: the Palette screen’s harmonies in its order, each at a size its range allows (v318.34: the segment is A palette)', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page);
   await page.click('.sftabbtn[data-t="colours"]'); await idle(page);
-  await page.click('#sfSrc button[data-v="generate"]'); await idle(page);
+  await page.click('#sfSrc button[data-v="palette"]'); await idle(page);
+  // (v319: Greys & black is off by default and greys Greys + accent with the reason, Y3-2: the Include row's chip on first)
+  await page.click('#sfExpand'); await idle(page);
+  await page.click('#sfIncl [data-v="greys"]'); await idle(page);
   const guide = await page.$$eval('#sfHarm option', (os) => os.map((o) => o.value + '=' + o.textContent));
   const palette = await page.$$eval('#harm button', (bs) => bs.filter((b) => !['custom', 'photo'].includes(b.dataset.h)).map((b) => b.dataset.h + '=' + b.textContent));
   assert.deepEqual(guide, palette);
-  assert.deepEqual(guide.map((x) => x.split('=')[1]), ['Complementary', 'Analogous', 'Triadic', 'Split complementary', 'Tetradic', 'Monochrome', 'Rainbow']);
+  // (v318.34: Light to shadow, Analogous + accent and Greys + accent after Monochrome)
+  assert.deepEqual(guide.map((x) => x.split('=')[1]), ['Complementary', 'Analogous', 'Triadic', 'Split complementary', 'Tetradic', 'Monochrome', 'Light to shadow', 'Analogous + accent', 'Greys + accent', 'Rainbow']);
   for (const expand of [true, false]) {
     const got = await page.evaluate((expand) => __mstest.GEN_HARMS.map((h) => { const t = __mstest; t.genHarmony = h; t.limitN = 16; t.expand = expand; t.paletteSource = 'generate'; t.generatePalette(); return { h, n: t.genPal.length, pool: t.activePool().length, R: HARM_RANGE[h] }; }), expand);
     for (const g of got) {
@@ -490,12 +494,24 @@ test('Palette: a line under the Harmony choices says what the chosen one does', 
     split: 'One colour and the two either side of its opposite',
     tetradic: 'Two pairs of opposites',
     mono: 'One colour, light to dark',
+    // (v318.34)
+    shadow: 'One colour’s lights down to a cooler hue’s shadows',
+    accent: 'Neighbours on the wheel, plus one accent from across it',
+    neutral: 'Greys light to dark, plus one clear colour',
     rainbow: 'Round the rainbow from red', // (v308: lightness follows hue now, and it starts at red)
     custom: 'Markers you choose: tap a slot to pick one',
     photo: 'A photo’s main colours, matched to markers',
   };
   assert.deepEqual((await page.$$eval('#harm button', (b) => b.map((x) => x.dataset.h))).sort(), Object.keys(want).sort(), 'every harmony has a line');
   for (const [h, t] of Object.entries(want)) {
+    // (v318.34: Greys + accent needs 3 greys; these eight markers have none, so its button is greyed and a tap says
+    // why instead — a click from the page, as Playwright's own waits for aria-disabled to clear)
+    if (h === 'neutral') {
+      assert.equal(await page.getAttribute('#harm [data-h="neutral"]', 'aria-disabled'), 'true');
+      await page.evaluate(() => document.querySelector('#harm [data-h="neutral"]').click()); await idle(page);
+      assert.equal(await page.evaluate(() => state.harmony), 'accent', 'not chosen');
+      continue;
+    }
     await page.click(`#harm [data-h="${h}"]`); await idle(page);
     assert.equal(await page.textContent('#harmDesc'), t, h);
   }

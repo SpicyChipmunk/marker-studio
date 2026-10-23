@@ -336,7 +336,8 @@ button.hlplink.ttready {
   min-height: 64px;
   margin: 16px 0 4px;
   padding: 12px 16px;
-  border-radius: var(--r-md);
+  /* (v318.33) --r-lg, a card as the Home cards are */
+  border-radius: var(--r-lg);
   border: 1px solid rgba(124, 92, 255, 0.55);
   background: rgba(124, 92, 255, 0.1);
   color: var(--ink);
@@ -371,6 +372,10 @@ button.hlplink.ttready {
 .tthomecard .ttct b {
   color: var(--ink);
   font-size: var(--t-md);
+}
+/* (v318.32) the last word and the › together: the › never wraps alone */
+.tthomecard .ttnw {
+  white-space: nowrap;
 }
 .tthomecard.ttready {
   border-color: rgba(95, 184, 159, 0.6);

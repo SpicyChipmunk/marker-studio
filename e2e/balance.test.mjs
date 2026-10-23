@@ -1,5 +1,7 @@
-// Random's Balance (v283): Pattern › Random › Balance (Mixed | Main colour). With Main colour a bar of the three roles
-// (tap one to choose its colour family, or Auto), ↻ Other pairings, and a line of what's used; with Mixed, No repeats.
+// Random's Balance (v283): Pattern › Random › Balance (Mixed | Main colour). With Main colour the three roles (v318.34:
+// a strip of their shares and a row each, "Main colour · pinks · about 60% · Auto"; a bar of three coloured buttons
+// before; tap one to choose its colour family, or Auto), ↻ Other pairings, and a line of what's used; with Mixed, No
+// repeats.
 // The engine itself is covered by test/balance.test.mjs.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -23,30 +25,32 @@ const shares = (page) => page.evaluate(() => {
   return r;
 });
 const undoLabel = (page) => page.getAttribute('#sfPlanUndo', 'aria-label');
-// what the bar should say: each role's measured share (f, whole percent), to the nearest 5 (pc), and its name (n)
+// what the rows should say: each role's measured share (f, whole percent), to the nearest 5 (pc), and its short name (n)
 const measured = (page) => page.evaluate(() => {
   const t = __mstest, p = t.balPlan(), ms = t.balMeasure(p), o = { f: {}, pc: {}, n: {}, sliver: {} };
   ['m', 's', 'a'].forEach((r) => { if (!p.roles[r]) return; o.f[r] = Math.round(ms.f[r] * 100); o.pc[r] = Math.round(ms.f[r] * 20) * 5; o.n[r] = t.balShort(r); o.sliver[r] = ms.f[r] > 0 && ms.f[r] < 0.025; });
   return o;
 });
 
-test('Random starts on Main colour: a bar of three roles about 60/30/10 of the picture, a line of what it uses, and the picture laid that way', async () => {
+test('Random starts on Main colour: three role rows about 60/30/10 of the picture, a line of what it uses, and the picture laid that way', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   await random(page);
   assert.equal(await page.getAttribute('#sfBal [data-v="main"]', 'aria-pressed'), 'true');
   assert.equal(await undoLabel(page), 'Undo: Pattern: Random');
-  const segs = await page.$$eval('#sfBalBar .sfbalseg', (b) => b.map((x) => ({ r: x.dataset.r, t: x.innerText.replace(/\n/g, ""), w: x.getBoundingClientRect().width, lab: x.getAttribute('aria-label') })));
-  assert.deepEqual(segs.map((s) => s.r), ['m', 's', 'a']);
+  // (v318.34: a row each, its words in full; the strip above them as wide as each share)
+  const rows = await page.$$eval('#sfBalRows .sfbalr', (b) => b.map((x) => ({ r: x.dataset.r, t: x.innerText.replace(/\s+/g, ' ').trim(), lab: x.getAttribute('aria-label') })));
+  assert.deepEqual(rows.map((s) => s.r), ['m', 's', 'a']);
+  const segs = await page.$$eval('.sfbalstrip i', (b) => b.map((x) => ({ w: x.getBoundingClientRect().width })));
   // (v284: what's painted, to the nearest 5, within 5 of 60/30/10)
   const want = await measured(page);
-  assert.equal(segs[0].t, want.n.m + ' · ' + want.pc.m + '%');
-  assert.equal(segs[1].t, want.n.s + ' · ' + want.pc.s + '%');
-  // (a name shows only where it fits whole)
-  assert.ok([want.pc.a + '%', want.n.a + ' · ' + want.pc.a + '%'].includes(segs[2].t), segs[2].t);
+  const fam = (r) => page.evaluate((r) => __mstest.balName(r, __mstest.balPlan()).toLowerCase(), r);
+  assert.equal(rows[0].t, 'Main colour · ' + (await fam('m')) + ' · about ' + want.pc.m + '% · Auto');
+  assert.equal(rows[1].t, 'Second colour · ' + (await fam('s')) + ' · about ' + want.pc.s + '% · Auto');
+  assert.equal(rows[2].t, 'Accent · ' + (await fam('a')) + ' · about ' + want.pc.a + '% · Auto');
   assert.ok(Math.abs(want.f.m - 60) <= 5 && Math.abs(want.f.s - 30) <= 5 && Math.abs(want.f.a - 10) <= 5, JSON.stringify(want.f));
-  assert.ok(segs[0].w > segs[1].w * 1.5 && segs[1].w > segs[2].w * 1.4, 'widths follow the shares');
-  assert.equal(segs[0].lab, 'Main colour: ' + (await page.evaluate(() => __mstest.balName('m', __mstest.balPlan()).toLowerCase())) + ', chosen for you, about ' + want.pc.m + '% of the picture. Change');
+  assert.ok(segs[0].w > segs[1].w * 1.5 && segs[1].w > segs[2].w * 1.4, 'the strip’s widths follow the shares');
+  assert.equal(rows[0].lab, 'Main colour: ' + (await fam('m')) + ', about ' + want.pc.m + '%, Auto. Change');
   assert.match(await page.textContent('#sfBalNote'), /^\d+ [a-z-]+s?(?:, with [^,]*)?, \d+ [a-z-]+s?(?:, with [^,]*)? and \d+ [a-z-]+s?(?:, with .*)? (?:of yours|from the catalogue)\./);
   const r = await shares(page);
   assert.ok(Math.abs(r.m - 60) <= 4 && Math.abs(r.s - 30) <= 4 && Math.abs(r.a - 10) <= 4 && r.x === 0, JSON.stringify(r));
@@ -75,7 +79,7 @@ test('a part of the bar opens its colour families (Auto first); choosing one lay
   assert.equal((await plan(page)).keys.split('/')[0], pick);
   assert.match(await undoLabel(page), new RegExp('^Undo: Main colour: '));
   assert.equal(await page.evaluate(() => document.activeElement.id), 'sfBalM');
-  assert.match(await page.getAttribute('#sfBalM', 'aria-label'), new RegExp('^Main colour: [a-z][a-z -]+, about ' + (await measured(page)).pc.m + '%'));
+  assert.match(await page.getAttribute('#sfBalM', 'aria-label'), new RegExp('^Main colour: [a-z][a-z -]+, about ' + (await measured(page)).pc.m + '%, Your choice\\. Change$'));
   // Temperature: the colours are chosen, so it greys out and says why
   await page.click('.sftabbtn[data-t="colours"]'); await idle(page);
   assert.equal(await page.isDisabled('#sfPal [data-v="cool"]'), true);
@@ -128,7 +132,7 @@ test('Mixed is Random as it was; No repeats gives every section its own marker, 
   await random(page);
   await page.click('#sfBal [data-v="mixed"]'); await idle(page);
   assert.equal(await undoLabel(page), 'Undo: Balance: Mixed');
-  assert.equal(await page.$('#sfBalBar'), null);
+  assert.equal(await page.$('#sfBalRows'), null);
   assert.equal(await page.isChecked('#sfNoRep'), false);
   const distinct = () => page.evaluate(() => { const a = __mstest.assignData; return [a.order.length, new Set(a.order.map((l) => a.assign[l].mkey)).size]; });
   const [n0, k0] = await distinct();
@@ -139,7 +143,7 @@ test('Mixed is Random as it was; No repeats gives every section its own marker, 
   assert.equal(n, n0);
   const pool = await page.evaluate(() => __mstest.noRepPool(__mstest.countedList()).length);
   assert.equal(k, Math.min(n, pool));
-  assert.match(await page.textContent('#sfNoRepNote'), k >= n ? /^Every section has its own marker: \d+\./ : /^\d+ sections, \d+ markers: (?:each used about \d+ times|\d+ used twice), every one before any again, kept apart\./);
+  assert.match(await page.textContent('#sfNoRepNote'), k >= n ? /^Every section has its own marker: \d+\./ : /^\d+ sections, \d+ markers: (?:each used about \d+ times|\d+ used twice), each used once before any is used again, kept apart\./);
   await page.click('.sftabbtn[data-t="colours"]'); await idle(page);
   assert.match(await page.textContent('#sfMkNlbl'), /one per section/);
   assert.equal(await page.isDisabled('#sfMkCount'), true);
@@ -194,7 +198,7 @@ test('zones: each has its own Balance; a zone of fewer than 10 sections has no a
   assert.deepEqual(errors, []);
 });
 
-test('the bar by keyboard: each part a button that opens its sheet; Surprise sometimes picks Random with a main colour, and says so', async () => {
+test('the rows by keyboard: each a button that opens its sheet; Surprise sometimes picks Random with a main colour, and says so', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   await random(page);
@@ -214,7 +218,7 @@ test('the bar by keyboard: each part a button that opens its sheet; Surprise som
   assert.deepEqual(errors, []);
 });
 
-test('v284, a saved palette: a colour far from the others is an accent, the bar follows what Shuffle paints; a main colour of one marker says so, and Add shades turns Expand on', async () => {
+test('v284, a saved palette: a colour far from the others is an accent, the rows follow what Shuffle paints; a main colour of one marker says so, and Add shades turns Expand on', async () => {
   const { page, errors } = await openApp();
   await sampleGuide(page); await idle(page);
   await random(page);
@@ -228,15 +232,16 @@ test('v284, a saved palette: a colour far from the others is an accent, the bar 
     t.reassign();
   });
   await idle(page);
-  const bar = () => page.$$eval('#sfBalBar .sfbalseg', (b) => b.map((x) => ({ t: x.innerText.replace(/\n/g, ""), cut: [...x.querySelectorAll('span')].some((s) => s.offsetParent && s.scrollWidth > s.clientWidth + 1) })));
+  // (v318.34: the rows say the family and the share in full; nothing to cut short)
+  const bar = () => page.$$eval('#sfBalRows .sfbalr', (b) => b.map((x) => ({ t: x.innerText.replace(/\s+/g, ' ').trim() })));
   const check = async () => {
     const w = await measured(page), t = await bar(), rs = Object.keys(w.pc);
-    rs.forEach((r, i) => {
-      const pct = (w.sliver[r] ? '<5' : w.pc[r]) + '%';
-      assert.ok(t[i].t === pct || t[i].t === w.n[r] + ' · ' + pct, t[i].t + ' vs ' + w.n[r] + ' ' + pct);
-      assert.ok(!t[i].cut, 'nothing cut short: ' + t[i].t);
-    });
-    assert.equal(t[0].t.split(' · ')[0], w.n.m, 'the main colour named');
+    const full = { m: 'Main colour', s: 'Second colour', a: 'Accent' };
+    for (let i = 0; i < rs.length; i++) {
+      const r = rs[i], pct = (w.sliver[r] ? 'under 5' : 'about ' + w.pc[r]) + '%';
+      const nm = await page.evaluate((r) => __mstest.balName(r, __mstest.balPlan()).toLowerCase(), r);
+      assert.equal(t[i].t, full[r] + ' · ' + nm + ' · ' + pct + ' · Auto');
+    }
     return w;
   };
   const w = await check();

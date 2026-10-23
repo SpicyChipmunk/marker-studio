@@ -515,6 +515,9 @@ function guideMeta(d, id) {
   else if (/ \(section edits\)$/.test(meta.name || '')) meta.eds = 0;
   // (v314: when its photo of the finished page last changed, for the backup reminder: kept from save to save)
   if (_ex && +_ex.fn > 0) meta.fn = +_ex.fn;
+  // (v318.34: a guide you've worked with, for Random's Prefer markers you haven't used yet: kept once set
+  // (guideWorked, library.js), and set here by a section ticked or toned)
+  if ((_ex && _ex.wk) || d.wk || meta.done > 0 || meta.tn > 0) meta.wk = 1;
   // (v314.1: and its straightened photo's shape)
   if (_ex && +_ex.fa > 0) meta.fa = +_ex.fa;
   return meta;
@@ -777,6 +780,8 @@ function sfDeleteDesign(id) {
     .catch(function () {});
   // (v314: and its photo of the finished page)
   IDB.del('fin-' + id).catch(function () {});
+  // (v318.34: and its source picture, guide/25-source-photo.js)
+  IDB.del('src-' + id).catch(function () {});
   save();
 }
 function loadGuide(entry) {
@@ -805,12 +810,44 @@ function finRecOk(r) {
 }
 // (v314.1) a Library row's note of its straightened photo's shape (fa, width ÷ height), for Home's latest piece to be laid
 // out in it from the start; none for a photo kept as taken, or none at all
+// (v318.34) a guide's source picture ('src-<id>' beside 'guide-<id>': guide/25-source-photo.js), as stored and as a
+// backup carries it when "Include guide photos" is ticked; a record bigger than SRC_MAX is left out (a photo at 2400 px
+// is about 1–3 MB)
+const SRC_MAX = 8e6;
+function srcRecOk(r) {
+  return (
+    !!r &&
+    typeof r === 'object' &&
+    typeof r.u === 'string' &&
+    /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(r.u) &&
+    r.u.length < SRC_MAX &&
+    +r.w > 0 &&
+    +r.h > 0
+  );
+}
+// (v318.34) a guide's source picture put in from a backup, as finFill does its photo of the finished page
+function srcFill(id, rec, over) {
+  if (!id || !srcRecOk(rec)) return Promise.resolve();
+  return (over ? Promise.resolve(null) : IDB.get('src-' + id))
+    .then(function (here) {
+      if (!srcRecOk(here) || (+rec.ts || 0) > (+here.ts || 0)) return IDB.put('src-' + id, rec);
+    })
+    .catch(function () {});
+}
+// (v318.34) whether a backup takes the guides' source pictures: the tick box in the Library and in Back up & restore
+// (off by default, the backup being far bigger with them; the two show the same choice)
+function bkPhotos() {
+  const a = $('bkPhotos'),
+    b = $('bkPhotos2');
+  return !!((a && a.checked) || (b && b.checked));
+}
 function finRowShape(row, rec) {
   if (!row) return;
   if (finRecOk(rec) && rec.flat) row.fa = Math.round((rec.w / rec.h) * 10000) / 10000;
   else delete row.fa;
 }
-function gatherGuides() {
+// (v318.34) withPhotos: the guides' source pictures too (src-<id>), when "Include guide photos" is ticked
+function gatherGuides(withPhotos) {
   var gs = state.saved.filter(function (s) {
     return s.type === 'guide';
   });
@@ -822,6 +859,11 @@ function gatherGuides() {
         IDB.get('fin-' + s.id).catch(function () {
           return null;
         }),
+        withPhotos === true
+          ? IDB.get('src-' + s.id).catch(function () {
+              return null;
+            })
+          : null,
       ])
         .then(function (r) {
           // (v318 review: a guide not stored at all is said apart from one that couldn't be read: backing up again
@@ -842,6 +884,7 @@ function gatherGuides() {
                 }
               : null;
           if (o && finRecOk(r[1])) o.fin = r[1];
+          if (o && srcRecOk(r[2])) o.src = r[2];
           return o;
         })
         .catch(function () {
@@ -943,9 +986,13 @@ function backupAll(btnId) {
     b0.textContent = 'Preparing…';
     b0.disabled = true;
   }
+  // (v318.34: the tick box read before the wait, as the person left it)
+  const withPhotos = bkPhotos();
   return Promise.resolve(window.SF && SF.flushSave ? SF.flushSave() : null)
     .catch(function () {})
-    .then(gatherGuides)
+    .then(function () {
+      return gatherGuides(withPhotos);
+    })
     .then(function (guides) {
       var now = Date.now(),
         sig = dataSig(),
@@ -2298,7 +2345,11 @@ function restoreGuideList(guides, _fts, done, prog) {
             if (isDup === 'ahead') ahead++;
             else dup++;
             // (v314: the backup's photo of the finished page, for the same guide here without one)
-            finFill(isDup === 'ahead' ? _ex.id : isDup, g.fin, false).then(next);
+            // (v318.34: and its source picture, when the backup has it)
+            Promise.all([
+              finFill(isDup === 'ahead' ? _ex.id : isDup, g.fin, false),
+              srcFill(isDup === 'ahead' ? _ex.id : isDup, g.src, false),
+            ]).then(next);
             return;
           }
           var copy = false,
@@ -2387,13 +2438,21 @@ function restoreGuideList(guides, _fts, done, prog) {
                   })
                   .then(function (k) {
                     kid = k;
-                    // (v314: the guide kept aside keeps its photo of the finished page too)
+                    // (v314: the guide kept aside keeps its photo of the finished page too; v318.34: and its source
+                    // picture)
                     if (k)
-                      return IDB.get('fin-' + _ex.id)
-                        .then(function (r) {
-                          return finFill(k, r, true);
-                        })
-                        .catch(function () {});
+                      return Promise.all([
+                        IDB.get('fin-' + _ex.id)
+                          .then(function (r) {
+                            return finFill(k, r, true);
+                          })
+                          .catch(function () {}),
+                        IDB.get('src-' + _ex.id)
+                          .then(function (r) {
+                            return srcFill(k, r, true);
+                          })
+                          .catch(function () {}),
+                      ]);
                   });
               });
             })
@@ -2445,7 +2504,11 @@ function restoreGuideList(guides, _fts, done, prog) {
                   // (a photo that came with it is backed up too)
                   if (m) m.bk = finIn ? Math.max(m.ts || 1, +m.fn || 0) : m.ts || 1;
                   // (put in before the guide is opened again, below)
-                  (finIn ? finFill(id, g.fin, true) : Promise.resolve()).then(function () {
+                  // (v318.34: and its source picture, when the backup has one; one here is left when it hasn't)
+                  Promise.all([
+                    finIn ? finFill(id, g.fin, true) : Promise.resolve(),
+                    srcRecOk(g.src) ? srcFill(id, g.src, true) : Promise.resolve(),
+                  ]).then(function () {
                     // (also a guide deleted while open, restored with the same id: the open copy becomes the restored one,
                     // v289; libChanged leaves any other guide alone)
                     if (window.SF && SF.libChanged) SF.libChanged(id, 'replaced');

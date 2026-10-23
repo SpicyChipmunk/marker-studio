@@ -45,6 +45,12 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     set gray(v) {
       gray = v;
     },
+    get chroma() {
+      return chroma;
+    },
+    set chroma(v) {
+      chroma = v;
+    },
     get W() {
       return W;
     },
@@ -388,6 +394,8 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     labelsSig: labelsSig,
     stepFaint: stepFaint,
     pgFind: pgFind,
+    // (v318.36: the same in the JOBS worker)
+    pgFindOff: pgFindOff,
     pgKeystone: pgKeystone,
     pgJudge: pgJudge,
     get bgEdgeAll() {
@@ -472,6 +480,20 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     set pgOrig(v) {
       pgOrig = v;
     },
+    // (v318.34: the source picture kept with the guide, 25-source-photo)
+    get srcFrom() {
+      return srcFrom;
+    },
+    get srcSet() {
+      return _srcSet;
+    },
+    srcSettings: srcSettings,
+    srcLoading: srcLoading,
+    srcCheck: srcCheck,
+    // (v319: the fit allowance for a rebuilt picture, test/v319-src-fit; the note when a picture can't be kept, for
+    // its wording, e2e/v319-src-fit)
+    srcFit: srcFit,
+    srcFail: srcFail,
     get phRefit() {
       return _phRefit;
     },
@@ -529,6 +551,8 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get undoBytes() {
       return undoBytes;
     },
+    // (v318.37: a step's share of the budget, for the test of what it counts)
+    snapBytes: snapBytes,
     get undoCount() {
       return undoStack.length;
     },
@@ -621,6 +645,15 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     set pgHint(v) {
       pgHint = v;
     },
+    // (v318.37: the photo's lens, which hatchUnsure reads; and Edit sections' hatching note)
+    get pgF35() {
+      return pgF35;
+    },
+    set pgF35(v) {
+      pgF35 = v;
+    },
+    hatchUnsure: hatchUnsure,
+    hatchNoteText: hatchNoteText,
     updateProgress: updateProgress,
     get labMin() {
       return _labMin;
@@ -655,6 +688,18 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     GEN_HARMS: GEN_HARMS,
     generatePalette: generatePalette,
+    // (v319: Greys + accent's fallback, for test/v319-palettes)
+    get genNote() {
+      return genNote;
+    },
+    get genFell() {
+      return genFell;
+    },
+    genHarmUsed: genHarmUsed,
+    genNeutralWhy: genNeutralWhy,
+    genNeutralShort: genNeutralShort,
+    genNeutralChipOff: genNeutralChipOff,
+    inclExclude: inclExclude,
     activePool: activePool,
     thinGreyM: thinGreyM,
     balPlan: balPlan,
@@ -1349,6 +1394,13 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       set bgRule(v) {
         bgRule = v;
       },
+      // (v318.35) Treat hatching as one section
+      get hatchOne() {
+        return hatchOne;
+      },
+      set hatchOne(v) {
+        hatchOne = v;
+      },
     },
     get undoTop() {
       const t = undoStack[undoStack.length - 1];
@@ -1359,6 +1411,8 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     faintSplit: faintSplit,
     paperGains: paperGains,
     colourShare: colourShare,
+    chromaOf: chromaOf,
+    colourSecs: colourSecs,
     ruledBox: ruledBox,
     autoCropBox: autoCropBox,
     edgePadded: edgePadded,
@@ -1381,9 +1435,31 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       srcColour = v;
     },
     resegment: resegment,
+    // (v318.37: the detection settings kept for Undo before a change to them, as the controls do)
+    reFrom: reFrom,
     get speckGone() {
       return speckGone;
     },
+    // (v318.32: read off the sections, as segQuality does: the Undo tests compare them)
+    get crumbGone() {
+      return crumbCount();
+    },
+    crumbCount: crumbCount,
+    // (v318.35) hatching as one section: the merger, and how many patches the last detection merged
+    hatchMerge: hatchMerge,
+    get hatchMade() {
+      return hatchMade;
+    },
+    get hatchWould() {
+      return hatchWould;
+    },
+    get hatchOne() {
+      return hatchOne;
+    },
+    set hatchOne(v) {
+      hatchOne = v;
+    },
+    mmPx: mmPx,
     speckCap: speckCap,
     trimOffer: trimOffer,
     mandalaGroups: mandalaGroups,
@@ -1419,6 +1495,10 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     processSrcAsync: processSrcAsync,
     get segBusy() {
       return segBusy;
+    },
+    // (v318.36: how many runs found their sections in the worker, segOff)
+    get segOffCount() {
+      return segOffCount;
     },
     get adaptC() {
       return adaptC;
@@ -1463,6 +1543,8 @@ return {
   finGet: finGet,
   finOk: finOk,
   finDrop: finDrop,
+  // (v318.34: a copy's source picture, library.js libDuplicate)
+  srcCopy: srcCopy,
   // (v315: read again after a restore)
   finRefresh: finRefresh,
   edToPlan: edToPlan,

@@ -189,7 +189,8 @@ test('an unexpected error: Send feedback beside Copy details', async () => {
   assert.ok(await page.evaluate(() => JSON.parse(localStorage.getItem('ms-errors')).length >= 1), 'kept');
 });
 
-test('What’s new shows only what came after the version last seen; About lists this version’s', async () => {
+// (v318.32: the Home card of items is one line, "Updated to vX · What’s new"; the items are in Help › What’s new, its own section)
+test('What’s new shows after an update (the line on Home); Help › What’s new lists this version’s', async () => {
   const { ctx, page, errors } = await openApp({
     ...IPAD,
     init: () => {
@@ -210,16 +211,17 @@ test('What’s new shows only what came after the version last seen; About lists
     .map((x) => x.t);
   assert.ok(want.length >= 1);
   assert.ok(await page.isVisible('#whatsNew'));
-  assert.deepEqual(await page.$$eval('#whatsNew li', (l) => l.map((x) => x.textContent)), want);
-  assert.ok(!(await page.textContent('#whatsNew')).includes(wn.find((x) => x.v === 'v306').t), 'not v306’s');
+  assert.equal((await page.textContent('#wnTitle')).trim(), 'Updated to ' + ver);
+  assert.equal(await page.$('#whatsNew li'), null, 'a line, not the items');
   // every entry has its version
   assert.ok(
     wn.every((x) => /^v\d+(\.\d+)?$/.test(x.v) && x.t),
     'tagged',
   );
-  // About: this version's (or the newest that has any)
+  // Help › What's new: this version's (or the newest that has any)
   await page.click('#homeHelp');
   await page.waitForSelector('#helpOverlay.on');
+  await page.click('#helpNews > summary');
   await page.click('#helpAbout > summary');
   const top = wn.find((x) => num(x.v) <= num(ver)).v;
   assert.equal((await page.textContent('#helpWnVer')).trim(), top);
@@ -243,20 +245,15 @@ test('What’s new shows only what came after the version last seen; About lists
   await page.reload();
   await idle(page);
   assert.equal(await page.$('#whatsNew'), null);
-  // from long ago: the four newest
+  // from long ago: the line again (v318.32: it had listed the four newest)
   await page.evaluate(() => {
     localStorage.setItem('ms-last-ver', 'v200');
     localStorage.removeItem('ms-wn-shown');
   });
   await page.reload();
   await idle(page);
-  assert.deepEqual(
-    await page.$$eval('#whatsNew li', (l) => l.map((x) => x.textContent)),
-    wn
-      .filter((x) => num(x.v) <= num(ver))
-      .slice(0, 4)
-      .map((x) => x.t),
-  );
+  assert.ok(await page.isVisible('#whatsNew'));
+  assert.equal((await page.textContent('#wnTitle')).trim(), 'Updated to ' + ver);
   assert.deepEqual(errors, []);
   await ctx.close();
 });
@@ -302,6 +299,7 @@ test('Help: the beta tester guide first, the new glossary entries, “phone or i
   const secs = await page.$$eval('#helpOverlay .hlpsec > summary', (l) => l.map((s) => s.textContent));
   assert.deepEqual(secs, [
     'Beta tester guide',
+    'What’s new', // (v318.32: its own section, second)
     'Photographing a page',
     'Adding markers by code',
     'More you can do',

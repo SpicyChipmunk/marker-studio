@@ -205,7 +205,7 @@ export const SESSIONS = [
       await step('plan-colours-count-10', () => slide(page, 'sfMkCount', 10));
       await step('plan-colours-generate', async () => {
         await seed(page, 11);
-        await click(page, '#sfSrc [data-v="generate"]');
+        await click(page, '#sfSrc [data-v="palette"]');
       });
       await step('plan-colours-harmony', async () => {
         await seed(page, 12);
@@ -217,7 +217,8 @@ export const SESSIONS = [
         await slide(page, 'sfMkCount', await page.evaluate(() => +document.getElementById('sfMkCount').max));
       });
       await step('plan-colours-expand-off', () => click(page, '#sfExpand'));
-      await step('plan-colours-saved-none', () => click(page, '#sfSrc [data-v="saved"]'));
+      // (v318.34: A palette with none saved says so under the card)
+      await step('plan-colours-saved-none', () => click(page, '#sfSrc [data-v="palette"]'));
       await step('plan-colours-saved-one', async () => {
         await page.evaluate(() => {
           state.saved.unshift({ id: 777001, type: 'palette', name: 'P one', keys: [...state.owned].slice(0, 6), ts: 777001 });
@@ -225,7 +226,9 @@ export const SESSIONS = [
         });
         await click(page, '#sfSrc [data-v="owned"]');
         await idle(page);
-        await click(page, '#sfSrc [data-v="saved"]');
+        await click(page, '#sfSrc [data-v="palette"]');
+        await idle(page);
+        await choose(page, 'sfPalPick', '777001');
       });
       await step('plan-colours-saved-two', async () => {
         await page.evaluate(() => {

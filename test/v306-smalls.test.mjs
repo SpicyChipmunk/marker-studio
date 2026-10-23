@@ -177,9 +177,9 @@ test('Home’s latest piece leaves out copies with section edits to build: the n
 
 // ---- 4. the untick toast ----
 
-test('the untick toast is short enough for one line at 390: “Removed Copic BG0000”', () => {
+test('the untick toast is short enough for one line at 390: “Copic BG0000 unticked” (v318.32 wording)', () => {
   const { __eval: E } = createApp({ localStorage: memoryStorage() });
-  assert.equal(E(`addedLine(true, COLORS[keyIdx('Copic|BG0000')], 0)`), 'Removed Copic BG0000');
+  assert.equal(E(`addedLine(true, COLORS[keyIdx('Copic|BG0000')], 0)`), 'Copic BG0000 unticked');
   assert.equal(
     E(`addedLine(false, COLORS[keyIdx('Copic|BG0000')], 0)`),
     'Added Copic BG0000 to your collection',

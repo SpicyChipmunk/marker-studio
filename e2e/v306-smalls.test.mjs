@@ -206,7 +206,7 @@ test('run low: the chips follow a marker marked running low or dry while the fin
 
 // ---- the untick toast ----
 
-test('the untick toast: “Removed Copic BG0000”, one line at 390 with Undo', async () => {
+test('the untick toast: “Copic BG0000 unticked” (v318.32 wording), one line at 390 with Undo', async () => {
   const { page, errors } = await openApp({ width: 390, height: 844 });
   await page.evaluate(() => {
     state.owned = new Set(defaultOwned());
@@ -225,7 +225,7 @@ test('the untick toast: “Removed Copic BG0000”, one line at 390 with Undo', 
   await idle(page);
   assert.equal(
     await page.evaluate(() => document.getElementById('msToast').textContent.replace(/\s*Undo$/, '')),
-    'Removed Copic BG0000',
+    'Copic BG0000 unticked',
   );
   const lines = await page.evaluate(() => {
     const r = document.createRange();

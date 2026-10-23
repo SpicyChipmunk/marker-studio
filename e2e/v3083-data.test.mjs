@@ -85,7 +85,7 @@ test('Ticked back in the grid, a dry marker is fresh again (in palettes and guid
   assert.deepEqual(await where(page, Y26), yours, 'dry: left out of palettes and guides');
   // unticked: the mark stays with it (only an add by hand clears it)
   await tapCell(page, 'Y26');
-  assert.equal(await toastText(page), 'Removed Ohuhu Y26');
+  assert.equal(await toastText(page), 'Ohuhu Y26 unticked');
   assert.equal((await where(page, Y26)).ink, 'dry');
   // that untick's Undo: exactly as it was, mark and all
   await undo(page);

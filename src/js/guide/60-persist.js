@@ -265,6 +265,9 @@ function currentDesignObj(share, edits) {
         // (v306: the paper inside a frame, so a guide opened again knows it: its line to Colour it is back. Not found
         // again on opening, so a guide saved before has none)
         frame: frameSaved(),
+        // (v318.34: the settings its picture was worked on with, beside the picture kept in 'src-<id>'; not in a guide
+        // file, which never carries the picture: 25-source-photo)
+        src: share ? undefined : srcSettings() || undefined,
       },
       // the zones besides Main (34-zones), only when there are any
       zones.length ? { zones: zoneSave() } : {},
@@ -312,6 +315,7 @@ const PL_TOP = [
     'frame',
     'zones',
     'secStates',
+    'src',
   ],
   PL_GONE = [];
 let _plKnown = null;
@@ -358,6 +362,8 @@ function plCarry(prev, pl) {
 function shareGuideFile() {
   const d = currentDesignObj(true);
   if (!d) return;
+  // (v318.34: a guide you've worked with, for Random; library.js)
+  if (typeof guideWorked === 'function') guideWorked(curId);
   // (v308: the version that made it, so an older one can say it's from a newer version)
   if (typeof appVersion === 'function') d.app = appVersion();
   let blob = null;
@@ -1192,6 +1198,8 @@ function keepSlot(m) {
         .then(function (id) {
           if (!id) return false;
           if (api.refreshSaved) api.refreshSaved();
+          // (v318.34: a "(section edits)" copy keeps the guide's picture, 25-source-photo)
+          if (eds) srcCopy(m.savedId, id);
           if (!eds && m.tab && m.tab !== TAB_ID) {
             const a = slotKept();
             a.push({ tab: m.tab, tok: m.tok, id: id });
@@ -1234,6 +1242,9 @@ function slotAdopt() {
   guideDirty = true;
   _lastAuto = null;
   saveStatus();
+  // (v318.37: the other tab saved the sections and their picture's settings, but only this tab has the picture: it's
+  // written beside the entry from here, as firstSave would have)
+  srcKeep(id);
   return true;
 }
 function scheduleAutosave() {
@@ -1899,7 +1910,10 @@ function firstSave(auto) {
     back = _removed && curId != null ? curId : null,
     wasErr = _saveErr,
     pl = d.payload || {},
-    started = (Array.isArray(pl.prog) && pl.prog.length) || (pl.tones && Object.keys(pl.tones).length);
+    started = (Array.isArray(pl.prog) && pl.prog.length) || (pl.tones && Object.keys(pl.tones).length),
+    // (v318.37: the picture this save is of, for when it lands after the person opened something else: srcKeepLate)
+    sPic = srcPic(),
+    sKind = sPic ? srcKind() : null;
   // nothing would be kept (a save might even seem to work, into storage the browser throws away)
   if (storeBlocked()) {
     if (!auto) note(saveFailWords(''));
@@ -1936,6 +1950,9 @@ function firstSave(auto) {
         if (id) {
           if (api.refreshSaved) api.refreshSaved();
           slotClear(gen);
+          // (v318.37: the entry is kept, so its picture goes with it too, from the one the save was of: the payload
+          // carries its settings, and Adjust photo would look for the record for good)
+          srcKeepLate(id, sPic, sKind);
         } else
           toast(
             saveFailWords(
@@ -1964,6 +1981,10 @@ function firstSave(auto) {
         setTimeout(saveStatus, 6100);
         // (v314: and its photo of the finished page, if its record went meanwhile)
         if (back != null) finPutBack(id);
+        // (v318.34: its picture, kept beside it once it's in the Library; a failure is said and never holds it up;
+        // put back after a purge, written again)
+        if (back != null) srcPutBack(id);
+        else srcKeep(id);
         // (v318 polish: after "Page finished.", said a moment before when the tick that finished the page is what's
         // saved, not instead of it: a sample finished as it's first saved had only this heard)
         const fin =
@@ -2029,7 +2050,8 @@ function saveCopy() {
       if (gen !== _gTok || !assignData) return null;
       const d = currentDesignObj();
       if (!d) return null;
-      const nm = copyName(libName(libEntry()));
+      const nm = copyName(libName(libEntry())),
+        from = curId;
       return Promise.resolve(
         api.saveDesign({
           name: nm,
@@ -2059,6 +2081,8 @@ function saveCopy() {
             return;
           }
           if (api.refreshSaved) api.refreshSaved();
+          // (v318.34: the copy keeps the picture too, 25-source-photo)
+          srcCopy(from, id);
           if (gen !== _gTok) return;
           curId = id;
           curName = nm;

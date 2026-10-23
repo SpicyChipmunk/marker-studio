@@ -75,10 +75,14 @@ function styleHarmony(v, d) {
 // (v308) a handed-over palette: its name (at most 80 characters) and scheme (Palette's: any name HARM has, or none)
 function styleFromPal(v, d) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return d;
-  return {
+  var o = {
     name: typeof v.name === 'string' && v.name ? v.name.slice(0, 80) : 'Palette',
     h: styleHarmony(v.h, null),
   };
+  // (v318.34) from: 'library' marks a palette chosen from the Library, whose keys were copied into genPal (so a
+  // deleted Library palette changes nothing); written only when so, as any other value is read as none
+  if (v.from === 'library') o.from = 'library';
+  return o;
 }
 function shadeFlatList() {
   return Object.keys(shadeFlat).map(Number);
@@ -397,7 +401,10 @@ const STYLE_FIELDS = [
     check: styleFromPal,
     undo: true,
     save: function () {
-      return fromPal ? { name: fromPal.name, h: fromPal.h } : undefined;
+      if (!fromPal) return undefined;
+      var o = { name: fromPal.name, h: fromPal.h };
+      if (fromPal.from === 'library') o.from = 'library';
+      return o;
     },
   },
   // the Sections screen's settings: smallest section, background trim, Add's autoclose. The smallest section's
@@ -494,6 +501,18 @@ const STYLE_FIELDS = [
     undo: false,
     save: function () {
       return bgRule || undefined;
+    },
+  },
+  // (v318.35) Treat hatching as one section (hatchOne, 00-state): written only when it's off, so a guide saved with it
+  // on, as every guide is unless the person turned it off, saves exactly as before
+  {
+    key: 'hatchOne',
+    in: 'payload',
+    def: true,
+    check: styleBool,
+    undo: false,
+    save: function () {
+      return hatchOne ? undefined : false;
     },
   },
 ];
@@ -801,6 +820,13 @@ const STYLE_VAR = {
   },
   get bgRule() {
     return bgRule;
+  },
+  get hatchOne() {
+    return hatchOne;
+  },
+  set hatchOne(v) {
+    hatchOne = v;
+    hatchSet = true;
   },
   set bgRule(v) {
     bgRule = v;

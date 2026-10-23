@@ -216,12 +216,13 @@ test('Markers › All: markers you don’t own keep their true colour, with a da
   assert.deepEqual(errors, []);
 });
 
-// (v311: Add markers at the top; the link goes down to Brands I'd buy and Print a swatch chart)
+// (v311: Add markers at the top; the link goes down to Brands I'd buy and Print a swatch chart. v318.33: both buttons in
+// the tools row, Swatch chart without its arrow)
 test('Markers: Add markers and a link to the swatch chart near the top; the bulk buttons stand clear, Untick in ⋯ at full contrast', async () => {
   const { page, errors } = await openApp({ storage: onboardedV265({ [KEY]: appState({ collView: 'all' }) }) });
   await page.click('#mCollection'); await idle(page);
   assert.ok((await page.locator('#mkAddBtn').boundingBox()).y < 844, 'Add markers on the first screen');
-  assert.equal((await page.textContent('#mkJump')).trim(), 'Swatch chart↓');
+  assert.equal((await page.textContent('#mkJump')).trim(), 'Swatch chart');
   assert.ok((await page.locator('#mkJump').boundingBox()).y < 844, 'on the first screen');
   assert.ok(await page.evaluate(() => document.getElementById('presetWrap').getBoundingClientRect().top > 3000), 'the tools are far down');
   await page.click('#mkJump'); await idle(page);
@@ -240,7 +241,7 @@ test('Markers: Add markers and a link to the swatch chart near the top; the bulk
   await page.click('#mPalette');
   assert.equal(await page.isVisible('#mkJump'), false);
   await page.evaluate(() => { state.owned.clear(); save(); }); await page.click('#mCollection'); await idle(page);
-  assert.equal((await page.textContent('#mkJump')).trim(), 'Swatch chart↓');
+  assert.equal((await page.textContent('#mkJump')).trim(), 'Swatch chart');
   assert.equal(await page.isVisible('#mkAddBtn'), false);
   assert.ok(await page.isVisible('#mkAddCard'));
   await page.click('#mkJump'); await idle(page);

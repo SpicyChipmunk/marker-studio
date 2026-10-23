@@ -105,7 +105,16 @@ function pgAngles(q) {
 // Each gives a region; its outline's four straight sides make the page. Returns
 // {tier:'sure'|'unsure'|'none', q (corners, photo pixels), why, ...details}.
 // (v315) opt.coloured: the page is coloured in (a photo of the finished page, 24-page-photo): see pgPaperT
+// (v318.36) In two: the small copy's pixels read on the page (pgShrink: a canvas), then the finding itself on them
+// (pgFindCore), which reads nothing of the page, so the JOBS worker can do it (pgFindOff) for a new photo, where it
+// held the page longest (0.2 s on a computer); pgFind does both here, for a page already open (pgAdjust, pgRefFlat,
+// the finished page's photo), the same code.
 function pgFind(img, opt) {
+  const s = pgShrink(img);
+  return s.why ? s : pgFindCore(s, opt);
+}
+// the small copy of the photo: its pixels (d, w × h), its scale (sc) and the photo's own size; or {tier: 'none', why}
+function pgShrink(img) {
   const iw = img.naturalWidth || img.width,
     ih = img.naturalHeight || img.height;
   if (!(iw > 40 && ih > 40)) return { tier: 'none', why: 'small' };
@@ -130,6 +139,105 @@ function pgFind(img, opt) {
     return { tier: 'none', why: 'read' };
   }
   freeCanvas(c);
+  return { d: d, w: w, h: h, sc: sc, iw: iw, ih: ih };
+}
+// the page found in the JOBS worker from the small copy (its pixels handed over), or on the page where there's no
+// worker or the job fails (the copy made again); an error finding it reads as no page, as pgBegin took it (why 'read')
+function pgFindOff(img, opt) {
+  let s;
+  try {
+    s = pgShrink(img);
+  } catch (e) {
+    return Promise.resolve({ tier: 'none', why: 'read' });
+  }
+  if (s.why) return Promise.resolve(s);
+  const here = function () {
+    try {
+      // (timed for Copy diagnostics as the find was before v318.36, holdTime in safety.js)
+      return holdTime('New photo: find the page', function () {
+        const s2 = pgShrink(img);
+        return s2.why ? s2 : pgFindCore(s2, opt);
+      });
+    } catch (e) {
+      return { tier: 'none', why: 'read' };
+    }
+  };
+  if (!JOBS.on) return Promise.resolve(here());
+  return JOBS.run('pgf', { d: s.d, w: s.w, h: s.h, sc: s.sc, iw: s.iw, ih: s.ih, opt: opt || null }, [
+    s.d.buffer,
+  ]).then(function (f) {
+    return f;
+  }, here);
+}
+// (runs in the worker) the page found from the small copy sent
+function pgWork(m) {
+  return { v: pgFindCore(m, m.opt), t: [] };
+}
+// the finder's code for the worker: pgFindCore and what it calls, and their constants as this page has them
+function pgWorkerSrc() {
+  const K = {
+    PG_CLOTH: PG_CLOTH,
+    PG_BUSY: PG_BUSY,
+    PG_PAPER_ALL: PG_PAPER_ALL,
+    PG_PAPER_VALLEY: PG_PAPER_VALLEY,
+    PG_CROSS_IN: PG_CROSS_IN,
+    PG_SHARP_FAR: PG_SHARP_FAR,
+    PG_CROSS_MAX: PG_CROSS_MAX,
+    PG_SHARP_MIN: PG_SHARP_MIN,
+    PG_EDGE_MIN: PG_EDGE_MIN,
+    PG_EDGE_TILT: PG_EDGE_TILT,
+    PG_EDGE_SPREAD: PG_EDGE_SPREAD,
+    PG_EDGE_K: PG_EDGE_K,
+    PG_EDGE_COVER: PG_EDGE_COVER,
+    PG_EDGE_QUADS: PG_EDGE_QUADS,
+    PG_EDGE_FAR: PG_EDGE_FAR,
+    PG_EDGE_STEP: PG_EDGE_STEP,
+    PG_EDGE_IN: PG_EDGE_IN,
+  };
+  return (
+    [
+      pgHomog,
+      pgArea,
+      pgOrder,
+      pgConvex,
+      pgAngles,
+      pgPaperT,
+      pgFlicker,
+      pgRegion,
+      pgRing,
+      pgQuad,
+      pgCross,
+      pgInset,
+      pgEdges,
+      pgJudge,
+      pgAspectAt,
+      paperGains,
+      pgFindCore,
+      pgWork,
+    ]
+      .map(function (f) {
+        return f.toString();
+      })
+      .join('\n') +
+    '\nconst _cr = ' +
+    _cr.toString() +
+    ';\nconst ' +
+    Object.keys(K)
+      .map(function (k) {
+        return k + ' = ' + K[k];
+      })
+      .join(', ') +
+    ';\n'
+  );
+}
+// the finding itself, on the small copy (s: pgShrink's)
+function pgFindCore(s, opt) {
+  const d = s.d,
+    w = s.w,
+    h = s.h,
+    sc = s.sc,
+    iw = s.iw,
+    ih = s.ih;
   // (v308) a page photographed under a warm lamp: the paper's tint taken out first (each channel scaled so the
   // brightest 5% come out white, at most x2, only when they're tinted), so the paper isn't taken for something
   // colourful like the wooden table under it
@@ -255,10 +363,29 @@ function pgFind(img, opt) {
     });
     cands.push(f);
   });
-  if (!cands.length) return { tier: 'none', why: 'nothing' };
   cands.forEach(function (f) {
     pgJudge(f, iw, ih, opt);
   });
+  // (v318.35) nothing sure (the paper "fills", or no outline at all): the edge fallback's quads, judged the same way;
+  // kept only where they come out better than nothing (an outline judged 'none' there would only change the reason)
+  let edges = '';
+  if (
+    !cands.some(function (f) {
+      return f.tier === 'sure';
+    })
+  ) {
+    const eq = pgEdges(d, w, h, B, gw, gh, dm, hi, mean);
+    edges = eq.length ? '' : 'nothing';
+    eq.forEach(function (f) {
+      f.q = f.q.map(function (p) {
+        return [p[0] / sc, p[1] / sc];
+      });
+      pgJudge(f, iw, ih, opt);
+      if (f.tier !== 'none') cands.push(f);
+      else if (!edges) edges = f.why;
+    });
+  }
+  if (!cands.length) return { tier: 'none', why: 'nothing' };
   // the drawing's own outline wins a tie: on a spiral pad or an open book the paper runs on past the drawing's sheet.
   // (v313) Only when its four sides fit the drawing (its region fills its box as a page would): a diamond drawn round a
   // mandala under a lamp (fill 1.33, a side 21% covered) had won over the paper's own outline, found right beside it
@@ -272,6 +399,8 @@ function pgFind(img, opt) {
   cands[0].others = cands.slice(1).map(function (f) {
     return { kind: f.kind, tier: f.tier, why: f.why };
   });
+  // (v318.35) why the edge fallback's quads were turned down, when they were tried and none was kept
+  if (edges) cands[0].edges = edges;
   // (v315) a finished page on a patterned cloth (a check, stripes): the pattern can pass for the page's edge, so a find
   // there is checked rather than trusted (the corners shown). Only for a photo of a finished page, and only the page found
   if (opt && opt.coloured && cands[0].tier === 'sure' && cands[0].flick > PG_CLOTH) {
@@ -439,14 +568,18 @@ function pgRegion(m0, gw, gh) {
     if (y > 0) push(q - gw);
     if (y < gh - 1) push(q + gw);
   }
-  const reg = new Uint8Array(N),
-    ring = new Uint8Array(N);
+  const reg = new Uint8Array(N);
   let area = 0;
   for (let i = 0; i < N; i++)
     if (!out[i]) {
       reg[i] = 1;
       area++;
     }
+  return { m: reg, ring: pgRing(reg, gw, gh), area: area };
+}
+// the blocks within 2 of a region, outside it (v318.35: shared with the edge fallback's quads)
+function pgRing(reg, gw, gh) {
+  const ring = new Uint8Array(gw * gh);
   for (let y = 0; y < gh; y++)
     for (let x = 0; x < gw; x++) {
       const i = y * gw + x;
@@ -461,7 +594,7 @@ function pgRegion(m0, gw, gh) {
           }
         }
     }
-  return { m: reg, ring: ring, area: area };
+  return ring;
 }
 // four straight sides round the region: the biggest quadrilateral on its hull, then each side re-fitted to the
 // outline points along it, ignoring bumps (a hand, the spiral) and the photo's own edges
@@ -700,11 +833,345 @@ function pgCross(q, dm, hi, gw, gh, B) {
 }
 const PG_CROSS_MAX = 0.2,
   PG_SHARP_MIN = 0.5;
+// (v318.35) The edge fallback (Fable E1-1): a page on a desk nearly as bright as the paper (a light grey or white
+// table, a page lit unevenly) has no paper/table split the block views can find (the paper candidate "fills" or
+// nothing is sure), yet its edge is still a sharp local step everywhere. So: the gradient of the white-balanced grey
+// on the 720 px copy, thinned to its ridges (non-maximum suppression), each ridge pixel voting for the lines through
+// it with its own gradient direction (a Hough accumulator over direction x offset, so only pixels whose step runs
+// the same way add up: a page edge, not a texture); per side the strongest few lines whose step goes bright inward
+// (paper brighter than what is round it); every top/right/bottom/left combination makes a quad, kept when each
+// side has a ridge along at least PG_EDGE_COVER of its length (a page cut off by the photo's edge has no line
+// there and gets no quad: no fourth side is invented); the best few go to pgJudge as any other candidate, with the
+// region, ring, step, flicker and crossing measures taken from the blocks inside the quad.
+const PG_EDGE_MIN = 6, // the gradient step (grey levels per pixel) a ridge must have
+  PG_EDGE_TILT = 40, // degrees a side may turn from the picture's axes
+  PG_EDGE_SPREAD = 4, // degrees either side of a pixel's own gradient direction its vote covers
+  PG_EDGE_K = 5, // lines kept per side
+  PG_EDGE_COVER = 0.5, // the least a side may be covered by ridge pixels
+  PG_EDGE_QUADS = 3, // quads offered to pgJudge
+  PG_EDGE_FAR = 4, // pixels past a ridge where the step must still hold
+  PG_EDGE_STEP = 0.3, // ...by this share of the ridge's own gradient
+  PG_EDGE_IN = 3; // pixels the quad is moved inside its ridges, onto the paper
+// a convex quad with each side moved d px towards its inside (the corners where the moved sides meet); the quad as it
+// was if a corner can't be found
+function pgInset(q, d) {
+  const cx = (q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4,
+    cy = (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4,
+    L = [];
+  for (let e = 0; e < 4; e++) {
+    const a = q[e],
+      b = q[(e + 1) % 4],
+      len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    let nx = -(b[1] - a[1]) / len,
+      ny = (b[0] - a[0]) / len;
+    if ((cx - a[0]) * nx + (cy - a[1]) * ny < 0) {
+      nx = -nx;
+      ny = -ny;
+    }
+    L.push({ nx: nx, ny: ny, c: a[0] * nx + a[1] * ny + d });
+  }
+  const out = [];
+  for (let e = 0; e < 4; e++) {
+    const A = L[(e + 3) % 4],
+      Bl = L[e],
+      det = A.nx * Bl.ny - A.ny * Bl.nx;
+    if (Math.abs(det) < 1e-9) return q;
+    out.push([(A.c * Bl.ny - A.ny * Bl.c) / det, (A.nx * Bl.c - A.c * Bl.nx) / det]);
+  }
+  return out;
+}
+function pgEdges(d, w, h, B, gw, gh, dm, hi, mean) {
+  const n = w * h,
+    L = new Float32Array(n);
+  for (let i = 0, j = 0; i < n; i++, j += 4) L[i] = (d[j] * 77 + d[j + 1] * 150 + d[j + 2] * 29) >> 8;
+  // smoothed 3 x 3 (the noise turns a step's direction by a few degrees; the votes below need it steady), then
+  // Sobel (/4: a step of one grey level reads as 1) and its direction in whole degrees (the way brightness rises)
+  const Lb = new Float32Array(n);
+  for (let y = 1; y < h - 1; y++)
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      Lb[i] =
+        (L[i - w - 1] +
+          L[i - w] +
+          L[i - w + 1] +
+          L[i - 1] +
+          L[i] +
+          L[i + 1] +
+          L[i + w - 1] +
+          L[i + w] +
+          L[i + w + 1]) /
+        9;
+    }
+  const GX = new Float32Array(n),
+    GY = new Float32Array(n),
+    mag = new Float32Array(n);
+  for (let y = 2; y < h - 2; y++)
+    for (let x = 2; x < w - 2; x++) {
+      const i = y * w + x,
+        gx =
+          (Lb[i - w + 1] + 2 * Lb[i + 1] + Lb[i + w + 1] - Lb[i - w - 1] - 2 * Lb[i - 1] - Lb[i + w - 1]) / 4,
+        gy =
+          (Lb[i + w - 1] + 2 * Lb[i + w] + Lb[i + w + 1] - Lb[i - w - 1] - 2 * Lb[i - w] - Lb[i - w + 1]) / 4;
+      GX[i] = gx;
+      GY[i] = gy;
+      mag[i] = gx * gx + gy * gy;
+    }
+  // non-maximum suppression along the gradient: only the ridge of each step remains, each voting (acc: direction in
+  // whole degrees x offset) for the lines through it that run its own way
+  const ridge = new Uint8Array(n),
+    dir = new Int16Array(n).fill(-1),
+    diag = Math.ceil(Math.hypot(w, h)),
+    NR = 2 * diag + 1,
+    acc = new Uint16Array(360 * NR),
+    cs = new Float32Array(360),
+    sn = new Float32Array(360),
+    m2 = PG_EDGE_MIN * PG_EDGE_MIN,
+    T22 = Math.tan(Math.PI / 8);
+  for (let t = 0; t < 360; t++) {
+    cs[t] = Math.cos((t * Math.PI) / 180);
+    sn[t] = Math.sin((t * Math.PI) / 180);
+  }
+  let nr = 0;
+  for (let y = PG_EDGE_FAR; y < h - PG_EDGE_FAR; y++)
+    for (let x = PG_EDGE_FAR; x < w - PG_EDGE_FAR; x++) {
+      const i = y * w + x,
+        m = mag[i];
+      if (m < m2) continue;
+      // the neighbour pair nearest the gradient's direction
+      const gx = GX[i],
+        gy = GY[i],
+        ax = Math.abs(gx),
+        ay = Math.abs(gy),
+        o = ay < T22 * ax ? 1 : ax < T22 * ay ? w : gx > 0 === gy > 0 ? w + 1 : w - 1;
+      if (m < mag[i - o] || m < mag[i + o]) continue;
+      // a step, not a drawn line: well past it either way (PG_EDGE_FAR) the dark side stays dark. A line's two edges
+      // are both bright beyond (so a frame drawn round a mandala, or a tessellation's grid, can't pass as the page).
+      // A share of the ridge's own step only: the desk just outside a page is often darker still (its contact shadow)
+      const ml = Math.sqrt(m),
+        fx = Math.round((PG_EDGE_FAR * gx) / ml),
+        fy = Math.round((PG_EDGE_FAR * gy) / ml),
+        li = L[i + fy * w + fx],
+        lo = L[i - fy * w - fx];
+      if (!(li - lo >= PG_EDGE_MIN && li - lo >= PG_EDGE_STEP * ml)) continue;
+      // (v318.36) and the step lasts: a desk stays darker than the paper well beyond the edge, a drawn line ends and
+      // the paper comes back. A thick line (a grid's 24 px border on a 1,300 px download, 13 px on this copy) still
+      // had its far side dark 4 px past its edge, and the grid's inner lines were taken for a page (e2e random-and-
+      // blend: 16 of 48 boxes kept). Samples past the picture's edge are left out.
+      let gone = false;
+      for (let k = 3; k <= 6 && !gone; k += 3) {
+        const ox = Math.round((k * PG_EDGE_FAR * gx) / ml),
+          oy = Math.round((k * PG_EDGE_FAR * gy) / ml),
+          xx = (i % w) - ox,
+          yy = ((i / w) | 0) - oy;
+        if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+        if (li - L[yy * w + xx] < PG_EDGE_MIN) gone = true;
+      }
+      if (gone) continue;
+      const a = ((Math.round((Math.atan2(gy, gx) * 180) / Math.PI) % 360) + 360) % 360;
+      ridge[i] = 1;
+      dir[i] = a;
+      nr++;
+      for (let t = a - PG_EDGE_SPREAD; t <= a + PG_EDGE_SPREAD; t++) {
+        const tt = (t + 360) % 360,
+          r = Math.round(x * cs[tt] + y * sn[tt]) + diag;
+        acc[tt * NR + r]++;
+      }
+    }
+  if (nr < 4 * B) return [];
+  // per side, the strongest distinct lines whose step rises inward: top (down), right (left), bottom (up), left (right)
+  const centre = [90, 180, 270, 0],
+    vmin = Math.max(3 * B, 0.2 * Math.min(w, h)),
+    sides = [];
+  for (let s = 0; s < 4; s++) {
+    const found = [];
+    for (let dt = -PG_EDGE_TILT; dt <= PG_EDGE_TILT; dt++) {
+      const t = (centre[s] + dt + 360) % 360,
+        row = t * NR;
+      // (the sum of three neighbouring offsets, slid along the row; most of it is empty)
+      let v = acc[row] + acc[row + 1];
+      for (let r = 1; r < NR - 1; r++) {
+        v += acc[row + r + 1];
+        if (v >= vmin) found.push([v, t, r - diag]);
+        v -= acc[row + r - 1];
+      }
+    }
+    found.sort(function (a, b) {
+      return b[0] - a[0];
+    });
+    const keep = [];
+    for (const c of found) {
+      if (keep.length >= PG_EDGE_K) break;
+      let near = false;
+      for (const k of keep) {
+        const da = Math.abs(((c[1] - k.t + 540) % 360) - 180);
+        if (da <= 4 && Math.abs(c[2] - k.r) <= 2 * B) {
+          near = true;
+          break;
+        }
+      }
+      if (!near) keep.push({ v: c[0], t: c[1], r: c[2] });
+    }
+    // the ridge pixels along each line (within a pixel either side, their step within 12 degrees of the line's),
+    // as a running count by position along it, for the cover of any stretch of it
+    for (const k of keep) {
+      const nx = cs[k.t],
+        ny = sn[k.t],
+        t0 = -diag,
+        len = 2 * diag,
+        run = new Uint16Array(len + 1);
+      for (let p = 0; p < len; p++) {
+        const px = k.r * nx - (t0 + p) * ny,
+          py = k.r * ny + (t0 + p) * nx;
+        let hit = 0;
+        for (let o = -1; o <= 1 && !hit; o++) {
+          const x = Math.round(px + o * nx),
+            y = Math.round(py + o * ny);
+          if (x < 0 || y < 0 || x >= w || y >= h) continue;
+          const i = y * w + x;
+          if (ridge[i] && Math.abs(((dir[i] - k.t + 540) % 360) - 180) <= 12) hit = 1;
+        }
+        run[p + 1] = run[p] + hit;
+      }
+      k.nx = nx;
+      k.ny = ny;
+      k.t0 = t0;
+      k.run = run;
+    }
+    sides.push(keep);
+  }
+  if (sides.some((k) => !k.length)) return [];
+  const meet = function (a, b) {
+    const det = a.nx * b.ny - a.ny * b.nx;
+    if (Math.abs(det) < 1e-6) return null;
+    return [(a.r * b.ny - b.r * a.ny) / det, (a.nx * b.r - b.nx * a.r) / det];
+  };
+  // the cover of a side between two corners: of 24 equal stretches, the share holding a ridge pixel
+  const coverOf = function (k, p, q) {
+    const ta = -(p[0] - k.r * k.nx) * k.ny + (p[1] - k.r * k.ny) * k.nx - k.t0,
+      tb = -(q[0] - k.r * k.nx) * k.ny + (q[1] - k.r * k.ny) * k.nx - k.t0,
+      lo = Math.max(0, Math.min(ta, tb)),
+      hi2 = Math.min(k.run.length - 1, Math.max(ta, tb));
+    if (hi2 - lo < 2 * B) return 0;
+    let c = 0;
+    for (let b = 0; b < 24; b++) {
+      const a0 = Math.floor(lo + ((hi2 - lo) * b) / 24),
+        a1 = Math.floor(lo + ((hi2 - lo) * (b + 1)) / 24);
+      if (k.run[a1] > k.run[a0]) c++;
+    }
+    return c / 24;
+  };
+  const quads = [];
+  for (const T of sides[0])
+    for (const R of sides[1])
+      for (const Bt of sides[2])
+        for (const Lf of sides[3]) {
+          const tl = meet(T, Lf),
+            tr = meet(T, R),
+            br = meet(Bt, R),
+            bl = meet(Bt, Lf);
+          if (!tl || !tr || !br || !bl) continue;
+          const q = [tl, tr, br, bl];
+          if (tl[0] >= tr[0] || bl[0] >= br[0] || tl[1] >= bl[1] || tr[1] >= br[1]) continue;
+          if (
+            q.some(function (p) {
+              return p[0] < -0.1 * w || p[1] < -0.1 * h || p[0] > 1.1 * w || p[1] > 1.1 * h;
+            })
+          )
+            continue;
+          if (!pgConvex(q) || pgArea(q) < 0.1 * w * h) continue;
+          const cover = [coverOf(T, tl, tr), coverOf(R, tr, br), coverOf(Bt, br, bl), coverOf(Lf, bl, tl)],
+            mc = Math.min.apply(null, cover);
+          if (mc < PG_EDGE_COVER) continue;
+          quads.push({ q: q, cover: cover, score: cover[0] + cover[1] + cover[2] + cover[3] + 0.5 * mc });
+        }
+  quads.sort(function (a, b) {
+    return b.score - a.score;
+  });
+  const out = [];
+  for (const c of quads) {
+    if (out.length >= PG_EDGE_QUADS) break;
+    if (
+      out.some(function (o) {
+        return o.q.every(function (p, i) {
+          return Math.hypot(p[0] - c.q[i][0], p[1] - c.q[i][1]) < 0.02 * diag;
+        });
+      })
+    )
+      continue;
+    // the blocks inside the quad stand for its region: pgJudge's fill, touch, step and flicker as for the others
+    const reg = new Uint8Array(gw * gh);
+    let area = 0,
+      touch = 0;
+    for (let by = 0; by < gh; by++)
+      for (let bx = 0; bx < gw; bx++) {
+        const x = (bx + 0.5) * B,
+          y = (by + 0.5) * B;
+        let inside = true;
+        for (let e = 0; e < 4 && inside; e++) {
+          const a = c.q[e],
+            b = c.q[(e + 1) % 4];
+          if ((b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]) < 0) inside = false;
+        }
+        if (!inside) continue;
+        reg[by * gw + bx] = 1;
+        area++;
+        if (bx === 0 || by === 0 || bx === gw - 1 || by === gh - 1) touch++;
+      }
+    const ring = pgRing(reg, gw, gh),
+      xc = pgCross(c.q, dm, hi, gw, gh, B);
+    // the step from inside to out, measured at the edge itself (PG_EDGE_FAR either side, every 2 px along each
+    // side) rather than between the whole page and the ring round it: on a desk nearly as bright as the paper the
+    // page as a whole stands out by little (pgJudge would call it 'plain'), its edge by a clear step
+    let stS = 0,
+      stN = 0;
+    for (let e = 0; e < 4; e++) {
+      const a = c.q[e],
+        b = c.q[(e + 1) % 4],
+        len = Math.hypot(b[0] - a[0], b[1] - a[1]),
+        nx = -(b[1] - a[1]) / len,
+        ny = (b[0] - a[0]) / len;
+      for (let t = 1; t < len; t += 2) {
+        const px = a[0] + ((b[0] - a[0]) * t) / len,
+          py = a[1] + ((b[1] - a[1]) * t) / len,
+          xi = Math.round(px + PG_EDGE_FAR * nx),
+          yi = Math.round(py + PG_EDGE_FAR * ny),
+          xo = Math.round(px - PG_EDGE_FAR * nx),
+          yo = Math.round(py - PG_EDGE_FAR * ny);
+        if (xi < 1 || yi < 1 || xo < 1 || yo < 1 || xi >= w - 1 || yi >= h - 1 || xo >= w - 1 || yo >= h - 1)
+          continue;
+        stS += Lb[yi * w + xi] - Lb[yo * w + xo];
+        stN++;
+      }
+    }
+    out.push({
+      kind: 'edges',
+      // (inset PG_EDGE_IN px from the ridges, which sit midway down the step: the warped page had kept a frame of the
+      // desk's shadow round it, as ink, so its margins were closed in and counted as sections — the owner's photo)
+      q: pgOrder(pgInset(c.q, PG_EDGE_IN)),
+      cover: c.cover,
+      fill: (area * B * B) / Math.max(1, pgArea(c.q)),
+      frac: area / (gw * gh),
+      touch: touch / (2 * (gw + gh)),
+      w: w,
+      h: h,
+      cross: xc.cross,
+      sharp: xc.sharp,
+      sharpN: xc.n,
+      step: stN ? stS / stN : 0,
+      flick: pgFlicker(ring, mean, gw, gh),
+    });
+  }
+  return out;
+}
 // how sure we are, and why not
 function pgJudge(f, iw, ih, opt) {
   // (v313) the drawing runs across this outline, or the light changes gently across it rather than in a step: uneven
   // light on a page (its bright half under a lamp), not a page's edge. Nothing is offered to straighten.
-  if (f.kind === 'paper' && (f.cross > PG_CROSS_MAX || (f.sharpN >= 8 && f.sharp < PG_SHARP_MIN))) {
+  // (v318.35: the edge fallback's outlines too, a shadow's edge across the drawing being a straight line)
+  if (
+    (f.kind === 'paper' || f.kind === 'edges') &&
+    (f.cross > PG_CROSS_MAX || (f.sharpN >= 8 && f.sharp < PG_SHARP_MIN))
+  ) {
     f.tier = 'none';
     f.why = 'lit';
     f.score = 0;
@@ -960,6 +1427,21 @@ const PG_WHY = {
   none: 'Drag the four corners onto the corners of the page.',
   adjust: 'Drag a corner to move it.',
 };
+// (v318.32) said after the reason on a fresh photo's corner step: how to put the corners right (U1-3)
+const PG_DRAG = 'Drag the yellow corners onto the page\u2019s corners, then Straighten.';
+// (v318.32) whether the corners sit inside the photo and cover most of it (over half): then Straighten is the main
+// button on a fresh photo the finder was unsure of. A quad with a corner off the photo, or a small one (a page's
+// bright half under a lamp), keeps Keep as is first
+function pgCovers(q) {
+  if (!pgOrig) return false;
+  const iw = pgOrig.naturalWidth || pgOrig.width,
+    ih = pgOrig.naturalHeight || pgOrig.height,
+    m = 0.005;
+  for (let i = 0; i < 4; i++)
+    if (q[i][0] < -iw * m || q[i][0] > iw * (1 + m) || q[i][1] < -ih * m || q[i][1] > ih * (1 + m))
+      return false;
+  return pgArea(q) > 0.5 * iw * ih;
+}
 let _pgT = 0;
 // (v318.11; v318.13 in the warning box, segQuality) a page photographed at a steep angle: the far end of the page has few of the photo's pixels, and half its
 // sections were lost (the guide benchmark's printed set: flat on the desk 94-97% of the sections found, at about 45°
@@ -1003,16 +1485,26 @@ function pgStartQ(found, iw, ih) {
   ];
 }
 // a fresh photo: srcImg holds it at working size, f35 is its lens (0 if unknown)
-function pgBegin(f35) {
+// (v318.36: the page found in the JOBS worker, pgFindOff, the busy state and the photo's preview kept meanwhile;
+// resolves true once it has gone on, false when the photo is stale by then (stale(): a newer picture, 20-image-input).
+// What follows the find, pgFound, is as it was)
+function pgBegin(f35, stale) {
   pgOrig = srcImg;
   pgF35 = f35 || 0;
   pgQ = null;
   pgShape = null;
   pgHint = null;
-  let found = { tier: 'none', why: 'read' };
-  try {
-    found = pgFind(pgOrig);
-  } catch (e) {}
+  const img = pgOrig;
+  return pgFindOff(img).then(function (found) {
+    if ((stale && stale()) || pgOrig !== img || srcImg !== img) return false;
+    segBusySet(false);
+    holdTime('New photo: find the page', function () {
+      pgFound(found);
+    });
+    return true;
+  });
+}
+function pgFound(found) {
   pgSteep = found.tier === 'sure' && pgKeystone(found.q) < PG_STEEP;
   if (found.tier === 'sure') {
     pgReveal(found.q, true);
@@ -1074,6 +1566,9 @@ function pgProceed(msg) {
   rot90 = 0;
   tilt = 0;
   cropRect = null;
+  // (v318.35) Treat hatching as one section starts off for a camera photo (straightened, lens known, or kept as
+  // photographed) and on for a scan, a download or a PDF page, unless it was set for this picture (hatchSet)
+  if (!hatchSet) hatchOne = !(pgQ || pgF35 > 0 || pgHint === 'kept');
   // (v318.14: with a paint between its steps, segRun; a newer photo takes over from it)
   note('Detecting sections\u2026');
   segThen(
@@ -1311,6 +1806,10 @@ function pgControls() {
     return;
   }
   const ok = pgConvex(e.q) && pgAngles(e.q)[0] > 20,
+    // (v318.32) a fresh photo the finder was unsure of: Straighten is the main button once the corners are a convex
+    // quad inside the photo covering most of it (over half); else Keep as is stays first, as v313 had it (U1-3: a
+    // tester tapped the big button on a right outline and kept a skewed page)
+    sure = e.how === 'first' && ok && pgCovers(e.q),
     sh = pgShape || 'auto',
     chip = function (v, l) {
       return '<button data-v="' + v + '" class="' + (sh === v ? 'on' : '') + '">' + l + '</button>';
@@ -1318,6 +1817,8 @@ function pgControls() {
   ctlEl.innerHTML =
     '<div class="sfpgnote">' +
     esc(PG_WHY[e.why] || PG_WHY.adjust) +
+    // (v318.32) and that the yellow corners can be dragged, which only Adjust corners had said (U1-3)
+    (e.how === 'first' && e.why !== 'none' ? ' ' + PG_DRAG : '') +
     '</div>' +
     '<div class="sfpgshape"><span>Page shape</span><div class="segs" id="sfPgShape">' +
     chip('auto', 'Auto') +
@@ -1330,14 +1831,17 @@ function pgControls() {
       : '<div class="sfpgnote warn">Those corners cross over. Drag them back to the page’s four corners.</div>') +
     // (v313) a fresh photo the finder wasn't sure of: Keep as is first, as what it found may not be the page (a page
     // under a lamp, its bright half taken for it); Straighten shows what it's about to do, then does it
-    (e.how === 'first'
+    (e.how === 'first' && !sure
       ? '<div class="sfpgbtns first"><button id="sfPgNo" class="btn-primary">Keep as is</button>' +
         '<button id="sfPgGo" class="btn-soft"' +
         (ok ? '' : ' disabled') +
         '>Straighten</button></div>'
-      : '<div class="sfpgbtns"><button id="sfPgGo" class="btn-primary"' +
-        (ok ? '' : ' disabled') +
-        '>Straighten</button><button id="sfPgNo" class="btn-soft">Cancel</button></div>');
+      : e.how === 'first'
+        ? '<div class="sfpgbtns first"><button id="sfPgGo" class="btn-primary">Straighten</button>' +
+          '<button id="sfPgNo" class="btn-soft">Keep as is</button></div>'
+        : '<div class="sfpgbtns"><button id="sfPgGo" class="btn-primary"' +
+          (ok ? '' : ' disabled') +
+          '>Straighten</button><button id="sfPgNo" class="btn-soft">Cancel</button></div>');
   document.getElementById('sfPgShape').addEventListener('click', function (ev) {
     const b = ev.target.closest('button');
     if (!b) return;

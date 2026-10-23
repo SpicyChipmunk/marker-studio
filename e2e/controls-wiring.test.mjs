@@ -87,12 +87,16 @@ test('the saved palette picker chooses which palette the guide uses', async () =
     save();
     return own.slice(20, 26);
   });
-  await click(page, '#sfSrc [data-v="saved"]');
+  // (v318.34: A palette, then Choose a saved palette ▾ with a placeholder until one is chosen)
+  await click(page, '#sfSrc [data-v="palette"]');
   await idle(page);
   const opts = await page.$$eval('#sfPalPick option', (o) => o.map((x) => [x.value, x.textContent, x.selected]));
-  assert.deepEqual(opts.map((o) => o.slice(0, 2)), [['881002', 'Second (6)'], ['881001', 'First (5)']]);
+  assert.deepEqual(opts, [['', 'Choose a saved palette…', true], ['881002', 'Second (6)', false], ['881001', 'First (5)', false]]);
+  await choose(page, 'sfPalPick', '881002');
+  await idle(page);
   const first = await page.evaluate(() => __mstest.styleVars.savedPalId);
-  assert.equal(String(first), opts.find((o) => o[2])[0], 'the palette chosen is the one shown');
+  assert.equal(first, 881002);
+  assert.equal(await page.$eval('#sfPalPick', (s) => s.value), '881002', 'the palette chosen is the one shown');
   await choose(page, 'sfPalPick', first === 881001 ? '881002' : '881001');
   await idle(page);
   const now = await page.evaluate(() => __mstest.styleVars.savedPalId);
@@ -117,7 +121,9 @@ test('a guide whose saved palette was deleted reopens saying so, and keeps it un
     state.saved.unshift({ id: 882002, type: 'palette', name: 'Gone', keys: own.slice(20, 26), ts: 882002 });
     save();
   });
-  await click(page, '#sfSrc [data-v="saved"]');
+  await click(page, '#sfSrc [data-v="palette"]');
+  await idle(page);
+  await choose(page, 'sfPalPick', '882002');
   await idle(page);
   assert.equal(await page.evaluate(() => __mstest.styleVars.savedPalId), 882002);
   await saveGuide(page);
@@ -137,10 +143,13 @@ test('a guide whose saved palette was deleted reopens saying so, and keeps it un
   await page.waitForFunction(() => !!(window.__mstest && __mstest.assignData));
   await idle(page);
   assert.equal(await page.evaluate(() => __mstest.styleVars.savedPalId), 882002, 'not switched to another palette');
+  // (v318.34: its keys were copied into the guide when chosen, so the card still shows "Gone" and the picker offers
+  // the rest; before, the picker said "Palette deleted — choose another")
   assert.deepEqual(await page.$$eval('#sfPalPick option', (o) => o.map((x) => [x.value, x.textContent, x.selected])), [
-    ['', 'Palette deleted \u2014 choose another', true],
+    ['', 'Choose a saved palette…', true],
     ['882001', 'Keep (5)', false],
   ]);
+  assert.equal(await page.textContent('#sfPalCard .sfpntx b'), 'Gone');
   assert.equal(await used(), before, 'the guide opens as it was saved');
   // choosing one uses it
   await choose(page, 'sfPalPick', '882001');

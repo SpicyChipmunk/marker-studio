@@ -8,6 +8,7 @@ npm run build
 npm run bench:quick      # one size, no JPEG, one photo per set: about 5 minutes the first time, 1 after
 npm run bench            # everything, 356 runs: 10-15 minutes the first time (pages, photos cached), 5 after
 node scripts/bench/run.mjs --only t02,h02 --pics      # some pages, with pictures of every run
+node scripts/bench/run.mjs --photos-only --only h17   # the photo rows alone (the page finder's gate)
 node scripts/bench/run.mjs --compare                  # against bench/baseline.json, row by row
 node scripts/bench/run.mjs --baseline                 # write bench/baseline.json from this run
 npm run bench:colour     # stage B: ~9,900 builds on the pages' true sections, ~8 minutes (--quick: seconds)

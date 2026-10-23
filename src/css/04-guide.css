@@ -125,14 +125,19 @@
 #sfRoot .sfexp {
   height: 44px;
 }
+/* (v318.33) the guide's second level as underline tabs: no track, a 1px baseline and a 2px ink underline on the open
+   tab (Fable V1-2: the white-pill track read as the main nav again). The flat colour is the card's, so the controls
+   don't show through while the tabs are pinned. The size stays --t-base: at --t-md the four labels touch on a phone
+   with Larger text */
 #sfRoot .sftabs {
   display: flex;
-  gap: 3px;
+  gap: 0;
   margin-top: 12px;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: #141417;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: #121215;
   position: sticky;
   top: calc(var(--pinH, 0px) + env(safe-area-inset-top, 0px));
   z-index: 5;
@@ -140,12 +145,12 @@
 #sfRoot .sftabbtn {
   flex: 1;
   min-width: 0;
-  height: 42px;
+  height: 44px;
   min-height: 0;
   border: none;
-  border-radius: var(--r-sm);
+  border-radius: 0;
   background: transparent;
-  color: var(--sub);
+  color: var(--sub-guide);
   font: inherit;
   font-weight: 600;
   font-size: var(--t-base);
@@ -161,8 +166,8 @@
   }
 }
 #sfRoot .sftabbtn.on {
-  background: var(--ink);
-  color: #151318;
+  color: var(--ink);
+  box-shadow: inset 0 -2px 0 var(--ink);
 }
 #sfRoot .sftab {
   padding: 2px 0 6px;
@@ -554,12 +559,14 @@
   flex: 1 1 160px;
   min-width: 0;
 }
-/* (v318.17) a page that looks like a mandala: its heading, then Matching shapes alike and Try Around on a line */
+/* (v318.17) a page that looks like a mandala: Matching shapes alike and Try Around on a line
+   (v318.32: no heading over it any more; the row keeps the heading's room above) */
 #sfRoot #sfCtl .sfmandrow {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 4px 10px;
+  margin-top: 8px;
 }
 #sfRoot #sfCtl .sfmandrow .sfchk {
   margin-top: 0;
@@ -633,6 +640,10 @@
   display: block;
   width: 100%;
   margin-top: 2px;
+}
+/* (v318.32) its hint line, inside the label under the slider */
+#sfRoot .sftex .sfrnghint {
+  display: block;
 }
 /* (v318.16: a plain line, not a dashed box, the only one in the guide) */
 #sfRoot .sfonel {
@@ -845,6 +856,34 @@
   top: 50%;
   height: max(100%, 44px);
   transform: translateY(-50%);
+}
+/* (v318.33) one "chosen" look (the design system): a setting is a teal segment in a track, as Palette's .segs
+   (01-base.css), and the white pill marks only where you are (the main menu). The guide's rows of choices take the
+   track — Colours from, Lean towards, Mood's words, Light from, Fit, Shading's presets, Pattern's family, Look,
+   Direction and Mix, the edit tools, Colour along's order. Cards stay only where there's a picture (Mood's pictures,
+   Flow, Theme's strips), and Include's chips keep their ticks (a filter). The rows' own layouts (grid, flex, gaps)
+   are untouched: the track is the box round them. */
+#sfRoot .sfc-segs:not(.sfthemes):not(.sfincl),
+#sfRoot .sffit:not(#sfShape) {
+  background: var(--glass);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 3px;
+}
+#sfRoot .sfc-segs:not(.sfthemes):not(.sfincl) > .sfedit,
+#sfRoot .sffit:not(#sfShape) > .sfedit {
+  /* (--h-seg in the track, as Palette's segments; the 44px tap area stays, .sfedit::after) */
+  min-height: var(--h-seg);
+  border-color: transparent;
+  background: transparent;
+  color: var(--sub-guide);
+  font-weight: 600;
+}
+#sfRoot .sfc-segs:not(.sfthemes):not(.sfincl) > .sfedit.on,
+#sfRoot .sffit:not(#sfShape) > .sfedit.on {
+  background: var(--pick-bg);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--pick-edge);
 }
 /* the start card's buttons: a set 44px keeps them the same, one line each */
 #sfRoot #sfStart button:not(.hlpq):not(.sfstpic) {
@@ -1415,7 +1454,8 @@
 #sfRoot #sfCtl .sfzchip.on {
   background: var(--pick-bg);
   border-color: var(--pick-edge);
-  font-weight: 700;
+  /* (v318.33) 600, a control's weight; 700 is the primary call's only */
+  font-weight: 600;
 }
 #sfRoot #sfCtl .sfzchip .sfzpen {
   margin-left: 7px;

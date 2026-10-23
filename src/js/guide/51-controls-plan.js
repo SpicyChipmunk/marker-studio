@@ -10,8 +10,9 @@ function ctlPlan() {
   }
   // (v318.1: said shorter, its words of filler gone (palette, main colour, mood): with large text it had covered
   // the most of the picture)
+  // (v318.34: a palette you chose is kept, and the toast says so in the harmony's place, U1-5)
   const _snote = surpriseNote
-    ? HARM[genHarmony] +
+    ? (surpriseNote === 'kept' ? 'Kept your palette' : HARM[genHarmUsed()]) +
       ' \u00b7 ' +
       (family === 'random'
         ? 'Random: ' + surpriseRoles()
@@ -353,6 +354,166 @@ function themeChip(k, s) {
     '></span></button>'
   );
 }
+// (v318.34) the palette the guide holds, for the Colours tab's card: its keys, name, scheme (a HARM key or null),
+// where it came from, and gone (an older guide's Library palette, since deleted: nothing to draw)
+function palCardInfo() {
+  var o = { keys: [], name: '', h: null, src: '', gone: false };
+  if (paletteSource === 'saved' && !palLinked()) {
+    var pl = (api.listPalettes ? api.listPalettes() : []).filter(function (x) {
+      return x.id === savedPalId;
+    })[0];
+    if (pl) {
+      o.keys = genPalKeys(pl.keys || []);
+      o.name = pl.name || 'Palette';
+      o.h = HARM[pl.h] ? pl.h : null;
+      o.src = 'From your Library';
+    } else o.gone = true;
+    return o;
+  }
+  o.keys = genPal.slice();
+  if (fromPal) {
+    o.name = fromPal.name;
+    o.h = fromPal.h;
+    // (v318.37: the Library palette it was copied from, since deleted: said, and Save to Library offered again, X3-6)
+    o.src =
+      fromPal.from === 'library'
+        ? palLinked() && !palListed()
+          ? 'From your Library (deleted)'
+          : 'From your Library'
+        : 'From Palette';
+  } else {
+    // (v319: the scheme it was made with, Analogous + accent while Greys + accent falls back, Y3-3)
+    o.name = HARM[genHarmUsed()] || 'Palette';
+    o.src = 'Made here';
+  }
+  return o;
+}
+// (v318.37) whether the Library still has the palette the guide links to (savedPalId)
+function palListed() {
+  return (api.listPalettes ? api.listPalettes() : []).some(function (x) {
+    return x.id === savedPalId;
+  });
+}
+// (v318.34) whether the palette on the card is in the Library as it is (Save to Library has nothing to add)
+function palInLibrary() {
+  // (v318.37: a linked palette only while the Library lists it; deleted, its keys are looked for like any other's)
+  if (palLinked()) {
+    if (palListed()) return true;
+  } else if (paletteSource === 'saved' && !palCardInfo().gone) return true;
+  var keys = genPalKeys(genPal);
+  return (api.listPalettes ? api.listPalettes() : []).some(function (s) {
+    return (
+      s.keys &&
+      s.keys.length === keys.length &&
+      s.keys.every(function (k, i) {
+        return k === keys[i];
+      })
+    );
+  });
+}
+// (v318.34) the card and the row of actions under it (see ctlPlanColours)
+function palCardHTML() {
+  var info = palCardInfo(),
+    pals = api.listPalettes ? api.listPalettes() : [],
+    html = '';
+  if (info.gone) {
+    html +=
+      '<div id="sfPalCard" class="sfpalnote sfpalgone sfc-mt8" role="group" aria-label="The palette"><div class="sfpntx"><b>Palette deleted</b><span>Choose another</span></div>' +
+      '<button type="button" id="sfPalOff" class="mclose" aria-label="Stop using a palette: your markers instead">' +
+      ic('x') +
+      '</button></div>';
+  } else {
+    var sw = info.keys
+        .slice(0, 12)
+        .map(function (k) {
+          var i = keyIdx(k);
+          return i != null ? '<span style="background:' + COLORS[i].hex + '"></span>' : '';
+        })
+        .join(''),
+      n = resolveKeys(info.keys).length,
+      line = [nWord(n, 'marker'), info.h && info.h !== 'custom' ? HARM[info.h] : '', info.src]
+        .filter(Boolean)
+        .join(' · ');
+    html +=
+      '<div id="sfPalCard" class="sfpalnote sfc-mt8" role="group" aria-label="The palette"><div class="sstrip" aria-hidden="true">' +
+      sw +
+      '</div><div class="sfpntx"><b>' +
+      esc(info.name) +
+      '</b><span>' +
+      esc(line) +
+      '</span></div><button type="button" id="sfPalOff" class="mclose" aria-label="Stop using this palette: your markers instead">' +
+      ic('x') +
+      '</button></div>';
+    // the cap: a palette used as it is caps the count at its size (the count had jumped, 16 to "all · 8", unsaid)
+    if (!expand && n > 0 && limitN > n)
+      html +=
+        '<div id="sfPalCap" class="sfc-note sfc-mt6">A palette of ' + n + ': tick Expand for more.</div>';
+  }
+  html +=
+    '<div class="sfpalact sfc-mt8"><button type="button" id="sfGenNew" class="sfghost">New palette</button>' +
+    '<select id="sfHarm" class="sfc-select" aria-label="Harmony">' +
+    GEN_HARMS.map(function (h) {
+      // (v318.34) Greys + accent below 3 greys: greyed, and the option says why (v319: or with Greys & black off,
+      // genNeutralWhy; it stays the one chosen, shown greyed, while generatePalette falls back, Y3-2/3)
+      // (v319, Ben's choice: with only Greys & black off it can be chosen, and choosing it turns them on)
+      var why = h === 'neutral' ? genNeutralShort() : null;
+      return (
+        '<option value="' +
+        h +
+        '"' +
+        (genHarmony === h ? ' selected' : '') +
+        (why ? ' disabled' : '') +
+        '>' +
+        HARM[h] +
+        (why ? ' — ' + lcFirst(why) : '') +
+        '</option>'
+      );
+    }).join('') +
+    '</select></div>';
+  if (genNote) html += '<div class="sfc-note sfc-mt6" id="sfGenNote">' + esc(genNote) + '</div>';
+  html += '<div class="sfpalact sfc-mt8">';
+  if (!info.gone)
+    html +=
+      '<button type="button" id="sfPalEdit" class="sfghost">Change it in Palette ' +
+      ic('chevron-right') +
+      '</button>' +
+      (palInLibrary() ? '' : '<button type="button" id="sfPalSave" class="sfghost">Save to Library</button>');
+  // (the Library palette in use shown as chosen; else the placeholder, also for one chosen and since deleted)
+  var picked =
+    paletteSource === 'saved' && !info.gone
+      ? pals.some(function (pp) {
+          return pp.id === savedPalId;
+        })
+      : false;
+  if (pals.length)
+    html +=
+      '<select id="sfPalPick" class="sfc-select" aria-label="Choose a saved palette"><option value="" disabled' +
+      (picked ? '' : ' selected') +
+      '>Choose a saved palette\u2026</option>' +
+      pals
+        .map(function (pp) {
+          return (
+            '<option value="' +
+            pp.id +
+            '"' +
+            (picked && pp.id === savedPalId ? ' selected' : '') +
+            '>' +
+            esc(pp.name || 'Palette') +
+            ' (' +
+            (pp.keys ? pp.keys.length : 0) +
+            ')</option>'
+          );
+        })
+        .join('') +
+      '</select>';
+  html += '</div>';
+  if (!pals.length)
+    html +=
+      '<div class="sfc-note sfc-mt6" id="sfPalNone">No saved palettes yet' +
+      (info.gone ? '.' : ': Save to Library keeps this one.') +
+      '</div>';
+  return html;
+}
 function ctlPlanColours() {
   let html = '<div class="sftab" data-tab="colours"' + ctlTabAttrs('colours') + '>' + zoneChipsHTML();
   // (v318.16: on a phone, with your own markers as the source, Filters, Temperature, Include and the count under More
@@ -377,7 +538,11 @@ function ctlPlanColours() {
       (_nr || _one ? ' sfoff' : '') +
       '">' +
       mkCountCtl(_nr ? 'one' : _one ? 'off' : '') +
-      '</div>';
+      '</div>' +
+      // (v318.32: why the count is greyed, as its cause is on another tab)
+      (_nr
+        ? '<div id="sfMkNrNote" class="sfc-note sfc-mt6">No repeats is on (Pattern): every section its own marker.</div>'
+        : '');
     if (_srcSeed && (_seedN || paletteSource === 'generate')) {
       _expH +=
         '<label class="sfchk sfc-check sfc-inline sfc-mt8"><input type="checkbox" id="sfExpand"' +
@@ -397,70 +562,20 @@ function ctlPlanColours() {
     }
   }
   html += _mkH;
+  // (v318.34) Colours from: Your markers | A palette. "A palette" is whatever palette the guide holds, made here (New
+  // palette), handed over from Palette or chosen from the Library: a card with its swatches, name, count, scheme and
+  // where it came from, and under it New palette with the harmony select, Change it in Palette, Choose a saved
+  // palette and Save to Library. Before: Owned | Saved palette | Generate palette, where a palette handed over from
+  // Palette lit "Generate palette" and showed only as a greyed option in the harmony select (G5, P2-10)
+  var _onPal = paletteSource === 'saved' || paletteSource === 'generate';
   if (family !== 'manual')
     html +=
       '<div class="sfsublbl">Colours from</div><div id="sfSrc" role="group" aria-label="Colours from" class="sfc-segs sfc-mt6">' +
-      ctlSeg('owned', 'Owned', paletteSource === 'owned') +
-      ctlSeg('saved', 'Saved palette', paletteSource === 'saved') +
-      ctlSeg('generate', 'Generate palette', paletteSource === 'generate') +
+      ctlSeg('owned', 'Your markers', paletteSource === 'owned') +
+      ctlSeg('palette', 'A palette', _onPal) +
       '</div>';
-  if (family !== 'manual' && paletteSource === 'saved') {
-    const pals = api.listPalettes ? api.listPalettes() : [];
-    if (!pals.length) {
-      html +=
-        '<div class="sfc-note sfc-mt6">No saved palettes yet \u2014 make one in Palette, or use Share & print \u203a Save as palette.</div>';
-    } else {
-      // a guide whose palette has since been deleted (or never had one) says so, and uses your markers until you
-      // choose; showing the first palette as chosen would quietly switch the guide to it at its next change
-      const found = pals.some(function (pp) {
-        return pp.id === savedPalId;
-      });
-      html +=
-        '<select id="sfPalPick" class="sfc-select" aria-label="Saved palette">' +
-        (found
-          ? ''
-          : '<option value="" selected disabled>' +
-            (savedPalId == null ? 'Choose a palette' : 'Palette deleted \u2014 choose another') +
-            '</option>') +
-        pals
-          .map(function (pp) {
-            return (
-              '<option value="' +
-              pp.id +
-              '"' +
-              (pp.id === savedPalId ? ' selected' : '') +
-              '>' +
-              esc(pp.name || 'Palette') +
-              ' (' +
-              (pp.keys ? pp.keys.length : 0) +
-              ')</option>'
-            );
-          })
-          .join('') +
-        '</select>';
-    }
-  } else if (family !== 'manual' && paletteSource === 'generate') {
-    // (v308: a palette handed over from Palette shows as itself; choosing a harmony makes a new one)
-    html +=
-      '<select id="sfHarm" class="sfc-select" aria-label="Harmony">' +
-      (fromPal
-        ? '<option value="" selected disabled>' +
-          esc(fromPal.name) +
-          (fromPal.h ? ' (' + HARM[fromPal.h] + ')' : '') +
-          '</option>'
-        : '') +
-      GEN_HARMS.map(function (h) {
-        return (
-          '<option value="' +
-          h +
-          '"' +
-          (genHarmony === h && !fromPal ? ' selected' : '') +
-          '>' +
-          HARM[h] +
-          '</option>'
-        );
-      }).join('') +
-      '</select>';
+  if (family !== 'manual' && _onPal) {
+    html += palCardHTML();
   } else {
     html += FOLD;
     {
@@ -742,9 +857,10 @@ function ctlPlanPattern() {
     html += gradSpeckHTML();
     if (_mf) html += '</div>';
   } else if (family === 'random') {
-    // (Balance, its bar, Keep touching sections clearly different and No repeats: 31-balance; v318.17: those two
-    // under More options on a phone, balHTML)
-    html += balHTML(_mf);
+    // (Balance, its share strip and role rows, Keep touching sections clearly different and No repeats: 31-balance;
+    // v318.17: those two under More options on a phone, balHTML; v318.34: then Random's own row of Shuffle and Other
+    // pairings, balActionsHTML, before the shared Pin colours below)
+    html += balHTML(_mf) + balActionsHTML();
   } else if (family === 'blend') {
     html +=
       infoLine(
@@ -884,13 +1000,17 @@ function ctlPlanPattern() {
       '<div class="sfshpin"><button id="sfFillAll" class="sfghost">Fill unpinned with a colour…</button></div>';
   }
   {
-    const _shId = family === 'gradient' ? 'sfVary' : family === 'random' ? 'sfShuffle' : '',
+    // (v318.34: Random's Shuffle is in its own row above, balActionsHTML, so Pin colours is alone here for it)
+    const _shId = family === 'gradient' ? 'sfVary' : '',
       _pin = family !== 'blend' && family !== 'manual',
       // a saved palette that runs end to end (not round the colour wheel) has nothing to shuffle
       _shOff = family === 'gradient' && savedRamp();
     if (_shId || _pin)
       html +=
-        '<div class="sfshpin sfrow2">' +
+        // (v318.34: under Random's own row, no second rule and a smaller gap, sfpinonly)
+        '<div class="sfshpin sfrow2' +
+        (family === 'random' ? ' sfpinonly' : '') +
+        '">' +
         (_shId
           ? '<button id="' +
             _shId +
@@ -956,11 +1076,12 @@ function morePatternSum() {
 }
 // (v318.17) a page that looks like a mandala, in Gradient and Random: Matching shapes alike, and with Radial's rings
 // Try Around
+// (v318.32: the box's one sentence says it all; the "Looks like a mandala" heading over it is gone, U1-9)
 function mandalaHTML(around) {
   const m = matchAlikeHTML();
   if (!m) return '';
   return (
-    '<div class="sfmand" role="group" aria-labelledby="sfMandLbl"><div class="sfsublbl" id="sfMandLbl">Looks like a mandala</div><div class="sfmandrow">' +
+    '<div class="sfmand"><div class="sfmandrow">' +
     m +
     (around
       ? '<span id="sfAroundTip" class="sfc-note">\u00b7 <button type="button" id="sfUseAround" class="sflink">Try Around</button></span>'
@@ -990,7 +1111,10 @@ function ctlPlanShading() {
     '</div>' +
     (shadeMode !== 'off' && !shStyleCur()
       ? '<div id="sfShCustom" class="sfc-note sfc-mt6">' + shCustomText() + '</div>'
-      : '');
+      : '') +
+    // (v318.32) what Neuro is, a line under the row (after the Custom line, which shRowSync puts right after the
+    // row): the name alone means nothing to a newcomer (U1-8)
+    '<div id="sfShNeuro" class="sfc-note sfc-mt6">Neuro is for neurographic art: each section lit from its edges, not from one side.</div>';
   if (shadeMode !== 'off') {
     const _fp = shadeFromPhoto(),
       _nf = Object.keys(shadeFlat).length,
@@ -1148,11 +1272,13 @@ function ctlPlanShading() {
   html +=
     '</div>' +
     (_mf ? moreIn('shading', 2) : '') +
+    // (v318.32) a hint line under the slider, as every other slider has (U1-8). Inside the label, so texture stays the
+    // tab's last element; the slider is named by aria-label and the hint describes it, so the hint isn't its name
     '<label class="sftex">Marker texture <b id="sfTexVal">' +
     Math.round(texAmt * 100) +
     '%</b><input type="range" id="sfTex" min="0" max="100" value="' +
     Math.round(texAmt * 100) +
-    '"></label>' +
+    '" aria-label="Marker texture" aria-describedby="sfTexHint"><span id="sfTexHint" class="sfrnghint">Higher: the colours look more like marker strokes on paper</span></label>' +
     (_mf ? '</div>' : '');
   return html + '</div>';
 }

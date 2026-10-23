@@ -343,6 +343,8 @@ function distinctMk() {
 // (the shared image, its layout and Reveal's celebration: 89-show.js)
 function downloadClip() {
   if (!revBlob) return;
+  // (v318.34: a guide you've worked with, for Random; library.js)
+  if (typeof guideWorked === 'function') guideWorked(curId);
   // (v310.1: named after the guide, as Save image and the PDF are)
   handOver(
     revBlob,

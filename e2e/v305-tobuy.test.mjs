@@ -45,7 +45,7 @@ test('To buy: ticking a marker in the grid takes it off the list; Undo puts it b
   await tapCell(page, 'Y26');
   assert.deepEqual(await wishKeys(page), ['Ohuhu|G43', 'Ohuhu|R28']);
   await page.click(`#results .cell[data-i="${await idx(page, 'Ohuhu|Y26')}"]`); await idle(page);
-  assert.equal(await toastText(page), 'Removed Ohuhu Y26');
+  assert.equal(await toastText(page), 'Ohuhu Y26 unticked');
   assert.deepEqual(await wishKeys(page), ['Ohuhu|G43', 'Ohuhu|R28'], 'unticking doesn’t put it back');
   // and that untick's Undo makes it yours again without touching the list
   await undo(page);

@@ -161,7 +161,7 @@ test('Mood: six choices in two rows, in order; filters your markers; old guidesâ
   assert.deepEqual(errors, []);
 });
 
-test('Mood with a saved palette is greyed out (used as it is); with Generate palette it goes to the generator', async () => {
+test('Mood with a saved palette is greyed out (used as it is); with a palette made here it goes to the generator', async () => {
   const { page, errors } = await openApp({ init: SEEDED });
   await sampleGuide(page);
   // what the guide asks the generator for
@@ -172,7 +172,7 @@ test('Mood with a saved palette is greyed out (used as it is); with Generate pal
   });
   await tab(page, 'colours');
   await page.evaluate(() => window.__seed(3));
-  await click(page, '#sfSrc [data-v="generate"]'); await idle(page);
+  await click(page, '#sfSrc [data-v="palette"]'); await idle(page);
   await click(page, '#sfMood [data-v="vivid"]'); await idle(page);
   const calls = await page.evaluate(() => window.__genCalls);
   assert.ok(calls.length >= 2);
@@ -183,7 +183,8 @@ test('Mood with a saved palette is greyed out (used as it is); with Generate pal
   // a saved palette
   await answerAsks(page);
   await page.evaluate(() => { const id = 777001; state.saved.unshift({ id, type: 'palette', name: 'P', keys: [...state.owned].slice(0, 6), ts: id }); save(); SF.setSavedSource(id); });
-  await click(page, '#sfSrc [data-v="saved"]'); await idle(page);
+  // (v318.34: A palette is lit already for it; tapped again it lays the plan again)
+  await click(page, '#sfSrc [data-v="palette"]'); await idle(page);
   assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#sfMood button')].map((b) => b.disabled)), [true, true, true, true, true, true]);
   assert.equal(await poolLine(page), 'All 6 of the saved paletteâ€™s markers, as it is');
   const was = await keys(page);
@@ -239,7 +240,7 @@ test('loop or ramp: your markers loop (Shuffle turns the start); a narrow genera
   // a one-hue generated palette: a ramp, lighter end first
   await tab(page, 'colours');
   await page.evaluate(() => window.__seed(5));
-  await click(page, '#sfSrc [data-v="generate"]'); await idle(page);
+  await click(page, '#sfSrc [data-v="palette"]'); await idle(page);
   await page.selectOption('#sfHarm', 'mono'); await idle(page);
   const plan = await page.evaluate(() => { const p = __mstest.grad.plan(__mstest.grad.poolSource(16), __mstest.countedList().length); return { loop: p.loop, L: p.seq.map((m) => m.lab[0]) }; });
   assert.equal(plan.loop, false);

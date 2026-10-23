@@ -40,8 +40,9 @@ const appState = (extra = {}) => JSON.stringify({ mode: 'home', ownedSeedV: 2, c
 test('Home keeps < and > in guide names', async () => {
   const g = { id: 5, type: 'guide', name: 'Cats <3 & dogs >', keys: ['Ohuhu|R014'], ts: Date.now() };
   const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState({ saved: [g] }) }) });
-  await page.waitForSelector('#sfRecent .sfRecName');
-  assert.equal(await page.textContent('#sfRecent .sfRecName'), 'Cats <3 & dogs >');
+  // (v318.32: the newest guide, not started, is on Home's card, not in Your guides: e2e/v31832-g2)
+  await page.waitForSelector('#homeCont .hccard[data-gid] .hcname');
+  assert.equal(await page.textContent('#homeCont .hcname'), 'Cats <3 & dogs >');
   assert.deepEqual(errors, []);
 });
 
@@ -54,8 +55,9 @@ test('Home keeps a name that starts with "Guide"; the Resume card uses the appâ€
   const g = (id, name) => ({ id, type: 'guide', name, keys: ['Ohuhu|R014', 'Ohuhu|B08'], ts: id, n: 4, W: 10, H: 10 });
   const auto = JSON.stringify({ name: 'Guide for Mum', dirty: true, ts: Date.now(), keys: ['Ohuhu|R014'] });
   const { page, errors } = await openAtScale(1.6, { storage: onboardedV265({ [KEY]: appState({ saved: [g(2000, 'Guide for Mum'), g(1000, 'Guide')] }), 'ms-guide-auto': auto }) });
+  // (v318.32: the newest guide is on Home's card, the others in Your guides: e2e/v31832-g2)
   await page.waitForSelector('#sfRecent .sfRecName');
-  const names = await page.$$eval('#sfRecent .sfRecName', (l) => l.map((x) => x.textContent));
+  const names = await page.$$eval('#homeCont .hccard[data-gid] .hcname, #sfRecent .sfRecName', (l) => l.map((x) => x.textContent));
   assert.equal(names[0], 'Guide for Mum');
   assert.notEqual(names[1], 'Guide', 'the default name still gets a made-up one');
   await page.waitForSelector('#sfResumeGo');
@@ -197,11 +199,12 @@ test('v285: the Continue card is the newest guide part-way coloured â€” its pict
   await sampleGuide(page); await saveGuide(page);
   await letterGuide(page); await page.waitForFunction(() => __mstest.inLibrary); await idle(page);
   await page.click('#mHome'); await idle(page);
-  // (v300: on an iPad, the start card in its place)
+  // (v300: on an iPad, the start card in its place; v318.32: the newest guide, not started, on the card instead, as
+  // Open, not Continue colouring: e2e/v31832-g2)
   assert.equal(await page.isVisible('#homeCont .hccard[data-cont]'), false, 'nothing started: no Continue card');
-  assert.equal(await page.isVisible('#homeCont .hcstart'), true, 'the start card instead');
+  assert.equal(await page.isVisible('#homeCont .hccard:not([data-cont])'), true, 'the guide just built instead');
   assert.equal(await page.isVisible('#homeView .homehead'), false, 'and no intro line once there are guides');
-  assert.equal(await page.locator('#sfRecent .sfRecCard').count(), 2);
+  assert.equal(await page.locator('#sfRecent .sfRecCard').count(), 1);
   // colour a few sections of the Letter page
   await page.click('#mSections'); await idle(page);
   await page.click('#sfColor'); await idle(page);

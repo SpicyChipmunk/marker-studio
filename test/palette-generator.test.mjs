@@ -65,7 +65,8 @@ function tools(a) {
 
 test('the sizes each scheme offers', () => {
   const R = JSON.parse(JSON.stringify(createApp().__eval('HARM_RANGE')));
-  assert.deepEqual(R, { complementary: [2, 8], analogous: [2, 8], triadic: [3, 10], split: [3, 10], tetradic: [4, 12], mono: [2, 10], rainbow: [6, 16], custom: [2, 16], photo: [4, 16] });
+  // (v318.34: Light to shadow, Analogous + accent and Greys + accent, 3–8; 3–6 below 72 markers in play: rampMax)
+  assert.deepEqual(R, { complementary: [2, 8], analogous: [2, 8], triadic: [3, 10], split: [3, 10], tetradic: [4, 12], mono: [2, 10], shadow: [3, 8], accent: [3, 8], neutral: [3, 8], rainbow: [6, 16], custom: [2, 16], photo: [4, 16] });
 });
 
 test('320 set: every scheme at every size is full, clearly different, grey-free and on its hues', () => {
@@ -225,7 +226,11 @@ test('re-rolling one colour: a free marker near it, clearly different from the r
         const next = pal.slice();
         next[k] = pick;
         const others = pal.filter((_, p) => p !== k);
-        assert.ok(others.every((i) => t.de(i, pick) >= need), `${h}: clearly different from the others`);
+        // (v318.34: a Monochrome of 10 is a ramp over the family's whole range, which can leave no free marker in
+        // its hue window (round the palette's mean hue, as rerollPick looks) 6 from every other; then the re-roll
+        // comes as close as it can, and the note says so)
+        const roomLeft = h !== 'mono' || a.__eval(`(() => { const pal = ${JSON.stringify(pal)}, others = ${JSON.stringify(others)}; let x = 0, y = 0; for (const i of pal) { x += Math.cos(LCH[i][2] * Math.PI / 180); y += Math.sin(LCH[i][2] * Math.PI / 180); } const bh = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; return COLORS.some((c, i) => inPool(i) && !pal.includes(i) && LCH[i][1] >= GREY_C && hueDist(LCH[i][2], bh) <= 25 && others.every((o) => de2000(LAB[o], LAB[i]) >= ${need})); })()`);
+        if (roomLeft) assert.ok(others.every((i) => t.de(i, pick) >= need), `${h}: clearly different from the others`);
         if (h !== 'mono') assert.ok(t.lch(pick)[1] >= t.GREY_C, `${h}: not a near-grey`);
         if (h === 'analogous') assert.ok(arc(t.clearHues(next)) <= 120, 'analogous stays within 120°');
         else if (h !== 'mono') {

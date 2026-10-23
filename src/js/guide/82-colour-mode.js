@@ -112,6 +112,65 @@ function markBack(was, done) {
   if (done) celebrated = false;
   normalizeTones();
 }
+// (v318.35) A page partly coloured in already (E1-3): once its guide is built from sections found afresh, the sections
+// coloured in (colourSecs, 10-segment) are offered as done, in a toast with a button, after the first build's bloom.
+// Never marked done by themselves: a fill the app reads as a marker's may be a wash or a print's tint. Taking the
+// offer ticks them, and says so with an Undo that puts the ticks back as they were (markBack, as Mark all has)
+function colourOffer() {
+  if (!assignData || !chroma) return;
+  let secs;
+  try {
+    secs = colourSecs().filter(function (l) {
+      return assignData.assign[l] && !colored[l];
+    });
+  } catch (e) {
+    return;
+  }
+  const n = secs.length;
+  if (!n) return;
+  const g = loadGen,
+    K = comps.length;
+  bloomAfter(function () {
+    if (g !== loadGen || !assignData || comps.length !== K) return;
+    toastAction(
+      n === 1 ? 'One section looks coloured in already.' : n + ' sections look coloured in already.',
+      n === 1 ? 'Mark it done' : 'Mark them done',
+      function () {
+        if (g !== loadGen || !assignData || comps.length !== K) return;
+        const was = {},
+          P = tp();
+        secs.forEach(function (l) {
+          if (!assignData.assign[l] || colored[l]) return;
+          was[l] = [colored[l], P[l], heldSh[l] || null];
+          colored[l] = 1;
+          P[l] = 0;
+        });
+        const k = Object.keys(was).length;
+        if (!k) return;
+        guideDirty = true;
+        const wasC = celebrated;
+        checkComplete();
+        renderGuide();
+        updateProgress();
+        if (sfmode === 'color') renderFocusMarkers();
+        if (celebrated && !wasC) return;
+        toastAction(
+          k === 1 ? 'Marked 1 section done' : 'Marked ' + k + ' sections done',
+          'Undo',
+          function () {
+            if (g !== loadGen || !assignData || comps.length !== K) return;
+            markBack(was, true);
+            renderGuide();
+            updateProgress();
+            if (sfmode === 'color') renderFocusMarkers();
+            sayLive('Ticks as they were');
+          },
+        );
+      },
+      12000,
+    );
+  });
+}
 // how many sections are ticked, or part-way done (a tone ticked): what Reset progress would clear
 function progressCount() {
   if (!assignData || !colored) return 0;
@@ -268,6 +327,8 @@ function enterColor(paint) {
   hideTip();
   normalizeTones();
   sfmode = 'color';
+  // (v318.34: a guide you've worked with, for Random; library.js)
+  if (typeof guideWorked === 'function') guideWorked(curId);
   hlKey = null;
   hlZone = null;
   blendOpen = {};
@@ -314,6 +375,7 @@ let _focK = null,
   _focAt = -1;
 function enterFocus() {
   if (sfmode !== 'color' || !assignData) return;
+  if (typeof guideWorked === 'function') guideWorked(curId);
   if (_fnOl) {
     _fnOl = false;
     outlineSecs(null);
@@ -357,10 +419,39 @@ function enterFocus() {
   if (start < 0) finishFocus();
   else goFocus(start, false);
   _focAt = focusPos;
+  // (v318.32 decision 6.10) framed again once the bars have measured: on an iPad held upright, Safari had laid out the
+  // bars after the entry's frame, which used their heights before (and the picture showed whole, with a blank band
+  // above, until Done framed the next section). Nothing moves when their measure is unchanged
+  focusRefit(true);
+  requestAnimationFrame(function () {
+    requestAnimationFrame(focusRefit);
+  });
+  setTimeout(focusRefit, 350);
   // modal for the keyboard (75-focus.js); a toast from the list would sit over its buttons
   hideToast();
   focusModal(true);
   focusIn();
+}
+// (v318.32 decision 6.10) the room between the bars as it was last framed, and the frame done again when it has changed
+// since (remember: only notes the measure; from a frame or a timer after Focus is entered: fits and frames again)
+var _focFit = null;
+function focusRefit(remember) {
+  if (!focus || !sfView || !root.classList.contains('sffoc')) return;
+  var tb = document.querySelector('.sffocbar'),
+    bb = document.querySelector('.sffocbot');
+  if (tb) document.documentElement.style.setProperty('--focTop', tb.offsetHeight + 'px');
+  if (bb) document.documentElement.style.setProperty('--focBot', bb.offsetHeight + 'px');
+  var g = focusGeo(true),
+    was = _focFit;
+  _focFit = { t: g.t, b: g.b, aw: g.aw, ah: g.ah };
+  if (remember === true) return;
+  if (was && was.t === g.t && was.b === g.b && was.aw === g.aw && was.ah === g.ah) return;
+  fitFocus();
+  if (handOn()) return handReframe();
+  var l = focusCur();
+  if (focusFin || l < 0) return;
+  focusZ = focusZoomFor(l);
+  frameFocus(false);
 }
 function fitFocus() {
   if (!root.classList.contains('sffoc') || !sfView) return;

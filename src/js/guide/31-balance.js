@@ -1071,8 +1071,11 @@ function buildNoRep(cl, pool) {
     }
     const m = cand[Math.floor(Math.random() * cand.length)],
       was = uses[m.mkey] || 0,
-      g = byUse[was];
-    g.splice(g.indexOf(m), 1);
+      g = byUse[was],
+      // (v318.32 D2-1: the marker found before it's taken out: two pool entries with one mkey would put uses[] a step
+      // ahead of byUse[], and splice(-1, 1) took the LAST marker of the list out of the rotation instead)
+      ix = g ? g.indexOf(m) : -1;
+    if (ix >= 0) g.splice(ix, 1);
     (byUse[was + 1] = byUse[was + 1] || []).push(m);
     put(l, m);
   });
@@ -1155,12 +1158,8 @@ function balPct(r, p, ms) {
   const f = ms.f[r];
   return f > 0 && f < 0.025 ? 1 : Math.round(f * 20) * 5;
 }
-// "15%", or "<5%" for a sliver
-function balPctTxt(pc) {
-  return (pc === 1 ? '<5' : pc) + '%';
-}
-// a role's word on the bar (v288): its role (Main, Second, Accent), as a family's name ("Browns") didn't always match
-// the colours you saw; the family is in its label for screen readers, and in its sheet's title
+// a role's short word (v288: the bar's part; v318.34: the rows say the role in full, this stays for the tests,
+// __mstest): its role (Main, Second, Accent), as a family's name ("Browns") didn't always match the colours you saw
 const BAL_SHORT = { m: 'Main', s: 'Second', a: 'Accent' };
 function balShort(r) {
   return BAL_SHORT[r];
@@ -1335,11 +1334,22 @@ function balAutoSub(otherHand) {
     (tp && th ? 'as Lean towards and Theme say' : tp ? 'as Lean towards says' : 'from the theme')
   );
 }
+// (v318.32) what each Balance does, in a line under its row, as Gradient's Look and Blend's Mix have theirs: a new user
+// had the two words alone (Mixed's panel was bare)
+const BAL_DESC = {
+  mixed: 'Any marker on any section, all mixed together.',
+  main: 'One colour over most of the picture, a second with it and an accent.',
+};
+// (v318.34) a role's third word on its row: the family chosen for you, or by hand in its sheet (P2-9: not the pin)
+const BAL_STATE = { auto: 'Auto', hand: 'Your choice' };
 function balHTML(mf) {
   let h =
-    '<div class="sfsublbl">Balance</div><div id="sfBal" role="group" aria-label="Balance" class="sfc-segs">' +
+    // (v318.32: sffit, filling the row as Pattern's other rows do (Flow, Look, Direction); it was Colours' sfc-segs)
+    '<div class="sfsublbl">Balance</div><div id="sfBal" role="group" aria-label="Balance" class="sffit">' +
     ctlSeg('mixed', 'Mixed', balance === 'mixed') +
     ctlSeg('main', 'Main colour', balance === 'main') +
+    '</div><div id="sfBalHint" class="sfc-note sfc-mt6">' +
+    BAL_DESC[balance] +
     '</div>';
   if (balance === 'main') {
     const p = balPlan(),
@@ -1355,52 +1365,51 @@ function balHTML(mf) {
         '</div>';
     else {
       const ms = balMeasure(p);
-      h += '<div id="sfBalBar" class="sfbalbar">';
+      // (v318.34) a thin strip of the shares, then a 44 px row for each role: "Main colour · pinks · about 60% ·
+      // Auto", or "Your choice" for a family picked by hand (BAL_STATE). Each opens the role's sheet (balChoose).
+      // The bar of three coloured buttons it replaces dropped the accent's name where it didn't fit and had no
+      // words for Auto (G4 review, P2-9). The strip is only a picture: the rows say it all.
+      // (v318.32: a group, so a screen reader says what the three buttons are before the first one's name)
+      let strip = '',
+        rows = '';
       ['m', 's', 'a'].forEach(function (r) {
         const x = p.roles[r];
         if (!x) return;
         const pc = balPct(r, p, ms),
-          // (as wide as it's painted; its figure to the nearest 5)
+          // (the strip's part as wide as it's painted; its figure to the nearest 5)
           wd = ms ? +(ms.f[r] * 100).toFixed(2) : pc,
           nm = balName(r, p).toLowerCase(),
-          auto = { m: balM, s: balS, a: balA }[r] === 'auto';
-        h +=
+          auto = { m: balM, s: balS, a: balA }[r] === 'auto',
+          share = (pc === 1 ? 'under 5' : 'about ' + pc) + '%',
+          bg = 'linear-gradient(90deg,' + balStrip(x.markers) + ')';
+        strip += '<i style="flex:' + wd + ' 1 0;background:' + bg + '"></i>';
+        rows +=
           '<button type="button" id="sfBal' +
           r.toUpperCase() +
-          '" class="sfbalseg" data-r="' +
+          '" class="sfbalr" data-r="' +
           r +
-          '" style="flex:' +
-          wd +
-          ' 1 0;background:linear-gradient(90deg,' +
-          balStrip(x.markers) +
-          ');color:' +
-          // (the label's over the light end of the strip)
-          txt(balLight(x.markers)[0].hex) +
           '" aria-label="' +
           esc(
-            BAL_ROLE[r] +
-              ': ' +
-              nm +
-              (auto ? ', chosen for you' : '') +
-              (pc === 1 ? ', under 5' : ', about ' + pc) +
-              '% of the picture. Change',
+            BAL_ROLE[r] + ': ' + nm + ', ' + share + ', ' + BAL_STATE[auto ? 'auto' : 'hand'] + '. Change',
           ) +
-          // (the name goes when it doesn't fit whole: balFit)
-          '"><span aria-hidden="true" class="sfbalsn">' +
-          esc(balShort(r)) +
-          '</span><span aria-hidden="true" class="sfbaldot"> \u00b7 </span><span aria-hidden="true" class="sfbalsp">' +
-          balPctTxt(pc) +
-          '</span></button>';
-      });
-      const handAll = ['m', 's', 'a'].every(function (r) {
-        return !p.roles[r] || { m: balM, s: balS, a: balA }[r] !== 'auto';
+          '"><span class="sfbalrsw" aria-hidden="true" style="background:' +
+          bg +
+          '"></span><span class="sfbalrtx" aria-hidden="true"><b>' +
+          esc(BAL_ROLE[r]) +
+          '</b><span class="sfbalrsub"> · ' +
+          esc(nm + ' · ' + share + ' · ') +
+          '</span><span class="sfbalrst">' +
+          BAL_STATE[auto ? 'auto' : 'hand'] +
+          '</span></span>' +
+          ic('chevron-right', 'sfbalrch') +
+          '</button>';
       });
       h +=
-        '</div><div class="sfbalrow"><span class="sfc-note">Tap a colour to change it</span><button type="button" id="sfBalPair" class="sfghost"' +
-        (handAll ? ' disabled' : '') +
-        '>' +
-        ic('refresh-cw') +
-        ' Other pairings</button></div><div id="sfBalNote" class="sfc-note sfc-mt6">' +
+        '<div class="sfbalstrip" aria-hidden="true">' +
+        strip +
+        '</div><div id="sfBalRows" class="sfbalrows" role="group" aria-label="Main, second and accent colours">' +
+        rows +
+        '</div><div id="sfBalNote" class="sfc-note sfc-mt8">' +
         esc(balNote(p)) +
         '</div>' +
         balMore(p, ms);
@@ -1434,13 +1443,44 @@ function balHTML(mf) {
             k +
             ' markers: ' +
             (per >= 2 ? 'each used about ' + per + ' times' : n - k + ' used twice') +
-            ', every one before any again, kept apart.') +
+            // (v318.32: "every one before any again" said in full)
+            ', each used once before any is used again, kept apart.') +
         (k >= n * 0.8 ? ' Slow to colour: nearly every section is a new marker.' : '') +
         '</div>';
     }
   }
   if (mf) h += '</div>';
   return h;
+}
+// (v318.34) Random's own action row, before the shared Pin colours (ctlPlanPattern): Shuffle, and with Main colour
+// laid (p.ok) ↻ Other pairings, with a line saying how the two re-rolls differ. Other pairings was beside "Tap a
+// colour to change it" under the bar, Shuffle a screen away beside Pin colours (G4 review 5).
+function balActionsHTML() {
+  const p = balance === 'main' ? balPlan() : null,
+    pair = !!(p && p.ok),
+    // (every role chosen by hand: nothing left on Auto to roll)
+    handAll =
+      pair &&
+      ['m', 's', 'a'].every(function (r) {
+        return !p.roles[r] || { m: balM, s: balS, a: balA }[r] !== 'auto';
+      });
+  return (
+    '<div class="sfshpin sfrow2"><button id="sfShuffle" class="sfghost">' +
+    ic('shuffle') +
+    ' Shuffle</button>' +
+    (pair
+      ? '<button type="button" id="sfBalPair" class="sfghost"' +
+        (handAll ? ' disabled' : '') +
+        '>' +
+        ic('refresh-cw') +
+        ' Other pairings</button>'
+      : '') +
+    '</div>' +
+    (pair
+      ? '<div id="sfBalRollNote" class="sfc-note sfc-mt6">Shuffle lays the same colours again · ' +
+        'Other pairings picks new colours for the roles on Auto</div>'
+      : '')
+  );
 }
 // (v318.27) under Keep touching sections clearly different: the sections it couldn't keep clear of every section they
 // touch on the last laying (a section touching many others on a small set, where every marker is alike to one of
@@ -1456,7 +1496,8 @@ function adjNoteHTML() {
     ': too few different markers.</div>'
   );
 }
-// the sheet a part of the bar opens: Auto, then each colour family there is (a strip of the markers and how many);
+// the sheet a role's row opens (v318.34; a part of the bar before): Auto, then each colour family there is (a strip of
+// the markers and how many);
 // one that can't fill the role even borrowing from next to it is shown, greyed
 function balChoose(r) {
   const p = balPlan();
@@ -1561,16 +1602,6 @@ function balSet(r, v) {
   else if (r === 's') balS = v;
   else balA = v;
 }
-// the bar's parts show their colour's name only where it fits whole (else just the share); fitPairs calls it
-function balFit(root) {
-  const bar = root && root.querySelector('#sfBalBar');
-  if (!bar || bar.offsetParent === null) return;
-  bar.querySelectorAll('.sfbalseg').forEach(function (b) {
-    b.classList.remove('sfbalnn');
-    const sn = b.querySelector('.sfbalsn');
-    if (sn && labelTooWide(sn)) b.classList.add('sfbalnn');
-  });
-}
 // wire Balance's controls (ctlPlanWire)
 function balWire() {
   const g = document.getElementById('sfBal');
@@ -1582,10 +1613,10 @@ function balWire() {
       reassign();
       ctlRefocus('#sfBal [data-v="' + balance + '"]');
     });
-  const bar = document.getElementById('sfBalBar');
-  if (bar)
-    bar.addEventListener('click', function (e) {
-      const b = e.target.closest('.sfbalseg');
+  const rows = document.getElementById('sfBalRows');
+  if (rows)
+    rows.addEventListener('click', function (e) {
+      const b = e.target.closest('.sfbalr');
       if (b) balChoose(b.dataset.r);
     });
   const pr = document.getElementById('sfBalPair');

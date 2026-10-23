@@ -22,7 +22,10 @@ const pdfHere = (page) =>
       P = { letter: [612, 792], a4: [595.28, 841.89] }[localStorage.getItem('ms-paper') || 'letter'] || [
         612, 792,
       ];
-    const u8 = await t.canvasesToPDF(t.buildPDFPages(false, false), P[0], P[1], false);
+    // (v318.35: the pages carrying the picture in colour tried as JPEG, as exportPDF does)
+    const cvs = t.buildPDFPages(false, false),
+      kinds = t.pdfKinds.slice();
+    const u8 = await t.canvasesToPDF(cvs, P[0], P[1], false, null, (i) => !!(kinds[i] && kinds[i].col));
     return Array.from(u8);
   });
 const stats = (page) => page.evaluate(() => JSON.parse(JSON.stringify(__mstest.jobs.stats)));

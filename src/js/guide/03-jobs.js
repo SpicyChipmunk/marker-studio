@@ -6,6 +6,8 @@
       'png'   the saved image encoded (exportImage, 90-export)
       'lmap'  the section map encoded, ahead of a new guide's first save (lmapWarm, 60-persist)
       'lpts'  the label points and edge distances (labelPtsCore, 40-render)
+      'seg'   a picture's ink, specks and sections, the steps up to the flood fill (segWork, 10-segment; v318.36)
+      'pgf'   a photographed page's corners, from a small copy of the photo (pgWork, 22-straighten; v318.36)
     Anywhere there's no worker (an old browser, a page that can't make one) or a job fails, JOBS.run rejects and the
     caller does the work itself, as before. So does a job with no answer in time (jobBudget): the worker is then given
     up on for the session, and anything it sends later is ignored. */
@@ -13,13 +15,18 @@ const JOBS = (function () {
   let wk = null,
     bad = false,
     seq = 0,
-    // (when the last job waiting is due: jobs are timed one after another, as each may wait on those ahead of it)
+    // (when the last job waiting is due: jobs are timed one after another, as each may wait on those ahead of it.
+    // v318.37: and timed again as those ahead answer, retime: an answered job's budget no longer pads the ones
+    // behind it, nor a later one's, so a worker that then hangs is given up on after the waiting jobs' own budgets,
+    // not every budget ever posted: a Sensitivity drag posts a seg job a step, each superseded one answering at its
+    // next step, and the last was due many budgets out)
     tail = 0,
-    // (for the tests: a worker that never answers, its jobs given this long)
-    hang = 0;
+    // (for the tests: a worker that never answers, its jobs given this long; v318.36: only jobs of one kind, hangK)
+    hang = 0,
+    hangK = '';
   const waits = new Map(),
     // (how many of each kind the worker did, failed and didn't answer in time: for the tests)
-    stats = { done: {}, failed: {}, timedOut: {} };
+    stats = { done: {}, failed: {}, timedOut: {}, dropped: {} };
   // (runs in the worker)
   function main() {
     // (each job's own work starts as it comes in; what waits on the browser, compressing or encoding, overlaps the
@@ -47,6 +54,11 @@ const JOBS = (function () {
       if (m.k === 'png') return { v: await png(m) };
       // (as the data: URL the page's toDataURL gives)
       if (m.k === 'lmap') return { v: new self.FileReaderSync().readAsDataURL(await png(m)) };
+      // (v318.36: the finder's steps, with the thread free between them: a newer picture's job takes over, and the
+      // older answers 'superseded')
+      if (m.k === 'seg') return segWork(m);
+      // (v318.36: a photographed page's corners, from the small copy sent, 22-straighten)
+      if (m.k === 'pgf') return pgWork(m);
       if (m.k === 'lpts') {
         const r = labelPtsCore(new Int32Array(m.buf), m.W, m.H, m.K);
         return {
@@ -96,6 +108,11 @@ const JOBS = (function () {
             return f.toString();
           })
           .join('\n') +
+        // (v318.36: the section finder's steps and their state, 10-segment)
+        '\n' +
+        segWorkerSrc() +
+        '\n' +
+        pgWorkerSrc() +
         '\n(' +
         main.toString() +
         ')();';
@@ -107,11 +124,12 @@ const JOBS = (function () {
         if (!w) return;
         waits.delete(m.id);
         clearTimeout(w.t);
-        if (!waits.size) tail = 0;
-        const st = m.err ? stats.failed : stats.done;
+        retime(Date.now());
+        // (v318.36: a section-finding job a newer one took over from is neither: dropped, as the page meant)
+        const st = m.err === 'superseded' ? stats.dropped : m.err ? stats.failed : stats.done;
         st[w.k] = (st[w.k] || 0) + 1;
         // (v308: kept for Copy details; a picture that isn't opaque is expected, and done on the page)
-        if (m.err && m.err !== 'not opaque')
+        if (m.err && m.err !== 'not opaque' && m.err !== 'superseded')
           errLog('Worker', w.k + ' job failed (done on the page): ' + m.err);
         if (m.err) w.rej(new Error(m.err));
         else w.res(m.r);
@@ -151,6 +169,9 @@ const JOBS = (function () {
       w.t = setTimeout(function () {
         due(id, ms);
       }, ms);
+      // (v318.37: due that much later, and so are the jobs behind it, retime)
+      w.d = Date.now() + ms;
+      if (w.d > tail) tail = w.d;
       return;
     }
     waits.delete(id);
@@ -159,6 +180,25 @@ const JOBS = (function () {
     w.rej(new Error('timed out'));
     stop();
   }
+  // (v318.37) a job answered or given up on: the jobs still waiting, in the order they were posted, are due one after
+  // another from now (each from the later of its own posting and the one ahead of it being due, plus its budget), and
+  // never later than they were: the budget of a job that answered early no longer holds up the timing of those
+  // behind it. tail follows the last of them
+  function retime(now) {
+    let prev = now;
+    tail = 0;
+    waits.forEach(function (w, id) {
+      const d = Math.max(w.at, prev) + w.ms;
+      if (d < w.d) {
+        w.d = d;
+        clearTimeout(w.t);
+        w.t = setTimeout(function () {
+          due(id, w.ms);
+        }, d - now);
+      }
+      prev = tail = w.d;
+    });
+  }
   // a job: resolves to what it gives back, or rejects (no worker, or the job failed) so the caller does it itself.
   // tr: what's handed over rather than copied (buffers, a picture)
   function run(k, data, tr) {
@@ -166,12 +206,14 @@ const JOBS = (function () {
     if (!w) return Promise.reject(new Error('no worker'));
     return new Promise(function (res, rej) {
       const id = ++seq,
-        ms = hang || jobBudget(data),
+        hg = hang && (!hangK || hangK === k) ? hang : 0,
+        ms = hg || jobBudget(data, k),
         now = Date.now(),
-        e0 = { res: res, rej: rej, k: k, t: 0 };
+        // (v318.37: when it was posted, its budget and when it's due, for retime)
+        e0 = { res: res, rej: rej, k: k, t: 0, at: now, ms: ms, d: 0 };
       waits.set(id, e0);
       try {
-        w.postMessage(Object.assign({ id: id, k: k }, data, hang ? { hang: true } : null), tr || []);
+        w.postMessage(Object.assign({ id: id, k: k }, data, hg ? { hang: true } : null), tr || []);
       } catch (e) {
         waits.delete(id);
         if (!waits.size) tail = 0;
@@ -179,6 +221,7 @@ const JOBS = (function () {
         return;
       }
       tail = Math.max(now, tail) + ms;
+      e0.d = tail;
       e0.t = setTimeout(function () {
         due(id, ms);
       }, tail - now);
@@ -193,9 +236,11 @@ const JOBS = (function () {
       if (v === false) bad = false;
       else stop();
     },
-    // (for the tests: from now on the worker answers nothing, and each job is given ms; hang(0) as before)
-    hang: function (ms) {
+    // (for the tests: from now on the worker answers nothing, and each job is given ms; hang(0) as before. v318.36:
+    // hang(ms, k), only jobs of kind k)
+    hang: function (ms, k) {
       hang = ms > 0 ? ms : 0;
+      hangK = (hang && k) || '';
     },
     get on() {
       return !bad && typeof Worker !== 'undefined';
@@ -206,10 +251,12 @@ const JOBS = (function () {
 // million pixels it's about (a PDF page, 1700 × 2200, about 6 s). In Safari's engine the worker takes well under a
 // second per job (a page packed and compressed, the saved image encoded, a guide's label points), so this leaves a slow
 // iPad several times what it needs; one that's slower still loses nothing but the worker, as the page then does the
-// work itself, as it did before v307
-function jobBudget(data) {
+// work itself, as it did before v307.
+// (v318.36) A picture's sections (k 'seg'): 4 s and 2 s more for each million pixels (a 2400 × 2400 photo, 15.5 s): the
+// steps take an iPad a second or two there, and a run superseded by a newer one answers at its next step
+function jobBudget(data, k) {
   const px = data.n || data.w * data.h || data.W * data.H || 0;
-  return 4000 + Math.round(px / 2000);
+  return 4000 + Math.round(px / (k === 'seg' ? 500 : 2000));
 }
 // the RGB bytes of RGBA pixels (a PDF page's image; read through a Uint8Array view, about twice as fast in Safari's
 // engine as the clamped array getImageData gives, and the same bytes)

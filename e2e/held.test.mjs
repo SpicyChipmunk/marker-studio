@@ -191,7 +191,9 @@ test('Photo chosen with no photo picked: the pattern before it stays laid and sa
   // a saved palette: no "are you sure"
   await page.evaluate(() => { state.saved.unshift({ id: 885001, type: 'palette', name: 'Mine', keys: [...state.owned].slice(0, 6), ts: 885001 }); save(); });
   await page.click('.sftabbtn[data-t="colours"]'); await idle(page);
-  await page.click('#sfSrc [data-v="saved"]'); await idle(page);
+  // (v318.34: A palette, then Choose a saved palette)
+  await page.click('#sfSrc [data-v="palette"]'); await idle(page);
+  await page.selectOption('#sfPalPick', '885001'); await idle(page);
   assert.equal(await page.evaluate(() => __mstest.styleVars.paletteSource), 'saved');
   assert.deepEqual(dialogs, []);
   assert.deepEqual(errors, []);

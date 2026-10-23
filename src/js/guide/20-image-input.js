@@ -6,6 +6,19 @@
 function resetForNewPicture() {
   // (v318.14: sections still being found for the picture before go with it)
   segStop();
+  // (v318.35: Treat hatching as one section starts again from the picture's own default, pgProceed)
+  hatchOne = true;
+  hatchSet = false;
+  // (v318.37: the hatched patches found were the old picture's; a saved guide opened runs no detection, and its Edit
+  // sections had said "Found N hatched patches" about the picture before, X1-6)
+  hatchMade = 0;
+  hatchWould = 0;
+  // (v319: the page finder's findings were the old picture's too: a camera photo kept as photographed (pgHint 'kept',
+  // its lens pgF35) had left the sample, or a guide saved before v318.34, 'kept' as well, so their hatching never
+  // merged and Edit sections' note said to straighten the page first, Y1-3. pgBegin and srcOpen set them again)
+  pgHint = null;
+  pgF35 = 0;
+  pgSteep = false;
   _preview = false;
   // (v318.15: its own bands, found as it's prepared: srcPrep)
   edgeBands = null;
@@ -78,6 +91,9 @@ function resetForNewPicture() {
   guideSig = null;
   clearUndo();
   pgReset();
+  // (v318.34: how the picture came in, and a reopened guide's picture settings: 25-source-photo)
+  srcFrom = null;
+  _srcSet = null;
   photoReset();
   rot90 = 0;
   tilt = 0;
@@ -624,23 +640,27 @@ function srcPrep() {
     g0 = new Uint8Array(n);
   freeCanvas(c);
   for (let i = 0, j = 0; i < n; i++, j += 4) g0[i] = (d[j] * 0.299 + d[j + 1] * 0.587 + d[j + 2] * 0.114) | 0;
-  const p = {
-    W: cw,
-    H: ch,
-    gray: g0,
-    srcK: 1,
-    dims: { w: cw, h: ch },
-    // (how much of it is coloured in, for the warning about a page coloured already: segQuality, v308)
-    colour: colourShare(d, n),
-    // (v318.15) a photo as taken, as it came: the binding or the table along its edges (Auto crop leaves them out).
-    // Found while it's as taken and kept through a crop or a turn (trimOffer asks for neither), so Undo of Trim it
-    // offers it again; a new picture starts without (resetForNewPicture)
-    bands: pgOrig && !pgQ && !cropRect && !rot90 && !tilt ? edgeBandsOf(d, cw, ch) : undefined,
-  };
+  // (how much of it is coloured in, for the warning about a page coloured already: segQuality, v308)
+  const colour = colourShare(d, n),
+    p = {
+      W: cw,
+      H: ch,
+      gray: g0,
+      // (v318.35: each pixel's colour, for a page with colour on it: the ink and the offer to mark sections done)
+      chroma: chromaOf(d, n, colour),
+      srcK: 1,
+      dims: { w: cw, h: ch },
+      colour: colour,
+      // (v318.15) a photo as taken, as it came: the binding or the table along its edges (Auto crop leaves them out).
+      // Found while it's as taken and kept through a crop or a turn (trimOffer asks for neither), so Undo of Trim it
+      // offers it again; a new picture starts without (resetForNewPicture)
+      bands: pgOrig && !pgQ && !cropRect && !rot90 && !tilt ? edgeBandsOf(d, cw, ch) : undefined,
+    };
   if (up > 1.05) {
     p.W = Math.round(cw * up);
     p.H = Math.round(ch * up);
     p.gray = grayUp(g0, cw, ch, p.W, p.H);
+    if (p.chroma) p.chroma = grayUp(p.chroma, cw, ch, p.W, p.H);
     p.srcK = p.W / cw;
   }
   return p;
@@ -656,6 +676,7 @@ function srcCommit(p) {
   W = p.W;
   H = p.H;
   gray = p.gray;
+  chroma = p.chroma || null;
   srcK = p.srcK;
   srcDims = p.dims;
   if (p.bands !== undefined) edgeBands = p.bands;
@@ -802,6 +823,7 @@ function resegment() {
         adaptC = f.c;
         enhance = f.e;
         faintCut = f.f || 0;
+        hatchOne = f.h !== false;
       }
       renderControls();
     });
@@ -823,7 +845,9 @@ function reseg() {
   // (a re-detection taking over from one still under way: the sections in place are still those the first found)
   if (!segBusy || !_segIn)
     _segIn = {
-      det: _reFrom ? { e: _reFrom.e, c: _reFrom.c, f: _reFrom.f } : { e: enhance, c: adaptC, f: faintCut },
+      det: _reFrom
+        ? { e: _reFrom.e, c: _reFrom.c, f: _reFrom.f, h: _reFrom.h }
+        : { e: enhance, c: adaptC, f: faintCut, h: hatchOne },
       s: s,
     };
   _reFrom = null;
@@ -842,6 +866,7 @@ function reseg() {
         render();
         segWarnSync();
         faintLineSync();
+        hatchLineSync();
       }
       note('Sections detected again \u2014 tap Undo to go back.');
     },
@@ -855,7 +880,8 @@ function reseg() {
 // the detection settings before a change to them (put back if the person says No above)
 let _reFrom = null;
 function reFrom() {
-  if (!_reFrom) _reFrom = { c: adaptC, e: enhance, f: faintCut };
+  // (v318.35: and Treat hatching as one section, h)
+  if (!_reFrom) _reFrom = { c: adaptC, e: enhance, f: faintCut, h: hatchOne };
 }
 // Before the sections are found afresh: one Undo step that brings back the sections and all that hangs on them (ticks,
 // part-done tones, pins, flat sections, the guide's colours); geo: also the picture as it was (turned, tilted,
@@ -912,6 +938,8 @@ function keepObj(geo) {
             into: c.into,
             from: c.from,
             at: c.at,
+            // (v318.32: a crumb crumbClean made paper, its size then: segQuality counts them)
+            crumb: c.crumb,
           }
         : null;
     }),
@@ -936,12 +964,15 @@ function keepObj(geo) {
         segBusy && _segIn
           ? Object.assign({}, _segIn.det)
           : _reFrom
-            ? { e: _reFrom.e, c: _reFrom.c, f: _reFrom.f }
-            : { e: enhance, c: adaptC, f: faintCut },
+            ? { e: _reFrom.e, c: _reFrom.c, f: _reFrom.f, h: _reFrom.h }
+            : { e: enhance, c: adaptC, f: faintCut, h: hatchOne },
       bgMaxB: bgMaxB,
       bgEdgeAll: bgEdgeAll,
       // (v308: the offer to ignore faint grey marks, as it was for those sections)
       fo: faintOffer,
+      // (v318.35: the hatched patches merged in those sections, for Edit sections' note)
+      hm: hatchMade,
+      hw: hatchWould,
       ad: ad,
       sig: guideSig,
       plan: ad ? planStack.slice() : null,
@@ -956,6 +987,8 @@ function keepObj(geo) {
               H: H,
               k: srcK,
               gray: gray,
+              // (v318.35: its colour, read with the grey)
+              chroma: chroma,
               src: srcImg,
               pgQ: pgQ,
               pgShape: pgShape,
@@ -1274,6 +1307,8 @@ function _loadImage(file) {
         takeNextPal();
         srcImg = fitSource(img);
         srcUp = true;
+        // (v318.34: kept with the guide once it's saved, 25-source-photo)
+        srcFrom = 'pic';
         enterWork();
         var _rs = document.getElementById('sfResume');
         if (_rs) _rs.style.display = 'none';
@@ -1290,14 +1325,13 @@ function _loadImage(file) {
       }
       // a photographed page is found and flattened first (or its corners offered for checking); a scan goes straight
       // on. (resetForNewPicture moved loadGen on: its token is this photo's; a newer one's segStop cleared the busy state)
+      // (v318.36: the page found in the JOBS worker, the page free meanwhile; pgBegin clears the busy state once it
+      // goes on, and a newer photo's segStop cleared it already)
       afterPaint(function () {
         if (tok !== loadGen) return;
-        segBusySet(false);
-        try {
-          holdTime('New photo: find the page', function () {
-            pgBegin(f35);
-          });
-        } catch (err) {
+        const failed = function (err) {
+          if (tok !== loadGen) return;
+          segBusySet(false);
           _preview = false;
           note(
             errNote(
@@ -1306,6 +1340,13 @@ function _loadImage(file) {
               err,
             ),
           );
+        };
+        try {
+          pgBegin(f35, function () {
+            return tok !== loadGen;
+          }).catch(failed);
+        } catch (err) {
+          failed(err);
         }
       });
     };

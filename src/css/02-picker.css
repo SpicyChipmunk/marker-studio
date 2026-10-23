@@ -333,6 +333,14 @@
   font-size: var(--t-sm);
   color: var(--warn);
 }
+/* (v318.32) no marker chosen: the button says "Start from a marker… (random)", so the row's label is away */
+.seedbtn .seedrnd {
+  font-weight: 500;
+  color: var(--sub);
+}
+#seedWrap.noseed > .szlbl {
+  display: none;
+}
 .band.bin {
   animation: bin 0.5s cubic-bezier(0.2, 1.2, 0.35, 1) both;
 }
@@ -762,11 +770,14 @@ button {
   font-size: var(--t-md);
   font-weight: 600;
   cursor: pointer;
-  border-radius: var(--r-lg);
+  /* (v318.33) --r-md, every standalone control's corner (the design system); --r-lg before, so a button beside a
+     12px field, drop-down or primary button had a different corner */
+  border-radius: var(--r-md);
   border: 1px solid var(--line);
   background: var(--glass);
   color: var(--ink);
   min-height: 44px;
+  line-height: var(--lh-tight);
   padding: 4px 18px;
   -webkit-tap-highlight-color: transparent;
   transition:
@@ -1309,30 +1320,11 @@ button:focus-visible {
   border-radius: 50%;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
-/* the way down to the tools under the grid: a small link under the line about the view */
-.mkjump {
-  display: block;
-  min-height: 44px;
-  margin: -12px 2px 4px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: #b9a8ff;
-  font: inherit;
-  font-size: var(--t-sm);
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-align: left;
-  cursor: pointer;
-}
-.mkjump span {
-  display: inline-block;
-  margin-left: 5px;
-}
-/* (v318 review) under Add markers, not tucked up into it: the button had taken the link's top 12px (a 32px tap area) */
-#mkAddBtn:not([style*='none']) + .mkjump {
-  margin-top: 0;
+/* the way down to the tools under the grid: a button in the tools row (v318.33: a small underlined link under the
+   line about the view before; its look is the row's, 08-dialogs-match.css #mkDraw) */
+/* (v318.33) Markers' Filters close under the tools row and Order (Fable V1-1: a 40px gap before it) */
+.wrap.mkmode .filterbar {
+  margin-top: var(--s2, 8px);
 }
 /* (v300) Markers' top on a wide screen: the search with Owned / Unowned / All / To buy beside it, then Random and Match
    a colour with the line about the view and the link down to the tools (Order on a row of its own under them), so
@@ -1382,12 +1374,6 @@ button:focus-visible {
     flex: 1 1 100%;
     min-width: 0;
     margin-top: -4px;
-  }
-  .wrap.mkmode #mkAddBtn {
-    margin-left: auto;
-  }
-  .wrap.mkmode #mkJump {
-    flex: none;
   }
   .wrap.mkmode #gapWrap {
     order: 9;
@@ -1611,16 +1597,11 @@ button:focus-visible {
   width: 16px;
   height: 16px;
 }
-@media (min-width: 700px) {
-  .wrap.mkmode #mkAddBtn {
-    flex: none;
-  }
-}
 .mkaddcard {
   margin: 4px 0 16px;
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.03);
 }
 .mkaddh {
@@ -1662,28 +1643,180 @@ button:focus-visible {
   display: none;
 }
 
-/* (v313) the Library's empty state: what gets kept here, and a way to make something */
+/* (v313) the Library's empty state: what gets kept here, and a way to make something
+   (v318.33) the icon in a tinted ring first, then the words, then the action (Fable V1-5) */
 #savedList .emptyhow {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   grid-column: 1 / -1;
   justify-self: center;
   width: 100%;
   max-width: 360px;
-  margin: -14px auto 24px;
+  margin: 0 auto 24px;
+  padding: 28px 0 8px;
   text-align: center;
   color: var(--sub);
   font-size: var(--t-base);
 }
+#savedList .emptyhow .emptyring {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(124, 92, 255, 0.12);
+  color: #b9a8ff;
+}
 #savedList .emptyhow .ic {
-  width: 40px;
-  height: 40px;
-  opacity: 0.6;
+  width: 34px;
+  height: 34px;
+  stroke-width: 1.6;
+}
+#savedList .emptyhow .empty {
+  max-width: 30ch;
+  margin: 0;
+  padding: 0;
 }
 #savedList .emptyhow .btn-soft {
   width: auto;
   margin-top: 4px;
   padding: 0 22px;
+}
+
+/* ---- (v318.34) Markers › Random, tidied (Stage 3 G): what it's for over a shorter card, the buttons saying what they
+   act on, the Drawn pile right under them, the markers left to draw folded away, two columns held sideways ---- */
+/* the way back at the left, as the guide's "← Plan" (G2; it had floated centred over the card) */
+.wrap.rndmode .rndback {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--h-ctl);
+  margin: 0 0 var(--s2);
+}
+.rndwhy {
+  margin: 0 0 var(--s4);
+  font-size: var(--t-base);
+  line-height: var(--lh);
+  color: var(--sub);
+}
+.rndwhy b {
+  color: var(--ink);
+  font-weight: 600;
+}
+/* about 200 px on an iPad held upright, 160 on a phone (it was 240–350: the card and its buttons filled the first
+   screen, the pile below the fold everywhere) */
+.wrap.rndmode .swatch {
+  height: clamp(160px, 18vh, 200px);
+  padding: 18px 24px;
+}
+.wrap.rndmode .code {
+  font-size: clamp(40px, 9vw, 64px);
+}
+/* no empty band under an undrawn card */
+.wrap.rndmode .readout:empty {
+  display: none;
+}
+.wrap.rndmode #drawnWrap .pile-head {
+  margin-top: var(--s5);
+}
+/* Prefer markers you haven't used yet: a 44px row under the buttons, and its line */
+.rndfresh {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--h-ctl);
+  margin-top: var(--s3);
+  font-size: var(--t-base);
+  color: var(--ink);
+  cursor: pointer;
+}
+.rndfresh input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex: none;
+}
+.rndnote {
+  margin: -2px 0 0 30px;
+  font-size: var(--t-sm);
+  color: var(--sub);
+  line-height: var(--lh);
+}
+/* the markers left to draw, folded: "Show the 138 left to draw" (G4); open, by family, lightest first (.rgroup) */
+.remfold {
+  margin-top: var(--s4);
+}
+.remfold summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--h-ctl);
+  padding: 0 2px;
+  list-style: none;
+  cursor: pointer;
+  color: var(--sub);
+  font-size: var(--t-base);
+  font-weight: 600;
+  -webkit-tap-highlight-color: transparent;
+}
+.remfold summary::-webkit-details-marker {
+  display: none;
+}
+.remfold summary:hover {
+  color: var(--ink);
+}
+.remfold summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+.remchev {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.2s;
+  margin: 0 4px 0 2px;
+  flex: none;
+}
+.remfold[open] .remchev {
+  transform: rotate(45deg);
+}
+.remgrid {
+  padding-top: var(--s2);
+}
+.remgrid > .empty {
+  color: var(--sub);
+  font-size: var(--t-base);
+}
+/* held sideways on a wide screen (an iPad): the card and its buttons left, the rest in a column beside (chrome.js
+   rndSidePlace puts them in #rndSide); the same query and columns as Palette's */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .wrap.rndmode .palsplit {
+    display: grid;
+    grid-template-columns: minmax(360px, 440px) minmax(0, 1fr);
+    column-gap: 28px;
+    align-items: start;
+  }
+  .wrap.rndmode .palset {
+    display: none;
+  }
+  .wrap.rndmode .palmain,
+  .wrap.rndmode .rndside {
+    display: block;
+    min-width: 0;
+  }
+  .wrap.rndmode .rndside #drawnWrap .pile-head {
+    margin-top: 0;
+  }
+  .wrap.rndmode .rndside #trackWrap .rail {
+    margin-top: var(--s4);
+  }
+}
+/* "Remove this one" with a little more of the row than Save and ⋯ (it wraps to two lines on a phone otherwise) */
+.wrap.rndmode #secondaryRow {
+  flex: 1.3 1 0;
 }

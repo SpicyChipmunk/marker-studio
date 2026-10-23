@@ -104,7 +104,16 @@ Screenshots and PDFs from the browser tests land in `e2e/.artifacts/`
     `00-state.js` declares the shared variables (with the files that write
     each one), `05-style-fields.js` lists a guide's style settings once for
     saving, opening and Undo, and `50`–`53` draw the controls under the
-    picture, one function per tab and stage.
+    picture, one function per tab and stage. `03-jobs.js` is the guide's
+    worker (`JOBS`): a Blob made from the page's own functions' source, so
+    a job computes exactly what the page would. Its jobs: a PDF page packed,
+    the saved image encoded, the section map encoded, a guide's label points,
+    and (v318.36) a photographed page's corners (`pgFindCore`, 22-straighten)
+    and a picture's ink, specks and sections up to the flood fill (`segWork`,
+    10-segment: `segWorkerSrc` lists the functions copied in and the
+    constants they read; add any new one there, or the worker's answer will
+    differ from the page's and `e2e/v31836-worker.test.mjs` says so). A job
+    that fails or gives no answer in time is done on the page instead.
   - `data/markers.json` — every marker (code, name, hex, family, brand), one
     per line.
   - `assets/sample-jellyfish.png` — the built-in sample picture.
@@ -151,6 +160,12 @@ Unit tests (`npm test`):
   full, clearly different (ΔE00 10; Monochrome 6), free of greys and on its
   hues; small collections relax and say so; locked colours, moods, re-rolling
   one colour, speed.
+- `v31834-harmonies.test.mjs` — the ramp as a path (picker.js genPath): a
+  Monochrome, Analogous, Light to shadow or grey ramp is evenly stepped where
+  the markers in play allow it (median max/min step ≤ 2.5); Light to shadow,
+  Analogous + accent and Greys + accent on Honolulu 120 / 320 and a 36-Copic
+  set (sizes 3–6 below 72 markers in play, 3–8 from there; Greys + accent
+  needs 3 greys, never in Surprise); their notes and palOnScheme.
 - `match-and-photo.test.mjs` — Match's ranking by eye, its labels and buy
   rule; From photo (full size, pairs at least 6 apart, no near-white); the
   paper patch and lighting correction.
@@ -171,6 +186,16 @@ Unit tests (`npm test`):
   snapshot/undo field preservation, and labels placed inside irregular sections.
 - `quality-check.test.mjs` — `segQuality` flags blank, low-contrast, dark and
   over-segmented inputs, and passes clean (also dense) line art.
+- `v31835-coloured.test.mjs` — a page partly coloured in (v318.35, E1-3): ink
+  is dark AND colourless, so a section filled with a mid marker stays whole
+  (`chromaOf` beside `gray`, only for a picture with colour on it; a greyscale
+  page's sections are unchanged), `colourSecs` lists the coloured sections for
+  the offer after Build (`colourOffer`, never automatic), and the softened
+  "coloured in already" words. In the browser: `e2e/v31835-coloured.test.mjs`.
+- `v31835-hatching.test.mjs` — hatching as one section (`hatchMerge`, a segRun
+  step after the crumbs): parallel lines in a box and cross-hatching merge, wide
+  stripes and a five-rung ladder stay, the "hatched" warning softens, and the
+  `hatchOne` field (Treat hatching as one section) is written only when off.
 - `save-load.test.mjs` — the label map round-trips losslessly (`lmapURL`),
   `currentDesignObj` keeps settings and the generated palette, `esc`/`safeThumb`,
   and a file that isn't a guide changes nothing.
@@ -261,7 +286,7 @@ Browser tests (`npm run e2e`), by area:
 - `library.test.mjs` — rows, renaming, names, progress, delete by keyboard, the
   Library picture.
 - `markers.test.mjs` — the Markers screen and the marker sheet.
-- `palette.test.mjs` — the Palette screen and the guide's Generate palette,
+- `palette.test.mjs` — the Palette screen and the guide's A palette › New palette (v318.34: `v31834-colours-from.test.mjs` for the Colours from card),
   the new sizes, and the "two colours are close" note.
 - `random-and-blend.test.mjs` — Random keeps touching sections clearly
   different (checked against its own adjacency), neighbours across thick

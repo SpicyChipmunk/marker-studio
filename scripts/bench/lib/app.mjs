@@ -13,7 +13,8 @@ export function makeApp() {
   return t;
 }
 
-// grey as processSrc makes it (0.299/0.587/0.114, truncated), and srcColour = colourShare of the picture
+// grey as processSrc makes it (0.299/0.587/0.114, truncated), srcColour = colourShare of the picture, and (v318.35)
+// chroma = chromaOf for a picture with colour on it (null for a greyscale page)
 function toGrey(t, input, w, h, rgb) {
   const n = w * h,
     g = new Uint8Array(n),
@@ -28,20 +29,24 @@ function toGrey(t, input, w, h, rgb) {
     d[i * 4 + 3] = 255;
     g[i] = (r * 0.299 + gg * 0.587 + b * 0.114) | 0;
   }
-  return { g, colour: t.colourShare(d, n) };
+  const colour = t.colourShare(d, n);
+  return { g, colour, chroma: rgb ? t.chromaOf(d, n, colour) : null };
 }
 function fromRGBA(t, d, w, h) {
   const n = w * h,
     g = new Uint8Array(n);
   for (let i = 0, j = 0; i < n; i++, j += 4) g[i] = (d[j] * 0.299 + d[j + 1] * 0.587 + d[j + 2] * 0.114) | 0;
-  return { g, colour: t.colourShare(d, n) };
+  const colour = t.colourShare(d, n);
+  return { g, colour, chroma: t.chromaOf(d, n, colour) };
 }
 
-function seg(t, gray, W, H, srcK, adaptC, colour) {
+function seg(t, gray, W, H, srcK, adaptC, colour, chroma) {
   t.adaptC = adaptC;
   t.srcK = srcK;
   t.W = W;
   t.H = H;
+  // (v318.35: the picture's colour beside its grey, enlarged with it; null for a greyscale page)
+  t.chroma = chroma || null;
   // (as processSrc: the picture as it came, and a new picture's own Min section size, v318.13)
   t.srcDims = { w: Math.round(W / srcK), h: Math.round(H / srcK) };
   if (t.minAuto && t.minPosAuto) t.styleVars.minPos = t.minPosAuto();
@@ -76,9 +81,10 @@ function seg(t, gray, W, H, srcK, adaptC, colour) {
 // a picture of the person's own at inW x inH (grey or RGB), enlarged by the app's rule to the product's W x H
 export function cleanPath(t, prod, adaptC = 9) {
   const m = prod.meta,
-    { g, colour } = toGrey(t, prod.input, m.inW, m.inH, m.rgb);
-  const gray = m.srcK > 1 ? t.grayUp(g, m.inW, m.inH, m.W, m.H) : g;
-  return seg(t, gray, m.W, m.H, m.srcK, adaptC, colour);
+    { g, colour, chroma } = toGrey(t, prod.input, m.inW, m.inH, m.rgb);
+  const gray = m.srcK > 1 ? t.grayUp(g, m.inW, m.inH, m.W, m.H) : g,
+    ch = chroma && m.srcK > 1 ? t.grayUp(chroma, m.inW, m.inH, m.W, m.H) : chroma;
+  return seg(t, gray, m.W, m.H, m.srcK, adaptC, colour, ch);
 }
 
 // the photo path. ph: makePhoto() output (d possibly JPEG'd). page: the 1200 product (meta + truth at page size).
@@ -130,8 +136,25 @@ export function photoPath(t, ph, page, o = {}) {
   const straighten = o.path !== 'none' && q && (f.tier === 'sure' || (o.unsure && f.tier === 'unsure'));
   if (!straighten) {
     // pgProceed: the photo as taken (srcUp: 1800 x 2400 needs no enlargement), Sensitivity 9
-    const { g, colour } = fromRGBA(t, ph.d, ph.W, ph.H);
-    const r = seg(t, g, ph.W, ph.H, 1, 9, colour);
+    // (v318.35: as in the app, a camera photo the finder left as it was is "kept as photographed" (pgBegin: pgHint),
+    // which hatchMerge reads along with the surround; a photo without a lens gets no hint, as in the app)
+    const { g, colour, chroma } = fromRGBA(t, ph.d, ph.W, ph.H);
+    // (and a photo whose page the finder found but that is used as taken — this path with the app's own Straighten
+    // undone or Keep as is tapped — is "kept as photographed" in the app whatever its lens: pgUndo, #sfPgNo)
+    t.pgHint =
+      (q && (f.tier === 'sure' || f.tier === 'unsure')) ||
+      (o.f35 > 0 && ['square', 'fills', 'small', 'read'].indexOf(f.why) < 0)
+        ? 'kept'
+        : null;
+    // (v318.35: as pgProceed, Treat hatching as one section starts off for a camera photo: kept, or a lens known)
+    t.hatchOne = !(t.pgHint === 'kept' || o.f35 > 0);
+    let r;
+    try {
+      r = seg(t, g, ph.W, ph.H, 1, 9, colour, chroma);
+    } finally {
+      t.pgHint = null;
+      t.hatchOne = true;
+    }
     // truth: each photo pixel's page truth (2x2 uniform), the table round the page its own region
     const truth = new Int32Array(ph.W * ph.H),
       sur = pm.nTruth + 1;
@@ -163,19 +186,29 @@ export function photoPath(t, ph, page, o = {}) {
     oh = flat.height,
     wd = flat.getContext('2d').getImageData(0, 0, ow, oh).data;
   // processSrc on the flat page: enlarged to UPSIDE when small (srcUp), Sensitivity 6 after straightening (SENS_PHOTO)
-  const { g, colour } = fromRGBA(t, wd, ow, oh);
+  const { g, colour, chroma } = fromRGBA(t, wd, ow, oh);
   const up = Math.min(8, 2400 / Math.max(ow, oh), Math.max(1, 1600 / Math.max(ow, oh)));
   let W2 = ow,
     H2 = oh,
     gray = g,
+    ch = chroma,
     srcK = 1;
   if (up > 1.05) {
     W2 = Math.round(ow * up);
     H2 = Math.round(oh * up);
     gray = t.grayUp(g, ow, oh, W2, H2);
+    if (ch) ch = t.grayUp(ch, ow, oh, W2, H2);
     srcK = W2 / ow;
   }
-  const r = seg(t, gray, W2, H2, srcK, 6, colour);
+  // (v318.32: the app's straightened-photo Sensitivity is 5, adaptC 9; BENCH_SENS_PHOTO tries another)
+  // (v318.35: a straightened photo starts with Treat hatching as one section off, as pgProceed does)
+  t.hatchOne = false;
+  let r;
+  try {
+    r = seg(t, gray, W2, H2, srcK, +(process.env.BENCH_SENS_PHOTO || 9), colour, ch);
+  } finally {
+    t.hatchOne = true;
+  }
   // truth through the app's own quad: working px -> flat px -> photo px -> page px
   const Hw2p = homog(
       [

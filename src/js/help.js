@@ -1,9 +1,34 @@
 // Help: "How it works" (three cards), the help sheet (photo tips, glossary, your data, about with what's new) and
 // "What's new" on Home.
-// What's new, newest first, each with the version it came in (v308). After an update, a card on Home shows those
-// newer than the version last seen (ms-last-ver), up to four (not on a fresh install); Help › About lists this
-// version's. (Send feedback, Copy diagnostics and the beta's label: safety.js.)
+// What's new, newest first, each with the version it came in (v308). After an update, a line on Home says the app
+// was updated (v318.32: it had been a card of up to four items) once the version last seen (ms-last-ver) is older
+// (not on a fresh install); Help › What's new (v318.32: its own section; it had been in About) lists this version's.
+// (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v319',
+    t: 'The beta. Fixes from two debugging passes: pages drawn with coloured outlines find their sections, coloured in or not and however thick the lines. A cropped guide keeps its photo for Edit sections when it’s opened again. Tapping the dimmed picture closes the ⋯ menu and nothing else. In Palette, a colour you lock stays in its place in the new schemes, and Greys + accent always has its accent (in a guide, choosing it turns Include › Greys & black on). Undo after removing a drawn marker can’t undo a later draw. What’s new lists every version since the one you last saw.',
+  },
+  {
+    v: 'v318.36',
+    t: 'A big photo no longer holds the screen while its page and sections are found: that work now runs in the background, and the picture keeps responding meanwhile. The guide it makes is exactly the same.',
+  },
+  {
+    v: 'v318.35',
+    t: 'Better at finding the page in a photo on a light desk, so more photos straighten by themselves. On a page you’ve partly coloured, the coloured sections stay sections, and after building the app offers to mark them done. On a scan or download, close hatching and shading lines become one section (Edit sections › Treat hatching as one section; off to start with for a photo). PDFs with the reference picture are smaller.',
+  },
+  {
+    v: 'v318.34',
+    t: 'Edit sections keeps Adjust photo after a guide is opened again: the picture a guide was built from is kept with it on this device (and in a backup if you tick Include guide photos). Three new harmonies, Light to shadow, Analogous + accent and Greys + accent, and Monochrome and Analogous now step evenly from light to dark. In a guide, Colours from is Your markers or A palette, shown as a card you can change, edit in Palette or save; Surprise keeps a palette you chose. Pattern › Random shows its colours as rows (Main colour, Second colour, Accent). Markers › Random is tidier, can draw from the markers you’ve chosen, use a draw in a guide, and prefer markers you haven’t used yet.',
+  },
+  {
+    v: 'v318.33',
+    t: 'A design pass: one look for every control you choose from, the same rounded corners and spacing everywhere, and controls at one comfortable height. Markers’ tools sit in one row (Random, Match a colour, Add markers, Swatch chart). The guide’s Colours, Pattern, Shading and Share & print are underlined tabs, and the picture dims behind the ⋯ menu. Palette’s harmonies are an even grid. The Library looks friendlier when it’s empty, and a guide’s name is in the title font.',
+  },
+  {
+    v: 'v318.32',
+    t: 'A guide from a photo starts at Sensitivity 5, and the paper’s grain and a shadowed page edge no longer turn into clusters of tiny sections. Focus mode has an Exit button, and its next-marker card stays whole on screen. Home shows your latest guide even before you start colouring it. Palette’s Start from shows full colour cards on an iPad held upright. What’s new has its own part of Help. Smaller things: a Done button in the welcome’s one-by-one step, clearer words when straightening a photo, Undo after unticking a marker, hints in Shading, and a photo pasted into Scan’s box is read.',
+  },
   {
     v: 'v318.31',
     t: 'A fix: with the keyboard up in a guide, a check meant to run once after the screen turns kept running until the keyboard went down.',
@@ -629,6 +654,8 @@ const WHATS_NEW = [
     function openSheet() {
       const v = D.getElementById('helpVer');
       if (v) v.textContent = ver();
+      // (v318.37) What's new: this version's (Home's What's new line fills in the versions since, after)
+      wnFill();
       // (v307) whether this device keeps your data (guide-bridge.js keepWords)
       const k = D.getElementById('helpKeep');
       if (k && typeof keepWords === 'function')
@@ -659,9 +686,10 @@ const WHATS_NEW = [
         'beforebegin',
         '<div class="homehelp"><button id="homeHiw" class="hlplink" data-help="hiw">How it works</button><span aria-hidden="true">·</span><button id="homeHelp" class="hlplink" data-help="sheet">Help</button><span aria-hidden="true">·</span><button id="homeFeedback" class="hlplink" data-feedback>Send feedback</button></div>',
       );
-    // What's new: one card on Home after an update (never on a fresh install), when neither card above it is due (see
-    // renderBackupNudge). It goes when ✕ is tapped, or by itself a week after it was first on screen: that time is kept
-    // per version (WN_SHOWN, {v,t}), so time spent waiting behind the other cards doesn't count.
+    // What's new: one line on Home after an update (never on a fresh install), when neither card above it is due (see
+    // renderBackupNudge). It goes when ✕ or What's new is tapped, or by itself a week after it was first on screen:
+    // that time is kept per version (WN_SHOWN, {v,t}), so time spent waiting behind the other cards doesn't count.
+    // (v318.32: a line, not a card; Help › What's new, its own section, lists this version's)
     const WN_SHOWN = 'ms-wn-shown',
       WN_DAYS = 7;
     // (v308) a version as a number to compare: v307.1 → 307.001; '' (none seen) → 0
@@ -669,22 +697,58 @@ const WHATS_NEW = [
       const m = /^v?(\d+)(?:\.(\d+))?/.exec(String(v || '').trim());
       return m ? +m[1] + (+m[2] || 0) / 1000 : 0;
     };
-    // what's new since the version last seen (up to four, newest first), and never what's newer than this one
+    // what's new since the version last seen (newest first, up to eight: v318.37, four before), and never what's
+    // newer than this one
     const wnSince = function (last) {
       const lo = verNum(last),
         hi = verNum(ver()) || Infinity;
       return WHATS_NEW.filter(function (x) {
         const n = verNum(x.v);
         return n > lo && n <= hi;
-      }).slice(0, 4);
+      }).slice(0, 8);
     };
+    // (v318.37) a list of several versions' items: each headed with its version
     const wnItems = function (list) {
+      const many = list.some(function (x) {
+        return x.v !== list[0].v;
+      });
       return list
         .map(function (x) {
-          return '<li>' + esc(x.t) + '</li>';
+          return '<li>' + (many ? '<b class="hlpwnv">' + esc(x.v) + '</b> ' : '') + esc(x.t) + '</li>';
         })
         .join('');
     };
+    // Help › What's new: this version's (or the newest version's that has any), any time (v318.32: its own section,
+    // second, after the beta tester guide; it had been in About). (v318.37, X4-2) From Home's "Updated to … · What's
+    // new", every version since the one last seen instead (wnSince), so an update across several versions shows them
+    // all; opened by itself again it shows this version's as before
+    function wnFill(list, last) {
+      const hv = D.getElementById('helpWnVer'),
+        hl = D.getElementById('helpWnList'),
+        ht = hv && hv.parentNode;
+      const cur = WHATS_NEW.filter(function (x) {
+          return verNum(x.v) <= (verNum(ver()) || Infinity);
+        }),
+        top = cur.length ? cur[0].v : '';
+      if (!list)
+        list = cur.filter(function (x) {
+          return x.v === top;
+        });
+      // ("What's new since v318.31" over several versions, "What's new in v318.37" for one. v319, Y4-3: over several
+      // versions with the one last seen unknown, a device that used the app before ms-last-ver was kept, plain
+      // "What's new": wnItems heads each item with its version, so "in v318.37" over eight versions was wrong)
+      const span = list.some(function (x) {
+          return x.v !== list[0].v;
+        }),
+        many = span && verNum(last) > 0;
+      if (ht)
+        ht.innerHTML =
+          (many ? 'What’s new since ' : span ? 'What’s new' : 'What’s new in ') +
+          '<span id="helpWnVer"></span>';
+      const hv2 = D.getElementById('helpWnVer');
+      if (hv2) hv2.textContent = many ? last : span ? '' : top || ver();
+      if (hl) hl.innerHTML = wnItems(list);
+    }
     function wnShownAt(v) {
       try {
         const o = JSON.parse(get(WN_SHOWN) || 'null');
@@ -729,26 +793,44 @@ const WHATS_NEW = [
       }
       const v = ver();
       if (!card) {
+        // (v318.32) one line, "Updated to v318.32 · What’s new", in place of v308's card of up to four items: What’s
+        // new opens Help at its own section (helpNews), and the line goes, as it does at ✕ (U1-4)
         card = D.createElement('section');
         card.id = 'whatsNew';
-        card.className = 'wnew';
+        card.className = 'wnline';
         card.setAttribute('aria-labelledby', 'wnTitle');
         card.innerHTML =
-          '<div class="wnhead"><h2 id="wnTitle">What’s new in ' +
+          '<span id="wnTitle">Updated to ' +
           esc(v) +
-          '</h2><button id="wnClose" class="wnx" aria-label="Dismiss what’s new">' +
+          // (spaces round the dot for the text as read; a flex row doesn't draw them)
+          '</span> <span aria-hidden="true">·</span> <button type="button" id="wnOpen" class="hlplink">What’s new</button>' +
+          '<button id="wnClose" class="wnx" aria-label="Dismiss what’s new">' +
           ic('x') +
-          '</button></div><ul>' +
-          wnItems(wnSince(get(LAST))) +
-          '</ul>';
+          '</button>';
         const after = D.getElementById('backupNudge') || D.querySelector('#homeView .homegrid');
         if (after) after.insertAdjacentElement('afterend', card);
         else if (av) av.insertAdjacentElement('beforebegin', card);
         else return;
-        card.querySelector('#wnClose').addEventListener('click', function () {
+        const gone = function () {
           put(LAST, v);
           if (typeof homeCardGone === 'function') homeCardGone(card);
           else card.remove();
+        };
+        card.querySelector('#wnClose').addEventListener('click', gone);
+        card.querySelector('#wnOpen').addEventListener('click', function () {
+          // (v318.37, X4-2) every version since the one last seen, read before gone() records this one
+          const last = get(LAST),
+            since = wnSince(last);
+          gone();
+          openSheet();
+          if (since.length) wnFill(since, last);
+          const g = D.getElementById('helpNews');
+          if (g) {
+            g.open = true;
+            setTimeout(function () {
+              g.scrollIntoView({ block: 'start' });
+            }, 0);
+          }
         });
       }
       // it counts as shown once it is on screen (Home is showing)
@@ -817,21 +899,7 @@ const WHATS_NEW = [
         if (window.console) console.warn('home cards', e);
       }
     } else renderWhatsNew(true);
-    // Help › About lists the same, any time
-    {
-      const hv = D.getElementById('helpWnVer'),
-        hl = D.getElementById('helpWnList');
-      // (v308: this version's, or the newest version's that has any)
-      const cur = WHATS_NEW.filter(function (x) {
-          return verNum(x.v) <= (verNum(ver()) || Infinity);
-        }),
-        top = cur.length ? cur[0].v : '',
-        mine = cur.filter(function (x) {
-          return x.v === top;
-        });
-      if (hv) hv.textContent = top || ver();
-      if (hl) hl.innerHTML = wnItems(mine);
-    }
+    wnFill();
     // --- How it works, once: the first time the guide shows a photo or the sample (never over another dialog) ---
     if (
       auto() &&

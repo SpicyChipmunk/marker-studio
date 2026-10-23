@@ -270,7 +270,9 @@
 }
 /* with zones: whole picture or zone by zone, and each zone's name over its markers (83-along) */
 #sfRoot #sfCtl .sfalorder {
-  margin: 10px 0 4px;
+  /* (v318.33) 6px above, not 10: the row is a track now (04-guide.css), whose 3px padding and edge carry the room,
+     so the list's first row stays where it was (above the bar on a 375×667 phone) */
+  margin: 6px 0 4px;
 }
 #sfRoot .sfazh {
   display: flex;
@@ -371,14 +373,26 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    min-height: 44px;
+    /* (v318.33) a 40px square in the order row's track, as the segments beside it (the 44px tap area comes from
+       02-picker.css' rule for small buttons: ::after below); 44px before */
+    position: relative;
+    width: 40px;
+    min-height: var(--h-seg);
     margin-left: auto;
     padding: 0;
     border: 1px solid var(--line);
-    border-radius: var(--r-md);
+    border-radius: var(--r-sm);
     background: none;
     color: var(--ink);
+  }
+  #sfRoot .sffindopen::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: 50%;
+    height: var(--h-ctl);
+    transform: translateY(-50%);
   }
   #sfRoot .sffindopen[aria-expanded='true'] {
     border-color: var(--focus);

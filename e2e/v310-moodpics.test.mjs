@@ -135,7 +135,7 @@ test('making the pictures leaves the guide exactly as it was: every pattern and 
   await layAll(page, 'Blend');
   await pattern(page, 'gradient');
   // a generated palette (made again for each mood), then the Temperature and fewer markers
-  await page.click('#sfSrc [data-v="generate"]');
+  await page.click('#sfSrc [data-v="palette"]');
   await idle(page);
   await layAll(page, 'Gradient, generated palette');
   await page.click('#sfSrc [data-v="owned"]');
@@ -235,7 +235,7 @@ test('a tap lays what its picture showed: Random and a generated palette too; on
     if (setup === 'random') await pattern(page, 'random');
     if (setup === 'generate') {
       await pattern(page, 'gradient');
-      await page.click('#sfSrc [data-v="generate"]');
+      await page.click('#sfSrc [data-v="palette"]');
       await idle(page);
     }
     await pics(page);

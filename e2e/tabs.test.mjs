@@ -67,11 +67,12 @@ test('Pattern: the chooser on one row, that pattern\'s options, then Shuffle and
   assert.ok(last, 'Shuffle and Pin come last, then ＋ Zone');
   // nothing from Shading or Display in here
   for (const sel of ['#sfShade', '#sfTex', '#sfShLines', '#sfPrint']) assert.equal(await page.locator(`${pane('pattern')} ${sel}`).count(), 0, sel);
-  // Random: its option, and Shuffle + Pin
+  // Random: its option, and Shuffle (v318.34: in Random's own row with Other pairings, above Pin)
   await page.click('#sfFam [data-v="random"]'); await idle(page);
   assert.ok(await page.isVisible('#sfNoAdj'));
-  const s2 = await rect(page, '#sfShuffle'), p2 = await rect(page, '#sfLock');
-  assert.ok(Math.abs(s2.top - p2.top) < 1, 'Random: Shuffle and Pin side by side');
+  const s2 = await rect(page, '#sfShuffle'), o2 = await rect(page, '#sfBalPair'), p2 = await rect(page, '#sfLock');
+  assert.ok(Math.abs(s2.top - o2.top) < 1 && s2.right <= o2.left, 'Random: Shuffle and Other pairings side by side');
+  assert.ok(s2.bottom <= p2.top, 'Random: Pin colours under them');
   // Blend: the anchors hint, Reset anchors, spread; no Shuffle or Pin
   await page.click('#sfFam [data-v="blend"]'); await idle(page);
   assert.ok(await page.isVisible(`${pane('pattern')} .sfinfo[data-info="blend"]`));

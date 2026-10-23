@@ -38,7 +38,9 @@ function snapBytes(s) {
         (s.ov ? s.ov.length : 0) +
         (s.col ? s.col.length : 0) +
         (s.comps ? s.comps.length * 48 : 0) +
-        (s.keep && s.keep.geo && s.keep.geo.gray ? s.keep.geo.gray.length : 0)
+        (s.keep && s.keep.geo && s.keep.geo.gray ? s.keep.geo.gray.length : 0) +
+        // (v318.37: and the picture's colour kept with its grey, X1-3)
+        (s.keep && s.keep.geo && s.keep.geo.chroma ? s.keep.geo.chroma.length : 0)
     : s.d
       ? s.d.length
       : 0;
@@ -116,6 +118,8 @@ function segObj() {
             into: c.into,
             from: c.from,
             at: c.at,
+            // (v318.32: a crumb crumbClean made paper, its size then: segQuality counts them)
+            crumb: c.crumb,
           }
         : null;
     }),
@@ -180,6 +184,7 @@ function secApply(u, redo) {
       H = g.H;
       srcK = g.k || 1;
       gray = g.gray;
+      chroma = g.chroma || null;
       srcImg = g.src;
       pgQ = g.pgQ;
       pgShape = g.pgShape;
@@ -209,8 +214,6 @@ function secApply(u, redo) {
     comps = u.comps;
     secColor = u.sec;
     secState = u.ov;
-    // (the warning about the picture is about the picture as it is again, v303)
-    if (gray) segWarn = segQuality();
     if (u.keep) {
       setColored(u.col);
       if (u.keep.tones) {
@@ -244,11 +247,21 @@ function secApply(u, redo) {
         enhance = u.keep.det.e;
         adaptC = u.keep.det.c;
         faintCut = u.keep.det.f || 0;
+        // (v318.35: Treat hatching as one section as it was; a step kept before it existed says nothing: on)
+        hatchOne = u.keep.det.h !== false;
         _reFrom = null;
       }
       bgMaxB = u.keep.bgMaxB;
       bgEdgeAll = !!u.keep.bgEdgeAll;
       if (u.keep.fo !== undefined) faintOffer = u.keep.fo;
+      if (u.keep.hm !== undefined) hatchMade = u.keep.hm;
+      if (u.keep.hw !== undefined) hatchWould = u.keep.hw;
+    }
+    // (the warning about the picture is about the picture as it is again, v303)
+    // (v318.37: judged once the detection's hatching state is back, hatchMade and hatchOne, which the 'hatched'
+    // warning's wording reads: it had been judged before them, X1-4)
+    if (gray) segWarn = segQuality();
+    if (u.keep) {
       _origKeys = u.keep.orig || {};
       _lostKeys = u.keep.lost || {};
       _gone = u.keep.gone || {};

@@ -1002,7 +1002,8 @@
 }
 #sfRoot .sfpgline .sflink,
 #sfRoot .sfframeline .sflink,
-#sfRoot .sfc-segwarn .sfc-retake {
+#sfRoot .sfc-segwarn .sfc-retake,
+#sfRoot #sfAdjNone .sfc-retake {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -1543,72 +1544,87 @@ html.sfsheetsd .mstoast {
   outline: 2px solid var(--focus-pic);
   outline-offset: 2px;
 }
-/* Random's Balance (v283): the bar of roles, each a button in its markers' colours, and the family sheet */
-#sfRoot #sfCtl .sfbalbar {
+/* Random's Balance (v283; v318.34): a thin strip of the roles' shares, then a 44 px row for each role, in a list
+   of its own ("Main colour · pinks · about 60% · Auto ›"), and the family sheet. Until v318.34 the roles were a
+   bar of three coloured buttons, the accent's often too narrow for its name. */
+#sfRoot #sfCtl .sfbalstrip {
   display: flex;
   gap: 2px;
-  margin-top: 12px;
-  border-radius: var(--r-sm);
+  height: 8px;
+  margin-top: var(--s3);
+  border-radius: var(--r-xs);
   overflow: hidden;
 }
-#sfRoot #sfCtl .sfbalseg {
-  min-width: 44px;
-  min-height: 44px;
-  margin: 0;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 0;
-  font: inherit;
-  font-size: var(--t-sm);
-  font-weight: 600;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+#sfRoot #sfCtl .sfbalstrip i {
+  display: block;
+  min-width: 4px;
 }
-#sfRoot #sfCtl .sfbalseg {
+#sfRoot #sfCtl .sfbalrows {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--glass);
+  overflow: hidden;
+}
+#sfRoot #sfCtl .sfbalr {
   display: flex;
   align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 6px 8px 6px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-base);
+  text-align: left;
+  cursor: pointer;
 }
-#sfRoot #sfCtl .sfbalsp {
-  white-space: pre;
+#sfRoot #sfCtl .sfbalr:last-child {
+  border-bottom: 0;
 }
-/* (a name too long for its part gives way; the share always shows) */
-#sfRoot #sfCtl .sfbalsn {
-  flex: 0 1 auto;
+#sfRoot #sfCtl .sfbalr:focus-visible {
+  outline: 2px solid var(--focus-pic);
+  outline-offset: -3px;
+}
+/* (a swatch of the role's markers, light to dark) */
+#sfRoot #sfCtl .sfbalrsw {
+  flex: none;
+  width: 36px;
+  height: 22px;
+  border-radius: var(--r-xs);
+}
+#sfRoot #sfCtl .sfbalrtx {
+  flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-#sfRoot #sfCtl .sfbalsn:empty,
-#sfRoot #sfCtl .sfbalnn .sfbalsn,
-#sfRoot #sfCtl .sfbalnn .sfbaldot {
-  display: none;
+#sfRoot #sfCtl .sfbalrtx b {
+  font-weight: 600;
 }
-#sfRoot #sfCtl .sfbaldot {
+#sfRoot #sfCtl .sfbalrsub,
+#sfRoot #sfCtl .sfbalrst {
+  color: var(--sub-guide);
+}
+#sfRoot #sfCtl .sfbalrch {
   flex: none;
-  white-space: pre;
+  width: 18px;
+  height: 18px;
+  color: var(--sub);
 }
-#sfRoot #sfCtl .sfbalsp {
-  flex: none;
+/* (Pin colours under Random's own row of Shuffle and Other pairings: one rule between the rows, not two) */
+#sfRoot #sfCtl .sfshpin.sfpinonly {
+  margin-top: var(--s2);
+  padding-top: 0;
+  border-top: 0;
 }
 #sfRoot .sfbalopt:disabled {
   opacity: 0.5;
-}
-#sfRoot #sfCtl .sfbalseg:focus-visible {
-  outline: 2px solid var(--focus-pic);
-  outline-offset: -4px;
-}
-#sfRoot #sfCtl .sfbalrow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 8px;
-}
-#sfRoot #sfCtl .sfbalrow .sfghost {
-  margin: 0;
-  flex: none;
 }
 #sfRoot .sfbalopts {
   display: flex;
@@ -2080,4 +2096,34 @@ html.sfsheetsd .mstoast {
   max-height: min(64vh, 820px, calc(100vh - 190px));
   margin: 4px auto 10px;
   border-radius: 10px;
+}
+/* (v318.34) Colours from › A palette: the row of actions under the card (New palette with the harmony select; Change
+   it in Palette, Save to Library and Choose a saved palette), each 44px, wrapping on a phone */
+#sfRoot #sfCtl .sfpalact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+#sfRoot #sfCtl .sfpalact .sfghost {
+  margin: 0;
+  min-height: var(--h-ctl);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+#sfRoot #sfCtl .sfpalact .sfc-select {
+  flex: 1 1 160px;
+  width: auto;
+  margin-top: 0;
+  min-height: var(--h-ctl);
+}
+/* a deleted Library palette: no swatches, the card says so */
+#sfRoot .sfpalnote.sfpalgone {
+  border-style: dashed;
+  background: transparent;
+}
+#sfRoot .sfpalnote .mclose {
+  flex: none;
 }

@@ -71,7 +71,8 @@ test('a coloured page on a grey table is found and straightened by itself; on a 
   let r = await find(page, grey.b64);
   assert.equal(r.fin.tier, 'sure', JSON.stringify(r.fin));
   assert.ok(err(r.fin.q, grey.C) < 0.01, 'its corners: ' + err(r.fin.q, grey.C).toFixed(4));
-  assert.notEqual(r.guide.tier, 'sure', 'guide building as v314.1 found it: ' + r.guide.tier);
+  // (v318.35: guide building's edge fallback finds it too now; where it does, its corners are the page's)
+  if (r.guide.tier === 'sure') assert.ok(err(r.guide.q, grey.C) < 0.01, 'guide building\u2019s corners: ' + err(r.guide.q, grey.C).toFixed(4));
   // a white table: no page offered with wrong corners
   const white = await photo(page, { art, L: 236, tilt: 15, roll: 5, size: 0.7 });
   r = await find(page, white.b64);

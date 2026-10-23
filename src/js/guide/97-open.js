@@ -129,6 +129,7 @@ function openDesignObj(d, id, resumed, quiet, col) {
       srcImg = null;
       shadeReset();
       gray = null;
+      chroma = null;
       adj = null;
       edgeDist = null;
       labelPts = null;
@@ -196,6 +197,9 @@ function openDesignObj(d, id, resumed, quiet, col) {
       }
       // the guide's own settings first: which sections are background depends on its Background trim
       styleFrom(d);
+      // (v318.34) the settings its picture was worked on with (turn, crop, corners, Sensitivity…), so Adjust photo shows
+      // them; the picture itself is read only when Adjust photo opens (25-source-photo srcLoad)
+      srcOpen(d.src);
       // (its own Min section size, as saved: not a new picture's)
       minAuto = false;
       applyBg(true);

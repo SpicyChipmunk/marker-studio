@@ -98,7 +98,10 @@ test('a worker that never answers: Build finishes on the page, and the new guide
   await page.waitForFunction(() => __mstest.inLibrary);
   await idle(page);
   const s = await stats(page);
-  assert.equal(s.timedOut.lpts, 1, 'Build’s label points timed out');
+  // (v318.36: a new photo's first job is the page finder's, pgf, which times out and the worker is given up on for
+  // the session; Build's label points are then done on the page with no job sent. Until v318.35 the first was lpts)
+  assert.equal(s.timedOut.pgf, 1, 'the page finder timed out: ' + JSON.stringify(s));
+  assert.equal(s.timedOut.lpts, undefined, 'Build’s label points never sent');
   assert.equal(s.done.lpts || 0, 0);
   assert.equal(
     await page.evaluate(() => sfLoadDesign(__mstest.curId).then((d) => d.lmap === __mstest.lmapHere())),

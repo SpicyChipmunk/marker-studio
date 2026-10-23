@@ -22,7 +22,7 @@ sheet, paper, VoiceOver, and how it feels.
 
 ## Before you start (5 min)
 
-- [ ] Home's foot says the version you're testing (**v318.31 · Beta**). If not: "A new version of Marker Studio is
+- [ ] Home's foot says the version you're testing (**v319 · Beta**). If not: "A new version of Marker Studio is
       ready" under Home's title → **Reload**.
 - [ ] ★ **Library › Back up** → the share sheet → **Save to Files** → the file is in Files. (A1 needs it.)
 - Have ready: a colouring page on the table to photograph; a PDF of a colouring page in Files; a few Ohuhu and Copic
@@ -169,6 +169,131 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 ## Part C — new in recent releases (20 min)
 
 What v318.22 to v318.30 changed that Parts A and B don't already cover.
+
+**New in v319 (fixes from two debugging passes)**
+
+- [ ] ★ A colouring page drawn with **coloured outlines** (red or blue lines; a PDF or download) → its sections are
+      found as for black lines, with or without Enhance; colour a few cells in with dark markers and photograph it →
+      still all its sections, and the coloured ones offered as done.
+- [ ] ★ A guide from a photo → Edit sections › Crop it a little → build, close the app fully, reopen → Edit sections ›
+      Adjust photo works (no "isn't kept" note).
+- [ ] ★ A guide → ⋯ → tap the dimmed picture near the top → the menu closes, you stay in the guide (not Markers or
+      Home), nothing else opens; tap again → the section's tip.
+- [ ] Palette › Analogous + accent → lock the accent band → Generate → the other colours are still a fan round the
+      opposite hue. Greys + accent › Start from a grey marker → one clear colour and the greys.
+- [ ] A guide → Palette › A palette → Greys + accent (Include › Greys & black off) → the greys chip turns on and the
+      palette is one colour and greys → ↶ Undo → the chip is off again and the scheme is as it was.
+- [ ] Markers › Random → Remove this one → Draw → the Undo toast is gone.
+- [ ] After updating from an older version → "What's new" lists each version since then.
+
+**New in v318.36 (building without freezing)**
+
+- [ ] ★ New guide from a big camera photo (12 MP) → while "Detecting sections…" shows, scroll and tap around: the
+      screen keeps responding (no 2–3 s freeze). The guide looks the same as before. Drag Edit sections' Sensitivity
+      slider quickly back and forth → it keeps up and settles on where you let go.
+- [ ] Copy diagnostics after that → "Longest waits" are shorter than they were in v318.35.
+
+**New in v318.35 (engine upgrades)**
+
+- [ ] ★ **A page you've partly coloured in with mid or dark markers**, photographed → Edit sections: the coloured
+      sections are whole sections (not holes or scraps), and there's no "coloured in already" warning. Build guide →
+      after the bloom, a toast "N sections look coloured in already." with **Mark them done** → tap it → they're
+      ticked, "Marked N sections done · Undo" → Undo puts the ticks back. A plain page gets no such toast.
+- [ ] A page coloured in nearly all over (dark or scribbled) still gets the "coloured in already" warning, now saying a
+      partly coloured page works.
+- [ ] ★ A photo of a page on a **light desk** (white or pale grey table) → the app straightens it by itself; the page's
+      margins are background (dark in Edit sections), not sections.
+- [ ] A **scan or download of a hatched page** (zentangle, shading lines) → Edit sections shows "Treat hatching as
+      one section" ticked and says how many patches it found; untick → the slivers come back; Undo. A photo of the
+      same page → the box starts unticked.
+- [ ] Share & print › a PDF with the reference picture → it opens in Files and looks as before (a smaller file).
+
+**New in v318.34 (the five features)**
+
+- [ ] ★ **A guide from one of your photos** → save it → open another guide → close the app fully → open the first
+      guide → Edit sections › Adjust photo → "Getting the photo ready…", then turn, Adjust corners, crop, Enhance and
+      Sensitivity all work as when you built it. After ticking a few sections, change the crop → it warns that
+      progress clears; Undo brings the ticks back. Same with a guide from a PDF page.
+- [ ] Library › Back up → "Include guide photos (bigger backup)" is unticked; back up both ways and compare the two
+      files' sizes in Files. On a nearly full iPad, building and reopening guides still works.
+- [ ] Save a copy of that guide → the copy's Adjust photo works too.
+- [ ] ★ **A guide › Pattern › Random › Main colour** → a thin strip, then three rows "Main colour · pinks · about 60% ·
+      Auto ›"; each opens its sheet; pick a family by hand → the row says "Your choice". Shuffle and ↻ Other pairings
+      in one row with the line telling them apart; Pin colours below. With Larger Text, the rows wrap and stay
+      tappable.
+- [ ] ★ **Markers › 🎲 Random** → the line saying what it's for; draw five → Drawn right under the buttons, "Show the N
+      left to draw" folded, grouped by family. Swap this one, Remove this one (Undo), Clear all (asks, Undo). Sideways:
+      two columns. Use in a guide with two or more drawn. Markers › Draw from these → Random from those.
+- [ ] Tick "Prefer markers you haven't used yet" → draws avoid markers in guides you've worked with (coloured,
+      printed, shared, opened in Colour along); the line under it says how many are left unused; reload → still ticked.
+
+**Harmonies and Colours from**
+
+- [ ] Palette → the Harmony grid has twelve: **Light to shadow**, **Analogous + accent** and **Greys + accent** after
+      Monochrome, three to a row, upright and sideways. Each makes a palette; the line under the grid says what it is.
+- [ ] Monochrome or Analogous at 6 → the colours step evenly from light to dark (no two nearly the same lightness
+      next to a big jump); Generate again → another even ramp.
+- [ ] Greys + accent → one clear colour first, then greys light to dark; no "Some colours are greys" line. Filters →
+      Saturation: Neutral off (or a selection without greys) → the button is greyed; a tap says "Needs 3 greys among
+      your markers".
+- [ ] A guide → Colours from › A palette → New palette's harmony menu has the three; Greys + accent gives a grey ramp
+      with one accent. (v319) It is greyed "— needs Include › Greys & black on" until Expand › Include › Greys & black
+      is on; chosen, then the chip off and a Mood tap → "Greys + accent needs Include › Greys & black on: Analogous +
+      accent instead" under the menu, the card "Analogous + accent", Greys + accent still the one chosen; the chip on
+      and a Mood tap → Greys + accent again, no note.
+- [ ] (v319) Palette → Start from Ohuhu 120 Black → Greys + accent → lock the first colour (the accent) → Generate ×3
+      → it stays first and locked. Markers › Random → Draw ×3 → Remove this one → tap a colour in the pile → "Removed
+      …" with Undo → Undo puts that one back.
+- [ ] (v318.37) Analogous + accent → lock the last colour (the accent) → Generate ×3 → the other colours stay a fan
+      across the wheel from it, no "stray from the scheme" line. Light to shadow → lock the last → Generate → it
+      stays the ramp's dark end.
+- [ ] (v318.37) Start from a grey marker (a Cool Grey) → Greys + accent → one clear colour first, the grey among the
+      greys at its lightness, "… base" under the name. Markers › select greys only › Palette from these → Greys +
+      accent says "All greys: your markers in play don't have a clear colour for the accent."
+- [ ] (v318.37) Markers › Random → draw three → Remove this one → Draw a marker → the Undo toast is gone; Remove,
+      Undo at once → back. A guide › Colours from › a saved palette → delete it in the Library → the card says "From
+      your Library (deleted)" and offers Save to Library.
+- [ ] (Stage 3 F) Colours from is **Your markers | A palette**. A palette → a card: swatches, name, "8 markers · Made
+      here", ✕; under it "A palette of 8: tick Expand for more", New palette + harmony, Change it in Palette ›, Save to
+      Library. ✕ → Your markers; A palette again → the same palette back.
+- [ ] Palette → make one → Use in a guide › Recolour → the card says "From Palette" with its name and scheme; Save to
+      Library → "Saved to your Library as …", the card says "From your Library" and Save to Library goes.
+- [ ] Choose a saved palette ▾ → the card shows it; delete that palette in the Library → the guide keeps its colours
+      and its card (reopen it after a reload: still so). A guide saved before v318.34 whose palette was deleted reads
+      "Palette deleted · Choose another".
+- [ ] Change it in Palette › → the Palette screen with that palette (locks, re-roll a band) → Use in a guide ›
+      Recolour → back in the guide with the change.
+- [ ] With a saved or handed-over palette, ✨ Surprise → the colours stay the palette's; the toast starts "Kept your
+      palette"; Undo brings the pattern back. With a palette made by New palette, Surprise makes a new one as before.
+- [ ] Help › Glossary has "Colours from". Phone (390 wide): the card and the rows under it fit, nothing cut off.
+
+**New in v318.33 (the design pass)**
+
+- [ ] ★ Walk through Home, Markers, Palette, a guide's four tabs, Colour along and the Library, upright and sideways →
+      nothing overlaps or is cut off; every button you'd tap is a comfortable size; chosen options look the same
+      everywhere (teal inside a track). Repeat with Larger Text.
+- [ ] Markers → Random, Match a colour, Add markers and Swatch chart in one row (two rows on a phone width).
+- [ ] A guide → the tabs are underlined and stay pinned when you scroll; ⋯ → the picture dims behind the menu.
+- [ ] Palette → the harmonies in an even grid; with Larger Text on a phone width, two columns, no word broken.
+- [ ] The Library with nothing in it (a Private tab) → the icon in a ring above the text and Try the sample.
+
+**New in v318.32**
+
+- [ ] ★ **A guide from one of your own photos** (the Specks ones are good) → no clusters of tiny purple specks along
+      the page's edge or in the margin at the Sensitivity it starts at (now 5). Edit sections › Adjust photo ›
+      Sensitivity 1 → about the same number of sections.
+- [ ] ★ **Focus mode** → the **Exit** pill leaves it; the next-marker card is always whole on screen, upright and
+      sideways. Enter Focus upright → it zooms to the first section straight away (not the whole picture).
+- [ ] ★ **Home** after building a guide you haven't coloured yet → "Your latest guide · not started · Open".
+- [ ] **Edit sections › Adjust photo** on a phone-width Safari tab → the panel scrolls into view above Build guide.
+- [ ] **Palette › Start from a marker…** upright → the colour cards are full cards, not grey slivers.
+- [ ] A photo where the app isn't sure of the page → the note says to drag the yellow corners; with a sensible
+      outline, **Straighten** is the main button.
+- [ ] After updating, Home shows "Updated to v318.32 · What's new" once; it opens Help's own What's new section.
+- [ ] Markers chart: tap a marker you own → "… unticked · Undo"; Undo ticks it again.
+- [ ] Scan: copy a photo of caps in Photos, paste it into the box → it's read. Close Scan straight after choosing a
+      photo, while "Starting the reader…" shows → reopen Scan and read a photo: it works.
+- [ ] The welcome, Private tab: add a set › I have extra markers › one by one → a **Done** button.
 
 **Markers and Scan**
 

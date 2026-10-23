@@ -149,7 +149,8 @@ test('Welcome and the guide keep the rule: 44px actions, 40px choices, a 44px Fo
   const g = await check(page, 'guide: Colours', false);
   assert.deepEqual([h(g, '#sfColor'), h(g, '#sfBack2')], [44, 44], 'the bar');
   assert.equal(h(g, '#sfZin'), 34, 'the tool row’s icons keep their size');
-  assert.equal(h(g, '#sfTab-colours'), 42, 'the tabs keep theirs');
+  // (v318.33: underline tabs, 44 px as every action; 42 before)
+  assert.equal(h(g, '#sfTab-colours'), 44, 'the tabs keep theirs');
   await page.click('.sftabbtn[data-t="share"]'); await check(page, 'guide: Share', false);
   await page.click('#sfPrint'); await check(page, 'guide: the Print sheet', false);
   await page.keyboard.press('Escape'); await idle(page);
@@ -201,7 +202,8 @@ test('buttons in the guide are 44px (choices and actions), never the app\'s 54px
   await answerAsks(page);
   await page.click('#sfBack2'); await idle(page); await page.click('#sfAdjToggle'); await idle(page);
   assert.deepEqual(await hs('#sfRotL,#sfRotR,#sfCrop,#sfAutoCrop'), ['sfRotL:44', 'sfRotR:44', 'sfCrop:44', 'sfAutoCrop:44']);
-  assert.deepEqual(await hs('#sfEdit button'), ['sfEmToggle:44', 'sfEmMerge:44', 'sfEmSplit:44', 'sfEmAdd:44']);
+  // (v318.33: the edit tools are segments in a track, 40px (--h-seg) with the 44px tap area, as Palette's)
+  assert.deepEqual(await hs('#sfEdit button'), ['sfEmToggle:40', 'sfEmMerge:40', 'sfEmSplit:40', 'sfEmAdd:40']);
   await none54('Edit sections');
   await page.click('#sfCrop'); await idle(page);
   assert.deepEqual(await hs('#sfCropApply,#sfCropReset,#sfCropCancel'), ['sfCropApply:44', 'sfCropReset:44', 'sfCropCancel:44']);
@@ -213,7 +215,9 @@ const onboarded = (extra = {}) => ({ 'ms-onboarded': '1', 'ms-setup-tip': '1', '
 const appState = (extra = {}) => JSON.stringify({ mode: 'home', ownedSeedV: 2, copicAdd1: 1, libAdj1: 1, setFix1: 1, owned: OWN, saved: [], ...extra });
 
 test('small controls have 44px tap areas; long palette codes wrap; the To buy view is tidy', async () => {
-  const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState({ saved: [{ id: 5, type: 'guide', name: 'G', keys: [], ts: Date.now() }] }) }) });
+  // (v318.33: two guides. Since v318.32 Home features the newest guide whether or not it's started, so with one guide
+  // "Your guides" and its All guides link didn't show, and this test timed out)
+  const { page, errors } = await openApp({ storage: onboarded({ [KEY]: appState({ saved: [{ id: 5, type: 'guide', name: 'G', keys: [], ts: Date.now() }, { id: 6, type: 'guide', name: 'H', keys: [], ts: Date.now() - 1000 }] }) }) });
   // a tap 4px outside a control still reaches it
   const hit = (sel) => page.evaluate((sel) => { const b = document.querySelector(sel), r = b.getBoundingClientRect(), el = document.elementFromPoint(r.left + r.width / 2, r.top - 4); return !!el && (el === b || b.contains(el)); }, sel);
   await page.waitForSelector('#sfRecent .sfSeeAll');
@@ -287,9 +291,9 @@ test('disabled buttons look disabled; Clear only when there is something to clea
   assert.equal(await page.getAttribute('#segs [data-n="4"]', 'aria-pressed'), 'false');
   await page.click('#mCollection');
   assert.deepEqual(await pressed('#ownView'), ['true', 'false', 'false', 'false']);
-  // the top tabs: 38px to look at, 44px to tap
+  // the top tabs: 40px to look at (--h-seg since v318.33; 38 before), 44px to tap
   const tab = await page.evaluate(() => { const b = document.getElementById('mHome'), r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after'); return { h: r.height, after: parseFloat(a.height), hit: document.elementFromPoint(r.left + r.width / 2, r.top - 2) === b }; });
-  assert.equal(Math.round(tab.h), 38);
+  assert.equal(Math.round(tab.h), 40);
   assert.ok(tab.after >= 44);
   assert.ok(tab.hit, 'a tap just above the tab reaches it');
   assert.deepEqual(errors, []);

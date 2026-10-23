@@ -306,13 +306,16 @@ test('sheets: portrait from under the pinned picture to the bottom; the page is 
   assert.equal(await page.evaluate(() => [document.getElementById('sfSheet').getAttribute('role'), document.getElementById('sfSheet').getAttribute('aria-modal')].join()), 'dialog,true');
   // header, a scrolling body, a footer
   assert.deepEqual(await page.$$eval('#sfSheet > *', (k) => k.map((x) => x.className)), ['sfshhd', 'sfshbody', 'sfshft']);
-  // locked: a wheel over the page doesn't scroll it; the picture still zooms
+  // locked: a wheel over the page doesn't scroll it. (v318.37, X4-1: the menu's dim is modal and takes the pointer, so
+  // a pinch (ctrl + wheel) over the dimmed picture no longer zooms it either; it did before, under a dim that took
+  // no taps. A picker's dim still lets the picture through: e2e/v31837-shell)
   const y0 = await page.evaluate(() => scrollY);
   await page.mouse.move(195, s.top - 30 > 0 ? 100 : 100); await page.mouse.wheel(0, 400); await idle(page);
   await page.mouse.move(195, s.top + 40); await page.mouse.wheel(0, 400); await idle(page);
   assert.equal(await page.evaluate(() => scrollY), y0, 'the page does not scroll');
   await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2); await page.keyboard.down('Control'); await page.mouse.wheel(0, -120); await page.keyboard.up('Control'); await idle(page);
-  assert.ok(await page.evaluate(() => __mstest.zoom) > 1, 'pinch (ctrl + wheel) still zooms the picture');
+  assert.equal(await page.evaluate(() => __mstest.zoom), 1, 'a pinch (ctrl + wheel) over the dim leaves the picture as it is');
+  assert.ok(await page.$('#sfSheet .sfmitem'), 'and the menu stays open');
   // Tab stays inside
   for (let i = 0; i < 9; i++) await page.keyboard.press('Tab');
   assert.ok(await page.evaluate(() => document.getElementById('sfSheet').contains(document.activeElement)), 'Tab stays in the sheet');

@@ -581,7 +581,6 @@ function fitPairs() {
     r.classList.remove('sfmeas');
     r.classList.toggle('sfstack', wide);
   });
-  balFit(ctlEl);
   // Mood's six choices: one row where every label fits, else two rows of three
   // (v318.17: and Lean towards' six)
   ctlEl.querySelectorAll('.sfsix').forEach(function (six) {
@@ -990,8 +989,9 @@ function fitTabs() {
     Portrait: from the bottom of the pinned picture block to the bottom of the screen, so it covers the tabs, controls
     and bar but never the picture (the page first scrolls so the picture is pinned at its floor size, and scrolls
     back on close). Side by side: over the controls column. A header (title and an optional field), a scrolling body,
-    and a footer. While it's open the page doesn't scroll (pinch and pan on the picture still work), Escape closes
-    it, and focus goes into it and back to what opened it.
+    and a footer. While it's open the page doesn't scroll, Escape closes it, and focus goes into it and back to what
+    opened it. (v318.37) A tap on the dim outside it closes it and does nothing else; only under a picker's dim does
+    the picture still take taps, pans and pinches.
     o: {title, field (HTML), body (HTML), foot (HTML), label, pin (false: don't scroll), restore (false: stay), onClose,
     opener (what focus goes back to, when not what has it now), tipSec (the section whose tip opened it), fit (as tall
     as its content, up to the usual height: menus)} */
@@ -1020,8 +1020,20 @@ function openSheet(o) {
     (o.body || '') +
     '</div>' +
     (o.foot ? '<div class="sfshft">' + o.foot + '</div>' : '');
+  // (v318.33) a dim backdrop under the sheet, in the guide's own stacking context (at body level it covered the sheet).
+  // (v318.37, X4-1) The dim reads as modal, so it acts as one: a tap on it closes the sheet and does nothing else (the
+  // tap never reaches the picture: it used to open a section's tip, bright over the dim, with the menu still open).
+  // Only a picker's dim (o.picker, 84-popovers) still lets taps through: a tap on another section moves the picker
+  const scrim = document.createElement('div');
+  scrim.className = 'sfscrim';
+  scrim.setAttribute('aria-hidden', 'true');
+  if (!o.picker) {
+    scrim.classList.add('sfscrimtap');
+    scrim.addEventListener('pointerdown', scrimDown);
+  }
+  root.appendChild(scrim);
   root.appendChild(el);
-  sheetO = { el: el, o: o, opener: op, y0: y0, y1: window.scrollY };
+  sheetO = { el: el, o: o, opener: op, y0: y0, y1: window.scrollY, scrim: scrim };
   document.documentElement.classList.add('sfsheeton');
   placeSheet();
   // (and again a frame later: Safari can settle the scroll that pinned the picture, and the page's overflow, after
@@ -1039,6 +1051,44 @@ function openSheet(o) {
   } catch (_) {}
   return el;
 }
+// (v318.37) A pointer down on the dim: the sheet closes at once, and the tap is swallowed. The dim itself stays (unseen)
+// until the pointer is up, so the up and the click land on it and not on the picture under it, then goes.
+// (v319, Y4-1) A touch's click comes after its up, hit-tested afresh: with the dim gone at the up and the page scrolled
+// back on close (restore), it landed on what had moved under the finger: the Markers or Home tab, where the pinned
+// picture's top had been, and the tap on the ⋯ menu's dim threw the person out of the guide. So the up's default (that
+// click) is stopped on the dim, and the dim stays, unseen, until a click lands on it (a mouse) or 350 ms after the up;
+// a second tap on the dim's area in that time is swallowed too (sheetO.scrim is no longer this dim), one after it
+// reaches the picture as before. Escape and the keyboard close the sheet by closeSheet, which removes the dim at once.
+function scrimDown(e) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const s = e.currentTarget;
+  if (!sheetO || sheetO.scrim !== s) return;
+  sheetO.scrim = null;
+  s.style.opacity = '0';
+  try {
+    s.setPointerCapture(e.pointerId);
+  } catch (_) {}
+  const gone = function () {
+    s.remove();
+  };
+  let ended = false;
+  const end = function () {
+    if (ended) return;
+    ended = true;
+    s.addEventListener('click', gone, true);
+    setTimeout(gone, 350);
+  };
+  const noClick = function (ev) {
+    if (ev.cancelable) ev.preventDefault();
+  };
+  s.addEventListener('touchend', noClick, { passive: false });
+  s.addEventListener('pointerup', end);
+  s.addEventListener('pointercancel', end);
+  s.addEventListener('lostpointercapture', end);
+  closeSheet();
+}
 // Close the sheet (quietly: no onClose). Focus goes back to what opened it: the same control (found again by its id
 // when the controls were redrawn meanwhile); for one that was in a section's tip, from the keyboard, the tip again;
 // else ⋯. The page itself (<body>) never counts as the opener.
@@ -1048,6 +1098,7 @@ function closeSheet(quiet) {
   sheetO = null;
   const had = S.el.contains(document.activeElement);
   S.el.remove();
+  if (S.scrim) S.scrim.remove();
   document.documentElement.classList.remove('sfsheeton', 'sfsheetsd', 'sfsheetin');
   touchRule();
   if (S.o.restore !== false && S.y1 !== S.y0 && Math.abs(window.scrollY - S.y1) < 2) {

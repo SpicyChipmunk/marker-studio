@@ -1,6 +1,6 @@
 // v308 (getting a picture in), in the browser: a tilted photo of grey paper keeps its sections; Straighten starts from
 // the photo's own rectangle when the finder only saw the drawing; a page under a warm lamp is found; a straightened
-// photo is found at Sensitivity 7; Auto crop says "Nothing to trim" with no Undo step; Merge refuses the background;
+// photo is found at Sensitivity 5 (v318.32: was 7); Auto crop says "Nothing to trim" with no Undo step; Merge refuses the background;
 // Ignore faint grey marks; the warning for a coloured-in page; a failed file said once, and a PDF told what to do;
 // the bloom's "too slow" lasts one launch; and a guide saved by v307.1 opens unchanged. Pages and photos are drawn
 // here in code. (The measures themselves: test/v308-intake)
@@ -47,9 +47,10 @@ async function makePic(o) {
     const s = Math.min((PW - 120) / art.width, (PH - 160) / art.height);
     p.drawImage(art, (PW - art.width * s) / 2, (PH - art.height * s) / 2, art.width * s, art.height * s);
     if (o.kind === 'coloured') {
-      // scribbled colour over most of it, in short strokes that break into specks
+      // scribbled colour over most of it, in short strokes that break into specks (v318.35: dark blue and violet
+      // markers, as dark as the lines: a mid marker's strokes are paper to the ink now, and such a page gets no warning)
       p.globalCompositeOperation = 'multiply';
-      for (let i = 0; i < 20000; i++) { p.strokeStyle = 'hsl(' + ((i * 37) % 360) + ',80%,60%)'; p.lineWidth = 2 + rnd() * 3; const x = rnd() * PW, y = rnd() * PH; p.beginPath(); p.moveTo(x, y); p.lineTo(x + (rnd() - 0.5) * 16, y + (rnd() - 0.5) * 16); p.stroke(); }
+      for (let i = 0; i < 20000; i++) { p.strokeStyle = 'hsl(' + (235 + ((i * 37) % 30)) + ',100%,35%)'; p.lineWidth = 2 + rnd() * 3; const x = rnd() * PW, y = rnd() * PH; p.beginPath(); p.moveTo(x, y); p.lineTo(x + (rnd() - 0.5) * 16, y + (rnd() - 0.5) * 16); p.stroke(); }
       p.globalCompositeOperation = 'source-over';
       g.drawImage(pg, (W - PW) / 2, (H - PH) / 2); g.globalCompositeOperation = 'destination-over'; g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
       return done(c, 'image/png');
@@ -152,7 +153,7 @@ test('Straighten on a photo where only the drawing was seen starts from the phot
   assert.deepEqual(errors, []);
 });
 
-test('a page photographed under a warm lamp is found and straightened, at Sensitivity 7; a scan stays at 5', async () => {
+test('a page photographed under a warm lamp is found and straightened, at Sensitivity 5 (v318.32: was 7); a scan stays at 5', async () => {
   const { page, errors } = await fresh();
   const b64 = await pic(page, { kind: 'angled', tint: [0.95, 0.82, 0.6] });
   const f = await page.evaluate(async (b64) => {
@@ -170,7 +171,7 @@ test('a page photographed under a warm lamp is found and straightened, at Sensit
   });
   await sections(page);
   await page.click('#sfAdjToggle');
-  assert.equal(await page.textContent('#sfSensVal'), '7', 'a straightened photo: Sensitivity 7');
+  assert.equal(await page.textContent('#sfSensVal'), '5', 'a straightened photo: Sensitivity 5 (v318.32)');
   // back to the photo as taken: 5 again
   await page.click('#sfPgUndo');
   await sections(page);
@@ -295,12 +296,13 @@ test('Ignore faint grey marks: offered for pale marks round dark outlines; ticke
   assert.deepEqual(b.errors, []);
 });
 
-test('a page coloured in already gets a warning', async () => {
+test('a page coloured in already gets a warning (v318.35: softened, a partly coloured page works)', async () => {
   const { page, errors } = await fresh();
   await pick(page, await pic(page, { kind: 'coloured' }), 'page.png', 'image/png');
   await sections(page);
   assert.equal(await warn(page), 'coloured');
   assert.match(await page.textContent('.sfc-segwarn'), /coloured in already/);
+  assert.match(await page.textContent('.sfc-segwarn'), /A partly coloured page works/);
   assert.deepEqual(errors, []);
 });
 

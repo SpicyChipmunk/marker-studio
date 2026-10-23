@@ -201,12 +201,16 @@ function ocrStart() {
       }
       ocrFailed(m);
     };
-    await new Promise((res, rej) => {
-      w._ready = res;
-      w._fail = rej;
-      w.postMessage(Object.assign({ t: 'init' }, files), [files.wasm, files.det, files.rec, files.cls]);
-    });
-    URL.revokeObjectURL(files.ort);
+    try {
+      await new Promise((res, rej) => {
+        w._ready = res;
+        w._fail = rej;
+        w.postMessage(Object.assign({ t: 'init' }, files), [files.wasm, files.det, files.rec, files.cls]);
+      });
+    } finally {
+      // (v318.32 D1-1: and on a failure or an end while starting, the module's blob URL isn't kept)
+      URL.revokeObjectURL(files.ort);
+    }
     if (ocrReady !== p) {
       w.terminate();
       throw new Error('ended');
@@ -220,7 +224,13 @@ function ocrStart() {
 }
 // the worker ended: its memory goes (on Scan's close, and after running out of memory)
 function ocrEnd() {
-  if (ocrW) ocrW.terminate();
+  if (ocrW) {
+    const w = ocrW;
+    w.terminate();
+    // (v318.32 D1-1: a worker ended while it was starting (Scan closed): ocrStart's wait for its 'ready' is told, not
+    // left waiting for good with the photo's pixels in ocrGo's hand. A terminated worker says nothing)
+    if (!w._up && w._fail) w._fail(new Error('ended'));
+  }
   ocrW = null;
   ocrReady = null;
   // (v318.22 debug: a closer look waiting on the worker ended is told, not left waiting for good: terminate() says
@@ -2877,6 +2887,9 @@ function ocrClose() {
     ocrCl.stop = ocrCl.closed = true;
     if (ocrCl.wait) ocrCl.wait.rej(new Error('closed'));
     ocrCl.wait = null;
+    // (v318.32 D1-1: let go of here too, not only by ocrCloserGo's finally, whose start may still be waited on: Look
+    // closer is offered again on the next photo, and the worker put away in the background)
+    ocrCl = null;
   }
   ocrCloserList = [];
   ocrClLast = null;
@@ -2913,6 +2926,17 @@ function ocrClose() {
       ocrWide(ocrRun);
       ocrDraw(ocrRun);
     }
+  });
+  // (v318.32 D1-3) the page left (a reload, a link followed, the app swiped away) while a photo is read: the busy mark
+  // cleared, as closing Scan clears it. Left, it was taken for the reader running out of memory, and the next photo
+  // read gently for a fortnight, with a note blaming the device. A real crash leaves no pagehide, so its mark stays.
+  // (not when the page is only put away in the browser's cache, persisted: it may come back and finish)
+  window.addEventListener('pagehide', function (e) {
+    if (e && e.persisted) return;
+    if ((ocrRun && !ocrRun.done) || ocrCl)
+      try {
+        localStorage.removeItem(OCR_BUSY_KEY);
+      } catch (_) {}
   });
   // (the app put away while nothing's being read: the worker's memory given back)
   document.addEventListener('visibilitychange', function () {

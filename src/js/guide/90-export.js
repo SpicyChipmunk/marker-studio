@@ -282,7 +282,13 @@ async function _flate(u8) {
 // a page's pixels as RGB, packed and compressed: in the worker (03-jobs), while the page draws the next one, or here
 // where there is none (or it fails). Resolves to { w, h, b: the bytes, zc: compressed }. The same bytes either way
 // (v307)
-function pdfPagePack(cv) {
+// (v318.35 Stage 4.6, E1-8) jpg: the page tried as a JPEG too (quality 0.9, the browser's own encoder), and the smaller
+// of that and the deflated RGB goes in: the pages with the picture in colour (the key's reference, Key + reference's
+// picture and close-ups), whose shading and gradients deflate poorly (the sample's key page 449 KB deflated, 329 KB
+// as a JPEG; its reference's pages 520–610 KB → 290–430 KB), while a page of flat colour can deflate smaller still
+// (the tests' Letter page: 225 KB deflated, 246 KB as a JPEG) and then stays as it was. The colouring page and the key's
+// text-only pages are never tried: lossless. Where the encoder gives nothing (an old browser), deflated as before
+function pdfPagePack(cv, jpg) {
   const w = cv.width,
     h = cv.height,
     read = function () {
@@ -296,19 +302,54 @@ function pdfPagePack(cv) {
         return { w: w, h: h, b: zc || raw, zc: !!zc };
       });
     };
-  if (!JOBS.on) return here();
-  // (the pixels handed to the worker; the canvas kept until it's done, in case it fails)
-  const px = read();
-  return JOBS.run('pdf', { buf: px.buffer, n: w * h, z: typeof CompressionStream !== 'undefined' }, [
-    px.buffer,
-  ]).then(function (r) {
-    freeCanvas(cv);
-    // (a worker without compression where the page has it: compressed here, as the page would have)
-    if (r.zc || !r.b.length) return { w: w, h: h, b: r.b, zc: r.zc };
-    return _flate(r.b).then(function (zc) {
-      return { w: w, h: h, b: zc || r.b, zc: !!zc };
+  const packed = function () {
+    return JOBS.on ? pack() : here();
+  };
+  if (!jpg) return packed();
+  // (the JPEG first, while the canvas is whole; the pixels are read and the canvas handed back by the packing after)
+  return pdfJpeg(cv).then(function (b) {
+    return packed().then(function (r) {
+      return b && b.length < r.b.length ? { w: w, h: h, b: b, jpg: true } : r;
     });
-  }, here);
+  }, packed);
+  function pack() {
+    // (the pixels handed to the worker; the canvas kept until it's done, in case it fails)
+    const px = read();
+    return JOBS.run('pdf', { buf: px.buffer, n: w * h, z: typeof CompressionStream !== 'undefined' }, [
+      px.buffer,
+    ]).then(function (r) {
+      freeCanvas(cv);
+      // (a worker without compression where the page has it: compressed here, as the page would have)
+      if (r.zc || !r.b.length) return { w: w, h: h, b: r.b, zc: r.zc };
+      return _flate(r.b).then(function (zc) {
+        return { w: w, h: h, b: zc || r.b, zc: !!zc };
+      });
+    }, here);
+  }
+}
+// a canvas's pixels as JPEG bytes (quality 0.9), or null where the browser gives none (v318.35)
+function pdfJpeg(cv) {
+  return new Promise(function (res) {
+    try {
+      cv.toBlob(
+        function (b) {
+          if (!b || b.type !== 'image/jpeg' || !b.size) return res(null);
+          b.arrayBuffer().then(
+            function (ab) {
+              res(new Uint8Array(ab));
+            },
+            function () {
+              res(null);
+            },
+          );
+        },
+        'image/jpeg',
+        0.9,
+      );
+    } catch (e) {
+      res(null);
+    }
+  });
 }
 // a moment for the screen between pages: the next frame (or a tenth of a second, where frames don't come)
 function pdfBreath() {
@@ -331,7 +372,8 @@ function pdfBreath() {
 // one array (pages stored uncompressed are about 11 MB each, v304). prog(i, n): called as page i (from 1) of n is
 // drawn. (v307: one page at a time, the screen updated in between; each page packed and compressed in the worker
 // while the next is drawn)
-async function canvasesToPDF(cvs, PW, PH, blob, prog) {
+// (v318.35) jpg: which pages go in as JPEG (a function of the page's index), see pdfPagePack
+async function canvasesToPDF(cvs, PW, PH, blob, prog, jpg) {
   PW = PW || 612;
   PH = PH || 792;
   const M = 0,
@@ -362,7 +404,7 @@ async function canvasesToPDF(cvs, PW, PH, blob, prog) {
     if (i < nP) {
       if (prog) prog(i + 1, nP);
       if (prog || i) await pdfBreath();
-      job = pdfPagePack(typeof cvs[i] === 'function' ? cvs[i]() : cvs[i]);
+      job = pdfPagePack(typeof cvs[i] === 'function' ? cvs[i]() : cvs[i], !!(jpg && jpg(i)));
     }
     if (pend) put(i - 1, await pend);
     pend = job;
@@ -380,7 +422,7 @@ async function canvasesToPDF(cvs, PW, PH, blob, prog) {
         ' /Height ' +
         h +
         ' /ColorSpace /DeviceRGB /BitsPerComponent 8' +
-        (zc ? ' /Filter /FlateDecode' : '') +
+        (pk.jpg ? ' /Filter /DCTDecode' : zc ? ' /Filter /FlateDecode' : '') +
         ' /Length ' +
         comp.length +
         ' >>\nstream\n',
@@ -2312,7 +2354,8 @@ function _buildPDF(dry) {
       // (page 1's own width for the picture and its lines: on its side it's wider than the other pages)
       bw1 = p1.w - 2 * m;
     pages.push(dry ? null : p1);
-    _pdfKinds.push({ k: refPic ? 'ref' : 'pic', lab: lab, land: p1.w > p1.h });
+    // (v318.35: col, the page carries the picture in colour: written as a JPEG, canvasesToPDF)
+    _pdfKinds.push({ k: refPic ? 'ref' : 'pic', lab: lab, land: p1.w > p1.h, col: refPic });
     g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
     // (the picture's place, from the longest the lines under the title can be)
     // (long: the longest they can be, for the estimate; v284 review: the real lines could be longer than it)
@@ -2575,7 +2618,7 @@ function _buildPDF(dry) {
           if (i % cell.per === 0) {
             cp = pdfPage();
             pages.push(cp);
-            _pdfKinds.push({ k: 'close' });
+            _pdfKinds.push({ k: 'close', col: refPic });
             const gc = cp.g;
             gc.fillStyle = '#111';
             gc.font = '700 ' + PX(15) + 'px ' + LFONT;
@@ -2655,7 +2698,7 @@ function _buildPDF(dry) {
     } else
       for (let i = 0; i < closeP; i++) {
         pages.push(null);
-        _pdfKinds.push({ k: 'close' });
+        _pdfKinds.push({ k: 'close', col: refPic });
       }
   }
   _pdfCloseN = Object.keys(shown).length;
@@ -2676,7 +2719,7 @@ function _buildPDF(dry) {
   let pg = pdfPage(),
     g = pg.g;
   pages.push(pg);
-  _pdfKinds.push({ k: refOne ? 'refkey' : 'key' });
+  _pdfKinds.push({ k: refOne ? 'refkey' : 'key', col: true });
   g.fillStyle = '#111';
   g.font = '700 ' + PX(15) + 'px ' + LFONT;
   g.fillText(pdfTrunc(g, refOne ? nm : 'Colour key', bw), m, m + PX(12));
@@ -3320,6 +3363,8 @@ const pdfKit = {
   share: shareOrSave,
 };
 async function exportPDF() {
+  // (v318.34: a guide you've worked with, for Random; library.js)
+  if (typeof guideWorked === 'function') guideWorked(curId);
   // (one at a time: the sheet can be closed and opened again while one is being written, v304)
   if (!assignData || exportPDF.busy) return;
   exportPDF.busy = 1;
@@ -3371,11 +3416,23 @@ async function _exportPDF() {
   try {
     const P = PAPERS[paper] || PAPERS.letter,
       // (v307) each page drawn in turn, the button saying which (the Print sheet's, opened again meanwhile too)
-      blob = await canvasesToPDF(buildPDFPages(false, true), P[0], P[1], true, function (i, n) {
-        if (n > 1) _pdfProg = 'Page ' + i + ' of ' + n + '\u2026';
-        const b = document.getElementById('sfPDF');
-        if (b && b.disabled && _pdfProg) b.textContent = _pdfProg;
-      });
+      pages = buildPDFPages(false, true),
+      // (v318.35: the pages in colour as JPEG; the kinds copied, as the sheet's summary re-lays them meanwhile)
+      kinds = _pdfKinds.slice(),
+      blob = await canvasesToPDF(
+        pages,
+        P[0],
+        P[1],
+        true,
+        function (i, n) {
+          if (n > 1) _pdfProg = 'Page ' + i + ' of ' + n + '\u2026';
+          const b = document.getElementById('sfPDF');
+          if (b && b.disabled && _pdfProg) b.textContent = _pdfProg;
+        },
+        function (i) {
+          return !!(kinds[i] && kinds[i].col);
+        },
+      );
     // (v318.28: Key + reference's named apart from Page + key's, as the test strip's is: printed one after the other,
     // the second had come as "… (1).pdf" on a computer, and an iPad's Save to Files offered to replace the first)
     const fname =
@@ -3748,6 +3805,7 @@ function confettiBurst() {
 }
 function exportImage() {
   if (!assignData || exportImage.busy) return;
+  if (typeof guideWorked === 'function') guideWorked(curId);
   exportImage.busy = 1;
   note('Preparing image\u2026');
   const _b = document.getElementById('sfExport'),

@@ -41,7 +41,10 @@ let srcDims = null;
 let enhance = true; // written by: 20-image-input, 50-controls, 99-close (test)
 let adaptC = 9; // written by: 20-image-input, 22-straighten, 50-controls
 // (v308) a straightened photo's Sensitivity: 7 (adaptC 6), where a picture as it came is 5 (9)
-const SENS_PHOTO = 6;
+// (v318.32: 5 too, adaptC 9. On Ben's 30 photos of the printed test pages (hatched pages aside) 7 gave 28% more specks
+// than 5 (257 against 185) and found no more of the drawing (93.5% of its sections either way, fewer lines missed at
+// 5); below 5 there were no fewer specks, and more sections split)
+const SENS_PHOTO = 9;
 // (v308) Sensitivity moved by hand for this picture: a straightened photo's own default (Sensitivity 7) no longer
 // applies. written by: 20-image-input, 22-straighten, 53-controls-stages
 let sensUser = false;
@@ -87,6 +90,11 @@ let cropAnchor = null; // written by: 20-image-input, 80-input
 let W; // written by: 20-image-input, 65-edit, 97-open, 99-close (test)
 let H; // written by: 20-image-input, 65-edit, 97-open, 99-close (test)
 let gray; // written by: 20-image-input, 65-edit, 97-open, 99-close (test)
+// (v318.35) each pixel's colour (max - min of its RGB, the paper's tint taken out: chromaOf), kept beside gray for a
+// picture with colour on it, so a section coloured in with a marker isn't read as ink (inkDone) and can be offered as
+// done (colourSecs); null for a greyscale page, a guide opened again without its picture, or a page under
+// COLOUR_PAGE coloured. written by: 20-image-input, 25-source-photo, 65-edit, 97-open, 99-close (test)
+let chroma = null;
 let labels; // written by: 10-segment, 22-straighten, 65-edit, 97-open, 99-close (test)
 let comps; // written by: 10-segment, 65-edit, 97-open, 99-close (test)
 let secState; // written by: 10-segment, 65-edit, 97-open, 99-close (test)
@@ -122,6 +130,15 @@ const MIN_MM = 1,
   PAGE_MM = 279.4;
 let minAuto = false;
 let bgTrim = 50; // written by: 05-style-fields, 50-controls, 99-close (test)
+// (v318.35) Treat hatching as one section: the slivers between hatching or shading lines merged into one section when
+// the sections are found (hatchMerge, 10-segment). Saved with the guide (STYLE_FIELDS) and kept in a re-detection's
+// Undo step beside Enhance and Sensitivity. written by: 05-style-fields, 53-controls-stages, 65-edit, 20-image-input, 99-close (test)
+let hatchOne = true;
+// (v318.35) whether hatchOne was set for this picture (the switch, or a saved guide's own): if not, a camera photo
+// starts with it off (pgProceed: on the owner's photographed zentangle pages it took real cells together, 54–61 merged
+// sections a page, while the clean pages lost no match), anything else with it on. written by: 05-style-fields,
+// 20-image-input, 53-controls-stages
+let hatchSet = false;
 let undoStack = []; // never reassigned (65-edit pushes, pops and empties it)
 let undoBytes = 0; // written by: 65-edit
 const MAXUNDO = 25;
@@ -170,7 +187,7 @@ let hlKey = null;
 let hlZone = null; // written by: 83-along, 75-focus, 82-colour-mode, 20-image-input
 let gTab = 'colours'; // written by: 50-controls, 72-frame, 75-focus
 let showAdjust = false; // written by: 50-controls
-let surpriseNote = false; // written by: 30-palette-assign, 50-controls
+let surpriseNote = false; // written by: 30-palette-assign, 50-controls ('kept', v318.34: a chosen palette was kept)
 let lastPoolN = 0; // written by: 30-palette-assign, 46-photo
 
 // ---- the guide's style (saved with it as payload.style; the shading settings are in 45-shading) ----
@@ -261,6 +278,11 @@ let paletteSource = 'owned';
 // written by: 05-style-fields, 30-palette-assign, 50-controls, 95-mount, 99-close (test)
 let savedPalId = null;
 let genHarmony = 'analogous'; // written by: 05-style-fields, 30-palette-assign, 50-controls, 99-close (test)
+// (v318.34) the line under the Harmony select when Greys + accent gave way to Analogous + accent (too few greys)
+let genNote = ''; // written by: 30-palette-assign, 51-controls-plan
+// (v319) whether the last generatePalette fell back from Greys + accent (true/false), or null when nothing has been
+// made since the guide opened or an Undo: genHarmUsed then reads the greys as they stand
+let genFell = null; // written by: 30-palette-assign, 87-undo
 let genPal = []; // written by: 05-style-fields, 30-palette-assign, 99-close (test)
 // (v308) a palette handed over by Palette's Use in a guide ({ name, h }: its name and scheme), which genPal holds: used
 // as it is, as a saved palette is, until a new one is generated (generatePalette clears it); null otherwise

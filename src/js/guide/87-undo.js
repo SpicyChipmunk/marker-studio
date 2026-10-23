@@ -170,13 +170,14 @@ function planLabel1(p, q) {
   const fpa = JSON.stringify(a.fromPal || null),
     fpb = JSON.stringify(b.fromPal || null);
   if (fpa !== fpb && b.fromPal) return 'Palette: ' + b.fromPal.name;
-  if (a.paletteSource !== b.paletteSource)
-    return (
-      'Colours from: ' +
-      ({ owned: 'Owned', saved: 'Saved palette', generate: 'Generate palette' }[b.paletteSource] ||
-        b.paletteSource)
-    );
-  if (a.savedPalId !== b.savedPalId) return 'Saved palette changed';
+  // (v318.34) Colours from: Your markers | A palette; within A palette, a new palette made here, or a saved one
+  // chosen (an older guide's, by its id: a chosen one since v318.34 is named above, by fromPal)
+  if (a.paletteSource !== b.paletteSource) {
+    if (b.paletteSource === 'owned') return 'Colours from: Your markers';
+    if (a.paletteSource === 'owned') return 'Colours from: A palette';
+    return b.paletteSource === 'generate' ? 'New palette' : 'Saved palette chosen';
+  }
+  if (a.savedPalId !== b.savedPalId) return 'Saved palette chosen';
   if (a.genHarmony !== b.genHarmony) return 'Palette: ' + (HARM[b.genHarmony] || b.genHarmony);
   if (fpa !== fpb) return 'New palette';
   if (p.filt !== q.filt) return 'Filters changed';
@@ -1165,6 +1166,10 @@ function planRestore(e, noFilt) {
   // the zones first (which one is edited decides whose settings the live ones are), then those settings
   zoneRestore(s.z);
   styleRestore(s);
+  // (v318.37) the note under the harmony select (Greys + accent's fallback, generatePalette) isn't a step's field: it
+  // spoke of the fallback with Greys + accent back on the select (X3-4). The next generatePalette writes it again
+  genNote = '';
+  genFell = null;
   zStash(zoneCur);
   if (zoneEdit && !zoneCur) zoneEdit = false;
   // (every zone's markers are as the step had them: a change to one zone next lays just that one)

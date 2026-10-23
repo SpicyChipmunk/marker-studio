@@ -93,6 +93,27 @@ SF.configure({
       return s.type === 'palette';
     });
   },
+  // (v318.34) whether Greys + accent can be made from the guide's markers (minus `exclude`, as genPalette's): it needs
+  // NEUTRAL_GREYS near-greys; the reason when it can't, else null
+  neutralWhy: function (exclude) {
+    const sel = state.pool;
+    state.pool = null;
+    try {
+      return genGreys(exclude || null) < NEUTRAL_GREYS
+        ? 'Needs ' + NEUTRAL_GREYS + ' greys among your markers'
+        : null;
+    } finally {
+      state.pool = sel;
+    }
+  },
+  // (v318.34) the guide's Change it in Palette: the palette opens on the Palette screen as its own scheme, a step in
+  // the palette history (library.js loadSaved: Custom's and a photo's open as Custom picks, asking first if there are
+  // picks to replace)
+  editPalette: function (p) {
+    if (!p || !Array.isArray(p.keys) || !p.keys.length) return false;
+    loadSaved({ keys: p.keys, h: p.h, name: p.name });
+    return true;
+  },
   // opts goes to the Palette screen's generator as it is ({ mood }: the guide's Mood, a MOOD_KEYS key)
   // (from the guide's own markers: yours that aren't dry, or any with none, in the filters; never the Palette
   // screen's selection, which can hold markers you don't own and outlives the Finder hand-off it came from, v304)
@@ -119,7 +140,9 @@ SF.configure({
     const i = keyIdx(k);
     return i != null ? { lab: hexToLab(COLORS[i].hex), code: COLORS[i].code, hex: COLORS[i].hex } : null;
   },
-  savePalette: function (keys, name) {
+  // (v318.34) h: the palette's scheme, when the guide has it (as Palette's Save keeps it), so the Library opens it as
+  // that harmony. The guide's Colours tab › Save to Library
+  savePalette: function (keys, name, h) {
     const entry = {
       id: Date.now(),
       type: 'palette',
@@ -133,6 +156,7 @@ SF.configure({
       keys: keys,
       ts: Date.now(),
     };
+    if (typeof h === 'string' && HARM[h]) entry.h = h;
     state.saved.unshift(entry);
     if (!save()) {
       state.saved.shift();
@@ -1012,11 +1036,21 @@ document.addEventListener('keydown', function (e) {
     });
     upd();
   };
-  $('wcSample').addEventListener('click', function () {
+  function toSample() {
     close();
     setMode('sections');
     if (SF.loadSample) SF.loadSample();
     if (SF.focusOnOpen) SF.focusOnOpen();
+  }
+  $('wcSample').addEventListener('click', toSample);
+  // (v318.32) Done on "Add your markers one by one" and on the Markers sheet's "Add markers": the ways to add had only
+  // Back as a way out (U1-2: a sheet closed without adding left the tester there, two Backs from the sample). In the
+  // welcome it's "That's all: try the sample"; in the sheet over Markers it closes the sheet, as Back there does
+  ['wcOneDone', 'wcAddDone'].forEach(function (id) {
+    $(id).addEventListener('click', function () {
+      if (mk) mkClose();
+      else toSample();
+    });
   });
   $('wcPhoto').addEventListener('click', function () {
     close();

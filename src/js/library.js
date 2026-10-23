@@ -305,9 +305,31 @@ function homeWhen(g) {
     n = Math.round(day(Date.now()) - day(t));
   return n < 1 ? '' : n === 1 ? 'Last coloured yesterday' : 'Last coloured ' + n + ' days ago';
 }
+// (v318.32) the Continue card's when: "Last coloured 3 days ago" for a guide started; for one not started, when it was
+// saved, in Your guides' words ("today", "3 days ago"; '' when unknown). Also what tells the card to draw again
+function homeContWhen(g) {
+  return homeStarted(g) ? homeWhen(g) : relDate(g.ts);
+}
 // (v313: not the sample with a few ticks to try it, until it's printed or renamed: smp)
 function homeStarted(g) {
   return !g.smp && (+g.done > 0 || +g.tn > 0) && !(+g.n > 0 && +g.done >= +g.n);
+}
+// (v318.32) what the Continue card features: the guide worked on last, coloured or not (Ben: "the home screen should
+// feature the most recently worked on guide whether or not coloring has started"). "Worked on" is the row's time, ts:
+// every save moves it on (a change, a rename, colouring), opening a guide to look doesn't. So: the newest guide not
+// finished, started or not — the sample tried (smp, v313) and a copy with section edits to build (heroEdits) aside —
+// unless a finished guide is newer: that one leads Home as the latest piece (v306), and the card keeps to a guide
+// part-way coloured, as before, so a page just finished isn't pushed off Home by an older guide never started. `all`
+// is newest first; null when there's nothing to feature (the start card)
+function homeFeature(all) {
+  var fin = false;
+  for (var i = 0; i < all.length; i++) {
+    var g = all[i];
+    if (homeStarted(g)) return g;
+    if (+g.n > 0 && +g.done >= +g.n) fin = true;
+    else if (!fin && !g.smp && !heroEdits(g)) return g;
+  }
+  return null;
 }
 // the start card's buttons: a photo (the picker straight away, in the tap, as New colouring guide once there are
 // guides), or the sample
@@ -529,6 +551,8 @@ function homeFinChanged(id, rec) {
   });
   if (r) {
     r.fn = Date.now();
+    // (v318.34: a guide you've worked with, for Random)
+    r.wk = 1;
     finRowShape(r, rec);
     save(true);
   }
@@ -536,6 +560,19 @@ function homeFinChanged(id, rec) {
   if (el) el.removeAttribute('data-hid');
   renderRecent();
   if (typeof renderBackupNudge === 'function') renderBackupNudge();
+}
+// (v318.34) a guide you've worked with, for Random's Prefer markers you haven't used yet (usedKeys): its row gets the
+// worked flag, wk, which stays (guideMeta keeps it from save to save). Called on Colour along, Focus mode, Print,
+// Save image, Share and a finished photo (guide/); ticks and tones set it at the guide's save (guideMeta: done, tn).
+// A guide not in the Library yet (no id) is skipped: its first save with a tick sets it
+function guideWorked(id) {
+  if (id == null) return;
+  var r = state.saved.find(function (s) {
+    return s.id === id && s.type === 'guide';
+  });
+  if (!r || r.wk) return;
+  r.wk = 1;
+  save(true);
 }
 // (v315) the open guide's photo changed in another tab or by a restore: Home's latest piece drawn again (the row's
 // note of it is already saved)
@@ -702,7 +739,8 @@ function renderRecent() {
       .sort(function (a, b) {
         return (b.ts || 0) - (a.ts || 0);
       }),
-    cont = all.find(homeStarted) || null,
+    // (v318.32: the guide worked on last, started or not: homeFeature; it was the newest one part-way coloured)
+    cont = homeFeature(all),
     // (v306: the latest piece, left out of Your guides before its cards are picked, or the grid shows three)
     hero = homeHeroPick(all, cont),
     gs = all
@@ -765,71 +803,80 @@ function renderRecent() {
       cel.getAttribute('data-cid') !== String(cont.id) ||
       cel.getAttribute('data-ts') !== String(cont.ts) ||
       cel.getAttribute('data-nm') !== homeName(cont) ||
-      cel.getAttribute('data-when') !== homeWhen(cont)
+      cel.getAttribute('data-when') !== homeContWhen(cont)
     ) {
       var nm = esc(homeName(cont)),
         n = +cont.n || 0,
         d = +cont.done || 0,
-        pc = n ? Math.max(1, Math.min(100, Math.round((d * 100) / n))) : 0;
+        pc = n ? Math.max(1, Math.min(100, Math.round((d * 100) / n))) : 0,
+        // (v318.32) a guide not started yet (homeFeature): "Your latest guide … not started · today", and Open, the plan
+        // as the Library opens it (no data-cont: Continue would take the open guide into Colour along), its picture
+        // the plan's, not the pale progress one. "Last coloured" has nothing to say of it: when it was saved instead
+        st = homeStarted(cont),
+        when = homeContWhen(cont);
       cel.setAttribute('data-cid', String(cont.id));
       cel.setAttribute('data-ts', String(cont.ts));
       cel.setAttribute('data-nm', homeName(cont));
-      cel.setAttribute('data-when', homeWhen(cont));
+      cel.setAttribute('data-when', when);
       cel.innerHTML =
         '<button type="button" class="hccard" data-gid="' +
         esc(cont.id) +
-        '" data-cont="1" aria-label="Continue colouring ' +
+        (st ? '" data-cont="1" aria-label="Continue colouring ' : '" aria-label="Open your latest guide, ') +
         nm +
         ': ' +
         progressText(d, n, true) +
-        (homeWhen(cont) ? '. ' + homeWhen(cont) : '') +
-        '"><span class="hcpic"><span class="hcph"></span></span><span class="hcbody"><span class="hceb" aria-hidden="true">Continue colouring</span><span class="hcname" aria-hidden="true">' +
+        (when ? (st ? '. ' : ', saved ') + when : '') +
+        '"><span class="hcpic"><span class="hcph"></span></span><span class="hcbody"><span class="hceb" aria-hidden="true">' +
+        (st ? 'Continue colouring' : 'Your latest guide') +
+        '</span><span class="hcname" aria-hidden="true">' +
         nm +
-        '</span><span class="hcbar" aria-hidden="true"><i style="width:' +
-        pc +
-        '%"></i></span><span class="hcmeta" aria-hidden="true">' +
-        progressText(d, n) +
         '</span>' +
-        (homeWhen(cont)
-          ? '<span class="hcmeta hcwhen" aria-hidden="true">' + homeWhen(cont) + '</span>'
-          : '') +
-        '<span class="btn-primary hcgo" aria-hidden="true">Continue</span></span></button>';
+        (st ? '<span class="hcbar" aria-hidden="true"><i style="width:' + pc + '%"></i></span>' : '') +
+        '<span class="hcmeta" aria-hidden="true">' +
+        progressText(d, n) +
+        (!st && when ? ' · ' + when : '') +
+        '</span>' +
+        (st && when ? '<span class="hcmeta hcwhen" aria-hidden="true">' + when + '</span>' : '') +
+        '<span class="btn-primary hcgo" aria-hidden="true">' +
+        (st ? 'Continue' : 'Open') +
+        '</span></span></button>';
       cel.style.display = '';
       var gid = cont.id,
         gts = String(cont.ts),
         same = function () {
           return cel.getAttribute('data-cid') === String(gid) && cel.getAttribute('data-ts') === gts;
         };
-      homeArt(cont, 'prog', 560).then(function (u) {
+      homeArt(cont, st ? 'prog' : 'plan', 560).then(function (u) {
         var ph = same() && cel.querySelector('.hcph');
         if (u && ph) ph.outerHTML = '<img alt="" src="' + u + '">';
       });
-      IDB.get('guide-' + gid)
-        .then(function (pl) {
-          var nx = pl ? homeNext(pl) : null,
-            m = same() && cel.querySelector('.hcmeta');
-          if (nx && m && !m.querySelector('.hcdot')) {
-            var cb = cel.querySelector('.hccard');
-            if (cb) {
-              // (the next marker after how far along; "Last coloured …" stays last, v313)
-              var lb = cb.getAttribute('aria-label'),
-                wh = homeWhen(cont);
-              if (wh && lb.slice(-wh.length) === wh) lb = lb.slice(0, -(wh.length + 2));
-              cb.setAttribute(
-                'aria-label',
-                lb + ', next ' + nx.code + (nx.name ? ' ' + nx.name : '') + (wh ? '. ' + wh : ''),
-              );
+      if (st)
+        IDB.get('guide-' + gid)
+          .then(function (pl) {
+            var nx = pl ? homeNext(pl) : null,
+              m = same() && cel.querySelector('.hcmeta');
+            if (nx && m && !m.querySelector('.hcdot')) {
+              var cb = cel.querySelector('.hccard');
+              if (cb) {
+                // (the next marker after how far along; "Last coloured …" stays last, v313)
+                var lb = cb.getAttribute('aria-label'),
+                  wh = homeWhen(cont);
+                if (wh && lb.slice(-wh.length) === wh) lb = lb.slice(0, -(wh.length + 2));
+                cb.setAttribute(
+                  'aria-label',
+                  lb + ', next ' + nx.code + (nx.name ? ' ' + nx.name : '') + (wh ? '. ' + wh : ''),
+                );
+              }
+              m.innerHTML +=
+                ' · next <span class="hcdot" style="background:' +
+                esc(nx.hex) +
+                '"></span> <b>' +
+                esc(nx.code) +
+                '</b> ' +
+                esc(nx.name);
             }
-            m.innerHTML +=
-              ' · next <span class="hcdot" style="background:' +
-              esc(nx.hex) +
-              '"></span> <b>' +
-              esc(nx.code) +
-              '</b> ' +
-              esc(nx.name);
-          }
-        })
-        .catch(function () {});
+          })
+          .catch(function () {});
     }
     if (top) top.classList.toggle('nocont', !cont);
   }
@@ -1007,7 +1054,8 @@ function renderSaved() {
         .join('')
     : q
       ? '<div class="empty">No matches.</div>'
-      : '<div class="empty">Nothing yet. A guide saves itself here once it\u2019s built; a palette is kept with <b>Save</b>.</div><div class="emptyhow"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg><button type="button" id="libTrySample" class="btn-soft">Try the sample</button></div>';
+      : // (v318.33) the icon in a tinted ring, then the words, then the action (Fable V1-5: the icon sat faint under the copy)
+        '<div class="emptyhow"><span class="emptyring" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><div class="empty">Nothing yet. A guide saves itself here once it\u2019s built; a palette is kept with <b>Save</b>.</div><button type="button" id="libTrySample" class="btn-soft">Try the sample</button></div>';
   // (v313) with nothing to search or sort, no search box or sort menu
   {
     var _bar = document.querySelector('#savedOverlay .libbar');
@@ -1281,6 +1329,8 @@ function libPurge(id) {
     .catch(function () {});
   // (v314: and its photo of the finished page: guide/24-page-photo.js)
   IDB.del('fin-' + id).catch(function () {});
+  // (v318.34: and its source picture: guide/25-source-photo.js)
+  IDB.del('src-' + id).catch(function () {});
 }
 // a guide being put back (the guide's Put back, v285): its stored record mustn't be tidied away behind the save
 function libUnpend(id) {
@@ -1418,6 +1468,8 @@ function libDuplicate(id) {
           );
           return null;
         }
+        // (v318.34: the copy keeps the source picture too, so its Adjust photo works: guide/25-source-photo.js)
+        if (window.SF && SF.srcCopy) SF.srcCopy(id, nid);
         renderSaved();
         renderRecent();
         chrome();

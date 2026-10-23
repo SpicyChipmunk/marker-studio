@@ -29,7 +29,10 @@ const elsewhere = walk('src')
 
 test('the new Help sections: after Adding markers by code, before the Glossary', () => {
   const ids = [...dialogs.matchAll(/<details class="hlpsec" id="(\w+)">/g)].map((m) => m[1]);
-  assert.deepEqual(ids.slice(2, 6), ['helpScan', 'helpMore', 'helpTrouble', 'helpGloss']);
+  // (v318.32: What's new has its own section, second, so the run starts one later: found by its first id)
+  const at = ids.indexOf('helpScan');
+  assert.deepEqual(ids.slice(at, at + 4), ['helpScan', 'helpMore', 'helpTrouble', 'helpGloss']);
+  assert.equal(ids[at - 1], 'helpPhoto');
 });
 
 test('every button or place they name is a real one in the app (the label as it is on screen)', () => {

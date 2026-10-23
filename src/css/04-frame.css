@@ -38,11 +38,15 @@
   min-width: 0;
   height: 38px;
 }
+/* (v318.33) the guide's name in the app's serif at --t-xl, as every other screen title and the sheet that opens
+   under it (Fable V1-6: it was the only title in the sans) */
 #sfRoot .sfgt strong {
   min-width: 0;
-  font-weight: 600;
-  font-size: var(--t-lg);
-  line-height: 1.25;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  font-size: var(--t-xl);
+  letter-spacing: -0.01em;
+  line-height: var(--lh-tight, 1.2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -548,6 +552,26 @@ html.sfsheeton {
 html.sfsheeton body {
   overflow: visible;
 }
+/* (v318.33) the backdrop behind a sheet: dims the page (Fable V1-3: the picture stayed fully bright behind the sheet,
+   which read as a panel pushed into the page). (v318.37, X4-1) A tap on it closes the sheet and nothing else
+   (sfscrimtap, 72-frame.js scrimDown); only a picker's dim lets taps through to the picture */
+#sfRoot .sfscrim {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  animation: sfscrimin 0.18s ease-out;
+}
+#sfRoot .sfscrim.sfscrimtap {
+  pointer-events: auto;
+  touch-action: none;
+}
+@keyframes sfscrimin {
+  from {
+    opacity: 0;
+  }
+}
 #sfRoot .sfsheet {
   position: fixed;
   left: 0;
@@ -560,7 +584,8 @@ html.sfsheeton body {
   padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
   background: #15151a;
   border-top: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 18px 18px 0 0;
+  /* (v318.33) --r-lg, a sheet's corner as a card's (the design system); 18px before */
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
   box-shadow: 0 -18px 40px -10px rgba(0, 0, 0, 0.7);
   outline: none;
   animation: sfsheetup 0.18s ease-out;
@@ -568,14 +593,14 @@ html.sfsheeton body {
 #sfRoot .sfsheet.sfshside {
   border-top: 0;
   border-left: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 18px 0 0 0;
+  border-radius: var(--r-lg) 0 0 0;
   padding-top: env(safe-area-inset-top, 0px);
   box-shadow: -18px 0 40px -10px rgba(0, 0, 0, 0.7);
 }
 /* (v300: ending at the card's right edge, in from the screen's on an iPad, placeSheet) */
 html.sfsheetin #sfRoot .sfsheet.sfshside {
   border-right: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 18px 18px 0 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
 }
 @keyframes sfsheetup {
   from {
@@ -584,7 +609,8 @@ html.sfsheetin #sfRoot .sfsheet.sfshside {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  #sfRoot .sfsheet {
+  #sfRoot .sfsheet,
+  #sfRoot .sfscrim {
     animation: none;
   }
 }

@@ -45,6 +45,23 @@
 #savedOverlay .dsub.libbackup {
   margin-top: 10px;
 }
+/* (v318.34) the backup's "Include guide photos" tick: a full-height row, the box a comfortable tap */
+.bkphotos {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 2px;
+  font-size: var(--t-md, 14px);
+  cursor: pointer;
+}
+.bkphotos input {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--accent);
+  flex: 0 0 auto;
+}
 #savedOverlay #savedList {
   flex: 1 1 auto;
   min-height: 120px;
@@ -263,6 +280,10 @@
 .seedgrid {
   max-height: 46vh;
   overflow: auto;
+  /* (v318.32) rows their own height: Safari's engine sized the auto rows of this scrolling grid (a flex item of the
+     card) against no height at all on an iPad, so every marker was a 2 px sliver until something relaid the page
+     (as a long PDF's pages were, v314.1 .sfpdfpgs) */
+  grid-auto-rows: max-content;
 }
 /* Back up & restore: markers and palettes as text to copy or paste (shown by Markers & palettes as text) */
 .bktextwrap {
@@ -351,7 +372,8 @@
   gap: 3px;
   padding: 3px;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  /* (v318.33) --r-lg, a track (the design system) */
+  border-radius: var(--r-lg);
   background: var(--glass);
 }
 /* a tab's name is never broken: at large text sizes, when the tabs don't fit on one line, the row wraps as a whole */
@@ -370,8 +392,10 @@
   overflow-wrap: normal;
 }
 .msrc button.on {
-  background: var(--ink);
-  color: #151318;
+  /* (v318.33) teal in the track, as every setting (the white pill marks the main menu only) */
+  background: var(--pick-bg);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--pick-edge);
 }
 .mdrop {
   width: 100%;
@@ -822,18 +846,41 @@ img.paperpick {
 }
 /* (v289) Markers' Random and Match a colour: tools, not your collection, so two small buttons rather than the top's
    two big ones */
+/* (v318.33) one tools row: Random, Match a colour, Add markers and Swatch chart as four matching outline buttons
+   (Fable V1-1: Add markers was a bigger button of its own under Order, and Swatch chart an underlined link) */
 #mkDraw.mkrow {
   display: flex;
   flex-wrap: wrap;
+  gap: var(--s2, 8px);
 }
-#mkDraw .mkbtn {
+#mkDraw .mkbtn,
+#mkDraw .mkaddbtn,
+#mkDraw .mkjump {
   flex: none;
-  padding: 4px 14px;
-  background: transparent;
-  font-size: var(--t-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--h-ctl, 44px);
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md, 12px);
+  background: var(--glass);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-base);
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+}
+#mkDraw .mkjump .ic {
+  width: 16px;
+  height: 16px;
 }
 .ordsel {
-  height: 40px;
+  /* (v318.33) --h-ctl, a field's height as every button's (the design system); 40px before */
+  height: var(--h-ctl);
   padding: 0 10px;
   border-radius: var(--r-md);
   border: 1px solid var(--line);
@@ -1011,12 +1058,16 @@ img.paperpick {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* (v318.37, X4-4) from the top, not the middle: on a 320px phone Markers' and Palette's lines wrap to two and the
+     Library card's icon and name sat 16px lower, centred in the same height. Taller content than the card's minimum
+     (every wider phone) sits the same either way */
+  justify-content: flex-start;
   gap: 6px;
   padding: 12px 8px;
   min-width: 0;
   min-height: 88px;
-  border-radius: var(--r-md);
+  /* (v318.33) --r-lg: a card (the design system); --r-md before */
+  border-radius: var(--r-lg);
   border: 1px solid var(--line);
   background: var(--raise);
   color: var(--ink);
@@ -1682,6 +1733,24 @@ button.wnx {
 .wnew li + li {
   margin-top: 4px;
 }
+/* (v318.32) Home's one line after an update, "Updated to v318.32 · What's new ✕", where the card of items had been */
+.wnline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 1px solid rgba(124, 92, 255, 0.5);
+  background: rgba(124, 92, 255, 0.1);
+  border-radius: var(--r-md);
+  color: var(--sub);
+  font-size: var(--t-base);
+}
+.wnline #wnTitle {
+  padding-left: 8px;
+}
 /* 44px tap areas around small controls (dialog ✕, a toast's Undo, See all, Add markers, the + chips, the shopping-list
    pills and row buttons, the filter quick buttons, lone text links); they look the same */
 .mclose,
@@ -1718,6 +1787,39 @@ button.wnx::after,
   width: max(100%, 44px);
   height: max(100%, 44px);
   transform: translate(-50%, -50%);
+}
+/* (v318.37, X4-3) 44px tap areas on the rest: the checkbox rows (a tick box and its words, 19 to 30px tall: Show
+   tone lines, Keep touching sections clearly different, Print's) and Colour along's first-time More, as pseudo-elements
+   so they look the same; the Library's search box and Sort, and the guide's selects (Shading's styles), at --h-ctl as
+   every other field is (a field can't carry a pseudo-element) */
+#sfRoot .sfchk,
+#sfRoot #sfAlMore {
+  position: relative;
+}
+/* (a strip above and one below the box, each as tall as the box lacks of 44px, rather than one over it: the tick box
+   itself stays what a tap or a test hits) */
+#sfRoot .sfchk::before,
+#sfRoot .sfchk::after,
+#sfRoot #sfAlMore::before,
+#sfRoot #sfAlMore::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: calc(22px - 50%);
+}
+#sfRoot .sfchk::before,
+#sfRoot #sfAlMore::before {
+  bottom: 100%;
+}
+#sfRoot .sfchk::after,
+#sfRoot #sfAlMore::after {
+  top: 100%;
+}
+.libbar .libin,
+.libbar .libsel,
+#sfRoot #sfCtl .sfc-select {
+  min-height: var(--h-ctl);
 }
 /* on a touch screen a dialog takes focus itself when it opens (layers.js): no ring for that */
 .overlay > [tabindex='-1']:focus {
@@ -1772,6 +1874,10 @@ button.wnx::after,
 }
 .hlpbody .hlpwnt {
   margin: 0 0 6px;
+}
+/* (v318.37) over several versions (Home's What's new after an update), each item headed with its version */
+.hlpwnv {
+  color: var(--ink);
 }
 /* (v308) Help › About's Send feedback and Copy diagnostics; the beta's label after the version; Help › Your data's
    Delete all my data and its question; the welcome's privacy line; an error's Copy details and Send feedback, which

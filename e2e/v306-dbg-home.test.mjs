@@ -23,7 +23,7 @@ test('Plan › Generate palette › Rainbow: Shuffle rolls another rainbow, as P
   await idle(page);
   await click(page, '.sftabbtn[data-t="colours"]');
   await idle(page);
-  await click(page, '#sfSrc [data-v="generate"]');
+  await click(page, '#sfSrc [data-v="palette"]');
   await idle(page);
   await page.selectOption('#sfHarm', 'rainbow');
   await idle(page);

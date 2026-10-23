@@ -202,39 +202,113 @@ function ctlWireColours() {
         renderControls();
       }
     });
+  // (v318.34) Colours from: Your markers | A palette. A palette brings back the palette the guide holds (one from
+  // the Library, one made here or handed over from Palette; an older guide's saved one by its id), or makes one
   var _src = document.getElementById('sfSrc');
   if (_src)
     _src.addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (b) {
         var wasSrc = paletteSource;
-        paletteSource = b.dataset.v;
-        if (paletteSource === 'saved' && savedPalId == null) {
-          var pl = api.listPalettes ? api.listPalettes() : [];
-          if (pl.length) savedPalId = pl[0].id;
-        }
-        // (v308: Generate palette makes one, also in place of a palette handed over from Palette)
-        if (paletteSource === 'generate' && (!genPal.length || fromPal)) generatePalette();
+        // (the lit segment tapped again lays the plan again, as before)
+        if (b.dataset.v === 'palette' && wasSrc === 'owned') {
+          if (fromPal && fromPal.from === 'library' && savedPalId != null) paletteSource = 'saved';
+          else if (genPal.length) paletteSource = 'generate';
+          else if (savedPalId != null) paletteSource = 'saved';
+          else {
+            paletteSource = 'generate';
+            generatePalette();
+          }
+        } else if (b.dataset.v === 'owned') paletteSource = 'owned';
         if (reassign() === false) {
           paletteSource = wasSrc;
           renderControls();
         }
       }
     });
+  // the card's ✕: your markers (the palette is kept for A palette to bring back)
+  var _poff = document.getElementById('sfPalOff');
+  if (_poff)
+    _poff.addEventListener('click', function () {
+      var wasSrc = paletteSource;
+      paletteSource = 'owned';
+      if (reassign() === false) {
+        paletteSource = wasSrc;
+        renderControls();
+      }
+      ctlRefocus('#sfSrc [data-v="owned"]');
+    });
+  // New palette: one made here, of the harmony chosen (in place of one handed over or from the Library)
+  var _gn = document.getElementById('sfGenNew');
+  if (_gn)
+    _gn.addEventListener('click', function () {
+      paletteSource = 'generate';
+      generatePalette(true);
+      reassign();
+      ctlRefocus('#sfGenNew');
+    });
   var _hm = document.getElementById('sfHarm');
   if (_hm)
     _hm.addEventListener('change', function (e) {
+      paletteSource = 'generate';
       genHarmony = e.target.value;
-      generatePalette();
+      // (v319, Ben's choice) Greys + accent wants greys: chosen while Include › Greys & black is off, it turns them on,
+      // in the same Undo step, and the step says so
+      if (genHarmony === 'neutral' && genNeutralChipOff()) {
+        var _o = inclCopy(gradIncl || {});
+        _o.greys = true;
+        gradIncl = _o;
+        generatePalette();
+        planWhy = 'Greys + accent: ' + INCL_LABEL.greys + ' turned on';
+      } else generatePalette();
       reassign();
     });
+  // Choose a saved palette: its keys are copied into the guide (setSavedSource)
   var _pp = document.getElementById('sfPalPick');
   if (_pp) {
     _pp.addEventListener('change', function (e) {
-      savedPalId = +e.target.value;
+      if (!e.target.value) return;
+      setSavedSource(+e.target.value);
       reassign();
     });
   }
+  // Change it in Palette: the palette opens on the Palette screen (locks, re-rolls, size, a start marker); Use in a
+  // guide › Recolour brings it back
+  var _pe = document.getElementById('sfPalEdit');
+  if (_pe)
+    _pe.addEventListener('click', function () {
+      var info = palCardInfo();
+      if (!info.keys.length || !api.editPalette) return;
+      api.editPalette({ keys: genPalKeys(info.keys), h: info.h, name: info.name });
+    });
+  // Save to Library: the palette on the card, under its name; the guide then links to it, as a chosen one
+  var _ps = document.getElementById('sfPalSave');
+  if (_ps)
+    _ps.addEventListener('click', function () {
+      var info = palCardInfo(),
+        keys = genPalKeys(info.keys);
+      if (!keys.length || !api.savePalette) return;
+      // (a palette made here is named by its colours, as Palette's Save names one; its scheme goes with it)
+      // (v319: the scheme it was made with, genHarmUsed: Analogous + accent while Greys + accent falls back, Y3-3)
+      var id = api.savePalette(keys, fromPal ? info.name : '', fromPal ? info.h : genHarmUsed());
+      if (id == null) {
+        toast('Couldn\u2019t save the palette: storage is full.', 6000);
+        return;
+      }
+      var pl = (api.listPalettes ? api.listPalettes() : []).filter(function (x) {
+        return x.id === id;
+      })[0];
+      savedPalId = id;
+      genPal = keys;
+      fromPal = { name: (pl && pl.name) || info.name, h: fromPal ? info.h : genHarmUsed(), from: 'library' };
+      paletteSource = 'saved';
+      guideDirty = true;
+      renderControls();
+      planCommit('Saved to Library');
+      scheduleAutosave();
+      toast('Saved to your Library as \u201c' + fromPal.name + '\u201d.');
+      ctlRefocus('#sfPalEdit');
+    });
   // Mood: a generated palette is made again to suit it (not one handed over from Palette, whose Mood is greyed out)
   var _mood = document.getElementById('sfMood');
   if (_mood)

@@ -48,6 +48,11 @@ const counted = (page) => page.evaluate(() => __mstest.countedList().length);
 async function smallMin(page) {
   await input(page, 'sfMin', 30); await idle(page);
 }
+// (v318.35: a page of thousands of tiny cells is cross-hatching to Treat hatching as one section, on for a download:
+// these tests are about dense pages, so the box is unticked first and every cell kept)
+async function noHatch(page) {
+  if (await page.isChecked('#sfHatch')) { await page.click('#sfHatch'); await idle(page); }
+}
 
 test('a tilt with a Sensitivity change straight after: the picture is turned (it was dropped)', async () => {
   const { page, errors } = await openApp({ width: 1180, height: 820 });
@@ -188,7 +193,7 @@ const MIXED = `g.fillStyle = '#000';
 test('a page of more than 3,000 sections asks first; Leave out the small ones builds it with fewer', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await welcome(page, 'look'); await idle(page);
-  await openPicture(page, 2400, 1800, MIXED); await smallMin(page);
+  await openPicture(page, 2400, 1800, MIXED); await noHatch(page); await smallMin(page);
   const n = await counted(page);
   assert.ok(n > 3000, 'sections: ' + n);
   await page.click('#sfBuild');
@@ -207,7 +212,7 @@ test('a page of more than 3,000 sections asks first; Leave out the small ones bu
 test('Build all builds them all, and Build again for the same picture doesn’t ask again', async () => {
   const { page, errors } = await openApp({ width: 820, height: 1180 });
   await welcome(page, 'look'); await idle(page);
-  await openPicture(page, 2400, 1800, MIXED); await smallMin(page);
+  await openPicture(page, 2400, 1800, MIXED); await noHatch(page); await smallMin(page);
   const n = await counted(page);
   await page.click('#sfBuild');
   await page.waitForSelector('#sfEdAsk');
@@ -225,7 +230,7 @@ test('Build all builds them all, and Build again for the same picture doesn’t 
 test('on a phone the dense page’s question says “the smallest”, not a size under 3 px', async () => {
   const { page, errors } = await openApp({ width: 390, height: 844 });
   await welcome(page, 'look'); await idle(page);
-  await openPicture(page, 2400, 1800, MIXED); await smallMin(page);
+  await openPicture(page, 2400, 1800, MIXED); await noHatch(page); await smallMin(page);
   // (the size Leave out the small ones would leave out, as wide as it looks on this screen)
   await page.click('#sfBuild');
   await page.waitForSelector('#sfEdAsk');
@@ -270,7 +275,7 @@ test('a very dense page is saved with its specks as part of the lines, and opens
 test('a page with more sections than a guide can keep is not built until Min section size is raised', async () => {
   const { page, errors } = await openApp({ width: 1180, height: 820 });
   await welcome(page, 'look'); await idle(page);
-  await openPicture(page, 2400, 1800, hatch(6)); await smallMin(page);
+  await openPicture(page, 2400, 1800, hatch(6)); await noHatch(page); await smallMin(page);
   const m0 = await page.inputValue('#sfMin');
   await page.click('#sfBuild');
   await page.waitForSelector('#sfEdAsk');

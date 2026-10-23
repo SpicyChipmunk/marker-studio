@@ -418,7 +418,10 @@ function handFrame(u, el) {
           Math.max(0, Math.min(sy1, c.y1) - Math.max(sy0, c.y0))) /
         Math.max(1, (sx1 - sx0) * (sy1 - sy0)),
       // (a sliver under the card counts as none)
-      o = ov < 0.02 ? 0 : ov,
+      // (v318.32 D3-1: a side where the card is taller than its room, its last line cut, counts as if it covered the
+      // sections whole: a small phone at the largest text put the card beside the picture, narrow and cut, when
+      // above it the whole card showed)
+      o = (ov < 0.02 ? 0 : ov) + (card.scrollHeight > card.clientHeight + 1 ? 1 : 0),
       // (and of the rest of the picture: at the same size, the side that hides least of it)
       px0 = cv.offsetLeft + panX,
       py0 = cv.offsetTop + panY,
@@ -438,6 +441,7 @@ function handFrame(u, el) {
   // (v318.25) every side still leaves some of the sections under the card (a small phone with large text: on an
   // iPhone SE at 1.6x text it covered 9 of the 20 it said were "shown on the picture"): the short card, the marker on
   // one line under how the last went (the bar above names it too, with its swatch), placed again
+  // (v318.32 D3-1: or leaves the card cut, counted in o as covering: the short card then, which fits)
   if (best.o > 0) {
     el.classList.add('sfhtight');
     best = null;
@@ -456,7 +460,14 @@ function handFrame(u, el) {
 // (the screen turned with the card up: placed again, the picture out to the sections again)
 function handReframe() {
   var el = document.getElementById('sfHand');
-  if (handOn() && el && handFrame.u) handFrame(handFrame.u, el);
+  if (!handOn() || !el || !handFrame.u) return;
+  // (v318.32) the bars' heights first: turned, the name line wraps differently, and the card's room (--focTop,
+  // --focBot: the bars are measured by renderFocusUI, which a turn doesn't run) was the old shape's
+  var tb = document.querySelector('.sffocbar'),
+    bb = document.querySelector('.sffocbot');
+  if (tb) document.documentElement.style.setProperty('--focTop', tb.offsetHeight + 'px');
+  if (bb) document.documentElement.style.setProperty('--focBot', bb.offsetHeight + 'px');
+  handFrame(handFrame.u, el);
 }
 function handOn() {
   return _hand >= 0;
