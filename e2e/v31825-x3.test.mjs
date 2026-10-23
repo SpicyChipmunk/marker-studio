@@ -327,8 +327,9 @@ test('X3 G2: an older copy of the app in another tab leaves the newer version se
   await idle(page);
   // (this page standing in for the older one: a version newer than its own seen already)
   const v = await page.evaluate(() => {
-    const m = /^v(\d+)\.(\d+)/.exec(localStorage.getItem('ms-last-ver'));
-    const newer = 'v' + m[1] + '.' + (+m[2] + 1);
+    // (v319: a version can have no point, "v319": the next is then v319.1)
+    const m = /^v(\d+)(?:\.(\d+))?/.exec(localStorage.getItem('ms-last-ver'));
+    const newer = 'v' + m[1] + '.' + ((+m[2] || 0) + 1);
     localStorage.setItem('ms-last-ver', newer);
     window.renderWhatsNew(true);
     return [newer, localStorage.getItem('ms-last-ver')];

@@ -132,8 +132,25 @@ test('Random on the sample, 24 rolls each from its own seed: Mixed, Main colour 
   await click(page, '#sfBal [data-v="main"]');
   await idle(page);
   await pairing(0.25);
+  // (v319: each tap from a seed of its own, as the rolls above are. Unseeded, about 1 tap in 100 leaves one touching
+  // pair alike with the note under the box saying so, as v318.31 did too: 4 of 400 seeds measured; the test failed
+  // now and then on GitHub when a tap hit one)
   for (let r = 0; r < 4; r++) {
-    await click(page, '#sfShuffle');
+    await page.evaluate((r) => {
+      const R = Math.random;
+      let a = (r + 1) * 104729 + 17;
+      Math.random = function () {
+        a = (a + 0x6d2b79f5) | 0;
+        let q = Math.imul(a ^ (a >>> 15), 1 | a);
+        q = (q + Math.imul(q ^ (q >>> 7), 61 | q)) ^ q;
+        return ((q ^ (q >>> 14)) >>> 0) / 4294967296;
+      };
+      try {
+        document.querySelector('#sfShuffle').click();
+      } finally {
+        Math.random = R;
+      }
+    }, r);
     await idle(page);
     const n = await page.evaluate((pairs) => {
       const as = __mstest.assignData.assign;

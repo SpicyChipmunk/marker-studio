@@ -2713,4 +2713,8 @@ From Fable's design review (round R32, V1), built in two parts and compared scre
   browser's system libraries from a slow package server. apt now gives up on a stalled download after 30 s and tries
   it again (up to 5 times), the library install gets a 4th try, each next try waits a little first (30 s, then 60 s,
   then 90 s; e2e/ci-try.sh), and the jobs have 10 more minutes to allow for it.
+- **Two browser tests fixed (no change to the app):** e2e/v31825-x3 read the version as "v318.23"-style and broke on
+  "v319", which has no point (the app's own comparison already handles it). e2e/v31827-v2's four Shuffle taps were
+  unseeded: about 1 tap in 100 leaves one touching pair alike, with the note under the box saying so (the same on
+  v318.31, 4 seeds of 400), so the test failed now and then; each tap now has a seed, as the test's other rolls do.
 - Cache bumped to `marker-studio-v319`.
