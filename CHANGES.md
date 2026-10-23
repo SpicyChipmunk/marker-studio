@@ -2709,4 +2709,8 @@ From Fable's design review (round R32, V1), built in two parts and compared scre
   - **Tests:** test/v319-colour-ink (7), v319-palettes (4), v319-src-fit (2); e2e/v319-colour-ink (1), v319-palettes (6),
     v319-scrim-tap (5), v319-shell (3), v319-src-fit (6). Changed on purpose: test/v31837-segment, e2e/v31837-coloured-
     lines, v31837-src-crop, v31834-harmonies, v31837-palettes, palette.
+- **GitHub's test run (no change to the app):** run #66 lost three parts before any test ran, each stuck installing the
+  browser's system libraries from a slow package server. apt now gives up on a stalled download after 30 s and tries
+  it again (up to 5 times), the library install gets a 4th try, each next try waits a little first (30 s, then 60 s,
+  then 90 s; e2e/ci-try.sh), and the jobs have 10 more minutes to allow for it.
 - Cache bumped to `marker-studio-v319`.

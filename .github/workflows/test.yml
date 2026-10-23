@@ -15,7 +15,7 @@ jobs:
   test:
     name: tests on Chromium, part ${{ matrix.part }} of 2
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 50
     strategy:
       fail-fast: false
       matrix:
@@ -42,7 +42,7 @@ jobs:
         run: node e2e/ci-summary.mjs e2e/.artifacts/unit-results.jsonl "Unit tests" all test
       # Playwright's Chromium is kept between runs (keyed on the Playwright version), so it's downloaded only when Playwright
       # changes; the system libraries it needs come from apt each run. Each install is stopped after 5 minutes and
-      # tried again, up to 3 times (e2e/ci-try.sh): now and then a download stalls (once for 38 minutes).
+      # tried again, up to 3 times (4 for the libraries; e2e/ci-try.sh): now and then a download stalls (once for 38 minutes).
       - name: Playwright version
         id: pw
         run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
@@ -54,8 +54,12 @@ jobs:
       # (run even when kept: it then only checks, in a second, and fetches again one that was kept half-installed)
       - name: Install Chromium
         run: bash e2e/ci-try.sh 3 300 npx playwright install chromium
+      # (v319) apt itself gives up on a stalled download after 30 s and tries it again, rather than hanging until the
+      # try's 5 minutes run out; and the libraries get a 4th try (run #66 lost three parts to a slow package server)
+      - name: Let apt retry stalled downloads
+        run: printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/80-ci-retries
       - name: Install Chromium's system libraries
-        run: bash e2e/ci-try.sh 3 300 npx playwright install-deps chromium
+        run: bash e2e/ci-try.sh 4 300 npx playwright install-deps chromium
       - name: Browser tests (Chromium, part ${{ matrix.part }} of 2)
         run: >-
           mkdir -p e2e/.artifacts &&
@@ -109,7 +113,7 @@ jobs:
   webkit:
     name: browser tests on WebKit (Safari's engine), part ${{ matrix.part }} of 10
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 60
     continue-on-error: true
     strategy:
       fail-fast: false
@@ -124,7 +128,7 @@ jobs:
       - run: npm ci
       # Playwright's WebKit is kept between runs (keyed on the Playwright version), so it's downloaded only when Playwright
       # changes; the system libraries it needs come from apt each run. Each install is stopped after 5 minutes and
-      # tried again, up to 3 times (e2e/ci-try.sh): now and then a download stalls (once for 38 minutes).
+      # tried again, up to 3 times (4 for the libraries; e2e/ci-try.sh): now and then a download stalls (once for 38 minutes).
       - name: Playwright version
         id: pw
         run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
@@ -136,8 +140,12 @@ jobs:
       # (run even when kept: it then only checks, in a second, and fetches again one that was kept half-installed)
       - name: Install WebKit
         run: bash e2e/ci-try.sh 3 300 npx playwright install webkit
+      # (v319) apt itself gives up on a stalled download after 30 s and tries it again, rather than hanging until the
+      # try's 5 minutes run out; and the libraries get a 4th try (run #66 lost three parts to a slow package server)
+      - name: Let apt retry stalled downloads
+        run: printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/80-ci-retries
       - name: Install WebKit's system libraries
-        run: bash e2e/ci-try.sh 3 300 npx playwright install-deps webkit
+        run: bash e2e/ci-try.sh 4 300 npx playwright install-deps webkit
       # (a diagnostic, part 1 only: how fast this WebKit runs plain JavaScript; about 180 ms with its JIT on a laptop)
       - name: WebKit speed check
         if: matrix.part == 1

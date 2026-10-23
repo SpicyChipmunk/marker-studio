@@ -7,9 +7,14 @@ import { spawnSync } from 'node:child_process';
 
 const root = new URL('../', import.meta.url);
 const read = (f) => readFileSync(new URL(f, root), 'utf8');
-const tryRun = (...a) => spawnSync('bash', ['e2e/ci-try.sh', ...a], { cwd: root, encoding: 'utf8' });
+const tryRun = (...a) =>
+  spawnSync('bash', ['e2e/ci-try.sh', ...a], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, CI_TRY_PAUSE: '0' },
+  });
 
-test('test.yml: each browser kept between runs on the Playwright version, each install tried up to 3 times', () => {
+test('test.yml: each browser kept between runs on the Playwright version, each install tried up to 3 times (the libraries 4, with apt retrying stalls)', () => {
   const wf = read('.github/workflows/test.yml');
   assert.ok(!/--with-deps/.test(wf), 'no installs left without the retry');
   for (const b of ['chromium', 'webkit']) {
@@ -21,9 +26,11 @@ test('test.yml: each browser kept between runs on the Playwright version, each i
       b,
     );
     assert.ok(wf.includes(`run: bash e2e/ci-try.sh 3 300 npx playwright install ${b}\n`), b);
-    assert.ok(wf.includes(`run: bash e2e/ci-try.sh 3 300 npx playwright install-deps ${b}\n`), b);
+    assert.ok(wf.includes(`run: bash e2e/ci-try.sh 4 300 npx playwright install-deps ${b}\n`), b);
   }
   assert.equal(wf.match(/require\('playwright\/package\.json'\)\.version/g).length, 2);
+  // (v319) apt's own retries, set before each library install
+  assert.equal(wf.match(/Acquire::Retries "5";.*Acquire::https::Timeout "30";.*80-ci-retries/g).length, 2);
 });
 
 test('ci-try.sh: a command that works runs once', () => {
@@ -52,4 +59,16 @@ test('ci-try.sh: a try that fails is followed by one that works', () => {
   );
   assert.equal(r.status, 0);
   assert.match(r.stdout, /try 1 of 3[\s\S]*second/);
+});
+
+test('ci-try.sh (v319): waits before the next try, longer each time, and not after the last', () => {
+  const t = Date.now();
+  const r = spawnSync('bash', ['e2e/ci-try.sh', '3', '5', 'false'], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, CI_TRY_PAUSE: '1' },
+  });
+  const ms = Date.now() - t;
+  assert.equal(r.status, 1);
+  assert.ok(ms >= 2900 && ms < 6000, 'paused 1 s then 2 s, none after the last try: ' + ms);
 });
