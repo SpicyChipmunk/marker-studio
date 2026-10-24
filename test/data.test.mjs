@@ -741,7 +741,8 @@ import fs, { readFileSync } from 'node:fs';
       limitN: 16,
       // (v308: no Include row until a new picture gives it one; a guide saved before has none)
       gradIncl: null,
-      noAdj: false,
+      // (v323: on for a new guide)
+      noAdj: true,
       balance: 'main',
       balM: 'auto',
       balS: 'auto',
@@ -917,7 +918,8 @@ import fs, { readFileSync } from 'node:fs';
     for (const f of core.styleFields) {
       if (!('def' in f)) continue;
       const first = f.key === 'x' ? sv.shadeSun.x : f.key === 'y' ? sv.shadeSun.y : sv[VAR[f.key] || f.key];
-      assert.deepEqual(plain(f.def), plain(first), f.key);
+      // (v323: a setting a new guide starts with otherwise than an old file that says nothing: first, noAdj)
+      assert.deepEqual(plain('first' in f ? f.first : f.def), plain(first), f.key);
       assert.deepEqual(plain(f.check(undefined, f.def)), plain(f.def), f.key + ' (missing)');
       n++;
     }
@@ -926,8 +928,9 @@ import fs, { readFileSync } from 'node:fs';
     // 45 with famRule, the family rule; 46 with lowX, the running-low lines closed;
     // 47 with smp, the sample not yet printed or renamed; v314: 48 with gradArea, the Gradient's area rule; v318.12: 49
     // with bgRule, the background rule; v318.15: 50 with matchAlike, Matching shapes alike; v318.18: 51 with theme;
-    // v318.35: 52 with hatchOne, Treat hatching as one section)
-    assert.equal(n, 52);
+    // v318.35: 52 with hatchOne, Treat hatching as one section; v323: 54 with colOffer, the coloured-in sections offered as
+    // done, and focusAt, the section Focus mode was left on)
+    assert.equal(n, 54);
   });
   test('STYLE_FIELDS: where each setting is saved (in the order written) and which ones Undo keeps', () => {
     const core = createApp().__mstest;
@@ -987,6 +990,8 @@ import fs, { readFileSync } from 'node:fs';
         'payload.addAutoClose (no undo)',
         'payload.famRule (no undo)',
         'payload.lowX (no undo)',
+        'payload.colOffer (no undo)',
+        'payload.focusAt (no undo)',
         'payload.smp (no undo)',
         'payload.gradArea (no undo)',
         'payload.bgRule (no undo)',

@@ -398,6 +398,8 @@ let tipL = -1,
   tipEl = null,
   tipY = 0,
   _tipSc = false;
+// (v323: the tip's outline of the marker's other sections, while it's open: _tipOl)
+let _tipOl = false;
 function hideTip() {
   clearTimeout(tipT);
   tipL = -1;
@@ -405,6 +407,22 @@ function hideTip() {
     tipEl.remove();
     tipEl = null;
   }
+  if (_tipOl) {
+    _tipOl = false;
+    if (olSet && !olRow) outlineSecs(null);
+  }
+}
+// (v323) the Plan's section tip: how many sections the marker colours, and its other sections outlined on the picture
+// while the tip is open, so whether it's everywhere or a one-off shows before its colour is changed
+function tipUses(l, m) {
+  const o = [];
+  if (!assignData) return o;
+  for (let i = 0; i < assignData.order.length; i++) {
+    const x = assignData.order[i],
+      a = assignData.assign[x];
+    if (x !== l && a && a.mkey === m.mkey) o.push(x);
+  }
+  return o;
 }
 function showTip(l, btns, quiet) {
   const m = assignData && assignData.assign[l];
@@ -424,6 +442,7 @@ function showTip(l, btns, quiet) {
   const ask = btns === 'ask' && sfmode === 'color' && !!hlKey;
   btns = !!btns && sfmode === 'guide';
   const pin = locks[l] !== undefined,
+    _uses = btns ? tipUses(l, m) : [],
     d = document.createElement('div');
   d.className = 'sftip' + (btns || ask ? ' sftipb' : '') + (ask ? ' sftipask' : '');
   d.innerHTML =
@@ -437,6 +456,11 @@ function showTip(l, btns, quiet) {
     esc(m.brand) +
     '</span>' +
     (pin && btns ? '<span class="sftippin">Pinned</span>' : '') +
+    // (v323: a marker you've marked running low says so here too, where its colour might be changed)
+    (btns && inkLowNow(m.mkey) ? '<span class="sftippin sftiplow">Running low</span>' : '') +
+    (btns
+      ? '<span class="sftipn">' + (_uses.length + 1) + ' section' + (_uses.length ? 's' : '') + '</span>'
+      : '') +
     shadeTipHTML(l) +
     photoTipHTML(l) +
     (btns ? zoneTipHTML(l) : '') +
@@ -495,6 +519,10 @@ function showTip(l, btns, quiet) {
   tipEl = d;
   tipL = l;
   tipBtns = btns;
+  if (btns && _uses.length && !olSet) {
+    outlineSecs(_uses);
+    _tipOl = true;
+  }
   tipY = window.scrollY;
   positionTip();
   tipScrollWatch();
@@ -1533,6 +1561,9 @@ function renderGuide() {
   rowOutline();
   // (always: with nothing left to outline, e.g. a row's last section ticked or Mark all, this hides the outline, v305)
   positionOutline();
+  // (v323: Focus mode's side rail, its strip and the page as coloured so far; its sharp copy, drawn again)
+  if (focus) focusSide();
+  if (focus || _shEl) sharpStale(true);
   if (!pickPending()) scheduleAutosave();
 }
 function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tick, fcur, ring) {

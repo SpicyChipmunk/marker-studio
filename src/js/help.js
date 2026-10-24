@@ -6,6 +6,10 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v323',
+    t: 'Focus mode zooms steadily, a marker at a time, its outlines drawn smooth, with a ring round a section too small to see; on the iPad its panel shows your markers for the page and where you are on it. Continue takes you back into Focus mode where you left off. Markers look like swatches, with a second coat, and the Library’s guides are covers. A section’s tip says how many sections its marker colours. Printed close-ups have smooth lines.',
+  },
+  {
     v: 'v322.1',
     t: 'Two fixes. A new guide stays in your Library if the app is closed or reloaded just as it’s first being saved. A PDF is written, and named, as you’d set it when you tapped Download, even if you change the choices while it’s being made.',
   },

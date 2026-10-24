@@ -207,24 +207,21 @@ after(teardown);
     );
     assert.deepEqual(errors, []);
   });
-  test('the sample joins the Library only once it is changed: "Sample", a line under the tabs, nothing kept; looking around is no change', async () => {
+  const SAMPLE_ST = 'Sample · change anything to keep it';
+  test('the sample joins the Library only once it is changed: its header says so, nothing kept; looking around is no change', async () => {
     const { page, errors } = await openApp();
     await sampleGuide(page);
     await idle(page, AUTO);
-    assert.equal(await status(page), 'Sample');
+    assert.equal(await status(page), SAMPLE_ST);
     assert.equal(await guideName(page), 'Sample jellyfish');
     assert.equal(await saveShown(page), false);
-    // (v289) one line at a time: the first-time "Tap a section" first, the sample's line at the next tab
+    // (v323) no line under the tabs for it: the header's line says it; the first-time "Tap a section" line stays
+    // through a change of tab (v289 took it away there, for the sample's line)
     assert.equal(await page.isVisible('.sfinfo[data-hint="tap"]'), true);
-    assert.equal(await page.locator('#sfSampleNote').count(), 0, 'Tap a section first');
     await page.click('.sftabbtn[data-t="pattern"]');
-    assert.equal(await page.locator('.sfinfo[data-hint="tap"]').count(), 0);
-    assert.match(
-      await page.textContent('#sfSampleNote'),
-      /^This sample isn’t in your Library yet\. Change anything to keep it\./,
-    );
+    assert.equal(await page.isVisible('.sfinfo[data-hint="tap"]'), true, 'still there on Pattern');
+    assert.equal(await page.locator('#sfSampleNote').count(), 0, 'no line under the tabs');
     await page.click('.sftabbtn[data-t="colours"]');
-    assert.equal(await page.locator('.sfinfo[data-hint="tap"]').count(), 0, 'gone for good');
     assert.equal((await guides(page)).length, 0, 'not in the Library');
     assert.equal(
       await page.evaluate(() => localStorage.getItem('ms-guide-auto')),
@@ -244,13 +241,7 @@ after(teardown);
     await page.evaluate(() => __mstest.flushSave());
     await idle(page, AUTO);
     assert.equal((await guides(page)).length, 0, 'none of that is a change');
-    assert.equal(await status(page), 'Sample');
-    // the line closes
-    await page.click('.sftabbtn[data-t="colours"]');
-    await idle(page);
-    await page.click('#sfSampleX');
-    await idle(page);
-    assert.equal(await page.locator('#sfSampleNote').count(), 0);
+    assert.equal(await status(page), SAMPLE_ST);
     // a change keeps it, as "Sample jellyfish"
     await page.click('.sftabbtn[data-t="pattern"]');
     await page.click('#sfFam [data-v="random"]');
@@ -263,7 +254,9 @@ after(teardown);
     assert.match(await status(page), /^(Saved in your Library|Saves itself from now on) ✓$/);
     // the sample again: a fresh copy; changed, it's "Sample jellyfish 2"
     await page.evaluate(() => SF.loadSample());
-    await page.waitForFunction(() => document.getElementById('sfSaveSt').textContent === 'Sample');
+    await page.waitForFunction(
+      () => document.getElementById('sfSaveSt').textContent === 'Sample · change anything to keep it',
+    );
     await idle(page);
     assert.equal((await guides(page)).length, 1);
     await rename(page, 'My jellyfish');
@@ -274,7 +267,9 @@ after(teardown);
       'a rename alone keeps it',
     );
     await page.evaluate(() => SF.loadSample());
-    await page.waitForFunction(() => document.getElementById('sfSaveSt').textContent === 'Sample');
+    await page.waitForFunction(
+      () => document.getElementById('sfSaveSt').textContent === 'Sample · change anything to keep it',
+    );
     await idle(page);
     await page.click('#sfColor');
     await tickInCode(page, 0);
@@ -1042,6 +1037,84 @@ after(teardown);
     assert.ok(m.lines <= 3, 'three lines at most: ' + m.lines);
     assert.ok(!m.clipped, 'nothing is cut off');
     assert.deepEqual(errors, []);
+  });
+  test('(v323) a guide’s tile is a cover: a page near 4:5 fills it, a landscape one sits whole; ⋯ on the cover’s corner', async () => {
+    for (const vp of [
+      { width: 390, height: 844 },
+      { width: 1180, height: 820 },
+    ]) {
+      const { page, errors } = await openApp(vp);
+      await welcome(page, 'look');
+      const ids = await page.evaluate(() => {
+        const pic = (w, h) => {
+          const c = document.createElement('canvas');
+          c.width = w;
+          c.height = h;
+          const x = c.getContext('2d');
+          x.fillStyle = '#c33';
+          x.fillRect(0, 0, w, h);
+          return c.toDataURL('image/jpeg', 0.7);
+        };
+        const mk = (id, name, W, H) => ({
+          id,
+          type: 'guide',
+          name,
+          W,
+          H,
+          n: 10,
+          done: 0,
+          keys: [mkey(11)],
+          ts: Date.now(),
+          thumb: pic(W / 10, H / 10),
+        });
+        state.saved.unshift(mk(880001, 'Tall page', 800, 1000), mk(880002, 'Wide page', 1200, 800));
+        save();
+        renderSaved();
+        return [880001, 880002];
+      });
+      await openLibrary(page);
+      const m = await page.evaluate((ids) => {
+        const one = (id) => {
+          const t = document.querySelector(`#savedList .srow[data-id="${id}"]`);
+          const pic = t.querySelector('.spic'),
+            img = pic.querySelector('.sthumb'),
+            more = t.querySelector('.smore');
+          const p = pic.getBoundingClientRect(),
+            i = img.getBoundingClientRect(),
+            mo = more.getBoundingClientRect();
+          return {
+            cover: pic.classList.contains('scover'),
+            fit: getComputedStyle(img).objectFit,
+            fills: Math.abs(i.width - p.width) < 2 && Math.abs(i.height - p.height) < 2,
+            whole: i.width <= p.width + 1 && i.height <= p.height + 1,
+            moreIn: mo.right <= p.right + 1 && mo.bottom <= p.bottom + 1 && mo.top >= p.top + p.height / 2,
+          };
+        };
+        return ids.map(one);
+      }, ids);
+      assert.equal(m[0].cover, true, 'a 4:5 page is a cover');
+      assert.equal(m[0].fit, 'cover');
+      assert.ok(m[0].fills, 'it fills the tile’s top edge to edge');
+      assert.equal(m[1].cover, false, 'a landscape page is not cropped');
+      assert.ok(m[1].whole, 'it sits whole');
+      assert.ok(m[0].moreIn && m[1].moreIn, '⋯ sits on the cover’s lower corner: ' + JSON.stringify(m));
+      // its menu opens under the cover, on the screen
+      await page.click(row(page, ids[0]) + ' .smore');
+      const mn = await page.evaluate((id) => {
+        const t = document.querySelector(`#savedList .srow[data-id="${id}"]`);
+        const menu = t.querySelector('.smenu');
+        const r = menu.getBoundingClientRect(),
+          p = t.querySelector('.spic').getBoundingClientRect();
+        return {
+          shown: !menu.hidden && r.height > 0,
+          below: r.top >= p.bottom - 8,
+          right: r.right <= innerWidth,
+        };
+      }, ids[0]);
+      assert.ok(mn.shown && mn.below && mn.right, 'menu under the cover: ' + JSON.stringify(mn));
+      assert.deepEqual(errors, []);
+      await page.close();
+    }
   });
   test('the line under a name: type, markers, when (Home’s words: yesterday, then the date); no type badge', async () => {
     const { page, errors } = await openApp();

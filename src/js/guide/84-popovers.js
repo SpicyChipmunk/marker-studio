@@ -574,7 +574,10 @@ let olEl = null,
 // once: one pulse as it arrives, then steady (Find next, v288); otherwise it pulses while the picker is open
 let olOnce = false,
   olMerge = -1;
-function outlineSecs(ls, once) {
+// (v323) the outline is a partly coloured page's offer's (colOfferShow, 82-colour-mode)
+let _olOffer = false;
+function outlineSecs(ls, once, offer) {
+  _olOffer = !!offer && !!(ls && ls.length);
   olRow = false;
   olGroups = null;
   olSet = ls && ls.length ? ls.slice() : null;
@@ -689,6 +692,8 @@ function positionOutline() {
     (sfmode === 'guide' ||
       (sfmode === 'review' && olMerge > 0) ||
       (sfmode === 'color' && olRow && !focus) ||
+      // (v323: a partly coloured page's offer in Colour along, colOfferShow)
+      (sfmode === 'color' && _olOffer && !focus && !olRow && !hlKey) ||
       (sfmode === 'color' &&
         _fnOl &&
         !focus &&

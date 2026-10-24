@@ -162,6 +162,8 @@ function alongControls() {
     } catch (_) {}
   });
   updateProgress();
+  // (v323) a partly coloured page's offer, until taken or closed (82-colour-mode)
+  colOfferShow();
 }
 // With zones, Colour along goes through the whole picture (each marker once) or zone by zone (each zone's markers
 // in turn, a marker in two zones once in each): ALONG_ZONES keeps the choice on this device.

@@ -114,7 +114,7 @@
 /* (v320) a change being written: the saved line stays, fainter for that moment (no "Saving…" flicker) */
 #sfRoot .sfsavest.saving {
   color: var(--sub);
-  transition: color 0.2s ease;
+  transition: color var(--dur-base) ease;
 }
 #sfRoot .sfsavest.warn {
   color: var(--warn);
@@ -406,7 +406,7 @@
   width: 0;
   height: 100%;
   background: var(--ok);
-  transition: width 0.25s;
+  transition: width var(--dur-slow);
 }
 #sfRoot .sfalong .sfprog {
   display: block;
@@ -572,7 +572,7 @@ html.sfsheeton body {
   z-index: 39;
   background: rgba(0, 0, 0, 0.5);
   pointer-events: none;
-  animation: sfscrimin 0.18s ease-out;
+  animation: sfscrimin var(--dur-base) ease-out;
 }
 #sfRoot .sfscrim.sfscrimtap {
   pointer-events: auto;
@@ -599,7 +599,7 @@ html.sfsheeton body {
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   box-shadow: 0 -18px 40px -10px rgba(0, 0, 0, 0.7);
   outline: none;
-  animation: sfsheetup 0.18s ease-out;
+  animation: sfsheetup var(--dur-base) ease-out;
 }
 #sfRoot .sfsheet.sfshside {
   border-top: 0;
@@ -974,4 +974,48 @@ html.sfsheetin #sfRoot .sfsheet.sfshside {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.55),
     0 8px 26px rgba(0, 0, 0, 0.5);
+}
+
+/* (v323) The sample opening (smpOpenShow, 20-image-input): a small card in the middle of the screen, its ring turned
+   by the browser off the page's thread (a transform), so it turns while the sample's work holds the page */
+.smpopen {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 70;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px 14px 16px;
+  border-radius: var(--r-md);
+  background: var(--raise);
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 60px -20px #000;
+  color: var(--ink);
+  font-size: var(--t-base);
+  font-weight: 600;
+  pointer-events: none;
+}
+.smpring {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(var(--accent-rgb), 0.25);
+  border-top-color: var(--accent-ink);
+  animation: smpspin 0.8s linear infinite;
+  will-change: transform;
+}
+@keyframes smpspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .smpring {
+    animation: none;
+    border-color: var(--accent-ink);
+  }
 }

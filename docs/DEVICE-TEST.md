@@ -22,7 +22,7 @@ sheet, paper, VoiceOver, and how it feels.
 
 ## Before you start (5 min)
 
-- [ ] Home's foot says the version you're testing (**v322.1 · Beta**). If not: "A new version of Marker Studio is
+- [ ] Home's foot says the version you're testing (**v323 · Beta**). If not: "A new version of Marker Studio is
       ready" under Home's title → **Reload**.
 - [ ] ★ **Library › Back up** → the share sheet → **Save to Files** → the file is in Files. (A1 needs it.)
 - Have ready: a colouring page on the table to photograph; a PDF of a colouring page in Files; a few Ohuhu and Copic
@@ -169,6 +169,32 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 ## Part C — new in recent releases (20 min)
 
 What v318.22 to v318.30 changed that Parts A and B don't already cover.
+
+**New in v323**
+
+- [ ] ★ **Focus mode on the iPad, sideways:** colour a few sections → the picture zooms the same for each of a marker's
+      sections (it pans, rather than zooming in and out at every Done), never so far that the lines show pixel steps;
+      a moment after each move the outlines are smooth curves. A very small section has a ring pulsing round it. In
+      the panel: the page's markers in a row under the progress bar (the one in hand ringed, ✓ for those done), and
+      under Back and Skip "Where you are", the whole page with a ring; tapping it shows the whole page.
+- [ ] ★ **Continue into Focus mode:** colour a few sections in Focus mode, close the app (swipe it away), open it →
+      Home's Continue → Focus mode on the section you were on. Tap Exit, close and open again → Continue goes to
+      Colour along.
+- [ ] **Phone:** Focus mode's zoom buttons float in a column at the picture's right edge. On its side, the picture is
+      on the left the full height, the controls on the right.
+- [ ] ★ **Markers:** the tiles are swatches: the ink to the edge with a darker second coat on the right, the code on
+      the ink at the bottom left (dark or white, whichever reads). Markers you own fill their tile; those you don't
+      sit inset in the dashed edge. Scrolling a long list is as smooth as before.
+- [ ] **Library:** each guide's tile is a cover, its picture edge to edge; ⋯ on the cover's lower corner opens the
+      menu; Home's recent guides match.
+- [ ] **Plan:** a section's tip says how many sections its marker colours, outlines the others while it's open, and
+      says Running low for a marker you've marked so. The tabs' labels are one style (grey, sentence case); the
+      sample's line is in the header ("Sample · change anything to keep it").
+- [ ] **Try the sample** from Home → "Opening the sample…" at once, its ring turning, then the guide. Any dialog
+      (Help, Back up) rises in slightly as it opens (not with Reduce motion).
+- [ ] **A partly coloured page:** photograph one → after Build the offer to mark the coloured sections done; let it go,
+      then Colour along → the same offer at the top, those sections outlined; Mark them done, or ✕.
+- [ ] **Print a guide with close-ups** (the sample) → the close-up pages' lines are smooth curves, not steps.
 
 **New in v322**
 

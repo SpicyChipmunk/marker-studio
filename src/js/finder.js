@@ -214,8 +214,20 @@ function cellHtml(i, rank) {
         ? ', older cap ' + oldCode(c) + ' ' + capOldName(c)
         : '';
   const rk = rank ? '<span class="rankb">' + rank + '</span>' : '';
+  // (v323) Markers' tiles as swatches (sw2, 02-picker.css): the ink to the tile's edge, a second coat on the right
+  // (coatTwo, as shading's 2nd coat), the code on the ink in dark or white by contrast (txt), with a halo where neither
+  // reads well (txtWeak); a near-white blender keeps an edge (swpale)
+  const sw =
+    col &&
+    ' sw2' +
+      (darkText(c.hex) ? ' swd' : '') +
+      (txtWeak(c.hex) ? ' swweak' : '') +
+      (relLum(c.hex) > 0.86 ? ' swpale' : '');
   const cls =
-    'cell' + (col && !own && state.collView !== 'unowned' ? ' notown' : '') + (col && own ? ' own' : '');
+    'cell' +
+    (col && !own && state.collView !== 'unowned' ? ' notown' : '') +
+    (col && own ? ' own' : '') +
+    (sw || '');
   // (the tick shows ownership where owned and not owned are mixed: All. In Owned every marker is yours, v305)
   const check = col && own && state.collView !== 'owned' ? '<span class="owncheck">\u2713</span>' : '';
   const act = col ? (own ? 'remove' : 'add') : 'copy';
@@ -245,6 +257,7 @@ function cellHtml(i, rank) {
     btHTML(c.brand, cellBt) +
     '<div class="sq" style="background:' +
     c.hex +
+    (sw ? ';--c2:rgb(' + coatTwo(rgb(c.hex)).join(',') + ')' : '') +
     '"></div><div class="cc">' +
     esc(cc) +
     '</div></div>'

@@ -2305,6 +2305,29 @@ const CU_INK = '#1a1a1a',
 function cuLines(mag) {
   return Math.max(0.35, Math.min(CU_LINES, CU_LINES - (mag - 2) * 0.05));
 }
+// (v323) a close-up's picture drawn sharp at its size on the page (77-sharp), or null (then it's magnified as before)
+function cuSharp(art, cr, dw, dh) {
+  try {
+    const ow = Math.max(1, Math.round(dw)),
+      oh = Math.max(1, Math.round(dh));
+    if (ow * oh > 16e6) return null;
+    if (!art._im) art._im = art.getContext('2d').getImageData(0, 0, W, H);
+    if (!art._fill) {
+      const F = sharpField();
+      if (!F) return null;
+      art._fill = sharpFill(art._im, F, LINE);
+    }
+    const im = sharpPaint(art._im, cr, ow, oh, LINE, art._fill);
+    if (!im) return null;
+    const c = document.createElement('canvas');
+    c.width = ow;
+    c.height = oh;
+    c.getContext('2d').putImageData(im, 0, 0);
+    return c;
+  } catch (_) {
+    return null;
+  }
+}
 // 1st, 2nd, 3rd … (the key's colouring order, unlike its numbers: v284 review)
 function pdfOrd(n) {
   const t = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th';
@@ -2923,7 +2946,11 @@ function _buildPDF(dry) {
           gc.fillStyle = '#fff';
           gc.fillRect(cx, iy, dw, dh);
           gc.globalAlpha = cuLines(kc / f1.k);
-          gc.drawImage(art1, cr[0], cr[1], cr[2] - cr[0], cr[3] - cr[1], cx, iy, dw, dh);
+          // (v323: its lines drawn again at the close-up's size, smooth curves rather than magnified pixel steps,
+          // 77-sharp; as before if that can't be done)
+          const sh1 = cuSharp(art1, cr, dw, dh);
+          if (sh1) gc.drawImage(sh1, cx, iy, dw, dh);
+          else gc.drawImage(art1, cr[0], cr[1], cr[2] - cr[0], cr[3] - cr[1], cx, iy, dw, dh);
           gc.globalAlpha = 1;
           gc.setTransform(kc, 0, 0, kc, cx - cr[0] * kc, iy - cr[1] * kc);
           // (a dot only for a small section still without a label: one labelled on page 1 needs none here)

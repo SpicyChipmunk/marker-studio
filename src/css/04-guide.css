@@ -106,8 +106,8 @@
   margin: 0 auto;
   flex: none;
   transition:
-    width 0.18s ease,
-    height 0.18s ease;
+    width var(--dur-base) ease,
+    height var(--dur-base) ease;
 }
 /* (v293) the codes' own canvas when zoomed in, over the picture's (40-render.js labHi) */
 #sfRoot #sfLabHi {
@@ -116,8 +116,8 @@
   transform-origin: 0 0;
   pointer-events: none;
   transition:
-    width 0.18s ease,
-    height 0.18s ease;
+    width var(--dur-base) ease,
+    height var(--dur-base) ease;
 }
 #sfRoot.sfvals #sfLabHi {
   filter: grayscale(1);
@@ -180,15 +180,15 @@
   background: var(--ink);
   transform: translateX(var(--ulX, 0px));
   transition:
-    transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
-    width 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform var(--dur-slow) var(--ease-out),
+    width var(--dur-slow) var(--ease-out);
   pointer-events: none;
 }
 #sfRoot .sftabs.sful .sftabbtn.on {
   box-shadow: none;
 }
 #sfRoot .sftabbtn {
-  transition: color 0.2s ease;
+  transition: color var(--dur-base) ease;
 }
 @media (prefers-reduced-motion: reduce) {
   #sfRoot .sftabs.sful::after {
@@ -302,7 +302,7 @@
 #sfRoot .sfmlrow .nm small {
   display: block;
   color: var(--sub);
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
 }
 #sfRoot .sfmlrow .cnt {
   flex: none;
@@ -339,13 +339,30 @@
 #sfRoot .sfgrp:first-child {
   margin-top: 12px;
 }
+/* (v323) a group's label, as the other tabs' labels (.sfsublbl): grey and in sentence case, not small capitals */
 #sfRoot .sfglbl {
-  font-size: var(--t-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--sub);
-  font-weight: 700;
+  font-size: var(--t-base);
+  color: var(--sub-guide);
+  font-weight: 400;
   margin: 0 0 7px;
+}
+/* (v323) a slider's row: its label on the left, its value on the right in the ink's white (Start colour, Scatter,
+   Marker texture, Markers in this guide) */
+#sfRoot .sfvrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
+#sfRoot .sfvrow .sfval {
+  color: var(--ink);
+  font-weight: 600;
+  text-align: right;
+  margin-left: auto;
+}
+#sfRoot .sfvrow .sfval b {
+  font-weight: 700;
 }
 #sfRoot .sfrow2 {
   display: grid;
@@ -451,6 +468,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+/* (v323) its label as the other sliders' labels; the count stays large and white */
+#sfRoot #sfMkWord {
+  font-size: var(--t-base);
+  font-weight: 400;
+  color: var(--sub-guide);
 }
 #sfRoot #sfCtl .sfmknum,
 #sfRoot #sfCtl .sfmktype {
@@ -654,8 +677,9 @@
   margin-top: 14px;
   padding-top: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: var(--t-sm);
-  color: var(--sub);
+  /* (v323: as the other sliders' labels) */
+  font-size: var(--t-base);
+  color: var(--sub-guide);
 }
 #sfRoot .sftex b {
   float: right;

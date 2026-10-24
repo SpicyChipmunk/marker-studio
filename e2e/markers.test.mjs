@@ -391,7 +391,9 @@ after(teardown);
     assert.equal(await page.isVisible('#qClear'), false);
     assert.deepEqual(errors, []);
   });
-  test('Markers › All: markers you don’t own keep their true colour, with a dashed edge and a quieter code; owned keep the tick', async () => {
+  // (v323) the tiles as swatches: the ink fills an owned tile and sits inset in an unowned one's dashed edge, a second
+  // coat on its right; the code on the ink in dark or white, whichever reads better on that colour
+  test('Markers › All: markers you don’t own keep their true colour, inset in a dashed edge; owned fill the tile and keep the tick; codes read on the ink', async () => {
     const { page, errors } = await openApp({
       storage: onboardedV265({ [KEY]: appState({ collView: 'all' }) }),
     });
@@ -401,48 +403,50 @@ after(teardown);
       page.$eval(sel, (c) => {
         const cs = getComputedStyle(c),
           sq = c.querySelector('.sq'),
+          cr = c.getBoundingClientRect(),
+          sr = sq.getBoundingClientRect(),
           cc = getComputedStyle(c.querySelector('.cc'));
         return {
           op: +cs.opacity,
           edge: cs.borderTopStyle,
           sq: getComputedStyle(sq).backgroundColor,
+          coat: getComputedStyle(sq, '::after').backgroundColor,
           hex: COLORS[+c.dataset.i].hex,
+          want: txt(COLORS[+c.dataset.i].hex),
           code: cc.color,
           tick: !!c.querySelector('.owncheck'),
+          inset: Math.round(sr.left - cr.left - parseFloat(cs.borderLeftWidth)),
         };
       });
-    const rgb = (h) => 'rgb(' + [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16)).join(', ') + ')';
+    const rgb = (h) =>
+      h === '#fff'
+        ? 'rgb(255, 255, 255)'
+        : 'rgb(' + [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16)).join(', ') + ')';
     const un = await look('#results .cell.notown'),
       own = await look('#results .cell.own');
     assert.equal(un.op, 1, 'not faded');
     assert.equal(un.sq, rgb(un.hex), 'its true colour');
     assert.equal(un.edge, 'dashed');
     assert.equal(un.tick, false);
+    assert.equal(un.inset, 4, 'inset in its dashed edge');
     assert.equal(own.edge, 'solid');
     assert.equal(own.tick, true, 'the tick as before');
-    assert.equal(own.code, await inkOf(page), 'an owned code at full contrast');
-    assert.notEqual(un.code, own.code, 'an unowned code quieter');
-    // the quieter code still reads: over 4.5:1 on the cell's background
-    const ratio = await page.$eval('#results .cell.notown', (c) => {
-      const lum = (rgb) =>
-        rgb
-          .map((v) => {
-            v /= 255;
-            return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-          })
-          .reduce((a, v, k) => a + v * [0.2126, 0.7152, 0.0722][k], 0);
-      const m = getComputedStyle(c.querySelector('.cc'))
-          .color.match(/[\d.]+/g)
-          .map(Number),
-        bg = getComputedStyle(c)
-          .backgroundColor.match(/[\d.]+/g)
-          .map(Number),
-        a = m[3] ?? 1;
-      const L1 = lum([0, 1, 2].map((k) => m[k] * a + bg[k] * (1 - a))),
-        L2 = lum(bg.slice(0, 3));
-      return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
-    });
-    assert.ok(ratio >= 4.5, 'contrast ' + ratio.toFixed(2));
+    assert.equal(own.inset, 0, 'an owned one fills its tile');
+    assert.equal(own.code, rgb(own.want), 'dark or white, by contrast');
+    assert.equal(un.code, rgb(un.want));
+    assert.notEqual(own.coat, own.sq, 'a second coat, darker');
+    // every code reads on its ink: 4.3:1 at worst (the few markers neither colour reads well on get a halo, swweak)
+    const worst = await page.$$eval('#results .cell.sw2', (cs) =>
+      Math.min(
+        ...cs.map((c) => {
+          const h = COLORS[+c.dataset.i].hex,
+            y = relLum(h),
+            t = relLum(txt(h) === '#fff' ? '#ffffff' : txt(h));
+          return (Math.max(y, t) + 0.05) / (Math.min(y, t) + 0.05);
+        }),
+      ),
+    );
+    assert.ok(worst >= 4.3, 'contrast ' + worst.toFixed(2));
     assert.deepEqual(errors, []);
   });
   // (v311: Add markers at the top; the link goes down to Brands I'd buy and Print a swatch chart. v318.33: both buttons in

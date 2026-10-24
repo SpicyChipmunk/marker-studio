@@ -1256,17 +1256,18 @@ button.hcpic:focus-visible {
   align-items: center;
   justify-content: center;
   aspect-ratio: 4 / 3;
-  background: #f6f3ec;
+  background: #f4f1ea;
   overflow: hidden;
 }
 #sfRecent .sfRecPic {
   position: relative;
 }
+/* (v323: edge to edge on its paper, as the Library's covers) */
 #sfRecent .sfRecThumb {
   position: absolute;
-  inset: 8px;
-  width: calc(100% - 16px);
-  height: calc(100% - 16px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border: 0;
   border-radius: 0;
   object-fit: contain;

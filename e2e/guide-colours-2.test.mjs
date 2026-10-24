@@ -1322,3 +1322,46 @@ ring(600,700,300);ring(600,700,180);g.beginPath();g.moveTo(300,700);g.lineTo(900
     await page.context().close();
   });
 }
+
+// ---- v323: what a section's tip says of its marker ----
+{
+  // The Plan's tip for a section: how many sections its marker colours, those others outlined on the picture while the
+  // tip is open (gone with it), and "Running low" for a marker you've marked so
+  test('a section’s tip: the marker’s count, its other sections outlined while open, and Running low', async () => {
+    const { page, errors } = await openApp({ width: 820, height: 1180 });
+    await sampleGuide(page);
+    await idle(page);
+    // a big section high on the page whose marker colours several
+    const l = await page.evaluate(() => {
+      const t = __mstest,
+        A = t.assignData,
+        n = (k) => A.order.filter((x) => A.assign[x].mkey === k).length;
+      return A.order
+        .filter((x) => n(A.assign[x].mkey) >= 3)
+        .sort((a, b) => t.comps[b].area - t.comps[a].area)[0];
+    });
+    const want = await page.evaluate((l) => {
+      const A = __mstest.assignData;
+      return A.order.filter((x) => A.assign[x].mkey === A.assign[l].mkey).length;
+    }, l);
+    await scrollTop(page);
+    const p = await sectionPoint(page, l);
+    await page.mouse.click(p.x, p.y);
+    await idle(page);
+    assert.equal((await page.textContent('.sftip .sftipn')).trim(), want + ' sections');
+    assert.equal(await page.evaluate(() => (__mstest.olSet || []).length), want - 1, 'the others outlined');
+    assert.equal(await page.locator('.sftip .sftiplow').count(), 0);
+    await page.keyboard.press('Escape');
+    await idle(page);
+    assert.equal(await page.evaluate(() => __mstest.olSet), null, 'gone with the tip');
+    // marked running low: the tip says so
+    await page.evaluate((l) => {
+      state.ink[__mstest.assignData.assign[l].mkey] = 'low';
+      save();
+    }, l);
+    await page.mouse.click(p.x, p.y);
+    await idle(page);
+    assert.equal((await page.textContent('.sftip .sftiplow')).trim(), 'Running low');
+    assert.deepEqual(errors, []);
+  });
+}

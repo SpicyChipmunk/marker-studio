@@ -683,11 +683,11 @@ after(teardown);
 // Random's words without "pool"; Reset progress with one verb.
 {
   const seen = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('ms-seen-hints') || '[]'));
-  test('phone: once the first-time hints are seen, a one-time line names Codes, Greyscale and Full screen; not beside the sample’s line; ✕ closes it', async () => {
+  test('phone: once the first-time hints are seen, a one-time line names Codes, Greyscale and Full screen; ✕ closes it', async () => {
     const { page, errors } = await openApp({ storage: { 'ms-seen-hints': '["tap","along"]' } });
     await sampleGuide(page);
-    assert.equal(await page.isVisible('#sfSampleNote'), true);
-    assert.equal(await page.locator('#sfToolTip').count(), 0, 'one line at a time: the sample’s first');
+    // (v323: no line for the sample under the tabs; the names wait for a guide of your own)
+    assert.equal(await page.locator('#sfToolTip').count(), 0, 'not on the sample as it was built');
     await letterGuide(page);
     assert.equal(await page.isVisible('#sfToolTip'), true);
     assert.equal(

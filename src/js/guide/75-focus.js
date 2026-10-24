@@ -142,7 +142,10 @@ function nextUndone(from) {
 // picture has the screen's whole height beside it (CSS: html.sfrailon, sfrailL; the rail's width --railW). The DOM
 // order, and so the keyboard's, is as before. The Colours sheet, the hand-off card and the toasts keep to the
 // picture's column.
-var RAIL_MQ = '(orientation: landscape) and (min-height: 600px) and (min-width: 900px)';
+// (v323: a phone on its side too, from 640 wide: the picture beside the controls has the screen's whole height, where
+// above and below them it had about 250px; a short screen's rail is a compact one, sfrailshort)
+var RAIL_MQ = '(orientation: landscape) and (min-height: 340px) and (min-width: 640px)',
+  RAIL_SHORT = '(max-height: 599px)';
 function focusRail() {
   return !!(
     focus &&
@@ -164,6 +167,154 @@ function railSync() {
     de = document.documentElement;
   de.classList.toggle('sfrailon', on);
   de.classList.toggle('sfrailL', on && railLeft());
+  de.classList.toggle('sfrailshort', on && window.matchMedia(RAIL_SHORT).matches);
+  if (!on) focusSide();
+}
+// (v323) The iPad's side rail, tall enough: under the progress bar, the page's markers in order (each one's sections
+// coloured, ✓ when done, the one in hand ringed), and under Done, Back and Skip, the whole page as coloured so far
+// with a ring where the section is ("Where you are"); a tap on it shows the whole page. Drawn with the picture
+// (renderGuide). Not on a short rail or off the rail.
+function focusSide() {
+  var de = document.documentElement,
+    on =
+      focus &&
+      !focusFin &&
+      sfmode === 'color' &&
+      de.classList.contains('sfrailon') &&
+      !de.classList.contains('sfrailshort'),
+    strip = document.getElementById('sfFocStrip'),
+    map = document.getElementById('sfFocMap');
+  if (!on) {
+    if (strip) strip.hidden = true;
+    if (map) map.hidden = true;
+    return;
+  }
+  var bar = document.querySelector('.sffocbar'),
+    prog = document.getElementById('sfFocProg');
+  if (!bar || !prog || !assignData) return;
+  if (!strip) {
+    strip = document.createElement('div');
+    strip.id = 'sfFocStrip';
+    strip.className = 'sffocstrip';
+    strip.setAttribute('aria-hidden', 'true');
+    strip.innerHTML =
+      '<div class="sffshead"><span>Markers for this page</span><span class="sffsn"></span></div><div class="sffsrow"></div>';
+  }
+  if (strip.parentNode !== bar) prog.after(strip);
+  // the groups in order, each with its marker, how many sections and how many done
+  var groups = [],
+    cur = focusPos >= 0 && focusPos < focusOrd.length ? focusGroup(focusPos) : '',
+    by = {};
+  for (var i = 0; i < focusOrd.length; i++) {
+    var gk = focusGroup(i),
+      e = by[gk];
+    if (!e) {
+      e = by[gk] = { k: gk, m: assignData.assign[focusOrd[i]], n: 0, d: 0 };
+      groups.push(e);
+    }
+    e.n++;
+    if (stepDone(focusOrd[i], stepBits(i))) e.d++;
+  }
+  var sig =
+    groups
+      .map(function (g) {
+        return g.k + ':' + g.d + '/' + g.n;
+      })
+      .join(',') +
+    '|' +
+    cur;
+  if (strip.dataset.sig !== sig) {
+    strip.dataset.sig = sig;
+    strip.querySelector('.sffsn').textContent =
+      groups.length +
+      ' marker' +
+      (groups.length === 1 ? '' : 's') +
+      ' \u00b7 ' +
+      focusOrd.length +
+      ' sections';
+    strip.querySelector('.sffsrow').innerHTML = groups
+      .map(function (g) {
+        var done = g.d >= g.n;
+        return (
+          '<span class="sffs' +
+          (g.k === cur ? ' cur' : '') +
+          (done ? ' done' : '') +
+          '"><i style="background:' +
+          esc(g.m.hex) +
+          '">' +
+          (done ? '\u2713' : '') +
+          '</i><b>' +
+          esc(capLabel(g.m)) +
+          '</b><small>' +
+          (done ? g.n : g.n - g.d) +
+          '</small></span>'
+        );
+      })
+      .join('');
+    var c = strip.querySelector('.sffs.cur');
+    if (c) {
+      var row = strip.querySelector('.sffsrow');
+      row.scrollLeft = Math.max(0, c.offsetLeft - row.clientWidth / 2 + c.offsetWidth / 2);
+    }
+  }
+  strip.hidden = false;
+  // Where you are
+  if (!map) {
+    map = document.createElement('button');
+    map.type = 'button';
+    map.id = 'sfFocMap';
+    map.className = 'sffocmap';
+    map.setAttribute('aria-label', 'Show the whole page');
+    map.innerHTML = '<span class="sffmh">Where you are</span><canvas></canvas>';
+    map.addEventListener('click', function () {
+      resetZoom();
+      focusRing();
+    });
+    (document.getElementById('sfView') || document.body).appendChild(map);
+  }
+  var mc = map.querySelector('canvas'),
+    room =
+      window.innerHeight - (document.querySelector('.sffocbot') || bar).getBoundingClientRect().bottom - 110;
+  if (room < 120 || !cv) {
+    map.hidden = true;
+    return;
+  }
+  map.hidden = false;
+  var mh = Math.min(260, room),
+    mw = Math.round((mh * W) / H),
+    maxW = 300 - 36;
+  if (mw > maxW) {
+    mw = maxW;
+    mh = Math.round((mw * H) / W);
+  }
+  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (mc.width !== Math.round(mw * dpr) || mc.height !== Math.round(mh * dpr)) {
+    mc.width = Math.round(mw * dpr);
+    mc.height = Math.round(mh * dpr);
+  }
+  mc.style.width = mw + 'px';
+  mc.style.height = mh + 'px';
+  var g = mc.getContext('2d'),
+    l = focusCur();
+  g.imageSmoothingEnabled = true;
+  g.drawImage(cv, 0, 0, mc.width, mc.height);
+  if (l > 0 && focusBox) {
+    var k = mc.width / W,
+      x = ((focusBox.x0[l] + focusBox.x1[l] + 1) / 2) * k,
+      y = ((focusBox.y0[l] + focusBox.y1[l] + 1) / 2) * k,
+      r = Math.max(
+        8 * dpr,
+        ((Math.max(focusBox.x1[l] - focusBox.x0[l], focusBox.y1[l] - focusBox.y0[l]) + 1) * k) / 2 + 4 * dpr,
+      );
+    g.lineWidth = 4 * dpr;
+    g.strokeStyle = 'rgba(10,12,12,.85)';
+    g.beginPath();
+    g.arc(x, y, r, 0, 6.283);
+    g.stroke();
+    g.lineWidth = 2.5 * dpr;
+    g.strokeStyle = '#b9a8ff';
+    g.stroke();
+  }
 }
 function railSwap() {
   try {
@@ -193,9 +344,9 @@ function focusGeo(sheet) {
   var bar = document.querySelector('.sffocbar'),
     bot = document.querySelector('.sffocbot'),
     t = bar ? bar.offsetHeight : 0,
-    zs = (window.innerWidth || 0) < 700 ? document.getElementById('sfZoomCtl') : null,
-    // (a phone: the tool strip above the bottom bar is the picture's too, v289)
-    b = (bot ? bot.offsetHeight : 0) + (zs ? zs.offsetHeight : 0),
+    // (v323: a phone's zoom buttons float at the picture's edge, as on an iPad upright: no strip of their own to leave
+    // room for, v289's)
+    b = bot ? bot.offsetHeight : 0,
     vw = sfView.clientWidth,
     vh = sfView.clientHeight,
     sh = sheet && focusSheet ? document.getElementById('sfFocSheet') : null;
@@ -205,9 +356,33 @@ function focusGeo(sheet) {
   var ah = Math.max(40, vh - t - b);
   return { t: t, b: b, x0: 0, cx: vw / 2, cy: t + ah / 2, aw: vw, ah: ah };
 }
+// (v323) one zoom for a marker's sections: the middle of their own zooms (each no further than fitZoom allows), so
+// the view pans from one to the next rather than zooming in and out at every Done; a section it wouldn't fit gets less.
+// Worked out once per marker (its group, and pass), _fzG
+var _fzG = null;
 function focusZoomFor(l) {
-  var g = focusGeo(true);
-  return fitZoom(focusBox, l, g.aw, g.ah);
+  var g = focusGeo(true),
+    own = fitZoom(focusBox, l, g.aw, g.ah),
+    i = focusOrd.indexOf(l);
+  if (i < 0) return own;
+  var grp = focusGroup(i),
+    key = grp + '|' + focusOrd.length + '|' + Math.round(g.aw) + 'x' + Math.round(g.ah) + '|' + W;
+  if (!_fzG || _fzG.k !== key) {
+    var zs = [];
+    for (var j = 0; j < focusOrd.length; j++)
+      if (focusGroup(j) === grp) zs.push(fitZoom(focusBox, focusOrd[j], g.aw, g.ah));
+    zs.sort(function (a, b) {
+      return a - b;
+    });
+    _fzG = { k: key, z: zs.length ? zs[(zs.length - 1) >> 1] : own };
+  }
+  // (never so far in that this section is wider or taller than most of the view, as fitZoom keeps)
+  var DW = (cv && cv.offsetWidth) || 1,
+    DH = (cv && cv.offsetHeight) || 1,
+    bw = Math.max(1, ((focusBox.x1[l] - focusBox.x0[l] + 1) / W) * DW),
+    bh = Math.max(1, ((focusBox.y1[l] - focusBox.y0[l] + 1) / H) * DH),
+    most = Math.max(1, Math.min((g.aw * 0.8) / bw, (g.ah * 0.8) / bh));
+  return Math.max(1, Math.min(_fzG.z, most));
 }
 var _ftT = 0;
 function animXform(anim) {
@@ -216,6 +391,8 @@ function animXform(anim) {
     clearTimeout(_ftT);
     _ftT = setTimeout(function () {
       cv.style.transition = '';
+      // (the ring placed where the section ends up, v323)
+      focusRing();
     }, 380);
   } else cv.style.transition = '';
   applyXform();
@@ -235,6 +412,41 @@ function frameFocus(anim) {
   clampPan();
   animXform(anim);
 }
+// (v323) A section too small to see at the zoom Focus mode keeps (FIT_RES, 70-view) has a ring round it that pulses
+// gently, drawn over the picture where the section is; not with Reduce motion (it stays still) or under test
+function focusRing() {
+  var el = document.getElementById('sfFocRing'),
+    l = focus && !focusFin && sfmode === 'color' ? focusCur() : -1;
+  if (l < 0 || !cv || !sfView || !focusBox || root.classList.contains('sfrev')) {
+    if (el) el.hidden = true;
+    return;
+  }
+  var r0 = cv.getBoundingClientRect(),
+    host = picEl || sfView,
+    vr = host.getBoundingClientRect(),
+    q = picK(),
+    k = r0.width / q / W,
+    bw = (focusBox.x1[l] - focusBox.x0[l] + 1) * k,
+    bh = (focusBox.y1[l] - focusBox.y0[l] + 1) * k;
+  if (!(k > 0) || Math.max(bw, bh) >= 24) {
+    if (el) el.hidden = true;
+    return;
+  }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sfFocRing';
+    el.className = 'sffocring';
+    el.setAttribute('aria-hidden', 'true');
+  }
+  if (el.parentNode !== host) host.appendChild(el);
+  var d = Math.max(34, Math.max(bw, bh) + 18),
+    cx = (r0.left - vr.left) / q + ((focusBox.x0[l] + focusBox.x1[l] + 1) / 2) * k,
+    cy = (r0.top - vr.top) / q + ((focusBox.y0[l] + focusBox.y1[l] + 1) / 2) * k;
+  el.style.left = cx - d / 2 + 'px';
+  el.style.top = cy - d / 2 + 'px';
+  el.style.width = el.style.height = d + 'px';
+  el.hidden = false;
+}
 function goFocus(pos, anim, noHist) {
   if (!focusOrd.length) return;
   if (!noHist && focusPos >= 0 && !focusFin && pos !== focusPos) {
@@ -244,6 +456,8 @@ function goFocus(pos, anim, noHist) {
   focusFin = false;
   focusPos = Math.max(0, Math.min(focusOrd.length - 1, pos));
   var l = focusOrd[focusPos];
+  // (v323: where Continue would open Focus mode, were the guide left now)
+  focusAt = l;
   hlKey = assignData.assign[l].mkey;
   hlZone = alongZones() ? zoneOf(l) : null;
   renderFocusUI();

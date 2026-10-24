@@ -845,9 +845,7 @@ function shadeTones(base, zs) {
     }
   }
   const b = hexRgb(base.hex),
-    coat = [0, 1, 2].map(function (k) {
-      return Math.round(b[k] * (0.52 + (0.48 * b[k]) / 255));
-    });
+    coat = coatTwo(b);
   const t = {
     light: light,
     dark: dark,

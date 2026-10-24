@@ -578,18 +578,9 @@ function switchTab(t) {
   ctlEl.querySelectorAll('.sftab').forEach(function (pn) {
     pn.style.display = pn.dataset.tab === gTab ? '' : 'none';
   });
-  // (the first-time "Tap a section" line goes at the first change of tab, and the sample's line takes its place, v289)
-  const tapL = _tapTab && t !== _tapTab ? ctlEl.querySelector('.sfinfo[data-hint="tap"]') : null;
-  if (_tapTab && t !== _tapTab) _tapTab = false;
-  if (tapL) {
-    const sn = sampleNoteHTML();
-    if (sn) {
-      tapL.insertAdjacentHTML('beforebegin', sn);
-      sampleNoteWire();
-    }
-    tapL.remove();
-    paneMin();
-  }
+  // (v323) the first-time "Tap a section" line stays through changes of tab for the visit: it went at the first one so
+  // the sample's line could take its place (v289), which is no more, and its going moved the page at the foot of a
+  // short tab
   if (th != null) window.scrollTo(0, Math.round(th));
   picScroll();
   fitPairs();

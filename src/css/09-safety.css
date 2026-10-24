@@ -108,7 +108,7 @@
   width: 0;
   border-radius: 99px;
   background: var(--ok);
-  transition: width 0.25s;
+  transition: width var(--dur-slow);
 }
 .ttcount {
   font-weight: 600;

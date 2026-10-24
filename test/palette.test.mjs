@@ -393,6 +393,10 @@ import fsSync from 'node:fs';
   });
   test('Analogous built from a chosen marker: as many colours on either side of it', () => {
     const E = fresh();
+    // (v323) seeded: unseeded, about one run in 25 fell outside the 20% band by chance (balance ~0.55 of it on average)
+    E(
+      `(() => { let s = 323; Math.random = () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })()`,
+    );
     const seeds = E(`COLORS.map((c,i)=>i).filter(i=>LCH[i][1]>=35&&LCH[i][0]>40&&LCH[i][0]<75)`).filter(
       (_, k) => k % 9 === 0,
     );

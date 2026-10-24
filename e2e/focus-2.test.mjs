@@ -74,7 +74,8 @@ after(teardown);
         overPic: inter(card, cv) / (card.width * card.height),
         under,
         overZoom: inter(card, zc) > 0,
-        overBar: card.top < bar.bottom - 1,
+        // (v323: a phone on its side has the side rail; over the bar is any overlap with it, top bar or rail)
+        overBar: inter(card, bar) > 1,
       };
     });
   // (v320: held sideways, Focus mode's buttons are a column at the side, and the picture's column is narrower: the card
@@ -424,11 +425,16 @@ after(teardown);
       const card = r('#sfHand .sfhcard'),
         bar = r('.sffocbar'),
         bot = r('.sffocbot');
+      const inter = (a, b) =>
+        Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) *
+        Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+      const rail = document.documentElement.classList.contains('sfrailon');
       return {
+        rail,
         top: card.top,
         bottom: card.bottom,
-        barB: bar.bottom,
-        botT: bot.top,
+        barB: rail ? (inter(card, bar) > 1 ? Infinity : -Infinity) : bar.bottom,
+        botT: rail ? (inter(card, bot) > 1 ? -Infinity : Infinity) : bot.top,
         vh: innerHeight,
         scrolls: document.querySelector('#sfHand .sfhcard').scrollHeight > card.height + 1,
       };
@@ -438,7 +444,8 @@ after(teardown);
       `the card starts below the top bar: ${g.top} vs ${g.barB} (v318.31: under it)`,
     );
     assert.ok(g.bottom <= g.botT + 1, `and ends above the bottom bar: ${g.bottom} vs ${g.botT}`);
-    assert.ok(g.bottom <= g.vh, 'on the screen');
+    assert.ok(g.top >= 0 && g.bottom <= g.vh, 'on the screen');
+    // (v323: this window now has the compact side rail; the card is then in the picture's column, clear of the rail)
     // (v318.32 D3-1: a card taller than its room is tried again as the short card, which fits here; the full card had
     // scrolled inside, nothing saying so. Were the short one too tall for the room, it would scroll as before)
     assert.ok(!g.scrolls, 'nothing cut: the short card fits');
@@ -466,6 +473,50 @@ after(teardown);
       g.bar,
       'the top bar’s height, measured as the card was placed again (v318.31: left as it was)',
     );
+    assert.deepEqual(errors, []);
+  });
+}
+
+// ---- v323: Continue opens Focus mode again ----
+{
+  // Left in Focus mode (the app closed or reloaded, not Exit), Home's Continue opens Focus mode on the section it was on;
+  // left by Exit, it goes to Colour along as before. Kept with the guide (focusAt)
+  test('Continue opens Focus mode again where it was left, unless it was left by Exit; after a reload too', async () => {
+    const { page, errors } = await openApp({ width: 820, height: 1180 });
+    await sampleGuide(page);
+    await letterGuide(page);
+    await page.evaluate(() => __mstest.flushSave());
+    await page.click('#sfColor');
+    await idle(page);
+    await page.click('#sfFocus');
+    await idle(page);
+    await page.click('#sfFDone');
+    await idle(page);
+    await page.click('#sfFDone');
+    await idle(page);
+    const at = await page.evaluate(() => __mstest.focusOrd[__mstest.focusPos]);
+    assert.equal(await page.evaluate(() => __mstest.focusAt), at);
+    await page.evaluate(() => __mstest.flushSave());
+    const reopen = async () => {
+      await page.reload();
+      await page.waitForFunction(() => typeof state !== 'undefined' && document.readyState === 'complete');
+      await idle(page, 1500);
+      await page.click('#homeCont [data-cont]');
+      await page.waitForFunction(() => window.__mstest && __mstest.sfmode === 'color', null, {
+        timeout: 30000,
+      });
+      await idle(page);
+    };
+    await reopen();
+    assert.equal(await page.evaluate(() => __mstest.focus), true, 'Focus mode again');
+    assert.equal(await page.evaluate(() => __mstest.focusOrd[__mstest.focusPos]), at, 'on that section');
+    // left by Exit: Continue goes to Colour along
+    await page.click('#sfExitFoc');
+    await idle(page);
+    assert.equal(await page.evaluate(() => __mstest.focusAt), null);
+    await page.evaluate(() => __mstest.flushSave());
+    await reopen();
+    assert.equal(await page.evaluate(() => __mstest.focus), false, 'Colour along, as before');
     assert.deepEqual(errors, []);
   });
 }

@@ -94,6 +94,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
 @@include(css/12-ios.css)
 @@include(css/14-intro.css)</style>
 <script>
+// (v323) under test, the interface's entrances (a dialog's card rising in, 08-dialogs-match.css) don't play unless a
+// test asks (window.__MS_MOTION): the tests tap a dialog's buttons as it opens
+if (window.__MS_TEST && !window.__MS_MOTION) document.documentElement.classList.add('ms-still');
+</script>
+<script>
 // (v322) the opening animation (css/14-intro.css): opened from the Home Screen (a fresh start, not a return to it),
 // not with Reduce motion; under test only when one asks (window.__MS_INTRO)
 (function () {
@@ -212,6 +217,7 @@ window.SF=(function(){ /* guide module (window.SF): the js/guide files below sha
 @@include(js/guide/70-view.js)
 @@include(js/guide/72-frame.js)
 @@include(js/guide/75-focus.js)
+@@include(js/guide/77-sharp.js)
 @@include(js/guide/80-input.js)
 @@include(js/guide/81-paint.js)
 @@include(js/guide/82-colour-mode.js)

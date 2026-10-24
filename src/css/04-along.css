@@ -71,7 +71,7 @@
   position: relative;
 }
 #sfRoot .sfpgkick {
-  font-size: var(--t-xs, 12px);
+  font-size: var(--t-sm);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--sub);

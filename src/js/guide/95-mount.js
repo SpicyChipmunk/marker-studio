@@ -511,7 +511,7 @@ function mount() {
     },
     close: function (e) {
       if (inField(e)) return false;
-      exitFocus();
+      exitFocus(true);
     },
   });
   addLayer({

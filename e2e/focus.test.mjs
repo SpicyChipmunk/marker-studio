@@ -249,11 +249,16 @@ after(teardown);
     await page.setViewportSize({ width: 844, height: 390 });
     await idle(page);
     assert.ok(await centred(page), 'centred after rotating');
-    const bars = await page.evaluate(
-      () =>
-        document.querySelector('.sffocbar').offsetHeight + document.querySelector('.sffocbot').offsetHeight,
-    );
-    assert.ok(bars < 390 * 0.45, `bars use ${bars}px of 390`);
+    // (v323: a phone on its side has the side rail, a compact one: the picture has the screen's whole height beside it)
+    const side = await page.evaluate(() => ({
+      rail: document.documentElement.classList.contains('sfrailon'),
+      short: document.documentElement.classList.contains('sfrailshort'),
+      barLeft: Math.round(document.querySelector('.sffocbar').getBoundingClientRect().left),
+      doneBottom: Math.round(document.getElementById('sfFDone').getBoundingClientRect().bottom),
+    }));
+    assert.deepEqual([side.rail, side.short], [true, true], 'the compact side rail');
+    assert.ok(side.barLeft >= 844 - 300 - 1, 'the bar at the side: ' + side.barLeft);
+    assert.ok(side.doneBottom <= 390, 'Done on the screen: ' + side.doneBottom);
     await page.setViewportSize({ width: 390, height: 844 });
     await idle(page);
     await page.evaluate(() => document.getElementById('mHome').click());
@@ -388,7 +393,9 @@ after(teardown);
 // Edit sections' tools on a phone's first screen, the guide saved at once on leaving it, focus after Change colour.
 {
   // v289 decisions
-  test('Focus mode on a phone: Greyscale, zoom and Fit in a strip of their own above the bottom bar, off the picture', async () => {
+  // (v323) the zoom buttons float at the picture's right edge, one above another, over the picture (as on an iPad
+  // upright), rather than in a strip of their own: the picture has that room
+  test('Focus mode on a phone: Greyscale, zoom and Fit float in a column at the picture’s edge, solid, above the bottom bar', async () => {
     for (const [w, h] of [
       [390, 844],
       [320, 568],
@@ -400,71 +407,40 @@ after(teardown);
       await idle(page);
       await page.click('#sfFocus');
       await idle(page);
-      // (v313: each marker starts on its largest section, which can show at the whole picture's size: on to a section
-      // it zooms in on)
-      const fills = () =>
-        page.evaluate(() => {
-          const z = document.getElementById('sfZoomCtl').getBoundingClientRect(),
-            c = document.getElementById('sfCanvas');
-          return [4, z.width / 2, z.width - 4].every((x) => document.elementFromPoint(x, z.top - 2) === c);
-        });
-      for (let i = 0; i < 40 && !(await fills()); i++) {
-        await page.click('#sfFSkip');
-        await idle(page);
-        if (await page.isVisible('#sfHand')) {
-          await page.click('#sfFDone');
-          await idle(page);
-        }
-      }
       const g = await page.evaluate(() => {
-        const r = (s) => document.querySelector(s).getBoundingClientRect();
-        return { z: r('#sfZoomCtl'), c: r('#sfCanvas'), b: r('#sfFocBot') };
-      });
-      assert.ok(Math.abs(g.z.bottom - g.b.top) <= 1, `${w}×${h}: the strip sits on the bottom bar`);
-      // (v308: Focus mode opens zoomed in on the first section, so the canvas runs on past the strip. What the user
-      // sees: the picture right down to the strip, and the strip solid over the rest, nothing of the picture through it
-      // or beside its buttons. It had checked the canvas's own box, which ended above the strip at Fit.)
-      const seen = await page.evaluate(() => {
-        const z = document.getElementById('sfZoomCtl').getBoundingClientRect(),
-          c = document.getElementById('sfCanvas');
-        const at = (x, y) => document.elementFromPoint(x, y);
-        const xs = [4, z.width / 4, z.width / 2, z.width - 4];
+        const r = (s) => document.querySelector(s).getBoundingClientRect().toJSON(),
+          bs = [...document.querySelectorAll('#sfZoomCtl .sfz')]
+            .filter((b) => b.offsetWidth)
+            .map((b) => b.getBoundingClientRect());
         return {
-          above: xs.every((x) => at(x, z.top - 2) === c),
-          strip: xs.every(
-            (x) =>
-              document.getElementById('sfZoomCtl').contains(at(x, z.top + 2)) ||
-              document.getElementById('sfZoomCtl').contains(at(x, z.bottom - 2)),
-          ),
-          solid: (() => {
-            let e = document.getElementById('sfZoomCtl');
-            for (; e; e = e.parentElement) {
-              const m = getComputedStyle(e).backgroundColor.match(/[\d.]+/g);
-              if (m && (m.length < 4 || +m[3] === 1)) return true;
-              if (e.id === 'sfFocBot' || e === document.body) break;
-            }
-            return false;
-          })(),
+          z: r('#sfZoomCtl'),
+          b: r('#sfFocBot'),
+          col: bs.every((q, i) => !i || (Math.abs(q.left - bs[0].left) < 1 && q.top > bs[i - 1].top)),
+          n: bs.length,
+          chip: getComputedStyle(document.getElementById('sfZin')).backgroundColor,
         };
       });
-      assert.ok(seen.above, `${w}×${h}: the picture shows right down to the strip`);
-      assert.ok(
-        seen.strip && seen.solid,
-        `${w}×${h}: the strip sits solid over the picture (${JSON.stringify(seen)})`,
+      assert.ok(g.n >= 3 && g.col, `${w}×${h}: one above another`);
+      assert.ok(g.z.right <= w - 8 && g.z.right >= w - 16, `${w}×${h}: at the right edge (${g.z.right})`);
+      assert.ok(g.z.bottom <= g.b.top - 6, `${w}×${h}: above the bottom bar`);
+      const alpha = +(g.chip.match(/rgba?\(([^)]+)\)/)[1].split(',')[3] ?? 1);
+      assert.ok(alpha >= 0.9, 'solid chips: ' + g.chip);
+      // the picture runs down to the bottom bar beside them
+      const below = await page.evaluate(
+        (y) => document.elementFromPoint(8, y) === document.getElementById('sfCanvas'),
+        g.b.top - 3,
       );
-      // and zoomed all the way out (Fit frames the section in Focus mode), the whole picture ends above the strip
-      for (let i = 0; i < 8 && (await page.evaluate(() => __mstest.zoom)) > 1.001; i++) {
-        await page.click('#sfZout');
+      for (let i = 0; i < 8 && (await page.evaluate(() => __mstest.zoom)) > 1.001 && !below; i++) {
+        await page.click('#sfZin');
         await idle(page);
       }
-      const c = await page.evaluate(() =>
-        document.getElementById('sfCanvas').getBoundingClientRect().toJSON(),
-      );
       assert.ok(
-        c.bottom <= g.z.top + 1,
-        `${w}×${h}: zoomed out, the picture ends above the strip (${c.bottom}, ${g.z.top})`,
+        await page.evaluate(
+          (y) => document.elementFromPoint(8, y) === document.getElementById('sfCanvas'),
+          g.b.top - 3,
+        ),
+        `${w}×${h}: the picture down to the bottom bar`,
       );
-      assert.ok(g.z.left <= 1 && g.z.right >= w - 1, 'the strip spans the screen');
       assert.deepEqual(errors, []);
       await ctx.close();
     }

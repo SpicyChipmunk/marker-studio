@@ -535,6 +535,8 @@ function openDesignObj(d, id, resumed, quiet, col) {
           renderGuide();
         } else if (cont) {
           if (!alongResume()) renderGuide();
+          // (v323: left in Focus mode, it opens there again)
+          continueFocus();
         }
         // (another tab's save, reloaded in place: Colour along as it was, the code box's text and all, v307)
         else if (quiet && _alKeep && _alKeep.id === id) alongRestore(_alKeep);
@@ -735,6 +737,8 @@ function continueGuide(id) {
       enterColor(false);
       if (!alongResume()) renderGuide();
     } else alongResume();
+    // (v323: left in Focus mode, it opens there again)
+    continueFocus();
     return;
   }
   openDesign(id, true);

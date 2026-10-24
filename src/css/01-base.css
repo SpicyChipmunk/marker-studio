@@ -6,6 +6,16 @@
    OS and browser text size, 16px at default. iOS Safari and Home Screen apps: font:-apple-system-body gives
    the root the Dynamic Type body size, 17px at default, so --tk (16/17) brings that back to 16. */
 :root {
+  /* (v323) Motion tokens: the interface's quick movements share three durations and two easings, so presses,
+     fades and panels move to one rhythm. Short interface transitions use these; the slow ambient animations, the
+     opening animation and the bloom keep their own timing. --dur-quick: a press, a hover; --dur-base: most
+     changes of state, a fade; --dur-slow: a panel or card coming in. --ease-out settles; --ease-spring
+     overshoots a touch, for something that pops in. */
+  --dur-quick: 0.12s;
+  --dur-base: 0.2s;
+  --dur-slow: 0.28s;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.2, 1.2, 0.35, 1);
   --bg: #0b0b0e;
   --raise: #141419;
   --ink: #f4f2ec;
@@ -259,9 +269,9 @@ html.noamb .ambient {
   font-size: var(--t-md);
   cursor: pointer;
   transition:
-    color 0.2s ease,
-    background 0.3s ease,
-    box-shadow 0.3s ease;
+    color var(--dur-base) ease,
+    background var(--dur-slow) ease,
+    box-shadow var(--dur-slow) ease;
 }
 /* (v320) the tab you're on in its own colour, as Home's tiles: a 22% tint with a 70% edge, the text the app's ink
    (Home pink, Guide violet, Markers coral, Palette amber) */
@@ -386,8 +396,8 @@ html.noamb .ambient {
   font-size: var(--t-base);
   cursor: pointer;
   transition:
-    color 0.2s ease,
-    background 0.25s ease;
+    color var(--dur-base) ease,
+    background var(--dur-slow) ease;
 }
 .segs.wide button {
   width: auto;

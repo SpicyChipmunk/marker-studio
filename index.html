@@ -84,6 +84,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
    OS and browser text size, 16px at default. iOS Safari and Home Screen apps: font:-apple-system-body gives
    the root the Dynamic Type body size, 17px at default, so --tk (16/17) brings that back to 16. */
 :root {
+  /* (v323) Motion tokens: the interface's quick movements share three durations and two easings, so presses,
+     fades and panels move to one rhythm. Short interface transitions use these; the slow ambient animations, the
+     opening animation and the bloom keep their own timing. --dur-quick: a press, a hover; --dur-base: most
+     changes of state, a fade; --dur-slow: a panel or card coming in. --ease-out settles; --ease-spring
+     overshoots a touch, for something that pops in. */
+  --dur-quick: 0.12s;
+  --dur-base: 0.2s;
+  --dur-slow: 0.28s;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.2, 1.2, 0.35, 1);
   --bg: #0b0b0e;
   --raise: #141419;
   --ink: #f4f2ec;
@@ -337,9 +347,9 @@ html.noamb .ambient {
   font-size: var(--t-md);
   cursor: pointer;
   transition:
-    color 0.2s ease,
-    background 0.3s ease,
-    box-shadow 0.3s ease;
+    color var(--dur-base) ease,
+    background var(--dur-slow) ease,
+    box-shadow var(--dur-slow) ease;
 }
 /* (v320) the tab you're on in its own colour, as Home's tiles: a 22% tint with a 70% edge, the text the app's ink
    (Home pink, Guide violet, Markers coral, Palette amber) */
@@ -464,8 +474,8 @@ html.noamb .ambient {
   font-size: var(--t-base);
   cursor: pointer;
   transition:
-    color 0.2s ease,
-    background 0.25s ease;
+    color var(--dur-base) ease,
+    background var(--dur-slow) ease;
 }
 .segs.wide button {
   width: auto;
@@ -747,7 +757,7 @@ input[type='radio'] {
   z-index: 2;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--dur-slow) ease;
   mix-blend-mode: screen;
   background: radial-gradient(
     circle at var(--gx, 50%) var(--gy, 50%),
@@ -890,8 +900,8 @@ input[type='radio'] {
   cursor: pointer;
   opacity: 0.5;
   transition:
-    opacity 0.2s ease,
-    background 0.2s ease;
+    opacity var(--dur-base) ease,
+    background var(--dur-base) ease;
 }
 /* (v300: on a touch screen there's no hover to bring it up: clearer to start with, on pale colours too) */
 @media (hover: none) {
@@ -1388,10 +1398,10 @@ button {
   padding: 4px 18px;
   -webkit-tap-highlight-color: transparent;
   transition:
-    transform 0.08s ease,
+    transform var(--dur-quick) ease,
     box-shadow 0.5s ease,
-    opacity 0.25s ease,
-    background 0.25s ease;
+    opacity var(--dur-slow) ease,
+    background var(--dur-slow) ease;
 }
 /* (v321) a press: the button sinks a little under the finger (it had moved down 1px). Safari on an iPad shows :active
    only with a touchstart listener on the page (boot.js). Buttons that move by a transform of their own keep it:
@@ -1552,7 +1562,7 @@ button:focus-visible {
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  transition: border-color 0.2s ease;
+  transition: border-color var(--dur-base) ease;
 }
 .filterbar:hover {
   border-color: rgba(255, 255, 255, 0.18);
@@ -1574,13 +1584,13 @@ button:focus-visible {
 .filterbar .fb-chev {
   display: flex;
   color: var(--sub);
-  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform var(--dur-slow) var(--ease-out);
 }
 .filterbar.open .fb-chev {
   transform: rotate(180deg);
 }
 #filters {
-  animation: fdrop 0.28s ease;
+  animation: fdrop var(--dur-slow) ease;
 }
 @keyframes fdrop {
   from {
@@ -1649,9 +1659,9 @@ button:focus-visible {
   color: var(--ink);
   user-select: none;
   transition:
-    opacity 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.1s ease;
+    opacity var(--dur-base) ease,
+    border-color var(--dur-base) ease,
+    transform var(--dur-quick) ease;
 }
 .chip:hover {
   border-color: rgba(255, 255, 255, 0.2);
@@ -1751,8 +1761,8 @@ button:focus-visible {
   background: var(--raise);
   cursor: pointer;
   transition:
-    transform 0.1s ease,
-    opacity 0.2s ease;
+    transform var(--dur-quick) ease,
+    opacity var(--dur-base) ease;
 }
 /* Markers › All: a marker you don't own keeps its true colour (no fading R22 and R23 to grey); it says so by shape as
    well as tone: a dashed outline and a quieter code, against an owned one's solid edge, bright code and tick */
@@ -2399,7 +2409,7 @@ button:focus-visible {
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
   transform: rotate(-45deg);
-  transition: transform 0.2s;
+  transition: transform var(--dur-base);
   margin: 0 4px 0 2px;
   flex: none;
 }
@@ -2440,6 +2450,87 @@ button:focus-visible {
 /* "Remove this one" with a little more of the row than Save and ⋯ (it wraps to two lines on a phone otherwise) */
 .wrap.rndmode #secondaryRow {
   flex: 1.3 1 0;
+}
+
+/* (v323) Markers' tiles as swatches (cellHtml's sw2, finder.js): the ink fills the tile, a second coat of it on the
+   right (--c2) behind a soft seam, faint streaks over it; the code on the ink at the bottom left, dark or white by
+   contrast (swd: dark), with a halo where neither reads well (swweak). A marker you don't own sits inset in the dashed
+   edge; one you own fills the tile. Plain fills and an overlay, no blending, so a grid of hundreds scrolls as before. */
+.cell.sw2 {
+  min-height: calc(62 * var(--tpx));
+  isolation: isolate;
+}
+.cell.sw2 .sq {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  overflow: hidden;
+  z-index: 0;
+}
+.cell.sw2 .sq::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 40%;
+  background: var(--c2);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%);
+  mask-image: linear-gradient(90deg, transparent, #000 30%);
+}
+.cell.sw2 .sq::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    repeating-linear-gradient(
+      93deg,
+      rgba(0, 0, 0, 0.025) 0 1px,
+      transparent 1px 5px,
+      rgba(0, 0, 0, 0.015) 5px 6px,
+      transparent 6px 13px
+    ),
+    repeating-linear-gradient(98deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 17px);
+}
+.cell.sw2.swpale .sq {
+  box-shadow: inset 0 0 0 1px rgba(20, 18, 22, 0.14);
+}
+.cell.sw2 .cc,
+.cell.sw2.own .cc,
+.cell.sw2.notown .cc {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  text-align: left;
+  padding: 0 9px 9px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-overflow: clip;
+  color: #fff;
+}
+.cell.sw2.swd .cc,
+.cell.sw2.swd.own .cc,
+.cell.sw2.swd.notown .cc {
+  color: #141216;
+}
+.cell.sw2.swweak .cc {
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.45);
+}
+.cell.sw2.swweak.swd .cc {
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
+}
+.cell.sw2.notown .sq {
+  inset: 4px;
+  border-radius: 8px;
+}
+.cell.sw2 .bt,
+.cell.sw2 .owncheck,
+.cell.sw2 .rankb,
+.cell.sw2 .inkb {
+  z-index: 3;
 }
 .overlay {
   position: fixed;
@@ -2612,8 +2703,8 @@ html.ms-ovl body {
   margin: 0 auto;
   flex: none;
   transition:
-    width 0.18s ease,
-    height 0.18s ease;
+    width var(--dur-base) ease,
+    height var(--dur-base) ease;
 }
 /* (v293) the codes' own canvas when zoomed in, over the picture's (40-render.js labHi) */
 #sfRoot #sfLabHi {
@@ -2622,8 +2713,8 @@ html.ms-ovl body {
   transform-origin: 0 0;
   pointer-events: none;
   transition:
-    width 0.18s ease,
-    height 0.18s ease;
+    width var(--dur-base) ease,
+    height var(--dur-base) ease;
 }
 #sfRoot.sfvals #sfLabHi {
   filter: grayscale(1);
@@ -2686,15 +2777,15 @@ html.ms-ovl body {
   background: var(--ink);
   transform: translateX(var(--ulX, 0px));
   transition:
-    transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
-    width 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform var(--dur-slow) var(--ease-out),
+    width var(--dur-slow) var(--ease-out);
   pointer-events: none;
 }
 #sfRoot .sftabs.sful .sftabbtn.on {
   box-shadow: none;
 }
 #sfRoot .sftabbtn {
-  transition: color 0.2s ease;
+  transition: color var(--dur-base) ease;
 }
 @media (prefers-reduced-motion: reduce) {
   #sfRoot .sftabs.sful::after {
@@ -2808,7 +2899,7 @@ html.ms-ovl body {
 #sfRoot .sfmlrow .nm small {
   display: block;
   color: var(--sub);
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
 }
 #sfRoot .sfmlrow .cnt {
   flex: none;
@@ -2845,13 +2936,30 @@ html.ms-ovl body {
 #sfRoot .sfgrp:first-child {
   margin-top: 12px;
 }
+/* (v323) a group's label, as the other tabs' labels (.sfsublbl): grey and in sentence case, not small capitals */
 #sfRoot .sfglbl {
-  font-size: var(--t-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--sub);
-  font-weight: 700;
+  font-size: var(--t-base);
+  color: var(--sub-guide);
+  font-weight: 400;
   margin: 0 0 7px;
+}
+/* (v323) a slider's row: its label on the left, its value on the right in the ink's white (Start colour, Scatter,
+   Marker texture, Markers in this guide) */
+#sfRoot .sfvrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
+#sfRoot .sfvrow .sfval {
+  color: var(--ink);
+  font-weight: 600;
+  text-align: right;
+  margin-left: auto;
+}
+#sfRoot .sfvrow .sfval b {
+  font-weight: 700;
 }
 #sfRoot .sfrow2 {
   display: grid;
@@ -2957,6 +3065,12 @@ html.ms-ovl body {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+/* (v323) its label as the other sliders' labels; the count stays large and white */
+#sfRoot #sfMkWord {
+  font-size: var(--t-base);
+  font-weight: 400;
+  color: var(--sub-guide);
 }
 #sfRoot #sfCtl .sfmknum,
 #sfRoot #sfCtl .sfmktype {
@@ -3160,8 +3274,9 @@ html.ms-ovl body {
   margin-top: 14px;
   padding-top: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: var(--t-sm);
-  color: var(--sub);
+  /* (v323: as the other sliders' labels) */
+  font-size: var(--t-base);
+  color: var(--sub-guide);
 }
 #sfRoot .sftex b {
   float: right;
@@ -4269,7 +4384,7 @@ html.ms-ovl body {
 /* (v320) a change being written: the saved line stays, fainter for that moment (no "Saving…" flicker) */
 #sfRoot .sfsavest.saving {
   color: var(--sub);
-  transition: color 0.2s ease;
+  transition: color var(--dur-base) ease;
 }
 #sfRoot .sfsavest.warn {
   color: var(--warn);
@@ -4561,7 +4676,7 @@ html.ms-ovl body {
   width: 0;
   height: 100%;
   background: var(--ok);
-  transition: width 0.25s;
+  transition: width var(--dur-slow);
 }
 #sfRoot .sfalong .sfprog {
   display: block;
@@ -4727,7 +4842,7 @@ html.sfsheeton body {
   z-index: 39;
   background: rgba(0, 0, 0, 0.5);
   pointer-events: none;
-  animation: sfscrimin 0.18s ease-out;
+  animation: sfscrimin var(--dur-base) ease-out;
 }
 #sfRoot .sfscrim.sfscrimtap {
   pointer-events: auto;
@@ -4754,7 +4869,7 @@ html.sfsheeton body {
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   box-shadow: 0 -18px 40px -10px rgba(0, 0, 0, 0.7);
   outline: none;
-  animation: sfsheetup 0.18s ease-out;
+  animation: sfsheetup var(--dur-base) ease-out;
 }
 #sfRoot .sfsheet.sfshside {
   border-top: 0;
@@ -5130,6 +5245,50 @@ html.sfsheetin #sfRoot .sfsheet.sfshside {
     0 1px 2px rgba(0, 0, 0, 0.55),
     0 8px 26px rgba(0, 0, 0, 0.5);
 }
+
+/* (v323) The sample opening (smpOpenShow, 20-image-input): a small card in the middle of the screen, its ring turned
+   by the browser off the page's thread (a transform), so it turns while the sample's work holds the page */
+.smpopen {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 70;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px 14px 16px;
+  border-radius: var(--r-md);
+  background: var(--raise);
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 60px -20px #000;
+  color: var(--ink);
+  font-size: var(--t-base);
+  font-weight: 600;
+  pointer-events: none;
+}
+.smpring {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(var(--accent-rgb), 0.25);
+  border-top-color: var(--accent-ink);
+  animation: smpspin 0.8s linear infinite;
+  will-change: transform;
+}
+@keyframes smpspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .smpring {
+    animation: none;
+    border-color: var(--accent-ink);
+  }
+}
 /* #10 Colour along: the marker list (js/guide/83-along.js). Closed rows are one 48px line; the open row holds its
    actions (and Blends' companions) under it; finished markers are dimmed; "Done (n)" gathers them on re-entry. */
 #sfRoot .sfalongp .sfinfo {
@@ -5203,7 +5362,7 @@ html.sfsheetin #sfRoot .sfsheet.sfshside {
   position: relative;
 }
 #sfRoot .sfpgkick {
-  font-size: var(--t-xs, 12px);
+  font-size: var(--t-sm);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--sub);
@@ -6116,7 +6275,7 @@ button.sffoccols::after {
   height: 100%;
   width: 0;
   background: var(--ok);
-  transition: width 0.25s;
+  transition: width var(--dur-slow);
 }
 .sffocbot {
   position: fixed;
@@ -6316,7 +6475,7 @@ button.sffoccols::after {
   cursor: pointer;
 }
 .sfhand.in .sfhcard {
-  animation: sfhIn 0.22s ease-out;
+  animation: sfhIn var(--dur-base) ease-out;
 }
 @keyframes sfhIn {
   from {
@@ -6614,6 +6773,217 @@ html.sfrailon .mstoast {
 }
 html.sfrailon.sfrailL .mstoast {
   left: calc(var(--railW) + (100vw - var(--railW)) / 2);
+}
+
+/* (v323) Focus mode's ring round a section too small to see at the zoom it keeps (focusRing, 75-focus): white inside a
+   dark edge, so it shows on any colour, and a gentle pulse; still with Reduce motion and under test */
+#sfRoot .sffocring {
+  position: absolute;
+  z-index: 4;
+  border-radius: 50%;
+  border: 2.5px solid #fff;
+  box-shadow:
+    0 0 0 2px rgba(10, 12, 12, 0.7),
+    inset 0 0 0 2px rgba(10, 12, 12, 0.5);
+  pointer-events: none;
+  animation: focring 1.6s var(--ease-out) infinite;
+}
+#sfRoot .sffocring[hidden] {
+  display: none;
+}
+@keyframes focring {
+  0% {
+    transform: scale(0.82);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.12);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(0.82);
+    opacity: 1;
+  }
+}
+html.ms-still #sfRoot .sffocring {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  #sfRoot .sffocring {
+    animation: none;
+  }
+}
+
+/* (v323) The side rail's markers strip, under the progress bar (focusSide, 75-focus): each marker's swatch, code and
+   sections left (✓ once done), the one in hand ringed; it scrolls sideways to keep that one in view */
+.sffocstrip {
+  display: none;
+}
+html.sfrailon:not(.sfrailshort) .sffocstrip:not([hidden]) {
+  display: block;
+  margin-top: 18px;
+}
+.sffshead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--t-sm);
+  color: var(--sub);
+  margin-bottom: 8px;
+}
+.sffsrow {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 3px 2px 2px;
+  -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
+  mask-image: linear-gradient(90deg, #000 85%, transparent);
+}
+.sffsrow::-webkit-scrollbar {
+  display: none;
+}
+.sffs {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 36px;
+  color: var(--sub);
+  font-size: var(--t-sm);
+  line-height: 1.15;
+}
+.sffs i {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 12px;
+  color: #fff;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.sffs b {
+  font-weight: 700;
+}
+.sffs.done {
+  opacity: 0.55;
+}
+.sffs.cur {
+  color: var(--ink);
+}
+.sffs.cur i {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--accent-ink);
+}
+/* "Where you are": the whole page as coloured so far, a ring where the section is, under Done, Back and Skip */
+.sffocmap {
+  display: none;
+}
+html.sfrailon:not(.sfrailshort) #sfRoot.sffoc .sffocmap:not([hidden]) {
+  position: fixed;
+  z-index: 6003;
+  right: 0;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  width: var(--railW);
+  box-sizing: border-box;
+  padding: 0 calc(18px + env(safe-area-inset-right, 0px)) 0 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  color: var(--sub);
+  font: inherit;
+  font-size: var(--t-sm);
+  cursor: pointer;
+}
+html.sfrailon.sfrailL:not(.sfrailshort) #sfRoot.sffoc .sffocmap:not([hidden]) {
+  right: auto;
+  left: 0;
+  padding: 0 18px 0 calc(18px + env(safe-area-inset-left, 0px));
+}
+.sffocmap .sffmh {
+  align-self: stretch;
+  text-align: left;
+}
+.sffocmap canvas {
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+/* (v323) a short screen on its side (a phone): a compact rail, its marker on one row with Exit and Colours, Done
+   smaller and just above the zoom buttons; no strip or map */
+html.sfrailon.sfrailshort {
+  --railW: 300px;
+}
+html.sfrailon.sfrailshort .sffocbar {
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+}
+html.sfrailon.sfrailshort .sffocrow {
+  row-gap: 10px;
+}
+html.sfrailon.sfrailshort .sffocrow .sffocsw {
+  width: 36px;
+  height: 36px;
+}
+html.sfrailon.sfrailshort .sffocname b {
+  font-size: var(--t-lg);
+}
+html.sfrailon.sfrailshort .sffocprog {
+  margin-top: 10px;
+}
+html.sfrailon.sfrailshort .sffocbot {
+  top: auto;
+  bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  transform: none;
+  gap: 8px;
+}
+html.sfrailon.sfrailshort .sffocbot .fdone {
+  height: 56px;
+  font-size: var(--t-lg);
+}
+html.sfrailon.sfrailshort .sffocbot #sfFBack,
+html.sfrailon.sfrailshort .sffocbot #sfFSkip {
+  height: 44px;
+}
+html.sfrailon.sfrailshort #sfRoot.sffoc #sfZoomCtl {
+  gap: 8px;
+}
+/* (v323) a phone upright: the zoom buttons float at the picture's right edge, one above another, as on an iPad upright,
+   rather than taking a strip of their own above the bottom bar */
+@media (max-width: 699px) {
+  html:not(.sfrailon) #sfRoot.sffoc #sfZoomCtl {
+    left: auto;
+    right: calc(10px + env(safe-area-inset-right, 0px));
+    bottom: calc(var(--focBot, 76px) + 10px);
+    flex-direction: column;
+    gap: 8px;
+    padding: 0;
+    background: transparent;
+    border-top: 0;
+  }
+  html:not(.sfrailon) #sfRoot.sffoc #sfZoomCtl .sfz {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* (v323) the picture's sharp copy over the part of it on the screen (77-sharp): just over the picture, under the ring */
+#sfRoot .sfsharp {
+  position: absolute;
+  z-index: 1;
+  margin: 0;
+  pointer-events: none;
+}
+#sfRoot .sfsharp[hidden] {
+  display: none;
 }
 #sfRoot .sfpop {
   position: absolute;
@@ -7204,7 +7574,7 @@ html.sfrailon.sfrailL .mstoast {
   cursor: grab;
   touch-action: none;
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
-  transition: transform 0.12s ease;
+  transition: transform var(--dur-quick) ease;
 }
 #sfRoot .sfradc {
   position: absolute;
@@ -7223,7 +7593,7 @@ html.sfrailon.sfrailL .mstoast {
   justify-content: center;
   cursor: grab;
   touch-action: none;
-  transition: transform 0.12s ease;
+  transition: transform var(--dur-quick) ease;
 }
 #sfRoot .sfradc.on {
   cursor: grabbing;
@@ -7240,7 +7610,7 @@ html.sfrailon.sfrailL .mstoast {
 /* (v308) see-through at rest, so a code under the light still reads; whole while it's being moved or has the focus */
 #sfRoot .sfsun svg {
   opacity: 0.75;
-  transition: opacity 0.12s ease;
+  transition: opacity var(--dur-quick) ease;
 }
 #sfRoot .sfsun.on svg,
 #sfRoot .sfsun:hover svg,
@@ -7694,6 +8064,16 @@ html.sfrailon.sfrailL .mstoast {
   background: rgba(255, 216, 74, 0.14);
   color: #ffd84a;
   border: 1px solid rgba(255, 216, 74, 0.45);
+}
+/* (v323) running low: as Pinned, in the running-low line's amber; how many sections the marker colours, fainter */
+#sfRoot .sftip .sftiplow {
+  background: rgba(255, 166, 77, 0.14);
+  color: #ffb36b;
+  border-color: rgba(255, 166, 77, 0.45);
+}
+#sfRoot .sftip .sftipn {
+  opacity: 0.6;
+  font-size: var(--t-sm);
 }
 /* the marker's brand after its name, fainter */
 #sfRoot .sftip .sftipbr {
@@ -8440,7 +8820,7 @@ html.sfsheetsd .mstoast {
   height: 112px;
   object-fit: contain;
   border-radius: 6px;
-  transition: opacity 0.25s;
+  transition: opacity var(--dur-slow);
 }
 #sfRoot .sfmp.sfmpwait canvas {
   opacity: 0.45;
@@ -9999,17 +10379,18 @@ button.hcpic:focus-visible {
   align-items: center;
   justify-content: center;
   aspect-ratio: 4 / 3;
-  background: #f6f3ec;
+  background: #f4f1ea;
   overflow: hidden;
 }
 #sfRecent .sfRecPic {
   position: relative;
 }
+/* (v323: edge to edge on its paper, as the Library's covers) */
 #sfRecent .sfRecThumb {
   position: absolute;
-  inset: 8px;
-  width: calc(100% - 16px);
-  height: calc(100% - 16px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border: 0;
   border-radius: 0;
   object-fit: contain;
@@ -11374,7 +11755,7 @@ img.paperpick {
   font-size: var(--t-sm);
   font-weight: 600;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity var(--dur-base);
   pointer-events: none;
   z-index: 60;
 }
@@ -11600,8 +11981,8 @@ img.paperpick {
   visibility: hidden;
   pointer-events: none;
   transition:
-    opacity 0.2s ease,
-    transform 0.2s ease,
+    opacity var(--dur-base) ease,
+    transform var(--dur-base) ease,
     visibility 0s linear 0.2s;
   z-index: 9500;
   text-align: center;
@@ -11612,8 +11993,8 @@ img.paperpick {
   transform: translate(-50%, 0);
   pointer-events: none;
   transition:
-    opacity 0.2s ease,
-    transform 0.2s ease,
+    opacity var(--dur-base) ease,
+    transform var(--dur-base) ease,
     visibility 0s;
 }
 .mstoast .sflink {
@@ -12184,8 +12565,8 @@ button.hiwdot::before {
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.28);
   transition:
-    width 0.2s ease,
-    background 0.2s ease;
+    width var(--dur-base) ease,
+    background var(--dur-base) ease;
 }
 button.hiwdot.on::before {
   width: 20px;
@@ -12271,7 +12652,7 @@ button.hlphiw::after {
   border-right: 2px solid var(--sub);
   border-bottom: 2px solid var(--sub);
   transform: rotate(-45deg);
-  transition: transform 0.15s ease;
+  transition: transform var(--dur-quick) ease;
 }
 .hlpsec[open] > summary::after {
   transform: rotate(45deg);
@@ -12915,6 +13296,82 @@ button.wnx::after,
     flex: 1;
   }
 }
+
+/* (v323) A dialog comes in: its card rises 8px and fades up from half over --dur-slow, as the guide's own sheets do,
+   while the backdrop is there at once (fading the blurred backdrop is where Safari flickers). It starts half seen, so
+   a first frame held up by heavy work is still a dialog, never an empty screen. It plays as the overlay is shown
+   (display none to flex starts it); closing is at once. Not with Reduce motion, nor under test (html.ms-still). */
+.overlay.on > .ocard,
+.overlay.on > .mcard {
+  animation: ovin var(--dur-slow) var(--ease-out) both;
+}
+@keyframes ovin {
+  from {
+    opacity: 0.5;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+html.ms-still .overlay.on > .ocard,
+html.ms-still .overlay.on > .mcard {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .overlay.on > .ocard,
+  .overlay.on > .mcard {
+    animation: none;
+  }
+}
+
+/* (v323) A guide's tile as a cover: its picture fills the tile's top edge to edge on paper, not a small picture inside
+   a dark frame; a page near the cover's shape fills it (scover, libRowHTML), another sits whole on the paper. Its ⋯
+   sits on the cover's lower corner on a dark disc (any picture under it), so the name has the tile's width; its menu
+   opens under the cover. The ring for how far it's coloured stays at the top right. Palettes and draws keep theirs. */
+#savedList .stile.sguide .sopen {
+  padding: 0 0 10px;
+}
+#savedList .stile.sguide .spic {
+  border-radius: calc(var(--r-lg) - 1px) calc(var(--r-lg) - 1px) 0 0;
+  background: #f4f1ea;
+}
+#savedList .stile.sguide .spic .sthumb {
+  max-width: 100%;
+  max-height: 100%;
+  box-shadow: none;
+  background: transparent;
+}
+#savedList .stile.sguide .spic.scover .sthumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#savedList .stile.sguide .scol {
+  padding: 0 10px;
+}
+#savedList .stile.sguide .snfl {
+  display: none;
+}
+#savedList .stile.sguide .smore {
+  top: calc(100cqw * 1.25 - 48px);
+  right: 4px;
+  padding: 5px;
+  border-radius: 50%;
+  background: rgba(10, 12, 12, 0.6);
+  background-clip: content-box;
+  color: #fff;
+}
+#savedList .stile.sguide .smore:hover,
+#savedList .stile.sguide .smore[aria-expanded='true'] {
+  background: rgba(10, 12, 12, 0.8);
+  background-clip: content-box;
+  color: #fff;
+}
+#savedList .stile.sguide .smenu {
+  top: calc(100cqw * 1.25 - 4px);
+}
 /* Fonts ship with the app (Latin subsets from Fontsource, SIL Open Font License: src/assets/fonts/OFL-*.txt),
    so nothing is fetched from Google and they're cached for offline use with everything else. */
 @font-face {
@@ -13025,7 +13482,7 @@ button.wnx::after,
   width: 0;
   border-radius: 99px;
   background: var(--ok);
-  transition: width 0.25s;
+  transition: width var(--dur-slow);
 }
 .ttcount {
   font-weight: 600;
@@ -14243,7 +14700,7 @@ button.wrm {
   height: 100%;
   background: #7a6cff;
   border-radius: 4px;
-  transition: width 0.25s ease;
+  transition: width var(--dur-slow) ease;
 }
 /* the photo, its boxes drawn on a canvas over it */
 .ocrpic {
@@ -14736,6 +15193,11 @@ html.msintro-on .msintro {
   }
 }</style>
 <script>
+// (v323) under test, the interface's entrances (a dialog's card rising in, 08-dialogs-match.css) don't play unless a
+// test asks (window.__MS_MOTION): the tests tap a dialog's buttons as it opens
+if (window.__MS_TEST && !window.__MS_MOTION) document.documentElement.classList.add('ms-still');
+</script>
+<script>
 // (v322) the opening animation (css/14-intro.css): opened from the Home Screen (a fresh start, not a return to it),
 // not with Reduce motion; under test only when one asks (window.__MS_INTRO)
 (function () {
@@ -14844,7 +15306,7 @@ html.msintro-on .msintro {
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New guide from a photo</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v322.1</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v323</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="light">Lightest first</option><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><button data-h="shadow">Light to shadow</button><button data-h="accent">Analogous + accent</button><button data-h="neutral">Greys + accent</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -17434,6 +17896,13 @@ function txtWeak(hex) {
   if (_darkTxtLum == null) _darkTxtLum = relLum('#141216');
   const y = relLum(hex);
   return Math.max((y + 0.05) / (_darkTxtLum + 0.05), 1.05 / (y + 0.05)) < 4.5;
+}
+// (v323) a second coat of the same alcohol marker, as shading shows it when no darker marker is owned (45-shading) and
+// the Markers tiles' right-hand strip shows it: each channel darkened by itself, a dark one more than a light one
+function coatTwo(c) {
+  return [0, 1, 2].map(function (k) {
+    return Math.round(c[k] * (0.52 + (0.48 * c[k]) / 255));
+  });
 }
 function hsl(hex) {
   const [R, G, B] = rgb(hex),
@@ -23192,9 +23661,15 @@ function libRowHTML(s, ed) {
           : '<span class="sring" aria-hidden="true" style="--p:' +
             Math.max(4, Math.min(96, Math.round((_d / (_n || 1)) * 100))) +
             '%"></span>';
+  // (v323) a guide's picture is its tile's cover, edge to edge: a page near the cover's shape (4:5) fills it, a little of
+  // its margin trimmed (scover); any other shape (a landscape page) sits whole on paper
+  var _ar = +s.W && +s.H ? +s.W / +s.H : 0,
+    cover = _ar > 0.68 && _ar < 0.92;
   var vis =
     s.type === 'guide'
-      ? '<span class="spic">' +
+      ? '<span class="spic' +
+        (cover ? ' scover' : '') +
+        '">' +
         ring +
         (safeThumb(s.thumb)
           ? '<img class="sthumb" alt="" src="' + esc(safeThumb(s.thumb)) + '">'
@@ -24067,8 +24542,20 @@ function cellHtml(i, rank) {
         ? ', older cap ' + oldCode(c) + ' ' + capOldName(c)
         : '';
   const rk = rank ? '<span class="rankb">' + rank + '</span>' : '';
+  // (v323) Markers' tiles as swatches (sw2, 02-picker.css): the ink to the tile's edge, a second coat on the right
+  // (coatTwo, as shading's 2nd coat), the code on the ink in dark or white by contrast (txt), with a halo where neither
+  // reads well (txtWeak); a near-white blender keeps an edge (swpale)
+  const sw =
+    col &&
+    ' sw2' +
+      (darkText(c.hex) ? ' swd' : '') +
+      (txtWeak(c.hex) ? ' swweak' : '') +
+      (relLum(c.hex) > 0.86 ? ' swpale' : '');
   const cls =
-    'cell' + (col && !own && state.collView !== 'unowned' ? ' notown' : '') + (col && own ? ' own' : '');
+    'cell' +
+    (col && !own && state.collView !== 'unowned' ? ' notown' : '') +
+    (col && own ? ' own' : '') +
+    (sw || '');
   // (the tick shows ownership where owned and not owned are mixed: All. In Owned every marker is yours, v305)
   const check = col && own && state.collView !== 'owned' ? '<span class="owncheck">\u2713</span>' : '';
   const act = col ? (own ? 'remove' : 'add') : 'copy';
@@ -24098,6 +24585,7 @@ function cellHtml(i, rank) {
     btHTML(c.brand, cellBt) +
     '<div class="sq" style="background:' +
     c.hex +
+    (sw ? ';--c2:rgb(' + coatTwo(rgb(c.hex)).join(',') + ')' : '') +
     '"></div><div class="cc">' +
     esc(cc) +
     '</div></div>'
@@ -31465,6 +31953,14 @@ let famRule = 0;
 // (v313) the markers whose running-low line was closed in this guide: { mkey: 1 }, saved with it (lowLineUp, 87-undo);
 // null when none. Written by: 05-style-fields, 20-image-input, 87-undo, 99-close (test)
 let lowX = null;
+// (v323) a partly coloured page's sections that look coloured in already (colourSecs), offered as done in Colour along
+// until the offer is taken or closed: a list of sections, saved with the guide; null when none (colOfferLine,
+// 82-colour-mode). Written by: 05-style-fields, 20-image-input, 82-colour-mode, 99-close (test)
+let colOffer = null;
+// (v323) the section Focus mode was on, while the guide is left in it rather than by Exit (Escape, Back): saved with the
+// guide, so Home's Continue opens Focus mode there (continueFocus, 82-colour-mode); null otherwise. Written by:
+// 05-style-fields, 20-image-input, 75-focus, 82-colour-mode, 99-close (test)
+let focusAt = null;
 // (v313) the sample, kept because it was changed (a tick), but not yet printed or renamed: 1, saved with it, so Home's
 // Continue card leaves it be (ticks to try the sample aren't a page being coloured). Written by: 05-style-fields,
 // 60-persist, 72-frame, 90-export, 99-close (test)
@@ -31486,7 +31982,9 @@ let bgEdgeAll = false;
 // (v308) the zones of a guide opened from the Library, Main 0 too, not laid since: { id: 1 } (mkOwnCount)
 // Written by: 20-image-input, 30-palette-assign, 97-open
 let _mkOpened = {};
-let noAdj = false; // written by: 05-style-fields, 50-controls, 99-close (test)
+// (v323: on from the start, so a new guide's Random keeps touching sections clearly apart; a guide saved without the
+// setting opens with it off, as it was laid: STYLE_FIELDS' def and first)
+let noAdj = true; // written by: 05-style-fields, 50-controls, 99-close (test)
 // Random's Balance (v283, 31-balance): 'main' (one main colour, a second and an accent, about 60/30/10 of the
 // picture) or 'mixed' (every marker alike, as Random always was); balM, balS, balA: each role's colour family
 // (BAL_FAM) or 'auto'; balSeed: which pairing Auto chose (Other pairings rolls it); noRep: Mixed's No repeats.
@@ -31925,6 +32423,7 @@ function afterPaint(fn) {
       check  a value from a saved guide, checked and kept in range (or def): used as the guide opens;
              check(value, def, src), src being the whole object it was saved in (for a setting that replaced
              an older one, which it reads when it wasn't saved itself: blendMix)
+      first  (v323) what the app starts with, for a new guide, where that differs from def (noAdj)
       undo   kept in each Undo step
       save / snap / restore   for a setting not saved (or kept for Undo) as its variable's plain value
     The flat sections and the photo have no check: openDesignObj opens them itself, as the flat sections
@@ -32076,7 +32575,8 @@ const STYLE_FIELDS = [
       return gradIncl ? inclCopy(gradIncl) : undefined;
     },
   },
-  { key: 'noAdj', in: 'style', def: false, check: styleBool, undo: true },
+  // (v323: on for a new guide, first; a guide saved without it opens as it was laid, off)
+  { key: 'noAdj', in: 'style', def: false, first: true, check: styleBool, undo: true },
   // Random's Balance (v283): a guide saved before it that uses Random opens as Mixed, as it looked; any other opens on
   // Main colour, what Random starts with when chosen now
   {
@@ -32374,6 +32874,36 @@ const STYLE_FIELDS = [
     undo: false,
     save: function () {
       return lowX && Object.keys(lowX).length ? Object.keys(lowX) : undefined;
+    },
+  },
+  // (v323) the sections offered as coloured in already, while the offer stands (colOffer, 00-state): written only then
+  {
+    key: 'colOffer',
+    in: 'payload',
+    def: null,
+    check: function (v) {
+      if (!Array.isArray(v)) return null;
+      const a = v.filter(function (l) {
+        return typeof l === 'number' && l > 0 && l === Math.floor(l);
+      });
+      return a.length ? a.slice(0, 20000) : null;
+    },
+    undo: false,
+    save: function () {
+      return colOffer && colOffer.length ? colOffer.slice() : undefined;
+    },
+  },
+  // (v323) the section Focus mode was left on, not by Exit (focusAt, 00-state): written only then
+  {
+    key: 'focusAt',
+    in: 'payload',
+    def: null,
+    check: function (v) {
+      return typeof v === 'number' && v > 0 && v === Math.floor(v) ? v : null;
+    },
+    undo: false,
+    save: function () {
+      return focusAt != null ? focusAt : undefined;
     },
   },
   // (v313) the sample, not yet printed or renamed (smpTry, 00-state): written only then
@@ -32716,6 +33246,18 @@ const STYLE_VAR = {
   },
   set lowX(v) {
     lowX = v;
+  },
+  get colOffer() {
+    return colOffer;
+  },
+  set colOffer(v) {
+    colOffer = v;
+  },
+  get focusAt() {
+    return focusAt;
+  },
+  set focusAt(v) {
+    focusAt = v;
   },
   get smp() {
     return smpTry;
@@ -35551,6 +36093,8 @@ function resetForNewPicture() {
   famRule = 4;
   // (the running-low lines closed: the guide's own, none for a new one)
   lowX = null;
+  colOffer = null;
+  focusAt = null;
   smpTry = 0;
   // (v314: a new guide, the sample too, shares a Gradient's run out by its sections' areas softened: gradArea; v315: the
   // adapting rule, pins bigger than a share counting for nothing, and no two markers too alike in the run; v318:
@@ -36679,60 +37223,92 @@ function loadSample() {
     if (ok) _loadSample();
   });
 }
+// (v323) The sample opening: its work is one block of about a second on an iPad (1.6 s here in Safari's engine, 2.6 s
+// on a slowed Chromium), and nothing on the screen moved meanwhile, the tap seeming not to have taken. A small card says
+// "Opening the sample…" at once, its ring turned by the browser off the page's thread (so it keeps turning while the
+// work holds the page), and the work starts once it has been drawn (afterPaint). It goes as the guide appears.
+function smpOpenShow() {
+  if (document.getElementById('smpOpen')) return;
+  const el = document.createElement('div');
+  el.id = 'smpOpen';
+  el.className = 'smpopen';
+  el.setAttribute('role', 'status');
+  el.innerHTML = '<span class="smpring" aria-hidden="true"></span><span>Opening the sample\u2026</span>';
+  document.body.appendChild(el);
+}
+function smpOpenHide() {
+  const el = document.getElementById('smpOpen');
+  if (el) el.remove();
+}
 function _loadSample() {
   var si = sampleIdx % SAMPLES.length,
     nm = SAMPLE_NAMES[si];
   sampleIdx++;
   _smpLoad = true;
   note('Loading sample\u2026');
+  smpOpenShow();
   const gen = ++loadGen;
   var img = new Image();
   img.onload = function () {
-    try {
-      if (!img.width || !img.height) {
-        note('Couldn\u2019t load the sample. Try again.');
-        return;
-      }
-      if (gen !== loadGen) return;
-      resetForNewPicture();
-      // (v318.13) the sample keeps Min section size as it was: a clean drawing at its own size, whose smallest real
-      // sections are under 1 mm on a page that size (its 166 sections at the default)
-      minAuto = false;
-      // (v320: Ben's two jellyfish have pinholes where their lines meet, white gaps of 5 to 10 pixels at the sample's
-      // size that he counts as sections: Min section size 5 px for it, so all 311 are in the guide)
-      if (!SAMPLE_OLD) minPos = SAMPLE_MIN_POS;
-      // (a palette held for the next new guide is this one's, the sample too, v289)
-      takeNextPal();
-      pgOrig = null;
-      srcImg = img;
-      srcUp = false;
-      processSrc();
-      sfmode = 'review';
-      resetZoom();
-      enterWork();
-      var _rs = document.getElementById('sfResume');
-      if (_rs) _rs.style.display = 'none';
-      renderControls();
-      render();
-      note(metaText());
-      // the sample is already clean line art: go straight to the finished guide (\u2190 Sections still opens the editor).
-      // It joins the Library only once it's changed (v285: sampleBuilt, 60-persist)
-      buildGuide();
-      // (only once it's built: a build that stopped short, every marker dry say, leaves a picture like any other)
-      if (assignData) sampleBuilt('Sample ' + nm);
-      renderHead();
-      renderControls();
-      saveStatus();
-    } catch (err) {
-      note('Couldn\u2019t open the sample. Try again.');
+    if (gen !== loadGen) {
+      smpOpenHide();
+      return;
     }
+    afterPaint(function () {
+      try {
+        smpOpen(img, gen, nm);
+      } finally {
+        smpOpenHide();
+      }
+    });
   };
   img.onerror = function () {
     _smpLoad = false;
+    smpOpenHide();
     if (gen === loadGen) note('Couldn\u2019t open the sample. Try again.');
   };
   var _sv = SAMPLES[si];
   img.src = _sv.slice(0, 5) === 'data:' ? _sv : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(_sv);
+}
+function smpOpen(img, gen, nm) {
+  try {
+    if (!img.width || !img.height) {
+      note('Couldn\u2019t load the sample. Try again.');
+      return;
+    }
+    if (gen !== loadGen) return;
+    resetForNewPicture();
+    // (v318.13) the sample keeps Min section size as it was: a clean drawing at its own size, whose smallest real
+    // sections are under 1 mm on a page that size (its 166 sections at the default)
+    minAuto = false;
+    // (v320: Ben's two jellyfish have pinholes where their lines meet, white gaps of 5 to 10 pixels at the sample's
+    // size that he counts as sections: Min section size 5 px for it, so all 311 are in the guide)
+    if (!SAMPLE_OLD) minPos = SAMPLE_MIN_POS;
+    // (a palette held for the next new guide is this one's, the sample too, v289)
+    takeNextPal();
+    pgOrig = null;
+    srcImg = img;
+    srcUp = false;
+    processSrc();
+    sfmode = 'review';
+    resetZoom();
+    enterWork();
+    var _rs = document.getElementById('sfResume');
+    if (_rs) _rs.style.display = 'none';
+    renderControls();
+    render();
+    note(metaText());
+    // the sample is already clean line art: go straight to the finished guide (\u2190 Sections still opens the editor).
+    // It joins the Library only once it's changed (v285: sampleBuilt, 60-persist)
+    buildGuide();
+    // (only once it's built: a build that stopped short, every marker dry say, leaves a picture like any other)
+    if (assignData) sampleBuilt('Sample ' + nm);
+    renderHead();
+    renderControls();
+    saveStatus();
+  } catch (err) {
+    note('Couldn\u2019t open the sample. Try again.');
+  }
 }
 function loadImage(file) {
   stashDirty().then(function (ok) {
@@ -45669,6 +46245,8 @@ function buildGuide(keepPlan) {
   markBuilt();
   saveStatus();
   if (_fresh) colourOffer();
+  // (v323: sections found afresh or edited: an offer kept for the old ones means other sections now)
+  else if (!same) colOffer = null;
   // (a new guide from your photo goes into the Library straight away, not after the usual pause: a page closed or
   // reloaded just after Build lost it, v287)
   // (v305: once the first Build's bloom is over, 41-bloom.js: about a second, the save's work held up its frames)
@@ -49744,6 +50322,8 @@ let tipL = -1,
   tipEl = null,
   tipY = 0,
   _tipSc = false;
+// (v323: the tip's outline of the marker's other sections, while it's open: _tipOl)
+let _tipOl = false;
 function hideTip() {
   clearTimeout(tipT);
   tipL = -1;
@@ -49751,6 +50331,22 @@ function hideTip() {
     tipEl.remove();
     tipEl = null;
   }
+  if (_tipOl) {
+    _tipOl = false;
+    if (olSet && !olRow) outlineSecs(null);
+  }
+}
+// (v323) the Plan's section tip: how many sections the marker colours, and its other sections outlined on the picture
+// while the tip is open, so whether it's everywhere or a one-off shows before its colour is changed
+function tipUses(l, m) {
+  const o = [];
+  if (!assignData) return o;
+  for (let i = 0; i < assignData.order.length; i++) {
+    const x = assignData.order[i],
+      a = assignData.assign[x];
+    if (x !== l && a && a.mkey === m.mkey) o.push(x);
+  }
+  return o;
 }
 function showTip(l, btns, quiet) {
   const m = assignData && assignData.assign[l];
@@ -49770,6 +50366,7 @@ function showTip(l, btns, quiet) {
   const ask = btns === 'ask' && sfmode === 'color' && !!hlKey;
   btns = !!btns && sfmode === 'guide';
   const pin = locks[l] !== undefined,
+    _uses = btns ? tipUses(l, m) : [],
     d = document.createElement('div');
   d.className = 'sftip' + (btns || ask ? ' sftipb' : '') + (ask ? ' sftipask' : '');
   d.innerHTML =
@@ -49783,6 +50380,11 @@ function showTip(l, btns, quiet) {
     esc(m.brand) +
     '</span>' +
     (pin && btns ? '<span class="sftippin">Pinned</span>' : '') +
+    // (v323: a marker you've marked running low says so here too, where its colour might be changed)
+    (btns && inkLowNow(m.mkey) ? '<span class="sftippin sftiplow">Running low</span>' : '') +
+    (btns
+      ? '<span class="sftipn">' + (_uses.length + 1) + ' section' + (_uses.length ? 's' : '') + '</span>'
+      : '') +
     shadeTipHTML(l) +
     photoTipHTML(l) +
     (btns ? zoneTipHTML(l) : '') +
@@ -49841,6 +50443,10 @@ function showTip(l, btns, quiet) {
   tipEl = d;
   tipL = l;
   tipBtns = btns;
+  if (btns && _uses.length && !olSet) {
+    outlineSecs(_uses);
+    _tipOl = true;
+  }
   tipY = window.scrollY;
   positionTip();
   tipScrollWatch();
@@ -50879,6 +51485,9 @@ function renderGuide() {
   rowOutline();
   // (always: with nothing left to outline, e.g. a row's last section ticked or Mark all, this hides the outline, v305)
   positionOutline();
+  // (v323: Focus mode's side rail, its strip and the page as coloured so far; its sharp copy, drawn again)
+  if (focus) focusSide();
+  if (focus || _shEl) sharpStale(true);
   if (!pickPending()) scheduleAutosave();
 }
 function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tick, fcur, ring) {
@@ -52187,9 +52796,7 @@ function shadeTones(base, zs) {
     }
   }
   const b = hexRgb(base.hex),
-    coat = [0, 1, 2].map(function (k) {
-      return Math.round(b[k] * (0.52 + (0.48 * b[k]) / 255));
-    });
+    coat = coatTwo(b);
   const t = {
     light: light,
     dark: dark,
@@ -56764,7 +57371,8 @@ function gradStartHTML() {
       })
       .join(', ');
   return (
-    '<div class="sfsublbl">Start colour: <span id="sfGStartC">' +
+    // (v323: one style for a slider's row, the label on the left and its value on the right, white)
+    '<div class="sfsublbl sfvrow">Start colour <span id="sfGStartC" class="sfval">' +
     gradStartName(gs, gs.r) +
     '</span></div><div class="sfgstart"><div class="sfgsstrip" aria-hidden="true" style="background:linear-gradient(90deg, ' +
     stops +
@@ -56877,7 +57485,7 @@ function ctlPlanPattern() {
     html +=
       '<div class="sfc-slider sfgscat' +
       (_sOff ? ' sfoff' : '') +
-      '"><div class="sfsublbl" id="sfGradScatLbl">Scatter: <b id="sfGradScatName">' +
+      '"><div class="sfsublbl sfvrow" id="sfGradScatLbl">Scatter <b id="sfGradScatName" class="sfval">' +
       GRAD_SCAT_LABEL[_sv] +
       '</b></div><input type="range" id="sfGradScat" min="0" max="4" step="1" value="' +
       _sv +
@@ -58454,7 +59062,10 @@ function ctlFocus() {
     '<div id="sfHand" class="sfhand" hidden><div class="sfhcard"><div class="sfhhead"></div><span class="sfhsw"></span><div class="sfhlbl"></div><div class="sfhname"></div><div class="sfhsub"></div></div></div>' +
     '<div id="sfFocBot" class="sffocbot"></div>';
   var _ef = document.getElementById('sfExitFoc');
-  if (_ef) _ef.addEventListener('click', exitFocus);
+  if (_ef)
+    _ef.addEventListener('click', function () {
+      exitFocus(true);
+    });
   var _rs = document.getElementById('sfRailSwap');
   if (_rs) _rs.addEventListener('click', railSwap);
   var _fcb = document.getElementById('sfFocCols');
@@ -60993,7 +61604,8 @@ function saveStText(pe) {
   // (v304: or the browser's database stopped answering)
   if (_saveErr)
     return storeNotAnswering() ? 'Not saved \u2014 reload to try again' : 'Not saved \u2014 storage is full';
-  if (!e && curSample && !sampleTouched()) return 'Sample';
+  // (v323: what the sample's line under the tabs said, here instead: that line filled a phone's panel on every tab)
+  if (!e && curSample && !sampleTouched()) return 'Sample \u00b7 change anything to keep it';
   if (!e) return sfmode === 'review' || _openEmpty ? 'Not saved yet' : 'Saving\u2026';
   // (v307: only while it's being written; a change waiting its moment to be saved said "Saving…" for 1.5 s after
   // every tick, so Colour along read as always saving)
@@ -62222,6 +62834,10 @@ function applyXform() {
   if (photoEl) positionPhoto();
   if (tipL >= 0) positionTip();
   if (olSet) positionOutline();
+  // (v323: Focus mode's ring round a small section)
+  if (focus || document.getElementById('sfFocRing')) focusRing();
+  // (v323: the sharp copy over Focus mode's picture waits for the move to settle, 77-sharp)
+  if (focus || _shEl) sharpStale();
 }
 function clampPan() {
   const d = viewDims(),
@@ -62287,7 +62903,16 @@ function resetZoom() {
 // (then up to FIT_MAX). keep: zoomed in already, stay so while the section is 44px or more there.
 const FIT_MAX = 4,
   FIT_PX = 44,
-  FIT_CTX = 2;
+  FIT_CTX = 2,
+  // (v323) and no further than 2.5 screen pixels to a picture pixel: past that a section's outline shows its pixels as
+  // steps (the sample, 921 pixels across, went to 5.3 on an iPad), and the view lost the page round it
+  FIT_RES = 2.5;
+// how far in the picture can be shown before its pixels show (FIT_RES), never less than as it fits
+function fitRes() {
+  const DW = (cv && cv.offsetWidth) || 1,
+    dpr = window.devicePixelRatio || 1;
+  return Math.max(1, (FIT_RES * W) / (DW * dpr * picK()));
+}
 function fitZoom(box, l, aw, ah, keep) {
   const DW = (cv && cv.offsetWidth) || 1,
     DH = (cv && cv.offsetHeight) || 1,
@@ -62298,11 +62923,11 @@ function fitZoom(box, l, aw, ah, keep) {
     // (never so far in that the section is wider or taller than most of the view)
     most = Math.min((aw * 0.8) / bw, (ah * 0.8) / bh);
   let z = need <= FIT_CTX ? need : Math.min(FIT_MAX, need);
-  z = Math.max(1, Math.min(z, Math.max(1, most)));
+  z = Math.max(1, Math.min(z, Math.max(1, most), fitRes()));
   if (
     keep &&
     zoom > z &&
-    zoom <= FIT_MAX &&
+    zoom <= Math.min(FIT_MAX, fitRes()) &&
     Math.min(bw, bh) * zoom * picK() >= FIT_PX &&
     Math.max(bw / aw, bh / ah) * zoom <= 0.8
   )
@@ -62897,18 +63522,9 @@ function switchTab(t) {
   ctlEl.querySelectorAll('.sftab').forEach(function (pn) {
     pn.style.display = pn.dataset.tab === gTab ? '' : 'none';
   });
-  // (the first-time "Tap a section" line goes at the first change of tab, and the sample's line takes its place, v289)
-  const tapL = _tapTab && t !== _tapTab ? ctlEl.querySelector('.sfinfo[data-hint="tap"]') : null;
-  if (_tapTab && t !== _tapTab) _tapTab = false;
-  if (tapL) {
-    const sn = sampleNoteHTML();
-    if (sn) {
-      tapL.insertAdjacentHTML('beforebegin', sn);
-      sampleNoteWire();
-    }
-    tapL.remove();
-    paneMin();
-  }
+  // (v323) the first-time "Tap a section" line stays through changes of tab for the visit: it went at the first one so
+  // the sample's line could take its place (v289), which is no more, and its going moved the page at the foot of a
+  // short tab
   if (th != null) window.scrollTo(0, Math.round(th));
   picScroll();
   fitPairs();
@@ -63973,7 +64589,10 @@ function nextUndone(from) {
 // picture has the screen's whole height beside it (CSS: html.sfrailon, sfrailL; the rail's width --railW). The DOM
 // order, and so the keyboard's, is as before. The Colours sheet, the hand-off card and the toasts keep to the
 // picture's column.
-var RAIL_MQ = '(orientation: landscape) and (min-height: 600px) and (min-width: 900px)';
+// (v323: a phone on its side too, from 640 wide: the picture beside the controls has the screen's whole height, where
+// above and below them it had about 250px; a short screen's rail is a compact one, sfrailshort)
+var RAIL_MQ = '(orientation: landscape) and (min-height: 340px) and (min-width: 640px)',
+  RAIL_SHORT = '(max-height: 599px)';
 function focusRail() {
   return !!(
     focus &&
@@ -63995,6 +64614,154 @@ function railSync() {
     de = document.documentElement;
   de.classList.toggle('sfrailon', on);
   de.classList.toggle('sfrailL', on && railLeft());
+  de.classList.toggle('sfrailshort', on && window.matchMedia(RAIL_SHORT).matches);
+  if (!on) focusSide();
+}
+// (v323) The iPad's side rail, tall enough: under the progress bar, the page's markers in order (each one's sections
+// coloured, ✓ when done, the one in hand ringed), and under Done, Back and Skip, the whole page as coloured so far
+// with a ring where the section is ("Where you are"); a tap on it shows the whole page. Drawn with the picture
+// (renderGuide). Not on a short rail or off the rail.
+function focusSide() {
+  var de = document.documentElement,
+    on =
+      focus &&
+      !focusFin &&
+      sfmode === 'color' &&
+      de.classList.contains('sfrailon') &&
+      !de.classList.contains('sfrailshort'),
+    strip = document.getElementById('sfFocStrip'),
+    map = document.getElementById('sfFocMap');
+  if (!on) {
+    if (strip) strip.hidden = true;
+    if (map) map.hidden = true;
+    return;
+  }
+  var bar = document.querySelector('.sffocbar'),
+    prog = document.getElementById('sfFocProg');
+  if (!bar || !prog || !assignData) return;
+  if (!strip) {
+    strip = document.createElement('div');
+    strip.id = 'sfFocStrip';
+    strip.className = 'sffocstrip';
+    strip.setAttribute('aria-hidden', 'true');
+    strip.innerHTML =
+      '<div class="sffshead"><span>Markers for this page</span><span class="sffsn"></span></div><div class="sffsrow"></div>';
+  }
+  if (strip.parentNode !== bar) prog.after(strip);
+  // the groups in order, each with its marker, how many sections and how many done
+  var groups = [],
+    cur = focusPos >= 0 && focusPos < focusOrd.length ? focusGroup(focusPos) : '',
+    by = {};
+  for (var i = 0; i < focusOrd.length; i++) {
+    var gk = focusGroup(i),
+      e = by[gk];
+    if (!e) {
+      e = by[gk] = { k: gk, m: assignData.assign[focusOrd[i]], n: 0, d: 0 };
+      groups.push(e);
+    }
+    e.n++;
+    if (stepDone(focusOrd[i], stepBits(i))) e.d++;
+  }
+  var sig =
+    groups
+      .map(function (g) {
+        return g.k + ':' + g.d + '/' + g.n;
+      })
+      .join(',') +
+    '|' +
+    cur;
+  if (strip.dataset.sig !== sig) {
+    strip.dataset.sig = sig;
+    strip.querySelector('.sffsn').textContent =
+      groups.length +
+      ' marker' +
+      (groups.length === 1 ? '' : 's') +
+      ' \u00b7 ' +
+      focusOrd.length +
+      ' sections';
+    strip.querySelector('.sffsrow').innerHTML = groups
+      .map(function (g) {
+        var done = g.d >= g.n;
+        return (
+          '<span class="sffs' +
+          (g.k === cur ? ' cur' : '') +
+          (done ? ' done' : '') +
+          '"><i style="background:' +
+          esc(g.m.hex) +
+          '">' +
+          (done ? '\u2713' : '') +
+          '</i><b>' +
+          esc(capLabel(g.m)) +
+          '</b><small>' +
+          (done ? g.n : g.n - g.d) +
+          '</small></span>'
+        );
+      })
+      .join('');
+    var c = strip.querySelector('.sffs.cur');
+    if (c) {
+      var row = strip.querySelector('.sffsrow');
+      row.scrollLeft = Math.max(0, c.offsetLeft - row.clientWidth / 2 + c.offsetWidth / 2);
+    }
+  }
+  strip.hidden = false;
+  // Where you are
+  if (!map) {
+    map = document.createElement('button');
+    map.type = 'button';
+    map.id = 'sfFocMap';
+    map.className = 'sffocmap';
+    map.setAttribute('aria-label', 'Show the whole page');
+    map.innerHTML = '<span class="sffmh">Where you are</span><canvas></canvas>';
+    map.addEventListener('click', function () {
+      resetZoom();
+      focusRing();
+    });
+    (document.getElementById('sfView') || document.body).appendChild(map);
+  }
+  var mc = map.querySelector('canvas'),
+    room =
+      window.innerHeight - (document.querySelector('.sffocbot') || bar).getBoundingClientRect().bottom - 110;
+  if (room < 120 || !cv) {
+    map.hidden = true;
+    return;
+  }
+  map.hidden = false;
+  var mh = Math.min(260, room),
+    mw = Math.round((mh * W) / H),
+    maxW = 300 - 36;
+  if (mw > maxW) {
+    mw = maxW;
+    mh = Math.round((mw * H) / W);
+  }
+  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (mc.width !== Math.round(mw * dpr) || mc.height !== Math.round(mh * dpr)) {
+    mc.width = Math.round(mw * dpr);
+    mc.height = Math.round(mh * dpr);
+  }
+  mc.style.width = mw + 'px';
+  mc.style.height = mh + 'px';
+  var g = mc.getContext('2d'),
+    l = focusCur();
+  g.imageSmoothingEnabled = true;
+  g.drawImage(cv, 0, 0, mc.width, mc.height);
+  if (l > 0 && focusBox) {
+    var k = mc.width / W,
+      x = ((focusBox.x0[l] + focusBox.x1[l] + 1) / 2) * k,
+      y = ((focusBox.y0[l] + focusBox.y1[l] + 1) / 2) * k,
+      r = Math.max(
+        8 * dpr,
+        ((Math.max(focusBox.x1[l] - focusBox.x0[l], focusBox.y1[l] - focusBox.y0[l]) + 1) * k) / 2 + 4 * dpr,
+      );
+    g.lineWidth = 4 * dpr;
+    g.strokeStyle = 'rgba(10,12,12,.85)';
+    g.beginPath();
+    g.arc(x, y, r, 0, 6.283);
+    g.stroke();
+    g.lineWidth = 2.5 * dpr;
+    g.strokeStyle = '#b9a8ff';
+    g.stroke();
+  }
 }
 function railSwap() {
   try {
@@ -64024,9 +64791,9 @@ function focusGeo(sheet) {
   var bar = document.querySelector('.sffocbar'),
     bot = document.querySelector('.sffocbot'),
     t = bar ? bar.offsetHeight : 0,
-    zs = (window.innerWidth || 0) < 700 ? document.getElementById('sfZoomCtl') : null,
-    // (a phone: the tool strip above the bottom bar is the picture's too, v289)
-    b = (bot ? bot.offsetHeight : 0) + (zs ? zs.offsetHeight : 0),
+    // (v323: a phone's zoom buttons float at the picture's edge, as on an iPad upright: no strip of their own to leave
+    // room for, v289's)
+    b = bot ? bot.offsetHeight : 0,
     vw = sfView.clientWidth,
     vh = sfView.clientHeight,
     sh = sheet && focusSheet ? document.getElementById('sfFocSheet') : null;
@@ -64036,9 +64803,33 @@ function focusGeo(sheet) {
   var ah = Math.max(40, vh - t - b);
   return { t: t, b: b, x0: 0, cx: vw / 2, cy: t + ah / 2, aw: vw, ah: ah };
 }
+// (v323) one zoom for a marker's sections: the middle of their own zooms (each no further than fitZoom allows), so
+// the view pans from one to the next rather than zooming in and out at every Done; a section it wouldn't fit gets less.
+// Worked out once per marker (its group, and pass), _fzG
+var _fzG = null;
 function focusZoomFor(l) {
-  var g = focusGeo(true);
-  return fitZoom(focusBox, l, g.aw, g.ah);
+  var g = focusGeo(true),
+    own = fitZoom(focusBox, l, g.aw, g.ah),
+    i = focusOrd.indexOf(l);
+  if (i < 0) return own;
+  var grp = focusGroup(i),
+    key = grp + '|' + focusOrd.length + '|' + Math.round(g.aw) + 'x' + Math.round(g.ah) + '|' + W;
+  if (!_fzG || _fzG.k !== key) {
+    var zs = [];
+    for (var j = 0; j < focusOrd.length; j++)
+      if (focusGroup(j) === grp) zs.push(fitZoom(focusBox, focusOrd[j], g.aw, g.ah));
+    zs.sort(function (a, b) {
+      return a - b;
+    });
+    _fzG = { k: key, z: zs.length ? zs[(zs.length - 1) >> 1] : own };
+  }
+  // (never so far in that this section is wider or taller than most of the view, as fitZoom keeps)
+  var DW = (cv && cv.offsetWidth) || 1,
+    DH = (cv && cv.offsetHeight) || 1,
+    bw = Math.max(1, ((focusBox.x1[l] - focusBox.x0[l] + 1) / W) * DW),
+    bh = Math.max(1, ((focusBox.y1[l] - focusBox.y0[l] + 1) / H) * DH),
+    most = Math.max(1, Math.min((g.aw * 0.8) / bw, (g.ah * 0.8) / bh));
+  return Math.max(1, Math.min(_fzG.z, most));
 }
 var _ftT = 0;
 function animXform(anim) {
@@ -64047,6 +64838,8 @@ function animXform(anim) {
     clearTimeout(_ftT);
     _ftT = setTimeout(function () {
       cv.style.transition = '';
+      // (the ring placed where the section ends up, v323)
+      focusRing();
     }, 380);
   } else cv.style.transition = '';
   applyXform();
@@ -64066,6 +64859,41 @@ function frameFocus(anim) {
   clampPan();
   animXform(anim);
 }
+// (v323) A section too small to see at the zoom Focus mode keeps (FIT_RES, 70-view) has a ring round it that pulses
+// gently, drawn over the picture where the section is; not with Reduce motion (it stays still) or under test
+function focusRing() {
+  var el = document.getElementById('sfFocRing'),
+    l = focus && !focusFin && sfmode === 'color' ? focusCur() : -1;
+  if (l < 0 || !cv || !sfView || !focusBox || root.classList.contains('sfrev')) {
+    if (el) el.hidden = true;
+    return;
+  }
+  var r0 = cv.getBoundingClientRect(),
+    host = picEl || sfView,
+    vr = host.getBoundingClientRect(),
+    q = picK(),
+    k = r0.width / q / W,
+    bw = (focusBox.x1[l] - focusBox.x0[l] + 1) * k,
+    bh = (focusBox.y1[l] - focusBox.y0[l] + 1) * k;
+  if (!(k > 0) || Math.max(bw, bh) >= 24) {
+    if (el) el.hidden = true;
+    return;
+  }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sfFocRing';
+    el.className = 'sffocring';
+    el.setAttribute('aria-hidden', 'true');
+  }
+  if (el.parentNode !== host) host.appendChild(el);
+  var d = Math.max(34, Math.max(bw, bh) + 18),
+    cx = (r0.left - vr.left) / q + ((focusBox.x0[l] + focusBox.x1[l] + 1) / 2) * k,
+    cy = (r0.top - vr.top) / q + ((focusBox.y0[l] + focusBox.y1[l] + 1) / 2) * k;
+  el.style.left = cx - d / 2 + 'px';
+  el.style.top = cy - d / 2 + 'px';
+  el.style.width = el.style.height = d + 'px';
+  el.hidden = false;
+}
 function goFocus(pos, anim, noHist) {
   if (!focusOrd.length) return;
   if (!noHist && focusPos >= 0 && !focusFin && pos !== focusPos) {
@@ -64075,6 +64903,8 @@ function goFocus(pos, anim, noHist) {
   focusFin = false;
   focusPos = Math.max(0, Math.min(focusOrd.length - 1, pos));
   var l = focusOrd[focusPos];
+  // (v323: where Continue would open Focus mode, were the guide left now)
+  focusAt = l;
   hlKey = assignData.assign[l].mkey;
   hlZone = alongZones() ? zoneOf(l) : null;
   renderFocusUI();
@@ -64807,6 +65637,369 @@ function renderFocusUI() {
   // (v313: the hand-off card sits between the two bars)
   var tbar = document.querySelector('.sffocbar');
   if (tbar) document.documentElement.style.setProperty('--focTop', tbar.offsetHeight + 'px');
+}
+/* ---- (v323) Sharp outlines when magnified: Focus mode's zoom and the PDF's close-ups ----
+   The guide is drawn one pixel per pixel of the picture (921 across for the sample), and magnified its outlines show
+   those pixels as steps. Here the outlines are drawn again at the size they're shown: a signed distance field of the
+   line pixels (the exact distance from each pixel to the nearest pixel of the other kind, labels -1 being the lines),
+   smoothed a touch, is read between pixels and its zero is the line's edge, drawn with a pixel of soft edge. Under it,
+   the colours are the picture's own with the lines taken out (each line pixel given the colour of the section nearest
+   it), read between pixels too. So the lines keep their width and place, and their steps become curves; the colours,
+   the codes and the shading are the picture's, magnified as before.
+   sharpField() is worked out once for the sections (about 0.1 s for the sample) and kept while they stand;
+   sharpPaint(base, crop, ow, oh, ink) draws the crop [x0, y0, x1, y1] of the picture (in picture pixels) at ow × oh
+   from base (an ImageData of the picture, W × H) into a new ImageData; ink: the lines' colour. */
+let _shF = null;
+// the field for these sections: { sdf: Float32Array (picture pixels, negative inside a line), near: Int32Array (each
+// line pixel's nearest pixel not a line, or -1), k: the sections it was made for }
+function sharpField() {
+  if (!labels || !W || !H) return null;
+  const key = labels.length + ':' + W + 'x' + H + ':' + (typeof labelsSig === 'function' ? labelsSig() : '');
+  if (_shF && _shF.k === key && _shF.lab === labels) return _shF;
+  const n = W * H,
+    INF = 1e20,
+    // squared distances to the nearest line pixel (for the others), and to the nearest pixel not a line (for lines)
+    dOut = new Float32Array(n),
+    dIn = new Float32Array(n),
+    near = new Int32Array(n).fill(-1);
+  sharpEdt(
+    function (p) {
+      return labels[p] === -1;
+    },
+    dOut,
+    null,
+  );
+  sharpEdt(
+    function (p) {
+      return labels[p] !== -1;
+    },
+    dIn,
+    near,
+  );
+  const sdf = new Float32Array(n);
+  for (let p = 0; p < n; p++)
+    sdf[p] =
+      labels[p] === -1
+        ? -(Math.sqrt(dIn[p] >= INF ? 0 : dIn[p]) - 0.5)
+        : Math.sqrt(dOut[p] >= INF ? 0 : dOut[p]) - 0.5;
+  // smoothed (about 1.4 pixels): a line's pixel steps, and the wobble a photo leaves along its edges, round off into
+  // its curve. A thin line (under about 3 pixels across) would thin away, so near one it never gets less deep than it
+  // was (thick: within 2 pixels of a pixel 1.5 or more inside a line)
+  const bl = sharpBlur(sharpBlur(sdf)),
+    deep = new Uint8Array(n);
+  for (let p = 0; p < n; p++) if (labels[p] === -1 && dIn[p] >= 2.25) deep[p] = 1;
+  const thick = sharpNear(deep, 2);
+  // (and a small section, the sample's pinholes, never shrinks: smoothed into the lines round it, it was gone)
+  for (let p = 0; p < n; p++) {
+    const l = labels[p];
+    if (l >= 0 && comps[l] && comps[l].area < 60) sdf[p] = Math.max(sdf[p], bl[p]);
+    else sdf[p] = thick[p] || bl[p] < sdf[p] ? bl[p] : sdf[p];
+  }
+  _shF = { sdf: sdf, near: near, k: key, lab: labels };
+  return _shF;
+}
+// Felzenszwalb and Huttenlocher's exact distance transform, columns then rows, keeping (near) the nearest feature
+function sharpEdt(isF, out, near) {
+  const INF = 1e20,
+    m = Math.max(W, H),
+    f = new Float64Array(m),
+    d = new Float64Array(m),
+    v = new Int32Array(m),
+    z = new Float64Array(m + 1),
+    arg = new Int32Array(m),
+    colRow = near ? new Int32Array(W * H) : null;
+  // columns
+  for (let x = 0; x < W; x++) {
+    for (let y = 0; y < H; y++) f[y] = isF(y * W + x) ? 0 : INF;
+    sharp1d(f, H, d, v, z, arg);
+    for (let y = 0; y < H; y++) {
+      out[y * W + x] = d[y];
+      if (colRow) colRow[y * W + x] = arg[y];
+    }
+  }
+  // rows
+  for (let y = 0; y < H; y++) {
+    const r = y * W;
+    for (let x = 0; x < W; x++) f[x] = out[r + x];
+    sharp1d(f, W, d, v, z, arg);
+    for (let x = 0; x < W; x++) {
+      out[r + x] = d[x];
+      if (near) {
+        const ax = arg[x];
+        near[r + x] = f[ax] >= INF ? -1 : colRow[r + ax] * W + ax;
+      }
+    }
+  }
+}
+function sharp1d(f, n, d, v, z, arg) {
+  const INF = 1e20;
+  let k = 0;
+  v[0] = 0;
+  z[0] = -INF;
+  z[1] = INF;
+  for (let q = 1; q < n; q++) {
+    if (f[q] >= INF && f[v[k]] >= INF) continue;
+    let s = (f[q] + q * q - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
+    while (s <= z[k]) {
+      k--;
+      s = (f[q] + q * q - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
+    }
+    k++;
+    v[k] = q;
+    z[k] = s;
+    z[k + 1] = INF;
+  }
+  k = 0;
+  for (let q = 0; q < n; q++) {
+    while (z[k + 1] < q) k++;
+    const dq = q - v[k];
+    d[q] = f[v[k]] >= INF ? INF : dq * dq + f[v[k]];
+    arg[q] = v[k];
+  }
+}
+// a 1-4-6-4-1 blur each way (about 1 pixel)
+function sharpBlur(a) {
+  const n = W * H,
+    t = new Float32Array(n),
+    o = new Float32Array(n),
+    Wm = W - 1,
+    Hm = H - 1;
+  for (let y = 0; y < H; y++) {
+    const r = y * W;
+    for (let x = 0; x < W; x++) {
+      const x1 = x > 0 ? x - 1 : 0,
+        x2 = x > 1 ? x - 2 : 0,
+        x3 = x < Wm ? x + 1 : Wm,
+        x4 = x < Wm - 1 ? x + 2 : Wm;
+      t[r + x] = (a[r + x2] + 4 * a[r + x1] + 6 * a[r + x] + 4 * a[r + x3] + a[r + x4]) * 0.0625;
+    }
+  }
+  for (let y = 0; y < H; y++) {
+    const r = y * W,
+      u1 = (y > 0 ? y - 1 : 0) * W,
+      u2 = (y > 1 ? y - 2 : 0) * W,
+      d1 = (y < Hm ? y + 1 : Hm) * W,
+      d2 = (y < Hm - 1 ? y + 2 : Hm) * W;
+    for (let x = 0; x < W; x++)
+      o[r + x] = (t[u2 + x] + 4 * t[u1 + x] + 6 * t[r + x] + 4 * t[d1 + x] + t[d2 + x]) * 0.0625;
+  }
+  return o;
+}
+// within rad pixels (a square) of a marked pixel
+function sharpNear(m, rad) {
+  const n = W * H,
+    t = new Uint8Array(n),
+    o = new Uint8Array(n);
+  for (let y = 0; y < H; y++) {
+    const r = y * W;
+    let last = -1e9;
+    for (let x = 0; x < W; x++) {
+      if (m[r + x]) last = x;
+      if (x - last <= rad) t[r + x] = 1;
+    }
+    last = 1e9;
+    for (let x = W - 1; x >= 0; x--) {
+      if (m[r + x]) last = x;
+      if (last - x <= rad) t[r + x] = 1;
+    }
+  }
+  for (let x = 0; x < W; x++) {
+    let last = -1e9;
+    for (let y = 0; y < H; y++) {
+      if (t[y * W + x]) last = y;
+      if (y - last <= rad) o[y * W + x] = 1;
+    }
+    last = 1e9;
+    for (let y = H - 1; y >= 0; y--) {
+      if (t[y * W + x]) last = y;
+      if (last - y <= rad) o[y * W + x] = 1;
+    }
+  }
+  return o;
+}
+// the picture's colours with its lines taken out (each line pixel the colour of its nearest section pixel). A line
+// pixel drawn over in something else (Focus mode's mark on a section in a line, a code) keeps it, and no sharp line is
+// drawn there (_ov)
+function sharpFill(base, F, ink) {
+  const d = base.data,
+    n = W * H,
+    o = new Uint8ClampedArray(d.length),
+    ov = new Uint8Array(n),
+    near = F.near;
+  o.set(d);
+  for (let p = 0; p < n; p++) {
+    if (labels[p] !== -1) continue;
+    const j = p * 4;
+    if (Math.abs(d[j] - ink[0]) + Math.abs(d[j + 1] - ink[1]) + Math.abs(d[j + 2] - ink[2]) > 48) {
+      ov[p] = 1;
+      continue;
+    }
+    const q = near[p];
+    if (q < 0) continue;
+    const k = q * 4;
+    o[j] = d[k];
+    o[j + 1] = d[k + 1];
+    o[j + 2] = d[k + 2];
+  }
+  o._ov = ov;
+  o._d = d;
+  return o;
+}
+function sharpPaint(base, crop, ow, oh, ink, fill) {
+  const F = sharpField();
+  if (!F || !base || ow < 1 || oh < 1) return null;
+  const C0 = fill || sharpFill(base, F, ink),
+    OV = C0._ov,
+    S = F.sdf,
+    out = new ImageData(ow, oh),
+    od = out.data,
+    x0 = crop[0],
+    y0 = crop[1],
+    sx = (crop[2] - crop[0]) / ow,
+    sy = (crop[3] - crop[1]) / oh,
+    // output pixels to a picture pixel: the line's soft edge one output pixel wide
+    k = 1 / Math.max(1e-6, Math.min(sx, sy)),
+    ir = ink[0],
+    ig = ink[1],
+    ib = ink[2],
+    Wm = W - 1,
+    Hm = H - 1;
+  for (let oy = 0, j = 0; oy < oh; oy++) {
+    let fy = y0 + (oy + 0.5) * sy - 0.5;
+    if (fy < 0) fy = 0;
+    else if (fy > Hm) fy = Hm;
+    const iy = fy | 0,
+      ty = fy - iy,
+      iy1 = iy < Hm ? iy + 1 : iy,
+      r0 = iy * W,
+      r1 = iy1 * W;
+    for (let ox = 0; ox < ow; ox++, j += 4) {
+      let fx = x0 + (ox + 0.5) * sx - 0.5;
+      if (fx < 0) fx = 0;
+      else if (fx > Wm) fx = Wm;
+      const ix = fx | 0,
+        tx = fx - ix,
+        ix1 = ix < Wm ? ix + 1 : ix,
+        p00 = r0 + ix,
+        p01 = r0 + ix1,
+        p10 = r1 + ix,
+        p11 = r1 + ix1,
+        w00 = (1 - tx) * (1 - ty),
+        w01 = tx * (1 - ty),
+        w10 = (1 - tx) * ty,
+        w11 = tx * ty,
+        s = S[p00] * w00 + S[p01] * w01 + S[p10] * w10 + S[p11] * w11;
+      // (next to a mark drawn over a line: the picture as it is there, no sharp line)
+      const over = OV && OV[p00] | OV[p01] | OV[p10] | OV[p11],
+        C = over ? C0._d : C0;
+      let a = 0.5 - s * k;
+      a = a < 0 || over ? 0 : a > 1 ? 1 : a;
+      const q00 = p00 * 4,
+        q01 = p01 * 4,
+        q10 = p10 * 4,
+        q11 = p11 * 4,
+        r = C[q00] * w00 + C[q01] * w01 + C[q10] * w10 + C[q11] * w11,
+        g = C[q00 + 1] * w00 + C[q01 + 1] * w01 + C[q10 + 1] * w10 + C[q11 + 1] * w11,
+        b = C[q00 + 2] * w00 + C[q01 + 2] * w01 + C[q10 + 2] * w10 + C[q11 + 2] * w11;
+      od[j] = r + (ir - r) * a;
+      od[j + 1] = g + (ig - g) * a;
+      od[j + 2] = b + (ib - b) * a;
+      od[j + 3] = 255;
+    }
+  }
+  return out;
+}
+
+/* Focus mode: a canvas over the part of the picture on the screen, drawn sharp once a zoom or a move settles (and
+   hidden while the picture moves). Only where the picture is magnified enough for its steps to show. */
+let _shEl = null,
+  _shT = 0,
+  _shBase = null;
+function sharpOn() {
+  return !!(
+    focus &&
+    !focusFin &&
+    sfmode === 'color' &&
+    cv &&
+    sfView &&
+    labels &&
+    assignData &&
+    !root.classList.contains('sfrev')
+  );
+}
+// the picture moved or was drawn again: the sharp copy goes until it settles
+function sharpStale(drawn) {
+  if (drawn) _shBase = null;
+  if (_shEl) _shEl.style.visibility = 'hidden';
+  clearTimeout(_shT);
+  if (!sharpOn()) {
+    if (_shEl) _shEl.hidden = true;
+    return;
+  }
+  _shT = setTimeout(sharpDraw, 420);
+}
+function sharpDraw() {
+  if (!sharpOn()) {
+    if (_shEl) _shEl.hidden = true;
+    return;
+  }
+  const host = picEl || sfView,
+    r0 = cv.getBoundingClientRect(),
+    vr = sfView.getBoundingClientRect(),
+    dpr = Math.min(3, window.devicePixelRatio || 1),
+    k = r0.width / W;
+  // (no steps to see below about 1.3 screen pixels to a picture pixel)
+  if (!(k > 0) || k * dpr < 1.3) {
+    if (_shEl) _shEl.hidden = true;
+    return;
+  }
+  // the part of the picture on the screen
+  const L = Math.max(r0.left, vr.left),
+    T = Math.max(r0.top, vr.top),
+    R = Math.min(r0.right, vr.right),
+    B = Math.min(r0.bottom, vr.bottom);
+  if (R - L < 4 || B - T < 4) return;
+  const crop = [(L - r0.left) / k, (T - r0.top) / k, (R - r0.left) / k, (B - r0.top) / k];
+  let ow = Math.round((R - L) * dpr),
+    oh = Math.round((B - T) * dpr);
+  // (at most about 4 million pixels)
+  const cap = Math.sqrt(4e6 / (ow * oh));
+  if (cap < 1) {
+    ow = Math.round(ow * cap);
+    oh = Math.round(oh * cap);
+  }
+  if (!_shBase) {
+    try {
+      _shBase = cv.getContext('2d').getImageData(0, 0, W, H);
+    } catch (_) {
+      return;
+    }
+    _shBase._fill = null;
+  }
+  const F = sharpField();
+  if (!F) return;
+  if (!_shBase._fill) _shBase._fill = sharpFill(_shBase, F, LINE);
+  const im = sharpPaint(_shBase, crop, ow, oh, LINE, _shBase._fill);
+  if (!im) return;
+  if (!_shEl) {
+    _shEl = document.createElement('canvas');
+    _shEl.id = 'sfSharp';
+    _shEl.className = 'sfsharp';
+    _shEl.setAttribute('aria-hidden', 'true');
+  }
+  // (just over the picture: under the ring, the outline and the bars)
+  if (_shEl.parentNode !== host) host.insertBefore(_shEl, cv.nextSibling);
+  _shEl.width = ow;
+  _shEl.height = oh;
+  _shEl.getContext('2d').putImageData(im, 0, 0);
+  const hr = host.getBoundingClientRect(),
+    q = picK();
+  _shEl.style.left = (L - hr.left) / q + 'px';
+  _shEl.style.top = (T - hr.top) / q + 'px';
+  _shEl.style.width = (R - L) / q + 'px';
+  _shEl.style.height = (B - T) / q + 'px';
+  _shEl.hidden = false;
+  _shEl.style.visibility = '';
 }
 // Find next: zoom in on the next section of the highlighted colour still to do, one after another
 let _fnLast = -1;
@@ -65776,7 +66969,9 @@ function markBack(was, done) {
 // (v318.35) A page partly coloured in already (E1-3): once its guide is built from sections found afresh, the sections
 // coloured in (colourSecs, 10-segment) are offered as done, in a toast with a button, after the first build's bloom.
 // Never marked done by themselves: a fill the app reads as a marker's may be a wash or a print's tint. Taking the
-// offer ticks them, and says so with an Undo that puts the ticks back as they were (markBack, as Mark all has)
+// offer ticks them, and says so with an Undo that puts the ticks back as they were (markBack, as Mark all has).
+// (v323) The toast went in 12 s and never came back: the offer is kept with the guide (colOffer, saved) and Colour
+// along says it too, at the top, with those sections outlined on the picture, until it's taken or closed (colOfferLine)
 function colourOffer() {
   if (!assignData || !chroma) return;
   let secs;
@@ -65789,48 +66984,117 @@ function colourOffer() {
   }
   const n = secs.length;
   if (!n) return;
-  const g = loadGen,
-    K = comps.length;
+  colOffer = secs.slice();
+  const g = loadGen;
   bloomAfter(function () {
-    if (g !== loadGen || !assignData || comps.length !== K) return;
+    if (g !== loadGen || !assignData || !colOfferLeft().length) return;
     toastAction(
       n === 1 ? 'One section looks coloured in already.' : n + ' sections look coloured in already.',
       n === 1 ? 'Mark it done' : 'Mark them done',
       function () {
-        if (g !== loadGen || !assignData || comps.length !== K) return;
-        const was = {},
-          P = tp();
-        secs.forEach(function (l) {
-          if (!assignData.assign[l] || colored[l]) return;
-          was[l] = [colored[l], P[l], heldSh[l] || null];
-          colored[l] = 1;
-          P[l] = 0;
-        });
-        const k = Object.keys(was).length;
-        if (!k) return;
-        guideDirty = true;
-        const wasC = celebrated;
-        checkComplete();
-        renderGuide();
-        updateProgress();
-        if (sfmode === 'color') renderFocusMarkers();
-        if (celebrated && !wasC) return;
-        toastAction(
-          k === 1 ? 'Marked 1 section done' : 'Marked ' + k + ' sections done',
-          'Undo',
-          function () {
-            if (g !== loadGen || !assignData || comps.length !== K) return;
-            markBack(was, true);
-            renderGuide();
-            updateProgress();
-            if (sfmode === 'color') renderFocusMarkers();
-            sayLive('Ticks as they were');
-          },
-        );
+        if (g === loadGen) colOfferTake();
       },
       12000,
     );
   });
+}
+// the offer's sections still there and not ticked
+function colOfferLeft() {
+  if (!colOffer || !assignData) return [];
+  return colOffer.filter(function (l) {
+    return assignData.assign[l] && !colored[l];
+  });
+}
+function colOfferTake() {
+  const secs = colOfferLeft(),
+    g = loadGen;
+  if (!secs.length) {
+    colOfferEnd();
+    return;
+  }
+  const was = {},
+    P = tp(),
+    off = colOffer;
+  secs.forEach(function (l) {
+    was[l] = [colored[l], P[l], heldSh[l] || null];
+    colored[l] = 1;
+    P[l] = 0;
+  });
+  const k = secs.length;
+  colOffer = null;
+  colOfferEnd();
+  guideDirty = true;
+  const wasC = celebrated;
+  checkComplete();
+  renderGuide();
+  updateProgress();
+  if (sfmode === 'color') renderFocusMarkers();
+  if (celebrated && !wasC) return;
+  toastAction(k === 1 ? 'Marked 1 section done' : 'Marked ' + k + ' sections done', 'Undo', function () {
+    if (g !== loadGen || !assignData) return;
+    markBack(was, true);
+    colOffer = off;
+    guideDirty = true;
+    renderGuide();
+    updateProgress();
+    if (sfmode === 'color') {
+      renderFocusMarkers();
+      colOfferShow();
+    }
+    sayLive('Ticks as they were');
+  });
+}
+// Colour along's line: "12 sections look coloured in already · Mark them done ✕"
+function colOfferLine() {
+  const n = colOfferLeft().length;
+  if (!n || focus) return '';
+  return (
+    '<div id="sfColOffer" class="sfheldnote" role="status"><span>' +
+    (n === 1 ? 'One section looks coloured in already.' : n + ' sections look coloured in already.') +
+    ' <button type="button" id="sfColGo" class="sflink">' +
+    (n === 1 ? 'Mark it done' : 'Mark them done') +
+    '</button></span><button type="button" id="sfColX" class="sfheldx" aria-label="Close">' +
+    ic('x') +
+    '</button></div>'
+  );
+}
+// (the line put in place, and its sections outlined on the picture while no marker's row is open)
+function colOfferShow() {
+  const old = document.getElementById('sfColOffer');
+  if (old) old.remove();
+  const html = colOfferLine(),
+    host = document.getElementById('sfAlHint') || document.querySelector('#sfCtl .sfalongp .sfinfo');
+  if (!html || sfmode !== 'color') return;
+  const pane = document.querySelector('#sfCtl .sfalongp');
+  if (!pane) return;
+  if (host && host.parentNode === pane) host.insertAdjacentHTML('beforebegin', html);
+  else pane.insertAdjacentHTML('afterbegin', html);
+  const go = document.getElementById('sfColGo'),
+    x = document.getElementById('sfColX');
+  if (go) go.addEventListener('click', colOfferTake);
+  if (x)
+    x.addEventListener('click', function () {
+      colOffer = null;
+      guideDirty = true;
+      scheduleAutosave();
+      colOfferEnd();
+    });
+  if (!hlKey) outlineSecs(colOfferLeft(), false, true);
+}
+function colOfferEnd() {
+  const el = document.getElementById('sfColOffer');
+  if (el) {
+    const had = el.contains(document.activeElement);
+    el.remove();
+    if (had) {
+      const f = document.getElementById('sfFocus');
+      if (f)
+        try {
+          f.focus({ preventScroll: true });
+        } catch (_) {}
+    }
+  }
+  if (olSet && !olRow && !hlKey) outlineSecs(null);
 }
 // how many sections are ticked, or part-way done (a tone ticked): what Reset progress would clear
 function progressCount() {
@@ -66019,6 +67283,8 @@ function exitColor() {
     _fnOl = false;
     outlineSecs(null);
   }
+  // (the offer's outline, v323)
+  if (document.getElementById('sfColOffer')) colOfferEnd();
   sfmode = 'guide';
   // (coloured sections keep their shading from here on: heldSh; the plan's toast about them may say so again)
   heldSweep();
@@ -66096,6 +67362,26 @@ function enterFocus() {
   hideToast();
   focusModal(true);
   focusIn();
+  // (v323: in Focus mode now, kept with a Library guide so Continue comes back here; focusAt is set by goFocus)
+  if (libEntry() && start >= 0) {
+    guideDirty = true;
+    scheduleAutosave();
+  }
+}
+// (v323) Home's Continue on a guide left in Focus mode (focusAt, not by Exit): Focus mode again, on that section if it
+// isn't done yet, else the next one that isn't. From Colour along, once Continue has opened it
+function continueFocus() {
+  if (focus || sfmode !== 'color' || !assignData || focusAt == null || !assignData.assign[focusAt])
+    return false;
+  if (pageDone()) return false;
+  const at = focusAt;
+  enterFocus();
+  if (!focus) return false;
+  const i = focusOrd.indexOf(at);
+  if (i < 0 || i === focusPos) return true;
+  const go = !stepDone(at, stepBits(i)) ? i : nextUndone(i);
+  if (go >= 0 && go !== focusPos) goFocus(go, false, true);
+  return true;
 }
 // (v318.32 decision 6.10) the room between the bars as it was last framed, and the frame done again when it has changed
 // since (remember: only notes the measure; from a frame or a timer after Focus is entered: fits and frames again)
@@ -66126,7 +67412,16 @@ function fitFocus() {
   sfView.style.paddingBottom = g.b + 'px';
   sizeCanvas();
 }
-function exitFocus() {
+// chosen: left by Exit, Escape or Back, so Continue goes to Colour along again (v323: focusAt); not when the guide is left
+// for Home or another tab, or Reveal
+function exitFocus(chosen) {
+  if (chosen === true && focusAt != null) {
+    focusAt = null;
+    if (libEntry()) {
+      guideDirty = true;
+      scheduleAutosave();
+    }
+  }
   const _fl = focusCur(),
     ae = document.activeElement,
     back =
@@ -66343,6 +67638,8 @@ function alongControls() {
     } catch (_) {}
   });
   updateProgress();
+  // (v323) a partly coloured page's offer, until taken or closed (82-colour-mode)
+  colOfferShow();
 }
 // With zones, Colour along goes through the whole picture (each marker once) or zone by zone (each zone's markers
 // in turn, a marker in two zones once in each): ALONG_ZONES keeps the choice on this device.
@@ -68041,7 +69338,10 @@ let olEl = null,
 // once: one pulse as it arrives, then steady (Find next, v288); otherwise it pulses while the picker is open
 let olOnce = false,
   olMerge = -1;
-function outlineSecs(ls, once) {
+// (v323) the outline is a partly coloured page's offer's (colOfferShow, 82-colour-mode)
+let _olOffer = false;
+function outlineSecs(ls, once, offer) {
+  _olOffer = !!offer && !!(ls && ls.length);
   olRow = false;
   olGroups = null;
   olSet = ls && ls.length ? ls.slice() : null;
@@ -68156,6 +69456,8 @@ function positionOutline() {
     (sfmode === 'guide' ||
       (sfmode === 'review' && olMerge > 0) ||
       (sfmode === 'color' && olRow && !focus) ||
+      // (v323: a partly coloured page's offer in Colour along, colOfferShow)
+      (sfmode === 'color' && _olOffer && !focus && !olRow && !hlKey) ||
       (sfmode === 'color' &&
         _fnOl &&
         !focus &&
@@ -70373,23 +71675,10 @@ function pinNoteFirst(secs) {
 // The sample, as it was built: a line under the tabs says it isn't in the Library yet (v285), until it's changed (then
 // it is) or closed. (Not beside the kept-sections line: a sample with coloured sections was changed, so is kept.)
 // (v289: not while the first-time "Tap a section" line is up — it goes at the next tab, and this line comes then)
+// (v323) the line is no more: the header's save line says it ("Sample · change anything to keep it", saveStText), so
+// it no longer takes a phone's panel on every tab. Kept as a function that gives nothing, for the lines that waited on it
 function sampleNoteHTML() {
-  if (
-    !curSample ||
-    _sampleNoteX ||
-    _heldNote ||
-    _pinNote ||
-    libEntry() ||
-    sampleTouched() ||
-    tapLineUp() ||
-    lowLineUp()
-  )
-    return '';
-  return (
-    '<div id="sfSampleNote" class="sfheldnote sfsamplenote" role="note"><span>This sample isn\u2019t in your Library yet. Change anything to keep it.</span><button type="button" id="sfSampleX" class="sfheldx" aria-label="Close">' +
-    ic('x') +
-    '</button></div>'
-  );
+  return '';
 }
 function sampleNoteWire() {
   const x = document.getElementById('sfSampleX');
@@ -70575,14 +71864,11 @@ function stripLineWire() {
       ctlRefocus('#sfTab-' + gTab);
     });
 }
-// The first-time "Tap a section…" line under the tabs: the first visit to the Plan, on the tab it opened on (v289: it
-// goes when you change tab, so the sample's line can have its turn)
-let _tapTab = null; // the tab it showed on; false once it has gone
+// The first-time "Tap a section…" line under the tabs: the first visit to the Plan, on every tab (v323: it went at the
+// first change of tab, v289, so the sample's line could have its turn; that line is now the header's)
 function tapLineUp() {
   if (family === 'manual' || paintOn || zoneEditOn() || _heldNote || _pinNote || lowLineUp()) return false;
-  if (_tapTab === false || (hintSeen('tap') && !_hNow.tap)) return false;
-  if (_tapTab == null) _tapTab = gTab;
-  return gTab === _tapTab;
+  return !(hintSeen('tap') && !_hNow.tap);
 }
 /* Rough spots (v306): at Polished, where markers the guide doesn't use can smooth them (gradFixRun, 30-palette-assign),
    a line under the tabs, "11 rough spots · Smooth them ✕", and a ring on the picture where each pair meets. Smooth
@@ -75331,6 +76617,29 @@ const CU_INK = '#1a1a1a',
 function cuLines(mag) {
   return Math.max(0.35, Math.min(CU_LINES, CU_LINES - (mag - 2) * 0.05));
 }
+// (v323) a close-up's picture drawn sharp at its size on the page (77-sharp), or null (then it's magnified as before)
+function cuSharp(art, cr, dw, dh) {
+  try {
+    const ow = Math.max(1, Math.round(dw)),
+      oh = Math.max(1, Math.round(dh));
+    if (ow * oh > 16e6) return null;
+    if (!art._im) art._im = art.getContext('2d').getImageData(0, 0, W, H);
+    if (!art._fill) {
+      const F = sharpField();
+      if (!F) return null;
+      art._fill = sharpFill(art._im, F, LINE);
+    }
+    const im = sharpPaint(art._im, cr, ow, oh, LINE, art._fill);
+    if (!im) return null;
+    const c = document.createElement('canvas');
+    c.width = ow;
+    c.height = oh;
+    c.getContext('2d').putImageData(im, 0, 0);
+    return c;
+  } catch (_) {
+    return null;
+  }
+}
 // 1st, 2nd, 3rd … (the key's colouring order, unlike its numbers: v284 review)
 function pdfOrd(n) {
   const t = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th';
@@ -75949,7 +77258,11 @@ function _buildPDF(dry) {
           gc.fillStyle = '#fff';
           gc.fillRect(cx, iy, dw, dh);
           gc.globalAlpha = cuLines(kc / f1.k);
-          gc.drawImage(art1, cr[0], cr[1], cr[2] - cr[0], cr[3] - cr[1], cx, iy, dw, dh);
+          // (v323: its lines drawn again at the close-up's size, smooth curves rather than magnified pixel steps,
+          // 77-sharp; as before if that can't be done)
+          const sh1 = cuSharp(art1, cr, dw, dh);
+          if (sh1) gc.drawImage(sh1, cx, iy, dw, dh);
+          else gc.drawImage(art1, cr[0], cr[1], cr[2] - cr[0], cr[3] - cr[1], cx, iy, dw, dh);
           gc.globalAlpha = 1;
           gc.setTransform(kc, 0, 0, kc, cx - cr[0] * kc, iy - cr[1] * kc);
           // (a dot only for a small section still without a label: one labelled on page 1 needs none here)
@@ -78145,7 +79458,7 @@ function mount() {
     },
     close: function (e) {
       if (inField(e)) return false;
-      exitFocus();
+      exitFocus(true);
     },
   });
   addLayer({
@@ -78997,6 +80310,8 @@ function openDesignObj(d, id, resumed, quiet, col) {
           renderGuide();
         } else if (cont) {
           if (!alongResume()) renderGuide();
+          // (v323: left in Focus mode, it opens there again)
+          continueFocus();
         }
         // (another tab's save, reloaded in place: Colour along as it was, the code box's text and all, v307)
         else if (quiet && _alKeep && _alKeep.id === id) alongRestore(_alKeep);
@@ -79197,6 +80512,8 @@ function continueGuide(id) {
       enterColor(false);
       if (!alongResume()) renderGuide();
     } else alongResume();
+    // (v323: left in Focus mode, it opens there again)
+    continueFocus();
     return;
   }
   openDesign(id, true);
@@ -79598,6 +80915,23 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     get focusFin() {
       return focusFin;
+    },
+    // (v323) the outline on the picture, a partly coloured page's offer, the section Focus mode was left on
+    get olSet() {
+      return olSet;
+    },
+    // (v323) the sharp outlines (77-sharp): drawn now, and their field worked out afresh
+    sharpDraw: sharpDraw,
+    sharpField: function (fresh) {
+      if (fresh) _shF = null;
+      return !!sharpField();
+    },
+    sharpPaint: sharpPaint,
+    get colOffer() {
+      return colOffer;
+    },
+    get focusAt() {
+      return focusAt;
     },
     get focus() {
       return focus;
@@ -80807,6 +82141,18 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       },
       set lowX(v) {
         lowX = v;
+      },
+      get colOffer() {
+        return colOffer;
+      },
+      set colOffer(v) {
+        colOffer = v;
+      },
+      get focusAt() {
+        return focusAt;
+      },
+      set focusAt(v) {
+        focusAt = v;
       },
       get smpTry() {
         return smpTry;
@@ -91827,8 +93173,13 @@ document.addEventListener('keydown', function (e) {
     });
     add.disabled = !ch.length;
     // (v309.1: the colours; a set's blender comes with it, uncounted)
-    var n = setKeys([...ks]).length;
-    add.textContent = ch.length ? 'Add ' + n + ' marker' + (n === 1 ? '' : 's') : 'Tick a set above';
+    var n = setKeys([...ks]).length,
+      // (v323) the blender a ticked set brings, when it isn't yours yet, is named: "Add 120 markers + blender", then
+      // "121 markers added" (v320: the blender counts as a marker once added; the set's size, as the list says, doesn't)
+      bl = ks.has('Ohuhu|0') && !state.owned.has('Ohuhu|0');
+    add.textContent = ch.length
+      ? 'Add ' + n + ' marker' + (n === 1 ? '' : 's') + (bl ? ' + blender' : '')
+      : 'Tick a set above';
   }
   sets.addEventListener('change', upd);
   // Ohuhu / Copic: jump the list to that brand's sets (Copic's are below the fold otherwise), and show which is in view
@@ -94335,6 +95686,10 @@ function renderHomeNotes() {
 // (not on a fresh install); Help › What's new (v318.32: its own section; it had been in About) lists this version's.
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v323',
+    t: 'Focus mode zooms steadily, a marker at a time, its outlines drawn smooth, with a ring round a section too small to see; on the iPad its panel shows your markers for the page and where you are on it. Continue takes you back into Focus mode where you left off. Markers look like swatches, with a second coat, and the Library’s guides are covers. A section’s tip says how many sections its marker colours. Printed close-ups have smooth lines.',
+  },
   {
     v: 'v322.1',
     t: 'Two fixes. A new guide stays in your Library if the app is closed or reloaded just as it’s first being saved. A PDF is written, and named, as you’d set it when you tapped Download, even if you change the choices while it’s being made.',

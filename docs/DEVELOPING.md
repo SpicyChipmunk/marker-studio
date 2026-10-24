@@ -223,6 +223,14 @@ path (marker reassignment plus UI wiring) is covered by the browser tests
 
 ## Notes on the content
 
+- **Wording style (v323).** British English, and sentence case everywhere: buttons, labels, headings, tabs and
+  menus capitalise only their first word ("Reveal & share", "Plan & keep", "Colour along"), never every word.
+  Names keep their capitals wherever they fall: brands (Ohuhu, Copic), marker codes and names, products (Colorless
+  Blender), and the app's own named features when referred to (Focus mode, Colour along). Group labels in a panel are
+  grey sentence-case labels, not small capitals; a slider's row is its label on the left and its value on the right.
+- **Motion (v323).** Short interface movements use the motion tokens in `src/css/01-base.css` (`--dur-quick`,
+  `--dur-base`, `--dur-slow`, `--ease-out`, `--ease-spring`) rather than their own timings. Entrances are off
+  under test (`html.ms-still`, unless a test sets `window.__MS_MOTION`) and with Reduce motion.
 - **Marker sets.** The set lists (`OHUHU_SETS` in `src/js/events.js`) were
   checked against Ohuhu's official colour charts and copic.jp's set pages in
   September 2026. Colourless

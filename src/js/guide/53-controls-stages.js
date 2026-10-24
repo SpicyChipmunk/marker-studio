@@ -18,7 +18,10 @@ function ctlFocus() {
     '<div id="sfHand" class="sfhand" hidden><div class="sfhcard"><div class="sfhhead"></div><span class="sfhsw"></span><div class="sfhlbl"></div><div class="sfhname"></div><div class="sfhsub"></div></div></div>' +
     '<div id="sfFocBot" class="sffocbot"></div>';
   var _ef = document.getElementById('sfExitFoc');
-  if (_ef) _ef.addEventListener('click', exitFocus);
+  if (_ef)
+    _ef.addEventListener('click', function () {
+      exitFocus(true);
+    });
   var _rs = document.getElementById('sfRailSwap');
   if (_rs) _rs.addEventListener('click', railSwap);
   var _fcb = document.getElementById('sfFocCols');

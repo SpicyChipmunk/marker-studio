@@ -709,7 +709,7 @@ img.paperpick {
   font-size: var(--t-sm);
   font-weight: 600;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity var(--dur-base);
   pointer-events: none;
   z-index: 60;
 }
@@ -935,8 +935,8 @@ img.paperpick {
   visibility: hidden;
   pointer-events: none;
   transition:
-    opacity 0.2s ease,
-    transform 0.2s ease,
+    opacity var(--dur-base) ease,
+    transform var(--dur-base) ease,
     visibility 0s linear 0.2s;
   z-index: 9500;
   text-align: center;
@@ -947,8 +947,8 @@ img.paperpick {
   transform: translate(-50%, 0);
   pointer-events: none;
   transition:
-    opacity 0.2s ease,
-    transform 0.2s ease,
+    opacity var(--dur-base) ease,
+    transform var(--dur-base) ease,
     visibility 0s;
 }
 .mstoast .sflink {
@@ -1519,8 +1519,8 @@ button.hiwdot::before {
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.28);
   transition:
-    width 0.2s ease,
-    background 0.2s ease;
+    width var(--dur-base) ease,
+    background var(--dur-base) ease;
 }
 button.hiwdot.on::before {
   width: 20px;
@@ -1606,7 +1606,7 @@ button.hlphiw::after {
   border-right: 2px solid var(--sub);
   border-bottom: 2px solid var(--sub);
   transform: rotate(-45deg);
-  transition: transform 0.15s ease;
+  transition: transform var(--dur-quick) ease;
 }
 .hlpsec[open] > summary::after {
   transform: rotate(45deg);
@@ -2249,4 +2249,80 @@ button.wnx::after,
   .prevhead .mtitle {
     flex: 1;
   }
+}
+
+/* (v323) A dialog comes in: its card rises 8px and fades up from half over --dur-slow, as the guide's own sheets do,
+   while the backdrop is there at once (fading the blurred backdrop is where Safari flickers). It starts half seen, so
+   a first frame held up by heavy work is still a dialog, never an empty screen. It plays as the overlay is shown
+   (display none to flex starts it); closing is at once. Not with Reduce motion, nor under test (html.ms-still). */
+.overlay.on > .ocard,
+.overlay.on > .mcard {
+  animation: ovin var(--dur-slow) var(--ease-out) both;
+}
+@keyframes ovin {
+  from {
+    opacity: 0.5;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+html.ms-still .overlay.on > .ocard,
+html.ms-still .overlay.on > .mcard {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .overlay.on > .ocard,
+  .overlay.on > .mcard {
+    animation: none;
+  }
+}
+
+/* (v323) A guide's tile as a cover: its picture fills the tile's top edge to edge on paper, not a small picture inside
+   a dark frame; a page near the cover's shape fills it (scover, libRowHTML), another sits whole on the paper. Its ⋯
+   sits on the cover's lower corner on a dark disc (any picture under it), so the name has the tile's width; its menu
+   opens under the cover. The ring for how far it's coloured stays at the top right. Palettes and draws keep theirs. */
+#savedList .stile.sguide .sopen {
+  padding: 0 0 10px;
+}
+#savedList .stile.sguide .spic {
+  border-radius: calc(var(--r-lg) - 1px) calc(var(--r-lg) - 1px) 0 0;
+  background: #f4f1ea;
+}
+#savedList .stile.sguide .spic .sthumb {
+  max-width: 100%;
+  max-height: 100%;
+  box-shadow: none;
+  background: transparent;
+}
+#savedList .stile.sguide .spic.scover .sthumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#savedList .stile.sguide .scol {
+  padding: 0 10px;
+}
+#savedList .stile.sguide .snfl {
+  display: none;
+}
+#savedList .stile.sguide .smore {
+  top: calc(100cqw * 1.25 - 48px);
+  right: 4px;
+  padding: 5px;
+  border-radius: 50%;
+  background: rgba(10, 12, 12, 0.6);
+  background-clip: content-box;
+  color: #fff;
+}
+#savedList .stile.sguide .smore:hover,
+#savedList .stile.sguide .smore[aria-expanded='true'] {
+  background: rgba(10, 12, 12, 0.8);
+  background-clip: content-box;
+  color: #fff;
+}
+#savedList .stile.sguide .smenu {
+  top: calc(100cqw * 1.25 - 4px);
 }

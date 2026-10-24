@@ -1191,9 +1191,15 @@ function libRowHTML(s, ed) {
           : '<span class="sring" aria-hidden="true" style="--p:' +
             Math.max(4, Math.min(96, Math.round((_d / (_n || 1)) * 100))) +
             '%"></span>';
+  // (v323) a guide's picture is its tile's cover, edge to edge: a page near the cover's shape (4:5) fills it, a little of
+  // its margin trimmed (scover); any other shape (a landscape page) sits whole on paper
+  var _ar = +s.W && +s.H ? +s.W / +s.H : 0,
+    cover = _ar > 0.68 && _ar < 0.92;
   var vis =
     s.type === 'guide'
-      ? '<span class="spic">' +
+      ? '<span class="spic' +
+        (cover ? ' scover' : '') +
+        '">' +
         ring +
         (safeThumb(s.thumb)
           ? '<img class="sthumb" alt="" src="' + esc(safeThumb(s.thumb)) + '">'

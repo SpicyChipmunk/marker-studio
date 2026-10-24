@@ -1830,3 +1830,44 @@ after(teardown);
     assert.deepEqual(errors, []);
   });
 }
+
+// ---- v323: a dialog's entrance ----
+{
+  // A dialog's card rises in (08-dialogs-match.css, ovin): with motion allowed, the welcome's card plays it; under
+  // test by default it doesn't (html.ms-still), nor with Reduce motion
+  test('a dialog’s card rises in, except under test and with Reduce motion', async () => {
+    const anim = async (init, reduce) => {
+      const { page, errors, ctx } = await openApp({ init });
+      if (reduce) {
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await page.reload();
+      }
+      await page.waitForSelector('#welcome.on');
+      const r = await page.evaluate(() => {
+        const c = document.querySelector('#welcome.on > .ocard');
+        return {
+          name: getComputedStyle(c).animationName,
+          still: document.documentElement.classList.contains('ms-still'),
+        };
+      });
+      assert.deepEqual(errors, []);
+      await ctx.close();
+      return r;
+    };
+    assert.deepEqual(await anim(null), { name: 'none', still: true }, 'under test');
+    assert.deepEqual(
+      await anim(() => {
+        window.__MS_MOTION = true;
+      }),
+      { name: 'ovin', still: false },
+      'motion asked for',
+    );
+    assert.deepEqual(
+      await anim(() => {
+        window.__MS_MOTION = true;
+      }, true),
+      { name: 'none', still: false },
+      'Reduce motion',
+    );
+  });
+}

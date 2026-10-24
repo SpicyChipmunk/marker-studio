@@ -14,6 +14,7 @@
       check  a value from a saved guide, checked and kept in range (or def): used as the guide opens;
              check(value, def, src), src being the whole object it was saved in (for a setting that replaced
              an older one, which it reads when it wasn't saved itself: blendMix)
+      first  (v323) what the app starts with, for a new guide, where that differs from def (noAdj)
       undo   kept in each Undo step
       save / snap / restore   for a setting not saved (or kept for Undo) as its variable's plain value
     The flat sections and the photo have no check: openDesignObj opens them itself, as the flat sections
@@ -165,7 +166,8 @@ const STYLE_FIELDS = [
       return gradIncl ? inclCopy(gradIncl) : undefined;
     },
   },
-  { key: 'noAdj', in: 'style', def: false, check: styleBool, undo: true },
+  // (v323: on for a new guide, first; a guide saved without it opens as it was laid, off)
+  { key: 'noAdj', in: 'style', def: false, first: true, check: styleBool, undo: true },
   // Random's Balance (v283): a guide saved before it that uses Random opens as Mixed, as it looked; any other opens on
   // Main colour, what Random starts with when chosen now
   {
@@ -463,6 +465,36 @@ const STYLE_FIELDS = [
     undo: false,
     save: function () {
       return lowX && Object.keys(lowX).length ? Object.keys(lowX) : undefined;
+    },
+  },
+  // (v323) the sections offered as coloured in already, while the offer stands (colOffer, 00-state): written only then
+  {
+    key: 'colOffer',
+    in: 'payload',
+    def: null,
+    check: function (v) {
+      if (!Array.isArray(v)) return null;
+      const a = v.filter(function (l) {
+        return typeof l === 'number' && l > 0 && l === Math.floor(l);
+      });
+      return a.length ? a.slice(0, 20000) : null;
+    },
+    undo: false,
+    save: function () {
+      return colOffer && colOffer.length ? colOffer.slice() : undefined;
+    },
+  },
+  // (v323) the section Focus mode was left on, not by Exit (focusAt, 00-state): written only then
+  {
+    key: 'focusAt',
+    in: 'payload',
+    def: null,
+    check: function (v) {
+      return typeof v === 'number' && v > 0 && v === Math.floor(v) ? v : null;
+    },
+    undo: false,
+    save: function () {
+      return focusAt != null ? focusAt : undefined;
     },
   },
   // (v313) the sample, not yet printed or renamed (smpTry, 00-state): written only then
@@ -805,6 +837,18 @@ const STYLE_VAR = {
   },
   set lowX(v) {
     lowX = v;
+  },
+  get colOffer() {
+    return colOffer;
+  },
+  set colOffer(v) {
+    colOffer = v;
+  },
+  get focusAt() {
+    return focusAt;
+  },
+  set focusAt(v) {
+    focusAt = v;
   },
   get smp() {
     return smpTry;

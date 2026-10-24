@@ -115,7 +115,9 @@ function markBack(was, done) {
 // (v318.35) A page partly coloured in already (E1-3): once its guide is built from sections found afresh, the sections
 // coloured in (colourSecs, 10-segment) are offered as done, in a toast with a button, after the first build's bloom.
 // Never marked done by themselves: a fill the app reads as a marker's may be a wash or a print's tint. Taking the
-// offer ticks them, and says so with an Undo that puts the ticks back as they were (markBack, as Mark all has)
+// offer ticks them, and says so with an Undo that puts the ticks back as they were (markBack, as Mark all has).
+// (v323) The toast went in 12 s and never came back: the offer is kept with the guide (colOffer, saved) and Colour
+// along says it too, at the top, with those sections outlined on the picture, until it's taken or closed (colOfferLine)
 function colourOffer() {
   if (!assignData || !chroma) return;
   let secs;
@@ -128,48 +130,117 @@ function colourOffer() {
   }
   const n = secs.length;
   if (!n) return;
-  const g = loadGen,
-    K = comps.length;
+  colOffer = secs.slice();
+  const g = loadGen;
   bloomAfter(function () {
-    if (g !== loadGen || !assignData || comps.length !== K) return;
+    if (g !== loadGen || !assignData || !colOfferLeft().length) return;
     toastAction(
       n === 1 ? 'One section looks coloured in already.' : n + ' sections look coloured in already.',
       n === 1 ? 'Mark it done' : 'Mark them done',
       function () {
-        if (g !== loadGen || !assignData || comps.length !== K) return;
-        const was = {},
-          P = tp();
-        secs.forEach(function (l) {
-          if (!assignData.assign[l] || colored[l]) return;
-          was[l] = [colored[l], P[l], heldSh[l] || null];
-          colored[l] = 1;
-          P[l] = 0;
-        });
-        const k = Object.keys(was).length;
-        if (!k) return;
-        guideDirty = true;
-        const wasC = celebrated;
-        checkComplete();
-        renderGuide();
-        updateProgress();
-        if (sfmode === 'color') renderFocusMarkers();
-        if (celebrated && !wasC) return;
-        toastAction(
-          k === 1 ? 'Marked 1 section done' : 'Marked ' + k + ' sections done',
-          'Undo',
-          function () {
-            if (g !== loadGen || !assignData || comps.length !== K) return;
-            markBack(was, true);
-            renderGuide();
-            updateProgress();
-            if (sfmode === 'color') renderFocusMarkers();
-            sayLive('Ticks as they were');
-          },
-        );
+        if (g === loadGen) colOfferTake();
       },
       12000,
     );
   });
+}
+// the offer's sections still there and not ticked
+function colOfferLeft() {
+  if (!colOffer || !assignData) return [];
+  return colOffer.filter(function (l) {
+    return assignData.assign[l] && !colored[l];
+  });
+}
+function colOfferTake() {
+  const secs = colOfferLeft(),
+    g = loadGen;
+  if (!secs.length) {
+    colOfferEnd();
+    return;
+  }
+  const was = {},
+    P = tp(),
+    off = colOffer;
+  secs.forEach(function (l) {
+    was[l] = [colored[l], P[l], heldSh[l] || null];
+    colored[l] = 1;
+    P[l] = 0;
+  });
+  const k = secs.length;
+  colOffer = null;
+  colOfferEnd();
+  guideDirty = true;
+  const wasC = celebrated;
+  checkComplete();
+  renderGuide();
+  updateProgress();
+  if (sfmode === 'color') renderFocusMarkers();
+  if (celebrated && !wasC) return;
+  toastAction(k === 1 ? 'Marked 1 section done' : 'Marked ' + k + ' sections done', 'Undo', function () {
+    if (g !== loadGen || !assignData) return;
+    markBack(was, true);
+    colOffer = off;
+    guideDirty = true;
+    renderGuide();
+    updateProgress();
+    if (sfmode === 'color') {
+      renderFocusMarkers();
+      colOfferShow();
+    }
+    sayLive('Ticks as they were');
+  });
+}
+// Colour along's line: "12 sections look coloured in already · Mark them done ✕"
+function colOfferLine() {
+  const n = colOfferLeft().length;
+  if (!n || focus) return '';
+  return (
+    '<div id="sfColOffer" class="sfheldnote" role="status"><span>' +
+    (n === 1 ? 'One section looks coloured in already.' : n + ' sections look coloured in already.') +
+    ' <button type="button" id="sfColGo" class="sflink">' +
+    (n === 1 ? 'Mark it done' : 'Mark them done') +
+    '</button></span><button type="button" id="sfColX" class="sfheldx" aria-label="Close">' +
+    ic('x') +
+    '</button></div>'
+  );
+}
+// (the line put in place, and its sections outlined on the picture while no marker's row is open)
+function colOfferShow() {
+  const old = document.getElementById('sfColOffer');
+  if (old) old.remove();
+  const html = colOfferLine(),
+    host = document.getElementById('sfAlHint') || document.querySelector('#sfCtl .sfalongp .sfinfo');
+  if (!html || sfmode !== 'color') return;
+  const pane = document.querySelector('#sfCtl .sfalongp');
+  if (!pane) return;
+  if (host && host.parentNode === pane) host.insertAdjacentHTML('beforebegin', html);
+  else pane.insertAdjacentHTML('afterbegin', html);
+  const go = document.getElementById('sfColGo'),
+    x = document.getElementById('sfColX');
+  if (go) go.addEventListener('click', colOfferTake);
+  if (x)
+    x.addEventListener('click', function () {
+      colOffer = null;
+      guideDirty = true;
+      scheduleAutosave();
+      colOfferEnd();
+    });
+  if (!hlKey) outlineSecs(colOfferLeft(), false, true);
+}
+function colOfferEnd() {
+  const el = document.getElementById('sfColOffer');
+  if (el) {
+    const had = el.contains(document.activeElement);
+    el.remove();
+    if (had) {
+      const f = document.getElementById('sfFocus');
+      if (f)
+        try {
+          f.focus({ preventScroll: true });
+        } catch (_) {}
+    }
+  }
+  if (olSet && !olRow && !hlKey) outlineSecs(null);
 }
 // how many sections are ticked, or part-way done (a tone ticked): what Reset progress would clear
 function progressCount() {
@@ -358,6 +429,8 @@ function exitColor() {
     _fnOl = false;
     outlineSecs(null);
   }
+  // (the offer's outline, v323)
+  if (document.getElementById('sfColOffer')) colOfferEnd();
   sfmode = 'guide';
   // (coloured sections keep their shading from here on: heldSh; the plan's toast about them may say so again)
   heldSweep();
@@ -435,6 +508,26 @@ function enterFocus() {
   hideToast();
   focusModal(true);
   focusIn();
+  // (v323: in Focus mode now, kept with a Library guide so Continue comes back here; focusAt is set by goFocus)
+  if (libEntry() && start >= 0) {
+    guideDirty = true;
+    scheduleAutosave();
+  }
+}
+// (v323) Home's Continue on a guide left in Focus mode (focusAt, not by Exit): Focus mode again, on that section if it
+// isn't done yet, else the next one that isn't. From Colour along, once Continue has opened it
+function continueFocus() {
+  if (focus || sfmode !== 'color' || !assignData || focusAt == null || !assignData.assign[focusAt])
+    return false;
+  if (pageDone()) return false;
+  const at = focusAt;
+  enterFocus();
+  if (!focus) return false;
+  const i = focusOrd.indexOf(at);
+  if (i < 0 || i === focusPos) return true;
+  const go = !stepDone(at, stepBits(i)) ? i : nextUndone(i);
+  if (go >= 0 && go !== focusPos) goFocus(go, false, true);
+  return true;
 }
 // (v318.32 decision 6.10) the room between the bars as it was last framed, and the frame done again when it has changed
 // since (remember: only notes the measure; from a frame or a timer after Focus is entered: fits and frames again)
@@ -465,7 +558,16 @@ function fitFocus() {
   sfView.style.paddingBottom = g.b + 'px';
   sizeCanvas();
 }
-function exitFocus() {
+// chosen: left by Exit, Escape or Back, so Continue goes to Colour along again (v323: focusAt); not when the guide is left
+// for Home or another tab, or Reveal
+function exitFocus(chosen) {
+  if (chosen === true && focusAt != null) {
+    focusAt = null;
+    if (libEntry()) {
+      guideDirty = true;
+      scheduleAutosave();
+    }
+  }
   const _fl = focusCur(),
     ae = document.activeElement,
     back =

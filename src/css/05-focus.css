@@ -212,7 +212,7 @@ button.sffoccols::after {
   height: 100%;
   width: 0;
   background: var(--ok);
-  transition: width 0.25s;
+  transition: width var(--dur-slow);
 }
 .sffocbot {
   position: fixed;
@@ -412,7 +412,7 @@ button.sffoccols::after {
   cursor: pointer;
 }
 .sfhand.in .sfhcard {
-  animation: sfhIn 0.22s ease-out;
+  animation: sfhIn var(--dur-base) ease-out;
 }
 @keyframes sfhIn {
   from {
@@ -710,4 +710,215 @@ html.sfrailon .mstoast {
 }
 html.sfrailon.sfrailL .mstoast {
   left: calc(var(--railW) + (100vw - var(--railW)) / 2);
+}
+
+/* (v323) Focus mode's ring round a section too small to see at the zoom it keeps (focusRing, 75-focus): white inside a
+   dark edge, so it shows on any colour, and a gentle pulse; still with Reduce motion and under test */
+#sfRoot .sffocring {
+  position: absolute;
+  z-index: 4;
+  border-radius: 50%;
+  border: 2.5px solid #fff;
+  box-shadow:
+    0 0 0 2px rgba(10, 12, 12, 0.7),
+    inset 0 0 0 2px rgba(10, 12, 12, 0.5);
+  pointer-events: none;
+  animation: focring 1.6s var(--ease-out) infinite;
+}
+#sfRoot .sffocring[hidden] {
+  display: none;
+}
+@keyframes focring {
+  0% {
+    transform: scale(0.82);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.12);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(0.82);
+    opacity: 1;
+  }
+}
+html.ms-still #sfRoot .sffocring {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  #sfRoot .sffocring {
+    animation: none;
+  }
+}
+
+/* (v323) The side rail's markers strip, under the progress bar (focusSide, 75-focus): each marker's swatch, code and
+   sections left (✓ once done), the one in hand ringed; it scrolls sideways to keep that one in view */
+.sffocstrip {
+  display: none;
+}
+html.sfrailon:not(.sfrailshort) .sffocstrip:not([hidden]) {
+  display: block;
+  margin-top: 18px;
+}
+.sffshead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--t-sm);
+  color: var(--sub);
+  margin-bottom: 8px;
+}
+.sffsrow {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 3px 2px 2px;
+  -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
+  mask-image: linear-gradient(90deg, #000 85%, transparent);
+}
+.sffsrow::-webkit-scrollbar {
+  display: none;
+}
+.sffs {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 36px;
+  color: var(--sub);
+  font-size: var(--t-sm);
+  line-height: 1.15;
+}
+.sffs i {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 12px;
+  color: #fff;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.sffs b {
+  font-weight: 700;
+}
+.sffs.done {
+  opacity: 0.55;
+}
+.sffs.cur {
+  color: var(--ink);
+}
+.sffs.cur i {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--accent-ink);
+}
+/* "Where you are": the whole page as coloured so far, a ring where the section is, under Done, Back and Skip */
+.sffocmap {
+  display: none;
+}
+html.sfrailon:not(.sfrailshort) #sfRoot.sffoc .sffocmap:not([hidden]) {
+  position: fixed;
+  z-index: 6003;
+  right: 0;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  width: var(--railW);
+  box-sizing: border-box;
+  padding: 0 calc(18px + env(safe-area-inset-right, 0px)) 0 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  color: var(--sub);
+  font: inherit;
+  font-size: var(--t-sm);
+  cursor: pointer;
+}
+html.sfrailon.sfrailL:not(.sfrailshort) #sfRoot.sffoc .sffocmap:not([hidden]) {
+  right: auto;
+  left: 0;
+  padding: 0 18px 0 calc(18px + env(safe-area-inset-left, 0px));
+}
+.sffocmap .sffmh {
+  align-self: stretch;
+  text-align: left;
+}
+.sffocmap canvas {
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+/* (v323) a short screen on its side (a phone): a compact rail, its marker on one row with Exit and Colours, Done
+   smaller and just above the zoom buttons; no strip or map */
+html.sfrailon.sfrailshort {
+  --railW: 300px;
+}
+html.sfrailon.sfrailshort .sffocbar {
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+}
+html.sfrailon.sfrailshort .sffocrow {
+  row-gap: 10px;
+}
+html.sfrailon.sfrailshort .sffocrow .sffocsw {
+  width: 36px;
+  height: 36px;
+}
+html.sfrailon.sfrailshort .sffocname b {
+  font-size: var(--t-lg);
+}
+html.sfrailon.sfrailshort .sffocprog {
+  margin-top: 10px;
+}
+html.sfrailon.sfrailshort .sffocbot {
+  top: auto;
+  bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  transform: none;
+  gap: 8px;
+}
+html.sfrailon.sfrailshort .sffocbot .fdone {
+  height: 56px;
+  font-size: var(--t-lg);
+}
+html.sfrailon.sfrailshort .sffocbot #sfFBack,
+html.sfrailon.sfrailshort .sffocbot #sfFSkip {
+  height: 44px;
+}
+html.sfrailon.sfrailshort #sfRoot.sffoc #sfZoomCtl {
+  gap: 8px;
+}
+/* (v323) a phone upright: the zoom buttons float at the picture's right edge, one above another, as on an iPad upright,
+   rather than taking a strip of their own above the bottom bar */
+@media (max-width: 699px) {
+  html:not(.sfrailon) #sfRoot.sffoc #sfZoomCtl {
+    left: auto;
+    right: calc(10px + env(safe-area-inset-right, 0px));
+    bottom: calc(var(--focBot, 76px) + 10px);
+    flex-direction: column;
+    gap: 8px;
+    padding: 0;
+    background: transparent;
+    border-top: 0;
+  }
+  html:not(.sfrailon) #sfRoot.sffoc #sfZoomCtl .sfz {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* (v323) the picture's sharp copy over the part of it on the screen (77-sharp): just over the picture, under the ring */
+#sfRoot .sfsharp {
+  position: absolute;
+  z-index: 1;
+  margin: 0;
+  pointer-events: none;
+}
+#sfRoot .sfsharp[hidden] {
+  display: none;
 }

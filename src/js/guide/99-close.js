@@ -174,6 +174,23 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get focusFin() {
       return focusFin;
     },
+    // (v323) the outline on the picture, a partly coloured page's offer, the section Focus mode was left on
+    get olSet() {
+      return olSet;
+    },
+    // (v323) the sharp outlines (77-sharp): drawn now, and their field worked out afresh
+    sharpDraw: sharpDraw,
+    sharpField: function (fresh) {
+      if (fresh) _shF = null;
+      return !!sharpField();
+    },
+    sharpPaint: sharpPaint,
+    get colOffer() {
+      return colOffer;
+    },
+    get focusAt() {
+      return focusAt;
+    },
     get focus() {
       return focus;
     },
@@ -1382,6 +1399,18 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       },
       set lowX(v) {
         lowX = v;
+      },
+      get colOffer() {
+        return colOffer;
+      },
+      set colOffer(v) {
+        colOffer = v;
+      },
+      get focusAt() {
+        return focusAt;
+      },
+      set focusAt(v) {
+        focusAt = v;
       },
       get smpTry() {
         return smpTry;

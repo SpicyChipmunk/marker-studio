@@ -220,7 +220,9 @@ after(teardown);
     assert.deepEqual(ps, set0);
     // the sample beside it (it keeps no picture), then this one again
     await page.evaluate(() => SF.loadSample());
-    await page.waitForFunction(() => document.getElementById('sfSaveSt').textContent === 'Sample');
+    await page.waitForFunction(
+      () => document.getElementById('sfSaveSt').textContent === 'Sample · change anything to keep it',
+    );
     await idle(page);
     await saveGuide(page);
     const sid = await page.evaluate(() => __mstest.curId);

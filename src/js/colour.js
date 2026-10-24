@@ -33,6 +33,13 @@ function txtWeak(hex) {
   const y = relLum(hex);
   return Math.max((y + 0.05) / (_darkTxtLum + 0.05), 1.05 / (y + 0.05)) < 4.5;
 }
+// (v323) a second coat of the same alcohol marker, as shading shows it when no darker marker is owned (45-shading) and
+// the Markers tiles' right-hand strip shows it: each channel darkened by itself, a dark one more than a light one
+function coatTwo(c) {
+  return [0, 1, 2].map(function (k) {
+    return Math.round(c[k] * (0.52 + (0.48 * c[k]) / 255));
+  });
+}
 function hsl(hex) {
   const [R, G, B] = rgb(hex),
     r = R / 255,

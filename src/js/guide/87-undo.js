@@ -502,23 +502,10 @@ function pinNoteFirst(secs) {
 // The sample, as it was built: a line under the tabs says it isn't in the Library yet (v285), until it's changed (then
 // it is) or closed. (Not beside the kept-sections line: a sample with coloured sections was changed, so is kept.)
 // (v289: not while the first-time "Tap a section" line is up — it goes at the next tab, and this line comes then)
+// (v323) the line is no more: the header's save line says it ("Sample · change anything to keep it", saveStText), so
+// it no longer takes a phone's panel on every tab. Kept as a function that gives nothing, for the lines that waited on it
 function sampleNoteHTML() {
-  if (
-    !curSample ||
-    _sampleNoteX ||
-    _heldNote ||
-    _pinNote ||
-    libEntry() ||
-    sampleTouched() ||
-    tapLineUp() ||
-    lowLineUp()
-  )
-    return '';
-  return (
-    '<div id="sfSampleNote" class="sfheldnote sfsamplenote" role="note"><span>This sample isn\u2019t in your Library yet. Change anything to keep it.</span><button type="button" id="sfSampleX" class="sfheldx" aria-label="Close">' +
-    ic('x') +
-    '</button></div>'
-  );
+  return '';
 }
 function sampleNoteWire() {
   const x = document.getElementById('sfSampleX');
@@ -704,14 +691,11 @@ function stripLineWire() {
       ctlRefocus('#sfTab-' + gTab);
     });
 }
-// The first-time "Tap a section…" line under the tabs: the first visit to the Plan, on the tab it opened on (v289: it
-// goes when you change tab, so the sample's line can have its turn)
-let _tapTab = null; // the tab it showed on; false once it has gone
+// The first-time "Tap a section…" line under the tabs: the first visit to the Plan, on every tab (v323: it went at the
+// first change of tab, v289, so the sample's line could have its turn; that line is now the header's)
 function tapLineUp() {
   if (family === 'manual' || paintOn || zoneEditOn() || _heldNote || _pinNote || lowLineUp()) return false;
-  if (_tapTab === false || (hintSeen('tap') && !_hNow.tap)) return false;
-  if (_tapTab == null) _tapTab = gTab;
-  return gTab === _tapTab;
+  return !(hintSeen('tap') && !_hNow.tap);
 }
 /* Rough spots (v306): at Polished, where markers the guide doesn't use can smooth them (gradFixRun, 30-palette-assign),
    a line under the tabs, "11 rough spots · Smooth them ✕", and a ring on the picture where each pair meets. Smooth

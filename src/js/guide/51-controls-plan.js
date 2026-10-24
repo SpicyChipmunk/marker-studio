@@ -723,7 +723,8 @@ function gradStartHTML() {
       })
       .join(', ');
   return (
-    '<div class="sfsublbl">Start colour: <span id="sfGStartC">' +
+    // (v323: one style for a slider's row, the label on the left and its value on the right, white)
+    '<div class="sfsublbl sfvrow">Start colour <span id="sfGStartC" class="sfval">' +
     gradStartName(gs, gs.r) +
     '</span></div><div class="sfgstart"><div class="sfgsstrip" aria-hidden="true" style="background:linear-gradient(90deg, ' +
     stops +
@@ -836,7 +837,7 @@ function ctlPlanPattern() {
     html +=
       '<div class="sfc-slider sfgscat' +
       (_sOff ? ' sfoff' : '') +
-      '"><div class="sfsublbl" id="sfGradScatLbl">Scatter: <b id="sfGradScatName">' +
+      '"><div class="sfsublbl sfvrow" id="sfGradScatLbl">Scatter <b id="sfGradScatName" class="sfval">' +
       GRAD_SCAT_LABEL[_sv] +
       '</b></div><input type="range" id="sfGradScat" min="0" max="4" step="1" value="' +
       _sv +

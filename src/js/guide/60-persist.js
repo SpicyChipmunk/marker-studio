@@ -1704,7 +1704,8 @@ function saveStText(pe) {
   // (v304: or the browser's database stopped answering)
   if (_saveErr)
     return storeNotAnswering() ? 'Not saved \u2014 reload to try again' : 'Not saved \u2014 storage is full';
-  if (!e && curSample && !sampleTouched()) return 'Sample';
+  // (v323: what the sample's line under the tabs said, here instead: that line filled a phone's panel on every tab)
+  if (!e && curSample && !sampleTouched()) return 'Sample \u00b7 change anything to keep it';
   if (!e) return sfmode === 'review' || _openEmpty ? 'Not saved yet' : 'Saving\u2026';
   // (v307: only while it's being written; a change waiting its moment to be saved said "Saving…" for 1.5 s after
   // every tick, so Colour along read as always saving)

@@ -657,7 +657,7 @@ after(teardown);
     await page.click('#wcHaveSet');
     assert.equal(await page.textContent('#wcSets label:has(input[data-i="3"]) .presetn'), '120');
     await page.check('#wcSets input[data-i="3"]');
-    assert.equal(await page.textContent('#wcAdd'), 'Add 120 markers');
+    assert.equal(await page.textContent('#wcAdd'), 'Add 120 markers + blender');
     await page.click('#wcAdd');
     await idle(page);
     assert.equal(await page.textContent('#wcT2'), '121 markers added');

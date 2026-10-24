@@ -296,7 +296,7 @@ let k=0;for(let x=150;x+${step}<=W-150;x+=${step})for(let y=150;y+${step}<=H-150
       const { page, errors, ctx } = await openApp({ width: w, height: h });
       await sampleGuide(page);
       await tab(page, 'pattern');
-      // Scatter: "Scatter: Polished", the same style as Look's label, the slider under it
+      // Scatter: "Scatter … Polished" (v323: its value on the right), the same style as Look's label, the slider under it
       const sc = await page.evaluate(() => {
         const l = document.getElementById('sfGradScatLbl'),
           look = [...document.querySelectorAll('#sfPanel-pattern .sfsublbl')].find(
@@ -316,8 +316,8 @@ let k=0;for(let x=150;x+${step}<=W-150;x+=${step})for(let y=150;y+${step}<=H-150
         };
       });
       assert.deepEqual(sc, {
-        text: 'Scatter: Polished',
-        cls: 'sfsublbl',
+        text: 'Scatter Polished',
+        cls: 'sfsublbl sfvrow',
         same: true,
         under: true,
         name: 'Scatter',

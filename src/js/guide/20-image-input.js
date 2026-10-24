@@ -49,6 +49,8 @@ function resetForNewPicture() {
   famRule = 4;
   // (the running-low lines closed: the guide's own, none for a new one)
   lowX = null;
+  colOffer = null;
+  focusAt = null;
   smpTry = 0;
   // (v314: a new guide, the sample too, shares a Gradient's run out by its sections' areas softened: gradArea; v315: the
   // adapting rule, pins bigger than a share counting for nothing, and no two markers too alike in the run; v318:
@@ -1177,60 +1179,92 @@ function loadSample() {
     if (ok) _loadSample();
   });
 }
+// (v323) The sample opening: its work is one block of about a second on an iPad (1.6 s here in Safari's engine, 2.6 s
+// on a slowed Chromium), and nothing on the screen moved meanwhile, the tap seeming not to have taken. A small card says
+// "Opening the sample…" at once, its ring turned by the browser off the page's thread (so it keeps turning while the
+// work holds the page), and the work starts once it has been drawn (afterPaint). It goes as the guide appears.
+function smpOpenShow() {
+  if (document.getElementById('smpOpen')) return;
+  const el = document.createElement('div');
+  el.id = 'smpOpen';
+  el.className = 'smpopen';
+  el.setAttribute('role', 'status');
+  el.innerHTML = '<span class="smpring" aria-hidden="true"></span><span>Opening the sample\u2026</span>';
+  document.body.appendChild(el);
+}
+function smpOpenHide() {
+  const el = document.getElementById('smpOpen');
+  if (el) el.remove();
+}
 function _loadSample() {
   var si = sampleIdx % SAMPLES.length,
     nm = SAMPLE_NAMES[si];
   sampleIdx++;
   _smpLoad = true;
   note('Loading sample\u2026');
+  smpOpenShow();
   const gen = ++loadGen;
   var img = new Image();
   img.onload = function () {
-    try {
-      if (!img.width || !img.height) {
-        note('Couldn\u2019t load the sample. Try again.');
-        return;
-      }
-      if (gen !== loadGen) return;
-      resetForNewPicture();
-      // (v318.13) the sample keeps Min section size as it was: a clean drawing at its own size, whose smallest real
-      // sections are under 1 mm on a page that size (its 166 sections at the default)
-      minAuto = false;
-      // (v320: Ben's two jellyfish have pinholes where their lines meet, white gaps of 5 to 10 pixels at the sample's
-      // size that he counts as sections: Min section size 5 px for it, so all 311 are in the guide)
-      if (!SAMPLE_OLD) minPos = SAMPLE_MIN_POS;
-      // (a palette held for the next new guide is this one's, the sample too, v289)
-      takeNextPal();
-      pgOrig = null;
-      srcImg = img;
-      srcUp = false;
-      processSrc();
-      sfmode = 'review';
-      resetZoom();
-      enterWork();
-      var _rs = document.getElementById('sfResume');
-      if (_rs) _rs.style.display = 'none';
-      renderControls();
-      render();
-      note(metaText());
-      // the sample is already clean line art: go straight to the finished guide (\u2190 Sections still opens the editor).
-      // It joins the Library only once it's changed (v285: sampleBuilt, 60-persist)
-      buildGuide();
-      // (only once it's built: a build that stopped short, every marker dry say, leaves a picture like any other)
-      if (assignData) sampleBuilt('Sample ' + nm);
-      renderHead();
-      renderControls();
-      saveStatus();
-    } catch (err) {
-      note('Couldn\u2019t open the sample. Try again.');
+    if (gen !== loadGen) {
+      smpOpenHide();
+      return;
     }
+    afterPaint(function () {
+      try {
+        smpOpen(img, gen, nm);
+      } finally {
+        smpOpenHide();
+      }
+    });
   };
   img.onerror = function () {
     _smpLoad = false;
+    smpOpenHide();
     if (gen === loadGen) note('Couldn\u2019t open the sample. Try again.');
   };
   var _sv = SAMPLES[si];
   img.src = _sv.slice(0, 5) === 'data:' ? _sv : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(_sv);
+}
+function smpOpen(img, gen, nm) {
+  try {
+    if (!img.width || !img.height) {
+      note('Couldn\u2019t load the sample. Try again.');
+      return;
+    }
+    if (gen !== loadGen) return;
+    resetForNewPicture();
+    // (v318.13) the sample keeps Min section size as it was: a clean drawing at its own size, whose smallest real
+    // sections are under 1 mm on a page that size (its 166 sections at the default)
+    minAuto = false;
+    // (v320: Ben's two jellyfish have pinholes where their lines meet, white gaps of 5 to 10 pixels at the sample's
+    // size that he counts as sections: Min section size 5 px for it, so all 311 are in the guide)
+    if (!SAMPLE_OLD) minPos = SAMPLE_MIN_POS;
+    // (a palette held for the next new guide is this one's, the sample too, v289)
+    takeNextPal();
+    pgOrig = null;
+    srcImg = img;
+    srcUp = false;
+    processSrc();
+    sfmode = 'review';
+    resetZoom();
+    enterWork();
+    var _rs = document.getElementById('sfResume');
+    if (_rs) _rs.style.display = 'none';
+    renderControls();
+    render();
+    note(metaText());
+    // the sample is already clean line art: go straight to the finished guide (\u2190 Sections still opens the editor).
+    // It joins the Library only once it's changed (v285: sampleBuilt, 60-persist)
+    buildGuide();
+    // (only once it's built: a build that stopped short, every marker dry say, leaves a picture like any other)
+    if (assignData) sampleBuilt('Sample ' + nm);
+    renderHead();
+    renderControls();
+    saveStatus();
+  } catch (err) {
+    note('Couldn\u2019t open the sample. Try again.');
+  }
 }
 function loadImage(file) {
   stashDirty().then(function (ok) {

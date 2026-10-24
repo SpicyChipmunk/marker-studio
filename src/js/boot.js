@@ -259,8 +259,13 @@ document.addEventListener('keydown', function (e) {
     });
     add.disabled = !ch.length;
     // (v309.1: the colours; a set's blender comes with it, uncounted)
-    var n = setKeys([...ks]).length;
-    add.textContent = ch.length ? 'Add ' + n + ' marker' + (n === 1 ? '' : 's') : 'Tick a set above';
+    var n = setKeys([...ks]).length,
+      // (v323) the blender a ticked set brings, when it isn't yours yet, is named: "Add 120 markers + blender", then
+      // "121 markers added" (v320: the blender counts as a marker once added; the set's size, as the list says, doesn't)
+      bl = ks.has('Ohuhu|0') && !state.owned.has('Ohuhu|0');
+    add.textContent = ch.length
+      ? 'Add ' + n + ' marker' + (n === 1 ? '' : 's') + (bl ? ' + blender' : '')
+      : 'Tick a set above';
   }
   sets.addEventListener('change', upd);
   // Ohuhu / Copic: jump the list to that brand's sets (Copic's are below the fold otherwise), and show which is in view

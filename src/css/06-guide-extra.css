@@ -587,7 +587,7 @@
   cursor: grab;
   touch-action: none;
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
-  transition: transform 0.12s ease;
+  transition: transform var(--dur-quick) ease;
 }
 #sfRoot .sfradc {
   position: absolute;
@@ -606,7 +606,7 @@
   justify-content: center;
   cursor: grab;
   touch-action: none;
-  transition: transform 0.12s ease;
+  transition: transform var(--dur-quick) ease;
 }
 #sfRoot .sfradc.on {
   cursor: grabbing;
@@ -623,7 +623,7 @@
 /* (v308) see-through at rest, so a code under the light still reads; whole while it's being moved or has the focus */
 #sfRoot .sfsun svg {
   opacity: 0.75;
-  transition: opacity 0.12s ease;
+  transition: opacity var(--dur-quick) ease;
 }
 #sfRoot .sfsun.on svg,
 #sfRoot .sfsun:hover svg,
@@ -1077,6 +1077,16 @@
   background: rgba(255, 216, 74, 0.14);
   color: #ffd84a;
   border: 1px solid rgba(255, 216, 74, 0.45);
+}
+/* (v323) running low: as Pinned, in the running-low line's amber; how many sections the marker colours, fainter */
+#sfRoot .sftip .sftiplow {
+  background: rgba(255, 166, 77, 0.14);
+  color: #ffb36b;
+  border-color: rgba(255, 166, 77, 0.45);
+}
+#sfRoot .sftip .sftipn {
+  opacity: 0.6;
+  font-size: var(--t-sm);
 }
 /* the marker's brand after its name, fainter */
 #sfRoot .sftip .sftipbr {
@@ -1823,7 +1833,7 @@ html.sfsheetsd .mstoast {
   height: 112px;
   object-fit: contain;
   border-radius: 6px;
-  transition: opacity 0.25s;
+  transition: opacity var(--dur-slow);
 }
 #sfRoot .sfmp.sfmpwait canvas {
   opacity: 0.45;

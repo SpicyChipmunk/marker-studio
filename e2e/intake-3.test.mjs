@@ -773,13 +773,38 @@ after(teardown);
     await page.click('#toastAct');
     await idle(page);
     assert.equal(await ticked(page), 0, 'Undo: the ticks as they were');
-    // Colour along counts none, and the offer isn't made again
+    // (v323) the offer is kept with the guide, and Colour along makes it again at its top, the sections outlined
+    assert.equal(
+      (await page.evaluate(() => __mstest.currentDesignObj().payload.colOffer || [])).length,
+      3,
+      'saved with the guide',
+    );
     await page.click('#sfColor');
     await page.waitForFunction(() => __mstest.sfmode === 'color');
     await idle(page);
     // (WebKit's first Colour along adds "· screen stays on" to the status)
     assert.match(await toolStatus(page), new RegExp(`^0 of ${n} coloured`));
     assert.doesNotMatch(await toastOn(page), /coloured in already/);
+    assert.match(
+      await page.textContent('#sfColOffer'),
+      /^3 sections look coloured in already\. Mark them done/,
+    );
+    assert.equal(await page.evaluate(() => (__mstest.olSet || []).length), 3, 'outlined on the picture');
+    await page.click('#sfColGo');
+    await idle(page);
+    assert.equal(await ticked(page), 3);
+    assert.equal(await page.locator('#sfColOffer').count(), 0, 'taken: the line goes');
+    assert.equal(await page.evaluate(() => __mstest.currentDesignObj().payload.colOffer), undefined);
+    // Undo brings the ticks and the line back; ✕ closes it for good
+    await page.click('#toastAct');
+    await idle(page);
+    assert.equal(await ticked(page), 0);
+    assert.equal(await page.isVisible('#sfColOffer'), true);
+    await page.click('#sfColX');
+    await idle(page);
+    assert.equal(await page.locator('#sfColOffer').count(), 0);
+    assert.equal(await page.evaluate(() => (__mstest.olSet || []).length), 0, 'its outline goes with it');
+    assert.equal(await page.evaluate(() => __mstest.colOffer), null);
     assert.deepEqual(errors, []);
   });
   test('a plain page gets no offer', async () => {

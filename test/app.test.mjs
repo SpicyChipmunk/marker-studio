@@ -377,6 +377,27 @@ import vm from 'node:vm';
         assert.ok(allowed.has(m[1]), `${f}: font-size:${m[1]}`);
     }
   });
+  // (v323) a var() naming a custom property defined nowhere silently falls back (or inherits): --t-xs, gone since
+  // v284, had left three labels unscaled or at the wrong size
+  test('every CSS custom property used is defined somewhere (CSS, or set from the script)', () => {
+    const src = new URL('../src/', import.meta.url);
+    const walk = (u) =>
+      readdirSync(u, { withFileTypes: true }).flatMap((d) =>
+        d.isDirectory()
+          ? walk(new URL(d.name + '/', u))
+          : /\.(css|js|html)$/.test(d.name)
+            ? [new URL(d.name, u)]
+            : [],
+      );
+    const all = walk(src)
+      .map((f) => readFileSync(f, 'utf8'))
+      .join('\n');
+    const defined = new Set([...all.matchAll(/(--[\w-]+)\s*['"]?\s*[:,]/g)].map((m) => m[1]));
+    const missing = [...new Set([...all.matchAll(/var\((--[\w-]+)/g)].map((m) => m[1]))].filter(
+      (n) => !defined.has(n),
+    );
+    assert.deepEqual(missing, []);
+  });
 }
 
 // ---- from v306-welcome.test.mjs ----
@@ -428,7 +449,10 @@ import vm from 'node:vm';
         [pw, ph] = pngSize(readFileSync(src('assets/' + page)));
       assert.ok(plain.length < kb * 1024, col + ' under ' + kb + ' KB (' + plain.length + ')');
       assert.ok(w >= 300 && h > w, w + '×' + h);
-      assert.ok(Math.abs(w / h - pw / ph) < 0.001, 'the page’s shape, so the two lie exactly over each other');
+      assert.ok(
+        Math.abs(w / h - pw / ph) < 0.001,
+        'the page’s shape, so the two lie exactly over each other',
+      );
       assert.equal(html.split(plain.toString('base64')).length - 1, 1, col + ' in index.html once');
     }
     // the picture's frame takes the sample's shape (SAMPLE_AR), the new sample's by default

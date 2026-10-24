@@ -222,6 +222,14 @@ let famRule = 0;
 // (v313) the markers whose running-low line was closed in this guide: { mkey: 1 }, saved with it (lowLineUp, 87-undo);
 // null when none. Written by: 05-style-fields, 20-image-input, 87-undo, 99-close (test)
 let lowX = null;
+// (v323) a partly coloured page's sections that look coloured in already (colourSecs), offered as done in Colour along
+// until the offer is taken or closed: a list of sections, saved with the guide; null when none (colOfferLine,
+// 82-colour-mode). Written by: 05-style-fields, 20-image-input, 82-colour-mode, 99-close (test)
+let colOffer = null;
+// (v323) the section Focus mode was on, while the guide is left in it rather than by Exit (Escape, Back): saved with the
+// guide, so Home's Continue opens Focus mode there (continueFocus, 82-colour-mode); null otherwise. Written by:
+// 05-style-fields, 20-image-input, 75-focus, 82-colour-mode, 99-close (test)
+let focusAt = null;
 // (v313) the sample, kept because it was changed (a tick), but not yet printed or renamed: 1, saved with it, so Home's
 // Continue card leaves it be (ticks to try the sample aren't a page being coloured). Written by: 05-style-fields,
 // 60-persist, 72-frame, 90-export, 99-close (test)
@@ -243,7 +251,9 @@ let bgEdgeAll = false;
 // (v308) the zones of a guide opened from the Library, Main 0 too, not laid since: { id: 1 } (mkOwnCount)
 // Written by: 20-image-input, 30-palette-assign, 97-open
 let _mkOpened = {};
-let noAdj = false; // written by: 05-style-fields, 50-controls, 99-close (test)
+// (v323: on from the start, so a new guide's Random keeps touching sections clearly apart; a guide saved without the
+// setting opens with it off, as it was laid: STYLE_FIELDS' def and first)
+let noAdj = true; // written by: 05-style-fields, 50-controls, 99-close (test)
 // Random's Balance (v283, 31-balance): 'main' (one main colour, a second and an accent, about 60/30/10 of the
 // picture) or 'mixed' (every marker alike, as Random always was); balM, balS, balA: each role's colour family
 // (BAL_FAM) or 'auto'; balSeed: which pairing Auto chose (Other pairings rolls it); noRep: Mixed's No repeats.

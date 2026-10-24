@@ -2840,3 +2840,51 @@ From Fable's design review (round R32, V1), built in two parts and compared scre
   printed and named instead. The choices are now taken as Download is tapped (`src/js/guide/90-export.js`); print-2's
   X3 G1 test caught it.
 - Cache bumped to `marker-studio-v322.1`.
+
+# Changes — v323 (the premium pass, part 3: decisions 1–16)
+
+- **Focus mode (7):** the zoom never goes past 2.5 screen pixels to a picture pixel (the sample had gone to 5.3, its
+  outlines in steps), and a section too small to see at that has a ring pulsing round it (still with Reduce motion,
+  and under test). One zoom for each marker's sections (the middle of their own), so the view pans from section to
+  section and changes zoom only between markers. A moment after each move, the outlines on the screen are drawn again
+  as smooth curves (77-sharp: a signed distance field of the line pixels, smoothed, read between pixels; a small
+  section never shrinks and a thin line never thins; a mark drawn over a line keeps it). On the iPad's side panel:
+  the page's markers in a row under the progress bar, and "Where you are", the whole page as coloured with a ring
+  where the section is (a tap shows the whole page). On a phone the zoom buttons float in a column at the picture's
+  edge; a phone on its side (from 640 by 340) has a compact side panel, the picture the screen's full height.
+- **Print (11):** the close-ups' lines drawn at their size on the page with the same smooth outlines, not magnified
+  pixel steps.
+- **Continue (15):** a guide left in Focus mode (not by Exit, Escape or Back) opens there again from Home's Continue, on
+  the section it was on (focusAt, saved with the guide).
+- **Markers (16):** the tiles as swatches: the ink to the tile's edge, a second coat on the right (the second-coat
+  colour shading uses, coatTwo), the code at the bottom left in dark or white by contrast, with a halo where neither
+  reads well. Owned: the tile filled; not owned: inset in the dashed edge. Plain fills, no blending.
+- **Library (9):** a guide's tile is a cover, its picture edge to edge on paper (a page near 4:5 fills it; another sits
+  whole); ⋯ on a dark disc on the cover's corner, so the name has the tile's width. Home's recent guides edge to edge.
+- **The section tip (8):** how many sections the marker colours, the others outlined while it's open, Running low for
+  a marker marked so.
+- **A partly coloured page (13):** the offer to mark its coloured sections done is kept with the guide (colOffer) and
+  made again at the top of Colour along with those sections outlined, until taken or closed; the toast as before.
+- **Random (10):** "Keep touching sections clearly different" on from the start for a new guide; a guide saved
+  without it opens off, as it was laid (STYLE_FIELDS' first, beside def).
+- **Plan (5, 6):** one label style: grey sentence case (Share & print's small capitals gone), sliders with the label
+  on the left and the value on the right. The sample's line under the tabs is the header's ("Sample · change anything
+  to keep it"); the first-time "Tap a section" line stays through a change of tab.
+- **Welcome (3):** "Add 120 markers + blender" when a ticked set brings a blender not yet yours (then "121 markers
+  added").
+- **The sample (1):** "Opening the sample…" at once on a card whose ring turns off the page's thread, the work after it
+  is drawn.
+- **Dialogs (2):** a dialog's card rises 8px and fades up from half as it opens (--dur-slow); the backdrop at once;
+  none with Reduce motion or under test (html.ms-still, unless window.__MS_MOTION).
+- **Motion (4):** the interface's quick transitions on three duration tokens and two easings (01-base.css); the rule,
+  and sentence case for all wording, written in docs/DEVELOPING.md.
+- **The Gradient's blind comparison (14):** 40 pairs from the colour benchmark, published as a private page for Ben.
+- Tests: the dialog entrance; the swatch tiles; the sample's header line; the coloured-in offer in Colour along; the
+  tip's count, outline and Running low; Continue into Focus mode after a reload; Focus mode's phone and sideways
+  layouts; the style golden rewritten for noAdj; the Library's covers (a 4:5 page fills, a landscape one sits whole,
+  ⋯ and its menu); focus-2's two short-landscape tests measure the card against the side panel, not a top bar.
+- **Found on the way:** three labels used `--t-xs`, a size gone since v284 — the Marker list's grey second line
+  inherited its size and Colour along's page count stayed at 12px whatever the text size; both now `--t-sm`, and a
+  unit test fails on any CSS variable used but never defined. The Analogous balance test is seeded (unseeded, about
+  one run in 25 failed by chance).
+- Cache bumped to `marker-studio-v323`.

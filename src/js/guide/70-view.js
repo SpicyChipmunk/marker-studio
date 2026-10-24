@@ -181,6 +181,10 @@ function applyXform() {
   if (photoEl) positionPhoto();
   if (tipL >= 0) positionTip();
   if (olSet) positionOutline();
+  // (v323: Focus mode's ring round a small section)
+  if (focus || document.getElementById('sfFocRing')) focusRing();
+  // (v323: the sharp copy over Focus mode's picture waits for the move to settle, 77-sharp)
+  if (focus || _shEl) sharpStale();
 }
 function clampPan() {
   const d = viewDims(),
@@ -246,7 +250,16 @@ function resetZoom() {
 // (then up to FIT_MAX). keep: zoomed in already, stay so while the section is 44px or more there.
 const FIT_MAX = 4,
   FIT_PX = 44,
-  FIT_CTX = 2;
+  FIT_CTX = 2,
+  // (v323) and no further than 2.5 screen pixels to a picture pixel: past that a section's outline shows its pixels as
+  // steps (the sample, 921 pixels across, went to 5.3 on an iPad), and the view lost the page round it
+  FIT_RES = 2.5;
+// how far in the picture can be shown before its pixels show (FIT_RES), never less than as it fits
+function fitRes() {
+  const DW = (cv && cv.offsetWidth) || 1,
+    dpr = window.devicePixelRatio || 1;
+  return Math.max(1, (FIT_RES * W) / (DW * dpr * picK()));
+}
 function fitZoom(box, l, aw, ah, keep) {
   const DW = (cv && cv.offsetWidth) || 1,
     DH = (cv && cv.offsetHeight) || 1,
@@ -257,11 +270,11 @@ function fitZoom(box, l, aw, ah, keep) {
     // (never so far in that the section is wider or taller than most of the view)
     most = Math.min((aw * 0.8) / bw, (ah * 0.8) / bh);
   let z = need <= FIT_CTX ? need : Math.min(FIT_MAX, need);
-  z = Math.max(1, Math.min(z, Math.max(1, most)));
+  z = Math.max(1, Math.min(z, Math.max(1, most), fitRes()));
   if (
     keep &&
     zoom > z &&
-    zoom <= FIT_MAX &&
+    zoom <= Math.min(FIT_MAX, fitRes()) &&
     Math.min(bw, bh) * zoom * picK() >= FIT_PX &&
     Math.max(bw / aw, bh / ah) * zoom <= 0.8
   )

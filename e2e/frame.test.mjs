@@ -850,7 +850,7 @@ after(teardown);
       // (under the line under the tabs: the sample's, which takes the place of the first visit's "tap a section" hint at
       // the first change of tab, v289)
       const pane = await rect(page, `.sftab[data-tab="${t}"]`),
-        hint = (await rect(page, '#sfSampleNote')) || (await rect(page, '.sfinfo.sfonce'));
+        hint = await rect(page, '.sfinfo.sfonce');
       assert.ok(Math.abs(pane.top - (hint ? hint.bottom : tabs0.bottom)) <= 2, `${t}: opens at its top`);
     }
     // scrolled into a long tab: the next one opens at its top with the tabs still pinned
@@ -1377,7 +1377,7 @@ after(teardown);
     assert.equal(h.name, await page.evaluate(() => __mstest.curName));
     assert.deepEqual(
       [h.status, h.save, h.surprise, h.more],
-      ['Sample', false, true, true],
+      ['Sample · change anything to keep it', false, true, true],
       'Plan: the sample, not in the Library yet (no Save: v285)',
     );
     // Reset progress is only in Colour along's ⋯ menu (see the menu's test below), never a button in Plan
@@ -1403,7 +1403,11 @@ after(teardown);
     await page.click('#sfBack2');
     await idle(page);
     h = await head(page);
-    assert.deepEqual([h.surprise, h.save, h.status], [false, false, 'Sample'], 'Edit sections');
+    assert.deepEqual(
+      [h.surprise, h.save, h.status],
+      [false, false, 'Sample · change anything to keep it'],
+      'Edit sections',
+    );
     // (v288: nothing edited, so the bar goes back to the Plan)
     await page.click('#sfToPlan');
     await page.waitForFunction(() => __mstest.assignData && document.getElementById('sfColor'));
