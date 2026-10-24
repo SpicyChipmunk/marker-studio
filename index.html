@@ -4377,6 +4377,8 @@ html.ms-ovl body {
   line-height: 1.3;
   color: var(--sub);
   overflow-wrap: anywhere;
+  /* (v324: two even lines when it wraps, not one word left alone on the second) */
+  text-wrap: balance;
 }
 #sfRoot .sfsavest.ok {
   color: var(--ok);
@@ -5761,6 +5763,20 @@ html.sfsheetin #sfRoot .sfsheet.sfshside {
   min-height: 0;
   margin-bottom: 0;
 }
+/* (v324) a narrow phone (320): "Light first", and the order's segments closer, so ⌕ stays on the row, not wrapped
+   below it on a line of its own */
+@media (max-width: 359px) {
+  #sfRoot #sfAlSort .sfalx {
+    display: none;
+  }
+  #sfRoot #sfCtl #sfAlSort {
+    gap: 4px;
+  }
+  #sfRoot #sfAlSort .sfedit {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
 /* on a phone the box folds away behind a ⌕ at the end of the order row (Colour along's first rows stay above the
    bar), and its line takes no room while empty */
 #sfRoot .sffindopen {
@@ -6719,6 +6735,11 @@ html.sfrailon #sfRoot.sffoc #sfZoomCtl {
   bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   display: flex;
   gap: 10px;
+  /* (v324: in the rail alone: a phone's own rule, under 700 wide, had made it a dark strip across the picture too) */
+  left: auto;
+  padding: 0;
+  background: transparent;
+  border-top: 0;
 }
 html.sfrailon.sfrailL #sfRoot.sffoc #sfZoomCtl {
   right: calc(100% - var(--railW) + 18px);
@@ -6819,9 +6840,16 @@ html.ms-still #sfRoot .sffocring {
 .sffocstrip {
   display: none;
 }
-html.sfrailon:not(.sfrailshort) .sffocstrip:not([hidden]) {
+html.sfrailon .sffocstrip:not([hidden]) {
   display: block;
   margin-top: 18px;
+}
+/* (v324) the compact rail's, when there's room for it above Done (focusSide measures): no heading, closer */
+html.sfrailon.sfrailshort .sffocstrip:not([hidden]) {
+  margin-top: 12px;
+}
+html.sfrailon.sfrailshort .sffshead {
+  display: none;
 }
 .sffshead {
   display: flex;
@@ -9919,6 +9947,27 @@ button.sfSeeAll {
     padding-bottom: 8px;
     -webkit-mask-image: none;
     mask-image: none;
+  }
+}
+/* (v324) a short screen: the first step's three choices as titles alone, all in view without scrolling (the
+   descriptions had pushed the third below the fold on a 568-tall phone) */
+@media (max-height: 620px) {
+  #wcStep0 .wct span {
+    display: none;
+  }
+  #wcStep0 .wcc {
+    grid-template-columns: 36px minmax(0, 1fr) 18px;
+    min-height: 60px;
+    padding: 10px 12px;
+  }
+  #wcStep0 .wci {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+  #wcStep0 .wci .ic {
+    width: 20px;
+    height: 20px;
   }
 }
 @media (max-height: 720px) {
@@ -15307,7 +15356,7 @@ if (window.__MS_TEST && !window.__MS_MOTION) document.documentElement.classList.
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New guide from a photo</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v323.1</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v324</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="light">Lightest first</option><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><button data-h="shadow">Light to shadow</button><button data-h="accent">Analogous + accent</button><button data-h="neutral">Greys + accent</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -15355,7 +15404,7 @@ if (window.__MS_TEST && !window.__MS_MOTION) document.documentElement.classList.
 <div class="overlay" id="matchOverlay" role="dialog" aria-modal="true" aria-labelledby="mtTitle"><div class="mcard"><div class="mhead"><h2 class="mtitle" id="mtTitle">Match a colour</h2><button id="matchClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="msub">Find the closest markers you own to any colour.</div><div class="msrc" role="group" aria-label="Colour source"><button type="button" data-src="photo" class="on" aria-pressed="true">Photo</button><button type="button" data-src="camera" id="matchCamBtn" aria-pressed="false" style="display:none">Camera</button><button type="button" data-src="hex" aria-pressed="false" aria-label="Hex code">Hex</button><button type="button" data-src="screen" id="matchEye" aria-pressed="false" style="display:none">Screen</button></div><div class="mpane" data-pane="photo"><button id="matchPhotoBtn" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10.5" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg><b>Choose a photo</b><span>Then tap or drag on it to sample a colour</span></button><input type="file" id="matchFile" class="fileinput" accept="image/*"><div id="matchPhotoWrap" class="mstage" style="display:none"><canvas id="matchCanvas"></canvas><div id="matchRing" class="mring" style="display:none"></div></div><div class="mhint" id="mPhotoHint" style="display:none">Tap or drag on the photo to sample. <button class="sflink" id="matchPhotoChange">Change photo</button></div><div class="paperrow" id="matchPaperRow" style="display:none"><button id="matchPaper" class="paperbtn" aria-pressed="false" title="Correct the photo’s lighting from something white in it">Tap something white</button><button id="matchLight" class="lightchip" style="display:none" aria-label="Lighting corrected: remove the correction">Lighting corrected <svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="papernote" id="matchPaperNote" role="status"></div></div><div class="mpane" data-pane="camera" style="display:none"><button id="matchCamOff" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><b>Start camera</b><span>Point the ring at a colour to match it live</span></button><div id="matchCamWrap" style="display:none"><div id="matchVideoBox" class="mstage"><video id="matchVideo" playsinline autoplay muted></video><div id="matchReticle" class="mring" style="left:50%;top:50%"></div><div class="mbadge" id="matchLive"><i></i>LIVE</div><div class="mcamctl"><button id="matchTorch" class="mpill" style="display:none">Light</button><button id="matchFreeze" class="mpill primary">Freeze</button></div></div><div class="mhint">Drag the ring onto a colour · pinch to zoom · <button class="sflink" id="matchCamStop">Stop camera</button></div></div><div class="mhint" id="matchCamTip">For the truest match, take a photo and tap something white.</div></div><div class="mpane" data-pane="hex" style="display:none"><div class="mhexrow"><label class="mpick empty" title="Open colour picker" aria-label="Open colour picker"><input type="color" id="matchPicker" value="#7c5cff"></label><input type="text" id="matchHex" placeholder="#RRGGBB" maxlength="12" autocomplete="off" spellcheck="false" aria-label="Hex colour code"></div></div><div class="mpane" data-pane="screen" style="display:none"><button id="matchEyeGo" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5M17 7l-9.5 9.5L5 19l2.5-2.5"/><path d="M13 6l5 5"/></svg><b>Pick from the screen</b><span>Click anywhere on your screen to sample it</span></button></div><div id="matchResult"></div><div id="matchSay" class="hlpsr" aria-live="polite"></div></div></div>
 
 <div class="overlay" id="buyOverlay" role="dialog" aria-modal="true" aria-labelledby="buyTitle"><div class="ocard dcard buycard"><div class="mhead"><h2 class="mtitle" id="buyTitle">Brands I’d buy</h2><button id="buyClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Where a marker you don’t have would match better, it’s suggested from the brands you choose here: in <b>Match a colour</b>, a guide’s shading and blend plan, the <b>Photo</b> pattern, and To buy’s <b>From your guides</b>.</div><div class="segs wide buymode" id="buyMode" role="group" aria-label="Suggest from"><button type="button" data-m="auto">Your brands first</button><button type="button" data-m="pick">Only these brands</button></div><div class="fams buychips" id="buyChips" role="group" aria-label="Brands"></div><div class="buynote" id="buyNote" aria-live="polite"></div><button id="buyDone" class="btn-primary">Done</button></div></div>
-<div class="overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="ocard dcard hlpcard"><div class="mhead"><h2 class="mtitle" id="helpTitle">Help</h2><button id="helpClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><button id="helpHiw" class="btn-soft hlphiw" data-help="hiw"><span>How it works</span><span class="hlphiwsub">3 quick steps</span></button><details class="hlpsec" id="helpBeta"><summary>Beta tester guide</summary><div class="hlpbody"><p class="hlptasks"><button type="button" class="nb1" id="helpTasks" data-tasks>Tester tasks</button><span>Six things to try, then <b>Send results</b>. Also at the foot of Home.</span></p><p class="hlpbt">Before you start</p><ul><li>On an iPad or iPhone, open the link in Safari and add it to your Home Screen (Share&nbsp;› Add to Home Screen) <b>before</b> you set up your markers. The Home Screen app has its own storage: what you add in a Safari tab stays in the tab. Set up in a tab already? Back up there, then restore the file in the Home Screen app.</li><li>Back up once a week: <b>Library › Back up</b>. It’s a beta, and a backup file brings everything back.</li></ul><p class="hlpbt">What it covers</p><ul><li>Ohuhu and Copic markers only. <span id="helpRanges">Ohuhu: 364 markers, among them every colour in the Honolulu sets (24 up to the complete 320) and in the 48 Mid-tone, 104 Colors, 36 Skin Tones, 36 Gray Tones, 48 Pastel, 24 Portrait and 6 Skin Tones sets. Other Ohuhu markers with these codes work too. Copic: all 358 markers, by the codes Sketch, Ciao and Classic share.</span></li><li>Colours on screen are approximate: they’re Ohuhu’s and Copic’s own published colours, and screens and inks differ, so some markers look quite different on paper. <b>Markers › Print a swatch chart</b> makes a page to colour in and compare.</li></ul><p class="hlpbt">Pictures</p><ul><li>Clear, closed lines work best: a downloaded colouring page, a scan, or a flat, evenly lit photo of a page (<b>Photographing a page</b>, below).</li><li>A page that came as a PDF: <b>Open the PDF</b>, under <b>Choose a photo</b> (with a guide open, <b>⋯ › Open a PDF</b>). If it won’t open, screenshot the page and choose the screenshot.</li></ul><p class="hlpbt">Known limits</p><ul><li>No account or sync: each device, and the Home Screen app, keeps its own data. Move it with <b>Back up</b> and <b>Restore</b>.</li><li>Very detailed, hatched or already-coloured pages, and faint or broken lines, give poor sections. <b>← Edit sections</b> can merge, split or add them.</li><li>Picking one section on the picture needs touch or a mouse.</li></ul><p class="hlpbt">What to try</p><ul><li><b>Tester tasks</b> (above, and at the foot of Home): six things to try, each answered Easy, OK, Hard or Didn’t try, with a note if you like. Your answers stay on this device until you tap <b>Send results</b>; you can send again later.</li></ul><p class="hlpbt">How to report</p><ul><li>Tap <b>Send feedback</b> (at the foot of Home, in the guide’s <b>⋯</b> menu, or in <b>About</b>, below). It adds your device, the app’s version, how many markers, guides and palettes you have, any recent errors, how long the slowest steps took this visit (times and picture sizes only) and a tester number made on this device (not your name); write what happened. To add a screenshot, use <b>Share it instead</b>.</li><li>When something goes wrong, <b>Copy details</b> beside the message copies what’s needed.</li></ul></div></details><details class="hlpsec" id="helpNews"><summary>What’s new</summary><div class="hlpbody"><div class="hlpwn"><p class="hlpwnt">What’s new in <span id="helpWnVer"></span></p><ul id="helpWnList"></ul></div></div></details><details class="hlpsec" id="helpPhoto"><summary>Photographing a page</summary><div class="hlpbody"><ul><li>Lay the page flat on a table. Smooth out any curl.</li><li>Use even light: daylight near a window, or a bright room. Keep your shadow and your hand off the page, and avoid shiny glare.</li><li>Hold your phone or iPad right above the page, not at an angle, and get all of it in the frame. A bit of table around it is fine.</li><li>Choose the photo you took: one sent by message can come back smaller.</li><li>Taken at an angle? The app finds the page and straightens it. If it isn’t sure, drag the corners, then tap <b>Straighten</b>.</li><li>A sketchbook’s binding or a strip of table along the edge? On a page not coloured in yet, <b>Trim it</b> shows above the sections and crops it off (<b>Undo</b> puts it back). Specks of grain or dust in the blank paper round the drawing are cleared for you.</li><li>Clear, dark lines work best. If sections come out wrong, <b>← Edit sections</b> lets you merge, split or add them; if the app warns about the photo, <b>Choose another photo</b> is beside the warning. <b>Min section size</b> starts at about 1 mm on the page.</li><li>Scans and screenshots work too. A colouring page that came as a PDF opens with <b>Open the PDF</b>, under <b>Choose a photo</b>, or <b>⋯ › Open a PDF</b> with a guide open.</li></ul></div></details><details class="hlpsec" id="helpScan"><summary>Adding markers by code</summary><div class="hlpbody"><ul><li><b>Markers › Add markers › Scan or type codes</b> takes codes typed one at a time, or a whole list pasted (from notes, a receipt or a spreadsheet): each line is read, and what’s unclear is asked about before anything is added.</li><li>On an iPad or iPhone, tap the box, then <b>AutoFill › Scan Text</b> on the keyboard, and hold each marker’s cap in view: its code is read with a beep, no need to tap Insert.</li><li>On Android with Gboard (free on Google Play), tap the box, open Gboard’s tools (the four-squares icon on its toolbar) and tap <b>Scan text</b>: photograph one cap and tap <b>Insert</b>; its code is read with a beep.</li><li><b>Photograph your caps</b> (<b>Markers › Add markers</b>, or its card in Scan): photograph each tray from above, caps up, in good light (about half a tray a photo: closer reads more), then choose one photo or all of them. They’re read in turn, and the codes join the list as they’re read, each marker once however many photos it’s in, with boxes on the photo: green for what was read, amber for what to check. <b>Undo</b> takes the photos’ codes back out. Caps without a box weren’t read: <b>Look closer</b> reads them again from the photo at a larger size (a while longer: Stop ends it, keeping what it read), and <b>Undo look closer</b> takes back what it added. The reader works on this device, so your photo never leaves it: a one-time download of about 22 MB, kept for offline use. It needs iPadOS or iOS 16.4 or later, or a current browser. A question’s close-up has <b>Where in the photo?</b> under it: the whole photo with that cap ringed, to find the real marker in your tray.</li><li><b>Older Ohuhu caps</b>: in 2025 Ohuhu gave its markers new codes and names (R6 Rose Red is R213 Pomegranate now). Each marker shows the code on <i>your</i> cap, everywhere in the app: Scan notes it as it reads your caps, <b>Bought ✓</b> on To buy means a new cap, and a marker’s details have <b>My cap says</b> to switch it. Markers Scan hasn’t read follow <b>Markers › ⋯ › Show the codes on older Ohuhu caps</b> (Colour along asks once). Markers’ search finds a marker by the name on its older cap too: <b>Rose Red</b> finds R213. In a guide with two markers that show the same code, an older cap’s R22 and the R22 of now, the older one’s label has a <b>*</b> and the key names both caps.</li><li>Another way to read a tray, on any device: take a photo of the caps, copy all its text (<b>Live Text</b> in Photos on an iPad or iPhone; <b>Google Lens</b> on Android) and paste it into the box (on Android, long-press the box › Paste: its lines stay apart).</li><li>A set’s box or an order email: copy its text and paste it the same way. A set’s name in it (Honolulu 120, Ciao 36 Set A) offers the whole set, to add to the list with a tap. Lost a few of its markers? After adding a set, untick them on the colour chart (<b>Markers › Add markers › Tick colours on a chart</b>).</li><li>A list in a file, a spreadsheet saved as CSV or a text file: <b>Open a list file</b>, under the steps. It’s read as a pasted list is.</li></ul></div></details><details class="hlpsec" id="helpMore"><summary>More you can do</summary><div class="hlpbody"><ul><li><b>Leave white</b>: tap a section, then <b>Leave white</b>, and it stays the paper through every change (<b>Colour it</b> brings its colour back). <b>Pin</b> keeps a section’s marker when you shuffle.</li><li><b>Zones</b>: give part of the picture its own pattern and colours, like a flower against its background. At the end of <b>Pattern</b>, tap <b>Zone</b>, then tap or drag across sections.</li><li><b>Paint</b>: in the <b>Manual</b> pattern, turn on <b>Paint</b> and drag across sections to fill them with one marker.</li><li><b>Shading</b>: lighter and darker markers you own for light and shadow, in one tap (Soft, Dramatic, Rounded or Neuro). <b>Greyscale</b> (the three grey bars under the picture) shows where the guide is light and dark.</li><li><b>Focus mode</b>, in Colour along, zooms to one section at a time. When you’re done, <b>Reveal &amp; share</b> plays your page filling with colour.</li><li><b>Print</b> (in <b>Share &amp; print</b>): the page with its key, the key with a coloured reference, or a <b>Test strip</b> to try the shading tones on your paper first. <b>Guide file</b> saves a guide to keep or send.</li><li>In <b>Markers</b>, press and hold a marker for its details: the markers it <b>Blends with</b>, and <b>Find similar</b>. <b>Match a colour</b> finds your nearest marker to a colour you pick; <b>To buy</b> keeps a shopping list; <b>Print a swatch chart</b> makes a page of every code to colour in.</li><li><b>Random</b> (in <b>Markers</b>): a marker you wouldn’t have picked, drawn at random from your markers, as a prompt or a challenge. Keep drawing to build a set; <b>Use in a guide</b> takes two or more. <b>Prefer markers you haven’t used yet</b> leaves out the markers of every guide you’ve worked with: one you’ve ticked or toned a section in, coloured along or used Focus mode in, printed, saved as an image, shared, or added a finished photo to (when they’ve all been used, it says so and draws from all). <b>Draw from these</b>, under the Markers grid, draws from the markers shown.</li><li>In the <b>Library</b>: <b>Duplicate</b> a guide to try something else, and <b>Recently deleted</b> to put back one you deleted.</li></ul></div></details><details class="hlpsec" id="helpTrouble"><summary>If something goes wrong</summary><div class="hlpbody"><ul><li><b>The sections are wrong.</b> <b>← Edit sections</b> merges, splits or adds them. A clearer photo helps most (<b>Photographing a page</b>, above).</li><li><b>A colour doesn’t match your marker.</b> The app shows Ohuhu’s and Copic’s own published colours, and screens and inks differ: some markers look quite different on paper. Colour in a swatch chart (<b>Markers › Print a swatch chart</b>) to compare, and tell us which ones, in <b>Send feedback</b>.</li><li><b>Your markers or guides are missing.</b> The Home Screen app and a Safari tab each keep their own: check the other one. Safari also clears a tab’s data after about seven days without a visit. <b>Library › Restore</b> brings back a backup.</li><li><b>A big photo is slow to open.</b> Finding its page and sections can take a few seconds; the app says what it’s doing.</li><li><b>You changed something by mistake.</b> <b>Undo</b> (↶) steps back, and Redo forward again. A section ticked by mistake in Colour along: tap it again to untick it.</li><li><b>Something looks stuck, or an error shows.</b> Close the app and open it again; your work saves itself. Then tap <b>Send feedback</b>, or <b>Copy details</b> beside the message, so we can fix it.</li><li><b>“A new version of Marker Studio is ready.”</b> Tap <b>Reload</b> when you’re ready.</li></ul></div></details><details class="hlpsec" id="helpGloss"><summary>Glossary</summary><div class="hlpbody"><dl class="hlpgl"><dt>Section</dt><dd>One area of the picture, closed in by lines, that you colour with one marker. Its marker code is printed on it.</dd><dt>Background / left out</dt><dd>Parts that stay white. The background is the paper around the drawing. Left-out sections are ones you’ve tapped with <b>Leave out</b> in <b>Edit sections</b>; tap one there again to bring it back. <b>Left white</b>: tap a section, then <b>Leave white</b>. It stays white through Shuffle, Mood and pattern changes, and is out of the key and Colour along. Tap it, then <b>Colour it</b>, to bring its colour back.</dd><dt>Plan</dt><dd>The guide’s main screen: your picture with its <b>Colours</b>, <b>Pattern</b>, <b>Shading</b> and <b>Share &amp; print</b> tabs. <b>Edit sections</b> and <b>Colour along</b> open from it; <b>← Plan</b> brings you back.</dd><dt>Colour pattern</dt><dd>How markers are spread over the page, in <b>Pattern</b>:<ul><li><b>Gradient</b>: colours flow across the page along a path (serpentine, vertical, diagonal, radial or around).</li><li><b>Random</b>: markers scattered over the sections. <b>Main colour</b> gives one colour about 60% of the picture, a second 30% and an accent 10% (tap the bar to choose them); <b>Mixed</b> treats every marker alike, and <b>No repeats</b> gives each section its own.</li><li><b>Blend</b>: tap to drop colour anchors; colours blend between them.</li><li><b>Photo</b>: colours taken from a photo you lay over the page.</li><li><b>Manual</b>: you pick every section’s marker.</li></ul></dd><dt>Flow</dt><dd>The path a <b>Gradient</b>’s colours follow across the page (<b>Pattern › Flow</b>): <b>Serpentine</b> (in rows, back and forth), <b>Vertical</b>, <b>Diagonal</b>, <b>Radial</b> (rings out from a centre), or <b>Around</b> (round a centre, like a clock’s hand; good for mandalas). Radial’s <b>Rings</b> can be <b>Circles</b> or <b>Follow the drawing</b>: out from the section under the centre, a step at a time through the sections touching it, so the colours follow the drawing’s own rings. Drag the centre mark to move where they start.</dd><dt>Matching shapes alike</dt><dd>On a page that looks like a mandala, a tick box under <b>Pattern › Flow</b> (and in <b>Random</b>’s options): the matching shapes in each ring, such as eight petals the same size and shape, take one marker. A pinned or coloured one sets the marker for its ring.</dd><dt>Look</dt><dd>How a <b>Gradient</b> lays its markers along the flow (<b>Pattern › Look</b>): <b>Smooth</b> runs each colour gently into the next; <b>Light to dark</b> lays them in bands, light to dark within each; <b>Auto</b> chooses for the page and says which.</dd><dt>Scatter</dt><dd>How neatly a <b>Gradient</b>’s colours sit (<b>Pattern › Scatter</b>). <b>Polished</b> lays neat bands in flow order; <b>Natural</b>, <b>Textured</b>, <b>Sparkle</b> and <b>Confetti</b> mix them more and more, until it’s confetti close up and a rainbow from afar.</dd><dt>Rough spots</dt><dd>Touching sections of a <b>Gradient</b> whose colours jump. A line under the tabs counts them; <b>Smooth them</b> gives one of each pair a marker the guide isn’t using.</dd><dt>Colours from</dt><dd>Where a guide’s colours come from (<b>Colours › Colours from</b>): <b>Your markers</b>, with Lean towards, Theme and Mood to steer them, or <b>A palette</b>: a few markers used as they are, shown on a card with where it came from. <b>New palette</b> makes one here in the scheme chosen (Analogous, Complementary, Light to shadow…); <b>Change it in Palette</b> opens it on the Palette screen to lock, re-roll or resize, and <b>Use in a guide</b> brings it back; <b>Choose a saved palette</b> takes one from your Library, and <b>Save to Library</b> keeps the one on the card. A palette caps the guide’s count at its size: tick <b>Expand with nearby markers</b> for more. <b>Surprise</b> keeps a palette you chose and surprises the rest.</dd><dt>Mood</dt><dd>Which of your markers a palette or a <b>Gradient</b> draws on (<b>Colours › Mood</b>): <b>Any</b>, <b>Bright</b>, <b>Soft</b>, <b>Pastel</b>, <b>Deep</b> or <b>Earthy</b>.</dd><dt>Lean towards</dt><dd>Which of your markers the colours lean to (<b>Colours › Lean towards</b>): <b>Any</b>, <b>Cool</b> or <b>Warm</b>. Under it, <b>Theme</b>: twelve palettes, from <b>Blossom</b> to <b>Twilight</b>, each with a strip of the colours it takes from your markers; tap the chosen one again for none. With Cool or Warm too, a theme takes that temperature’s colours, and one with next to none of them is greyed. With too few of a theme’s colours in your markers, the nearest are added, and a line says so.</dd><dt>Include</dt><dd>For a <b>Gradient</b> (<b>Colours › Include</b>): whether browns, greys and black, and fluorescents may be used. Each guide, and each zone, keeps its own choice.</dd><dt>Surprise</dt><dd>The <b>✨</b> button by the guide’s name: new colours and a new style in one tap (flow, mood, look, sometimes Random). <b>Undo</b> brings back what you had.</dd><dt>Zone</dt><dd>A part of the picture with its own pattern and colours, like a flower against the background around it. At the end of <b>Pattern</b>, tap <b><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg> Zone</b>, then tap or drag across sections to add them. The chips at the top of <b>Pattern</b> and <b>Colours</b> choose which zone those tabs change; <b>Main</b> is the rest of the picture. With shading on, each zone can be shaded or left flat, with its own roundness, highlights and shadows (<b>Shading</b>, under its chips); the light is the whole picture’s.</dd><dt>Pin</dt><dd>Keeps a section’s marker when you shuffle or change the pattern; a pinned section has a ring around its label. Tap a section, then <b>Pin</b>. Changing a section’s colour pins it too (<b>Unpin</b> lets the plan choose again).</dd><dt>Kept</dt><dd>A section you’ve coloured keeps its marker, whatever you change in the plan: it’s on your paper already. Kept sections have no ring; untick one and the plan can colour it again.</dd><dt>Blend companions</dt><dd>A lighter and a darker marker for each colour, listed in the printed key, for blending. A marker’s details (press and hold it in <b>Markers</b>, or tap it in <b>To buy</b>) show the lighter and darker markers it blends with, under <b>Blends with</b>.</dd><dt>Skin tones</dt><dd>A row in <b>Change colour</b>, when 3 or more of your markers are skin tones: the markers of Ohuhu’s 36 Skin Tones set and a like set of Copic’s, lightest first. Search <b>skin</b> in <b>Markers</b> for the same list.</dd><dt>Shading</dt><dd>Adds light and shadow with lighter and darker markers you own. Choose a style in its row: <b>Soft</b>, <b>Dramatic</b>, <b>Rounded</b> or <b>Neuro</b> each sets the light and the amounts for the whole picture in one tap, or <b>Off</b>. Move a slider after and it says <b>Custom</b>. For shadows only, set <b>Highlights</b> to <b>None</b>: with zones, for the zone chosen. With <b>Blender (0)</b>, put the 0 on the highlight first, then the base over the whole section. On a phone, the finer controls (Roundness, tones, texture) are under <b>More options</b>, as Pattern’s and Colours’ are. <b>Light from</b>: <b>The sun</b> (drag it on the picture to move the light), <b>The edges</b> (each section darker along its lines and in its corners, lighter in its middle, as neurographic drawings are rounded) or, with the Photo pattern, <b>The photo</b> (a style keeps the photo’s light).</dd><dt>Highlight / Base / Shadow (H/B/S)</dt><dd>The tones of a shaded section. <b>B</b> is its main marker. <b>H</b> is a lighter one on the side facing the light (or a warmer one, or the paper left white, or the Colorless Blender’s lift, <b>Blender (0)</b>, if you own one, or none for shadows only: <b>Shading › Highlights</b>), <b>S</b> a darker one on the far side (or a cooler or grey one laid over the base: <b>Shading › Shadows</b>). “2nd coat” means going over the base again.</dd><dt>Greyscale</dt><dd>The button with three grey bars under the picture (once called Values). It shows your guide in greys, so you can judge its values: where it’s light and dark, without the colours. It only changes the view.</dd><dt>Colour along</dt><dd>Where you colour your page: the markers are listed lightest first, and you tick off each section as you colour it. Your progress saves itself.</dd><dt>Focus mode</dt><dd>In <b>Colour along</b>. It zooms to one section at a time, colour by colour. Tap <b>✓ Done</b> (or the section) to move on.</dd><dt>Reveal</dt><dd>In <b>Share &amp; print</b>. Plays your page filling with colour, to share as a picture or a clip.</dd><dt>Your page</dt><dd>A photo of your finished page, added from <b>Colour along</b>’s <b>Page finished</b> panel. It’s straightened and kept beside the plan, on this device. Home shows it first; <b>Reveal &amp; share</b> can share the plan and your page together.</dd></dl></div></details><details class="hlpsec" id="helpKeys"><summary>Keyboard and screen readers</summary><div class="hlpbody"><ul><li>Picking a single section on the picture needs touch or a mouse: <b>Change colour</b>, <b>Pin</b>, <b>Leave white</b>, <b>Paint</b> and ticking off one section.</li><li>By keyboard, use <b>Colour along</b>’s list instead: open a marker, then <b>Mark all coloured</b> or <b>Find next</b>. <b>Focus mode</b> and everything else work by keyboard too.</li><li>In <b>Markers</b>, press <b>Shift+F10</b> on a marker to open its details.</li><li>In <b>Change colour</b>, <b>Tab</b> moves from one row or group of markers to the next, and the arrow keys within it.</li><li>A zone’s sections can be chosen by keyboard: in the zone’s editor, Tab to <b>Choose sections with the keys</b>. The arrow keys then move a ring from section to section, and Space adds the ringed one to the zone or takes it out.</li></ul></div></details><details class="hlpsec" id="helpData"><summary>Your data</summary><div class="hlpbody"><ul><li>Your markers, palettes, guides and photos stay on this device. Nothing is uploaded. (In the beta, <b>Send results</b> and <b>Send feedback</b> send what you write when you tap them, with your device, the app’s version, how many markers, guides and palettes you have and a tester number made on this device. <b>Send feedback</b> adds the app’s last few errors and how long its slowest steps took this visit: times and picture sizes, never the picture.)</li><li>There’s no account, no ads and no tracking. The app works offline.</li><li>On iPhone and iPad, Safari deletes a site’s data after about seven days without opening it. On your Home Screen (Share&nbsp;› Add to Home Screen) Marker Studio isn’t cleared like that, but it has its own storage: back up here first, then restore the file there.</li><li id="helpKeep"></li><li>Back up now and then: <b>Library › Back up</b> saves one file with everything. <b>Library › Restore</b> brings it back on any iPhone, iPad or computer.</li><li>In a private window (Private Browsing) everything is deleted when you close it. Use Marker Studio in an ordinary tab, or from your Home Screen.</li><li>A guide missing from your Library may still be stored on this device. <b>Find lost guides</b> looks for any and can add them back.</li></ul><div class="hlplost"><button type="button" id="helpLost" class="btn-soft">Find lost guides</button><div id="helpLostRes" class="hlplostres" role="status"></div></div><p class="hlpwipeh">Leaving the app, or starting again? <b>Delete all my data</b> removes your markers, palettes, guides and photos from this device, and the photo reader if you downloaded it.</p><button type="button" id="helpWipe" class="btn-soft hlpwipe">Delete all my data</button></div></details><details class="hlpsec" id="helpAbout"><summary>About</summary><div class="hlpbody"><p class="hlpapp"><b>Marker Studio</b> <span id="helpVer" class="hlpver"></span></p><p>Turns a photo of a colouring page into a marker-by-number guide, using the Ohuhu and Copic markers you own.</p><p>Nothing you add leaves this device. There are no accounts, ads or analytics. It works offline, and the camera is used only when you <b>scan or photograph</b> caps or <b>Match</b> a colour, and photos of caps are read on this device.</p><p>Ohuhu and Copic are trademarks of their owners. Marker Studio isn’t affiliated with or endorsed by Ohuhu or Copic. Colours on screen are approximate — compare with your own swatches. <b>Markers › Print a swatch chart</b> makes a page to colour in.</p><p>Fonts: Fraunces and Hanken Grotesk, under the SIL Open Font License. Icons: Lucide (ISC License), some from Feather (MIT License). PDFs are opened with Mozilla’s PDF.js (Apache License 2.0). The photo reader uses ONNX Runtime (MIT License) and PaddleOCR’s models (Apache License 2.0).</p><p>© 2026 SpicyChipmunk. All rights reserved.</p><div class="hlpfbrow"><button type="button" id="helpFeedback" class="btn-soft hlpfb" data-feedback>Send feedback</button><button type="button" id="helpDiag" class="btn-soft hlpfb" data-diag>Copy diagnostics</button></div></div></details></div></div>
+<div class="overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="ocard dcard hlpcard"><div class="mhead"><h2 class="mtitle" id="helpTitle">Help</h2><button id="helpClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><button id="helpHiw" class="btn-soft hlphiw" data-help="hiw"><span>How it works</span><span class="hlphiwsub">3 quick steps</span></button><details class="hlpsec" id="helpBeta"><summary>Beta tester guide</summary><div class="hlpbody"><p class="hlptasks"><button type="button" class="nb1" id="helpTasks" data-tasks>Tester tasks</button><span>Six things to try, then <b>Send results</b>. Also on Home, under its cards.</span></p><p class="hlpbt">Before you start</p><ul><li>On an iPad or iPhone, open the link in Safari and add it to your Home Screen (Share&nbsp;› Add to Home Screen) <b>before</b> you set up your markers. The Home Screen app has its own storage: what you add in a Safari tab stays in the tab. Set up in a tab already? Back up there, then restore the file in the Home Screen app.</li><li>Back up once a week: <b>Library › Back up</b>. It’s a beta, and a backup file brings everything back.</li></ul><p class="hlpbt">What it covers</p><ul><li>Ohuhu and Copic markers only. <span id="helpRanges">Ohuhu: 364 markers, among them every colour in the Honolulu sets (24 up to the complete 320) and in the 48 Mid-tone, 104 Colors, 36 Skin Tones, 36 Gray Tones, 48 Pastel, 24 Portrait and 6 Skin Tones sets. Other Ohuhu markers with these codes work too. Copic: all 358 markers, by the codes Sketch, Ciao and Classic share.</span></li><li>Colours on screen are approximate: they’re Ohuhu’s and Copic’s own published colours, and screens and inks differ, so some markers look quite different on paper. <b>Markers › Print a swatch chart</b> makes a page to colour in and compare.</li></ul><p class="hlpbt">Pictures</p><ul><li>Clear, closed lines work best: a downloaded colouring page, a scan, or a flat, evenly lit photo of a page (<b>Photographing a page</b>, below).</li><li>A page that came as a PDF: <b>Open the PDF</b>, under <b>Choose a photo</b> (with a guide open, <b>⋯ › Open a PDF</b>). If it won’t open, screenshot the page and choose the screenshot.</li></ul><p class="hlpbt">Known limits</p><ul><li>No account or sync: each device, and the Home Screen app, keeps its own data. Move it with <b>Back up</b> and <b>Restore</b>.</li><li>Very detailed, hatched or already-coloured pages, and faint or broken lines, give poor sections. <b>← Edit sections</b> can merge, split or add them.</li><li>Picking one section on the picture needs touch or a mouse.</li></ul><p class="hlpbt">What to try</p><ul><li><b>Tester tasks</b> (above, and on Home): six things to try, each answered Easy, OK, Hard or Didn’t try, with a note if you like. Your answers stay on this device until you tap <b>Send results</b>; you can send again later.</li></ul><p class="hlpbt">How to report</p><ul><li>Tap <b>Send feedback</b> (at the foot of Home, in the guide’s <b>⋯</b> menu, or in <b>About</b>, below). It adds your device, the app’s version, how many markers, guides and palettes you have, any recent errors, how long the slowest steps took this visit (times and picture sizes only) and a tester number made on this device (not your name); write what happened. To add a screenshot, use <b>Share it instead</b>.</li><li>When something goes wrong, <b>Copy details</b> beside the message copies what’s needed.</li></ul></div></details><details class="hlpsec" id="helpNews"><summary>What’s new</summary><div class="hlpbody"><div class="hlpwn"><p class="hlpwnt">What’s new in <span id="helpWnVer"></span></p><ul id="helpWnList"></ul></div></div></details><details class="hlpsec" id="helpPhoto"><summary>Photographing a page</summary><div class="hlpbody"><ul><li>Lay the page flat on a table. Smooth out any curl.</li><li>Use even light: daylight near a window, or a bright room. Keep your shadow and your hand off the page, and avoid shiny glare.</li><li>Hold your phone or iPad right above the page, not at an angle, and get all of it in the frame. A bit of table around it is fine.</li><li>Choose the photo you took: one sent by message can come back smaller.</li><li>Taken at an angle? The app finds the page and straightens it. If it isn’t sure, drag the corners, then tap <b>Straighten</b>.</li><li>A sketchbook’s binding or a strip of table along the edge? On a page not coloured in yet, <b>Trim it</b> shows above the sections and crops it off (<b>Undo</b> puts it back). Specks of grain or dust in the blank paper round the drawing are cleared for you.</li><li>Clear, dark lines work best. If sections come out wrong, <b>← Edit sections</b> lets you merge, split or add them; if the app warns about the photo, <b>Choose another photo</b> is beside the warning. <b>Min section size</b> starts at about 1 mm on the page.</li><li>Scans and screenshots work too. A colouring page that came as a PDF opens with <b>Open the PDF</b>, under <b>Choose a photo</b>, or <b>⋯ › Open a PDF</b> with a guide open.</li></ul></div></details><details class="hlpsec" id="helpScan"><summary>Adding markers by code</summary><div class="hlpbody"><ul><li><b>Markers › Add markers › Scan or type codes</b> takes codes typed one at a time, or a whole list pasted (from notes, a receipt or a spreadsheet): each line is read, and what’s unclear is asked about before anything is added.</li><li>On an iPad or iPhone, tap the box, then <b>AutoFill › Scan Text</b> on the keyboard, and hold each marker’s cap in view: its code is read with a beep, no need to tap Insert.</li><li>On Android with Gboard (free on Google Play), tap the box, open Gboard’s tools (the four-squares icon on its toolbar) and tap <b>Scan text</b>: photograph one cap and tap <b>Insert</b>; its code is read with a beep.</li><li><b>Photograph your caps</b> (<b>Markers › Add markers</b>, or its card in Scan): photograph each tray from above, caps up, in good light (about half a tray a photo: closer reads more), then choose one photo or all of them. They’re read in turn, and the codes join the list as they’re read, each marker once however many photos it’s in, with boxes on the photo: green for what was read, amber for what to check. <b>Undo</b> takes the photos’ codes back out. Caps without a box weren’t read: <b>Look closer</b> reads them again from the photo at a larger size (a while longer: Stop ends it, keeping what it read), and <b>Undo look closer</b> takes back what it added. The reader works on this device, so your photo never leaves it: a one-time download of about 22 MB, kept for offline use. It needs iPadOS or iOS 16.4 or later, or a current browser. A question’s close-up has <b>Where in the photo?</b> under it: the whole photo with that cap ringed, to find the real marker in your tray.</li><li><b>Older Ohuhu caps</b>: in 2025 Ohuhu gave its markers new codes and names (R6 Rose Red is R213 Pomegranate now). Each marker shows the code on <i>your</i> cap, everywhere in the app: Scan notes it as it reads your caps, <b>Bought ✓</b> on To buy means a new cap, and a marker’s details have <b>My cap says</b> to switch it. Markers Scan hasn’t read follow <b>Markers › ⋯ › Show the codes on older Ohuhu caps</b> (Colour along asks once). Markers’ search finds a marker by the name on its older cap too: <b>Rose Red</b> finds R213. In a guide with two markers that show the same code, an older cap’s R22 and the R22 of now, the older one’s label has a <b>*</b> and the key names both caps.</li><li>Another way to read a tray, on any device: take a photo of the caps, copy all its text (<b>Live Text</b> in Photos on an iPad or iPhone; <b>Google Lens</b> on Android) and paste it into the box (on Android, long-press the box › Paste: its lines stay apart).</li><li>A set’s box or an order email: copy its text and paste it the same way. A set’s name in it (Honolulu 120, Ciao 36 Set A) offers the whole set, to add to the list with a tap. Lost a few of its markers? After adding a set, untick them on the colour chart (<b>Markers › Add markers › Tick colours on a chart</b>).</li><li>A list in a file, a spreadsheet saved as CSV or a text file: <b>Open a list file</b>, under the steps. It’s read as a pasted list is.</li></ul></div></details><details class="hlpsec" id="helpMore"><summary>More you can do</summary><div class="hlpbody"><ul><li><b>Leave white</b>: tap a section, then <b>Leave white</b>, and it stays the paper through every change (<b>Colour it</b> brings its colour back). <b>Pin</b> keeps a section’s marker when you shuffle.</li><li><b>Zones</b>: give part of the picture its own pattern and colours, like a flower against its background. At the end of <b>Pattern</b>, tap <b>Zone</b>, then tap or drag across sections.</li><li><b>Paint</b>: in the <b>Manual</b> pattern, turn on <b>Paint</b> and drag across sections to fill them with one marker.</li><li><b>Shading</b>: lighter and darker markers you own for light and shadow, in one tap (Soft, Dramatic, Rounded or Neuro). <b>Greyscale</b> (the three grey bars under the picture) shows where the guide is light and dark.</li><li><b>Focus mode</b>, in Colour along, zooms to one section at a time. When you’re done, <b>Reveal &amp; share</b> plays your page filling with colour.</li><li><b>Print</b> (in <b>Share &amp; print</b>): the page with its key, the key with a coloured reference, or a <b>Test strip</b> to try the shading tones on your paper first. <b>Guide file</b> saves a guide to keep or send.</li><li>In <b>Markers</b>, press and hold a marker for its details: the markers it <b>Blends with</b>, and <b>Find similar</b>. <b>Match a colour</b> finds your nearest marker to a colour you pick; <b>To buy</b> keeps a shopping list; <b>Print a swatch chart</b> makes a page of every code to colour in.</li><li><b>Random</b> (in <b>Markers</b>): a marker you wouldn’t have picked, drawn at random from your markers, as a prompt or a challenge. Keep drawing to build a set; <b>Use in a guide</b> takes two or more. <b>Prefer markers you haven’t used yet</b> leaves out the markers of every guide you’ve worked with: one you’ve ticked or toned a section in, coloured along or used Focus mode in, printed, saved as an image, shared, or added a finished photo to (when they’ve all been used, it says so and draws from all). <b>Draw from these</b>, under the Markers grid, draws from the markers shown.</li><li>In the <b>Library</b>: <b>Duplicate</b> a guide to try something else, and <b>Recently deleted</b> to put back one you deleted.</li></ul></div></details><details class="hlpsec" id="helpTrouble"><summary>If something goes wrong</summary><div class="hlpbody"><ul><li><b>The sections are wrong.</b> <b>← Edit sections</b> merges, splits or adds them. A clearer photo helps most (<b>Photographing a page</b>, above).</li><li><b>A colour doesn’t match your marker.</b> The app shows Ohuhu’s and Copic’s own published colours, and screens and inks differ: some markers look quite different on paper. Colour in a swatch chart (<b>Markers › Print a swatch chart</b>) to compare, and tell us which ones, in <b>Send feedback</b>.</li><li><b>Your markers or guides are missing.</b> The Home Screen app and a Safari tab each keep their own: check the other one. Safari also clears a tab’s data after about seven days without a visit. <b>Library › Restore</b> brings back a backup.</li><li><b>A big photo is slow to open.</b> Finding its page and sections can take a few seconds; the app says what it’s doing.</li><li><b>You changed something by mistake.</b> <b>Undo</b> (↶) steps back, and Redo forward again. A section ticked by mistake in Colour along: tap it again to untick it.</li><li><b>Something looks stuck, or an error shows.</b> Close the app and open it again; your work saves itself. Then tap <b>Send feedback</b>, or <b>Copy details</b> beside the message, so we can fix it.</li><li><b>“A new version of Marker Studio is ready.”</b> Tap <b>Reload</b> when you’re ready.</li></ul></div></details><details class="hlpsec" id="helpGloss"><summary>Glossary</summary><div class="hlpbody"><dl class="hlpgl"><dt>Section</dt><dd>One area of the picture, closed in by lines, that you colour with one marker. Its marker code is printed on it.</dd><dt>Background / left out</dt><dd>Parts that stay white. The background is the paper around the drawing. Left-out sections are ones you’ve tapped with <b>Leave out</b> in <b>Edit sections</b>; tap one there again to bring it back. <b>Left white</b>: tap a section, then <b>Leave white</b>. It stays white through Shuffle, Mood and pattern changes, and is out of the key and Colour along. Tap it, then <b>Colour it</b>, to bring its colour back.</dd><dt>Plan</dt><dd>The guide’s main screen: your picture with its <b>Colours</b>, <b>Pattern</b>, <b>Shading</b> and <b>Share &amp; print</b> tabs. <b>Edit sections</b> and <b>Colour along</b> open from it; <b>← Plan</b> brings you back.</dd><dt>Colour pattern</dt><dd>How markers are spread over the page, in <b>Pattern</b>:<ul><li><b>Gradient</b>: colours flow across the page along a path (serpentine, vertical, diagonal, radial or around).</li><li><b>Random</b>: markers scattered over the sections. <b>Main colour</b> gives one colour about 60% of the picture, a second 30% and an accent 10% (tap the bar to choose them); <b>Mixed</b> treats every marker alike, and <b>No repeats</b> gives each section its own.</li><li><b>Blend</b>: tap to drop colour anchors; colours blend between them.</li><li><b>Photo</b>: colours taken from a photo you lay over the page.</li><li><b>Manual</b>: you pick every section’s marker.</li></ul></dd><dt>Flow</dt><dd>The path a <b>Gradient</b>’s colours follow across the page (<b>Pattern › Flow</b>): <b>Serpentine</b> (in rows, back and forth), <b>Vertical</b>, <b>Diagonal</b>, <b>Radial</b> (rings out from a centre), or <b>Around</b> (round a centre, like a clock’s hand; good for mandalas). Radial’s <b>Rings</b> can be <b>Circles</b> or <b>Follow the drawing</b>: out from the section under the centre, a step at a time through the sections touching it, so the colours follow the drawing’s own rings. Drag the centre mark to move where they start.</dd><dt>Matching shapes alike</dt><dd>On a page that looks like a mandala, a tick box under <b>Pattern › Flow</b> (and in <b>Random</b>’s options): the matching shapes in each ring, such as eight petals the same size and shape, take one marker. A pinned or coloured one sets the marker for its ring.</dd><dt>Look</dt><dd>How a <b>Gradient</b> lays its markers along the flow (<b>Pattern › Look</b>): <b>Smooth</b> runs each colour gently into the next; <b>Light to dark</b> lays them in bands, light to dark within each; <b>Auto</b> chooses for the page and says which.</dd><dt>Scatter</dt><dd>How neatly a <b>Gradient</b>’s colours sit (<b>Pattern › Scatter</b>). <b>Polished</b> lays neat bands in flow order; <b>Natural</b>, <b>Textured</b>, <b>Sparkle</b> and <b>Confetti</b> mix them more and more, until it’s confetti close up and a rainbow from afar.</dd><dt>Rough spots</dt><dd>Touching sections of a <b>Gradient</b> whose colours jump. A line under the tabs counts them; <b>Smooth them</b> gives one of each pair a marker the guide isn’t using.</dd><dt>Colours from</dt><dd>Where a guide’s colours come from (<b>Colours › Colours from</b>): <b>Your markers</b>, with Lean towards, Theme and Mood to steer them, or <b>A palette</b>: a few markers used as they are, shown on a card with where it came from. <b>New palette</b> makes one here in the scheme chosen (Analogous, Complementary, Light to shadow…); <b>Change it in Palette</b> opens it on the Palette screen to lock, re-roll or resize, and <b>Use in a guide</b> brings it back; <b>Choose a saved palette</b> takes one from your Library, and <b>Save to Library</b> keeps the one on the card. A palette caps the guide’s count at its size: tick <b>Expand with nearby markers</b> for more. <b>Surprise</b> keeps a palette you chose and surprises the rest.</dd><dt>Mood</dt><dd>Which of your markers a palette or a <b>Gradient</b> draws on (<b>Colours › Mood</b>): <b>Any</b>, <b>Bright</b>, <b>Soft</b>, <b>Pastel</b>, <b>Deep</b> or <b>Earthy</b>.</dd><dt>Lean towards</dt><dd>Which of your markers the colours lean to (<b>Colours › Lean towards</b>): <b>Any</b>, <b>Cool</b> or <b>Warm</b>. Under it, <b>Theme</b>: twelve palettes, from <b>Blossom</b> to <b>Twilight</b>, each with a strip of the colours it takes from your markers; tap the chosen one again for none. With Cool or Warm too, a theme takes that temperature’s colours, and one with next to none of them is greyed. With too few of a theme’s colours in your markers, the nearest are added, and a line says so.</dd><dt>Include</dt><dd>For a <b>Gradient</b> (<b>Colours › Include</b>): whether browns, greys and black, and fluorescents may be used. Each guide, and each zone, keeps its own choice.</dd><dt>Surprise</dt><dd>The <b>✨</b> button by the guide’s name: new colours and a new style in one tap (flow, mood, look, sometimes Random). <b>Undo</b> brings back what you had.</dd><dt>Zone</dt><dd>A part of the picture with its own pattern and colours, like a flower against the background around it. At the end of <b>Pattern</b>, tap <b><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg> Zone</b>, then tap or drag across sections to add them. The chips at the top of <b>Pattern</b> and <b>Colours</b> choose which zone those tabs change; <b>Main</b> is the rest of the picture. With shading on, each zone can be shaded or left flat, with its own roundness, highlights and shadows (<b>Shading</b>, under its chips); the light is the whole picture’s.</dd><dt>Pin</dt><dd>Keeps a section’s marker when you shuffle or change the pattern; a pinned section has a ring around its label. Tap a section, then <b>Pin</b>. Changing a section’s colour pins it too (<b>Unpin</b> lets the plan choose again).</dd><dt>Kept</dt><dd>A section you’ve coloured keeps its marker, whatever you change in the plan: it’s on your paper already. Kept sections have no ring; untick one and the plan can colour it again.</dd><dt>Blend companions</dt><dd>A lighter and a darker marker for each colour, listed in the printed key, for blending. A marker’s details (press and hold it in <b>Markers</b>, or tap it in <b>To buy</b>) show the lighter and darker markers it blends with, under <b>Blends with</b>.</dd><dt>Skin tones</dt><dd>A row in <b>Change colour</b>, when 3 or more of your markers are skin tones: the markers of Ohuhu’s 36 Skin Tones set and a like set of Copic’s, lightest first. Search <b>skin</b> in <b>Markers</b> for the same list.</dd><dt>Shading</dt><dd>Adds light and shadow with lighter and darker markers you own. Choose a style in its row: <b>Soft</b>, <b>Dramatic</b>, <b>Rounded</b> or <b>Neuro</b> each sets the light and the amounts for the whole picture in one tap, or <b>Off</b>. Move a slider after and it says <b>Custom</b>. For shadows only, set <b>Highlights</b> to <b>None</b>: with zones, for the zone chosen. With <b>Blender (0)</b>, put the 0 on the highlight first, then the base over the whole section. On a phone, the finer controls (Roundness, tones, texture) are under <b>More options</b>, as Pattern’s and Colours’ are. <b>Light from</b>: <b>The sun</b> (drag it on the picture to move the light), <b>The edges</b> (each section darker along its lines and in its corners, lighter in its middle, as neurographic drawings are rounded) or, with the Photo pattern, <b>The photo</b> (a style keeps the photo’s light).</dd><dt>Highlight / Base / Shadow (H/B/S)</dt><dd>The tones of a shaded section. <b>B</b> is its main marker. <b>H</b> is a lighter one on the side facing the light (or a warmer one, or the paper left white, or the Colorless Blender’s lift, <b>Blender (0)</b>, if you own one, or none for shadows only: <b>Shading › Highlights</b>), <b>S</b> a darker one on the far side (or a cooler or grey one laid over the base: <b>Shading › Shadows</b>). “2nd coat” means going over the base again.</dd><dt>Greyscale</dt><dd>The button with three grey bars under the picture (once called Values). It shows your guide in greys, so you can judge its values: where it’s light and dark, without the colours. It only changes the view.</dd><dt>Colour along</dt><dd>Where you colour your page: the markers are listed lightest first, and you tick off each section as you colour it. Your progress saves itself.</dd><dt>Focus mode</dt><dd>In <b>Colour along</b>. It zooms to one section at a time, colour by colour. Tap <b>✓ Done</b> (or the section) to move on.</dd><dt>Reveal</dt><dd>In <b>Share &amp; print</b>. Plays your page filling with colour, to share as a picture or a clip.</dd><dt>Your page</dt><dd>A photo of your finished page, added from <b>Colour along</b>’s <b>Page finished</b> panel. It’s straightened and kept beside the plan, on this device. Home shows it first; <b>Reveal &amp; share</b> can share the plan and your page together.</dd></dl></div></details><details class="hlpsec" id="helpKeys"><summary>Keyboard and screen readers</summary><div class="hlpbody"><ul><li>Picking a single section on the picture needs touch or a mouse: <b>Change colour</b>, <b>Pin</b>, <b>Leave white</b>, <b>Paint</b> and ticking off one section.</li><li>By keyboard, use <b>Colour along</b>’s list instead: open a marker, then <b>Mark all done</b> or <b>Find next</b>. <b>Focus mode</b> and everything else work by keyboard too.</li><li>In <b>Markers</b>, press <b>Shift+F10</b> on a marker to open its details.</li><li>In <b>Change colour</b>, <b>Tab</b> moves from one row or group of markers to the next, and the arrow keys within it.</li><li>A zone’s sections can be chosen by keyboard: in the zone’s editor, Tab to <b>Choose sections with the keys</b>. The arrow keys then move a ring from section to section, and Space adds the ringed one to the zone or takes it out.</li></ul></div></details><details class="hlpsec" id="helpData"><summary>Your data</summary><div class="hlpbody"><ul><li>Your markers, palettes, guides and photos stay on this device. Nothing is uploaded. (In the beta, <b>Send results</b> and <b>Send feedback</b> send what you write when you tap them, with your device, the app’s version, how many markers, guides and palettes you have and a tester number made on this device. <b>Send feedback</b> adds the app’s last few errors and how long its slowest steps took this visit: times and picture sizes, never the picture.)</li><li>There’s no account, no ads and no tracking. The app works offline.</li><li>On iPhone and iPad, Safari deletes a site’s data after about seven days without opening it. On your Home Screen (Share&nbsp;› Add to Home Screen) Marker Studio isn’t cleared like that, but it has its own storage: back up here first, then restore the file there.</li><li id="helpKeep"></li><li>Back up now and then: <b>Library › Back up</b> saves one file with everything. <b>Library › Restore</b> brings it back on any iPhone, iPad or computer.</li><li>In a private window (Private Browsing) everything is deleted when you close it. Use Marker Studio in an ordinary tab, or from your Home Screen.</li><li>A guide missing from your Library may still be stored on this device. <b>Find lost guides</b> looks for any and can add them back.</li></ul><div class="hlplost"><button type="button" id="helpLost" class="btn-soft">Find lost guides</button><div id="helpLostRes" class="hlplostres" role="status"></div></div><p class="hlpwipeh">Leaving the app, or starting again? <b>Delete all my data</b> removes your markers, palettes, guides and photos from this device, and the photo reader if you downloaded it.</p><button type="button" id="helpWipe" class="btn-soft hlpwipe">Delete all my data</button></div></details><details class="hlpsec" id="helpAbout"><summary>About</summary><div class="hlpbody"><p class="hlpapp"><b>Marker Studio</b> <span id="helpVer" class="hlpver"></span></p><p>Turns a photo of a colouring page into a marker-by-number guide, using the Ohuhu and Copic markers you own.</p><p>Nothing you add leaves this device. There are no accounts, ads or analytics. It works offline, and the camera is used only when you <b>scan or photograph</b> caps or <b>Match</b> a colour, and photos of caps are read on this device.</p><p>Ohuhu and Copic are trademarks of their owners. Marker Studio isn’t affiliated with or endorsed by Ohuhu or Copic. Colours on screen are approximate — compare with your own swatches. <b>Markers › Print a swatch chart</b> makes a page to colour in.</p><p>Fonts: Fraunces and Hanken Grotesk, under the SIL Open Font License. Icons: Lucide (ISC License), some from Feather (MIT License). PDFs are opened with Mozilla’s PDF.js (Apache License 2.0). The photo reader uses ONNX Runtime (MIT License) and PaddleOCR’s models (Apache License 2.0).</p><p>© 2026 SpicyChipmunk. All rights reserved.</p><div class="hlpfbrow"><button type="button" id="helpFeedback" class="btn-soft hlpfb" data-feedback>Send feedback</button><button type="button" id="helpDiag" class="btn-soft hlpfb" data-diag>Copy diagnostics</button></div></div></details></div></div>
 <div class="overlay" id="hiwOverlay" role="dialog" aria-modal="true" aria-labelledby="hiwTitle"><div class="ocard dcard hiwcard"><div class="mhead"><h2 class="mtitle" id="hiwTitle">How it works</h2><button id="hiwClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="hiwtrack" id="hiwTrack"><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH1"><div class="hiwart" data-art="1"></div><div class="hiwstep">Step 1 of 3</div><h3 id="hiwH1">Photograph a colouring page</h3><p>Choose a photo of a line-art page, or try the sample.</p><ul class="hiwtips"><li>Lay the page flat, in even light.</li><li>Get the whole page in the frame.</li><li>Taken at an angle? The app straightens it.</li></ul></section><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH2" aria-hidden="true"><div class="hiwart" data-art="2"></div><div class="hiwstep">Step 2 of 3</div><h3 id="hiwH2">Sections and colours</h3><p>The app finds the sections — the areas you’ll colour — and picks a marker for each, from the markers you own.</p><ul class="hiwtips"><li>Tap a section to change its colour or pin it.</li><li>Try patterns and shading in the Pattern and Shading tabs.</li></ul></section><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH3" aria-hidden="true"><div class="hiwart" data-art="3"></div><div class="hiwstep">Step 3 of 3</div><h3 id="hiwH3">Colour along</h3><p>Tap Colour along and tick sections off as you colour them.</p><ul class="hiwtips"><li>Focus mode zooms to one section at a time and walks you through.</li><li>Finished? Reveal &amp; share shows your page filling with colour.</li></ul></section></div><div class="hlpsr" id="hiwLive" aria-live="polite"></div><div class="hiwnav"><button id="hiwBack" class="hiwback" style="visibility:hidden">Back</button><div class="hiwdots" id="hiwDots" role="group" aria-label="Steps"><button class="hiwdot on" data-i="0" aria-label="Step 1: Photograph a colouring page" aria-current="step"></button><button class="hiwdot" data-i="1" aria-label="Step 2: Sections and colours"></button><button class="hiwdot" data-i="2" aria-label="Step 3: Colour along"></button></div><button data-first id="hiwNext" class="btn-primary hiwnext">Next</button></div></div></div><div class="overlay" id="ttOverlay" role="dialog" aria-modal="true" aria-labelledby="ttTitle"><div class="ocard dcard ttcard"><div class="mhead"><h2 class="mtitle" id="ttTitle" tabindex="-1">Tester tasks</h2><button id="ttClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Six things to try, in your own time. Answer each as you go: your answers stay on this device until you tap Send results.</div><div class="ttprog"><div class="ttbar" aria-hidden="true"><i id="ttBarFill"></i></div><span id="ttCount" class="ttcount"></span><button type="button" id="ttSendTop" class="ttsend">Send results</button></div><div id="ttSaid" class="ttsaid" role="status" aria-live="polite"></div><div id="ttList"></div><h3 class="tth">If you have time</h3><div id="ttExtras"></div><h3 class="tth">Last questions</h3><div id="ttQs"></div><label class="ttq"><span class="ttql">Your name <i>(optional, so we know who to thank)</i></span><input id="ttName" class="ttinput" type="text" maxlength="60" autocomplete="name"></label><div class="ttfoot"><button type="button" id="ttSend" class="btn-primary">Send results</button><button type="button" id="ttCopy" class="sflink ttcopy">Copy my answers instead</button></div><p class="ttwhat" id="ttWhat"></p></div></div><div class="overlay" id="fbOverlay" role="dialog" aria-modal="true" aria-labelledby="fbTitle"><div class="ocard dcard fbcard"><div class="mhead"><h2 class="mtitle" id="fbTitle">Send feedback</h2><button id="fbClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><label class="ttq"><span class="ttql">What happened, or what would you like?</span><textarea id="fbText" class="ttnote fbtext" maxlength="3000" rows="6"></textarea></label><div id="fbSaid" class="ttsaid" role="status" aria-live="polite"></div><div class="ttfoot"><button type="button" id="fbSend" class="btn-primary">Send</button><button type="button" id="fbShare" class="sflink ttcopy">Add a screenshot? Share it instead</button></div><p class="ttwhat">Sent with your device and screen size, the app’s version, how many markers, guides and palettes you have, the app’s last few errors, how long its slowest steps took this visit (times and picture sizes only) and a tester number made on this device (not your name), to help find what went wrong. Nothing else.</p></div></div>
 <div class="overlay" id="ptOverlay" role="dialog" aria-modal="true" aria-labelledby="ptTitle"><div class="ocard dcard ptcard"><div class="mhead"><h2 class="mtitle" id="ptTitle">Photographing a page</h2><button id="ptClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><p class="dsub">A few things make the sections come out right first time.</p><ul class="pttips"><li><svg class="ptic" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M3 25h26"/><path d="M6 22l5-9h16l-5 9z"/></svg><span><b>Flat.</b> Lay the page on a table and smooth out any curl.</span></li><li><svg class="ptic" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="10" y="3" width="12" height="8" rx="2"/><path d="M16 14v6M13 17.5l3 3 3-3"/><path d="M4 26h24"/></svg><span><b>Right above.</b> Hold your phone or iPad over the middle of the page, not at an angle.</span></li><li><svg class="ptic" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="5"/><path d="M16 3v4M16 25v4M3 16h4M25 16h4M6.8 6.8l2.8 2.8M22.4 22.4l2.8 2.8M6.8 25.2l2.8-2.8M22.4 9.6l2.8-2.8"/></svg><span><b>Even light.</b> Daylight or a bright room, with no shadow from you or your phone, and no shiny glare.</span></li><li><svg class="ptic" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M4 10V4h6M22 4h6v6M28 22v6h-6M10 28H4v-6"/><rect x="9" y="8" width="14" height="16" rx="1"/></svg><span><b>All of it.</b> Get the whole page in the frame. A bit of table round it is fine.</span></li><li><svg class="ptic" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="4" y="6" width="24" height="20" rx="2"/><path d="M4 22l7-7 6 6 4-4 7 7"/><circle cx="21" cy="12" r="2"/></svg><span><b>The original.</b> Choose the photo you took: one sent by message can come back smaller.</span></li></ul><p class="dsub">Taken at an angle anyway? The app finds the page and straightens it.</p><button type="button" id="ptGo" class="btn-primary ptgo" data-first>Choose a photo</button></div></div>
 <div class="overlay prevov" id="prevOverlay" role="dialog" aria-modal="true" aria-labelledby="prevTitle"><div class="ocard prevcard"><div class="mhead prevhead"><h2 class="mtitle" id="prevTitle">Page 1</h2><span class="prevkind" id="prevKind"></span><button type="button" id="prevPdf" class="btn-primary prevpdf">Download PDF</button><button type="button" id="prevClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="prevstage" id="prevStage" role="img" aria-roledescription="page" aria-label="Page 1"></div><div class="prevfoot"><button type="button" id="prevBack" class="prevnav" aria-label="Page before"><svg class="ic icnav icback" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></button><span class="prevn" id="prevN" aria-hidden="true"></span><button type="button" id="prevNext" class="prevnav" aria-label="Next page"><svg class="ic icnav" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></button></div></div></div>
@@ -16247,75 +16296,431 @@ function brandKey() {
     .map((b) => bTag(b) + ' = ' + b)
     .join('    ');
 }
-/* ---- guide name generator: reads the palette (hue families, lightness, intensity, spread) and writes an evocative two/three-word name ---- */
+/* ---- guide name generator: reads the palette (hue families, lightness, intensity, spread) and writes an evocative two/three-word name ----
+   (v324) The words: each listed once across all the lists (Coral had been under three families, so it came up three
+   times as often), spread over gems and minerals, flowers, creatures, places, weather, textiles and times of day as
+   well as food (half of all names had been food or drink: a menu); the romantic words gone (Affair, Crush, Tryst,
+   Liaison, Temptation…: a colouring app many families use), British spellings (Harbour, Candyfloss). EVO_FOOD: at most
+   one of them in a name. EVO_FIT: an adjective that means a colour (Golden, Inky) only with colours it suits.
+   (v324, second pass) More words in every list, and titles of their own beside the two-word names: an old master's
+   ("Nocturne in Navy and Gold"), a room or garden ("The Saffron Parlour"), a creature's song, where a flower grows,
+   skies, seasons ("Plum Season"), "A Touch of Lilac", "Ode to Teal". */
 var EVO_HUES = {
   red: {
-    pale: ['Blush', 'Rosé', 'Petal', 'Strawberry', 'Coral'],
+    pale: [
+      'Blush',
+      'Camellia',
+      'Rosehip',
+      'Salmon',
+      'Strawberry',
+      'Coral',
+      'Seashell',
+      'Rosebud',
+      'Tea Rose',
+      'Conch',
+    ],
     mid: [
       'Scarlet',
-      'Coral',
       'Cherry',
       'Poppy',
       'Crimson',
       'Ruby',
-      'Cerise',
       'Rouge',
       'Cinnabar',
       'Vermilion',
       'Lipstick',
+      'Geranium',
+      'Pomegranate',
+      'Cardinal',
+      'Postbox',
+      'Ladybird',
+      'Robin',
+      'Red Admiral',
+      'Rowan',
+      'Toadstool',
+      'Fire Engine',
     ],
-    deep: ['Garnet', 'Merlot', 'Claret', 'Oxblood', 'Bordeaux', 'Cabernet', 'Black Cherry'],
+    deep: [
+      'Garnet',
+      'Merlot',
+      'Claret',
+      'Oxblood',
+      'Bordeaux',
+      'Black Cherry',
+      'Mahogany',
+      'Carnelian',
+      'Brick',
+      'Burgundy',
+      'Jasper',
+      'Red Oak',
+    ],
   },
   orange: {
-    pale: ['Peach', 'Apricot', 'Melon', 'Nectarine', 'Sherbet'],
-    mid: ['Tangerine', 'Ember', 'Papaya', 'Persimmon', 'Coral', 'Mango', 'Paprika', 'Clementine'],
-    deep: ['Rust', 'Copper', 'Cognac', 'Terracotta', 'Cinnamon', 'Amberwood', 'Spice'],
+    pale: [
+      'Peach',
+      'Apricot',
+      'Melon',
+      'Sherbet',
+      'Sunrise',
+      'Daylily',
+      'Calendula',
+      'Peach Blossom',
+      'Honeysuckle',
+    ],
+    mid: [
+      'Tangerine',
+      'Ember',
+      'Persimmon',
+      'Mango',
+      'Paprika',
+      'Clementine',
+      'Marmalade',
+      'Pumpkin',
+      'Fox',
+      'Monarch',
+      'Bonfire',
+      'Tiger Lily',
+      'Koi',
+      'Goldfish',
+      'Nasturtium',
+      'Lantern',
+    ],
+    deep: [
+      'Rust',
+      'Copper',
+      'Cognac',
+      'Terracotta',
+      'Cinnamon',
+      'Russet',
+      'Burnt Sienna',
+      'Autumn',
+      'Chestnut',
+      'Ginger',
+      'Conker',
+      'Copper Beech',
+      'Red Squirrel',
+    ],
   },
   yellow: {
-    pale: ['Champagne', 'Butter', 'Vanilla', 'Limoncello', 'Primrose', 'Chiffon'],
-    mid: ['Honey', 'Saffron', 'Citrine', 'Gold', 'Sunflower', 'Lemon', 'Buttercup', 'Mimosa', 'Marigold'],
-    deep: ['Ochre', 'Mustard', 'Bronze', 'Brass', 'Amber', 'Turmeric', 'Old Gold'],
+    pale: [
+      'Champagne',
+      'Butter',
+      'Vanilla',
+      'Primrose',
+      'Chiffon',
+      'Daffodil',
+      'Moonbeam',
+      'Straw',
+      'Cowslip',
+      'Corn Silk',
+      'Meadowsweet',
+    ],
+    mid: [
+      'Honey',
+      'Saffron',
+      'Citrine',
+      'Gold',
+      'Sunflower',
+      'Lemon',
+      'Buttercup',
+      'Mimosa',
+      'Marigold',
+      'Canary',
+      'Sunbeam',
+      'Goldfinch',
+      'Dandelion',
+      'Bumblebee',
+      'Sunshine',
+      'Yellowhammer',
+      'Celandine',
+    ],
+    deep: [
+      'Ochre',
+      'Mustard',
+      'Bronze',
+      'Brass',
+      'Amber',
+      'Turmeric',
+      'Old Gold',
+      'Topaz',
+      'Gold Leaf',
+      'Harvest',
+      'Goldenrod',
+      'Wheatfield',
+      'Antique Gold',
+    ],
   },
   lime: {
-    pale: ['Pistachio', 'Key Lime', 'Honeydew', 'Pear', 'Celery Silk'],
-    mid: ['Chartreuse', 'Lime', 'Absinthe', 'Matcha', 'Kiwi', 'Limeade'],
-    deep: ['Olive', 'Moss', 'Lichen', 'Martini Olive', 'Fern Shade'],
+    pale: [
+      'Pistachio',
+      'Key Lime',
+      'Honeydew',
+      'Pear',
+      'Spring Bud',
+      'Sprout',
+      'Seedling',
+      'Pea Shoot',
+      'Spring Green',
+      'Catkin',
+      'Lacewing',
+    ],
+    mid: [
+      'Chartreuse',
+      'Lime',
+      'Matcha',
+      'Kiwi',
+      'Grasshopper',
+      'Tree Frog',
+      'New Leaf',
+      'Green Apple',
+      'Lily Pad',
+      'Peridot',
+      'Greenfinch',
+      'Gecko',
+      'Caterpillar',
+    ],
+    deep: ['Olive', 'Moss', 'Lichen', 'Bracken', 'Avocado', 'Khaki', 'Hedgerow', 'Seaweed', 'Pondweed'],
   },
   green: {
-    pale: ['Mint', 'Sage', 'Celadon', 'Eucalyptus', 'Spearmint'],
-    mid: ['Jade', 'Emerald', 'Fern', 'Basil', 'Clover', 'Shamrock', 'Palm'],
-    deep: ['Forest', 'Juniper', 'Evergreen', 'Malachite', 'Ivy', 'Bottle Green', 'Pine'],
+    pale: ['Mint', 'Sage', 'Celadon', 'Eucalyptus', 'Spearmint', 'Aloe', 'Dewdrop', 'Mistletoe', 'Seagrass'],
+    mid: [
+      'Jade',
+      'Emerald',
+      'Fern',
+      'Basil',
+      'Clover',
+      'Shamrock',
+      'Palm',
+      'Parakeet',
+      'Ivy',
+      'Holly',
+      'Bamboo',
+      'Cactus',
+      'Dragon',
+      'Woodpecker',
+    ],
+    deep: [
+      'Forest',
+      'Juniper',
+      'Evergreen',
+      'Malachite',
+      'Bottle Green',
+      'Pine',
+      'Spruce',
+      'Laurel',
+      'Cedar',
+      'Rainforest',
+      'Yew',
+      'Fir',
+      'Hunter Green',
+      'Conifer',
+    ],
   },
   teal: {
-    pale: ['Sea Glass', 'Seafoam', 'Aqua', 'Glacier', 'Mint Julep'],
-    mid: ['Teal', 'Lagoon', 'Turquoise', 'Verdigris', 'Mermaid', 'Tidepool'],
-    deep: ['Spruce', 'Peacock', 'Petrol', 'Deep Lagoon', 'Jadeite'],
+    pale: [
+      'Sea Glass',
+      'Seafoam',
+      'Aqua',
+      'Glacier',
+      'Duck Egg',
+      'Surf',
+      'Shallows',
+      'Sea Spray',
+      'Rock Pool',
+      'Opal',
+    ],
+    mid: [
+      'Teal',
+      'Lagoon',
+      'Turquoise',
+      'Verdigris',
+      'Mermaid',
+      'Tidepool',
+      'Kingfisher',
+      'Dragonfly',
+      'Caribbean',
+      'Aquamarine',
+      'Sea Turtle',
+      'Kelp',
+      'Tourmaline',
+    ],
+    deep: ['Peacock', 'Petrol', 'Jadeite', 'Deep Sea', 'Mallard', 'Fathom', 'Blue Spruce', 'Sea Moss'],
   },
   blue: {
-    pale: ['Powder Blue', 'Sky', 'Cornflower', 'Chambray', 'Ice', 'Periwinkle'],
-    mid: ['Cobalt', 'Azure', 'Cerulean', 'Sapphire', 'Denim', 'Delft', 'Riviera Blue'],
-    deep: ['Navy', 'Ink', 'Prussian', 'Marine', 'Midnight Blue', 'Oxford'],
+    pale: [
+      'Powder Blue',
+      'Sky',
+      'Cornflower',
+      'Chambray',
+      'Ice',
+      'Periwinkle',
+      'Forget-Me-Not',
+      'Frost',
+      'Hydrangea',
+      'Baby Blue',
+      'Snowmelt',
+      'Morning Sky',
+      'Blue Tit',
+    ],
+    mid: [
+      'Cobalt',
+      'Azure',
+      'Cerulean',
+      'Sapphire',
+      'Denim',
+      'Delft',
+      'Lapis',
+      'Ultramarine',
+      'Bluebird',
+      'Blue Jay',
+      'Blue Whale',
+      'Sailor Blue',
+      'Blueberry',
+    ],
+    deep: [
+      'Navy',
+      'Ink',
+      'Prussian',
+      'Marine',
+      'Midnight Blue',
+      'Oxford',
+      'Admiral',
+      'Deep Ocean',
+      'Night Sky',
+      'Royal Blue',
+      'Bilberry',
+    ],
   },
   violet: {
-    pale: ['Lavender', 'Lilac', 'Wisteria', 'Thistle', 'Heather'],
-    mid: ['Amethyst', 'Iris', 'Violet', 'Hyacinth', 'Ultraviolet'],
-    deep: ['Aubergine', 'Indigo', 'Blackberry', 'Nightshade', 'Damson'],
+    pale: [
+      'Lavender',
+      'Lilac',
+      'Wisteria',
+      'Thistle',
+      'Heather',
+      'Bluebell',
+      'Crocus',
+      'Bellflower',
+      'Harebell',
+      'Sea Holly',
+    ],
+    mid: [
+      'Amethyst',
+      'Iris',
+      'Violet',
+      'Hyacinth',
+      'Ultraviolet',
+      'Pansy',
+      'Clematis',
+      'Lupin',
+      'Purple Emperor',
+      'Allium',
+      'Petunia',
+      'Verbena',
+    ],
+    deep: ['Aubergine', 'Indigo', 'Blackberry', 'Damson', 'Tyrian', 'Royal Purple', 'Elderberry', 'Sloe'],
   },
   magenta: {
-    pale: ['Orchid', 'Peony', 'Mauve', 'Sweet Pea'],
-    mid: ['Fuchsia', 'Magenta', 'Raspberry', 'Bougainvillea', 'Hibiscus'],
-    deep: ['Plum', 'Mulberry', 'Sangria', 'Boysenberry', 'Black Plum'],
+    pale: ['Orchid', 'Peony', 'Mauve', 'Sweet Pea', 'Mallow', 'Cosmos', 'Phlox', 'Sweet William'],
+    mid: [
+      'Fuchsia',
+      'Magenta',
+      'Raspberry',
+      'Bougainvillea',
+      'Hibiscus',
+      'Foxglove',
+      'Azalea',
+      'Rhododendron',
+      'Dragon Fruit',
+      'Fireweed',
+      'Primula',
+    ],
+    deep: ['Plum', 'Mulberry', 'Boysenberry', 'Beetroot', 'Heliotrope', 'Black Tulip', 'Dark Orchid'],
   },
   pink: {
-    pale: ['Ballet Pink', 'Petal', 'Cotton Candy', 'Blush', 'Rose Quartz'],
-    mid: ['Rose', 'Flamingo', 'Watermelon', 'Cerise', 'Hot Pink', 'Candy'],
-    deep: ['Raspberry', 'Rosewood', 'Cranberry', 'Berry', 'Wild Rose'],
+    pale: [
+      'Ballet Pink',
+      'Petal',
+      'Candyfloss',
+      'Rose Quartz',
+      'Cherry Blossom',
+      'Tutu',
+      'Marshmallow',
+      'Apple Blossom',
+      'Shell Pink',
+    ],
+    mid: [
+      'Rose',
+      'Flamingo',
+      'Watermelon',
+      'Cerise',
+      'Hot Pink',
+      'Bubblegum',
+      'Carnation',
+      'Begonia',
+      'Rosebay',
+      'Coral Pink',
+      'Stargazer',
+    ],
+    deep: ['Rosewood', 'Cranberry', 'Berry', 'Wild Rose', 'Damask', 'Rhubarb', 'Old Rose'],
   },
 };
 var EVO_NEUTRAL = {
-  pale: ['Linen', 'Pearl', 'Oyster', 'Cashmere', 'Porcelain', 'Ivory', 'Chalk', 'Moonstone', 'Alabaster'],
-  mid: ['Pewter', 'Smoke', 'Stone', 'Fog', 'Ash', 'Driftwood', 'Taupe', 'Mink', 'Silver', 'Flint'],
-  deep: ['Graphite', 'Onyx', 'Charcoal', 'Slate', 'Obsidian', 'Espresso', 'Gunmetal', 'Soot'],
+  pale: [
+    'Linen',
+    'Pearl',
+    'Oyster',
+    'Cashmere',
+    'Porcelain',
+    'Ivory',
+    'Chalk',
+    'Moonstone',
+    'Alabaster',
+    'Eggshell',
+    'Cloud',
+    'Snowdrift',
+    'Sea Salt',
+    'Swan',
+    'Parchment',
+    'Mist',
+  ],
+  mid: [
+    'Pewter',
+    'Smoke',
+    'Stone',
+    'Fog',
+    'Ash',
+    'Driftwood',
+    'Taupe',
+    'Mink',
+    'Silver',
+    'Flint',
+    'Pebble',
+    'Dove',
+    'Heron',
+    'Sandstone',
+    'Tweed',
+    'Granite',
+    'Silver Birch',
+    'Mushroom',
+    'Moth',
+  ],
+  deep: [
+    'Graphite',
+    'Onyx',
+    'Charcoal',
+    'Slate',
+    'Obsidian',
+    'Espresso',
+    'Gunmetal',
+    'Soot',
+    'Raven',
+    'Basalt',
+    'Jet',
+    'Storm Cloud',
+    'Ironstone',
+    'Panther',
+  ],
 };
 var EVO_MOOD = {
   pale: [
@@ -16331,24 +16736,28 @@ var EVO_MOOD = {
     'Moonlit',
     'Gauzy',
     'Dreamy',
+    'Frosted',
+    'Feathered',
+    'Snowy',
+    'Airy',
+    'Lacy',
   ],
   deep: [
     'Midnight',
     'Velvet',
-    'Smouldering',
     'Candlelit',
     'Inky',
-    'Sultry',
-    'Brooding',
     'Dusky',
     'Nocturnal',
     'Shadowed',
     'Moody',
-    'Decadent',
+    'Twilit',
+    'Stormy',
+    'Starlit',
+    'Wintry',
   ],
   vivid: [
     'Electric',
-    'Fevered',
     'Radiant',
     'Wild',
     'Blazing',
@@ -16358,7 +16767,12 @@ var EVO_MOOD = {
     'Molten',
     'Sunlit',
     'Juicy',
-    'Brazen',
+    'Bold',
+    'Dazzling',
+    'Fizzy',
+    'Zesty',
+    'Sparkling',
+    'Vivid',
   ],
   soft: [
     'Smoky',
@@ -16371,6 +16785,11 @@ var EVO_MOOD = {
     'Mellow',
     'Wistful',
     'Muted',
+    'Gentle',
+    'Quiet',
+    'Dusty',
+    'Chalky',
+    'Drowsy',
   ],
   mid: [
     'Satin',
@@ -16378,38 +16797,48 @@ var EVO_MOOD = {
     'Honeyed',
     'Burnished',
     'Glowing',
-    'Tender',
     'Glossy',
     'Lacquered',
     'Golden',
-    'Silken',
+    'Painted',
+    'Shimmering',
+    'Enamelled',
+    'Polished',
+    'Glazed',
   ],
 };
+// (the moods that mean a colour, and the families they suit: "Golden Turquoise" read as a contradiction)
+var EVO_FIT = {
+  Golden: ['red', 'orange', 'yellow', 'lime', 'neutral'],
+  Gilded: ['red', 'orange', 'yellow', 'lime', 'neutral'],
+  Honeyed: ['red', 'orange', 'yellow', 'pink', 'neutral'],
+  Burnished: ['red', 'orange', 'yellow', 'neutral'],
+  Molten: ['red', 'orange', 'yellow', 'pink', 'magenta'],
+  Blazing: ['red', 'orange', 'yellow', 'pink', 'magenta'],
+  Blushing: ['red', 'orange', 'pink', 'magenta', 'neutral'],
+  Candlelit: ['red', 'orange', 'yellow', 'neutral'],
+  Inky: ['blue', 'violet', 'teal', 'green', 'magenta', 'neutral'],
+  Midnight: ['blue', 'violet', 'teal', 'green', 'magenta', 'neutral'],
+  Frosted: ['blue', 'teal', 'violet', 'green', 'lime', 'pink', 'magenta', 'neutral'],
+  Sunlit: ['red', 'orange', 'yellow', 'lime', 'green', 'teal', 'pink'],
+  Snowy: ['blue', 'teal', 'violet', 'green', 'pink', 'magenta', 'neutral'],
+  Wintry: ['blue', 'teal', 'violet', 'green', 'magenta', 'neutral'],
+  Zesty: ['orange', 'yellow', 'lime', 'green'],
+  Fizzy: ['red', 'orange', 'yellow', 'lime', 'green', 'teal', 'pink', 'magenta'],
+};
 var EVO_VIBE = [
-  'Affair',
-  'Kiss',
-  'Crush',
-  'Tryst',
   'Whisper',
   'Serenade',
   'Tango',
-  'Rendezvous',
   'Reverie',
-  'Allure',
   'Secret',
-  'Flirt',
-  'Temptation',
-  'Siren',
   'Muse',
   'Soirée',
-  'Boudoir',
   'Afterglow',
   'Heatwave',
   'Mirage',
   'Riviera',
   'Cabana',
-  'Martini',
-  'Nightcap',
   'Encore',
   'Spell',
   'Charm',
@@ -16420,28 +16849,78 @@ var EVO_VIBE = [
   'Lullaby',
   'Sonnet',
   'Daydream',
-  'Fever',
   'Rhapsody',
-  'Liaison',
-  'Desire',
-  'Caress',
-  'Embrace',
-  'Slow Dance',
-  'Last Dance',
-  'Velvet',
   'Silk',
-  'Satin',
   'Lace',
-  'Chiffon',
-  'Confession',
+  'Postcard',
+  'Parade',
+  'Picnic',
+  'Holiday',
+  'Voyage',
+  'Fable',
+  'Legend',
+  'Echo',
+  'Carousel',
+  'Kite',
+  'Keepsake',
+  'Wish',
+  'Promise',
+  'Story',
+  'Jamboree',
+  'Tea Party',
+  'Treasure',
+  'Snow Globe',
+  'Music Box',
+  'Sketchbook',
+  'Lighthouse',
+  'Paper Boat',
+  'Fairy Tale',
+  'Hideaway',
+  'Adventure',
+  'Escapade',
 ];
+// (a piece of music, for "Mango Nocturne"; and a time, for "Lagoon at Low Tide")
+var EVO_PIECE = [
+    'Nocturne',
+    'Sonata',
+    'Ballad',
+    'Waltz',
+    'Overture',
+    'Interlude',
+    'Refrain',
+    'Prelude',
+    'Minuet',
+    'Symphony',
+    'Concerto',
+    'Polka',
+    'Fanfare',
+    'Étude',
+    'Jig',
+  ],
+  EVO_AT = [
+    'First Light',
+    'Low Tide',
+    'High Summer',
+    'Noon',
+    'Daybreak',
+    'Nightfall',
+    'Teatime',
+    'Midsummer',
+    'Sunset',
+    'Lamplight',
+    'First Frost',
+    'Harvest Moon',
+    'Bedtime',
+    'Elevenses',
+    'Last Light',
+  ];
 var EVO_NATURE = [
   'Bloom',
   'Tide',
   'Grove',
   'Meadow',
   'Dune',
-  'Harbor',
+  'Harbour',
   'Orchard',
   'Glade',
   'Horizon',
@@ -16462,8 +16941,27 @@ var EVO_NATURE = [
   'Oasis',
   'Coast',
   'Isle',
-  'Lagoon',
-  'Orchid House',
+  'Valley',
+  'Fjord',
+  'Brook',
+  'Moor',
+  'Heath',
+  'Cove',
+  'Glen',
+  'Rainfall',
+  'Snowfall',
+  'Summit',
+  'Estuary',
+  'Hollow',
+  'Spring',
+  'Equinox',
+  'Bay',
+  'Marsh',
+  'Loch',
+  'Woodland',
+  'Waterfall',
+  'Riverbank',
+  'Hillside',
 ];
 var EVO_SPEC_NOUN = [
     'Kaleidoscope',
@@ -16472,7 +16970,7 @@ var EVO_SPEC_NOUN = [
     'Rainbow',
     'Spectrum',
     'Disco',
-    'Candy Shop',
+    'Sweet Shop',
     'Mosaic',
     'Fiesta',
     'Festival',
@@ -16480,9 +16978,118 @@ var EVO_SPEC_NOUN = [
     'Stained Glass',
     'Prism',
     'Pinwheel',
+    'Patchwork',
+    'Quilt',
+    'Bouquet',
+    'Bazaar',
+    'Regatta',
+    'Lanterns',
+    'Kites',
+    'Fireworks',
+    'Harlequin',
+    'Tapestry',
+    'Medley',
+    'Paintbox',
+    'Marbles',
+    'Bunting',
+    'Ribbons',
+    'Flower Market',
+    'Treasure Chest',
+    'Parasols',
+    'Beach Huts',
+    'Circus',
+    'Butterflies',
+    'Balloons',
+    'Crayon Box',
+    'Toy Shop',
+    'Sticker Book',
+    'Pick and Mix',
+    'Funfair',
+    'Coral Garden',
+    'Hot Air Balloons',
+    'Rock Pools',
+    'Seed Packets',
+    'Button Tin',
+    'Gemstones',
+    'Street Party',
   ],
-  EVO_SPEC_ADJ = ['Prismatic', 'Iridescent', 'Opaline', 'Technicolor', 'Kaleidoscopic'],
+  EVO_SPEC_ADJ = ['Prismatic', 'Iridescent', 'Opaline', 'Kaleidoscopic', 'Technicolour', 'Many-Coloured'],
+  // (every word for many colours: what the tests check a rainbow page's name has one of)
+  // eslint-disable-next-line no-unused-vars
   EVO_SPECTRUM = EVO_SPEC_NOUN.concat(EVO_SPEC_ADJ);
+// (v324.1) for titles of their own: the words that are creatures ("Song of the Kingfisher") and flowers ("Where the
+// Heather Grows"), from the colour words above; the rooms and gardens of "The Saffron Parlour"; and the old masters'
+// titles beside "Study in" ("Nocturne in Navy and Gold", "Arrangement in Grey")
+var EVO_CREATURE = new Set(
+    (
+      'Robin|Red Admiral|Ladybird|Cardinal|Fox|Monarch|Koi|Goldfish|Red Squirrel|Goldfinch|Canary|Bumblebee|' +
+      'Yellowhammer|Grasshopper|Tree Frog|Greenfinch|Gecko|Caterpillar|Lacewing|Parakeet|Dragon|Woodpecker|Mermaid|' +
+      'Kingfisher|Dragonfly|Sea Turtle|Peacock|Mallard|Blue Tit|Bluebird|Blue Jay|Blue Whale|Purple Emperor|Flamingo|' +
+      'Moth|Dove|Heron|Raven|Panther'
+    ).split('|'),
+  ),
+  // (the creatures that are colours in their own right, "Study in Rouge and Fox", "Under Peacock Skies": in any title)
+  EVO_HUEBEAST = new Set([
+    'Fox',
+    'Cardinal',
+    'Canary',
+    'Kingfisher',
+    'Peacock',
+    'Flamingo',
+    'Raven',
+    'Mermaid',
+  ]),
+  EVO_FLOWER = new Set(
+    (
+      'Camellia|Rosebud|Tea Rose|Poppy|Geranium|Daylily|Calendula|Honeysuckle|Tiger Lily|Nasturtium|Primrose|' +
+      'Daffodil|Cowslip|Meadowsweet|Sunflower|Buttercup|Mimosa|Marigold|Dandelion|Celandine|Goldenrod|Clover|' +
+      'Shamrock|Cornflower|Forget-Me-Not|Hydrangea|Lavender|Lilac|Wisteria|Thistle|Heather|Bluebell|Crocus|' +
+      'Bellflower|Harebell|Sea Holly|Iris|Hyacinth|Pansy|Clematis|Lupin|Allium|Petunia|Verbena|Orchid|Peony|Sweet Pea|' +
+      'Mallow|Cosmos|Phlox|Sweet William|Bougainvillea|Hibiscus|Foxglove|Azalea|Rhododendron|Fireweed|Primula|' +
+      'Heliotrope|Black Tulip|Cherry Blossom|Apple Blossom|Peach Blossom|Carnation|Begonia|Rosebay|Stargazer|Wild Rose|' +
+      'Rose|Old Rose'
+    ).split('|'),
+  ),
+  EVO_ROOM = [
+    'Room',
+    'Garden',
+    'Parlour',
+    'Studio',
+    'Atelier',
+    'Pavilion',
+    'Gallery',
+    'Summerhouse',
+    'Boathouse',
+    'Attic',
+    'Greenhouse',
+    'Library',
+  ],
+  EVO_ART = [
+    'Study in',
+    'Study in',
+    'Study in',
+    'Portrait in',
+    'Sketch in',
+    'Nocturne in',
+    'Symphony in',
+    'Harmony in',
+    'Arrangement in',
+    'Variations on',
+  ];
+// food and drink: at most one in a name ("Mango & Gold" had come with "Mango Martini"). Single words, as a name's
+// words are matched (Black Cherry by cherry, Sweet Shop by shop, Pea Shoot by shoot: never green, sweet or black)
+var EVO_FOOD = new Set(
+  (
+    'Strawberry Salmon Cherry Pomegranate Merlot Claret Bordeaux Peach Apricot Melon Sherbet Persimmon Mango Paprika ' +
+    'Clementine Marmalade Pumpkin Cognac Cinnamon Chestnut Champagne Butter Vanilla Honey Saffron Lemon Mustard ' +
+    'Turmeric Pistachio Lime Honeydew Pear Matcha Kiwi Apple Avocado Mint Sage Spearmint Basil Aubergine Blackberry ' +
+    'Damson Raspberry Plum Mulberry Boysenberry Beetroot Candyfloss Watermelon Bubblegum Cranberry Berry Espresso ' +
+    'Shop Juicy Sugared Honeyed Picnic Teatime Shoot Ginger Mushroom Blueberry Bilberry Elderberry Sloe Fruit ' +
+    'Rhubarb Marshmallow Zesty Elevenses Mix'
+  )
+    .toLowerCase()
+    .split(' '),
+);
 function _evoRng(a) {
   a = a >>> 0;
   return function () {
@@ -16567,15 +17174,35 @@ const EVO_ARC = {
     pink: 'm',
   },
   EVO_ARC_MIN = 0.04;
-function evoName(hexes, seedExtra, avoid) {
-  hexes = (hexes || []).filter(Boolean);
-  var px = [];
-  for (var i = 0; i < hexes.length; i++) {
+// the words of a title, not of its colours: passed over for a name's first word (opts.recent), and words that may
+// come twice ("Study in Navy and Gold at Dusk" never does, but "the" and "of" may)
+var EVO_JOIN = { and: 1, at: 1, the: 1, of: 1, in: 1, on: 1, a: 1, to: 1 },
+  EVO_TITLE_WORDS = {};
+'study in notes of the song where grows under skies a touch ode to portrait sketch nocturne symphony harmony arrangement variations on season'
+  .split(' ')
+  .forEach(function (w) {
+    EVO_TITLE_WORDS[w] = 1;
+  });
+// hexes: one colour per section (or a palette's colours); opts.w: each one's weight, a section's area, so a big sky
+// counts as what you see (v324: one per section, a page's many small red flowers had named it over its blue sky);
+// opts.recent: names of the last few guides, whose first words this one doesn't start with
+function evoName(hexes, seedExtra, avoid, opts) {
+  opts = opts || {};
+  var wts = opts.w && opts.w.length === (hexes || []).length ? opts.w : null;
+  var px = [],
+    pw = [],
+    hx2 = [];
+  for (var i = 0; i < (hexes || []).length; i++) {
+    if (!hexes[i]) continue;
     var o = _evoHSL(hexes[i]);
-    if (o) px.push(o);
+    if (!o) continue;
+    px.push(o);
+    pw.push(wts ? Math.max(0, +wts[i] || 0) : 1);
+    hx2.push(hexes[i]);
   }
+  hexes = hx2;
   if (!px.length) return 'Colouring guide';
-  var n = px.length,
+  var n = 0,
     sumC = 0,
     sumL = 0,
     sx = 0,
@@ -16583,13 +17210,15 @@ function evoName(hexes, seedExtra, avoid) {
     fam = {},
     famL = {},
     nC = 0;
-  for (i = 0; i < n; i++) {
-    var p = px[i];
-    sumL += p.l;
-    sumC += p.c;
+  for (i = 0; i < px.length; i++) {
+    var p = px[i],
+      q = pw[i];
+    n += q;
+    sumL += p.l * q;
+    sumC += p.c * q;
     if (p.c >= 0.14 || (p.s >= 0.28 && p.c >= 0.07)) {
-      nC++;
-      var wc = Math.max(p.c, 0.14);
+      nC += q;
+      var wc = Math.max(p.c, 0.14) * q;
       var a = (p.h * Math.PI) / 180;
       sx += Math.cos(a) * wc;
       sy += Math.sin(a) * wc;
@@ -16598,6 +17227,7 @@ function evoName(hexes, seedExtra, avoid) {
       famL[f] = (famL[f] || 0) + p.l * wc;
     }
   }
+  if (!(n > 0)) return 'Colouring guide';
   var meanL = sumL / n,
     meanC = sumC / n,
     chromW = 0;
@@ -16644,29 +17274,97 @@ function evoName(hexes, seedExtra, avoid) {
     var L = EVO_HUES[f] || EVO_HUES.red;
     return pick(L[t]);
   };
+  // (v324.1) a colour word for a title: never a creature ("Study in Tiger", "Under Blue Whale Skies"); and for a season,
+  // only what has one, a flower or a fruit ("Plum Season", "Heather Season", not "Cobalt Season"); '' when the family
+  // has none at its tone
+  var plainWord = function (f, season) {
+    var L = (EVO_HUES[f] || EVO_HUES.red)[_evoTone(famL[f] / fam[f])].filter(function (x) {
+      return season
+        ? EVO_FLOWER.has(x) || EVO_FOOD.has(_evoWords(x)[0])
+        : !EVO_CREATURE.has(x) || EVO_HUEBEAST.has(x);
+    });
+    return L.length ? pick(L) : '';
+  };
   var neutralWord = function (t) {
     return pick(EVO_NEUTRAL[t || tone]);
   };
+  // (the family a mood word has to suit: the name's own colour, else the page's strongest)
+  var lead = type === 'neutral' ? 'neutral' : fams[0] || 'neutral';
+  var moodWord = function (m, f) {
+    var L = EVO_MOOD[m];
+    for (var t = 0; t < 8; t++) {
+      var w = pick(L),
+        ok = EVO_FIT[w];
+      if (!ok || ok.indexOf(f || lead) >= 0) return w;
+    }
+    return pick(
+      L.filter(function (w) {
+        return !EVO_FIT[w];
+      }),
+    );
+  };
+  // (greys keep to the quiet times of day: "Cashmere at High Summer" read oddly)
+  var at = function () {
+    var L = EVO_AT.concat(['Dawn', 'Dusk', 'Twilight']);
+    if (type === 'neutral')
+      L = L.filter(function (w) {
+        return ['High Summer', 'Midsummer', 'Noon'].indexOf(w) < 0;
+      });
+    return pick(L);
+  };
+  // (v324.1) the title words: a creature or a flower among a family's words at its tone ('' if it has none: that
+  // title is passed over), the rooms and the old masters' titles
+  var hueOf = function (f, set) {
+    var L = f === 'neutral' ? EVO_NEUTRAL[tone] : (EVO_HUES[f] || EVO_HUES.red)[_evoTone(famL[f] / fam[f])];
+    L = L.filter(function (x) {
+      return set.has(x);
+    });
+    return L.length ? pick(L) : '';
+  };
+  var art = function () {
+      return pick(EVO_ART);
+    },
+    room = function () {
+      return pick(EVO_ROOM);
+    },
+    song = function (fs) {
+      var c = hueOf(pick(fs), EVO_CREATURE);
+      return c ? 'Song of the ' + c : '';
+    },
+    grows = function (fs) {
+      var c = hueOf(pick(fs), EVO_FLOWER);
+      return c ? 'Where the ' + c + ' Grows' : '';
+    };
+  // (v324) templates, weighted: "X & Y" and "Y-Kissed X" each about one name in ten at most (they had been 26% and
+  // 13%), with art and music titles ("Study in Teal", "Mango Nocturne", "Teal Hour", "Notes of Ember", "Fern at
+  // Daybreak") beside the mood and place ones; (v324.1) and the titles above, about one name in three
   var T;
   if (type === 'neutral') {
     var n1 = function () {
-      return neutralWord();
-    };
+        return neutralWord();
+      },
+      // (for a title: no creature but one that's a colour, Dove, Heron, Raven: "Under Dove Skies", not "Study in Moth")
+      nt = function (t) {
+        var L = EVO_NEUTRAL[t || tone].filter(function (x) {
+          return !EVO_CREATURE.has(x) || EVO_HUEBEAST.has(x);
+        });
+        return pick(L);
+      };
     T = [
       [
         2,
         function () {
-          return pick(EVO_MOOD[tone === 'mid' ? 'soft' : tone]) + ' ' + n1();
+          return moodWord(tone === 'mid' ? 'soft' : tone, 'neutral') + ' ' + n1();
         },
       ],
       [
-        3,
+        2,
         function () {
           return n1() + ' ' + pick(EVO_VIBE);
         },
       ],
       [
-        2,
+        0.5,
         function () {
           return (
             n1() +
@@ -16681,31 +17379,110 @@ function evoName(hexes, seedExtra, avoid) {
           return n1() + ' ' + pick(EVO_NATURE);
         },
       ],
+      [
+        1.2,
+        function () {
+          return art() + ' ' + nt();
+        },
+      ],
+      [
+        0.4,
+        function () {
+          return 'Arrangement in ' + nt() + ' and ' + nt(tone === 'deep' ? 'mid' : 'deep');
+        },
+      ],
+      [
+        1,
+        function () {
+          return n1() + ' at ' + at();
+        },
+      ],
+      [
+        1,
+        function () {
+          return 'The ' + nt() + ' ' + room();
+        },
+      ],
+      [
+        0.8,
+        function () {
+          return song(['neutral']);
+        },
+      ],
+      [
+        0.6,
+        function () {
+          return 'Under ' + nt() + ' Skies';
+        },
+      ],
     ];
   } else if (type === 'spectrum') {
+    // (v324: the page's strongest colour beside a word for many colours, so colourful pages don't all read "… Prism")
     T = [
       [
-        3,
+        4,
         function () {
           return hueWord(fams[0]) + ' ' + pick(EVO_SPEC_NOUN);
         },
       ],
       [
-        2,
+        1,
         function () {
-          return pick(EVO_SPECTRUM) + ' ' + pick(EVO_VIBE);
+          return pick(EVO_SPEC_ADJ) + ' ' + pick(rng() < 0.5 ? EVO_VIBE : EVO_NATURE);
         },
       ],
       [
         2,
         function () {
-          return pick(EVO_MOOD[mood]) + ' ' + pick(EVO_SPEC_NOUN);
+          return moodWord(mood) + ' ' + pick(EVO_SPEC_NOUN);
         },
       ],
       [
         2,
         function () {
-          return pick(EVO_SPEC_NOUN) + ' ' + pick(EVO_NATURE);
+          return pick(EVO_SPEC_NOUN) + ' at ' + at();
+        },
+      ],
+      [
+        1,
+        function () {
+          return (
+            'The ' +
+            pick([
+              'Kaleidoscope',
+              'Carnival',
+              'Confetti',
+              'Rainbow',
+              'Mosaic',
+              'Patchwork',
+              'Harlequin',
+              'Paintbox',
+              'Funfair',
+              'Bazaar',
+              'Circus',
+              'Prism',
+            ]) +
+            ' ' +
+            room()
+          );
+        },
+      ],
+      [
+        0.6,
+        function () {
+          return pick(EVO_SPEC_ADJ) + ' ' + room();
+        },
+      ],
+      [
+        0.5,
+        function () {
+          return 'Under ' + pick(['Rainbow', 'Confetti', 'Kaleidoscope', 'Bunting', 'Patchwork']) + ' Skies';
+        },
+      ],
+      [
+        0.5,
+        function () {
+          return art() + ' ' + pick(['Rainbow', 'Confetti', 'Mosaic', 'Patchwork', 'Prism']);
         },
       ],
     ];
@@ -16714,16 +17491,19 @@ function evoName(hexes, seedExtra, avoid) {
       fb = fams[1];
     T = [
       [
-        3,
+        1.2,
         function () {
           return hueWord(fa) + ' & ' + hueWord(fb);
         },
       ],
       [
-        2,
+        1,
         function () {
-          var b = hueWord(fb);
-          for (var q = 0; q < 4 && b.indexOf(' ') >= 0; q++) b = hueWord(fb);
+          // (a light touch of a colour, one word: "Cherry-Kissed Fox"; not a deep one, "Fathom-Kissed Copper")
+          if (_evoTone(famL[fb] / fam[fb]) === 'deep') return '';
+          var b = plainWord(fb);
+          for (var q = 0; q < 4 && (b.indexOf(' ') >= 0 || !b); q++) b = plainWord(fb);
+          if (!b) return '';
           return b.indexOf(' ') >= 0 ? hueWord(fa) + ' & ' + b : b + '-Kissed ' + hueWord(fa);
         },
       ],
@@ -16736,21 +17516,86 @@ function evoName(hexes, seedExtra, avoid) {
       [
         1,
         function () {
-          return pick(EVO_MOOD[mood]) + ' ' + hueWord(fa);
+          return moodWord(mood, fa) + ' ' + hueWord(fa);
+        },
+      ],
+      [
+        1.2,
+        function () {
+          return art() + ' ' + plainWord(fa) + ' and ' + plainWord(fb);
+        },
+      ],
+      [
+        1,
+        function () {
+          return hueWord(fa) + ' ' + pick(EVO_PIECE);
+        },
+      ],
+      [
+        0.3,
+        function () {
+          return 'Notes of ' + hueWord(fb);
+        },
+      ],
+      [
+        0.5,
+        function () {
+          return hueWord(fa) + ' Hour';
+        },
+      ],
+      [
+        0.8,
+        function () {
+          return 'The ' + plainWord(fa) + ' ' + room();
+        },
+      ],
+      [
+        0.7,
+        function () {
+          return song([fa, fb]);
+        },
+      ],
+      [
+        0.6,
+        function () {
+          return grows([fa, fb]);
+        },
+      ],
+      [
+        0.3,
+        function () {
+          return 'Under ' + plainWord(fa) + ' Skies';
+        },
+      ],
+      [
+        0.4,
+        function () {
+          var w = plainWord(fa, true);
+          return w && w + ' Season';
+        },
+      ],
+      [
+        0.3,
+        function () {
+          return 'A Touch of ' + plainWord(fb);
         },
       ],
     ];
   } else {
     var f0 = fams[0] || _evoFam((Math.atan2(sy, sx) * 180) / Math.PI + 360);
+    if (!fam[f0]) {
+      fam[f0] = 1;
+      famL[f0] = meanL;
+    }
     T = [
       [
         3,
         function () {
-          return pick(EVO_MOOD[mood]) + ' ' + hueWord(f0);
+          return moodWord(mood, f0) + ' ' + hueWord(f0);
         },
       ],
       [
-        3,
+        2,
         function () {
           return hueWord(f0) + ' ' + pick(EVO_VIBE);
         },
@@ -16764,7 +17609,80 @@ function evoName(hexes, seedExtra, avoid) {
       [
         1,
         function () {
-          return pick(EVO_MOOD[mood]) + ' ' + pick(EVO_VIBE);
+          return moodWord(mood, f0) + ' ' + pick(EVO_VIBE);
+        },
+      ],
+      [
+        1,
+        function () {
+          return hueWord(f0) + ' ' + pick(EVO_PIECE);
+        },
+      ],
+      [
+        1.2,
+        function () {
+          return art() + ' ' + plainWord(f0);
+        },
+      ],
+      [
+        0.5,
+        function () {
+          return hueWord(f0) + ' Hour';
+        },
+      ],
+      [
+        1,
+        function () {
+          return hueWord(f0) + ' at ' + at();
+        },
+      ],
+      [
+        0.3,
+        function () {
+          return 'Notes of ' + hueWord(f0);
+        },
+      ],
+      [
+        1,
+        function () {
+          return 'The ' + plainWord(f0) + ' ' + room();
+        },
+      ],
+      [
+        0.8,
+        function () {
+          return song([f0]);
+        },
+      ],
+      [
+        0.7,
+        function () {
+          return grows([f0]);
+        },
+      ],
+      [
+        0.35,
+        function () {
+          return 'Under ' + plainWord(f0) + ' Skies';
+        },
+      ],
+      [
+        0.5,
+        function () {
+          var w = plainWord(f0, true);
+          return w && w + ' Season';
+        },
+      ],
+      [
+        0.3,
+        function () {
+          return 'A Touch of ' + plainWord(f0);
+        },
+      ],
+      [
+        0.4,
+        function () {
+          return 'Ode to ' + plainWord(f0);
         },
       ],
     ];
@@ -16773,9 +17691,18 @@ function evoName(hexes, seedExtra, avoid) {
   T.forEach(function (t) {
     tot += t[0];
   });
+  // (the first words of the last few guides: three "Ember …" in a row read as one name)
+  var leads = {};
+  (opts.recent || []).forEach(function (r) {
+    var w0 = _evoWords(String(r || '')).filter(function (x) {
+      return !EVO_TITLE_WORDS[x];
+    })[0];
+    if (w0) leads[w0] = 1;
+  });
   var av = avoid || null,
-    best = null;
-  for (var tries = 0; tries < 40; tries++) {
+    best = null,
+    good = null;
+  for (var tries = 0; tries < 60; tries++) {
     var r = rng() * tot,
       acc = 0,
       fn = T[0][1];
@@ -16787,16 +17714,40 @@ function evoName(hexes, seedExtra, avoid) {
       }
     }
     var name = fn();
-    if (name.length > 24) continue;
+    if (!name || name.length > 24) continue;
     var w = _evoWords(name),
-      dup = false;
-    for (var u = 0; u < w.length; u++) if (w.indexOf(w[u]) !== u) dup = true;
-    if (dup) continue;
+      dup = false,
+      food = 0;
+    for (var u = 0; u < w.length; u++) {
+      if (w.indexOf(w[u]) !== u && !EVO_JOIN[w[u]]) dup = true;
+      if (EVO_FOOD.has(w[u])) food++;
+    }
+    if (dup || food > 1) continue;
     if (!best) best = name;
     if (av && av.has && av.has(name.toLowerCase())) continue;
+    if (!good) good = name;
+    var w0 = w.filter(function (x) {
+      return !EVO_TITLE_WORDS[x];
+    })[0];
+    if (leads[w0]) continue;
     return name;
   }
-  return best || 'Colouring guide';
+  return good || best || 'Colouring guide';
+}
+// the names of the last few guides saved, newest first (for evoName's opts.recent)
+function recentGuideNames(n) {
+  return state.saved
+    .filter(function (s) {
+      return s.type === 'guide';
+    })
+    .slice()
+    .sort(function (a, b) {
+      return (+b.ts || 0) - (+a.ts || 0);
+    })
+    .slice(0, n || 5)
+    .map(function (s) {
+      return s.name || '';
+    });
 }
 function usedGuideNames(extra) {
   const u = new Set(state.saved.filter((s) => s.type === 'guide').map((s) => (s.name || '').toLowerCase()));
@@ -23386,9 +24337,13 @@ function renderRecent() {
     });
     el.innerHTML = html + '</div>';
     el.style.display = '';
-    // (each card's picture drawn from its sections: sharper than the Library's small thumbnail)
+    // (each card's picture drawn from its sections: sharper than the Library's small thumbnail; v324: at the size it's
+    // shown times the screen's density, as the Library's covers, where a fixed 320 had been soft on an iPad)
     gs.forEach(function (g) {
-      homeArt(g, 'plan', 320).then(function (u) {
+      var pic = el.querySelector('.sfRecCard[data-gid="' + g.id + '"] .sfRecPic'),
+        side = pic ? Math.max(pic.clientWidth, pic.clientHeight) : 0,
+        w = Math.min(480, Math.round((side * Math.min(2, window.devicePixelRatio || 1)) / 40) * 40 || 320);
+      homeArt(g, 'plan', w).then(function (u) {
         var c = u && el.querySelector('.sfRecCard[data-gid="' + g.id + '"] .sfRecPic');
         if (c) c.innerHTML = '<img class="sfRecThumb" alt="" src="' + u + '">';
       });
@@ -41232,7 +42187,11 @@ function srcLoading() {
   return _src.busy && _src.id === curId && _src.gen === loadGen;
 }
 // the record, as a data: URL, from the picture as it came in: a JPEG; for a scan or a PDF page a PNG too, kept when
-// smaller (line art is often smaller lossless, and exact)
+// smaller (line art is often smaller lossless, and exact).
+// (v324) Encoded with toBlob and read back as a data: URL: the same file toDataURL makes, but the browser encodes it
+// away from the page's thread where it can (a photo's JPEG had held the page up for about 0.35 s just after a new
+// guide's first save; 1.4 s with the processor slowed 4×). Only the drawing, cheap, is done here and now, so a picture
+// freed meanwhile doesn't matter. Where there's no toBlob, toDataURL as before
 function srcEncode(pic, kind) {
   const w0 = pic.naturalWidth || pic.width,
     h0 = pic.naturalHeight || pic.height,
@@ -41245,14 +42204,48 @@ function srcEncode(pic, kind) {
   g.imageSmoothingQuality = 'high';
   if (k < 1) drawShrunk(g, pic, t.width, t.height);
   else g.drawImage(pic, 0, 0);
-  let u = t.toDataURL('image/jpeg', SRC_Q);
-  if (kind !== 'photo') {
-    const p = t.toDataURL('image/png');
-    if (p.length < u.length) u = p;
-  }
-  const rec = { u: u, w: t.width, h: t.height, ts: Date.now(), kind: kind };
-  freeCanvas(t);
-  return rec;
+  // (its size taken now: freeCanvas empties it once it's encoded)
+  const tw = t.width,
+    th = t.height,
+    rec = function (u) {
+      return { u: u, w: tw, h: th, ts: Date.now(), kind: kind };
+    },
+    url = function (type, q) {
+      if (!t.toBlob || typeof FileReader === 'undefined') return Promise.resolve(t.toDataURL(type, q));
+      return new Promise(function (res, rej) {
+        t.toBlob(
+          function (b) {
+            if (!b) return rej(new Error('no blob'));
+            const f = new FileReader();
+            f.onload = function () {
+              res(f.result);
+            };
+            f.onerror = rej;
+            f.readAsDataURL(b);
+          },
+          type,
+          q,
+        );
+      });
+    };
+  return url('image/jpeg', SRC_Q)
+    .then(function (u) {
+      return kind !== 'photo'
+        ? url('image/png').then(function (p) {
+            return p.length < u.length ? p : u;
+          })
+        : u;
+    })
+    .then(
+      function (u) {
+        freeCanvas(t);
+        return rec(u);
+      },
+      function (e) {
+        freeCanvas(t);
+        throw e;
+      },
+    );
 }
 // the open guide's picture written beside the guide `id` (just saved), once per picture; a failure is said once and
 // never holds the guide up. Resolves true when a record is in place
@@ -41279,32 +42272,43 @@ function srcWrite(id, pic, kind, mark) {
   // (a picture freed since it was taken: nothing to write)
   if (!(pic.naturalWidth || pic.width) || !(pic.naturalHeight || pic.height)) return Promise.resolve(false);
   if (mark && _srcWrote && _srcWrote.id === id && _srcWrote.pic === pic) return Promise.resolve(true);
-  let rec = null;
-  try {
-    rec = srcEncode(pic, kind);
-  } catch (_) {}
-  if (!srcRecOk(rec)) {
-    // (v319, Y2-2: a record over SRC_MAX is the photo's size, not the storage's)
-    srcFail(id, rec && typeof rec.u === 'string' && rec.u.length >= SRC_MAX ? 'big' : '');
-    return Promise.resolve(false);
-  }
+  // (v324: noted before the encoding, now waited for, so a second save meanwhile doesn't write it again)
   const mine = { id: id, pic: pic };
   if (mark) _srcWrote = mine;
-  return IDB.put(srcKey(id), rec).then(
-    function () {
-      if (_src.id === id) {
-        _src.rec = rec;
-        _src.read = true;
-        _src.miss = false;
+  let rec = null;
+  let enc;
+  try {
+    enc = srcEncode(pic, kind);
+  } catch (e) {
+    enc = Promise.reject(e);
+  }
+  return enc
+    .catch(function () {
+      return null;
+    })
+    .then(function (r) {
+      rec = r;
+      if (!srcRecOk(rec)) {
+        if (_srcWrote === mine) _srcWrote = null;
+        // (v319, Y2-2: a record over SRC_MAX is the photo's size, not the storage's)
+        srcFail(id, rec && typeof rec.u === 'string' && rec.u.length >= SRC_MAX ? 'big' : '');
+        return false;
       }
-      return true;
-    },
-    function () {
-      if (_srcWrote === mine) _srcWrote = null;
-      srcFail(id);
-      return false;
-    },
-  );
+      return IDB.put(srcKey(id), rec).then(ok, bad);
+    });
+  function ok() {
+    if (_src.id === id) {
+      _src.rec = rec;
+      _src.read = true;
+      _src.miss = false;
+    }
+    return true;
+  }
+  function bad() {
+    if (_srcWrote === mine) _srcWrote = null;
+    srcFail(id);
+    return false;
+  }
 }
 // (a guide deleted while open, then Put back after its record was purged: its picture is written again from the one
 // in memory, when it is; as 24-page-photo's finPutBack)
@@ -48963,8 +49967,24 @@ function moodPicsHTML() {
   );
 }
 // after the Plan is drawn: the pictures in, and the next to make asked for
+// (v324) Not in Build's own hold (mpLater, set there: 53-controls-stages): the pictures are drawn once the guide has
+// appeared, after the first Build's bloom if it shows; about 0.2 s of a big photo's Build, slowed 4×. Only the row
+// drawn then is filled, and only if it's still there
+let mpLater = false;
 function mpAfterPlan() {
   _mpVer++;
+  if (mpLater) {
+    const row = document.getElementById('sfMood'),
+      v = _mpVer;
+    afterPaint(function () {
+      bloomAfter(function () {
+        if (v !== _mpVer || !row || !row.isConnected) return;
+        mpPaint();
+        mpSchedule();
+      });
+    });
+    return;
+  }
   mpPaint();
   mpSchedule();
 }
@@ -56687,14 +57707,22 @@ function editPressed() {
 }
 // Plan (the guide's style): the tabs over four panels (Colours, Pattern, Shading, Share) and the bar. Each panel's
 // markup comes from its own function; ctlPlanWire (52-controls-plan-wire.js) then wires the lot.
+// (v324) a name for this guide from its colours, each section weighed by its area (what you see), not starting with
+// the first word of the last few guides' names (evoName, names.js)
+function guideAutoName(used) {
+  const hx = [],
+    w = [];
+  if (assignData)
+    for (const l in assignData.assign) {
+      hx.push(assignData.assign[l].hex);
+      w.push(comps && comps[l] ? comps[l].area || 1 : 1);
+    }
+  return evoName(hx, Date.now(), used, { w: w, recent: recentGuideNames(5) });
+}
 function ctlPlan() {
   const mk = {};
   if (assignData) for (const l in assignData.assign) mk[assignData.assign[l].mkey] = 1;
-  if (curName == null && assignData) {
-    var _hx = [];
-    for (var _l in assignData.assign) _hx.push(assignData.assign[_l].hex);
-    curName = evoName(_hx, Date.now(), usedGuideNames());
-  }
+  if (curName == null && assignData) curName = guideAutoName(usedGuideNames());
   // (v318.1: said shorter, its words of filler gone (palette, main colour, mood): with large text it had covered
   // the most of the picture)
   // (v318.34: a palette you chose is kept, and the toast says so in the harmony's place, U1-5)
@@ -59087,7 +60115,7 @@ function ctlFocus() {
     // (v318.32) Exit in a word, a pill like Colours at the other end of the row: on the iPad the bare ✕ it was wasn't
     // read as the way out, only the back swipe was. (Not "✕ Exit": at 390 wide the ✕ would push "Not the Copic Y26" to
     // a second line, v306.) Escape and the back swipe leave the same way (layers.js: exitFocus).
-    '<div class="sffocbar"><div class="sffocrow"><button id="sfExitFoc" class="sfexit" aria-label="Exit focus mode">Exit</button><span id="sfFocSw" class="sffocsw"></span><div class="sffocname"><b id="sfFocName"></b><span id="sfFocSub"></span></div><button id="sfFocCols" class="sffoccols" aria-expanded="false">Colours</button></div><div id="sfFocChips" class="sffocchips" aria-hidden="true"></div><div id="sfFocTip" class="sffoctip"></div><div class="sffocprog" id="sfFocProg" role="progressbar" aria-label="Page" aria-valuemin="0" aria-valuemax="100"><div id="sfProgBar"></div></div><button type="button" id="sfRailSwap" class="sfrailswap" aria-label="Swap sides" title="Swap sides">' +
+    '<div class="sffocbar"><div class="sffocrow"><button id="sfExitFoc" class="sfexit" aria-label="Exit Focus mode">Exit</button><span id="sfFocSw" class="sffocsw"></span><div class="sffocname"><b id="sfFocName"></b><span id="sfFocSub"></span></div><button id="sfFocCols" class="sffoccols" aria-expanded="false">Colours</button></div><div id="sfFocChips" class="sffocchips" aria-hidden="true"></div><div id="sfFocTip" class="sffoctip"></div><div class="sffocprog" id="sfFocProg" role="progressbar" aria-label="Page" aria-valuemin="0" aria-valuemax="100"><div id="sfProgBar"></div></div><button type="button" id="sfRailSwap" class="sfrailswap" aria-label="Swap sides" title="Swap sides">' +
     ic('arrow-left-right') +
     '</button></div>' +
     '<div id="sfFocSheet" class="sffocsheet" style="display:none"><button id="sfFocAll" class="fsall"></button>' +
@@ -59823,24 +60851,37 @@ function ctlSections() {
             if (texAmt > 0 && !edgeDist) buildTexFields();
             if (mpOn()) mpLinesImage();
           } catch (e) {}
+        // (v324: and the section map's signature in a task of its own, read for every pixel: about 0.2 s off Build's
+        // own hold on a big photo, slowed 4×)
         afterPaint(function () {
-          // (the first Build of a new picture blooms: 41-bloom.js; v320: so does Build after the sections were
-          // changed in Edit sections, the plan laid on them afresh)
-          const first = !assignData || (!!assignData && guideSig !== labelsSig());
-          try {
-            if (g !== loadGen) return;
-            holdTime('Build', function () {
-              buildGuide();
-            });
-            if (first && assignData && sfmode === 'guide') bloomStart();
-          } finally {
-            if (b.isConnected) {
-              b.disabled = false;
-              b.innerHTML = 'Build guide ' + icNav(1);
-              b.setAttribute('aria-label', 'Build guide');
-              edBarSync();
+          if (g === loadGen && !assignData)
+            try {
+              labelsSigWarm();
+            } catch (e) {}
+          afterPaint(function () {
+            // (the first Build of a new picture blooms: 41-bloom.js; v320: so does Build after the sections were
+            // changed in Edit sections, the plan laid on them afresh)
+            const first = !assignData || (!!assignData && guideSig !== labelsSig());
+            try {
+              if (g !== loadGen) return;
+              mpLater = true;
+              try {
+                holdTime('Build', function () {
+                  buildGuide();
+                });
+              } finally {
+                mpLater = false;
+              }
+              if (first && assignData && sfmode === 'guide') bloomStart();
+            } finally {
+              if (b.isConnected) {
+                b.disabled = false;
+                b.innerHTML = 'Build guide ' + icNav(1);
+                b.setAttribute('aria-label', 'Build guide');
+                edBarSync();
+              }
             }
-          }
+          });
         });
       });
     });
@@ -59946,11 +60987,19 @@ let _lmC = null,
 // for a 1275 × 1650 page, a hitch a moment after each tick, and some three times that for a photo at full size. In the
 // Plan and Colour along the map can't change (it's edited only in Edit sections, in place, which lets it go:
 // labelsEdited; anything else that changes it makes a new one), so there it's kept for the same map.
-let _lsC = null;
+let _lsC = null,
+  // (v324) worked out ahead, in a task of its own just before Build's (labelsSigWarm): taken once, by the next ask
+  // for the same map and sections, then gone (Edit sections and the finder change the map in place)
+  _lsW = null;
+function labelsSigWarm() {
+  _lsW = labels ? { l: labels, c: comps, W: W, H: H, s: labelsSigOf(labels, W, H) } : null;
+}
 function labelsSig() {
   const keep = sfmode === 'guide' || sfmode === 'color';
   if (keep && _lsC && _lsC.l === labels && _lsC.W === W && _lsC.H === H) return _lsC.s;
-  const s = labelsSigOf(labels, W, H);
+  const w = _lsW;
+  _lsW = null;
+  const s = w && w.l === labels && w.c === comps && w.W === W && w.H === H ? w.s : labelsSigOf(labels, W, H);
   _lsC = keep ? { l: labels, W: W, H: H, s: s } : null;
   return s;
 }
@@ -60076,7 +61125,7 @@ function guideStale() {
 }
 // the section map changed in place (Edit sections' merge, split, add): labelsSig reads it again
 function labelsEdited() {
-  _lsC = null;
+  _lsC = _lsW = null;
 }
 // share: for a guide file to share, which leaves out a photo the pattern doesn't use (to keep it small). edits: the
 // guide with section edits not built yet (kept when the page is hidden): only sections still there keep their
@@ -63830,9 +64879,7 @@ function headClick(e) {
   else if (id === 'sfNameRoll') {
     const i = document.getElementById('sfGName');
     if (!i) return;
-    const hx = [];
-    if (assignData) for (const l in assignData.assign) hx.push(assignData.assign[l].hex);
-    i.value = evoName(hx, Date.now(), usedGuideNames(curName));
+    i.value = guideAutoName(usedGuideNames(curName));
     try {
       i.focus({ preventScroll: true });
     } catch (_) {}
@@ -64638,7 +65685,9 @@ function nextUndone(from) {
 // picture's column.
 // (v323: a phone on its side too, from 640 wide: the picture beside the controls has the screen's whole height, where
 // above and below them it had about 250px; a short screen's rail is a compact one, sfrailshort)
-var RAIL_MQ = '(orientation: landscape) and (min-height: 340px) and (min-width: 640px)',
+// (v324: from 560 wide and 300 tall, a small phone on its side too: an iPhone SE's 568 by 320 had had the controls
+// above and below a picture about 150px tall)
+var RAIL_MQ = '(orientation: landscape) and (min-height: 300px) and (min-width: 560px)',
   RAIL_SHORT = '(max-height: 599px)';
 function focusRail() {
   return !!(
@@ -64667,15 +65716,13 @@ function railSync() {
 // (v323) The iPad's side rail, tall enough: under the progress bar, the page's markers in order (each one's sections
 // coloured, ✓ when done, the one in hand ringed), and under Done, Back and Skip, the whole page as coloured so far
 // with a ring where the section is ("Where you are"); a tap on it shows the whole page. Drawn with the picture
-// (renderGuide). Not on a short rail or off the rail.
+// (renderGuide). Not off the rail. (v324) A short rail (a phone on its side) has the strip too, without its heading,
+// when it fits above Done once laid out (it never covers Done: a 390-tall phone has the room, a 320-tall one hasn't);
+// the map stays the iPad's.
 function focusSide() {
   var de = document.documentElement,
-    on =
-      focus &&
-      !focusFin &&
-      sfmode === 'color' &&
-      de.classList.contains('sfrailon') &&
-      !de.classList.contains('sfrailshort'),
+    short = de.classList.contains('sfrailshort'),
+    on = focus && !focusFin && sfmode === 'color' && de.classList.contains('sfrailon'),
     strip = document.getElementById('sfFocStrip'),
     map = document.getElementById('sfFocMap');
   if (!on) {
@@ -64752,6 +65799,12 @@ function focusSide() {
     }
   }
   strip.hidden = false;
+  if (short) {
+    var fb = document.querySelector('.sffocbot');
+    if (fb && strip.getBoundingClientRect().bottom + 8 > fb.getBoundingClientRect().top) strip.hidden = true;
+    if (map) map.hidden = true;
+    return;
+  }
   // Where you are
   if (!map) {
     map = document.createElement('button');
@@ -67173,7 +68226,7 @@ function colourOffer() {
     if (g !== loadGen || !assignData || !colOfferLeft().length) return;
     toastAction(
       n === 1 ? 'One section looks coloured in already.' : n + ' sections look coloured in already.',
-      n === 1 ? 'Mark it done' : 'Mark them done',
+      n === 1 ? 'Tick it' : 'Mark them done',
       function () {
         if (g === loadGen) colOfferTake();
       },
@@ -67213,7 +68266,7 @@ function colOfferTake() {
   updateProgress();
   if (sfmode === 'color') renderFocusMarkers();
   if (celebrated && !wasC) return;
-  toastAction(k === 1 ? 'Marked 1 section done' : 'Marked ' + k + ' sections done', 'Undo', function () {
+  toastAction(k === 1 ? 'Ticked 1 section' : 'Marked ' + k + ' sections done', 'Undo', function () {
     if (g !== loadGen || !assignData) return;
     markBack(was, true);
     colOffer = off;
@@ -67235,7 +68288,7 @@ function colOfferLine() {
     '<div id="sfColOffer" class="sfheldnote" role="status"><span>' +
     (n === 1 ? 'One section looks coloured in already.' : n + ' sections look coloured in already.') +
     ' <button type="button" id="sfColGo" class="sflink">' +
-    (n === 1 ? 'Mark it done' : 'Mark them done') +
+    (n === 1 ? 'Tick it' : 'Mark them done') +
     '</button></span><button type="button" id="sfColX" class="sfheldx" aria-label="Close">' +
     ic('x') +
     '</button></div>'
@@ -67676,7 +68729,7 @@ const MA_DOUBLE = 600;
 // and counts as seen. After that, the ⓘ line.
 const AL_1 = 'Tap a marker to see its sections, then tap each section on the picture as you colour it.',
   AL_2 =
-    'Use <b><span aria-hidden="true">✓</span> Mark all coloured</b> for a whole marker. Press and hold a section to find its marker here.';
+    'Use <b><span aria-hidden="true">✓</span> Mark all done</b> for a whole marker. Press and hold a section to find its marker here.';
 let _alMore = false;
 function alongTips() {
   const u = shadeUse();
@@ -67686,7 +68739,7 @@ function alongTips() {
     : '';
 }
 function alongHint() {
-  if (hintSeen('along')) return infoLine('along', 'How colour along works', AL_1 + ' ' + AL_2 + alongTips());
+  if (hintSeen('along')) return infoLine('along', 'How Colour along works', AL_1 + ' ' + AL_2 + alongTips());
   return (
     '<div id="sfAlHint" class="sfinfo sfonce open"><span class="sfi" aria-hidden="true">i</span><span class="sfit">' +
     AL_1 +
@@ -67728,7 +68781,8 @@ function alongControls() {
         '</div>'
       : '') +
     '<div id="sfAlSort" class="sfc-segs sfalorder" role="group" aria-label="Order of the list">' +
-    ctlSeg('light', 'Lightest first', alongSort() === 'light') +
+    // (v324: "Light first" under 360 wide, so the search button keeps to the row, 04-along.css)
+    ctlSeg('light', 'Light<span class="sfalx">est</span> first', alongSort() === 'light') +
     ctlSeg('rainbow', 'Rainbow', alongSort() === 'rainbow') +
     ctlSeg('brand', 'By brand', alongSort() === 'brand') +
     // (on a phone the code box folds away behind this, so the first rows stay above the bar)
@@ -68036,7 +69090,7 @@ function alongRow(e, inDone) {
       '<div class="sfacts" role="group" aria-label="' +
       esc(capLabel(m)) +
       '"><button type="button" id="sfMarkAll" class="sfedit">' +
-      (full ? 'Clear' : '<span aria-hidden="true">✓</span> Mark all coloured') +
+      (full ? 'Clear' : '<span aria-hidden="true">✓</span> Mark all done') +
       '</button>' +
       (full ? '' : '<button type="button" id="sfFindNext" class="sfedit">Find next</button>') +
       '<button type="button" id="sfBlends" class="sfedit' +
@@ -93486,7 +94540,11 @@ document.addEventListener('keydown', function (e) {
     trail = [];
     show('wcStep2', true);
     var b = $('wcSample');
-    if (b) b.focus();
+    // (v324: without scrolling to it: on a short phone the step had opened scrolled down, its heading out of view)
+    if (b) b.focus({ preventScroll: true });
+    [$('wcStep2'), ov.querySelector('.wcard')].forEach(function (el) {
+      if (el) el.scrollTop = 0;
+    });
   }
   function close() {
     closeDialog(ov);
@@ -95866,6 +96924,10 @@ function renderHomeNotes() {
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v324',
+    t: 'New guides get better names, read from the colours that fill most of the page: more words, fewer foods, and titles such as “Study in Rouge and Fox”, “Where the Poppy Grows” and “The Honey Greenhouse”. Building a guide from a big photo pauses for less. On a small phone the welcome fits on one screen, Focus mode sideways has its controls beside the picture (with your markers for the page when there’s room), and Colour along’s order row keeps its search button. Home has one way into the tester tasks, and some wording is tidier: Colour along’s button is ✓ Mark all done.',
+  },
+  {
     v: 'v323.1',
     t: 'Zoomed in on Colour along, the outlines are drawn smooth too, and move with the picture as you pan and pinch. Focus mode no longer pauses on a big photo as its outlines turn smooth. Fixes: the Library could show fewer sections coloured than you’d ticked if the app was closed just as it saved; closing Reveal from the finished page puts you back on Reveal & share; the sample’s note in the header fits on a phone.',
   },
@@ -97396,7 +98458,7 @@ const WHATS_NEW = [
     load();
     said(
       st.sends && st.sig === sig()
-        ? 'Sent. Thank you! Change anything and you can send it again.'
+        ? 'Sent. Thank you. Change anything and you can send it again.'
         : st.sends
           ? 'You’ve changed things since you last sent them.'
           : '',
@@ -97505,7 +98567,7 @@ const WHATS_NEW = [
         st.sends = (st.sends || 0) + 1;
         st.sig = sig();
         save();
-        said('Sent. Thank you! Change anything and you can send it again.');
+        said('Sent. Thank you. Change anything and you can send it again.');
       } else
         said(
           'Couldn’t send: check you’re online. Your answers are kept here: try again in a moment, or copy them instead.',
@@ -97528,7 +98590,7 @@ const WHATS_NEW = [
           st.sends = (st.sends || 0) + 1;
           st.sig = sig();
           save();
-          said('Shared. Thank you!');
+          said('Shared. Thank you.');
         },
         function (e) {
           if (!(e && e.name === 'AbortError')) copyResults();
@@ -97571,7 +98633,7 @@ const WHATS_NEW = [
   // (v318 review, prototype) a card on Home, under its cards, while there are tasks to answer or send: how
   // many are done and the next one ("Next to answer: 2 · Make a guide"; v318.26: "Next" alone read as a button to go
   // on), or "ready to send";
-  // it opens the tasks at that one. Gone once they're sent as they are (the line at the foot stays, as a way in)
+  // it opens the tasks at that one. Gone once they're sent as they are (the line at the foot is the way in then)
   let card = null;
   {
     // (under the Markers, Palette and Library cards: above them, on an iPad the cards no longer lined up with the
@@ -97633,9 +98695,10 @@ const WHATS_NEW = [
       'Tester tasks · ' + (sent ? 'sent' : all ? 'ready to send' : n + ' of ' + TASKS.length);
     footBtn.classList.toggle('ttready', all && !sent);
     cardSync(n, all, sent);
-    // (v318.36: v318.32 had put the foot's line away while the card showed, V1-8; it's back. It's the one way into the
-    // tasks that's always there and opens them at the top, which a dozen tester flows rely on: the card opens them at
-    // the next task)
+    // (v324: the foot's line goes again while the card shows, as v318.32 had it: two ways in, one above the other,
+    // read as two things to do. Both open the tasks at the next one to answer. Once they're sent the card goes and the
+    // line, "Tester tasks · sent", is the way back in)
+    footBtn.parentNode.style.display = card && !card.hidden ? 'none' : '';
   }
   footSync();
 
@@ -97698,7 +98761,7 @@ const WHATS_NEW = [
         if (ok) {
           box.value = '';
           close();
-          toast('Sent. Thank you!');
+          toast('Sent. Thank you.');
         } else
           fbSaid(
             'Couldn’t send: check you’re online. Your words are kept here: try again in a moment, or Share it instead.',

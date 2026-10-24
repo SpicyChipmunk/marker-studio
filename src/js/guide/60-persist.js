@@ -7,11 +7,19 @@ let _lmC = null,
 // for a 1275 × 1650 page, a hitch a moment after each tick, and some three times that for a photo at full size. In the
 // Plan and Colour along the map can't change (it's edited only in Edit sections, in place, which lets it go:
 // labelsEdited; anything else that changes it makes a new one), so there it's kept for the same map.
-let _lsC = null;
+let _lsC = null,
+  // (v324) worked out ahead, in a task of its own just before Build's (labelsSigWarm): taken once, by the next ask
+  // for the same map and sections, then gone (Edit sections and the finder change the map in place)
+  _lsW = null;
+function labelsSigWarm() {
+  _lsW = labels ? { l: labels, c: comps, W: W, H: H, s: labelsSigOf(labels, W, H) } : null;
+}
 function labelsSig() {
   const keep = sfmode === 'guide' || sfmode === 'color';
   if (keep && _lsC && _lsC.l === labels && _lsC.W === W && _lsC.H === H) return _lsC.s;
-  const s = labelsSigOf(labels, W, H);
+  const w = _lsW;
+  _lsW = null;
+  const s = w && w.l === labels && w.c === comps && w.W === W && w.H === H ? w.s : labelsSigOf(labels, W, H);
   _lsC = keep ? { l: labels, W: W, H: H, s: s } : null;
   return s;
 }
@@ -137,7 +145,7 @@ function guideStale() {
 }
 // the section map changed in place (Edit sections' merge, split, add): labelsSig reads it again
 function labelsEdited() {
-  _lsC = null;
+  _lsC = _lsW = null;
 }
 // share: for a guide file to share, which leaves out a photo the pattern doesn't use (to keep it small). edits: the
 // guide with section edits not built yet (kept when the page is hidden): only sections still there keep their

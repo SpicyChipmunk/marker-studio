@@ -154,7 +154,11 @@ function srcLoading() {
   return _src.busy && _src.id === curId && _src.gen === loadGen;
 }
 // the record, as a data: URL, from the picture as it came in: a JPEG; for a scan or a PDF page a PNG too, kept when
-// smaller (line art is often smaller lossless, and exact)
+// smaller (line art is often smaller lossless, and exact).
+// (v324) Encoded with toBlob and read back as a data: URL: the same file toDataURL makes, but the browser encodes it
+// away from the page's thread where it can (a photo's JPEG had held the page up for about 0.35 s just after a new
+// guide's first save; 1.4 s with the processor slowed 4×). Only the drawing, cheap, is done here and now, so a picture
+// freed meanwhile doesn't matter. Where there's no toBlob, toDataURL as before
 function srcEncode(pic, kind) {
   const w0 = pic.naturalWidth || pic.width,
     h0 = pic.naturalHeight || pic.height,
@@ -167,14 +171,48 @@ function srcEncode(pic, kind) {
   g.imageSmoothingQuality = 'high';
   if (k < 1) drawShrunk(g, pic, t.width, t.height);
   else g.drawImage(pic, 0, 0);
-  let u = t.toDataURL('image/jpeg', SRC_Q);
-  if (kind !== 'photo') {
-    const p = t.toDataURL('image/png');
-    if (p.length < u.length) u = p;
-  }
-  const rec = { u: u, w: t.width, h: t.height, ts: Date.now(), kind: kind };
-  freeCanvas(t);
-  return rec;
+  // (its size taken now: freeCanvas empties it once it's encoded)
+  const tw = t.width,
+    th = t.height,
+    rec = function (u) {
+      return { u: u, w: tw, h: th, ts: Date.now(), kind: kind };
+    },
+    url = function (type, q) {
+      if (!t.toBlob || typeof FileReader === 'undefined') return Promise.resolve(t.toDataURL(type, q));
+      return new Promise(function (res, rej) {
+        t.toBlob(
+          function (b) {
+            if (!b) return rej(new Error('no blob'));
+            const f = new FileReader();
+            f.onload = function () {
+              res(f.result);
+            };
+            f.onerror = rej;
+            f.readAsDataURL(b);
+          },
+          type,
+          q,
+        );
+      });
+    };
+  return url('image/jpeg', SRC_Q)
+    .then(function (u) {
+      return kind !== 'photo'
+        ? url('image/png').then(function (p) {
+            return p.length < u.length ? p : u;
+          })
+        : u;
+    })
+    .then(
+      function (u) {
+        freeCanvas(t);
+        return rec(u);
+      },
+      function (e) {
+        freeCanvas(t);
+        throw e;
+      },
+    );
 }
 // the open guide's picture written beside the guide `id` (just saved), once per picture; a failure is said once and
 // never holds the guide up. Resolves true when a record is in place
@@ -201,32 +239,43 @@ function srcWrite(id, pic, kind, mark) {
   // (a picture freed since it was taken: nothing to write)
   if (!(pic.naturalWidth || pic.width) || !(pic.naturalHeight || pic.height)) return Promise.resolve(false);
   if (mark && _srcWrote && _srcWrote.id === id && _srcWrote.pic === pic) return Promise.resolve(true);
-  let rec = null;
-  try {
-    rec = srcEncode(pic, kind);
-  } catch (_) {}
-  if (!srcRecOk(rec)) {
-    // (v319, Y2-2: a record over SRC_MAX is the photo's size, not the storage's)
-    srcFail(id, rec && typeof rec.u === 'string' && rec.u.length >= SRC_MAX ? 'big' : '');
-    return Promise.resolve(false);
-  }
+  // (v324: noted before the encoding, now waited for, so a second save meanwhile doesn't write it again)
   const mine = { id: id, pic: pic };
   if (mark) _srcWrote = mine;
-  return IDB.put(srcKey(id), rec).then(
-    function () {
-      if (_src.id === id) {
-        _src.rec = rec;
-        _src.read = true;
-        _src.miss = false;
+  let rec = null;
+  let enc;
+  try {
+    enc = srcEncode(pic, kind);
+  } catch (e) {
+    enc = Promise.reject(e);
+  }
+  return enc
+    .catch(function () {
+      return null;
+    })
+    .then(function (r) {
+      rec = r;
+      if (!srcRecOk(rec)) {
+        if (_srcWrote === mine) _srcWrote = null;
+        // (v319, Y2-2: a record over SRC_MAX is the photo's size, not the storage's)
+        srcFail(id, rec && typeof rec.u === 'string' && rec.u.length >= SRC_MAX ? 'big' : '');
+        return false;
       }
-      return true;
-    },
-    function () {
-      if (_srcWrote === mine) _srcWrote = null;
-      srcFail(id);
-      return false;
-    },
-  );
+      return IDB.put(srcKey(id), rec).then(ok, bad);
+    });
+  function ok() {
+    if (_src.id === id) {
+      _src.rec = rec;
+      _src.read = true;
+      _src.miss = false;
+    }
+    return true;
+  }
+  function bad() {
+    if (_srcWrote === mine) _srcWrote = null;
+    srcFail(id);
+    return false;
+  }
 }
 // (a guide deleted while open, then Put back after its record was purged: its picture is written again from the one
 // in memory, when it is; as 24-page-photo's finPutBack)

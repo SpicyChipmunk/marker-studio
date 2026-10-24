@@ -107,6 +107,8 @@
   line-height: 1.3;
   color: var(--sub);
   overflow-wrap: anywhere;
+  /* (v324: two even lines when it wraps, not one word left alone on the second) */
+  text-wrap: balance;
 }
 #sfRoot .sfsavest.ok {
   color: var(--ok);

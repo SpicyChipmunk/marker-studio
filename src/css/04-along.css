@@ -470,6 +470,20 @@
   min-height: 0;
   margin-bottom: 0;
 }
+/* (v324) a narrow phone (320): "Light first", and the order's segments closer, so ⌕ stays on the row, not wrapped
+   below it on a line of its own */
+@media (max-width: 359px) {
+  #sfRoot #sfAlSort .sfalx {
+    display: none;
+  }
+  #sfRoot #sfCtl #sfAlSort {
+    gap: 4px;
+  }
+  #sfRoot #sfAlSort .sfedit {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
 /* on a phone the box folds away behind a ⌕ at the end of the order row (Colour along's first rows stay above the
    bar), and its line takes no room while empty */
 #sfRoot .sffindopen {

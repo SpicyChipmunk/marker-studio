@@ -2936,3 +2936,29 @@ From Fable's design review (round R32, V1), built in two parts and compared scre
   exactly (1.56.0, was ^1.56.0) and `e2e/ci-pw-image.mjs` fails at once if the image's tag and the installed version
   differ (a WebKit job's first step, and a unit test). The Chromium jobs are as they were.
 - Cache bumped to `marker-studio-v323.1`.
+
+# Changes — v324 (pre-beta polish: Ben's decisions D1–D10)
+
+- **Guide names (D10).** `src/js/names.js` rewritten in two passes, signed off on samples of 40.
+  - The name reads the page as you see it: each section's colour weighed by its area (`evoName(…, { w })`; `guideAutoName`, 51-controls-plan), so a big blue sky names the page over its many small red flowers.
+  - About 645 words, each listed once across the lists (Coral had been under three families), British spellings, the romantic words retired (Affair, Crush, Tryst, Valentine, Slow Dance…). At most one food or drink word in a name (`EVO_FOOD`: half of all names had been food). An adjective that means a colour only with colours it suits (`EVO_FIT`: no "Golden Turquoise").
+  - Templates rebalanced ("&" and "-Kissed" about 1 name in 10 each, from 26% and 13%), with titles of their own about 1 in 4: the old masters' ("Study in Rouge and Fox", "Nocturne in Navy and Gold", "Arrangement in Pewter and Slate"), rooms and gardens ("The Honey Greenhouse"), a creature's song ("Song of the Cardinal"), where a flower grows, skies, seasons (flowers and fruit only), "A Touch of Azalea", "Ode to Cobalt". A creature goes in a title only if it's a colour in its own right (Fox, Peacock, Raven…: `EVO_HUEBEAST`); "-Kissed" only with a light colour.
+  - A new guide doesn't start with the first word of the last five (`recentGuideNames`); the words a title is made of are passed over for that (`EVO_TITLE_WORDS`).
+  - Measured over 3,000 random palettes: 2,568 different names; none romantic; a food word in about 1 in 4; no colour-meaning adjective on the wrong colours; on colourful pages no word in more than about 1 name in 10. Unit tests for each (`test/colour.test.mjs`).
+- **Build pauses less on a big photo (D1).** Measured with a 4000 × 3000 photo at 4× slowdown, phone size, Chromium: the longest pauses after Build went from 1.2 s and 1.0–1.3 s to 0.7–0.9 s and 0.4–0.5 s, and the total held from 3.3–3.9 s to 2.3–2.6 s.
+  - The photo kept with the guide is encoded with `toBlob` and read back as a data: URL (`srcEncode`, 25-source-photo), the same file `toDataURL` made, the browser encoding it off the page's thread where it can: it had been a 1.4 s pause (slowed 4×) just after the first save. Its size is taken before the canvas is freed.
+  - The section map's signature is worked out in a task of its own just before Build's (`labelsSigWarm`, taken once by the next ask for the same map, cleared by any edit): 0.2 s off Build's hold.
+  - The mood pictures are drawn once the guide has appeared, after the bloom when it shows (`mpLater`, 32-mood-pics).
+  - Not changed, and measured: reading the photo still has pauses of about 0.5 s (drawing it), 0.65 s (preparing it) and 0.8 s (its sections), slowed 4×. A candidate for later.
+  - Tests: Build then straight to Home (built and saved once, nothing amiss); Build then another photo (not built over).
+- **Small phones and headers (D2, D3, D5).**
+  - Home's "Your guides" pictures are drawn at the size they're shown times the screen's density (up to 480), as the Library's covers; a fixed 320 had been soft on an iPad.
+  - The welcome's first step, under 620px tall, shows its three choices as titles alone, all above its buttons; "You’re all set" opens at its heading (the focus no longer scrolls to Try the sample).
+  - Focus mode's side rail from 560 wide and 300 tall (was 640 and 340): an iPhone SE on its side has it, the compact one. The zoom buttons keep to the rail (a phone's strip rule had laid a dark band across the picture). Test at 568 × 320.
+  - Under 360 wide, Colour along's first order is "Light first" and the order's segments sit closer, so ⌕ stays on the row.
+  - The guide's save line wraps in even lines (`text-wrap: balance`).
+- **The markers strip in the compact rail (D4)**, without its heading, when it fits above Done once laid out (it never covers Done: 844 × 390 has it, 568 × 320 not); the map stays the iPad's. Focus tests check it, and their "centred" check now knows the rail.
+- **One way into the tester tasks on Home (D6):** the foot's line goes while the card shows, and is the way back once the answers are sent. Help says "Also on Home, under its cards". Tests open the tasks by whichever shows.
+- **Wording (D7).** Rules in `docs/DEVELOPING.md` › Wording rules, checked by `test/app.test.mjs` where a test can: curly apostrophes, Colour along and Focus mode with capitals ("How Colour along works", "Exit Focus mode"), "Tick" for one section ("Tick it", "Ticked 1 section") and "Mark … done" for several ("✓ Mark all done" in Colour along, was "Mark all coloured"), dialog buttons (Cancel, Not now, Close, OK), and exclamation marks only for a celebration ("Thank you." after sending results).
+- **Kept for the pre-beta revisit (D9):** a pen gap suggested, then confirmed, and sharp outlines in the Plan.
+- Cache bumped to `marker-studio-v324`.

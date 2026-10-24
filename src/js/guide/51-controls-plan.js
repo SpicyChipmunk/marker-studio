@@ -1,13 +1,21 @@
 // Plan (the guide's style): the tabs over four panels (Colours, Pattern, Shading, Share) and the bar. Each panel's
 // markup comes from its own function; ctlPlanWire (52-controls-plan-wire.js) then wires the lot.
+// (v324) a name for this guide from its colours, each section weighed by its area (what you see), not starting with
+// the first word of the last few guides' names (evoName, names.js)
+function guideAutoName(used) {
+  const hx = [],
+    w = [];
+  if (assignData)
+    for (const l in assignData.assign) {
+      hx.push(assignData.assign[l].hex);
+      w.push(comps && comps[l] ? comps[l].area || 1 : 1);
+    }
+  return evoName(hx, Date.now(), used, { w: w, recent: recentGuideNames(5) });
+}
 function ctlPlan() {
   const mk = {};
   if (assignData) for (const l in assignData.assign) mk[assignData.assign[l].mkey] = 1;
-  if (curName == null && assignData) {
-    var _hx = [];
-    for (var _l in assignData.assign) _hx.push(assignData.assign[_l].hex);
-    curName = evoName(_hx, Date.now(), usedGuideNames());
-  }
+  if (curName == null && assignData) curName = guideAutoName(usedGuideNames());
   // (v318.1: said shorter, its words of filler gone (palette, main colour, mood): with large text it had covered
   // the most of the picture)
   // (v318.34: a palette you chose is kept, and the toast says so in the harmony's place, U1-5)

@@ -136,7 +136,7 @@ function colourOffer() {
     if (g !== loadGen || !assignData || !colOfferLeft().length) return;
     toastAction(
       n === 1 ? 'One section looks coloured in already.' : n + ' sections look coloured in already.',
-      n === 1 ? 'Mark it done' : 'Mark them done',
+      n === 1 ? 'Tick it' : 'Mark them done',
       function () {
         if (g === loadGen) colOfferTake();
       },
@@ -176,7 +176,7 @@ function colOfferTake() {
   updateProgress();
   if (sfmode === 'color') renderFocusMarkers();
   if (celebrated && !wasC) return;
-  toastAction(k === 1 ? 'Marked 1 section done' : 'Marked ' + k + ' sections done', 'Undo', function () {
+  toastAction(k === 1 ? 'Ticked 1 section' : 'Marked ' + k + ' sections done', 'Undo', function () {
     if (g !== loadGen || !assignData) return;
     markBack(was, true);
     colOffer = off;
@@ -198,7 +198,7 @@ function colOfferLine() {
     '<div id="sfColOffer" class="sfheldnote" role="status"><span>' +
     (n === 1 ? 'One section looks coloured in already.' : n + ' sections look coloured in already.') +
     ' <button type="button" id="sfColGo" class="sflink">' +
-    (n === 1 ? 'Mark it done' : 'Mark them done') +
+    (n === 1 ? 'Tick it' : 'Mark them done') +
     '</button></span><button type="button" id="sfColX" class="sfheldx" aria-label="Close">' +
     ic('x') +
     '</button></div>'

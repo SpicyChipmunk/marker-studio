@@ -238,12 +238,12 @@ after(teardown);
     await along(page);
     const i = page.locator('#sfCtl .sfinfo[data-info="along"]');
     assert.equal(await i.getAttribute('aria-expanded'), 'false');
-    assert.equal((await i.textContent()).trim(), 'iHow colour along works');
+    assert.equal((await i.textContent()).trim(), 'iHow Colour along works');
     assert.ok((await i.locator('.sfit').boundingBox()).height <= 24, 'one line');
     assert.ok((await i.boundingBox()).height >= 44, 'a 44px tap height');
     await i.click();
     assert.equal(await i.getAttribute('aria-expanded'), 'true');
-    assert.match(await i.textContent(), /Mark all coloured/);
+    assert.match(await i.textContent(), /Mark all done/);
     assert.deepEqual(errors, []);
   });
   test('a row opens in place, one at a time: Mark all coloured ↔ Clear, Find next, Blends; tapping it again closes it', async () => {
@@ -260,7 +260,7 @@ after(teardown);
       await page.$$eval('#sfAlist .sfarow.open .sfacts button', (bs) =>
         bs.map((b) => b.id + ':' + b.textContent.trim()),
       ),
-      ['sfMarkAll:✓ Mark all coloured', 'sfFindNext:Find next', 'sfBlends:Blends'],
+      ['sfMarkAll:✓ Mark all done', 'sfFindNext:Find next', 'sfBlends:Blends'],
     );
     // another row: the first one closes
     await clickRow(page, 1);
@@ -290,7 +290,7 @@ after(teardown);
     await page.click('#sfMarkAll');
     await idle(page);
     assert.equal(await toolStatus(page), `0 of ${N} coloured`);
-    assert.equal(await page.textContent('#sfMarkAll'), '✓ Mark all coloured');
+    assert.equal(await page.textContent('#sfMarkAll'), '✓ Mark all done');
     assert.match(await page.textContent('#msToast'), /Cleared .+Undo/, 'Clear ticks offers Undo');
     // a tick on the picture keeps the row open and updates its count
     const secs = await secsOf(page, k);
@@ -904,7 +904,7 @@ after(teardown);
     await idle(page);
     assert.equal(
       (await page.textContent(h + ' .sfit')).trim(),
-      'Tap a marker to see its sections, then tap each section on the picture as you colour it. Use ✓ Mark all coloured for a whole marker. Press and hold a section to find its marker here.',
+      'Tap a marker to see its sections, then tap each section on the picture as you colour it. Use ✓ Mark all done for a whole marker. Press and hold a section to find its marker here.',
     );
     assert.equal(await page.locator('#sfAlMore').count(), 0);
     // the first row opened: the ⓘ line, closed, and seen
@@ -912,14 +912,14 @@ after(teardown);
     await idle(page);
     assert.equal(await page.locator(h).count(), 0);
     const i = page.locator('#sfCtl button.sfinfo[data-info="along"]');
-    assert.equal((await i.textContent()).trim(), 'iHow colour along works');
+    assert.equal((await i.textContent()).trim(), 'iHow Colour along works');
     assert.equal(await i.getAttribute('aria-expanded'), 'false');
     assert.equal(await seen(), true);
     // it opens in place with all of it
     await i.click();
     assert.match(
       await i.textContent(),
-      /Tap a marker to see its sections, then tap each section on the picture as you colour it\. Use ✓ Mark all coloured for a whole marker\./,
+      /Tap a marker to see its sections, then tap each section on the picture as you colour it\. Use ✓ Mark all done for a whole marker\./,
     );
     await i.click();
     // later visits: the ⓘ line
@@ -930,7 +930,7 @@ after(teardown);
     assert.equal(await page.locator(h).count(), 0);
     assert.equal(
       (await page.locator('#sfCtl button.sfinfo[data-info="along"]').textContent()).trim(),
-      'iHow colour along works',
+      'iHow Colour along works',
     );
     assert.deepEqual(errors, []);
   });

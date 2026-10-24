@@ -29,6 +29,8 @@ import {
   welcome,
 } from './helpers.mjs';
 import { GEN_STRAIGHTEN } from './photo-gens.mjs';
+// (v324: Home's tester tasks card while there are tasks to answer, the foot's line once they're sent: whichever shows)
+const homeTasks = (page) => page.click('#homeTaskCard:visible, #homeTasks:visible');
 
 before(setup);
 after(teardown);
@@ -572,7 +574,7 @@ after(teardown);
     );
     assert.match(
       t,
-      /By keyboard, use Colour along’s list instead: open a marker, then Mark all coloured or Find next\. Focus mode and everything else work by keyboard too\./,
+      /By keyboard, use Colour along’s list instead: open a marker, then Mark all done or Find next\. Focus mode and everything else work by keyboard too\./,
     );
     assert.match(t, /In Markers, press Shift\+F10 on a marker to open its details\./);
     await snap(page, 'help-keyboard');
@@ -1268,7 +1270,7 @@ after(teardown);
   test('the ways in: Home’s foot counts, the thanks card and Help’s tester guide open it; Escape closes it, back where it was', async () => {
     const { page, errors } = await ready({ init: 'window.__MS_THANKS_AUTO = 1;' });
     assert.equal(await foot(page), 'Tester tasks · 0 of 6');
-    await page.click('#homeTasks');
+    await homeTasks(page);
     await idle(page);
     assert.ok(await page.isVisible('#ttOverlay'));
     assert.equal(await page.textContent('#ttCount'), '0 of 6 answered');
@@ -1278,7 +1280,7 @@ after(teardown);
     await page.keyboard.press('Escape');
     await idle(page);
     assert.equal(await page.isVisible('#ttOverlay'), false);
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'homeTasks');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'homeTaskCard');
     // the thanks card's, which then goes (the foot keeps the way in)
     await page.click('#btTasks');
     await idle(page);
@@ -1295,7 +1297,7 @@ after(teardown);
   });
   test('answers: a rating answers a task (tapped again, taken back), notes and questions kept through a reload; all six: "ready to send"', async () => {
     const { page, errors } = await ready();
-    await page.click('#homeTasks');
+    await homeTasks(page);
     await rate(page, 'add', 'easy');
     assert.equal(await page.textContent('#ttCount'), '1 of 6 answered');
     assert.equal(await page.textContent('.ttrow[data-k="add"] .ttchip'), 'Easy');
@@ -1318,7 +1320,7 @@ after(teardown);
     await page.waitForFunction(() => !(history.state && history.state.msLayer));
     await page.reload();
     await idle(page);
-    await page.click('#homeTasks');
+    await homeTasks(page);
     await openRow(page, 'add');
     assert.equal(await page.inputValue('.ttrow[data-k="add"] .ttnote'), 'Found my set straight away.');
     assert.equal(await page.inputValue('[data-q="confused"]'), 'The Shading tab.');
@@ -1340,7 +1342,7 @@ after(teardown);
   test('Send results posts each answer to its field, says so, and a second send is marked an update', async () => {
     const { page, errors } = await ready({ init: withForm() });
     const posts = await catchPosts(page);
-    await page.click('#homeTasks');
+    await homeTasks(page);
     await rate(page, 'add', 'easy');
     await openRow(page, 'plan');
     await rate(page, 'plan', 'hard');
@@ -1371,7 +1373,7 @@ after(teardown);
     await page.keyboard.press('Escape');
     assert.equal(await foot(page), 'Tester tasks · sent');
     // a change, then sent again from the top: the same tester, an update
-    await page.click('#homeTasks');
+    await homeTasks(page);
     assert.match(await said(page), /Sent\. Thank you/);
     await openRow(page, 'guide');
     await rate(page, 'guide', 'ok');
@@ -1386,7 +1388,7 @@ after(teardown);
   test('offline: nothing lost, said so; Copy my answers copies them', async () => {
     const { page, errors } = await ready({ init: withForm(STUBS) });
     await catchPosts(page, true);
-    await page.click('#homeTasks');
+    await homeTasks(page);
     await rate(page, 'add', 'easy');
     await page.click('#ttSend');
     await page.waitForFunction(() => /^Couldn’t send/.test(document.getElementById('ttSaid').textContent));
@@ -1404,7 +1406,7 @@ after(teardown);
   test('no form: Send results opens the share sheet with the answers (or copies them, without one)', async () => {
     for (const init of [STUBS, NO_SHARE]) {
       const { page, errors, ctx } = await ready({ init });
-      await page.click('#homeTasks');
+      await homeTasks(page);
       await rate(page, 'add', 'hard');
       assert.match(await page.textContent('#ttWhat'), /opens the share sheet/);
       await page.click('#ttSend');
@@ -1461,7 +1463,7 @@ after(teardown);
     const b = await openApp({ width: 320, height: 640 });
     await welcome(b.page, 'look');
     await b.page.evaluate(() => document.documentElement.style.setProperty('--tpx0', '1.6px'));
-    await b.page.click('#homeTasks');
+    await homeTasks(b.page);
     await idle(b.page);
     const r = await b.page.evaluate(() => {
       const card = document.querySelector('#ttOverlay .dcard'),
@@ -1527,7 +1529,7 @@ after(teardown);
       },
     });
     await idle(page);
-    await page.click('#homeTasks');
+    await homeTasks(page);
     await idle(page);
     await page.click('#ttSendTop');
     await idle(page);
@@ -1969,7 +1971,7 @@ after(teardown);
     await welcome(a.page, 'look');
     await idle(a.page);
     a.posts = n ? await catchPosts(a.page) : [];
-    await a.page.click('#homeTasks');
+    await homeTasks(a.page);
     await idle(a.page);
     return a;
   }
@@ -2002,7 +2004,7 @@ after(teardown);
     await page.waitForFunction(() => !(history.state && history.state.msLayer));
     await page.reload();
     await idle(page);
-    await page.click('#homeTasks');
+    await homeTasks(page);
     assert.equal(await page.inputValue('[data-q="brands"]'), 'Copic, Spectrum Noir');
     assert.equal(await page.inputValue('[data-q="subjects"]'), 'People and flowers');
     assert.deepEqual(errors, []);
@@ -2067,7 +2069,7 @@ after(teardown);
     const { page, errors } = await openApp({ width: 820, height: 1180 });
     await welcome(page, 'look');
     await idle(page);
-    await page.click('#homeTasks');
+    await homeTasks(page);
     const w = await page.textContent('#ttWhat');
     assert.match(w, /opens the share sheet/);
     assert.match(

@@ -6,6 +6,10 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v324',
+    t: 'New guides get better names, read from the colours that fill most of the page: more words, fewer foods, and titles such as “Study in Rouge and Fox”, “Where the Poppy Grows” and “The Honey Greenhouse”. Building a guide from a big photo pauses for less. On a small phone the welcome fits on one screen, Focus mode sideways has its controls beside the picture (with your markers for the page when there’s room), and Colour along’s order row keeps its search button. Home has one way into the tester tasks, and some wording is tidier: Colour along’s button is ✓ Mark all done.',
+  },
+  {
     v: 'v323.1',
     t: 'Zoomed in on Colour along, the outlines are drawn smooth too, and move with the picture as you pan and pinch. Focus mode no longer pauses on a big photo as its outlines turn smooth. Fixes: the Library could show fewer sections coloured than you’d ticked if the app was closed just as it saved; closing Reveal from the finished page puts you back on Reveal & share; the sample’s note in the header fits on a phone.',
   },

@@ -1,72 +1,428 @@
-/* ---- guide name generator: reads the palette (hue families, lightness, intensity, spread) and writes an evocative two/three-word name ---- */
+/* ---- guide name generator: reads the palette (hue families, lightness, intensity, spread) and writes an evocative two/three-word name ----
+   (v324) The words: each listed once across all the lists (Coral had been under three families, so it came up three
+   times as often), spread over gems and minerals, flowers, creatures, places, weather, textiles and times of day as
+   well as food (half of all names had been food or drink: a menu); the romantic words gone (Affair, Crush, Tryst,
+   Liaison, Temptation…: a colouring app many families use), British spellings (Harbour, Candyfloss). EVO_FOOD: at most
+   one of them in a name. EVO_FIT: an adjective that means a colour (Golden, Inky) only with colours it suits.
+   (v324, second pass) More words in every list, and titles of their own beside the two-word names: an old master's
+   ("Nocturne in Navy and Gold"), a room or garden ("The Saffron Parlour"), a creature's song, where a flower grows,
+   skies, seasons ("Plum Season"), "A Touch of Lilac", "Ode to Teal". */
 var EVO_HUES = {
   red: {
-    pale: ['Blush', 'Rosé', 'Petal', 'Strawberry', 'Coral'],
+    pale: [
+      'Blush',
+      'Camellia',
+      'Rosehip',
+      'Salmon',
+      'Strawberry',
+      'Coral',
+      'Seashell',
+      'Rosebud',
+      'Tea Rose',
+      'Conch',
+    ],
     mid: [
       'Scarlet',
-      'Coral',
       'Cherry',
       'Poppy',
       'Crimson',
       'Ruby',
-      'Cerise',
       'Rouge',
       'Cinnabar',
       'Vermilion',
       'Lipstick',
+      'Geranium',
+      'Pomegranate',
+      'Cardinal',
+      'Postbox',
+      'Ladybird',
+      'Robin',
+      'Red Admiral',
+      'Rowan',
+      'Toadstool',
+      'Fire Engine',
     ],
-    deep: ['Garnet', 'Merlot', 'Claret', 'Oxblood', 'Bordeaux', 'Cabernet', 'Black Cherry'],
+    deep: [
+      'Garnet',
+      'Merlot',
+      'Claret',
+      'Oxblood',
+      'Bordeaux',
+      'Black Cherry',
+      'Mahogany',
+      'Carnelian',
+      'Brick',
+      'Burgundy',
+      'Jasper',
+      'Red Oak',
+    ],
   },
   orange: {
-    pale: ['Peach', 'Apricot', 'Melon', 'Nectarine', 'Sherbet'],
-    mid: ['Tangerine', 'Ember', 'Papaya', 'Persimmon', 'Coral', 'Mango', 'Paprika', 'Clementine'],
-    deep: ['Rust', 'Copper', 'Cognac', 'Terracotta', 'Cinnamon', 'Amberwood', 'Spice'],
+    pale: [
+      'Peach',
+      'Apricot',
+      'Melon',
+      'Sherbet',
+      'Sunrise',
+      'Daylily',
+      'Calendula',
+      'Peach Blossom',
+      'Honeysuckle',
+    ],
+    mid: [
+      'Tangerine',
+      'Ember',
+      'Persimmon',
+      'Mango',
+      'Paprika',
+      'Clementine',
+      'Marmalade',
+      'Pumpkin',
+      'Fox',
+      'Monarch',
+      'Bonfire',
+      'Tiger Lily',
+      'Koi',
+      'Goldfish',
+      'Nasturtium',
+      'Lantern',
+    ],
+    deep: [
+      'Rust',
+      'Copper',
+      'Cognac',
+      'Terracotta',
+      'Cinnamon',
+      'Russet',
+      'Burnt Sienna',
+      'Autumn',
+      'Chestnut',
+      'Ginger',
+      'Conker',
+      'Copper Beech',
+      'Red Squirrel',
+    ],
   },
   yellow: {
-    pale: ['Champagne', 'Butter', 'Vanilla', 'Limoncello', 'Primrose', 'Chiffon'],
-    mid: ['Honey', 'Saffron', 'Citrine', 'Gold', 'Sunflower', 'Lemon', 'Buttercup', 'Mimosa', 'Marigold'],
-    deep: ['Ochre', 'Mustard', 'Bronze', 'Brass', 'Amber', 'Turmeric', 'Old Gold'],
+    pale: [
+      'Champagne',
+      'Butter',
+      'Vanilla',
+      'Primrose',
+      'Chiffon',
+      'Daffodil',
+      'Moonbeam',
+      'Straw',
+      'Cowslip',
+      'Corn Silk',
+      'Meadowsweet',
+    ],
+    mid: [
+      'Honey',
+      'Saffron',
+      'Citrine',
+      'Gold',
+      'Sunflower',
+      'Lemon',
+      'Buttercup',
+      'Mimosa',
+      'Marigold',
+      'Canary',
+      'Sunbeam',
+      'Goldfinch',
+      'Dandelion',
+      'Bumblebee',
+      'Sunshine',
+      'Yellowhammer',
+      'Celandine',
+    ],
+    deep: [
+      'Ochre',
+      'Mustard',
+      'Bronze',
+      'Brass',
+      'Amber',
+      'Turmeric',
+      'Old Gold',
+      'Topaz',
+      'Gold Leaf',
+      'Harvest',
+      'Goldenrod',
+      'Wheatfield',
+      'Antique Gold',
+    ],
   },
   lime: {
-    pale: ['Pistachio', 'Key Lime', 'Honeydew', 'Pear', 'Celery Silk'],
-    mid: ['Chartreuse', 'Lime', 'Absinthe', 'Matcha', 'Kiwi', 'Limeade'],
-    deep: ['Olive', 'Moss', 'Lichen', 'Martini Olive', 'Fern Shade'],
+    pale: [
+      'Pistachio',
+      'Key Lime',
+      'Honeydew',
+      'Pear',
+      'Spring Bud',
+      'Sprout',
+      'Seedling',
+      'Pea Shoot',
+      'Spring Green',
+      'Catkin',
+      'Lacewing',
+    ],
+    mid: [
+      'Chartreuse',
+      'Lime',
+      'Matcha',
+      'Kiwi',
+      'Grasshopper',
+      'Tree Frog',
+      'New Leaf',
+      'Green Apple',
+      'Lily Pad',
+      'Peridot',
+      'Greenfinch',
+      'Gecko',
+      'Caterpillar',
+    ],
+    deep: ['Olive', 'Moss', 'Lichen', 'Bracken', 'Avocado', 'Khaki', 'Hedgerow', 'Seaweed', 'Pondweed'],
   },
   green: {
-    pale: ['Mint', 'Sage', 'Celadon', 'Eucalyptus', 'Spearmint'],
-    mid: ['Jade', 'Emerald', 'Fern', 'Basil', 'Clover', 'Shamrock', 'Palm'],
-    deep: ['Forest', 'Juniper', 'Evergreen', 'Malachite', 'Ivy', 'Bottle Green', 'Pine'],
+    pale: ['Mint', 'Sage', 'Celadon', 'Eucalyptus', 'Spearmint', 'Aloe', 'Dewdrop', 'Mistletoe', 'Seagrass'],
+    mid: [
+      'Jade',
+      'Emerald',
+      'Fern',
+      'Basil',
+      'Clover',
+      'Shamrock',
+      'Palm',
+      'Parakeet',
+      'Ivy',
+      'Holly',
+      'Bamboo',
+      'Cactus',
+      'Dragon',
+      'Woodpecker',
+    ],
+    deep: [
+      'Forest',
+      'Juniper',
+      'Evergreen',
+      'Malachite',
+      'Bottle Green',
+      'Pine',
+      'Spruce',
+      'Laurel',
+      'Cedar',
+      'Rainforest',
+      'Yew',
+      'Fir',
+      'Hunter Green',
+      'Conifer',
+    ],
   },
   teal: {
-    pale: ['Sea Glass', 'Seafoam', 'Aqua', 'Glacier', 'Mint Julep'],
-    mid: ['Teal', 'Lagoon', 'Turquoise', 'Verdigris', 'Mermaid', 'Tidepool'],
-    deep: ['Spruce', 'Peacock', 'Petrol', 'Deep Lagoon', 'Jadeite'],
+    pale: [
+      'Sea Glass',
+      'Seafoam',
+      'Aqua',
+      'Glacier',
+      'Duck Egg',
+      'Surf',
+      'Shallows',
+      'Sea Spray',
+      'Rock Pool',
+      'Opal',
+    ],
+    mid: [
+      'Teal',
+      'Lagoon',
+      'Turquoise',
+      'Verdigris',
+      'Mermaid',
+      'Tidepool',
+      'Kingfisher',
+      'Dragonfly',
+      'Caribbean',
+      'Aquamarine',
+      'Sea Turtle',
+      'Kelp',
+      'Tourmaline',
+    ],
+    deep: ['Peacock', 'Petrol', 'Jadeite', 'Deep Sea', 'Mallard', 'Fathom', 'Blue Spruce', 'Sea Moss'],
   },
   blue: {
-    pale: ['Powder Blue', 'Sky', 'Cornflower', 'Chambray', 'Ice', 'Periwinkle'],
-    mid: ['Cobalt', 'Azure', 'Cerulean', 'Sapphire', 'Denim', 'Delft', 'Riviera Blue'],
-    deep: ['Navy', 'Ink', 'Prussian', 'Marine', 'Midnight Blue', 'Oxford'],
+    pale: [
+      'Powder Blue',
+      'Sky',
+      'Cornflower',
+      'Chambray',
+      'Ice',
+      'Periwinkle',
+      'Forget-Me-Not',
+      'Frost',
+      'Hydrangea',
+      'Baby Blue',
+      'Snowmelt',
+      'Morning Sky',
+      'Blue Tit',
+    ],
+    mid: [
+      'Cobalt',
+      'Azure',
+      'Cerulean',
+      'Sapphire',
+      'Denim',
+      'Delft',
+      'Lapis',
+      'Ultramarine',
+      'Bluebird',
+      'Blue Jay',
+      'Blue Whale',
+      'Sailor Blue',
+      'Blueberry',
+    ],
+    deep: [
+      'Navy',
+      'Ink',
+      'Prussian',
+      'Marine',
+      'Midnight Blue',
+      'Oxford',
+      'Admiral',
+      'Deep Ocean',
+      'Night Sky',
+      'Royal Blue',
+      'Bilberry',
+    ],
   },
   violet: {
-    pale: ['Lavender', 'Lilac', 'Wisteria', 'Thistle', 'Heather'],
-    mid: ['Amethyst', 'Iris', 'Violet', 'Hyacinth', 'Ultraviolet'],
-    deep: ['Aubergine', 'Indigo', 'Blackberry', 'Nightshade', 'Damson'],
+    pale: [
+      'Lavender',
+      'Lilac',
+      'Wisteria',
+      'Thistle',
+      'Heather',
+      'Bluebell',
+      'Crocus',
+      'Bellflower',
+      'Harebell',
+      'Sea Holly',
+    ],
+    mid: [
+      'Amethyst',
+      'Iris',
+      'Violet',
+      'Hyacinth',
+      'Ultraviolet',
+      'Pansy',
+      'Clematis',
+      'Lupin',
+      'Purple Emperor',
+      'Allium',
+      'Petunia',
+      'Verbena',
+    ],
+    deep: ['Aubergine', 'Indigo', 'Blackberry', 'Damson', 'Tyrian', 'Royal Purple', 'Elderberry', 'Sloe'],
   },
   magenta: {
-    pale: ['Orchid', 'Peony', 'Mauve', 'Sweet Pea'],
-    mid: ['Fuchsia', 'Magenta', 'Raspberry', 'Bougainvillea', 'Hibiscus'],
-    deep: ['Plum', 'Mulberry', 'Sangria', 'Boysenberry', 'Black Plum'],
+    pale: ['Orchid', 'Peony', 'Mauve', 'Sweet Pea', 'Mallow', 'Cosmos', 'Phlox', 'Sweet William'],
+    mid: [
+      'Fuchsia',
+      'Magenta',
+      'Raspberry',
+      'Bougainvillea',
+      'Hibiscus',
+      'Foxglove',
+      'Azalea',
+      'Rhododendron',
+      'Dragon Fruit',
+      'Fireweed',
+      'Primula',
+    ],
+    deep: ['Plum', 'Mulberry', 'Boysenberry', 'Beetroot', 'Heliotrope', 'Black Tulip', 'Dark Orchid'],
   },
   pink: {
-    pale: ['Ballet Pink', 'Petal', 'Cotton Candy', 'Blush', 'Rose Quartz'],
-    mid: ['Rose', 'Flamingo', 'Watermelon', 'Cerise', 'Hot Pink', 'Candy'],
-    deep: ['Raspberry', 'Rosewood', 'Cranberry', 'Berry', 'Wild Rose'],
+    pale: [
+      'Ballet Pink',
+      'Petal',
+      'Candyfloss',
+      'Rose Quartz',
+      'Cherry Blossom',
+      'Tutu',
+      'Marshmallow',
+      'Apple Blossom',
+      'Shell Pink',
+    ],
+    mid: [
+      'Rose',
+      'Flamingo',
+      'Watermelon',
+      'Cerise',
+      'Hot Pink',
+      'Bubblegum',
+      'Carnation',
+      'Begonia',
+      'Rosebay',
+      'Coral Pink',
+      'Stargazer',
+    ],
+    deep: ['Rosewood', 'Cranberry', 'Berry', 'Wild Rose', 'Damask', 'Rhubarb', 'Old Rose'],
   },
 };
 var EVO_NEUTRAL = {
-  pale: ['Linen', 'Pearl', 'Oyster', 'Cashmere', 'Porcelain', 'Ivory', 'Chalk', 'Moonstone', 'Alabaster'],
-  mid: ['Pewter', 'Smoke', 'Stone', 'Fog', 'Ash', 'Driftwood', 'Taupe', 'Mink', 'Silver', 'Flint'],
-  deep: ['Graphite', 'Onyx', 'Charcoal', 'Slate', 'Obsidian', 'Espresso', 'Gunmetal', 'Soot'],
+  pale: [
+    'Linen',
+    'Pearl',
+    'Oyster',
+    'Cashmere',
+    'Porcelain',
+    'Ivory',
+    'Chalk',
+    'Moonstone',
+    'Alabaster',
+    'Eggshell',
+    'Cloud',
+    'Snowdrift',
+    'Sea Salt',
+    'Swan',
+    'Parchment',
+    'Mist',
+  ],
+  mid: [
+    'Pewter',
+    'Smoke',
+    'Stone',
+    'Fog',
+    'Ash',
+    'Driftwood',
+    'Taupe',
+    'Mink',
+    'Silver',
+    'Flint',
+    'Pebble',
+    'Dove',
+    'Heron',
+    'Sandstone',
+    'Tweed',
+    'Granite',
+    'Silver Birch',
+    'Mushroom',
+    'Moth',
+  ],
+  deep: [
+    'Graphite',
+    'Onyx',
+    'Charcoal',
+    'Slate',
+    'Obsidian',
+    'Espresso',
+    'Gunmetal',
+    'Soot',
+    'Raven',
+    'Basalt',
+    'Jet',
+    'Storm Cloud',
+    'Ironstone',
+    'Panther',
+  ],
 };
 var EVO_MOOD = {
   pale: [
@@ -82,24 +438,28 @@ var EVO_MOOD = {
     'Moonlit',
     'Gauzy',
     'Dreamy',
+    'Frosted',
+    'Feathered',
+    'Snowy',
+    'Airy',
+    'Lacy',
   ],
   deep: [
     'Midnight',
     'Velvet',
-    'Smouldering',
     'Candlelit',
     'Inky',
-    'Sultry',
-    'Brooding',
     'Dusky',
     'Nocturnal',
     'Shadowed',
     'Moody',
-    'Decadent',
+    'Twilit',
+    'Stormy',
+    'Starlit',
+    'Wintry',
   ],
   vivid: [
     'Electric',
-    'Fevered',
     'Radiant',
     'Wild',
     'Blazing',
@@ -109,7 +469,12 @@ var EVO_MOOD = {
     'Molten',
     'Sunlit',
     'Juicy',
-    'Brazen',
+    'Bold',
+    'Dazzling',
+    'Fizzy',
+    'Zesty',
+    'Sparkling',
+    'Vivid',
   ],
   soft: [
     'Smoky',
@@ -122,6 +487,11 @@ var EVO_MOOD = {
     'Mellow',
     'Wistful',
     'Muted',
+    'Gentle',
+    'Quiet',
+    'Dusty',
+    'Chalky',
+    'Drowsy',
   ],
   mid: [
     'Satin',
@@ -129,38 +499,48 @@ var EVO_MOOD = {
     'Honeyed',
     'Burnished',
     'Glowing',
-    'Tender',
     'Glossy',
     'Lacquered',
     'Golden',
-    'Silken',
+    'Painted',
+    'Shimmering',
+    'Enamelled',
+    'Polished',
+    'Glazed',
   ],
 };
+// (the moods that mean a colour, and the families they suit: "Golden Turquoise" read as a contradiction)
+var EVO_FIT = {
+  Golden: ['red', 'orange', 'yellow', 'lime', 'neutral'],
+  Gilded: ['red', 'orange', 'yellow', 'lime', 'neutral'],
+  Honeyed: ['red', 'orange', 'yellow', 'pink', 'neutral'],
+  Burnished: ['red', 'orange', 'yellow', 'neutral'],
+  Molten: ['red', 'orange', 'yellow', 'pink', 'magenta'],
+  Blazing: ['red', 'orange', 'yellow', 'pink', 'magenta'],
+  Blushing: ['red', 'orange', 'pink', 'magenta', 'neutral'],
+  Candlelit: ['red', 'orange', 'yellow', 'neutral'],
+  Inky: ['blue', 'violet', 'teal', 'green', 'magenta', 'neutral'],
+  Midnight: ['blue', 'violet', 'teal', 'green', 'magenta', 'neutral'],
+  Frosted: ['blue', 'teal', 'violet', 'green', 'lime', 'pink', 'magenta', 'neutral'],
+  Sunlit: ['red', 'orange', 'yellow', 'lime', 'green', 'teal', 'pink'],
+  Snowy: ['blue', 'teal', 'violet', 'green', 'pink', 'magenta', 'neutral'],
+  Wintry: ['blue', 'teal', 'violet', 'green', 'magenta', 'neutral'],
+  Zesty: ['orange', 'yellow', 'lime', 'green'],
+  Fizzy: ['red', 'orange', 'yellow', 'lime', 'green', 'teal', 'pink', 'magenta'],
+};
 var EVO_VIBE = [
-  'Affair',
-  'Kiss',
-  'Crush',
-  'Tryst',
   'Whisper',
   'Serenade',
   'Tango',
-  'Rendezvous',
   'Reverie',
-  'Allure',
   'Secret',
-  'Flirt',
-  'Temptation',
-  'Siren',
   'Muse',
   'Soirée',
-  'Boudoir',
   'Afterglow',
   'Heatwave',
   'Mirage',
   'Riviera',
   'Cabana',
-  'Martini',
-  'Nightcap',
   'Encore',
   'Spell',
   'Charm',
@@ -171,28 +551,78 @@ var EVO_VIBE = [
   'Lullaby',
   'Sonnet',
   'Daydream',
-  'Fever',
   'Rhapsody',
-  'Liaison',
-  'Desire',
-  'Caress',
-  'Embrace',
-  'Slow Dance',
-  'Last Dance',
-  'Velvet',
   'Silk',
-  'Satin',
   'Lace',
-  'Chiffon',
-  'Confession',
+  'Postcard',
+  'Parade',
+  'Picnic',
+  'Holiday',
+  'Voyage',
+  'Fable',
+  'Legend',
+  'Echo',
+  'Carousel',
+  'Kite',
+  'Keepsake',
+  'Wish',
+  'Promise',
+  'Story',
+  'Jamboree',
+  'Tea Party',
+  'Treasure',
+  'Snow Globe',
+  'Music Box',
+  'Sketchbook',
+  'Lighthouse',
+  'Paper Boat',
+  'Fairy Tale',
+  'Hideaway',
+  'Adventure',
+  'Escapade',
 ];
+// (a piece of music, for "Mango Nocturne"; and a time, for "Lagoon at Low Tide")
+var EVO_PIECE = [
+    'Nocturne',
+    'Sonata',
+    'Ballad',
+    'Waltz',
+    'Overture',
+    'Interlude',
+    'Refrain',
+    'Prelude',
+    'Minuet',
+    'Symphony',
+    'Concerto',
+    'Polka',
+    'Fanfare',
+    'Étude',
+    'Jig',
+  ],
+  EVO_AT = [
+    'First Light',
+    'Low Tide',
+    'High Summer',
+    'Noon',
+    'Daybreak',
+    'Nightfall',
+    'Teatime',
+    'Midsummer',
+    'Sunset',
+    'Lamplight',
+    'First Frost',
+    'Harvest Moon',
+    'Bedtime',
+    'Elevenses',
+    'Last Light',
+  ];
 var EVO_NATURE = [
   'Bloom',
   'Tide',
   'Grove',
   'Meadow',
   'Dune',
-  'Harbor',
+  'Harbour',
   'Orchard',
   'Glade',
   'Horizon',
@@ -213,8 +643,27 @@ var EVO_NATURE = [
   'Oasis',
   'Coast',
   'Isle',
-  'Lagoon',
-  'Orchid House',
+  'Valley',
+  'Fjord',
+  'Brook',
+  'Moor',
+  'Heath',
+  'Cove',
+  'Glen',
+  'Rainfall',
+  'Snowfall',
+  'Summit',
+  'Estuary',
+  'Hollow',
+  'Spring',
+  'Equinox',
+  'Bay',
+  'Marsh',
+  'Loch',
+  'Woodland',
+  'Waterfall',
+  'Riverbank',
+  'Hillside',
 ];
 var EVO_SPEC_NOUN = [
     'Kaleidoscope',
@@ -223,7 +672,7 @@ var EVO_SPEC_NOUN = [
     'Rainbow',
     'Spectrum',
     'Disco',
-    'Candy Shop',
+    'Sweet Shop',
     'Mosaic',
     'Fiesta',
     'Festival',
@@ -231,9 +680,118 @@ var EVO_SPEC_NOUN = [
     'Stained Glass',
     'Prism',
     'Pinwheel',
+    'Patchwork',
+    'Quilt',
+    'Bouquet',
+    'Bazaar',
+    'Regatta',
+    'Lanterns',
+    'Kites',
+    'Fireworks',
+    'Harlequin',
+    'Tapestry',
+    'Medley',
+    'Paintbox',
+    'Marbles',
+    'Bunting',
+    'Ribbons',
+    'Flower Market',
+    'Treasure Chest',
+    'Parasols',
+    'Beach Huts',
+    'Circus',
+    'Butterflies',
+    'Balloons',
+    'Crayon Box',
+    'Toy Shop',
+    'Sticker Book',
+    'Pick and Mix',
+    'Funfair',
+    'Coral Garden',
+    'Hot Air Balloons',
+    'Rock Pools',
+    'Seed Packets',
+    'Button Tin',
+    'Gemstones',
+    'Street Party',
   ],
-  EVO_SPEC_ADJ = ['Prismatic', 'Iridescent', 'Opaline', 'Technicolor', 'Kaleidoscopic'],
+  EVO_SPEC_ADJ = ['Prismatic', 'Iridescent', 'Opaline', 'Kaleidoscopic', 'Technicolour', 'Many-Coloured'],
+  // (every word for many colours: what the tests check a rainbow page's name has one of)
+  // eslint-disable-next-line no-unused-vars
   EVO_SPECTRUM = EVO_SPEC_NOUN.concat(EVO_SPEC_ADJ);
+// (v324.1) for titles of their own: the words that are creatures ("Song of the Kingfisher") and flowers ("Where the
+// Heather Grows"), from the colour words above; the rooms and gardens of "The Saffron Parlour"; and the old masters'
+// titles beside "Study in" ("Nocturne in Navy and Gold", "Arrangement in Grey")
+var EVO_CREATURE = new Set(
+    (
+      'Robin|Red Admiral|Ladybird|Cardinal|Fox|Monarch|Koi|Goldfish|Red Squirrel|Goldfinch|Canary|Bumblebee|' +
+      'Yellowhammer|Grasshopper|Tree Frog|Greenfinch|Gecko|Caterpillar|Lacewing|Parakeet|Dragon|Woodpecker|Mermaid|' +
+      'Kingfisher|Dragonfly|Sea Turtle|Peacock|Mallard|Blue Tit|Bluebird|Blue Jay|Blue Whale|Purple Emperor|Flamingo|' +
+      'Moth|Dove|Heron|Raven|Panther'
+    ).split('|'),
+  ),
+  // (the creatures that are colours in their own right, "Study in Rouge and Fox", "Under Peacock Skies": in any title)
+  EVO_HUEBEAST = new Set([
+    'Fox',
+    'Cardinal',
+    'Canary',
+    'Kingfisher',
+    'Peacock',
+    'Flamingo',
+    'Raven',
+    'Mermaid',
+  ]),
+  EVO_FLOWER = new Set(
+    (
+      'Camellia|Rosebud|Tea Rose|Poppy|Geranium|Daylily|Calendula|Honeysuckle|Tiger Lily|Nasturtium|Primrose|' +
+      'Daffodil|Cowslip|Meadowsweet|Sunflower|Buttercup|Mimosa|Marigold|Dandelion|Celandine|Goldenrod|Clover|' +
+      'Shamrock|Cornflower|Forget-Me-Not|Hydrangea|Lavender|Lilac|Wisteria|Thistle|Heather|Bluebell|Crocus|' +
+      'Bellflower|Harebell|Sea Holly|Iris|Hyacinth|Pansy|Clematis|Lupin|Allium|Petunia|Verbena|Orchid|Peony|Sweet Pea|' +
+      'Mallow|Cosmos|Phlox|Sweet William|Bougainvillea|Hibiscus|Foxglove|Azalea|Rhododendron|Fireweed|Primula|' +
+      'Heliotrope|Black Tulip|Cherry Blossom|Apple Blossom|Peach Blossom|Carnation|Begonia|Rosebay|Stargazer|Wild Rose|' +
+      'Rose|Old Rose'
+    ).split('|'),
+  ),
+  EVO_ROOM = [
+    'Room',
+    'Garden',
+    'Parlour',
+    'Studio',
+    'Atelier',
+    'Pavilion',
+    'Gallery',
+    'Summerhouse',
+    'Boathouse',
+    'Attic',
+    'Greenhouse',
+    'Library',
+  ],
+  EVO_ART = [
+    'Study in',
+    'Study in',
+    'Study in',
+    'Portrait in',
+    'Sketch in',
+    'Nocturne in',
+    'Symphony in',
+    'Harmony in',
+    'Arrangement in',
+    'Variations on',
+  ];
+// food and drink: at most one in a name ("Mango & Gold" had come with "Mango Martini"). Single words, as a name's
+// words are matched (Black Cherry by cherry, Sweet Shop by shop, Pea Shoot by shoot: never green, sweet or black)
+var EVO_FOOD = new Set(
+  (
+    'Strawberry Salmon Cherry Pomegranate Merlot Claret Bordeaux Peach Apricot Melon Sherbet Persimmon Mango Paprika ' +
+    'Clementine Marmalade Pumpkin Cognac Cinnamon Chestnut Champagne Butter Vanilla Honey Saffron Lemon Mustard ' +
+    'Turmeric Pistachio Lime Honeydew Pear Matcha Kiwi Apple Avocado Mint Sage Spearmint Basil Aubergine Blackberry ' +
+    'Damson Raspberry Plum Mulberry Boysenberry Beetroot Candyfloss Watermelon Bubblegum Cranberry Berry Espresso ' +
+    'Shop Juicy Sugared Honeyed Picnic Teatime Shoot Ginger Mushroom Blueberry Bilberry Elderberry Sloe Fruit ' +
+    'Rhubarb Marshmallow Zesty Elevenses Mix'
+  )
+    .toLowerCase()
+    .split(' '),
+);
 function _evoRng(a) {
   a = a >>> 0;
   return function () {
@@ -318,15 +876,35 @@ const EVO_ARC = {
     pink: 'm',
   },
   EVO_ARC_MIN = 0.04;
-function evoName(hexes, seedExtra, avoid) {
-  hexes = (hexes || []).filter(Boolean);
-  var px = [];
-  for (var i = 0; i < hexes.length; i++) {
+// the words of a title, not of its colours: passed over for a name's first word (opts.recent), and words that may
+// come twice ("Study in Navy and Gold at Dusk" never does, but "the" and "of" may)
+var EVO_JOIN = { and: 1, at: 1, the: 1, of: 1, in: 1, on: 1, a: 1, to: 1 },
+  EVO_TITLE_WORDS = {};
+'study in notes of the song where grows under skies a touch ode to portrait sketch nocturne symphony harmony arrangement variations on season'
+  .split(' ')
+  .forEach(function (w) {
+    EVO_TITLE_WORDS[w] = 1;
+  });
+// hexes: one colour per section (or a palette's colours); opts.w: each one's weight, a section's area, so a big sky
+// counts as what you see (v324: one per section, a page's many small red flowers had named it over its blue sky);
+// opts.recent: names of the last few guides, whose first words this one doesn't start with
+function evoName(hexes, seedExtra, avoid, opts) {
+  opts = opts || {};
+  var wts = opts.w && opts.w.length === (hexes || []).length ? opts.w : null;
+  var px = [],
+    pw = [],
+    hx2 = [];
+  for (var i = 0; i < (hexes || []).length; i++) {
+    if (!hexes[i]) continue;
     var o = _evoHSL(hexes[i]);
-    if (o) px.push(o);
+    if (!o) continue;
+    px.push(o);
+    pw.push(wts ? Math.max(0, +wts[i] || 0) : 1);
+    hx2.push(hexes[i]);
   }
+  hexes = hx2;
   if (!px.length) return 'Colouring guide';
-  var n = px.length,
+  var n = 0,
     sumC = 0,
     sumL = 0,
     sx = 0,
@@ -334,13 +912,15 @@ function evoName(hexes, seedExtra, avoid) {
     fam = {},
     famL = {},
     nC = 0;
-  for (i = 0; i < n; i++) {
-    var p = px[i];
-    sumL += p.l;
-    sumC += p.c;
+  for (i = 0; i < px.length; i++) {
+    var p = px[i],
+      q = pw[i];
+    n += q;
+    sumL += p.l * q;
+    sumC += p.c * q;
     if (p.c >= 0.14 || (p.s >= 0.28 && p.c >= 0.07)) {
-      nC++;
-      var wc = Math.max(p.c, 0.14);
+      nC += q;
+      var wc = Math.max(p.c, 0.14) * q;
       var a = (p.h * Math.PI) / 180;
       sx += Math.cos(a) * wc;
       sy += Math.sin(a) * wc;
@@ -349,6 +929,7 @@ function evoName(hexes, seedExtra, avoid) {
       famL[f] = (famL[f] || 0) + p.l * wc;
     }
   }
+  if (!(n > 0)) return 'Colouring guide';
   var meanL = sumL / n,
     meanC = sumC / n,
     chromW = 0;
@@ -395,29 +976,97 @@ function evoName(hexes, seedExtra, avoid) {
     var L = EVO_HUES[f] || EVO_HUES.red;
     return pick(L[t]);
   };
+  // (v324.1) a colour word for a title: never a creature ("Study in Tiger", "Under Blue Whale Skies"); and for a season,
+  // only what has one, a flower or a fruit ("Plum Season", "Heather Season", not "Cobalt Season"); '' when the family
+  // has none at its tone
+  var plainWord = function (f, season) {
+    var L = (EVO_HUES[f] || EVO_HUES.red)[_evoTone(famL[f] / fam[f])].filter(function (x) {
+      return season
+        ? EVO_FLOWER.has(x) || EVO_FOOD.has(_evoWords(x)[0])
+        : !EVO_CREATURE.has(x) || EVO_HUEBEAST.has(x);
+    });
+    return L.length ? pick(L) : '';
+  };
   var neutralWord = function (t) {
     return pick(EVO_NEUTRAL[t || tone]);
   };
+  // (the family a mood word has to suit: the name's own colour, else the page's strongest)
+  var lead = type === 'neutral' ? 'neutral' : fams[0] || 'neutral';
+  var moodWord = function (m, f) {
+    var L = EVO_MOOD[m];
+    for (var t = 0; t < 8; t++) {
+      var w = pick(L),
+        ok = EVO_FIT[w];
+      if (!ok || ok.indexOf(f || lead) >= 0) return w;
+    }
+    return pick(
+      L.filter(function (w) {
+        return !EVO_FIT[w];
+      }),
+    );
+  };
+  // (greys keep to the quiet times of day: "Cashmere at High Summer" read oddly)
+  var at = function () {
+    var L = EVO_AT.concat(['Dawn', 'Dusk', 'Twilight']);
+    if (type === 'neutral')
+      L = L.filter(function (w) {
+        return ['High Summer', 'Midsummer', 'Noon'].indexOf(w) < 0;
+      });
+    return pick(L);
+  };
+  // (v324.1) the title words: a creature or a flower among a family's words at its tone ('' if it has none: that
+  // title is passed over), the rooms and the old masters' titles
+  var hueOf = function (f, set) {
+    var L = f === 'neutral' ? EVO_NEUTRAL[tone] : (EVO_HUES[f] || EVO_HUES.red)[_evoTone(famL[f] / fam[f])];
+    L = L.filter(function (x) {
+      return set.has(x);
+    });
+    return L.length ? pick(L) : '';
+  };
+  var art = function () {
+      return pick(EVO_ART);
+    },
+    room = function () {
+      return pick(EVO_ROOM);
+    },
+    song = function (fs) {
+      var c = hueOf(pick(fs), EVO_CREATURE);
+      return c ? 'Song of the ' + c : '';
+    },
+    grows = function (fs) {
+      var c = hueOf(pick(fs), EVO_FLOWER);
+      return c ? 'Where the ' + c + ' Grows' : '';
+    };
+  // (v324) templates, weighted: "X & Y" and "Y-Kissed X" each about one name in ten at most (they had been 26% and
+  // 13%), with art and music titles ("Study in Teal", "Mango Nocturne", "Teal Hour", "Notes of Ember", "Fern at
+  // Daybreak") beside the mood and place ones; (v324.1) and the titles above, about one name in three
   var T;
   if (type === 'neutral') {
     var n1 = function () {
-      return neutralWord();
-    };
+        return neutralWord();
+      },
+      // (for a title: no creature but one that's a colour, Dove, Heron, Raven: "Under Dove Skies", not "Study in Moth")
+      nt = function (t) {
+        var L = EVO_NEUTRAL[t || tone].filter(function (x) {
+          return !EVO_CREATURE.has(x) || EVO_HUEBEAST.has(x);
+        });
+        return pick(L);
+      };
     T = [
       [
         2,
         function () {
-          return pick(EVO_MOOD[tone === 'mid' ? 'soft' : tone]) + ' ' + n1();
+          return moodWord(tone === 'mid' ? 'soft' : tone, 'neutral') + ' ' + n1();
         },
       ],
       [
-        3,
+        2,
         function () {
           return n1() + ' ' + pick(EVO_VIBE);
         },
       ],
       [
-        2,
+        0.5,
         function () {
           return (
             n1() +
@@ -432,31 +1081,110 @@ function evoName(hexes, seedExtra, avoid) {
           return n1() + ' ' + pick(EVO_NATURE);
         },
       ],
+      [
+        1.2,
+        function () {
+          return art() + ' ' + nt();
+        },
+      ],
+      [
+        0.4,
+        function () {
+          return 'Arrangement in ' + nt() + ' and ' + nt(tone === 'deep' ? 'mid' : 'deep');
+        },
+      ],
+      [
+        1,
+        function () {
+          return n1() + ' at ' + at();
+        },
+      ],
+      [
+        1,
+        function () {
+          return 'The ' + nt() + ' ' + room();
+        },
+      ],
+      [
+        0.8,
+        function () {
+          return song(['neutral']);
+        },
+      ],
+      [
+        0.6,
+        function () {
+          return 'Under ' + nt() + ' Skies';
+        },
+      ],
     ];
   } else if (type === 'spectrum') {
+    // (v324: the page's strongest colour beside a word for many colours, so colourful pages don't all read "… Prism")
     T = [
       [
-        3,
+        4,
         function () {
           return hueWord(fams[0]) + ' ' + pick(EVO_SPEC_NOUN);
         },
       ],
       [
-        2,
+        1,
         function () {
-          return pick(EVO_SPECTRUM) + ' ' + pick(EVO_VIBE);
+          return pick(EVO_SPEC_ADJ) + ' ' + pick(rng() < 0.5 ? EVO_VIBE : EVO_NATURE);
         },
       ],
       [
         2,
         function () {
-          return pick(EVO_MOOD[mood]) + ' ' + pick(EVO_SPEC_NOUN);
+          return moodWord(mood) + ' ' + pick(EVO_SPEC_NOUN);
         },
       ],
       [
         2,
         function () {
-          return pick(EVO_SPEC_NOUN) + ' ' + pick(EVO_NATURE);
+          return pick(EVO_SPEC_NOUN) + ' at ' + at();
+        },
+      ],
+      [
+        1,
+        function () {
+          return (
+            'The ' +
+            pick([
+              'Kaleidoscope',
+              'Carnival',
+              'Confetti',
+              'Rainbow',
+              'Mosaic',
+              'Patchwork',
+              'Harlequin',
+              'Paintbox',
+              'Funfair',
+              'Bazaar',
+              'Circus',
+              'Prism',
+            ]) +
+            ' ' +
+            room()
+          );
+        },
+      ],
+      [
+        0.6,
+        function () {
+          return pick(EVO_SPEC_ADJ) + ' ' + room();
+        },
+      ],
+      [
+        0.5,
+        function () {
+          return 'Under ' + pick(['Rainbow', 'Confetti', 'Kaleidoscope', 'Bunting', 'Patchwork']) + ' Skies';
+        },
+      ],
+      [
+        0.5,
+        function () {
+          return art() + ' ' + pick(['Rainbow', 'Confetti', 'Mosaic', 'Patchwork', 'Prism']);
         },
       ],
     ];
@@ -465,16 +1193,19 @@ function evoName(hexes, seedExtra, avoid) {
       fb = fams[1];
     T = [
       [
-        3,
+        1.2,
         function () {
           return hueWord(fa) + ' & ' + hueWord(fb);
         },
       ],
       [
-        2,
+        1,
         function () {
-          var b = hueWord(fb);
-          for (var q = 0; q < 4 && b.indexOf(' ') >= 0; q++) b = hueWord(fb);
+          // (a light touch of a colour, one word: "Cherry-Kissed Fox"; not a deep one, "Fathom-Kissed Copper")
+          if (_evoTone(famL[fb] / fam[fb]) === 'deep') return '';
+          var b = plainWord(fb);
+          for (var q = 0; q < 4 && (b.indexOf(' ') >= 0 || !b); q++) b = plainWord(fb);
+          if (!b) return '';
           return b.indexOf(' ') >= 0 ? hueWord(fa) + ' & ' + b : b + '-Kissed ' + hueWord(fa);
         },
       ],
@@ -487,21 +1218,86 @@ function evoName(hexes, seedExtra, avoid) {
       [
         1,
         function () {
-          return pick(EVO_MOOD[mood]) + ' ' + hueWord(fa);
+          return moodWord(mood, fa) + ' ' + hueWord(fa);
+        },
+      ],
+      [
+        1.2,
+        function () {
+          return art() + ' ' + plainWord(fa) + ' and ' + plainWord(fb);
+        },
+      ],
+      [
+        1,
+        function () {
+          return hueWord(fa) + ' ' + pick(EVO_PIECE);
+        },
+      ],
+      [
+        0.3,
+        function () {
+          return 'Notes of ' + hueWord(fb);
+        },
+      ],
+      [
+        0.5,
+        function () {
+          return hueWord(fa) + ' Hour';
+        },
+      ],
+      [
+        0.8,
+        function () {
+          return 'The ' + plainWord(fa) + ' ' + room();
+        },
+      ],
+      [
+        0.7,
+        function () {
+          return song([fa, fb]);
+        },
+      ],
+      [
+        0.6,
+        function () {
+          return grows([fa, fb]);
+        },
+      ],
+      [
+        0.3,
+        function () {
+          return 'Under ' + plainWord(fa) + ' Skies';
+        },
+      ],
+      [
+        0.4,
+        function () {
+          var w = plainWord(fa, true);
+          return w && w + ' Season';
+        },
+      ],
+      [
+        0.3,
+        function () {
+          return 'A Touch of ' + plainWord(fb);
         },
       ],
     ];
   } else {
     var f0 = fams[0] || _evoFam((Math.atan2(sy, sx) * 180) / Math.PI + 360);
+    if (!fam[f0]) {
+      fam[f0] = 1;
+      famL[f0] = meanL;
+    }
     T = [
       [
         3,
         function () {
-          return pick(EVO_MOOD[mood]) + ' ' + hueWord(f0);
+          return moodWord(mood, f0) + ' ' + hueWord(f0);
         },
       ],
       [
-        3,
+        2,
         function () {
           return hueWord(f0) + ' ' + pick(EVO_VIBE);
         },
@@ -515,7 +1311,80 @@ function evoName(hexes, seedExtra, avoid) {
       [
         1,
         function () {
-          return pick(EVO_MOOD[mood]) + ' ' + pick(EVO_VIBE);
+          return moodWord(mood, f0) + ' ' + pick(EVO_VIBE);
+        },
+      ],
+      [
+        1,
+        function () {
+          return hueWord(f0) + ' ' + pick(EVO_PIECE);
+        },
+      ],
+      [
+        1.2,
+        function () {
+          return art() + ' ' + plainWord(f0);
+        },
+      ],
+      [
+        0.5,
+        function () {
+          return hueWord(f0) + ' Hour';
+        },
+      ],
+      [
+        1,
+        function () {
+          return hueWord(f0) + ' at ' + at();
+        },
+      ],
+      [
+        0.3,
+        function () {
+          return 'Notes of ' + hueWord(f0);
+        },
+      ],
+      [
+        1,
+        function () {
+          return 'The ' + plainWord(f0) + ' ' + room();
+        },
+      ],
+      [
+        0.8,
+        function () {
+          return song([f0]);
+        },
+      ],
+      [
+        0.7,
+        function () {
+          return grows([f0]);
+        },
+      ],
+      [
+        0.35,
+        function () {
+          return 'Under ' + plainWord(f0) + ' Skies';
+        },
+      ],
+      [
+        0.5,
+        function () {
+          var w = plainWord(f0, true);
+          return w && w + ' Season';
+        },
+      ],
+      [
+        0.3,
+        function () {
+          return 'A Touch of ' + plainWord(f0);
+        },
+      ],
+      [
+        0.4,
+        function () {
+          return 'Ode to ' + plainWord(f0);
         },
       ],
     ];
@@ -524,9 +1393,18 @@ function evoName(hexes, seedExtra, avoid) {
   T.forEach(function (t) {
     tot += t[0];
   });
+  // (the first words of the last few guides: three "Ember …" in a row read as one name)
+  var leads = {};
+  (opts.recent || []).forEach(function (r) {
+    var w0 = _evoWords(String(r || '')).filter(function (x) {
+      return !EVO_TITLE_WORDS[x];
+    })[0];
+    if (w0) leads[w0] = 1;
+  });
   var av = avoid || null,
-    best = null;
-  for (var tries = 0; tries < 40; tries++) {
+    best = null,
+    good = null;
+  for (var tries = 0; tries < 60; tries++) {
     var r = rng() * tot,
       acc = 0,
       fn = T[0][1];
@@ -538,16 +1416,40 @@ function evoName(hexes, seedExtra, avoid) {
       }
     }
     var name = fn();
-    if (name.length > 24) continue;
+    if (!name || name.length > 24) continue;
     var w = _evoWords(name),
-      dup = false;
-    for (var u = 0; u < w.length; u++) if (w.indexOf(w[u]) !== u) dup = true;
-    if (dup) continue;
+      dup = false,
+      food = 0;
+    for (var u = 0; u < w.length; u++) {
+      if (w.indexOf(w[u]) !== u && !EVO_JOIN[w[u]]) dup = true;
+      if (EVO_FOOD.has(w[u])) food++;
+    }
+    if (dup || food > 1) continue;
     if (!best) best = name;
     if (av && av.has && av.has(name.toLowerCase())) continue;
+    if (!good) good = name;
+    var w0 = w.filter(function (x) {
+      return !EVO_TITLE_WORDS[x];
+    })[0];
+    if (leads[w0]) continue;
     return name;
   }
-  return best || 'Colouring guide';
+  return good || best || 'Colouring guide';
+}
+// the names of the last few guides saved, newest first (for evoName's opts.recent)
+function recentGuideNames(n) {
+  return state.saved
+    .filter(function (s) {
+      return s.type === 'guide';
+    })
+    .slice()
+    .sort(function (a, b) {
+      return (+b.ts || 0) - (+a.ts || 0);
+    })
+    .slice(0, n || 5)
+    .map(function (s) {
+      return s.name || '';
+    });
 }
 function usedGuideNames(extra) {
   const u = new Set(state.saved.filter((s) => s.type === 'guide').map((s) => (s.name || '').toLowerCase()));

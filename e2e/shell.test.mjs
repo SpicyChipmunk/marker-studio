@@ -2575,7 +2575,7 @@ after(teardown);
     await page.click(`#sfAlist .sfarow[data-k="${k}"] .sfah`);
     await idle(page);
     assert.equal(
-      await page.getByRole('button', { name: 'Mark all coloured', exact: true }).count(),
+      await page.getByRole('button', { name: 'Mark all done', exact: true }).count(),
       1,
       'Mark all done',
     );

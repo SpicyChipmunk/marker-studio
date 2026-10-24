@@ -4,7 +4,7 @@ function ctlFocus() {
     // (v318.32) Exit in a word, a pill like Colours at the other end of the row: on the iPad the bare ✕ it was wasn't
     // read as the way out, only the back swipe was. (Not "✕ Exit": at 390 wide the ✕ would push "Not the Copic Y26" to
     // a second line, v306.) Escape and the back swipe leave the same way (layers.js: exitFocus).
-    '<div class="sffocbar"><div class="sffocrow"><button id="sfExitFoc" class="sfexit" aria-label="Exit focus mode">Exit</button><span id="sfFocSw" class="sffocsw"></span><div class="sffocname"><b id="sfFocName"></b><span id="sfFocSub"></span></div><button id="sfFocCols" class="sffoccols" aria-expanded="false">Colours</button></div><div id="sfFocChips" class="sffocchips" aria-hidden="true"></div><div id="sfFocTip" class="sffoctip"></div><div class="sffocprog" id="sfFocProg" role="progressbar" aria-label="Page" aria-valuemin="0" aria-valuemax="100"><div id="sfProgBar"></div></div><button type="button" id="sfRailSwap" class="sfrailswap" aria-label="Swap sides" title="Swap sides">' +
+    '<div class="sffocbar"><div class="sffocrow"><button id="sfExitFoc" class="sfexit" aria-label="Exit Focus mode">Exit</button><span id="sfFocSw" class="sffocsw"></span><div class="sffocname"><b id="sfFocName"></b><span id="sfFocSub"></span></div><button id="sfFocCols" class="sffoccols" aria-expanded="false">Colours</button></div><div id="sfFocChips" class="sffocchips" aria-hidden="true"></div><div id="sfFocTip" class="sffoctip"></div><div class="sffocprog" id="sfFocProg" role="progressbar" aria-label="Page" aria-valuemin="0" aria-valuemax="100"><div id="sfProgBar"></div></div><button type="button" id="sfRailSwap" class="sfrailswap" aria-label="Swap sides" title="Swap sides">' +
     ic('arrow-left-right') +
     '</button></div>' +
     '<div id="sfFocSheet" class="sffocsheet" style="display:none"><button id="sfFocAll" class="fsall"></button>' +
@@ -740,24 +740,37 @@ function ctlSections() {
             if (texAmt > 0 && !edgeDist) buildTexFields();
             if (mpOn()) mpLinesImage();
           } catch (e) {}
+        // (v324: and the section map's signature in a task of its own, read for every pixel: about 0.2 s off Build's
+        // own hold on a big photo, slowed 4×)
         afterPaint(function () {
-          // (the first Build of a new picture blooms: 41-bloom.js; v320: so does Build after the sections were
-          // changed in Edit sections, the plan laid on them afresh)
-          const first = !assignData || (!!assignData && guideSig !== labelsSig());
-          try {
-            if (g !== loadGen) return;
-            holdTime('Build', function () {
-              buildGuide();
-            });
-            if (first && assignData && sfmode === 'guide') bloomStart();
-          } finally {
-            if (b.isConnected) {
-              b.disabled = false;
-              b.innerHTML = 'Build guide ' + icNav(1);
-              b.setAttribute('aria-label', 'Build guide');
-              edBarSync();
+          if (g === loadGen && !assignData)
+            try {
+              labelsSigWarm();
+            } catch (e) {}
+          afterPaint(function () {
+            // (the first Build of a new picture blooms: 41-bloom.js; v320: so does Build after the sections were
+            // changed in Edit sections, the plan laid on them afresh)
+            const first = !assignData || (!!assignData && guideSig !== labelsSig());
+            try {
+              if (g !== loadGen) return;
+              mpLater = true;
+              try {
+                holdTime('Build', function () {
+                  buildGuide();
+                });
+              } finally {
+                mpLater = false;
+              }
+              if (first && assignData && sfmode === 'guide') bloomStart();
+            } finally {
+              if (b.isConnected) {
+                b.disabled = false;
+                b.innerHTML = 'Build guide ' + icNav(1);
+                b.setAttribute('aria-label', 'Build guide');
+                edBarSync();
+              }
             }
-          }
+          });
         });
       });
     });

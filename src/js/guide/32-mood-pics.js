@@ -495,8 +495,24 @@ function moodPicsHTML() {
   );
 }
 // after the Plan is drawn: the pictures in, and the next to make asked for
+// (v324) Not in Build's own hold (mpLater, set there: 53-controls-stages): the pictures are drawn once the guide has
+// appeared, after the first Build's bloom if it shows; about 0.2 s of a big photo's Build, slowed 4×. Only the row
+// drawn then is filled, and only if it's still there
+let mpLater = false;
 function mpAfterPlan() {
   _mpVer++;
+  if (mpLater) {
+    const row = document.getElementById('sfMood'),
+      v = _mpVer;
+    afterPaint(function () {
+      bloomAfter(function () {
+        if (v !== _mpVer || !row || !row.isConnected) return;
+        mpPaint();
+        mpSchedule();
+      });
+    });
+    return;
+  }
   mpPaint();
   mpSchedule();
 }

@@ -572,7 +572,8 @@ after(teardown);
     let { page, errors } = await openApp({ storage: ONB });
     assert.deepEqual(await card(page), {
       card: '0/6 Beta tester tasks Next to answer: 1 · Add your markers ›',
-      foot: 'Tester tasks · 0 of 6',
+      // (v324: the foot's line away while the card shows)
+      foot: null,
     });
     ({ page, errors } = await openApp({ storage: { ...ONB, 'ms-tester': tester(2) } }));
     assert.equal((await card(page)).card, '2/6 Beta tester tasks Next to answer: 3 · Make the plan yours ›');

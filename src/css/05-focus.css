@@ -656,6 +656,11 @@ html.sfrailon #sfRoot.sffoc #sfZoomCtl {
   bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   display: flex;
   gap: 10px;
+  /* (v324: in the rail alone: a phone's own rule, under 700 wide, had made it a dark strip across the picture too) */
+  left: auto;
+  padding: 0;
+  background: transparent;
+  border-top: 0;
 }
 html.sfrailon.sfrailL #sfRoot.sffoc #sfZoomCtl {
   right: calc(100% - var(--railW) + 18px);
@@ -756,9 +761,16 @@ html.ms-still #sfRoot .sffocring {
 .sffocstrip {
   display: none;
 }
-html.sfrailon:not(.sfrailshort) .sffocstrip:not([hidden]) {
+html.sfrailon .sffocstrip:not([hidden]) {
   display: block;
   margin-top: 18px;
+}
+/* (v324) the compact rail's, when there's room for it above Done (focusSide measures): no heading, closer */
+html.sfrailon.sfrailshort .sffocstrip:not([hidden]) {
+  margin-top: 12px;
+}
+html.sfrailon.sfrailshort .sffshead {
+  display: none;
 }
 .sffshead {
   display: flex;

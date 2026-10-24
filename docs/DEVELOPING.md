@@ -234,6 +234,14 @@ path (marker reassignment plus UI wiring) is covered by the browser tests
   Names keep their capitals wherever they fall: brands (Ohuhu, Copic), marker codes and names, products (Colorless
   Blender), and the app's own named features when referred to (Focus mode, Colour along). Group labels in a panel are
   grey sentence-case labels, not small capitals; a slider's row is its label on the left and its value on the right.
+- **Wording rules (v324).** Checked by `test/app.test.mjs` (UI text) where a test can check them:
+  - Curly apostrophes in what the app shows (’, never '), and named features with their capitals (Colour along,
+    Focus mode); "colour along" as a verb ("while you colour along") stays lower case.
+  - "Tick" for one section ("Tick it", "Ticked 1 section"); "Mark … done" for several ("Mark them done",
+    "✓ Mark all done", "Marked 12 sections done").
+  - Dialog buttons: **Cancel** abandons an action already started; **Not now** puts off an offer; **Close** dismisses
+    something that only informs; **OK** only acknowledges, and never confirms an action.
+  - Exclamation marks only for a celebration (a page finished); thanks and confirmations end with a full stop.
 - **Motion (v323).** Short interface movements use the motion tokens in `src/css/01-base.css` (`--dur-quick`,
   `--dur-base`, `--dur-slow`, `--ease-out`, `--ease-spring`) rather than their own timings. Entrances are off
   under test (`html.ms-still`, unless a test sets `window.__MS_MOTION`) and with Reduce motion.

@@ -393,7 +393,11 @@ document.addEventListener('keydown', function (e) {
     trail = [];
     show('wcStep2', true);
     var b = $('wcSample');
-    if (b) b.focus();
+    // (v324: without scrolling to it: on a short phone the step had opened scrolled down, its heading out of view)
+    if (b) b.focus({ preventScroll: true });
+    [$('wcStep2'), ov.querySelector('.wcard')].forEach(function (el) {
+      if (el) el.scrollTop = 0;
+    });
   }
   function close() {
     closeDialog(ov);

@@ -168,7 +168,21 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 
 ## Part C — new in recent releases (20 min)
 
-What v318.22 to v318.30 changed that Parts A and B don't already cover.
+What recent releases changed that Parts A and B don't already cover.
+
+**New in v324**
+
+- [ ] ★ **Guide names:** build three guides from different pages (a colourful one, a mostly blue one, a grey one) and
+      tap the name's ↻ a few times on each → names that fit the page's main colour, varied (some titles such as "The
+      … Room", "Song of the …", "Study in … and …"), no two new guides in a row starting with the same word.
+- [ ] **A big photo (a 12-megapixel camera photo):** after Build guide, the guide appears and responds with no long
+      pause; reopened from the Library later, Edit sections › Adjust photo has the photo.
+- [ ] **iPhone (or a small phone), welcome:** the first step's three choices fit with their buttons, no scrolling;
+      after adding a set, "You’re all set" shows its heading.
+- [ ] **iPhone on its side, Focus mode:** the controls in a column beside the picture, no dark band across it; on a
+      bigger phone, the page's markers in a row under the progress bar.
+- [ ] **Narrow phone, Colour along:** the order row reads Light first · Rainbow · By brand with ⌕ at its end.
+- [ ] **Home:** one way into the tester tasks (the card); after Send results, "Tester tasks · sent" at the foot.
 
 **New in v323.1**
 

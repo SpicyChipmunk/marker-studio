@@ -2118,3 +2118,16 @@ after(teardown);
     assert.deepEqual(errors, []);
   });
 }
+
+// (v324) a 320-wide phone: "Light first", and the search button on the order row, not on a line of its own
+test('a 320-wide phone: the list order row keeps its search button', async () => {
+  const { page, errors } = await openApp({ width: 320, height: 568 });
+  await sampleGuide(page);
+  await page.click('#sfColor');
+  await idle(page);
+  assert.equal(await page.innerText('#sfAlSort [data-v="light"]'), 'Light first');
+  const top = (s) =>
+    page.evaluate((q) => Math.round(document.querySelector(q).getBoundingClientRect().top), s);
+  assert.equal(await top('#sfFindOpen'), await top('#sfAlSort [data-v="light"]'), 'one row');
+  assert.deepEqual(errors, []);
+});

@@ -144,7 +144,9 @@ function nextUndone(from) {
 // picture's column.
 // (v323: a phone on its side too, from 640 wide: the picture beside the controls has the screen's whole height, where
 // above and below them it had about 250px; a short screen's rail is a compact one, sfrailshort)
-var RAIL_MQ = '(orientation: landscape) and (min-height: 340px) and (min-width: 640px)',
+// (v324: from 560 wide and 300 tall, a small phone on its side too: an iPhone SE's 568 by 320 had had the controls
+// above and below a picture about 150px tall)
+var RAIL_MQ = '(orientation: landscape) and (min-height: 300px) and (min-width: 560px)',
   RAIL_SHORT = '(max-height: 599px)';
 function focusRail() {
   return !!(
@@ -173,15 +175,13 @@ function railSync() {
 // (v323) The iPad's side rail, tall enough: under the progress bar, the page's markers in order (each one's sections
 // coloured, ✓ when done, the one in hand ringed), and under Done, Back and Skip, the whole page as coloured so far
 // with a ring where the section is ("Where you are"); a tap on it shows the whole page. Drawn with the picture
-// (renderGuide). Not on a short rail or off the rail.
+// (renderGuide). Not off the rail. (v324) A short rail (a phone on its side) has the strip too, without its heading,
+// when it fits above Done once laid out (it never covers Done: a 390-tall phone has the room, a 320-tall one hasn't);
+// the map stays the iPad's.
 function focusSide() {
   var de = document.documentElement,
-    on =
-      focus &&
-      !focusFin &&
-      sfmode === 'color' &&
-      de.classList.contains('sfrailon') &&
-      !de.classList.contains('sfrailshort'),
+    short = de.classList.contains('sfrailshort'),
+    on = focus && !focusFin && sfmode === 'color' && de.classList.contains('sfrailon'),
     strip = document.getElementById('sfFocStrip'),
     map = document.getElementById('sfFocMap');
   if (!on) {
@@ -258,6 +258,12 @@ function focusSide() {
     }
   }
   strip.hidden = false;
+  if (short) {
+    var fb = document.querySelector('.sffocbot');
+    if (fb && strip.getBoundingClientRect().bottom + 8 > fb.getBoundingClientRect().top) strip.hidden = true;
+    if (map) map.hidden = true;
+    return;
+  }
   // Where you are
   if (!map) {
     map = document.createElement('button');

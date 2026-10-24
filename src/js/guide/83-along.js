@@ -17,7 +17,7 @@ const MA_DOUBLE = 600;
 // and counts as seen. After that, the ⓘ line.
 const AL_1 = 'Tap a marker to see its sections, then tap each section on the picture as you colour it.',
   AL_2 =
-    'Use <b><span aria-hidden="true">✓</span> Mark all coloured</b> for a whole marker. Press and hold a section to find its marker here.';
+    'Use <b><span aria-hidden="true">✓</span> Mark all done</b> for a whole marker. Press and hold a section to find its marker here.';
 let _alMore = false;
 function alongTips() {
   const u = shadeUse();
@@ -27,7 +27,7 @@ function alongTips() {
     : '';
 }
 function alongHint() {
-  if (hintSeen('along')) return infoLine('along', 'How colour along works', AL_1 + ' ' + AL_2 + alongTips());
+  if (hintSeen('along')) return infoLine('along', 'How Colour along works', AL_1 + ' ' + AL_2 + alongTips());
   return (
     '<div id="sfAlHint" class="sfinfo sfonce open"><span class="sfi" aria-hidden="true">i</span><span class="sfit">' +
     AL_1 +
@@ -69,7 +69,8 @@ function alongControls() {
         '</div>'
       : '') +
     '<div id="sfAlSort" class="sfc-segs sfalorder" role="group" aria-label="Order of the list">' +
-    ctlSeg('light', 'Lightest first', alongSort() === 'light') +
+    // (v324: "Light first" under 360 wide, so the search button keeps to the row, 04-along.css)
+    ctlSeg('light', 'Light<span class="sfalx">est</span> first', alongSort() === 'light') +
     ctlSeg('rainbow', 'Rainbow', alongSort() === 'rainbow') +
     ctlSeg('brand', 'By brand', alongSort() === 'brand') +
     // (on a phone the code box folds away behind this, so the first rows stay above the bar)
@@ -377,7 +378,7 @@ function alongRow(e, inDone) {
       '<div class="sfacts" role="group" aria-label="' +
       esc(capLabel(m)) +
       '"><button type="button" id="sfMarkAll" class="sfedit">' +
-      (full ? 'Clear' : '<span aria-hidden="true">✓</span> Mark all coloured') +
+      (full ? 'Clear' : '<span aria-hidden="true">✓</span> Mark all done') +
       '</button>' +
       (full ? '' : '<button type="button" id="sfFindNext" class="sfedit">Find next</button>') +
       '<button type="button" id="sfBlends" class="sfedit' +

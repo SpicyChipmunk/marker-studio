@@ -797,6 +797,27 @@ button.sfSeeAll {
     mask-image: none;
   }
 }
+/* (v324) a short screen: the first step's three choices as titles alone, all in view without scrolling (the
+   descriptions had pushed the third below the fold on a 568-tall phone) */
+@media (max-height: 620px) {
+  #wcStep0 .wct span {
+    display: none;
+  }
+  #wcStep0 .wcc {
+    grid-template-columns: 36px minmax(0, 1fr) 18px;
+    min-height: 60px;
+    padding: 10px 12px;
+  }
+  #wcStep0 .wci {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+  #wcStep0 .wci .ic {
+    width: 20px;
+    height: 20px;
+  }
+}
 @media (max-height: 720px) {
   .wctitle {
     font-size: var(--t-xl);

@@ -1041,7 +1041,7 @@ after(teardown);
       hold = r; // never answered: a stalled connection
     });
     await page.clock.install();
-    await page.click('#homeTasks');
+    await page.click('#homeTaskCard:visible, #homeTasks:visible');
     await page.click('.ttrow[data-k="add"] [data-r="easy"]');
     await page.click('#ttSend');
     assert.equal(await page.isDisabled('#ttSendTop'), true);
@@ -1124,7 +1124,7 @@ after(teardown);
     assert.match(await page.textContent('#wishView'), /in its details, then tap \+ To buy for a replacement/);
     await page.click('#mHome');
     await idle(page);
-    await page.click('#homeTasks');
+    await page.click('#homeTaskCard:visible, #homeTasks:visible');
     await page.click('.ttrow[data-k="plan"] .tttop');
     assert.match(await page.textContent('#ttBody-plan'), /or Shuffle \(Other pairings in Random\)/);
     assert.deepEqual(errors, []);

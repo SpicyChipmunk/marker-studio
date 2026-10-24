@@ -53,7 +53,20 @@ after(teardown);
     const s = await state(page),
       p = await sectionPoint(page, s.l);
     const g = await page.evaluate(() => {
-      const c = document.getElementById('sfCanvas').getBoundingClientRect();
+      const c = document.getElementById('sfCanvas').getBoundingClientRect(),
+        de = document.documentElement;
+      // (on the side rail the picture has the screen's height beside it; measured from its own left edge)
+      if (de.classList.contains('sfrailon')) {
+        const rw = document.querySelector('.sffocbar').offsetWidth,
+          x0 = de.classList.contains('sfrailL') ? rw : 0;
+        return {
+          w: innerWidth - rw,
+          top: 0,
+          bot: innerHeight,
+          c: { l: c.left - x0, r: c.right - x0, t: c.top, b: c.bottom },
+          x0,
+        };
+      }
       return {
         w: innerWidth,
         top: document.querySelector('.sffocbar').offsetHeight,
@@ -62,8 +75,10 @@ after(teardown);
           document.querySelector('.sffocbot').offsetHeight -
           (innerWidth < 700 ? document.getElementById('sfZoomCtl').offsetHeight : 0),
         c: { l: c.left, r: c.right, t: c.top, b: c.bottom },
+        x0: 0,
       };
     });
+    p.x -= g.x0;
     // (or all the picture fits that way, and it's in the middle)
     const fitX = g.c.r - g.c.l <= g.w + 1 && Math.abs((g.c.l + g.c.r) / 2 - g.w / 2) < 2,
       fitY = g.c.b - g.c.t <= g.bot - g.top + 1 && Math.abs((g.c.t + g.c.b) / 2 - (g.top + g.bot) / 2) < 2;
@@ -259,6 +274,27 @@ after(teardown);
     assert.deepEqual([side.rail, side.short], [true, true], 'the compact side rail');
     assert.ok(side.barLeft >= 844 - 300 - 1, 'the bar at the side: ' + side.barLeft);
     assert.ok(side.doneBottom <= 390, 'Done on the screen: ' + side.doneBottom);
+    // (v324) its markers strip, room for it above Done: no heading, never over Done; no map
+    const strip = await page.evaluate(() => {
+      const st = document.getElementById('sfFocStrip'),
+        m = document.getElementById('sfFocMap');
+      return {
+        shown: !!st && !st.hidden && st.getClientRects().length > 0,
+        head: !!st && st.querySelector('.sffshead').getClientRects().length > 0,
+        gap: st
+          ? document.querySelector('.sffocbot').getBoundingClientRect().top -
+            st.getBoundingClientRect().bottom
+          : 0,
+        cur: st ? st.querySelectorAll('.sffs.cur').length : 0,
+        map: !!m && !m.hidden,
+      };
+    });
+    assert.deepEqual(
+      [strip.shown, strip.head, strip.cur, strip.map],
+      [true, false, 1, false],
+      JSON.stringify(strip),
+    );
+    assert.ok(strip.gap >= 8, 'the strip above Done: ' + strip.gap);
     await page.setViewportSize({ width: 390, height: 844 });
     await idle(page);
     await page.evaluate(() => document.getElementById('mHome').click());
@@ -274,6 +310,43 @@ after(teardown);
         .trim(),
     }));
     assert.deepEqual(s, { focus: false, zoom: 1, cls: '' });
+    assert.deepEqual(errors, []);
+  });
+  // (v324) an iPhone SE on its side, 568 by 320: the compact rail too, everything in it on the screen and apart, and
+  // the zoom buttons in the rail alone (a phone's strip rule had laid a dark band across the picture)
+  test('a small phone on its side (568×320): the compact rail, nothing overlapping, no band over the picture', async () => {
+    const { page, errors } = await openApp();
+    await sampleGuide(page);
+    await enterFocus(page);
+    await page.setViewportSize({ width: 568, height: 320 });
+    await idle(page);
+    const g = await page.evaluate(() => {
+      const r = (s) => document.querySelector(s).getBoundingClientRect();
+      const de = document.documentElement;
+      return {
+        rail: de.classList.contains('sfrailon') && de.classList.contains('sfrailshort'),
+        bar: r('.sffocbar').left,
+        prog: r('#sfFocProg').bottom,
+        bot: [r('.sffocbot').top, r('.sffocbot').bottom],
+        zoom: [r('#sfZoomCtl').left, r('#sfZoomCtl').top, r('#sfZoomCtl').bottom],
+      };
+    });
+    assert.ok(g.rail, 'the compact side rail');
+    assert.ok(g.bar >= 568 - 300 - 1, 'the bar at the side: ' + g.bar);
+    assert.ok(g.prog <= g.bot[0], `the progress bar above Done: ${g.prog} / ${g.bot[0]}`);
+    assert.ok(g.bot[1] <= g.zoom[1], `Back and Skip above the zoom buttons: ${g.bot[1]} / ${g.zoom[1]}`);
+    assert.ok(g.zoom[2] <= 320, 'the zoom buttons on the screen');
+    assert.ok(g.zoom[0] >= 568 - 300, 'the zoom buttons in the rail, not across the picture: ' + g.zoom[0]);
+    // (no room for the markers strip above Done here: it stays away)
+    assert.equal(
+      await page.evaluate(() => {
+        const st = document.getElementById('sfFocStrip');
+        return !!st && !st.hidden;
+      }),
+      false,
+      'no strip',
+    );
+    assert.ok(await centred(page), 'the section centred beside the rail');
     assert.deepEqual(errors, []);
   });
   test('focus mode: solid zoom chips; focus moves in, Tab stays in, the page behind is inert, and focus returns to ⛶ Focus mode', async () => {

@@ -562,7 +562,7 @@
     load();
     said(
       st.sends && st.sig === sig()
-        ? 'Sent. Thank you! Change anything and you can send it again.'
+        ? 'Sent. Thank you. Change anything and you can send it again.'
         : st.sends
           ? 'You’ve changed things since you last sent them.'
           : '',
@@ -671,7 +671,7 @@
         st.sends = (st.sends || 0) + 1;
         st.sig = sig();
         save();
-        said('Sent. Thank you! Change anything and you can send it again.');
+        said('Sent. Thank you. Change anything and you can send it again.');
       } else
         said(
           'Couldn’t send: check you’re online. Your answers are kept here: try again in a moment, or copy them instead.',
@@ -694,7 +694,7 @@
           st.sends = (st.sends || 0) + 1;
           st.sig = sig();
           save();
-          said('Shared. Thank you!');
+          said('Shared. Thank you.');
         },
         function (e) {
           if (!(e && e.name === 'AbortError')) copyResults();
@@ -737,7 +737,7 @@
   // (v318 review, prototype) a card on Home, under its cards, while there are tasks to answer or send: how
   // many are done and the next one ("Next to answer: 2 · Make a guide"; v318.26: "Next" alone read as a button to go
   // on), or "ready to send";
-  // it opens the tasks at that one. Gone once they're sent as they are (the line at the foot stays, as a way in)
+  // it opens the tasks at that one. Gone once they're sent as they are (the line at the foot is the way in then)
   let card = null;
   {
     // (under the Markers, Palette and Library cards: above them, on an iPad the cards no longer lined up with the
@@ -799,9 +799,10 @@
       'Tester tasks · ' + (sent ? 'sent' : all ? 'ready to send' : n + ' of ' + TASKS.length);
     footBtn.classList.toggle('ttready', all && !sent);
     cardSync(n, all, sent);
-    // (v318.36: v318.32 had put the foot's line away while the card showed, V1-8; it's back. It's the one way into the
-    // tasks that's always there and opens them at the top, which a dozen tester flows rely on: the card opens them at
-    // the next task)
+    // (v324: the foot's line goes again while the card shows, as v318.32 had it: two ways in, one above the other,
+    // read as two things to do. Both open the tasks at the next one to answer. Once they're sent the card goes and the
+    // line, "Tester tasks · sent", is the way back in)
+    footBtn.parentNode.style.display = card && !card.hidden ? 'none' : '';
   }
   footSync();
 
@@ -864,7 +865,7 @@
         if (ok) {
           box.value = '';
           close();
-          toast('Sent. Thank you!');
+          toast('Sent. Thank you.');
         } else
           fbSaid(
             'Couldn’t send: check you’re online. Your words are kept here: try again in a moment, or Share it instead.',

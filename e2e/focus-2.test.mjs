@@ -380,7 +380,7 @@ after(teardown);
       touch: getComputedStyle(e.closest('.sffocbar')).touchAction,
     }));
     assert.equal(b.text, 'Exit', 'the word (v318.31: a bare ✕)');
-    assert.equal(b.label, 'Exit focus mode');
+    assert.equal(b.label, 'Exit Focus mode');
     assert.equal(b.touch, 'manipulation', 'no double-tap zoom of the page from the bar (v318.31: auto)');
     assert.equal(
       await page.$eval('.sffocbot', (e) => getComputedStyle(e).touchAction),

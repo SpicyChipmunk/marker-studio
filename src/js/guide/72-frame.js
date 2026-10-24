@@ -843,9 +843,7 @@ function headClick(e) {
   else if (id === 'sfNameRoll') {
     const i = document.getElementById('sfGName');
     if (!i) return;
-    const hx = [];
-    if (assignData) for (const l in assignData.assign) hx.push(assignData.assign[l].hex);
-    i.value = evoName(hx, Date.now(), usedGuideNames(curName));
+    i.value = guideAutoName(usedGuideNames(curName));
     try {
       i.focus({ preventScroll: true });
     } catch (_) {}

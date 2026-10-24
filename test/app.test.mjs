@@ -1859,3 +1859,54 @@ import vm from 'node:vm';
     assert.deepEqual(n(jobs.stats.timedOut), {});
   });
 }
+
+// ---- (v324) UI wording: the house rules in DEVELOPING.md › Wording ----
+// Every string the app shows is in its source's string literals and its HTML: none has a straight apostrophe between
+// letters (’, not '), and Colour along and Focus mode, named features, are written with capitals (the verb, "colour
+// along", and the layer's own name stay as they are).
+{
+  const { createRequire } = await import('node:module');
+  const { readdirSync, readFileSync: rf } = await import('node:fs');
+  const { join: pj } = await import('node:path');
+  const acorn = createRequire(import.meta.url)('acorn');
+  const SRC = pj(import.meta.dirname, '..', 'src');
+  const files = (d, ext) =>
+    readdirSync(d, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? files(pj(d, e.name), ext) : e.name.endsWith(ext) ? [pj(d, e.name)] : [],
+    );
+  const strings = () => {
+    const out = [];
+    for (const f of files(pj(SRC, 'js'), '.js')) {
+      const src = rf(f, 'utf8');
+      for (const t of acorn.tokenizer(src, { ecmaVersion: 'latest', allowHashBang: true }))
+        if ((t.type.label === 'string' || t.type.label === 'template') && typeof t.value === 'string')
+          out.push([f.slice(SRC.length + 1) + ':' + src.slice(0, t.start).split('\n').length, t.value]);
+    }
+    // (the HTML's text and attributes: tags' insides are attribute values, between them the words shown)
+    for (const f of files(pj(SRC, 'html'), '.html').concat(pj(SRC, 'index.template.html')))
+      rf(f, 'utf8')
+        .replace(/<!--[\s\S]*?-->|<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, '')
+        .split(/(?=<)|(?<=>)/)
+        .forEach((s, i) => out.push([f.slice(SRC.length + 1) + '#' + i, s]));
+    return out;
+  };
+  test('UI text: no straight apostrophes between letters', () => {
+    const bad = strings().filter(([, v]) => /[A-Za-z]'[A-Za-z]/.test(v));
+    assert.deepEqual(
+      bad.map(([w, v]) => w + ' ' + v.slice(0, 80)),
+      [],
+    );
+  });
+  test('UI text: Colour along and Focus mode with capitals, as named features', () => {
+    const bad = strings().filter(
+      ([, v]) =>
+        /(^|[^A-Za-z])(colour along|focus mode)\b/.test(v) &&
+        !/\b(to|you|next) colour along\b/.test(v) &&
+        v !== 'focus mode',
+    );
+    assert.deepEqual(
+      bad.map(([w, v]) => w + ' ' + v.slice(0, 80)),
+      [],
+    );
+  });
+}

@@ -915,9 +915,13 @@ function renderRecent() {
     });
     el.innerHTML = html + '</div>';
     el.style.display = '';
-    // (each card's picture drawn from its sections: sharper than the Library's small thumbnail)
+    // (each card's picture drawn from its sections: sharper than the Library's small thumbnail; v324: at the size it's
+    // shown times the screen's density, as the Library's covers, where a fixed 320 had been soft on an iPad)
     gs.forEach(function (g) {
-      homeArt(g, 'plan', 320).then(function (u) {
+      var pic = el.querySelector('.sfRecCard[data-gid="' + g.id + '"] .sfRecPic'),
+        side = pic ? Math.max(pic.clientWidth, pic.clientHeight) : 0,
+        w = Math.min(480, Math.round((side * Math.min(2, window.devicePixelRatio || 1)) / 40) * 40 || 320);
+      homeArt(g, 'plan', w).then(function (u) {
         var c = u && el.querySelector('.sfRecCard[data-gid="' + g.id + '"] .sfRecPic');
         if (c) c.innerHTML = '<img class="sfRecThumb" alt="" src="' + u + '">';
       });

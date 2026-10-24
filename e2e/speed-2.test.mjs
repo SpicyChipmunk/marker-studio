@@ -480,6 +480,54 @@ after(teardown);
         return new Promise(() => {});
       };
     });
+  // (v324) Build's steps are a frame apart now (the section map's signature, then the build; the mood pictures after
+  // it): leaving for Home as it starts, or a new photo meanwhile, never errors or builds over the newer picture
+  test('Build, then straight to Home: the guide is built and saved once, the mood pictures drawn, nothing amiss', async () => {
+    const { page, errors } = await openApp();
+    await welcome(page, 'look');
+    await idle(page);
+    const buf = await readFile(join(ROOT, 'e2e', 'fixtures', 'letter-page.png'));
+    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.evaluate(() => SF.pickPhoto())]);
+    await fc.setFiles({ name: 'letter-page.png', mimeType: 'image/png', buffer: buf });
+    await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 60000 });
+    await idle(page);
+    await page.click('#sfBuild');
+    await page.evaluate(() => document.getElementById('mHome').click());
+    await idle(page, 2500);
+    await page.waitForFunction(() => __mstest.inLibrary, null, { timeout: 5000 });
+    assert.equal(
+      await page.evaluate(() => state.saved.filter((s) => s.type === 'guide').length),
+      1,
+      'one guide saved',
+    );
+    await page.click('#mSections');
+    await idle(page, 1500);
+    assert.equal(await page.evaluate(() => __mstest.sfmode), 'guide');
+    assert.deepEqual(errors, []);
+  });
+  test('Build, then another photo before it starts: the newer picture is not built over', async () => {
+    const { page, errors } = await openApp();
+    await welcome(page, 'look');
+    await idle(page);
+    const buf = await readFile(join(ROOT, 'e2e', 'fixtures', 'letter-page.png'));
+    const pick = async () => {
+      const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.evaluate(() => SF.pickPhoto())]);
+      await fc.setFiles({ name: 'letter-page.png', mimeType: 'image/png', buffer: buf });
+      await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 60000 });
+    };
+    await pick();
+    await idle(page);
+    await page.click('#sfBuild');
+    await pick();
+    await idle(page, 2500);
+    assert.equal(
+      await page.evaluate(() => !!__mstest.assignData),
+      false,
+      'the newer picture waits for its own Build',
+    );
+    assert.equal(await page.isVisible('#sfBuild'), true);
+    assert.deepEqual(errors, []);
+  });
   test('with no bloom, a new guide is saved straight after Build, not waiting on the worker', async () => {
     const { page, errors } = await openApp();
     await welcome(page, 'look');

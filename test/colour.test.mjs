@@ -1046,6 +1046,115 @@ import vm from 'node:vm';
     const second = app.evoName(h, 1, new Set([first.toLowerCase()]));
     assert.notEqual(second, first);
   });
+  // (v324) the generator's pressure-tested rules
+  const vocab = () =>
+    app.__eval(`[].concat(
+      ...Object.values(EVO_HUES).map((f) => Object.values(f).flat()),
+      Object.values(EVO_NEUTRAL).flat(), Object.values(EVO_MOOD).flat(), EVO_VIBE, EVO_PIECE, EVO_AT,
+      EVO_NATURE, EVO_SPEC_NOUN, EVO_SPEC_ADJ)`);
+  const randomPals = (k, seed) => {
+    const C = matching.COLORS;
+    const rnd = () => (seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296;
+    return Array.from({ length: k }, () => {
+      const n = 3 + ((rnd() * 14) | 0),
+        base = (rnd() * C.length) | 0,
+        spread = rnd() < 0.5 ? 12 : C.length;
+      return Array.from({ length: n }, () => C[(base + ((rnd() * spread) | 0)) % C.length].hex);
+    });
+  };
+  test('the vocabulary has no duplicates and no romantic words', () => {
+    const v = [...vocab()];
+    const lower = v.map((w) => w.toLowerCase());
+    const dup = lower.filter((w, i) => lower.indexOf(w) !== i);
+    assert.deepEqual(dup, [], 'duplicates: ' + dup.join(', '));
+    const banned = [
+      'boudoir',
+      'affair',
+      'desire',
+      'nightcap',
+      'seduction',
+      'romance',
+      'passion',
+      'lover',
+      'kiss',
+      'crush',
+    ];
+    assert.deepEqual(
+      lower.filter((w) => banned.some((b) => w.split(' ').includes(b))),
+      [],
+    );
+  });
+  test('at most one food word in a name', () => {
+    const food = app.__eval('[...EVO_FOOD]').map((w) => w.toLowerCase());
+    randomPals(800, 11).forEach((hx, t) => {
+      const n = app.evoName(hx, t);
+      const w = n.toLowerCase().split(/[\s&-]+/);
+      assert.ok(w.filter((x) => food.includes(x)).length <= 1, n);
+    });
+  });
+  test('colour-meaning moods only go with colours they suit', () => {
+    const fit = app.__eval('EVO_FIT');
+    // a page of cool blues and teals never gets Golden, Honeyed, Molten...
+    const warmOnly = Object.keys(fit).filter((w) => !fit[w].includes('blue') && !fit[w].includes('teal'));
+    const out = names(['#1f4e8c', '#2a6fb0', '#1c7c8c', '#3b8ec4', '#164a6e'], 400);
+    assert.ok(!out.some((n) => warmOnly.some((w) => n.split(' ').includes(w))), out.join(' | '));
+  });
+  test('a colourful page spreads its words: none in more than about 1 in 8 names', () => {
+    const out = names(['#e63946', '#f4a261', '#e9c46a', '#2a9d8f', '#457b9d', '#7b2cbf', '#ff70a6'], 400);
+    const count = {};
+    for (const n of out)
+      for (const w of new Set(n.toLowerCase().split(/[\s&-]+/)))
+        if (!['and', 'at', 'in', 'of', 'study', 'notes'].includes(w)) count[w] = (count[w] || 0) + 1;
+    const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0];
+    assert.ok(top[1] <= out.length / 8, top.join(': '));
+  });
+  test('the section that covers most of the page leads the name', () => {
+    const hx = ['#1f4e8c', '#2a6fb0', '#e63946', '#d62839'];
+    const blue = Object.values(H.blue).flat(),
+      red = Object.values(H.red).flat();
+    const lead = (w) =>
+      Array.from({ length: 200 }, (_, i) => app.evoName(hx, i, null, { w })).filter((n) => {
+        const b = blue.findIndex((x) => n.includes(x)) >= 0 ? n.search(new RegExp(blue.join('|'))) : 1e9,
+          r = red.findIndex((x) => n.includes(x)) >= 0 ? n.search(new RegExp(red.join('|'))) : 1e9;
+        return b < r;
+      }).length;
+    assert.ok(
+      lead([20, 20, 1, 1]) > lead([1, 1, 20, 20]) + 40,
+      `${lead([20, 20, 1, 1])} vs ${lead([1, 1, 20, 20])}`,
+    );
+  });
+  test('titles: a creature only in its song (or one that is a colour, "Study in Rouge and Fox"); a season only for a flower or a fruit', () => {
+    const C = new Set(app.__eval('[...EVO_CREATURE].filter((x) => !EVO_HUEBEAST.has(x))')),
+      F = new Set(app.__eval('[...EVO_FLOWER]')),
+      food = new Set(app.__eval('[...EVO_FOOD]'));
+    let titles = 0;
+    randomPals(1500, 23).forEach((hx, t) => {
+      const n = app.evoName(hx, t);
+      const m = n.match(
+        /^(?:The (.+) \S+|Under (.+) Skies|A Touch of (.+)|Ode to (.+)|(?:Study|Portrait|Sketch|Nocturne|Symphony|Harmony|Arrangement) in (.+?)(?: and (.+))?|Variations on (.+?)(?: and (.+))?)$/,
+      );
+      if (m) {
+        titles++;
+        m.slice(1)
+          .filter(Boolean)
+          .forEach((w) => assert.ok(!C.has(w), 'a creature in a title: ' + n));
+      }
+      const se = n.match(/^(.+) Season$/);
+      if (se) assert.ok(F.has(se[1]) || food.has(se[1].split(' ')[0].toLowerCase()), 'a season for ' + n);
+    });
+    assert.ok(titles > 1500 / 10, 'titles: ' + titles);
+  });
+  test('avoids the lead word of the last few guides', () => {
+    const TW = app.__eval('EVO_TITLE_WORDS');
+    const hx = ['#1f8a8a', '#27a0a0', '#ff7f6a', '#f06c58'];
+    for (let t = 0; t < 60; t++) {
+      const prev = app.evoName(hx, t);
+      const n = app.evoName(hx, t + 1000, null, { recent: [prev] });
+      // (a title's own words passed over: "The Cobalt Room" leads with Cobalt)
+      const lw = (s) => s.split(/[\s&-]+/).filter((w) => !TW[w.toLowerCase()])[0];
+      assert.notEqual(lw(n), lw(prev), prev + ' then ' + n);
+    }
+  });
   test('paletteName names a palette from its colours and skips names already in the Library', () => {
     const idxs = [0, 37, 74, 111];
     const hexes = app.__eval('[0, 37, 74, 111].map((i) => COLORS[i].hex)');

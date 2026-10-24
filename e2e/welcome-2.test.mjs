@@ -902,7 +902,29 @@ after(teardown);
       ),
       '0/6 Beta tester tasks Next to answer: 1 · Add your markers ›',
     );
-    assert.equal(await vis(page, '#homeTasks'), true, 'the foot line stays (v318.36)');
+    assert.equal(await vis(page, '#homeTasks'), false, 'the foot line away while the card shows (v324)');
     assert.deepEqual(errors, []);
   });
 }
+
+// (v324) a 320×568 phone: the first step's three choices as titles, all above its buttons; "You’re all set" opens
+// with its heading in view
+test('a small phone: the welcome’s three choices in view, and step 2 opens at its heading', async () => {
+  const { page, errors } = await openApp({ width: 320, height: 568 });
+  await idle(page);
+  const g = await page.evaluate(() => ({
+    desc: getComputedStyle(document.querySelector('#wcHaveSet .wct span')).display,
+    last: document.getElementById('wcNotSure').getBoundingClientRect().bottom,
+    acts: document.querySelector('#wcStep0 .wcacts').getBoundingClientRect().top,
+  }));
+  assert.equal(g.desc, 'none', 'titles alone');
+  assert.ok(g.last <= g.acts, `the third choice above the buttons: ${g.last} / ${g.acts}`);
+  await haveSet(page);
+  await page.check('#wcSets input[data-i="3"]');
+  await page.click('#wcAdd');
+  await idle(page);
+  const t = await page.evaluate(() => document.getElementById('wcT2').getBoundingClientRect().top);
+  assert.ok(t >= 0 && t < 568, 'the heading in view: ' + t);
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'wcSample');
+  assert.deepEqual(errors, []);
+});
