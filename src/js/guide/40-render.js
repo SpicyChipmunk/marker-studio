@@ -779,6 +779,8 @@ function spreadBegin(l) {
     return null;
   }
   const p = _tapPt && _tapPt.l === l ? _tapPt : labelPos(l);
+  // (v323.1: the sharp copy over the picture cleared there, so the colour is seen spreading, 77-sharp)
+  sharpHole(x0, y0, x1, y1, true);
   return { l: l, x0: x0, y0: y0, old: old, px: p.x, py: p.y, gen: loadGen };
 }
 function spreadRun(s) {
@@ -1563,7 +1565,7 @@ function renderGuide() {
   positionOutline();
   // (v323: Focus mode's side rail, its strip and the page as coloured so far; its sharp copy, drawn again)
   if (focus) focusSide();
-  if (focus || _shEl) sharpStale(true);
+  if (sfmode === 'color' || _shEl) sharpStale(inc ? 'part' : true);
   if (!pickPending()) scheduleAutosave();
 }
 function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tick, fcur, ring) {
@@ -1667,6 +1669,8 @@ function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tic
       if (!grew || ++guard > 50) break;
     }
     ctx.putImageData(imgData, 0, 0, r[0], r[1], r[2] - r[0], r[3] - r[1]);
+    // (v323.1: the sharp copy over the picture cleared there, the change seen at once, 77-sharp)
+    sharpHole(r[0], r[1], r[2], r[3], false);
     // zoomed in: the codes are on their own canvas, at its scale: its part of the rectangle cleared, and drawn there
     const main = ctx,
       hk = _rg.hiK;

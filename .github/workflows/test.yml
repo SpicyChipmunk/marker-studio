@@ -7,7 +7,8 @@ on:
   pull_request:
 # The runners are pinned to Ubuntu 24.04: ubuntu-latest moves to Ubuntu 26 from 19 October 2026, and the browsers our
 # Playwright version installs (npx playwright install and install-deps) are built for 24.04. Move on when Playwright is
-# upgraded to a version that lists Ubuntu 26.
+# upgraded to a version that lists Ubuntu 26. (v323.1: the WebKit jobs run in Playwright's own image, noble = 24.04;
+# its tag moves with Playwright, which e2e/ci-pw-image.mjs checks.)
 jobs:
   # Unit tests, then the browser tests on Chromium in 2 parts side by side, so the results come in about half the time:
   # e2e/ci-parts.mjs shares the files out so the parts take about as long (e2e/ci-durations.json). The unit tests run
@@ -113,6 +114,13 @@ jobs:
   webkit:
     name: browser tests on WebKit (Safari's engine), part ${{ matrix.part }} of 10
     runs-on: ubuntu-24.04
+    # (v323.1) in Playwright's own image, WebKit and the system libraries it needs already in it: installing those from
+    # apt each run timed out four times running on three of run #71's ten parts, and on two more when they were run
+    # again, so a part's tests never ran. The tag is the exact Playwright version in package-lock.json (pinned in
+    # package.json): the step below, and test/app.test.mjs, fail at once if the two ever differ.
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.0-noble
+      options: --user 1001
     timeout-minutes: 60
     continue-on-error: true
     strategy:
@@ -126,26 +134,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Playwright's WebKit is kept between runs (keyed on the Playwright version), so it's downloaded only when Playwright
-      # changes; the system libraries it needs come from apt each run. Each install is stopped after 5 minutes and
-      # tried again, up to 3 times (4 for the libraries; e2e/ci-try.sh): now and then a download stalls (once for 38 minutes).
-      - name: Playwright version
-        id: pw
-        run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
-      - name: Keep WebKit between runs
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-24.04-webkit-${{ steps.pw.outputs.v }}
-      # (run even when kept: it then only checks, in a second, and fetches again one that was kept half-installed)
-      - name: Install WebKit
-        run: bash e2e/ci-try.sh 3 300 npx playwright install webkit
-      # (v319) apt itself gives up on a stalled download after 30 s and tries it again, rather than hanging until the
-      # try's 5 minutes run out; and the libraries get a 4th try (run #66 lost three parts to a slow package server)
-      - name: Let apt retry stalled downloads
-        run: printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/80-ci-retries
-      - name: Install WebKit's system libraries
-        run: bash e2e/ci-try.sh 4 300 npx playwright install-deps webkit
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - name: Playwright matches the image
+        run: node e2e/ci-pw-image.mjs
       # (a diagnostic, part 1 only: how fast this WebKit runs plain JavaScript; about 180 ms with its JIT on a laptop)
       - name: WebKit speed check
         if: matrix.part == 1

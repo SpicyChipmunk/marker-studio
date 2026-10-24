@@ -207,7 +207,7 @@ after(teardown);
     );
     assert.deepEqual(errors, []);
   });
-  const SAMPLE_ST = 'Sample · change anything to keep it';
+  const SAMPLE_ST = 'Sample · change it to keep it';
   test('the sample joins the Library only once it is changed: its header says so, nothing kept; looking around is no change', async () => {
     const { page, errors } = await openApp();
     await sampleGuide(page);
@@ -255,7 +255,7 @@ after(teardown);
     // the sample again: a fresh copy; changed, it's "Sample jellyfish 2"
     await page.evaluate(() => SF.loadSample());
     await page.waitForFunction(
-      () => document.getElementById('sfSaveSt').textContent === 'Sample · change anything to keep it',
+      () => document.getElementById('sfSaveSt').textContent === 'Sample · change it to keep it',
     );
     await idle(page);
     assert.equal((await guides(page)).length, 1);
@@ -268,7 +268,7 @@ after(teardown);
     );
     await page.evaluate(() => SF.loadSample());
     await page.waitForFunction(
-      () => document.getElementById('sfSaveSt').textContent === 'Sample · change anything to keep it',
+      () => document.getElementById('sfSaveSt').textContent === 'Sample · change it to keep it',
     );
     await idle(page);
     await page.click('#sfColor');

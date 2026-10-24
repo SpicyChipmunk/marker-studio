@@ -2312,12 +2312,7 @@ function cuSharp(art, cr, dw, dh) {
       oh = Math.max(1, Math.round(dh));
     if (ow * oh > 16e6) return null;
     if (!art._im) art._im = art.getContext('2d').getImageData(0, 0, W, H);
-    if (!art._fill) {
-      const F = sharpField();
-      if (!F) return null;
-      art._fill = sharpFill(art._im, F, LINE);
-    }
-    const im = sharpPaint(art._im, cr, ow, oh, LINE, art._fill);
+    const im = sharpPaint(art._im, cr, ow, oh, LINE);
     if (!im) return null;
     const c = document.createElement('canvas');
     c.width = ow;

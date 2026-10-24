@@ -6975,11 +6975,12 @@ html.sfrailon.sfrailshort #sfRoot.sffoc #sfZoomCtl {
   }
 }
 
-/* (v323) the picture's sharp copy over the part of it on the screen (77-sharp): just over the picture, under the ring */
+/* (v323) the picture's sharp copy over the part of it on the screen (77-sharp): just over the picture (after it, so
+   under the overlays that follow it), given the picture's transform from the same corner */
 #sfRoot .sfsharp {
   position: absolute;
-  z-index: 1;
   margin: 0;
+  transform-origin: 0 0;
   pointer-events: none;
 }
 #sfRoot .sfsharp[hidden] {
@@ -15306,7 +15307,7 @@ if (window.__MS_TEST && !window.__MS_MOTION) document.documentElement.classList.
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New guide from a photo</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v323</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v323.1</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="light">Lightest first</option><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><button data-h="shadow">Light to shadow</button><button data-h="accent">Analogous + accent</button><button data-h="neutral">Greys + accent</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -29750,7 +29751,37 @@ function sfLeaveApply() {
         // copy, made from the same state, stayed with its base moved to that save's row, leaveRebase): nothing to
         // put in. Writing it again gave the row a new time, so a guide backed up since read "not in a backup", was
         // taken as newer by a restore, and reloaded in another tab
-        if (old && typeof old === 'object' && JSON.stringify(leaveSlim(old)) === JSON.stringify(j.pl)) return;
+        if (old && typeof old === 'object' && JSON.stringify(leaveSlim(old)) === JSON.stringify(j.pl)) {
+          // (v323.1) unless the save's database write landed and the page went before its row was written: the
+          // stored guide is the copy, the row as it was (how much is coloured, 0 of 5 ticks on GitHub's run #71). The
+          // row then follows the stored guide; one the save did write already says the same, and is left be
+          const ix = state.saved.findIndex((s) => s.id === j.id && s.type === 'guide');
+          if (ix < 0) return;
+          const was = state.saved[ix],
+            m = guideMeta(
+              {
+                name: was.name || j.name,
+                W: j.W,
+                H: j.H,
+                keys: j.keys,
+                n: j.n,
+                payload: old,
+                thumb: was.thumb,
+              },
+              j.id,
+            );
+          if (
+            (+m.done || 0) === (+was.done || 0) &&
+            (+m.tn || 0) === (+was.tn || 0) &&
+            (+m.lc || 0) === (+was.lc || 0)
+          )
+            return;
+          state.saved[ix] = m;
+          save(true);
+          if (typeof renderRecent === 'function') renderRecent();
+          if (typeof renderSaved === 'function') renderSaved();
+          return;
+        }
         // (v318.23: a newer version's settings in the stored guide kept, as its autosave keeps them. SF is there by
         // now: this runs once the database has answered, after the guide's code has loaded)
         let pl = old && leaveFill(j.pl, old);
@@ -46245,8 +46276,12 @@ function buildGuide(keepPlan) {
   markBuilt();
   saveStatus();
   if (_fresh) colourOffer();
-  // (v323: sections found afresh or edited: an offer kept for the old ones means other sections now)
-  else if (!same) colOffer = null;
+  // (v323: sections found afresh or edited: an offer kept for the old ones means other sections now; and so does the
+  // section Continue would open Focus mode on, v323.1)
+  else if (!same) {
+    colOffer = null;
+    focusAt = null;
+  }
   // (a new guide from your photo goes into the Library straight away, not after the usual pause: a page closed or
   // reloaded just after Build lost it, v287)
   // (v305: once the first Build's bloom is over, 41-bloom.js: about a second, the save's work held up its frames)
@@ -50703,6 +50738,8 @@ function spreadBegin(l) {
     return null;
   }
   const p = _tapPt && _tapPt.l === l ? _tapPt : labelPos(l);
+  // (v323.1: the sharp copy over the picture cleared there, so the colour is seen spreading, 77-sharp)
+  sharpHole(x0, y0, x1, y1, true);
   return { l: l, x0: x0, y0: y0, old: old, px: p.x, py: p.y, gen: loadGen };
 }
 function spreadRun(s) {
@@ -51487,7 +51524,7 @@ function renderGuide() {
   positionOutline();
   // (v323: Focus mode's side rail, its strip and the page as coloured so far; its sharp copy, drawn again)
   if (focus) focusSide();
-  if (focus || _shEl) sharpStale(true);
+  if (sfmode === 'color' || _shEl) sharpStale(inc ? 'part' : true);
   if (!pickPending()) scheduleAutosave();
 }
 function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tick, fcur, ring) {
@@ -51591,6 +51628,8 @@ function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tic
       if (!grew || ++guard > 50) break;
     }
     ctx.putImageData(imgData, 0, 0, r[0], r[1], r[2] - r[0], r[3] - r[1]);
+    // (v323.1: the sharp copy over the picture cleared there, the change seen at once, 77-sharp)
+    sharpHole(r[0], r[1], r[2], r[3], false);
     // zoomed in: the codes are on their own canvas, at its scale: its part of the rectangle cleared, and drawn there
     const main = ctx,
       hk = _rg.hiK;
@@ -60941,11 +60980,14 @@ let curSample = false,
   _removed = false,
   _sampleNoteX = false,
   // (a sample being loaded and built: not yet curSample, but its line under the tabs is coming, so no tip before it)
-  _smpLoad = false;
+  _smpLoad = false,
+  // (v323.1: this guide began as the sample, kept or not: the header keeps room for the sample's line, headGhost)
+  _smpHead = false;
 // the sample as built is noted (after build): changing anything from here keeps it
 function sampleBuilt(nm) {
   _smpLoad = false;
   curSample = true;
+  _smpHead = true;
   // (v313: kept once changed, it's the sample tried until it's printed or renamed: smpTry)
   smpTry = 1;
   _sampleNm = nm;
@@ -61005,6 +61047,7 @@ function saveReset() {
   _gTok++;
   _libBase = null;
   curSample = false;
+  _smpHead = false;
   _sampleBase = null;
   _removed = false;
   _libTs = null;
@@ -61605,7 +61648,7 @@ function saveStText(pe) {
   if (_saveErr)
     return storeNotAnswering() ? 'Not saved \u2014 reload to try again' : 'Not saved \u2014 storage is full';
   // (v323: what the sample's line under the tabs said, here instead: that line filled a phone's panel on every tab)
-  if (!e && curSample && !sampleTouched()) return 'Sample \u00b7 change anything to keep it';
+  if (!e && curSample && !sampleTouched()) return 'Sample \u00b7 change it to keep it';
   if (!e) return sfmode === 'review' || _openEmpty ? 'Not saved yet' : 'Saving\u2026';
   // (v307: only while it's being written; a change waiting its moment to be saved said "Saving…" for 1.5 s after
   // every tick, so Colour along read as always saving)
@@ -62836,8 +62879,8 @@ function applyXform() {
   if (olSet) positionOutline();
   // (v323: Focus mode's ring round a small section)
   if (focus || document.getElementById('sfFocRing')) focusRing();
-  // (v323: the sharp copy over Focus mode's picture waits for the move to settle, 77-sharp)
-  if (focus || _shEl) sharpStale();
+  // (v323: the sharp copy over the picture moves with it, drawn again once the move settles, 77-sharp)
+  if (sfmode === 'color' || _shEl) sharpStale();
 }
 function clampPan() {
   const d = viewDims(),
@@ -63695,12 +63738,16 @@ function focusOpened() {
   } catch (_) {}
 }
 // (the longest states the status line can show for this guide: Save after a failed first save, and Put back after it
-// was deleted while open, only then, so the header doesn't make room for them on every guide)
+// was deleted while open, only then, so the header doesn't make room for them on every guide; v323.1: the sample's
+// line, while the guide began as the sample, so its header doesn't shrink once the sample's changed and kept)
 function headGhost() {
   return (
     '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Saved in your Library ✓</span></div><div class="sfgsg" aria-hidden="true"><span class="sfsavest">Not saved — storage is full</span>' +
     (_saveErr && !libEntry() ? '<button type="button" class="sfsave" tabindex="-1">Save</button>' : '') +
     '</div>' +
+    (_smpHead
+      ? '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Sample \u00b7 change it to keep it</span></div>'
+      : '') +
     (_removed
       ? '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Removed from your Library</span><button type="button" class="sfsave" tabindex="-1">Put back</button></div>'
       : '') +
@@ -64711,7 +64758,7 @@ function focusSide() {
     map.type = 'button';
     map.id = 'sfFocMap';
     map.className = 'sffocmap';
-    map.setAttribute('aria-label', 'Show the whole page');
+    map.setAttribute('aria-label', 'Where you are: show the whole page');
     map.innerHTML = '<span class="sffmh">Where you are</span><canvas></canvas>';
     map.addEventListener('click', function () {
       resetZoom();
@@ -65340,6 +65387,8 @@ function focusParts() {
     cv && cv.getAttribute('tabindex') != null ? cv : null,
     document.getElementById('sfZoomCtl'),
     document.getElementById('sfFocBot'),
+    // (v323.1: the side panel's Where you are, under them; hidden, it has no box and is passed over)
+    document.getElementById('sfFocMap'),
   ].filter(function (x) {
     return !!x;
   });
@@ -65646,87 +65695,122 @@ function renderFocusUI() {
    the colours are the picture's own with the lines taken out (each line pixel given the colour of the section nearest
    it), read between pixels too. So the lines keep their width and place, and their steps become curves; the colours,
    the codes and the shading are the picture's, magnified as before.
-   sharpField() is worked out once for the sections (about 0.1 s for the sample) and kept while they stand;
-   sharpPaint(base, crop, ow, oh, ink) draws the crop [x0, y0, x1, y1] of the picture (in picture pixels) at ow × oh
-   from base (an ImageData of the picture, W × H) into a new ImageData; ink: the lines' colour. */
+   sharpField(R) is worked out for a window of the picture (R: { X0, Y0, w, h }, the part to be drawn and a margin; the
+   whole picture without R) and kept while the sections stand and later crops fall inside it: the window on the screen
+   in Focus mode is a few hundred picture pixels across (a few ms), where the whole of a 2400-pixel photo took about
+   a second (v323 debugging pass). sharpPaint(base, crop, ow, oh, ink) draws the crop [x0, y0, x1, y1] of the picture
+   (in picture pixels) at ow × oh from base (an ImageData of the picture, W × H) into a new ImageData; ink: the lines'
+   colour. Within the margin the window's distances are the whole picture's: the drawing reads at most the smoothing's
+   4 pixels and the edge's half pixel beyond a pixel, and a line pixel's nearest section pixel is found within it for
+   any line up to twice the margin across (beyond that, the line's middle keeps its own colour, the ink). */
+const SHARP_M = 24;
 let _shF = null;
-// the field for these sections: { sdf: Float32Array (picture pixels, negative inside a line), near: Int32Array (each
-// line pixel's nearest pixel not a line, or -1), k: the sections it was made for }
-function sharpField() {
+// the window for a crop: the crop, a quarter more each way (small moves stay inside it) and the margin
+function sharpRegion(crop) {
+  if (!crop) return { X0: 0, Y0: 0, w: W, h: H };
+  const pw = (crop[2] - crop[0]) * 0.25 + SHARP_M,
+    ph = (crop[3] - crop[1]) * 0.25 + SHARP_M,
+    X0 = Math.max(0, Math.floor(crop[0] - pw)),
+    Y0 = Math.max(0, Math.floor(crop[1] - ph)),
+    X1 = Math.min(W, Math.ceil(crop[2] + pw)),
+    Y1 = Math.min(H, Math.ceil(crop[3] + ph));
+  return { X0: X0, Y0: Y0, w: Math.max(1, X1 - X0), h: Math.max(1, Y1 - Y0) };
+}
+// whether a field's window holds a crop with the margin round it (or reaches the picture's edge there)
+function sharpHolds(F, crop) {
+  if (!crop) return F.X0 === 0 && F.Y0 === 0 && F.w === W && F.h === H;
+  return (
+    (F.X0 === 0 || crop[0] - F.X0 >= SHARP_M) &&
+    (F.Y0 === 0 || crop[1] - F.Y0 >= SHARP_M) &&
+    (F.X0 + F.w === W || F.X0 + F.w - crop[2] >= SHARP_M) &&
+    (F.Y0 + F.h === H || F.Y0 + F.h - crop[3] >= SHARP_M)
+  );
+}
+// the field for these sections over a crop's window: { sdf: Float32Array (the window's pixels, negative inside a
+// line), near: Int32Array (each line pixel's nearest pixel not a line, as a picture index, or -1), X0, Y0, w, h, k:
+// the sections it was made for }
+function sharpField(crop) {
   if (!labels || !W || !H) return null;
   const key = labels.length + ':' + W + 'x' + H + ':' + (typeof labelsSig === 'function' ? labelsSig() : '');
-  if (_shF && _shF.k === key && _shF.lab === labels) return _shF;
-  const n = W * H,
+  if (_shF && _shF.k === key && _shF.lab === labels && sharpHolds(_shF, crop)) return _shF;
+  const R = sharpRegion(crop),
+    X0 = R.X0,
+    Y0 = R.Y0,
+    w = R.w,
+    h = R.h,
+    n = w * h,
     INF = 1e20,
+    // (each window pixel's picture index)
+    gi = function (p) {
+      return (Y0 + ((p / w) | 0)) * W + X0 + (p % w);
+    },
     // squared distances to the nearest line pixel (for the others), and to the nearest pixel not a line (for lines)
     dOut = new Float32Array(n),
     dIn = new Float32Array(n),
-    near = new Int32Array(n).fill(-1);
-  sharpEdt(
-    function (p) {
-      return labels[p] === -1;
-    },
-    dOut,
-    null,
-  );
-  sharpEdt(
-    function (p) {
-      return labels[p] !== -1;
-    },
-    dIn,
-    near,
-  );
+    near = new Int32Array(n).fill(-1),
+    isLine = new Uint8Array(n);
+  for (let y = 0, p = 0; y < h; y++) {
+    const r = (Y0 + y) * W + X0;
+    for (let x = 0; x < w; x++, p++) isLine[p] = labels[r + x] === -1 ? 1 : 0;
+  }
+  sharpEdt(isLine, 1, dOut, null, w, h);
+  sharpEdt(isLine, 0, dIn, near, w, h);
+  // (near: window index to picture index)
+  for (let p = 0; p < n; p++) if (near[p] >= 0) near[p] = gi(near[p]);
   const sdf = new Float32Array(n);
   for (let p = 0; p < n; p++)
-    sdf[p] =
-      labels[p] === -1
-        ? -(Math.sqrt(dIn[p] >= INF ? 0 : dIn[p]) - 0.5)
-        : Math.sqrt(dOut[p] >= INF ? 0 : dOut[p]) - 0.5;
+    sdf[p] = isLine[p]
+      ? -(Math.sqrt(dIn[p] >= INF ? 0 : dIn[p]) - 0.5)
+      : Math.sqrt(dOut[p] >= INF ? 0 : dOut[p]) - 0.5;
   // smoothed (about 1.4 pixels): a line's pixel steps, and the wobble a photo leaves along its edges, round off into
   // its curve. A thin line (under about 3 pixels across) would thin away, so near one it never gets less deep than it
   // was (thick: within 2 pixels of a pixel 1.5 or more inside a line)
-  const bl = sharpBlur(sharpBlur(sdf)),
+  const bl = sharpBlur(sharpBlur(sdf, w, h), w, h),
     deep = new Uint8Array(n);
-  for (let p = 0; p < n; p++) if (labels[p] === -1 && dIn[p] >= 2.25) deep[p] = 1;
-  const thick = sharpNear(deep, 2);
+  for (let p = 0; p < n; p++) if (isLine[p] && dIn[p] >= 2.25) deep[p] = 1;
+  const thick = sharpNear(deep, 2, w, h);
   // (and a small section, the sample's pinholes, never shrinks: smoothed into the lines round it, it was gone)
-  for (let p = 0; p < n; p++) {
-    const l = labels[p];
-    if (l >= 0 && comps[l] && comps[l].area < 60) sdf[p] = Math.max(sdf[p], bl[p]);
-    else sdf[p] = thick[p] || bl[p] < sdf[p] ? bl[p] : sdf[p];
+  for (let y = 0, p = 0; y < h; y++) {
+    const r = (Y0 + y) * W + X0;
+    for (let x = 0; x < w; x++, p++) {
+      const l = labels[r + x];
+      if (l >= 0 && comps[l] && comps[l].area < 60) sdf[p] = Math.max(sdf[p], bl[p]);
+      else sdf[p] = thick[p] || bl[p] < sdf[p] ? bl[p] : sdf[p];
+    }
   }
-  _shF = { sdf: sdf, near: near, k: key, lab: labels };
+  _shF = { sdf: sdf, near: near, X0: X0, Y0: Y0, w: w, h: h, k: key, lab: labels, fill: null, base: null };
   return _shF;
 }
-// Felzenszwalb and Huttenlocher's exact distance transform, columns then rows, keeping (near) the nearest feature
-function sharpEdt(isF, out, near) {
+// Felzenszwalb and Huttenlocher's exact distance transform over a w × h window (the feature: isLine === want),
+// columns then rows, keeping (near) the nearest feature as a window index
+function sharpEdt(isLine, want, out, near, w, h) {
   const INF = 1e20,
-    m = Math.max(W, H),
+    m = Math.max(w, h),
     f = new Float64Array(m),
     d = new Float64Array(m),
     v = new Int32Array(m),
     z = new Float64Array(m + 1),
     arg = new Int32Array(m),
-    colRow = near ? new Int32Array(W * H) : null;
+    colRow = near ? new Int32Array(w * h) : null;
   // columns
-  for (let x = 0; x < W; x++) {
-    for (let y = 0; y < H; y++) f[y] = isF(y * W + x) ? 0 : INF;
-    sharp1d(f, H, d, v, z, arg);
-    for (let y = 0; y < H; y++) {
-      out[y * W + x] = d[y];
-      if (colRow) colRow[y * W + x] = arg[y];
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) f[y] = isLine[y * w + x] === want ? 0 : INF;
+    sharp1d(f, h, d, v, z, arg);
+    for (let y = 0; y < h; y++) {
+      out[y * w + x] = d[y];
+      if (colRow) colRow[y * w + x] = arg[y];
     }
   }
   // rows
-  for (let y = 0; y < H; y++) {
-    const r = y * W;
-    for (let x = 0; x < W; x++) f[x] = out[r + x];
-    sharp1d(f, W, d, v, z, arg);
-    for (let x = 0; x < W; x++) {
+  for (let y = 0; y < h; y++) {
+    const r = y * w;
+    for (let x = 0; x < w; x++) f[x] = out[r + x];
+    sharp1d(f, w, d, v, z, arg);
+    for (let x = 0; x < w; x++) {
       out[r + x] = d[x];
       if (near) {
         const ax = arg[x];
-        near[r + x] = f[ax] >= INF ? -1 : colRow[r + ax] * W + ax;
+        near[r + x] = f[ax] >= INF ? -1 : colRow[r + ax] * w + ax;
       }
     }
   }
@@ -65758,15 +65842,15 @@ function sharp1d(f, n, d, v, z, arg) {
   }
 }
 // a 1-4-6-4-1 blur each way (about 1 pixel)
-function sharpBlur(a) {
-  const n = W * H,
+function sharpBlur(a, w, h) {
+  const n = w * h,
     t = new Float32Array(n),
     o = new Float32Array(n),
-    Wm = W - 1,
-    Hm = H - 1;
-  for (let y = 0; y < H; y++) {
-    const r = y * W;
-    for (let x = 0; x < W; x++) {
+    Wm = w - 1,
+    Hm = h - 1;
+  for (let y = 0; y < h; y++) {
+    const r = y * w;
+    for (let x = 0; x < w; x++) {
       const x1 = x > 0 ? x - 1 : 0,
         x2 = x > 1 ? x - 2 : 0,
         x3 = x < Wm ? x + 1 : Wm,
@@ -65774,83 +65858,108 @@ function sharpBlur(a) {
       t[r + x] = (a[r + x2] + 4 * a[r + x1] + 6 * a[r + x] + 4 * a[r + x3] + a[r + x4]) * 0.0625;
     }
   }
-  for (let y = 0; y < H; y++) {
-    const r = y * W,
-      u1 = (y > 0 ? y - 1 : 0) * W,
-      u2 = (y > 1 ? y - 2 : 0) * W,
-      d1 = (y < Hm ? y + 1 : Hm) * W,
-      d2 = (y < Hm - 1 ? y + 2 : Hm) * W;
-    for (let x = 0; x < W; x++)
+  for (let y = 0; y < h; y++) {
+    const r = y * w,
+      u1 = (y > 0 ? y - 1 : 0) * w,
+      u2 = (y > 1 ? y - 2 : 0) * w,
+      d1 = (y < Hm ? y + 1 : Hm) * w,
+      d2 = (y < Hm - 1 ? y + 2 : Hm) * w;
+    for (let x = 0; x < w; x++)
       o[r + x] = (t[u2 + x] + 4 * t[u1 + x] + 6 * t[r + x] + 4 * t[d1 + x] + t[d2 + x]) * 0.0625;
   }
   return o;
 }
 // within rad pixels (a square) of a marked pixel
-function sharpNear(m, rad) {
-  const n = W * H,
+function sharpNear(m, rad, w, h) {
+  const n = w * h,
     t = new Uint8Array(n),
     o = new Uint8Array(n);
-  for (let y = 0; y < H; y++) {
-    const r = y * W;
+  for (let y = 0; y < h; y++) {
+    const r = y * w;
     let last = -1e9;
-    for (let x = 0; x < W; x++) {
+    for (let x = 0; x < w; x++) {
       if (m[r + x]) last = x;
       if (x - last <= rad) t[r + x] = 1;
     }
     last = 1e9;
-    for (let x = W - 1; x >= 0; x--) {
+    for (let x = w - 1; x >= 0; x--) {
       if (m[r + x]) last = x;
       if (last - x <= rad) t[r + x] = 1;
     }
   }
-  for (let x = 0; x < W; x++) {
+  for (let x = 0; x < w; x++) {
     let last = -1e9;
-    for (let y = 0; y < H; y++) {
-      if (t[y * W + x]) last = y;
-      if (y - last <= rad) o[y * W + x] = 1;
+    for (let y = 0; y < h; y++) {
+      if (t[y * w + x]) last = y;
+      if (y - last <= rad) o[y * w + x] = 1;
     }
     last = 1e9;
-    for (let y = H - 1; y >= 0; y--) {
-      if (t[y * W + x]) last = y;
-      if (last - y <= rad) o[y * W + x] = 1;
+    for (let y = h - 1; y >= 0; y--) {
+      if (t[y * w + x]) last = y;
+      if (last - y <= rad) o[y * w + x] = 1;
     }
   }
   return o;
 }
-// the picture's colours with its lines taken out (each line pixel the colour of its nearest section pixel). A line
-// pixel drawn over in something else (Focus mode's mark on a section in a line, a code) keeps it, and no sharp line is
-// drawn there (_ov)
+// the picture's colours over the field's window with its lines taken out (each line pixel the colour of its nearest
+// section pixel). A line pixel drawn over in something else (Focus mode's mark on a section in a line, a code) keeps
+// it, and no sharp line is drawn there (_ov)
 function sharpFill(base, F, ink) {
   const d = base.data,
-    n = W * H,
-    o = new Uint8ClampedArray(d.length),
-    ov = new Uint8Array(n),
+    w = F.w,
+    h = F.h,
+    o = new Uint8ClampedArray(w * h * 4),
+    ov = new Uint8Array(w * h),
     near = F.near;
-  o.set(d);
-  for (let p = 0; p < n; p++) {
-    if (labels[p] !== -1) continue;
-    const j = p * 4;
-    if (Math.abs(d[j] - ink[0]) + Math.abs(d[j + 1] - ink[1]) + Math.abs(d[j + 2] - ink[2]) > 48) {
-      ov[p] = 1;
-      continue;
+  for (let y = 0, p = 0; y < h; y++) {
+    const r = (F.Y0 + y) * W + F.X0;
+    for (let x = 0; x < w; x++, p++) {
+      const g = r + x,
+        j = g * 4,
+        i = p * 4;
+      o[i] = d[j];
+      o[i + 1] = d[j + 1];
+      o[i + 2] = d[j + 2];
+      if (labels[g] !== -1) continue;
+      if (Math.abs(d[j] - ink[0]) + Math.abs(d[j + 1] - ink[1]) + Math.abs(d[j + 2] - ink[2]) > 48) {
+        ov[p] = 1;
+        continue;
+      }
+      const q = near[p];
+      if (q < 0) continue;
+      const k = q * 4;
+      o[i] = d[k];
+      o[i + 1] = d[k + 1];
+      o[i + 2] = d[k + 2];
     }
-    const q = near[p];
-    if (q < 0) continue;
-    const k = q * 4;
-    o[j] = d[k];
-    o[j + 1] = d[k + 1];
-    o[j + 2] = d[k + 2];
   }
   o._ov = ov;
-  o._d = d;
   return o;
 }
-function sharpPaint(base, crop, ow, oh, ink, fill) {
-  const F = sharpField();
-  if (!F || !base || ow < 1 || oh < 1) return null;
-  const C0 = fill || sharpFill(base, F, ink),
+function sharpPaint(base, crop, ow, oh, ink) {
+  const job = sharpJob(base, crop, ow, oh, ink);
+  if (!job) return null;
+  job.rows(0, oh);
+  return job.out;
+}
+// (v323.1) the drawing as a job whose rows can be drawn a few at a time (sharpDraw, between frames: on an older iPad the
+// whole of it took a third of a second, and a tap meanwhile waited)
+function sharpJob(base, crop, ow, oh, ink) {
+  if (!base || ow < 1 || oh < 1) return null;
+  const F = sharpField(crop);
+  if (!F) return null;
+  // (the colours for this picture over this window, kept with the field while the picture stands)
+  if (F.base !== base || !F.fill) {
+    F.fill = sharpFill(base, F, ink);
+    F.base = base;
+  }
+  const C0 = F.fill,
     OV = C0._ov,
+    D = base.data,
     S = F.sdf,
+    fw = F.w,
+    X0 = F.X0,
+    Y0 = F.Y0,
     out = new ImageData(ow, oh),
     od = out.data,
     x0 = crop[0],
@@ -65862,64 +65971,90 @@ function sharpPaint(base, crop, ow, oh, ink, fill) {
     ir = ink[0],
     ig = ink[1],
     ib = ink[2],
-    Wm = W - 1,
-    Hm = H - 1;
-  for (let oy = 0, j = 0; oy < oh; oy++) {
-    let fy = y0 + (oy + 0.5) * sy - 0.5;
-    if (fy < 0) fy = 0;
-    else if (fy > Hm) fy = Hm;
-    const iy = fy | 0,
-      ty = fy - iy,
-      iy1 = iy < Hm ? iy + 1 : iy,
-      r0 = iy * W,
-      r1 = iy1 * W;
-    for (let ox = 0; ox < ow; ox++, j += 4) {
-      let fx = x0 + (ox + 0.5) * sx - 0.5;
-      if (fx < 0) fx = 0;
-      else if (fx > Wm) fx = Wm;
-      const ix = fx | 0,
-        tx = fx - ix,
-        ix1 = ix < Wm ? ix + 1 : ix,
-        p00 = r0 + ix,
-        p01 = r0 + ix1,
-        p10 = r1 + ix,
-        p11 = r1 + ix1,
-        w00 = (1 - tx) * (1 - ty),
-        w01 = tx * (1 - ty),
-        w10 = (1 - tx) * ty,
-        w11 = tx * ty,
-        s = S[p00] * w00 + S[p01] * w01 + S[p10] * w10 + S[p11] * w11;
-      // (next to a mark drawn over a line: the picture as it is there, no sharp line)
-      const over = OV && OV[p00] | OV[p01] | OV[p10] | OV[p11],
-        C = over ? C0._d : C0;
-      let a = 0.5 - s * k;
-      a = a < 0 || over ? 0 : a > 1 ? 1 : a;
-      const q00 = p00 * 4,
-        q01 = p01 * 4,
-        q10 = p10 * 4,
-        q11 = p11 * 4,
-        r = C[q00] * w00 + C[q01] * w01 + C[q10] * w10 + C[q11] * w11,
-        g = C[q00 + 1] * w00 + C[q01 + 1] * w01 + C[q10 + 1] * w10 + C[q11 + 1] * w11,
-        b = C[q00 + 2] * w00 + C[q01 + 2] * w01 + C[q10 + 2] * w10 + C[q11 + 2] * w11;
-      od[j] = r + (ir - r) * a;
-      od[j + 1] = g + (ig - g) * a;
-      od[j + 2] = b + (ib - b) * a;
-      od[j + 3] = 255;
+    // (read within the window: the picture's last pixel, or the window's)
+    Wm = Math.min(W, X0 + fw) - 1,
+    Hm = Math.min(H, Y0 + F.h) - 1;
+  const rows = function (oyA, oyB) {
+    for (let oy = oyA, j = oyA * ow * 4; oy < oyB; oy++) {
+      let fy = y0 + (oy + 0.5) * sy - 0.5;
+      if (fy < Y0) fy = Y0;
+      else if (fy > Hm) fy = Hm;
+      const iy = fy | 0,
+        ty = fy - iy,
+        iy1 = iy < Hm ? iy + 1 : iy,
+        r0 = (iy - Y0) * fw - X0,
+        r1 = (iy1 - Y0) * fw - X0,
+        g0 = iy * W,
+        g1 = iy1 * W;
+      for (let ox = 0; ox < ow; ox++, j += 4) {
+        let fx = x0 + (ox + 0.5) * sx - 0.5;
+        if (fx < X0) fx = X0;
+        else if (fx > Wm) fx = Wm;
+        const ix = fx | 0,
+          tx = fx - ix,
+          ix1 = ix < Wm ? ix + 1 : ix,
+          p00 = r0 + ix,
+          p01 = r0 + ix1,
+          p10 = r1 + ix,
+          p11 = r1 + ix1,
+          w00 = (1 - tx) * (1 - ty),
+          w01 = tx * (1 - ty),
+          w10 = (1 - tx) * ty,
+          w11 = tx * ty,
+          s = S[p00] * w00 + S[p01] * w01 + S[p10] * w10 + S[p11] * w11;
+        // (next to a mark drawn over a line: the picture as it is there, no sharp line)
+        const over = OV[p00] | OV[p01] | OV[p10] | OV[p11];
+        let a = 0.5 - s * k;
+        a = a < 0 || over ? 0 : a > 1 ? 1 : a;
+        let q00, q01, q10, q11, C;
+        if (over) {
+          C = D;
+          q00 = (g0 + ix) * 4;
+          q01 = (g0 + ix1) * 4;
+          q10 = (g1 + ix) * 4;
+          q11 = (g1 + ix1) * 4;
+        } else {
+          C = C0;
+          q00 = p00 * 4;
+          q01 = p01 * 4;
+          q10 = p10 * 4;
+          q11 = p11 * 4;
+        }
+        const r = C[q00] * w00 + C[q01] * w01 + C[q10] * w10 + C[q11] * w11,
+          g = C[q00 + 1] * w00 + C[q01 + 1] * w01 + C[q10 + 1] * w10 + C[q11 + 1] * w11,
+          b = C[q00 + 2] * w00 + C[q01 + 2] * w01 + C[q10 + 2] * w10 + C[q11 + 2] * w11;
+        od[j] = r + (ir - r) * a;
+        od[j + 1] = g + (ig - g) * a;
+        od[j + 2] = b + (ib - b) * a;
+        od[j + 3] = 255;
+      }
     }
-  }
-  return out;
+  };
+  return { out: out, rows: rows };
 }
 
-/* Focus mode: a canvas over the part of the picture on the screen, drawn sharp once a zoom or a move settles (and
-   hidden while the picture moves). Only where the picture is magnified enough for its steps to show. */
+/* Focus mode and Colour along: a canvas over the part of the picture on the screen, drawn sharp once a zoom or a move
+   settles, where the picture is magnified enough for its steps to show (v323.1: Colour along too). It is placed in the
+   picture's own frame and given the picture's transform (and its transition, Focus mode's glide), so it moves and
+   scales with the picture as it's panned or pinched, and is drawn again sharp for the new view once that stops.
+   Drawn again after the picture is: in Focus mode it goes at once (Done moves on to the next section). In Colour
+   along, after the picture is drawn again in part (a tick, its ✓ fading, renderIncremental) it stays, a hole cleared
+   in it over each part drawn and where a tick's colour spreads (sharpHole), so each change is seen at once, and it's
+   drawn again once they stop; after the whole picture is drawn again (a marker's row opened) it goes at once and is
+   drawn again a moment later. */
 let _shEl = null,
   _shT = 0,
-  _shBase = null;
+  _shBase = null,
+  // the crop it shows (picture pixels), and until when a tick's colour spreads under it (sharpHole)
+  _shCrop = null,
+  _shWait = 0,
+  // (the drawing under way, a few rows at a time: a newer one, or the copy hidden, stops it)
+  _shGen = 0,
+  _shJobT = 0;
 function sharpOn() {
   return !!(
-    focus &&
-    !focusFin &&
     sfmode === 'color' &&
+    (focus ? !focusFin : true) &&
     cv &&
     sfView &&
     labels &&
@@ -65927,46 +66062,83 @@ function sharpOn() {
     !root.classList.contains('sfrev')
   );
 }
-// the picture moved or was drawn again: the sharp copy goes until it settles
+function sharpHide() {
+  _shGen++;
+  clearTimeout(_shJobT);
+  if (_shEl) _shEl.hidden = true;
+  _shCrop = null;
+}
+// the picture moved, or (drawn) was drawn again, in whole (true) or in part ('part'): drawn sharp again once it settles
 function sharpStale(drawn) {
   if (drawn) _shBase = null;
-  if (_shEl) _shEl.style.visibility = 'hidden';
   clearTimeout(_shT);
-  if (!sharpOn()) {
-    if (_shEl) _shEl.hidden = true;
-    return;
-  }
-  _shT = setTimeout(sharpDraw, 420);
+  // (a drawing under way is of the picture or the view as they were)
+  _shGen++;
+  clearTimeout(_shJobT);
+  if (!sharpOn()) return sharpHide();
+  if (drawn && (focus || drawn !== 'part')) sharpHide();
+  sharpPlace();
+  _shT = setTimeout(sharpDraw, drawn === true && !focus ? 30 : drawn ? 300 : 420);
+}
+// the copy given the picture's place and transform (applyXform: as the picture moves)
+function sharpPlace() {
+  if (!_shEl || _shEl.hidden || !_shCrop || !cv) return;
+  const DW = cv.offsetWidth,
+    DH = cv.offsetHeight,
+    c = _shCrop;
+  if (!DW || !DH) return sharpHide();
+  const s = _shEl.style;
+  s.left = cv.offsetLeft + 'px';
+  s.top = cv.offsetTop + 'px';
+  s.width = ((c[2] - c[0]) * DW) / W + 'px';
+  s.height = ((c[3] - c[1]) * DH) / H + 'px';
+  s.transition = cv.style.transition;
+  s.transform =
+    (cv.style.transform || '') + ' translate(' + (c[0] * DW) / W + 'px,' + (c[1] * DH) / H + 'px)';
+}
+// the picture drawn again over [x0, y0, x1, y1] (picture pixels, renderIncremental), or (spread) a tick's colour about
+// to spread there (spreadBegin, 40-render): the copy cleared there so it shows, and drawn again after
+function sharpHole(x0, y0, x1, y1, spread) {
+  if (spread) _shWait = performance.now() + TICK_SPREAD + 150;
+  if (!_shEl || _shEl.hidden || !_shCrop) return;
+  const c = _shCrop,
+    kx = _shEl.width / (c[2] - c[0]),
+    ky = _shEl.height / (c[3] - c[1]);
+  _shEl
+    .getContext('2d')
+    .clearRect((x0 - c[0]) * kx - 2, (y0 - c[1]) * ky - 2, (x1 - x0) * kx + 4, (y1 - y0) * ky + 4);
 }
 function sharpDraw() {
-  if (!sharpOn()) {
-    if (_shEl) _shEl.hidden = true;
+  if (!sharpOn()) return sharpHide();
+  // (a tick's colour still spreading: after it)
+  if (_spr || performance.now() < _shWait) {
+    _shT = setTimeout(sharpDraw, 60);
     return;
   }
-  const host = picEl || sfView,
+  const host = cv.parentNode,
     r0 = cv.getBoundingClientRect(),
     vr = sfView.getBoundingClientRect(),
     dpr = Math.min(3, window.devicePixelRatio || 1),
     k = r0.width / W;
   // (no steps to see below about 1.3 screen pixels to a picture pixel)
-  if (!(k > 0) || k * dpr < 1.3) {
-    if (_shEl) _shEl.hidden = true;
-    return;
-  }
-  // the part of the picture on the screen
-  const L = Math.max(r0.left, vr.left),
-    T = Math.max(r0.top, vr.top),
-    R = Math.min(r0.right, vr.right),
-    B = Math.min(r0.bottom, vr.bottom);
-  if (R - L < 4 || B - T < 4) return;
-  const crop = [(L - r0.left) / k, (T - r0.top) / k, (R - r0.left) / k, (B - r0.top) / k];
+  if (!host || !(k > 0) || k * dpr < 1.3) return sharpHide();
+  // the part of the picture on the screen and 15% beyond it each way, so a pan shows sharp lines till it's drawn again
+  const mx = vr.width * 0.15,
+    my = vr.height * 0.15,
+    L = Math.max(r0.left, vr.left - mx),
+    T = Math.max(r0.top, vr.top - my),
+    R = Math.min(r0.right, vr.right + mx),
+    B = Math.min(r0.bottom, vr.bottom + my);
+  if (R - L < 4 || B - T < 4) return sharpHide();
+  const ky = r0.height / H,
+    crop = [(L - r0.left) / k, (T - r0.top) / ky, (R - r0.left) / k, (B - r0.top) / ky];
   let ow = Math.round((R - L) * dpr),
     oh = Math.round((B - T) * dpr);
   // (at most about 4 million pixels)
   const cap = Math.sqrt(4e6 / (ow * oh));
   if (cap < 1) {
-    ow = Math.round(ow * cap);
-    oh = Math.round(oh * cap);
+    ow = Math.max(1, Math.round(ow * cap));
+    oh = Math.max(1, Math.round(oh * cap));
   }
   if (!_shBase) {
     try {
@@ -65974,32 +66146,43 @@ function sharpDraw() {
     } catch (_) {
       return;
     }
-    _shBase._fill = null;
   }
-  const F = sharpField();
-  if (!F) return;
-  if (!_shBase._fill) _shBase._fill = sharpFill(_shBase, F, LINE);
-  const im = sharpPaint(_shBase, crop, ow, oh, LINE, _shBase._fill);
-  if (!im) return;
+  const job = sharpJob(_shBase, crop, ow, oh, LINE);
+  if (!job) return;
+  const gen = ++_shGen;
+  let y = 0;
+  const step = function () {
+    if (gen !== _shGen) return;
+    if (!sharpOn()) return sharpHide();
+    const t0 = performance.now();
+    while (y < oh && performance.now() - t0 < 8) {
+      const y1 = Math.min(oh, y + 16);
+      job.rows(y, y1);
+      y = y1;
+    }
+    if (y < oh) {
+      _shJobT = setTimeout(step, 0);
+      return;
+    }
+    sharpShow(job.out, crop, ow, oh, host);
+  };
+  step();
+}
+function sharpShow(im, crop, ow, oh, host) {
   if (!_shEl) {
     _shEl = document.createElement('canvas');
     _shEl.id = 'sfSharp';
     _shEl.className = 'sfsharp';
     _shEl.setAttribute('aria-hidden', 'true');
   }
-  // (just over the picture: under the ring, the outline and the bars)
-  if (_shEl.parentNode !== host) host.insertBefore(_shEl, cv.nextSibling);
+  // (just over the picture, in its frame: under the codes' highlight, the ring, the outline and the bars)
+  if (_shEl.parentNode !== host || _shEl.previousSibling !== cv) host.insertBefore(_shEl, cv.nextSibling);
   _shEl.width = ow;
   _shEl.height = oh;
   _shEl.getContext('2d').putImageData(im, 0, 0);
-  const hr = host.getBoundingClientRect(),
-    q = picK();
-  _shEl.style.left = (L - hr.left) / q + 'px';
-  _shEl.style.top = (T - hr.top) / q + 'px';
-  _shEl.style.width = (R - L) / q + 'px';
-  _shEl.style.height = (B - T) / q + 'px';
+  _shCrop = crop;
   _shEl.hidden = false;
-  _shEl.style.visibility = '';
+  sharpPlace();
 }
 // Find next: zoom in on the next section of the highlighted colour still to do, one after another
 let _fnLast = -1;
@@ -71084,6 +71267,8 @@ function startReveal() {
   resetZoom();
   var rt = document.getElementById('sfRoot');
   if (rt) rt.classList.add('sfrev');
+  // (v323.1: the picture's sharp copy goes at once, 77-sharp)
+  if (_shEl) sharpStale();
   revCloseEl();
   revModal(true);
   // (v309.2: the keyboard on the ✕ at once, as the button that opened Reveal goes inert behind it; Share takes it at
@@ -71109,7 +71294,8 @@ function revClose() {
   gTab = back.tab;
   enterColor();
   doneAfterFocus();
-  const b = document.getElementById('sfAlongRev');
+  // (v323.1: the Page finished panel's Reveal & share, sfDoneRev; the id looked for had gone, the keyboard left on the page)
+  const b = document.getElementById('sfDoneRev');
   if (b && b.offsetParent !== null)
     try {
       b.focus({ preventScroll: true });
@@ -71675,7 +71861,7 @@ function pinNoteFirst(secs) {
 // The sample, as it was built: a line under the tabs says it isn't in the Library yet (v285), until it's changed (then
 // it is) or closed. (Not beside the kept-sections line: a sample with coloured sections was changed, so is kept.)
 // (v289: not while the first-time "Tap a section" line is up — it goes at the next tab, and this line comes then)
-// (v323) the line is no more: the header's save line says it ("Sample · change anything to keep it", saveStText), so
+// (v323) the line is no more: the header's save line says it ("Sample · change it to keep it", saveStText), so
 // it no longer takes a phone's panel on every tab. Kept as a function that gives nothing, for the lines that waited on it
 function sampleNoteHTML() {
   return '';
@@ -76624,12 +76810,7 @@ function cuSharp(art, cr, dw, dh) {
       oh = Math.max(1, Math.round(dh));
     if (ow * oh > 16e6) return null;
     if (!art._im) art._im = art.getContext('2d').getImageData(0, 0, W, H);
-    if (!art._fill) {
-      const F = sharpField();
-      if (!F) return null;
-      art._fill = sharpFill(art._im, F, LINE);
-    }
-    const im = sharpPaint(art._im, cr, ow, oh, LINE, art._fill);
+    const im = sharpPaint(art._im, cr, ow, oh, LINE);
     if (!im) return null;
     const c = document.createElement('canvas');
     c.width = ow;
@@ -81699,7 +81880,6 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     shadeSec: shadeSec,
     shadeUse: shadeUse,
-    shadeFromPhoto: shadeFromPhoto,
     photoLightOK: photoLightOK,
     shadeHowto: shadeHowto,
     toneRows: toneRows,
@@ -81736,7 +81916,6 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     shadeGlaze: shadeGlaze,
     stepText: stepText,
-    shadeHowto: shadeHowto,
     shadeTipHTML: shadeTipHTML,
     shT2: shT2,
     minPx: minPx,
@@ -95686,6 +95865,10 @@ function renderHomeNotes() {
 // (not on a fresh install); Help › What's new (v318.32: its own section; it had been in About) lists this version's.
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v323.1',
+    t: 'Zoomed in on Colour along, the outlines are drawn smooth too, and move with the picture as you pan and pinch. Focus mode no longer pauses on a big photo as its outlines turn smooth. Fixes: the Library could show fewer sections coloured than you’d ticked if the app was closed just as it saved; closing Reveal from the finished page puts you back on Reveal & share; the sample’s note in the header fits on a phone.',
+  },
   {
     v: 'v323',
     t: 'Focus mode zooms steadily, a marker at a time, its outlines drawn smooth, with a ring round a section too small to see; on the iPad its panel shows your markers for the page and where you are on it. Continue takes you back into Focus mode where you left off. Markers look like swatches, with a second coat, and the Library’s guides are covers. A section’s tip says how many sections its marker colours. Printed close-ups have smooth lines.',

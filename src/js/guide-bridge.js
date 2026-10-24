@@ -782,7 +782,37 @@ function sfLeaveApply() {
         // copy, made from the same state, stayed with its base moved to that save's row, leaveRebase): nothing to
         // put in. Writing it again gave the row a new time, so a guide backed up since read "not in a backup", was
         // taken as newer by a restore, and reloaded in another tab
-        if (old && typeof old === 'object' && JSON.stringify(leaveSlim(old)) === JSON.stringify(j.pl)) return;
+        if (old && typeof old === 'object' && JSON.stringify(leaveSlim(old)) === JSON.stringify(j.pl)) {
+          // (v323.1) unless the save's database write landed and the page went before its row was written: the
+          // stored guide is the copy, the row as it was (how much is coloured, 0 of 5 ticks on GitHub's run #71). The
+          // row then follows the stored guide; one the save did write already says the same, and is left be
+          const ix = state.saved.findIndex((s) => s.id === j.id && s.type === 'guide');
+          if (ix < 0) return;
+          const was = state.saved[ix],
+            m = guideMeta(
+              {
+                name: was.name || j.name,
+                W: j.W,
+                H: j.H,
+                keys: j.keys,
+                n: j.n,
+                payload: old,
+                thumb: was.thumb,
+              },
+              j.id,
+            );
+          if (
+            (+m.done || 0) === (+was.done || 0) &&
+            (+m.tn || 0) === (+was.tn || 0) &&
+            (+m.lc || 0) === (+was.lc || 0)
+          )
+            return;
+          state.saved[ix] = m;
+          save(true);
+          if (typeof renderRecent === 'function') renderRecent();
+          if (typeof renderSaved === 'function') renderSaved();
+          return;
+        }
         // (v318.23: a newer version's settings in the stored guide kept, as its autosave keeps them. SF is there by
         // now: this runs once the database has answered, after the guide's code has loaded)
         let pl = old && leaveFill(j.pl, old);

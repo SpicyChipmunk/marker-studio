@@ -1,6 +1,6 @@
 {
   "name": "marker-studio",
-  "version": "323.0.0",
+  "version": "323.1.0",
   "description": "An offline web app that turns colouring pages into marker-by-number guides, matched to the markers you own (Ohuhu, Copic).",
   "type": "module",
   "license": "UNLICENSED",
@@ -29,7 +29,7 @@
     "esbuild": "0.28.2",
     "eslint": "9.39.5",
     "globals": "17.12.0",
-    "playwright": "^1.56.0",
+    "playwright": "1.56.0",
     "prettier": "3.9.9"
   }
 }

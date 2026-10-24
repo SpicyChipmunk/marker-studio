@@ -502,7 +502,7 @@ function pinNoteFirst(secs) {
 // The sample, as it was built: a line under the tabs says it isn't in the Library yet (v285), until it's changed (then
 // it is) or closed. (Not beside the kept-sections line: a sample with coloured sections was changed, so is kept.)
 // (v289: not while the first-time "Tap a section" line is up — it goes at the next tab, and this line comes then)
-// (v323) the line is no more: the header's save line says it ("Sample · change anything to keep it", saveStText), so
+// (v323) the line is no more: the header's save line says it ("Sample · change it to keep it", saveStText), so
 // it no longer takes a phone's panel on every tab. Kept as a function that gives nothing, for the lines that waited on it
 function sampleNoteHTML() {
   return '';

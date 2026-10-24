@@ -221,7 +221,7 @@ after(teardown);
     // the sample beside it (it keeps no picture), then this one again
     await page.evaluate(() => SF.loadSample());
     await page.waitForFunction(
-      () => document.getElementById('sfSaveSt').textContent === 'Sample · change anything to keep it',
+      () => document.getElementById('sfSaveSt').textContent === 'Sample · change it to keep it',
     );
     await idle(page);
     await saveGuide(page);

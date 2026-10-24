@@ -1503,6 +1503,13 @@ after(teardown);
     };
   };
   const click = (page, sel) => page.evaluate((sel) => document.querySelector(sel).click(), sel);
+  // (v323: on from the start for a new guide, the sample's too: set to on or off, not tapped)
+  const noAdjTo = async (page, on) => {
+    if ((await page.evaluate(() => __mstest.styleVars.noAdj)) !== on) {
+      await click(page, '#sfNoAdj');
+      await idle(page);
+    }
+  };
   const tab = async (page, t) => {
     await page.click(`.sftabbtn[data-t="${t}"]`);
     await idle(page);
@@ -1574,6 +1581,7 @@ after(teardown);
     const pairs = await touching(page);
     assert.ok(pairs.length > 40, pairs.length + ' touching pairs');
     // off: markers fall where they may (with 16 markers, some touching sections clash)
+    await noAdjTo(page, false);
     let off = { same: 0, alike: 0 };
     for (let r = 0; r < 4; r++) {
       await click(page, '#sfShuffle');
@@ -1582,8 +1590,7 @@ after(teardown);
       off = { same: off.same + c.same, alike: off.alike + c.alike };
     }
     assert.ok(off.same + off.alike > 0, 'with it off, some clash');
-    await click(page, '#sfNoAdj');
-    await idle(page);
+    await noAdjTo(page, true);
     assert.equal(await page.evaluate(() => __mstest.planLabel), 'Touching sections different on');
     for (let r = 0; r < 5; r++) {
       assert.deepEqual(await clashes(page, pairs), { same: 0, alike: 0 }, 'roll ' + r);
@@ -1661,8 +1668,7 @@ after(teardown);
     await tab(page, 'pattern');
     await click(page, '#sfFam [data-v="random"]');
     await idle(page);
-    await click(page, '#sfNoAdj');
-    await idle(page);
+    await noAdjTo(page, true);
     for (let r = 0; r < 5; r++) {
       assert.deepEqual(await clashes(page, pairs), { same: 0, alike: 0 }, 'roll ' + r);
       await click(page, '#sfShuffle');

@@ -2888,3 +2888,51 @@ From Fable's design review (round R32, V1), built in two parts and compared scre
   unit test fails on any CSS variable used but never defined. The Analogous balance test is seeded (unseeded, about
   one run in 25 failed by chance).
 - Cache bumped to `marker-studio-v323`.
+
+# Changes — v323.1 (fixes from v323's run on GitHub, the debugging pass, and sharp outlines in Colour along)
+
+- **Sharp outlines in Colour along (Ben's ask):** zoomed in past the point where the picture's pixels show (1.3 screen
+  pixels to one), the outlines over the part on the screen and 15% round it are drawn smooth, as in Focus mode. The
+  copy sits in the picture's frame with the picture's transform (and its transition), so it pans and pinches with it
+  and is drawn again once a move stops. A tick, and its ✓'s fade, clear the copy over just the part drawn again
+  (renderIncremental, spreadBegin: sharpHole), so each change shows at once; it's drawn again once they stop. A
+  marker's row opened (the picture drawn again whole) hides it, drawn again a moment later. Reveal hides it.
+- **The field for a window, not the whole picture (77-sharp):** the outlines' distance field is worked out for the part
+  drawn and a margin (24 picture pixels, past the smoothing's reach), a quarter more each way so small moves reuse it:
+  a few ms, where a 2400-pixel photo's whole field took about a second, a pause in Focus mode as its outlines first
+  turned smooth. Print's close-ups use it the same way.
+- **The sample's line in the header** is "Sample · change it to keep it": "change anything to keep it" was 188px where a
+  390px phone has 186 beside ✨ Surprise, so the sample's Surprise lost its word at the usual text size, and at large
+  text the header shrank 25px once the sample was changed (frame, shell on run #71). The header keeps room for it
+  while the guide began as the sample (headGhost, _smpHead).
+- **A row behind its stored guide (v318.28's gap):** a save as the page went that wrote the stored guide and not its
+  row left the copy kept aside the same as the stored guide, and the next start, taking that for a save that had
+  written both, left the row saying fewer sections coloured (data-2 on run #71, now and then). The row now follows the
+  stored guide when it says otherwise (sfLeaveApply); a test makes that state directly.
+- **Reveal from the finished page, closed:** the keyboard goes back to Reveal & share (sfDoneRev); the id it looked for
+  (sfAlongRev) had gone in a rename, and the keyboard was left on the page.
+- **Continue into Focus mode** after the sections were edited: the section it had been left on is forgotten with them
+  (focusAt, as colOffer), not taken for whichever section now has its number.
+- Tests: run #71's welcome (the blender in the button), pattern and pattern-3 (Keep touching sections clearly
+  different set, not tapped: on from the start now) brought up to date; Colour along's sharp copy; the row put right;
+  Reveal's keyboard. Two duplicated test hooks dropped.
+- The debugging pass also checked, and found nothing to change in: names reaching the page as HTML (a name with markup
+  in it through Home, the Library, its menus and an opened palette), stored JSON read without a guard, listeners added
+  over and over, the service worker, and a wide lint of the shipped script (its 28 findings all deliberate).
+- **The extra-deep pass (after run #71):**
+  - The sharp copy is drawn a few rows at a time between frames (sharpJob): with the processor slowed 4×, as an older
+    iPad, drawing it again after a tick took 0.3–0.47 s in one go, and a tap meanwhile waited; now no task runs past
+    about 65 ms (the window's field), and a newer drawing, a move or the copy hidden stops one under way.
+  - Focus mode's Where you are is in its Tab order (after Done, Back and Skip) and its name says what it shows
+    ("Where you are: show the whole page"), so voice control finds it by the words on it.
+  - Checked and found sound: a random-tap crawl of 2,400+ steps on Chromium (phone, iPad both ways, touch) and WebKit
+    with page errors, unhandled rejections and the screen's invariants watched (the sharp copy only in Colour along
+    and Focus mode, never in Reveal, after the picture and following it; the ring and the map only in Focus mode); ten
+    rounds of the sample through Colour along, Focus mode and Home with the heap, listeners and canvases flat (the
+    nodes that grew were the Library's new guides); every control named on every screen.
+- **CI: WebKit in Playwright's own image.** The WebKit jobs run in `mcr.microsoft.com/playwright:v1.56.0-noble`,
+  WebKit and its system libraries in it, rather than installing those from apt each run: that timed out four tries
+  running on three of run #71's ten parts and on two more when run again, so part 9 never ran. Playwright is pinned
+  exactly (1.56.0, was ^1.56.0) and `e2e/ci-pw-image.mjs` fails at once if the image's tag and the installed version
+  differ (a WebKit job's first step, and a unit test). The Chromium jobs are as they were.
+- Cache bumped to `marker-studio-v323.1`.

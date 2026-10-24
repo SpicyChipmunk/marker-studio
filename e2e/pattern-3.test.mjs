@@ -643,6 +643,13 @@ after(teardown);
 // markers can't keep them apart, the note under the box says so (#sfNoAdjNote), and More options' bar doesn't claim it.
 {
   const click = (page, sel) => page.evaluate((sel) => document.querySelector(sel).click(), sel);
+  // (v323: on from the start for a new guide, the sample's too: set to on or off, not tapped)
+  const noAdjTo = async (page, on) => {
+    if ((await page.evaluate(() => __mstest.styleVars.noAdj)) !== on) {
+      await click(page, '#sfNoAdj');
+      await idle(page);
+    }
+  };
   const tab = async (page, t) => {
     await page.click(`.sftabbtn[data-t="${t}"]`);
     await idle(page);
@@ -726,8 +733,7 @@ after(teardown);
     await idle(page);
     await click(page, '#sfBal [data-v="mixed"]');
     await idle(page);
-    await click(page, '#sfNoAdj');
-    await idle(page);
+    await noAdjTo(page, true);
     assert.equal(await page.evaluate(() => __mstest.styleVars.noAdj), true);
     const pairs = await touching(page);
     assert.ok(pairs.length > 40, pairs.length + ' touching pairs');
@@ -800,8 +806,7 @@ after(teardown);
     await idle(page);
     await click(page, '#sfBal [data-v="main"]');
     await idle(page);
-    await click(page, '#sfNoAdj');
-    await idle(page);
+    await noAdjTo(page, true);
     const pairs = await touching(page);
     await page.evaluate(() => {
       __mstest.styleVars.balSeed = 0.25;
@@ -842,8 +847,7 @@ after(teardown);
     await idle(page);
     await click(page, '#sfBal [data-v="main"]');
     await idle(page);
-    await click(page, '#sfNoAdj');
-    await idle(page);
+    await noAdjTo(page, true);
     const pairs = await touching(page);
     // (browns, reds and a teal: the accent's marker is never given to the others' sections, so a section touching
     // all of its role's few markers keeps one)
@@ -871,8 +875,7 @@ after(teardown);
     await idle(page);
     await click(page, '#sfBal [data-v="mixed"]');
     await idle(page);
-    await click(page, '#sfNoAdj');
-    await idle(page);
+    await noAdjTo(page, true);
     assert.equal(await page.locator('#sfNoAdjNote').count(), 0, 'none at 16 markers');
     // (on a phone the box is under More options, whose bar says what's on)
     const sum = () => page.textContent('#sfMore-pattern .fb-sum');

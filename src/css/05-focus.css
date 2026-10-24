@@ -912,11 +912,12 @@ html.sfrailon.sfrailshort #sfRoot.sffoc #sfZoomCtl {
   }
 }
 
-/* (v323) the picture's sharp copy over the part of it on the screen (77-sharp): just over the picture, under the ring */
+/* (v323) the picture's sharp copy over the part of it on the screen (77-sharp): just over the picture (after it, so
+   under the overlays that follow it), given the picture's transform from the same corner */
 #sfRoot .sfsharp {
   position: absolute;
-  z-index: 1;
   margin: 0;
+  transform-origin: 0 0;
   pointer-events: none;
 }
 #sfRoot .sfsharp[hidden] {

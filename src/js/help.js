@@ -6,6 +6,10 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v323.1',
+    t: 'Zoomed in on Colour along, the outlines are drawn smooth too, and move with the picture as you pan and pinch. Focus mode no longer pauses on a big photo as its outlines turn smooth. Fixes: the Library could show fewer sections coloured than you’d ticked if the app was closed just as it saved; closing Reveal from the finished page puts you back on Reveal & share; the sample’s note in the header fits on a phone.',
+  },
+  {
     v: 'v323',
     t: 'Focus mode zooms steadily, a marker at a time, its outlines drawn smooth, with a ring round a section too small to see; on the iPad its panel shows your markers for the page and where you are on it. Continue takes you back into Focus mode where you left off. Markers look like swatches, with a second coat, and the Library’s guides are covers. A section’s tip says how many sections its marker colours. Printed close-ups have smooth lines.',
   },

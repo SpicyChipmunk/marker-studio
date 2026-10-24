@@ -174,6 +174,57 @@ after(teardown);
     assert.equal(s.lmap, lmap, 'the stored section map is still the one restored');
     assert.deepEqual(errors, []);
   });
+  // (v323.1) GitHub's run #71: the save begun as the page went wrote the stored guide, and the page went before its row
+  // was written; the copy kept aside was then the stored guide already, and the row was left saying 0 coloured. Here
+  // that end state is made directly: the copy kept aside, the stored guide written, the row not
+  test('a save whose database write landed but whose row did not: the next start puts the row right', async () => {
+    const { backup, id } = await foreignBackup();
+    const { page, errors } = await openApp();
+    await welcome(page, 'look');
+    await idle(page);
+    await restoreInto(page, backup);
+    await page.evaluate((id) => loadGuide({ id }), id);
+    await until(
+      page,
+      (id) => __mstest.curId === id && __mstest.assignData && __mstest.sfmode === 'guide',
+      id,
+      'the restored guide open',
+    );
+    await idle(page);
+    await page.evaluate(async (id) => {
+      const t = __mstest;
+      t.assignData.order.slice(0, 5).forEach((l) => {
+        t.colored[l] = 1;
+      });
+      t.renderGuide();
+      const d = t.currentDesignObj(),
+        e = state.saved.find((s) => s.id === id);
+      sfSaveDesignNow({
+        id,
+        name: e.name,
+        W: d.W,
+        H: d.H,
+        keys: d.keys,
+        n: d.n,
+        sk: d.sk,
+        payload: d.payload,
+      });
+      await IDB.put('guide-' + id, d.payload);
+      // (nothing more saved as the page goes: the row stays as it was)
+      t.guideDirty = false;
+    }, id);
+    assert.equal(await page.evaluate((id) => state.saved.find((x) => x.id === id).done || 0, id), 0);
+    await page.reload();
+    await idle(page);
+    assert.equal((await stored(page, id)).prog, 5);
+    await until(page, (id) => state.saved.find((x) => x.id === id).done === 5, id, 'the row says 5 coloured');
+    assert.equal(
+      await page.evaluate(() => localStorage.getItem('ms-guide-leave')),
+      null,
+      'the copy put away',
+    );
+    assert.deepEqual(errors, []);
+  });
   test('the stored section map stays byte-identical through a save, and a section edit still saves a new one', async () => {
     const { backup, lmap, id } = await foreignBackup();
     const { page, errors } = await openApp();

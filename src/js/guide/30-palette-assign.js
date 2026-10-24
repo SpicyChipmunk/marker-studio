@@ -4800,8 +4800,12 @@ function buildGuide(keepPlan) {
   markBuilt();
   saveStatus();
   if (_fresh) colourOffer();
-  // (v323: sections found afresh or edited: an offer kept for the old ones means other sections now)
-  else if (!same) colOffer = null;
+  // (v323: sections found afresh or edited: an offer kept for the old ones means other sections now; and so does the
+  // section Continue would open Focus mode on, v323.1)
+  else if (!same) {
+    colOffer = null;
+    focusAt = null;
+  }
   // (a new guide from your photo goes into the Library straight away, not after the usual pause: a page closed or
   // reloaded just after Build lost it, v287)
   // (v305: once the first Build's bloom is over, 41-bloom.js: about a second, the save's work held up its frames)

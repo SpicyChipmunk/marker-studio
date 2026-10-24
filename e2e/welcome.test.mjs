@@ -134,7 +134,7 @@ after(teardown);
       await haveSet(page);
       for (const v of await onScreen(['wcAdd'])) assert.ok(v.ok, v.id + ' is visible');
       await page.check('#wcSets input[data-i="3"]');
-      assert.match(await page.textContent('#wcAdd'), /^Add \d+ markers$/);
+      assert.match(await page.textContent('#wcAdd'), /^Add \d+ markers( \+ blender)?$/);
       assert.deepEqual(errors, []);
     });
   }

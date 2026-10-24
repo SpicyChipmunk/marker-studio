@@ -6,6 +6,7 @@ import fs, { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFi
 import { build } from '../scripts/build.mjs';
 import { spawnSync } from 'node:child_process';
 import { partFiles } from '../e2e/ci-parts.mjs';
+import { pwImageCheck } from '../e2e/ci-pw-image.mjs';
 import { tmpdir } from 'node:os';
 import path, { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -37,23 +38,28 @@ import vm from 'node:vm';
       encoding: 'utf8',
       env: { ...process.env, CI_TRY_PAUSE: '0' },
     });
-  test('test.yml: each browser kept between runs on the Playwright version, each install tried up to 3 times (the libraries 4, with apt retrying stalls)', () => {
+  test('test.yml: Chromium kept between runs on the Playwright version, each install tried up to 3 times (the libraries 4, with apt retrying stalls); WebKit in Playwright’s own image, nothing installed (v323.1)', () => {
     const wf = read('.github/workflows/test.yml');
     assert.ok(!/--with-deps/.test(wf), 'no installs left without the retry');
-    for (const b of ['chromium', 'webkit']) {
-      assert.match(
-        wf,
-        new RegExp(
-          String.raw`uses: actions/cache@v\d+\n\s+with:\n\s+path: ~/\.cache/ms-playwright\n\s+key: playwright-\$\{\{ runner\.os \}\}-24\.04-${b}-\$\{\{ steps\.pw\.outputs\.v \}\}`,
-        ),
-        b,
-      );
-      assert.ok(wf.includes(`run: bash e2e/ci-try.sh 3 300 npx playwright install ${b}\n`), b);
-      assert.ok(wf.includes(`run: bash e2e/ci-try.sh 4 300 npx playwright install-deps ${b}\n`), b);
-    }
-    assert.equal(wf.match(/require\('playwright\/package\.json'\)\.version/g).length, 2);
-    // (v319) apt's own retries, set before each library install
-    assert.equal(wf.match(/Acquire::Retries "5";.*Acquire::https::Timeout "30";.*80-ci-retries/g).length, 2);
+    assert.match(
+      wf,
+      new RegExp(
+        String.raw`uses: actions/cache@v\d+\n\s+with:\n\s+path: ~/\.cache/ms-playwright\n\s+key: playwright-\$\{\{ runner\.os \}\}-24\.04-chromium-\$\{\{ steps\.pw\.outputs\.v \}\}`,
+      ),
+    );
+    assert.ok(wf.includes('run: bash e2e/ci-try.sh 3 300 npx playwright install chromium\n'));
+    assert.ok(wf.includes('run: bash e2e/ci-try.sh 4 300 npx playwright install-deps chromium\n'));
+    assert.equal(wf.match(/require\('playwright\/package\.json'\)\.version/g).length, 1);
+    // (v319) apt's own retries, set before the library install
+    assert.equal(wf.match(/Acquire::Retries "5";.*Acquire::https::Timeout "30";.*80-ci-retries/g).length, 1);
+    // WebKit: the image, its version checked first, and no installs or apt
+    const wk = wf.slice(wf.indexOf('\n  webkit:'));
+    assert.match(
+      wk,
+      /container:\n\s+image: mcr\.microsoft\.com\/playwright:v[\d.]+-noble\n\s+options: --user 1001\n/,
+    );
+    assert.ok(wk.includes('run: node e2e/ci-pw-image.mjs'));
+    assert.ok(!/playwright install|apt\.conf|sudo /.test(wk), 'nothing installed in the WebKit jobs');
   });
   test('ci-try.sh: a command that works runs once', () => {
     const r = tryRun('3', '5', 'bash', '-c', 'echo ran');
@@ -376,6 +382,10 @@ import vm from 'node:vm';
       for (const m of css.matchAll(/font-size:\s*([\d.]+(?:px|rem))/g))
         assert.ok(allowed.has(m[1]), `${f}: font-size:${m[1]}`);
     }
+  });
+  // (v323.1) GitHub's WebKit jobs run in Playwright's own image: its tag must be the Playwright installed, pinned exactly
+  test('the WebKit jobs’ Playwright image is the Playwright version installed, pinned in package.json', () => {
+    assert.deepEqual(pwImageCheck(new URL('../', import.meta.url)), []);
   });
   // (v323) a var() naming a custom property defined nowhere silently falls back (or inherits): --t-xs, gone since
   // v284, had left three labels unscaled or at the wrong size

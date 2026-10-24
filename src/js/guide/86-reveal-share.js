@@ -269,6 +269,8 @@ function startReveal() {
   resetZoom();
   var rt = document.getElementById('sfRoot');
   if (rt) rt.classList.add('sfrev');
+  // (v323.1: the picture's sharp copy goes at once, 77-sharp)
+  if (_shEl) sharpStale();
   revCloseEl();
   revModal(true);
   // (v309.2: the keyboard on the ✕ at once, as the button that opened Reveal goes inert behind it; Share takes it at
@@ -294,7 +296,8 @@ function revClose() {
   gTab = back.tab;
   enterColor();
   doneAfterFocus();
-  const b = document.getElementById('sfAlongRev');
+  // (v323.1: the Page finished panel's Reveal & share, sfDoneRev; the id looked for had gone, the keyboard left on the page)
+  const b = document.getElementById('sfDoneRev');
   if (b && b.offsetParent !== null)
     try {
       b.focus({ preventScroll: true });

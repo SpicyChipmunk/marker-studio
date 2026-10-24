@@ -1558,4 +1558,19 @@ after(teardown);
     assert.equal(await page.isVisible('#revFin'), true, 'Reveal still open');
     assert.deepEqual(errors, []);
   });
+  // (v323.1: the id looked for had gone in a rename, and the keyboard was left on the page)
+  test('Reveal opened from the finished page, closed: back on Reveal & share', async () => {
+    const { page, errors } = await openApp();
+    await finished(page);
+    await page.click('#sfDoneRev');
+    await page.waitForSelector('#sfRevX', { timeout: 30000 });
+    await page.keyboard.press('Escape');
+    await idle(page);
+    assert.equal(
+      await page.evaluate(() => document.getElementById('sfRoot').classList.contains('sfrev')),
+      false,
+    );
+    assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'sfDoneRev');
+    assert.deepEqual(errors, []);
+  });
 }

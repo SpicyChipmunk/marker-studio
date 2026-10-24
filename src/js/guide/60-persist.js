@@ -1041,11 +1041,14 @@ let curSample = false,
   _removed = false,
   _sampleNoteX = false,
   // (a sample being loaded and built: not yet curSample, but its line under the tabs is coming, so no tip before it)
-  _smpLoad = false;
+  _smpLoad = false,
+  // (v323.1: this guide began as the sample, kept or not: the header keeps room for the sample's line, headGhost)
+  _smpHead = false;
 // the sample as built is noted (after build): changing anything from here keeps it
 function sampleBuilt(nm) {
   _smpLoad = false;
   curSample = true;
+  _smpHead = true;
   // (v313: kept once changed, it's the sample tried until it's printed or renamed: smpTry)
   smpTry = 1;
   _sampleNm = nm;
@@ -1105,6 +1108,7 @@ function saveReset() {
   _gTok++;
   _libBase = null;
   curSample = false;
+  _smpHead = false;
   _sampleBase = null;
   _removed = false;
   _libTs = null;
@@ -1705,7 +1709,7 @@ function saveStText(pe) {
   if (_saveErr)
     return storeNotAnswering() ? 'Not saved \u2014 reload to try again' : 'Not saved \u2014 storage is full';
   // (v323: what the sample's line under the tabs said, here instead: that line filled a phone's panel on every tab)
-  if (!e && curSample && !sampleTouched()) return 'Sample \u00b7 change anything to keep it';
+  if (!e && curSample && !sampleTouched()) return 'Sample \u00b7 change it to keep it';
   if (!e) return sfmode === 'review' || _openEmpty ? 'Not saved yet' : 'Saving\u2026';
   // (v307: only while it's being written; a change waiting its moment to be saved said "Saving…" for 1.5 s after
   // every tick, so Colour along read as always saving)

@@ -1105,3 +1105,44 @@ after(teardown);
     assert.deepEqual(errors, []);
   });
 }
+
+// (v323.1) Colour along zoomed in: the outlines drawn sharp over the part of the picture on the screen, moving with
+// the picture (its transform), gone for Reveal and back at the fit (where its pixels don't show on a 2× screen)
+{
+  test('Colour along, zoomed in: a sharp copy over the picture that moves with it; none for Reveal or at the fit', async () => {
+    const { page, errors } = await openApp({ width: 390, height: 844 });
+    await sampleGuide(page);
+    await page.click('#sfColor');
+    await idle(page);
+    const sh = () =>
+      page.evaluate(() => {
+        const e = document.getElementById('sfSharp'),
+          c = document.getElementById('sfCanvas');
+        return e
+          ? {
+              on: !e.hidden,
+              follows: e.style.transform.startsWith(c.style.transform),
+              next: e.previousSibling === c,
+            }
+          : { on: false };
+      });
+    await pause(page, 600, 'the sharp copy’s moment');
+    assert.equal((await sh()).on, false, 'none at the fit');
+    for (let i = 0; i < 3; i++) {
+      await page.click('#sfZin');
+      await idle(page);
+    }
+    await until(
+      page,
+      () => !!document.getElementById('sfSharp') && !document.getElementById('sfSharp').hidden,
+      null,
+      'drawn sharp',
+    );
+    assert.deepEqual(await sh(), { on: true, follows: true, next: true });
+    await page.click('#sfZrst');
+    await idle(page);
+    await pause(page, 600, 'the sharp copy’s moment');
+    assert.equal((await sh()).on, false, 'gone at the fit again');
+    assert.deepEqual(errors, []);
+  });
+}

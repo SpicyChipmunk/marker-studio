@@ -22,7 +22,7 @@ sheet, paper, VoiceOver, and how it feels.
 
 ## Before you start (5 min)
 
-- [ ] Home's foot says the version you're testing (**v323 · Beta**). If not: "A new version of Marker Studio is
+- [ ] Home's foot says the version you're testing (**v323.1 · Beta**). If not: "A new version of Marker Studio is
       ready" under Home's title → **Reload**.
 - [ ] ★ **Library › Back up** → the share sheet → **Save to Files** → the file is in Files. (A1 needs it.)
 - Have ready: a colouring page on the table to photograph; a PDF of a colouring page in Files; a few Ohuhu and Copic
@@ -170,6 +170,16 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 
 What v318.22 to v318.30 changed that Parts A and B don't already cover.
 
+**New in v323.1**
+
+- [ ] ★ **Colour along, zoomed in:** pinch in on the sample (or tap + three times) → a moment after you stop, the
+      outlines are smooth curves, not pixel steps. Pan and pinch: they move with the picture and sharpen again when
+      you stop. Tick a section: its colour spreads at once (never held back), and the lines round it are smooth again
+      soon after. Zoomed back out to fit (on an iPad), the picture as before.
+- [ ] **A big photo in Focus mode:** no pause as the outlines first turn smooth.
+- [ ] **Reveal from the finished page** (Every section coloured › Reveal & share), closed with ✕ → back on Reveal &
+      share.
+
 **New in v323**
 
 - [ ] ★ **Focus mode on the iPad, sideways:** colour a few sections → the picture zooms the same for each of a marker's
@@ -189,7 +199,7 @@ What v318.22 to v318.30 changed that Parts A and B don't already cover.
       menu; Home's recent guides match.
 - [ ] **Plan:** a section's tip says how many sections its marker colours, outlines the others while it's open, and
       says Running low for a marker you've marked so. The tabs' labels are one style (grey, sentence case); the
-      sample's line is in the header ("Sample · change anything to keep it").
+      sample's line is in the header ("Sample · change it to keep it").
 - [ ] **Try the sample** from Home → "Opening the sample…" at once, its ring turning, then the guide. Any dialog
       (Help, Back up) rises in slightly as it opens (not with Reduce motion).
 - [ ] **A partly coloured page:** photograph one → after Build the offer to mark the coloured sections done; let it go,

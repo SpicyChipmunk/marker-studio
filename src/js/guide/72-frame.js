@@ -751,12 +751,16 @@ function focusOpened() {
   } catch (_) {}
 }
 // (the longest states the status line can show for this guide: Save after a failed first save, and Put back after it
-// was deleted while open, only then, so the header doesn't make room for them on every guide)
+// was deleted while open, only then, so the header doesn't make room for them on every guide; v323.1: the sample's
+// line, while the guide began as the sample, so its header doesn't shrink once the sample's changed and kept)
 function headGhost() {
   return (
     '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Saved in your Library ✓</span></div><div class="sfgsg" aria-hidden="true"><span class="sfsavest">Not saved — storage is full</span>' +
     (_saveErr && !libEntry() ? '<button type="button" class="sfsave" tabindex="-1">Save</button>' : '') +
     '</div>' +
+    (_smpHead
+      ? '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Sample \u00b7 change it to keep it</span></div>'
+      : '') +
     (_removed
       ? '<div class="sfgsg" aria-hidden="true"><span class="sfsavest">Removed from your Library</span><button type="button" class="sfsave" tabindex="-1">Put back</button></div>'
       : '') +

@@ -264,7 +264,7 @@ function focusSide() {
     map.type = 'button';
     map.id = 'sfFocMap';
     map.className = 'sffocmap';
-    map.setAttribute('aria-label', 'Show the whole page');
+    map.setAttribute('aria-label', 'Where you are: show the whole page');
     map.innerHTML = '<span class="sffmh">Where you are</span><canvas></canvas>';
     map.addEventListener('click', function () {
       resetZoom();
@@ -893,6 +893,8 @@ function focusParts() {
     cv && cv.getAttribute('tabindex') != null ? cv : null,
     document.getElementById('sfZoomCtl'),
     document.getElementById('sfFocBot'),
+    // (v323.1: the side panel's Where you are, under them; hidden, it has no box and is passed over)
+    document.getElementById('sfFocMap'),
   ].filter(function (x) {
     return !!x;
   });

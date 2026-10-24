@@ -1377,7 +1377,7 @@ after(teardown);
     assert.equal(h.name, await page.evaluate(() => __mstest.curName));
     assert.deepEqual(
       [h.status, h.save, h.surprise, h.more],
-      ['Sample · change anything to keep it', false, true, true],
+      ['Sample · change it to keep it', false, true, true],
       'Plan: the sample, not in the Library yet (no Save: v285)',
     );
     // Reset progress is only in Colour along's ⋯ menu (see the menu's test below), never a button in Plan
@@ -1405,7 +1405,7 @@ after(teardown);
     h = await head(page);
     assert.deepEqual(
       [h.surprise, h.save, h.status],
-      [false, false, 'Sample · change anything to keep it'],
+      [false, false, 'Sample · change it to keep it'],
       'Edit sections',
     );
     // (v288: nothing edited, so the bar goes back to the Plan)
