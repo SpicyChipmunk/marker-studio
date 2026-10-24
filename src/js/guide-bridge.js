@@ -533,6 +533,8 @@ function sfSaveDesign(d) {
   if (d.mustExist && !had) return Promise.resolve(null);
   if (d.id && !had) libUnpend(id);
   storeErr.last = '';
+  // (v323) a guide's first save, in flight until its row is written: firstKeep keeps the row aside if the page goes
+  if (!had) _firstFly = { id: id, d: d };
   return (
     had
       ? IDB.get('guide-' + id).catch(function () {
@@ -562,6 +564,7 @@ function sfSaveDesign(d) {
           }
           // (the app's own storage is full: said as such, v304)
           storeErr.last = 'QuotaExceededError';
+          firstDone(id);
           return null;
         }
         askPersist();
@@ -570,10 +573,12 @@ function sfSaveDesign(d) {
         // wrote: else, the page stopped before its next save, the next start took that row for another tab's save and
         // threw the copy away. Another tab's copy, or a later save from another tab, still fails the check)
         leaveRebase(id, leaveAt, +meta.ts);
+        firstDone(id);
         return id;
       });
     })
     .catch(function (e) {
+      firstDone(id);
       storeErr.last = (e && e.name) || 'Error';
       return null;
     });
@@ -686,6 +691,72 @@ function sfSaveDesignNow(d) {
     return false;
   }
 }
+// (v323) A new guide's first save writes the guide to the database, then its row to localStorage. A reload or a tab
+// closed in between (a Build's first save, or the one begun as the page went) lost the row, though the database write
+// landed: the guide was only offered later on Home as lost. As the page goes, the row of a first save still in flight
+// is kept aside at once (localStorage is written there and then); at the next start it goes into the Library, and out
+// again if the database turns out not to have the guide.
+const FIRST_KEY = 'ms-guide-first';
+let _firstFly = null;
+function firstKeep() {
+  if (!_firstFly) return;
+  try {
+    localStorage.setItem(
+      FIRST_KEY,
+      JSON.stringify({ id: _firstFly.id, meta: guideMeta(_firstFly.d, _firstFly.id) }),
+    );
+  } catch (_) {}
+}
+function firstDone(id) {
+  if (_firstFly && _firstFly.id === id) _firstFly = null;
+  try {
+    const j = JSON.parse(localStorage.getItem(FIRST_KEY) || 'null');
+    if (j && j.id === id) localStorage.removeItem(FIRST_KEY);
+  } catch (_) {}
+}
+window.addEventListener('beforeunload', firstKeep);
+window.addEventListener('pagehide', firstKeep);
+function sfFirstApply() {
+  let j = null;
+  try {
+    j = JSON.parse(localStorage.getItem(FIRST_KEY) || 'null');
+    localStorage.removeItem(FIRST_KEY);
+  } catch (_) {}
+  if (
+    !j ||
+    !j.meta ||
+    typeof j.meta !== 'object' ||
+    j.meta.type !== 'guide' ||
+    !(+j.id > 0) ||
+    j.meta.id !== j.id
+  )
+    return;
+  if (state.saved.some((s) => s.id === j.id)) return;
+  state.saved.unshift(j.meta);
+  save(true);
+  IDB.hold(
+    IDB.getNow('guide-' + j.id)
+      .then(
+        function (pl) {
+          return !!pl;
+        },
+        function () {
+          // (the database didn't answer: the row stays, as a guide that won't open says why)
+          return true;
+        },
+      )
+      .then(function (ok) {
+        if (ok) return;
+        const ix = state.saved.findIndex((s) => s.id === j.id && s.type === 'guide');
+        if (ix < 0) return;
+        state.saved.splice(ix, 1);
+        save(true);
+        if (typeof renderRecent === 'function') renderRecent();
+        if (typeof renderSaved === 'function') renderSaved();
+      }),
+  );
+}
+sfFirstApply();
 // at start: changes kept as the page went away go into their guide (reads of the store wait meanwhile). Not when the
 // row has changed since (another tab saved it), or the stored guide's pictures aren't the ones they were made on.
 function sfLeaveApply() {

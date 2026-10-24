@@ -3669,6 +3669,14 @@ async function _exportPDF() {
     _b.textContent = 'Preparing…';
     _b.disabled = true;
   }
+  // (v318.25) what is printed and the guide it's from: the choices as Download PDF was tapped. They stay live while
+  // it's written, and a change to Pages then (or another guide opened) had named the file, and marked the sample
+  // printed, after that instead. (v323: taken before the wait below, which v320's fonts made longer: a choice tapped
+  // in that moment had been printed, and named, in place of the one Download was tapped for)
+  const what = pdfWhat,
+    name = curName,
+    gen = loadGen,
+    opts = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend];
   // (a moment for "Preparing…" to show: the pages are laid out in one go, v287; v320: the headings' serif loaded
   // meanwhile, as the saved image's fonts are)
   await Promise.all([
@@ -3677,18 +3685,20 @@ async function _exportPDF() {
     }),
     showFonts(),
   ]);
-  // (v318.25) what is printed and the guide it's from, as the pages are laid out: the choices stay live while it's
-  // written, and a change to Pages then (or another guide opened) had named the file, and marked the sample printed,
-  // after that instead
-  const what = pdfWhat,
-    name = curName,
-    gen = loadGen;
   try {
-    const P = PAPERS[paper] || PAPERS.letter,
+    // (laid out with the choices as they were; the sheet's own, changed meanwhile, put back straight after)
+    const now = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend];
+    let pages, kinds;
+    [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend] = opts;
+    try {
       // (v307) each page drawn in turn, the button saying which (the Print sheet's, opened again meanwhile too)
-      pages = buildPDFPages(false, true),
+      pages = buildPDFPages(false, true);
       // (v318.35: the pages in colour as JPEG; the kinds copied, as the sheet's summary re-lays them meanwhile)
-      kinds = _pdfKinds.slice(),
+      kinds = _pdfKinds.slice();
+    } finally {
+      [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend] = now;
+    }
+    const P = PAPERS[opts[2]] || PAPERS.letter,
       blob = await canvasesToPDF(
         pages,
         P[0],

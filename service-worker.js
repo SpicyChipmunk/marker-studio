@@ -1,4 +1,4 @@
-const CACHE='marker-studio-v322';
+const CACHE='marker-studio-v322.1';
 // (v313) PDF.js, for opening a PDF (vendor/pdfjs/<version>/): a cache of its own, named after its version, which a new
 // release leaves alone, so its 2 MB are downloaded once, not with every update. Stored when the app is installed, as
 // far as it can be (not waiting for it: the app works without it), and kept as it's used.

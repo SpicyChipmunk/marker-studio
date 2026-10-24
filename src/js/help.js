@@ -6,6 +6,10 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v322.1',
+    t: 'Two fixes. A new guide stays in your Library if the app is closed or reloaded just as it’s first being saved. A PDF is written, and named, as you’d set it when you tapped Download, even if you change the choices while it’s being made.',
+  },
+  {
     v: 'v322',
     t: 'Opened from your Home Screen, Marker Studio now starts with its drop colouring itself in, section by section, before Home appears. It’s about half a second and never holds you up; with Reduce motion on there’s none.',
   },

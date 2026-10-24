@@ -1379,6 +1379,47 @@ after(teardown);
     }
     assert.equal(tried, 1, 'reloaded before the save began by itself');
   });
+  // (v323) A new guide's first save writes the guide to the database, then its row: a reload in between (GitHub run 69:
+  // a fast machine reloaded as the first save was writing) lost the row, the guide only offered later as lost. Here
+  // each database write answers 4 s late, so the reload always comes in between.
+  test('a reload while a new guide’s first save is writing keeps it in the Library', async () => {
+    const buf = await readFile(new URL('./fixtures/letter-page.png', import.meta.url));
+    const { page, errors } = await openApp({ width: 820, height: 1180, storage: ONBOARDED });
+    await page.click('#mSections');
+    await idle(page);
+    await page.setInputFiles('#sfFile', { name: 'letter-page.png', mimeType: 'image/png', buffer: buf });
+    await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 60000 });
+    await idle(page);
+    await page.evaluate(() => {
+      const put = IDB.put;
+      IDB.put = function (k, v) {
+        return put.call(IDB, k, v).then((x) => new Promise((res) => setTimeout(() => res(x), 4000)));
+      };
+    });
+    await page.click('#sfBuild');
+    await page.waitForFunction(() => __mstest.assignData && __mstest.sfmode === 'guide', null, {
+      timeout: 60000,
+    });
+    await page.waitForTimeout(2500);
+    assert.equal(
+      await page.evaluate(() => state.saved.filter((s) => s.type === 'guide').length),
+      0,
+      'still writing',
+    );
+    await page.reload();
+    await page.waitForFunction(() => typeof state !== 'undefined' && document.readyState === 'complete');
+    await idle(page);
+    const r = await page.evaluate(async () => {
+      const g = state.saved.filter((s) => s.type === 'guide');
+      return {
+        n: g.length,
+        stored: g.length ? !!(await IDB.get('guide-' + g[0].id)) : false,
+        aside: localStorage.getItem('ms-guide-first'),
+      };
+    });
+    assert.deepEqual(r, { n: 1, stored: true, aside: null });
+    assert.deepEqual(errors, []);
+  });
   // The Photo pattern's lighting correction (white balance from the photo's paper) was saved rounded to 4 places, so a
   // reopened guide's corrected photo, and shading lit from it, came out a level or two off in a few pixels.
   test('a Photo pattern guide’s lighting correction reopens exactly as it was saved', async () => {

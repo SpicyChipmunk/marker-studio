@@ -2825,3 +2825,18 @@ From Fable's design review (round R32, V1), built in two parts and compared scre
   `src/assets/icon.svg`.
 - Tests: the animation on and gone, none with Reduce motion or in a tab (home-2); its markup and gate (app).
 - Cache bumped to `marker-studio-v322`.
+
+# Changes — v322.1 (from v322's run on GitHub)
+
+- **A new guide lost from the Library by a reload (a long-standing race, found by GitHub run 69):** a guide's first save writes
+  the guide to the database, then its row in the Library. A reload or a tab closed in between (a fast machine reloaded
+  just as Build's first save was writing) kept the guide in the database but not its row: the Library didn't show it,
+  and Home only offered it later as a lost guide. As the page goes, a first save still writing now keeps its row aside
+  at once (`ms-guide-first`); the next start puts it in the Library, and takes it out again if the database turns out
+  not to have the guide (`src/js/guide-bridge.js`: firstKeep, sfFirstApply). New test (library-2): each database write
+  answers 4 s late, so the reload always lands in between; it fails on v322 (`n: 0`).
+- **Download PDF used the Pages choice changed while it was being written (v320, run 69's other failure):** the PDF
+  read its choices after a short wait that v320's font loading made longer, so a change tapped in that moment was
+  printed and named instead. The choices are now taken as Download is tapped (`src/js/guide/90-export.js`); print-2's
+  X3 G1 test caught it.
+- Cache bumped to `marker-studio-v322.1`.
