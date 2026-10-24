@@ -2032,6 +2032,8 @@ function segEnd() {
 function segPlace() {
   // (v318.15: the new picture's sections are in place: render() draws them, not the photo shown meanwhile)
   _preview = false;
+  // (v320: and the wait is over: the quick check takes its place)
+  waitEnd();
   labelTail();
   speckClean();
   adj = null;
@@ -2499,6 +2501,10 @@ const SEG_STEP_NAMES = [
 function segRun(prep, commit, hide) {
   const my = ++segGen;
   segBusySet(true, hide, !!prep);
+  // (v320: a new picture's sections being found: the wait's list back if the corner handles had it aside)
+  // (a picture with no page to find, a scan or a download, goes straight to its sections)
+  if (prep) waitPause(false);
+  if (_wait) waitAt(2);
   let pic = null;
   // (v318.36: the 'put in place' step's place, where the run goes on once the worker has found the sections)
   const PLACE = SEG_STEP_NAMES.indexOf('put in place');
@@ -2570,6 +2576,7 @@ function segRun(prep, commit, hide) {
     const fail = function (e) {
         if (my === segGen) {
           segBusySet(false);
+          waitEnd();
           // (v318.15: a new photo shown meanwhile, photoPreview, goes: the open picture is drawn again as it was)
           if (_preview) {
             _preview = false;

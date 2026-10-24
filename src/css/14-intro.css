@@ -1,0 +1,59 @@
+/* (v322) The opening animation, Home Screen app only (index.template.html decides, before the page is drawn): the
+   launch screen's picture (the app's ground, the drop not yet coloured, launch/*.png) at the same size and place, its
+   sections coloured in one after another top to bottom, then the whole fading off Home, which loads underneath
+   meanwhile. Each section is its own layer faded in (opacity, run off the main thread), so the app's script loading
+   doesn't stall it. Never with Reduce motion. A tap on it ends it at once, and goes no further (Home under it can't be
+   seen yet). The timing is here, the end in the template's script. */
+.msintro {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: none;
+  background: #0b0b0e;
+}
+.msintro.out {
+  pointer-events: none;
+}
+html.msintro-on .msintro {
+  display: block;
+}
+/* (as the launch screens draw it, scripts/launch.py: 24% of the screen's shorter side, rounded 22.5%, centred) */
+.msinicon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(min(100vw, 100vh) * 0.24);
+  height: calc(min(100vw, 100vh) * 0.24);
+  border-radius: 22.5%;
+  overflow: hidden;
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s ease-in;
+}
+.msinl {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.msinf {
+  opacity: 0;
+  will-change: opacity;
+  animation: msinf 0.18s ease-out calc(40ms + var(--i, 0) * 20ms) forwards;
+}
+@keyframes msinf {
+  to {
+    opacity: 1;
+  }
+}
+.msintro.out {
+  opacity: 0;
+  transition: opacity 0.16s ease-in;
+}
+.msintro.out .msinicon {
+  transform: translate(-50%, -50%) scale(1.06);
+}
+@media (prefers-reduced-motion: reduce) {
+  html.msintro-on .msintro {
+    display: none;
+  }
+}

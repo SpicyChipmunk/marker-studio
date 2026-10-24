@@ -658,6 +658,11 @@ function mount() {
     resetZoom();
   });
   document.getElementById('sfFull').addEventListener('click', enterFull);
+  // (v320) Focus mode's Colours sheet open: a tap on the frame round the page closes it too, as one on the page does
+  // (held sideways the page is narrower than its column, beside the rail)
+  sfView.addEventListener('click', function (e) {
+    if (focus && focusSheet && e.target === sfView) focusSheetSet(false);
+  });
   document.getElementById('sfFullX').addEventListener('click', exitFull);
   // focus mode, the screen another shape: the picture fitted and framed again for it
   // (v318.30: from the resize handler, and from settleNow when the settled size differs)

@@ -65,7 +65,10 @@ function chrome() {
         // blender owned: it, still counted, so the card doesn't ask to set up markers that are there
         // (v318.28) the colours as a set's size counts them (setKeys): Ohuhu's blender aside, Copic's 0 counted, as it
         // is in its set (Ciao 36 Set B, All Copic markers 358). inkKeys had made All Copic markers 357 and Set B 35
-        const n = setKeys([...state.owned]).length || state.owned.size;
+        // (v320, Ben's rule) a count headed "markers" is every marker owned, the Colorless Blender too (121 for Honolulu
+        // 120), as Markers and the Swatch chart count them; a count headed "colours" is the colours a guide can use
+        // (the guide's card: "Built from your 120 colours")
+        const n = state.owned.size;
         hc.classList.toggle('attn', !n);
         const sb = hc.querySelector('.hcsub');
         if (sb) sb.textContent = n ? n + (n === 1 ? ' marker' : ' markers') : 'Set up your markers';
@@ -110,7 +113,16 @@ function chrome() {
   swapBtn.style.display = rnd ? '' : 'none';
   // (v318.34) "Remove this one": it takes the latest draw only (G3; it said "Remove", and three ways to remove read
   // as one). Clear is "Clear all" here, as it empties the pile (disarm, events.js)
-  undoBtn.textContent = rnd ? 'Remove this one' : 'Undo';
+  // (v320, Ben's decision) "Remove": "Remove this one" wrapped onto two lines on an iPad and a phone; what it removes
+  // is still said in full to a screen reader and as its tip
+  undoBtn.textContent = rnd ? 'Remove' : 'Undo';
+  if (rnd) {
+    undoBtn.setAttribute('aria-label', 'Remove this one (the latest draw)');
+    undoBtn.title = 'Remove the latest draw';
+  } else {
+    undoBtn.removeAttribute('aria-label');
+    undoBtn.removeAttribute('title');
+  }
   if (resetBtn.dataset.arm !== '1') resetBtn.textContent = rnd ? 'Clear all' : 'Clear';
   // (v318.25) Photo has Undo too, while there's a step before its palette (photoUndoable): hidden there, From photo had
   // cut off every palette made before it

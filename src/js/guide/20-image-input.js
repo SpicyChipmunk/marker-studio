@@ -6,6 +6,8 @@
 function resetForNewPicture() {
   // (v318.14: sections still being found for the picture before go with it)
   segStop();
+  // (v320: a wait for a photo before this ends; a new photo's own starts again in detect)
+  waitEnd();
   // (v318.35: Treat hatching as one section starts again from the picture's own default, pgProceed)
   hatchOne = true;
   hatchSet = false;
@@ -121,6 +123,7 @@ function resetForNewPicture() {
   focus = false;
   var _rt = document.getElementById('sfRoot');
   if (_rt) _rt.classList.remove('sffoc');
+  railSync();
   if (sfView) sfView.style.paddingTop = sfView.style.paddingBottom = '';
   assignData = null;
   hlKey = null;
@@ -1115,14 +1118,26 @@ function imgCancel() {
   clearTimeout(_imgT);
   _imgT = 0;
 }
-var SAMPLES = ['@@dataurl(assets/sample-jellyfish.png)'],
+// (v320) The sample is Ben's two jellyfish (src/assets/sample-dual.png, his drawing), and his own page of it coloured
+// (sample-dual-coloured.webp: photographed, lined up with the drawing and its paper evened) is what the app makes: the
+// start cards' "after" and the welcome's picture. Under test (window.__MS_TEST) the single jellyfish of v284–v319 stays
+// the sample, as the tests were written for (window.__MS_SAMPLE_NEW: the new one under test too)
+var SAMPLE_OLD = !!(window.__MS_TEST && !window.__MS_SAMPLE_NEW),
+  SAMPLES = SAMPLE_OLD ? ['@@dataurl(assets/sample-jellyfish.png)'] : ['@@dataurl(assets/sample-dual.png)'],
+  // (the guide's name: "Sample jellyfish", both; "Sample dual jellyfish" read as a file name)
   SAMPLE_NAMES = ['jellyfish'],
+  // (the picture's shape, for the welcome's frame before it has loaded)
+  SAMPLE_AR = SAMPLE_OLD ? '568 / 1500' : '921 / 1200',
+  // (minPx(17) = 5)
+  SAMPLE_MIN_POS = 17,
   sampleIdx = 0,
   // (v300) the sample page coloured from its guide, codes on it: the start cards' picture of what the app makes
-  SAMPLE_DONE = '@@dataurl(assets/sample-coloured.webp)',
+  SAMPLE_DONE = SAMPLE_OLD
+    ? '@@dataurl(assets/sample-coloured.webp)'
+    : '@@dataurl(assets/sample-dual-coloured.webp)',
   // (v306) the same, without its codes: the welcome's picture (src/assets/sample-plain.webp, the sample's guide as Save
-  // image makes it with Codes unticked, 340 px wide)
-  SAMPLE_PLAIN = '@@dataurl(assets/sample-plain.webp)';
+  // image makes it with Codes unticked, 340 px wide); v320: Ben's coloured page, which has none
+  SAMPLE_PLAIN = SAMPLE_OLD ? '@@dataurl(assets/sample-plain.webp)' : SAMPLE_DONE;
 // the welcome's picture: the sample page (its white made the guide's paper, its black the guide's lines, so the coloured
 // guide lies exactly over it) and its guide without codes. A canvas, drawn once the page has loaded: only for a first run
 function samplePics() {
@@ -1141,7 +1156,11 @@ function samplePics() {
     g.fillRect(0, 0, c.width, c.height);
   };
   img.src = SAMPLES[0];
-  return { line: c, plain: SAMPLE_PLAIN };
+  return { line: c, plain: SAMPLE_PLAIN, ar: SAMPLE_AR };
+}
+// (v320) the sample's two pictures, for the empty Library's
+function sampleSrc() {
+  return { line: SAMPLES[0], done: SAMPLE_DONE };
 }
 // the start cards' before and after (the page, then its guide), until there's a guide of one's own
 function sampleBA() {
@@ -1177,6 +1196,9 @@ function _loadSample() {
       // (v318.13) the sample keeps Min section size as it was: a clean drawing at its own size, whose smallest real
       // sections are under 1 mm on a page that size (its 166 sections at the default)
       minAuto = false;
+      // (v320: Ben's two jellyfish have pinholes where their lines meet, white gaps of 5 to 10 pixels at the sample's
+      // size that he counts as sections: Min section size 5 px for it, so all 311 are in the guide)
+      if (!SAMPLE_OLD) minPos = SAMPLE_MIN_POS;
       // (a palette held for the next new guide is this one's, the sample too, v289)
       takeNextPal();
       pgOrig = null;
@@ -1248,6 +1270,8 @@ function _loadImage(file) {
   }
   note('Reading photo\u2026');
   const gen = ++loadGen;
+  // (v320: the wait's steps from the moment the photo is chosen)
+  waitBegin(1);
   let url = null;
   // the lens's focal length from the photo's camera data, for the page's true shape when straightening
   const lens =
@@ -1273,6 +1297,7 @@ function _loadImage(file) {
       }
       if (gen !== loadGen) return;
       if (!img.width || !img.height) {
+        waitEnd();
         note('That image looked empty \u2014 try another file.');
         return;
       }
@@ -1316,8 +1341,10 @@ function _loadImage(file) {
         // whose controls' bar is drawn afresh: 72-frame dockBar), then a paint before the page is found
         photoPreview(srcImg);
         segBusySet(true, true, true);
+        waitBegin(1);
       } catch (err) {
         segBusySet(false);
+        waitEnd();
         note(
           errNote('Couldn’t process that photo. Try it again, or another photo.', 'Processing a photo', err),
         );
@@ -1333,6 +1360,7 @@ function _loadImage(file) {
           if (tok !== loadGen) return;
           segBusySet(false);
           _preview = false;
+          waitEnd();
           note(
             errNote(
               'Couldn’t process that photo. Try it again, or another photo.',
@@ -1356,6 +1384,7 @@ function _loadImage(file) {
         url = null;
       }
       if (gen !== loadGen) return;
+      waitEnd();
       note('That file couldn\u2019t be opened as a picture \u2014 try a JPEG or PNG.');
     };
     img.src = src;
@@ -1366,7 +1395,9 @@ function _loadImage(file) {
       if (gen === loadGen) go(fr.result);
     };
     fr.onerror = function () {
-      if (gen === loadGen) note('Couldn’t read that file.');
+      if (gen !== loadGen) return;
+      waitEnd();
+      note('Couldn’t read that file.');
     };
     fr.readAsDataURL(file);
   }
@@ -1385,6 +1416,84 @@ function geoSet0(o) {
     if ('crop' in o) cropRect = o.crop;
     reprocessImg();
   });
+}
+// (v320, D2a; G1-1) The wait after a photo is chosen. The page had sat at 30% for about 3 s with nothing on it: the tab
+// switch's fade (.swap, events.js) froze on its first frame while the photo was read (Safari), and the steps said
+// nothing. Now the fade is skipped, the photo shows at full strength with a slow light passing over it, and a short
+// list says what's being done, each step ticked as it really ends: the page found (pgBegin, 22-straighten), the
+// sections found (segPlace, 10-segment), after which the quick check asks "Looks right?" and Build chooses the
+// markers. While the corner handles wait for the person the list steps aside (waitPause). Each step is said to a
+// screen reader as it starts. No percentage: the app can't know how far along a step is.
+let _wait = 0;
+const WAIT_STEPS = ['Finding the page', 'Finding the sections'];
+function waitEl() {
+  let el = document.getElementById('sfWait');
+  if (!el && workEl) {
+    el = document.createElement('div');
+    el.id = 'sfWait';
+    el.className = 'sfwait';
+    el.setAttribute('aria-hidden', 'true');
+    const v = document.getElementById('sfView');
+    if (v && v.parentNode === workEl) v.after(el);
+    else workEl.appendChild(el);
+  }
+  return el;
+}
+function waitDraw() {
+  const el = waitEl();
+  if (!el) return;
+  el.innerHTML =
+    '<ol class="sfwaitl">' +
+    WAIT_STEPS.map(function (s, i) {
+      const n = i + 1,
+        st = n < _wait ? 'done' : n === _wait ? 'now' : '';
+      return (
+        '<li class="' +
+        st +
+        '"><span class="sfwaitd" aria-hidden="true">' +
+        (st === 'done' ? '\u2713' : '') +
+        '</span>' +
+        WAIT_STEPS[i] +
+        (st === 'now' ? '\u2026' : '') +
+        '</li>'
+      );
+    }).join('') +
+    '</ol>';
+}
+// step: 1 the page, 2 the sections (a scan, a PDF or a picture that isn't a camera photo skips the page)
+function waitAt(step) {
+  if (!_wait && step !== 1) {
+    if (!root.classList.contains('sfwaiting')) return;
+  }
+  if (step <= _wait) return;
+  _wait = step;
+  root.classList.add('sfwaiting');
+  root.classList.remove('sfwaitpause');
+  waitDraw();
+  sayLive(WAIT_STEPS[step - 1] + '\u2026');
+}
+function waitBegin(step) {
+  // (no fade into the Guide screen for a new picture: it froze the page at 30% while the photo was read)
+  const w = document.querySelector('.wrap');
+  if (w) w.classList.remove('swap');
+  // (begun already for this photo, when it was chosen: not said again as it shows)
+  if (_wait && root.classList.contains('sfwaiting')) return;
+  _wait = 0;
+  root.classList.add('sfwaiting');
+  waitAt(step || 1);
+  renderHead();
+}
+function waitPause(on) {
+  if (!_wait) return;
+  root.classList.toggle('sfwaitpause', !!on);
+}
+function waitEnd() {
+  if (!_wait && !root.classList.contains('sfwaiting')) return;
+  _wait = 0;
+  root.classList.remove('sfwaiting', 'sfwaitpause');
+  const el = document.getElementById('sfWait');
+  if (el) el.innerHTML = '';
+  renderHead();
 }
 // (v318.15) A new photo shown on the picture as soon as it's opened, while its page and sections are found: the
 // previous guide's picture had stayed on screen, under "Detecting sections…". Until its sections are in place

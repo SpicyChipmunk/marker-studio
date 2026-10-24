@@ -137,7 +137,59 @@ function nextUndone(from) {
 }
 // (sheet: with the Colours sheet's room taken off, for framing the section above it: not for the picture's size, which
 // stays the same whether the sheet is open or not, v303)
+// (v320) Focus mode's side rail: on an iPad held sideways (RAIL_MQ) the bar, the marker, Done, Back and Skip and the
+// zoom buttons stand in a column at the side (the right, or the left: Swap sides, remembered on this device), and the
+// picture has the screen's whole height beside it (CSS: html.sfrailon, sfrailL; the rail's width --railW). The DOM
+// order, and so the keyboard's, is as before. The Colours sheet, the hand-off card and the toasts keep to the
+// picture's column.
+var RAIL_MQ = '(orientation: landscape) and (min-height: 600px) and (min-width: 900px)';
+function focusRail() {
+  return !!(
+    focus &&
+    root &&
+    root.classList.contains('sffoc') &&
+    window.matchMedia &&
+    window.matchMedia(RAIL_MQ).matches
+  );
+}
+function railLeft() {
+  try {
+    return localStorage.getItem('ms-foc-rail') === 'left';
+  } catch (_) {
+    return false;
+  }
+}
+function railSync() {
+  var on = focusRail(),
+    de = document.documentElement;
+  de.classList.toggle('sfrailon', on);
+  de.classList.toggle('sfrailL', on && railLeft());
+}
+function railSwap() {
+  try {
+    localStorage.setItem('ms-foc-rail', railLeft() ? 'right' : 'left');
+  } catch (_) {}
+  railSync();
+  _focFit = null;
+  focusRefit();
+}
 function focusGeo(sheet) {
+  if (focusRail()) {
+    var rb = document.querySelector('.sffocbar'),
+      rw = rb ? rb.offsetWidth : 340,
+      L = document.documentElement.classList.contains('sfrailL'),
+      vw0 = sfView.clientWidth,
+      vh0 = sfView.clientHeight,
+      sh0 = sheet && focusSheet ? document.getElementById('sfFocSheet') : null,
+      b0 =
+        sh0 && sh0.offsetHeight
+          ? Math.max(0, sfView.getBoundingClientRect().bottom - sh0.getBoundingClientRect().top)
+          : 0,
+      aw0 = Math.max(40, vw0 - rw),
+      ah0 = Math.max(40, vh0 - b0),
+      x0 = L ? rw : 0;
+    return { t: 0, b: b0, x0: x0, cx: x0 + aw0 / 2, cy: ah0 / 2, aw: aw0, ah: ah0 };
+  }
   var bar = document.querySelector('.sffocbar'),
     bot = document.querySelector('.sffocbot'),
     t = bar ? bar.offsetHeight : 0,
@@ -151,7 +203,7 @@ function focusGeo(sheet) {
   if (sh && sh.offsetHeight)
     b = Math.max(b, sfView.getBoundingClientRect().bottom - sh.getBoundingClientRect().top);
   var ah = Math.max(40, vh - t - b);
-  return { t: t, b: b, cx: vw / 2, cy: t + ah / 2, aw: vw, ah: ah };
+  return { t: t, b: b, x0: 0, cx: vw / 2, cy: t + ah / 2, aw: vw, ah: ah };
 }
 function focusZoomFor(l) {
   var g = focusGeo(true);
@@ -391,8 +443,8 @@ function handFrame(u, el) {
         x1: cr.right - vr.left + 8,
         y1: cr.bottom - vr.top + 8,
       },
-      // the room the card leaves, in the view
-      R = { x0: 0, y0: g.t, x1: g.aw, y1: g.t + g.ah };
+      // the room the card leaves, in the view (v320: beside the rail, held sideways)
+      R = { x0: g.x0, y0: g.t, x1: g.x0 + g.aw, y1: g.t + g.ah };
     if (side === 'top') R.y0 = c.y1;
     else if (side === 'bot') R.y1 = c.y0;
     else if (side === 'left') {
@@ -504,6 +556,10 @@ function focusDone() {
     renderFocusUI();
     return;
   }
+  // (v320: its colour spreads from the tap, or from its label for Done)
+  var sp = spreadBegin(l);
+  // (v321: the next Done draws its tick, renderFocusUI)
+  focusDone.at = performance.now();
   stepSet(l, bits, true);
   // (the page's start date, and its finish, as a tick anywhere else sets them, v287)
   progStamp();
@@ -516,6 +572,7 @@ function focusDone() {
     nx = nextUndone(focusPos);
   if (nx < 0) finishFocus();
   else focusNext(nx, from);
+  spreadRun(sp);
 }
 function focusBack() {
   handClose(false);
@@ -599,6 +656,11 @@ function focusAllOfColour() {
     });
 }
 // (v308: closing it goes back to Colour along, revClose; before, it left you on the Plan's Share tab)
+// (v320, P2) the finished list's bar: Share & print, the Plan's tab for the PDF, the saved image and the guide file
+function shareFromColour() {
+  exitColor();
+  planTab('share');
+}
 function revealFromColour() {
   if (focus) exitFocus();
   const back = { tab: gTab };
@@ -772,7 +834,9 @@ function renderFocusUI() {
     nm.removeAttribute('data-say');
     sub.textContent = N && dn >= N ? finishLine() : dn + ' of ' + N + ' sections coloured';
     bot.innerHTML =
-      '<button id="sfFBack" aria-label="Back">← Back</button><button id="sfFReveal" class="fdone">' +
+      '<button id="sfFBack" aria-label="Back">' +
+      icNav(-1) +
+      ' Back</button><button id="sfFReveal" class="fdone">' +
       ic('sparkles') +
       ' Reveal &amp; share</button>';
   } else {
@@ -848,11 +912,22 @@ function renderFocusUI() {
     bot.innerHTML =
       '<button id="sfFBack" aria-label="Back"' +
       (focusPos <= 0 && !focusHist.length ? ' disabled' : '') +
-      '><span aria-hidden="true">←</span> Back</button><button id="sfFDone" class="fdone' +
+      '>' +
+      icNav(-1) +
+      ' Back</button><button id="sfFDone" class="fdone' +
       (isDone ? ' undo' : '') +
+      // (v321: a tick that draws itself just after a Done, as the next section's Done comes up; not with Reduce motion,
+      // 05-focus.css)
+      (!isDone && focusDone.at && performance.now() - focusDone.at < 600 ? ' fdtick' : '') +
       '">' +
-      (isDone ? ic('undo-2') + ' Undo' : '<span aria-hidden="true">✓</span> Done') +
-      '</button><button id="sfFSkip">Skip <span aria-hidden="true">→</span></button>';
+      (isDone
+        ? ic('undo-2') + ' Undo'
+        : '<svg class="fdck" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 12.5l5 5L19.5 7"/></svg> Done') +
+      '</button><button id="sfFSkip">Skip ' +
+      icNav(1) +
+      '</button>';
+    // (drawn once: a redraw of the bar while the next section settles doesn't start it again)
+    if (!isDone) focusDone.at = 0;
   }
   var q = function (id, fn) {
     var e = document.getElementById(id);

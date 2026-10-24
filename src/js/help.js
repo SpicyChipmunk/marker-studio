@@ -6,6 +6,18 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v322',
+    t: 'Opened from your Home Screen, Marker Studio now starts with its drop colouring itself in, section by section, before Home appears. It’s about half a second and never holds you up; with Reduce motion on there’s none.',
+  },
+  {
+    v: 'v321',
+    t: 'More finishing touches. Tap page 1’s picture in the Print sheet to see every page as it will print, swiping between them. Opened from your Home Screen, the app can now show its icon while it starts, instead of a black screen. Buttons press in under your finger, the ways back and on are chevrons, and in Focus mode each Done’s tick draws itself in. A finished page’s numbers count up. The keyboard’s focus ring is light violet and fits what it’s on. The beta tasks card on Home is quieter, with a ring for how far you’ve got.',
+  },
+  {
+    v: 'v320',
+    t: 'A more finished look. The tab you’re on and Home’s tiles each have a colour of their own, a choice you’ve made shows in a quiet grey, and green means done. On an iPad the page sits on the screen like a sheet of paper, and held sideways Focus mode puts its buttons in a column beside the picture (Swap sides moves it). The Library shows your guides as covers, with a ring for how far you’ve coloured. A finished page gets a card with the day you finished, its numbers and its markers. The printout has a cleaner heading, footer and colour key, and the Print sheet shows page 1. Tick a section and its colour spreads from your finger. The sample is a new drawing: two jellyfish. And smaller things: codes keep a thinner outline where they’re big on screen, names wrap to two lines, buttons that are off stay readable, a photo shows its steps while it’s read, and Home counts every marker you own.',
+  },
+  {
     v: 'v319',
     t: 'The beta. Fixes from two debugging passes: pages drawn with coloured outlines find their sections, coloured in or not and however thick the lines. A cropped guide keeps its photo for Edit sections when it’s opened again. Tapping the dimmed picture closes the ⋯ menu and nothing else. In Palette, a colour you lock stays in its place in the new schemes, and Greys + accent always has its accent (in a guide, choosing it turns Include › Greys & black on). Undo after removing a drawn marker can’t undo a later draw. What’s new lists every version since the one you last saw.',
   },

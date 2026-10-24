@@ -1,4 +1,7 @@
 mHome.addEventListener('click', () => setMode('home'));
+// (v321) Safari on an iPad and iPhone shows a button's :active look (its press, 02-picker.css) only when the page
+// listens for touches; this listener does nothing else, and passive, it never holds up a scroll
+document.addEventListener('touchstart', function () {}, { passive: true });
 var _rbk = document.getElementById('rndBack');
 if (_rbk)
   _rbk.addEventListener('click', function () {
@@ -231,6 +234,7 @@ document.addEventListener('keydown', function (e) {
       pim = new Image();
     pic.className = 'wcpic';
     pic.setAttribute('aria-hidden', 'true');
+    if (sp.ar) pic.style.setProperty('--wcar', sp.ar);
     pin.className = 'wcpicin';
     pfl.className = 'wcfl ' + WC_ANIM;
     pim.alt = '';
@@ -399,7 +403,8 @@ document.addEventListener('keydown', function (e) {
   function added(n, names, del, set) {
     // (v318.27: all the colours owned, as Home's Markers card counts them; the blender aside)
     // (v318.28: setKeys, as Home's card: inkKeys had left Copic's 0 out, "358 markers added" and "357 … in your collection")
-    var all = setKeys([...state.owned]).length || state.owned.size,
+    // (v320: every marker owned, the blender too, as Home's card counts them now: "markers" counts markers)
+    var all = state.owned.size,
       // (the first markers: all the colours owned are these; a set's blender aside)
       first = setKeys([...state.owned]).length === n;
     // (v309.1: added on "Anything else?" itself (Scan's toast Open): what it said, for Undo to put back)
@@ -438,11 +443,13 @@ document.addEventListener('keydown', function (e) {
           ? all + ' marker' + (all === 1 ? ' is' : 's are') + ' in your collection.'
           : 'They were already in your collection.') + ' Anything else?',
       // (v309.1: the chart can untick too)
+      // (v320: the blender a set brought is one of the markers added: "121 markers added", the sentence says which)
       n
         ? n +
+            (bl ? 1 : 0) +
             (first ? '' : ' more') +
             ' marker' +
-            (n === 1 ? '' : 's') +
+            (n + (bl ? 1 : 0) === 1 ? '' : 's') +
             ' added' +
             (del ? ', ' + del + ' removed' : '')
         : del

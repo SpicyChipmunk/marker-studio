@@ -112,15 +112,25 @@ Screenshots and PDFs from the browser tests land in `e2e/.artifacts/`
     and a picture's ink, specks and sections up to the flood fill (`segWork`,
     10-segment: `segWorkerSrc` lists the functions copied in and the
     constants they read; add any new one there, or the worker's answer will
-    differ from the page's and `e2e/v31836-worker.test.mjs` says so). A job
+    differ from the page's and `e2e/speed-2.test.mjs` says so). A job
     that fails or gives no answer in time is done on the page instead.
   - `data/markers.json` — every marker (code, name, hex, family, brand), one
     per line.
-  - `assets/sample-jellyfish.png` — the built-in sample picture.
-    `assets/sample-coloured.webp` (its guide, with codes, on the start cards)
-    and `assets/sample-plain.webp` (without codes, on the welcome) are the
-    app's own output from it.
+  - `assets/sample-dual.png` — the built-in sample picture (v320: Ben's two
+    jellyfish), and `assets/sample-dual-coloured.webp` his page of it coloured
+    (photographed, lined up with the drawing, its paper evened): the start
+    cards' "after", the welcome's picture and the empty Library's. The browser
+    tests keep the single jellyfish of v284–v319 as the sample
+    (`assets/sample-jellyfish.png`, with the app's own output from it,
+    `sample-coloured.webp` and `sample-plain.webp`), unless a test sets
+    `window.__MS_SAMPLE_NEW`.
 - `scripts/build.mjs` — the build (no dependencies; `--check` and `--watch`).
+- `scripts/launch.py` — v321: the iOS launch screens in `launch/` (the app's ground and the drop, one per screen size
+  and orientation; v322: from `src/assets/intro/plain.png`, the drop uncoloured), and the `<link>` tags for
+  `src/index.template.html` (Python with Pillow).
+- `scripts/make-intro.mjs` — v322: the opening animation's markup (`src/html/intro.html`) and the launch screens'
+  picture (`src/assets/intro/plain.png`) from `src/assets/icon.svg`; run it, then `launch.py`, after the icon changes
+  (needs `npm install`).
 - `scripts/make-icons.mjs` — renders the icon PNGs from `src/assets/icon.svg` and `icon-maskable.svg` (the
   source, drawn once) (needs `npm install`).
 - `service-worker.js` — offline caching for the PWA. Bump the cache version
@@ -144,177 +154,61 @@ Screenshots and PDFs from the browser tests land in `e2e/.artifacts/`
 
 ### Test coverage today
 
-The suites run against the real shipped code. Each file is named for the
-feature it tests; a regression test found in a review or release sits with the
-feature it guards, under a comment saying where it came from.
+The suites run against the real shipped code. Since v320 the tests are organised **by feature**: each file is a
+feature's (a big feature in parts, `palette.test.mjs`, `palette-2.test.mjs` …, each part under about 220 s on
+Chromium, so the CI parts stay balanced). Inside a file, each block `{ … }` holds the tests that came from one older
+file, under a `// ---- from <file> ----` line with that file's own header, its helpers beside them: the tests
+themselves were moved word for word. A new test goes into its feature's file (the last part, or a new part when that
+one is near the time limit), at the end of the block it belongs with or in a block of its own with a comment saying
+which release or review it came from; never a file named after a release. `e2e/photo-gens.mjs` holds the made-up phone
+photos several files draw. After adding or moving files, `e2e/ci-durations.json` gets the new names (timings from a
+full run).
 
-Unit tests (`npm test`):
+Unit tests (`npm test`), 14 files:
 
-- `build.test.mjs` — `index.html` matches a fresh build of `src/`.
-- `format.test.mjs` — `src/js` and `src/css` are formatted by the pinned
-  Prettier (`npm run format` fixes it).
-- `color.test.mjs` — pure colour/format helpers (`hexToLab`, `rgb`, `hsl`,
-  `mix`, `hueDist`, `txt`, `normCode`), CIEDE2000 against the published test
-  data, and the six moods.
-- `palette-generator.test.mjs` — generated palettes: every scheme and size is
-  full, clearly different (ΔE00 10; Monochrome 6), free of greys and on its
-  hues; small collections relax and say so; locked colours, moods, re-rolling
-  one colour, speed.
-- `v31834-harmonies.test.mjs` — the ramp as a path (picker.js genPath): a
-  Monochrome, Analogous, Light to shadow or grey ramp is evenly stepped where
-  the markers in play allow it (median max/min step ≤ 2.5); Light to shadow,
-  Analogous + accent and Greys + accent on Honolulu 120 / 320 and a 36-Copic
-  set (sizes 3–6 below 72 markers in play, 3–8 from there; Greys + accent
-  needs 3 greys, never in Surprise); their notes and palOnScheme.
-- `match-and-photo.test.mjs` — Match's ranking by eye, its labels and buy
-  rule; From photo (full size, pairs at least 6 apart, no near-white); the
-  paper patch and lighting correction.
-- `photo-choice.test.mjs` — the Photo pattern's marker choice (the full search
-  against the quick one used while the slider is dragged) and its suggested
-  marker count.
-- `colour-engines.test.mjs` — the CIEDE2000 split, the closest-by-eye
-  lookup, Blend's three mixes, Warm/Cool on named markers, blend companions
-  (direction, step, hue), neighbours across thick lines, Random's rule.
-- `gradient.test.mjs` — the gradient's marker choice (never more than
-  sections, coloured first, clearer ones when spare), loop or ramp, Look's
-  band sizes, sharing by area, and speed on a big page.
-- `matching.test.mjs` — `nearest` checked against an exact reimplementation of
-  its cost function (exclude, the neutral fallback, `preferL`, determinism),
-  plus `keyIdx` round-trips.
-- `segmentation.test.mjs` — the section-finder core via the test seam:
-  `segment`, `labelCells`, `otsu`, background-detection stability,
-  snapshot/undo field preservation, and labels placed inside irregular sections.
-- `quality-check.test.mjs` — `segQuality` flags blank, low-contrast, dark and
-  over-segmented inputs, and passes clean (also dense) line art.
-- `v31835-coloured.test.mjs` — a page partly coloured in (v318.35, E1-3): ink
-  is dark AND colourless, so a section filled with a mid marker stays whole
-  (`chromaOf` beside `gray`, only for a picture with colour on it; a greyscale
-  page's sections are unchanged), `colourSecs` lists the coloured sections for
-  the offer after Build (`colourOffer`, never automatic), and the softened
-  "coloured in already" words. In the browser: `e2e/v31835-coloured.test.mjs`.
-- `v31835-hatching.test.mjs` — hatching as one section (`hatchMerge`, a segRun
-  step after the crumbs): parallel lines in a box and cross-hatching merge, wide
-  stripes and a five-rung ladder stay, the "hatched" warning softens, and the
-  `hatchOne` field (Treat hatching as one section) is written only when off.
-- `save-load.test.mjs` — the label map round-trips losslessly (`lmapURL`),
-  `currentDesignObj` keeps settings and the generated palette, `esc`/`safeThumb`,
-  and a file that isn't a guide changes nothing.
-- `saved-state.test.mjs` — loading the saved state: one bad field costs only
-  that field, unknown or out-of-range markers are dropped, unreadable state is
-  copied and left alone, other tabs' Library entries are kept, and the one-time
-  collection migrations and set fix run once. Each case boots a fresh app with
-  an in-memory `localStorage` (`createApp()` / `memoryStorage()`).
-- `backup-restore.test.mjs` — the backup reminder's at-risk count, and restoring
-  with storage full or from a backup without markers.
-- `sets.test.mjs` — every marker set has as many colours as its name, every code
-  is known, the sets nest the way Ohuhu sells them, Copic sets resolve, and the
-  set picker marks sets you already own.
-- `filters.test.mjs` — marker filters: the first tap shows only that kind, more
-  taps add, removing the last goes back to all.
-- `names.test.mjs` — the guide and palette name generators and copy names.
-- `focus-mode.test.mjs` — focus mode's walking order: every section once, light
-  to dark, top section first, then a neighbour; "next" skips finished ones.
-- `shading.test.mjs` — companion markers only from your collection, the shadow
-  away from the sun, layered tones, 2nd coats, saving, the printed H/S marks,
-  and colouring along with tones.
-- `speed.test.mjs` — packed undo snapshots and the section-map signature.
-- `style-fields.test.mjs` — the exact saved form of a guide's style settings.
-- `text-size.test.mjs` — the text-size codemod, and CSS sizes on the type scale.
-- `pwa.test.mjs` — the manifest, its icons, the precache and the version shown.
+- `along.test.mjs` — Colour along, Focus mode, the share card.
+- `app.test.mjs` — The app as a whole: build, CI, format, PWA, speed, text size, release, feedback.
+- `colour.test.mjs` — Colour maths, matching and names.
+- `data.test.mjs` — Saved state, backups, restore, style settings.
+- `gradient.test.mjs` — The Gradient pattern’s engine.
+- `markers.test.mjs` — Markers: filters, sets, finding, buying, Random.
+- `palette.test.mjs` — The palette generator and the Palette screen’s logic.
+- `pattern.test.mjs` — The guide’s patterns: Random, Balance, Blend, families, Leave white, themes.
+- `scan.test.mjs` — Scan or type codes: reading text into markers.
+- `scan-reader.test.mjs` — The photo reader’s readings and settling.
+- `segmentation.test.mjs` — Finding sections: ink, specks, frames, hatching, coloured pages, small pictures.
+- `shading.test.mjs` — Shading.
+- `source-photo.test.mjs` — The picture kept with each guide.
+- `zones.test.mjs` — Zones.
 
-Browser tests (`npm run e2e`), by area:
+Browser tests (`npm run e2e`), 52 files:
 
-- `guide-frame.test.mjs` — picture sizes and the scroll-linked shrink, tabs that
-  never move anything, where a stage change lands, drag to scroll, side by side,
-  one-time hints, overlays on the shrunk picture.
-- `guide-header.test.mjs` — the name and where it is saved, renaming in place,
-  the ⋯ menu, a header that keeps its height.
-- `bar-and-tool-row.test.mjs` — the bottom bar on the bottom edge, and the tool
-  row's contents and wording.
-- `tabs.test.mjs` — Colours · Pattern · Shading · Share: what each holds, the
-  remembered tab, helper text, the Print sheet.
-- `sheet.test.mjs` — the section tip, and the shared sheet under the picture
-  (Change colour, Manual, the Paint brush, Blend's menu) on phones and tablets.
-- `controls-wiring.test.mjs` — every state of the guide's controls
-  (`e2e/controls-states.mjs`) renders and wires each control.
-- `pins-and-change-colour.test.mjs` — tap a section to change or pin its colour
-  in every pattern, the marker picker, Pin mode, Fill unpinned.
-- `paint.test.mjs` — Everywhere in the picker, and Paint in Manual (tap, drag,
-  touch).
-- `photo.test.mjs` — colour from a photo: matching, lining up (by hand and by
-  itself), the marker cap, white areas, and keeping the photo.
-- `photo-choice.test.mjs` — the Photo pattern's figures graded by eye in
-  Match's words (summary, tips, "Closer with"), and the suggested marker count
-  and its Use button.
-- `shading.test.mjs` — the sun, rounder light, Highlight/Shadow, sections left
-  flat, light from the photo, tones while colouring along, saving.
-- `undo.test.mjs` — ↶ Undo and Ctrl+Z for every plan change, and the Undo toasts
-  for Own all, Clear collection, Library delete and Reset progress.
-- `style-fields.test.mjs` — every style setting saved, reopened, undone and read
-  from odd files, against `e2e/fixtures/style-golden.json`.
-- `sections-editor.test.mjs` — merge, split, add, include/exclude, the size
-  slider, crop and rotate, Ctrl+Z.
-- `rebuild-sections.test.mjs` — going back to a built guide's sections (re-detect,
-  turn, Build again, sections left out, edits not built) keeps its work.
-- `straighten.test.mjs` — a photographed page is found and flattened; unsure
-  cases open the corner handles.
-- `paper-and-background.test.mjs` — grainy paper, the table around the page and
-  a drawn frame.
-- `colour-along.test.mjs` — the marker rows, opening one in place, Clear ticks
-  and Reset progress, press and hold, finishing the page.
-- `focus-mode.test.mjs` — one section at a time, light to dark; its keyboard
-  focus and leaving it.
-- `reveal.test.mjs` — Reveal's bar, closing it, and its start.
-- `autosave.test.mjs` — one Save, then every change saves itself; Save a copy;
-  the Resume slot; failed saves.
-- `switching-guides.test.mjs` — nothing carried over or lost when another guide
-  or picture opens.
-- `two-tabs.test.mjs` — two tabs sharing storage and guides.
-- `storage-full.test.mjs` — full or blocked storage says so and keeps nothing.
-- `unreadable-data.test.mjs` — bad saved data costs only what is bad, and Home's
-  note about it.
-- `lost-guides.test.mjs` — stored guides missing from the Library are offered
-  back.
-- `guide-files.test.mjs` — broken or hostile guide files are turned away.
-- `backup.test.mjs` — making a backup (share sheet or download) and the
-  reminder.
-- `restore.test.mjs` — restoring markers, palettes and guides, and what it says.
-- `welcome.test.mjs` — the first run.
-- `home.test.mjs` — Home's names, tiles and one card at a time.
-- `install-and-offline.test.mjs` — Add to Home Screen, the install prompt,
-  persistent storage, bundled fonts.
-- `library.test.mjs` — rows, renaming, names, progress, delete by keyboard, the
-  Library picture.
-- `markers.test.mjs` — the Markers screen and the marker sheet.
-- `palette.test.mjs` — the Palette screen and the guide's A palette › New palette (v318.34: `v31834-colours-from.test.mjs` for the Colours from card),
-  the new sizes, and the "two colours are close" note.
-- `random-and-blend.test.mjs` — Random keeps touching sections clearly
-  different (checked against its own adjacency), neighbours across thick
-  lines, and Blend's Mix (Soft · Vivid · Like paint), saved and undone.
-- `gradient.test.mjs` — Look (Auto · Smooth · Light to dark) and Mood (Any ·
-  Bright · Soft · Pastel · Deep · Earthy): saved, undone, set by Surprise; old
-  guides open with their markers; Shuffle on a loop, a ramp and a saved palette.
-- `match.test.mjs` — Match a colour from a photo, a hex code and the camera.
-- `to-buy.test.mjs` — the To buy list from every suggestion, and ink (low, dry).
-- `brand-letters.test.mjs` — brand letters on screen and in exports.
-- `help.test.mjs` — How it works, the help sheet, What's new.
-- `print.test.mjs` — the Print sheet's options and the PDF pages.
-- `share-export.test.mjs` — guide files, images and PDFs: share sheet on a
-  phone, download on a computer.
-- `swatch-chart.test.mjs` — the printable swatch chart.
-- `speed.test.mjs` — partial redraws match a full redraw; big photos are kept at
-  working size.
-- `text-size.test.mjs` — text follows the phone's text size without clipping or
-  sideways scroll.
-- `buttons.test.mjs` — one button height and 44px tap areas.
-- `keyboard-and-screen-readers.test.mjs` — focus, Tab, Ctrl+Z and what screen
-  readers hear.
-- `escape-stack-guide.test.mjs` — Escape closes the guide's layers one at a
-  time, and focus goes back.
-- `escape-stack-shell.test.mjs` — Escape closes one dialog at a time, focus goes
-  back, and Tab stays in the top dialog.
-- `toasts-and-errors.test.mjs` — where toasts and error messages show and go.
-- `wording.test.mjs` — one word per idea, and small wording.
+- `along.test.mjs`, `along-2.test.mjs`, `along-3.test.mjs` — Colour along: the list, ticks, codes, run low, finding a marker.
+- `data.test.mjs`, `data-2.test.mjs` — Backups, restore, storage, two tabs, unreadable data, deleting data.
+- `finish-share.test.mjs`, `finish-share-2.test.mjs` — A finished page, Reveal, Save image, share, the photo of your page.
+- `focus.test.mjs`, `focus-2.test.mjs` — Focus mode.
+- `frame.test.mjs`, `frame-2.test.mjs` — The guide’s frame and layout: the picture’s sizes, text size, the header, phones and iPads.
+- `guide-colours.test.mjs`, `guide-colours-2.test.mjs` — A guide’s colours: Mood, Colours from, filters, Change colour, pins, Paint, brand letters.
+- `help.test.mjs` — Help, What’s new, wording, the beta tester tasks and feedback.
+- `home.test.mjs`, `home-2.test.mjs` — Home: tiles, the Continue card, the latest guide, counts.
+- `intake.test.mjs`, `intake-2.test.mjs`, `intake-3.test.mjs` — Getting a picture in: photos, scans, PDFs, straightening, sections found, specks, frames, hatching.
+- `library.test.mjs`, `library-2.test.mjs` — The Library, saving and reopening guides, guide files.
+- `markers.test.mjs`, `markers-2.test.mjs`, `markers-3.test.mjs` — Markers: the grid, details, sets, To buy, the swatch chart, dry and running low.
+- `match.test.mjs` — Match a colour.
+- `palette.test.mjs`, `palette-2.test.mjs`, `palette-3.test.mjs` — The Palette screen: harmonies, locks, sizes, saving, Use in a guide.
+- `pattern.test.mjs`, `pattern-2.test.mjs`, `pattern-3.test.mjs` — A guide’s Pattern: Random, Blend, Gradient, Balance, Leave white.
+- `photo-pattern.test.mjs` — The Photo pattern.
+- `print.test.mjs`, `print-2.test.mjs` — Print and the PDF, the test strip.
+- `scan.test.mjs`, `scan-2.test.mjs` — Markers › Scan or type codes: typed, pasted and Scan Text.
+- `scan-reader.test.mjs`, `scan-reader-2.test.mjs` — Scan › Photograph your caps: the photo reader.
+- `sections-editor.test.mjs`, `sections-editor-2.test.mjs` — Edit sections: merge, split, re-detect, Undo, Discard.
+- `shading.test.mjs` — Shading.
+- `shell.test.mjs`, `shell-2.test.mjs`, `shell-3.test.mjs` — The shell: tabs, sheets, buttons, Escape and Back, keyboard and screen readers, toasts, tap areas, installing.
+- `source-photo.test.mjs` — The picture kept with each guide (Edit sections › Adjust photo after reopening).
+- `speed.test.mjs`, `speed-2.test.mjs` — Speed and the worker: redraws, jobs, controls wiring.
+- `undo.test.mjs` — Undo.
+- `welcome.test.mjs`, `welcome-2.test.mjs` — The welcome (first run): sets, the steps, adding markers on the way in.
+- `zones.test.mjs`, `zones-2.test.mjs` — Zones.
 
 The section-finder core is reached through a small, additive **test-export
 seam** in `index.html`: one block, guarded by `globalThis.__MS_TEST`, that

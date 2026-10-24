@@ -140,6 +140,9 @@ function exportPlace(xs) {
       max: Math.max(mn, 30 * srcK),
       w: 700,
       swk: 0.3,
+      // (v320: thinner where it stays 2.8 px wide on the image as saved: codeLayout)
+      thin: 0.2,
+      dev: xs,
     },
     g = document.createElement('canvas').getContext('2d'),
     pl = pdfPlace(g, Object.keys(assignData.assign).map(Number), o, 'codes', null, { noNum: true });
@@ -674,7 +677,8 @@ function openPrint() {
     b += '</div></div>';
   });
   b +=
-    '</div><div id="sfPrOrd" class="sfprord"></div><div class="sfshhint" id="sfPrWhat">' +
+    '</div><div class="sfprtop"><button type="button" id="sfPrThumb" class="sfprthumb" aria-label="Preview the pages"></button>' +
+    '<div id="sfPrOrd" class="sfprord"></div></div><div class="sfshhint" id="sfPrWhat">' +
     printWhatNote() +
     '</div><div class="sfprchk"><label class="sfchk"><input type="checkbox" id="sfPdfDark"' +
     (pdfDark ? ' checked' : '') +
@@ -715,6 +719,7 @@ function openPrint() {
       }
     } else if (e.target.closest('[data-pr="cancel"]')) closeSheet();
     else if (e.target.closest('#sfPDF')) exportPDF();
+    else if (e.target.closest('#sfPrThumb')) printPreview();
   });
   el.addEventListener('change', function (e) {
     if (e.target.id === 'sfPdfDark') printOptSet('dark', e.target.checked);
@@ -850,6 +855,222 @@ function printOptsSync() {
   // (after the summary: its dry run noted each page's kind, _pdfKinds)
   const od = document.getElementById('sfPrOrd');
   if (od) od.innerHTML = assignData ? printOrder(_pdfKinds) : '';
+  printThumbSoon();
+}
+// (v320) the Print sheet's picture of page 1, as it will print: drawn once the sheet has painted and again after each
+// change of the choices, never in the way of its buttons (the pages laid out as for the PDF, page 1 drawn and made
+// small, the rest let go). None for the test strip, nor while a PDF is being written.
+let _prThT = 0,
+  _prThSig = '';
+function printThumbSoon() {
+  clearTimeout(_prThT);
+  const el = document.getElementById('sfPrThumb');
+  if (!el) return;
+  const sig = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend].join('|');
+  el.hidden = pdfWhat === 'strip';
+  if (el.hidden || (sig === _prThSig && el.firstChild)) return;
+  el.classList.add('wait');
+  _prThT = setTimeout(function () {
+    requestAnimationFrame(function () {
+      _prThT = setTimeout(function () {
+        printThumb(el, sig);
+      }, 0);
+    });
+  }, 80);
+}
+function printThumb(el, sig) {
+  if (!el.isConnected || !assignData || pdfWhat === 'strip') {
+    el.classList.remove('wait');
+    return;
+  }
+  // (v321 debug: a PDF being written meanwhile, a choice changed just after Download PDF: drawn once it's done. It had
+  // been left as it was, dimmed, and showing the choices before)
+  if (exportPDF.busy) {
+    clearTimeout(_prThT);
+    _prThT = setTimeout(function () {
+      printThumb(el, sig);
+    }, 400);
+    return;
+  }
+  let pages = null,
+    keep = [],
+    full = null;
+  _pdfDry = false;
+  _pdfKinds = [];
+  _pdfRec = { keep: keep };
+  try {
+    pages = _buildPDF(false);
+  } catch (_) {
+    pages = null;
+  } finally {
+    _pdfRec = null;
+  }
+  try {
+    const P = pages && pages[0];
+    if (!P) return;
+    full = pdfReplay(P.c.ops, P.w, P.h);
+    const css = el.clientWidth || 96,
+      dpr = Math.min(3, window.devicePixelRatio || 1),
+      c = document.createElement('canvas');
+    c.width = Math.round(css * dpr);
+    c.height = Math.round((css * dpr * P.h) / P.w);
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(full, 0, 0, c.width, c.height);
+    // (v321: a tap opens every page, printPreview; the corner's mark says so)
+    const mk = document.createElement('span');
+    mk.className = 'sfprthmk';
+    mk.innerHTML = ic('fullscreen');
+    el.replaceChildren(c, mk);
+    el.classList.toggle('land', P.w > P.h);
+    el.style.aspectRatio = P.w + ' / ' + P.h;
+    _prThSig = sig;
+  } finally {
+    el.classList.remove('wait');
+    freeCanvas(full);
+    keep.forEach(freeCanvas);
+  }
+}
+// (v321) Preview: every page as it will print, one at a time over the screen, from the Print sheet's picture of page 1.
+// The pages are laid out once as it opens (as the PDF is, noted down, not drawn), and only the page shown is drawn, at
+// the size it's shown, its full-size drawing let go at once: a page is 1700 × 2200 at the PDF's 200 dpi (about 15 MB),
+// and a dozen held together could pass Safari's limit on an iPad. ‹ and ›, a swipe, or the arrow keys; Download PDF
+// is the sheet's own. Not for the test strip (it has no picture of page 1), nor while a PDF is being written.
+let _pv = null;
+function printPreview() {
+  const ov = document.getElementById('prevOverlay');
+  if (!ov || !assignData || exportPDF.busy || pdfWhat === 'strip' || _pv) return;
+  let pages = null;
+  const keep = [];
+  _pdfDry = false;
+  _pdfKinds = [];
+  _pdfRec = { keep: keep };
+  try {
+    pages = _buildPDF(false);
+  } catch (_) {
+    pages = null;
+  } finally {
+    _pdfRec = null;
+  }
+  if (!pages || !pages.length) {
+    keep.forEach(freeCanvas);
+    return;
+  }
+  _pv = { pages: pages, keep: keep, kinds: _pdfKinds.slice(), i: -1, ov: ov, gen: loadGen };
+  pvWire(ov);
+  openDialog(ov);
+  // (once it's laid out: the stage's size is what the page is drawn to)
+  requestAnimationFrame(function () {
+    pvShow(0);
+  });
+}
+function pvShow(i) {
+  if (!_pv) return;
+  const n = _pv.pages.length;
+  i = Math.max(0, Math.min(n - 1, i));
+  const st = document.getElementById('prevStage');
+  if (!st) return;
+  const P = _pv.pages[i],
+    dpr = Math.min(2, window.devicePixelRatio || 1),
+    bw = Math.max(40, st.clientWidth),
+    bh = Math.max(40, st.clientHeight),
+    k = Math.min(bw / P.w, bh / P.h),
+    c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(P.w * k * dpr));
+  c.height = Math.max(1, Math.round(P.h * k * dpr));
+  c.style.width = Math.round(P.w * k) + 'px';
+  c.style.height = Math.round(P.h * k) + 'px';
+  let full = null;
+  try {
+    full = pdfReplay(P.c.ops, P.w, P.h);
+    drawShrunk(c.getContext('2d'), full, c.width, c.height);
+  } catch (_) {
+    // (left white: Download PDF still writes it)
+  } finally {
+    freeCanvas(full);
+  }
+  const old = st.querySelector('canvas');
+  st.replaceChildren(c);
+  freeCanvas(old);
+  _pv.i = i;
+  const kd = _pv.kinds[i] || {},
+    W0 = {
+      pic: 'Your picture',
+      ref: 'Your picture',
+      close: 'Close-ups',
+      key: 'Colour key',
+      keymore: 'Colour key',
+      refkey: 'Picture and key',
+    },
+    kw = W0[kd.k] || '';
+  document.getElementById('prevTitle').textContent = 'Page ' + (i + 1) + ' of ' + n;
+  document.getElementById('prevKind').textContent = kw;
+  st.setAttribute('aria-label', 'Page ' + (i + 1) + (kw ? ': ' + kw.toLowerCase() : ''));
+  document.getElementById('prevN').textContent = i + 1 + ' / ' + n;
+  const pb = document.getElementById('prevBack'),
+    pn = document.getElementById('prevNext'),
+    ae = document.activeElement;
+  pb.disabled = i <= 0;
+  pn.disabled = i >= n - 1;
+  // (the one that went off had the keyboard's focus: it goes to the other, so the keyboard stays in the preview)
+  if (ae && ae.disabled && (ae === pb || ae === pn)) (ae === pb ? pn : pb).focus({ preventScroll: true });
+}
+function pvClose() {
+  const ov = document.getElementById('prevOverlay');
+  if (ov) closeDialog(ov);
+  if (!_pv) return;
+  const st = document.getElementById('prevStage');
+  if (st) {
+    freeCanvas(st.querySelector('canvas'));
+    st.replaceChildren();
+  }
+  _pv.keep.forEach(freeCanvas);
+  _pv = null;
+}
+function pvWire(ov) {
+  if (ov._wired) return;
+  ov._wired = 1;
+  ov.addEventListener('click', function (e) {
+    // (a tap on the dim round it, or Escape, layers.js, which taps it)
+    if (e.target === ov || e.target.closest('#prevClose')) pvClose();
+    else if (e.target.closest('#prevBack')) pvShow(_pv ? _pv.i - 1 : 0);
+    else if (e.target.closest('#prevNext')) pvShow(_pv ? _pv.i + 1 : 0);
+    else if (e.target.closest('#prevPdf')) {
+      pvClose();
+      exportPDF();
+    }
+  });
+  // (on the page, not the dialog: the last page's › goes disabled under the keyboard's focus, which then leaves it)
+  document.addEventListener('keydown', function (e) {
+    if (!_pv || !ov.classList.contains('on') || topDialog() !== ov) return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      pvShow(_pv.i + (e.key === 'ArrowLeft' ? -1 : 1));
+    }
+  });
+  // a swipe across the page: to the next one (leftwards) or the one before
+  const st = document.getElementById('prevStage');
+  let x0 = null,
+    y0 = 0;
+  st.addEventListener('pointerdown', function (e) {
+    x0 = e.clientX;
+    y0 = e.clientY;
+  });
+  st.addEventListener('pointerup', function (e) {
+    if (x0 == null || !_pv) return;
+    const dx = e.clientX - x0,
+      dy = e.clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) pvShow(_pv.i + (dx < 0 ? 1 : -1));
+  });
+  st.addEventListener('pointercancel', function () {
+    x0 = null;
+  });
+  // (turned or resized while open: the page drawn again at its new size)
+  window.addEventListener('resize', function () {
+    if (_pv && ov.classList.contains('on')) pvShow(_pv.i);
+  });
 }
 // the pages in order, as small page shapes in the paper's shape (page 1 on its side when it is), a run of one kind
 // under one word; a screen reader hears one line ("Page 1: your picture with codes; pages 2–4: close-ups; …")
@@ -1663,16 +1884,62 @@ function pdfLines(g, parts, max, n) {
     return pdfTrunc(g, t, max);
   });
 }
-function pdfSwatch(g, x, y, sz, hex, owned) {
+function pdfSwatch(g, x, y, sz, hex, owned, round) {
   g.fillStyle = hex;
-  g.fillRect(x, y, sz, sz);
+  // (round: the key's, v320, as a marker's cap)
+  if (round) {
+    g.beginPath();
+    g.arc(x + sz / 2, y + sz / 2, sz / 2, 0, 6.283);
+    g.fill();
+  } else g.fillRect(x, y, sz, sz);
   g.lineWidth = PX(0.6);
   if (owned === false) {
     g.setLineDash([PX(1.6), PX(1.2)]);
     g.strokeStyle = '#c98a1c';
   } else g.strokeStyle = 'rgba(0,0,0,.28)';
-  g.strokeRect(x, y, sz, sz);
+  if (round) g.stroke();
+  else g.strokeRect(x, y, sz, sz);
   g.setLineDash([]);
+}
+// (v320) a page's heading: its title in the app's serif on the left, its details (lines) in grey on the right, a
+// rule under both. The rule's place, from the top margin m: PDF_HEAD_RULE, a line lower for each line of details past
+// two (pdfHeadRule), so what's under it starts where it did before
+const PDF_SERIF = 'Fraunces, Georgia, serif',
+  PDF_HEAD_RULE = 26,
+  PDF_HEAD_LINE = 10.5;
+function pdfHeadRule(m, n) {
+  return m + PX(PDF_HEAD_RULE) + Math.max(0, n - 2) * PX(PDF_HEAD_LINE);
+}
+// the details' column: as wide as the page less room for a title of a few words
+function pdfHeadW(bw) {
+  return Math.round(bw * 0.62);
+}
+function pdfHead(g, title, lines, x, w, m, size) {
+  g.font = '500 ' + PX(8) + 'px ' + LFONT;
+  let dw = 0;
+  lines.forEach(function (t) {
+    dw = Math.max(dw, g.measureText(t).width);
+  });
+  g.fillStyle = '#777';
+  g.textAlign = 'right';
+  lines.forEach(function (t, i) {
+    g.fillText(t, x + w, m + PX(9) + i * PX(PDF_HEAD_LINE));
+  });
+  g.textAlign = 'left';
+  g.fillStyle = '#111';
+  // (a longer name a size smaller, down to 14, before it's cut short: "Mum's birthday jellyfish, autumn" had lost its
+  // last word beside the details)
+  const tw = w - dw - (dw ? PX(16) : 0);
+  let fs = size || 20;
+  g.font = '600 ' + PX(fs) + 'px ' + PDF_SERIF;
+  while (fs > 14 && g.measureText(title).width > tw) {
+    fs--;
+    g.font = '600 ' + PX(fs) + 'px ' + PDF_SERIF;
+  }
+  g.fillText(pdfTrunc(g, title, tw), x, m + PX(18));
+  const ry = pdfHeadRule(m, lines.length);
+  g.fillRect(x, ry - PX(0.35), w, PX(0.7));
+  return ry;
 }
 // a marker's colour family (COLORS' own), and the keys' order: the families round the colour wheel (FAM_ORDER),
 // lightest first in each (the PDF's key and, v305, the saved image's)
@@ -2033,6 +2300,11 @@ function pdfSunAt(sr, pl) {
 // a close-up page's codes and how strong its magnified lines are (v305: grey lines, near-black codes)
 const CU_INK = '#1a1a1a',
   CU_LINES = 0.5;
+// (v320) a close-up's lines lighter the more it's magnified (mag: its size over page 1's), as its thinnest lines grow
+// with it: half strength at 2× page 1 and below, down to 0.35 by 5×, so the codes lead
+function cuLines(mag) {
+  return Math.max(0.35, Math.min(CU_LINES, CU_LINES - (mag - 2) * 0.05));
+}
 // 1st, 2nd, 3rd … (the key's colouring order, unlike its numbers: v284 review)
 function pdfOrd(n) {
   const t = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th';
@@ -2356,8 +2628,8 @@ function _buildPDF(dry) {
     pages.push(dry ? null : p1);
     // (v318.35: col, the page carries the picture in colour: written as a JPEG, canvasesToPDF)
     _pdfKinds.push({ k: refPic ? 'ref' : 'pic', lab: lab, land: p1.w > p1.h, col: refPic });
-    g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
-    // (the picture's place, from the longest the lines under the title can be)
+    g1.font = '500 ' + PX(8) + 'px ' + LFONT;
+    // (the picture's place, from the longest the heading's details can be: v320, at the right of the title)
     // (long: the longest they can be, for the estimate; v284 review: the real lines could be longer than it)
     const subParts = function (cl, keyPg, long) {
         return [nWord(assignData.N, 'section'), nMk].concat(
@@ -2372,8 +2644,8 @@ function _buildPDF(dry) {
           lab === 'codes' && !oneB && guideMixed() ? brandKey().replace(/\s{2,}/g, '  ') : [],
         );
       },
-      sub0 = pdfLines(g1, subParts(54, 5, true), bw1, 2),
-      top = m + PX(36) + (sub0.length - 1) * PX(11),
+      sub0 = pdfLines(g1, subParts(54, 5, true), pdfHeadW(bw1), 3),
+      top = pdfHeadRule(m, sub0.length) + PX(10),
       bot = p1.h - m - PX(14),
       f1 = pdfFit(bw1, bot - top),
       ox = m + (bw1 - f1.w) / 2,
@@ -2483,17 +2755,10 @@ function _buildPDF(dry) {
       });
     } else if (withShade && shadeUse().sun) sun = pdfSunAt(PX(6) / f1.k, null);
     if (!dry) {
-      g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
+      g1.font = '500 ' + PX(8) + 'px ' + LFONT;
       const keyPg = 2 + closeP,
-        sub = pdfLines(g1, subParts(closeups.length, keyPg), bw1, 2);
-      g1.fillStyle = '#111';
-      g1.font = '700 ' + PX(15) + 'px ' + LFONT;
-      g1.fillText(pdfTrunc(g1, nm, bw1), m, m + PX(12));
-      g1.fillStyle = '#777';
-      g1.font = '500 ' + PX(8.5) + 'px ' + LFONT;
-      sub.forEach(function (t, i) {
-        g1.fillText(t, m, m + PX(26) + i * PX(11));
-      });
+        sub = pdfLines(g1, subParts(closeups.length, keyPg), pdfHeadW(bw1), sub0.length);
+      pdfHead(g1, nm, sub, m, bw1, m);
       g1.imageSmoothingEnabled = true;
       g1.imageSmoothingQuality = 'high';
       // (v308: no tone line under a label, the sun or a close-up's letter; before, they struck through the codes)
@@ -2620,19 +2885,19 @@ function _buildPDF(dry) {
             pages.push(cp);
             _pdfKinds.push({ k: 'close', col: refPic });
             const gc = cp.g;
-            gc.fillStyle = '#111';
-            gc.font = '700 ' + PX(15) + 'px ' + LFONT;
-            gc.fillText('Close-ups', m, m + PX(12));
-            gc.fillStyle = '#777';
-            gc.font = '500 ' + PX(8.5) + 'px ' + LFONT;
-            gc.fillText(
-              pdfTrunc(
+            gc.font = '500 ' + PX(8) + 'px ' + LFONT;
+            pdfHead(
+              gc,
+              'Close-ups',
+              pdfLines(
                 gc,
-                'Sections too small to label on page 1, magnified. A dot there marks each one.',
-                bw,
+                ['Sections too small to label on page 1, magnified', 'a dot there marks each one'],
+                pdfHeadW(bw),
+                2,
               ),
               m,
-              m + PX(26),
+              bw,
+              m,
             );
           }
           const gc = cp.g,
@@ -2657,7 +2922,7 @@ function _buildPDF(dry) {
           // (the magnified lines at about half strength: about 50% grey on the white page, v305)
           gc.fillStyle = '#fff';
           gc.fillRect(cx, iy, dw, dh);
-          gc.globalAlpha = CU_LINES;
+          gc.globalAlpha = cuLines(kc / f1.k);
           gc.drawImage(art1, cr[0], cr[1], cr[2] - cr[0], cr[3] - cr[1], cx, iy, dw, dh);
           gc.globalAlpha = 1;
           gc.setTransform(kc, 0, 0, kc, cx - cr[0] * kc, iy - cr[1] * kc);
@@ -2720,27 +2985,26 @@ function _buildPDF(dry) {
     g = pg.g;
   pages.push(pg);
   _pdfKinds.push({ k: refOne ? 'refkey' : 'key', col: true });
-  g.fillStyle = '#111';
-  g.font = '700 ' + PX(15) + 'px ' + LFONT;
-  g.fillText(pdfTrunc(g, refOne ? nm : 'Colour key', bw), m, m + PX(12));
-  g.fillStyle = '#777';
-  g.font = '500 ' + PX(8.5) + 'px ' + LFONT;
-  g.fillText(
-    pdfTrunc(
+  g.font = '500 ' + PX(8) + 'px ' + LFONT;
+  pdfHead(
+    g,
+    refOne ? nm : 'Colour key',
+    pdfLines(
       g,
-      (refOne ? 'Colour key' : nm) +
-        ' · ' +
-        nMk +
-        ' · ' +
+      [
+        refOne ? 'Colour key' : nm,
+        nMk,
         nWord(assignData.N, 'section') +
-        (assignData.paper
-          ? ' (' + Object.keys(assignData.paper).length + ' unlabelled ones stay white)'
-          : '') +
-        (oneB ? '' : ' · ' + brandKey().replace(/\s{2,}/g, '  ')),
-      bw,
+          (assignData.paper
+            ? ' (' + Object.keys(assignData.paper).length + ' unlabelled ones stay white)'
+            : ''),
+      ].concat(oneB ? [] : [brandKey().replace(/\s{2,}/g, '  ')]),
+      pdfHeadW(bw),
+      2,
     ),
     m,
-    m + PX(26),
+    bw,
+    m,
   );
   const cols = withBlend ? 1 : 2,
     gap = PX(20),
@@ -3071,8 +3335,8 @@ function _buildPDF(dry) {
     pages.push(pg);
     _pdfKinds.push({ k: 'keymore' });
     g.fillStyle = '#111';
-    g.font = '700 ' + PX(12) + 'px ' + LFONT;
-    g.fillText('Colour key (continued)', m, m + PX(10));
+    g.font = '600 ' + PX(14) + 'px ' + PDF_SERIF;
+    g.fillText('Colour key (continued)', m, m + PX(11));
     colTop = m + PX(24);
     y = colTop;
     col = 0;
@@ -3162,7 +3426,7 @@ function _buildPDF(dry) {
       g.fillText(pdfOrd(r.ord), x + X.ord, y + PX(12.5));
     }
     g.textAlign = 'left';
-    pdfSwatch(g, x + X.sw, y + PX(3.5), sw, mm.hex, true);
+    pdfSwatch(g, x + X.sw, y + PX(3.5), sw, mm.hex, true, true);
     if (!oneB) {
       // (v306: a code in the guide in both brands has its letter in a filled tag, as on the labels)
       if (sameOf(mm)) {
@@ -3301,22 +3565,24 @@ function _buildPDF(dry) {
   }
   // ---- footers
   if (dry) return pages.length;
+  // (v320: "Marker Studio" in the serif, the guide's name and "page n of N" on the right, a hairline over them)
   pages.forEach(function (P, i) {
     const gg = P.g,
       fy = P.h - P.m + PX(6),
-      mk = 'Made with Marker Studio',
-      pn = '  ·  ' + (i + 1) + ' / ' + pages.length;
-    gg.fillStyle = '#9a9a9a';
-    gg.font = '500 ' + PX(7.5) + 'px ' + LFONT;
+      mk = 'Marker Studio',
+      pn = '  ·  page ' + (i + 1) + ' of ' + pages.length;
+    gg.fillStyle = '#d6d6d6';
+    gg.fillRect(P.m, P.h - P.m - PX(5), P.w - 2 * P.m, PX(0.5));
+    gg.fillStyle = '#555';
+    gg.font = '600 ' + PX(8) + 'px ' + PDF_SERIF;
     gg.textAlign = 'left';
     gg.fillText(mk, P.m, fy);
+    const mkw = gg.measureText(mk).width;
+    gg.fillStyle = '#9a9a9a';
+    gg.font = '500 ' + PX(7.5) + 'px ' + LFONT;
     gg.textAlign = 'right';
     gg.fillText(
-      pdfTrunc(
-        gg,
-        nm,
-        Math.min(PX(260), P.w - 2 * P.m - gg.measureText(mk).width - gg.measureText(pn).width - PX(16)),
-      ) + pn,
+      pdfTrunc(gg, nm, Math.min(PX(260), P.w - 2 * P.m - mkw - gg.measureText(pn).width - PX(16))) + pn,
       P.w - P.m,
       fy,
     );
@@ -3403,10 +3669,14 @@ async function _exportPDF() {
     _b.textContent = 'Preparing…';
     _b.disabled = true;
   }
-  // (a moment for "Preparing…" to show: the pages are laid out in one go, v287)
-  await new Promise(function (r) {
-    setTimeout(r, 30);
-  });
+  // (a moment for "Preparing…" to show: the pages are laid out in one go, v287; v320: the headings' serif loaded
+  // meanwhile, as the saved image's fonts are)
+  await Promise.all([
+    new Promise(function (r) {
+      setTimeout(r, 30);
+    }),
+    showFonts(),
+  ]);
   // (v318.25) what is printed and the guide it's from, as the pages are laid out: the choices stay live while it's
   // written, and a change to Pages then (or another guide opened) had named the file, and marked the sample printed,
   // after that instead
@@ -3553,8 +3823,87 @@ function finishLine() {
   return t;
 }
 // (v307) what a screen reader hears as the page is finished, in Focus mode and in the list alike (they differed)
+// (v320: in the list Reveal & share is in the finished card; in Focus mode it's still in the bar)
 function finishSay() {
-  return 'Page finished. ' + finishLine() + '. Reveal & share is in the bar at the bottom.';
+  return (
+    'Page finished. ' +
+    finishLine() +
+    (focus
+      ? '. Reveal & share is in the bar at the bottom.'
+      : '. Reveal & share is in the card above the list.')
+  );
+}
+// (v320, D2b) the finished card: when it was finished, three numbers (sections, markers, days; two without dates), and
+// the guide's markers as chips. finishLine() is what a screen reader hears for the numbers
+function finishCard() {
+  const ds = document.getElementById('sfDoneSum'),
+    kk = document.getElementById('sfDoneKick'),
+    mkEl = document.getElementById('sfDoneMk');
+  if (!ds || !assignData) return;
+  const ord = assignData.order,
+    mk = [],
+    seen = {};
+  ord.forEach(function (l) {
+    const m = assignData.assign[l];
+    if (m && !seen[m.mkey]) {
+      seen[m.mkey] = 1;
+      mk.push(m);
+    }
+  });
+  const dated = !!(progAt.s && progAt.e),
+    days = dated
+      ? Math.max(
+          1,
+          Math.round(
+            (new Date(new Date(progAt.e).toDateString()) - new Date(new Date(progAt.s).toDateString())) /
+              864e5,
+          ) + 1,
+        )
+      : 0,
+    stat = function (n, w) {
+      return '<div class="sfpgst"><b>' + n + '</b><span>' + w + '</span></div>';
+    },
+    x = shadeExtra();
+  const h =
+    stat(ord.length, ord.length === 1 ? 'section' : 'sections') +
+    stat(mk.length + (x > 0 ? '+' + x : ''), mk.length + x === 1 ? 'marker' : 'markers') +
+    (dated ? stat(days, days === 1 ? 'day' : 'days') : '');
+  if (ds._h !== h) {
+    ds._h = h;
+    ds.innerHTML = h;
+  }
+  ds.setAttribute('role', 'text');
+  ds.setAttribute('aria-label', finishLine());
+  if (kk) {
+    let k = 'Finished';
+    if (dated) {
+      const d = new Date(progAt.e),
+        now = new Date();
+      k +=
+        ' \u00b7 ' +
+        d.toLocaleDateString(
+          'en-GB',
+          d.getFullYear() === now.getFullYear()
+            ? { weekday: 'long', day: 'numeric', month: 'long' }
+            : { day: 'numeric', month: 'long', year: 'numeric' },
+        );
+    }
+    if (kk.textContent !== k) kk.textContent = k;
+  }
+  if (mkEl) {
+    const MAX = 24,
+      c =
+        mk
+          .slice(0, MAX)
+          .map(function (m) {
+            return '<i style="background:' + esc(m.hex) + '"></i>';
+          })
+          .join('') + (mk.length > MAX ? '<span>+' + (mk.length - MAX) + '</span>' : '');
+    if (mkEl._h !== c) {
+      mkEl._h = c;
+      mkEl.innerHTML = c;
+    }
+  }
 }
 function checkComplete() {
   progStamp();
@@ -3598,8 +3947,116 @@ function celebrate() {
   }
   if (sfmode !== 'color')
     note(ic('sparkles') + ' Finished \u2014 every section coloured! Tap Reveal &amp; share to show it off.');
-  else requestAnimationFrame(doneInView);
-  if (!rm) confettiBurst();
+  else {
+    requestAnimationFrame(doneInView);
+    // (v320, D2b: the list's finish is the same marker strokes as Focus mode's, from the card's own edges; it threw
+    // confetti over the whole screen and the card's title, G1-2)
+    if (!rm)
+      requestAnimationFrame(function () {
+        finishStrokes(document.getElementById('sfDone'));
+        finishCount(document.getElementById('sfDone'));
+      });
+  }
+}
+// (v321) the finished card's numbers count up as it comes, about 0.7 s (the moment the page is finished in the list;
+// not with Reduce motion, nor when a finished guide is opened again). A screen reader has the numbers whole meanwhile
+// (finishCard's label); a count that changes while it runs (shading's +n) is written afresh by finishCard
+function finishCount(card) {
+  if (!card || card.offsetParent === null) return;
+  card.querySelectorAll('.sfpgst b').forEach(function (b) {
+    const m = /^(\d+)(.*)$/.exec(b.textContent);
+    if (!m || +m[1] < 2) return;
+    const n = +m[1],
+      tail = m[2],
+      t0 = performance.now(),
+      want = b.textContent;
+    (function f(t) {
+      // (written afresh meanwhile: left as it is)
+      if (!b.isConnected || b._cnt !== t0) return;
+      const k = Math.min(1, (t - t0) / 700);
+      b.textContent = (k < 1 ? Math.round(n * (1 - Math.pow(1 - k, 3))) : n) + tail;
+      if (k < 1) requestAnimationFrame(f);
+      else b.textContent = want;
+    })((b._cnt = t0));
+  });
+}
+// (v320) the finished card's marker strokes: on a canvas inside the card (it scrolls with it), flicked up from its
+// foot and down from its top, drawn only in those two bands so none crosses its words; about 1.4 s
+function finishStrokes(card) {
+  const cv = card && card.querySelector('.sfpgfx');
+  if (!cv || card.offsetParent === null) return;
+  const W0 = card.clientWidth,
+    H0 = card.clientHeight,
+    dpr = Math.min(2, window.devicePixelRatio || 1),
+    band = Math.min(28, H0 * 0.16);
+  cv.width = Math.round(W0 * dpr);
+  cv.height = Math.round(H0 * dpr);
+  const g = cv.getContext('2d');
+  g.scale(dpr, dpr);
+  g.lineCap = 'round';
+  const pal = [],
+    seen = {};
+  if (assignData)
+    for (const l in assignData.assign) {
+      const hx = assignData.assign[l].hex;
+      if (!seen[hx]) {
+        seen[hx] = 1;
+        pal.push(hx);
+      }
+    }
+  if (!pal.length) pal.push('#7c5cff', '#ffd84a', '#5fb89f', '#ff5c8a');
+  const N = Math.min(40, Math.max(16, Math.round(W0 / 14))),
+    ps = [];
+  for (let i = 0; i < N; i++) {
+    const top = i % 2 === 1,
+      a = (top ? Math.PI / 2 : -Math.PI / 2) + (Math.random() - 0.5) * 1.4,
+      v = 1.5 + Math.random() * 2.2;
+    ps.push({
+      x: W0 * Math.random(),
+      y: top ? -4 : H0 + 4,
+      vx: Math.cos(a) * v,
+      vy: Math.sin(a) * v,
+      len: 8 + Math.random() * 10,
+      lw: 3 + Math.random() * 3,
+      c: pal[(Math.random() * pal.length) | 0],
+      top: top,
+    });
+  }
+  finishStrokes.n = N;
+  finishStrokes.runs = (finishStrokes.runs || 0) + 1;
+  // (a second finish while one plays, the last section unticked and ticked again: the older one stops, or the two
+  // would each clear the other's frame)
+  const run = finishStrokes.runs,
+    start = performance.now();
+  let last = start;
+  (function frame(t) {
+    if (run !== finishStrokes.runs) return;
+    const dt = Math.min(2.2, (t - last) / 16.67) || 1,
+      age = (t - start) / 1400;
+    last = t;
+    g.clearRect(0, 0, W0, H0);
+    g.save();
+    g.beginPath();
+    g.rect(0, 0, W0, band);
+    g.rect(0, H0 - band, W0, band);
+    g.clip();
+    g.globalAlpha = Math.max(0, Math.min(1, 1.5 - age * 1.5));
+    for (const p of ps) {
+      p.vy += (p.top ? -0.05 : 0.05) * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      const sp = Math.hypot(p.vx, p.vy) || 1;
+      g.strokeStyle = p.c;
+      g.lineWidth = p.lw;
+      g.beginPath();
+      g.moveTo(p.x, p.y);
+      g.lineTo(p.x - (p.vx / sp) * p.len, p.y - (p.vy / sp) * p.len);
+      g.stroke();
+    }
+    g.restore();
+    if (age < 1 && card.isConnected) requestAnimationFrame(frame);
+    else g.clearRect(0, 0, W0, H0);
+  })(start);
 }
 // (v306) Focus mode's finish: up to STROKES_MAX short rounded strokes in the guide's own marker colours, flicked up
 // from the progress bar (r: its box on the screen; the foot of the screen without one) and falling away, about 1.6 s.
@@ -3733,76 +4190,7 @@ function doneAfterFocus() {
     });
   });
 }
-function confettiBurst() {
-  const dpr = Math.min(2, window.devicePixelRatio || 1),
-    W0 = window.innerWidth,
-    H0 = window.innerHeight,
-    cv = document.createElement('canvas');
-  cv.width = W0 * dpr;
-  cv.height = H0 * dpr;
-  cv.className = 'sfconfetti';
-  document.body.appendChild(cv);
-  const g = cv.getContext('2d');
-  g.scale(dpr, dpr);
-  const pal = [];
-  if (assignData) {
-    const seen = {};
-    for (const l in assignData.assign) {
-      const hx = assignData.assign[l].hex;
-      if (!seen[hx]) {
-        seen[hx] = 1;
-        pal.push(hx);
-      }
-    }
-  }
-  if (!pal.length) {
-    pal.push('#7c5cff', '#b45cff', '#ffd84a', '#3f7d4e', '#ff5c8a');
-  }
-  const N = 150,
-    ps = [];
-  for (let i = 0; i < N; i++)
-    ps.push({
-      x: W0 * (0.15 + 0.7 * Math.random()),
-      y: H0 * 0.5 + (Math.random() * 30 - 15),
-      vx: (Math.random() - 0.5) * 11,
-      vy: -9 - Math.random() * 10,
-      gr: 0.3 + Math.random() * 0.12,
-      r: 4 + Math.random() * 5,
-      rot: Math.random() * 6.28,
-      vr: (Math.random() - 0.5) * 0.45,
-      c: pal[(Math.random() * pal.length) | 0],
-      sq: Math.random() < 0.55,
-    });
-  const start = performance.now();
-  let last = start;
-  (function frame(t) {
-    const dt = Math.min(2.2, (t - last) / 16.67) || 1;
-    last = t;
-    g.clearRect(0, 0, W0, H0);
-    let alive = false;
-    for (const p of ps) {
-      p.vy += p.gr * dt;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vx *= 0.995;
-      p.rot += p.vr * dt;
-      if (p.y < H0 + 24) alive = true;
-      g.save();
-      g.translate(p.x, p.y);
-      g.rotate(p.rot);
-      g.fillStyle = p.c;
-      if (p.sq) g.fillRect(-p.r, -p.r * 0.6, p.r * 2, p.r * 1.2);
-      else {
-        g.beginPath();
-        g.arc(0, 0, p.r, 0, 6.283);
-        g.fill();
-      }
-      g.restore();
-    }
-    if (alive && t - start < 2800) requestAnimationFrame(frame);
-    else cv.remove();
-  })(start);
-}
+// (v320: the list's confetti went; its finish is finishStrokes, the marker strokes Focus mode has)
 function exportImage() {
   if (!assignData || exportImage.busy) return;
   if (typeof guideWorked === 'function') guideWorked(curId);

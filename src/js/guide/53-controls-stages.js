@@ -4,7 +4,9 @@ function ctlFocus() {
     // (v318.32) Exit in a word, a pill like Colours at the other end of the row: on the iPad the bare ✕ it was wasn't
     // read as the way out, only the back swipe was. (Not "✕ Exit": at 390 wide the ✕ would push "Not the Copic Y26" to
     // a second line, v306.) Escape and the back swipe leave the same way (layers.js: exitFocus).
-    '<div class="sffocbar"><div class="sffocrow"><button id="sfExitFoc" class="sfexit" aria-label="Exit focus mode">Exit</button><span id="sfFocSw" class="sffocsw"></span><div class="sffocname"><b id="sfFocName"></b><span id="sfFocSub"></span></div><button id="sfFocCols" class="sffoccols" aria-expanded="false">Colours</button></div><div id="sfFocChips" class="sffocchips" aria-hidden="true"></div><div id="sfFocTip" class="sffoctip"></div><div class="sffocprog" id="sfFocProg" role="progressbar" aria-label="Page" aria-valuemin="0" aria-valuemax="100"><div id="sfProgBar"></div></div></div>' +
+    '<div class="sffocbar"><div class="sffocrow"><button id="sfExitFoc" class="sfexit" aria-label="Exit focus mode">Exit</button><span id="sfFocSw" class="sffocsw"></span><div class="sffocname"><b id="sfFocName"></b><span id="sfFocSub"></span></div><button id="sfFocCols" class="sffoccols" aria-expanded="false">Colours</button></div><div id="sfFocChips" class="sffocchips" aria-hidden="true"></div><div id="sfFocTip" class="sffoctip"></div><div class="sffocprog" id="sfFocProg" role="progressbar" aria-label="Page" aria-valuemin="0" aria-valuemax="100"><div id="sfProgBar"></div></div><button type="button" id="sfRailSwap" class="sfrailswap" aria-label="Swap sides" title="Swap sides">' +
+    ic('arrow-left-right') +
+    '</button></div>' +
     '<div id="sfFocSheet" class="sffocsheet" style="display:none"><button id="sfFocAll" class="fsall"></button>' +
     (shadeUse().on
       ? '<label class="sfchk fsteps"><input type="checkbox" id="sfToneSteps"' +
@@ -17,6 +19,8 @@ function ctlFocus() {
     '<div id="sfFocBot" class="sffocbot"></div>';
   var _ef = document.getElementById('sfExitFoc');
   if (_ef) _ef.addEventListener('click', exitFocus);
+  var _rs = document.getElementById('sfRailSwap');
+  if (_rs) _rs.addEventListener('click', railSwap);
   var _fcb = document.getElementById('sfFocCols');
   if (_fcb)
     _fcb.addEventListener('click', function () {
@@ -86,7 +90,11 @@ function edBarHTML(quick) {
   return (
     '<div class="sfbar sfedbar">' +
     (quick ? '<button type="button" id="sfFix" class="sfghost">Edit sections</button>' : '') +
-    '<button id="sfToPlan" class="sfghost" style="display:none" aria-label="Back to the Plan">\u2190 Plan</button><button id="sfBuild" class="sfprimary" aria-label="Build guide">Build guide \u2192</button></div>'
+    '<button id="sfToPlan" class="sfghost" style="display:none" aria-label="Back to the Plan">' +
+    icNav(-1) +
+    ' Plan</button><button id="sfBuild" class="sfprimary" aria-label="Build guide">Build guide ' +
+    icNav(1) +
+    '</button></div>'
   );
 }
 // (v318.32 U1-1) Adjust photo opened: its rows brought into view between the pinned picture and the Build bar. On a
@@ -122,8 +130,10 @@ function edBarSync() {
     tp.className = ed ? 'sfghost' : 'sfprimary';
   }
   bb.style.display = built && !ed ? 'none' : '';
-  if (bb.textContent.indexOf('Building') < 0)
-    bb.textContent = built ? 'Build again \u2192' : 'Build guide \u2192';
+  if (bb.textContent.indexOf('Building') < 0) {
+    const w = built ? 'Build again ' : 'Build guide ';
+    if (bb.textContent !== w) bb.innerHTML = w + icNav(1);
+  }
   // (the arrow isn't read out)
   bb.setAttribute('aria-label', built ? 'Build again' : 'Build guide');
   const kl = document.getElementById('sfKeepLine');
@@ -728,8 +738,9 @@ function ctlSections() {
             if (mpOn()) mpLinesImage();
           } catch (e) {}
         afterPaint(function () {
-          // (the first Build of a new picture blooms: 41-bloom.js)
-          const first = !assignData;
+          // (the first Build of a new picture blooms: 41-bloom.js; v320: so does Build after the sections were
+          // changed in Edit sections, the plan laid on them afresh)
+          const first = !assignData || (!!assignData && guideSig !== labelsSig());
           try {
             if (g !== loadGen) return;
             holdTime('Build', function () {
@@ -739,7 +750,7 @@ function ctlSections() {
           } finally {
             if (b.isConnected) {
               b.disabled = false;
-              b.textContent = 'Build guide \u2192';
+              b.innerHTML = 'Build guide ' + icNav(1);
               b.setAttribute('aria-label', 'Build guide');
               edBarSync();
             }

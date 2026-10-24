@@ -17,7 +17,7 @@
   border: 1px solid rgba(var(--ok-rgb), 0.55);
   background:
     radial-gradient(90% 110% at 0% 0%, rgba(var(--ok-rgb), 0.16), transparent 62%),
-    radial-gradient(80% 100% at 100% 100%, rgba(124, 92, 255, 0.14), transparent 62%), var(--raise);
+    radial-gradient(80% 100% at 100% 100%, rgba(var(--accent-rgb), 0.14), transparent 62%), var(--raise);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   color: var(--ink);
   font-weight: 700;
@@ -52,6 +52,111 @@
 #sfRoot .sfpgsum:empty {
   display: none;
 }
+/* (v320, D2b) the finished card: left-aligned, the date over the title, three numbers, the guide's markers, its actions;
+   marker strokes on its own canvas (finishStrokes) under its words */
+#sfRoot .sfpgdone {
+  text-align: left;
+  padding: var(--s5) var(--s5) var(--s4);
+  overflow: hidden;
+  font-weight: 500;
+}
+#sfRoot .sfpgfx {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+#sfRoot .sfpgdone > :not(.sfpgfx) {
+  position: relative;
+}
+#sfRoot .sfpgkick {
+  font-size: var(--t-xs, 12px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sub);
+  font-weight: 650;
+}
+#sfRoot .sfpgdone .sfpgtitle {
+  margin-top: var(--s1);
+  font-weight: 540;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+#sfRoot .sfpgdone .sfpgsum {
+  display: flex;
+  margin-top: var(--s4);
+  color: var(--ink);
+}
+#sfRoot .sfpgst {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: var(--s4);
+  border-left: 1px solid var(--line);
+}
+#sfRoot .sfpgst:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+#sfRoot .sfpgst b {
+  display: block;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  font-size: var(--t-2xl);
+  line-height: 1.1;
+  /* (tabular: v321's count-up holds its width) */
+  font-variant-numeric: lining-nums tabular-nums;
+}
+#sfRoot .sfpgst span {
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+#sfRoot .sfpgmk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--s4);
+}
+#sfRoot .sfpgmk:empty {
+  display: none;
+}
+#sfRoot .sfpgmk i {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.18),
+    0 2px 5px rgba(0, 0, 0, 0.4);
+}
+#sfRoot .sfpgmk span {
+  align-self: center;
+  font-size: var(--t-sm);
+  color: var(--sub);
+}
+#sfRoot .sfpgacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  margin-top: var(--s4);
+}
+#sfRoot .sfpgacts > .sfprimary {
+  flex: 1 1 12em;
+  min-height: var(--h-ctl);
+}
+#sfRoot .sfpgacts > .sffin {
+  flex: 1 1 12em;
+  min-width: 0;
+}
+/* (the photo's button level with Reveal & share; its note, how a photo straightens, left out of the card: the button
+   says what it does, and the note shows once there's a photo) */
+#sfRoot .sfpgacts .sffinadd {
+  min-height: var(--h-ctl);
+  margin-top: 0;
+  font-size: var(--t-md);
+}
+#sfRoot .sfpgacts .sffinnote {
+  display: none;
+}
 /* brought into view when the page is finished (90-export.js celebrate): a green ring that swells and fades */
 #sfRoot .sfpgdone.flash {
   animation: pgflash 1.6s ease;
@@ -81,7 +186,7 @@
   border-bottom: 1px solid var(--line);
 }
 #sfRoot .sfarow.open {
-  background: rgba(124, 92, 255, 0.09);
+  background: rgba(var(--accent-rgb), 0.09);
   border-bottom-color: transparent;
   border-radius: 10px;
 }
@@ -253,8 +358,8 @@
 @keyframes alflash {
   0%,
   40% {
-    background: rgba(124, 92, 255, 0.42);
-    box-shadow: 0 0 0 2px #b9a8ff inset;
+    background: rgba(var(--accent-rgb), 0.42);
+    box-shadow: 0 0 0 2px var(--accent-ink) inset;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -265,8 +370,10 @@
 /* the first time's More (the rest of how colour along works): a link with a finger-sized tap area */
 #sfRoot #sfAlMore {
   display: inline-block;
-  padding: 8px 16px 8px 0;
-  margin: -6px 0 -8px;
+  /* (v321: its tap area is the strips above and below it, and to each side, 08-dialogs-match; padding had made the
+     keyboard's ring a box over the line above) */
+  padding: 0 2px;
+  margin: 0;
 }
 /* with zones: whole picture or zone by zone, and each zone's name over its markers (83-along) */
 #sfRoot #sfCtl .sfalorder {
@@ -479,7 +586,11 @@
     overflow-x: auto;
     scrollbar-width: none;
     margin: 0 -12px;
-    padding: 0 12px 2px;
+    /* (v321) its right edge fades, so there's more to see (the row's scroll bar is hidden), and its end has room to
+       scroll clear of the fade */
+    padding: 0 36px 2px 12px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
   }
   #sfRoot .sflowc::-webkit-scrollbar {
     display: none;
@@ -619,4 +730,43 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+/* (v320) a phone: the card compact enough to show whole between the pinned picture and the bar (a 375×667 screen
+   too): the numbers on one line, no marker chips (the list under it has them all), the two actions one under the
+   other */
+@media (max-width: 699px) {
+  #sfRoot .sfpgdone {
+    padding: var(--s3) var(--s4);
+  }
+  #sfRoot .sfpgdone .sfpgtitle {
+    font-size: var(--t-xl);
+  }
+  #sfRoot .sfpgdone .sfpgsum {
+    flex-wrap: wrap;
+    gap: 2px var(--s4);
+    margin-top: var(--s2);
+  }
+  #sfRoot .sfpgst {
+    flex: none;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    padding: 0;
+    border: 0;
+  }
+  #sfRoot .sfpgst b {
+    font-size: var(--t-lg);
+  }
+  #sfRoot .sfpgmk {
+    display: none;
+  }
+  #sfRoot .sfpgacts {
+    flex-direction: column;
+    gap: var(--s2);
+    margin-top: var(--s3);
+  }
+  #sfRoot .sfpgacts > .sfprimary,
+  #sfRoot .sfpgacts > .sffin {
+    flex: none;
+  }
 }

@@ -146,8 +146,10 @@ function sizeCanvas() {
     return;
   }
   if (root.classList.contains('sffoc') && !root.classList.contains('sfrev')) {
+    root.classList.add('sfonpaper');
     const g = focusGeo(),
-      k = Math.min(g.aw / (cv.width || 1), (g.ah - 6) / (cv.height || 1));
+      G2 = paperG() * 2,
+      k = Math.min((g.aw - G2) / (cv.width || 1), (g.ah - 6 - G2) / (cv.height || 1));
     if (k > 0) {
       cv.style.width = Math.round(cv.width * k) + 'px';
       cv.style.height = Math.round(cv.height * k) + 'px';
@@ -165,6 +167,9 @@ function sizeCanvas() {
 }
 function applyXform() {
   if (cv) cv.style.transform = 'translate(' + panX + 'px,' + panY + 'px) scale(' + zoom + ')';
+  // (v320: the paper's shadow only at its own size: zoomed, it would grow with the picture. On the canvas, not the
+  // root: a class changed on the root has every control's style worked out again, on every zoom step)
+  if (cv) cv.classList.toggle('sfzin', zoom > 1.001);
   labHiSync();
   labZoomed();
   fitBtn();
@@ -191,13 +196,18 @@ function clampPan() {
     const r = handOn() && _handRoom ? _handRoom : null,
       cx = r ? (r.x0 + r.x1) / 2 : g.cx,
       cy = r ? (r.y0 + r.y1) / 2 : g.cy;
+    // (v320: g.x0, where the picture's room starts: beside Focus mode's rail on its left. On an iPad the page may
+    // come off the room's edge by the paper's gutter, G, as it sits in it unzoomed: zoomed just past the room's size,
+    // the page had jumped to its edge)
+    const x0 = g.x0 || 0,
+      G = paperG();
     panX =
       sw >= g.aw
-        ? Math.min(-ol, Math.max(g.aw - ol - sw, panX))
-        : Math.max(-ol, Math.min(g.aw - ol - sw, cx - ol - sw / 2));
+        ? Math.min(x0 - ol + G, Math.max(x0 + g.aw - ol - sw - G, panX))
+        : Math.max(x0 - ol, Math.min(x0 + g.aw - ol - sw, cx - ol - sw / 2));
     panY =
       sh >= g.ah
-        ? Math.min(g.t - ot, Math.max(g.t + g.ah - ot - sh, panY))
+        ? Math.min(g.t - ot + G, Math.max(g.t + g.ah - ot - sh - G, panY))
         : Math.max(g.t - ot, Math.min(g.t + g.ah - ot - sh, cy - ot - sh / 2));
     return;
   }

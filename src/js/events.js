@@ -357,7 +357,9 @@ function mkBlendFill(i) {
     (back != null
       ? '<button type="button" class="mkblback" data-mkback="' +
         back +
-        '"><span aria-hidden="true">\u2190</span> Back to ' +
+        '">' +
+        icNav(-1) +
+        ' Back to ' +
         esc(COLORS[back].brand + ' ' + capCode(back)) +
         '</button>'
       : '<div class="mkblh" aria-hidden="true">Blends with</div>') +

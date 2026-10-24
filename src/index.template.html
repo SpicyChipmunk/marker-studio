@@ -3,7 +3,7 @@
 <!-- Marker Studio. Copyright (c) 2026 SpicyChipmunk. All rights reserved (see LICENSE). Not affiliated with or endorsed
 by Ohuhu or Copic; their names are trademarks of their owners.
 Third-party: the fonts Fraunces and Hanken Grotesk, under the SIL Open Font License 1.1 (src/assets/fonts/OFL-*.txt).
-36 line icons from Lucide (lucide.dev), some of them derived from Feather (feathericons.com); the full list is in
+37 line icons from Lucide (lucide.dev), some of them derived from Feather (feathericons.com); the full list is in
 src/assets/icons/LICENSE-Lucide-Feather.txt. Their notices:
 
 Lucide: ISC License. Copyright (c) 2026 Lucide Icons and Contributors. Permission to use, copy, modify, and/or
@@ -27,12 +27,48 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="text-scale" content="scale">
 <meta name="mobile-web-app-capable" content="yes">
+<!-- (v321) Apple's own tag as well: iOS shows the launch screens below only with it (the manifest opens the app as a
+     Home Screen app either way) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b0b0e">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Marker Studio">
 <meta name="application-name" content="Marker Studio">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- (v321) Launch screens: while iOS starts the Home Screen app, the app's ground with its icon instead of a black
+     screen. iOS takes one only on an exact match of screen size, pixel ratio and orientation (a screen not listed stays
+     black, as before); every current iPad either way up, and iPhones upright. launch/, made by scripts/launch.py -->
+<link rel="apple-touch-startup-image" media="screen and (device-width: 1032px) and (device-height: 1376px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="launch/launch-1032x1376@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 1032px) and (device-height: 1376px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="launch/launch-1376x1032@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="launch/launch-1024x1366@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="launch/launch-1366x1024@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1210px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="launch/launch-834x1210@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1210px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="launch/launch-1210x834@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="launch/launch-834x1194@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="launch/launch-1194x834@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="launch/launch-820x1180@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="launch/launch-1180x820@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="launch/launch-834x1112@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="launch/launch-1112x834@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="launch/launch-810x1080@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="launch/launch-1080x810@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="launch/launch-768x1024@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="launch/launch-1024x768@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="launch/launch-744x1133@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="launch/launch-1133x744@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="launch/launch-440x956@3x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="launch/launch-420x912@3x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="launch/launch-402x874@3x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="launch/launch-430x932@3x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="launch/launch-393x852@3x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="launch/launch-428x926@3x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="launch/launch-390x844@3x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="launch/launch-414x896@3x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="launch/launch-375x812@3x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="launch/launch-414x896@2x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="launch/launch-414x736@3x.png">
+<link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="launch/launch-375x667@2x.png">
 <!-- (v318.32) the tab icon's address names the icon's version: browsers keep a tab icon by its address long after
      the file changes (v318.30's new icon showed on the Home Screen, the old one in Safari's tab) -->
 <link rel="icon" type="image/png" href="icon-192.png?v=318.30">
@@ -55,7 +91,65 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
 @@include(css/10-swatch.css)
 @@include(css/11-scan.css)
 @@include(css/13-chart.css)
-@@include(css/12-ios.css)</style></head><body>
+@@include(css/12-ios.css)
+@@include(css/14-intro.css)</style>
+<script>
+// (v322) the opening animation (css/14-intro.css): opened from the Home Screen (a fresh start, not a return to it),
+// not with Reduce motion; under test only when one asks (window.__MS_INTRO)
+(function () {
+  try {
+    var mm = function (q) {
+      return !!(window.matchMedia && matchMedia(q).matches);
+    };
+    if (window.__MS_TEST && !window.__MS_INTRO) return;
+    if (mm('(prefers-reduced-motion: reduce)')) return;
+    if (window.__MS_INTRO || navigator.standalone === true || mm('(display-mode: standalone)'))
+      document.documentElement.classList.add('msintro-on');
+  } catch (_) {}
+})();
+</script></head><body>
+@@include(html/intro.html)
+<script>
+// (v322) the animation's end: once the page's script has all run and its last section is in, it fades off Home and goes.
+// (Its start is the browser's: Safari's engine starts it as the page is first drawn, Chromium's once the script has run;
+// so its own end, not a time, says when it's done.) A start that never finishes loading still loses it after 4 s
+(function () {
+  var el = document.getElementById('msIntro');
+  if (!el || !document.documentElement.classList.contains('msintro-on')) {
+    if (el) el.remove();
+    return;
+  }
+  var gone = false,
+    ready = 0,
+    last = el.querySelectorAll('.msinf'),
+    end = function () {
+      if (gone) return;
+      gone = true;
+      el.classList.add('out');
+      setTimeout(function () {
+        el.remove();
+        document.documentElement.classList.remove('msintro-on');
+      }, 200);
+    };
+  var step = function () {
+    if (++ready === 2) end();
+  };
+  last = last[last.length - 1];
+  if (last) last.addEventListener('animationend', step, { once: true });
+  else ready++;
+  document.addEventListener('DOMContentLoaded', step, { once: true });
+  // (a tap ends it at once; the tap itself goes no further)
+  el.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    end();
+  });
+  el.addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  setTimeout(end, 4000);
+})();
+</script>
 @@include(html/icons.html)
 @@include(html/app.html)
 @@include(html/dialogs.html)

@@ -760,6 +760,8 @@
       return !(st.t[x.k] && st.t[x.k].r);
     });
     card.classList.toggle('ttready', all);
+    // (v321: the count in a ring that fills as tasks are answered)
+    card.style.setProperty('--p', Math.round((n / TASKS.length) * 100) + '%');
     // (v318.32) the line's last word and the › in one nowrap span, so the › never wraps alone (V1-9: it did on an
     // iPad in portrait). A span, not a no-break space: the tests compare the text
     const line = all

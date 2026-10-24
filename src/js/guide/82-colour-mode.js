@@ -284,13 +284,16 @@ function renderFocusMarkers() {
     .map(function (e) {
       var full = e.d >= e.n,
         act = hlKey === e.m.mkey && (e.z == null || hlZone === e.z),
-        tc = txt(e.m.hex);
+        // (v320, G1-11) a colour neither text reads on at 4.5:1 (Ohuhu RV212's pink: 4.2 white, 4.4 dark) takes white
+        // words with a dark halo: dark words with a light halo read as pink on pink
+        weak = txtWeak(e.m.hex),
+        tc = weak ? '#fff' : txt(e.m.hex);
       return (
         '<button class="focmk' +
         (act ? ' on' : '') +
         (full ? ' done' : '') +
         // (v308.3: a colour neither text reads on at 4.5:1 gets a halo round its words, dark under white, light under dark)
-        (txtWeak(e.m.hex) ? ' fmhalo' + (tc === '#fff' ? '' : ' fmhalo-lt') : '') +
+        (weak ? ' fmhalo' : '') +
         '" data-k="' +
         esc(e.k) +
         '" style="background:' +
@@ -365,6 +368,7 @@ function exitColor() {
   if (sfView) sfView.style.paddingTop = sfView.style.paddingBottom = '';
   var _rt = document.getElementById('sfRoot');
   if (_rt) _rt.classList.remove('sffoc');
+  railSync();
   relWake();
   stageGo();
   renderControls();
@@ -455,6 +459,7 @@ function focusRefit(remember) {
 }
 function fitFocus() {
   if (!root.classList.contains('sffoc') || !sfView) return;
+  railSync();
   var g = focusGeo();
   sfView.style.paddingTop = g.t + 'px';
   sfView.style.paddingBottom = g.b + 'px';
@@ -493,6 +498,7 @@ function exitFocus() {
     sfView.style.paddingTop = sfView.style.paddingBottom = '';
   }
   root.classList.remove('sffoc');
+  railSync();
   resetZoom();
   renderControls();
   renderGuide();

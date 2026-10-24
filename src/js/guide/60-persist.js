@@ -688,7 +688,12 @@ function edDecide() {
   return _edAsk.then(function (a) {
     if (a === 'build') {
       // (not a page with more sections than a guide can keep: Build in Edit sections says what to do, v304)
-      if (secEdPending() && !denseStop()) buildGuide();
+      if (secEdPending() && !denseStop()) {
+        // (v320: the plan on the changed sections blooms in, as Build does: 41-bloom.js)
+        const chg = !!assignData && guideSig !== labelsSig();
+        buildGuide();
+        if (chg && assignData && sfmode === 'guide') bloomStart();
+      }
       return secEdPending() || !assignData || sfmode === 'review' ? false : stashDirty();
     }
     if (a === 'discard') {
@@ -1703,7 +1708,8 @@ function saveStText(pe) {
   if (!e) return sfmode === 'review' || _openEmpty ? 'Not saved yet' : 'Saving\u2026';
   // (v307: only while it's being written; a change waiting its moment to be saved said "Saving…" for 1.5 s after
   // every tick, so Colour along read as always saving)
-  if (_libBusy) return 'Saving\u2026';
+  // (v320, G1-13: a guide already in the Library keeps its line while a change is written, a little fainter (saveStatus),
+  // not "Saving…" and back after every tick)
   return Date.now() - _savedNew < 6000 ? 'Saves itself from now on \u2713' : 'Saved in your Library \u2713';
 }
 function saveStatus() {
@@ -1716,6 +1722,8 @@ function saveStatus() {
     el.style.display = t ? '' : 'none';
     el.classList.toggle('warn', pe || _saveErr || _removed || (!e && storeBlocked() && !!assignData));
     el.classList.toggle('ok', !pe && !!e && !_saveErr && !_libBusy);
+    // (v320: being written: the same words, fainter for the moment it takes)
+    el.classList.toggle('saving', !pe && !!e && !_saveErr && !!_libBusy);
   }
   // the button: Put back (deleted while open), or Save to try again after a save that failed
   const b = document.getElementById('sfSave'),

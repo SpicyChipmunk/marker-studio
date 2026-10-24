@@ -54,7 +54,7 @@
   width: 18px;
   height: 18px;
   flex: none;
-  accent-color: #7c5cff;
+  accent-color: var(--accent);
   cursor: pointer;
 }
 .presetnm {
@@ -215,7 +215,7 @@
   letter-spacing: 0.01em;
 }
 #useGuideWrap #useInGuide:active {
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 /* Home's recent guides (library.js), well clear of the tiles above */
 .homerecent {
@@ -355,7 +355,7 @@ button.sfSeeAll {
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: rgba(124, 92, 255, 0.16);
+  background: rgba(var(--accent-rgb), 0.16);
   color: #b9a6ff;
 }
 .wci .ic {
@@ -565,25 +565,26 @@ button.sfSeeAll {
   margin-top: 10px;
 }
 /* (v306) The welcome's picture (boot.js, a first run only): the sample page, and its guide flooding down over it from
-   the bell, held, then faded back to the page; three times, then it stays coloured. The picture lies on its side above
-   the heading (portrait), or stands beside the list on a landscape screen. Not under 761 px of height. Not .ocard img's
-   frame (03-overlays.css). */
+   the bell, held, then faded back to the page; three times, then it stays coloured. v320: upright above the heading,
+   up to 180 px of its top (the bells and the bodies under them: --wcar, the sample's shape), the colour flooding in from the
+   top; standing whole beside the list on a landscape screen. Not under 761 px of height. Not .ocard img's frame
+   (03-overlays.css). */
 .wcpic {
   display: none;
   position: relative;
   flex: none;
   overflow: hidden;
-  aspect-ratio: 898 / 340;
+  /* (180 px on an iPad; a phone's three ways in stay on its first screen) */
+  height: clamp(120px, 18vh, 180px);
   border-radius: var(--r-md);
   background: #f7f4ee;
 }
 .wcpicin {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: calc(100% * 340 / 898);
-  height: calc(100% * 898 / 340);
-  transform: translate(-50%, -50%) rotate(-90deg);
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: var(--wcar, 921 / 1200);
 }
 .wcpicin > * {
   position: absolute;
@@ -719,7 +720,7 @@ button.sfSeeAll {
   /* (v309: the picture is on the first step, the three ways in; the steps after it are the usual width) */
   .wcard.haspic[data-step='wcStep0'] {
     max-width: 760px;
-    --wcpw: min(250px, calc((100vh - 150px) * 340 / 898));
+    --wcpw: min(300px, calc((100vh - 150px) * 921 / 1200));
   }
   .wcard.haspic #wcStep0 {
     display: grid;
@@ -732,7 +733,8 @@ button.sfSeeAll {
     grid-row: 1 / 3;
     align-self: center;
     width: var(--wcpw);
-    aspect-ratio: 340 / 898;
+    height: auto;
+    aspect-ratio: var(--wcar, 921 / 1200);
   }
   .wcard.haspic .wcpicin {
     inset: 0;
@@ -851,16 +853,21 @@ button.sfSeeAll {
   min-width: 200px;
 }
 .homecard.attn {
-  border-color: rgba(124, 92, 255, 0.6);
-  box-shadow: 0 0 0 1px rgba(124, 92, 255, 0.35) inset;
+  border-color: rgba(var(--accent-rgb), 0.6);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.35) inset;
 }
 .homecard.attn .hcsub {
-  color: #b9a8ff;
+  color: var(--accent-ink);
   font-weight: 600;
 }
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+/* (v321) a link in a line of text: its ring close round its words, rounded, not its tap area's box */
+.sflink:focus-visible {
+  outline-offset: 1px;
+  border-radius: 4px;
 }
 .band:focus-visible,
 .cell:focus-visible {
@@ -911,7 +918,29 @@ button.sfSeeAll {
 .libstat {
   font-size: var(--t-sm);
   color: var(--sub);
-  margin: -4px 0 10px;
+}
+/* (v320) the line and, while guides aren't in a backup, a Back up link straight after it */
+.libstatrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 44px;
+  margin: -12px 0 2px;
+}
+/* (a 44 px tap area, inside the row's own height) */
+.libstatrow .sflink {
+  position: relative;
+  font-size: var(--t-sm);
+}
+.libstatrow .sflink::after {
+  content: '';
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
 }
 .libstat.warn {
   color: #f0c27a;
@@ -1179,8 +1208,8 @@ button.hcpic:focus-visible {
 /* (beside the Continue card, New colouring guide is the second choice: outlined) */
 .homenew.homenew2 {
   background: transparent;
-  border: 1.5px solid rgba(124, 92, 255, 0.7);
-  color: #cbbcff;
+  border: 1.5px solid rgba(var(--accent-rgb), 0.7);
+  color: var(--accent-ink2);
   box-shadow: none;
 }
 /* (the cards' icons on a soft tile in their marker colour) */
@@ -1195,13 +1224,13 @@ button.hcpic:focus-visible {
   font-size: var(--t-2xl);
 }
 .homecard .hct1 {
-  background: rgba(224, 104, 90, 0.15);
+  background: rgba(251, 129, 127, 0.15);
 }
 .homecard .hct2 {
-  background: rgba(30, 163, 216, 0.15);
+  background: rgba(225, 155, 27, 0.15);
 }
 .homecard .hct3 {
-  background: rgba(180, 187, 84, 0.15);
+  background: rgba(103, 176, 249, 0.15);
 }
 /* Your guides: cards with their picture over the name; a sideways strip on a phone */
 .sfRecList {
@@ -1838,8 +1867,8 @@ button.hcpic:focus-visible {
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: rgba(124, 92, 255, 0.14);
-    color: #cbbcff;
+    background: rgba(var(--accent-rgb), 0.14);
+    color: var(--accent-ink2);
   }
   .homehow .hhwi .ic {
     width: 18px;
@@ -1861,5 +1890,33 @@ button.hcpic:focus-visible {
     content: counter(how) '. ';
     color: var(--sub);
     font-weight: 400;
+  }
+}
+/* (v320) a phone's first Home: the sample page and its coloured page, a 150 px strip above New guide from a photo
+   (library.js); the iPad's start card shows them already */
+.homeba {
+  display: none;
+}
+@media (max-width: 699.98px) {
+  .homeba {
+    display: block;
+    position: relative;
+    width: 100%;
+    /* (shorter on a short phone, 320×568, so the three cards stay on its first screen) */
+    height: clamp(88px, 16vh, 150px);
+    margin: 0 0 10px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: #f7f4ee;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .homeba .hcba {
+    inset: 10px;
+  }
+  .homeba:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
   }
 }

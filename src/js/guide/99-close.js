@@ -207,6 +207,13 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     codeNorm: codeNorm,
     openSectionPop: openSectionPop,
     // (v306: the marker strokes when a page is finished in Focus mode)
+    // (v320: the finished card's strokes, the list's finish)
+    get finishStrokesN() {
+      return finishStrokes.n || 0;
+    },
+    get finishStrokesRuns() {
+      return finishStrokes.runs || 0;
+    },
     get markerStrokesN() {
       return markerStrokes.n || 0;
     },
@@ -1529,6 +1536,7 @@ return {
   loadSample: sampleFromAnywhere,
   // (the sample page and its guide, for Home's start card, v300)
   sampleBA: sampleBA,
+  sampleSrc: sampleSrc,
   // (the welcome's picture, v306)
   samplePics: samplePics,
   // (v306: Palette's Rainbow scheme picks as the Gradient does; Home's latest piece opens a guide and acts)

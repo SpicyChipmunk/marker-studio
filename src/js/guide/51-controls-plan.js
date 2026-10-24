@@ -1312,7 +1312,9 @@ function ctlPlanShare() {
 // (a photo with no colour, v307)
 function ctlPlanBar() {
   return (
-    '<div class="sfbar"><button id="sfBack2" class="sfghost" aria-label="Back to Edit sections" data-long="\u2190 Edit sections" data-short="\u2190 Sections">\u2190 Edit sections</button><button id="sfColor" class="sfcolorcta"' +
+    '<div class="sfbar"><button id="sfBack2" class="sfghost" aria-label="Back to Edit sections" data-ic="back" data-long="Edit sections" data-short="Sections">' +
+    icNav(-1) +
+    ' Edit sections</button><button id="sfColor" class="sfcolorcta"' +
     (guideWhite() ? ' disabled title="Every section is left white: nothing to colour yet"' : '') +
     '>Colour along</button></div>'
   );

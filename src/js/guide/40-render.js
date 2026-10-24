@@ -333,7 +333,12 @@ function codeLayout(g, l, m, o) {
   fs = Math.max(o.min, Math.floor(fs * 2) / 2);
   mm = meas(fs);
   const x0 = p.x - mm.tw / 2,
-    lw = Math.max(1, fs * o.swk);
+    // (o.thin, v320: the outline goes thinner, o.thin of the size, only where it stays at least LAB_EDGE_DEV pixels
+    // wide on the screen (o.dev: on the saved image), never thicker than before: measured over every marker colour, a
+    // thinner edge under that let the letters run into the colour round them)
+    lw = o.thin
+      ? Math.max(1, Math.min(fs * o.swk, Math.max(fs * o.thin, LAB_EDGE_DEV / (o.dev || _labDev))))
+      : Math.max(1, fs * o.swk);
   return {
     fs: fs,
     x0: x0,
@@ -718,6 +723,96 @@ function secBoxes() {
   _sb = { lp: labelPts, K: K, x0: x0, y0: y0, x1: x1, y1: y1 };
   return _sb;
 }
+// (v320) A tick's colour spreading from where the finger was, over about TICK_SPREAD ms: the section's box as it was
+// (spreadBegin, before the tick) and as it's drawn after (spreadRun, a frame later, once the tick's drawing is done),
+// the new one shown through a circle growing from the tap. Only that box is drawn each frame (not renderGuide); the
+// next tap never waits (a new spread ends the one before at once); none with Reduce motion (read afresh each time); a
+// slow frame jumps to the end. _tapPt: the last tap in the picture's pixels (80-input).
+const TICK_SPREAD = 240;
+let _tapPt = null,
+  _spr = null;
+function spreadBegin(l) {
+  // (not in the browser tests unless one asks, window.__MS_MOTION: they read the picture's pixels straight after a tick)
+  if (window.__MS_TEST && !window.__MS_MOTION) return null;
+  if (!cv || !ctx || !assignData || reducedMotion() || !comps || !comps[l] || cv.width !== W) return null;
+  spreadEnd();
+  const B = secBoxes(),
+    x0 = Math.max(0, B.x0[l] - 2),
+    y0 = Math.max(0, B.y0[l] - 2),
+    x1 = Math.min(W, B.x1[l] + 3),
+    y1 = Math.min(H, B.y1[l] + 3);
+  if (!(x1 > x0 && y1 > y0) || (x1 - x0) * (y1 - y0) > W * H * 0.6) return null;
+  const old = document.createElement('canvas');
+  old.width = x1 - x0;
+  old.height = y1 - y0;
+  try {
+    old.getContext('2d').drawImage(cv, x0, y0, old.width, old.height, 0, 0, old.width, old.height);
+  } catch (_) {
+    return null;
+  }
+  const p = _tapPt && _tapPt.l === l ? _tapPt : labelPos(l);
+  return { l: l, x0: x0, y0: y0, old: old, px: p.x, py: p.y, gen: loadGen };
+}
+function spreadRun(s) {
+  if (!s) return;
+  requestAnimationFrame(function () {
+    if (s.gen !== loadGen || !cv || !ctx || cv.width !== W) return;
+    const w = s.old.width,
+      h = s.old.height,
+      nw = document.createElement('canvas');
+    nw.width = w;
+    nw.height = h;
+    nw.getContext('2d').drawImage(cv, s.x0, s.y0, w, h, 0, 0, w, h);
+    const R = Math.max(
+        Math.hypot(s.px - s.x0, s.py - s.y0),
+        Math.hypot(s.px - s.x0 - w, s.py - s.y0),
+        Math.hypot(s.px - s.x0, s.py - s.y0 - h),
+        Math.hypot(s.px - s.x0 - w, s.py - s.y0 - h),
+      ),
+      t0 = performance.now();
+    let last = t0;
+    _spr = { s: s, nw: nw, raf: 0 };
+    const put = function (k) {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+      if (k < 1) {
+        ctx.drawImage(s.old, s.x0, s.y0);
+        ctx.beginPath();
+        ctx.arc(s.px, s.py, Math.max(1, R * k), 0, 6.2832);
+        ctx.clip();
+      }
+      ctx.drawImage(nw, s.x0, s.y0);
+      ctx.restore();
+    };
+    const frame = function (now) {
+      if (!_spr || _spr.s !== s) return;
+      const t = Math.min(1, (now - t0) / TICK_SPREAD),
+        // (a frame over 60 ms: the picture is too big for this device to keep up, so straight to the end)
+        k = now - last > 60 ? 1 : 1 - Math.pow(1 - t, 3);
+      last = now;
+      put(k);
+      if (k < 1) _spr.raf = requestAnimationFrame(frame);
+      else _spr = null;
+    };
+    put(0);
+    _spr.raf = requestAnimationFrame(frame);
+  });
+}
+// a spread under way, finished at once (the next tick, a full redraw)
+function spreadEnd() {
+  if (!_spr) return;
+  const z = _spr;
+  _spr = null;
+  cancelAnimationFrame(z.raf);
+  if (z.s.gen === loadGen && cv && ctx && cv.width === W) {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(z.nw, z.s.x0, z.s.y0);
+    ctx.restore();
+  }
+}
 // one section's label: a code (with lock marker) or, for a coloured section in colour along, a tick. Returns its box.
 // stepping through tones: while on the highlight or shadow step, the base marker's code in the section is faded
 function stepFaint(l) {
@@ -764,6 +859,7 @@ function secLabel(l, m, tick, draw) {
       max: 30 * srcK,
       w: 600,
       swk: 0.27,
+      thin: 0.2,
       stroke: dark ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.55)',
       fill: dark ? '#141414' : '#fff',
     };
@@ -939,6 +1035,16 @@ function paintPixels(PX, sh, x0, y0, x1, y1, one) {
    codes only now and then (at the end of a zoom: applyXform); focus mode keeps the unzoomed size, so its steps don't
    redraw every code. _labMin: that size, in the picture's pixels, for the draw under way. */
 const LAB_MIN_CSS = 6;
+// (v320: the codes' outline, at least this many of the screen's own pixels wide; _labDev: the screen's pixels per
+// picture pixel for the draw under way, at the low end of its zoom step)
+const LAB_EDGE_DEV = 2.8;
+let _labDev = 1;
+function labDevFor(b) {
+  const s0 = cv && cv.offsetWidth ? cv.offsetWidth / W : 1,
+    d = Math.max(0.1, s0 * (window.devicePixelRatio || 1) * (b > 1 ? b * Math.pow(2, -0.25) : 1));
+  // (in steps of an eighth of a doubling, rounded down: a frame a pixel or two another size draws the same codes)
+  return Math.pow(2, Math.floor(Math.log2(d) * 8) / 8);
+}
 let _labMin = 5,
   _labB = 0,
   _labT = 0;
@@ -1101,6 +1207,8 @@ function tkAlpha(l) {
 }
 function renderGuide() {
   if (!assignData) return;
+  // (v320: a tick's spread under way shows its end first, so what's drawn now is drawn over the finished picture)
+  spreadEnd();
   _mixKey = null;
   sameCodeReset();
   sizeCanvas();
@@ -1119,6 +1227,7 @@ function renderGuide() {
   // finished, or focus mode's last view, the picture as it is, no codes (v284)
   _labB = labBucket();
   _labMin = labMinFor(_labB);
+  _labDev = labDevFor(_labB);
   const assign = assignData.assign,
     n = W * H,
     K = comps.length,
@@ -1298,6 +1407,7 @@ function renderGuide() {
     brandsMixed(),
     _fontGen,
     _labMin,
+    _labDev,
     cv.width,
     cv.height,
   ];

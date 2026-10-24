@@ -36,7 +36,8 @@
   align-items: center;
   gap: 2px;
   min-width: 0;
-  height: 38px;
+  /* (v320, G1-5) at least the rename field's height; a long name takes a second line rather than being cut */
+  min-height: 38px;
 }
 /* (v318.33) the guide's name in the app's serif at --t-xl, as every other screen title and the sheet that opens
    under it (Fable V1-6: it was the only title in the sans) */
@@ -47,9 +48,14 @@
   font-size: var(--t-xl);
   letter-spacing: -0.01em;
   line-height: var(--lh-tight, 1.2);
-  white-space: nowrap;
+  /* (v320, G1-5) the made-up names ("Kaleidoscope Glass Garden") wrap to two lines, evenly, and only then are cut */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 #sfRoot .sfibtn {
   flex: none;
@@ -105,6 +111,11 @@
 #sfRoot .sfsavest.ok {
   color: var(--ok);
 }
+/* (v320) a change being written: the saved line stays, fainter for that moment (no "Saving…" flicker) */
+#sfRoot .sfsavest.saving {
+  color: var(--sub);
+  transition: color 0.2s ease;
+}
 #sfRoot .sfsavest.warn {
   color: var(--warn);
 }
@@ -114,9 +125,9 @@
   min-height: 24px;
   white-space: nowrap;
   padding: 1px 12px;
-  border: 1px solid rgba(124, 92, 255, 0.6);
+  border: 1px solid rgba(var(--accent-rgb), 0.6);
   border-radius: var(--r-pill);
-  background: rgba(124, 92, 255, 0.14);
+  background: rgba(var(--accent-rgb), 0.14);
   color: #d9cfff;
   font: inherit;
   font-size: var(--t-sm);
@@ -176,7 +187,7 @@
   gap: 2px;
   white-space: nowrap;
   border-radius: var(--r-md);
-  border-color: rgba(124, 92, 255, 0.55);
+  border-color: rgba(var(--accent-rgb), 0.55);
 }
 #sfRoot .sfhrow .sfsurprise span {
   color: inherit;
@@ -849,4 +860,118 @@ html.sfsheetin #sfRoot .sfsheet.sfshside {
 /* ◐ Values: the picture in greys (its canvas only: the sun, tips and outlines keep their colours) */
 #sfRoot.sfvals #sfCanvas {
   filter: grayscale(1);
+}
+/* (v320, D2a) the wait after a photo is chosen: its steps under the picture, a slow light over it (20-image-input
+   waitBegin). Transform-only animation, on its own layer: nothing redrawn under it */
+#sfRoot .sfwait {
+  display: none;
+}
+#sfRoot.sfwaiting:not(.sfwaitpause) .sfwait {
+  display: block;
+  padding-block: var(--s4) var(--s2);
+}
+#sfRoot .sfwaitl {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+#sfRoot .sfwaitl li {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  color: var(--sub);
+  font-size: var(--t-md);
+}
+#sfRoot .sfwaitl li.done {
+  color: var(--ink);
+}
+#sfRoot .sfwaitl li.now {
+  color: var(--ink);
+  font-weight: 650;
+}
+#sfRoot .sfwaitd {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--ink) 25%, transparent);
+  font-size: var(--t-sm);
+  font-weight: 800;
+}
+#sfRoot .sfwaitl li.done .sfwaitd {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: var(--bg);
+}
+#sfRoot .sfwaitl li.now .sfwaitd {
+  border-color: var(--accent);
+  border-top-color: transparent;
+  animation: sfwaitspin 0.9s linear infinite;
+}
+@keyframes sfwaitspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+#sfRoot.sfwaiting:not(.sfwaitpause) .sfpicbox::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgba(var(--accent-rgb), 0.1) 45%,
+    rgba(255, 255, 255, 0.16) 50%,
+    rgba(var(--accent-rgb), 0.1) 55%,
+    transparent 65%
+  );
+  transform: translateX(-100%);
+  animation: sfsweep 2.6s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes sfsweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+#sfRoot.sfwaiting #sfStat {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  #sfRoot.sfwaiting .sfpicbox::after {
+    animation: none;
+    opacity: 0;
+  }
+  #sfRoot .sfwaitl li.now .sfwaitd {
+    animation: none;
+  }
+}
+/* (v320) the paper on a desk: the frame's surface lit a little in the middle, and the picture's shadow under it where
+   it's coloured from (sfonpaper: the Plan, Colour along, Focus mode and Reveal; not Edit sections, Crop or Straighten),
+   at its own size only (sfzin: zoomed, it would grow with the picture). On an iPad the fit maths leaves --paperG round
+   it (72-frame paperG); a phone's picture keeps the frame's width. The paper itself is never tinted. */
+#sfRoot #sfView,
+#sfRoot.sffull #sfView,
+#sfRoot.sffoc #sfView,
+#sfRoot.sfrev #sfView {
+  background: radial-gradient(ellipse 80% 70% at 50% 42%, #18181d 0%, #111115 50%, var(--bg) 100%), var(--bg);
+}
+#sfRoot .sftools {
+  background: transparent;
+}
+#sfRoot .sfpic {
+  padding: var(--paperG, 0px);
+  box-sizing: border-box;
+}
+#sfRoot.sfonpaper #sfCanvas:not(.sfzin),
+#sfRoot.sfrev #sfCanvas {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 8px 26px rgba(0, 0, 0, 0.5);
 }

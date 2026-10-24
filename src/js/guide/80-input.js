@@ -101,9 +101,16 @@ function editTapAt(P) {
     return;
   }
   if (sfmode === 'color') {
+    // (v320: where the finger was, for the tick's colour to spread from)
+    _tapPt = { l: l, x: P.x, y: P.y };
     // (v313: a tap with the hand-off card up closes it, and ticks nothing)
     if (focus && handOn()) {
       handClose(true);
+      return;
+    }
+    // (v320: the Colours sheet open, a tap anywhere on the picture closes it, a line or the paper too, as on a section)
+    if (focus && focusSheet && !focusFin) {
+      focusSheetSet(false);
       return;
     }
     if (l > 0 && assignData && assignData.assign[l]) {
@@ -189,6 +196,7 @@ function editTapAt(P) {
 // a section ticked, or unticked, in Colour along: a tap on one of the open row's (or with none open), or Tick it in the
 // question over another marker's
 function alongTick(l) {
+  const sp = colored[l] ? null : spreadBegin(l);
   colored[l] ^= 1;
   tp()[l] = 0;
   guideDirty = true;
@@ -203,6 +211,7 @@ function alongTick(l) {
   renderGuide();
   updateProgress();
   jumpToNext();
+  if (colored[l]) spreadRun(sp);
 }
 const MERGE_BG_SAY = 'That’s the background, not a section. To make a section white, use Leave out.';
 // the section a Split or Add stroke is for: the one it runs through furthest, lines not counted (v304: the section it

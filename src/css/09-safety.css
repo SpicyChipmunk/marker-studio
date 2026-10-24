@@ -22,12 +22,12 @@
 }
 /* Add to Home Screen card (Home) */
 .nudge.instcard {
-  border-color: rgba(124, 92, 255, 0.5);
-  background: rgba(124, 92, 255, 0.1);
+  border-color: rgba(var(--accent-rgb), 0.5);
+  background: rgba(var(--accent-rgb), 0.1);
 }
 .instcard .nrow .nb1 {
-  background: rgba(124, 92, 255, 0.28);
-  border-color: rgba(124, 92, 255, 0.6);
+  background: rgba(var(--accent-rgb), 0.28);
+  border-color: rgba(var(--accent-rgb), 0.6);
 }
 .insteps {
   margin: 0;
@@ -118,8 +118,8 @@ button.ttsend {
   min-height: 44px;
   padding: 0 16px;
   border-radius: 999px;
-  border: 1px solid rgba(124, 92, 255, 0.55);
-  background: rgba(124, 92, 255, 0.16);
+  border: 1px solid rgba(var(--accent-rgb), 0.55);
+  background: rgba(var(--accent-rgb), 0.16);
   color: var(--ink);
   font: inherit;
   font-weight: 600;
@@ -178,7 +178,7 @@ button.tttop {
   place-items: center;
   font-size: var(--t-sm);
   font-weight: 700;
-  background: rgba(124, 92, 255, 0.18);
+  background: rgba(var(--accent-rgb), 0.18);
   color: #c9bcff;
 }
 .ttn.ok {
@@ -321,8 +321,8 @@ button.hlplink.ttready {
   min-height: 44px;
   padding: 0 16px;
   border-radius: var(--r-md);
-  border: 1px solid rgba(124, 92, 255, 0.6);
-  background: rgba(124, 92, 255, 0.22);
+  border: 1px solid rgba(var(--accent-rgb), 0.6);
+  background: rgba(var(--accent-rgb), 0.22);
   color: var(--ink);
   font: inherit;
   font-weight: 600;
@@ -338,8 +338,10 @@ button.hlplink.ttready {
   padding: 12px 16px;
   /* (v318.33) --r-lg, a card as the Home cards are */
   border-radius: var(--r-lg);
-  border: 1px solid rgba(124, 92, 255, 0.55);
-  background: rgba(124, 92, 255, 0.1);
+  /* (v321) a card as Home's others are: violet is New guide's alone (v320's one accent), and how far the tasks have
+     got is a ring, as on the Library's covers */
+  border: 1px solid var(--line);
+  background: var(--raise);
   color: var(--ink);
   font: inherit;
   text-align: left;
@@ -355,10 +357,16 @@ button.hlplink.ttready {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
+  background:
+    radial-gradient(closest-side, var(--raise) 82%, transparent 84%),
+    conic-gradient(var(--accent) var(--p, 0%), rgba(255, 255, 255, 0.14) 0);
+  color: var(--ink);
   font-weight: 700;
-  font-size: var(--t-md);
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+}
+.tthomecard:hover {
+  border-color: rgba(255, 255, 255, 0.28);
 }
 .tthomecard .ttct {
   display: flex;
@@ -379,7 +387,7 @@ button.hlplink.ttready {
 }
 .tthomecard.ttready {
   border-color: rgba(95, 184, 159, 0.6);
-  background: rgba(95, 184, 159, 0.1);
+  background: rgba(95, 184, 159, 0.08);
 }
 .tthomecard.ttready .ttcn {
   background: var(--ok);

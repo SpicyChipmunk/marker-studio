@@ -9,9 +9,9 @@ button.wishbtn {
   min-height: 0;
   padding: 0 11px;
   border-radius: var(--r-pill);
-  border: 1px solid rgba(124, 92, 255, 0.55);
-  background: rgba(124, 92, 255, 0.12);
-  color: #e6e0ff;
+  border: 1px solid rgba(var(--accent-rgb), 0.55);
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent-pale);
   font-size: var(--t-sm);
   font-weight: 600;
   white-space: nowrap;
@@ -66,8 +66,8 @@ button.wishchip .wmk {
   height: 18px;
   margin-left: 2px;
   border-radius: var(--r-pill);
-  background: rgba(124, 92, 255, 0.3);
-  color: #e6e0ff;
+  background: rgba(var(--accent-rgb), 0.3);
+  color: var(--accent-pale);
   font-size: var(--t-sm);
   font-weight: 800;
 }
@@ -85,9 +85,9 @@ button.wishall {
   padding: 3px 10px;
   margin: 4px 0 0;
   border-radius: var(--r-pill);
-  border: 1px solid rgba(124, 92, 255, 0.55);
-  background: rgba(124, 92, 255, 0.12);
-  color: #e6e0ff;
+  border: 1px solid rgba(var(--accent-rgb), 0.55);
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent-pale);
   font-size: var(--t-sm);
   font-weight: 600;
   vertical-align: middle;

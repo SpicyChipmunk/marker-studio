@@ -942,6 +942,23 @@ function renderRecent() {
   };
   el.onclick = go;
   if (cel) cel.onclick = go;
+  // (v320) a phone's first Home: the sample page and Ben's page of it coloured, a short strip above New guide from a
+  // photo (the iPad's start card has them already), until there's a guide of one's own; a tap opens the sample
+  var nbB = document.getElementById('homeNew'),
+    ba0 = document.getElementById('homeBA');
+  if (!all.length && nbB && window.SF && SF.sampleBA) {
+    if (!ba0) {
+      ba0 = document.createElement('button');
+      ba0.type = 'button';
+      ba0.id = 'homeBA';
+      ba0.className = 'homeba';
+      ba0.setAttribute('data-start', 'sample');
+      ba0.setAttribute('aria-label', 'Try the sample: a page and the guide made from it');
+      ba0.innerHTML = SF.sampleBA();
+      nbB.parentNode.insertBefore(ba0, nbB);
+    }
+    ba0.onclick = go;
+  } else if (ba0) ba0.remove();
   all.slice(0, 5).forEach(function (g) {
     if (safeThumb(g.thumb)) return;
     if (_thumbTried[g.id]) return;
@@ -962,6 +979,7 @@ function renderLibStat() {
     risk = guidesAtRisk();
   if (!n) {
     el.textContent = '';
+    if ($('libStatBk')) $('libStatBk').hidden = true;
     return;
   }
   // (guides saved as built, nothing coloured, aren't counted as at risk, v285, but they aren't in a backup either)
@@ -976,6 +994,17 @@ function renderLibStat() {
         ? 'Not backed up yet'
         : 'All guides are in a backup';
   el.classList.toggle('warn', !!risk);
+  const bkl = $('libStatBk');
+  if (bkl) {
+    bkl.hidden = !risk;
+    if (!bkl._on) {
+      bkl._on = 1;
+      bkl.addEventListener('click', function () {
+        const b = $('guidesBackup');
+        if (b) b.click();
+      });
+    }
+  }
 }
 // the Library overlay: from Home's Library card, the Recent strip's Library link, the Library button and the guide's ⋯ menu
 var _libPalFirst = false;
@@ -1035,32 +1064,48 @@ function renderSaved() {
     list.sort(function (a, b) {
       return (b.ts || 0) - (a.ts || 0);
     });
-  // (opened from Palette's ⋯: palettes and draws first, then guides, each in the chosen order)
-  if (_libPalFirst)
-    list = list
-      .filter(function (x) {
-        return x.type !== 'guide';
-      })
-      .concat(
-        list.filter(function (x) {
-          return x.type === 'guide';
-        }),
+  // (opened from Palette's ⋯: palettes and draws first, then guides, each in the chosen order: below)
+  // (v320) two grids, Guides then Palettes and draws (Palette's ⋯ puts those first), each under its heading when both
+  // are there; one search and one sort across both
+  var _gs = list.filter(function (x) {
+      return x.type === 'guide';
+    }),
+    _ps = list.filter(function (x) {
+      return x.type !== 'guide';
+    }),
+    _grid = function (h, xs) {
+      return (
+        (h && _gs.length && _ps.length ? '<h3 class="libgh">' + h + '</h3>' : '') +
+        xs
+          .map(function (s) {
+            return libRowHTML(s, false);
+          })
+          .join('')
       );
+    };
   savedList.innerHTML = list.length
-    ? list
-        .map(function (s) {
-          return libRowHTML(s, false);
-        })
-        .join('')
+    ? _libPalFirst
+      ? _grid('Palettes and draws', _ps) + _grid('Guides', _gs)
+      : _grid('Guides', _gs) + _grid('Palettes and draws', _ps)
     : q
       ? '<div class="empty">No matches.</div>'
       : // (v318.33) the icon in a tinted ring, then the words, then the action (Fable V1-5: the icon sat faint under the copy)
-        '<div class="emptyhow"><span class="emptyring" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><div class="empty">Nothing yet. A guide saves itself here once it\u2019s built; a palette is kept with <b>Save</b>.</div><button type="button" id="libTrySample" class="btn-soft">Try the sample</button></div>';
+        // (v320: the sample page and its coloured page as two sheets, then Choose a photo, or the sample)
+        '<div class="emptyhow">' +
+        libFan() +
+        '<h3 class="libemh">Your guides will live here</h3><div class="empty">Every guide you make is kept on this device, with how far you\u2019ve coloured it. A palette is kept with <b>Save</b>.</div><button type="button" id="libChoose" class="btn-primary">Choose a photo</button><button type="button" id="libTrySample" class="sflink">or try the sample</button></div>';
   // (v313) with nothing to search or sort, no search box or sort menu
   {
     var _bar = document.querySelector('#savedOverlay .libbar');
     if (_bar) _bar.style.display = state.saved.length ? '' : 'none';
   }
+  var _lc = document.getElementById('libChoose');
+  if (_lc)
+    _lc.addEventListener('click', function () {
+      // (the picker in this tap, iOS opening it only from one; the Library closed as it opens)
+      closeDialog(savedOverlay);
+      homeStart('photo');
+    });
   var _ts = document.getElementById('libTrySample');
   if (_ts)
     _ts.addEventListener('click', function () {
@@ -1070,6 +1115,19 @@ function renderSaved() {
     });
   libArtWatch();
   libBackfill();
+}
+// (v320) the empty Library's picture: the sample page and the page coloured, as two sheets fanned
+function libFan() {
+  var s = window.SF && SF.sampleSrc ? SF.sampleSrc() : null;
+  if (!s)
+    return '<span class="emptyring" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span>';
+  return (
+    '<span class="libfan" aria-hidden="true"><img class="lf1" alt="" src="' +
+    s.line +
+    '"><img class="lf2" alt="" src="' +
+    s.done +
+    '"></span>'
+  );
 }
 // the delete control: a bin, not a ✕ (a ✕ is a dialog's Close), and rename's pen: from the icon sprite (Lucide)
 var LIB_PEN = ic('pencil'),
@@ -1102,7 +1160,8 @@ function libMeta(s) {
         })
         .join(' \u00b7 ');
     },
-    l1 = part([s.name ? t : '', cnt ? cnt + ' marker' + (cnt === 1 ? '' : 's') : '']),
+    // (v320: a guide's kind isn't said, its grid is; a palette's and a draw's are, sharing theirs)
+    l1 = part([s.name && s.type !== 'guide' ? t : '', cnt ? cnt + ' marker' + (cnt === 1 ? '' : 's') : '']),
     l2 = part([p, when]);
   return l1 && l2 ? l1 + '<span class="smsep"> \u00b7 </span>' + l2 : l1 || l2;
 }
@@ -1120,9 +1179,22 @@ function libRowHTML(s, ed) {
       return i != null && COLORS[i] ? '<span style="background:' + COLORS[i].hex + '"></span>' : '';
     })
     .join('');
+  // (v320) how far a guide is, on its cover: a violet ring filling as it's coloured, a green ✓ once finished, none
+  // before it's started (the words under the name say it too, for a screen reader)
+  var _d = +s.done || 0,
+    _n = +s.n || 0,
+    ring =
+      s.type !== 'guide' || !(_d > 0)
+        ? ''
+        : _n && _d >= _n
+          ? '<span class="sring done" aria-hidden="true">\u2713</span>'
+          : '<span class="sring" aria-hidden="true" style="--p:' +
+            Math.max(4, Math.min(96, Math.round((_d / (_n || 1)) * 100))) +
+            '%"></span>';
   var vis =
     s.type === 'guide'
       ? '<span class="spic">' +
+        ring +
         (safeThumb(s.thumb)
           ? '<img class="sthumb" alt="" src="' + esc(safeThumb(s.thumb)) + '">'
           : '<img class="sthumb" alt="" hidden>') +
@@ -1230,7 +1302,8 @@ function libArt(row) {
   // (one at a time: each reads and redraws a whole stored page)
   _libArtQ = _libArtQ
     .then(function () {
-      return im.isConnected ? homeArt(s, +s.done > 0 ? 'prog' : 'plan', w) : '';
+      // (v320: the colour plan, as Home's cover, whatever's coloured: the ring says how far)
+      return im.isConnected ? homeArt(s, 'plan', w) : '';
     })
     .catch(function () {
       return '';

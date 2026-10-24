@@ -1497,6 +1497,8 @@ function pgBegin(f35, stale) {
   const img = pgOrig;
   return pgFindOff(img).then(function (found) {
     if ((stale && stale()) || pgOrig !== img || srcImg !== img) return false;
+    // (v320: the wait's first step done, the page found; the sections next, or the corner handles first: pgOpen)
+    waitAt(2);
     segBusySet(false);
     holdTime('New photo: find the page', function () {
       pgFound(found);
@@ -1637,6 +1639,8 @@ function pgUndo() {
 // open the corner editor. how: 'reveal' (showing what's about to happen), 'first' (unsure, fresh photo), 'adjust'
 function pgOpen(q, why, how) {
   if (!pgOrig) return;
+  // (v320: the wait's list steps aside while the handles wait for the person; segRun brings it back)
+  waitPause(true);
   const iw = pgOrig.naturalWidth || pgOrig.width,
     ih = pgOrig.naturalHeight || pgOrig.height;
   if (!q) {

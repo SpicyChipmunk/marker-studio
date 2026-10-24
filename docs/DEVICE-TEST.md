@@ -22,7 +22,7 @@ sheet, paper, VoiceOver, and how it feels.
 
 ## Before you start (5 min)
 
-- [ ] Home's foot says the version you're testing (**v319 · Beta**). If not: "A new version of Marker Studio is
+- [ ] Home's foot says the version you're testing (**v322 · Beta**). If not: "A new version of Marker Studio is
       ready" under Home's title → **Reload**.
 - [ ] ★ **Library › Back up** → the share sheet → **Save to Files** → the file is in Files. (A1 needs it.)
 - Have ready: a colouring page on the table to photograph; a PDF of a colouring page in Files; a few Ohuhu and Copic
@@ -169,6 +169,59 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 ## Part C — new in recent releases (20 min)
 
 What v318.22 to v318.30 changed that Parts A and B don't already cover.
+
+**New in v322**
+
+- [ ] ★ **Opening (installed on the iPad, Reduce motion off):** close Marker Studio fully (swipe it away), open it from
+      the Home Screen → the drop shows uncoloured, its sections colour in top to bottom, then it fades into Home: about
+      half a second, never a wait. If the launch screen still showed black, the drop appears and animates from there.
+      Switching back to the app without closing it: no animation. With Reduce motion on: none. In a Safari tab: none.
+
+**New in v321 (the premium pass, part 2)**
+
+- [ ] ★ **The launch screen (installed on the iPad):** open Marker Studio from the Home Screen twice → while it
+      starts, the app's dark ground with its icon in the middle, not a black screen. If it's still black, iOS read the
+      launch screens when the app was added: only Back up › remove the app › add it again › Restore brings them in
+      (the Library comes back from the backup, so back up first). Say which it took.
+- [ ] ★ **Preview the pages:** a guide › Share & print › Print… → tap page 1's picture → each page as it will print,
+      ‹ › and a swipe across the page; Download PDF from there writes the PDF; ✕ or a tap round it closes the preview
+      and the Print sheet is still there.
+- [ ] **Buttons press in** a little under your finger (Done, Colour along, the tabs); the ways back and on are
+      chevrons ("‹ Plan", "‹ Back", "Skip ›", "Build guide ›"), not arrows.
+- [ ] **Focus mode:** after each Done the next Done's tick draws itself in. Finish a page in Colour along → the card's
+      numbers count up (not with Reduce motion).
+- [ ] With a keyboard on the iPad: Tab → the ring round what has focus is light violet and fits it (Colour along's
+      More: round its word only). Tapping never shows a ring.
+- [ ] Home's Beta tester tasks card: grey like the tiles, the count in a ring that fills as tasks are answered; green
+      once all six are.
+
+**New in v320 (the premium pass)**
+
+- [ ] ★ **Print a page (Ben's test print, before release):** a guide › Share & print › Print… → page 1 shows in the
+      sheet as it will print → Download PDF → print it. Page 1: serif title, details on the right, a rule; the footer
+      "Marker Studio · name · page 1 of N" over a hairline; the close-ups' lines lighter but every thin line still
+      clearly there; the key's round swatches. Note anything that prints too faint.
+- [ ] ★ **Codes on the iPad:** a guide's codes at the usual size and zoomed in read as well as before on every
+      colour (compare with labels-outline-v320.png); the outline looks a little finer on big codes.
+- [ ] ★ **A new photo:** choose one → it stays bright, the tabs say Guide at once, "Finding the page" then "Finding
+      the sections" tick off, a slow light sweep over it; Straighten's corner handles pause the steps.
+- [ ] ★ **Finish a page** in Colour along → the card: "Finished · today", the numbers, the markers as chips, Reveal &
+      share and Add a photo; strokes flick in from the card's edges, not over its title. The bar: "← Plan | Share &
+      print". With Reduce motion: no strokes.
+- [ ] ★ **Held sideways, Focus mode:** the buttons in a column on the right, the picture the full height; Swap sides →
+      the left, and it stays there next time; Colours' sheet and the next-marker card keep to the picture; turn the
+      iPad upright → the bars as before.
+- [ ] ★ **Tick sections** in Colour along and Focus mode → the colour spreads from your finger; quick taps never wait.
+- [ ] The tab you're on: Home pink, Guide violet, Markers coral, Palette amber; Home's tiles coral, amber, blue; a
+      chosen option (Your markers, Lightest first) a quiet grey, not teal.
+- [ ] The page on the iPad sits like a sheet of paper with a shadow and a little room round it; zoomed in, no shadow
+      grows; Edit sections draws to the edge as before.
+- [ ] **Library:** covers with rings (violet part-way, green ✓ finished); a palette under "Palettes and draws"; "Not
+      backed up yet" has Back up beside it. A fresh Safari tab: the empty Library shows the two pages and Choose a photo.
+- [ ] **The sample** (a fresh Safari tab): the welcome's picture upright, the colour flooding down; Home's start card
+      and (phone width) the short strip show the two jellyfish and Ben's coloured page; the sample guide has 311
+      sections.
+- [ ] Edit sections, change a section, Build → the plan blooms in again; change nothing, Build → no bloom.
 
 **New in v319 (fixes from two debugging passes)**
 

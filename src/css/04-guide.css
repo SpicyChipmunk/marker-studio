@@ -169,6 +169,32 @@
   color: var(--ink);
   box-shadow: inset 0 -2px 0 var(--ink);
 }
+/* (v320) one underline that slides to the tab chosen (72-frame tabUl); without it placed yet, each tab's own */
+#sfRoot .sftabs.sful::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--ulW, 0px);
+  height: 2px;
+  background: var(--ink);
+  transform: translateX(var(--ulX, 0px));
+  transition:
+    transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+#sfRoot .sftabs.sful .sftabbtn.on {
+  box-shadow: none;
+}
+#sfRoot .sftabbtn {
+  transition: color 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  #sfRoot .sftabs.sful::after {
+    transition: none;
+  }
+}
 #sfRoot .sftab {
   padding: 2px 0 6px;
 }
@@ -180,8 +206,8 @@
   margin: 12px 0 4px;
   padding: 10px 12px;
   border-radius: var(--r-md);
-  background: rgba(124, 92, 255, 0.12);
-  border: 1px solid rgba(124, 92, 255, 0.4);
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
 }
 #sfRoot .sfpalnote .sstrip,
 .homepalnote .sfpalnote .sstrip {
@@ -292,8 +318,8 @@
   padding: 0 12px;
   margin-top: 8px;
   border-radius: var(--r-md);
-  border: 1px solid rgba(124, 92, 255, 0.45);
-  background: rgba(124, 92, 255, 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
+  background: rgba(var(--accent-rgb), 0.12);
   color: var(--ink);
   font: inherit;
   font-weight: 600;
@@ -349,8 +375,8 @@
   margin: 0;
   padding: 4px 10px;
   line-height: 1.2;
-  background: rgba(124, 92, 255, 0.14);
-  border: 1px solid rgba(124, 92, 255, 0.6);
+  background: rgba(var(--accent-rgb), 0.14);
+  border: 1px solid rgba(var(--accent-rgb), 0.6);
   color: #ece7ff;
   box-shadow: none;
 }
@@ -375,7 +401,7 @@
   width: 18px;
   height: 18px;
   flex: none;
-  accent-color: #7c5cff;
+  accent-color: var(--accent);
 }
 
 #sfRoot .sfprimary {
@@ -393,7 +419,7 @@
    2.3:1, with the app's disabled primary look (.btn-primary:disabled, 08-dialogs-match.css) */
 #sfRoot .sfprimary:disabled {
   opacity: 1;
-  background: #2a2350;
+  background: var(--accent-deep);
   box-shadow: none;
   color: rgba(244, 242, 236, 0.62);
   cursor: default;
@@ -451,7 +477,7 @@
 }
 #sfRoot #sfCtl .sfmktype {
   width: 96px;
-  border: 1px solid rgba(143, 214, 180, 0.7);
+  border: 1px solid var(--pick-edge);
   background: rgba(255, 255, 255, 0.08);
 }
 #sfRoot .sfmkrow {
@@ -737,9 +763,65 @@
 #sfRoot .sfprchk {
   margin: 14px 0 12px;
 }
-/* (v318.24) the pages in order, under the choices */
-#sfRoot .sfprord {
+/* (v318.24) the pages in order, under the choices; v320: beside page 1 as it will print (sfprthumb) */
+#sfRoot .sfprtop {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
   margin-top: 10px;
+}
+#sfRoot .sfprthumb {
+  flex: none;
+  position: relative;
+  display: block;
+  width: calc(84 * var(--tpx));
+  min-height: 0;
+  aspect-ratio: 8.5 / 11;
+  /* (v321: a button, Preview: none of a button's own look) */
+  padding: 0;
+  border: 0;
+  background: #fff;
+  cursor: zoom-in;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 4px 14px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+#sfRoot .sfprthumb.land {
+  width: calc(108 * var(--tpx));
+  aspect-ratio: 11 / 8.5;
+}
+#sfRoot .sfprthumb.wait {
+  opacity: 0.55;
+}
+#sfRoot .sfprthumb canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#sfRoot .sfprthumb[hidden] {
+  display: none;
+}
+/* (v321) the mark in its corner: tap for the pages */
+#sfRoot .sfprthmk {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(11, 11, 14, 0.72);
+  color: #fff;
+}
+#sfRoot .sfprthmk .ic {
+  width: 13px;
+  height: 13px;
+}
+#sfRoot .sfprord {
+  min-width: 0;
 }
 #sfRoot .sfprordr {
   display: flex;
@@ -795,7 +877,7 @@
   height: 20px;
   flex: none;
   margin: 0;
-  accent-color: #7c5cff;
+  accent-color: var(--accent);
 }
 #sfRoot .sfprchk .sfchk.off {
   opacity: 0.45;
@@ -901,7 +983,7 @@
 }
 #sfRoot #sfStart button.sfstpick {
   padding: 12px 18px;
-  box-shadow: 0 3px 12px rgba(124, 92, 255, 0.35);
+  box-shadow: 0 3px 12px rgba(var(--accent-rgb), 0.35);
 }
 #sfRoot #sfStart button.sfstbtn {
   padding: 9px 14px;
@@ -1342,13 +1424,13 @@
 #sfRoot #sfCtl .sfgscat .sfc-range:focus-visible::-webkit-slider-thumb {
   box-shadow:
     0 0 0 2px #0e0e12,
-    0 0 0 4px #7c5cff;
+    0 0 0 4px var(--accent);
 }
 #sfRoot #sfCtl .sfgstart .sfc-range:focus-visible::-moz-range-thumb,
 #sfRoot #sfCtl .sfgscat .sfc-range:focus-visible::-moz-range-thumb {
   box-shadow:
     0 0 0 2px #0e0e12,
-    0 0 0 4px #7c5cff;
+    0 0 0 4px var(--accent);
 }
 /* (Scatter's line, after the shared see-through track it draws on) */
 #sfRoot #sfCtl .sfgscat .sfc-range::-webkit-slider-runnable-track {

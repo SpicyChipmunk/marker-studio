@@ -1,9 +1,9 @@
-36 of the line icons in Marker Studio (src/html/icons.html: every icon there except "codes" and "values", which are
+37 of the line icons in Marker Studio (src/html/icons.html: every icon there except "codes" and "values", which are
 the app's own) come from Lucide (lucide.dev), and some of those Lucide icons are derived from Feather
 (feathericons.com). They are: camera, x, ellipsis, sparkles, triangle-alert, sun, plus, minus, undo-2, search, redo-2,
 rotate-ccw, rotate-cw, shuffle, refresh-cw, image, blend, pencil, focus, crosshair, dice-5, target, printer, file-down,
 chevron-right, chevron-down, shrink, fullscreen, swatch-book, palette, library-big, copy, trash-2, circle-help,
-message-square and square-minus. They keep these licences:
+message-square, square-minus and arrow-left-right. They keep these licences:
 
 ISC License
 

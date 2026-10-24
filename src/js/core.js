@@ -270,6 +270,11 @@ function fileSlug(name, fallback, max, keepSpaces) {
     .replace(/[-\s]+$/, '');
   return s || fallback || 'file';
 }
+// (v321) a button's way back or on: a chevron from the icon set, not a text arrow (← and → drew in the font's own
+// weight and sat on its baseline); dir -1 points back
+function icNav(dir) {
+  return ic('chevron-right', dir < 0 ? 'icnav icback' : 'icnav');
+}
 function ic(n, cls) {
   return (
     '<svg class="ic' +

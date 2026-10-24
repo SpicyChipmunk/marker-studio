@@ -27,7 +27,7 @@
 #sfRoot.sffoc #sfZoomCtl .sfz {
   width: 44px;
   height: 44px;
-  background: rgba(8, 11, 10, 0.93);
+  background: var(--bg);
   border-color: rgba(255, 255, 255, 0.22);
   color: var(--ink);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
@@ -46,7 +46,7 @@
     justify-content: flex-end;
     gap: 8px;
     padding: 6px calc(12px + env(safe-area-inset-right, 0px)) 6px calc(12px + env(safe-area-inset-left, 0px));
-    background: rgba(8, 11, 10, 0.93);
+    background: var(--bg);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
   #sfRoot.sffoc #sfZoomCtl .sfz {
@@ -63,9 +63,8 @@
   z-index: 6001;
   padding: calc(10px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 10px
     calc(12px + env(safe-area-inset-left, 0px));
-  background: rgba(8, 11, 10, 0.93);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* (v320) solid, the app's black: the blur behind it drew the paper's white up over the progress line as a smudge */
+  background: var(--bg);
 }
 .sffocrow {
   display: flex;
@@ -225,9 +224,8 @@ button.sffoccols::after {
   gap: 8px;
   padding: 10px calc(12px + env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px))
     calc(12px + env(safe-area-inset-left, 0px));
-  background: rgba(8, 11, 10, 0.93);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* (v320) solid, the app's black: the blur behind it drew the paper's white up over the progress line as a smudge */
+  background: var(--bg);
 }
 .sffocbot button {
   min-width: 56px;
@@ -244,6 +242,11 @@ button.sffoccols::after {
 .sffocbot {
   justify-content: center;
 }
+/* (v321) an icon and its word kept together: at 320px and 1.6× text the line could break between the chevron and
+   "Back" with room to spare */
+.sffocbot button {
+  white-space: nowrap;
+}
 .sffocbot button.fdone {
   flex: 1;
   max-width: 440px;
@@ -252,6 +255,36 @@ button.sffoccols::after {
   color: #fff;
   font-weight: 700;
   font-size: var(--t-lg);
+}
+/* (v321) Done's tick, a line icon; just after a Done it draws itself in on the next section's Done (75-focus fdtick) */
+.sffocbot .fdck {
+  display: inline-block;
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.2em;
+  margin-right: 0.1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sffocbot .fdtick .fdck path {
+  stroke-dasharray: 24;
+  animation: fdck 0.32s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+}
+@keyframes fdck {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sffocbot .fdtick .fdck path {
+    animation: none;
+  }
 }
 .sffocbot button.fdone.undo {
   background: rgba(255, 255, 255, 0.1);
@@ -486,4 +519,195 @@ button.sffoccols::after {
   .sfhname {
     margin: 0 0 4px;
   }
+}
+/* ---- (v320) Focus mode's side rail, on an iPad held sideways (75-focus.js RAIL_MQ, html.sfrailon): the bar, the
+   marker, Done with Back and Skip under it, and the zoom buttons in a column at the right (sfrailL: the left, Swap
+   sides), the picture the whole height beside it on the lit surface. The DOM order is unchanged. ---- */
+.sfrailswap {
+  display: none;
+}
+html.sfrailon {
+  --railW: 340px;
+}
+html.sfrailon #sfRoot.sffoc #sfView {
+  padding-right: var(--railW);
+}
+html.sfrailon.sfrailL #sfRoot.sffoc #sfView {
+  padding-right: 0;
+  padding-left: var(--railW);
+}
+/* (the rail's ground is the view's own ::after, under the zoom buttons, which live in the view; the bar over it is
+   only as tall as its rows) */
+html.sfrailon #sfRoot.sffoc #sfView::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 1;
+  width: var(--railW);
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+  pointer-events: none;
+}
+html.sfrailon.sfrailL #sfRoot.sffoc #sfView::after {
+  right: auto;
+  left: 0;
+  border-left: 0;
+  border-right: 1px solid var(--line);
+}
+html.sfrailon .sffocbar {
+  left: auto;
+  right: 0;
+  bottom: auto;
+  width: var(--railW);
+  box-sizing: border-box;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) calc(18px + env(safe-area-inset-right, 0px)) 18px 18px;
+  background: transparent;
+}
+html.sfrailon.sfrailL .sffocbar {
+  right: auto;
+  left: 0;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 18px 18px calc(18px + env(safe-area-inset-left, 0px));
+}
+/* Exit and Colours across the top, the marker's swatch and name under them */
+html.sfrailon .sffocrow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'exit . cols'
+    'sw name name';
+  row-gap: 18px;
+  column-gap: 14px;
+}
+html.sfrailon .sffocrow .sfexit {
+  grid-area: exit;
+  justify-self: start;
+}
+html.sfrailon .sffocrow .sffoccols {
+  grid-area: cols;
+}
+html.sfrailon .sffocrow .sffocsw {
+  grid-area: sw;
+  width: 52px;
+  height: 52px;
+}
+html.sfrailon .sffocrow .sffocname {
+  grid-area: name;
+  align-self: center;
+}
+html.sfrailon .sffocname b {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: var(--t-xl);
+  font-weight: 600;
+  line-height: 1.15;
+}
+html.sfrailon .sffocprog {
+  margin-top: 16px;
+}
+/* Done big in the middle of the rail, Back and Skip side by side under it */
+html.sfrailon .sffocbot {
+  left: auto;
+  right: 0;
+  top: 50%;
+  bottom: auto;
+  width: var(--railW);
+  box-sizing: border-box;
+  transform: translateY(-50%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    'done done'
+    'back skip';
+  gap: 12px;
+  padding: 0 calc(18px + env(safe-area-inset-right, 0px)) 0 18px;
+  background: transparent;
+}
+html.sfrailon.sfrailL .sffocbot {
+  right: auto;
+  left: 0;
+  padding: 0 18px 0 calc(18px + env(safe-area-inset-left, 0px));
+}
+html.sfrailon .sffocbot #sfFBack {
+  grid-area: back;
+  height: 48px;
+}
+html.sfrailon .sffocbot #sfFSkip {
+  grid-area: skip;
+  height: 48px;
+}
+html.sfrailon .sffocbot .fdone {
+  grid-area: done;
+  max-width: none;
+  height: 96px;
+  font-size: var(--t-xl);
+}
+/* (the page finished: Back and Reveal & share, one above the other) */
+html.sfrailon .sffocbot #sfFReveal {
+  grid-area: done;
+}
+html.sfrailon .sffocbot #sfFReveal ~ #sfFBack,
+html.sfrailon .sffocbot #sfFBack:has(+ #sfFReveal) {
+  grid-column: 1 / -1;
+}
+/* the zoom buttons along the rail's foot; Swap sides at its other end */
+html.sfrailon #sfRoot.sffoc #sfZoomCtl {
+  right: calc(18px + env(safe-area-inset-right, 0px));
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  gap: 10px;
+}
+html.sfrailon.sfrailL #sfRoot.sffoc #sfZoomCtl {
+  right: calc(100% - var(--railW) + 18px);
+}
+html.sfrailon .sfrailswap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  left: auto;
+  right: calc(var(--railW) - 18px - 44px);
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 11, 10, 0.93);
+  color: var(--ink);
+  cursor: pointer;
+}
+html.sfrailon.sfrailL .sfrailswap {
+  left: calc(var(--railW) - 18px - 44px);
+  right: auto;
+}
+/* (its icon two arrows, not a half-filled box: Codes, beside it at the rail's foot, is one) */
+.sfrailswap .ic {
+  width: 20px;
+  height: 20px;
+}
+/* the Colours sheet, the hand-off card and the toasts: in the picture's column */
+html.sfrailon .sffocsheet {
+  right: var(--railW);
+  bottom: 0;
+}
+html.sfrailon.sfrailL .sffocsheet {
+  right: 0;
+  left: var(--railW);
+}
+html.sfrailon .sfhand {
+  top: 0;
+  bottom: var(--hcut, 0px);
+  right: var(--railW);
+}
+html.sfrailon.sfrailL .sfhand {
+  right: 0;
+  left: var(--railW);
+}
+html.sfrailon .mstoast {
+  left: calc((100vw - var(--railW)) / 2);
+  max-width: calc(100vw - var(--railW) - 24px);
+}
+html.sfrailon.sfrailL .mstoast {
+  left: calc(var(--railW) + (100vw - var(--railW)) / 2);
 }

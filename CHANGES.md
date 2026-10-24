@@ -2718,3 +2718,110 @@ From Fable's design review (round R32, V1), built in two parts and compared scre
   unseeded: about 1 tap in 100 leaves one touching pair alike, with the note under the box saying so (the same on
   v318.31, 4 seeds of 400), so the test failed now and then; each tap now has a seed, as the test's other rolls do.
 - Cache bumped to `marker-studio-v319`.
+
+# Changes — v320, the premium pass (Ben's decisions D1–D8 and P1–P8, built as one release)
+
+- **The photo wait (D2a):** after a photo is chosen it stays bright (the tab switch's fade had stalled at 30% in
+  Safari's engine while the photo was read), the top tabs move to Guide at once, the header says "New guide", and in
+  the controls' place two steps, Finding the page and Finding the sections, each ticked as it really ends, under a slow
+  light sweep over the photo (none with Reduce motion). The steps step aside while the corner handles wait.
+- **The finished page (D2b, P2):** a card with "Finished · <day>", the sections, markers and days it took (two numbers
+  for a guide from before dates were kept) and the guide's markers as chips, with Reveal & share and Add a photo of
+  your page; marker strokes flick in from the card's edges, never over its title (the list's confetti is gone). The
+  bar under the list is "← Plan | Share & print". A screen reader hears where Reveal & share is in each.
+- **Code outlines (D2c):** thinner (0.20 of the size) only where that keeps at least 2.8 of the screen's pixels round
+  the letters, never thicker than before; on the saved image the same at its own size. Measured over all 722 marker
+  colours at 5, 9 and 14 px and 0.7–3 device pixels per picture pixel: no colour loses more than 0.8 L* of contrast
+  (the gate: 1.5). The PDF is unchanged.
+- **Counts (D2d, P1):** "markers" is every pen you own, blender too (Home's tile 121, as Markers and the swatch chart);
+  "colours" stays the ink ("Built from your 120 colours").
+- **Small slips (D2e, D2f):** disabled buttons (Random's Swap, Remove, Clear all, Save; Palette's Undo, Clear) stay in
+  place, readable, dashed; "Remove this one" is "Remove"; a guide's title wraps to two lines; Focus › Colours chips
+  pick their text colour by contrast (RV212); a guide already in the Library no longer flickers "Saving…".
+- **Touching sections (A7):** with Main colour about 1 Shuffle in 100 left two touching sections alike, with a note
+  blaming too few markers. The main colour's five markers are only two colours apart; the repair now searches the
+  section and two rings round it for a fix moving up to three sections (across the two roles, the shares kept under
+  5 points), where it used to try one swap. The four seeds that failed are a test.
+- **One accent (D3):** a chosen option is a raised neutral, not teal (teal/green is done and saved only); the tab
+  you're on is tinted its own colour (Home pink, Guide violet, Markers coral, Palette amber), and Home's tiles match
+  (Library blue). The violet is a set of tokens.
+- **The paper (D4, P3):** the picture has a soft shadow on a lit surface; on an iPad 12 px of it round the page (in the
+  fit maths, not on the zoomed canvas), not in Edit sections. A wide page's column is no longer held to 60% of the
+  width beside the controls. Focus mode's bars are solid: the blur had drawn the paper's white over the progress line.
+- **The printout (D5):** a serif heading with the details on the right and a rule, a footer "Marker Studio · <name> ·
+  page n of N" over a hairline, round swatches in the key, close-ups' lines lighter the more they're magnified (0.5 to
+  0.35); the Print sheet shows page 1 as it will print, drawn after the sheet opens, never holding its buttons.
+- **Motion (D6):** a tick's colour spreads from the finger (240 ms, the next tap never waits, none with Reduce motion);
+  the build bloom also plays on Build after the sections were changed; the Guide tabs' underline slides; the top
+  tab's tint crossfades.
+- **iPad held sideways (D7, P3):** Focus mode puts the bar, the marker, a big Done with Back and Skip, and the zoom
+  buttons in a column at the side, the picture the full height beside it; Swap sides moves the column and is kept.
+  The Colours sheet, the next-marker card and toasts keep to the picture's column. Portrait and phones unchanged.
+- **The Library (D8a, P4):** covers in a grid (the colour plan, as Home's), a violet ring for how far a guide is, a
+  green ✓ when finished; Guides, then Palettes and draws under their own heading (shorter tiles, the markers as round
+  chips); names in the serif on two lines; a Back up link beside "Not backed up yet"; an empty Library shows the
+  sample's two pages, Choose a photo, or try the sample.
+- **The sample (P5, P6, P8):** Ben's drawing of two jellyfish (311 sections: Min section size 5 px for it, so the
+  pinholes where its lines meet are sections too), and his own page of it coloured as the "after" on Home, the welcome
+  (upright now, the colour flooding in from the top) and the empty Library; a phone's first Home has a short
+  before-and-after strip. The browser tests keep the single jellyfish.
+- **Tests:** organised by feature (52 browser files from 268, 14 unit files from 151; every test moved word for word,
+  none removed: no exact duplicates), CI timings refreshed. New: the A7 seeds (pattern-3). Changed on purpose: the
+  finished page, counts, "Remove", "Saving…", the welcome's picture, the printout's heading and footer.
+- **The debugging pass after it:** a long guide name in the PDF's heading goes down a size or two (to 14) before it's
+  cut short ("Mum's birthday jellyfish, autumn" had lost its last word beside the details); the finished card's marker
+  strokes play once at a time (the last section unticked and ticked again had run two, each clearing the other's
+  frame); Focus mode's Swap sides has two arrows for its icon (its half-filled box looked like Codes beside it); the
+  new sample is "Sample jellyfish" ("Sample dual jellyfish" wrapped on a phone). Checked besides: a stricter lint over
+  the whole app (nothing real), about 3,000 random taps, resizes and photos over phone and iPad sizes with no page
+  errors and no stuck states, Ciao 12 and dense pages timed against v319 (the deeper repair costs nothing measurable).
+- Cache bumped to `marker-studio-v320`.
+
+# Changes — v321, the premium pass part 2 (Ben's choices after v320's sweep)
+
+- **Preview the pages:** the Print sheet's picture of page 1 is a button; it opens every page as it will print, one at
+  a time over the screen, with ‹ ›, a swipe and the arrow keys, and Download PDF. The pages are laid out once as it
+  opens and only the page shown is drawn, at its shown size (a page at the PDF's 200 dpi is about 15 MB: a dozen held
+  at once could pass Safari's limit on an iPad). Escape or a tap round it closes it and the Print sheet stays.
+- **Launch screens:** opened from the Home Screen, iOS shows the app's dark ground with its icon while the app starts,
+  instead of a black screen: 30 pictures in `launch/` (every current iPad both ways up, iPhones upright; iOS takes one
+  only on an exact match) made by `scripts/launch.py`, and Apple's `apple-mobile-web-app-capable` tag, without which
+  iOS ignores them. iOS may have read them when the app was added: if the screen stays black, only removing and
+  adding the app again brings them in, and that starts its storage empty (back up first, restore after).
+- **Press feel:** buttons sink a little under the finger (scale 0.97; they moved down 1px), and a passive touchstart
+  listener lets Safari on an iPad show it at all (it shows :active only with one). Rows that never moved (Colour
+  along's headers, the run-low chips) still don't.
+- **Chevrons:** "‹ Plan", "‹ Edit sections", "‹ Back", "Skip ›", "Build guide ›", "‹ Back to …", "‹ Markers" use the
+  icon set's chevron, not the font's arrows. Focus mode's Done has a line tick that draws itself in on the next
+  section's Done after each Done.
+- **The finished card's numbers count up** (0.7 s) as the page is finished in the list; not with Reduce motion, nor
+  when a finished guide is opened again.
+- **The run-low row** on a phone fades at its right edge (it scrolls sideways with its scroll bar hidden).
+- **The keyboard's focus ring** is the accent's light violet (it was white, which read as an edge of the control); a
+  link's ring keeps close round its words; Colour along's More takes its tap area from strips round it, so its ring
+  no longer covered the line above.
+- **Home's Beta tester tasks card** is a neutral card like the tiles (violet is New guide's alone, v320), its count in
+  a ring that fills as tasks are answered; green once all six are, as before.
+- Tests: the chevron labels compared by their words; Print's preview (pages, ‹ ›, Escape); the launch screens' sizes.
+- **Debugging passes after it (fresh eye, then experienced eye):** a paper or option chosen just after Download PDF,
+  while the PDF was being written, left page 1's picture dimmed and showing the choices before (v320; it now draws
+  once the PDF is done, with a test that fails on v320); Focus mode's three buttons keep each icon with its word (at
+  320px and 1.6× text "‹ Back" broke onto two lines with room to spare); the preview's arrow keys work after the last
+  page's › goes off under the keyboard's focus; the preview's backdrop is near solid (the Print sheet's buttons showed
+  through). Checked besides: the new pieces in Safari's engine, random taps over phone and iPad sizes in both engines.
+- Cache bumped to `marker-studio-v321`.
+
+# Changes — v322 (an opening animation)
+
+- **Opening animation:** opened from the Home Screen (a fresh start, not a return to the app), the launch screen's
+  drop, now uncoloured, has its twelve sections coloured in one after another, top to bottom, then fades off Home,
+  which loads underneath meanwhile: about 0.6 s, and it waits for nothing (it goes once the page's script has run and
+  the sections are in; a start that never finishes loading still loses it after 4 s). Each section is its own small
+  SVG layer faded in by opacity, which the browser runs off the main thread, so loading the app's script doesn't stall
+  it. Taps go through it. None with Reduce motion, in a browser tab, or under test (unless `window.__MS_INTRO`).
+- **Launch screens** now show the drop uncoloured (`src/assets/intro/plain.png`), the animation's first picture, at the
+  same size and place, so the hand-over can't be seen.
+- `scripts/make-intro.mjs` makes the animation's markup (`src/html/intro.html`) and that picture from
+  `src/assets/icon.svg`.
+- Tests: the animation on and gone, none with Reduce motion or in a tab (home-2); its markup and gate (app).
+- Cache bumped to `marker-studio-v322`.

@@ -781,13 +781,16 @@ button {
   padding: 4px 18px;
   -webkit-tap-highlight-color: transparent;
   transition:
-    transform 0.06s ease,
+    transform 0.08s ease,
     box-shadow 0.5s ease,
     opacity 0.25s ease,
     background 0.25s ease;
 }
+/* (v321) a press: the button sinks a little under the finger (it had moved down 1px). Safari on an iPad shows :active
+   only with a touchstart listener on the page (boot.js). Buttons that move by a transform of their own keep it:
+   button[data-ownmove] and the few named after this */
 button:active {
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 /* a button that can't be used now looks it: faint, with a no-entry cursor (a component with its own disabled look
    says so after this, e.g. #draw, .segs) */
@@ -809,7 +812,7 @@ button:focus-visible {
   background: var(--accent-btn);
   color: #fff;
   border: none;
-  box-shadow: 0 10px 26px -14px rgba(124, 92, 255, 0.95);
+  box-shadow: 0 10px 26px -14px rgba(var(--accent-rgb), 0.95);
   font-weight: 700;
   letter-spacing: 0.01em;
 }
@@ -857,6 +860,17 @@ button:focus-visible {
 #undo:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+/* (v320, G1-10) Random's and Palette's rows: a button that can't be used now keeps its place and stays readable, its
+   words at half strength and its edge dashed, not the whole button faded to grey on grey (3.5:1 → 4.9:1) */
+#primaryRow button:disabled:not(#draw),
+#secondaryRow button:disabled,
+#libRow button:disabled:not(.flash) {
+  opacity: 1;
+  color: color-mix(in srgb, var(--ink) 50%, transparent);
+  background: transparent;
+  border-style: dashed;
+  box-shadow: none;
 }
 #reset[data-arm='1'] {
   color: #ff6b63;
@@ -1111,7 +1125,7 @@ button:focus-visible {
   cursor: pointer;
 }
 .copybtn:active {
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 .pile {
   display: grid;
@@ -1236,9 +1250,9 @@ button:focus-visible {
 /* the second action next to a purple one: accent outline, not a second purple block */
 .btn-soft {
   width: 100%;
-  background: rgba(124, 92, 255, 0.12);
-  border: 1px solid rgba(124, 92, 255, 0.55);
-  color: #e6e0ff;
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.55);
+  color: var(--accent-pale);
 }
 
 /* ---- Markers (v284) ---- */
@@ -1306,7 +1320,7 @@ button:focus-visible {
   padding: 0 6px;
   border: none;
   background: none;
-  color: #b9a8ff;
+  color: var(--accent-ink);
   font: inherit;
   font-weight: 600;
   text-decoration: underline;
@@ -1666,8 +1680,8 @@ button:focus-visible {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: rgba(124, 92, 255, 0.12);
-  color: #b9a8ff;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent-ink);
 }
 #savedList .emptyhow .ic {
   width: 34px;

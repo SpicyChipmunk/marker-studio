@@ -856,22 +856,60 @@ function buildBalance(cl, p) {
         const r = roleOf[assign[l].mkey] || balRoleOf(p, assign[l]);
         if (r) pg[r] += area(l);
       });
-      left = adjRepair(assign, free, a, function (l, m) {
-        const r = roleOf[m.mkey] || 'm',
-          L = [rm(r)],
-          g = Object.assign({}, pg),
-          ar = area(l);
-        free.forEach(function (q) {
-          if (assign[q]) g[roleOf[assign[q].mkey] || 'm'] += area(q);
-        });
-        const fits = function (o) {
-          return g[o] + ar <= want[o] + tol && g[r] - ar >= want[r] - tol;
+      // (v320: the deeper search, adjSearch, may move sections across the two roles either way, kept only where the
+      // shares end up under 5 points off, or no further than they were: Q1-1, Shuffle's seed 109 on the sample)
+      const roleArea = function () {
+          const g2 = { m: 0, s: 0, a: 0 };
+          order.forEach(function (l) {
+            if (!assign[l]) return;
+            const r = roleOf[assign[l].mkey] || balRoleOf(p, assign[l]);
+            if (r) g2[r] += area(l);
+          });
+          return g2;
+        },
+        dev = function (g2) {
+          return Math.max(Math.abs(g2.m - want.m), Math.abs(g2.s - want.s), Math.abs(g2.a - want.a));
+        },
+        dev0 = dev(roleArea()),
+        wideSearch = function () {
+          return {
+            lists: function (l, m) {
+              const r = roleOf[m.mkey] || 'm';
+              return [rm(r)].concat(
+                (r === 'a' ? ['m', 's'] : [r === 'm' ? 's' : 'm']).map(function (o) {
+                  return rm(o);
+                }),
+              );
+            },
+            // (to just under 5 points, the most v318.28 lets the shares miss by, rather than its 4.5: a pair alike
+            // shows more than half a point of share does)
+            ok: function () {
+              return dev(roleArea()) <= Math.max(0.0499 * total, dev0) + 1e-9;
+            },
+          };
         };
-        (r === 'a' ? ['m', 's'] : [r === 'm' ? 's' : 'm']).forEach(function (o) {
-          if (fits(o)) L.push(rm(o));
-        });
-        return L;
-      });
+      left = adjRepair(
+        assign,
+        free,
+        a,
+        function (l, m) {
+          const r = roleOf[m.mkey] || 'm',
+            L = [rm(r)],
+            g = Object.assign({}, pg),
+            ar = area(l);
+          free.forEach(function (q) {
+            if (assign[q]) g[roleOf[assign[q].mkey] || 'm'] += area(q);
+          });
+          const fits = function (o) {
+            return g[o] + ar <= want[o] + tol && g[r] - ar >= want[r] - tol;
+          };
+          (r === 'a' ? ['m', 's'] : [r === 'm' ? 's' : 'm']).forEach(function (o) {
+            if (fits(o)) L.push(rm(o));
+          });
+          return L;
+        },
+        wideSearch(),
+      );
     }
   }
   adjLeft[balZoneKey()] = left;

@@ -187,7 +187,7 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
   background: var(--accent-btn);
   box-shadow:
-    0 6px 20px -8px rgba(124, 92, 255, 0.85),
+    0 6px 20px -8px rgba(var(--accent-rgb), 0.85),
     0 1px 0 rgba(255, 255, 255, 0.22) inset;
   -webkit-tap-highlight-color: transparent;
 }
@@ -205,7 +205,7 @@
   animation: ctaShine 4.2s ease-in-out 3;
 }
 .sfcolorcta:active {
-  transform: translateY(1px);
+  transform: scale(0.97);
   box-shadow:
     0 2px 12px -4px rgba(77, 171, 247, 0.5),
     0 1px 0 rgba(255, 255, 255, 0.28) inset;
@@ -257,7 +257,7 @@
   margin-top: 8px;
   cursor: pointer;
   background: var(--accent);
-  box-shadow: 0 6px 18px -8px rgba(124, 92, 255, 0.8);
+  box-shadow: 0 6px 18px -8px rgba(var(--accent-rgb), 0.8);
   -webkit-tap-highlight-color: transparent;
 }
 .sfreveal::before {
@@ -274,7 +274,7 @@
   animation: revShine 6.5s ease-in-out 3;
 }
 .sfreveal:active {
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 @keyframes revShine {
   0%,
@@ -534,15 +534,12 @@
   opacity: 0.5;
 }
 /* (v308.3) a colour neither text reads on at 4.5:1: a soft outline round the words in the other colour */
+/* (v320, G1-11: white words with a firmer dark halo on every such colour) */
 .focmk.fmhalo {
   text-shadow:
-    0 0 2px rgba(0, 0, 0, 0.75),
-    0 0 1px rgba(0, 0, 0, 0.9);
-}
-.focmk.fmhalo-lt {
-  text-shadow:
-    0 0 2px rgba(255, 255, 255, 0.75),
-    0 0 1px rgba(255, 255, 255, 0.9);
+    0 0 3px rgba(0, 0, 0, 0.85),
+    0 0 1px rgba(0, 0, 0, 0.95),
+    0 1px 1px rgba(0, 0, 0, 0.6);
 }
 .focmk .fmc {
   display: block;
@@ -1118,7 +1115,7 @@
   opacity: 0.7;
 }
 #sfRoot .sftip .sftipbtn.sftipgo {
-  background: var(--accent, #6f4ef5);
+  background: var(--accent, var(--accent-btn));
   border-color: transparent;
   color: #fff;
 }
@@ -1327,7 +1324,7 @@
   font-weight: 700;
   font-size: var(--t-md);
   cursor: pointer;
-  box-shadow: 0 6px 16px -8px rgba(124, 92, 255, 0.9);
+  box-shadow: 0 6px 16px -8px rgba(var(--accent-rgb), 0.9);
 }
 /* Change colour: only this section or everywhere the marker is used */
 #sfRoot .sfpopscope {
@@ -1425,7 +1422,7 @@
   font-style: normal;
   font-size: var(--t-sm);
   font-weight: 600;
-  color: #b9a8ff;
+  color: var(--accent-ink);
 }
 #sfRoot .sfbrush:focus-visible {
   outline: 2px solid var(--focus-pic);

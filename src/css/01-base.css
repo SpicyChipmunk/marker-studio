@@ -42,19 +42,26 @@
   --accent: #7c5cff;
   --accent-btn: #6f4ef5;
   --accent2: #a95cff;
+  /* (v320) the violet as tokens: every other use in the styles reads these */
+  --accent-rgb: 124, 92, 255;
+  --accent-ink: #b9a8ff;
+  --accent-ink2: #cbbcff;
+  --accent-pale: #e6e0ff;
+  --accent-deep: #2a2350;
   --ok-rgb: 95, 184, 159;
   --ok: rgb(var(--ok-rgb));
   --ok2: #4bbf9a;
-  /* (v316) the one "picked" tint for a chosen option (segments, chips, the tools' toggles, Mood): one teal everywhere;
-     green itself (--ok) is for done */
-  --pick-rgb: 120, 200, 180;
-  --pick-bg: rgba(var(--pick-rgb), 0.22);
-  --pick-edge: rgba(143, 214, 180, 0.6);
+  /* (v316) the one "picked" tint for a chosen option (segments, chips, the tools' toggles, Mood); v320: a raised
+     neutral, the ink at 13% with a 42% edge, not teal: green itself (--ok) is for done and saved only */
+  --pick-rgb: 244, 242, 236;
+  --pick-bg: rgba(var(--pick-rgb), 0.13);
+  --pick-edge: rgba(var(--pick-rgb), 0.42);
   --warn-rgb: 255, 180, 84;
   --warn: rgb(var(--warn-rgb));
   --sel: #ffd84a;
-  /* the keyboard's focus ring: one colour everywhere (v284), white over the picture */
-  --focus: var(--ink);
+  /* the keyboard's focus ring: one colour everywhere (v284), white over the picture; v321: the accent's light violet,
+     so a ring reads as the keyboard's and not as a white edge the control has */
+  --focus: var(--accent-ink);
   --focus-pic: #fff;
 }
 /* (v305) drop-downs drawn as the dark app they're in: Safari's engine otherwise draws its own pale box under their light
@@ -162,6 +169,20 @@ html.noamb .ambient {
   stroke-linejoin: round;
   pointer-events: none;
 }
+/* (v321) a button's way back or on (core.js icNav): a chevron, a touch heavier, tucked close to its word */
+.ic.icnav {
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.2em;
+  stroke-width: 2.4;
+  margin-inline: -0.2em -0.05em;
+}
+.ic.icnav:not(.icback) {
+  margin-inline: -0.05em -0.2em;
+}
+.ic.icback {
+  transform: scaleX(-1);
+}
 .wrap {
   position: relative;
   z-index: 1;
@@ -239,11 +260,30 @@ html.noamb .ambient {
   cursor: pointer;
   transition:
     color 0.2s ease,
-    background 0.3s ease;
+    background 0.3s ease,
+    box-shadow 0.3s ease;
+}
+/* (v320) the tab you're on in its own colour, as Home's tiles: a 22% tint with a 70% edge, the text the app's ink
+   (Home pink, Guide violet, Markers coral, Palette amber) */
+.modes button {
+  --tab: 244, 242, 236;
+}
+#mHome {
+  --tab: 240, 128, 184;
+}
+#mSections {
+  --tab: 139, 108, 255;
+}
+#mCollection {
+  --tab: 251, 129, 127;
+}
+#mPalette {
+  --tab: 225, 155, 27;
 }
 .modes button.on {
-  background: var(--ink);
-  color: #151318;
+  background: rgba(var(--tab), 0.22);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px rgba(var(--tab), 0.7);
 }
 .optrow {
   display: flex;

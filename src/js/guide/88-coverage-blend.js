@@ -15,15 +15,15 @@ function updateProgress() {
   const dn = document.getElementById('sfDone'),
     fin = N > 0 && done >= N;
   if (dn) dn.style.display = fin ? '' : 'none';
-  // (the bar: Focus mode while there's colouring to do, Reveal & share once the page is finished)
+  // (the bar: Focus mode while there's colouring to do, Share & print once the page is finished: Reveal & share is in
+  // the finished card, v320 P2)
   const fb = document.getElementById('sfFocus'),
-    rb = document.getElementById('sfAlongRev');
+    rb = document.getElementById('sfAlongShare');
   if (fb && rb) {
     fb.style.display = fin ? 'none' : '';
     rb.style.display = fin ? '' : 'none';
   }
-  const ds = document.getElementById('sfDoneSum');
-  if (ds && N > 0 && done >= N) ds.textContent = finishLine();
+  if (fin) finishCard();
   // (v314: Add a photo of your page, or the photo: 24-page-photo)
   finPanel();
   // (v306: Did any run low?, once the page is finished)

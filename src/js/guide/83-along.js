@@ -51,9 +51,15 @@ function alongHintSeen() {
 // Colour along's controls (focus mode has its own, in renderControls): the ⓘ line, the list and the bar
 function alongControls() {
   ctlEl.innerHTML =
-    '<div class="sfpane sfalongp"><div id="sfDone" class="sfpgdone" style="display:none">' +
-    ic('sparkles', 'sfpgstar') +
-    '<span class="sfpgtitle">Page finished!</span><div id="sfDoneSum" class="sfpgsum"></div><div id="sfFin" class="sffin"></div></div>' +
+    // (v320, D2b/P2) the finished page as a card: when, the title, three numbers, the guide's markers, and Reveal &
+    // share with Add a photo of your page in it (the bar's second button is Share & print then); marker strokes
+    // flick from its edges on a canvas of its own (finishStrokes, 90-export), never over its words
+    '<div class="sfpane sfalongp"><div id="sfDone" class="sfpgdone" style="display:none"><canvas class="sfpgfx" aria-hidden="true"></canvas>' +
+    '<div id="sfDoneKick" class="sfpgkick"></div>' +
+    '<span class="sfpgtitle">Every section coloured</span><div id="sfDoneSum" class="sfpgsum"></div><div id="sfDoneMk" class="sfpgmk" aria-hidden="true"></div>' +
+    '<div class="sfpgacts"><button type="button" id="sfDoneRev" class="sfprimary">' +
+    ic('sparkles') +
+    ' Reveal &amp; share</button><div id="sfFin" class="sffin"></div></div></div>' +
     lowHost('A') +
     alongHint() +
     (zones.length
@@ -74,19 +80,22 @@ function alongControls() {
     '</button></div>' +
     findBoxHTML() +
     // (v318.26: "Back to the Plan", as Edit sections' own; the Plan is in Help's glossary)
-    '<div id="sfAlist" class="sfalist"></div></div><div class="sfbar"><button id="sfDoneBtn" class="sfghost" aria-label="Back to the Plan" data-long="← Plan" data-short="← Plan">← Plan</button><button id="sfFocus" class="sfprimary" aria-label="Focus mode" data-ic="focus" data-long="Focus mode" data-short="Focus">' +
+    '<div id="sfAlist" class="sfalist"></div></div><div class="sfbar"><button id="sfDoneBtn" class="sfghost" aria-label="Back to the Plan" data-ic="back" data-long="Plan" data-short="Plan">' +
+    icNav(-1) +
+    ' Plan</button><button id="sfFocus" class="sfprimary" aria-label="Focus mode" data-ic="focus" data-long="Focus mode" data-short="Focus">' +
     ic('focus') +
     // (v288: a finished page's bar offers Reveal & share instead, updateProgress)
-    ' Focus mode</button><button id="sfAlongRev" class="sfprimary" style="display:none" data-ic="sparkles" data-long="Reveal &amp; share" data-short="Reveal">' +
-    ic('sparkles') +
-    ' Reveal &amp; share</button></div>';
+    ' Focus mode</button><button id="sfAlongShare" class="sfprimary" style="display:none" data-ic="printer" data-long="Share &amp; print" data-short="Share">' +
+    ic('printer') +
+    ' Share &amp; print</button></div>';
   const q = function (id, fn) {
     const el = document.getElementById(id);
     if (el) el.addEventListener('click', fn);
   };
   q('sfDoneBtn', exitColor);
   q('sfFocus', enterFocus);
-  q('sfAlongRev', revealFromColour);
+  q('sfDoneRev', revealFromColour);
+  q('sfAlongShare', shareFromColour);
   q('sfAlist', alongClick);
   q('sfAlOrder', function (e) {
     const b = e.target.closest('button');

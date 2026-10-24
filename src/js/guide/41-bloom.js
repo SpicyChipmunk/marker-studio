@@ -3,8 +3,9 @@
    starts (out from its centre for Radial, or for a pattern with no direction; along the flow otherwise: down the rows,
    across, or corner to corner, the way Direction turns it), and the codes fade in on top. About 1.2 s. It's drawn on a
    canvas of its own over the picture, at the size it's shown (the picture's own pixels are right underneath all along,
-   so a tap during it lands on the guide as usual: it ends the bloom and still reaches what was tapped). Not on Build
-   again, Edit sections, a guide opened again or the sample; not with reduced motion; not in the browser tests unless a
+   so a tap during it lands on the guide as usual: it ends the bloom and still reaches what was tapped). v320: also on
+   Build after the sections were changed in Edit sections. Not on Build again with them unchanged, a guide opened
+   again or the sample; not with reduced motion; not in the browser tests unless a
    test asks for it (window.__MS_BLOOM). */
 const BLOOM_FLOOD = 900,
   BLOOM_FADE = 300;

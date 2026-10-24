@@ -3212,7 +3212,10 @@ function buildRandom(cl, pool) {
    through is enough. Pinned sections aren't in ls. Nothing is drawn (Math.random) unless a section clashes, so a
    laying that kept the rule is as before. Returns how many sections of ls are still alike to a neighbour (no marker
    would do: too few different markers), which the note under the box says (adjLeft). */
-function adjRepair(assign, ls, a, lists) {
+const ADJ_SEARCH_N = 14,
+  ADJ_SEARCH_NODES = 8000,
+  ADJ_SEARCH_MOVES = 3;
+function adjRepair(assign, ls, a, lists, wide) {
   const alike = balAlike(),
     uses = {},
     inLs = new Set(ls);
@@ -3299,6 +3302,99 @@ function adjRepair(assign, ls, a, lists) {
     },
     stuck = function (l) {
       return !!(assign[l] && a[l] && !clearOf(assign[l], nbsOf(l)));
+    },
+    // (v320) when no single marker and no swap of one or two neighbours will do: a small search over the section and
+    // the free sections round it (two rings, at most ADJ_SEARCH_N), each from its own lists, keeping its marker where
+    // it can, least used first, until every one of them is clear of all its neighbours; stopped after ADJ_SEARCH_NODES
+    // tries. On the sample with Main colour about 1 Shuffle in 100 had left one pair alike (the main colour's five
+    // markers are two colours at CIEDE2000 10, and the fix needs two or three sections moved together, Q1-1)
+    adjSearch = function (l) {
+      const R = [l],
+        inR = new Set(R);
+      // (its neighbours alike to it first, so a marker kept for it that can't work is found out at once)
+      if (a[l])
+        a[l].forEach(function (nb) {
+          const y = assign[nb];
+          if (inLs.has(nb) && y && !inR.has(nb) && alike(assign[l], y)) {
+            inR.add(nb);
+            R.push(nb);
+          }
+        });
+      for (let ring = 0; ring < 2 && R.length < ADJ_SEARCH_N; ring++)
+        R.slice().forEach(function (q) {
+          if (a[q])
+            a[q].forEach(function (nb) {
+              if (R.length < ADJ_SEARCH_N && inLs.has(nb) && !inR.has(nb) && assign[nb]) {
+                inR.add(nb);
+                R.push(nb);
+              }
+            });
+        });
+      const was = R.map(function (q) {
+          return assign[q];
+        }),
+        cand = R.map(function (q, i) {
+          const seen = new Set(),
+            out = [was[i]];
+          seen.add(was[i].mkey);
+          (wide ? wide.lists : lists)(q, was[i]).forEach(function (L) {
+            L.slice()
+              .sort(function (x, y) {
+                return (uses[x.mkey] || 0) - (uses[y.mkey] || 0);
+              })
+              .forEach(function (x) {
+                if (!seen.has(x.mkey)) {
+                  seen.add(x.mkey);
+                  out.push(x);
+                }
+              });
+          });
+          return out;
+        });
+      let nodes = 0;
+      // a section's marker clear of its neighbours already set: those outside R, and those of R before it
+      const okAt = function (i, x) {
+        const q = R[i];
+        for (const nb of a[q] || []) {
+          const j = R.indexOf(nb);
+          if (j > i) continue;
+          const y = j >= 0 ? assign[nb] : nbOf(assign, nb);
+          if (y && alike(x, y)) return false;
+        }
+        return true;
+      };
+      // (wide: lists wider than lists' own, and a check of the whole laying once all of R is placed: Main colour's
+      // shares, which two sections moving opposite ways keep, though either alone would take one past them)
+      // (at most ADJ_SEARCH_MOVES of them given another marker: a fix moves two or three, and the search stays small)
+      let moved = 0;
+      const go = function (i) {
+        if (i === R.length) return !wide || wide.ok();
+        for (const x of cand[i]) {
+          if (++nodes > ADJ_SEARCH_NODES) return false;
+          const mv = x !== was[i] ? 1 : 0;
+          if (moved + mv > ADJ_SEARCH_MOVES || !okAt(i, x)) continue;
+          assign[R[i]] = x;
+          moved += mv;
+          const done = go(i + 1);
+          moved -= mv;
+          if (done) return true;
+        }
+        assign[R[i]] = was[i];
+        return false;
+      };
+      if (go(0)) {
+        R.forEach(function (q, i) {
+          if (assign[q] !== was[i]) {
+            use(was[i], -1);
+            use(assign[q], 1);
+          }
+        });
+        return true;
+      }
+      R.forEach(function (q, i) {
+        assign[q] = was[i];
+      });
+      return false;
     };
   let left = 0;
   for (let pass = 0; pass < 2; pass++) {
@@ -3318,7 +3414,7 @@ function adjRepair(assign, ls, a, lists) {
         if (c.length) ok = c;
       }
       if (!ok) {
-        if (!adjSwap(l, Ls)) left++;
+        if (!adjSwap(l, Ls) && !adjSearch(l)) left++;
         continue;
       }
       let lo = Infinity;
@@ -5158,6 +5254,7 @@ function backToReview() {
   lockMode = false;
   var _rt2 = document.getElementById('sfRoot');
   if (_rt2) _rt2.classList.remove('sffoc');
+  railSync();
   if (sfView) sfView.style.paddingTop = sfView.style.paddingBottom = '';
   renderControls();
   render();

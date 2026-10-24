@@ -83,8 +83,23 @@ function textK() {
 let _ctlGap = 12, // (see frameSize)
   _planNeed = 0,
   _labRaf = 0;
+// (v320) The paper's gutter: on an iPad (600px and more both ways) the picture, where it's coloured from (the Plan, Colour
+// along, Focus mode), sits inside its frame with PAPER_G px of the frame's lit surface round it, a sheet on a desk, its
+// shadow under it; a phone keeps every pixel for the picture (fewer codes would be dots), and Edit sections, Crop and
+// Straighten draw to the frame's edge as before. In the fit maths, not CSS on the canvas: its transform is the zoom
+function paperOn() {
+  return (sfmode === 'guide' || sfmode === 'color') && !cropMode && !pgMode;
+}
+function paperG() {
+  // (an iPad either way up: a phone held sideways is wide but short, and keeps every pixel too)
+  return Math.min(window.innerWidth || 0, window.innerHeight || 0) >= 600 && paperOn() ? PAPER_G : 0;
+}
+const PAPER_G = 12;
 function frameSize() {
   if (!cv || !sfView || !picBox || !cv.width || !cv.height || !workEl || workEl.offsetParent === null) return;
+  const G2 = paperG() * 2;
+  sfView.style.setProperty('--paperG', G2 / 2 + 'px');
+  root.classList.toggle('sfonpaper', paperOn());
   const side = sideBySide(),
     ar = cv.height / cv.width,
     tools = document.getElementById('sfZoomCtl'),
@@ -119,7 +134,14 @@ function frameSize() {
       // (a narrow landscape phone, 640–690px, can't give 280 + 340: the controls give up to 40px first, then the
       // picture's column, so nothing is cut off at the right)
       cm = Math.max(300, Math.min(340, ww - 280)),
-      pc = Math.round(Math.max(Math.min(280, ww - cm), Math.min(avail / ar + 64, ww * 0.6, ww - cm)));
+      // (v320: a wide page's column isn't held to 60% of the width: the controls keep their 300-340px and the picture
+      // takes the rest it can use; a tall one keeps the 60%, which it never needs more of)
+      pc = Math.round(
+        Math.max(
+          Math.min(280, ww - cm),
+          Math.min((avail - G2) / ar + G2 + 64, ar < 1 ? ww - cm : ww * 0.6, ww - cm),
+        ),
+      );
     // (v300) the card as wide as the menu above it, the controls taking what the picture leaves, unless the picture
     // and the controls at their narrowest need more (a landscape page): then as wide as that
     const mn = document.querySelector('.wrap > .modes'),
@@ -132,14 +154,15 @@ function frameSize() {
     if (tools) tools.classList.remove('sftw', 'sfzcw');
     const tw = tools ? tools.offsetWidth : 52;
     // tools stacked beside the picture when the column leaves 52px at its side, otherwise in a row under it
-    if (colW - avail / ar >= Math.max(52, tw)) {
+    if (colW - ((avail - G2) / ar + G2) >= Math.max(52, tw)) {
       full = Math.round(avail);
-      cw = full / ar;
+      cw = (full - G2) / ar;
     } else {
       workEl.classList.remove('sftoolsv');
-      const th = tools ? tools.offsetHeight : 40;
-      full = Math.round(Math.min(avail - th, colW * ar));
-      cw = full / ar;
+      const th = tools ? tools.offsetHeight : 40,
+        ph = Math.min(avail - th - G2, (colW - G2) * ar);
+      full = Math.round(ph + G2);
+      cw = ph / ar;
     }
     geo = { full: full, comp: full, side: true, shrink: false };
   } else {
@@ -154,7 +177,7 @@ function frameSize() {
       big = !small && (window.innerWidth || 0) >= 700;
     full = Math.max(
       120,
-      Math.min(Math.round(vw * ar), Math.round(vh * (along && small ? 0.45 : big ? 0.6 : 0.55))),
+      Math.min(Math.round((vw - G2) * ar + G2), Math.round(vh * (along && small ? 0.45 : big ? 0.6 : 0.55))),
     );
     // (v318 review) with larger text on a phone (the iPhone's Text Size, or the browser's), the Plan and Edit sections'
     // floor is lower, by the square root of how much larger: 45% of the screen at the usual size, 40% at 1.3×, 36% at
@@ -166,7 +189,7 @@ function frameSize() {
     // (v316) an iPad's one column with a narrow picture (the sample, a bookmark: under 55% of the column's width at the
     // 60% start, black either side): the Plan and Edit sections start at the 50% floor, the size it shrinks to anyway,
     // so the tabs and their first row are on the first screen; a page-shaped picture keeps its 60%
-    if (big && !along && full / ar < vw * 0.55) full = comp;
+    if (big && !along && (full - G2) / ar < vw * 0.55) full = comp;
     // on short screens (or with larger text) the start size is capped so the tool row ends above the bar at the top of
     // the page; never below the floor
     if (!along && headEl) {
@@ -213,13 +236,13 @@ function frameSize() {
         full = Math.max(comp, Math.min(full, cap - (_planNeed || _ctlGap + Math.round(8 * rem))));
       }
     }
-    cw = Math.min(vw, full / ar);
+    cw = Math.min(vw - G2, (full - G2) / ar);
     geo = { full: full, comp: comp, side: false, shrink: false };
     geo.shrink = geo.full > geo.comp;
   }
   // (a picture wider than the frame's least height allows, about 3:1 on a phone: drawn at its own shape in the middle
   // of the frame, not stretched to it, v287)
-  const ch = Math.min(full, Math.max(1, Math.round(cw * ar)));
+  const ch = Math.min(full - G2, Math.max(1, Math.round(cw * ar)));
   cvSize(Math.round(cw), ch);
   // (the picture drawn at another size than its codes were sized for, from Edit sections' first screen to the Plan:
   // drawn again, so codes stay 6 screen pixels at the least, v289)
@@ -229,7 +252,7 @@ function frameSize() {
       _labRaf = 0;
       if (assignData && sfmode !== 'review' && labMinFor(_labB) !== _labMin) renderGuide();
     });
-  picBox.classList.toggle('sfshort', ch < full - 1);
+  picBox.classList.toggle('sfshort', ch < full - G2 - 1);
   picBox.style.height = full + 'px';
   sfView.style.setProperty('--picShift', geo.full - geo.comp + 'px');
   // (not while the iPad's keyboard is up over the code box, when the picture isn't pinned, findKbd: v318.6, the picture
@@ -247,6 +270,21 @@ function frameSize() {
   planFit();
   // (v318.18: the column beside the picture can make Colours fold, 51-controls-plan)
   moreCheck();
+  tabUl();
+}
+// (v320) the Guide tabs' underline, one bar that slides to the tab chosen (04-guide.css .sftabs.sful): placed from the
+// tab's own box, again whenever the frame is sized (a turn, larger text); new tabs start it where it is, without a slide
+function tabUl() {
+  const tb = ctlEl && ctlEl.querySelector('.sftabs'),
+    on = tb && tb.querySelector('.sftabbtn.on');
+  if (!tb) return;
+  if (!on || !on.offsetWidth) {
+    tb.classList.remove('sful');
+    return;
+  }
+  tb.style.setProperty('--ulX', on.offsetLeft + 'px');
+  tb.style.setProperty('--ulW', on.offsetWidth + 'px');
+  tb.classList.add('sful');
 }
 // (v318 review) Where a toast goes in the Plan: over the foot of the picture, just above its tool row (beside the
 // picture's ↶ Undo), not over the tabs and their controls, where it had sat for Surprise's 8 seconds over the tab
@@ -536,6 +574,7 @@ function switchTab(t) {
     x.setAttribute('aria-selected', on ? 'true' : 'false');
     x.tabIndex = on ? 0 : -1;
   });
+  tabUl();
   ctlEl.querySelectorAll('.sftab').forEach(function (pn) {
     pn.style.display = pn.dataset.tab === gTab ? '' : 'none';
   });
@@ -642,8 +681,9 @@ function touchRule() {
 /* ---- #5 the header row: name (✎ renames it in place) over where it's saved, ✨ Surprise in Plan, and ⋯ ---- */
 function renderHead() {
   if (!headEl) return;
-  const plan = sfmode === 'guide' && !!assignData && !pgMode && !cropMode,
-    nm = (curName && curName.trim()) || 'New guide';
+  // (v320: while a new photo is read, its header is the new guide's, not the one it replaces: Q2-2)
+  const plan = sfmode === 'guide' && !!assignData && !pgMode && !cropMode && !_wait,
+    nm = (!_wait && curName && curName.trim()) || 'New guide';
   const old = document.getElementById('sfGName'),
     val = old ? old.value : curName || '',
     ae = document.activeElement,
@@ -754,6 +794,8 @@ function headWraps() {
 }
 function startRename() {
   hideTip();
+  // (v320: a name on two lines, the field on one: the header held at its height meanwhile, so nothing under it moves)
+  if (headEl) headEl.style.minHeight = headEl.getBoundingClientRect().height + 'px';
   renaming = true;
   renderHead();
   const i = document.getElementById('sfGName');
@@ -771,6 +813,7 @@ function endRename(keep) {
     v = i ? i.value.trim().slice(0, 120) : '',
     had = !!(i && headEl.contains(document.activeElement));
   renaming = false;
+  if (headEl) headEl.style.minHeight = '';
   if (keep && v && v !== curName) {
     curName = v;
     // (v313: a sample renamed is a page of one's own: Home's Continue card offers it)
@@ -958,7 +1001,7 @@ function fitBtn() {
   if (b) b.style.display = zoom > 1.001 || focus ? '' : 'none';
 }
 
-/* ---- #6 the bar: two buttons on one row; the back button reads "← Sections" when both don't fit ---- */
+/* ---- #6 the bar: two buttons on one row; the back button reads "‹ Sections" when both don't fit ---- */
 function fitBar() {
   fitTabs();
   const bar = barEl();
@@ -966,7 +1009,7 @@ function fitBar() {
   const sh = bar.querySelectorAll('[data-short]');
   // (data-ic: an icon before the words)
   const put = function (b, t) {
-    if (b.dataset.ic) b.innerHTML = ic(b.dataset.ic) + ' ' + esc(t);
+    if (b.dataset.ic) b.innerHTML = (b.dataset.ic === 'back' ? icNav(-1) : ic(b.dataset.ic)) + ' ' + esc(t);
     else b.textContent = t;
   };
   sh.forEach(function (b) {
