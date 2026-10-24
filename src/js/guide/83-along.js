@@ -435,6 +435,7 @@ function renderAlong() {
         return alongRow(e, true);
       })
       .join('');
+    actsLay(el);
     alongRefocus(el, fid, fk);
     return;
   }
@@ -483,8 +484,35 @@ function renderAlong() {
     el.addEventListener('click', capQClick);
   }
   alongFlash(el, full);
+  actsLay(el);
   alongRefocus(el, fid, fk);
 }
+// (v324.1) the open row's three actions even: three across where three of the widest fit, else two on a row and the
+// third across under them. "✓ Mark all done" (v324, was "✓ Mark all coloured") made three just fit a 390 phone's row
+// with flex, 114, 85 and 85px wide. Measured as the words are, any text size; again when the window changes width
+function actsLay(el) {
+  const g = el && el.querySelector('.sfacts');
+  if (!g) return;
+  const bs = g.querySelectorAll('button');
+  g.classList.remove('sfacts2', 'sfacts3');
+  if (bs.length !== 3) return;
+  g.classList.add('sfactsm');
+  let w = 0;
+  bs.forEach(function (b) {
+    w = Math.max(w, b.getBoundingClientRect().width);
+  });
+  g.classList.remove('sfactsm');
+  const cs = getComputedStyle(g),
+    room = g.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0),
+    gap = parseFloat(cs.columnGap) || 0;
+  g.classList.add(3 * w + 2 * gap <= room + 0.5 ? 'sfacts3' : 'sfacts2');
+}
+let _actsW = 0;
+window.addEventListener('resize', function () {
+  if (window.innerWidth === _actsW) return;
+  _actsW = window.innerWidth;
+  actsLay(document.getElementById('sfAlist'));
+});
 // (v318.21) Once, at the top of the list: which codes your Ohuhu caps show, asked of a marker you're colouring with,
 // "Does this cap say R213 Pomegranate or R6 Rose Red?" (caps.js capQPick, capAnswer). Never takes the keyboard; ×
 // closes it for good. Only in a guide with such a marker of yours, and not once Scan has told enough caps

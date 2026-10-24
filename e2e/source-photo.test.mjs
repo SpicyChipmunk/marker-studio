@@ -471,6 +471,31 @@ after(teardown);
     });
     return dims;
   }
+  // (v324.1) v324 encoded the picture's record once the guide was saved, waited for: a reload just after Build left the
+  // guide without it. It's encoded as the picture opens now (srcPrewarm), so the record goes in with the guide
+  test('a reload straight after Build keeps the picture with the guide', async () => {
+    // (each encoding a moment slower, as a big photo's on an older iPad)
+    const { page, errors } = await openApp({
+      ...VIEW,
+      init: () => {
+        const o = HTMLCanvasElement.prototype.toBlob;
+        HTMLCanvasElement.prototype.toBlob = function (cb, ...a) {
+          return o.call(this, (b) => setTimeout(() => cb(b), 600), ...a);
+        };
+      },
+    });
+    await croppedGuide(page, null);
+    await page.waitForFunction(() => __mstest.inLibrary, null, { timeout: 20000 });
+    const id = await page.evaluate(() => __mstest.curId);
+    await page.reload();
+    await idle(page);
+    assert.equal(
+      await page.evaluate((id) => IDB.get('src-' + id).then((r) => !!(r && r.u)), id),
+      true,
+      'the record',
+    );
+    assert.deepEqual(errors, []);
+  });
   async function reopen(page, id) {
     await page.click('#mHome');
     await idle(page);

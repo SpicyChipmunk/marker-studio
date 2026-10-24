@@ -1853,6 +1853,21 @@ button.hcpic:focus-visible {
     grid-column: 1 / -1;
   }
 }
+/* (v324.1) A phone on its side: the first step, and Let's find your set, scroll as one, choices and links together.
+   Their choices had scrolled in a strip of their own about 40 px tall above the pinned links, on a 568 × 320 iPhone
+   SE, part of one choice showing */
+@media (max-height: 500px) {
+  #wcStep0,
+  #wcStepFind {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  #wcStep0 .wcscroll,
+  #wcStepFind .wcscroll {
+    flex: none;
+    overflow: visible;
+  }
+}
 /* (v316) a new user's Home on a wide screen: three steps of how it works under the cards, where the start card's
    height had left the right-hand column empty; nowhere else (a phone's Home is one column), and only until the first
    guide is made (hownew, library.js) */

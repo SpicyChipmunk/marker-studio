@@ -2116,3 +2116,25 @@ import fs, { readFileSync } from 'node:fs';
     });
   }
 }
+
+// (v324.1) "today", "yesterday", "3 days ago" by the calendar, as Home's Continue card counts: a guide saved at 11 pm
+// had read "today" the next morning; a time ahead of now is "today", not nothing; another year's date has its year
+{
+  const a = createApp({ localStorage: memoryStorage() });
+  const rel = (ts) => a.__eval('relDate(' + ts + ')');
+  test('relDate counts calendar days, says "today" for a time ahead, and gives another year its year', () => {
+    const now = new Date(),
+      at = (dd, h, m) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + dd, h, m).getTime();
+    assert.equal(rel(at(0, 0, 1)), 'today');
+    assert.equal(rel(at(-1, 23, 59)), 'yesterday');
+    assert.equal(rel(at(-1, 0, 1)), 'yesterday');
+    assert.equal(rel(at(-3, 12, 0)), '3 days ago');
+    assert.equal(rel(Date.now() + 5 * 864e5), 'today');
+    assert.match(
+      rel(new Date(now.getFullYear() - 2, 2, 3).getTime()),
+      new RegExp(String(now.getFullYear() - 2)),
+    );
+    assert.doesNotMatch(rel(at(-10, 12, 0)), /ago|today/);
+    assert.equal(rel(0), '');
+  });
+}

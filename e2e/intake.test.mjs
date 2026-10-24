@@ -621,11 +621,27 @@ for(let i=0;i<9;i++){g.beginPath();g.arc(W*0.3+r()*W*0.4,H*0.3+r()*H*0.4,60+r()*
       await sampleGuide(page);
       await page.evaluate(() => scrollTo(0, 0));
       await idle(page);
+      // (v324.1: once its size holds still for a few frames: under load, GitHub's WebKit reported the picture's size
+      // transition finished while the size it laid out was still a few pixels short of it)
       const at = () =>
-        page.$eval('#sfCanvas', (c) => {
-          const r = c.getBoundingClientRect();
-          return [r.left, r.width];
-        });
+        page.evaluate(
+          () =>
+            new Promise((res) => {
+              let last = '',
+                same = 0;
+              const c = document.getElementById('sfCanvas'),
+                t0 = performance.now();
+              const f = () => {
+                const r = c.getBoundingClientRect(),
+                  k = r.left.toFixed(1) + ',' + r.width.toFixed(1);
+                same = k === last ? same + 1 : 0;
+                last = k;
+                if (same >= 3 || performance.now() - t0 > 3000) res([r.left, r.width]);
+                else requestAnimationFrame(f);
+              };
+              f();
+            }),
+        );
       const a = await at();
       await page.click('#sfColor');
       await page.evaluate(() => scrollTo(0, 0));

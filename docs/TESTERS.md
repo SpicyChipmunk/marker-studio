@@ -62,7 +62,7 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
 
 ## What to try: Tester tasks
 
-**Tester tasks** (at the foot of Home, and in **Help › Beta tester guide**) has six things to try, in your own time:
+**Tester tasks** (its card on Home, and in **Help › Beta tester guide**) has six things to try, in your own time:
 add your markers, make a guide, make the plan yours, colour along, come back to it, and share or print. Three more are
 there if you have time, then a few last questions.
 

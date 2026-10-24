@@ -928,3 +928,23 @@ test('a small phone: the welcome’s three choices in view, and step 2 opens at 
   assert.equal(await page.evaluate(() => document.activeElement.id), 'wcSample');
   assert.deepEqual(errors, []);
 });
+
+// (v324.1) a phone on its side, 568 × 320: the first step scrolls as one, its choices and links together (the choices
+// had scrolled in a strip of their own about 40px tall, part of one showing)
+test('a phone on its side: the welcome’s first step scrolls as one', async () => {
+  const { page, errors } = await openApp({ width: 568, height: 320 });
+  await idle(page);
+  const g = await page.evaluate(() => {
+    const st = document.getElementById('wcStep0'),
+      sc = st.querySelector('.wcscroll');
+    return {
+      stepScrolls: st.scrollHeight > st.clientHeight + 1 && getComputedStyle(st).overflowY === 'auto',
+      listOwn: sc.scrollHeight > sc.clientHeight + 1,
+    };
+  });
+  assert.deepEqual(g, { stepScrolls: true, listOwn: false });
+  await page.evaluate(() => document.getElementById('wcStep0').scrollTo(0, 9999));
+  const last = await page.evaluate(() => document.getElementById('wcNotSure').getBoundingClientRect().bottom);
+  assert.ok(last <= 320, 'the third choice reachable: ' + last);
+  assert.deepEqual(errors, []);
+});

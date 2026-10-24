@@ -320,6 +320,26 @@
 #sfRoot .sfacts .sfedit.on {
   color: var(--ink);
 }
+/* (v324.1) three actions laid as they fit (actsLay, 83-along): measured at their own widths (sfactsm), then three even
+   columns, or two with the third across under them */
+#sfRoot .sfacts.sfactsm .sfedit {
+  flex: none;
+}
+#sfRoot .sfacts.sfacts3,
+#sfRoot .sfacts.sfacts2 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+#sfRoot .sfacts.sfacts2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+#sfRoot .sfacts.sfacts2 > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+#sfRoot .sfacts.sfacts3 .sfedit,
+#sfRoot .sfacts.sfacts2 .sfedit {
+  min-width: 0;
+}
 #sfRoot .sfarow .blendstrip {
   padding: 0 8px 12px 36px;
 }

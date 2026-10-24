@@ -1390,6 +1390,10 @@ function _loadImage(file) {
       // goes on, and a newer photo's segStop cleared it already)
       afterPaint(function () {
         if (tok !== loadGen) return;
+        // (v324.1: the picture's record for the first save, encoded while the page and sections are found)
+        try {
+          srcPrewarm(srcImg, !(f35 > 0));
+        } catch (_) {}
         const failed = function (err) {
           if (tok !== loadGen) return;
           segBusySet(false);

@@ -170,6 +170,14 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 
 What recent releases changed that Parts A and B don't already cover.
 
+**New in v324.1**
+
+- [ ] **A new guide's photo:** make a guide from a photo, and close the app (swipe it away) the moment it appears;
+      open it again → the guide is in the Library, and Edit sections › Adjust photo has the photo.
+- [ ] **Colour along, iPhone:** open a marker's row → ✓ Mark all done and Find next the same width, Blends across
+      under them.
+- [ ] **Library:** a guide saved late yesterday says "yesterday" this morning.
+
 **New in v324**
 
 - [ ] ★ **Guide names:** build three guides from different pages (a colourful one, a mostly blue one, a grey one) and

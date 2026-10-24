@@ -349,6 +349,27 @@ after(teardown);
     assert.ok(await centred(page), 'the section centred beside the rail');
     assert.deepEqual(errors, []);
   });
+  // (v324.1) at a large text size on that phone: the marker's name on one line, so its section count and the progress
+  // bar stay above Done (two lines had put them under it)
+  test('a small phone on its side at 1.6× text: the name keeps to one line, the progress bar above Done', async () => {
+    const { page, errors } = await openAtScale(1.6, { width: 390, height: 844 });
+    await sampleGuide(page);
+    await enterFocus(page);
+    await page.setViewportSize({ width: 568, height: 320 });
+    await idle(page);
+    const g = await page.evaluate(() => {
+      const r = (s) => document.querySelector(s).getBoundingClientRect();
+      const b = document.querySelector('.sffocname > b');
+      return {
+        prog: r('#sfFocProg').bottom,
+        done: r('.sffocbot').top,
+        lines: Math.round(b.getBoundingClientRect().height / parseFloat(getComputedStyle(b).lineHeight)),
+      };
+    });
+    assert.equal(g.lines, 1, 'one line');
+    assert.ok(g.prog <= g.done, `the progress bar above Done: ${g.prog} / ${g.done}`);
+    assert.deepEqual(errors, []);
+  });
   test('focus mode: solid zoom chips; focus moves in, Tab stays in, the page behind is inert, and focus returns to ⛶ Focus mode', async () => {
     const { page, errors } = await openApp();
     await sampleGuide(page);

@@ -83,19 +83,21 @@ function flashSaved() {
 }
 var libQuery = '',
   libSort = 'recent';
+// (v324.1) by the calendar, as homeWhen counts: a guide saved at 11 pm read "today" at 8 the next morning, when it
+// had been less than a day; a time ahead of now (another device's clock, a backup from one) is "today", not nothing
+// ("Last backup: " had been left hanging); and a date in another year has its year (evoWhen)
 function relDate(ts) {
   if (!ts) return '';
-  var d = Date.now() - ts,
-    day = 86400000;
-  if (d < 0) return '';
-  if (d < day) return 'today';
-  if (d < 2 * day) return 'yesterday';
-  if (d < 7 * day) return Math.floor(d / day) + ' days ago';
-  try {
-    return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  } catch (e) {
-    return '';
-  }
+  var day = function (x) {
+      var d = new Date(x);
+      return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5;
+    },
+    n = Math.round(day(Date.now()) - day(+ts));
+  if (!isFinite(n)) return '';
+  if (n < 1) return 'today';
+  if (n === 1) return 'yesterday';
+  if (n < 7) return n + ' days ago';
+  return evoWhen(+ts);
 }
 var _thumbTried = {};
 // ---- Home (v285): the Continue card (the newest guide part-way coloured: its picture as coloured so far, the rest of
@@ -1151,8 +1153,7 @@ function libMeta(s) {
   var t = s.type === 'draw' ? 'Random draw' : s.type === 'guide' ? 'Guide' : 'Palette',
     cnt = s.keys ? s.keys.length : 0,
     p = s.type === 'guide' ? progressText(s.done, s.n) : '',
-    age = s.ts ? Date.now() - s.ts : -1,
-    when = age >= 0 && age < 7 * 86400000 ? relDate(s.ts) : evoWhen(s.ts);
+    when = relDate(s.ts);
   // (an item without a name shows its kind as the name: not twice)
   // (v303: on two lines, what it is and then how far and when, as Home has them, so no tile is left with one word on a
   // line of its own; the dot between the two lines is there for a screen reader, not shown)

@@ -886,6 +886,18 @@ html.sfrailon.sfrailshort .sffocrow .sffocsw {
 html.sfrailon.sfrailshort .sffocname b {
   font-size: var(--t-lg);
 }
+/* (v324.1) and on one line, cut short if it must be: at a large text size on a 320-tall phone the name took two lines,
+   and its section count and the progress bar went under Done */
+html.sfrailon.sfrailshort .sffocname {
+  min-width: 0;
+}
+html.sfrailon.sfrailshort .sffocname > b,
+html.sfrailon.sfrailshort .sffocname > span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 html.sfrailon.sfrailshort .sffocprog {
   margin-top: 10px;
 }

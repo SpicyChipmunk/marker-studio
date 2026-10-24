@@ -2209,9 +2209,13 @@ after(teardown);
     }
   });
   test('Colour along: an open marker’s actions are even — on a phone two on a row and the third across under them', async () => {
+    // (v324.1: and a narrow phone and a big one, laid as they fit by actsLay: "✓ Mark all done" had made three just
+    // fit a 390 row with flex, ragged)
     for (const [w, h, n] of [
       [1180, 820, 1],
       [390, 844, 2],
+      [320, 568, 2],
+      [430, 932, 2],
     ]) {
       const { page, errors, ctx } = await openApp({ width: w, height: h });
       await sampleGuide(page);

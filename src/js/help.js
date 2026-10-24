@@ -6,6 +6,10 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v324.1',
+    t: 'Fixes. A new guide keeps its photo even if the app is closed straight after Build. The Library and Home say “yesterday” for a guide saved last night, not “today”. Colour along’s Mark all done, Find next and Blends line up evenly again on a phone. On a small phone held sideways, the welcome scrolls as one, and Focus mode keeps the marker’s name on one line at large text sizes.',
+  },
+  {
     v: 'v324',
     t: 'New guides get better names, read from the colours that fill most of the page: more words, fewer foods, and titles such as “Study in Rouge and Fox”, “Where the Poppy Grows” and “The Honey Greenhouse”. Building a guide from a big photo pauses for less. On a small phone the welcome fits on one screen, Focus mode sideways has its controls beside the picture (with your markers for the page when there’s room), and Colour along’s order row keeps its search button. Home has one way into the tester tasks, and some wording is tidier: Colour along’s button is ✓ Mark all done.',
   },

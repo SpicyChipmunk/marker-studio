@@ -5613,6 +5613,26 @@ html.sfsheetin #sfRoot .sfsheet.sfshside {
 #sfRoot .sfacts .sfedit.on {
   color: var(--ink);
 }
+/* (v324.1) three actions laid as they fit (actsLay, 83-along): measured at their own widths (sfactsm), then three even
+   columns, or two with the third across under them */
+#sfRoot .sfacts.sfactsm .sfedit {
+  flex: none;
+}
+#sfRoot .sfacts.sfacts3,
+#sfRoot .sfacts.sfacts2 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+#sfRoot .sfacts.sfacts2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+#sfRoot .sfacts.sfacts2 > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+#sfRoot .sfacts.sfacts3 .sfedit,
+#sfRoot .sfacts.sfacts2 .sfedit {
+  min-width: 0;
+}
 #sfRoot .sfarow .blendstrip {
   padding: 0 8px 12px 36px;
 }
@@ -6964,6 +6984,18 @@ html.sfrailon.sfrailshort .sffocrow .sffocsw {
 }
 html.sfrailon.sfrailshort .sffocname b {
   font-size: var(--t-lg);
+}
+/* (v324.1) and on one line, cut short if it must be: at a large text size on a 320-tall phone the name took two lines,
+   and its section count and the progress bar went under Done */
+html.sfrailon.sfrailshort .sffocname {
+  min-width: 0;
+}
+html.sfrailon.sfrailshort .sffocname > b,
+html.sfrailon.sfrailshort .sffocname > span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 html.sfrailon.sfrailshort .sffocprog {
   margin-top: 10px;
@@ -11003,6 +11035,21 @@ button.hcpic:focus-visible {
   #wcStepRes .wcacts > [style*='display: none'] ~ .obGhost,
   #wcStepRes .wcacts .btn-primary:only-child {
     grid-column: 1 / -1;
+  }
+}
+/* (v324.1) A phone on its side: the first step, and Let's find your set, scroll as one, choices and links together.
+   Their choices had scrolled in a strip of their own about 40 px tall above the pinned links, on a 568 × 320 iPhone
+   SE, part of one choice showing */
+@media (max-height: 500px) {
+  #wcStep0,
+  #wcStepFind {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  #wcStep0 .wcscroll,
+  #wcStepFind .wcscroll {
+    flex: none;
+    overflow: visible;
   }
 }
 /* (v316) a new user's Home on a wide screen: three steps of how it works under the cards, where the start card's
@@ -15356,7 +15403,7 @@ if (window.__MS_TEST && !window.__MS_MOTION) document.documentElement.classList.
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New guide from a photo</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v324</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v324.1</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="light">Lightest first</option><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><button data-h="shadow">Light to shadow</button><button data-h="accent">Analogous + accent</button><button data-h="neutral">Greys + accent</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -15374,7 +15421,7 @@ if (window.__MS_TEST && !window.__MS_MOTION) document.documentElement.classList.
  </div><div class="actions" id="primaryRow"><button id="draw">Draw a marker</button><button id="swap">Swap this one</button></div><div class="actions actrow2"><div class="actions" id="secondaryRow"><button id="undo">Remove this one</button><button id="reset">Clear all</button></div><div class="actions" id="libRow"><button id="saveBtn">Save</button><button id="savedBtn">Library</button><button id="exportBtn">Save image</button></div></div><div id="useGuideWrap" style="display:none"><button id="useInGuide" class="btn-soft">Use in a guide</button></div><label class="rndfresh" id="rndFreshWrap" style="display:none"><input type="checkbox" id="rndFresh"><span>Prefer markers you haven’t used yet</span></label><div id="rndFreshNote" class="rndnote" role="status" style="display:none"></div></div></div><div id="drawnWrap">
   <div class="pile-head"><span class="lbl">Drawn</span><span class="n" id="pilen"></span><span class="tiptap" id="tiptap"></span></div>
   <div class="pile" id="pile"><div class="empty" id="pileEmpty">Colours you draw collect here. Tap one to put it back.</div></div>
- </div><div id="trackWrap"><div class="rail"><div class="rail-fill" id="fill"></div></div><div class="status" id="status"></div></div><div id="filterBar" class="filterbar" role="button" tabindex="0" aria-label="Show or hide filters" aria-controls="filters" aria-expanded="false"><span class="fb-label">Filters</span><span class="fb-sum" id="filterSum"></span><span class="fb-chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"></path></svg></span></div><div id="filters">
+ </div><div id="trackWrap"><div class="rail"><div class="rail-fill" id="fill"></div></div><div class="status" id="status"></div></div><div id="filterBar" class="filterbar" role="button" tabindex="0" aria-controls="filters" aria-expanded="false"><span class="fb-label">Filters</span><span class="fb-sum" id="filterSum"></span><span class="fb-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"></path></svg></span></div><div id="filters">
   <div class="fhint">Tap to show only those markers; tap more to add. Nothing&nbsp;chosen&nbsp;=&nbsp;all.</div>
   <div class="fam-head"><span class="lbl">Brand</span><span class="quick"><button id="brandAll">Clear</button></span></div>
   <div class="fams" id="brands"></div>
@@ -23505,19 +23552,21 @@ function flashSaved() {
 }
 var libQuery = '',
   libSort = 'recent';
+// (v324.1) by the calendar, as homeWhen counts: a guide saved at 11 pm read "today" at 8 the next morning, when it
+// had been less than a day; a time ahead of now (another device's clock, a backup from one) is "today", not nothing
+// ("Last backup: " had been left hanging); and a date in another year has its year (evoWhen)
 function relDate(ts) {
   if (!ts) return '';
-  var d = Date.now() - ts,
-    day = 86400000;
-  if (d < 0) return '';
-  if (d < day) return 'today';
-  if (d < 2 * day) return 'yesterday';
-  if (d < 7 * day) return Math.floor(d / day) + ' days ago';
-  try {
-    return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  } catch (e) {
-    return '';
-  }
+  var day = function (x) {
+      var d = new Date(x);
+      return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5;
+    },
+    n = Math.round(day(Date.now()) - day(+ts));
+  if (!isFinite(n)) return '';
+  if (n < 1) return 'today';
+  if (n === 1) return 'yesterday';
+  if (n < 7) return n + ' days ago';
+  return evoWhen(+ts);
 }
 var _thumbTried = {};
 // ---- Home (v285): the Continue card (the newest guide part-way coloured: its picture as coloured so far, the rest of
@@ -24573,8 +24622,7 @@ function libMeta(s) {
   var t = s.type === 'draw' ? 'Random draw' : s.type === 'guide' ? 'Guide' : 'Palette',
     cnt = s.keys ? s.keys.length : 0,
     p = s.type === 'guide' ? progressText(s.done, s.n) : '',
-    age = s.ts ? Date.now() - s.ts : -1,
-    when = age >= 0 && age < 7 * 86400000 ? relDate(s.ts) : evoWhen(s.ts);
+    when = relDate(s.ts);
   // (an item without a name shows its kind as the name: not twice)
   // (v303: on two lines, what it is and then how far and when, as Home has them, so no tile is left with one word on a
   // line of its own; the dot between the two lines is there for a screen reader, not shown)
@@ -38420,6 +38468,10 @@ function _loadImage(file) {
       // goes on, and a newer photo's segStop cleared it already)
       afterPaint(function () {
         if (tok !== loadGen) return;
+        // (v324.1: the picture's record for the first save, encoded while the page and sections are found)
+        try {
+          srcPrewarm(srcImg, !(f35 > 0));
+        } catch (_) {}
         const failed = function (err) {
           if (tok !== loadGen) return;
           segBusySet(false);
@@ -38789,6 +38841,8 @@ function pdfUse(c) {
     pgHint = null;
     // (v318.34: the page kept with the guide once it's saved, 25-source-photo)
     srcFrom = 'pdf';
+    // (v324.1: its record for the first save, begun now: 25-source-photo)
+    srcPrewarm(c, true);
     enterWork();
     const rs = document.getElementById('sfResume');
     if (rs) rs.style.display = 'none';
@@ -42066,7 +42120,8 @@ const SRC_SIDE = MAXSIDE,
   SRC_FIT_LEGACY = 0.01;
 // how the open picture came in: 'pic' (a photo, scan or download: 20-image-input), 'pdf' (21-pdf), null (the sample,
 // or a guide opened again without its picture)
-let srcFrom = null,
+let _srcPre = null,
+  srcFrom = null,
   // the settings a guide opened again was saved with (its payload's `src`), carried into its saves until the picture
   // is in memory again
   _srcSet = null,
@@ -42164,6 +42219,7 @@ function srcCheck(s) {
 // a guide opening (97-open): its settings, so the controls show them, and the record is looked for only when
 // Adjust photo opens (srcLoad). Nothing is read here
 function srcOpen(s) {
+  _srcPre = null;
   _srcSet = srcCheck(s);
   srcFrom = null;
   _src = { id: curId, gen: loadGen, read: false, rec: null, busy: false, miss: false };
@@ -42190,9 +42246,11 @@ function srcLoading() {
 // smaller (line art is often smaller lossless, and exact).
 // (v324) Encoded with toBlob and read back as a data: URL: the same file toDataURL makes, but the browser encodes it
 // away from the page's thread where it can (a photo's JPEG had held the page up for about 0.35 s just after a new
-// guide's first save; 1.4 s with the processor slowed 4×). Only the drawing, cheap, is done here and now, so a picture
-// freed meanwhile doesn't matter. Where there's no toBlob, toDataURL as before
-function srcEncode(pic, kind) {
+// guide's first save; 1.4 s with the processor slowed 4×). Where there's no toBlob, toDataURL as before.
+// (v324.1) The JPEG is started as the picture opens (srcPrewarm), while its sections are found, so by the first save
+// it's ready and the record is written in the same moment as the guide, as before v324: waited for then, a reload
+// just after Build lost the photo (the guide stayed, without it). _srcPre: above, with the other state
+function srcDraw(pic) {
   const w0 = pic.naturalWidth || pic.width,
     h0 = pic.naturalHeight || pic.height,
     k = Math.min(1, SRC_SIDE / Math.max(w0, h0)),
@@ -42204,48 +42262,79 @@ function srcEncode(pic, kind) {
   g.imageSmoothingQuality = 'high';
   if (k < 1) drawShrunk(g, pic, t.width, t.height);
   else g.drawImage(pic, 0, 0);
-  // (its size taken now: freeCanvas empties it once it's encoded)
-  const tw = t.width,
-    th = t.height,
-    rec = function (u) {
-      return { u: u, w: tw, h: th, ts: Date.now(), kind: kind };
-    },
-    url = function (type, q) {
-      if (!t.toBlob || typeof FileReader === 'undefined') return Promise.resolve(t.toDataURL(type, q));
-      return new Promise(function (res, rej) {
-        t.toBlob(
-          function (b) {
-            if (!b) return rej(new Error('no blob'));
-            const f = new FileReader();
-            f.onload = function () {
-              res(f.result);
-            };
-            f.onerror = rej;
-            f.readAsDataURL(b);
-          },
-          type,
-          q,
-        );
-      });
-    };
-  return url('image/jpeg', SRC_Q)
-    .then(function (u) {
-      return kind !== 'photo'
-        ? url('image/png').then(function (p) {
-            return p.length < u.length ? p : u;
-          })
-        : u;
-    })
-    .then(
-      function (u) {
-        freeCanvas(t);
-        return rec(u);
+  return t;
+}
+// a canvas `t` encoded as `type`, as a data: URL (toBlob, else toDataURL)
+function srcCanvasURL(t, type, q) {
+  if (!t.toBlob || typeof FileReader === 'undefined') return Promise.resolve(t.toDataURL(type, q));
+  return new Promise(function (res, rej) {
+    t.toBlob(
+      function (b) {
+        if (!b) return rej(new Error('no blob'));
+        const f = new FileReader();
+        f.onload = function () {
+          res(f.result);
+        };
+        f.onerror = rej;
+        f.readAsDataURL(b);
       },
-      function (e) {
-        freeCanvas(t);
-        throw e;
-      },
+      type,
+      q,
     );
+  });
+}
+// the picture `pic` drawn once, now, and encoded as each of `types` ([type, quality]): a promise each, of a data: URL
+// or null; the canvas freed once they're all done
+function srcURLs(pic, types) {
+  const t = srcDraw(pic),
+    ps = types.map(function (x) {
+      return srcCanvasURL(t, x[0], x[1]).catch(function () {
+        return null;
+      });
+    });
+  Promise.all(ps).then(function () {
+    freeCanvas(t);
+  });
+  return ps;
+}
+// (v324.1) a picture just opened (a photo, a scan, a PDF's page): its JPEG begun now, for the first save, and its PNG
+// too unless the camera said it's a photo (png: a scan or a PDF's page keeps the smaller), from one drawing. One kept
+// at a time; a failure is forgotten (the save then encodes it itself)
+function srcPrewarm(pic, png) {
+  if (!pic || typeof IDB === 'undefined' || (_srcPre && _srcPre.pic === pic)) return;
+  _srcPre = null;
+  try {
+    const ps = srcURLs(pic, png ? [['image/jpeg', SRC_Q], ['image/png']] : [['image/jpeg', SRC_Q]]);
+    _srcPre = { pic: pic, jpg: ps[0], png: ps[1] || null };
+  } catch (_) {
+    _srcPre = null;
+  }
+}
+function srcEncode(pic, kind) {
+  const w0 = pic.naturalWidth || pic.width,
+    h0 = pic.naturalHeight || pic.height,
+    k = Math.min(1, SRC_SIDE / Math.max(w0, h0)),
+    tw = Math.max(1, Math.round(w0 * k)),
+    th = Math.max(1, Math.round(h0 * k)),
+    pre = _srcPre && _srcPre.pic === pic ? _srcPre : null;
+  return Promise.all([pre && pre.jpg, kind === 'photo' ? 'none' : pre && pre.png])
+    .then(function (r) {
+      // (what wasn't encoded ahead, or failed then, encoded now, from one drawing)
+      const need = [];
+      if (!r[0]) need.push(['image/jpeg', SRC_Q]);
+      if (!r[1]) need.push(['image/png']);
+      if (!need.length) return r;
+      return Promise.all(srcURLs(pic, need)).then(function (x) {
+        if (x.indexOf(null) >= 0) throw new Error('not encoded');
+        return [r[0] || x.shift(), r[1] || x.shift()];
+      });
+    })
+    .then(function (r) {
+      return kind !== 'photo' && r[1].length < r[0].length ? r[1] : r[0];
+    })
+    .then(function (u) {
+      return { u: u, w: tw, h: th, ts: Date.now(), kind: kind };
+    });
 }
 // the open guide's picture written beside the guide `id` (just saved), once per picture; a failure is said once and
 // never holds the guide up. Resolves true when a record is in place
@@ -69147,6 +69236,7 @@ function renderAlong() {
         return alongRow(e, true);
       })
       .join('');
+    actsLay(el);
     alongRefocus(el, fid, fk);
     return;
   }
@@ -69195,8 +69285,35 @@ function renderAlong() {
     el.addEventListener('click', capQClick);
   }
   alongFlash(el, full);
+  actsLay(el);
   alongRefocus(el, fid, fk);
 }
+// (v324.1) the open row's three actions even: three across where three of the widest fit, else two on a row and the
+// third across under them. "✓ Mark all done" (v324, was "✓ Mark all coloured") made three just fit a 390 phone's row
+// with flex, 114, 85 and 85px wide. Measured as the words are, any text size; again when the window changes width
+function actsLay(el) {
+  const g = el && el.querySelector('.sfacts');
+  if (!g) return;
+  const bs = g.querySelectorAll('button');
+  g.classList.remove('sfacts2', 'sfacts3');
+  if (bs.length !== 3) return;
+  g.classList.add('sfactsm');
+  let w = 0;
+  bs.forEach(function (b) {
+    w = Math.max(w, b.getBoundingClientRect().width);
+  });
+  g.classList.remove('sfactsm');
+  const cs = getComputedStyle(g),
+    room = g.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0),
+    gap = parseFloat(cs.columnGap) || 0;
+  g.classList.add(3 * w + 2 * gap <= room + 0.5 ? 'sfacts3' : 'sfacts2');
+}
+let _actsW = 0;
+window.addEventListener('resize', function () {
+  if (window.innerWidth === _actsW) return;
+  _actsW = window.innerWidth;
+  actsLay(document.getElementById('sfAlist'));
+});
 // (v318.21) Once, at the top of the list: which codes your Ohuhu caps show, asked of a marker you're colouring with,
 // "Does this cap say R213 Pomegranate or R6 Rose Red?" (caps.js capQPick, capAnswer). Never takes the keyboard; ×
 // closes it for good. Only in a guide with such a marker of yours, and not once Scan has told enough caps
@@ -96923,6 +97040,10 @@ function renderHomeNotes() {
 // (not on a fresh install); Help › What's new (v318.32: its own section; it had been in About) lists this version's.
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v324.1',
+    t: 'Fixes. A new guide keeps its photo even if the app is closed straight after Build. The Library and Home say “yesterday” for a guide saved last night, not “today”. Colour along’s Mark all done, Find next and Blends line up evenly again on a phone. On a small phone held sideways, the welcome scrolls as one, and Focus mode keeps the marker’s name on one line at large text sizes.',
+  },
   {
     v: 'v324',
     t: 'New guides get better names, read from the colours that fill most of the page: more words, fewer foods, and titles such as “Study in Rouge and Fox”, “Where the Poppy Grows” and “The Honey Greenhouse”. Building a guide from a big photo pauses for less. On a small phone the welcome fits on one screen, Focus mode sideways has its controls beside the picture (with your markers for the page when there’s room), and Colour along’s order row keeps its search button. Home has one way into the tester tasks, and some wording is tidier: Colour along’s button is ✓ Mark all done.',

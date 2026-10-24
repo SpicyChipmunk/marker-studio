@@ -33,7 +33,8 @@ const SRC_SIDE = MAXSIDE,
   SRC_FIT_LEGACY = 0.01;
 // how the open picture came in: 'pic' (a photo, scan or download: 20-image-input), 'pdf' (21-pdf), null (the sample,
 // or a guide opened again without its picture)
-let srcFrom = null,
+let _srcPre = null,
+  srcFrom = null,
   // the settings a guide opened again was saved with (its payload's `src`), carried into its saves until the picture
   // is in memory again
   _srcSet = null,
@@ -131,6 +132,7 @@ function srcCheck(s) {
 // a guide opening (97-open): its settings, so the controls show them, and the record is looked for only when
 // Adjust photo opens (srcLoad). Nothing is read here
 function srcOpen(s) {
+  _srcPre = null;
   _srcSet = srcCheck(s);
   srcFrom = null;
   _src = { id: curId, gen: loadGen, read: false, rec: null, busy: false, miss: false };
@@ -157,9 +159,11 @@ function srcLoading() {
 // smaller (line art is often smaller lossless, and exact).
 // (v324) Encoded with toBlob and read back as a data: URL: the same file toDataURL makes, but the browser encodes it
 // away from the page's thread where it can (a photo's JPEG had held the page up for about 0.35 s just after a new
-// guide's first save; 1.4 s with the processor slowed 4×). Only the drawing, cheap, is done here and now, so a picture
-// freed meanwhile doesn't matter. Where there's no toBlob, toDataURL as before
-function srcEncode(pic, kind) {
+// guide's first save; 1.4 s with the processor slowed 4×). Where there's no toBlob, toDataURL as before.
+// (v324.1) The JPEG is started as the picture opens (srcPrewarm), while its sections are found, so by the first save
+// it's ready and the record is written in the same moment as the guide, as before v324: waited for then, a reload
+// just after Build lost the photo (the guide stayed, without it). _srcPre: above, with the other state
+function srcDraw(pic) {
   const w0 = pic.naturalWidth || pic.width,
     h0 = pic.naturalHeight || pic.height,
     k = Math.min(1, SRC_SIDE / Math.max(w0, h0)),
@@ -171,48 +175,79 @@ function srcEncode(pic, kind) {
   g.imageSmoothingQuality = 'high';
   if (k < 1) drawShrunk(g, pic, t.width, t.height);
   else g.drawImage(pic, 0, 0);
-  // (its size taken now: freeCanvas empties it once it's encoded)
-  const tw = t.width,
-    th = t.height,
-    rec = function (u) {
-      return { u: u, w: tw, h: th, ts: Date.now(), kind: kind };
-    },
-    url = function (type, q) {
-      if (!t.toBlob || typeof FileReader === 'undefined') return Promise.resolve(t.toDataURL(type, q));
-      return new Promise(function (res, rej) {
-        t.toBlob(
-          function (b) {
-            if (!b) return rej(new Error('no blob'));
-            const f = new FileReader();
-            f.onload = function () {
-              res(f.result);
-            };
-            f.onerror = rej;
-            f.readAsDataURL(b);
-          },
-          type,
-          q,
-        );
-      });
-    };
-  return url('image/jpeg', SRC_Q)
-    .then(function (u) {
-      return kind !== 'photo'
-        ? url('image/png').then(function (p) {
-            return p.length < u.length ? p : u;
-          })
-        : u;
-    })
-    .then(
-      function (u) {
-        freeCanvas(t);
-        return rec(u);
+  return t;
+}
+// a canvas `t` encoded as `type`, as a data: URL (toBlob, else toDataURL)
+function srcCanvasURL(t, type, q) {
+  if (!t.toBlob || typeof FileReader === 'undefined') return Promise.resolve(t.toDataURL(type, q));
+  return new Promise(function (res, rej) {
+    t.toBlob(
+      function (b) {
+        if (!b) return rej(new Error('no blob'));
+        const f = new FileReader();
+        f.onload = function () {
+          res(f.result);
+        };
+        f.onerror = rej;
+        f.readAsDataURL(b);
       },
-      function (e) {
-        freeCanvas(t);
-        throw e;
-      },
+      type,
+      q,
     );
+  });
+}
+// the picture `pic` drawn once, now, and encoded as each of `types` ([type, quality]): a promise each, of a data: URL
+// or null; the canvas freed once they're all done
+function srcURLs(pic, types) {
+  const t = srcDraw(pic),
+    ps = types.map(function (x) {
+      return srcCanvasURL(t, x[0], x[1]).catch(function () {
+        return null;
+      });
+    });
+  Promise.all(ps).then(function () {
+    freeCanvas(t);
+  });
+  return ps;
+}
+// (v324.1) a picture just opened (a photo, a scan, a PDF's page): its JPEG begun now, for the first save, and its PNG
+// too unless the camera said it's a photo (png: a scan or a PDF's page keeps the smaller), from one drawing. One kept
+// at a time; a failure is forgotten (the save then encodes it itself)
+function srcPrewarm(pic, png) {
+  if (!pic || typeof IDB === 'undefined' || (_srcPre && _srcPre.pic === pic)) return;
+  _srcPre = null;
+  try {
+    const ps = srcURLs(pic, png ? [['image/jpeg', SRC_Q], ['image/png']] : [['image/jpeg', SRC_Q]]);
+    _srcPre = { pic: pic, jpg: ps[0], png: ps[1] || null };
+  } catch (_) {
+    _srcPre = null;
+  }
+}
+function srcEncode(pic, kind) {
+  const w0 = pic.naturalWidth || pic.width,
+    h0 = pic.naturalHeight || pic.height,
+    k = Math.min(1, SRC_SIDE / Math.max(w0, h0)),
+    tw = Math.max(1, Math.round(w0 * k)),
+    th = Math.max(1, Math.round(h0 * k)),
+    pre = _srcPre && _srcPre.pic === pic ? _srcPre : null;
+  return Promise.all([pre && pre.jpg, kind === 'photo' ? 'none' : pre && pre.png])
+    .then(function (r) {
+      // (what wasn't encoded ahead, or failed then, encoded now, from one drawing)
+      const need = [];
+      if (!r[0]) need.push(['image/jpeg', SRC_Q]);
+      if (!r[1]) need.push(['image/png']);
+      if (!need.length) return r;
+      return Promise.all(srcURLs(pic, need)).then(function (x) {
+        if (x.indexOf(null) >= 0) throw new Error('not encoded');
+        return [r[0] || x.shift(), r[1] || x.shift()];
+      });
+    })
+    .then(function (r) {
+      return kind !== 'photo' && r[1].length < r[0].length ? r[1] : r[0];
+    })
+    .then(function (u) {
+      return { u: u, w: tw, h: th, ts: Date.now(), kind: kind };
+    });
 }
 // the open guide's picture written beside the guide `id` (just saved), once per picture; a failure is said once and
 // never holds the guide up. Resolves true when a record is in place
