@@ -1855,8 +1855,10 @@ button.hcpic:focus-visible {
 }
 /* (v324.1) A phone on its side: the first step, and Let's find your set, scroll as one, choices and links together.
    Their choices had scrolled in a strip of their own about 40 px tall above the pinned links, on a 568 × 320 iPhone
-   SE, part of one choice showing */
-@media (max-height: 500px) {
+   SE, part of one choice showing. (v324.2) Only up to 360 px tall (568 × 320, 640 × 360): from 375 (667 × 375 and
+   larger phones on their side) the strip is 170 px or more, and Skip and Restore stay pinned on screen as v285 asked
+   (welcome.test at 844 × 390) */
+@media (max-height: 360px) {
   #wcStep0,
   #wcStepFind {
     overflow-y: auto;

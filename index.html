@@ -11039,8 +11039,10 @@ button.hcpic:focus-visible {
 }
 /* (v324.1) A phone on its side: the first step, and Let's find your set, scroll as one, choices and links together.
    Their choices had scrolled in a strip of their own about 40 px tall above the pinned links, on a 568 × 320 iPhone
-   SE, part of one choice showing */
-@media (max-height: 500px) {
+   SE, part of one choice showing. (v324.2) Only up to 360 px tall (568 × 320, 640 × 360): from 375 (667 × 375 and
+   larger phones on their side) the strip is 170 px or more, and Skip and Restore stay pinned on screen as v285 asked
+   (welcome.test at 844 × 390) */
+@media (max-height: 360px) {
   #wcStep0,
   #wcStepFind {
     overflow-y: auto;
@@ -15403,7 +15405,7 @@ if (window.__MS_TEST && !window.__MS_MOTION) document.documentElement.classList.
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a photo into a marker-by-number colouring guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New guide from a photo</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v324.1</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF of one.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v324.2</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="light">Lightest first</option><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><button data-h="shadow">Light to shadow</button><button data-h="accent">Analogous + accent</button><button data-h="neutral">Greys + accent</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -48960,8 +48962,48 @@ function buildNoRep(cl, pool) {
           return [pool];
         })
       : 0;
+  if (free.length >= pool.length) noRepFill(assign, order, free, pool, a, noAdj ? alike : twin);
   assignData = { assign: assign, order: order, N: order.length, base: Object.assign({}, assign) };
   applyLocks();
+}
+// (v324.2) With sections enough for every marker, each is on the page: the laying could leave one out (each section it
+// came to had that marker's look-alike beside it, so it took one used already) and the repair could take a lone one
+// away, about 1 time in 20 on the sample (119 of 120). A marker left out goes on a section whose marker is used more
+// than once and whose neighbours are clear of it (near: look-alikes with Keep touching sections clearly different, which
+// a fill never breaks, else near-twins); with none clear, it stays out. Only while no marker is used more than twice:
+// past that, one used once beside others used three times would be no more even than one left out.
+function noRepFill(assign, order, free, pool, a, near) {
+  const uses = {};
+  order.forEach(function (l) {
+    const m = assign[l];
+    if (m) uses[m.mkey] = (uses[m.mkey] || 0) + 1;
+  });
+  for (const k in uses) if (uses[k] > 2) return;
+  pool.forEach(function (m) {
+    if (uses[m.mkey]) return;
+    let best = null,
+      bu = 1;
+    free.forEach(function (l) {
+      const was = assign[l],
+        u = was ? uses[was.mkey] || 0 : 0;
+      if (u <= bu) return;
+      const clash =
+        a &&
+        a[l] &&
+        Array.from(a[l]).some(function (q) {
+          const x = nbOf(assign, q);
+          return x && near(m, x);
+        });
+      if (!clash) {
+        best = l;
+        bu = u;
+      }
+    });
+    if (best === null) return;
+    uses[assign[best].mkey]--;
+    assign[best] = m;
+    uses[m.mkey] = 1;
+  });
 }
 // Random over the sections cl, by its Balance
 function buildRandomBal(cl, pool) {
@@ -97040,6 +97082,10 @@ function renderHomeNotes() {
 // (not on a fresh install); Help › What's new (v318.32: its own section; it had been in About) lists this version's.
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v324.2',
+    t: 'Fixes. Random’s No repeats uses every one of its markers when there are sections enough (now and then one was left out). On a phone held sideways the welcome keeps Skip and Restore on screen again; only the smallest phones scroll it as one.',
+  },
   {
     v: 'v324.1',
     t: 'Fixes. A new guide keeps its photo even if the app is closed straight after Build. The Library and Home say “yesterday” for a guide saved last night, not “today”. Colour along’s Mark all done, Find next and Blends line up evenly again on a phone. On a small phone held sideways, the welcome scrolls as one, and Focus mode keeps the marker’s name on one line at large text sizes.',

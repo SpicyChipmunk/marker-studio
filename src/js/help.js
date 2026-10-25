@@ -6,6 +6,10 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v324.2',
+    t: 'Fixes. Random’s No repeats uses every one of its markers when there are sections enough (now and then one was left out). On a phone held sideways the welcome keeps Skip and Restore on screen again; only the smallest phones scroll it as one.',
+  },
+  {
     v: 'v324.1',
     t: 'Fixes. A new guide keeps its photo even if the app is closed straight after Build. The Library and Home say “yesterday” for a guide saved last night, not “today”. Colour along’s Mark all done, Find next and Blends line up evenly again on a phone. On a small phone held sideways, the welcome scrolls as one, and Focus mode keeps the marker’s name on one line at large text sizes.',
   },

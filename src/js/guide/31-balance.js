@@ -1124,8 +1124,48 @@ function buildNoRep(cl, pool) {
           return [pool];
         })
       : 0;
+  if (free.length >= pool.length) noRepFill(assign, order, free, pool, a, noAdj ? alike : twin);
   assignData = { assign: assign, order: order, N: order.length, base: Object.assign({}, assign) };
   applyLocks();
+}
+// (v324.2) With sections enough for every marker, each is on the page: the laying could leave one out (each section it
+// came to had that marker's look-alike beside it, so it took one used already) and the repair could take a lone one
+// away, about 1 time in 20 on the sample (119 of 120). A marker left out goes on a section whose marker is used more
+// than once and whose neighbours are clear of it (near: look-alikes with Keep touching sections clearly different, which
+// a fill never breaks, else near-twins); with none clear, it stays out. Only while no marker is used more than twice:
+// past that, one used once beside others used three times would be no more even than one left out.
+function noRepFill(assign, order, free, pool, a, near) {
+  const uses = {};
+  order.forEach(function (l) {
+    const m = assign[l];
+    if (m) uses[m.mkey] = (uses[m.mkey] || 0) + 1;
+  });
+  for (const k in uses) if (uses[k] > 2) return;
+  pool.forEach(function (m) {
+    if (uses[m.mkey]) return;
+    let best = null,
+      bu = 1;
+    free.forEach(function (l) {
+      const was = assign[l],
+        u = was ? uses[was.mkey] || 0 : 0;
+      if (u <= bu) return;
+      const clash =
+        a &&
+        a[l] &&
+        Array.from(a[l]).some(function (q) {
+          const x = nbOf(assign, q);
+          return x && near(m, x);
+        });
+      if (!clash) {
+        best = l;
+        bu = u;
+      }
+    });
+    if (best === null) return;
+    uses[assign[best].mkey]--;
+    assign[best] = m;
+    uses[m.mkey] = 1;
+  });
 }
 // Random over the sections cl, by its Balance
 function buildRandomBal(cl, pool) {
