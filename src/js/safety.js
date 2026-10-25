@@ -713,14 +713,32 @@ function wipeAllData() {
       String(Date.now()),
     );
   } catch (e) {}
-  // (v318.1: and the photo reader's download, about 22 MB: no photos in it, but it's this app's, and someone leaving
-  // wants the room back. The app's own files and PDF.js's stay, for the welcome it starts again at, offline too)
+  // (v318.1: and the photo reader's download, about 22 MB, and v326 the subject finder's: no photos in them, but
+  // they're this app's, and someone leaving wants the room back. The app's own files and PDF.js's stay, for the
+  // welcome it starts again at, offline too)
   const reader = (function () {
     try {
       if (typeof ocrEnd === 'function') ocrEnd();
-      return self.caches && typeof OCR_CACHE === 'string'
-        ? caches.delete(OCR_CACHE).catch(function () {})
-        : Promise.resolve();
+      if (!self.caches) return Promise.resolve();
+      // (v326: and the subject finder's, 4.6 MB, v325.1 48-subject: every version of it, by its cache's name, as the
+      // guide module's SUB_CACHE isn't seen from here)
+      return caches
+        .keys()
+        .then(function (ks) {
+          return Promise.all(
+            ks
+              .filter(function (k) {
+                return (
+                  (typeof OCR_CACHE === 'string' && k === OCR_CACHE) ||
+                  k.indexOf('marker-studio-subject-') === 0
+                );
+              })
+              .map(function (k) {
+                return caches.delete(k);
+              }),
+          );
+        })
+        .catch(function () {});
     } catch (e) {
       return Promise.resolve();
     }

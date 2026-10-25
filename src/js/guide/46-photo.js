@@ -554,10 +554,15 @@ function photoPoints() {
 }
 // each section's typical photo colour (Lab): the most common colour under it, not the average,
 // so a mostly-blue section with a white highlight stays blue. Also how much of the section agrees (0..1).
+// (v326) On a photo-made page (47-photo-page), the average: what the page was made from. A photo's texture (a
+// striped coat) isn't a flat coloured-in page's: its marker was chosen for the stripes together, and judged
+// against one of them it had read as rough. The stats, the tip, the loose matches and a fresh plan all use it.
 function photoColours() {
-  const key = [photoXf.cx, photoXf.cy, photoXf.sx, photoXf.sy, photoXf.r].join('|');
+  const key = [photoXf.cx, photoXf.cy, photoXf.sx, photoXf.sy, photoXf.r].join('|'),
+    avg = ppOn();
   const P = photoPoints();
-  if (_phCol && _phCol.key === key && _phCol.lp === P.lp && _phCol.ref === photoRef) return _phCol;
+  if (_phCol && _phCol.key === key && _phCol.lp === P.lp && _phCol.ref === photoRef && _phCol.avg === avg)
+    return _phCol;
   const K = comps.length,
     lab = new Float32Array(K * 3),
     agree = new Float32Array(K),
@@ -592,7 +597,7 @@ function photoColours() {
         bk = k;
       }
     }
-    // refine: average the samples close to the most common colour
+    // refine: average the samples close to the most common colour (on a photo-made page, all of them)
     const c0 = [Ls[bk * 3], Ls[bk * 3 + 1], Ls[bk * 3 + 2]];
     let sL = 0,
       sa = 0,
@@ -602,7 +607,7 @@ function photoColours() {
       const dl = Ls[k * 3] - c0[0],
         da = Ls[k * 3 + 1] - c0[1],
         db = Ls[k * 3 + 2] - c0[2];
-      if (dl * dl + da * da + db * db <= 144) {
+      if (avg || dl * dl + da * da + db * db <= 144) {
         sL += Ls[k * 3];
         sa += Ls[k * 3 + 1];
         sb += Ls[k * 3 + 2];
@@ -616,7 +621,7 @@ function photoColours() {
     has[l] = 1;
     inn[l] = ni / m;
   }
-  _phCol = { key: key, lp: P.lp, ref: photoRef, lab: lab, agree: agree, has: has, inn: inn };
+  _phCol = { key: key, lp: P.lp, ref: photoRef, avg: avg, lab: lab, agree: agree, has: has, inn: inn };
   return _phCol;
 }
 // choose up to N markers from the pool that together cover the targets best, then give each target its closest chosen
@@ -1010,6 +1015,8 @@ function buildPhoto(cl, quick) {
   const zk = pwKey(),
     was = _phNone[zk];
   delete _phNone[zk];
+  // (v325: a photo-made page's sections take the markers it was made with, while those are what it may use, 47-photo-page)
+  if (ppMadeLay(cl)) return true;
   const pool = photoPool().filter(function (m) {
     return m.lab;
   });
@@ -1028,7 +1035,9 @@ function buildPhoto(cl, quick) {
   if (!t.length) return false;
   // (v304) no colour in the photo over these sections, with white areas left white: every one stays white (pins keep
   // their markers), and the Pattern panel says so; a photo mostly off the drawing is laid as before, and said
-  const nc = photoNoColour(t);
+  // (v326: not a photo-made page, whose colours are the photo's own: a black-and-white photo had every section
+  // white on any plan made afresh)
+  const nc = ppOn() ? null : photoNoColour(t);
   if (nc) _phNone[zk] = nc;
   if (nc && !nc.off) {
     if (!was || was.off) sayLive('No colour in this photo, so every section is left white.');
@@ -1138,7 +1147,7 @@ function positionPhoto() {
     photoXf &&
     cv &&
     sfView &&
-    sfmode === 'guide' &&
+    (sfmode === 'guide' || (photoPeek && photoPeekStep())) &&
     family === 'photo' &&
     !root.classList.contains('sfrev')
   );
@@ -1433,6 +1442,12 @@ let photoPaper = true,
 // How close a section's marker is to its photo colour: by eye (CIEDE2000), in Match's words (colour.js: MATCH_STEPS).
 // From PH_ROUGH on, a match is Rough or Loose.
 const PH_ROUGH = MATCH_STEPS[2][0];
+// (v326) where the rough matches start: on a photo-made page the loose ones (Match's further than Rough), by each
+// section's average colour (photoColours): a photo's texture against one flat marker is often 7-12, and Rough there
+// had flagged most of a page that looked right
+function photoRoughAt() {
+  return ppOn() ? MATCH_STEPS[3][0] : PH_ROUGH;
+}
 // plain L*a*b* distance: only for finding a short list quickly, and the page check (whose limits were measured with it)
 function _dE(a, b) {
   const dl = a[0] - b[0],
@@ -1463,7 +1478,8 @@ function photoStats() {
   let close = 0,
     rough = 0,
     tot = 0;
-  const R = [];
+  const R = [],
+    RA = photoRoughAt();
   for (const k in assignData.assign) {
     const l = +k,
       m = assignData.assign[l];
@@ -1473,14 +1489,15 @@ function photoStats() {
       e = de2000(t, m.lab);
     _phErr[l] = e;
     tot++;
-    if (e < PH_ROUGH) close++;
+    if (e < RA) close++;
     else {
       rough++;
       R.push({ lab: t, e: e, w: Math.sqrt(Math.max(1, comps[l].area || 1)) });
     }
   }
   let want = [];
-  if (R.length && !isDemo()) {
+  // (v326: not on a photo-made page: its markers to add are the page's own line, 47-photo-page ppHelpHTML)
+  if (R.length && !isDemo() && !ppOn()) {
     // (from your brands, or the ones ticked in Brands I'd buy, v304)
     const brands = {},
       bb = buyBrands();
@@ -1589,6 +1606,8 @@ function photoStatsHTML() {
 function photoStatsHTML0() {
   if (!_phCol) photoColours();
   photoStats();
+  // (v326: a photo-made page has its own, 47-photo-page)
+  if (ppOn()) return ppPlanStatsHTML();
   if (!_phStats) return '';
   const s = _phStats;
   if (!s.tot) return '';
@@ -1696,22 +1715,30 @@ function labHex(lab) {
       .join('')
   );
 }
-// the "Photo" button under the picture: show the photo on top (not see-through) to compare
+// the "Photo" button under the picture: show the photo on top (not see-through) to compare. (v326) On a photo-made
+// page's step too (47-photo-page), with Edit sections closed: the page in its markers' colours and its photo, the
+// one over the other (docs/PLAN-v326-photo-page.md, 8). Off by itself on leaving the screen it was turned on in
 function positionPeekBtn() {
   if (!peekBtn) {
     peekBtn = document.getElementById('sfPhPeek');
     if (!peekBtn) return;
     peekBtn.addEventListener('click', function () {
       photoPeek = !photoPeek;
+      _peekMode = sfmode;
       positionPhoto();
     });
   }
-  const on = !!(photoRef && photoXf && sfmode === 'guide' && family === 'photo');
+  const on = !!(photoRef && photoXf && family === 'photo' && (sfmode === 'guide' || photoPeekStep()));
   peekBtn.style.display = on ? '' : 'none';
-  if (!on) photoPeek = false;
+  if (!on || _peekMode !== sfmode) photoPeek = false;
   peekBtn.classList.toggle('on', photoPeek);
   peekBtn.setAttribute('aria-pressed', photoPeek ? 'true' : 'false');
   planFit();
+}
+let _peekMode = '';
+// (v326) the Photo button's place on a photo-made page's step: its page made, Edit sections closed
+function photoPeekStep() {
+  return sfmode === 'review' && ppOn() && !!pp.made && !_ppTools;
 }
 /* ---- lining the photo up automatically ----
     For a coloured version of the same page (or the photo the line art was traced from): find the size, turn and

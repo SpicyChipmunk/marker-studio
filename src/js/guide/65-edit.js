@@ -192,6 +192,8 @@ function secApply(u, redo) {
       rot90 = g.rot90;
       tilt = g.tilt;
       cropRect = g.crop;
+      // (v325: a photo-made page's photo is the picture itself, turned and cropped as it was: its own, 47-photo-page)
+      if (u.keep.pp && g.phRef && g.phXf) photoRef = g.phRef;
       // (the photo back where it was on that picture, still to be placed again only if it was then; a photo chosen
       // since was placed on the picture as it is, and is carried from there: 46-photo, v304)
       if (photoRef && g.phRef === photoRef && g.phXf) {
@@ -253,6 +255,9 @@ function secApply(u, redo) {
       }
       bgMaxB = u.keep.bgMaxB;
       bgEdgeAll = !!u.keep.bgEdgeAll;
+      // (v325: a photo-made page's settings as they were, 47-photo-page; a step kept before it says nothing)
+      if ('pp' in u.keep) pp = ppCopy(u.keep.pp);
+      if (pp && typeof u.keep.ppN === 'number') limitN = u.keep.ppN;
       if (u.keep.fo !== undefined) faintOffer = u.keep.fo;
       if (u.keep.hm !== undefined) hatchMade = u.keep.hm;
       if (u.keep.hw !== undefined) hatchWould = u.keep.hw;
@@ -562,6 +567,11 @@ function paintStroke(pts, L) {
 // message, another section is tried next (v304)
 function splitAt(startL, pts, quiet) {
   if (pts.length < 2) return 0;
+  // (v326: Subject only's background isn't split: it stays the paper, 47-photo-page)
+  if (ppOn() && pp.bgs && pp.bgs.indexOf(startL) >= 0) {
+    if (!quiet) toast('The background stays white with Subject only.', 2600);
+    return 0;
+  }
   snapshotSeg();
   paintStroke(pts, startL);
   if (relabelRegion(startL) < 1) {

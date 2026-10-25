@@ -92,6 +92,8 @@ function _renderControls() {
     if (focus) ctlFocus();
     else alongControls(); // the marker list: js/guide/83-along.js
   } else if (cropMode) ctlCrop();
+  // (v325: a photo-made page's own step, 47-photo-page)
+  else if (ppOn()) ctlPhotoPage();
   else ctlSections();
 }
 // a button in a one-choice group (data-v, pressed when on; greyed out when off)

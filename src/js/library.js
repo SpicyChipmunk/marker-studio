@@ -342,6 +342,14 @@ function homeStart(what) {
     if (SF.loadSample) SF.loadSample();
     return;
   }
+  // (v325) any photo made into a colouring page: its own picker, then the Guide screen
+  if (what === 'ppage') {
+    if (SF.ppPick)
+      SF.ppPick(function () {
+        setMode('sections');
+      });
+    return;
+  }
   // (v313) a page in a PDF: its own picker, then the Guide screen
   if (what === 'pdf') {
     if (SF.pickPdfHome)
@@ -775,7 +783,7 @@ function renderRecent() {
               ba +
               '</button>'
             : '') +
-          '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a photo of a colouring page into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a photo</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button><button type="button" class="homelink hcalt hcpdf" data-start="pdf">Page in a PDF? Open the PDF</button></div></div>';
+          '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a photo of a colouring page into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a colouring page</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button><button type="button" class="homelink hcalt hcpdf" data-start="pdf">Page in a PDF? Open the PDF</button><button type="button" class="homelink hcalt hcpdf" data-start="ppage">Any other photo? Make a colouring page</button></div></div>';
       }
       var own = cel.querySelector('.hcown'),
         // (v309.1: the colours; a set's Colorless Blender builds nothing. v318.27: Home's Markers card counts the
@@ -1099,7 +1107,7 @@ function renderSaved() {
         // (v320: the sample page and its coloured page as two sheets, then Choose a photo, or the sample)
         '<div class="emptyhow">' +
         libFan() +
-        '<h3 class="libemh">Your guides will live here</h3><div class="empty">Every guide you make is kept on this device, with how far you\u2019ve coloured it. A palette is kept with <b>Save</b>.</div><button type="button" id="libChoose" class="btn-primary">Choose a photo</button><button type="button" id="libTrySample" class="sflink">or try the sample</button></div>';
+        '<h3 class="libemh">Your guides will live here</h3><div class="empty">Every guide you make is kept on this device, with how far you\u2019ve coloured it. A palette is kept with <b>Save</b>.</div><button type="button" id="libChoose" class="btn-primary">Choose a colouring page</button><button type="button" id="libTrySample" class="sflink">or try the sample</button></div>';
   // (v313) with nothing to search or sort, no search box or sort menu
   {
     var _bar = document.querySelector('#savedOverlay .libbar');

@@ -200,6 +200,14 @@ function openDesignObj(d, id, resumed, quiet, col) {
       // (v318.34) the settings its picture was worked on with (turn, crop, corners, Sensitivity…), so Adjust photo shows
       // them; the picture itself is read only when Adjust photo opens (25-source-photo srcLoad)
       srcOpen(d.src);
+      // (v325) a photo made into a page: its settings, the markers as made on the sections as numbered now, and the
+      // picture under it (paper and lines) from the section map, as the page drew it (47-photo-page)
+      pp = ppCheck(d.pp, map);
+      if (pp) {
+        const g = new Uint8Array(n);
+        for (let i = 0; i < n; i++) g[i] = labels[i] < 0 ? 40 : 255;
+        gray = g;
+      }
       // (its own Min section size, as saved: not a new picture's)
       minAuto = false;
       applyBg(true);
@@ -235,6 +243,15 @@ function openDesignObj(d, id, resumed, quiet, col) {
           if (nl && nl < secState.length && (v === 1 || v === 2)) secState[nl] = v;
         }
       }
+      // (v326) a photo-made page's Subject only background: the background again (saved as left out, as a colouring
+      // page's found background is, 60-persist), not a section left out
+      if (pp && pp.bgs)
+        pp.bgs = pp.bgs.filter(function (l) {
+          if (!(l < comps.length && comps[l] && !comps[l].merged)) return false;
+          comps[l].bg = true;
+          secState[l] = 0;
+          return true;
+        });
       // (v306) the paper inside a frame, as saved: its line to Colour it shows again while it's left white. Only
       // when that section is there; a guide saved before has no `frame` and none is found again (a photo's page
       // margin would be)

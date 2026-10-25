@@ -2985,3 +2985,155 @@ From Fable's design review (round R32, V1), built in two parts and compared scre
 
 - Library's "the line under a name … yesterday" set its guide 25 hours back: since v324.1 counts calendar days, that read "2 days ago" when the run was before 1 am (run #75, Chromium and WebKit). It's set to yesterday at noon now.
 - Colour along's "finishing the page … screen readers hear it" keeps everything the live region says from Mark all done, and looks for "Page finished." among them: the guide's save, said a moment after, could replace it before a poll saw it on a busy WebKit (run #75, part 6, with a page crash noted; it passed 3 runs of 3 here). No change to the app.
+
+# Changes — v325 (a colouring page from any photo)
+
+The plan, its decisions and what the build settled: `docs/PLAN-photo-to-page.md` (its "As built" section).
+
+- **Make a colouring page from any photo.** Home's start card and the Guide screen's ("Any other photo? Make a colouring
+  page from it"), and with a guide in progress Home's link under its button, open a picker of their own; the photo becomes a
+  page of closed sections, each one of your markers, two side by side never the same (`47-photo-page.js`). Built in the
+  worker (job `ppage`): smoothing (kept per photo), the marker choice (the Photo pattern's suggestion and choice, on at
+  most 500 of the photo's colours), grouping by marker, areas merged (too small, too narrow, same marker), thin parts,
+  the ceiling, near-white left white, and the section map at the guide's size (2000 on its long side) with 2-pixel
+  lines. Then it's a guide like any other.
+- **The page step** (in Edit sections' place): **Detail** (Very simple to Very detailed: the smallest section 6 to
+  1.5 mm across on the paper, at most about 60 to 700 sections and 12 to 48 markers; made again when let go, a finer
+  step never fewer sections than a coarser one), "This page: N sections, M markers" ("(set by you)" once Markers in this
+  guide is moved), "Made for your N markers", the small-collection note (**Use the full … range**, **Add them to To
+  buy**), Adjust photo's Turn and Crop (the page made again), and Edit sections' tools behind a toggle. A remake is one
+  Undo step and asks first when there are edits or progress ("Make the page again?").
+- **Build** lays the page's own markers ("as made", through the Photo pattern: `ppMadeLay`); the Pattern tab says
+  "Colours come from your photo, as the page was made" with nothing to line up or change, and offers **Remake page for
+  N markers** when Markers in this guide or your markers change.
+- **Saved with the guide** (`payload.pp`: Detail, the count, the paper, the markers as made, renumbered as the guide
+  opens), its photo kept as a colouring page's is (25-source-photo, placed without finding a page in it); opened again,
+  Edit sections reads the photo first, then Detail works.
+- **Print:** a photo-made page's lines are light grey (about 40%) unless **Darker lines** is ticked; the photo prints
+  small beside the key's reference; on a smaller paper than the page was made for, the sheet says how small its
+  smallest sections come out, with **Remake page for …**.
+- **The warnings' offer:** a picture opened as a colouring page that looks like a photo ("looks coloured in already",
+  "most of the image is dark", "a lot of tiny fragments", "couldn't find distinct sections", or a colourful picture's
+  hatching warning or none) offers **Make a colouring page from it**.
+- **Wording:** "New guide from a colouring page" (Home), "Choose a colouring page" (the Guide screen, the Library, the
+  ⋯ menu). The ⋯ menu has no line of its own for a page from a photo: with one more line it no longer fit under the
+  picture on an iPad held upright, and Home's link is there whenever a guide is open.
+- **Copy diagnostics** lists the time a page took ("Page made in the background") and the page's thread's share
+  ("Photo got ready for its page", "Page put in place").
+- `okGeom` takes the page's wording; `edBarWire` (Build, Fix, To the Plan) is shared by Edit sections and the page step.
+- **Tests:** `test/photo-page.test.mjs` (the builder on made-up photos: the same page each time, a line between every
+  two sections, no same-marker neighbours, Detail's order and ceilings, sizes, near-white, the marker choice, the
+  worker's source standing alone, saved settings checked and renumbered) and `e2e/photo-page.test.mjs` (on both
+  engines: the way in, Detail and Undo, Build as made and the remake, save and reopen, Print, the offer, asking first).
+  `e2e/ci-photo-page.mjs`: the stage 0 bench, and a diagnostic step on GitHub's WebKit.
+- Help (Pictures, Known limits), What's new, `docs/TESTERS.md`, `docs/DEVICE-TEST.md` (v325's lines, with timing).
+- Cache bumped to `marker-studio-v325`.
+
+# Changes — v325.1 (Focus on a photo-made page)
+
+- **Focus: Even / Sharper subject / Simpler background** on the page step (`48-subject.js`). Sharper subject finds the
+  photo's subject on the device with U²-Net's small model (`vendor/subject/1/u2netp.onnx`, 4.6 MB, Apache 2.0, the
+  export rembg publishes; README with its size and hash) and gives it smaller sections (its smallest area 0.3 of
+  Detail's, never under the step's smallest width); Simpler background also makes the rest's 1.6 of it. The count isn't
+  held (as decided). The map is made at the model's 320 × 320 and kept with the photo at its working size, so a Detail
+  change doesn't find it again.
+- **Downloaded after asking** ("Find the photo's subject?", with its size), into a cache of its own
+  (`marker-studio-subject-1`) that updates leave alone, each file checked (size and SHA-256) before it's kept; ONNX
+  Runtime is the photo reader's own copy, downloaded into the reader's cache with it when the reader hasn't brought it
+  (19 MB in all then, else 4.6). Offline the first time: said, and Focus stays on Even. A guide reopened where the
+  finder isn't stored, or a finder that fails, is made Even and says so.
+- **Its own worker**, started for the map and ended after, so its memory goes with it. Measured here (stage 0 gate 4):
+  the map in 2.3–2.6 s in Chromium and about 4 s in WebKit, including starting ONNX Runtime; the same map as the plan's
+  spike in Python (correlation 1.000, the subject at 0.5 the same within 0.2–1% of the photo).
+- The service worker leaves `vendor/subject/` to the page and keeps its cache through updates.
+- Tests: unit (Focus moves detail: more sections on the subject, fewer behind it with Simpler background; the cache's
+  name, the file's size and hash as listed) and `e2e/photo-page.test.mjs` (Not now keeps Even; the download, the map,
+  the page made with it; Even again without asking) on both engines.
+- Help (Pictures), What's new, `docs/TESTERS.md`, `docs/DEVICE-TEST.md`. Cache bumped to `marker-studio-v325.1`.
+
+# Changes — v325.2 (the two debugging passes after v325.1)
+
+- **No repeats with fewer markers than sections is even, give or take one** (pre-existing, found by the pass: the
+  pattern tests' "each used once before any twice" failed about 1 run in 30, on v324.1 too). Where the least used
+  markers were all beside a look-alike, the laying took one used once more, and a marker could end up used once among
+  others used three times (30 markers on 80 sections). `noRepFill` (31-balance) now evens the counts after the laying
+  and its repair: while the most used is used two or more times more than the least used, one of the least used takes
+  a section of one of the most used whose neighbours are clear of it (as Keep touching sections clearly different asks,
+  else near-twins); pinned sections stay. It also does v324.2's job (every marker on the page when there are sections
+  enough). 0 in 90 lays, from 2 in 60; a unit test lays 60 times.
+- **A photo-made page made again after Build keeps the pattern chosen since** (Random, Gradient…): only the photo's
+  first page starts on the Photo pattern.
+- **Undo of a remake brings Markers in this guide back with the page**, so Build lays it as made.
+- **Focus** in three even columns on every width (a long name on two lines on a phone, not a row of its own); one
+  subject-finder download at a time; the finder's worker and download each given a time limit (a minute to answer, three
+  for a file), so a device where ONNX Runtime never starts makes the page Even and says so rather than waiting for good;
+  the worker's script let go only once it's done (Safari's engine reads it after `new Worker` returns: let go at once,
+  it failed to start, with no message).
+- **A photo of one colour all over** says its page has only one section, and to try a finer Detail or another photo
+  (Build, which needs two, had waited with no word why).
+- The page step says "each section one marker" (with no markers added it's the full range), and the brands in their
+  usual order: "the full Ohuhu and Copic ranges".
+- **The passes also ran, and found nothing more in:** random-tap crawls starting from a photo-made page (iPad both
+  ways, phone, small phone, phone on its side, touch, and WebKit), and from the Plan and Focus mode; crop, turn,
+  Build, a pattern change, a remake, Colour along and Undo back through every step; tiny, panorama, flat and transparent
+  pictures; the wide lint (the same 26 deliberate findings); the v325 diff read again from the top.
+- Cache bumped to `marker-studio-v325.2`.
+
+
+# Changes — v326 (a photo-made page: its markers' colours, the markers that would help, Subject only)
+
+Decided one at a time with measurements on the author's 17 photos (`docs/PLAN-v326-photo-page.md`).
+
+- **The page step in its markers' colours** (decision 2): each section the marker Build will give it, by one function
+  for both (`ppMadeAssign`: pins, sections coloured in, Leave white and the sections Edit sections made, as Build lays
+  them), the lines as they print (light grey; dark with Darker lines). The tints while Edit sections is open (a
+  split's halves take one marker; Merge's first pick is yellow), and when Build would plan afresh, with the reason by
+  Remake ("your markers changed since this page was made", another pattern, a zone with another).
+- **The markers that would help this photo most** (decision 1), in place of the small-collection note that never
+  showed for a small set: coverage, the share of the photo's colours within ΔE 10 of one of the page's markers, and the
+  catalogue markers you don't own that each add 5 points or more, at most 6, from Brands I'd buy's brands, or your own
+  with a second list from both when that does 10 points better (`ppFillCore`, in the worker: 33–64 ms for 500 colours
+  and 700 markers). Shown on the page step when they add 15 points or more, each a To buy chip; **Try it with these**
+  makes the page with them added (`pp.add`, saved, kept in Undo), and **See it with any marker** stays. The photo's
+  colours are kept with the page (`pp.tg`), so a guide opened again has the line without reading the photo.
+- **As made while its markers are there**: markers added to your collection no longer plan the page afresh (v325 did,
+  and said side-by-side sections might share a marker); only one of its own markers gone, another count or another
+  kind of pool does (`ppAsMade`). New markers that would match 5 points more: **Remake to use them**.
+- **Plan's Photo panel on a photo-made page** (decision 3) has the same line, the figure always said, in place of "N%
+  of sections are a close match", "Closer with" and Use N; **Show the loose matches** (further than Match's Rough, 12)
+  in place of the rough ones; a section's photo colour its average (`photoColours`), not its most common, everywhere:
+  a striped coat's sections had read as rough against one stripe. The Photo pattern's "no colour in this photo" isn't
+  applied to a photo-made page (a black-and-white photo had every section white on any fresh plan).
+- **Markers you don't own, marked**: the printed key's swatch dashed with "buy" by its code, and "not yours" on
+  Colour along's row (a full-range page had neither).
+- **Subject only** (decision 4), a fourth Focus choice (two rows of two): the background left white, like a colouring
+  book. The builder keeps the background apart (its own marker after the smoothing; never a home for a small region,
+  nor given the subject's thin parts): whitening the photo's background first had handed 0.4–6.4% of the subject's
+  edge to it, now 0.0–0.1%. The markers are chosen from the subject's colours. The background sections are a page's
+  background (not coloured, counted or numbered, saved and marked again on opening, out of Leave out and Split); the
+  count line says "background left white". Under 5% of the photo found as its subject: Even, said. **Crop to the
+  subject** when its box is under half the photo: the map cropped with the photo (not found again, the subject the one
+  you saw; kept for an Undo, turned with a quarter turn).
+- **Detail steps seen come back at once** (decision 6): the pages made for the last three steps, kept by what they
+  were made from; a page made at the first try serves a later coarser count too. Not made ahead of time (one worker; a
+  job can't be stopped).
+- **The Photo button on the page step** (decision 8), Plan's own, off when Edit sections opens or the page is made
+  again.
+- **Fixes found in the review:** a tap on a photo-made page's step left a section out with Edit sections closed (it
+  says to open Edit sections now); Delete all my data left the subject finder's 4.6 MB on the device; About credits
+  U²-Net.
+- **Found in the debugging passes:** "Your newer markers match more of it" compared the markers the page used with
+  all the markers it could use, so a page made from a big set (which uses some of it) said its unused markers were
+  newer; it now compares the markers it could use as made (from its key) with those it can now, and is said only
+  when there are new ones (`ppMadePoolKeys`; a test makes a page with 4 markers, adds 68, and remakes with them).
+  Markers to add from a brand you don't have showed without its letter, so an Ohuhu owner read "E47 E49 E19" (Copic)
+  as Ohuhu codes: the letters now show whenever a list has a brand you don't have, and the second list shown alone
+  says whose ("From Copic: …"). "Try it with it" reads "Try it with this one".
+  Checked in the browser on the author's photos: the step's colours against Build's after a split, a pin, Leave white
+  off, Subject only through a merge, saved and opened again, Try it with these saved and opened again, Use only yours,
+  and a quarter turn's subject map against one found afresh (92–94% the same subject).
+- Livelier colours was looked at and dropped (decision 5): a section's average loses almost no chroma, and the chosen
+  markers are within 1–3 of it; Help suggests raising the photo's saturation before choosing it instead.
+- Tests: unit (the markers to add, Subject only's background, the saved settings) and `e2e/photo-page-2.test.mjs` on
+  both engines; the Delete all my data test takes the subject finder's cache too.
+- Help (Pictures, Known limits), What's new. Cache bumped to `marker-studio-v326`.

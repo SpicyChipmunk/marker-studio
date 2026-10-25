@@ -897,7 +897,21 @@ function ctlPlanPattern() {
   } else if (family === 'photo') {
     const _pw = !photoRef && photoWait[pwKey()] !== 'photo' ? photoWait[pwKey()] : null,
       _pwName = _pw ? FAM_NAME[_pw] || _pw : '';
-    if (!photoRef)
+    // (v325: a photo-made page's own photo, lined up exactly as it was made: nothing to line up or change, 47-photo-page)
+    if (ppOn() && (photoRef || _phPend))
+      html += photoRef
+        ? '<div class="sfphrow"><img class="sfphthumb" src="' +
+          esc(photoViewUrl(photoRef)) +
+          '" alt=""><div class="sfphtx">' +
+          esc(ppPlanLine()) +
+          '</div></div>' +
+          ppRemakeHTML() +
+          photoStatsHTML() +
+          '<label class="sfchk sfc-check sfc-flex sfc-mt8"><input type="checkbox" id="sfPhPaper"' +
+          (photoPaper ? ' checked' : '') +
+          '> Leave white areas of the photo white</label>'
+        : '<div class="sfc-note" role="status">Getting the photo ready…</div>';
+    else if (!photoRef)
       html +=
         infoLine(
           'photo',

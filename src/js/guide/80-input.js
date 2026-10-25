@@ -162,6 +162,12 @@ function editTapAt(P) {
     if (l > 0) toast('To change the sections, tap Edit sections.', 2600);
     return;
   }
+  // (v326) a photo-made page's step likewise: its tools are behind Edit sections, and a tap with them closed had left a
+  // section out (v325: the step has no quick check, and editMode is Leave out from the start)
+  if (ppOn() && !_ppTools) {
+    if (l > 0) toast('To change the sections, open Edit sections.', 2600);
+    return;
+  }
   if (editMode === 'merge') {
     if (l > 0) {
       // (v308) the background isn't merged with: a section merged into it went white with no word, or, brought back
@@ -186,6 +192,11 @@ function editTapAt(P) {
     return;
   }
   if (l > 0 && editMode === 'toggle') {
+    // (v326: Subject only's background stays the paper: its colours weren't used for the page, 47-photo-page)
+    if (ppOn() && pp.bgs && pp.bgs.indexOf(l) >= 0) {
+      toast('The background stays white with Subject only. Choose Even under Focus to colour it.', 3200);
+      return;
+    }
     pushUndo({ t: 'ov', d: secState.slice() });
     secState[l] = counted(l) ? 2 : 1;
     _secSayNext = counted(l) ? 'Brought back: ' : 'Left out: ';

@@ -6,6 +6,22 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v326',
+    t: 'A page made from a photo shows in its markers’ colours as you choose its Detail, with the Photo button to see the photo over it. With a small collection it says how much of the photo your markers match, and the few markers that would match much more, to add to To buy or try on the page first. Focus has Subject only: the background left white, like a colouring book, with Crop to the subject when it’s small. Going back to a Detail you’ve seen is quicker. Fixes: a tap on the page no longer leaves a section out unless Edit sections is open, and Delete all my data takes the subject finder too.',
+  },
+  {
+    v: 'v325.2',
+    t: 'Fixes. Random’s No repeats uses each marker as often as the next, give or take one, when there are more sections than markers (now and then one was used once among others used three times). A photo-made page made again after Build keeps the pattern you chose; its Focus choices fit side by side on a phone; and a photo of one colour all over says why there’s nothing to build.',
+  },
+  {
+    v: 'v325.1',
+    t: 'A page made from a photo can keep more detail where it matters: Focus › Sharper subject finds what your photo is of (on this device, after a one-time download) and gives it smaller sections; Simpler background also makes what’s behind it simpler. Even, as before, is the same detail all over.',
+  },
+  {
+    v: 'v325',
+    t: 'Make a colouring page from any photo: a pet, a flower, a sunset. Under Choose a colouring page, “Any other photo?” draws a page of sections from your photo, each one of your markers, with two side by side never the same, then it’s a guide like any other. Detail chooses how simple or detailed it is; the page says how many sections and markers it has, and if few of your markers suit the photo it can use the full range instead, and add the ones you don’t have to To buy. Printed, its lines are light grey, with the photo small by the key.',
+  },
+  {
     v: 'v324.2',
     t: 'Fixes. Random’s No repeats uses every one of its markers when there are sections enough (now and then one was left out). On a phone held sideways the welcome keeps Skip and Restore on screen again; only the smallest phones scroll it as one.',
   },
@@ -215,7 +231,7 @@ const WHATS_NEW = [
   },
   {
     v: 'v313',
-    t: 'Open a colouring page that came as a PDF: Open the PDF, under Choose a photo. Focus mode shows which marker to pick up next. A marker you’ve marked running low can be swapped in one tap. Share is now Share & print.',
+    t: 'Open a colouring page that came as a PDF: Open the PDF, under Choose a colouring page. Focus mode shows which marker to pick up next. A marker you’ve marked running low can be swapped in one tap. Share is now Share & print.',
   },
   {
     v: 'v312.1',

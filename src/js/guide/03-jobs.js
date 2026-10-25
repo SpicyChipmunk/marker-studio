@@ -8,6 +8,8 @@
       'lpts'  the label points and edge distances (labelPtsCore, 40-render)
       'seg'   a picture's ink, specks and sections, the steps up to the flood fill (segWork, 10-segment; v318.36)
       'pgf'   a photographed page's corners, from a small copy of the photo (pgWork, 22-straighten; v318.36)
+      'ppage' a photo made into a colouring page (ppWork, 47-photo-page; v325)
+      'ppfill' the markers that would help that page most (ppFillCore, 47-photo-page; v326)
     Anywhere there's no worker (an old browser, a page that can't make one) or a job fails, JOBS.run rejects and the
     caller does the work itself, as before. So does a job with no answer in time (jobBudget): the worker is then given
     up on for the session, and anything it sends later is ignored. */
@@ -59,6 +61,10 @@ const JOBS = (function () {
       if (m.k === 'seg') return segWork(m);
       // (v318.36: a photographed page's corners, from the small copy sent, 22-straighten)
       if (m.k === 'pgf') return pgWork(m);
+      // (v325: a photo made into a colouring page, 47-photo-page)
+      if (m.k === 'ppage') return ppWork(m);
+      // (v326: the markers that would help a photo-made page most, 47-photo-page)
+      if (m.k === 'ppfill') return { v: ppFillCore(m) };
       if (m.k === 'lpts') {
         const r = labelPtsCore(new Int32Array(m.buf), m.W, m.H, m.K);
         return {
@@ -113,6 +119,9 @@ const JOBS = (function () {
         segWorkerSrc() +
         '\n' +
         pgWorkerSrc() +
+        '\n' +
+        // (v325: the photo-to-page builder's steps, 47-photo-page)
+        ppWorkerSrc() +
         '\n(' +
         main.toString() +
         ')();';
@@ -254,7 +263,10 @@ const JOBS = (function () {
 // work itself, as it did before v307.
 // (v318.36) A picture's sections (k 'seg'): 4 s and 2 s more for each million pixels (a 2400 × 2400 photo, 15.5 s): the
 // steps take an iPad a second or two there, and a run superseded by a newer one answers at its next step
+// (v325) A photo made into a page (k 'ppage'): 8 s and 2 s for each million pixels of the guide's size (a 2000 × 1500 page,
+// 14 s), several times what a computer takes (about 1.5 s there)
 function jobBudget(data, k) {
+  if (k === 'ppage') return 8000 + Math.round((data.GW * data.GH) / 500);
   const px = data.n || data.w * data.h || data.W * data.H || 0;
   return 4000 + Math.round(px / (k === 'seg' ? 500 : 2000));
 }

@@ -1278,7 +1278,7 @@ function openMenu() {
     };
   let b =
     '<div class="sfmenu" role="group" aria-labelledby="sfMh1"><div class="sfmh" id="sfMh1">New</div>' +
-    it('pick', 'image', 'Choose a photo') +
+    it('pick', 'image', 'Choose a colouring page') +
     // (v318.27) a page that came as a PDF: the start card's Open the PDF shows only with no guide open, and the photo
     // picker takes pictures only, so with a guide open a phone had no way to one
     it('pdf', 'file-down', 'Open a PDF') +

@@ -1287,7 +1287,7 @@ function renderGuide() {
     }
   } else if (photoRoughOnly && revealF == null && sfmode === 'guide' && family === 'photo' && _phErr) {
     for (const l in assign) {
-      if (!(_phErr[l] >= PH_ROUGH)) fade[l] = 1;
+      if (!(_phErr[l] >= photoRoughAt())) fade[l] = 1;
     }
   }
   const colArr = new Array(K),

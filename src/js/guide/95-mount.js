@@ -223,16 +223,18 @@ function enterWork() {
 function mount() {
   root.innerHTML =
     '<div class="sfcard compact" id="sfStart"><button type="button" id="sfStPic" class="sfstpic" tabindex="-1" aria-hidden="true"></button><div class="sfstbody"><button id="sfHelpQ0" class="hlpq" data-help="sheet" aria-label="Help"><span aria-hidden="true">?</span></button><h2>New colouring guide</h2><div class="sftag">Turn a photo of a colouring page into a marker-by-number guide, built from the markers you own.</div><div id="sfPalNote"></div><div class="sfmeta" id="sfMeta"></div>' +
-    '<div class="sfstrow"><button id="sfPick" class="btn-primary sfstpick">Choose a photo</button><button id="sfSample" class="sfstbtn">Try the sample</button><button id="sfLib" class="sfstbtn">Library</button><button id="sfImport" class="sfstbtn">Import a guide</button></div>' +
+    '<div class="sfstrow"><button id="sfPick" class="btn-primary sfstpick">Choose a colouring page</button><button id="sfSample" class="sfstbtn">Try the sample</button><button id="sfLib" class="sfstbtn">Library</button><button id="sfImport" class="sfstbtn">Import a guide</button></div>' +
     // (v313) a colouring page that came as a PDF: opened on its own (the photo picker takes pictures only)
-    '<div class="sfstpdf">Colouring page in a PDF? <button type="button" id="sfPdf" class="sflink">Open the PDF</button></div></div></div>' +
+    '<div class="sfstpdf">Colouring page in a PDF? <button type="button" id="sfPdf" class="sflink">Open the PDF</button></div>' +
+    // (v325) any other photo, made into a colouring page (47-photo-page)
+    '<div class="sfstpdf" id="sfStPp">Any other photo? <button type="button" id="sfPpPick" class="sflink">Make a colouring page from it</button></div></div></div>' +
     '<div class="sfcard" id="sfWork" style="display:none"><div id="sfHead" class="sfhead"></div><div id="sfView"><div id="sfPicBox" class="sfpicbox"><div id="sfPic" class="sfpic"><canvas id="sfCanvas" role="img" aria-label="Colouring page"></canvas></div></div>' +
     toolsHTML() +
     '<button id="sfFullX" class="sfz sffullx" aria-label="Close full screen">' +
     ic('x') +
     '</button></div>' +
     '<div id="sfCtl"></div></div>' +
-    '<div id="sfLive" class="sfsr" aria-live="polite"></div><input type="file" id="sfFile" class="fileinput" accept="image/*"><input type="file" id="sfPdfFile" class="fileinput" accept="application/pdf,.pdf"><input type="file" id="sfImpFile" class="fileinput" accept="application/json,.json">';
+    '<div id="sfLive" class="sfsr" aria-live="polite"></div><input type="file" id="sfFile" class="fileinput" accept="image/*"><input type="file" id="sfPdfFile" class="fileinput" accept="application/pdf,.pdf"><input type="file" id="sfImpFile" class="fileinput" accept="application/json,.json"><input type="file" id="sfPpFile" class="fileinput" accept="image/*">';
   metaEl = document.getElementById('sfMeta');
   root.addEventListener('click', function (e) {
     if (e.target.closest('[data-gomk]') && api.goMarkers) api.goMarkers();
@@ -257,7 +259,13 @@ function mount() {
   });
   // (v318.13) the warning box's Choose another photo: the picker opened in the tap itself, as Home's is (iOS)
   ctlEl.addEventListener('click', function (e) {
-    if (!e.target.closest || !e.target.closest('#sfRetake')) return;
+    if (!e.target.closest) return;
+    // (v325: the warning's Make a colouring page from it instead, 47-photo-page)
+    if (e.target.closest('#sfPpFrom')) {
+      ppFromPicture();
+      return;
+    }
+    if (!e.target.closest('#sfRetake')) return;
     _pickCb = null;
     fileEl.click();
   });
@@ -285,6 +293,20 @@ function mount() {
     pdfB.addEventListener('click', function () {
       _pickCb = null;
       pdfEl.click();
+    });
+  // (v325) a photo to make a colouring page from: its own picker (47-photo-page)
+  const ppEl = document.getElementById('sfPpFile'),
+    ppB = document.getElementById('sfPpPick');
+  if (ppEl)
+    ppEl.addEventListener('change', function (e) {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (f) ppPicked(f);
+      else _ppPickCb = null;
+    });
+  if (ppB)
+    ppB.addEventListener('click', function () {
+      ppPick(null);
     });
   var _imp = document.getElementById('sfImport'),
     _impF = document.getElementById('sfImpFile');

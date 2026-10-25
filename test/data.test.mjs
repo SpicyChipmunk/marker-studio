@@ -812,7 +812,8 @@ import fs, { readFileSync } from 'node:fs';
     );
     // the section settings are saved beside the style, in this place among the rest
     // (v318.34: `src`, the picture's settings, after frame; undefined here, as for the sample: written only for a guide
-    // built from a picture of the person's own)
+    // built from a picture of the person's own; v325: `pp`, a photo made into a page's settings, after it, undefined but
+    // for such a guide)
     assert.deepEqual(Object.keys(d.payload), [
       'lmap',
       'ref',
@@ -832,6 +833,7 @@ import fs, { readFileSync } from 'node:fs';
       'upk',
       'frame',
       'src',
+      'pp',
       'minPos',
       'minSize',
       'bgTrim',

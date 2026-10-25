@@ -1501,7 +1501,7 @@ after(teardown);
     assert.equal(await page.locator('#sfSheet .sfmenu[aria-label="Help"]').count(), 1, 'the Help group');
     // (v308: Send feedback under Help)
     assert.deepEqual(await menuLabels(page), [
-      'Choose a photo',
+      'Choose a colouring page',
       'Open a PDF',
       'Try the sample',
       'Open from Library',
@@ -1516,7 +1516,7 @@ after(teardown);
     await saveGuide(page);
     await openMenu(page);
     assert.deepEqual(await menuLabels(page), [
-      'Choose a photo',
+      'Choose a colouring page',
       'Open a PDF',
       'Try the sample',
       'Open from Library',
@@ -1532,7 +1532,7 @@ after(teardown);
     await idle(page);
     await openMenu(page);
     assert.deepEqual(await menuLabels(page), [
-      'Choose a photo',
+      'Choose a colouring page',
       'Open a PDF',
       'Try the sample',
       'Open from Library',
@@ -1550,8 +1550,11 @@ after(teardown);
       'Library',
     );
     await page.evaluate(() => document.getElementById('savedOverlay').classList.remove('on'));
-    let [fc] = await Promise.all([page.waitForEvent('filechooser'), menuItem(page, 'Choose a photo')]);
-    assert.equal(await fc.element().getAttribute('accept'), 'image/*', 'Choose a photo');
+    let [fc] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      menuItem(page, 'Choose a colouring page'),
+    ]);
+    assert.equal(await fc.element().getAttribute('accept'), 'image/*', 'Choose a colouring page');
     [fc] = await Promise.all([page.waitForEvent('filechooser'), menuItem(page, 'Import a guide')]);
     assert.match(await fc.element().getAttribute('accept'), /json/, 'Import a guide');
     await menuItem(page, 'Help');

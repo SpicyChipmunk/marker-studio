@@ -467,6 +467,30 @@ import { readFileSync } from 'node:fs';
       for (const q of adj[l] || [])
         assert.notEqual(core.assignData.assign[l].mkey, core.assignData.assign[q].mkey);
   });
+  // (v325 deep pass) fewer markers than sections: each used as often as the next, give or take one, every lay (about
+  // 1 lay in 30 had left one used once among others used three times, so the test above failed now and then)
+  test('No repeats with fewer markers than sections: even, give or take one, lay after lay', () => {
+    const { core } = appWith(['Honolulu 120']);
+    const cl = grid(core, 10, 8);
+    const pool = core.noRepPool(cl).slice(0, 30),
+      adj = core.colour.adj(),
+      bad = [];
+    for (let run = 0; run < 60; run++) {
+      core.buildNoRep(cl, pool);
+      const n = {};
+      core.assignData.order.forEach((l) => {
+        const k = core.assignData.assign[l].mkey;
+        n[k] = (n[k] || 0) + 1;
+      });
+      const c = Object.values(n);
+      if (c.length !== 30 || Math.max(...c) - Math.min(...c) > 1) bad.push(c.sort().join(','));
+      for (const l of core.assignData.order)
+        for (const q of adj[l] || [])
+          if (core.assignData.assign[l].mkey === core.assignData.assign[q].mkey)
+            bad.push('touching ' + l + ' ' + q);
+    }
+    assert.deepEqual(bad, []);
+  });
   test('a guide saved before Balance: Random opens as Mixed (as it looked), any other pattern opens on Main colour', () => {
     const core = createApp().__mstest,
       f = [...core.styleFields].find((x) => x.key === 'balance');

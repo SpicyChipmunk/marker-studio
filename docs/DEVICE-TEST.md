@@ -22,7 +22,7 @@ sheet, paper, VoiceOver, and how it feels.
 
 ## Before you start (5 min)
 
-- [ ] Home's foot says the version you're testing (**v323.1 · Beta**). If not: "A new version of Marker Studio is
+- [ ] Home's foot says the version you're testing (**v326 · Beta**). If not: "A new version of Marker Studio is
       ready" under Home's title → **Reload**.
 - [ ] ★ **Library › Back up** → the share sheet → **Save to Files** → the file is in Files. (A1 needs it.)
 - Have ready: a colouring page on the table to photograph; a PDF of a colouring page in Files; a few Ohuhu and Copic
@@ -169,6 +169,51 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 ## Part C — new in recent releases (20 min)
 
 What recent releases changed that Parts A and B don't already cover.
+
+**New in v326: the photo-made page's colours, markers to add, Subject only**
+
+- [ ] ★ **Timing (replaces the plan's modelled table):** Copy diagnostics after making a page from one of your own
+      photos, moving Detail to Simple and back to Medium, and choosing Subject only the first time: paste it into Send
+      feedback. "Page made in the background" gives each Detail change; back to Medium should be well under a second.
+- [ ] The page step shows the page in its markers' colours, lines light grey. The **Photo** button (under the picture)
+      shows the photo over it; opening **Edit sections** turns it off and shows the tints.
+- [ ] A tap on the page with Edit sections closed says "open Edit sections" and leaves nothing out.
+- [ ] With Markers set to a small set (a 12 or 24), "Your markers match N% of this photo. Adding … would make it M%",
+      each marker a **+** for To buy. **Try it with these** → "Made with your markers and N you don't own"; Build →
+      Colour along tags them **not yours**, the printed key has their swatch dashed and **buy** by the code.
+- [ ] **Focus › Subject only** on a pet or a flower → the background white, "background left white" in the count;
+      when the subject is small, **Crop to the subject** → bigger, more sections, at once (no "Finding the subject").
+      A landscape → "No clear subject found", Even.
+
+**New in v325.1: Focus**
+
+- [ ] ★ On a photo-made page (a pet or a person on a busy background), **Focus › Sharper subject** → "Find the photo’s
+      subject?" with its size › **Download** → the page made again in **___ s** (the first time; write it down), more
+      sections on the subject. **Simpler background** → fewer behind it, no question. **Even** → as before.
+- [ ] Airplane mode on, on another photo: Sharper subject is made without the internet (it's stored).
+- [ ] Close and reopen the guide → Edit sections shows the Focus it was made with; moving Detail keeps it.
+
+**New in v325: a colouring page from any photo**
+
+- [ ] ★ **Timing:** Home › **Any other photo? Make a colouring page** › one of your own photos (12 MP, from the
+      camera) → the page appears in **___ s** (write it down; the bench says about 2½ s on a desktop at full speed). Move
+      **Detail** to Very simple and Very detailed → each in **___ s**; the screen answers taps meanwhile (scroll the
+      controls while it works).
+- [ ] **The page step:** "This page: N sections, M markers" and "Made for your N markers" (v326: the markers to add,
+      above, in place of the small-collection note).
+- [ ] **Build guide** → the colours are the page's; **Pattern › Photo** says "as the page was made". Move **Markers in
+      this guide** down → "This page was made for N markers…" › **Remake page for M markers** → the page step again;
+      Build → no offer.
+- [ ] **Undo:** in Edit sections, move Detail, then Undo → the page before, the slider with it.
+- [ ] **Turn and crop** (Adjust photo) → the page is made again, asked first once you've ticked something.
+- [ ] **Close and reopen** the app → the guide opens as it was; Edit sections → "Getting the photo ready…", then Detail
+      works.
+- [ ] **Print** → page 1's lines light grey (markers cover them), **Darker lines** makes them dark; the key page has
+      the photo small beside the coloured reference. Choose Half Letter → "This page was made for Letter…" › Remake.
+- [ ] **A photo opened as a colouring page** (Choose a colouring page › a photo of your cat) → the warning, or a line,
+      offers **Make a colouring page from it** → the page step.
+- [ ] **Help › About › Copy diagnostics** lists "Page made in the background" and "Photo got ready for its page" with
+      their times.
 
 **New in v324.1**
 

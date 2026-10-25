@@ -135,6 +135,11 @@ function ctlWirePatternFamily() {
       photoPaper = e.target.checked;
       photoRecolour();
     });
+  // (v325: a photo-made page whose plan isn't as made any more: made again for the markers as they are, 47-photo-page)
+  var _ppr = document.getElementById('sfPpRemakeGo');
+  if (_ppr) _ppr.addEventListener('click', ppRemakeGo);
+  // (v326: and its markers-to-add line, the page step's, 47-photo-page)
+  ppHelpWire();
   var _phl = document.getElementById('sfPhLight');
   if (_phl)
     _phl.addEventListener('change', function (e) {
@@ -818,6 +823,8 @@ function ctlWireTexture() {
 function mkCountSet(n) {
   const cap = mkCap();
   limitN = n >= cap ? MK_ALL : Math.max(2, Math.round(n));
+  // (v325: on a photo-made page, a count set by hand is the one it's made again for, 47-photo-page)
+  if (pp) pp.hand = true;
 }
 // the label, the slider and the buttons as the count now is, without laying the guide
 function mkCountShow() {

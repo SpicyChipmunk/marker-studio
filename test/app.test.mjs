@@ -1,5 +1,6 @@
 // The app as a whole: build, CI, format, PWA, speed, text size, release, feedback.
 // (v320) Tests organised by feature: each block below came from the file named above it, its tests unchanged.
+import { createHash } from 'node:crypto';
 import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs, { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -1415,6 +1416,19 @@ import vm from 'node:vm';
       existsSync(new URL('vendor/ocr/' + ver + '/', root)),
       'its files are where the page fetches them',
     );
+  });
+  // (v325.1) the subject finder, as the reader: its cache kept, its file where the page fetches it, as listed
+  test('the subject finder’s cache, kept through updates, is the one the page stores it in; its file as listed', () => {
+    const src = read('src/js/guide/48-subject.js'),
+      ver = src.match(/SUB_VER = '([^']+)'/)[1];
+    assert.equal(sw.match(/const SUBC='([^']+)'/)[1], 'marker-studio-subject-' + ver);
+    assert.match(sw, /x!==SUBC/, 'kept through updates');
+    assert.match(sw, /\/vendor\/subject\//, 'never put in the app’s cache');
+    const [, f, n, h] = src.match(/\{ f: '([^']+)', n: (\d+), h: '([0-9a-f]{64})' \}/),
+      buf = readFileSync(new URL('vendor/subject/' + ver + '/' + f, root));
+    assert.equal(buf.length, +n);
+    assert.equal(createHash('sha256').update(buf).digest('hex'), h);
+    assert.match(read('vendor/subject/README.md'), new RegExp(h));
   });
   test('PDF.js’s cache is named after the version the app ships', () => {
     const v = sw.match(/const PDFJS='([^']+)'/)[1];

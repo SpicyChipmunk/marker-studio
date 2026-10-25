@@ -39,7 +39,7 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
 ## Getting a picture in
 
 - Clear, closed lines work best: a page downloaded from the internet, a scan, or a photo of a page.
-- **A colouring page that came as a PDF:** in Guide, tap **Open the PDF** (under Choose a photo), or **⋯ › Open a
+- **A colouring page that came as a PDF:** in Guide, tap **Open the PDF** (under Choose a colouring page), or **⋯ › Open a
   PDF** with a guide open, and choose it. If it won't open, or comes out blank, take a screenshot of the page and
   choose the screenshot.
 - **Photographing a page:**
@@ -49,12 +49,21 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
   - Taken at an angle? The app finds the page and straightens it. If it isn't sure, drag the corners, then tap
     **Straighten**.
 - If sections come out wrong, **← Edit sections** lets you merge, split or add them.
+- **Any other photo (new in v325):** a pet, a flower, a sunset. Tap **Make a colouring page from it** (under Choose a
+  colouring page; with a guide open, on Home under New guide from a colouring page). The app draws a page of sections from the photo,
+  each one of your markers, shown in their colours. **Detail** sets how simple or detailed it is, and **Focus** (v325.1)
+  can keep more detail on the photo's subject, or (v326) leave the background white with **Subject only**. With a small
+  collection it says which few markers would match the photo much better (**Try it with these** to see). Then **Build
+  guide** as usual. We'd like to
+  hear how long a page takes on your device (Send feedback includes it), and which photos come out well or badly.
 
 ## Known limits
 
 - **No account or sync.** Each device, and the Home Screen app, has its own data. Move it with Back up and Restore.
 - **Some pages come out poorly:** very detailed pages, hatched or already-coloured pages, and faint or broken lines.
 - **Picking one section on the picture needs touch or a mouse.** With a keyboard, use Colour along's list instead.
+- **A page made from a photo smooths away small features** (eyes, whiskers): a cat is a cat-shaped patchwork, not a
+  portrait. Busy backgrounds become many small sections.
 - **It's designed for the iPad** (portrait and landscape) and checked on iPhone-sized screens. Android phones and
   computers work too, but have had less testing.
 - **If something goes wrong:** **Help › If something goes wrong** covers wrong sections, colours that don't match,

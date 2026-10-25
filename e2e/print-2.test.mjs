@@ -628,7 +628,7 @@ after(teardown);
     }
   });
   // (v320, Ben's count rule: "markers" counts every marker owned, the blender too; the guide's card says colours)
-  test('Home’s Markers card counts every marker, as Markers does; its button: New guide from a photo', async () => {
+  test('Home’s Markers card counts every marker, as Markers does; its button: New guide from a colouring page', async () => {
     const { page, errors, ctx } = await openAtScale(1.6, { width: 320, height: 568 });
     await welcome(page, 'look');
     await idle(page);
@@ -647,7 +647,7 @@ after(teardown);
         ch: e.clientHeight,
       };
     });
-    assert.equal(b.t, 'New guide from a photo');
+    assert.equal(b.t, 'New guide from a colouring page');
     assert.ok(b.sw <= b.cw + 1 && b.sh <= b.ch + 1, 'it fits: ' + JSON.stringify(b));
     // (only a blender: it still counts, so the card doesn't ask to set markers up)
     await page.evaluate(() => {

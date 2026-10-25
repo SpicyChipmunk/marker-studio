@@ -1113,6 +1113,18 @@ function bgEdgeTest() {
   return runs >= 12 && ink <= 0.15 * n;
 }
 function applyBg(fresh) {
+  // (v325: on a photo-made page nothing is background: the whole photo is the picture, 47-photo-page; v326: but
+  // Subject only's, pp.bgs)
+  if (ppOn()) {
+    bgEdgeAll = true;
+    const bs = {};
+    if (pp.bgs)
+      pp.bgs.forEach(function (l) {
+        bs[l] = 1;
+      });
+    for (let l = 1; l < comps.length; l++) if (comps[l]) comps[l].bg = !!bs[l];
+    return;
+  }
   const n = comps.length,
     bgRel = 0.6 - (bgTrim / 100) * 0.5;
   if (fresh || !(bgMaxB > 0)) {
@@ -1488,7 +1500,8 @@ function colourSecs() {
 const SMALL_PIC = 100,
   SMALLISH_PIC = 200;
 function segQuality() {
-  if (!labels || !comps) return { ok: true };
+  // (v325: a photo-made page's sections are made to be coloured: none of these apply, 47-photo-page)
+  if (!labels || !comps || ppOn()) return { ok: true };
   var w0 = srcDims ? srcDims.w : 0,
     h0 = srcDims ? srcDims.h : 0,
     tooSmall = {
@@ -2666,12 +2679,17 @@ function render() {
       cl[2] = c[2];
       return (255 << 24) | (cl[2] << 16) | (cl[1] << 8) | cl[0];
     };
-  lut[0] = pack(LINE);
+  // (v326) a photo-made page's step: its markers' colours, as Build will lay them (47-photo-page ppStepColours), the
+  // lines as they print; the paper where nothing's coloured (left out, the background, left white)
+  const ppc = sfmode === 'review' && ppOn() ? ppStepColours(cn) : null,
+    PAPER_W = [255, 255, 255];
+  lut[0] = pack(ppc ? ppStepLine() : LINE);
   // (label 0 doesn't survive labelCells; drawn as a left-out section if it ever did, not as nothing)
   lut[1] = pack(MAG);
   for (let l = 1; l < comps.length; l++) {
     let col;
-    if (l === mergeSel) col = HILITE;
+    if (ppc) col = ppc[l] || PAPER_W;
+    else if (l === mergeSel) col = HILITE;
     else if (cn[l]) {
       // (v288: paler tints, still one per section, so a gap that let two shapes run together shows, without looking
       // like a colour plan)

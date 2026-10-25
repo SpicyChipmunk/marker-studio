@@ -32,6 +32,20 @@ if (_hn)
     setMode('sections');
     if (window.SF && SF.showHome && !SF.hasGuide()) SF.showHome();
   });
+// (v325) Home's "Or make a colouring page from any photo": its own picker, then the Guide screen (47-photo-page)
+var _hpp = document.getElementById('homePPage');
+if (_hpp)
+  _hpp.addEventListener('click', function () {
+    if (window.SF && SF.secEdPending && SF.secEdPending() && SF.edToPlan) {
+      setMode('sections');
+      SF.edToPlan(false);
+      return;
+    }
+    if (window.SF && SF.ppPick)
+      SF.ppPick(function () {
+        setMode('sections');
+      });
+  });
 var _hv = document.getElementById('homeView');
 if (_hv)
   _hv.addEventListener('click', function (e) {

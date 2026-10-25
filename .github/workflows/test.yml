@@ -152,6 +152,14 @@ jobs:
         run: node e2e/ci-photo-timing.mjs
         env:
           E2E_BROWSER: webkit
+      # (v325, a diagnostic too: a made-up 12-megapixel photo made into a colouring page at each Detail step, timed)
+      - name: Photo page timing
+        if: matrix.part == 1
+        continue-on-error: true
+        timeout-minutes: 6
+        run: node e2e/ci-photo-page.mjs
+        env:
+          E2E_BROWSER: webkit
       - name: Browser tests (WebKit, part ${{ matrix.part }} of 10)
         id: tests
         # failed tests don't fail this step: the retry below decides (and so does running out of time, which is why

@@ -558,6 +558,55 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     set limitN(v) {
       limitN = v;
     },
+    // (v325: a photo-made page, 47-photo-page)
+    get pp() {
+      return pp;
+    },
+    ppSave: ppSave,
+    ppCheck: ppCheck,
+    ppBuildCore: ppBuildCore,
+    ppPickCore: ppPickCore,
+    ppDe: ppDe,
+    ppMmPx: ppMmPx,
+    ppWorkerSrc: ppWorkerSrc,
+    ppRemakeFor: ppRemakeFor,
+    get ppBusy() {
+      return _ppBusy;
+    },
+    get ppPrep() {
+      return _ppPrep;
+    },
+    subMissing: subMissing,
+    // (v326: the markers to add, the step's colours, Subject only, the pages kept)
+    ppFillCore: ppFillCore,
+    ppFillGet: ppFillGet,
+    get ppFill() {
+      return _ppFill;
+    },
+    ppHelpBody: ppHelpBody,
+    ppAsMade: ppAsMade,
+    ppPool: ppPool,
+    ppStepColours: ppStepColours,
+    ppStepWhy: ppStepWhy,
+    ppMadeAssign: ppMadeAssign,
+    ppSubjectBox: ppSubjectBox,
+    ppSubjectShare: ppSubjectShare,
+    ppSubjectTargets: ppSubjectTargets,
+    ppCropSubject: ppCropSubject,
+    get ppMemN() {
+      return _ppMem.size;
+    },
+    get ppTools() {
+      return _ppTools;
+    },
+    get subKeep() {
+      return _subKeep;
+    },
+    photoColours: photoColours,
+    photoRoughAt: photoRoughAt,
+    get photoPeek() {
+      return photoPeek;
+    },
     get locks() {
       return locks;
     },
@@ -1573,6 +1622,8 @@ return {
   pickPhoto: pickPhoto,
   pickPhotoHome: pickPhotoHome,
   pickPdfHome: pickPdfHome,
+  // (v325: a colouring page from any photo, Home's link: 47-photo-page)
+  ppPick: ppPick,
   // (v314: the photo of a finished page, from Home and the Library: 24-page-photo)
   finPick: finPick,
   finGet: finGet,

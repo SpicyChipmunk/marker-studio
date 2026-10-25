@@ -100,6 +100,84 @@ function edBarHTML(quick) {
     '</button></div>'
   );
 }
+// (v325) the edit bar's buttons wired: Build guide (asked first for a very dense page), Edit sections (the quick
+// check's), ← Plan; for Edit sections and a photo-made page's step (47-photo-page)
+function edBarWire() {
+  document.getElementById('sfBuild').addEventListener('click', function () {
+    const b = this;
+    if (b.disabled) return;
+    // (a very dense page is asked about first, v304)
+    if (
+      denseAsk(function () {
+        // (the bar may have been drawn again meanwhile)
+        const nb = document.getElementById('sfBuild');
+        if (nb) nb.click();
+      })
+    )
+      return;
+    stageGo();
+    b.disabled = true;
+    b.textContent = 'Building\u2026';
+    // (the picture Build was pressed on: another guide opened meanwhile isn't built over, v307 debug)
+    const g = loadGen;
+    // (v318 polish: after the screen is drawn, not in the frame's own callback: with the label points already worked
+    // out, "Building…" never showed)
+    afterPaint(function () {
+      // (v307: the label points worked out in the worker first, while "Building…" shows: lptsReady, 40-render)
+      lptsReady().then(function () {
+        // (v318.23: what depends on the sections alone, the texture's distances and the mood pictures' lines, in a task
+        // of its own first, so Build's own hold is shorter; both are kept for the sections, so buildGuide finds them.
+        // Not after the bloom starts: it's drawn frame by frame, and work there makes it stutter or turn itself off)
+        if (g === loadGen)
+          try {
+            if (texAmt > 0 && !edgeDist) buildTexFields();
+            if (mpOn()) mpLinesImage();
+          } catch (e) {}
+        // (v324: and the section map's signature in a task of its own, read for every pixel: about 0.2 s off Build's
+        // own hold on a big photo, slowed 4×)
+        afterPaint(function () {
+          if (g === loadGen && !assignData)
+            try {
+              labelsSigWarm();
+            } catch (e) {}
+          afterPaint(function () {
+            // (the first Build of a new picture blooms: 41-bloom.js; v320: so does Build after the sections were
+            // changed in Edit sections, the plan laid on them afresh)
+            const first = !assignData || (!!assignData && guideSig !== labelsSig());
+            try {
+              if (g !== loadGen) return;
+              mpLater = true;
+              try {
+                holdTime('Build', function () {
+                  buildGuide();
+                });
+              } finally {
+                mpLater = false;
+              }
+              if (first && assignData && sfmode === 'guide') bloomStart();
+            } finally {
+              if (b.isConnected) {
+                b.disabled = false;
+                b.innerHTML = 'Build guide ' + icNav(1);
+                b.setAttribute('aria-label', 'Build guide');
+                edBarSync();
+              }
+            }
+          });
+        });
+      });
+    });
+  }); // show "Building…" before the work starts
+  var _fx = document.getElementById('sfFix');
+  if (_fx) _fx.addEventListener('click', secFix);
+  var _tp = document.getElementById('sfToPlan');
+  // (not edToPlan itself: the click would come in as newGuide, and Discard would open the photo picker, v296)
+  if (_tp)
+    _tp.addEventListener('click', function () {
+      edToPlan(false);
+    });
+  edBarSync();
+}
 // (v318.32 U1-1) Adjust photo opened: its rows brought into view between the pinned picture and the Build bar. On a
 // phone, and an iPad held upright, the panel had opened under the sticky bar or below the fold, so nothing seemed to
 // happen (as alongReveal does for the open row, 83-along)
@@ -230,6 +308,10 @@ function segWarnHTML() {
         (segWarn.retake && pgOrig
           ? '<br><button type="button" class="sflink sfc-retake" id="sfRetake">Choose another photo</button>'
           : '') +
+        // (v325: a photo, not a colouring page: made into one instead, 47-photo-page)
+        (ppOffer() === 'warn'
+          ? '<br><button type="button" class="sflink sfc-retake" id="sfPpFrom">Make a colouring page from it instead</button>'
+          : '') +
         '</div>'
     : '';
 }
@@ -338,6 +420,14 @@ function segWarnSync() {
   else if (h) {
     const ed = document.getElementById('sfEdit');
     if (ed) ed.insertAdjacentHTML('beforebegin', h);
+  }
+  // (v325: and the line offering a page made from the photo, 47-photo-page)
+  const po = document.getElementById('sfPpOffer'),
+    ph = ppOfferHTML();
+  if (po) po.outerHTML = ph;
+  else if (ph) {
+    const ed = document.getElementById('sfEdit');
+    if (ed) ed.insertAdjacentHTML('beforebegin', ph);
   }
 }
 // The paper inside a drawn frame, left white (findFrame, 10-segment, v305): a line on Edit sections and in the Plan
@@ -648,6 +738,7 @@ function ctlSections() {
     head +
     faintLineHTML() +
     segWarnHTML() +
+    ppOfferHTML() +
     '<div class="sfedtools"' +
     (quick ? ' hidden' : '') +
     '><div id="sfEdit" role="group" aria-label="Edit tool" class="sfc-segs sfc-mt8"><button type="button" id="sfEmToggle" data-m="toggle" class="sfedit">Leave out</button><button type="button" id="sfEmMerge" data-m="merge" class="sfedit">Merge</button><button type="button" id="sfEmSplit" data-m="split" class="sfedit">Split</button><button type="button" id="sfEmAdd" data-m="add" class="sfedit">Add</button></div><label id="sfAutoCloseWrap" class="sfc-autoclose" style="display:none"><input type="checkbox" id="sfAutoClose"> Join the ends of a loop for me</label><div id="sfHint" class="sfc-note sfc-mt8"></div><div class="sfc-key"><span><span class="sfc-sw sfc-sw-sec"></span>section</span><span><span class="sfc-sw sfc-sw-bg"></span>background</span><span><span class="sfc-sw sfc-sw-ex"></span>left out</span></div>' +
@@ -710,80 +801,7 @@ function ctlSections() {
           : 'Add: draw across a region to a line or the page edge to slice off a section.';
     });
   }
-  document.getElementById('sfBuild').addEventListener('click', function () {
-    const b = this;
-    if (b.disabled) return;
-    // (a very dense page is asked about first, v304)
-    if (
-      denseAsk(function () {
-        // (the bar may have been drawn again meanwhile)
-        const nb = document.getElementById('sfBuild');
-        if (nb) nb.click();
-      })
-    )
-      return;
-    stageGo();
-    b.disabled = true;
-    b.textContent = 'Building\u2026';
-    // (the picture Build was pressed on: another guide opened meanwhile isn't built over, v307 debug)
-    const g = loadGen;
-    // (v318 polish: after the screen is drawn, not in the frame's own callback: with the label points already worked
-    // out, "Building…" never showed)
-    afterPaint(function () {
-      // (v307: the label points worked out in the worker first, while "Building…" shows: lptsReady, 40-render)
-      lptsReady().then(function () {
-        // (v318.23: what depends on the sections alone, the texture's distances and the mood pictures' lines, in a task
-        // of its own first, so Build's own hold is shorter; both are kept for the sections, so buildGuide finds them.
-        // Not after the bloom starts: it's drawn frame by frame, and work there makes it stutter or turn itself off)
-        if (g === loadGen)
-          try {
-            if (texAmt > 0 && !edgeDist) buildTexFields();
-            if (mpOn()) mpLinesImage();
-          } catch (e) {}
-        // (v324: and the section map's signature in a task of its own, read for every pixel: about 0.2 s off Build's
-        // own hold on a big photo, slowed 4×)
-        afterPaint(function () {
-          if (g === loadGen && !assignData)
-            try {
-              labelsSigWarm();
-            } catch (e) {}
-          afterPaint(function () {
-            // (the first Build of a new picture blooms: 41-bloom.js; v320: so does Build after the sections were
-            // changed in Edit sections, the plan laid on them afresh)
-            const first = !assignData || (!!assignData && guideSig !== labelsSig());
-            try {
-              if (g !== loadGen) return;
-              mpLater = true;
-              try {
-                holdTime('Build', function () {
-                  buildGuide();
-                });
-              } finally {
-                mpLater = false;
-              }
-              if (first && assignData && sfmode === 'guide') bloomStart();
-            } finally {
-              if (b.isConnected) {
-                b.disabled = false;
-                b.innerHTML = 'Build guide ' + icNav(1);
-                b.setAttribute('aria-label', 'Build guide');
-                edBarSync();
-              }
-            }
-          });
-        });
-      });
-    });
-  }); // show "Building…" before the work starts
-  var _fx = document.getElementById('sfFix');
-  if (_fx) _fx.addEventListener('click', secFix);
-  var _tp = document.getElementById('sfToPlan');
-  // (not edToPlan itself: the click would come in as newGuide, and Discard would open the photo picker, v296)
-  if (_tp)
-    _tp.addEventListener('click', function () {
-      edToPlan(false);
-    });
-  edBarSync();
+  edBarWire();
   function wire(id, ev, fn) {
     const el = document.getElementById(id);
     if (el) el.addEventListener(ev, fn);

@@ -322,6 +322,10 @@ function alongRow(e, inDone) {
     (inkLowNow(m.mkey)
       ? '<span class="sflowtag" aria-hidden="true">low</span><span class="sfsr">(running low) </span>'
       : '') +
+    // (v326: a marker of the guide's you don't own: a photo-made page made with markers added, or from the full range)
+    (state.owned.size && !state.owned.has(m.mkey)
+      ? '<span class="sflowtag" aria-hidden="true">not yours</span><span class="sfsr">(a marker you don’t own) </span>'
+      : '') +
     (sn
       ? '<span class="sf2b" aria-hidden="true">' +
         (sameOf(m) ? '2 brands' : '2 caps') +

@@ -276,6 +276,8 @@ function currentDesignObj(share, edits) {
         // (v318.34: the settings its picture was worked on with, beside the picture kept in 'src-<id>'; not in a guide
         // file, which never carries the picture: 25-source-photo)
         src: share ? undefined : srcSettings() || undefined,
+        // (v325: a photo made into a page, its Detail, marker count, paper and the markers as made: 47-photo-page)
+        pp: ppSave(),
       },
       // the zones besides Main (34-zones), only when there are any
       zones.length ? { zones: zoneSave() } : {},
@@ -324,6 +326,7 @@ const PL_TOP = [
     'zones',
     'secStates',
     'src',
+    'pp',
   ],
   PL_GONE = [];
 let _plKnown = null;

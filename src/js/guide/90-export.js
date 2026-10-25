@@ -506,7 +506,11 @@ let pdfLabels = 'codes',
   // choice here, not the screen's Show tone lines: on paper they're most sections' only mark, v304)
   pdfToneLines = true,
   pdfWhat = 'page',
+  // (v325: a photo-made page's lines print light grey, to all but go under the colour, unless Darker lines is ticked)
+  pdfPpDark = false,
   pdfS = 1;
+// (its light lines: about 40% grey, 2 px at the page's 200 dots an inch, about 0.25 mm)
+const PP_LINE = [152, 154, 152];
 const LETTER_LANDS = ['US', 'CA', 'MX', 'PH', 'CL', 'CO', 'VE', 'PR'];
 function paperDefault() {
   let ls = [];
@@ -530,6 +534,7 @@ try {
   pdfDark = localStorage.getItem('ms-pdf-dark') === '1';
   pdfToneLines = localStorage.getItem('ms-pdf-lines') !== '0';
   pdfWhat = localStorage.getItem('ms-pdf-what') === 'ref' ? 'ref' : 'page';
+  pdfPpDark = localStorage.getItem('ms-pdf-pplines') === '1';
 } catch (_) {
   paper = paperDefault();
 }
@@ -692,6 +697,13 @@ function openPrint() {
       : '<label class="sfchk"><input type="checkbox" id="sfPdfBlend"' +
         (pdfBlend ? ' checked' : '') +
         '> Include blend companions (a lighter and darker shade for each colour)</label>') +
+    (ppOn()
+      ? '<label class="sfchk"><input type="checkbox" id="sfPdfPpDark"' +
+        (pdfPpDark ? ' checked' : '') +
+        '> Darker lines</label><div class="sfshhint" id="sfPrPp">' +
+        ppPaperHTML() +
+        '</div>'
+      : '') +
     '</div>';
   const el = openSheet({
     title: 'Print',
@@ -720,10 +732,12 @@ function openPrint() {
     } else if (e.target.closest('[data-pr="cancel"]')) closeSheet();
     else if (e.target.closest('#sfPDF')) exportPDF();
     else if (e.target.closest('#sfPrThumb')) printPreview();
+    else if (e.target.closest('#sfPrPpGo')) ppPaperGo();
   });
   el.addEventListener('change', function (e) {
     if (e.target.id === 'sfPdfDark') printOptSet('dark', e.target.checked);
     else if (e.target.id === 'sfPdfLines') printOptSet('lines', e.target.checked);
+    else if (e.target.id === 'sfPdfPpDark') printOptSet('pplines', e.target.checked);
     else if (e.target.id === 'sfPdfBlend') {
       pdfBlend = e.target.checked;
       try {
@@ -836,6 +850,14 @@ function printOptsSync() {
     tl.disabled = pdfWhat !== 'page';
     tl.parentNode.classList.toggle('off', tl.disabled);
   }
+  // (and the light lines, v325)
+  const pl = document.getElementById('sfPdfPpDark');
+  if (pl) {
+    pl.disabled = pdfWhat !== 'page';
+    pl.parentNode.classList.toggle('off', pl.disabled);
+  }
+  const pph = document.getElementById('sfPrPp');
+  if (pph) pph.innerHTML = ppPaperHTML();
   const shn = document.getElementById('sfPrShNote');
   if (shn) shn.textContent = printShNote();
   const sm = document.getElementById('sfPrSum');
@@ -866,7 +888,7 @@ function printThumbSoon() {
   clearTimeout(_prThT);
   const el = document.getElementById('sfPrThumb');
   if (!el) return;
-  const sig = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend].join('|');
+  const sig = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark].join('|');
   el.hidden = pdfWhat === 'strip';
   if (el.hidden || (sig === _prThSig && el.firstChild)) return;
   el.classList.add('wait');
@@ -1163,6 +1185,10 @@ function printOptSet(k, v) {
     pdfToneLines = !!v;
     key = 'ms-pdf-lines';
     val = pdfToneLines ? '1' : '0';
+  } else if (k === 'pplines') {
+    pdfPpDark = !!v;
+    key = 'ms-pdf-pplines';
+    val = pdfPpDark ? '1' : '0';
   } else {
     if (Object.prototype.hasOwnProperty.call(PAPERS, v)) paper = v;
     key = 'ms-paper';
@@ -1671,7 +1697,9 @@ function pdfArt(coloured, sh, lines) {
     C = new Uint8Array(K * 3).fill(255),
     V = sh ? sh.V : null,
     ti = sh ? sh.ti : null,
-    mix = sh ? sh.mix : null;
+    mix = sh ? sh.mix : null,
+    // (v325: a photo-made page's colouring page has light lines, unless Darker lines is ticked)
+    ink = !coloured && ppOn() && !pdfPpDark ? PP_LINE : LINE;
   if (coloured)
     for (const l in asg) {
       const c = hexRgb(asg[l].hex);
@@ -1683,9 +1711,9 @@ function pdfArt(coloured, sh, lines) {
   for (let q = 0, j = 0, n = W * H; q < n; q++, j += 4) {
     const l = labels[q];
     if (l === -1 && !(db && db[q])) {
-      d[j] = LINE[0];
-      d[j + 1] = LINE[1];
-      d[j + 2] = LINE[2];
+      d[j] = ink[0];
+      d[j + 1] = ink[1];
+      d[j + 2] = ink[2];
     } else if (l < 0) {
       // (ink that's the photo's debris too, v308)
       d[j] = d[j + 1] = d[j + 2] = 255;
@@ -3193,15 +3221,49 @@ function _buildPDF(dry) {
     pdfFit(cw, pageBot0 - pvTop).k > pdfFit(bw, pvH).k &&
     (hdrH + famN * famH + rows.length * PX(19) <= pageBot0 - pvTop || (refOne && !onePage));
   if (side) rowH = PX(19);
-  const f2 = side ? pdfFit(cw, pageBot0 - pvTop) : pdfFit(bw, pvH),
+  let f2 = side ? pdfFit(cw, pageBot0 - pvTop) : pdfFit(bw, pvH),
     pvx = m + ((side ? cw : bw) - f2.w) / 2,
-    pvy = pvTop;
+    // (v325: a photo-made page's photo, small beside the reference (under it beside the key), for what the page
+    // smoothed away: eyes, whiskers. Never over it, and only ever making it smaller, so the key fits as it did)
+    phB = null;
+  const pvy = pvTop;
+  if (ppOn() && photoRef && photoRef.data) {
+    const gap = PX(8);
+    if (side) {
+      const colH = pageBot0 - pvTop;
+      f2 = pdfFit(cw, colH * 0.74 - gap);
+      const fp = pdfFit(cw * 0.6, colH - f2.h - gap);
+      pvx = m + (cw - f2.w) / 2;
+      phB = { x: m + (cw - fp.w) / 2, y: pvy + f2.h + gap, w: fp.w, h: fp.h };
+    } else {
+      if (bw - f2.w < bw * 0.3) f2 = pdfFit(bw * 0.72, f2.h);
+      const fp = pdfFit(Math.min(bw * 0.32, bw - f2.w - gap), f2.h);
+      pvx = m + (bw - (f2.w + gap + fp.w)) / 2;
+      phB = { x: pvx + f2.w + gap, y: pvy, w: fp.w, h: fp.h };
+    }
+  }
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'high';
   if (!dry) {
     const art2 = pdfArt(true, sh);
     g.drawImage(art2, pvx, pvy, f2.w, f2.h);
     pdfFree(art2);
+  }
+  if (phB && !dry) {
+    const pc = document.createElement('canvas');
+    pc.width = photoRef.w;
+    pc.height = photoRef.h;
+    try {
+      pc.getContext('2d').putImageData(new ImageData(photoRef.data, photoRef.w, photoRef.h), 0, 0);
+      g.drawImage(pc, phB.x, phB.y, phB.w, phB.h);
+    } catch (_) {}
+    // (kept until the page is drawn for real: pdfReplay)
+    pdfFree(pc);
+  }
+  if (phB) {
+    g.strokeStyle = 'rgba(0,0,0,.15)';
+    g.lineWidth = PX(0.6);
+    g.strokeRect(phB.x, phB.y, phB.w, phB.h);
   }
   if (!dry && zIds.length) pdfZoneOverlay(g, pvx, pvy, f2, zIds);
   g.strokeStyle = 'rgba(0,0,0,.15)';
@@ -3448,7 +3510,10 @@ function _buildPDF(dry) {
       g.fillText(pdfOrd(r.ord), x + X.ord, y + PX(12.5));
     }
     g.textAlign = 'left';
-    pdfSwatch(g, x + X.sw, y + PX(3.5), sw, mm.hex, true, true);
+    // (v326: a marker of the guide's you don't own, as a photo-made page made with markers added, or from the full
+    // range, has: its swatch dashed, and "buy" after its code, as a blend companion you don't own has had)
+    const ownM = !state.owned.size || state.owned.has(mm.mkey);
+    pdfSwatch(g, x + X.sw, y + PX(3.5), sw, mm.hex, ownM, true);
     if (!oneB) {
       // (v306: a code in the guide in both brands has its letter in a filled tag, as on the labels)
       if (sameOf(mm)) {
@@ -3477,7 +3542,16 @@ function _buildPDF(dry) {
     }
     g.fillStyle = '#111';
     g.font = '700 ' + PX(9.5) + 'px ' + LFONT;
-    g.fillText(pdfTrunc(g, capLabel(mm), X.name - X.code - PX(4)), x + X.code, y + PX(12.5));
+    const cdT = pdfTrunc(g, capLabel(mm), X.name - X.code - PX(4));
+    g.fillText(cdT, x + X.code, y + PX(12.5));
+    if (!ownM) {
+      const cdW = g.measureText(cdT).width;
+      g.font = '600 ' + PX(7) + 'px ' + LFONT;
+      if (cdW + PX(3) + g.measureText('buy').width <= X.name - X.code - PX(4)) {
+        g.fillStyle = '#b7791f';
+        g.fillText('buy', x + X.code + cdW + PX(3), y + PX(12.5));
+      }
+    }
     const nmW = X.cnt - X.name - PX(30);
     if (nmW > PX(16)) {
       g.fillStyle = '#333';
@@ -3698,7 +3772,7 @@ async function _exportPDF() {
   const what = pdfWhat,
     name = curName,
     gen = loadGen,
-    opts = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend];
+    opts = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark];
   // (a moment for "Preparing…" to show: the pages are laid out in one go, v287; v320: the headings' serif loaded
   // meanwhile, as the saved image's fonts are)
   await Promise.all([
@@ -3709,16 +3783,16 @@ async function _exportPDF() {
   ]);
   try {
     // (laid out with the choices as they were; the sheet's own, changed meanwhile, put back straight after)
-    const now = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend];
+    const now = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark];
     let pages, kinds;
-    [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend] = opts;
+    [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark] = opts;
     try {
       // (v307) each page drawn in turn, the button saying which (the Print sheet's, opened again meanwhile too)
       pages = buildPDFPages(false, true);
       // (v318.35: the pages in colour as JPEG; the kinds copied, as the sheet's summary re-lays them meanwhile)
       kinds = _pdfKinds.slice();
     } finally {
-      [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend] = now;
+      [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark] = now;
     }
     const P = PAPERS[opts[2]] || PAPERS.letter,
       blob = await canvasesToPDF(

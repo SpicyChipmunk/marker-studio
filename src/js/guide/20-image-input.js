@@ -98,6 +98,11 @@ function resetForNewPicture() {
   // (v318.34: how the picture came in, and a reopened guide's picture settings: 25-source-photo)
   srcFrom = null;
   _srcSet = null;
+  // (v325: a photo made into a page is the old picture's: 47-photo-page)
+  pp = null;
+  _ppPrep = null;
+  _ppGen++;
+  _ppBusy = false;
   photoReset();
   rot90 = 0;
   tilt = 0;
@@ -385,7 +390,7 @@ function applyCrop() {
     const z = document.getElementById('sfZoomCtl');
     if (z) z.style.display = '';
     reprocessImg();
-  });
+  }, ppOn());
 }
 function cancelCrop() {
   cropMode = false;
@@ -806,7 +811,8 @@ function geomWords(p, what) {
     : what + ' clears your section edits. Undo brings them back.';
 }
 function resegment() {
-  if (!gray || _reAsk) return;
+  // (v325: a photo-made page has no lines to find: its sections are made, 47-photo-page)
+  if (!gray || _reAsk || ppOn()) return;
   const top = undoStack[undoStack.length - 1],
     p = !!assignData && hasProgress();
   if (assignData && (hasEdits || p) && !(top && top.reseg && !top.sealed)) {
@@ -973,6 +979,10 @@ function keepObj(geo) {
             : { e: enhance, c: adaptC, f: faintCut, h: hatchOne },
       bgMaxB: bgMaxB,
       bgEdgeAll: bgEdgeAll,
+      // (v325: a photo-made page's settings and its markers as made, and Markers in this guide with them: a make sets
+      // it to the count it chose, so the plan is as made after an Undo too, 47-photo-page)
+      pp: ppCopy(pp),
+      ppN: pp ? limitN : undefined,
       // (v308: the offer to ignore faint grey marks, as it was for those sections)
       fo: faintOffer,
       // (v318.35: the hatched patches merged in those sections, for Edit sections' note)
@@ -1030,7 +1040,9 @@ let _geoSnap = null,
 function geomAsks() {
   return hasEdits || hasProgress();
 }
-function okGeom(go) {
+// (v325) page: a photo-made page is made again (47-photo-page), and asked about in those words; stay: what to do when
+// the answer is Cancel
+function okGeom(go, page, stay) {
   _geoSnap = null;
   if (!geomAsks()) {
     _geoSnap = keepSnap(true);
@@ -1040,13 +1052,24 @@ function okGeom(go) {
   if (_geoAsk) return;
   _geoAsk = true;
   askBox(
-    'Rebuild the sections?',
-    geomWords(hasProgress(), 'Rotating or cropping'),
-    '<button type="button" class="btn-primary" data-a="go">Rebuild</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+    page ? 'Make the page again?' : 'Rebuild the sections?',
+    page
+      ? hasProgress()
+        ? 'This makes a new page and clears your colouring progress (ticks, part-done tones, pins and flat sections)' +
+          (hasEdits ? ' and your section edits' : '') +
+          '. Undo in Edit sections brings it all back.'
+        : 'This makes a new page and clears your section edits. Undo brings them back.'
+      : geomWords(hasProgress(), 'Rotating or cropping'),
+    page
+      ? '<button type="button" class="btn-primary" data-a="go">Make again</button><button type="button" class="sfghost" data-a="stay">Cancel</button>'
+      : '<button type="button" class="btn-primary" data-a="go">Rebuild</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
     true,
   ).then(function (a) {
     _geoAsk = false;
-    if (a !== 'go') return;
+    if (a !== 'go') {
+      if (stay) stay();
+      return;
+    }
     _geoSnap = keepSnap(true);
     go();
   });
@@ -1070,6 +1093,11 @@ function geoUndoOK() {
 }
 function reprocessImg() {
   if (!srcImg) return;
+  // (v325: a photo-made page is made again from the photo as turned or cropped now, 47-photo-page)
+  if (ppOn()) {
+    ppRemade(true);
+    return;
+  }
   _reFrom = null;
   const he = hasEdits || hasProgress();
   // (v318.14: with a paint between its steps, segRun)

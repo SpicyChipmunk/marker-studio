@@ -1325,7 +1325,8 @@ button.hcpic:focus-visible {
   }
   /* (v300) with no guide in progress, the start card in the Continue card's place: the same two columns */
   #homeView .homehub.hasstart .homehead,
-  #homeView .homehub.hasstart #homeNew {
+  #homeView .homehub.hasstart #homeNew,
+  #homeView .homehub.hasstart #homePPage {
     display: none;
   }
   .hometop .homegrid {
@@ -1958,4 +1959,10 @@ button.hcpic:focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
+}
+/* (v325) "Or make a colouring page from any photo", under New guide from a colouring page (the start card has its own
+   line, beside the PDF's) */
+#homePPage {
+  display: block;
+  margin: 8px auto 0;
 }

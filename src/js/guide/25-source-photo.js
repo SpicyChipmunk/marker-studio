@@ -53,6 +53,8 @@ function srcPic() {
 // scan or a download
 function srcKind() {
   if (srcFrom === 'pdf') return 'pdf';
+  // (v325: a photo made into a page, 47-photo-page)
+  if (ppOn()) return 'photo';
   return pgQ || pgF35 > 0 ? 'photo' : 'scan';
 }
 // the settings the sections were found with, for the payload's `src`; null for a guide with no picture of its own
@@ -379,6 +381,8 @@ function srcLoad() {
         if (!ok) _src.miss = true;
       }
       if (curId === id && loadGen === gen) renderControls();
+      // (v325: a photo-made page waiting for its photo to be made again, 47-photo-page)
+      ppLoaded(ok && curId === id && loadGen === gen);
     };
   _src = { id: id, gen: gen, read: false, rec: null, busy: true, miss: false };
   IDB.get(srcKey(id))
@@ -415,6 +419,7 @@ function srcFit(set, W, H) {
 }
 // the decoded picture put in place as the guide's (srcLoad): false when it doesn't fit the saved sections
 function srcPlace(im, r, set) {
+  if (ppOn()) return srcPlacePp(im, set);
   const keep = {
     srcImg: srcImg,
     pgOrig: pgOrig,
@@ -478,5 +483,31 @@ function srcPlace(im, r, set) {
   if (p.bands !== undefined) edgeBands = p.bands;
   // (the picture this guide was saved with: nothing to write again unless it's copied)
   _srcWrote = { id: curId, pic: pgOrig || srcImg };
+  return true;
+}
+// (v325) a photo made into a page: the photo itself is the picture (no page to straighten, nothing to find in it), and
+// what's under the guide stays the page drawn from the section map (97-open). It fits when the page it would be made
+// into is the saved map's size (ppSize, from the turn and crop); a Detail change or a remake then works from it
+function srcPlacePp(im, set) {
+  const keep = { srcImg: srcImg, pgOrig: pgOrig, rot: rot90, tilt: tilt, crop: cropRect };
+  srcImg = im;
+  pgOrig = im;
+  pgQ = null;
+  srcUp = false;
+  pgF35 = set.f35 || 0;
+  rot90 = set.rot;
+  tilt = 0;
+  cropRect = set.crop ? Object.assign({}, set.crop) : null;
+  const z = ppSize();
+  if (z.GW !== W || z.GH !== H) {
+    srcImg = keep.srcImg;
+    pgOrig = keep.pgOrig;
+    rot90 = keep.rot;
+    tilt = keep.tilt;
+    cropRect = keep.crop;
+    return false;
+  }
+  srcFrom = 'pic';
+  _srcWrote = { id: curId, pic: im };
   return true;
 }

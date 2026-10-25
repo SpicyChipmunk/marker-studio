@@ -1,4 +1,4 @@
-const CACHE='marker-studio-v324.2';
+const CACHE='marker-studio-v326';
 // (v313) PDF.js, for opening a PDF (vendor/pdfjs/<version>/): a cache of its own, named after its version, which a new
 // release leaves alone, so its 2 MB are downloaded once, not with every update. Stored when the app is installed, as
 // far as it can be (not waiting for it: the app works without it), and kept as it's used.
@@ -7,6 +7,8 @@ const PDFFILES=['pdf.min.mjs','pdf.worker.min.mjs','wasm/jbig2.wasm','wasm/openj
 // (v318) the photo reader (vendor/ocr/<version>/, about 22 MB): downloaded and kept by the page itself, only after its
 // consent card, in a cache of its own (photo-read.js). Here: never stored in the app's cache, and its cache kept
 const OCRC='marker-studio-ocr-1';
+// (v325.1) the subject finder (vendor/subject/<version>/, 4.6 MB), as the photo reader: the page keeps it (48-subject)
+const SUBC='marker-studio-subject-1';
 // (v308) the app is one page, stored once as ./index.html: every load of it (./, ./index.html, any query) is answered
 // from that copy, so an update downloads it once (it had been fetched and kept twice, as ./ and ./index.html)
 const CORE=['./index.html'];
@@ -16,7 +18,7 @@ const APP=(function(){try{return new URL('./',self.location.href).pathname;}catc
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(CORE.map(function(u){return new Request(u,{cache:'reload'});})).then(function(){return Promise.allSettled(OPTIONAL.map(function(u){return c.add(u);}));});}).then(()=>self.skipWaiting()));
  // (PDF.js: only what isn't stored yet, after the app itself)
  caches.open(PDFC).then(function(c){return Promise.allSettled(PDFFILES.map(function(u){return c.match(u).then(function(h){return h||c.add(u);});}));}).catch(function(){});});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE&&x!==PDFC&&x!==OCRC).map(x=>caches.delete(x)))).then(()=>self.clients.claim()));});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE&&x!==PDFC&&x!==OCRC&&x!==SUBC).map(x=>caches.delete(x)))).then(()=>self.clients.claim()));});
 // (v318.32 D3-2) only the app's own origin's files are stored: an opaque cross-origin response would take about 7 MB of
 // quota each in Chrome. Nothing cross-origin is fetched by GET today; this keeps it so
 // (v307) a page load is the app whatever its query (?back=1 …): a page with a query is never stored
@@ -24,7 +26,7 @@ self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.a
 // network as before, or the app when offline
 self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;
  // (the photo reader's files: straight from the network, as the page asks; it keeps them)
- if(r.url.indexOf('/vendor/ocr/')>=0)return;
+ if(r.url.indexOf('/vendor/ocr/')>=0||r.url.indexOf('/vendor/subject/')>=0)return;
  // (PDF.js's files from their own cache, stored there as they're fetched)
  if(r.url.indexOf('/vendor/pdfjs/'+PDFJS+'/')>=0){e.respondWith(caches.open(PDFC).then(function(c){return c.match(r).then(function(h){return h||fetch(r).then(function(res){if(res&&res.ok)c.put(r,res.clone()).catch(function(){});return res;});});}));return;}
  const nav=r.mode==='navigate',u=new URL(r.url),q=nav&&u.search,

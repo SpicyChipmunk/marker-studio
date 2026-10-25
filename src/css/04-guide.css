@@ -1233,6 +1233,28 @@
   flex: 1 1 0;
   min-width: max-content;
 }
+/* (v325.1) a photo-made page's Focus: three even columns on every width, a long name on two lines in its own column
+   on a narrow phone rather than a row of its own (48-subject) */
+/* v326: the markers-to-add line's rows (the figure, each list, the links) */
+#sfRoot .sfpphelp .sfppfl {
+  margin-top: 4px;
+}
+#sfRoot .sfpphelp:empty {
+  display: none;
+}
+#sfRoot #sfCtl #sfPpFoc.sfc-segs {
+  display: grid;
+  /* (v326: four choices, two rows of two: Subject only) */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+#sfRoot #sfCtl #sfPpFoc.sfc-segs .sfedit {
+  min-width: 0;
+  padding: 4px 6px;
+  line-height: 1.2;
+  white-space: normal;
+  text-wrap: balance;
+}
 /* v300: Edit sections' tools (Leave out, Merge, Split, Add) the same even row */
 #sfRoot #sfCtl #sfEdit.sfc-segs {
   gap: 4px;

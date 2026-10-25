@@ -1540,7 +1540,8 @@ after(teardown);
 
 // ---- from v3181-wipe.test.mjs ----
 // v318.1: Delete all my data takes the photo reader's download (its own cache, about 22 MB) with it; the app's own
-// files and PDF.js's stay, for the welcome it starts again at. Fails on v318.
+// files and PDF.js's stay, for the welcome it starts again at. Fails on v318. v326: and the subject finder's (its
+// cache left behind on v325.1-v325.2).
 {
   const KEY = 'ohuhu-hb320-picker-v3';
   const onboarded = {
@@ -1556,27 +1557,41 @@ after(teardown);
       saved: [],
     }),
   };
-  test('Delete all my data: the photo reader’s cache goes too; the app’s and PDF.js’s stay', async () => {
+  test('Delete all my data: the photo reader’s and subject finder’s caches go too; the app’s and PDF.js’s stay', async () => {
     const { page, errors } = await openApp({ width: 820, height: 1180, storage: onboarded });
     const names = await page.evaluate(async () => {
-      for (const n of [OCR_CACHE, 'marker-studio-v318', 'marker-studio-pdfjs-test']) {
+      for (const n of [
+        OCR_CACHE,
+        'marker-studio-subject-1',
+        'marker-studio-v318',
+        'marker-studio-pdfjs-test',
+      ]) {
         const c = await caches.open(n);
         await c.put(new Request(location.origin + '/' + n + '.bin'), new Response('x'));
       }
       return caches.keys();
     });
-    assert.ok(names.includes('marker-studio-ocr-1'), names.join(' '));
+    assert.ok(
+      names.includes('marker-studio-ocr-1') && names.includes('marker-studio-subject-1'),
+      names.join(' '),
+    );
     await page.click('#homeHelp');
     await page.waitForSelector('#helpOverlay.on');
     await page.click('#helpData > summary');
-    assert.match(await page.textContent('#helpData'), /and the photo reader if you downloaded it\./);
+    assert.match(
+      await page.textContent('#helpData'),
+      /and the photo reader and subject finder if you downloaded them\./,
+    );
     await page.click('#helpWipe');
     await page.waitForSelector('#sfEdAsk');
     await page.fill('#wipeWord', 'DELETE');
     await Promise.all([page.waitForEvent('load'), page.click('#wipeGo')]);
     await idle(page);
     const left = await page.evaluate(() => caches.keys());
-    assert.ok(!left.includes('marker-studio-ocr-1'), left.join(' '));
+    assert.ok(
+      !left.includes('marker-studio-ocr-1') && !left.includes('marker-studio-subject-1'),
+      left.join(' '),
+    );
     assert.ok(
       left.includes('marker-studio-v318') && left.includes('marker-studio-pdfjs-test'),
       left.join(' '),
