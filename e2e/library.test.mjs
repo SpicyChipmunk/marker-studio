@@ -1133,8 +1133,13 @@ after(teardown);
     assert.equal(await page.textContent(row(page, did) + ' .smeta'), 'Random draw · 1 marker · ' + when);
     assert.equal(await page.locator('#savedList .sbadge').count(), 0);
     // (v289) within the week, as Home says it
+    // (v324.2: yesterday at noon by the calendar, as relDate counts since v324.1; 25 hours ago read "2 days ago" when
+    // the run was before 1 am, run #75)
     await page.evaluate((id) => {
-      state.saved.find((s) => s.id === id).ts = Date.now() - 86400000 - 3600000;
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      d.setHours(12, 0, 0, 0);
+      state.saved.find((s) => s.id === id).ts = d.getTime();
       renderSaved();
     }, pid);
     assert.equal(await page.textContent(row(page, pid) + ' .smeta'), 'Palette · 5 markers · yesterday');

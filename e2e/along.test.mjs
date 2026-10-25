@@ -717,6 +717,17 @@ after(teardown);
       });
       await page.click(`#sfAlist .sfarow[data-k="${last}"] .sfah`);
       await idle(page);
+      // (v324.2: everything the live region says from here, kept: the guide's save, said a moment after, can replace
+      // "Page finished." before a poll sees it on a busy WebKit, run #75)
+      await page.evaluate(() => {
+        const el = document.getElementById('sfLive');
+        window.__said = [];
+        new MutationObserver(() => el.textContent && window.__said.push(el.textContent)).observe(el, {
+          childList: true,
+          characterData: true,
+          subtree: true,
+        });
+      });
       await page.click('#sfMarkAll');
       await idle(page);
       // (v318 polish: its smooth scroll waited for to the end: on a slow WebKit, scroll events can come further apart than
@@ -756,18 +767,16 @@ after(teardown);
           (await page.evaluate(() => document.getElementById('msToast')?.textContent)),
       );
       // (v307: the same words as Focus mode's finish, "Page finished. …")
-      // (v320: waited for: the guide's save, a moment after, is said too, and the live region is emptied for 40 ms
-      // before each thing it says; the finished card's strokes put the check right at that moment in WebKit)
       await page
-        .waitForFunction(
-          () => /^Page finished\. /.test(document.getElementById('sfLive').textContent),
-          null,
-          {
-            timeout: 3000,
-          },
-        )
+        .waitForFunction(() => window.__said.some((t) => /^Page finished\. /.test(t)), null, {
+          timeout: 5000,
+        })
         .catch(() => {});
-      assert.match(await page.textContent('#sfLive'), /^Page finished\. /, 'screen readers hear it');
+      const said = await page.evaluate(() => window.__said);
+      assert.ok(
+        said.some((t) => /^Page finished\. /.test(t)),
+        'screen readers hear it: ' + JSON.stringify(said),
+      );
       if (w === 390) await shot(page, 'g1-1-after');
       // in focus mode the toast stays: Reveal & share is in its own bottom bar
       await page.click('#sfDoneRev');
