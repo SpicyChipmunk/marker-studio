@@ -100,6 +100,8 @@ function resetForNewPicture() {
   _srcSet = null;
   // (v325: a photo made into a page is the old picture's: 47-photo-page)
   pp = null;
+  // (v327: a new picture: no photo tones kept)
+  ptReset();
   _ppPrep = null;
   _ppGen++;
   _ppBusy = false;

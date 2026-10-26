@@ -837,6 +837,9 @@ after(teardown);
       main: true,
       shadow: 'same',
       hilite: 'same',
+      // (v327: Two tone sets, and whether the Photo style is chosen)
+      sets: false,
+      pstyle: false,
       flat: [],
     },
     photo: null,
@@ -915,6 +918,8 @@ after(teardown);
             main: false,
             shadow: 'cool',
             hilite: 'warm',
+            sets: true,
+            pstyle: true,
             flat: [o[2], o[5]],
           },
           photo: null,
@@ -1233,6 +1238,8 @@ after(teardown);
       light: 3,
       shadow: 1,
       hilite: {},
+      sets: 'yes',
+      pstyle: 1,
       flat: 'x',
     },
     photo: 'x',
@@ -1295,6 +1302,8 @@ after(teardown);
       main: true,
       shadow: 'grey',
       hilite: 'paper',
+      sets: false,
+      pstyle: false,
       flat: [],
     },
   };
@@ -1345,6 +1354,8 @@ after(teardown);
       main: true,
       shadow: 'same',
       hilite: 'same',
+      sets: false,
+      pstyle: false,
       flat: [],
     },
   };
@@ -1848,7 +1859,7 @@ after(teardown);
       assert.deepEqual(await settings(page), { ...s1, [k]: DEF_PAY[k] }, 'missing ' + k);
       n++;
     }
-    assert.equal(n, 27 + 13 + 3);
+    assert.equal(n, 27 + 15 + 3);
     // (v306) Scatter's: missing, Polished, with nothing else of it written
     {
       const sc = { ...v.style, ...SCAT };

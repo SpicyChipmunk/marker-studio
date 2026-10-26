@@ -22,7 +22,7 @@ sheet, paper, VoiceOver, and how it feels.
 
 ## Before you start (5 min)
 
-- [ ] Home's foot says the version you're testing (**v326 · Beta**). If not: "A new version of Marker Studio is
+- [ ] Home's foot says the version you're testing (**v327 · Beta**). If not: "A new version of Marker Studio is
       ready" under Home's title → **Reload**.
 - [ ] ★ **Library › Back up** → the share sheet → **Save to Files** → the file is in Files. (A1 needs it.)
 - Have ready: a colouring page on the table to photograph; a PDF of a colouring page in Files; a few Ohuhu and Copic
@@ -169,6 +169,22 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 ## Part C — new in recent releases (20 min)
 
 What recent releases changed that Parts A and B don't already cover.
+
+**New in v327: photo tones, tidier shading, more markers for colourful photos**
+
+- [ ] ★ **A page coloured on paper (the one thing measurement can't tell):** a page made from one of your own photos,
+      Build › **Shading › Photo** › print it and colour one area with its highlights and shadows. Do the shadows laid
+      over the base come out as the screen shows them? Do the highlights under the base work? Are the patches big
+      enough to colour (under about 1.5 mm is tidied away)? With **Two tone sets per marker**, are the primed codes
+      (E415′) clear on paper?
+- [ ] ★ **Timing:** Copy diagnostics after tapping **Photo** (the first time on a page) and after moving a slider:
+      paste it into Send feedback.
+- [ ] The Shading row on a photo-made page reads Off · Soft · Dramatic · **Photo** · Neuro; with Light from › The sun it
+      reads Rounded again, and Highlights and Shadows show Same colour; back to The photo, Matched to the photo again.
+- [ ] Some sections stay flat: the panel says how many; tapping one says "Its tones wouldn't be closer to the photo".
+- [ ] Colour a section's highlight, then move the Shadows slider: its markers stay as you coloured them.
+- [ ] With a big collection and a busy, colourful photo: "Some of this photo's colours aren't on the page… Use up to 48
+      markers" › more markers, small coloured things back › **Back to 24**.
 
 **New in v326: the photo-made page's colours, markers to add, Subject only**
 

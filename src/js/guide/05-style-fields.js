@@ -297,17 +297,21 @@ const STYLE_FIELDS = [
       return shadeLight === 'sun' || shadeLight === 'edges' ? 'sun' : 'photo';
     },
   },
+  // (v327) Two tone sets per marker with photo tones; the Photo style chosen (its amounts the page's own)
+  { key: 'sets', in: 'shade', def: false, check: styleBool, undo: true },
+  { key: 'pstyle', in: 'shade', def: false, check: styleBool, undo: true },
   // with zones, whether Main is shaded ("Shade Main"; each other zone has its own, in payload.zones)
   { key: 'main', in: 'shade', def: true, check: styleBool, undo: true },
   // what kind of shadow and highlight: the same colour, a cooler or grey shadow, a warmer highlight or the paper
-  { key: 'shadow', in: 'shade', def: 'same', check: styleOne(['same', 'cool', 'grey']), undo: true },
+  // (v327 'photo': Matched to the photo, photo tones on a photo-made page; an older copy reads it as Same colour)
+  { key: 'shadow', in: 'shade', def: 'same', check: styleOne(['same', 'cool', 'grey', 'photo']), undo: true },
   // (v318.17: 'none', Highlights None for a zone (Shadows only there); 'blender', the Colorless Blender's lift. An older
   // copy reads either as the kind before it: Main's for a zone, Same colour for Main)
   {
     key: 'hilite',
     in: 'shade',
     def: 'same',
-    check: styleOne(['same', 'warm', 'paper', 'blender', 'none']),
+    check: styleOne(['same', 'warm', 'paper', 'blender', 'none', 'photo']),
     undo: true,
   },
   // sections left flat, by section number
@@ -702,6 +706,18 @@ const STYLE_VAR = {
   },
   get mode() {
     return shadeMode;
+  },
+  get sets() {
+    return shadeSets;
+  },
+  set sets(v) {
+    shadeSets = v;
+  },
+  get pstyle() {
+    return shadePStyle;
+  },
+  set pstyle(v) {
+    shadePStyle = v;
   },
   set mode(v) {
     shadeMode = v;

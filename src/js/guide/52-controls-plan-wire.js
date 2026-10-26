@@ -681,6 +681,8 @@ function ctlWireShading() {
       } else if (x[1] === 'hilite')
         planWhy = zn + 'Highlights: ' + (SHADE_HILITE_LABEL_ALL[el.value] || el.value);
       zshSet(zoneCur, x[1], el.value);
+      // (v327: the Photo style is both kinds Matched to the photo: another kind is Custom)
+      if (el.value !== 'photo') shadePStyle = false;
       guideDirty = true;
       normalizeTones();
       renderControls();
@@ -708,6 +710,8 @@ function ctlWireShading() {
     if (!el) return;
     el.addEventListener('input', function (e) {
       zshSet(zoneCur, id === 'sfShHi' ? 'hi' : 'lo', +e.target.value / 100);
+      // (v327: an amount of your own: Custom, no longer the Photo style's)
+      shadePStyle = false;
       guideDirty = true;
       dragPreview = true;
       if (!texRaf)
@@ -722,6 +726,18 @@ function ctlWireShading() {
       renderControls();
     });
   });
+  // (v327) Two tone sets per marker, with photo tones
+  var _sts = document.getElementById('sfShSets');
+  if (_sts)
+    _sts.addEventListener('change', function () {
+      shadeSets = !!_sts.checked;
+      planWhy = 'Shading: two tone sets ' + (shadeSets ? 'on' : 'off');
+      guideDirty = true;
+      normalizeTones();
+      renderControls();
+      renderGuide();
+      ctlRefocus('#sfShSets');
+    });
   var _shf = document.getElementById('sfShFlat');
   if (_shf)
     _shf.addEventListener('click', function () {

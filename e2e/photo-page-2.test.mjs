@@ -401,11 +401,16 @@ test('Subject only: the background left white and out of the count, kept when Ed
   await idle(page);
   await page.evaluate(() => __mstest.ppPrep.sal.fill(0.02));
   await page.click('#sfPpFoc [data-v="subject"]');
+  // (the page made, back at Even: waited for together, as the click's remake may not have started yet on a slow
+  // engine, which had read the choice before it went back)
   await until(
     page,
-    () => !__mstest.ppBusy && /This page:/.test(document.getElementById('sfPpCount').textContent),
+    () =>
+      !__mstest.ppBusy &&
+      __mstest.pp.f === 'even' &&
+      /This page:/.test(document.getElementById('sfPpCount').textContent),
     null,
-    'made',
+    'made, back at Even',
     60000,
   );
   await idle(page);

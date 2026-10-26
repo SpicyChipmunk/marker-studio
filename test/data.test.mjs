@@ -641,6 +641,9 @@ import fs, { readFileSync } from 'node:fs';
     'shadeMain',
     'shadeShadow',
     'shadeHilite',
+    // (v327: Two tone sets, the Photo style)
+    'shadeSets',
+    'shadePStyle',
     'shadeFlat',
     'photoXf',
     'photoOp',
@@ -708,6 +711,8 @@ import fs, { readFileSync } from 'node:fs';
       shadeLight: 'sun',
       shadeShadow: 'grey',
       shadeHilite: 'paper',
+      shadeSets: true,
+      shadePStyle: true,
       shadeFlat: { 3: 1, 1: 1 },
       photoOp: 0.4,
       photoPaper: false,
@@ -765,6 +770,8 @@ import fs, { readFileSync } from 'node:fs';
       shadeMain: true,
       shadeShadow: 'same',
       shadeHilite: 'same',
+      shadeSets: false,
+      shadePStyle: false,
       shadeFlat: {},
       photoXf: null,
       photoOp: 0.65,
@@ -803,7 +810,7 @@ import fs, { readFileSync } from 'node:fs';
       '{"family":"blend","palette":"cool","theme":"ocean","gradShape":"diagonal","dir":-1,"look":"ltd","emphasis":"pastel","limitN":7,' +
         '"noAdj":true,"balance":"mixed","balM":"blue","balS":"auto","balA":"orange","balSeed":0.5,"noRep":true,' +
         '"gradSeed":0.25,"blendFall":3.4,"blendVivid":true,"blendMix":"vivid","texAmt":0.75,"radC":{"x":0.3,"y":0.7},' +
-        '"shade":{"mode":"shadow","x":0.9,"y":0.05,"round":0.35,"lines":false,"hi":0.6,"lo":0.15,"lightSrc":"sun","light":"sun","main":true,"shadow":"grey","hilite":"paper","flat":[1,3]},' +
+        '"shade":{"mode":"shadow","x":0.9,"y":0.05,"round":0.35,"lines":false,"hi":0.6,"lo":0.15,"lightSrc":"sun","light":"sun","sets":true,"pstyle":true,"main":true,"shadow":"grey","hilite":"paper","flat":[1,3]},' +
         '"photo":null,"expand":true,"expandChar":0.1,"paletteSource":"saved","savedPalId":99,"genHarmony":"tetradic",' +
         // (v308: fromPal, last, written only while a palette handed over from Palette is in use: see below)
         '"genPal":["Ohuhu|R16","' +
@@ -912,6 +919,8 @@ import fs, { readFileSync } from 'node:fs';
       main: 'shadeMain',
       shadow: 'shadeShadow',
       hilite: 'shadeHilite',
+      sets: 'shadeSets',
+      pstyle: 'shadePStyle',
       minSize: 'minPos',
       incl: 'gradIncl',
       smp: 'smpTry',
@@ -931,8 +940,9 @@ import fs, { readFileSync } from 'node:fs';
     // 47 with smp, the sample not yet printed or renamed; v314: 48 with gradArea, the Gradient's area rule; v318.12: 49
     // with bgRule, the background rule; v318.15: 50 with matchAlike, Matching shapes alike; v318.18: 51 with theme;
     // v318.35: 52 with hatchOne, Treat hatching as one section; v323: 54 with colOffer, the coloured-in sections offered as
-    // done, and focusAt, the section Focus mode was left on)
-    assert.equal(n, 54);
+    // done, and focusAt, the section Focus mode was left on; v327: 56 with shade.sets and shade.pstyle, photo tones'
+    // Two tone sets and the Photo style)
+    assert.equal(n, 56);
   });
   test('STYLE_FIELDS: where each setting is saved (in the order written) and which ones Undo keeps', () => {
     const core = createApp().__mstest;
@@ -974,6 +984,8 @@ import fs, { readFileSync } from 'node:fs';
         'shade.lo',
         'shade.lightSrc',
         'shade.light (no undo)',
+        'shade.sets',
+        'shade.pstyle',
         'shade.main',
         'shade.shadow',
         'shade.hilite',

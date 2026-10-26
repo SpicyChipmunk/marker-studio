@@ -305,8 +305,9 @@ function codeLayout(g, l, m, o) {
     p = labelPos(l),
     tg = (o.bt != null ? o.bt : brandsMixed()) ? bTag(m.brand) : '',
     // (v318.21: the code on your cap, R6 for R213, and its * where another marker in the guide shows the same code;
-    // measured as drawn, so it fits its section)
-    t = capLabel(m);
+    // measured as drawn, so it fits its section; v327: its prime when the section is on its marker's second tone set,
+    // photo tones' Two tone sets, 45-shading)
+    t = capLabel(m) + (typeof ptSet2 === 'function' && ptSet2(l) ? '′' : '');
   let fs = Math.max(o.base, Math.min(Math.sqrt(c.area) * 0.5, o.max || 30));
   const meas = function (f) {
     const k1 = o.w + '|' + t,

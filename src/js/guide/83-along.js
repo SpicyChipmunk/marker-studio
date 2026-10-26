@@ -358,18 +358,10 @@ function alongRow(e, inDone) {
       '<div class="sfazones">' +
       tr
         .map(function (x) {
-          const ids = zoneIds().filter(function (id) {
-            return x.z[id];
-          });
           return (
             '<div><b>' +
-            esc(
-              ids
-                .map(function (id) {
-                  return zoneName(id);
-                })
-                .join(', '),
-            ) +
+            // (v327: by zone, or by tone set with photo tones: toneRowName)
+            esc(toneRowName(x, tr, m).replace(/^in /, '')) +
             '</b> <span class="sfatones">' +
             toneTrio(m, true, x.t) +
             '</span></div>'

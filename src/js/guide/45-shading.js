@@ -142,6 +142,9 @@ function shStyleRecs() {
 }
 function shPresetOn(p) {
   if (shadeMode !== p.mode) return false;
+  // (v327: Photo, its amounts the page's own; the others not while it's chosen)
+  if (p.k === 'photo') return shadePStyle;
+  if (shadePStyle) return false;
   if (shadeFromPhoto() ? p.light === 'edges' : (shadeEdges() ? 'edges' : 'sun') !== p.light) return false;
   const near = function (a, b) {
       return Math.abs(a - b) < 0.006;
@@ -153,20 +156,31 @@ function shPresetOn(p) {
     return (fp || near(zs.round, p.round)) && near(zs.hi, p.hi) && near(zs.lo, p.lo);
   });
 }
+// (v327) the Shading row's styles: on a photo-made page lit by its photo, Photo in Rounded's place (Roundness isn't
+// used with the photo's light)
+const PT_PRESET = { k: 'photo', n: 'Photo', mode: 'full', light: 'photo' };
+function shRowPresets() {
+  if (!ptAvail(0)) return SH_PRESETS;
+  return SH_PRESETS.map(function (p) {
+    return p.k === 'rounded' ? PT_PRESET : p;
+  });
+}
 // the style shown as chosen, or null (Custom: shading on, amounts of your own)
 function shStyleCur() {
   if (shadeMode !== 'full') return null;
   return (
-    SH_PRESETS.find(function (p) {
+    shRowPresets().find(function (p) {
       return shPresetOn(p);
     }) || null
   );
 }
 function shPresetApply(k) {
+  if (k === 'photo') return ptAvail(0) ? ptStyleApply() : false;
   const p = SH_PRESETS.find(function (x) {
     return x.k === k;
   });
   if (!p) return false;
+  shadePStyle = false;
   shadeMode = p.mode;
   if (p.light === 'edges') shadeLight = 'edges';
   else if (shadeLight === 'edges') shadeLight = 'sun';
@@ -309,7 +323,7 @@ function shadeNormals(g) {
 // why a section isn't shaded ('' when it is): not in the guide ('none'), too small ('small'), the page's background
 // at a quarter of the picture or more ('bg'), left flat itself ('flat'), in a zone that's flat ('zone'), or outside the
 // photo the light comes from ('photo')
-function shadeWhy(l, g, fp) {
+function shadeWhy(l, g, fp, noEven) {
   if (!(assignData && assignData.assign[l])) return 'none';
   // (SH_MINR in the guide's own pixels, as up to v302: v303 took it on the picture as it came, so a page downloaded at
   // 400 pixels, enlarged, had half the shaded sections of the same page photographed, v304)
@@ -320,6 +334,9 @@ function shadeWhy(l, g, fp) {
   if (shadeFlat[l]) return 'flat';
   if (!zshOf(l).on) return 'zone';
   if ((fp === undefined ? shadeFromPhoto() : fp) && !photoCovers(l)) return 'photo';
+  // (v327: photo tones that wouldn't bring it nearer the photo: flat. Not asked while the light's field is made, which
+  // photo tones are worked out from: noEven)
+  if (!noEven && ptFlat(l)) return 'even';
   return '';
 }
 // is a background-sized section the page's background? The background itself, a section touching the picture's edge,
@@ -333,13 +350,16 @@ function shadeBgLike(l) {
   return bw >= 0.75 * W && bh >= 0.75 * H && c.area < 0.5 * bw * bh;
 }
 // is this section shaded at all? (fp: whether the light comes from the photo, when the caller knows)
-function shadeable(l, g, fp) {
-  return !shadeWhy(l, g, fp);
+function shadeable(l, g, fp, noEven) {
+  return !shadeWhy(l, g, fp, noEven);
 }
 // shade value per pixel, 0 = facing the sun .. 1 = deepest shadow; 0 in the array means "not shaded"
 function shadeField(step) {
   const g = shadeGeom();
   if (!g) return null;
+  // (v327) a guide lit by its photo, opened a moment ago, whose photo isn't read yet: no tones until it is (it had
+  // been lit by the sun meanwhile, on the screen and in a print or share made then)
+  if (shadeWaitsPhoto()) return null;
   step = step || 1;
   const fromPhoto = shadeFromPhoto(),
     key = [
@@ -384,7 +404,7 @@ function shadeField(step) {
     ok = new Uint8Array(K),
     rnd = new Float32Array(K);
   for (let l = 1; l < K; l++) {
-    if (!shadeable(l, g, false)) continue;
+    if (!shadeable(l, g, false, true)) continue;
     ok[l] = 1;
     // (each section as round as its zone says)
     rnd[l] = zshOf(l).round;
@@ -469,7 +489,7 @@ function edgeShadeField(g, step, key) {
     ie = new Float64Array(K),
     kk = new Float64Array(K);
   for (let l = 1; l < K; l++) {
-    if (!shadeable(l, g, false)) continue;
+    if (!shadeable(l, g, false, true)) continue;
     ok[l] = 1;
     ie[l] = 1 / (8 * Math.max(1, g.mx[l]));
     kk[l] = 3 - 2 * zshOf(l).round;
@@ -497,6 +517,24 @@ function edgeShadeField(g, step, key) {
   shadeV = V;
   shadeVKey = key;
   return V;
+}
+// (v327) the light should come from the photo but the photo is still being read (a guide just opened: 97-open)
+function shadeWaitsPhoto() {
+  return (
+    !photoLightOK() &&
+    !!_phPend &&
+    (shadeLight === 'photo' || (shadeLight === 'auto' && zoneFamily(0) === 'photo'))
+  );
+}
+// (v327) resolves once the photo is read (at most 6 s), for a print or share made straight after opening
+function shadePhotoWait() {
+  return new Promise(function (res) {
+    const t0 = Date.now();
+    (function f() {
+      if (!shadeWaitsPhoto() || Date.now() - t0 > 6000) res();
+      else setTimeout(f, 100);
+    })();
+  });
 }
 // shading from the photo: where the photo is lighter than the section's own colour it gets the highlight, darker gets
 // the shadow, and where the photo is even the section stays flat. The photo's lightness is softened first so
@@ -567,7 +605,7 @@ function photoShadeField(g, step, key) {
     ok = new Uint8Array(K),
     ref = new Float32Array(K);
   for (let l = 1; l < K; l++) {
-    if (!shadeable(l, g, true) || !C.has[l]) continue;
+    if (!shadeable(l, g, true, true) || !C.has[l]) continue;
     ok[l] = 1;
     ref[l] = C.lab[l * 3];
   }
@@ -638,8 +676,19 @@ function shadePick(base, pool, side) {
    Warmer: a lighter marker turned 8-40° the warm way (shWarmWay): blues towards teal, greens towards
    yellow-green, yellows towards orange, oranges and reds towards yellow-orange, violets towards pink.
    The two ways are never the same for one colour. A grey base takes a cooler (or warmer) grey. */
-const SHADE_SHADOW_LABEL = { same: 'Same colour', cool: 'Cooler', grey: 'Grey' },
-  SHADE_HILITE_LABEL = { same: 'Same colour', warm: 'Warmer', paper: 'Paper white' },
+// (v327: Matched to the photo, photo tones: on a photo-made page lit by its photo, 'photo' at the end of this file)
+const SHADE_SHADOW_LABEL = {
+    same: 'Same colour',
+    cool: 'Cooler',
+    grey: 'Grey',
+    photo: 'Matched to the photo',
+  },
+  SHADE_HILITE_LABEL = {
+    same: 'Same colour',
+    warm: 'Warmer',
+    paper: 'Paper white',
+    photo: 'Matched to the photo',
+  },
   // (v318.16: the Highlights list's, with None: Shadows only, shadeMode 'shadow')
   SHADE_HILITE_LABEL_ALL = Object.assign({ blender: 'Blender (0)', none: 'None' }, SHADE_HILITE_LABEL);
 const SH_TURN = [8, 40];
@@ -782,7 +831,8 @@ function shadeTones(base, zs) {
   if (c) return c;
   const bl0 = (base.lab || hexToLab(base.hex))[0],
     noShadow = bl0 < 28, // near-black: nothing darker to add, a 2nd coat changes nothing
-    sStyle = zs.shadow !== 'same',
+    // (v327: Matched to the photo is a section's own, photoTones: here, as for a section it can't be, Same colour)
+    sStyle = zs.shadow !== 'same' && zs.shadow !== 'photo',
     paper = full && zs.hilite === 'paper',
     // (v318.17: the Colorless Blender laid first, the base over it; one you own, else Same colour's)
     blM = full && zs.hilite === 'blender' ? blenderFor(base) : null;
@@ -891,7 +941,9 @@ function shadeLUT() {
     list = [null],
     idx = new Map();
   for (const l in assignData.assign) {
-    const t = shadeTones(assignData.assign[l], zshOf(+l));
+    const t = secTones(+l);
+    // (v327: a section photo tones leave flat has none)
+    if (!t) continue;
     tone[l] = t;
     let k = idx.get(t);
     if (k == null) {
@@ -934,8 +986,143 @@ function shadePrep(drag) {
   const step = drag ? previewStep() : 1,
     V = shadeField(step);
   if (!V) return null;
-  const T = shadeLUT();
-  return { V: V, tone: T.tone, ti: T.ti, mix: T.mix, zn: T.zn, step: step };
+  const T = shadeLUT(),
+    // (v327: the tone patches tidied, on the whole picture; a preview while a slider is dragged isn't)
+    td = step === 1 ? shadeTidy(V, T) : null;
+  return {
+    V: td ? td.out : V,
+    tone: T.tone,
+    ti: T.ti,
+    mix: T.mix,
+    zn: T.zn,
+    step: step,
+    has: td ? td.has : null,
+  };
+}
+/* ---- (v327) the tone patches tidied (docs/PLAN-v327-photo-tones.md, C) ----
+    A light or shadow patch smaller than TIDY_MM across on the printed page (its area under TIDY_MM²) takes the tone
+    round it: its pixels take the shade value of its border in that tone, so the drawing, the tone lines, the tone
+    numbers and Colour along's coverage all follow. On a photo-made page lit by its photo, a patch thinner than
+    TIDY_THIN_MM (2 · area / perimeter) too: the photo's texture. Never with the sun or the edges, whose bands along
+    an outline are thin by design (Neuro's). Measured on the author's photos: today's Dramatic lit from the photo
+    1,717 patches to 205, its tone lines half as long, and nearer the photo (+0.4); the sun on the line-art sample
+    327-401 to 187-212. Made on a copy of the field, again whenever the field or the tones change: the field is kept
+    while only the amounts change, so tidying it in place would have kept patches merged for amounts they weren't
+    merged for. has[l]: which tones section l still has on the page (1 light, 4 shadow), for its steps. */
+const TIDY_THIN_MM = 0.9;
+// (let: the measurements try others through __mstest.shadeTune)
+let TIDY_MM = 1.5;
+let _tidy = null,
+  _tdZ = null,
+  _tdQ = null;
+function shadeTidy(V, T) {
+  const n = W * H,
+    K = comps.length,
+    thin = ppOn() && shadeFromPhoto(),
+    mm = ppMmPx(W, H, paper),
+    L = _lutC.list;
+  // (the field's array is reused as it's made again: its key says which field it holds)
+  if (
+    _tidy &&
+    _tidy.V === V &&
+    _tidy.vk === shadeVKey &&
+    _tidy.L === L &&
+    _tidy.thin === thin &&
+    _tidy.mm === mm &&
+    _tidy.ti.length === T.ti.length &&
+    _tidy.ti.every(function (v, i) {
+      return v === T.ti[i];
+    })
+  )
+    return _tidy;
+  const minA = Math.pow(TIDY_MM / mm, 2),
+    minT = TIDY_THIN_MM / mm,
+    out = V.slice(),
+    zn = T.zn,
+    ti = T.ti,
+    has = new Uint8Array(K);
+  if (!_tdZ || _tdZ.length !== n) {
+    _tdZ = new Int8Array(n);
+    _tdQ = new Int32Array(n);
+  }
+  const Z = _tdZ,
+    Q = _tdQ;
+  // each pixel's tone (0 light, 1 base, 2 shadow), -1 off the shaded sections
+  for (let q = 0; q < n; q++) {
+    const l = labels[q],
+      v = V[q];
+    Z[q] = l > 0 && v && ti[l] ? zn[ti[l] * 256 + v] : -1;
+  }
+  for (let p = 0; p < n; p++) {
+    const z = Z[p];
+    if (z !== 0 && z !== 2) continue;
+    const l = labels[p];
+    // (a patch: its pixels, 4-connected, in one section and one tone; visited ones marked by z + 8)
+    let h = 0,
+      t = 0,
+      per = 0;
+    const nbN = [0, 0, 0],
+      nbV = [0, 0, 0];
+    Q[t++] = p;
+    Z[p] = z + 8;
+    while (h < t) {
+      const q = Q[h++],
+        x = q % W;
+      for (let k = 0; k < 4; k++) {
+        const r =
+          k === 0 ? (x > 0 ? q - 1 : -1) : k === 1 ? (x < W - 1 ? q + 1 : -1) : k === 2 ? q - W : q + W;
+        if (r < 0 || r >= n || labels[r] !== l || Z[r] < 0) {
+          per++;
+          continue;
+        }
+        const zr = Z[r];
+        if (zr === z + 8) continue;
+        if (zr === z) {
+          Z[r] = z + 8;
+          Q[t++] = r;
+          continue;
+        }
+        per++;
+        const zb = zr >= 8 ? zr - 8 : zr;
+        nbN[zb]++;
+        nbV[zb] += out[r];
+      }
+    }
+    if (t >= minA && !(thin && (2 * t) / Math.max(1, per) < minT)) {
+      has[l] |= z === 0 ? 1 : 4;
+      continue;
+    }
+    // (into the tone its border touches most, in its own section; with none, it stays)
+    let bz = -1;
+    for (let k = 0; k < 3; k++) if (k !== z && nbN[k] && (bz < 0 || nbN[k] > nbN[bz])) bz = k;
+    if (bz < 0) {
+      has[l] |= z === 0 ? 1 : 4;
+      continue;
+    }
+    const nv = Math.round(nbV[bz] / nbN[bz]);
+    for (let i = 0; i < t; i++) {
+      out[Q[i]] = nv;
+      Z[Q[i]] = bz + 8;
+    }
+    if (bz !== 1) has[l] |= bz === 0 ? 1 : 4;
+  }
+  _tidy = { V: V, vk: shadeVKey, L: L, thin: thin, mm: mm, ti: Array.from(ti), out: out, has: has };
+  return _tidy;
+}
+// (v327) which tones section l has on the page once tidied (1 light, 4 shadow), or 5 when that isn't known (no
+// shading drawn yet): a tone with no part of the section left asks for no step
+let _hasMemo = null;
+function shadeHas(l) {
+  // (worked out once for a run of calls, as normalizeTones and Colour along's steps make one a section: it's let go
+  // when the run ends, so a change made after is seen)
+  if (!_hasMemo) {
+    const sh = shadeOn() ? shadePrep(false) : null;
+    _hasMemo = { has: sh && sh.has ? sh.has : null };
+    Promise.resolve().then(function () {
+      _hasMemo = null;
+    });
+  }
+  return _hasMemo.has ? _hasMemo.has[l] : 5;
 }
 function shadeZone(t, v) {
   return v >= t.T3 && !t.noShadow ? 2 : t.L && v < t.T2 ? 0 : 1;
@@ -1210,13 +1397,15 @@ function shadeTipHTML(l) {
           ? esc(zoneName(zoneOf(l))) + ' is flat — one colour'
           : why === 'photo'
             ? 'Outside the photo — one flat colour'
-            : why === 'bg'
-              ? 'Background-sized — one flat colour'
-              : 'Too small to shade — one flat colour') +
+            : why === 'even'
+              ? 'Its tones wouldn’t be closer to the photo — one flat colour'
+              : why === 'bg'
+                ? 'Background-sized — one flat colour'
+                : 'Too small to shade — one flat colour') +
       '</div>'
     );
   const m = assignData.assign[l],
-    t = shadeTones(m, zshOf(l)),
+    t = secTones(l) || shadeTones(m, zshOf(l)),
     sw = function (hex) {
       return '<i style="background:' + esc(hex) + '"></i>';
     },
@@ -1272,7 +1461,9 @@ function shadeNoteHTML() {
     if (sets[t.id]) continue;
     sets[t.id] = 1;
     if (t.coat) once(coats, m.code);
-    if (!t.noHi && !t.light && !t.paper) once(noLight, m.code);
+    // (v327: a highlight Matched to the photo left out is one that wouldn't be closer, not one you lack)
+    const pz = zshOf(l);
+    if (!t.noHi && !t.light && !t.paper && !(pz.hilite === 'photo' && ptOn(pz, l))) once(noLight, m.code);
     if (t.fellS) {
       once(fellS, m.code);
       fsKind[t.kS] = 1;
@@ -1317,7 +1508,9 @@ function shadeNoteHTML() {
             ' shadows from markers you own',
     fsK = Object.keys(fsKind);
   if (!coats.length && !noLight.length && !fellS.length && !fellH.length && !w.length)
-    return '<div class="sfshnote">All ' + n + ' colours have ' + _all + '.</div>';
+    return sK === 'photo' && hK === 'photo'
+      ? '<div class="sfshnote">Highlights and shadows matched to the photo, from markers you own.</div>'
+      : '<div class="sfshnote">All ' + n + ' colours have ' + _all + '.</div>';
   const few = function (a, one, many) {
     return a.length === 1 ? a[0] + ' ' + one : a.length + ' colours ' + many;
   };
@@ -1799,7 +1992,7 @@ function shadeSec(l) {
   if (!shadeOn() || !assignData || !assignData.assign[l]) return null;
   const g = shadeGeom();
   if (!g || !shadeable(l, g)) return null;
-  return shadeTones(assignData.assign[l], zshOf(l));
+  return secTones(l);
 }
 // how many of the guide's sections the photo doesn't cover, with the light from the photo (they stay flat)
 function shadeOutside() {
@@ -1849,14 +2042,19 @@ function shadeUse() {
   for (const k in assignData.assign) {
     const l = +k;
     if (!shadeable(l, g, fp)) continue;
-    const zs = zshOf(l);
+    const zs = zshOf(l),
+      // (Matched to the photo without the photo's light is drawn as Same colour, v327)
+      po = ptOn(zs, l);
     u.on = true;
-    u.kS[zs.shadow] = 1;
-    if (!u.gl && zs.shadow !== 'same' && shadeTones(assignData.assign[l], zs).glaze) u.gl = true;
+    u.kS[zs.shadow === 'photo' && !po ? 'same' : zs.shadow] = 1;
+    if (!u.gl && zs.shadow !== 'same') {
+      const t = secTones(l);
+      if (t && t.glaze) u.gl = true;
+    }
     // (v318.17: only the sections that have a highlight say what kind; the blender's lift, one you own, its own)
     if (hiOn(zs)) {
       const bl = zs.hilite === 'blender' && blenderOwned(),
-        hk = zs.hilite === 'blender' && !bl ? 'same' : zs.hilite;
+        hk = (zs.hilite === 'blender' && !bl) || (zs.hilite === 'photo' && !po) ? 'same' : zs.hilite;
       u.kH[hk] = 1;
       if (hk === 'paper') u.hp = true;
       else if (bl) u.hb = true;
@@ -1871,7 +2069,10 @@ function shadeUse() {
 // the tone bits a section needs: flat sections just the base
 function shadeReq(l) {
   const t = shadeSec(l);
-  return t ? (t.light ? 1 : 0) | 2 | (t.noShadow ? 0 : 4) : 2;
+  if (!t) return 2;
+  // (v327: a tone none of the section takes on the page, once tidied, isn't a step: a glaze over nothing)
+  const h = shadeHas(l);
+  return (t.light && h & 1 ? 1 : 0) | 2 | (!t.noShadow && h & 4 ? 4 : 0);
 }
 function stepDone(l, bits) {
   return !!colored[l] || (tp()[l] & bits) === bits;
@@ -2165,6 +2366,32 @@ function toneRows(secs) {
     return b.n - a.n;
   });
 }
+// (v327) what a marker's line of tones is, where it has more than one (rows: toneRows'): by its zones when they
+// differ, and with photo tones' Two tone sets by its set (its sections' labels carry the prime: E415′), or "as
+// coloured" for sections that keep what they were coloured with
+function toneRowName(x, rows, m) {
+  const ids = zoneIds().filter(function (id) {
+      return x.z[id];
+    }),
+    zk = function (r) {
+      return Object.keys(r.z).sort().join(',');
+    },
+    zDiff =
+      zones.length > 0 &&
+      rows.some(function (r) {
+        return zk(r) !== zk(x);
+      }),
+    sets = rows.some(function (r) {
+      return r.t.set === 1 || r.t.held;
+    }),
+    zn = ids
+      .map(function (id) {
+        return zoneName(id);
+      })
+      .join(', '),
+    st = x.t.held ? 'as coloured' : sets ? capLabel(m) + (x.t.set === 1 ? '′' : '') : '';
+  return [st, zDiff || !st ? 'in ' + zn : ''].filter(Boolean).join(' ');
+}
 // a marker's tones when its zones differ ("H Y26 / paper › B G410 › S G46"): each tone's options, at most two, then
 // "+1 more"; the screen reader hears "highlight Y26 or the paper left white, ...". rows: toneRows'
 function toneTrioMulti(m, rows, html) {
@@ -2361,4 +2588,795 @@ function positionZones() {
       );
     })
     .join('');
+}
+
+/* ---- (v327) Photo tones: Matched to the photo (docs/PLAN-v327-photo-tones.md, B) ----
+    On a photo-made page lit by its photo, in a zone that uses the Photo pattern, Highlights and Shadows can be
+    Matched to the photo: each marker of the page gets one highlight and one shadow (two with Two tone sets, each
+    section the one that fits it), chosen for the photo's own light and dark parts of its sections: a highlight a
+    lighter marker of its colour family or a close hue (as Same colour's), laid under the whole section; a shadow a
+    marker laid over the base (a glaze), 4 or more darker. From the page's own markers and up to PT_EXTRA of your
+    others, each only when it brings the tones clearly nearer. A section whose tones wouldn't bring it nearer the
+    photo by PT_MIN_GAIN stays flat ('even'). Measured on the author's 17 photos (in the app, as drawn): today's Same
+    colour lit by the photo +1.7 over flat, Matched to the photo +4.2 (shadows only) with 392 markers; +2.1 and +12.5
+    with Honolulu 72; never worse than flat.
+    Worked out from samples of each section (PT_STEP apart, at most PT_SAMP): the photo's colour there and the light
+    field's value, so the amounts can be tried without the field again (the field doesn't depend on them). Choices by
+    the parts' mean colours; a section's flat-or-not, and the Photo style's amounts, by the samples themselves.
+    Sections with ink keep what they were coloured with (as heldSh keeps their kinds): the highlight once there's ink
+    on it, the shadow once the shadow is on the paper (_ptHeld, saved with the page: pp.th). The markers added are
+    kept while what they were chosen for is the same (pp.tx), so a marker bought doesn't reshuffle a guide being
+    coloured; tapping Photo again chooses afresh. */
+const PT_EXTRA = 4,
+  PT_STEP = 4,
+  PT_SAMP = 80,
+  PT_HI = [0.5, 0.65],
+  PT_LO = [0.65, 0.75, 0.85, 1],
+  // (when the Photo style can't try them: the best fixed pair measured)
+  PT_HI0 = 0.5,
+  PT_LO0 = 0.85;
+// (let: the measurements try others through __mstest.shadeTune)
+let PT_MIN_GAIN = 0.1,
+  // (each marker added must bring the page's samples this much nearer the photo, all told: the first one often does,
+  // a fourth seldom. Measured: by the toned parts' own error instead, a fourth was nearly always taken)
+  PT_EXTRA_MIN = 0.01;
+// the tunable numbers, for the measurements (scratch scripts) through __mstest.shadeTune
+function shadeTune(o) {
+  if (o) {
+    if (o.tidyMm != null) TIDY_MM = o.tidyMm;
+    if (o.extraMin != null) PT_EXTRA_MIN = o.extraMin;
+    if (o.minGain != null) PT_MIN_GAIN = o.minGain;
+    _tidy = null;
+    _pt = null;
+    _ptMemo = null;
+    _ptX = null;
+  }
+  return { tidyMm: TIDY_MM, extraMin: PT_EXTRA_MIN, minGain: PT_MIN_GAIN };
+}
+// Two tone sets per marker (the whole picture's); the Photo style chosen (its amounts the page's own)
+let shadeSets = false,
+  shadePStyle = false;
+let _pt = null, // { key, tone: { section: tones or null (flat) }, flat, extras }
+  _ptS = null, // the samples: { key, s: { section: Float32Array [L, a, b, v] × n } }
+  _ptMemo = null,
+  _ptHeld = {}, // { section: { L: mkey or '', S: mkey or '' } }
+  _ptX = null, // the markers added: { k: what they were chosen for, x: [mkeys] }
+  _ptAutoK = '',
+  _ptForce = false;
+const _ptT = new Map(), // tones objects kept by what they are, so the drawing's caches keep them
+  _ptZs = new WeakMap();
+// whether a zone's sections can have photo tones: a photo-made page lit by its photo, the zone's pattern the Photo one
+function ptAvail(id) {
+  return typeof ppOn === 'function' && ppOn() && shadeFromPhoto() && zoneFamily(id || 0) === 'photo';
+}
+// whether section l's shading (zs) is Matched to the photo, and can be
+function ptOn(zs, l) {
+  return (zs.shadow === 'photo' || zs.hilite === 'photo') && ptAvail(zones.length ? zoneOf(l) : 0);
+}
+// a section's tones: its photo tones (null: flat), else its marker's in its zone's shading. m: another marker than
+// the plan's (Gradient's picks, 30-palette-assign), whose are the marker's
+function secTones(l, m) {
+  const A = assignData && assignData.assign,
+    b = m || (A && A[l]);
+  if (!b) return null;
+  const zs = zshOf(l);
+  if (A && A[l] === b && ptOn(zs, l)) {
+    const r = ptGet();
+    if (r && l in r.tone) return r.tone[l];
+  }
+  return shadeTones(b, zs);
+}
+// (photo tones would leave it flat)
+function ptFlat(l) {
+  if (!assignData || !assignData.assign[l]) return false;
+  const zs = zshOf(l);
+  if (!ptOn(zs, l)) return false;
+  const r = ptGet();
+  return !!r && l in r.tone && r.tone[l] === null;
+}
+// the zone's shading with the photo's kinds as Same colour: the base and the kinds that aren't the photo's
+function ptBaseZs(zs) {
+  let z = _ptZs.get(zs);
+  if (!z) {
+    z = Object.assign({}, zs, {
+      shadow: zs.shadow === 'photo' ? 'same' : zs.shadow,
+      hilite: zs.hilite === 'photo' ? 'same' : zs.hilite,
+    });
+    _ptZs.set(zs, z);
+  }
+  return z;
+}
+// one section's samples: the photo's colour (L*a*b*) and the light's value, at most PT_SAMP of them; worked out
+// again when the field, the plan or the photo change
+function ptSamples() {
+  const V = shadeField(1);
+  if (!V || !photoRef || !photoXf) return null;
+  const A = assignData.assign,
+    key = shadeVKey + '|' + _ptAssignSig();
+  if (_ptS && _ptS.key === key && _ptS.V === V) return _ptS;
+  const g = shadeGeom(),
+    X = photoXf,
+    cs = Math.cos(X.r),
+    sn = Math.sin(X.r),
+    pw = photoRef.w,
+    ph = photoRef.h,
+    d = photoRef.data,
+    K = comps.length,
+    cnt = new Uint32Array(K),
+    lists = new Array(K);
+  // (how many on the grid each section has, so the ones kept are spread over it)
+  for (let y = 0; y < H; y += PT_STEP)
+    for (let x = 0; x < W; x += PT_STEP) {
+      const l = labels[y * W + x];
+      if (l > 0 && A[l] && V[y * W + x]) cnt[l]++;
+    }
+  const every = new Uint32Array(K),
+    seen = new Uint32Array(K),
+    got = new Uint32Array(K);
+  for (const k in A) {
+    const l = +k;
+    if (!cnt[l] || !ptOn(zshOf(l), l) || !shadeable(l, g, true, true)) continue;
+    // (every so many on the grid, so the ones kept spread over the whole section, not its top)
+    every[l] = Math.max(1, Math.ceil(cnt[l] / PT_SAMP));
+    lists[l] = new Float32Array(Math.min(cnt[l], PT_SAMP + 1) * 4);
+  }
+  for (let y = 0; y < H; y += PT_STEP)
+    for (let x = 0; x < W; x += PT_STEP) {
+      const q = y * W + x,
+        l = labels[q];
+      if (l < 1 || !lists[l] || !V[q]) continue;
+      if (seen[l]++ % every[l] || got[l] * 4 >= lists[l].length) continue;
+      const dx = x + 0.5 - X.cx,
+        dy = y + 0.5 - X.cy,
+        px = Math.floor((dx * cs + dy * sn) / X.sx + pw / 2),
+        py = Math.floor((-dx * sn + dy * cs) / X.sy + ph / 2);
+      if (px < 0 || py < 0 || px >= pw || py >= ph) continue;
+      const j = (py * pw + px) * 4,
+        lab = rgbLab(d[j], d[j + 1], d[j + 2]),
+        o = got[l]++ * 4;
+      lists[l][o] = lab[0];
+      lists[l][o + 1] = lab[1];
+      lists[l][o + 2] = lab[2];
+      lists[l][o + 3] = (V[q] - 1) / 254;
+    }
+  const S = {};
+  for (let l = 1; l < K; l++) if (lists[l] && got[l]) S[l] = lists[l].subarray(0, got[l] * 4);
+  _ptS = { key: key, V: V, s: S };
+  return _ptS;
+}
+// (the plan's markers by section, as a key)
+function _ptAssignSig() {
+  const A = assignData.assign,
+    o = [];
+  for (const l in A) o.push(l + ':' + A[l].mkey);
+  return o.join(',');
+}
+// a marker laid over the base, as it's drawn (shadeGlaze), in L*a*b*
+const _ptGl = new Map();
+function ptGlaze(b, m) {
+  const k = b.mkey + '>' + m.mkey;
+  let v = _ptGl.get(k);
+  if (!v) {
+    v = shRgbLab(shadeGlaze(hexRgb(b.hex), m));
+    _ptGl.set(k, v);
+  }
+  return v;
+}
+function ptLab(m) {
+  return m.lab || (m.lab = hexToLab(m.hex));
+}
+// may m be base b's highlight (Same colour's test: 4 or more lighter, its colour family or a close hue)
+function ptLightOK(b, m) {
+  const bl = ptLab(b),
+    ml = ptLab(m);
+  if (m.mkey === b.mkey || ml[0] - bl[0] < 4) return false;
+  const fv = famVal(b.code),
+    f = famVal(m.code);
+  return !!(fv && f && m.brand === b.brand && f.fam === fv.fam) || _hueOK(bl, ml);
+}
+// The choice, for the amounts each zone has (amt: { zone id: [hi, lo] } to try others): for every section that's
+// Matched to the photo, its tones or null (flat), and the samples' error with them. extras: the markers added (null:
+// chosen here). Returns { tone, err, extras, nFlat }.
+function ptChoose(S, amt, extras) {
+  if (extras) return _ptChoose(S, amt, extras);
+  // (the markers added: the ones that would help the toned parts most, in turn, each kept while it brings the page
+  // PT_EXTRA_MIN nearer the photo)
+  const order = _ptChoose(S, amt, null).extras;
+  let best = _ptChoose(S, amt, []),
+    use = [];
+  for (let i = 0; i < order.length; i++) {
+    const r = _ptChoose(S, amt, use.concat([order[i]]));
+    if (best.err <= 0 || (best.err - r.err) / best.err < PT_EXTRA_MIN) break;
+    best = r;
+    use = use.concat([order[i]]);
+  }
+  return best;
+}
+function _ptChoose(S, amt, extras) {
+  const A = assignData.assign,
+    page = {},
+    groups = new Map(),
+    sec = [];
+  for (const l in A) page[A[l].mkey] = A[l];
+  // each section's samples in its tones, by the zone's amounts (as shadeZone hands them over)
+  for (const k in S) {
+    const l = +k,
+      b = A[l],
+      zs = zshOf(l),
+      zid = zones.length ? zoneOf(l) : 0,
+      a = amt && amt[zid],
+      zz = a ? Object.assign({}, zs, { hi: a[0], lo: a[1] }) : zs,
+      T2 = shT2(zz),
+      T3 = shT3(zz),
+      hiP = zs.hilite === 'photo' && hiOn(zs),
+      shP = zs.shadow === 'photo',
+      sm = S[k],
+      n = sm.length / 4,
+      part = new Uint8Array(n),
+      sum = [
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+      ];
+    // (a section whose base is near-black has no shadow: 45-shading noShadow)
+    const noS = ptLab(b)[0] < 28;
+    for (let i = 0; i < n; i++) {
+      const v = sm[i * 4 + 3],
+        z = v >= T3 && !noS ? 2 : v < T2 ? 0 : 1;
+      part[i] = z;
+      const s = sum[z];
+      s[0] += sm[i * 4];
+      s[1] += sm[i * 4 + 1];
+      s[2] += sm[i * 4 + 2];
+      s[3]++;
+    }
+    const gk = zid + '|' + b.mkey;
+    let gr = groups.get(gk);
+    if (!gr) {
+      gr = {
+        b: b,
+        zs: zs,
+        hiP: hiP,
+        shP: shP,
+        secs: [],
+        sum: [
+          [0, 0, 0, 0],
+          [0, 0, 0, 0],
+          [0, 0, 0, 0],
+        ],
+      };
+      groups.set(gk, gr);
+    }
+    for (let z = 0; z < 3; z++) for (let c = 0; c < 4; c++) gr.sum[z][c] += sum[z][c];
+    const e = { l: l, b: b, gr: gr, sm: sm, part: part, sum: sum, T2: T2, T3: T3 };
+    gr.secs.push(e);
+    sec.push(e);
+  }
+  const mean = function (s) {
+      return s[3] ? [s[0] / s[3], s[1] / s[3], s[2] / s[3]] : null;
+    },
+    // (a part's mean, n samples, against a colour: what picking by means weighs)
+    pcost = function (s, c) {
+      return s[3] ? s[3] * de2000(mean(s), c) : 0;
+    };
+  // the candidates: the page's markers, and the ones added
+  let cand = Object.keys(page).map(function (k) {
+    return page[k];
+  });
+  const bestL = function (gr, s, C) {
+      if (!gr.hiP || !s[3]) return null;
+      let best = null,
+        be = pcost(s, ptLab(gr.b));
+      C.forEach(function (m) {
+        if (!ptLightOK(gr.b, m)) return;
+        const e = pcost(s, ptLab(m));
+        if (e < be) {
+          be = e;
+          best = m;
+        }
+      });
+      return best;
+    },
+    bestS = function (gr, s, C) {
+      if (!gr.shP || !s[3] || ptLab(gr.b)[0] < 28) return null;
+      const bl = ptLab(gr.b);
+      let best = null,
+        be = pcost(s, bl);
+      C.forEach(function (m) {
+        if (m.mkey === gr.b.mkey) return;
+        const gl = ptGlaze(gr.b, m);
+        if (bl[0] - gl[0] < 4) return;
+        const e = pcost(s, gl);
+        if (e < be) {
+          be = e;
+          best = m;
+        }
+      });
+      return best;
+    };
+  // the markers added: as kept, while still yours; else up to PT_EXTRA, each saving PT_EXTRA_MIN of what's left
+  let added = [];
+  if (extras) {
+    const byK = {};
+    coll.forEach(function (m) {
+      byK[m.mkey] = m;
+    });
+    added = extras
+      .map(function (k) {
+        return byK[k];
+      })
+      .filter(Boolean);
+    cand = cand.concat(added);
+  } else {
+    const others = coll.filter(function (m) {
+      return !page[m.mkey] && (m.lab || m.hex);
+    });
+    // (each group's best light and dark parts' cost so far; a marker's saving is what it would better of them)
+    const G = Array.from(groups.values()),
+      cL = G.map(function (gr) {
+        const L = bestL(gr, gr.sum[0], cand);
+        return pcost(gr.sum[0], L ? ptLab(L) : ptLab(gr.b));
+      }),
+      cS = G.map(function (gr) {
+        const Sm = bestS(gr, gr.sum[2], cand);
+        return pcost(gr.sum[2], Sm ? ptGlaze(gr.b, Sm) : ptLab(gr.b));
+      });
+    let cur = 0;
+    for (let i = 0; i < G.length; i++) cur += cL[i] + cS[i];
+    for (let r = 0; r < PT_EXTRA && cur > 0; r++) {
+      let bm = null,
+        bg = 0;
+      others.forEach(function (m) {
+        if (added.indexOf(m) >= 0) return;
+        let g = 0;
+        for (let i = 0; i < G.length; i++) {
+          const gr = G[i];
+          if (gr.hiP && gr.sum[0][3] && ptLightOK(gr.b, m)) {
+            const e = pcost(gr.sum[0], ptLab(m));
+            if (e < cL[i]) g += cL[i] - e;
+          }
+          if (gr.shP && gr.sum[2][3] && m.mkey !== gr.b.mkey && ptLab(gr.b)[0] >= 28) {
+            const gl = ptGlaze(gr.b, m);
+            if (ptLab(gr.b)[0] - gl[0] >= 4) {
+              const e = pcost(gr.sum[2], gl);
+              if (e < cS[i]) g += cS[i] - e;
+            }
+          }
+        }
+        if (g > bg) {
+          bg = g;
+          bm = m;
+        }
+      });
+      if (!bm || bg / cur < 0.001) break;
+      added.push(bm);
+      cand = cand.concat([bm]);
+      for (let i = 0; i < G.length; i++) {
+        const gr = G[i];
+        if (gr.hiP && gr.sum[0][3] && ptLightOK(gr.b, bm))
+          cL[i] = Math.min(cL[i], pcost(gr.sum[0], ptLab(bm)));
+        if (gr.shP && gr.sum[2][3] && bm.mkey !== gr.b.mkey && ptLab(gr.b)[0] >= 28) {
+          const gl = ptGlaze(gr.b, bm);
+          if (ptLab(gr.b)[0] - gl[0] >= 4) cS[i] = Math.min(cS[i], pcost(gr.sum[2], gl));
+        }
+      }
+      cur -= bg;
+    }
+  }
+  // a section's samples' error with highlight L and shadow Sm (null: the base there)
+  const secCost = function (e, L, Sm) {
+    const b = e.b,
+      bl = ptLab(b),
+      lc = L ? ptLab(L) : bl,
+      sc = Sm ? ptGlaze(b, Sm) : bl,
+      sm = e.sm;
+    let flat = 0,
+      tone = 0,
+      all = 0;
+    for (let i = 0, n = e.part.length; i < n; i++) {
+      const c = [sm[i * 4], sm[i * 4 + 1], sm[i * 4 + 2]],
+        z = e.part[i],
+        f = de2000(c, bl);
+      if (z === 1) {
+        all += f;
+        continue;
+      }
+      const t = de2000(c, z === 0 ? lc : sc);
+      flat += f;
+      tone += t;
+      all += t;
+    }
+    return { flat: flat, tone: tone, all: all };
+  };
+  const tone = {},
+    byK = {};
+  cand.concat(coll).forEach(function (m) {
+    byK[m.mkey] = m;
+  });
+  let err = 0,
+    nFlat = 0;
+  groups.forEach(function (gr) {
+    // the pairs: one, chosen for all its sections; with Two tone sets up to two, from each section's own best
+    const pairOf = function (secs) {
+      const s0 = [0, 0, 0, 0],
+        s2 = [0, 0, 0, 0];
+      secs.forEach(function (e) {
+        for (let c = 0; c < 4; c++) {
+          s0[c] += e.sum[0][c];
+          s2[c] += e.sum[2][c];
+        }
+      });
+      return [bestL(gr, s0, cand), bestS(gr, s2, cand)];
+    };
+    const decide = function (pairs) {
+      // each section: the pair that brings its toned parts nearest, if by PT_MIN_GAIN; else flat
+      return gr.secs.map(function (e) {
+        let best = -1,
+          bc = null;
+        const f = secCost(e, null, null);
+        pairs.forEach(function (p, i) {
+          if (!p[0] && !p[1]) return;
+          const c = secCost(e, p[0], p[1]);
+          if (f.flat > 0 && (f.flat - c.tone) / f.flat >= PT_MIN_GAIN && (!bc || c.all < bc.all)) {
+            bc = c;
+            best = i;
+          }
+        });
+        return { e: e, i: best, all: bc ? bc.all : f.all };
+      });
+    };
+    let pairs = [pairOf(gr.secs)],
+      dec = decide(pairs);
+    // (chosen again for the sections that took it: the ones it didn't suit had pulled it their way)
+    const took = dec
+      .filter(function (x) {
+        return x.i === 0;
+      })
+      .map(function (x) {
+        return x.e;
+      });
+    if (took.length && took.length < gr.secs.length) {
+      const p2 = pairOf(took);
+      if (p2[0] !== pairs[0][0] || p2[1] !== pairs[0][1]) {
+        const d2 = decide([p2]),
+          a1 = dec.reduce(function (s, x) {
+            return s + x.all;
+          }, 0),
+          a2 = d2.reduce(function (s, x) {
+            return s + x.all;
+          }, 0);
+        if (a2 < a1) {
+          pairs = [p2];
+          dec = d2;
+        }
+      }
+    }
+    if (shadeSets && gr.secs.length > 1) {
+      // (up to two: each section's own best pair a candidate, the two that together save most)
+      const cands = [pairs[0]],
+        seenP = {};
+      gr.secs.forEach(function (e) {
+        const p = pairOf([e]),
+          k = (p[0] ? p[0].mkey : '-') + '|' + (p[1] ? p[1].mkey : '-');
+        if ((p[0] || p[1]) && !seenP[k]) {
+          seenP[k] = 1;
+          cands.push(p);
+        }
+      });
+      let chosen = [],
+        bestTot = Infinity,
+        bestDec = null;
+      for (let r = 0; r < 2; r++) {
+        let bi = -1;
+        cands.forEach(function (p, i) {
+          if (chosen.indexOf(p) >= 0) return;
+          const d = decide(chosen.concat([p])),
+            t = d.reduce(function (s, x) {
+              return s + x.all;
+            }, 0);
+          if (t < bestTot - 1e-9) {
+            bestTot = t;
+            bi = i;
+            bestDec = d;
+          }
+        });
+        if (bi < 0) break;
+        chosen = chosen.concat([cands[bi]]);
+      }
+      if (bestDec) {
+        pairs = chosen;
+        dec = bestDec;
+      }
+    }
+    dec.forEach(function (x) {
+      err += x.all;
+      const l = x.e.l;
+      let p = x.i >= 0 ? pairs[x.i] : null,
+        set = x.i > 0 ? 1 : 0;
+      // (a section with ink keeps what it was coloured with)
+      const h = _ptHeld[l];
+      if (!amt && h && inkOn(l)) {
+        const hl = h.L ? byK[h.L] || null : null,
+          hs = shadowOn(l) ? (h.S ? byK[h.S] || null : null) : p ? p[1] : null;
+        if ((hl || null) !== (p ? p[0] : null) || hs !== (p ? p[1] : null)) {
+          const j = pairs.findIndex(function (q) {
+            return q[0] === hl && q[1] === hs;
+          });
+          if (j >= 0) {
+            p = pairs[j];
+            set = j;
+          } else {
+            p = hl || hs ? [hl, hs] : null;
+            set = -1;
+          }
+        }
+      }
+      if (!p) {
+        tone[l] = null;
+        nFlat++;
+      } else tone[l] = ptTone(x.e.b, gr.zs, p[0], p[1], set, x.e.T2, x.e.T3);
+    });
+  });
+  return {
+    tone: tone,
+    err: err,
+    nFlat: nFlat,
+    extras: added.map(function (m) {
+      return m.mkey;
+    }),
+  };
+}
+// a tones object (as shadeTones makes them), its highlight L and shadow Sm the photo's; set 1 its second, -1 as
+// coloured (held). Kept by what it is, so the drawing's table and the key's rows see the same one
+function ptTone(b, zs, L, Sm, set, T2, T3) {
+  const k =
+    b.mkey +
+    '|' +
+    (L ? L.mkey : '-') +
+    '|' +
+    (Sm ? Sm.mkey : '-') +
+    '|' +
+    set +
+    '|' +
+    T2.toFixed(4) +
+    '|' +
+    T3.toFixed(4) +
+    '|' +
+    zs.shadow +
+    '|' +
+    zs.hilite +
+    '|' +
+    famRule +
+    '|' +
+    shadeMode;
+  let t = _ptT.get(k);
+  if (t && t._coll === coll) return t;
+  const t0 = shadeTones(b, ptBaseZs(zs)),
+    hiP = zs.hilite === 'photo' && hiOn(zs),
+    shP = zs.shadow === 'photo';
+  t = Object.assign({}, t0, {
+    id: ++_toneId,
+    _coll: coll,
+    set: set,
+    held: set < 0,
+  });
+  if (hiP) {
+    t.light = L || null;
+    t.L = L ? hexRgb(L.hex) : null;
+    t.paper = false;
+    t.blender = false;
+    t.wantLight = null;
+    t.fellH = false;
+  }
+  if (shP) {
+    t.dark = Sm || null;
+    t.glaze = !!Sm;
+    t.coat = false;
+    t.noShadow = !Sm;
+    t.S = Sm ? shadeGlaze(t0.B, Sm) : t0.B;
+    t.wantDark = null;
+    t.fellS = false;
+  }
+  t.T2 = T2;
+  t.T3 = T3;
+  t.sig =
+    (t.light ? t.light.mkey : t.paper ? 'paper' : '-') +
+    '|' +
+    (t.dark ? t.dark.mkey + (t.glaze ? 'g' : '') : t.noShadow ? 'n' : 'c') +
+    (set > 0 ? '|2' : set < 0 ? '|h' : '');
+  _ptT.set(k, t);
+  return t;
+}
+// the photo tones, as they are now (null while there are none to have: no photo read, nothing Matched to the photo).
+// Once for a run of calls (the drawing asks a section at a time), then checked against what they depend on
+function ptGet() {
+  if (_ptMemo) return _ptMemo.r;
+  _ptMemo = { r: _ptGet1() };
+  Promise.resolve().then(function () {
+    _ptMemo = null;
+  });
+  return _ptMemo.r;
+}
+function _ptZsSig() {
+  return zoneIds()
+    .map(function (id) {
+      const z = zsh(id);
+      return [id, z.on ? 1 : 0, z.hi, z.lo, z.shadow, z.hilite].join(':');
+    })
+    .join(',');
+}
+function _ptGet1() {
+  if (!assignData || !shadeOn()) return null;
+  let any = false;
+  for (const l in assignData.assign)
+    if (ptOn(zshOf(+l), +l)) {
+      any = true;
+      break;
+    }
+  if (!any) return null;
+  const S = ptSamples();
+  if (!S) return null;
+  // (the Photo style: its amounts the page's own, tried again when the page or the plan changed)
+  if (shadePStyle && (_ptForce || _ptAutoK !== S.key)) ptAuto(S);
+  // (what the markers added were chosen for: the plan, the light, the kinds and amounts, the sets)
+  const base = S.key + '|' + _ptZsSig() + '|' + (shadeSets ? 2 : 1) + '|' + shadeMode,
+    kx = ptHash(base),
+    key = function () {
+      return (
+        base +
+        '|' +
+        Object.keys(_ptHeld)
+          .map(function (l) {
+            return l + ':' + _ptHeld[l].L + ':' + _ptHeld[l].S;
+          })
+          .join(',')
+      );
+    };
+  if (_pt && !_ptForce && _pt.coll === coll && _pt.key === key()) {
+    // (a section given ink since: what it's coloured with noted, which makes them chosen again with it kept)
+    if (ptNoteHeld(_pt.tone)) return _ptGet1();
+    return _pt;
+  }
+  const keepX = !_ptForce && _ptX && _ptX.k === kx ? _ptX.x : null,
+    r = ptChoose(S.s, null, keepX);
+  _ptX = { k: kx, x: r.extras };
+  _ptForce = false;
+  ptNoteHeld(r.tone);
+  _pt = { key: key(), coll: coll, tone: r.tone, nFlat: r.nFlat, extras: r.extras };
+  return _pt;
+}
+// (sections with ink: what they're coloured with noted, the shadow as it follows until it's on the paper; none
+// without ink). Whether anything changed
+function ptNoteHeld(tone) {
+  let ch = false;
+  for (const l in _ptHeld)
+    if (!inkOn(+l)) {
+      delete _ptHeld[l];
+      ch = true;
+    }
+  for (const k in tone) {
+    const l = +k;
+    if (!inkOn(l)) continue;
+    const t = tone[l],
+      h = _ptHeld[l],
+      L = t && t.light ? t.light.mkey : '',
+      Sk = t && t.dark ? t.dark.mkey : '';
+    if (!h) {
+      _ptHeld[l] = { L: L, S: Sk };
+      ch = true;
+    } else if (!shadowOn(l) && h.S !== Sk) {
+      _ptHeld[l] = { L: h.L, S: Sk };
+      ch = true;
+    }
+  }
+  return ch;
+}
+// (a short, steady key for a long one)
+function ptHash(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+// The Photo style's amounts: the pair, of PT_HI × PT_LO, that brings the page nearest the photo, by the samples, for
+// Main and each zone that's Matched to the photo; set as their Highlights and Shadows amounts
+function ptAuto(S) {
+  S = S || ptSamples();
+  _ptAutoK = S ? S.key : '';
+  const ids = zoneIds().filter(function (id) {
+    const z = zsh(id);
+    return ptAvail(id) && (z.shadow === 'photo' || z.hilite === 'photo');
+  });
+  if (!ids.length) return;
+  let best = null,
+    bi = [PT_HI0, PT_LO0];
+  // (the markers added chosen once, at the amounts as they are, so each pair isn't a search of your collection)
+  if (S && !(_ptX && !_ptForce)) _ptX = { k: '', x: ptChoose(S.s, null, null).extras };
+  if (S)
+    PT_HI.forEach(function (hi) {
+      PT_LO.forEach(function (lo) {
+        const amt = {};
+        ids.forEach(function (id) {
+          amt[id] = [hi, lo];
+        });
+        const r = ptChoose(S.s, amt, _ptX ? _ptX.x : null);
+        if (best == null || r.err < best) {
+          best = r.err;
+          bi = [hi, lo];
+        }
+      });
+    });
+  ids.forEach(function (id) {
+    zshSet(id, 'hi', bi[0]);
+    zshSet(id, 'lo', bi[1]);
+  });
+}
+// Photo in the Shading row: shading on, the photo's light, both kinds Matched to the photo in Main and the zones that
+// use the Photo pattern, and the amounts the page's own (chosen afresh: markers bought since come in)
+function ptStyleApply() {
+  shadeMode = 'full';
+  if (shadeLight === 'edges' || shadeLight === 'sun') shadeLight = 'auto';
+  zoneIds().forEach(function (id) {
+    if (!ptAvail(id)) return;
+    zshSet(id, 'shadow', 'photo');
+    zshSet(id, 'hilite', 'photo');
+  });
+  shadePStyle = true;
+  _ptForce = true;
+  _ptX = null;
+  _pt = null;
+  _ptMemo = null;
+  return true;
+}
+// the photo tones' sections left flat, for the Shading panel
+function ptFlatN() {
+  const r = ptGet();
+  return r ? r.nFlat : 0;
+}
+// the section on its marker's second set (its label's prime)
+function ptSet2(l) {
+  if (!assignData || !assignData.assign[l] || !shadeOn()) return false;
+  const zs = zshOf(l);
+  if (!ptOn(zs, l)) return false;
+  const r = ptGet(),
+    t = r && r.tone[l];
+  return !!(t && t.set === 1);
+}
+// (saving and opening: the markers added and the sections' held pairs, with the page: 47-photo-page ppSave)
+function ptSaveState() {
+  const th = {};
+  for (const l in _ptHeld) th[l] = [_ptHeld[l].L, _ptHeld[l].S];
+  return {
+    tx: _ptX && _ptX.x.length ? { k: _ptX.k, x: _ptX.x.slice() } : undefined,
+    th: Object.keys(th).length ? th : undefined,
+  };
+}
+function ptOpenState(tx, th, map) {
+  _pt = null;
+  _ptS = null;
+  _ptMemo = null;
+  _ptForce = false;
+  _ptX =
+    tx && typeof tx.k === 'string' && Array.isArray(tx.x)
+      ? {
+          k: tx.k,
+          x: tx.x
+            .filter(function (k) {
+              return typeof k === 'string' && k.length < 40;
+            })
+            .slice(0, PT_EXTRA),
+        }
+      : null;
+  _ptHeld = {};
+  if (th && typeof th === 'object')
+    for (const ol in th) {
+      const nl = map ? map[ol] : +ol,
+        h = th[ol];
+      if (nl && Array.isArray(h) && typeof h[0] === 'string' && typeof h[1] === 'string')
+        _ptHeld[nl] = { L: h[0], S: h[1] };
+    }
+}
+// a new picture, or another guide: nothing kept
+function ptReset() {
+  ptOpenState(null, null);
+  _ptAutoK = '';
 }

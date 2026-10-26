@@ -3137,3 +3137,40 @@ Decided one at a time with measurements on the author's 17 photos (`docs/PLAN-v3
 - Tests: unit (the markers to add, Subject only's background, the saved settings) and `e2e/photo-page-2.test.mjs` on
   both engines; the Delete all my data test takes the subject finder's cache too.
 - Help (Pictures, Known limits), What's new. Cache bumped to `marker-studio-v326`.
+
+# Changes — v327 (photo tones, tidy tone patches, Use up to 48 markers; `docs/PLAN-v327-photo-tones.md`)
+
+- **Photo in the Shading row** (on a photo-made page lit by its photo, in Rounded's place): each marker gets a
+  highlight and a shadow chosen for the photo's own light and dark parts of its sections (**Matched to the photo**, a
+  new kind in the Highlights and Shadows lists, the default there on a photo-made page). Highlights pass Same colour's
+  test (the base's family or a close hue, 4 or more lighter) and go under the whole section; shadows are laid over the
+  base (its glaze 4 or more darker); a near-black base has no shadow, as before. Chosen from the page's markers and up
+  to 4 of your others, each only when it brings the page 1% nearer the photo. A section whose tones wouldn't bring it
+  10% nearer stays flat ("Its tones wouldn't be closer to the photo — one flat colour"); the panel says how many.
+- **Photo's own amounts**: Highlights 0.5 or 0.65 × Shadows 0.65 to 1.0, the pair nearest the photo (fallback 0.5 /
+  0.85); moving a slider makes it Custom; chosen again when the page or the plan changes.
+- **Two tone sets per marker (closer to the photo)**, an option: up to two pairs per marker; a section on the second
+  has a prime on its label (E415′), and the key, Colour along and the printed key name the lines by set.
+- Sections with ink keep what they were coloured with (as kinds already did), and the markers added are kept while
+  what they were chosen for is the same; both are saved with the page (`pp.th`, `pp.tx`). Print and share wait for
+  the photo's light on a guide opened a moment ago.
+- **Tidy tone patches, in all shading**: highlight and shadow patches under 1.5 mm across (and, lit by a photo,
+  thinner than 0.9 mm) are merged into what surrounds them (today's Dramatic: about 1,700 specks to 200 on a page).
+  Steps and the key leave out a highlight or shadow that tidying took away entirely.
+- **Use up to 48 markers**, on a very colourful photo with a big collection: offered under the page when 24 can't
+  cover the photo's colours (some of it no marker's within reach, and twice as many would bring it much nearer); Back
+  to 24 undoes it. Saved with the page.
+- **Measured** (the share of the drawn page within ΔE 10 of the photo, in the browser, all 17 of the author's photos;
+  points over flat): the author's collection, Photo +4.0 (3.99; least +0.4, most +9.9), two tone sets +4.8, today's
+  Dramatic +2.1 (least −1.3); Honolulu 72, Photo +11.1 (least +0.7, most +29.9), two sets +13.0, Dramatic +2.3. Never
+  worse than flat. Its own amounts beat the best fixed pair (8 photos: +3.8 against +3.7; +11.0 against +9.3); 1.0 and
+  1.5 mm match the photo the same; a 0.5% or 2% bar for the markers added, a 0 or 5% bar for flat sections, and a wider
+  range of amounts were no better. Tapping Photo: about 0.25 s more than Dramatic's first tap in the test browser
+  (the light's field is shared), about 0.3 s for a later change, like Soft.
+- **Found in the debugging passes:** the Shading note said "11 colours have no lighter marker" with Photo, where a
+  highlight left out is one that wouldn't be closer; it now says highlights and shadows are matched to the photo, and
+  with the sun's light (drawn as Same colour) it says what's drawn. A Subject only test read the choice before a slow
+  engine's remake had started (WebKit, under load).
+- Tests: unit (`test/photo-tones.test.mjs`; the saved settings), `e2e/photo-tones.test.mjs` on both engines. The saved-settings tests know the two new fields (`sets`, `pstyle`; the golden file rewritten, nothing
+  else in it changed).
+- Help, What’s new, the device test (a test page on paper). Cache bumped to `marker-studio-v327`.

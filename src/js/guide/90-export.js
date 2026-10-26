@@ -3595,16 +3595,8 @@ function _buildPDF(dry) {
       g.fillStyle = ids.length === 1 ? pdfZoneCol(ids[0]) : '#666';
       g.font = 'italic 600 ' + PX(8.5) + 'px ' + LFONT;
       g.fillText(
-        pdfTrunc(
-          g,
-          'in ' +
-            ids
-              .map(function (id) {
-                return zoneName(id);
-              })
-              .join(', '),
-          X.lt - X.name - PX(8),
-        ),
+        // (v327: or the tone set, with photo tones' Two tone sets: toneRowName)
+        pdfTrunc(g, toneRowName(q.x, r.tones, mm), X.lt - X.name - PX(8)),
         xs + X.name,
         y + PX(12.5),
       );
@@ -3779,6 +3771,7 @@ async function _exportPDF() {
     new Promise(function (r) {
       setTimeout(r, 30);
     }),
+    // (v327: and a guide lit by its photo, just opened, its photo read: 89-show)
     showFonts(),
   ]);
   try {

@@ -1128,9 +1128,11 @@ function ctlPlanShading() {
     // didn't fit a phone's row, and it can't be chosen. Shadows only is Highlights › None.
     '<div class="sfgrp sfshade"><h3 class="sfsr">Shading</h3><div id="sfShade" class="sfshsegs sffit" role="group" aria-label="Shading">' +
     ctlSeg('off', 'Off', shadeMode === 'off') +
-    SH_PRESETS.map(function (p) {
-      return ctlSeg(p.k, p.n, shadeMode !== 'off' && shPresetOn(p));
-    }).join('') +
+    shRowPresets()
+      .map(function (p) {
+        return ctlSeg(p.k, p.n, shadeMode !== 'off' && shPresetOn(p));
+      })
+      .join('') +
     '</div>' +
     (shadeMode !== 'off' && !shStyleCur()
       ? '<div id="sfShCustom" class="sfc-note sfc-mt6">' + shCustomText() + '</div>'
@@ -1251,9 +1253,16 @@ function ctlPlanShading() {
       // (v318.17: None per zone, a record's own; the Colorless Blender's lift where you own one, or it's chosen)
       const _none = shadeMode === 'shadow' || zs.hilite === 'none',
         _blOwn = blenderOwned(),
-        _hk = ['same', 'warm', 'paper'].concat(_blOwn || zs.hilite === 'blender' ? ['blender'] : [], [
-          'none',
-        ]);
+        // (v327: Matched to the photo, where the zone can have photo tones; chosen where it can't, Same colour)
+        _pt = ptAvail(zoneCur),
+        _hk = (_pt ? ['photo'] : []).concat(
+          ['same', 'warm', 'paper'],
+          _blOwn || zs.hilite === 'blender' ? ['blender'] : [],
+          ['none'],
+        ),
+        _cur = function (v) {
+          return v === 'photo' && !_pt ? 'same' : v;
+        };
       html +=
         '<div class="sfshpair">' +
         _col(
@@ -1261,7 +1270,7 @@ function ctlPlanShading() {
           'Highlights',
           _hk,
           SHADE_HILITE_LABEL_ALL,
-          _none ? 'none' : zs.hilite,
+          _none ? 'none' : _cur(zs.hilite),
           _none ? null : 'sfShHi',
           zs.hi,
           'Highlight amount',
@@ -1269,14 +1278,31 @@ function ctlPlanShading() {
         _col(
           'sfShStyle',
           'Shadows',
-          ['same', 'cool', 'grey'],
+          (_pt ? ['photo'] : []).concat(['same', 'cool', 'grey']),
           SHADE_SHADOW_LABEL,
-          zs.shadow,
+          _cur(zs.shadow),
           'sfShLo',
           zs.lo,
           'Shadow amount',
         ) +
         '</div>' +
+        // (v327) photo tones: Two tone sets, and how many sections stay flat
+        (_pt && (zs.shadow === 'photo' || zs.hilite === 'photo')
+          ? '<label class="sfchk sfc-mt6"><input type="checkbox" id="sfShSets"' +
+            (shadeSets ? ' checked' : '') +
+            '> Two tone sets per marker (closer to the photo)</label>' +
+            (function () {
+              const n = ptFlatN();
+              return n
+                ? '<div class="sfc-note sfc-mt6" id="sfShEven">' +
+                    n +
+                    (n === 1 ? ' section stays' : ' sections stay') +
+                    ' flat: ' +
+                    (n === 1 ? 'its tones wouldn’t' : 'their tones wouldn’t') +
+                    ' be closer to the photo.</div>'
+                : '';
+            })()
+          : '') +
         (shadeMode === 'shadow' && zones.length
           ? '<div class="sfc-note sfc-mt6">No highlights anywhere: the whole picture is shadows only. A highlight chosen here is this zone’s alone.</div>'
           : zs.hilite === 'none' && shadeMode === 'full'

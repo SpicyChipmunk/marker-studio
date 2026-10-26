@@ -347,6 +347,42 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     shadeField: shadeField,
     shadeTones: shadeTones,
+    // (v327 photo tones and tidying)
+    secTones: secTones,
+    ptGet: ptGet,
+    ptFlat: ptFlat,
+    ptFlatN: ptFlatN,
+    ptSet2: ptSet2,
+    ptAvail: ptAvail,
+    ptStyleApply: ptStyleApply,
+    ptAuto: ptAuto,
+    ptSamples: ptSamples,
+    ptChoose: ptChoose,
+    ptLightOK: ptLightOK,
+    shadeTidy: shadeTidy,
+    shadeTune: shadeTune,
+    toneRowName: toneRowName,
+    // (the field as made, untidied; whether the tidying's thin rule is on)
+    shadeFieldRaw: function () {
+      return shadeField(1);
+    },
+    shadeTidyThin: function () {
+      return ppOn() && shadeFromPhoto();
+    },
+    shadeHas: shadeHas,
+    shadeWaitsPhoto: shadeWaitsPhoto,
+    get ptHeld() {
+      return _ptHeld;
+    },
+    get ptX() {
+      return _ptX;
+    },
+    get shadeSets() {
+      return shadeSets;
+    },
+    set shadeSets(v) {
+      shadeSets = v;
+    },
     hiOn: hiOn,
     shAnyHi: shAnyHi,
     shZonesNone: shZonesNone,
@@ -1320,6 +1356,19 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       },
       set shadeHilite(v) {
         shadeHilite = v;
+      },
+      // (v327)
+      get shadeSets() {
+        return shadeSets;
+      },
+      set shadeSets(v) {
+        shadeSets = v;
+      },
+      get shadePStyle() {
+        return shadePStyle;
+      },
+      set shadePStyle(v) {
+        shadePStyle = v;
       },
       get shadeLines() {
         return shadeLines;

@@ -1315,7 +1315,63 @@ function ppFillCore(m) {
     }
     return out;
   };
-  return { own: pct(own), made: made, a: pick(false), b: m.both ? pick(true) : null };
+  return {
+    own: pct(own),
+    made: made,
+    a: pick(false),
+    b: m.both ? pick(true) : null,
+    more: m.mcap ? ppMoreCore(m) : null,
+  };
+}
+// (v327) Whether twice the markers would bring back colours the page's lose (docs/PLAN-v327-photo-tones.md, A): the
+// marker choice (ppPickCore, the page's own) at the cap, m.mcap, and at twice it, from the markers the page may use
+// (m.pl), against the photo's colours (m.tl / m.tw). lost: the share of the photo more than 15 from the cap's markers
+// that one of them all matches within 10 (a small object of its own colour gone, as a turquoise glass drawn grey);
+// gain: how much nearer the photo's colours are on average with twice the markers. Both as fractions of the photo.
+function ppMoreCore(m) {
+  const T = m.tw.length,
+    P = m.pl.length / 3,
+    tl = m.tl,
+    tw = m.tw;
+  let Wt = 0;
+  for (let t = 0; t < T; t++) Wt += tw[t];
+  if (!Wt || !P) return { lost: 0, gain: 0 };
+  const near = function (chosen, t) {
+      let b = Infinity;
+      for (let i = 0; i < chosen.length; i++) {
+        const q = chosen[i] * 3,
+          d = ppDe(tl[t * 3], tl[t * 3 + 1], tl[t * 3 + 2], m.pl[q], m.pl[q + 1], m.pl[q + 2]);
+        if (d < b) b = d;
+      }
+      return b;
+    },
+    c1 = ppPickCore({ tl: tl, tw: tw, pl: m.pl, n: 0, mkCap: m.mcap, fl: null }).chosen,
+    c2 = ppPickCore({ tl: tl, tw: tw, pl: m.pl, n: 0, mkCap: m.mcap * 2, fl: null }).chosen;
+  let lost = 0,
+    s1 = 0,
+    s2 = 0;
+  for (let t = 0; t < T; t++) {
+    const b1 = near(c1, t),
+      b2 = near(c2, t);
+    s1 += b1 * tw[t];
+    s2 += b2 * tw[t];
+    if (b1 > 15) {
+      let ba = Infinity;
+      for (let j = 0; j < P && ba >= 10; j++) {
+        const d = ppDe(
+          tl[t * 3],
+          tl[t * 3 + 1],
+          tl[t * 3 + 2],
+          m.pl[j * 3],
+          m.pl[j * 3 + 1],
+          m.pl[j * 3 + 2],
+        );
+        if (d < ba) ba = d;
+      }
+      if (ba < 10) lost += tw[t];
+    }
+  }
+  return { lost: lost / Wt, gain: (s1 - s2) / Wt };
 }
 // @@pp-core-end
 
@@ -1341,7 +1397,8 @@ const PP_STEPS = [
 // guide (payload.pp) and kept in each Undo step of Edit sections. null for any other picture.
 //   d: the Detail step (0-4); f: Focus ('even', 'sharp', 'calm': v325.1; 'subject': v326); n: how many markers it was
 //   made with; hand: n was set by hand (Markers in this guide), so the photo's suggestion doesn't replace it; paper:
-//   the paper it was made for; full: made from the full range of your brands, not only the markers you own; add
+//   the paper it was made for; full: made from the full range of your brands, not only the markers you own; more
+//   (v327): Use up to 48 markers, each Detail step's cap doubled (ppCap); add
 //   (v326): made with these catalogue markers added to yours (Try it with these: mkeys); made: each section's
 //   marker as made ({ section: mkey }); white: the sections left white ({ section: the nearest marker's mkey });
 //   sig: the markers it could use, as made (ppSig); sm (v326): which kind of pool that was (ppSigMode); tg (v326):
@@ -1371,6 +1428,7 @@ function ppNew() {
     paper: paper,
     full: false,
     add: null,
+    more: false,
     made: null,
     white: null,
     sig: '',
@@ -1411,6 +1469,8 @@ function ppCheck(o, map) {
   p.paper =
     typeof o.paper === 'string' && Object.prototype.hasOwnProperty.call(PAPERS, o.paper) ? o.paper : paper;
   p.full = o.full === 1;
+  // (v327) Use up to 48 markers: each Detail step's cap doubled
+  p.more = o.more === 1;
   // (v326) the markers added (Try it with these): catalogue keys only, a few
   p.add =
     !p.full && Array.isArray(o.add)
@@ -1465,6 +1525,7 @@ function ppSave() {
     hand: pp.hand ? 1 : undefined,
     paper: pp.paper,
     full: pp.full ? 1 : undefined,
+    more: pp.more ? 1 : undefined,
     add: pp.add && pp.add.length ? pp.add : undefined,
     made: pp.made || undefined,
     white: pp.white && Object.keys(pp.white).length ? pp.white : undefined,
@@ -1482,6 +1543,10 @@ function ppSave() {
         }
       : undefined,
     bgs: pp.bgs && pp.bgs.length ? pp.bgs : undefined,
+    // (v327 photo tones: the markers added and what they were chosen for; each coloured section's highlight and
+    // shadow, as coloured: 45-shading)
+    tx: ptSaveState().tx,
+    th: ptSaveState().th,
   };
 }
 // the markers a photo-made page may use: those the Photo pattern would (photoPool: your markers, or a palette you
@@ -1807,7 +1872,7 @@ function ppChoose(prep, d) {
   if (!pool.length) return null;
   const sig = ppSig(pool),
     n = pp.hand ? Math.max(1, Math.min(limitN >= MK_ALL ? pool.length : limitN, pool.length)) : 0,
-    cap = PP_STEPS[d].mk;
+    cap = ppCap(d);
   // (v326: Subject only chooses for the subject's colours: a choice of its own, or the whole photo's would be reused)
   return {
     pool: pool,
@@ -1884,9 +1949,14 @@ function ppMinCount(ch, d) {
   }
   return minCount;
 }
-// (each step's count is kept for the photo, its markers and its Focus: ppJobData's minCount)
+// (each step's count is kept for the photo, its markers and its Focus: ppJobData's minCount; v327: and Use up to 48
+// markers, whose steps have caps of their own)
 function ppCountKey(ch, d) {
-  return ch.sig + '|' + (pp.f || 'even') + '|' + d;
+  return ch.sig + '|' + (pp.f || 'even') + '|' + d + (pp.more ? '|more' : '');
+}
+// (v327) the most markers Detail step d's page may use: twice as many with Use up to 48 markers (pp.more)
+function ppCap(d) {
+  return PP_STEPS[d].mk * (pp && pp.more ? 2 : 1);
 }
 // (v326) the pages made this session for the last PP_MEM Detail steps (docs/PLAN-v326-photo-page.md, 6), by
 // everything a page is made from: the photo prepared (its turn and crop: pid), the markers it may use and how many
@@ -2150,6 +2220,13 @@ function ppCommit(r, ch, prep, geo) {
   // (v326: the Photo button's photo, of the page before, off: 8)
   photoPeek = false;
   if (first) family = 'photo';
+  // (v327) photo tones: on a new page, Highlights and Shadows are Matched to the photo (until changed), and nothing
+  // is kept from the page before
+  if (first && shadeMode === 'off') {
+    shadeShadow = 'photo';
+    shadeHilite = 'photo';
+  }
+  ptReset();
   waitEnd();
   resetZoom();
   render();
@@ -2439,6 +2516,7 @@ function ppWorkerSrc() {
       ppBuildCore,
       ppWork,
       ppFillCore,
+      ppMoreCore,
     ]
       .map(function (f) {
         return f.toString();
@@ -2724,7 +2802,12 @@ function ppNotOwned() {
 const PP_FILL_SHOW = 15,
   PP_FILL_OTHER = 10,
   // (newer markers than the page was made with, that would match this much more: Remake to use them)
-  PP_FILL_NEW = 5;
+  PP_FILL_NEW = 5,
+  // (v327, Use up to 48 markers: offered when twice the markers would bring back this share of the photo, lost to
+  // the cap, or bring its colours this much nearer on average; measured: photos 02, 05, 06 and 15 of 17 with 392
+  // markers, never with 120 or fewer)
+  PP_MORE_LOST = 0.005,
+  PP_MORE_GAIN = 0.45;
 let _ppFill = null; // { key, res (null while it's worked out), cand: the candidates, in ppFillCore's order }
 const _ppTgIds = new WeakMap();
 let _ppTgN = 0;
@@ -2779,12 +2862,15 @@ function ppFillGet() {
       .sort()
       .join(','),
     newer = !!mk && mk.join(',') !== nowK,
+    // (v327: whether to offer Use up to 48 markers: a page at its step's cap, the count not set by hand)
+    mcap = !pal && !pp.hand && !pp.more && pp.n >= ppCap(pp.d) ? ppCap(pp.d) : 0,
     key = [
       tid,
       ppSig(pool),
       cand ? cand.buy + '|' + Array.from(state.owned).sort().join(',') : '-',
       photoPaper ? 1 : 0,
       newer ? mk.join(',') : '-',
+      mcap,
     ].join('#');
   if (_ppFill && _ppFill.key === key) return _ppFill.res;
   const cat = ppCatMap(),
@@ -2805,6 +2891,7 @@ function ppFillGet() {
       cg: cand ? cand.cg : new Uint8Array(0),
       both: !!(cand && cand.both),
       paper: photoPaper ? 1 : 0,
+      mcap: mcap,
     },
     job = { key: key, res: null, cand: cand ? cand.list : [] };
   _ppFill = job;
@@ -2881,7 +2968,8 @@ function ppHelpBody(w) {
           (no.length === 1 ? 'it' : 'them') +
           ' to To buy</button>'
         : '.') +
-      (keep ? ' · <button type="button" class="sflink" data-pp="own">Use only yours</button>' : '')
+      (keep ? ' · <button type="button" class="sflink" data-pp="own">Use only yours</button>' : '') +
+      ppMoreBackHTML()
     );
   }
   const cat = ppCatMap();
@@ -2897,11 +2985,12 @@ function ppHelpBody(w) {
             return cat.get(k);
           }),
         ) +
-        (keep ? ' · <button type="button" class="sflink" data-pp="own">Use only yours</button>' : '')
+        (keep ? ' · <button type="button" class="sflink" data-pp="own">Use only yours</button>' : '') +
+        ppMoreBackHTML()
       );
   }
   const r = ppFillGet();
-  if (!r) return '';
+  if (!r) return ppMoreBackHTML();
   const pal = paletteSource === 'saved' || paletteSource === 'generate',
     whose = pal ? 'Your palette matches ' : 'Your markers match ',
     list = function (o) {
@@ -2987,7 +3076,28 @@ function ppHelpBody(w) {
       (keep
         ? ' <button type="button" class="sflink" data-pp="new">Remake to use them</button>'
         : ' ' + noPhoto);
-  return h;
+  // (v327) Use up to 48 markers: colours of the photo the step's cap of markers can't cover
+  const mo = r.more;
+  if (keep && mo && !pp.more && (mo.lost >= PP_MORE_LOST || mo.gain >= PP_MORE_GAIN))
+    h +=
+      '<div class="sfppfl" id="sfPpMore">Some of this photo’s colours aren’t on the page: ' +
+      ppCap(pp.d) +
+      ' markers can’t cover them all. <button type="button" class="sflink" data-pp="more">Use up to ' +
+      ppCap(pp.d) * 2 +
+      ' markers</button></div>';
+  return h + ppMoreBackHTML();
+}
+// (v327) with Use up to 48 markers on: said, with the way back
+function ppMoreBackHTML() {
+  if (!pp || !pp.more) return '';
+  const c = ppCap(pp.d);
+  return (
+    '<div class="sfppfl" id="sfPpMore">Up to ' +
+    c +
+    ' markers · <button type="button" class="sflink" data-pp="less">Back to ' +
+    c / 2 +
+    '</button></div>'
+  );
 }
 // the numbers came: the line filled in where it shows, its buttons wired
 function ppHelpRefresh() {
@@ -3040,6 +3150,12 @@ function ppHelpWire() {
       });
     } else if (k === 'new')
       ppRemakeWith(function () {
+        _ppPick = {};
+      });
+    // (v327) Use up to 48 markers, and back
+    else if (k === 'more' || k === 'less')
+      ppRemakeWith(function () {
+        pp.more = k === 'more';
         _ppPick = {};
       });
   });

@@ -6,6 +6,10 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v327',
+    t: 'Shading on a page made from a photo can match the photo: Shading › Photo gives each marker a highlight and a shadow chosen for the photo’s own light and dark parts, from the page’s markers and at most a few of your others, and leaves a section flat where its tones wouldn’t be closer to the photo. Two tone sets per marker go closer still. Small specks of highlight and shadow are tidied away in every kind of shading. With a big collection, a very colourful photo offers Use up to 48 markers.',
+  },
+  {
     v: 'v326',
     t: 'A page made from a photo shows in its markers’ colours as you choose its Detail, with the Photo button to see the photo over it. With a small collection it says how much of the photo your markers match, and the few markers that would match much more, to add to To buy or try on the page first. Focus has Subject only: the background left white, like a colouring book, with Crop to the subject when it’s small. Going back to a Detail you’ve seen is quicker. Fixes: a tap on the page no longer leaves a section out unless Edit sections is open, and Delete all my data takes the subject finder too.',
   },

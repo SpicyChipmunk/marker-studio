@@ -104,13 +104,16 @@ function buildFocusOrder() {
         add(req);
         return;
       }
-      // (a glaze, a cooler or grey shadow laid over the base, waits for the base to dry as a 2nd coat does)
+      // (a glaze, a cooler or grey shadow laid over the base, waits for the base to dry as a 2nd coat does; v327: a
+      // tone the section doesn't take on the page, once its patches are tidied, isn't a step: shadeReq)
       if (toneSteps) {
-        if (t.light) add(1);
+        if (req & 1) add(1);
         add(2);
-        if (t.coat || t.glaze) later.push(l);
-        else add(4);
-      } else if (t.coat || t.glaze) {
+        if (req & 4) {
+          if (t.coat || t.glaze) later.push(l);
+          else add(4);
+        }
+      } else if ((t.coat || t.glaze) && req & 4) {
         add(req & 3);
         later.push(l);
       } else add(req);

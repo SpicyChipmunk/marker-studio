@@ -530,12 +530,14 @@ function buildShowCard(src, k, w, h) {
 // ---- Reveal's end, on screen ----
 let _show = null;
 // the fonts the caption is drawn in, loaded (they're in the app, so this is quick; a failure draws in the fallbacks)
+// (v327: and a guide lit by its photo, just opened, its photo read: its tones are in what's drawn, 45-shading)
 function showFonts() {
   try {
     return Promise.all([
       document.fonts.load(showFont(SHOW_TITLE, 40)),
       document.fonts.load(showFont(SHOW_TEXT, 20)),
       document.fonts.load('600 15px "Hanken Grotesk"'),
+      shadePhotoWait(),
     ]).catch(function () {});
   } catch (_) {
     return Promise.resolve();

@@ -1,7 +1,7 @@
 {
  "sample": {
-  "sha256": "7f99af0264a35a330075edff92912cf95cd011ff40ff651985d15b3b8e1b68bf",
-  "bytes": 4180,
+  "sha256": "70dac78fbf02e8618b928ba24e588c11e4cc974013b262ac63fabb2b2b6c542c",
+  "bytes": 4208,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -34,6 +34,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -49,8 +51,8 @@
   }
  },
  "sample-share": {
-  "sha256": "7f99af0264a35a330075edff92912cf95cd011ff40ff651985d15b3b8e1b68bf",
-  "bytes": 4180,
+  "sha256": "70dac78fbf02e8618b928ba24e588c11e4cc974013b262ac63fabb2b2b6c542c",
+  "bytes": 4208,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -83,6 +85,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -98,8 +102,8 @@
   }
  },
  "sample-edits": {
-  "sha256": "9f192b395cd3dcadac036aac3bda9798bd13bc11f40ea357af63c2ca67773b24",
-  "bytes": 4190,
+  "sha256": "a7888fd15c069be56ccc3f299112179bc39ee62ff7e672e7b6f5ff4b44ce25a5",
+  "bytes": 4218,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -132,6 +136,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -147,8 +153,8 @@
   }
  },
  "limitN": {
-  "sha256": "92297d90d501ed3149f1ea763e3ae419d25f15bacaec9859dcf3a1fc7ad9d2fd",
-  "bytes": 4109,
+  "sha256": "4edcaa50e7ac36096dfc414b3f766df40e544c1cc866da92adc98ba1e986beb9",
+  "bytes": 4137,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -181,6 +187,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -196,8 +204,8 @@
   }
  },
  "palette": {
-  "sha256": "df37e32885e72d4c2fecbe2e81ea502bd60c29bc6ad5787977b28b04bc2a6751",
-  "bytes": 4083,
+  "sha256": "5a14929a60f01524af531717f1c9358e3cf9847ef791aca54fd5ba4e4af0e05e",
+  "bytes": 4111,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -230,6 +238,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -245,8 +255,8 @@
   }
  },
  "emphasis": {
-  "sha256": "3531a4e6834ace5a4570d49f812943c0fc1ec48331c444992eb9161773e7aa3e",
-  "bytes": 4081,
+  "sha256": "78c1b6ffc85651af25b6c930cad13ec85f8ee95aeb1272bd36c83672a5cc0a52",
+  "bytes": 4109,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -279,6 +289,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -294,8 +306,8 @@
   }
  },
  "generate": {
-  "sha256": "0365ff19441fb2e20f2da7292b7ba4545b4e9ceb6b7057aecaf11ab8a5dc83e2",
-  "bytes": 4209,
+  "sha256": "4aac3ee810c35617d9e10719d511555085bdb1cf5993ab54a49f5ea8dc6d09a9",
+  "bytes": 4237,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -328,6 +340,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -352,8 +366,8 @@
   }
  },
  "harmony": {
-  "sha256": "2b98ef0849701eff1db5f3f0b96b3c40cbe83ccb1831d533a481737d1a62ea4b",
-  "bytes": 4251,
+  "sha256": "e5a07f12f6f42c3b8a9871aa83a5ce5829e252e5cbee29924f09d406b9b91f75",
+  "bytes": 4279,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -386,6 +400,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -412,8 +428,8 @@
   }
  },
  "expand": {
-  "sha256": "df5feb68cf147b12cd17f1a5628aadf04cf01b19318bbced91fbf8971bddd228",
-  "bytes": 4250,
+  "sha256": "c01cc3e19de9ae480db52a339ad8a84c804628ef3947226f91586dee345215e1",
+  "bytes": 4278,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -446,6 +462,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -472,8 +490,8 @@
   }
  },
  "expandChar": {
-  "sha256": "08f9b6b9a70acb6c2b0ef2929f559bcf2478d314357bd5dbddc2f63f3e8a4c37",
-  "bytes": 4250,
+  "sha256": "ff2dc38a0ef18e6ad090a577a313a6c11a8d6d7c8125de4771424e0aa9d9dc2a",
+  "bytes": 4278,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -506,6 +524,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -532,8 +552,8 @@
   }
  },
  "gradShape": {
-  "sha256": "dba1ba0f6faa5b6e0f2f60c635bdc5158050c389d3164c5e4951ad6c704ddf90",
-  "bytes": 4240,
+  "sha256": "0d8f6415fc75b01bb0a44721dbe09ec701ae0ed4731de80a56f53cc46f889b61",
+  "bytes": 4268,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -566,6 +586,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -592,8 +614,8 @@
   }
  },
  "dir": {
-  "sha256": "47480f554600d43402c79e06e35f657c3fc127757972f773887ee6aa4377a1b6",
-  "bytes": 4270,
+  "sha256": "e829626f6d13e73569ace825743be895c78c6d8ab7fe252d9ca577005aec64ed",
+  "bytes": 4298,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -626,6 +648,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -652,8 +676,8 @@
   }
  },
  "shuffle": {
-  "sha256": "e9c46bc64a97c6fbfc6508e8922be8b9a487712db8ad8fe8a4e6dda8b337fa57",
-  "bytes": 4322,
+  "sha256": "b17d79b2c53659cd0bb9d2f0101dde4e983e8566e278a51c0f7dec0b396392f3",
+  "bytes": 4350,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -686,6 +710,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -712,8 +738,8 @@
   }
  },
  "look": {
-  "sha256": "b057669d2da03218e85befb06db5ab5c2166cd840970c96ab6726f159468edb6",
-  "bytes": 4303,
+  "sha256": "8d0fcc209264e5c8e0a1ee49a3a4f75aa93affd26dfbf72e090e807834770a33",
+  "bytes": 4331,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -746,6 +772,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -772,8 +800,8 @@
   }
  },
  "look-auto": {
-  "sha256": "e9c46bc64a97c6fbfc6508e8922be8b9a487712db8ad8fe8a4e6dda8b337fa57",
-  "bytes": 4322,
+  "sha256": "b17d79b2c53659cd0bb9d2f0101dde4e983e8566e278a51c0f7dec0b396392f3",
+  "bytes": 4350,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -806,6 +834,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -832,8 +862,8 @@
   }
  },
  "random": {
-  "sha256": "f634afd714d27c218d5ad4d43db83c6a991298394372982861578c708e75d608",
-  "bytes": 4359,
+  "sha256": "aa5ebc72ca9dc8b1b3d327f2810f167740469178db4b4a4e346e4df831dfc768",
+  "bytes": 4387,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -866,6 +896,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -892,8 +924,8 @@
   }
  },
  "random-shuffle": {
-  "sha256": "72f3d4b4985ec59410d04b08fd06c7415f79cf66f706f8fdbe176395a1883256",
-  "bytes": 4357,
+  "sha256": "7ff5c32af211357695eb6fb16cc1bbdebaab0c6ff40847c0897cf739017a678c",
+  "bytes": 4385,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -926,6 +958,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -952,8 +986,8 @@
   }
  },
  "noAdj": {
-  "sha256": "aa63e64b42b8cdc9b005a7f91ade6dc6dd2f57d3fc2589563836843d13b37057",
-  "bytes": 4358,
+  "sha256": "62e354c6b62108e5760914f65afa8ac9ca70e3fb671cc6888fc112ee2b8a585f",
+  "bytes": 4386,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -986,6 +1020,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -1012,8 +1048,8 @@
   }
  },
  "blend": {
-  "sha256": "820c2767f4f2e4275298950291e4e12cc114b586bfdc4263691f73afc9f72bcf",
-  "bytes": 4394,
+  "sha256": "979bf10ae0352657bbfdeff1dc67e120c439093ba1bd47f97b5c584a67e5a514",
+  "bytes": 4422,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1046,6 +1082,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -1072,8 +1110,8 @@
   }
  },
  "blendFall": {
-  "sha256": "929da55150811a9dc22bd1cc4b2ee3ecd6786c0882d65b274caa5336e5f9e346",
-  "bytes": 4405,
+  "sha256": "dcfbb4bb69df8c0fc01eb696751c5954ff1d617a4127dd406d7f0a9953b77ed9",
+  "bytes": 4433,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1106,6 +1144,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -1132,8 +1172,8 @@
   }
  },
  "blendMix-paint": {
-  "sha256": "1a4d7d4de86d61bee0ee7e2b4bfa502023601d43c7efef23a1df31bed94f1b08",
-  "bytes": 4405,
+  "sha256": "7dbaa8eeb4cad5aa4ae62316ed388156bac71aa7632d3f4e4fc7841581f9d0d3",
+  "bytes": 4433,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1166,6 +1206,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -1192,8 +1234,8 @@
   }
  },
  "blendMix": {
-  "sha256": "8d8786be156d269c3a77ab719404e7e9a5ee2d256495f5bd441450a19aee2deb",
-  "bytes": 4397,
+  "sha256": "7bd6e422513687283c473f04653c200867de783379bce78d1876dbcdf9d40012",
+  "bytes": 4425,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1226,6 +1268,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -1252,8 +1296,8 @@
   }
  },
  "shadeMode": {
-  "sha256": "9799ac2c31ddddd1bf0996c08d17fb7cc9b45ea03f17fbcef71fb649baba32d0",
-  "bytes": 4398,
+  "sha256": "c4211d03d3b00c71d11f5681f930d40e3d046b3c6c661b501657127e23d4817b",
+  "bytes": 4426,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1286,6 +1330,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -1312,8 +1358,8 @@
   }
  },
  "shadeHi": {
-  "sha256": "64a6698ab87c2fe386c1e7b07ca35df4b43a174b1471c03457393ae022fb5356",
-  "bytes": 4398,
+  "sha256": "e76685d32d6692b17f47b33285dda4197257ffe92e6fd879c0830bfaf8a45d3c",
+  "bytes": 4426,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1346,6 +1392,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -1372,8 +1420,8 @@
   }
  },
  "shadeLo": {
-  "sha256": "ba7d623f08a581a5ffb06a326e6225f438f6c6e4733fdf01166e7844b7b9b085",
-  "bytes": 4398,
+  "sha256": "9bce28b1a015daf4980b79bcfc6f5420908395869169215a1aff6959f1063b78",
+  "bytes": 4426,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1406,6 +1454,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -1432,8 +1482,8 @@
   }
  },
  "shadeRound": {
-  "sha256": "8e57ceb4d348192d823a649542a663e7c0b30f1b3c4ed51dd0b553fd4385c8fc",
-  "bytes": 4398,
+  "sha256": "f489c5f15505d505b3ea72ad5bda22b3d7162031dd7404421cd214f71c28c322",
+  "bytes": 4426,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1466,6 +1516,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -1492,8 +1544,8 @@
   }
  },
  "shadeLines": {
-  "sha256": "26be926783e1ffa94000c494819fa07f1fbd5ac92fcb3fa156bedfb4002e451e",
-  "bytes": 4399,
+  "sha256": "000336dfcefc00f7e8102834a8117792da141349fc8d9f55cf6bc53b05fb7bb5",
+  "bytes": 4427,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1526,6 +1578,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -1552,8 +1606,8 @@
   }
  },
  "shadeHilite": {
-  "sha256": "0c7374207fe91d869733cc7cad48e7caec98225f8cc9bfd0b7b395ea6b2f6225",
-  "bytes": 4399,
+  "sha256": "5bdd7d582984e06e994d9771e672c01c312972d4010221fa1fa38d668f692ee1",
+  "bytes": 4427,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1586,6 +1640,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "warm",
@@ -1612,8 +1668,8 @@
   }
  },
  "shadeShadow": {
-  "sha256": "2cd27485b4b6a6a75f14fec272015226219ee2aac9fade539b23e32d8ce0add8",
-  "bytes": 4399,
+  "sha256": "ff7ece0ca880f1a5c2e933f26b3bb8ec14463f8e54fbd4d4ec64bed0a05617c5",
+  "bytes": 4427,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1646,6 +1702,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "grey",
     "hilite": "warm",
@@ -1672,8 +1730,8 @@
   }
  },
  "shadeSunFlat": {
-  "sha256": "040f453203bb14285598a55e6de70757c1bde2e84e8d587114c840bfe1861c86",
-  "bytes": 4401,
+  "sha256": "ef678ff997052a861c5214af9d4713bcd42d4e3eaccfc4a7b48a7cd57969bff4",
+  "bytes": 4429,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1706,6 +1764,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "grey",
     "hilite": "warm",
@@ -1735,8 +1795,8 @@
   }
  },
  "texAmt": {
-  "sha256": "b22f326c2eef08ca986800a45df891a7850496f7628c1c84ae9a0a2982cd522f",
-  "bytes": 4402,
+  "sha256": "bad955f39ae5a006bc420aeab564ea3ff92fa60d562c59d961e67a0454da3267",
+  "bytes": 4430,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1769,6 +1829,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "grey",
     "hilite": "warm",
@@ -1798,8 +1860,8 @@
   }
  },
  "texAmt-share": {
-  "sha256": "b22f326c2eef08ca986800a45df891a7850496f7628c1c84ae9a0a2982cd522f",
-  "bytes": 4402,
+  "sha256": "bad955f39ae5a006bc420aeab564ea3ff92fa60d562c59d961e67a0454da3267",
+  "bytes": 4430,
   "style": {
    "family": "blend",
    "palette": "warm",
@@ -1832,6 +1894,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "grey",
     "hilite": "warm",
@@ -1861,8 +1925,8 @@
   }
  },
  "manual": {
-  "sha256": "399d32492887c208f8e26f377f2b9b741d45beb71f78de09fad11fbd86119008",
-  "bytes": 4403,
+  "sha256": "0cd3602b783deda615e336e5c78189f4b8dec5282cafbd1424594ec831836318",
+  "bytes": 4431,
   "style": {
    "family": "manual",
    "palette": "warm",
@@ -1895,6 +1959,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "grey",
     "hilite": "warm",
@@ -1924,8 +1990,8 @@
   }
  },
  "gradient": {
-  "sha256": "6746feb2b9e1a1eb55e2fc0412eb53012ee39210ed3fb690edbf7a526eee33c0",
-  "bytes": 4467,
+  "sha256": "4ece8a905a0d97aebc389b37dd22a8685b74bf699ff6fef441c1419d65406fe7",
+  "bytes": 4495,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -1958,6 +2024,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "grey",
     "hilite": "warm",
@@ -1987,8 +2055,8 @@
   }
  },
  "pins": {
-  "sha256": "81e1d6c869126dcc3891c52844481858b25da7cf9d4904637b2cbdd7f91b8dd4",
-  "bytes": 4505,
+  "sha256": "5f39bae9856d4c96c140438f06ad663ecf8f39215f3a0c0ef7d4ed46ba75905a",
+  "bytes": 4533,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2021,6 +2089,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "grey",
     "hilite": "warm",
@@ -2050,8 +2120,8 @@
   }
  },
  "surprise": {
-  "sha256": "db4100df2535662d44c34a89d3d30d2c91cfbd4fc7d0c006e8725b5321dd5fbd",
-  "bytes": 4353,
+  "sha256": "24d6dbed4cb1d2a11b2431cce852f798ca0dc29fad10b6af19ac89706cf9c2dc",
+  "bytes": 4381,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2084,6 +2154,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "grey",
     "hilite": "warm",
@@ -2111,8 +2183,8 @@
   }
  },
  "savedPalette": {
-  "sha256": "30e7556f0e1edf1ee94fedd803288480c3825c85a893b8046d78cc767295abb0",
-  "bytes": 4372,
+  "sha256": "bdbbb4bc5b1c89af4a3e7176ce78cc223428b78b07d05e5678cb5e42a1cc38f9",
+  "bytes": 4400,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2145,6 +2217,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "grey",
     "hilite": "warm",
@@ -2175,8 +2249,8 @@
   }
  },
  "savedPalette-render": {
-  "sha256": "b7158e45fd0b1dfd316301dbee82239d1281c24e407f01ce6f9839f07d008514",
-  "bytes": 4422,
+  "sha256": "4bf5f9ac3f03bd5e80d81397f0d385eaa887ab0020591727fa448692f712934e",
+  "bytes": 4450,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2209,6 +2283,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "grey",
     "hilite": "warm",
@@ -2240,8 +2316,8 @@
  },
  "edits-pending": null,
  "edits-pending-edits": {
-  "sha256": "c4a82630645ef7add83d83688a84c0147946590e7d0f076cd5709d2e71755603",
-  "bytes": 4438,
+  "sha256": "e756dd94dc0b70f753b812d18c340d7af1163bdb87cb4f3231d8188b1fa531df",
+  "bytes": 4466,
   "style": {
    "family": "gradient",
    "palette": "warm",
@@ -2274,6 +2350,8 @@
     "lo": 0.7,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "grey",
     "hilite": "warm",
@@ -2304,8 +2382,8 @@
   }
  },
  "photo": {
-  "sha256": "269119bc2c7fde0bd938dbffd65aff25ad75b79158b110c284ed770263ab8db1",
-  "bytes": 4072,
+  "sha256": "4cd1f9d4aedeeb699f9522dd509a5a63c4728f64d2be2fc387ef9c62fe36c584",
+  "bytes": 4100,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2338,6 +2416,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -2364,8 +2444,8 @@
   }
  },
  "photo-share": {
-  "sha256": "269119bc2c7fde0bd938dbffd65aff25ad75b79158b110c284ed770263ab8db1",
-  "bytes": 4072,
+  "sha256": "4cd1f9d4aedeeb699f9522dd509a5a63c4728f64d2be2fc387ef9c62fe36c584",
+  "bytes": 4100,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2398,6 +2478,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -2424,8 +2506,8 @@
   }
  },
  "photoOp": {
-  "sha256": "06ca7805632062f2d5ad75ba866535d239d63253c87746622ad9ca2f0877014b",
-  "bytes": 4071,
+  "sha256": "43e8e3de3037ee27dfb9146b6ade1f715eeace4d41f70507ca4574c6f258abdb",
+  "bytes": 4099,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2458,6 +2540,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -2484,8 +2568,8 @@
   }
  },
  "photoPaper": {
-  "sha256": "cb8e3e2fb6bdd09d16fb8f55ef343c3f24b20795c5da1daf29476fed88c16f04",
-  "bytes": 4072,
+  "sha256": "4d183eeb61dbef989befd14102c956834e1ee58cb4c84254dc293eccd7dd2144",
+  "bytes": 4100,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2518,6 +2602,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -2544,8 +2630,8 @@
   }
  },
  "photo-shade": {
-  "sha256": "e45fee034a87dcfeea2b702100f447e5c13ee0ebf8c7ebd94e8169355fc39cb6",
-  "bytes": 4075,
+  "sha256": "08935e9159d518fdb9339134a268eae245c09e5dd739d53fd4f7ce09c486975f",
+  "bytes": 4103,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2578,6 +2664,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -2604,8 +2692,8 @@
   }
  },
  "photo-shadeLight": {
-  "sha256": "79bec94699433eec137f92888e4a67729daeb30258b1e9154dc812cf01d52238",
-  "bytes": 4072,
+  "sha256": "83d1294fbb1db547aa6c8f1edb37fffb59af6cd08986006b6cf984674a1c396c",
+  "bytes": 4100,
   "style": {
    "family": "photo",
    "palette": "all",
@@ -2638,6 +2726,8 @@
     "lo": 0.5,
     "lightSrc": "sun",
     "light": "sun",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -2664,8 +2754,8 @@
   }
  },
  "photo-gradient": {
-  "sha256": "2f4f5c4121ec8ebe640e108d0a1547f5486a2e68c11c0fed18163c189ff08ce7",
-  "bytes": 4408,
+  "sha256": "8d2c35ca6e1e9d68d2871a2b873a17b38ad0ad9ae115bc49ee3f1245a2f520cd",
+  "bytes": 4436,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2698,6 +2788,8 @@
     "lo": 0.5,
     "lightSrc": "sun",
     "light": "sun",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -2724,8 +2816,8 @@
   }
  },
  "photo-gradient-share": {
-  "sha256": "8f28b00b5415027fcd54fa530ebc0de025ff3babc2480a89d17d34dcf0d8d32f",
-  "bytes": 4394,
+  "sha256": "ad4c5fefe8c8c71f00cc6671bbffbcd1eff79300d104e9c262480332c9061379",
+  "bytes": 4422,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2758,6 +2850,8 @@
     "lo": 0.5,
     "lightSrc": "sun",
     "light": "sun",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -2784,8 +2878,8 @@
   }
  },
  "open-all-set": {
-  "sha256": "c5513a2c8f75c5205ba1f1db91ab2d28924bbdbe8eb4e15be18242245bd21368",
-  "bytes": 4247,
+  "sha256": "7b64dd4c76f84b97c02d9234023830504c72483390ce1ac597cd8fd931c26b26",
+  "bytes": 4273,
   "style": {
    "family": "random",
    "palette": "warm",
@@ -2821,6 +2915,8 @@
     "lo": 0.65,
     "lightSrc": "sun",
     "light": "sun",
+    "sets": true,
+    "pstyle": true,
     "main": false,
     "shadow": "cool",
     "hilite": "warm",
@@ -2843,8 +2939,8 @@
   }
  },
  "open-odd-types": {
-  "sha256": "57689d16433e559be2e0895ec1be45f022d566e7bf24dfe35bef91c2667e97fa",
-  "bytes": 4168,
+  "sha256": "36cadac98d2815ae56a0d5ccd7ea31390e6ff7e38cebd5e79c9f6cb37a198af4",
+  "bytes": 4196,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2876,6 +2972,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -2891,8 +2989,8 @@
   }
  },
  "open-odd-high": {
-  "sha256": "206909cd747db079c8e3347f50256484d51b45a4ddf54e39819d779e6e2f70e2",
-  "bytes": 4170,
+  "sha256": "c233b79b2bac33cf0aaf12e22d3c3b96868745c5c771eac762db16a8690c5cee",
+  "bytes": 4198,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2927,6 +3025,8 @@
     "lo": 1,
     "lightSrc": "sun",
     "light": "sun",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "grey",
     "hilite": "paper",
@@ -2942,8 +3042,8 @@
   }
  },
  "open-odd-low": {
-  "sha256": "606b9bc2a139f4fc1b3ce6d8a072aeefcf10ae8e65dd44cd8e9ed971ec8fd89c",
-  "bytes": 4160,
+  "sha256": "4a0870f7ab5eea56edf2a86c5af5581c967ede888b41a5f3f38c9842ce3104fd",
+  "bytes": 4188,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -2978,6 +3078,8 @@
     "lo": 0,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -2993,8 +3095,8 @@
   }
  },
  "open-odd-enum": {
-  "sha256": "d0c608b618a9f55c354b4d28540b22658f4d982a12b2c9409674de327f3d7fd0",
-  "bytes": 4211,
+  "sha256": "03ccec0f94aaaee804283c2fa849f672e1cc077707fe2b3ddfa36d1d0b596f39",
+  "bytes": 4239,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -3026,6 +3128,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",
@@ -3045,8 +3149,8 @@
   }
  },
  "open-nothing": {
-  "sha256": "950d786d6534542c1646902e1cf66a7aca915e3723e84adc7d30ee29accd3f18",
-  "bytes": 4172,
+  "sha256": "ec65f6522d369e57856ae11bec9a0cd216b1889a5a66a17a4d5f0a4adcbcf681",
+  "bytes": 4200,
   "style": {
    "family": "gradient",
    "palette": "all",
@@ -3078,6 +3182,8 @@
     "lo": 0.5,
     "lightSrc": "auto",
     "light": "photo",
+    "sets": false,
+    "pstyle": false,
     "main": true,
     "shadow": "same",
     "hilite": "same",

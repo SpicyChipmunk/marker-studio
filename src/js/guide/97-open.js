@@ -203,6 +203,8 @@ function openDesignObj(d, id, resumed, quiet, col) {
       // (v325) a photo made into a page: its settings, the markers as made on the sections as numbered now, and the
       // picture under it (paper and lines) from the section map, as the page drew it (47-photo-page)
       pp = ppCheck(d.pp, map);
+      // (v327) photo tones' markers added and the coloured sections' tones, on the sections as numbered now
+      ptOpenState(pp && d.pp ? d.pp.tx : null, pp && d.pp ? d.pp.th : null, map);
       if (pp) {
         const g = new Uint8Array(n);
         for (let i = 0; i < n; i++) g[i] = labels[i] < 0 ? 40 : 255;
@@ -471,8 +473,8 @@ function openDesignObj(d, id, resumed, quiet, col) {
           if (
             nl &&
             Array.isArray(h) &&
-            ['same', 'cool', 'grey'].includes(h[0]) &&
-            ['same', 'warm', 'paper', 'blender', 'none'].includes(h[1])
+            ['same', 'cool', 'grey', 'photo'].includes(h[0]) &&
+            ['same', 'warm', 'paper', 'blender', 'none', 'photo'].includes(h[1])
           )
             heldSet(
               nl,
