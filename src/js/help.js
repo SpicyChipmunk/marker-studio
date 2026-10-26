@@ -6,6 +6,10 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v327.1',
+    t: 'Make a colouring page from any photo is a button now, on Home and the Guide screen. After you build a page from a photo, a line offers to shade it like the photo in one tap (Undo takes it back). Highlights and Shadows matched to the photo are called From the photo, and the printed key says a tone that isn’t needed rather than “base is the lightest”.',
+  },
+  {
     v: 'v327',
     t: 'Shading on a page made from a photo can match the photo: Shading › Photo gives each marker a highlight and a shadow chosen for the photo’s own light and dark parts, from the page’s markers and at most a few of your others, and leaves a section flat where its tones wouldn’t be closer to the photo. Two tone sets per marker go closer still. Small specks of highlight and shadow are tidied away in every kind of shading. With a big collection, a very colourful photo offers Use up to 48 markers.',
   },

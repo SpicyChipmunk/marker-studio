@@ -222,12 +222,11 @@ function enterWork() {
 }
 function mount() {
   root.innerHTML =
-    '<div class="sfcard compact" id="sfStart"><button type="button" id="sfStPic" class="sfstpic" tabindex="-1" aria-hidden="true"></button><div class="sfstbody"><button id="sfHelpQ0" class="hlpq" data-help="sheet" aria-label="Help"><span aria-hidden="true">?</span></button><h2>New colouring guide</h2><div class="sftag">Turn a photo of a colouring page into a marker-by-number guide, built from the markers you own.</div><div id="sfPalNote"></div><div class="sfmeta" id="sfMeta"></div>' +
-    '<div class="sfstrow"><button id="sfPick" class="btn-primary sfstpick">Choose a colouring page</button><button id="sfSample" class="sfstbtn">Try the sample</button><button id="sfLib" class="sfstbtn">Library</button><button id="sfImport" class="sfstbtn">Import a guide</button></div>' +
+    '<div class="sfcard compact" id="sfStart"><button type="button" id="sfStPic" class="sfstpic" tabindex="-1" aria-hidden="true"></button><div class="sfstbody"><button id="sfHelpQ0" class="hlpq" data-help="sheet" aria-label="Help"><span aria-hidden="true">?</span></button><h2>New colouring guide</h2><div class="sftag">Turn a colouring page, or any photo, into a marker-by-number guide, built from the markers you own.</div><div id="sfPalNote"></div><div class="sfmeta" id="sfMeta"></div>' +
+    // (v327.1) any other photo, made into a colouring page (47-photo-page): a button under Choose, as Home's
+    '<div class="sfstrow"><button id="sfPick" class="btn-primary sfstpick">Choose a colouring page</button><button type="button" id="sfPpPick" class="btn-primary sfstpick sfstpp">Make a colouring page from any photo</button><button id="sfSample" class="sfstbtn">Try the sample</button><button id="sfLib" class="sfstbtn">Library</button><button id="sfImport" class="sfstbtn">Import a guide</button></div>' +
     // (v313) a colouring page that came as a PDF: opened on its own (the photo picker takes pictures only)
-    '<div class="sfstpdf">Colouring page in a PDF? <button type="button" id="sfPdf" class="sflink">Open the PDF</button></div>' +
-    // (v325) any other photo, made into a colouring page (47-photo-page)
-    '<div class="sfstpdf" id="sfStPp">Any other photo? <button type="button" id="sfPpPick" class="sflink">Make a colouring page from it</button></div></div></div>' +
+    '<div class="sfstpdf">Colouring page in a PDF? <button type="button" id="sfPdf" class="sflink">Open the PDF</button></div></div></div>' +
     '<div class="sfcard" id="sfWork" style="display:none"><div id="sfHead" class="sfhead"></div><div id="sfView"><div id="sfPicBox" class="sfpicbox"><div id="sfPic" class="sfpic"><canvas id="sfCanvas" role="img" aria-label="Colouring page"></canvas></div></div>' +
     toolsHTML() +
     '<button id="sfFullX" class="sfz sffullx" aria-label="Close full screen">' +

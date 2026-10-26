@@ -3174,3 +3174,39 @@ Decided one at a time with measurements on the author's 17 photos (`docs/PLAN-v3
 - Tests: unit (`test/photo-tones.test.mjs`; the saved settings), `e2e/photo-tones.test.mjs` on both engines. The saved-settings tests know the two new fields (`sets`, `pstyle`; the golden file rewritten, nothing
   else in it changed).
 - Help, What’s new, the device test (a test page on paper). Cache bumped to `marker-studio-v327`.
+
+# Changes — v327.1 (the review after v327: `docs/REVIEW-v327.md`, built as `docs/PLAN-v327.1.md`)
+
+- **Make a colouring page from any photo is a button** (decision 2), outlined, under the colouring page one: on Home
+  (a phone, and with a guide in progress, beside the outlined New guide), on the iPad's start card and on the Guide
+  screen's start card (in place of "Any other photo? Make a colouring page from it"). Home's line and the iPad card's
+  heading say "Turn a colouring page, or any photo, into a marker-by-number guide"; How it works: "Or open a PDF, or
+  start from any photo."
+- **No toast for a page made** (3): "Colouring page made: … Build guide when it looks right." sat over Detail and Focus
+  for 3 seconds after every page; the count line says it. No clear subject, a remake with edits, a one-colour photo
+  and errors still say so.
+- **Shade it like the photo** (4): after a photo-made page's first Build in a visit, with shading off and nothing
+  coloured, a line under the tabs offers the Photo style ("A lighter and a darker tone in many sections, from the
+  photo's own light. Shade it ✕"); Shade it is one Undo step, opens Shading and says "Shaded like the photo." with
+  Undo. Gone once used or closed, once a section is ticked or shading turned on, after a remake; never after a reload
+  or from the Library (not saved). The first-time "Tap a section…" line waits for it. Its words may change after the
+  author's paper test of the Photo style's shadows (decision 1, open).
+- **Wording** (5): under Photo, "Shaded from the photo: 36 sections. 79 stay flat: tones wouldn't make them much
+  closer to it." (it had read as a failure); Pattern's and the page step's "Your 392 markers match 97% of this photo."
+  (the figure is all your markers, not the page's 24), and "the page's 24 markers can't cover them all"; Made for "your
+  36 markers and the 3 added" with Try it with these (they'd been counted as yours: "your 39 markers"); Matched to the
+  photo is **From the photo**, which fits a phone's list.
+- **One marker is never both a section's highlight and its shadow** (6): "H WG01, S WG01" read as a mistake. Measured:
+  3 of 11 photos had any, 1-11 sections, costing 0 to −0.2.
+- **Fixed in the review:** on a phone, Highlights' and Shadows' lists ran a long kind under the chevron (a more
+  specific rule had taken the room the lists keep for it); the printed key said "— base is the lightest" or "no shadow
+  (already darkest)" for a photo-toned marker with none chosen: "— not needed"; a duplicate test seam.
+- **Measured for the review** (no engine change, decision 8): eight variants of the page builder and the photo tones,
+  none over +0.5; the Photo style's gain rests on light markers laid over darker ones (+3.8 with the author's markers;
+  +0.7 with shadows only from markers as dark as the base), so the author's paper test (Test strips sent) decides
+  decision 1.
+- Tests: unit (the shadow never the highlight; Home's markup), `e2e/photo-tones` (the offer: shown, Shade it, Undo,
+  closed, ticked, a reload; no toast for the page made; From the photo; the flat line), `e2e/photo-page-2` (the Home
+  and start-card button at a phone's and an iPad's size; Your N markers match; Made for … and the N added), `home-2`
+  (the start card's words).
+- Help (Pictures, Shading), What's new. Cache bumped to `marker-studio-v327.1`.

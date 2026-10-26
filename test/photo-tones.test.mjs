@@ -96,3 +96,23 @@ test('markers added: at most 4, never one of the page’s, each only when it bri
   // and none added is never nearer than what it chose
   assert.ok(core.ptChoose(S, null, []).err >= r.err - 1e-6);
 });
+
+test('v327.1: one marker is never both a section’s highlight and its shadow', () => {
+  const { core, by } = scene(['Ohuhu|E415', 'Ohuhu|E97']);
+  const base = by.get('Ohuhu|E415'),
+    rose = by.get('Ohuhu|E97');
+  core.assignData = { assign: { 1: base, 2: rose }, order: [1, 2], N: 2 };
+  // section 1: its light part E97's own colour, its dark part E97 laid over the base (as the glaze model draws it),
+  // so E97 is the best highlight and the best shadow both
+  const S = {
+    1: Float32Array.from([
+      ...part(rose.lab, 0.1, 30),
+      ...part(base.lab, 0.41, 30),
+      ...part([33.4, 15, 17.9], 0.95, 30),
+    ]),
+  };
+  const r = core.ptChoose(S, null, []);
+  assert.ok(r.tone[1] && r.tone[1].light, 'a highlight');
+  assert.equal(r.tone[1].light.mkey, 'Ohuhu|E97');
+  assert.ok(!r.tone[1].dark || r.tone[1].dark.mkey !== 'Ohuhu|E97', 'its shadow another marker, or none');
+});

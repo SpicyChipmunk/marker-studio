@@ -3308,14 +3308,17 @@ function _buildPDF(dry) {
           ? { c: t.light, o: true }
           : t.paper
             ? { t: '— leave the paper white' }
-            : // (v318.17: by the row's own tones: a zone with Highlights None has no H)
+            : // (v318.17: by the row's own tones: a zone with Highlights None has no H. v327.1: photo tones leave
+              // one out where none would be closer to the photo, not for want of a lighter marker: not needed)
               !t.noHi
-              ? { t: '— base is the lightest' }
+              ? { t: t.photoH ? '— not needed' : '— base is the lightest' }
               : null,
         t.dark
           ? { c: t.dark, o: true }
           : t.noShadow
-            ? { t: 'no shadow (already darkest)' }
+            ? {
+                t: t.photoS && shLab(mm)[0] >= 28 ? '— not needed' : 'no shadow (already darkest)',
+              }
             : { coat: mm, S: t.S },
       ];
     }

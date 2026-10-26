@@ -676,18 +676,19 @@ function shadePick(base, pool, side) {
    Warmer: a lighter marker turned 8-40° the warm way (shWarmWay): blues towards teal, greens towards
    yellow-green, yellows towards orange, oranges and reds towards yellow-orange, violets towards pink.
    The two ways are never the same for one colour. A grey base takes a cooler (or warmer) grey. */
-// (v327: Matched to the photo, photo tones: on a photo-made page lit by its photo, 'photo' at the end of this file)
+// (v327: Matched to the photo, photo tones: on a photo-made page lit by its photo, 'photo' at the end of this file;
+// v327.1: named From the photo, which fits a phone's list)
 const SHADE_SHADOW_LABEL = {
     same: 'Same colour',
     cool: 'Cooler',
     grey: 'Grey',
-    photo: 'Matched to the photo',
+    photo: 'From the photo',
   },
   SHADE_HILITE_LABEL = {
     same: 'Same colour',
     warm: 'Warmer',
     paper: 'Paper white',
-    photo: 'Matched to the photo',
+    photo: 'From the photo',
   },
   // (v318.16: the Highlights list's, with None: Shadows only, shadeMode 'shadow')
   SHADE_HILITE_LABEL_ALL = Object.assign({ blender: 'Blender (0)', none: 'None' }, SHADE_HILITE_LABEL);
@@ -3006,7 +3007,21 @@ function _ptChoose(S, amt, extras) {
           s2[c] += e.sum[2][c];
         }
       });
-      return [bestL(gr, s0, cand), bestS(gr, s2, cand)];
+      // (v327.1: the shadow never the marker chosen as the highlight: "H WG01, S WG01" read as a mistake; measured,
+      // on 3 of 11 photos, 1-11 sections, and costing 0 to −0.2)
+      const L = bestL(gr, s0, cand);
+      return [
+        L,
+        bestS(
+          gr,
+          s2,
+          L
+            ? cand.filter(function (m) {
+                return m !== L;
+              })
+            : cand,
+        ),
+      ];
     };
     const decide = function (pairs) {
       // each section: the pair that brings its toned parts nearest, if by PT_MIN_GAIN; else flat
@@ -3160,6 +3175,9 @@ function ptTone(b, zs, L, Sm, set, T2, T3) {
     set: set,
     held: set < 0,
   });
+  // (v327.1: which of its tones are the photo's, for the key's words: one left out wouldn't be closer to the photo)
+  t.photoH = hiP;
+  t.photoS = shP;
   if (hiP) {
     t.light = L || null;
     t.L = L ? hexRgb(L.hex) : null;
@@ -3331,6 +3349,14 @@ function ptStyleApply() {
 function ptFlatN() {
   const r = ptGet();
   return r ? r.nFlat : 0;
+}
+// (v327.1) and the ones shaded from the photo
+function ptToneN() {
+  const r = ptGet();
+  if (!r) return 0;
+  let n = 0;
+  for (const l in r.tone) if (r.tone[l]) n++;
+  return n;
 }
 // the section on its marker's second set (its label's prime)
 function ptSet2(l) {

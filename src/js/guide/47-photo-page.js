@@ -1552,6 +1552,12 @@ function ppSave() {
 // the markers a photo-made page may use: those the Photo pattern would (photoPool: your markers, or a palette you
 // chose), or with pp.full the whole range of your brands (catalogue markers you don't own among them); with pp.add
 // (v326, Try it with these), those and the markers added
+// (v327.1) how many of ppPool's are your own (or your palette's): without the markers added
+function ppOwnN() {
+  return photoPool().filter(function (m) {
+    return !!m.lab;
+  }).length;
+}
 function ppPool() {
   if (pp && pp.full) return ppFullPool();
   const pool = photoPool().filter(function (m) {
@@ -2689,7 +2695,7 @@ function ppBegin(tok, f35) {
     ppMake(true)
       .then(function (ok) {
         if (!ok || tok !== loadGen) return;
-        note(ppSaid() || ppLine());
+        ppNote(ppSaid());
         sayLive('Your colouring page: ' + ppCountText() + '.');
       })
       .catch(function (err) {
@@ -2727,6 +2733,15 @@ function ppCountText() {
     (nb ? ' · background left white' : '')
   );
 }
+// (v327.1) the page made, said: what's worth saying as a toast (m: no clear subject, made again with edits); the
+// routine line only in the guide's meta line, not as a toast over Detail and Focus, which the count line already
+// says (docs/PLAN-v327.1.md, 3); a one-colour photo's line is a toast still
+function ppNote(m) {
+  if (m) return note(m);
+  const l = ppLine();
+  if (comps && comps.length < 3) return note(l);
+  note(l, true);
+}
 // the line under the picture once a page is made
 function ppLine() {
   // (a guide needs two sections or more, as Build says by waiting: a photo of one colour all over gives one)
@@ -2743,7 +2758,10 @@ function ppMadeFor() {
     return 'your palette’s ' + pool.length + ' markers';
   // (no markers added yet: every one in the catalogue, as the rest of the app says it)
   if (isDemo()) return full;
-  return 'your ' + pool.length + ' marker' + (pool.length === 1 ? '' : 's');
+  // (v327.1: the markers added by Try it with these said apart: they'd been counted in, "your 39 markers")
+  const own = pp.add && pp.add.length ? ppOwnN() : pool.length,
+    more = pool.length - own;
+  return 'your ' + own + ' marker' + (own === 1 ? '' : 's') + (more > 0 ? ' and the ' + more + ' added' : '');
 }
 function ppBrands() {
   const b = {};
@@ -2992,7 +3010,10 @@ function ppHelpBody(w) {
   const r = ppFillGet();
   if (!r) return ppMoreBackHTML();
   const pal = paletteSource === 'saved' || paletteSource === 'generate',
-    whose = pal ? 'Your palette matches ' : 'Your markers match ',
+    // (v327.1: whose markers, counted, as the page step's Made for line: the figure is all of them, not the page's)
+    whose = pal
+      ? 'Your palette matches '
+      : 'Your ' + ppPool().length + (ppPool().length === 1 ? ' marker matches ' : ' markers match '),
     list = function (o) {
       return o.i.map(function (i) {
         return _ppFill.cand[i];
@@ -3080,7 +3101,7 @@ function ppHelpBody(w) {
   const mo = r.more;
   if (keep && mo && !pp.more && (mo.lost >= PP_MORE_LOST || mo.gain >= PP_MORE_GAIN))
     h +=
-      '<div class="sfppfl" id="sfPpMore">Some of this photo’s colours aren’t on the page: ' +
+      '<div class="sfppfl" id="sfPpMore">Some of this photo’s colours aren’t on the page: the page’s ' +
       ppCap(pp.d) +
       ' markers can’t cover them all. <button type="button" class="sflink" data-pp="more">Use up to ' +
       ppCap(pp.d) * 2 +
@@ -3159,6 +3180,68 @@ function ppHelpWire() {
         _ppPick = {};
       });
   });
+}
+/* (v327.1) Shade it like the photo (docs/PLAN-v327.1.md, 4): right after a photo-made page's first Build in this
+   visit, with shading off and nothing coloured, a line under the tabs offers the Photo style. Gone once tapped or
+   closed, once a section is ticked or shading is turned on, after a remake, and for any other picture (loadGen); never
+   saved, so a reload or the Library never shows it. Shade it is the Photo style as its button applies it: one Undo
+   step, Shading opened, a toast with Undo (which doesn't bring the line back). */
+let _ppShFor = -1, // the picture (loadGen) it's offered for
+  _ppShGone = -1; // the picture it's gone for
+function ppShadeArm() {
+  // (the demo, with no markers of your own yet, too: its page is shaded from the whole range, as its plan is)
+  if (ppOn() && shadeMode === 'off' && _ppShFor !== loadGen && _ppShGone !== loadGen) _ppShFor = loadGen;
+}
+function ppShadeGone() {
+  if (_ppShFor === loadGen) _ppShGone = loadGen;
+}
+function ppShadeLineUp() {
+  if (_ppShFor !== loadGen || _ppShGone === loadGen) return false;
+  if (!ppOn() || !assignData || shadeMode !== 'off' || hasProgress()) {
+    ppShadeGone();
+    return false;
+  }
+  // (one line at a time: the kept-sections, pinned and running-low lines first)
+  return sfmode === 'guide' && !(_heldNote || _pinNote || lowLineUp());
+}
+function ppShadeLineHTML() {
+  if (!ppShadeLineUp()) return '';
+  return (
+    '<div id="sfPpShLine" class="sfheldnote sfsamplenote" role="note"><span>Shade it like the photo? A lighter and a ' +
+    'darker tone in many sections, from the photo’s own light. <button type="button" id="sfPpShGo" class="sflink">' +
+    'Shade it</button></span><button type="button" id="sfPpShX" class="sfheldx" aria-label="Not now">' +
+    ic('x') +
+    '</button></div>'
+  );
+}
+function ppShadeLineWire() {
+  const go = document.getElementById('sfPpShGo'),
+    x = document.getElementById('sfPpShX');
+  if (go)
+    go.addEventListener('click', function () {
+      ppShadeGone();
+      // (as the Shading row's Photo: 52-controls-plan-wire)
+      if (!shPresetApply('photo')) return;
+      planWhy = 'Shading: Photo';
+      shadeFlatMode = false;
+      guideDirty = true;
+      gradFollowLight();
+      normalizeTones();
+      gTab = 'shading';
+      renderControls();
+      renderGuide();
+      ctlRefocus('#sfTab-shading');
+      toastAction('Shaded like the photo.', 'Undo', function () {
+        planUndo();
+      });
+    });
+  if (x)
+    x.addEventListener('click', function () {
+      ppShadeGone();
+      const n = document.getElementById('sfPpShLine');
+      if (n) n.remove();
+      ctlRefocus('#sfTab-' + gTab);
+    });
 }
 // the page made again for a change of its markers (set): on the page step as Detail does (asked first when there's
 // something to lose; one Undo step), from Plan as its Remake does (then shown on the page step)
@@ -3352,6 +3435,8 @@ function ppSaid() {
 }
 function ppRemade(geo) {
   const he = hasEdits || hasProgress();
+  // (v327.1: a remade page isn't offered Shade it again)
+  ppShadeGone();
   return ppMake(geo)
     .then(function (ok) {
       if (!ok) return false;
@@ -3360,7 +3445,7 @@ function ppRemade(geo) {
       if (sfmode !== 'review') sfmode = 'review';
       renderControls();
       render();
-      note(ppSaid() || (he ? 'Page made again — tap Undo to bring back your edits and progress.' : ppLine()));
+      ppNote(ppSaid() || (he ? 'Page made again — tap Undo to bring back your edits and progress.' : null));
       return true;
     })
     .catch(function (err) {

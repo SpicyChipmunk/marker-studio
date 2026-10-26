@@ -156,7 +156,8 @@ function resetForNewPicture() {
   planReset();
   return gen;
 }
-function note(m) {
+// (quiet, v327.1: the meta line only, no toast)
+function note(m, quiet) {
   // (v310: not while a Mood picture is made, 32-mood-pics: the guide on screen hasn't changed)
   if (_mpQuiet) return;
   const _plain = typeof m === 'string' ? m.replace(/<[^>]*>/g, '') : '',
@@ -191,7 +192,7 @@ function note(m) {
     const t = document.getElementById('msToast');
     if (t && t.classList.contains('on') && /\u2026\s*$/.test(t.textContent)) t.classList.remove('on');
   }
-  if (m && !_prog && workEl && workEl.offsetParent !== null && m !== metaText())
+  if (m && !quiet && !_prog && workEl && workEl.offsetParent !== null && m !== metaText())
     toastHTML(m, /could not|couldn|failed|full|not enough|no longer/i.test(m) ? 6500 : 3200);
 }
 function evCanvas(e) {

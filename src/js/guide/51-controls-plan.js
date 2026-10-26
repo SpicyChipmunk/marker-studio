@@ -54,6 +54,7 @@ function ctlPlan() {
   toolTipWire();
   lowLineWire();
   stripLineWire();
+  ppShadeLineWire();
   roughWire();
   positionRough();
   speckWire();
@@ -219,6 +220,8 @@ function ctlPlanHead() {
     pinNoteHTML() +
     // (v313: a marker running low, ahead of the first-time lines)
     lowLineHTML() +
+    // (v327.1: Shade it like the photo, after a photo-made page's Build; the first-time lines wait for it)
+    ppShadeLineHTML() +
     sampleNoteHTML() +
     toolTipHTML() +
     // (one line at a time under the tabs: not beside the kept-sections or pinned line, v289)
@@ -1292,15 +1295,24 @@ function ctlPlanShading() {
             (shadeSets ? ' checked' : '') +
             '> Two tone sets per marker (closer to the photo)</label>' +
             (function () {
-              const n = ptFlatN();
-              return n
-                ? '<div class="sfc-note sfc-mt6" id="sfShEven">' +
+              // (v327.1: what was shaded first; the rest are the photo's even parts, mostly)
+              const n = ptFlatN(),
+                t = ptToneN();
+              if (!n) return '';
+              return (
+                '<div class="sfc-note sfc-mt6" id="sfShEven">' +
+                (t
+                  ? 'Shaded from the photo: ' +
+                    t +
+                    (t === 1 ? ' section. ' : ' sections. ') +
                     n +
-                    (n === 1 ? ' section stays' : ' sections stay') +
-                    ' flat: ' +
-                    (n === 1 ? 'its tones wouldn’t' : 'their tones wouldn’t') +
-                    ' be closer to the photo.</div>'
-                : '';
+                    (n === 1 ? ' stays' : ' stay') +
+                    ' flat: tones wouldn’t make ' +
+                    // (one: "it … to it" read badly)
+                    (n === 1 ? 'it much closer to the photo.' : 'them much closer to it.')
+                  : 'No section is shaded from the photo: tones wouldn’t make any much closer to it.') +
+                '</div>'
+              );
             })()
           : '') +
         (shadeMode === 'shadow' && zones.length

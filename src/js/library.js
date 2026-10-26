@@ -783,7 +783,7 @@ function renderRecent() {
               ba +
               '</button>'
             : '') +
-          '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a photo of a colouring page into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a colouring page</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button><button type="button" class="homelink hcalt hcpdf" data-start="pdf">Page in a PDF? Open the PDF</button><button type="button" class="homelink hcalt hcpdf" data-start="ppage">Any other photo? Make a colouring page</button></div></div>';
+          '<div class="hcbody"><span class="hceb">New colouring guide</span><h2 class="hcname">Turn a colouring page, or any photo, into a <span class="hcnw">marker-by-number</span> guide</h2><span class="hcmeta hcown"></span><button type="button" class="btn-primary hcgo" data-start="photo">Choose a colouring page</button><button type="button" class="btn-primary hcgo hcgo2" data-start="ppage">Make a colouring page from any photo</button><button type="button" class="homelink hcalt" data-start="sample">or try the sample</button><button type="button" class="homelink hcalt hcpdf" data-start="pdf">Page in a PDF? Open the PDF</button></div></div>';
       }
       var own = cel.querySelector('.hcown'),
         // (v309.1: the colours; a set's Colorless Blender builds nothing. v318.27: Home's Markers card counts the

@@ -22,7 +22,7 @@ sheet, paper, VoiceOver, and how it feels.
 
 ## Before you start (5 min)
 
-- [ ] Home's foot says the version you're testing (**v327 · Beta**). If not: "A new version of Marker Studio is
+- [ ] Home's foot says the version you're testing (**v327.1 · Beta**). If not: "A new version of Marker Studio is
       ready" under Home's title → **Reload**.
 - [ ] ★ **Library › Back up** → the share sheet → **Save to Files** → the file is in Files. (A1 needs it.)
 - Have ready: a colouring page on the table to photograph; a PDF of a colouring page in Files; a few Ohuhu and Copic
@@ -170,6 +170,19 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 
 What recent releases changed that Parts A and B don't already cover.
 
+**New in v327.1: the review's changes**
+
+- [ ] ★ **The paper test of the Photo style's shadows** (the review's decision 1): the three Test strips sent (or Share
+      & print › Print › **Test strip** on a guide shaded with Photo). Colour B, let it dry, then S over B; is S darker,
+      about as the bar under it? And the ×1/×2 box: does a 2nd coat darken as the screen shows?
+- [ ] Home, in both orientations: **Make a colouring page from any photo** is an outlined button under the colouring
+      page one (and beside the outlined New guide with a guide in progress); the Guide screen's start card has it under
+      Choose a colouring page. Each opens the photo picker.
+- [ ] A page made from a photo: no toast over Detail and Focus; Build → "Shade it like the photo?" under the tabs ›
+      **Shade it** → Shading, Photo chosen, "Shaded like the photo." with Undo. Make another › ✕ → gone; tick a
+      section on a third → gone.
+- [ ] Highlights and Shadows say **From the photo** in full, upright and sideways.
+
 **New in v327: photo tones, tidier shading, more markers for colourful photos**
 
 - [ ] ★ **A page coloured on paper (the one thing measurement can't tell):** a page made from one of your own photos,
@@ -180,7 +193,7 @@ What recent releases changed that Parts A and B don't already cover.
 - [ ] ★ **Timing:** Copy diagnostics after tapping **Photo** (the first time on a page) and after moving a slider:
       paste it into Send feedback.
 - [ ] The Shading row on a photo-made page reads Off · Soft · Dramatic · **Photo** · Neuro; with Light from › The sun it
-      reads Rounded again, and Highlights and Shadows show Same colour; back to The photo, Matched to the photo again.
+      reads Rounded again, and Highlights and Shadows show Same colour; back to The photo, From the photo again.
 - [ ] Some sections stay flat: the panel says how many; tapping one says "Its tones wouldn't be closer to the photo".
 - [ ] Colour a section's highlight, then move the Shadows slider: its markers stay as you coloured them.
 - [ ] With a big collection and a busy, colourful photo: "Some of this photo's colours aren't on the page… Use up to 48

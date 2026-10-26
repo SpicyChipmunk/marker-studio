@@ -1446,12 +1446,12 @@ import { readFileSync } from 'node:fs';
   });
   // (v320, Ben's count rule: "markers" is every pen owned, the blender too, as Markers and the swatch chart count them;
   // "colours", the ink, stays the guide's card's word: "Built from your 120 colours")
-  test('Home’s Markers card counts every marker owned, as Markers does; the button says it starts from a colouring page (v325: a photo of anything has its own link under it)', () => {
+  test('Home’s Markers card counts every marker owned, as Markers does; the button says it starts from a colouring page (v325: a photo of anything has its own link under it; v327.1: an outlined button)', () => {
     const chrome = read('src/js/chrome.js');
     assert.match(chrome, /const n = state\.owned\.size;/);
     assert.match(
       read('src/html/app.html'),
-      /<button id="homeNew" class="btn-primary homenew">New guide from a colouring page<\/button><button type="button" id="homePPage" class="homelink homepplink" data-start="ppage">Or make a colouring page from any photo<\/button>/,
+      /<button id="homeNew" class="btn-primary homenew">New guide from a colouring page<\/button><button type="button" id="homePPage" class="btn-primary homenew homenew2 homepp" data-start="ppage">Make a colouring page from any photo<\/button>/,
     );
   });
 }

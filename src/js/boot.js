@@ -32,7 +32,8 @@ if (_hn)
     setMode('sections');
     if (window.SF && SF.showHome && !SF.hasGuide()) SF.showHome();
   });
-// (v325) Home's "Or make a colouring page from any photo": its own picker, then the Guide screen (47-photo-page)
+// (v325) Home's "Make a colouring page from any photo" (a button since v327.1): its own picker, then the Guide
+// screen (47-photo-page)
 var _hpp = document.getElementById('homePPage');
 if (_hpp)
   _hpp.addEventListener('click', function () {

@@ -866,7 +866,7 @@ after(teardown);
     await idle(page);
     assert.equal(
       await page.textContent('#sfStart .sftag'),
-      'Turn a photo of a colouring page into a marker-by-number guide, built from the markers you own.',
+      'Turn a colouring page, or any photo, into a marker-by-number guide, built from the markers you own.',
     );
     assert.match(
       await page.textContent('#sfMeta'),

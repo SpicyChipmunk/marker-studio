@@ -139,6 +139,15 @@ test('photo tones: Photo in the Shading row in Rounded’s place, Matched to the
   await idle(page);
   await own(page, ['Honolulu 120']);
   await fromHome(page);
+  // (v327.1: the page made isn't said as a toast over Detail and Focus: the count line says it)
+  assert.ok(
+    !(await page.evaluate(() => {
+      const t = document.getElementById('msToast');
+      return !!t && t.classList.contains('on') && /Colouring page made/.test(t.textContent);
+    })),
+    'no toast for the page made',
+  );
+  assert.match(await page.textContent('#sfPpCount'), /This page: \d+ sections/);
   await built(page);
   await shadingTab(page);
   assert.deepEqual(await rowKeys(page), ['off', 'soft', 'dramatic', 'photo', 'neuro']);
@@ -161,8 +170,13 @@ test('photo tones: Photo in the Shading row in Rounded’s place, Matched to the
   assert.ok(t.extras <= 4);
   assert.equal(await page.inputValue('#sfShStyle'), 'photo');
   assert.equal(await page.inputValue('#sfHiStyle'), 'photo');
+  // (v327.1: named From the photo, which fits a phone's list)
+  assert.equal(await page.$eval('#sfShStyle option:checked', (o) => o.textContent), 'From the photo');
   if (t.flat)
-    assert.match(await page.textContent('#sfShEven'), /\d+ sections? stays? flat: .* closer to the photo/);
+    assert.match(
+      await page.textContent('#sfShEven'),
+      /^Shaded from the photo: \d+ sections?\. \d+ stays? flat: tones wouldn’t make (them much closer to it|it much closer to the photo)\.$/,
+    );
   // (a highlight left out as it wouldn't be closer isn't a lighter marker you lack)
   const note = () => page.evaluate(() => [...document.querySelectorAll('.sfshnote')].map((e) => e.textContent).join(' '));
   assert.doesNotMatch(await note(), /no lighter marker/);
@@ -383,7 +397,7 @@ test('Use up to 48 markers: offered for a very colourful photo with a big collec
   await until(page, () => !!document.querySelector('#sfPpHelp [data-pp="more"]'), null, 'the offer', 30000);
   assert.match(
     await page.textContent('#sfPpMore'),
-    /Some of this photo’s colours aren’t on the page: 24 markers can’t cover them all\. Use up to 48 markers/,
+    /Some of this photo’s colours aren’t on the page: the page’s 24 markers can’t cover them all\. Use up to 48 markers/,
   );
   await page.click('#sfPpHelp [data-pp="more"]');
   await until(page, () => __mstest.pp.more && !__mstest.ppBusy, null, 'made with more', 90000);
@@ -395,5 +409,67 @@ test('Use up to 48 markers: offered for a very colourful photo with a big collec
   await until(page, () => !__mstest.pp.more && !__mstest.ppBusy, null, 'back', 90000);
   await pageReady(page);
   assert.ok((await page.evaluate(() => __mstest.pp.n)) <= 24);
+  assert.deepEqual(errors, []);
+});
+
+test('v327.1: Shade it like the photo, once, after a photo-made page’s Build: Photo in one Undo step; closed, ticked or reopened, gone', async () => {
+  const { page, errors } = await openApp(VIEW);
+  await idle(page);
+  await own(page, ['Honolulu 120']);
+  await fromHome(page);
+  await built(page);
+  const line = () => page.$('#sfPpShLine');
+  assert.ok(await line(), 'offered after Build');
+  assert.match(await page.textContent('#sfPpShLine'), /^Shade it like the photo\? .* Shade it$/);
+  // (the first-time tap line waits its turn; one line at a time)
+  assert.doesNotMatch(await page.textContent('#sfCtl'), /a section on the picture to change or pin its colour/);
+  // on every tab: it's under the tabs
+  await page.click('.sftabbtn[data-t="pattern"]');
+  await idle(page);
+  assert.ok(await line(), 'on Pattern too');
+  // Shade it: the Photo style, Shading opened, said with Undo
+  await page.click('#sfPpShGo');
+  await idle(page, 1500);
+  assert.equal(await page.evaluate(() => __mstest.styleVars.shadeMode), 'full');
+  assert.equal(await page.getAttribute('#sfShade button.on', 'data-v'), 'photo');
+  assert.equal(await page.getAttribute('.sftabbtn.on', 'data-t'), 'shading');
+  assert.match(await page.textContent('#msToast'), /Shaded like the photo\./);
+  assert.equal(await line(), null, 'gone once used');
+  // one Undo step: shading off again, and the line stays gone
+  await page.evaluate(() => __mstest.assign.planUndo());
+  await idle(page);
+  assert.equal(await page.evaluate(() => __mstest.styleVars.shadeMode), 'off');
+  assert.equal(await line(), null, 'Undo doesn’t bring it back');
+  // a new photo page: offered again; ✕ closes it for good
+  await page.click('#mHome');
+  await idle(page);
+  await fromHome(page, { seed: 3 });
+  await built(page);
+  assert.ok(await line(), 'a new page is offered it');
+  await page.click('#sfPpShX');
+  await idle(page);
+  assert.equal(await line(), null);
+  await page.click('.sftabbtn[data-t="colours"]');
+  await idle(page);
+  assert.equal(await line(), null, 'closed stays closed');
+  // a third: a section ticked makes it go (shading would change what's on the paper)
+  await page.click('#mHome');
+  await idle(page);
+  await fromHome(page, { seed: 11 });
+  await built(page);
+  assert.ok(await line());
+  await page.evaluate(() => {
+    const t = __mstest;
+    t.stepSet(t.assignData.order[0], 2, true);
+    t.renderControls();
+  });
+  await idle(page);
+  assert.equal(await line(), null, 'gone once colouring starts');
+  // reopened (a reload): never
+  await page.reload();
+  await idle(page, 1500);
+  await page.click('#mSections');
+  await idle(page, 1500);
+  assert.equal(await line(), null, 'not after a reload');
   assert.deepEqual(errors, []);
 });

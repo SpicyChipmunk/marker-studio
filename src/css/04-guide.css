@@ -1064,6 +1064,13 @@
   flex: 1 1 100%;
   font-size: var(--t-md);
 }
+/* (v327.1) a colouring page from any photo: the second choice, outlined, under Choose a colouring page */
+#sfRoot #sfStart button.sfstpick.sfstpp {
+  background: transparent;
+  border: 1.5px solid rgba(var(--accent-rgb), 0.7);
+  color: var(--accent-ink2);
+  box-shadow: none;
+}
 #sfRoot #sfStart button.sfstbtn {
   /* (even widths on a row: as wide as the widest label needs, each) */
   flex: 1 1 0;
@@ -1506,9 +1513,12 @@
   display: block;
   margin-top: 0;
 }
+/* (v327.1: room kept for the chevron, which the select's own rule gives it: this rule, more specific, had taken it
+   away, so a long kind, Matched to the photo, ran under the chevron on a phone) */
 #sfRoot #sfCtl .sfshcol .sfc-select {
   margin-top: 4px;
-  padding: 7px 8px;
+  padding: 7px 30px 7px 8px;
+  text-overflow: ellipsis;
 }
 #sfRoot #sfCtl .sfshrow {
   display: flex;

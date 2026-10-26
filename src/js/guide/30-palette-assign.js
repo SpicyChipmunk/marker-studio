@@ -4791,6 +4791,9 @@ function buildGuide(keepPlan) {
   const now = same ? planSnap() : null,
     unchanged = !!(was && now && planSame(was, now, true));
   guideDirty = unchanged ? wasDirty : true;
+  // (v327.1: a photo-made page's first Build offers Shade it like the photo, 47-photo-page; armed before the
+  // controls are drawn, which show it)
+  if (_fresh) ppShadeArm();
   renderGuide();
   renderControls();
   if (unchanged) {

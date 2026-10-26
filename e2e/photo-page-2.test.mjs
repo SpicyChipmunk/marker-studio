@@ -160,9 +160,11 @@ test('the markers that would help: suggested with To buy chips, Try it with thes
   // four markers of a set: little of a colourful photo matched, so markers to add are suggested
   await own(page, (await setKeys(page, 'Honolulu 24')).slice(0, 4));
   await fromHome(page, { seed: 7 });
-  const t = await helpLine(page, /Your markers match \d+% of this photo\./);
+  const t = await helpLine(page, /Your \d+ markers? match(es)? \d+% of this photo\./);
   const m = t.match(/match (\d+)% of this photo\.\s*Adding .* would make it (\d+)%/);
   assert.ok(m, t);
+  // (v327.1: whose markers, counted: the figure is all of them)
+  assert.match(t, /Your 4 markers match/);
   assert.ok(+m[2] - +m[1] >= 15, 'shown when they add 15 points or more: ' + t);
   const chips = await page.$$eval('#sfPpHelp .wishchip', (b) => b.map((x) => x.getAttribute('data-wk')));
   assert.ok(chips.length >= 1, 'To buy chips');
@@ -176,6 +178,11 @@ test('the markers that would help: suggested with To buy chips, Try it with thes
   const add = await page.evaluate(() => __mstest.pp.add);
   assert.ok(add.length >= 1);
   assert.match(await helpLine(page, /Made with your markers and \d+ you don’t own/), /Use only yours/);
+  // (v327.1: the page step's Made for line counts them apart: they'd been counted as yours)
+  assert.equal(
+    await page.textContent('#sfPpMade'),
+    'Made for your 4 markers and the ' + add.length + ' added.',
+  );
   // Build: the plan as made, and Plan's Photo panel says the same
   await page.click('#sfBuild');
   await until(page, () => __mstest.sfmode === 'guide' && !!__mstest.assignData, null, 'built', 30000);
@@ -424,7 +431,7 @@ test('Remake to use your newer markers: said for markers you didn’t have when 
   // made with a few, then more bought: those are newer, and said
   await own(page, (await setKeys(page, 'Honolulu 24')).slice(0, 4));
   await fromHome(page, { seed: 7 });
-  await helpLine(page, /Your markers match \d+% of this photo\./);
+  await helpLine(page, /Your \d+ markers? match(es)? \d+% of this photo\./);
   await own(page, await setKeys(page, 'Honolulu 72'));
   await page.evaluate(() => __mstest.renderControls());
   const t = await helpLine(page, /Your newer markers match more of it \(\d+% as made, \d+% now\)/);
@@ -464,4 +471,38 @@ test('markers to add from a brand you don’t have carry its letter: a Copic lis
     assert.ok(t.startsWith(tag + ' '), 'its brand’s letter: ' + t);
   });
   assert.deepEqual(errors, []);
+});
+
+test('v327.1: a colouring page from any photo is a button, under the colouring page one, on Home (phone and iPad) and the Guide screen’s start card, each opening the photo picker', async () => {
+  for (const vp of [
+    { width: 390, height: 844 },
+    { width: 820, height: 1180 },
+  ]) {
+    const { page, ctx, errors } = await openApp({ ...vp, storage: ONBOARDED });
+    await answerAsks(page, true);
+    await idle(page);
+    const b = page.locator('[data-start="ppage"]:visible').first();
+    assert.equal(await b.textContent(), 'Make a colouring page from any photo', vp.width + ': Home');
+    assert.match(await b.getAttribute('class'), /btn-primary/, 'a button, not a link');
+    // (under the colouring page button: second in the start area's order)
+    const order = await page.evaluate(() => {
+      const all = [...document.querySelectorAll('#homeView button')].filter((e) => e.offsetParent);
+      return [
+        all.findIndex((e) => /colouring page$/.test(e.textContent.trim()) && !e.dataset.start?.startsWith('pp')),
+        all.findIndex((e) => e.dataset.start === 'ppage'),
+      ];
+    });
+    assert.ok(order[0] >= 0 && order[1] === order[0] + 1, 'straight after it: ' + order);
+    const [fc] = await Promise.all([page.waitForEvent('filechooser', { timeout: 5000 }), b.click()]);
+    assert.ok(fc, 'the photo picker');
+    // the Guide screen's start card
+    await page.click('#mSections');
+    await idle(page);
+    assert.equal(await page.textContent('#sfPpPick'), 'Make a colouring page from any photo');
+    assert.equal(await page.$('#sfStPp'), null, 'the old line gone');
+    const [fc2] = await Promise.all([page.waitForEvent('filechooser', { timeout: 5000 }), page.click('#sfPpPick')]);
+    assert.ok(fc2);
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
 });

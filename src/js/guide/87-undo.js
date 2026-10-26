@@ -660,7 +660,16 @@ function lowSwap(k) {
 let _stripTip = 0; // 1: shown in this visit, -1: closed
 function stripLineHTML() {
   if (_stripTip < 0 || sfmode !== 'guide' || !assignData || isDemo()) return '';
-  if (_heldNote || _pinNote || lowLineUp() || sampleNoteHTML() || tapLineUp() || _toolTip > 0) return '';
+  if (
+    _heldNote ||
+    _pinNote ||
+    lowLineUp() ||
+    sampleNoteHTML() ||
+    tapLineUp() ||
+    _toolTip > 0 ||
+    ppShadeLineUp()
+  )
+    return '';
   if (!_stripTip) {
     if (hintSeen('strip') || !hintSeen('tap') || _hNow.tap || _smpLoad || curSample) return '';
     markHint('strip');
@@ -695,6 +704,8 @@ function stripLineWire() {
 // first change of tab, v289, so the sample's line could have its turn; that line is now the header's)
 function tapLineUp() {
   if (family === 'manual' || paintOn || zoneEditOn() || _heldNote || _pinNote || lowLineUp()) return false;
+  // (v327.1: after Shade it like the photo has had its turn)
+  if (ppShadeLineUp()) return false;
   return !(hintSeen('tap') && !_hNow.tap);
 }
 /* Rough spots (v306): at Polished, where markers the guide doesn't use can smooth them (gradFixRun, 30-palette-assign),

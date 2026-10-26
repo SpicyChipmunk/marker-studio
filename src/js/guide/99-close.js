@@ -352,6 +352,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     ptGet: ptGet,
     ptFlat: ptFlat,
     ptFlatN: ptFlatN,
+    ptToneN: ptToneN,
     ptSet2: ptSet2,
     ptAvail: ptAvail,
     ptStyleApply: ptStyleApply,
@@ -638,7 +639,6 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get subKeep() {
       return _subKeep;
     },
-    photoColours: photoColours,
     photoRoughAt: photoRoughAt,
     get photoPeek() {
       return photoPeek;

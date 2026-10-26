@@ -1226,12 +1226,20 @@ button.hcpic:focus-visible {
     display: none !important;
   }
 }
-/* (beside the Continue card, New colouring guide is the second choice: outlined) */
-.homenew.homenew2 {
+/* (beside the Continue card, New colouring guide is the second choice: outlined; v327.1: so is a colouring page from
+   any photo, under it, here and in the start card, hcgo2) */
+.homenew.homenew2,
+.hcgo.hcgo2 {
   background: transparent;
   border: 1.5px solid rgba(var(--accent-rgb), 0.7);
   color: var(--accent-ink2);
   box-shadow: none;
+}
+.homenew.homepp {
+  margin-top: 10px;
+}
+.hcgo.hcgo2 {
+  margin-top: 8px;
 }
 /* (the cards' icons on a soft tile in their marker colour) */
 .homecard .hcicon {
