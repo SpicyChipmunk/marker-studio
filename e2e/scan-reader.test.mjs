@@ -220,7 +220,7 @@ after(teardown);
     await page.waitForSelector('#ocrView .ocrwarn');
     assert.match(
       await page.textContent('#ocrView .ocrwarn'),
-      /The download didn’t finish: what’s downloaded is kept\. Try again\./,
+      /The download didn’t finish: the files downloaded whole are kept\. Try again\./,
     );
     const kept = await page.evaluate(
       async () => (await (await caches.open('marker-studio-ocr-1')).keys()).length,
