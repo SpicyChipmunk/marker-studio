@@ -357,14 +357,25 @@ after(teardown);
   const vsFull = (page) =>
     page.evaluate(() => {
       const c = document.getElementById('sfCanvas'),
-        g = c.getContext('2d');
-      // the focus bar can change height after a step (longer text), which resizes the picture and the outline;
-      // a normal (partial) redraw catches that up first, as the app's next redraw would
-      __mstest.renderGuide();
-      const a = g.getImageData(0, 0, c.width, c.height).data.slice();
-      __mstest.forceFullRender();
-      __mstest.renderGuide();
-      const b = g.getImageData(0, 0, c.width, c.height).data;
+        g = c.getContext('2d'),
+        // (v328: the clock held for both drawings: a fresh ✓ fades by the time (40-render tkStep), and a full redraw
+        // of a big photo on a slow runner took long enough to cross a step of its fade, GitHub's run #81: the same
+        // state drawn at two moments, not a partial redraw that differs)
+        pn = performance.now,
+        t0 = pn.call(performance);
+      performance.now = () => t0;
+      let a, b;
+      try {
+        // the focus bar can change height after a step (longer text), which resizes the picture and the outline;
+        // a normal (partial) redraw catches that up first, as the app's next redraw would
+        __mstest.renderGuide();
+        a = g.getImageData(0, 0, c.width, c.height).data.slice();
+        __mstest.forceFullRender();
+        __mstest.renderGuide();
+        b = g.getImageData(0, 0, c.width, c.height).data;
+      } finally {
+        performance.now = pn;
+      }
       let n = 0,
         mx = 0;
       for (let i = 0; i < a.length; i++) {

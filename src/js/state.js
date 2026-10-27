@@ -482,6 +482,9 @@ function parseState(raw) {
       capOffer: v.capOffer ? 1 : 0,
       // (v318.34) Random's Prefer markers you haven't used yet
       rndFresh: v.rndFresh ? 1 : 0,
+      // (v328) each tab's changes this state holds (crossMerge)
+      tabsSeen:
+        v.tabsSeen && typeof v.tabsSeen === 'object' && !Array.isArray(v.tabsSeen) ? v.tabsSeen : null,
     },
   };
 }
@@ -594,7 +597,245 @@ function load() {
 function forgetSaved(id) {
   _savedGone.add(id);
 }
-function savedMerge() {
+// (v328) Two tabs, or the Home Screen app and a Safari tab: a tab sees another's save only once it has finished what
+// it's doing (the browser hands it the new state with the storage event), so a tab saving meanwhile writes its copy
+// over a save it hasn't seen. Each tab therefore keeps its own changes, as small steps (a marker added, an ink mark, a
+// To buy entry, a Library row, Brands I'd buy, the caps' settings), until a save from another tab shows it has them:
+// every save says which of each tab's steps it holds (tabsSeen). A save taken in that misses some of this tab's has
+// them put back and saved again, so every tab ends with every tab's changes. A Library row both changed goes to the
+// newer save. One tab alone saves as before, with its steps acknowledged by its own saves.
+// (this tab's name: not from Math.random where the browser has crypto, as drawing one as the page loads would move
+// every seeded test's rolls on, v318.26)
+const TAB =
+  (function () {
+    try {
+      const a = new Uint32Array(2);
+      crypto.getRandomValues(a);
+      return a[0] || a[1] ? a[0].toString(36) + a[1].toString(36) : '';
+    } catch (e) {
+      return '';
+    }
+  })() || 't' + Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36);
+let _seq = 0,
+  // [{ n, at, o: [steps] }] not yet known to be in the stored state
+  _ops = [],
+  // what each tab's steps the state this tab holds has ({ tab: n })
+  _vv = {},
+  // the shared fields as last written or taken in, to find this tab's steps since (fingerprints, snapNow)
+  _known = null;
+const _J = (x) => JSON.stringify(x === undefined ? null : x);
+// a row's or an entry's fingerprint: its picture by its size and end only (thumbnails are most of the text)
+function fpOf(x) {
+  return JSON.stringify(x, function (k, v) {
+    return k === 'thumb' && typeof v === 'string' && v.length > 96 ? v.length + ':' + v.slice(-64) : v;
+  });
+}
+function snapOf(v) {
+  const o = v && typeof v === 'object' ? v : {},
+    saved = new Map(),
+    wish = new Map();
+  (Array.isArray(o.saved) ? o.saved : []).forEach(function (e) {
+    const c = cleanSaved(e);
+    if (c) saved.set(c.id, fpOf(c));
+  });
+  cleanWish(o.wish).forEach(function (w) {
+    wish.set(w.k, fpOf(w));
+  });
+  return {
+    owned: new Set(o.owned instanceof Set ? o.owned : Array.isArray(o.owned) ? o.owned : []),
+    saved: saved,
+    wish: wish,
+    ink: cleanInk(o.ink),
+    cap: o.cap !== undefined ? cleanCap(o.cap) : null,
+    buy: _J(cleanBuy(o.buyBrands)),
+    capDef: o.capDef === 'old' ? 'old' : '',
+    capQ: o.capQ ? 1 : 0,
+    capOffer: o.capOffer ? 1 : 0,
+  };
+}
+function snapNow() {
+  return snapOf(state);
+}
+// this tab's steps since _known (the state as it was last written or taken in)
+function stepsNow() {
+  if (!_known) {
+    // (first: the state as this tab read it)
+    const v0 = _lastRaw ? parseState(_lastRaw).v || {} : {};
+    _known = snapOf(v0);
+    _vv = Object.assign({}, v0.tabsSeen || {});
+  }
+  const k = _known,
+    o = [];
+  state.owned.forEach(function (m) {
+    if (!k.owned.has(m)) o.push({ t: 'o', k: m, on: 1 });
+  });
+  k.owned.forEach(function (m) {
+    if (!state.owned.has(m)) o.push({ t: 'o', k: m, on: 0 });
+  });
+  const maps = function (t, cur, was) {
+    new Set(Object.keys(cur).concat(Object.keys(was || {}))).forEach(function (m) {
+      if ((cur[m] || null) !== ((was || {})[m] || null)) o.push({ t: t, k: m, v: cur[m] || null });
+    });
+  };
+  maps('i', cleanInk(state.ink), k.ink);
+  if (k.cap) maps('c', cleanCap(state.cap), k.cap);
+  const seenW = new Set();
+  state.wish.forEach(function (w) {
+    const c = cleanWish([w])[0];
+    if (!c) return;
+    seenW.add(c.k);
+    if (k.wish.get(c.k) !== fpOf(c)) o.push({ t: 'w', k: c.k, e: w });
+  });
+  k.wish.forEach(function (f, m) {
+    if (!seenW.has(m)) o.push({ t: 'w', k: m, e: null });
+  });
+  const seenS = new Set();
+  state.saved.forEach(function (r) {
+    const c = cleanSaved(r);
+    if (!c) return;
+    seenS.add(c.id);
+    if (k.saved.get(c.id) !== fpOf(c)) o.push({ t: 's', k: c.id, e: r });
+  });
+  k.saved.forEach(function (f, id) {
+    if (!seenS.has(id)) o.push({ t: 's', k: id, e: null });
+  });
+  if (_J(cleanBuy(state.buyBrands)) !== k.buy) o.push({ t: 'b', v: cleanBuy(state.buyBrands) });
+  ['capDef', 'capQ', 'capOffer'].forEach(function (f) {
+    const v = f === 'capDef' ? (state.capDef === 'old' ? 'old' : '') : state[f] ? 1 : 0;
+    if (v !== k[f]) o.push({ t: 'x', k: f, v: v });
+  });
+  return o;
+}
+// this tab's steps since the last save or what it took in, noted (one batch), → the batch, or null for none
+function stepsLog() {
+  const o = stepsNow();
+  if (!o.length) return null;
+  const b = { n: ++_seq, at: Date.now(), o: o };
+  _ops.push(b);
+  // (kept for 10 minutes and 300 batches at most: a tab that's gone, or a version that doesn't say what it holds)
+  const old = Date.now() - 6e5;
+  while (_ops.length > 300 || (_ops.length && _ops[0].at < old)) _ops.shift();
+  return b;
+}
+// this tab's steps not in a state another tab saved (tabsSeen: what it holds), put back on the state as taken in
+function stepsAgain() {
+  _ops.forEach(function (b) {
+    b.o.forEach(function (s) {
+      if (s.t === 'o') {
+        if (s.on) state.owned.add(s.k);
+        else state.owned.delete(s.k);
+      } else if (s.t === 'i' || s.t === 'c') {
+        const m = s.t === 'i' ? state.ink : state.cap;
+        if (s.v) m[s.k] = s.v;
+        else delete m[s.k];
+      } else if (s.t === 'w') {
+        const j = state.wish.findIndex((w) => w.k === s.k);
+        if (!s.e) {
+          if (j >= 0) state.wish.splice(j, 1);
+        } else if (j >= 0) state.wish[j] = s.e;
+        else state.wish.push(s.e);
+      } else if (s.t === 's') {
+        const j = state.saved.findIndex((r) => r.id === s.k);
+        if (!s.e) {
+          if (j >= 0) state.saved.splice(j, 1);
+        } else if (j < 0) state.saved.unshift(s.e);
+        // (both changed it: the newer save's)
+        else if (!((+state.saved[j].ts || 0) > (+s.e.ts || 0))) state.saved[j] = s.e;
+      } else if (s.t === 'b') state.buyBrands = s.v ? s.v.slice() : null;
+      else if (s.t === 'x') state[s.k] = s.v;
+    });
+  });
+}
+// another tab's save (v, as parseState read it; raw, its text) taken in: its markers, Library, To buy, ink and caps,
+// this tab's own steps it doesn't hold put back. inPlace: into this tab's own Set, list and maps (in a save, which can
+// come in the middle of code holding them). → true when steps were put back (the merge is then saved)
+function takeIn(v, inPlace) {
+  const seen = v.tabsSeen && typeof v.tabsSeen === 'object' ? v.tabsSeen : {},
+    mine = +seen[TAB] || 0;
+  _ops = _ops.filter((b) => b.n > mine);
+  const owned = Array.isArray(v.owned) ? new Set(v.owned) : null,
+    saved = Array.isArray(v.saved) ? v.saved.map(cleanSaved).filter(Boolean) : null,
+    wish = cleanWish(v.wish),
+    ink = cleanInk(v.ink);
+  if (inPlace) {
+    // (this tab's own row objects kept where the stored row is the same)
+    const by = new Map(state.saved.map((r) => [r.id, r]));
+    if (owned) inPlaceSet(state.owned, owned);
+    if (saved)
+      inPlaceList(
+        state.saved,
+        saved.map(function (r) {
+          const m = by.get(r.id);
+          return m && fpOf(cleanSaved(m)) === fpOf(r) ? m : r;
+        }),
+      );
+    const byW = new Map(state.wish.map((w) => [w.k, w]));
+    inPlaceList(
+      state.wish,
+      wish.map(function (w) {
+        const m = byW.get(w.k);
+        return m && fpOf(cleanWish([m])[0]) === fpOf(w) ? m : w;
+      }),
+    );
+    inPlaceMap(state.ink, ink);
+  } else {
+    if (owned) state.owned = owned;
+    if (saved) state.saved = saved;
+    state.wish = wish;
+    state.ink = ink;
+  }
+  state.buyBrands = cleanBuy(v.buyBrands);
+  // (v318.22 debug: a save by a version before v318.21, in another tab, has no caps: this tab's stay, and its next save
+  // writes them back. They had all been forgotten)
+  if (v.cap !== undefined) {
+    if (inPlace) inPlaceMap(state.cap, cleanCap(v.cap));
+    else state.cap = cleanCap(v.cap);
+    state.capDef = v.capDef === 'old' ? 'old' : '';
+    state.capQ = v.capQ ? 1 : 0;
+    state.capOffer = v.capOffer ? 1 : 0;
+  }
+  if (_savedGone.size) {
+    const keepIt = state.saved.filter((r) => !_savedGone.has(r.id));
+    if (keepIt.length !== state.saved.length) inPlaceList(state.saved, keepIt);
+  }
+  _vv = Object.assign({}, seen);
+  if (_ops.length) stepsAgain();
+  // (this tab's steps put back are still noted, _ops, till a save of another tab's shows it has them)
+  _known = snapNow();
+  return _ops.length > 0;
+}
+// what this tab's save says it holds: every tab's steps it took in, and all of its own
+function seenOut() {
+  const o = {};
+  // (the 15 latest tabs at most besides this one: a tab long closed needn't be carried)
+  Object.keys(_vv)
+    .filter((t) => t !== TAB)
+    .slice(-15)
+    .forEach(function (t) {
+      o[t] = _vv[t];
+    });
+  o[TAB] = _seq;
+  return o;
+}
+// (the merge put into this tab's own Set, list and maps, not new ones: a save can come in the middle of code that
+// holds them, as the storage event's syncFromStorage never does)
+function inPlaceSet(t, src) {
+  if (t.size === src.size && [...src].every((k) => t.has(k))) return;
+  t.clear();
+  src.forEach((k) => t.add(k));
+}
+function inPlaceList(t, src) {
+  if (t.length === src.length && src.every((x, i) => x === t[i])) return;
+  t.length = 0;
+  src.forEach((x) => t.push(x));
+}
+function inPlaceMap(t, src) {
+  if (_J(t) === _J(src)) return;
+  Object.keys(t).forEach((k) => delete t[k]);
+  Object.assign(t, src);
+}
+// in a save: another tab's save already here (seen at once, as a tab beside it can), taken in first
+function crossMerge() {
   let raw = null;
   try {
     raw = localStorage.getItem(KEY);
@@ -602,23 +843,16 @@ function savedMerge() {
     return;
   }
   if (typeof raw !== 'string' || raw === _lastRaw) return;
-  let v = null;
-  try {
-    v = JSON.parse(raw);
-  } catch (e) {
-    return;
-  }
-  // (v318.22 review J: another tab's save read here before syncFromStorage has seen it)
-  futureKeep(v);
-  if (!v || !Array.isArray(v.saved)) return;
-  const have = new Set(state.saved.map((s) => s.id));
-  v.saved.forEach((e) => {
-    const c = cleanSaved(e);
-    if (c && !have.has(c.id) && !_savedGone.has(c.id)) {
-      state.saved.push(c);
-      have.add(c.id);
-    }
-  });
+  const p = parseState(raw);
+  if (!p.v) return;
+  const pre = syncPre();
+  takeIn(p.v, true);
+  // (drawn once the save is done: the other tab's changes, as hearing its storage event draws them; what changed
+  // worked out now, so this tab's own changes after it aren't taken for the other's)
+  const post = syncPre();
+  setTimeout(function () {
+    syncPost(pre, post);
+  }, 0);
 }
 // (v318.23) Safari counts a stored string at 2 bytes a character once any character in it is past U+00FF (a ’ in one
 // name doubled the whole Library's share): what's written is plain ASCII, wider characters as \uXXXX, which JSON.parse
@@ -690,8 +924,10 @@ function saveRoom() {
   return e || new Error('full');
 }
 function saveTry() {
+  let batch = null;
   try {
-    savedMerge();
+    batch = stepsLog();
+    crossMerge();
     const s = narrow(
       JSON.stringify(
         futurePut({
@@ -733,13 +969,20 @@ function saveTry() {
           capQ: state.capQ,
           capOffer: state.capOffer,
           rndFresh: state.rndFresh ? 1 : 0,
+          // (v328: each tab's steps this state holds: crossMerge, takeIn)
+          tabsSeen: seenOut(),
         }),
       ),
     );
     localStorage.setItem(KEY, s);
     _lastRaw = s;
+    _vv[TAB] = _seq;
+    _known = snapNow();
     return null;
   } catch (e) {
+    // (not saved: the steps it noted aren't kept, as the change may be put back, keep's undo; the next save notes
+    // what's still changed)
+    if (batch) _ops = _ops.filter((b) => b !== batch);
     return e;
   }
 }
@@ -766,39 +1009,38 @@ function syncFromStorage() {
   if (typeof raw !== 'string' || raw === _lastRaw) return;
   const p = parseState(raw);
   if (!p.v) return;
+  // (v328: a change here not saved yet noted first, so taking the other tab's in doesn't lose it)
+  if (!_saveHold && !STORE_BLOCKED) stepsLog();
   _lastRaw = raw;
-  const v = p.v,
-    G = (a) => new Map(a.filter((s) => s.type === 'guide').map((s) => [s.id, s])),
-    g0 = G(state.saved),
-    sig = () =>
-      JSON.stringify([
-        [...state.owned].sort(),
-        state.saved,
-        state.wish,
-        state.ink,
-        state.buyBrands,
-        state.cap,
-        state.capDef,
-      ]),
-    was = sig(),
-    capWas = JSON.stringify([state.cap, state.capDef]);
-  if (Array.isArray(v.owned)) state.owned = new Set(v.owned);
-  if (Array.isArray(v.saved)) state.saved = v.saved.map(cleanSaved).filter(Boolean);
-  state.wish = cleanWish(v.wish);
-  state.ink = cleanInk(v.ink);
-  state.buyBrands = cleanBuy(v.buyBrands);
-  // (v318.22 debug: a save by a version before v318.21, in another tab, has no caps: this tab's stay, and its next save
-  // writes them back. They had all been forgotten)
-  if (v.cap !== undefined) {
-    state.cap = cleanCap(v.cap);
-    state.capDef = v.capDef === 'old' ? 'old' : '';
-    state.capQ = v.capQ ? 1 : 0;
-    state.capOffer = v.capOffer ? 1 : 0;
-  }
-  if (sig() === was) return; // only another tab's screen or settings changed
+  const pre = syncPre();
+  // (this tab's own changes the other tab's save didn't have: put back, and saved, so it hears them)
+  if (takeIn(p.v, false)) save(true);
+  syncPost(pre);
+}
+// (v328: before and after what another tab saved is taken in: syncFromStorage, crossMerge) what was shown, then what
+// changed drawn again
+const _syncG = (a) => new Map(a.filter((s) => s.type === 'guide').map((s) => [s.id, s]));
+function syncSig() {
+  return JSON.stringify([
+    [...state.owned].sort(),
+    state.saved,
+    state.wish,
+    state.ink,
+    state.buyBrands,
+    state.cap,
+    state.capDef,
+  ]);
+}
+function syncPre() {
+  return { g0: _syncG(state.saved), was: syncSig(), capWas: JSON.stringify([state.cap, state.capDef]) };
+}
+function syncPost(pre, post) {
+  const g0 = pre.g0,
+    now = post || syncPre();
+  if (now.was === pre.was) return; // only another tab's screen or settings changed
   // (v318.21 debug: what caps say changed there: an open guide's labels and keys drawn again whole)
-  if (JSON.stringify([state.cap, state.capDef]) !== capWas && typeof capChanged === 'function') capChanged();
-  const g1 = G(state.saved),
+  if (now.capWas !== pre.capWas && typeof capChanged === 'function') capChanged();
+  const g1 = now.g0,
     S = window.SF;
   if (S) {
     g0.forEach((s, id) => {

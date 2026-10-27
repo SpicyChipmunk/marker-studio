@@ -154,33 +154,137 @@
       sig: '',
     };
   }
-  let st = null;
+  let st = null,
+    // (v328) the record as this tab last read or wrote it (its text), and what it held (_ttKnown, to find this tab's
+    // own answers since: the steps it keeps until another tab's save shows it has them, as state.js does for the
+    // collection: a tab sees another's save only once it's done what it's doing, so both can write at once)
+    _ttBase = null,
+    _ttKnown = null,
+    _ttSeq = 0,
+    _ttOps = [];
+  const TT_TAB = (function () {
+    try {
+      const a = new Uint32Array(2);
+      crypto.getRandomValues(a);
+      if (a[0] || a[1]) return a[0].toString(36) + a[1].toString(36);
+    } catch (e) {}
+    return 't' + Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36);
+  })();
   function load() {
     if (st) return st;
     try {
-      const o = JSON.parse(localStorage.getItem(TT_KEY) || 'null');
+      const raw = localStorage.getItem(TT_KEY);
+      _ttBase = raw;
+      const o = JSON.parse(raw || 'null');
       st = o && typeof o === 'object' && typeof o.id === 'string' ? o : fresh();
     } catch (e) {
       st = fresh();
     }
     st.t = st.t && typeof st.t === 'object' ? st.t : {};
     st.q = st.q && typeof st.q === 'object' ? st.q : {};
+    if (!_ttKnown) _ttKnown = ttCopy(st);
     return st;
+  }
+  const TJ = (x) => JSON.stringify(x === undefined ? null : x);
+  function ttCopy(o) {
+    return JSON.parse(TJ({ t: o.t || {}, q: o.q || {}, name: o.name, sends: o.sends, sig: o.sig }));
+  }
+  // this tab's answers since it last wrote or took in another's: noted as one batch of steps
+  function ttLog() {
+    if (!st || !_ttKnown) return null;
+    const k = _ttKnown,
+      o = [];
+    ['t', 'q'].forEach(function (g) {
+      const cur = st[g] || {},
+        was = k[g] || {};
+      new Set(Object.keys(cur).concat(Object.keys(was))).forEach(function (x) {
+        if (TJ(cur[x]) !== TJ(was[x]))
+          o.push({ g: g, k: x, v: cur[x] === undefined ? null : JSON.parse(TJ(cur[x])) });
+      });
+    });
+    ['name', 'sends', 'sig'].forEach(function (f) {
+      if (TJ(st[f]) !== TJ(k[f])) o.push({ g: 'f', k: f, v: st[f] === undefined ? null : st[f] });
+    });
+    if (!o.length) return null;
+    const b = { n: ++_ttSeq, at: Date.now(), o: o };
+    _ttOps.push(b);
+    while (_ttOps.length > 200 || (_ttOps.length && _ttOps[0].at < Date.now() - 6e5)) _ttOps.shift();
+    return b;
+  }
+  // another tab's record taken in (o, as read), this tab's answers it doesn't have put back → true when there were any
+  function ttTake(o) {
+    const seen = o.seen && typeof o.seen === 'object' ? +o.seen[TT_TAB] || 0 : 0;
+    _ttOps = _ttOps.filter((b) => b.n > seen);
+    st = o;
+    st.t = st.t && typeof st.t === 'object' ? st.t : {};
+    st.q = st.q && typeof st.q === 'object' ? st.q : {};
+    _ttOps.forEach(function (b) {
+      b.o.forEach(function (x) {
+        if (x.g === 'f') st[x.k] = x.v;
+        else if (x.v == null) delete st[x.g][x.k];
+        else st[x.g][x.k] = x.v;
+      });
+    });
+    _ttKnown = ttCopy(st);
+    return _ttOps.length > 0;
+  }
+  function ttRead(raw) {
+    try {
+      const o = JSON.parse(raw || 'null');
+      return o && typeof o === 'object' && typeof o.id === 'string' ? o : null;
+    } catch (e) {
+      return null;
+    }
   }
   // (v318.22 debug) another tab's answers read in at once, so this one's next answer doesn't write over them with what
   // it read when it opened (a rating and a note given in one tab were gone after the next answer in another). Read
   // again in place, never left empty: everything here reads the record as it is
   addEventListener('storage', function (e) {
     if (e.key !== TT_KEY || !st) return;
-    st = null;
-    load();
+    const raw = localStorage.getItem(TT_KEY);
+    if (raw === _ttBase) return;
+    const o = ttRead(raw);
+    if (!o) {
+      st = null;
+      load();
+    } else {
+      // (v328: an answer here not saved yet noted first; this tab's answers the other's save missed put back, and
+      // saved, so it hears them)
+      ttLog();
+      _ttBase = raw;
+      if (ttTake(o)) save();
+    }
     // (v318.25) and Home's card and the foot line with them: they had said what this tab last saw until it reloaded
     footSync();
   });
   function save() {
+    let b = null;
     try {
-      localStorage.setItem(TT_KEY, JSON.stringify(st));
-    } catch (e) {}
+      b = ttLog();
+      // (another tab's save here already, seen at once: taken in first)
+      const cur = localStorage.getItem(TT_KEY);
+      if (cur !== _ttBase) {
+        const o = ttRead(cur);
+        if (o) ttTake(o);
+      }
+      // (what each tab's answers this record has: the 9 latest other tabs at most, a tab long closed not carried)
+      const was = st.seen && typeof st.seen === 'object' ? st.seen : {},
+        seen = {};
+      Object.keys(was)
+        .filter((t) => t !== TT_TAB)
+        .slice(-9)
+        .forEach(function (t) {
+          seen[t] = was[t];
+        });
+      seen[TT_TAB] = _ttSeq;
+      st.seen = seen;
+      const raw = JSON.stringify(st);
+      localStorage.setItem(TT_KEY, raw);
+      _ttBase = raw;
+      _ttKnown = ttCopy(st);
+    } catch (e) {
+      if (b) _ttOps = _ttOps.filter((x) => x !== b);
+    }
     footSync();
   }
   // (v318 review) the answers go in a backup and come back with it: moving from a Safari tab to the Home Screen app

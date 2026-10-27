@@ -3359,8 +3359,18 @@ From v327.1 (v327.2 held and dropped; its paper reading comes back reworked). De
     of each step, not a second copy of its text (1.4 M characters a step at 30,000 sections).
   - Not fixed: No repeats with hundreds of markers on 30,000 sections still takes seconds (faster means other
     plans); a very big backup is still read whole to restore; dialogs may keep toasts from VoiceOver (needs a
-    device); two tabs saving in the same moment; a file chosen and then cancelled moves the guide's load count on
-    (Tick off's offer goes).
+    device); a file chosen and then cancelled moves the guide's load count on (Tick off's offer goes).
+  - Two tabs saving in the same moment (the Home Screen app and a Safari tab, or two windows): a tab sees another's
+    save only once it has finished what it's doing, so it could save over a save it hadn't seen, and the other tab,
+    hearing that, lost its own change. Now each tab keeps its own changes as small steps (a marker added or taken
+    away, an ink or cap mark, a To buy entry, a Library row, Brands I'd buy, the caps' settings) until a save shows it
+    has them: every save says which of each tab's steps it holds (`tabsSeen`). A save heard that misses some has them
+    put back and saved again, so both tabs end with both tabs' changes (a Library row both changed: the newer save's).
+    The Tester answers the same, answer by answer (`seen`). One tab alone saves as before, about 2 ms more a save with
+    200 guides. Pressure-tested in a browser: two tabs making 120 changes each as fast as they can, one colouring a
+    guide meanwhile, nothing lost (the version before lost about a fifth); tester answers given in both at once, none
+    lost (before, 19 in 6 rounds); simulated in `test/tabs.test.mjs` and in 700 random runs of each tab's own and of
+    shared changes, all kept and the tabs alike.
 - Help: What's new. Version v328, cache `marker-studio-v328`.
 - Tests: unit (`test/tick.test.mjs`: lining up moved, scaled, in perspective and bent; turned; another page; the
   reading with a ticked blank; a printout's thin marks; a printout's drawing found and lined up;
