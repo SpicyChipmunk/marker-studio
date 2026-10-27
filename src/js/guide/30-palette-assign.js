@@ -2996,6 +2996,24 @@ function _gradFollowLight() {
     _shpForce = f0;
   }
 }
+// the sections of order that touch another with the same marker (assign's, or another zone's beside them)
+function adjSameN(assign, order) {
+  const A = adj || (adj = buildAdj());
+  if (!A) return 0;
+  let n = 0;
+  order.forEach(function (l) {
+    const m = assign[l];
+    if (!m || !A[l]) return;
+    let hit = false;
+    A[l].forEach(function (nb) {
+      if (hit) return;
+      const x = nbOf(assign, nb);
+      if (x && x.mkey === m.mkey) hit = true;
+    });
+    if (hit) n++;
+  });
+  return n;
+}
 /* Which sections touch (share a border), for Random's "Keep touching sections clearly different": { l: Set of the
    sections l touches }. Lines differ a lot in thickness (a thick felt-tip outline can be 20 px or more across), so
    instead of looking a fixed step away, it looks across the line: along every other row, and down every other
@@ -3026,7 +3044,17 @@ function adjTiny() {
   }
   return { tiny: tiny, sig: lim + ':' + kept.join(',') };
 }
+// (v328 review 2: the time it took, all told, so a laying's time for the Mood pictures leaves it out: 34-zones)
+let _adjMs = 0;
 function buildAdj() {
+  const t0 = Date.now();
+  try {
+    return buildAdj1();
+  } finally {
+    _adjMs += Date.now() - t0;
+  }
+}
+function buildAdj1() {
   const D = adjReach(),
     n = comps ? comps.length : 0,
     seen = new Map(),
@@ -3089,12 +3117,16 @@ function buildRandom(cl, pool) {
     assign = {};
   let a = null,
     left = 0,
-    rough = false;
+    rough = false,
+    one = false;
   // (touching sections never share a marker, or one as good as it (TWIN_DE), while another would do; "clearly
   // different" (noAdj) keeps them ADJ_DE apart too, v304)
   if (pool.length > 1) a = adj || (adj = buildAdj());
   if (!a) {
     for (let i = 0; i < order.length; i++) assign[order[i]] = pool[(Math.random() * pool.length) | 0];
+    // (v328 review 2: one marker, with Keep touching sections clearly different: the touching sections it can't keep
+    // apart said, as No repeats says them; it had said nothing)
+    if (noAdj && pool.length === 1) one = true;
   } else {
     const P = pool.length,
       at = new Map(),
@@ -3202,6 +3234,14 @@ function buildRandom(cl, pool) {
   adjLeft[balZoneKey()] = left;
   assignData = { assign: assign, order: order, N: order.length, base: Object.assign({}, assign) };
   applyLocks();
+  // (v328 review 2: counted once the pinned and coloured sections have their own markers, and only those laid)
+  if (one)
+    adjLeft[balZoneKey()] = adjSameN(
+      assignData.assign,
+      order.filter(function (l) {
+        return locks[l] === undefined;
+      }),
+    );
 }
 /* (v318.27) Keep touching sections clearly different, made good. Laid one by one, a section could find every marker
    alike to one of its neighbours' (the order had painted itself into a corner): on the sample with Main colour, 3 rolls
@@ -3664,6 +3704,11 @@ function blendPoolKey() {
     paletteSource,
     savedPalId,
     expand,
+    // (v328 review: and the palette itself and how near its added markers are: a new palette had kept the last one's
+    // anchor dots and count)
+    expand ? expandChar : '',
+    (genPal || []).join(','),
+    fromPal ? fromPal.name : '',
     coll.length,
     planFilt(),
   ].join('|');
@@ -4567,7 +4612,12 @@ function lookNote() {
 }
 // the guide's markers from its pattern: every zone's (zoneRun, 34-zones), or without zones the whole picture's
 function assignNow() {
-  return zoneRun(zoneAll(), assignOne);
+  zoneAllFallback = true;
+  try {
+    return zoneRun(zoneAll(), assignOne);
+  } finally {
+    zoneAllFallback = false;
+  }
 }
 // one pattern over the sections cl, from the live settings (a zone's, while zoneRun builds it)
 function assignOne(cl) {
@@ -4604,7 +4654,9 @@ function assignOne(cl) {
     buildGradient(cl);
   } else buildGradient(cl);
   // (v318.15) a mandala's matching shapes one marker each, when asked (Gradient and Random)
-  if (matchAlike && (family === 'gradient' || family === 'random')) matchUnify(cl);
+  // (v328 review: only where the page, or the zone, looks like a mandala, as its tick box shows: kept on from another
+  // picture or copied to a zone, it had given touching sections of a grid one marker, with no box to untick)
+  if (matchAlike && (family === 'gradient' || family === 'random') && gradMandala(cl)) matchUnify(cl);
   return true;
 }
 // Blend again from its anchors (a drag, the Spread slider, an anchor's colour): the zone being edited only
@@ -4802,12 +4854,21 @@ function buildGuide(keepPlan) {
   } else if (keepPlan !== true) planReset();
   markBuilt();
   saveStatus();
-  if (_fresh) colourOffer();
+  if (_fresh) {
+    colourOffer();
+    // (v328: a new visit's ticks counted from here, and no Tick off line straight after Build)
+    tickBuilt();
+  }
   // (v323: sections found afresh or edited: an offer kept for the old ones means other sections now; and so does the
   // section Continue would open Focus mode on, v323.1)
   else if (!same) {
     colOffer = null;
     focusAt = null;
+    // (v328: and Tick off from a photo's, read from the sections before; its count of this visit's ticks kept, counted
+    // on from the sections as they are now)
+    tickOffer = null;
+    _tickLn = 0;
+    tickRebase();
   }
   // (a new guide from your photo goes into the Library straight away, not after the usual pause: a page closed or
   // reloaded just after Build lost it, v287)
@@ -5036,13 +5097,23 @@ function layPlan(ids, moved) {
     run = !zones.length || all ? zoneAll() : ids || [zoneCur],
     stay = moved && !all ? zoneStayRandom(run, moved) : null,
     ok = holdRun(run, assignOne, stayKeys(stay));
-  // (with zones, the others were laid even if one couldn't be: no markers for it, which a note has said)
-  if (!ok && !zones.length) return false;
-  if (ok) _zSig = sig;
+  // (with zones, the others are laid even if one couldn't be, no markers for it, which a note has said, unless it's
+  // the one being edited: then nothing changed, v328 review 2)
+  if (!ok) return false;
+  // (v328 review 2 check: a zone that couldn't be laid keeps what it had until the markers change again, or it's
+  // edited: tried on every change, it had had every Random zone rolled again with it, and its note said each time)
+  const kept = zoneRunFailed;
+  _zSig = sig;
   if (stay) zoneStayPut(stay);
-  // (a stand-in for a dry marker is kept on in the sections that weren't laid again)
-  if (!zones.length || run.length === zoneIds().length) _origKeys = {};
-  else for (const l in _origKeys) if (run.indexOf(zoneOf(+l)) >= 0 && !(stay && stay[l])) delete _origKeys[l];
+  // (a stand-in for a dry marker is kept on in the sections that weren't laid again, a zone that couldn't be, and
+  // those a Random Main kept)
+  if ((!zones.length || (run.length === zoneIds().length && !kept.length)) && !stay) _origKeys = {};
+  else
+    for (const l in _origKeys) {
+      const z = zoneOf(+l);
+      if ((!zones.length || (run.indexOf(z) >= 0 && kept.indexOf(z) < 0)) && !(stay && stay[l]))
+        delete _origKeys[l];
+    }
   // (a Gradient elsewhere whose bands faced a light that has since changed by itself: Main's pattern to or from Photo
   // under Light from's auto, or the only Photo zone gone)
   gradFollowLight();
@@ -5087,6 +5158,8 @@ function recolourWith(id) {
   if (!assignData) return palGiven(id) ? setNextPal(id) : setSavedSource(id);
   if (sfmode === 'review') {
     if (secEdPending()) return 'edits';
+    // (v328 review 2: not while the sections are being found again, as ← Plan)
+    if (segPendingNow()) return 'busy';
     edGoPlan();
   } else if (sfmode === 'color') {
     if (focus) exitFocus();
@@ -5184,7 +5257,8 @@ function surprise() {
   family = 'gradient';
   // (v318.34) a palette you chose (saved, or handed over) is kept, used as it is: Surprise draws the rest. Before,
   // it was set aside for a generated one, and the toast didn't say (U1-5)
-  var kept = palChosen();
+  var kept = palChosen(),
+    src0 = paletteSource;
   if (!kept) paletteSource = 'generate';
   // (v308: the marker count is kept when it's 9 or more, "all" too; else 8 to 23 as before. Drawn either way, so the
   // rest is drawn as it was. A guide saved before v308 gets the Include row, as the Mood has it: its expansion never
@@ -5228,6 +5302,9 @@ function surprise() {
     expand = true;
     expandChar = Math.random();
     generatePalette();
+    // (v328 review: too few markers for a palette, or only greys: none made, so not "0 markers · Made here"; laid
+    // from your markers as before)
+    if (!genPal || !genPal.length) paletteSource = src0 === 'generate' ? 'owned' : src0;
   }
   // (drawn after the palette, so the palette a given run of random numbers makes is as it was before there were Looks)
   var looks = ['auto', 'auto', 'auto', 'smooth', 'ltd'];
@@ -5241,7 +5318,8 @@ function surprise() {
     balSeed = Math.random();
     noRep = false;
   }
-  surpriseNote = kept ? 'kept' : true;
+  // (v328 review 2: no palette made, so the toast names no harmony)
+  surpriseNote = kept ? 'kept' : genPal && genPal.length ? true : 'yours';
   planWhy = 'Surprise';
   reassign();
 }

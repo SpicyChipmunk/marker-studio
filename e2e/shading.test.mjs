@@ -500,7 +500,8 @@ after(teardown);
     // the real download still works
     await page.click('.sftabbtn[data-t="share"]');
     await page.click('#sfPrint');
-    assert.match(await page.textContent('#sfSheet'), /Shading is on/);
+    // (v328: Page to colour's note: the faint tone lines and the shading map)
+    assert.match(await page.textContent('#sfSheet'), /shading map shows them at full strength/);
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#sfPDF')]);
     const { readFile } = await import('node:fs/promises');
     const bytes = await readFile(await dl.path());
@@ -1058,14 +1059,17 @@ after(teardown);
     await page.click('#sfSheet [data-pr="cancel"]');
     await page.waitForSelector('#sfSheet', { state: 'detached' });
   }
-  // the colouring page and the key page, and how many of the colouring page's pixels are the tone lines' grey
+  // the colouring page and the key page, and how many of the colouring page's pixels are the tone lines' grey (v328:
+  // 18%, 209; page 1 is the page to colour, the key the last page)
   const pdf = (page) =>
     page.evaluate(() => {
       const c = __mstest.buildPDFPages();
       const d = c[0].getContext('2d').getImageData(0, 0, c[0].width, c[0].height).data;
       let grey = 0;
-      for (let i = 0; i < d.length; i += 4) if (d[i] === 150 && d[i + 1] === 150 && d[i + 2] === 150) grey++;
-      return { page: c[0].toDataURL(), key: c[1].toDataURL(), grey };
+      // (the lines are half a point wide: smoothed onto the page, most of them are light greys near it)
+      for (let i = 0; i < d.length; i += 4)
+        if (d[i] >= 200 && d[i] <= 230 && d[i + 1] === d[i] && d[i + 2] === d[i]) grey++;
+      return { page: c[0].toDataURL(), key: c[c.length - 1].toDataURL(), grey };
     });
   test('Print’s Tone lines: only with shading, on to start with, off leaves the dashes out and the how-to says so', async () => {
     let { page, errors } = await openApp({ width: 820, height: 1180 });
@@ -1085,7 +1089,7 @@ after(teardown);
     assert.ok(await page.isVisible('#sfPdfLines'));
     assert.equal(await page.isChecked('#sfPdfLines'), true, 'on to start with');
     const on = await pdf(page);
-    assert.ok(on.grey > 300, 'tone lines on the colouring page: ' + on.grey);
+    assert.ok(on.grey > 3000, 'tone lines on the colouring page: ' + on.grey);
     await page.uncheck('#sfPdfLines');
     await idle(page);
     const off = await pdf(page);
@@ -1101,10 +1105,12 @@ after(teardown);
       true,
       'the screen’s tone lines stay on',
     );
-    // Key + reference has no colouring page: nothing for it to do
+    // For your own page has no page to colour: nothing for it to do
     await page.click('[data-pwhat="ref"]');
     assert.equal(await page.isDisabled('#sfPdfLines'), true);
     await page.click('[data-pwhat="page"]');
+    assert.equal(await page.isDisabled('#sfPdfLines'), false);
+    await page.click('[data-pwhat="colour"]');
     assert.equal(await page.isDisabled('#sfPdfLines'), false);
     await closePrint(page);
     // remembered on this device, as the other print choices are

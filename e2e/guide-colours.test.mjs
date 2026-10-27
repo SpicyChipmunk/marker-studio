@@ -490,7 +490,8 @@ after(teardown);
     assert.deepEqual(errors, []);
   });
   test('letters, both brands owned: on every list (Owned, Palette, Match, the guide picture and rows), with full names for screen readers; exports of a one-brand guide unchanged', async () => {
-    const { page, errors } = await openApp();
+    // (v328: the Labelled page, whose page 1 has the labels; Page to colour's has none)
+    const { page, errors } = await openApp({ storage: { 'ms-pdf-what': 'page' } });
     await sampleGuide(page);
     await ownCopic(page);
     assert.deepEqual(await guideBrands(page), ['Ohuhu'], 'the guide itself is still all Ohuhu');
@@ -622,7 +623,8 @@ after(teardown);
     assert.deepEqual(errors, []);
   });
   test('brand tags: a small box after every code when the collection mixes brands (Ohuhu filled, Copic pale and outlined), on screen, the PDF and the saved image; none for one brand', async () => {
-    const { page, errors } = await openApp();
+    // (v328: the Labelled page, whose page 1 has the labels; Page to colour's has none)
+    const { page, errors } = await openApp({ storage: { 'ms-pdf-what': 'page' } });
     await sampleGuide(page);
     // one brand owned, one brand in the guide: no tags anywhere
     assert.deepEqual(await tagsOf(page, 'screen'), []);

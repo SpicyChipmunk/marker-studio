@@ -115,8 +115,12 @@ function chartGrid(f) {
   }
   // (fourth pass: two swatches of the family showing one code — your new R23, and R38 with an older cap's R23 — the
   // older cap's marked *, as on a swatch chart and in guides)
-  const seen = {};
-  f.idxs.forEach(function (i) {
+  // (v328 review: over the whole brand, as the swatch chart counts: 11 of the 16 clashing pairs are in different
+  // families, an older cap's R22 among the Red-Violets and today's among the Reds)
+  const seen = {},
+    br = f.idxs.length ? COLORS[f.idxs[0]].brand : '';
+  COLORS.forEach(function (c, i) {
+    if (c.brand !== br) return;
     const k = capCodeAny(i);
     seen[k] = (seen[k] || 0) + 1;
   });

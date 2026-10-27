@@ -64,7 +64,12 @@ function ctlWirePatternFamily() {
           _phBumped = true;
           if (limitN < 24) limitN = Math.min(24, sliderMax());
         }
-        reassign();
+        // (v328 review 2: a pattern that can't be laid, every marker dry, leaves the one before chosen: the controls
+        // had shown its options over the plan as it was, and Undo had a step that changed nothing)
+        if (reassign() === false) {
+          family = was;
+          renderControls();
+        }
         positionPhoto();
       }
     });

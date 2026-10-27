@@ -672,11 +672,20 @@ function wipeLock() {
 // Other tabs of the app hear of it ("ms-wiped", the time, left behind on purpose: not data) and start again too:
 // they had the collection and an open guide in memory, and their next save wrote them back. A tab away in the
 // back/forward cache, or hidden, checks the time when it comes back (it hears no storage event while away).
+// (v328: the time this tab found at its start, compared, not the clock: a clock set back, or another device's,
+// would have missed a wipe, or heard one that was before this tab)
 const WIPED = 'ms-wiped',
-  _wipeBoot = Date.now();
+  _wipeBoot = (function () {
+    try {
+      return localStorage.getItem(WIPED) || '';
+    } catch (e) {
+      return '';
+    }
+  })();
 function wipedSince() {
   try {
-    return +localStorage.getItem(WIPED) > _wipeBoot;
+    const v = localStorage.getItem(WIPED) || '';
+    return !!v && v !== _wipeBoot;
   } catch (e) {
     return false;
   }

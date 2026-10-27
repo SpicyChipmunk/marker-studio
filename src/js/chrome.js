@@ -406,10 +406,11 @@ function chrome() {
                   ? none
                   : null;
     drawBtn.disabled = !!bad || rolling;
-    drawFocusBack();
     drawBtn.textContent = bad || 'Draw a marker';
     undoBtn.disabled = state.drawn.length === 0;
     swapBtn.disabled = state.drawn.length === 0 || left === 0 || rolling;
+    // (v328 review 2: once Swap and Remove are on again, so the keyboard can go back to the one that was pressed)
+    drawFocusBack();
   } else if (pal) {
     let avail = 0;
     for (let i = 0; i < COLORS.length && avail < state.palSize; i++) if (inPool(i)) avail++;
@@ -448,7 +449,16 @@ function chrome() {
         : col
           ? state.collView
           : 'all';
-  const passOwn = (i) => (countView === 'owned' ? isOwned(i) : countView === 'unowned' ? !isOwned(i) : true);
+  // (v328 review 2: Palette and Random count what they draw from: your markers not dry, or with none added the brands
+  // you'd buy; every chip had said 0 with none added)
+  const passOwn = (i) =>
+    rnd || pal
+      ? !NOINK.has(i) && (state.owned.size ? isOwned(i) && !isDry(i) : buyOk(i))
+      : countView === 'owned'
+        ? isOwned(i)
+        : countView === 'unowned'
+          ? !isOwned(i)
+          : true;
   brandsEl.innerHTML = BRAND_DEFS.map((bd) => {
     let cnt = 0;
     for (let i = 0; i < COLORS.length; i++) {
@@ -691,7 +701,16 @@ function headBrands() {
   b.sort(function (p, q) {
     return p === 'Ohuhu' ? -1 : q === 'Ohuhu' ? 1 : p < q ? -1 : 1;
   });
-  const t = b.length ? b.join(' + ') + ' \u00b7 your collection' : 'Ohuhu + Copic \u00b7 full range';
+  // (v328 review: with none owned, the brands you'd buy, as the rest of the app uses them)
+  const bb =
+      state.buyBrands && state.buyBrands.length
+        ? state.buyBrands.slice().sort(function (p, q) {
+            return p === 'Ohuhu' ? -1 : q === 'Ohuhu' ? 1 : p < q ? -1 : 1;
+          })
+        : null,
+    t = b.length
+      ? b.join(' + ') + ' \u00b7 your collection'
+      : (bb ? bb.join(' + ') : 'Ohuhu + Copic') + ' \u00b7 full range';
   if (el.textContent !== t) el.textContent = t;
 }
 function fullRender() {
@@ -1004,14 +1023,23 @@ function doReRollBand(k) {
 }
 // The Draw / Generate button is disabled while it rolls, which drops a keyboard's focus to the page: noted here
 // and given back once it's enabled again (v289)
+// (v328 review: Swap's and Remove's too, which are disabled with it: the keyboard back on the one it was on, or Draw)
+let _rollRet = null;
 function rollFocus() {
-  if (document.activeElement === drawBtn) drawBtn._ret = 1;
+  const a = document.activeElement;
+  if (a === drawBtn || a === swapBtn || a === undoBtn) {
+    drawBtn._ret = 1;
+    _rollRet = a;
+  }
 }
 function drawFocusBack() {
   if (drawBtn.disabled || !drawBtn._ret) return;
   drawBtn._ret = 0;
+  const r = _rollRet;
+  _rollRet = null;
   const a = document.activeElement;
-  if (!a || a === document.body) drawBtn.focus({ preventScroll: true });
+  if (!a || a === document.body)
+    (r && !r.disabled && r.offsetParent ? r : drawBtn).focus({ preventScroll: true });
 }
 function toggleLock(k) {
   const pal = state.palettes[state.palettes.length - 1];
@@ -1184,10 +1212,13 @@ function undo() {
     if (!state.drawn.length) return;
     // (v318.34) with Undo, as Clear all has (G7: a mis-tap lost the draw)
     const was = state.drawn.slice(),
-      gone = state.drawn.shift();
+      gone = state.drawn.shift(),
+      // (v328 review: the keyboard on Draw if Remove is disabled now, none left)
+      had = document.activeElement === undoBtn;
     save();
     fullRender();
     drawnToast('Removed ' + COLORS[gone].brand + ' ' + capCode(gone), was);
+    focusKept(had, null, '', 0, [undoBtn, drawBtn]);
     return;
   } else return;
   save();

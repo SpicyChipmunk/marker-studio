@@ -1466,6 +1466,7 @@ function pgKeystone(q) {
 function pgReset() {
   clearTimeout(_pgT);
   pgMode = false;
+  pgKeyOn(false);
   pgEd = null;
   pgQ = null;
   pgShape = null;
@@ -1562,6 +1563,7 @@ function pgReveal(q, auto) {
 // build the sections from srcImg as it is now
 function pgProceed(msg) {
   pgMode = false;
+  pgKeyOn(false);
   pgEd = null;
   const z = document.getElementById('sfZoomCtl');
   if (z) z.style.display = '';
@@ -1662,10 +1664,13 @@ function pgOpen(q, why, how) {
     drag: -1,
     k: 1,
     pad: 0,
-    back: how === 'adjust' ? { src: srcImg, w: cv.width, h: cv.height } : null,
+    // (v328 review: and the page's shape as it was: a shape chip tapped, then Cancel, had kept the new shape, and the
+    // guide's photo no longer fitted its sections on reopening)
+    back: how === 'adjust' ? { src: srcImg, w: cv.width, h: cv.height, shape: pgShape } : null,
   };
   if (how !== 'adjust') labels = null;
   _rg = null;
+  pgKeyOn(how !== 'reveal');
   resetZoom();
   const z = document.getElementById('sfZoomCtl');
   if (z) z.style.display = 'none';
@@ -1726,6 +1731,14 @@ function pgDraw() {
       ctx.lineWidth = lw * 1.3;
       ctx.strokeStyle = '#ffd84a';
       ctx.stroke();
+      // (the corner the keys move, while the picture has the keyboard: a second ring)
+      if (e.kb && i === (e.sel || 0) && document.activeElement === cv) {
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], r * 1.6, 0, 6.283);
+        ctx.lineWidth = lw;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+      }
     });
   }
   // a magnifier beside the finger while a corner is dragged (the finger hides the corner itself)
@@ -1762,6 +1775,60 @@ function pgDraw() {
     ctx.lineWidth = lw * 1.5;
     ctx.strokeStyle = '#fff';
     ctx.stroke();
+  }
+}
+// (v328 review) the corners by keyboard, as the finished-page photo's (24-page-photo finEdKey): the picture takes the
+// keyboard while they show; the arrow keys move the ringed corner (Shift for bigger steps), Space or Enter the next
+function pgKeyOn(on) {
+  if (!cv) return;
+  if (on) {
+    cv.tabIndex = 0;
+    // (v328 review 2: an application, so a screen reader passes the arrow keys on, as the zones' keyboard does)
+    cv.setAttribute('role', 'application');
+    cv.setAttribute(
+      'aria-label',
+      'The page’s corners: arrow keys move the ringed corner, Space moves to the next',
+    );
+    if (!cv._pgKey) {
+      cv._pgKey = true;
+      cv.addEventListener('keydown', pgKey);
+      cv.addEventListener('focus', function () {
+        if (pgMode && pgEd) pgDraw();
+      });
+      cv.addEventListener('blur', function () {
+        if (pgMode && pgEd) pgDraw();
+      });
+    }
+  } else if (cv.getAttribute('role') === 'application' && !zoneEditOn()) {
+    // (the picture's own name back: it had gone for the rest of the visit)
+    cv.removeAttribute('tabindex');
+    cv.setAttribute('role', 'img');
+    cv.setAttribute('aria-label', 'Colouring page');
+  }
+}
+function pgKey(e) {
+  const E = pgEd;
+  if (!pgMode || !E || E.how === 'reveal' || !pgOrig) return;
+  const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key],
+    iw = pgOrig.naturalWidth || pgOrig.width,
+    ih = pgOrig.naturalHeight || pgOrig.height;
+  E.kb = true;
+  if (d) {
+    e.preventDefault();
+    const st = Math.max(iw, ih) * (e.shiftKey ? 0.05 : 0.01),
+      i = E.sel || 0,
+      p = E.q[i];
+    E.q[i] = [Math.max(0, Math.min(iw, p[0] + d[0] * st)), Math.max(0, Math.min(ih, p[1] + d[1] * st))];
+    pgDraw();
+    clearTimeout(E.kt);
+    E.kt = setTimeout(function () {
+      if (pgEd === E) renderControls();
+    }, 250);
+  } else if (e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    E.sel = ((E.sel || 0) + 1) % 4;
+    pgDraw();
+    sayLive(['Top left', 'Top right', 'Bottom right', 'Bottom left'][E.sel] + ' corner');
   }
 }
 function pgPtr(e, kind) {
@@ -1880,11 +1947,13 @@ function pgCancelAdjust() {
   geoCancel();
   const b = pgEd && pgEd.back;
   pgMode = false;
+  pgKeyOn(false);
   pgEd = null;
   if (b) {
     srcImg = b.src;
     cv.width = b.w;
     cv.height = b.h;
+    if (b.shape !== undefined) pgShape = b.shape;
   }
   const z = document.getElementById('sfZoomCtl');
   if (z) z.style.display = '';

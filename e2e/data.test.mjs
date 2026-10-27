@@ -971,7 +971,7 @@ after(teardown);
     const card = await page.textContent('#savedOverlay .mserr');
     assert.match(
       card,
-      /2 guides couldn’t be saved — this browser’s storage is full\. Delete a few guides from the Library, then restore again\./,
+      /2 guides couldn’t be saved — this browser’s storage is full\. Delete a few guides in the Library and in Recently deleted, then restore again\./,
     );
     assert.doesNotMatch(card, /restored\./);
     assert.equal(await toastText(page), '', 'no toast saying it worked');

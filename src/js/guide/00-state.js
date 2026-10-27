@@ -230,6 +230,14 @@ let colOffer = null;
 // guide, so Home's Continue opens Focus mode there (continueFocus, 82-colour-mode); null otherwise. Written by:
 // 05-style-fields, 20-image-input, 75-focus, 82-colour-mode, 99-close (test)
 let focusAt = null;
+// (v328) Tick off from a photo (26-tick): whether the guide's photos are of printouts ('p') or the page photographed
+// for it ('o'), asked once; null when not known. Saved with the guide. Written by: 05-style-fields, 20-image-input,
+// 26-tick, 99-close (test)
+let tickRef = null;
+// (v328 review) every change of the sections, counting on (65-edit pushUndo, popUndo, secApply, restoreSnap;
+// 60-persist labelsEdited): undoStack.length stops moving once Undo is full, so it can't say the sections changed
+// (bindingNow, trimOffer, Tick off from a photo's reading)
+let secEdN = 0;
 // (v313) the sample, kept because it was changed (a tick), but not yet printed or renamed: 1, saved with it, so Home's
 // Continue card leaves it be (ticks to try the sample aren't a page being coloured). Written by: 05-style-fields,
 // 60-persist, 72-frame, 90-export, 99-close (test)

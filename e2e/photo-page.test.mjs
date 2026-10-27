@@ -269,7 +269,8 @@ test('saved and opened again: the page’s settings and markers as made, and Det
 });
 
 test('Print: the colouring page’s lines are light unless Darker lines is ticked, and the photo is by the key', async () => {
-  const { page, errors } = await openApp(VIEW);
+  // (v328: the Labelled page, its colouring page drawn first; Page to colour's page is the same picture)
+  const { page, errors } = await openApp({ ...VIEW, storage: { ...ONBOARDED, 'ms-pdf-what': 'page' } });
   await idle(page);
   await fromHome(page, 19);
   await page.click('#sfBuild');

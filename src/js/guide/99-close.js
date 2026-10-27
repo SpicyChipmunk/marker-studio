@@ -188,6 +188,37 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get colOffer() {
       return colOffer;
     },
+    // (v328) Check them's draft
+    get colCheck() {
+      return colCheck;
+    },
+    colCheckOpen: colCheckOpen,
+    // (v328) Tick off from a photo (26-tick)
+    tickAlign: tickAlign,
+    tickWarp: tickWarp,
+    tickRead: tickRead,
+    tickWork: tickWork,
+    tickFit: tickFit,
+    tickPrintRef: tickPrintRef,
+    tickGo: tickGo,
+    tickResult: tickResult,
+    tickLineUp: tickLineUp,
+    tickVisNow: tickVisNow,
+    tkThin: tkThin,
+    get tickOffer() {
+      return tickOffer;
+    },
+    get tickBusy() {
+      return _tickBusy;
+    },
+    get olGroups() {
+      return olGroups;
+    },
+    get loadGen() {
+      return loadGen;
+    },
+    paperSecsOf: paperSecsOf,
+    spiralOf: spiralOf,
     get focusAt() {
       return focusAt;
     },
@@ -1501,6 +1532,12 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       },
       set colOffer(v) {
         colOffer = v;
+      },
+      get tickRef() {
+        return tickRef;
+      },
+      set tickRef(v) {
+        tickRef = v;
       },
       get focusAt() {
         return focusAt;

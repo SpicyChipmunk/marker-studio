@@ -2612,7 +2612,7 @@ import { core, createApp } from './harness.mjs';
       line = o.line || RED;
     for (let y = 0; y < H; y++)
       for (let x = 0; x < W; x++) {
-        let c = [250, 250, 250];
+        let c = o.paper || [250, 250, 250];
         const inDraw = x >= 100 && x < 700 && y >= 100 && y < 820,
           px = (x - 100) % 120,
           py = (y - 100) % 120,
@@ -2709,6 +2709,24 @@ import { core, createApp } from './harness.mjs';
           }
       },
     );
+  // (v328 review) a grainy photo of a coloured-line page: Enhance read the paper beside the lines as a grey rim, and
+  // that rim, counted as black ink round the lines, had them cut as fills (80 cells read as 401)
+  test('coloured outlines in a grainy photo (±6) keep their cells, with or without dark fills', () => {
+    for (const line of [RED, BLUE])
+      for (const fills of [0, 3]) {
+        const d = rgba({ line: line, fills: fills, paper: [246, 242, 230] });
+        let s = 7;
+        for (let i = 0; i < d.length; i += 4)
+          for (let c = 0; c < 3; c++) {
+            s = (s * 1103515245 + 12345) & 0x7fffffff;
+            d[i + c] = d[i + c] + ((s / 0x7fffffff) * 2 - 1) * 6;
+          }
+        const t = seg(d, true),
+          nm = (line === RED ? 'red' : 'blue') + ', ' + fills + ' fills: ';
+        assert.equal(counted(t), 30, nm + 'sections');
+        assert.equal(t.colourSecs().length, fills, nm + 'offered');
+      }
+  });
   test("Y1-1: black outlines with dark fills keep v318.35's gain, and with a coloured stipple every cell", () => {
     for (const enh of [true, false]) {
       const t = seg(rgba({ line: BLACK, fills: 3 }), enh);
@@ -2768,5 +2786,157 @@ import { core, createApp } from './harness.mjs';
     // a new picture starts from nothing
     t.assign.resetForNewPicture();
     assert.equal(t.hatchWould, 0);
+  });
+}
+
+// ---- v328: the pale-colour reading with the paper grown, and the spiral binding found by its sections ----
+// paperSecsOf (v327.2's reading against the paper) offered blank sections in a soft shadow: a shadow with a bluish
+// cast, 30% darker at its middle and fading over 120 px, gave three; grown from section to section, the paper takes
+// them back and the three pale fills stay. spiralOf finds a row of small, evenly spaced, alike sections along one
+// edge (a sketchbook's spiral binding read as sections), and nothing without one. Fails on v327.2 (no growing, no
+// spiralOf).
+{
+  const t = createApp().__mstest;
+  const N = 8,
+    S = 90,
+    W = N * S,
+    H = N * S;
+  const grid = () => {
+    const lab = new Int32Array(W * H);
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++)
+        lab[y * W + x] = x % S < 4 || y % S < 4 ? -1 : 1 + ((y / S) | 0) * N + ((x / S) | 0);
+    return lab;
+  };
+  const list = Array.from({ length: N * N }, (_, i) => i + 1);
+  test('the pale-colour reading: the paper grown through a soft shadow, the pale fills kept', () => {
+    const lab = grid(),
+      fills = { 10: [250, 238, 180], 27: [205, 222, 243], 45: [246, 214, 222] },
+      d = new Uint8ClampedArray(W * H * 4);
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x,
+          l = lab[i],
+          c = l < 0 ? [40, 40, 40] : fills[l] || [244, 242, 236],
+          k = 1 - 0.3 * Math.max(0, Math.min(1, (200 - Math.hypot(x - 150, y - 600)) / 120));
+        d[i * 4] = c[0] * k ** 1.25;
+        d[i * 4 + 1] = c[1] * k;
+        d[i * 4 + 2] = c[2] * k ** 0.75;
+        d[i * 4 + 3] = 255;
+      }
+    assert.deepEqual([...t.paperSecsOf(d, lab, W, H, N * N + 1, list)], [10, 27, 45]);
+    // (as v327.2 read it: the shadow's sections too)
+    assert.ok(t.paperSecsOf(d, lab, W, H, N * N + 1, list, false).length > 3);
+    // a plain page: nothing
+    for (let i = 0; i < W * H; i++) d.set(lab[i] < 0 ? [40, 40, 40, 255] : [244, 242, 236, 255], i * 4);
+    assert.deepEqual([...t.paperSecsOf(d, lab, W, H, N * N + 1, list)], []);
+  });
+  test('the pale-colour reading: a big pale fill isn’t grown back to paper (only paper-coloured sections seed it)', () => {
+    // (a 20 x 20 grid, an 8 x 8 block of pale pink in the middle: the growing kept what the surface reads)
+    const n = 20,
+      s = 50,
+      w = n * s,
+      lab = new Int32Array(w * w),
+      d = new Uint8ClampedArray(w * w * 4),
+      ls = Array.from({ length: n * n }, (_, i) => i + 1);
+    for (let y = 0; y < w; y++)
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x,
+          c = (x / s) | 0,
+          r = (y / s) | 0,
+          l = x % s < 4 || y % s < 4 ? -1 : 1 + r * n + c;
+        lab[i] = l;
+        d.set(
+          l < 0
+            ? [40, 40, 40, 255]
+            : c >= 6 && c < 14 && r >= 6 && r < 14
+              ? [246, 222, 228, 255]
+              : [244, 242, 236, 255],
+          i * 4,
+        );
+      }
+    const grown = t.paperSecsOf(d, lab, w, w, n * n + 1, ls).length,
+      plain = t.paperSecsOf(d, lab, w, w, n * n + 1, ls, false).length;
+    assert.ok(plain > 40, 'the surface reads most of it: ' + plain);
+    assert.equal(grown, plain);
+  });
+  // (v328 review) a page with no clear colour (abOnly): read by colour only, each section's middle averaged, against
+  // the line from no tint to the paper's: printed greys under a warm lamp and a grainy blank page aren't offered;
+  // pastels are, under that lamp too
+  test('the pale-colour reading by colour only: greys under a warm lamp and grain aren’t coloured, pastels are', () => {
+    const n = 8,
+      s = 60,
+      w = n * s,
+      ls = Array.from({ length: n * n }, (_, i) => i + 1),
+      GREY = { 9: 190, 10: 160, 11: 128, 20: 100, 21: 200, 30: 150 },
+      PASTEL = { 40: [248, 220, 226], 41: [210, 228, 245], 50: [250, 240, 180], 51: [205, 240, 215] };
+    let seed = 3;
+    const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+    const page = (fills, gains, noise) => {
+      const lab = new Int32Array(w * w),
+        d = new Uint8ClampedArray(w * w * 4);
+      for (let y = 0; y < w; y++)
+        for (let x = 0; x < w; x++) {
+          const i = y * w + x,
+            l = x % s < 3 || y % s < 3 ? -1 : 1 + ((y / s) | 0) * n + ((x / s) | 0),
+            f = fills[l];
+          lab[i] = l;
+          const c =
+            l < 0 ? [30, 30, 30] : f == null ? [246, 242, 230] : typeof f === 'number' ? [f, f, f] : f;
+          // (the light on the linear values, as a lamp is, then grain)
+          for (let k = 0; k < 3; k++) {
+            const v = Math.pow(c[k] / 255, 2.2) * gains[k];
+            d[i * 4 + k] = 255 * Math.pow(v, 1 / 2.2) + (rnd() * 2 - 1) * noise;
+          }
+          d[i * 4 + 3] = 255;
+        }
+      return t.paperSecsOf(d, lab, w, w, n * n + 1, ls, true, true);
+    };
+    for (const g of [
+      [1, 1, 1],
+      [1, 0.93, 0.78],
+      [1, 0.88, 0.65],
+    ]) {
+      assert.deepEqual([...page(GREY, g, 4)], [], 'greys, light ' + g);
+      assert.deepEqual([...page({}, g, 14)], [], 'grain, light ' + g);
+      // (a pale blue under a warm lamp is near a grey of the paper's cast, and may not be offered: by colour only, it
+      // can't be told from one)
+      const on = [...page({ ...GREY, ...PASTEL }, g, 4)].sort((a, b) => a - b);
+      if (g[2] === 1) assert.deepEqual(on, [40, 41, 50, 51], 'pastels, light ' + g);
+      else {
+        assert.ok(
+          on.every((l) => PASTEL[l]),
+          'nothing else, light ' + g + ': ' + on,
+        );
+        assert.ok(
+          [40, 50, 51].every((l) => on.includes(l)),
+          'the warm pastels, light ' + g + ': ' + on,
+        );
+      }
+    }
+  });
+  test('spiralOf: a row of loops along the left edge is found, with how deep it goes; none without', () => {
+    const w = 600,
+      h = 800,
+      lab = new Int32Array(w * h);
+    // the page: big sections in a grid from x 60; the loops: 14 squares 10 px across at x 15-24, every 50 px
+    for (let y = 0; y < h; y++)
+      for (let x = 60; x < w; x++)
+        lab[y * w + x] = x % 100 < 4 || y % 100 < 4 ? -1 : 1 + ((y / 100) | 0) * 6 + (((x - 60) / 100) | 0);
+    const plain = lab.slice();
+    for (let k = 0; k < 14; k++)
+      for (let y = 60 + k * 50; y < 70 + k * 50; y++) for (let x = 15; x < 25; x++) lab[y * w + x] = 100 + k;
+    const b = t.spiralOf(lab, w, h, 114);
+    assert.equal(b && b.side, 'l');
+    assert.equal(b.secs.length, 14);
+    assert.ok(Math.abs(b.d - (25 / w + 0.005)) < 1e-9, String(b.d));
+    assert.equal(t.spiralOf(plain, w, h, 114), null);
+    // loops of every size, unevenly placed: not a binding
+    const odd = plain.slice();
+    [60, 75, 160, 300, 330, 420, 600, 640, 700].forEach((y0, k) => {
+      for (let y = y0; y < y0 + 4 + k * 3; y++)
+        for (let x = 15; x < 19 + k * 3; x++) odd[y * w + x] = 100 + k;
+    });
+    assert.equal(t.spiralOf(odd, w, h, 114), null);
   });
 }

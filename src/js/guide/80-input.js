@@ -101,6 +101,11 @@ function editTapAt(P) {
     return;
   }
   if (sfmode === 'color') {
+    // (v328, 11.2) Check them: a tap flips whether the section will be done, nothing else
+    if (colCheckLive() && !focus) {
+      colCheckTap(l);
+      return;
+    }
     // (v320: where the finger was, for the tick's colour to spread from)
     _tapPt = { l: l, x: P.x, y: P.y };
     // (v313: a tap with the hand-off card up closes it, and ticks nothing)
@@ -207,6 +212,8 @@ function editTapAt(P) {
 // a section ticked, or unticked, in Colour along: a tap on one of the open row's (or with none open), or Tick it in the
 // question over another marker's
 function alongTick(l) {
+  // (v328: not while Check them's draft is open: its Done is the one step)
+  if (colCheckLive()) return;
   const sp = colored[l] ? null : spreadBegin(l);
   colored[l] ^= 1;
   tp()[l] = 0;
@@ -332,7 +339,7 @@ function onDown(e) {
   pStart = { x: e.clientX, y: e.clientY, panX: panX, panY: panY };
   lpFired = false;
   clearTimeout(lpT);
-  if (sfmode === 'color' && !focus) {
+  if (sfmode === 'color' && !focus && !colCheckLive()) {
     const P0 = evPt(e);
     lpT = setTimeout(function () {
       if (ptMoved || multi || ptrs.size !== 1) return;

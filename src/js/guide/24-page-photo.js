@@ -163,8 +163,8 @@ function finFile(file, id) {
       finSay(e && e.finMsg ? e.finMsg : 'Couldn’t read that photo. Try it again, or another photo.');
     });
 }
-// the photo at FIN_SIDE on its long side, and its lens (0 if unknown)
-function finRead(file) {
+// the photo at FIN_SIDE on its long side (v328: or side, Tick off from a photo's), and its lens (0 if unknown)
+function finRead(file, side) {
   const lens =
     file && file.slice
       ? file
@@ -192,7 +192,7 @@ function finRead(file) {
           rej(e);
           return;
         }
-        const k = Math.min(1, FIN_SIDE / Math.max(w0, h0)),
+        const k = Math.min(1, (side || FIN_SIDE) / Math.max(w0, h0)),
           c = document.createElement('canvas');
         c.width = Math.max(1, Math.round(w0 * k));
         c.height = Math.max(1, Math.round(h0 * k));
@@ -608,7 +608,9 @@ const FIN_WHY = {
   cloth: 'The table’s pattern makes the page’s edges hard to be sure of. Check the corners, then Straighten.',
 };
 let _finEd = null;
-function finEdit(id, src, q, why) {
+// (v328: end, for Tick off from a photo: given the corners for Straighten, null for Keep as is, false for Cancel, in
+// place of keeping the photo of the finished page)
+function finEdit(id, src, q, why, end) {
   finEdClose();
   const iw = src.width,
     ih = src.height;
@@ -668,6 +670,7 @@ function finEdit(id, src, q, why) {
     op: op,
     t0: Date.now(),
     why: why,
+    end: end || null,
   };
   _finEd = E;
   o.addEventListener('click', function (e) {
@@ -734,6 +737,13 @@ function finEdOK() {
 function finEdDo(a) {
   const E = _finEd;
   if (!E) return;
+  if (E.end) {
+    if (a === 'go' && !finEdGood(E.q)) return;
+    const q = a === 'go' ? pgOrder(E.q) : a === 'keep' ? null : false;
+    finEdClose();
+    E.end(q);
+    return;
+  }
   if (a === 'go') {
     if (!finEdGood(E.q)) return;
     const q = pgOrder(E.q),

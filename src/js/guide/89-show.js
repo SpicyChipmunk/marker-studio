@@ -749,7 +749,14 @@ function shareCard() {
         note(errNote('Couldn’t make the image.', 'Reveal’s picture', 'it couldn’t be encoded'));
         return;
       }
-      shareOrSave(blob, 'marker-studio-card.png', curName || 'My colouring', 'image', 'Image downloaded.');
+      // (v328 review: named for the guide, as Save image is: two saved had come as "(1)" or asked to replace)
+      shareOrSave(
+        blob,
+        fileSlug(curName, 'marker-studio', 80).toLowerCase() + '-card.png',
+        curName || 'My colouring',
+        'image',
+        'Image downloaded.',
+      );
     };
   if (S && S.blob) return send(S.blob);
   if (S && S.busy)

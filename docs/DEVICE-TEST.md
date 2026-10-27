@@ -22,7 +22,7 @@ sheet, paper, VoiceOver, and how it feels.
 
 ## Before you start (5 min)
 
-- [ ] Home's foot says the version you're testing (**v327.1 · Beta**). If not: "A new version of Marker Studio is
+- [ ] Home's foot says the version you're testing (**v328 · Beta**). If not: "A new version of Marker Studio is
       ready" under Home's title → **Reload**.
 - [ ] ★ **Library › Back up** → the share sheet → **Save to Files** → the file is in Files. (A1 needs it.)
 - Have ready: a colouring page on the table to photograph; a PDF of a colouring page in Files; a few Ohuhu and Copic
@@ -169,6 +169,29 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 ## Part C — new in recent releases (20 min)
 
 What recent releases changed that Parts A and B don't already cover.
+
+**New in v328: Tick off from a photo, Page to colour, Check them, the binding**
+
+- [ ] ★ **A printout coloured on paper** (Part D, untested on real paper): Share & print › Print › **Page to colour**
+      (the default) on one of your guides › print page 1, colour 5-10 sections, a pale one among them › Colour along ›
+      **Tick them off from a photo** › photograph the whole sheet › if asked, **A printout** → the sections you
+      coloured offered, nothing else? Try a Labelled page printout too (its codes coloured over).
+- [ ] ★ **Your own sketchbook page:** colour a few more sections of a page you made a guide from › Tick them off from a
+      photo › **My own page** → offered right? A photo in a shadow, and one on its side.
+- [ ] ★ **Timing:** from taking the photo to the offer (the trial's 3.8-megapixel page took about 6 s on a desktop):
+      Copy diagnostics, paste into Send feedback.
+- [ ] **Check them:** tap an offered section → left out (no outline), another → added; "N to tick" follows; **Done** →
+      one Undo; **Cancel** and Escape change nothing. A section ticked in the app but blank on paper is dashed, with its
+      line.
+- [ ] Reopen a guide (close the app first) you didn't tick in last time → "Coloured some on paper since? Tick them off
+      from a photo ✕" under the tabs; ✕ → gone until the next time.
+- [ ] **Page to colour** printed: page 1 has no labels and faint tone lines (18% grey: still visible? not showing
+      through the colour?); page 2, your picture in colour with dark codes, lies exactly over page 1 when held to the
+      light; page 3, the shading map's greys. **Only the page** prints page 1 alone. "Print one-sided" is under Pages.
+- [ ] A sketchbook photo with its spiral binding: "The spiral binding along the left edge was read as part of the page.
+      · Trim it" → trimmed; untrimmed, the loops aren't in the coloured-in offer.
+- [ ] A part-coloured page built: the coloured-in offer includes pale colours (peaches, pale blues), and none of the
+      blank sections in a soft shadow.
 
 **New in v327.1: the review's changes**
 

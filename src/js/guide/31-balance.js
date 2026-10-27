@@ -966,10 +966,75 @@ function buildNoRep(cl, pool) {
   coll.forEach(function (m) {
     bk[m.mkey] = m;
   });
+  // (v328 review: each marker's sections by where they are, on a coarse grid, so a repeat's nearest same-marker
+  // section is found from the cells round it, not by measuring to all of them: a 10,000-section page on Ciao 12 had
+  // taken 6 s, 29,000 80 s; the same distances, so the same plan)
+  const GS = Math.max(8, Math.max(W, H) / 32),
+    GW = Math.ceil(W / GS) + 1,
+    GH = Math.ceil(H / GS) + 1,
+    grid = {},
+    cellOf = function (l) {
+      const c = comps[l];
+      return [
+        Math.max(0, Math.min(GW - 1, Math.floor(c.cx / GS))),
+        Math.max(0, Math.min(GH - 1, Math.floor(c.cy / GS))),
+      ];
+    },
+    nearest = function (mk, l) {
+      const g = grid[mk];
+      if (!g) return Infinity;
+      // (v328 review 2: a marker on few sections, measured to each: the ring search scanned hundreds of empty cells
+      // for one far away, and a big collection on an ordinary page had become slower than before; the same distances)
+      const A = at[mk];
+      if (A.length * A.length < GW * GH) {
+        const c0 = comps[l];
+        let d = Infinity;
+        for (let i = 0; i < A.length; i++) {
+          const q = comps[A[i]];
+          if (q) d = Math.min(d, Math.hypot(c0.cx - q.cx, c0.cy - q.cy));
+        }
+        return d;
+      }
+      const c = comps[l],
+        p = cellOf(l),
+        R = Math.max(GW, GH);
+      let best = Infinity;
+      const look = function (x, y) {
+        if (x < 0 || y < 0 || x >= GW || y >= GH) return;
+        const L = g.get(y * GW + x);
+        if (L)
+          for (let i = 0; i < L.length; i++) {
+            const q = comps[L[i]],
+              d = Math.hypot(c.cx - q.cx, c.cy - q.cy);
+            if (d < best) best = d;
+          }
+      };
+      for (let r = 0; r <= R; r++) {
+        if ((r - 1) * GS > best) break;
+        if (!r) look(p[0], p[1]);
+        else {
+          for (let x = p[0] - r; x <= p[0] + r; x++) {
+            look(x, p[1] - r);
+            look(x, p[1] + r);
+          }
+          for (let y = p[1] - r + 1; y <= p[1] + r - 1; y++) {
+            look(p[0] - r, y);
+            look(p[0] + r, y);
+          }
+        }
+      }
+      return best;
+    };
   const put = function (l, m) {
     assign[l] = m;
     uses[m.mkey] = (uses[m.mkey] || 0) + 1;
     (at[m.mkey] = at[m.mkey] || []).push(l);
+    if (comps[l]) {
+      const p = cellOf(l),
+        g = grid[m.mkey] || (grid[m.mkey] = new Map()),
+        k = p[1] * GW + p[0];
+      (g.get(k) || g.set(k, []).get(k)).push(l);
+    }
   };
   const free = [];
   order.forEach(function (l) {
@@ -1094,11 +1159,7 @@ function buildNoRep(cl, pool) {
       // (a repeat: of those, the ones whose other sections are furthest away)
       const far = cand
         .map(function (m) {
-          let d = Infinity;
-          (at[m.mkey] || []).forEach(function (q) {
-            d = Math.min(d, Math.hypot(comps[l].cx - comps[q].cx, comps[l].cy - comps[q].cy));
-          });
-          return [d, m];
+          return [nearest(m.mkey, l), m];
         })
         .sort(function (x, y) {
           return y[0] - x[0];

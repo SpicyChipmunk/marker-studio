@@ -20,7 +20,11 @@ function ctlPlan() {
   // the most of the picture)
   // (v318.34: a palette you chose is kept, and the toast says so in the harmony's place, U1-5)
   const _snote = surpriseNote
-    ? (surpriseNote === 'kept' ? 'Kept your palette' : HARM[genHarmUsed()]) +
+    ? (surpriseNote === 'kept'
+        ? 'Kept your palette'
+        : surpriseNote === 'yours'
+          ? 'From your markers'
+          : HARM[genHarmUsed()]) +
       ' \u00b7 ' +
       (family === 'random'
         ? 'Random: ' + surpriseRoles()
@@ -54,6 +58,7 @@ function ctlPlan() {
   toolTipWire();
   lowLineWire();
   stripLineWire();
+  tickLineWire();
   ppShadeLineWire();
   roughWire();
   positionRough();
@@ -234,11 +239,16 @@ function ctlPlanHead() {
           true,
         )
       : '') +
-    // (v313: Screens and ink differ, once, after the first-time lines)
-    stripLineHTML() +
+    // (v313: Screens and ink differ, once, after the first-time lines; v328: before Tick off from a photo's line, which
+    // comes at every opening and would keep the once-only line from its turn)
+    planTickStrip() +
     // (v306: rough spots, last in the queue)
     roughLineHTML()
   );
+}
+function planTickStrip() {
+  const s = stripLineHTML();
+  return s || tickLineHTML();
 }
 /* (v308) The marker count: −, a slider and + (each 44 px, held down they keep going), and the count, which a tap
    turns into a box to type one. The slider runs from 2 to the smaller of the sections and the markers left (mkCap);

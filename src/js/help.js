@@ -6,6 +6,10 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v328',
+    t: 'Coloured on paper? A photo of your page ticks off what you’ve done: in Colour along, Tick them off from a photo lines your photo up with the page you made the guide from, or a printout of it, and offers the sections coloured since, with Check them to add or leave any out first. Print’s new Page to colour is the page with no labels to colour on, then your picture in colour with its codes to read beside it, and a shading map with the tones at full strength; the tone lines print faint. The offer for a page coloured in already finds pale colours too, and a spiral binding read as part of the page can be trimmed off.',
+  },
+  {
     v: 'v327.1',
     t: 'Make a colouring page from any photo is a button now, on Home and the Guide screen. After you build a page from a photo, a line offers to shade it like the photo in one tap (Undo takes it back). Highlights and Shadows matched to the photo are called From the photo, and the printed key says a tone that isn’t needed rather than “base is the lightest”.',
   },

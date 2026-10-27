@@ -35,7 +35,8 @@ function baseVH() {
 }
 // full screen: the picture fills the screen (above the tool row) until closed with the X or Escape
 function enterFull() {
-  if (!cv || focus || root.classList.contains('sfrev') || cropMode) return;
+  // (v328: not while Check them is open: its Cancel and Done are in the panel full screen hides)
+  if (!cv || focus || root.classList.contains('sfrev') || cropMode || colCheckLive()) return;
   const had = document.activeElement && document.activeElement !== document.body;
   closeSheet();
   hideToast();
@@ -96,6 +97,12 @@ document.addEventListener(
         },
       );
     });
+    // (v328 review 2: and a showing toast's buttons, last, as a dialog's Tab reaches them: ✨ Surprise's Undo)
+    const ts = document.getElementById('msToast');
+    if (ts && ts.classList.contains('on'))
+      [].forEach.call(ts.querySelectorAll('button'), function (x) {
+        if (!x.disabled && x.getClientRects().length) f.push(x);
+      });
     if (!f.length) return;
     const i = f.indexOf(document.activeElement),
       n = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : i < 0 || i >= f.length - 1 ? 0 : i + 1;
@@ -120,6 +127,9 @@ function fullModal(on) {
       if (
         c === n ||
         c === head ||
+        // (v328 review: nor a section's tip, shown over full screen: open as it started, it had gone dead)
+        c === tipEl ||
+        (c.classList && c.classList.contains('sftip')) ||
         c.id === 'sfSheet' ||
         c.inert ||
         /^(SCRIPT|STYLE|LINK)$/.test(c.tagName) ||

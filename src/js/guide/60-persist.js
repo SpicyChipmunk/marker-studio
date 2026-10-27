@@ -146,6 +146,8 @@ function guideStale() {
 // the section map changed in place (Edit sections' merge, split, add): labelsSig reads it again
 function labelsEdited() {
   _lsC = _lsW = null;
+  // (v328 review: the sections changed, for those that remember what they read from them: 65-edit secEdN)
+  secEdN++;
 }
 // share: for a guide file to share, which leaves out a photo the pattern doesn't use (to keep it small). edits: the
 // guide with section edits not built yet (kept when the page is hidden): only sections still there keep their
@@ -328,7 +330,8 @@ const PL_TOP = [
     'src',
     'pp',
   ],
-  PL_GONE = [];
+  // (v328 review: visT, a test build's count of a visit's ticks, now counted on the device: 26-tick)
+  PL_GONE = ['visT'];
 let _plKnown = null;
 function plKnown() {
   if (_plKnown) return _plKnown;
@@ -495,7 +498,7 @@ function stashDirty() {
         saveFailWords(
           'Couldn’t save “' +
             nm +
-            '”, so it’s still open. Free up space (delete or back up guides in the Library), then try again.',
+            '”, so it’s still open. Free up space (back up, then delete a few guides in the Library and in Recently deleted), then try again.',
           nm,
           true,
         ),
@@ -523,7 +526,7 @@ function stashDirty() {
       saveFailWords(
         'Couldn’t save “' +
           nm +
-          '”, so it’s still open. Free up space (delete or back up guides in the Library), then try again.',
+          '”, so it’s still open. Free up space (back up, then delete a few guides in the Library and in Recently deleted), then try again.',
         nm,
         true,
       ),
@@ -569,7 +572,17 @@ function markBuilt() {
   _edDisc = false;
   _built = assignData && labels && secState ? { ss: secState.slice(), min: minPos, bg: bgTrim } : null;
 }
+// (v328 review 2: worked out once for a drawing of Edit sections, which asks twice, the save status and the bar: each
+// can read every pixel of the map, ~65 ms a tap on a big page; render sets _sepOnce)
+let _sepOnce = null;
 function secEdPending() {
+  if (_sepOnce) {
+    if (!('v' in _sepOnce)) _sepOnce.v = secEdPending1();
+    return _sepOnce.v;
+  }
+  return secEdPending1();
+}
+function secEdPending1() {
   if (sfmode !== 'review' || !assignData || !labels || _edDisc) return false;
   if (_edResumed) return true;
   const b = _built;
@@ -1304,6 +1317,8 @@ function doAutosave(q) {
   clearTimeout(autoT);
   autoT = null;
   if (!assignData) return Promise.resolve(true);
+  // (v328: this visit's ticks counted for Tick off from a photo's line, however they changed, 26-tick)
+  tickVisNote();
   if (!libEntry()) slotAdopt();
   if (libEntry()) return libAutosave(q);
   if (canAuto()) return firstSave(true);
@@ -1372,7 +1387,7 @@ function slotNoteFailed(tok) {
   _slotWarn = tok;
   const say = function () {
     toast(
-      'This guide isn\u2019t kept for Resume: this browser\u2019s storage is full. Free up space (back up, then delete a few guides in the Library) to keep it.',
+      'This guide isn\u2019t kept for Resume: this browser\u2019s storage is full. Free up space (back up, then delete a few guides in the Library and in Recently deleted) to keep it.',
       8000,
     );
   };
@@ -1545,7 +1560,7 @@ function libAutosave(q) {
           saveFailWords(
             'Couldn’t save “' +
               nm +
-              '” — this browser’s storage is full. It stays open here: free up space (back up, then delete a few guides in the Library) and it saves with your next change.',
+              '” — this browser’s storage is full. It stays open here: free up space (back up, then delete a few guides in the Library and in Recently deleted) and it saves with your next change.',
             nm,
             true,
           ),
@@ -1574,7 +1589,7 @@ function libLost(id, nm) {
       saveFailWords(
         'Couldn\u2019t save the last changes to \u201c' +
           nm +
-          '\u201d \u2014 this browser\u2019s storage is full. Free up space (back up, then delete a few guides in the Library).',
+          '\u201d \u2014 this browser\u2019s storage is full. Free up space (back up, then delete a few guides in the Library and in Recently deleted).',
         nm,
         false,
       ),
@@ -1982,7 +1997,7 @@ function firstSave(auto) {
             saveFailWords(
               'Couldn\u2019t save \u201c' +
                 nm +
-                '\u201d \u2014 this browser\u2019s storage may be full. Free up space (back up, then delete a few guides in the Library), then open it again.',
+                '\u201d \u2014 this browser\u2019s storage may be full. Free up space (back up, then delete a few guides in the Library and in Recently deleted), then open it again.',
               nm,
               false,
             ),
@@ -2048,7 +2063,7 @@ function firstSave(auto) {
           saveFailWords(
             'Couldn\u2019t save \u201c' +
               nm +
-              '\u201d \u2014 this browser\u2019s storage is full. It stays open here: free up space (back up, then delete a few guides in the Library), or keep it with Share & print \u203a Guide file.',
+              '\u201d \u2014 this browser\u2019s storage is full. It stays open here: free up space (back up, then delete a few guides in the Library and in Recently deleted), or keep it with Share & print \u203a Guide file.',
             nm,
             true,
           ),
@@ -2096,7 +2111,7 @@ function saveCopy() {
           if (!id) {
             toast(
               saveFailWords(
-                'Couldn’t save a copy — this browser’s storage is full. Free up space (back up, then delete a few guides in the Library) and try again.',
+                'Couldn’t save a copy — this browser’s storage is full. Free up space (back up, then delete a few guides in the Library and in Recently deleted) and try again.',
                 '',
                 true,
               ),

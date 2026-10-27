@@ -207,7 +207,9 @@ function lptsReady() {
   const K = comps.length,
     key = lptsKey(K);
   if (lptsHas(key)) return Promise.resolve();
-  return JOBS.run('lpts', { buf: labels.slice().buffer, W: W, H: H, K: K }).then(
+  // (the copy handed over, not copied again: v328 review 2)
+  const buf = labels.slice().buffer;
+  return JOBS.run('lpts', { buf: buf, W: W, H: H, K: K }, [buf]).then(
     function (r) {
       lptsPut(key, lptsFix(r, K));
     },
@@ -488,7 +490,9 @@ function showTip(l, btns, quiet) {
       } else if (b.dataset.a === 'zone') {
         // to the zone this section is in (85-zones-ui): on the tab that's open if it has the chips (Pattern, Colours,
         // Shading with shading on), else on Pattern
-        // (the tab first, so the zone's chip is there to take the keyboard, v287)
+        // (the tab first, so the zone's chip is there to take the keyboard, v287; v328 review 2: out of full screen
+        // first, where the controls can't be seen or reached)
+        exitFull();
         if (gTab !== 'pattern' && gTab !== 'colours' && !(gTab === 'shading' && shadeMode !== 'off'))
           planTab('pattern');
         zoneSwitch(+b.dataset.z);
@@ -507,11 +511,21 @@ function showTip(l, btns, quiet) {
     d.addEventListener('click', function (e) {
       const b = e.target.closest('[data-a]');
       if (!b) return;
+      const kb = d.contains(document.activeElement);
       hideTip();
-      if (b.dataset.a === 'open') findInList(l);
-      else {
+      // (v328 review 2: the marker's row opened in the list, out of full screen first, where it can't be seen)
+      if (b.dataset.a === 'open') {
+        exitFull();
+        findInList(l);
+        // (the keyboard on the row it opened)
+        const row = kb && document.querySelector('#sfAlist .sfarow.open .sfah');
+        if (row) row.focus({ preventScroll: true });
+      } else {
         alongTick(l);
         sayLive((colored[l] ? 'Ticked ' : 'Unticked ') + alongName(m));
+        // (and the keyboard on the picture's tools, not lost with the tip, as Escape in it does)
+        const fx = kb && document.getElementById(root.classList.contains('sffull') ? 'sfFullX' : 'sfFull');
+        if (fx && fx.getClientRects().length) fx.focus({ preventScroll: true });
       }
     });
   }
@@ -582,6 +596,7 @@ function showWhiteTip(l, quiet) {
     const b = e.target.closest('[data-a]');
     if (!b) return;
     if (b.dataset.a === 'zone') {
+      exitFull();
       if (gTab !== 'pattern' && gTab !== 'colours' && !(gTab === 'shading' && shadeMode !== 'off'))
         planTab('pattern');
       zoneSwitch(+b.dataset.z);

@@ -29,25 +29,101 @@ function markerPath(secs, B, big) {
         : B.y0[rest[i]] < B.y0[rest[top]]
     )
       top = i;
-  var l = rest.splice(top, 1)[0],
-    pt = cxy(l);
-  path.push(l);
-  while (rest.length) {
-    var bi = 0,
-      bd = Infinity;
-    for (i = 0; i < rest.length; i++) {
-      var q = cxy(rest[i]),
-        dx = q[0] - pt[0],
-        dy = q[1] - pt[1],
-        d = dx * dx + dy * dy;
-      if (d < bd) {
-        bd = d;
-        bi = i;
+  // (v328 review 2: the nearest found on a grid of the sections' centres, not by measuring to every one left: a
+  // marker on 15,000 sections had taken 2-4 s to enter Focus mode, and each Find next as long; the same path, a tie
+  // going to the one earlier in secs, as before)
+  var n = rest.length,
+    X = new Float64Array(n),
+    Y = new Float64Array(n),
+    q;
+  for (i = 0; i < n; i++) {
+    q = cxy(rest[i]);
+    X[i] = q[0];
+    Y[i] = q[1];
+  }
+  var alive = new Uint8Array(n).fill(1),
+    left = n,
+    G = null;
+  var grid = function () {
+    var x0 = Infinity,
+      y0 = Infinity,
+      x1 = -Infinity,
+      y1 = -Infinity,
+      j;
+    for (j = 0; j < n; j++)
+      if (alive[j]) {
+        if (X[j] < x0) x0 = X[j];
+        if (X[j] > x1) x1 = X[j];
+        if (Y[j] < y0) y0 = Y[j];
+        if (Y[j] > y1) y1 = Y[j];
+      }
+    var gs = Math.max(1, Math.sqrt(((x1 - x0 + 1) * (y1 - y0 + 1)) / left) * 1.5),
+      gw = Math.floor((x1 - x0) / gs) + 1,
+      gh = Math.floor((y1 - y0) / gs) + 1,
+      cells = new Array(gw * gh);
+    for (j = 0; j < n; j++)
+      if (alive[j]) {
+        var k = Math.floor((Y[j] - y0) / gs) * gw + Math.floor((X[j] - x0) / gs);
+        (cells[k] || (cells[k] = [])).push(j);
+      }
+    G = { x0: x0, y0: y0, gs: gs, gw: gw, gh: gh, cells: cells, at: left };
+  };
+  var cellOf = function (j) {
+    return Math.floor((Y[j] - G.y0) / G.gs) * G.gw + Math.floor((X[j] - G.x0) / G.gs);
+  };
+  var take = function (j) {
+    alive[j] = 0;
+    left--;
+    var c = G.cells[cellOf(j)],
+      at = c.indexOf(j);
+    c[at] = c[c.length - 1];
+    c.pop();
+  };
+  grid();
+  var cur = top;
+  take(cur);
+  path.push(rest[cur]);
+  while (left) {
+    if (left * 2 < G.at && left > 16) grid();
+    var px = X[cur],
+      py = Y[cur],
+      cx = Math.max(0, Math.min(G.gw - 1, Math.floor((px - G.x0) / G.gs))),
+      cy = Math.max(0, Math.min(G.gh - 1, Math.floor((py - G.y0) / G.gs))),
+      bi = -1,
+      bd = Infinity,
+      R = Math.max(G.gw, G.gh);
+    var look = function (x, y) {
+      if (x < 0 || y < 0 || x >= G.gw || y >= G.gh) return;
+      var c = G.cells[y * G.gw + x];
+      if (!c) return;
+      for (var t = 0; t < c.length; t++) {
+        var j = c[t],
+          dx = X[j] - px,
+          dy = Y[j] - py,
+          d = dx * dx + dy * dy;
+        if (d < bd || (d === bd && j < bi)) {
+          bd = d;
+          bi = j;
+        }
+      }
+    };
+    for (var r = 0; r <= R; r++) {
+      if (bi >= 0 && (r - 1) * G.gs > Math.sqrt(bd)) break;
+      if (!r) look(cx, cy);
+      else {
+        for (var x = cx - r; x <= cx + r; x++) {
+          look(x, cy - r);
+          look(x, cy + r);
+        }
+        for (var y = cy - r + 1; y <= cy + r - 1; y++) {
+          look(cx - r, y);
+          look(cx + r, y);
+        }
       }
     }
-    l = rest.splice(bi, 1)[0];
-    pt = cxy(l);
-    path.push(l);
+    cur = bi;
+    take(cur);
+    path.push(rest[cur]);
   }
   return path;
 }
@@ -208,16 +284,31 @@ function focusSide() {
   var groups = [],
     cur = focusPos >= 0 && focusPos < focusOrd.length ? focusGroup(focusPos) : '',
     by = {};
+  // (v328 review: sections, not steps: a shaded section's tones, each a step, had counted as sections; and the page's
+  // own markers and sections, once each)
+  var allSec = {},
+    allMk = {};
   for (var i = 0; i < focusOrd.length; i++) {
     var gk = focusGroup(i),
-      e = by[gk];
+      e = by[gk],
+      q = focusOrd[i];
     if (!e) {
-      e = by[gk] = { k: gk, m: assignData.assign[focusOrd[i]], n: 0, d: 0 };
+      e = by[gk] = { k: gk, m: assignData.assign[q], n: 0, d: 0, s: {} };
       groups.push(e);
     }
-    e.n++;
-    if (stepDone(focusOrd[i], stepBits(i))) e.d++;
+    const dn = stepDone(q, stepBits(i));
+    e.s[q] = e.s[q] === undefined ? dn : e.s[q] && dn;
+    allSec[q] = 1;
+    allMk[assignData.assign[q].mkey] = 1;
   }
+  groups.forEach(function (g) {
+    for (const q in g.s) {
+      g.n++;
+      if (g.s[q]) g.d++;
+    }
+  });
+  var nSec = Object.keys(allSec).length,
+    nMk = Object.keys(allMk).length;
   var sig =
     groups
       .map(function (g) {
@@ -229,12 +320,7 @@ function focusSide() {
   if (strip.dataset.sig !== sig) {
     strip.dataset.sig = sig;
     strip.querySelector('.sffsn').textContent =
-      groups.length +
-      ' marker' +
-      (groups.length === 1 ? '' : 's') +
-      ' \u00b7 ' +
-      focusOrd.length +
-      ' sections';
+      nMk + ' marker' + (nMk === 1 ? '' : 's') + ' \u00b7 ' + nSec + ' section' + (nSec === 1 ? '' : 's');
     strip.querySelector('.sffsrow').innerHTML = groups
       .map(function (g) {
         var done = g.d >= g.n;
@@ -775,6 +861,8 @@ function focusDone() {
   var bits = stepBits(focusPos);
   if (stepDone(l, bits)) {
     stepSet(l, bits, false);
+    // (v328 review: unticked, the page no longer finished: its finishing again celebrated, checkComplete)
+    checkComplete();
     renderGuide();
     renderFocusUI();
     return;
@@ -1070,7 +1158,9 @@ function renderFocusUI() {
     coll.forEach(function (m) {
       bk[m.mkey] = m;
     });
-    var m = bk[a.mkey],
+    // (v328 review: the section's own marker when it isn't one of yours now, a photo-made page's from the full range or
+    // one marked dry since: the bar had read "Ohuhu|R16")
+    var m = bk[a.mkey] || (a.code ? a : null),
       k = a.mkey;
     var bits = stepBits(focusPos),
       st = stepText(l, bits),
@@ -1186,6 +1276,7 @@ function renderFocusUI() {
       coll.forEach(function (m) {
         if (m.mkey === ck) cm = m;
       });
+      if (!cm && cur >= 0 && assignData.assign[cur].code) cm = assignData.assign[cur];
       var all = document.getElementById('sfFocAll');
       if (all) {
         all.style.display = ck ? '' : 'none';

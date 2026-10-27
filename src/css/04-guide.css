@@ -748,6 +748,15 @@
   padding: 7px 6px 6px;
   line-height: 1.15;
 }
+/* (v328) four Pages choices on a phone: a two-word name goes onto two lines rather than into its neighbour */
+#sfRoot .sfprsh .segs button:has(.sfprpv) {
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+#sfRoot .sfprchk .sfchk[hidden] {
+  display: none;
+}
 #sfRoot .sfprpv {
   display: flex;
   align-items: center;
@@ -1702,4 +1711,10 @@
 }
 #sfRoot #sfCtl .sfthemes .sfedit.sfthoff {
   opacity: 0.45;
+}
+/* (v328) on the smallest phones the four Pages choices without their drawings, so Paper stays on the first screen */
+@media (max-width: 359px) {
+  #sfRoot .sfprsh .segs button[data-pwhat] .sfprpv {
+    display: none;
+  }
 }

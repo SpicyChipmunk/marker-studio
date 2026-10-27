@@ -1491,6 +1491,528 @@ function colourSecs() {
   });
   return out;
 }
+/* ---- (v327.2) the sections coloured in, read against the paper ----
+    colourSecs counts a section only when half its pixels are clearly coloured (chroma over COLOUR_CHROMA, 60): on a
+    real part-coloured page (the author's, 405 sections, 97 coloured) it found 63, missing the pastels, peaches and
+    pale blues. paperSecsOf reads the picture's own colours (RGBA d, W x H, as the sections were found from it: srcRGBA,
+    20-image-input) against the paper's colour where each section is: a smooth surface (PAPER_TERMS, a cubic in x and
+    y, CIELAB) fitted to cells of the page's paper again and again, each time without the pixels far from it (the
+    colour drops out of the fit, the light across the page stays in it). A section is coloured when over half its
+    middle (PAPER_IN px in from its lines; the whole of a section too thin for that) is coloured or a darker grey than
+    the paper there: its colour (a*, b*) PAPER_AB or more from the paper's, or PAPER_DARK or more darker. Lighter than
+    the paper is never a marker. Measured (scratchpad cs/): the real page, 95 of its 97 and nothing blank; the author's
+    blank photo, nothing; a fully coloured photo, 334 of 338 sections and nothing blank; those with the light falling
+    away across the page or a shadow over a quarter of it (a quarter to 30% darker), no more than one blank section
+    called coloured (on the colour alone with the lightness too, 13-46; with PAPER_DARK at 15, a shadow's middle, 2).
+    Pale greys (lightness only, under PAPER_DARK) aren't counted, as colourSecs never counted them: a shadow looks
+    the same. Offered only, with colourSecs' (82-colour-mode colourOffer). */
+const PAPER_AB = 5,
+  PAPER_DARK = 20,
+  // (the fit: cells about 1/150 of the picture's long side, sampled every st-th pixel; a cell counts with a tenth of
+  // its samples near the paper; passes after the first keep what's within PAPER_NEAR of the surface)
+  PAPER_CELLS = 150,
+  PAPER_NEAR = 8,
+  PAPER_IN = 2,
+  PAPER_TERMS = 10,
+  // (v328: the growing, and how far apart across a line two sections may be, of the picture's long side)
+  PAPER_GROW_AB = 3.5,
+  PAPER_GROW_L = 6,
+  PAPER_GAP = 0.012,
+  // (v328 review: on a page with no clear colour, a section coloured has most of its middle's pixels this far off the
+  // paper's tint line, colour only: paperSecsOf)
+  PAPER_AB_PX = 3,
+  // (the growing's seeds: within PAPER_AB of the paper in a*, and in b* towards yellow, and PAPER_SEED more a unit of
+  // L* darker; towards blue, as a shadow goes, PAPER_SEED_L more. Measured: the author's 9 photos as before the
+  // review, 1-9 blank sections offered, and pale fills kept as the surface alone reads them: an 8 x 8 block of pink 52
+  // of 64, a 6 x 6 of pale blue 14 of 36; any section read as paper a seed, those went to 0)
+  PAPER_SEED = 0.3,
+  PAPER_SEED_L = 1;
+// sRGB to CIELAB (D65), looked up at 6 bits a channel (under 1 ΔE off; a 4-megapixel page read in a tenth of the time
+// of working each pixel out): 64^3 colours, L* a* b* each, made the first time it's needed
+let _labLut = null;
+function labLut() {
+  if (_labLut) return _labLut;
+  const lin = new Float32Array(64);
+  for (let i = 0; i < 64; i++) {
+    const c = (i * 4 + 2) / 255;
+    lin[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  }
+  const f = function (t) {
+      return t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+    },
+    o = new Float32Array(64 * 64 * 64 * 3);
+  for (let r = 0; r < 64; r++)
+    for (let g = 0; g < 64; g++)
+      for (let b = 0; b < 64; b++) {
+        const R = lin[r],
+          G = lin[g],
+          B = lin[b],
+          fx = f((R * 0.4124 + G * 0.3576 + B * 0.1805) / 0.95047),
+          fy = f(R * 0.2126 + G * 0.7152 + B * 0.0722),
+          fz = f((R * 0.0193 + G * 0.1192 + B * 0.9505) / 1.08883),
+          k = ((r << 12) | (g << 6) | b) * 3;
+        o[k] = 116 * fy - 16;
+        o[k + 1] = 500 * (fx - fy);
+        o[k + 2] = 200 * (fy - fz);
+      }
+  return (_labLut = o);
+}
+// the look-up's index for pixel i of RGBA d
+function labAt(d, i) {
+  return (((d[i * 4] >> 2) << 12) | ((d[i * 4 + 1] >> 2) << 6) | (d[i * 4 + 2] >> 2)) * 3;
+}
+function paperBasis(x, y, o) {
+  o[0] = 1;
+  o[1] = x;
+  o[2] = y;
+  o[3] = x * x;
+  o[4] = x * y;
+  o[5] = y * y;
+  o[6] = x * x * x;
+  o[7] = y * y * y;
+  o[8] = x * x * y;
+  o[9] = x * y * y;
+}
+// A x = b (A n x n, row-major, overwritten), by elimination with partial pivoting; null when it's singular
+function solveSmall(A, b, n) {
+  for (let c = 0; c < n; c++) {
+    let p = c;
+    for (let r = c + 1; r < n; r++) if (Math.abs(A[r * n + c]) > Math.abs(A[p * n + c])) p = r;
+    if (!(Math.abs(A[p * n + c]) > 1e-12)) return null;
+    if (p !== c) {
+      for (let k = 0; k < n; k++) {
+        const t = A[c * n + k];
+        A[c * n + k] = A[p * n + k];
+        A[p * n + k] = t;
+      }
+      const t = b[c];
+      b[c] = b[p];
+      b[p] = t;
+    }
+    for (let r = c + 1; r < n; r++) {
+      const f = A[r * n + c] / A[c * n + c];
+      if (!f) continue;
+      for (let k = c; k < n; k++) A[r * n + k] -= f * A[c * n + k];
+      b[r] -= f * b[c];
+    }
+  }
+  const x = new Float64Array(n);
+  for (let r = n - 1; r >= 0; r--) {
+    let s = b[r];
+    for (let k = r + 1; k < n; k++) s -= A[r * n + k] * x[k];
+    x[r] = s / A[r * n + r];
+  }
+  return x;
+}
+// (grow false: without the growing below, as v327.2 read; for the tests. abOnly: coloured by a*b* only, not by being
+// PAPER_DARK darker, for a page with no clear colour; colourOffer, 82-colour-mode, reads it in the JOBS worker)
+// (v328) the paper's colour across the page, as a surface fitted to its sections' paper (paperSecsOf, and Tick off
+// from a photo's plain-paper test, 26-tick): { S: CIELAB per cell, G: a cell's side, gw, gh } or null
+function paperSurf(d, labels, W, H) {
+  const n = W * H,
+    G = Math.max(8, Math.round(Math.max(W, H) / PAPER_CELLS)),
+    gw = Math.ceil(W / G),
+    gh = Math.ceil(H / G),
+    nc = gw * gh,
+    st = Math.max(1, Math.round(Math.sqrt(n / 500000))),
+    // the samples: every st-th pixel each way that's in a section (or the paper round the picture), its CIELAB and
+    // cell
+    sx = Math.ceil(W / st),
+    sy = Math.ceil(H / st),
+    lab = new Float32Array(sx * sy * 3),
+    cell = new Int32Array(sx * sy),
+    LUT = labLut();
+  let m = 0;
+  for (let y = 0; y < H; y += st)
+    for (let x = 0; x < W; x += st) {
+      const i = y * W + x;
+      if (labels[i] <= 0) continue;
+      const q = labAt(d, i);
+      lab[m * 3] = LUT[q];
+      lab[m * 3 + 1] = LUT[q + 1];
+      lab[m * 3 + 2] = LUT[q + 2];
+      cell[m++] = ((y / G) | 0) * gw + ((x / G) | 0);
+    }
+  if (m < 100) return null;
+  // the paper to start from: the mean of the lightest 5% of the samples
+  const hs = new Uint32Array(401);
+  for (let k = 0; k < m; k++) hs[Math.max(0, Math.min(400, Math.round(lab[k * 3] * 4)))]++;
+  let t = 400,
+    acc = 0;
+  while (t > 0 && acc + hs[t] < m * 0.05) acc += hs[t--];
+  const p0 = [0, 0, 0];
+  let c0 = 0;
+  for (let k = 0; k < m; k++)
+    if (lab[k * 3] * 4 >= t - 0.5) {
+      p0[0] += lab[k * 3];
+      p0[1] += lab[k * 3 + 1];
+      p0[2] += lab[k * 3 + 2];
+      c0++;
+    }
+  for (let c = 0; c < 3; c++) p0[c] /= c0 || 1;
+  // the surface, one CIELAB colour per cell; the passes: the first loose (the light across the page can be far from
+  // the lightest paper), then near
+  const S = new Float32Array(nc * 3),
+    cnt = new Float64Array(nc),
+    sum = new Float64Array(nc * 3),
+    bs = new Float64Array(PAPER_TERMS),
+    cellMin = Math.max(4, 0.1 * (G / st) * (G / st));
+  for (let c = 0; c < nc; c++) S.set(p0, c * 3);
+  [50, PAPER_NEAR, PAPER_NEAR, PAPER_NEAR, PAPER_NEAR].forEach(function (near) {
+    cnt.fill(0);
+    sum.fill(0);
+    for (let k = 0; k < m; k++) {
+      const L = lab[k * 3];
+      if (L <= 50) continue;
+      const c = cell[k],
+        dL = L - S[c * 3],
+        da = lab[k * 3 + 1] - S[c * 3 + 1],
+        db = lab[k * 3 + 2] - S[c * 3 + 2];
+      if (dL * dL + da * da + db * db >= near * near) continue;
+      cnt[c]++;
+      sum[c * 3] += L;
+      sum[c * 3 + 1] += lab[k * 3 + 1];
+      sum[c * 3 + 2] += lab[k * 3 + 2];
+    }
+    // weighted least squares on the cells' means, weighted by their samples
+    const A = new Float64Array(PAPER_TERMS * PAPER_TERMS),
+      R = [new Float64Array(PAPER_TERMS), new Float64Array(PAPER_TERMS), new Float64Array(PAPER_TERMS)];
+    let used = 0;
+    for (let c = 0; c < nc; c++) {
+      const w = cnt[c];
+      if (w < cellMin) continue;
+      used++;
+      paperBasis(((c % gw) + 0.5) / gw, (((c / gw) | 0) + 0.5) / gh, bs);
+      for (let i = 0; i < PAPER_TERMS; i++) {
+        for (let j = 0; j < PAPER_TERMS; j++) A[i * PAPER_TERMS + j] += w * bs[i] * bs[j];
+        for (let ch = 0; ch < 3; ch++) R[ch][i] += bs[i] * sum[c * 3 + ch];
+      }
+    }
+    // (too little paper to fit: the surface stays as it was)
+    if (used < 2 * PAPER_TERMS) return;
+    const K = [];
+    for (let ch = 0; ch < 3; ch++) {
+      const x = solveSmall(A.slice(), R[ch], PAPER_TERMS);
+      if (!x) return;
+      K.push(x);
+    }
+    for (let c = 0; c < nc; c++) {
+      paperBasis(((c % gw) + 0.5) / gw, (((c / gw) | 0) + 0.5) / gh, bs);
+      for (let ch = 0; ch < 3; ch++) {
+        let v = 0;
+        for (let i = 0; i < PAPER_TERMS; i++) v += K[ch][i] * bs[i];
+        S[c * 3 + ch] = v;
+      }
+    }
+  });
+  return { S: S, G: G, gw: gw, gh: gh, p0: p0 };
+}
+function paperSecsOf(d, labels, W, H, nl, list, grow, abOnly) {
+  const P = paperSurf(d, labels, W, H);
+  if (!P) return [];
+  const S = P.S,
+    G = P.G,
+    gw = P.gw,
+    LUT = labLut();
+  // each section's pixels, its middle's apart: how many, and how many coloured; and its middle's colour, for the
+  // growing below
+  const tot = new Uint32Array(nl),
+    mL = new Float64Array(nl * 3),
+    hit = new Uint32Array(nl),
+    inTot = new Uint32Array(nl),
+    inHit = new Uint32Array(nl),
+    // (abOnly: the surface under each section's middle, averaged)
+    sM = abOnly ? new Float64Array(nl * 3) : null,
+    // (abOnly: how many of the middle's pixels are off the paper's line themselves, PAPER_AB_PX or more)
+    inOff = abOnly ? new Uint32Array(nl) : null,
+    r = PAPER_IN;
+  for (let y = 0; y < H; y++) {
+    const row = ((y / G) | 0) * gw,
+      mid = y >= r && y < H - r;
+    for (let x = 0, i = y * W; x < W; x++, i++) {
+      const l = labels[i];
+      if (l <= 0 || l >= nl) continue;
+      const q = labAt(d, i),
+        c = (row + ((x / G) | 0)) * 3,
+        da = LUT[q + 1] - S[c + 1],
+        db = LUT[q + 2] - S[c + 2],
+        on = da * da + db * db >= PAPER_AB * PAPER_AB || (!abOnly && S[c] - LUT[q] >= PAPER_DARK);
+      tot[l]++;
+      if (on) hit[l]++;
+      if (
+        mid &&
+        x >= r &&
+        x < W - r &&
+        labels[i - r] === l &&
+        labels[i + r] === l &&
+        labels[i - r * W] === l &&
+        labels[i + r * W] === l
+      ) {
+        inTot[l]++;
+        if (on) inHit[l]++;
+        mL[l * 3] += LUT[q];
+        mL[l * 3 + 1] += LUT[q + 1];
+        mL[l * 3 + 2] += LUT[q + 2];
+        if (sM) {
+          sM[l * 3] += S[c];
+          sM[l * 3 + 1] += S[c + 1];
+          sM[l * 3 + 2] += S[c + 2];
+          const qa = LUT[q + 1],
+            qb = LUT[q + 2],
+            p2 = S[c + 1] * S[c + 1] + S[c + 2] * S[c + 2],
+            u = p2 > 1e-6 ? Math.max(0, Math.min(1, (qa * S[c + 1] + qb * S[c + 2]) / p2)) : 1,
+            ea = qa - u * S[c + 1],
+            eb = qb - u * S[c + 2];
+          if (ea * ea + eb * eb >= PAPER_AB_PX * PAPER_AB_PX) inOff[l]++;
+        }
+      }
+    }
+  }
+  const out = [],
+    isOn = new Uint8Array(nl),
+    seen = new Uint8Array(nl);
+  list.forEach(function (l) {
+    const a = inTot[l] >= 20 ? inTot[l] : tot[l],
+      h = inTot[l] >= 20 ? inHit[l] : hit[l];
+    if (a < 20) return;
+    seen[l] = 1;
+    if (!sM) {
+      if (h * 2 > a) isOn[l] = 1;
+      return;
+    }
+    // (v328 review, abOnly: a page with no clear colour. By the section's middle averaged, so a photo's grain
+    // averages out; and against the line from no tint to the paper's own in a*b*, where a printed grey falls under any
+    // light, its cast fainter than the paper's the darker it is: a lamp's warm cast had made the greys read as
+    // coloured. A marker's colour is off that line, or along it further than the paper)
+    const k = inTot[l];
+    if (k < 20) return;
+    const pa = sM[l * 3 + 1] / k,
+      pb = sM[l * 3 + 2] / k,
+      va = mL[l * 3 + 1] / k,
+      vb = mL[l * 3 + 2] / k,
+      pp = pa * pa + pb * pb,
+      tt = pp > 1e-6 ? Math.max(0, Math.min(1, (va * pa + vb * pb) / pp)) : 1,
+      da = va - tt * pa,
+      db = vb - tt * pb;
+    // (and most of the middle off the line itself: a small strong patch, an eye coloured in a face, moves the
+    // average but isn't the section coloured)
+    if (da * da + db * db >= PAPER_AB * PAPER_AB && inOff[l] * 2 > k) isOn[l] = 1;
+  });
+  // (v328, P2) A soft shadow: the surface can't follow it, and its sections read as coloured (on the author's photos,
+  // 28-67 blank sections offered in the four with soft shadows). The paper is grown from section to neighbouring
+  // section across the lines instead: a section next to one that's paper, of nearly its colour (PAPER_GROW_AB in
+  // a*b*, PAPER_GROW_L in L*, each section's middle averaged), is paper too, however far it is from the surface; a
+  // shadow darkens step by step and is crossed, a marker's fill is a jump and isn't.
+  const mid = new Float64Array(nl * 3);
+  for (let l = 1; l < nl; l++)
+    if (inTot[l]) for (let c = 0; c < 3; c++) mid[l * 3 + c] = mL[l * 3 + c] / inTot[l];
+  const front = [],
+    vis = new Uint8Array(nl),
+    p0 = P.p0;
+  // (the seeds: sections read as paper whose middle is the paper's own colour, or a darker grey of it, as a shadow is.
+  // Not every section read as paper: on a big pale fill the surface bends to the fill's colour, its middle sections
+  // read as paper, and grown from them the whole fill went back to paper: an 8 x 8 block of pink, 52 sections, to 0)
+  if (grow !== false)
+    for (let l = 1; l < nl; l++) {
+      if (!seen[l] || isOn[l] || !inTot[l]) continue;
+      const da = mid[l * 3 + 1] - p0[1],
+        db = mid[l * 3 + 2] - p0[2],
+        dl = Math.max(0, p0[0] - mid[l * 3]),
+        lim = PAPER_AB + PAPER_SEED * dl;
+      // (darker and bluer, as a shadow is, allowed further: PAPER_SEED_L)
+      if (Math.abs(da) < lim && db < lim && db > -(PAPER_AB + PAPER_SEED_L * dl)) {
+        front.push(l);
+        vis[l] = 1;
+      }
+    }
+  // (the neighbours only when there's something to grow from)
+  const nb = front.length
+    ? secNeighbours(labels, W, H, nl, Math.max(6, Math.round(Math.max(W, H) * PAPER_GAP)))
+    : null;
+  while (front.length) {
+    const p = front.pop(),
+      ns = nb[p];
+    if (!ns) continue;
+    for (let k = 0; k < ns.length; k++) {
+      const q = ns[k];
+      // (through sections read as paper too, not only into those read as coloured)
+      if (vis[q] || !seen[q] || !inTot[q]) continue;
+      const da = mid[q * 3 + 1] - mid[p * 3 + 1],
+        db = mid[q * 3 + 2] - mid[p * 3 + 2];
+      if (
+        da * da + db * db < PAPER_GROW_AB * PAPER_GROW_AB &&
+        Math.abs(mid[q * 3] - mid[p * 3]) < PAPER_GROW_L
+      ) {
+        isOn[q] = 0;
+        vis[q] = 1;
+        front.push(q);
+      }
+    }
+  }
+  list.forEach(function (l) {
+    if (isOn[l]) out.push(l);
+  });
+  return out;
+}
+// the sections side by side across a line (no more than gap px of it between them, along a row or a column): for each
+// section, the list of its neighbours
+function secNeighbours(labels, W, H, nl, gap) {
+  const seen = new Set(),
+    nb = new Array(nl);
+  const pair = function (a, b) {
+    if (a === b) return;
+    const k = a < b ? a * nl + b : b * nl + a;
+    if (seen.has(k)) return;
+    seen.add(k);
+    (nb[a] || (nb[a] = [])).push(b);
+    (nb[b] || (nb[b] = [])).push(a);
+  };
+  for (let y = 0; y < H; y++) {
+    let last = 0,
+      at = -1e9;
+    for (let x = 0, i = y * W; x < W; x++, i++) {
+      const l = labels[i];
+      if (l > 0 && l < nl) {
+        if (last && l !== last && x - at <= gap) pair(last, l);
+        last = l;
+        at = x;
+      }
+    }
+  }
+  for (let x = 0; x < W; x++) {
+    let last = 0,
+      at = -1e9;
+    for (let y = 0, i = x; y < H; y++, i += W) {
+      const l = labels[i];
+      if (l > 0 && l < nl) {
+        if (last && l !== last && y - at <= gap) pair(last, l);
+        last = l;
+        at = y;
+      }
+    }
+  }
+  return nb;
+}
+/* ---- (v328, P1 and P6) a spiral binding, found by its sections ----
+    A sketchbook page photographed with its spiral binding: the loops are sections, which the guide and the print
+    then have, and every reading of the page took some of them for coloured in (on the author's glass table, 14-22 of
+    them). edgeBandsOf (20-image-input) finds a binding as dark bands along an edge, but on the glass table the loops
+    are separated by paper and the table shows through: it found 3 of the author's 9 photos. spiralOf reads the
+    sections instead: a row of SPIRAL_MIN or more small sections (no more than SPIRAL_AREA of the picture each), their
+    middles within SPIRAL_EDGE of one edge and in a line (within SPIRAL_LINE of the row's median), evenly spaced (most
+    gaps within 35% of the median gap), alike in size (most within 60% of the median), over SPIRAL_SPAN of the edge.
+    Measured: 8 of the 9 photos, and nothing on three test pages without a binding (the
+    letter page, a mandala, a mandala on a table). A drawn border of beads read as one, 7% deep: bindingNow
+    (20-image-input) takes it only from a photo of a page, and no deeper than 5%. { side: 't' | 'b' | 'l' | 'r', d: how deep from that edge, of the picture, secs: its sections }, or
+    null. */
+const SPIRAL_MIN = 8,
+  SPIRAL_AREA = 0.002,
+  SPIRAL_EDGE = 0.08,
+  SPIRAL_LINE = 0.015,
+  SPIRAL_SPAN = 0.4;
+function spiralOf(labels, W, H, nl) {
+  if (!labels || labels.length !== W * H || W < 32 || H < 32) return null;
+  const n = W * H,
+    cnt = new Float64Array(nl),
+    sx = new Float64Array(nl),
+    sy = new Float64Array(nl),
+    x0 = new Int32Array(nl).fill(W),
+    y0 = new Int32Array(nl).fill(H),
+    x1 = new Int32Array(nl).fill(-1),
+    y1 = new Int32Array(nl).fill(-1);
+  for (let y = 0, i = 0; y < H; y++)
+    for (let x = 0; x < W; x++, i++) {
+      const l = labels[i];
+      if (l <= 0 || l >= nl) continue;
+      cnt[l]++;
+      sx[l] += x;
+      sy[l] += y;
+      if (x < x0[l]) x0[l] = x;
+      if (x > x1[l]) x1[l] = x;
+      if (y < y0[l]) y0[l] = y;
+      if (y > y1[l]) y1[l] = y;
+    }
+  // (the least section: 30 px on the author's 1758 x 2149 guide, in proportion)
+  const amin = Math.max(8, (30 * n) / 3.78e6),
+    amax = SPIRAL_AREA * n,
+    med = function (a) {
+      const b = a.slice().sort(function (p, q) {
+        return p - q;
+      });
+      return b[b.length >> 1];
+    };
+  let best = null;
+  [
+    ['l', W, H],
+    ['r', W, H],
+    ['t', H, W],
+    ['b', H, W],
+  ].forEach(function (e) {
+    const side = e[0],
+      size = e[1],
+      len = e[2],
+      c = [];
+    for (let l = 1; l < nl; l++) {
+      if (cnt[l] < amin || cnt[l] > amax) continue;
+      const mx = sx[l] / cnt[l],
+        my = sy[l] / cnt[l],
+        pos = side === 'l' ? mx : side === 'r' ? W - 1 - mx : side === 't' ? my : H - 1 - my;
+      if (pos < SPIRAL_EDGE * size) c.push({ l: l, pos: pos, at: side === 'l' || side === 'r' ? my : mx });
+    }
+    if (c.length < SPIRAL_MIN) return;
+    const m = med(
+        c.map(function (o) {
+          return o.pos;
+        }),
+      ),
+      g = c.filter(function (o) {
+        return Math.abs(o.pos - m) < SPIRAL_LINE * size;
+      });
+    if (g.length < SPIRAL_MIN) return;
+    const at = g
+        .map(function (o) {
+          return o.at;
+        })
+        .sort(function (p, q) {
+          return p - q;
+        }),
+      gaps = [];
+    for (let k = 1; k < at.length; k++) gaps.push(at[k] - at[k - 1]);
+    const gm = med(gaps),
+      reg =
+        gm > 0
+          ? gaps.filter(function (v) {
+              return Math.abs(v - gm) < 0.35 * gm;
+            }).length / gaps.length
+          : 0,
+      ar = g.map(function (o) {
+        return cnt[o.l];
+      }),
+      am = med(ar),
+      alike =
+        ar.filter(function (v) {
+          return Math.abs(v - am) < 0.6 * am;
+        }).length / ar.length,
+      span = (at[at.length - 1] - at[0]) / len;
+    if (reg < 0.6 || alike < 0.6 || span < SPIRAL_SPAN) return;
+    // how deep: the row's sections' far side from the edge, and a little more
+    let deep = 0;
+    g.forEach(function (o) {
+      const l = o.l,
+        f = side === 'l' ? x1[l] + 1 : side === 'r' ? W - x0[l] : side === 't' ? y1[l] + 1 : H - y0[l];
+      if (f > deep) deep = f;
+    });
+    if (!best || g.length > best.secs.length)
+      best = {
+        side: side,
+        d: Math.min(SPIRAL_EDGE * 1.5, deep / size + 0.005),
+        secs: g.map(function (o) {
+          return o.l;
+        }),
+      };
+  });
+  return best;
+}
 // (v309.2) The least picture, on its shorter side as it came (before it's enlarged), that's worth finding sections in.
 // A page scaled down to a short side of 24–48 px gave 0–11 sections of the 125 it has at full size; 64 px, 24; 80, 55;
 // 120, 70 (e2e/fixtures/letter-page.png; a photo of a page went the same way). Under it, the warning says the picture is
@@ -1823,6 +2345,14 @@ function inkDone(k) {
 // is hollowed to its two edges
 const COLOUR_LINE_MM = 2,
   COLOUR_GAP_MM = 1;
+// (v328) the middle grey on g of the pixels marked in a (k of them)
+function inkMidGrey(a, g, n, k) {
+  const h = new Uint32Array(256);
+  for (let i = 0; i < n; i++) if (a[i]) h[g[i]]++;
+  let c = 0;
+  for (let v = 0; v < 256; v++) if ((c += h[v]) * 2 >= k) return v;
+  return 255;
+}
 function inkColourCut(g, n) {
   const mmpx = Math.max(W, H) / PAGE_MM,
     R = Math.max(3, Math.round(COLOUR_LINE_MM * mmpx)),
@@ -1845,9 +2375,15 @@ function inkColourCut(g, n) {
   boxPass(b, d, G, false, false, false, true);
   boxPass(d, b, G, true, true, true, false);
   boxPass(b, c, G, true, true, true, true);
-  // the black ink (d), and the uncoloured paper outside the closed coloured ink (b)
+  // the black ink (d), and the uncoloured paper outside the closed coloured ink (b). (v328: black ink is darker than
+  // the coloured ink's middle grey, gA: a coloured line's soft rim, read as ink in a grainy photo, is a grey lighter
+  // than the line, and counted as black ink round it, it had cut a red or blue line page's lines as fills, 1,140
+  // cells read as 5,701 at a noise of ±6. Known cost: a grey outline lighter than a dark fill beside it isn't black
+  // ink, so with Enhance off the fill's side near uncoloured paper keeps a rim of ink, its outline a few pixels
+  // thicker; a margin over gA brought the grainy page's cut back, its rim's darker specks enough to tip it)
+  const gA = inkMidGrey(a, g, n, any);
   for (let i = 0; i < n; i++) {
-    d[i] = labels[i] === -1 && !(chroma[i] > COLOUR_CHROMA && g[i] >= INK_DARK) ? 1 : 0;
+    d[i] = labels[i] === -1 && !(chroma[i] > COLOUR_CHROMA && g[i] >= INK_DARK) && g[i] < gA ? 1 : 0;
     b[i] = labels[i] === 0 && chroma[i] <= COLOUR_CHROMA && !c[i] ? 1 : 0;
   }
   // the patches of the closed coloured ink (cid, from 1), and for each how many of its pixels border black ink and
@@ -2177,6 +2713,7 @@ function segWorkerSrc() {
       inkBlur,
       inkDone,
       inkColourCut,
+      inkMidGrey,
       boxPass,
       segSpeck,
       picOut,
@@ -2490,9 +3027,26 @@ function segBusySet(on, hide, ctl) {
       bar.style.visibility = on && hide ? 'hidden' : '';
     }
     if (!on && _segFocus) {
-      const f = _segFocus;
+      let f = _segFocus;
       _segFocus = null;
-      if (f.isConnected && document.activeElement !== f) f.focus({ preventScroll: true });
+      // (v328 review 2: the controls drawn again meanwhile, as a photo-made page's remake does: the same control in the
+      // new ones, by its id, or its group's id and its value)
+      if (!f.isConnected) {
+        const id = f.id,
+          g = f.parentElement && f.parentElement.closest('[id]'),
+          v = f.dataset && f.dataset.v;
+        let n = id ? document.getElementById(id) : null;
+        if (!n && g && g.id && v != null) {
+          const gn = document.getElementById(g.id);
+          if (gn)
+            n =
+              [].find.call(gn.querySelectorAll('[data-v]'), function (x) {
+                return x.dataset.v === v;
+              }) || null;
+        }
+        f = n;
+      }
+      if (f && f.isConnected && document.activeElement !== f) f.focus({ preventScroll: true });
     }
   }
 }
@@ -2645,6 +3199,9 @@ function segRun(prep, commit, hide) {
 function render() {
   // (v318.15: a new photo shown while its sections are found: photoPreview, 20-image-input)
   if (_preview) return;
+  // (v328 review: Crop and the corners have their own drawing: sections found again meanwhile aren't drawn over them)
+  if (cropMode) return drawCropOverlay();
+  if (pgMode && pgEd) return pgDraw();
   _rg = null;
   positionPhoto();
   positionSun();
@@ -2725,8 +3282,13 @@ function render() {
     if (bb && bb.textContent.indexOf('Building') < 0) bb.disabled = cnt < 2;
   }
   // an edit may have made (or undone) section edits still to be built: the line under the name says so, and the bar
-  saveStatus();
-  edBarSync();
+  _sepOnce = {};
+  try {
+    saveStatus();
+    edBarSync();
+  } finally {
+    _sepOnce = null;
+  }
   frameLineSync();
   outlineMerge();
 }

@@ -501,6 +501,19 @@ const STYLE_FIELDS = [
       return focusAt != null ? focusAt : undefined;
     },
   },
+  // (v328) the guide's photos for Tick off from a photo: printouts ('p') or its own page ('o'); written once known
+  {
+    key: 'tickRef',
+    in: 'payload',
+    def: null,
+    check: function (v) {
+      return v === 'p' || v === 'o' ? v : null;
+    },
+    undo: false,
+    save: function () {
+      return tickRef || undefined;
+    },
+  },
   // (v313) the sample, not yet printed or renamed (smpTry, 00-state): written only then
   {
     key: 'smp',
@@ -862,6 +875,12 @@ const STYLE_VAR = {
   },
   get focusAt() {
     return focusAt;
+  },
+  get tickRef() {
+    return tickRef;
+  },
+  set tickRef(v) {
+    tickRef = v;
   },
   set focusAt(v) {
     focusAt = v;

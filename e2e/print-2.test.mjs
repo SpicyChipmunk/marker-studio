@@ -142,14 +142,16 @@ after(teardown);
     await page.click('.sftabbtn[data-t="share"]');
     await page.click('#sfPrint');
     await idle(page);
-    assert.match(await page.textContent('#sfPrSum'), /page 1 landscape/);
+    // (v328: Page to colour's page to colour and its reference both on their side, so they lie one over the other)
+    assert.match(await page.textContent('#sfPrSum'), /pages 1–2 landscape/);
     await page.keyboard.press('Escape');
     await idle(page);
     const wide = await pdfBoxes(page);
     assert.deepEqual(wide[0], [792, 612], 'page 1 on its side');
-    assert.ok(wide.length >= 2, 'a key page too');
+    assert.deepEqual(wide[1], [792, 612], 'its reference on its side too');
+    assert.ok(wide.length >= 3, 'a key page too');
     assert.ok(
-      wide.slice(1).every(([w, h]) => w === 612 && h === 792),
+      wide.slice(2).every(([w, h]) => w === 612 && h === 792),
       'the other pages upright ' + JSON.stringify(wide),
     );
     // the picture fills the page across, as wide as it can be within the margins
@@ -251,10 +253,15 @@ after(teardown);
     let o = await order(page);
     assert.equal(o.tiles, o.n, 'a page shape for each page');
     assert.equal(o.kinds.length, o.n);
+    // (v328) Page to colour: the page with no labels, then the reference
     assert.equal(o.kinds[0], 'pic');
+    assert.equal(o.kinds[1], 'ref');
     assert.ok(o.kinds.includes('key'));
-    assert.equal(o.words[0], 'Picture');
-    assert.match(o.said, /^Page 1: your picture with (codes|numbers)[;.]/);
+    assert.deepEqual(o.words.slice(0, 2), ['Picture', 'Reference']);
+    assert.match(
+      o.said,
+      /^Page 1: your picture unlabelled, to colour; page 2: your picture in colour with codes[;.]/,
+    );
     assert.ok(!/; Pages/.test(o.said), 'lower case after the first');
     assert.equal(o.after, true);
     assert.equal(o.live, false, 'not read out on every tap');
@@ -279,7 +286,13 @@ after(teardown);
     assert.equal(th.name, 'Preview the pages');
     assert.ok(Math.abs(th.ar - 8.5 / 11) < 0.02, 'Letter: ' + th.ar);
     assert.ok(th.ink > 0.01 && th.ink < 0.6, 'the page drawn: ' + th.ink);
-    // Key + reference with no labels: one page, the picture beside the key
+    // the Labelled page: the codes on the page coloured on
+    await page.click('[data-pwhat="page"]');
+    o = await order(page);
+    assert.equal(o.kinds[0], 'pic');
+    assert.match(o.said, /^Page 1: your picture with (codes|numbers)[;.]/);
+    assert.equal(o.tiles, o.n);
+    // For your own page with no labels: one page, the picture beside the key
     await page.click('[data-pwhat="ref"]');
     await page.click('[data-plabels="none"]');
     o = await order(page);
@@ -472,7 +485,8 @@ after(teardown);
     let dl = page.waitForEvent('download', { timeout: 60000 });
     await page.click('#sfPDF');
     await page.click('[data-pwhat="strip"]');
-    assert.equal((await dl).suggestedFilename(), 'sample-jellyfish.pdf');
+    // (v328: the Labelled page named apart from Page to colour's)
+    assert.equal((await dl).suggestedFilename(), 'sample-jellyfish-labelled.pdf');
     await page.waitForFunction(() => !document.getElementById('sfPDF').disabled);
     dl = page.waitForEvent('download', { timeout: 60000 });
     await page.click('#sfPDF');
@@ -612,10 +626,11 @@ after(teardown);
       else assert.ok(r.label >= 0 && r.link, 'Paper’s label and the link, ' + at);
       assert.ok(r.wide <= 1, 'nothing sideways, ' + at);
       // (the sample has close-ups: said in full under Pages, the summary one line)
+      // (v328: Page to colour, the default, says only its labels: one line on a small phone)
       assert.match(r.sum, /^\d+ pages · Letter · Codes$/, at);
       assert.match(
         r.what,
-        /^Your picture with light codes to colour on, then the colour key\.\d+ small sections are on \d+ close-up pages?\./,
+        /^The page to colour, unlabelled; then your picture in colour with dark codes to read beside it, and the colour key\.\d+ small sections are on \d+ close-up pages?\./,
         at,
       );
       // (and it follows the choices: none for the test strip, which has no close-ups)
@@ -920,7 +935,8 @@ after(teardown);
     return { bytes: bytes.length, images: images(bytes) };
   }
   test('Page + key: the colouring page deflated, the key page with the reference a JPEG of the page’s size; Key + reference: its picture a JPEG', async () => {
-    const { page, errors } = await openApp({ width: 820, height: 1180 });
+    // (v328: Page + key is the Labelled page, remembered)
+    const { page, errors } = await openApp({ width: 820, height: 1180, storage: { 'ms-pdf-what': 'page' } });
     await sampleGuide(page);
     await sharePrint(page);
     const pk = await pdf(page, 'v31835-page-key');
@@ -942,6 +958,12 @@ after(teardown);
       ref.images.every((im) => im.filter === 'DCTDecode'),
       'every page of it is in colour: ' + ref.images.map((im) => im.filter),
     );
+    // (v328) Page to colour: the page to colour lossless, its reference a JPEG
+    await page.click('[data-pwhat="colour"]');
+    await idle(page);
+    const pc = await pdf(page, 'v328-page-to-colour');
+    assert.equal(pc.images[0].filter, 'FlateDecode', 'the page to colour stays lossless');
+    assert.equal(pc.images[1].filter, 'DCTDecode', 'its reference is a JPEG');
     // (the sizes, for the notes)
     console.log(
       'v31835 sizes: page+key ' +

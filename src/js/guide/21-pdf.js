@@ -270,7 +270,22 @@ function pdfChoose(doc, gen, from) {
     doc
       .getPage(at)
       .then(function (pg) {
-        return pdfDraw(pg, PDF_THUMB);
+        // (v328 review 2: the page's decoded pictures let go once its small picture is drawn: a scanned book's 50
+        // pages had all been held while choosing)
+        return pdfDraw(pg, PDF_THUMB).then(
+          function (c) {
+            try {
+              pg.cleanup();
+            } catch (_) {}
+            return c;
+          },
+          function (e) {
+            try {
+              pg.cleanup();
+            } catch (_) {}
+            throw e;
+          },
+        );
       })
       .then(function (c) {
         const el = open && document.querySelector('#sfEdAsk .sfpdfth[data-p="' + at + '"]');

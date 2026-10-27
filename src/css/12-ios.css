@@ -13,7 +13,8 @@
   #savedList .stile .sname-in,
   #sfRoot #sfCtl .sfc-select,
   #sfRoot .sfzname,
-  #sfRoot #sfCtl .sfzname {
+  #sfRoot #sfCtl .sfzname,
+  .wipeword {
     /* (the text size setting's own step, never under 16px) */
     font-size: max(16px, var(--t-md));
   }

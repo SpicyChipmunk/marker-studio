@@ -241,6 +241,8 @@ document.addEventListener(
     if (!b) return;
     e.stopPropagation();
     e.preventDefault();
+    // (v328 review: in To buy, drawn again by the change, the keyboard back on this button or the one in its place)
+    wishFocusLater(b);
     if (b.classList.contains('wishall')) {
       const pairs = wishPairs(b),
         added = [];
@@ -507,9 +509,39 @@ function guideBuysHTML() {
 document.addEventListener('click', function (e) {
   const b = e.target.closest ? e.target.closest('#gbMore') : null;
   if (!b) return;
+  wishFocusLater(b);
   _gbuyAll = true;
   renderWish();
 });
+// (v328 review) a control in To buy that its own change draws again: the keyboard, if it was on it, back on the same
+// one (by its marker), else the button now where it was
+function wishFocusLater(b) {
+  const v = document.getElementById('wishView');
+  if (!v || !v.contains(b) || document.activeElement !== b) return;
+  const sel = 'button',
+    at = [...v.querySelectorAll(sel)].indexOf(b),
+    wk = b.getAttribute('data-wk'),
+    wall = b.classList.contains('wishall'),
+    // (v328 review 2: a "From your guides" chip, whose row goes once it's added: the chip now in its place)
+    chips = function () {
+      return [...v.querySelectorAll('.gbuy .wishchip')];
+    },
+    chipAt = chips().indexOf(b);
+  setTimeout(function () {
+    if (b.isConnected && document.activeElement === b) return;
+    const a = document.activeElement;
+    if (a && a !== document.body && a.isConnected) return;
+    const same = wk
+      ? v.querySelector('[data-wk="' + (window.CSS && CSS.escape ? CSS.escape(wk) : wk) + '"]')
+      : wall
+        ? v.querySelector('.wishall')
+        : null;
+    if (same && same.getClientRects().length) same.focus({ preventScroll: true });
+    else if (chipAt >= 0 && chips().length)
+      chips()[Math.min(chipAt, chips().length - 1)].focus({ preventScroll: true });
+    else focusKept(true, v, sel, at, []);
+  }, 0);
+}
 function renderWish() {
   const v = document.getElementById('wishView');
   if (!v) return;
@@ -867,8 +899,14 @@ function lowUnmark(k, dropWish) {
     const i = mkOpenIdx,
       v = b.getAttribute('data-ink');
     if ((state.ink[mkey(i)] || '') === v) return;
-    const ok = setInk(i, v);
+    const kb = document.activeElement === b,
+      ok = setInk(i, v);
     mkFill(i);
+    // (v328 review 2: the buttons are drawn again: the keyboard on the one pressed, not lost under the sheet)
+    if (kb) {
+      const nb = ik.querySelector('button[data-ink="' + v + '"]');
+      if (nb) nb.focus({ preventScroll: true });
+    }
     if (!ok) return;
     toast(
       v === 'dry'
@@ -995,14 +1033,25 @@ function closeBuy() {
     const old = state.buyBrands;
     state.buyBrands = nb;
     if (!save()) state.buyBrands = old;
-    else if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
+    else {
+      if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
+      // (v328 review: Markers' orders and To buy's suggestions go by these brands: drawn again)
+      wishRefresh();
+    }
   }
   buySumSync();
-  if (_buyFrom && _buyFrom.isConnected) _buyFrom.focus();
-  else {
-    const r = document.querySelector('.buyopen');
-    if (r && r.offsetParent) r.focus();
-  }
+  // (the opener, or the one drawn again in its place: by its id, or the first shown)
+  const again =
+      _buyFrom && !_buyFrom.isConnected && _buyFrom.id ? document.getElementById(_buyFrom.id) : null,
+    r =
+      _buyFrom && _buyFrom.isConnected
+        ? _buyFrom
+        : again && again.offsetParent
+          ? again
+          : Array.prototype.find.call(document.querySelectorAll('.buyopen'), function (b) {
+              return !!b.offsetParent;
+            });
+  if (r) r.focus();
   _buyFrom = null;
 }
 (function () {

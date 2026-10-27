@@ -3210,3 +3210,162 @@ Decided one at a time with measurements on the author's 17 photos (`docs/PLAN-v3
   and start-card button at a phone's and an iPad's size; Your N markers match; Made for … and the N added), `home-2`
   (the start card's words).
 - Help (Pictures, Shading), What's new. Cache bumped to `marker-studio-v327.1`.
+
+# Changes — v328 (Tick off from a photo; Page to colour; Check them; the binding; pale colours)
+
+From v327.1 (v327.2 held and dropped; its paper reading comes back reworked). Decisions 10-12 and P1-P7:
+`docs/PLAN-whats-left.md`, `docs/PLAN-v328.md`.
+
+- **Print › Pages: Page to colour** (12, the default where nothing is remembered): page 1 the page with no labels,
+  as Labels › None prints it but with no H/S circles or sun, faint tone lines when shaded; page 2 the reference as For
+  your own page prints it (your picture in colour, dark codes, close-ups lettered); page 3 the **shading map** (the
+  page's lines, highlight white, base 15% grey, shadow 40%, with its legend) when shaded; then the close-ups and the
+  key. Every page with the drawing uses one picture box, so the reference lies over the page to colour (measured:
+  0.36 px apart, 0.05% in scale). **Labelled page** is Page + key renamed (a remembered choice stays), **For your own
+  page** is Key + reference renamed; both get the shading map too. Under Page to colour: Labels Codes or Numbers (a
+  remembered None reads as Codes), Darker labels hidden, **Only the page** (page 1 alone: a blank copy to colour
+  again, 11.7). "Print one-sided: markers soak through the paper." under Pages. A **Shading map** tick. Page 1's
+  header names the pages as they fall.
+- **Tone lines** (12, P4): 0.5 pt, dashes 1.5 pt on and 2.5 pt off, 18% grey (the author's grey-steps print), on both
+  pages coloured on, kept off the codes; the screen's lines unchanged (`shadeLinesDraw` takes an on/off pattern).
+- **Check them** (11.2): Colour along's offer line reads "60 sections look coloured in already. Mark them done · Check
+  them ✕". Check them fits the page, closes a marker's row, outlines the offer and says "Tap a section to add it or
+  leave it out"; a tap flips a section (one ticked already will be unticked); the bar is Cancel | Done with "8 to tick ·
+  2 to untick". Done is one Undo step; Cancel, Escape, leaving Colour along or a reload apply nothing.
+- **The spiral binding** (P1, P6): found by its sections (`spiralOf`: a row of 8 or more small, alike, evenly spaced
+  sections within 8% of an edge, over 40% of it; 8 of the author's 9 photos, none of three test pages without one) or
+  as a band along an edge of the photo straightened and not coloured in (`edgeBandsOf`, now on straightened pages
+  too): 8 of the 9 (the ninth, part-coloured, left to Check them), and only in photos of a page (not line art or a
+  scan, where a border of beads is a drawing's), no deeper than 5% of the edge. "The spiral binding along the left edge was read as part of the page. · Trim it"; until it's trimmed
+  its sections are left out of every reading.
+- **Pale colours** (P2): the coloured-in offer adds v327.2's reading against the paper, with the paper grown from
+  section to neighbouring section across the lines (a soft shadow darkens step by step and is crossed; a fill is a
+  jump). On the author's 9 photos: 1-9 blank sections offered (v327.2: 28-67 in soft shadows), 0-4 missed, about a
+  quarter of a second.
+- **Tick off from a photo** (11.1-11.6): "Coloured on paper? Tick them off from a photo" under Colour along's hint,
+  and "Coloured some on paper since? Tick them off from a photo ✕" under the Plan's tabs when a guide is opened again
+  with nothing ticked the visit before (counted on this device, `ms-tick-visits`). The photo comes in as the finished-page photo does (found and
+  straightened, or the four corners), read at the guide's size and dropped after. Lined up in plain JS in the worker
+  (job `tick`): the turn by trying the four, an ECC homography at 1/8 then 1/4 size on the ink, then 4 x 6 tiles'
+  shifts (within 1 px of OpenCV's on all 8 of the author's shots); the light's difference taken out twice (widely,
+  then closely without what looked changed or far from the light's cast); offered where the reference was plain
+  paper and the section changed (8 in a*b*, or 25 darker): 40 of 40, nothing else. Ticked sections that look blank are
+  dashed in Check them. Not lined up, nothing new and no picture on this device each say so.
+- **Printouts** (11.4, Part D): the reference is the page as printed (`pdfArt` without labels), the drawing found on
+  the sheet by its ink under the header and put in the guide's place before lining up, and the photo's thin dark marks
+  (codes, numbers, tone lines, close-up letters) left out by a top-hat. Which it is, asked once per guide when both
+  line up ("Is this a printout from Marker Studio, or your own copy of the page…"), kept (`tickRef`). Measured on the
+  real PDF's page 1 of the letter page, coloured by simulation with a falling light, blur and noise: Page to colour and
+  Labelled page, 10 of 10 each, nothing else. Real printout photos: a ★ DEVICE-TEST item.
+- **After eight review rounds** (fresh reviewers each, then end-to-end runs on the author's photos):
+  - Tick off: the light's cast found from the median, then round it (a lamp's warm light had offered every blank
+    section); ticked sections left out of the light; sections the grown paper reading calls paper read whatever their
+    darkness (a soft shadow in the reference had left 18-27 of 80-192 unread), but still near the paper in a*b* (ticked
+    pastels had been said to look blank); a printout's grey marks told by the paper's own colour (a lamp's cast had
+    kept them in); a run ends quietly when the guide is left at any step; "Check it" only for one section in all. The
+    result in Focus mode, full screen, Reveal or Check them says how to see it (not "See Colour along" from inside
+    it), none is made from Edit sections, the keyboard goes to Mark them done, and the line names the ticked ones that
+    look blank; the offer stays when the same guide is opened again from the Library; Colour along's Tick off line
+    goes on a finished page or under an offer and comes back with ✕; the Plan's line goes once sections are ticked in
+    the visit or the picker is opened; the busy line is said once to a screen reader; dismissing the question says to
+    take the photo again.
+  - The coloured-in offer: also on pages with no clear colour, by colour only, each section's middle against the
+    line from no tint to the paper's, and most of the middle off it (printed greys under a lamp, grain, grey shadows and
+    a small coloured patch aren't offered; pastels are; a pale blue under a strong warm lamp may not be); its paper
+    reading in the worker, its line shown in Colour along if it was opened meanwhile, dropped if the sections were
+    edited meanwhile.
+  - A page drawn in coloured lines, photographed with grain: its lines' soft rim isn't black ink (1,140 cells had read
+    as 5,701). Known cost: a grey outline lighter than a dark fill, Enhance off, leaves the fill's edge a little ink.
+  - Check them: right-click or an Android long press doesn't open a marker's row under it; Cancel opens the row in the
+    list too; Reset progress closes it first; the dashed line's count follows the taps; focus after a Done that finishes
+    the page goes to Reveal & share.
+  - Photo-made pages and photo tones: the markers added kept on reopening (their key had session counters) and through
+    a remake's Undo, "none added" included; a zone switched to From the photo is sampled; Crop to the subject from the
+    photo as it's turned now; a cut-out PNG's clear parts kept white (reopened, its page had a black background); at
+    Markers in this guide's all, a marker bought doesn't re-plan the page; Undo while a remake waits for the photo stops
+    the remake; Add can't cut Subject only's background; the markers-to-add job keyed by the page's colours, not run
+    again on every make, with a budget for its size; Remake offered only with the photo on this device; a remake that can't read the photo keeps
+    the settings it had; a late subject-finder download or failure leaves another guide alone; the count and
+    one-section lines count only what Build takes, with their own words for one marker and for Subject only; a
+    highlight speck merged into a shadow speck goes on into base.
+  - Print: the notes say where the shading map is, and the Labelled page's circles; For your own page without labels
+    doesn't mention a ☀ it doesn't draw; another guide opened while the PDF waits for its fonts isn't printed.
+  - Colour along: "Tick them off from a photo" takes the taps on its words on a phone (More's tap strip had them; its
+    own tap area is now 1 px above and 9 below its words), and costs the iPad's first marker row no room.
+  - Markers: Brands I'd buy redraws Markers and gives focus back; empty orders say why; "You own every marker.";
+    scheme names checked as the app's own (a saved "toString" had been taken for one).
+- **A whole-app review** (eight fresh reviewers, each a part of the app): fixed:
+  - Pages and sections: ← Plan while the sections are still being found waits for them; Edit's Undo of a crop keeps the
+    page's size; Add can't cut Subject only's background; the straighten box keeps its shape on Cancel, and its
+    corners move with the arrow keys (Space for the next corner); a lost drawing surface redraws the crop and Edit's
+    sections.
+  - Planning: No repeats about 9 times faster on a big page (10,000 sections, 6 s to 0.7 s), the same plan; Surprise
+    me with nothing to make keeps the palette source it had; a blend's kept pool is told apart by its palette; the
+    mood pictures' Undo keeps the plan's notes; deleting a zone gives its sections back to Main; a zone that can't be
+    planned changes nothing.
+  - Colour along and Focus: progress counts what's in the guide; Reset progress keeps left-out ticks, and its Undo
+    keeps tone parts ticked since; Focus's names and counts per section, not per tone part; unticking the last
+    section re-checks the page; the tone lines name a held row "as coloured"; the white leave-out redraws.
+  - Full screen: rename and the ⋯ menu leave it first; the hint and the sharpened view aren't hidden by it; the
+    sharpened view's memory freed on leaving.
+  - Print and Share: the close-up's sharpening uses the ink chosen; the Paper scroll respects reduced motion; the
+    preview's button says what it makes; the card's file is named after the guide.
+  - Markers: Draw, Swap and Remove give focus back where it was; a pile's marker click keeps focus; picking a marker
+    already in another custom slot swaps them; the wish list keeps focus; the star count is the brand's whole range;
+    the demo collection and blenders leave out what can't be bought; a set's size ("120 Colors") is taken from its
+    own line only (a code "120" on its own line had gone).
+  - Photo reader: the codes worked out once per photo; offline, Download waits for the connection; leaving during the
+    download stops there; a full device has its own words; Stop says "Stopping…".
+  - Storage and backups: another tab hears a delete-all by its value, not the clock; a guide kept aside by a restore
+    that couldn't finish takes its photos with it; an empty guides backup says so; a duplicate starts without the
+    original's coloured-in offer, Focus section, running-low lines and Tick off answer; storage-full notes say to empty
+    Recently deleted too (a deleted guide waits there, taking room).
+  - Not fixed (low risk or a larger change): two tabs saving within the same moment can still drop the other's
+    marker change (a fix needs a base to merge from); the crop box has no keyboard.
+- **A second whole-app review** (eight more reviewers), fixed, round 1's own slips first:
+  - With zones, a zone that can't be laid (Lean towards Cool, every cool marker dry) no longer stops the rest: it
+    keeps what it had (laid again when the markers change, or it's edited), its dry markers' stand-ins too, and only
+    the zone being edited (or a first Build) refuses;
+    Build guide gives any zone's Temperature with no markers all of them, as the zone being edited had.
+  - No repeats as fast as before round 1 on ordinary pages with a big collection (a marker on few sections measured
+    directly), and still fast on big ones; the same plan.
+  - A set's size alone on its line beside the set's name ("HONOLULU / 120 / COLORS") is the size, not Black, unless
+    a line naming the set gives the size already (a tray's lone 120 is Black).
+  - Swap gives focus back to Swap; the print close-ups' canvases are let go after their page; "as coloured" only
+    for a row whose coloured sections all keep other tones (not every section under Shadows only).
+  - The Mood pictures are left out (Mood's buttons instead) where laying the plan takes over 0.7 s: five layings on
+    the main thread had held taps for seconds after every change.
+  - Focus mode and Find next find the nearest section on a grid: 15,000 sections 0.85 s to 7 ms, the same path.
+  - Leaving Edit sections by Home › Continue, Home's Reveal or Print, the Library or Use in a guide while the
+    sections are being found waits for them, as ← Plan does, and says so.
+  - The changes kept as the page went away aren't dropped when the database doesn't answer at the next start; a
+    failed save of a guide put back from Recently deleted leaves it there; a backup is made guide by guide (no limit
+    of one string), and one too big with photos says to untick them; a photo-made page coloured further since its
+    backup is "further along here"; Delete them now updates its count.
+  - Smaller: Edit this zone and Open from a section's tip leave full screen; keyboard focus kept after a toast's
+    button, Tick it, Escape in a tip, the ink buttons, a To buy chip, a remade photo page's Detail; the corners'
+    keyboard is an application to screen readers and the picture keeps its name after; Reduce motion leaves out
+    Reveal's flash and the tick's ring; a toast said twice is heard twice; Surprise me says "From your markers" when
+    it made no palette; a Pattern that can't be laid isn't left chosen; Palette, Random and the guide's filters count
+    the markers they use; a subject finder download finishing after Build doesn't go back to the page step; Stop
+    keeps saying Stopping…; Cancel on the reader's download as it ends goes back; another guide's Print sheet keeps
+    Cancel; a scanned PDF's page chooser lets go of each page; Edit sections asks once a drawing whether the
+    sections changed; Undo's memory counted nearer the truth.
+  - Then the low ones: Crop by keyboard (arrow keys move the box or a ringed corner, Space for the next, Shift for
+    bigger steps; the keyboard on the picture as it opens, back on Crop after); one marker with Keep touching sections clearly different says how many touching sections it
+    can't keep apart; the test strip's zone names and colours taken as it's laid out; a guide saved while a backup is
+    made is still to back up; a toast's Undo reached by Tab in full screen; guides being deleted for good aren't
+    offered back meanwhile; a PDF that fails part-way lets go of its pages' pictures; Plan Undo keeps a fingerprint
+    of each step, not a second copy of its text (1.4 M characters a step at 30,000 sections).
+  - Not fixed: No repeats with hundreds of markers on 30,000 sections still takes seconds (faster means other
+    plans); a very big backup is still read whole to restore; dialogs may keep toasts from VoiceOver (needs a
+    device); two tabs saving in the same moment; a file chosen and then cancelled moves the guide's load count on
+    (Tick off's offer goes).
+- Help: What's new. Version v328, cache `marker-studio-v328`.
+- Tests: unit (`test/tick.test.mjs`: lining up moved, scaled, in perspective and bent; turned; another page; the
+  reading with a ticked blank; a printout's thin marks; a printout's drawing found and lined up;
+  `segmentation.test`: the pale reading through a soft shadow, `spiralOf`), e2e (`tick`: the whole flow, the question
+  asked once, nothing new, another page, a ticked blank dashed, the Plan's line; `intake-3`: Check them, the spiral
+  binding and its offer; `print`, `print-2`: Page to colour, the shading map, Only the page, the names; tests that
+  read the labelled page 1 now ask for it).
+

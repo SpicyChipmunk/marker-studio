@@ -789,6 +789,8 @@ function headWraps() {
 }
 function startRename() {
   hideTip();
+  // (v328 review: out of full screen first, as Change colour does: the field was under the full-screen picture)
+  exitFull();
   // (v320: a name on two lines, the field on one: the header held at its height meanwhile, so nothing under it moves)
   if (headEl) headEl.style.minHeight = headEl.getBoundingClientRect().height + 'px';
   renaming = true;
@@ -1259,6 +1261,8 @@ function sheetTab(e) {
 
 /* ---- the ⋯ menu: new or open something, this guide's copy and reset, help ---- */
 function openMenu() {
+  // (v328 review: out of full screen first: the menu had opened under the full-screen picture, the keyboard in it)
+  exitFull();
   const plan = sfmode === 'guide' && !!assignData,
     along = sfmode === 'color' && !focus && !!assignData,
     // (v316) each item with its line icon before the label, as the Library's tile menus

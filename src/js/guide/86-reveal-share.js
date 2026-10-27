@@ -171,6 +171,8 @@ function revCloseEl() {
   x.style.display = '';
 }
 function revFlash() {
+  // (v328 review 2: no full-screen flash with Reduce motion on)
+  if (reducedMotion()) return;
   try {
     var f = document.createElement('div');
     f.className = 'sfrevflash';

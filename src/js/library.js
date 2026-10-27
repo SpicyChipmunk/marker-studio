@@ -1404,6 +1404,8 @@ function libPendDrop(id) {
 }
 // the id stays in the list until the stored guide is really gone (a delete that fails is tried again at the next
 // start), so a deleted guide is never offered back as a lost one (see Lost guides in boot.js)
+// (the guides whose stored copy is being deleted for good just now)
+const _purging = new Set();
 function libPurge(id) {
   if (state.saved.some((s) => s.id === id)) {
     libPendDrop(id);
@@ -1414,15 +1416,20 @@ function libPurge(id) {
     libPendDrop(id);
     return;
   }
-  IDB.del('guide-' + id)
-    .then(function () {
-      libPendDrop(id);
-    })
-    .catch(function () {});
   // (v314: and its photo of the finished page: guide/24-page-photo.js)
   IDB.del('fin-' + id).catch(function () {});
   // (v318.34: and its source picture: guide/25-source-photo.js)
   IDB.del('src-' + id).catch(function () {});
+  // (v328 review 2: not offered in Recently deleted meanwhile: a Put back then had a row whose guide went after)
+  _purging.add(id);
+  return IDB.del('guide-' + id)
+    .then(function () {
+      libPendDrop(id);
+    })
+    .catch(function () {})
+    .then(function () {
+      _purging.delete(id);
+    });
 }
 // a guide being put back (the guide's Put back, v285): its stored record mustn't be tidied away behind the save
 function libUnpend(id) {
@@ -1526,6 +1533,12 @@ function libDuplicate(id) {
       delete p.tones;
       delete p.held;
       delete p.dates;
+      // (v328: and what colouring changed: the coloured-in offer, Focus mode's section, the running-low lines closed,
+      // Tick off's printout-or-page answer; a fresh copy starts without them)
+      delete p.colOffer;
+      delete p.focusAt;
+      delete p.lowX;
+      delete p.tickRef;
       if (p.out && typeof p.out === 'object') {
         const q = {};
         Object.keys(p.out).forEach(function (l) {
@@ -1555,7 +1568,7 @@ function libDuplicate(id) {
       ).then(function (nid) {
         if (!nid) {
           toast(
-            'Couldn\u2019t duplicate \u2014 this browser\u2019s storage is full. Back up, then delete a few guides in the Library.',
+            'Couldn\u2019t duplicate \u2014 this browser\u2019s storage is full. Back up, then delete a few guides in the Library and in Recently deleted.',
             7000,
           );
           return null;
@@ -1586,23 +1599,38 @@ function libFocus(at) {
 // at start: what's waited its week in Recently deleted goes for good (and one from before v318.1, with no row to put
 // back, at once, as it did then)
 setTimeout(function tidy() {
+  const ps = [];
   libPendList().forEach(function (x) {
-    if (!x.e || Date.now() - x.t > LIB_KEEP_DAYS * 864e5 || x.t > Date.now() + 864e5) libPurge(x.id);
+    if (!x.e || Date.now() - x.t > LIB_KEEP_DAYS * 864e5 || x.t > Date.now() + 864e5) ps.push(libPurge(x.id));
   });
   renderLibBin();
+  // (v328 review 2: and again once they're gone, or a delete that failed is back in the count)
+  Promise.all(ps).then(renderLibBin);
 }, 1500);
 // (v318.1) Recently deleted: what's waiting, newest first, each with Put back; Delete them now ends the wait
 function libBinList() {
   return libPendList()
-    .filter((x) => x.e && !state.saved.some((s) => s.id === x.id) && !(libPend && libPend.entry.id === x.id))
+    .filter(
+      (x) =>
+        x.e &&
+        !_purging.has(x.id) &&
+        !state.saved.some((s) => s.id === x.id) &&
+        !(libPend && libPend.entry.id === x.id),
+    )
     .sort((a, b) => b.t - a.t);
 }
 function renderLibBin() {
   const b = $('libBin');
   if (!b) return;
-  const n = libBinList().length;
+  const n = libBinList().length,
+    had = document.activeElement === b;
   b.hidden = !n;
   b.textContent = 'Recently deleted (' + n + ')';
+  // (v328 review 2: the keyboard, on it as it goes, to the list)
+  if (had && !n) {
+    const l = $('savedList');
+    if (l) l.focus({ preventScroll: true });
+  }
 }
 function libBinOpen() {
   const ask = window.SF && SF.askBox,
@@ -1630,8 +1658,10 @@ function libBinOpen() {
     false,
   ).then(function (a) {
     if (a === 'purge') {
-      libBinList().forEach((x) => libPurge(x.id));
+      // (v328 review 2: its count again once the stored guides are gone, as each goes only then)
+      const ps = libBinList().map((x) => libPurge(x.id));
       renderLibBin();
+      Promise.all(ps).then(renderLibBin);
       toast('Deleted for good', 3000);
     } else if (a && a.indexOf('put:') === 0) libPutBack(+a.slice(4));
   });
@@ -1777,7 +1807,7 @@ function libBackfill() {
 function loadSaved(entry) {
   const idxs = entry.keys.map(keyIdx).filter((i) => i != null);
   if (!idxs.length) return;
-  const h = typeof entry.h === 'string' && HARM[entry.h] ? entry.h : 'custom',
+  const h = typeof entry.h === 'string' && harmOk(entry.h) ? entry.h : 'custom',
     gen = h !== 'custom' && h !== 'photo',
     n = Math.max(2, Math.min(16, idxs.length)),
     picks = (state.customPal || []).filter((x) => x != null);

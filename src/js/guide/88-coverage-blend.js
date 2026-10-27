@@ -2,6 +2,12 @@ function updateProgress() {
   if (!assignData) return;
   // (the dates follow the ticks however they changed: a section brought in, tones asked for again)
   progStamp();
+  // (v328: this visit's ticks, for Tick off from a photo's line the next time it's opened, 26-tick; and Colour along's
+  // offer line as its sections are ticked, 82-colour-mode)
+  tickVisNote();
+  colOfferSync();
+  // (and Colour along's Tick off line: 26-tick)
+  tickAlongSync();
   exCodesSync();
   let done = 0;
   assignData.order.forEach(function (l) {

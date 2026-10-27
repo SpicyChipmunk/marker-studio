@@ -24,6 +24,14 @@ function resetForNewPicture() {
   _preview = false;
   // (v318.15: its own bands, found as it's prepared: srcPrep)
   edgeBands = null;
+  bindBands = null;
+  // (v328: Check them's draft, Tick off from a photo's offer and its printout-or-page answer are the old guide's)
+  if (colCheck) outlineSecs(null);
+  colCheck = null;
+  tickOffer = null;
+  tickRef = null;
+  _tickLn = 0;
+  _tickAt = null;
   photoSettleNow();
   // (v318.13: its own Min section size, from its size: minPosAuto, set in processSrc)
   minAuto = true;
@@ -117,6 +125,7 @@ function resetForNewPicture() {
   srcColour = null;
   _tickHeld = {};
   cropRect = null;
+  if (cropMode) cropKeyOn(false);
   cropMode = false;
   cropFull = null;
   cropPx = null;
@@ -234,6 +243,94 @@ function drawCropOverlay() {
     ctx.arc(c[0], c[1], hs, 0, 6.283);
     ctx.fill();
   });
+  // (v328 review 2: what the arrow keys move, while the picture has the keyboard: the box, or a corner, ringed)
+  if (cropKb && document.activeElement === cv) {
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = Math.max(2, cv.width / 300);
+    if (!cropSel) {
+      const g = hs * 1.6;
+      ctx.setLineDash([g, g]);
+      ctx.strokeRect(r.x + g, r.y + g, Math.max(1, r.w - 2 * g), Math.max(1, r.h - 2 * g));
+      ctx.setLineDash([]);
+    } else {
+      const c = cropSel === 1 ? [r.x, r.y] : [r.x + r.w, r.y + r.h];
+      ctx.beginPath();
+      ctx.arc(c[0], c[1], hs * 2.2, 0, 6.283);
+      ctx.stroke();
+    }
+  }
+}
+// (v328 review 2) Crop by keyboard, as the page's corners: the picture takes the keyboard while Crop is open; the
+// arrow keys move the box, its top-left or its bottom-right corner (Space or Enter for the next), 1% a press, Shift 5%
+let cropSel = 0,
+  cropKb = false;
+function cropKeyOn(on) {
+  if (!cv) return;
+  cropKb = false;
+  cropSel = 0;
+  if (on) {
+    cv.tabIndex = 0;
+    cv.setAttribute('role', 'application');
+    cv.setAttribute(
+      'aria-label',
+      'The crop box: arrow keys move the box or the ringed corner, Space moves to the next',
+    );
+    if (!cv._cropKey) {
+      cv._cropKey = true;
+      cv.addEventListener('keydown', cropKey);
+      const redraw = function () {
+        if (cropMode) drawCropOverlay();
+      };
+      cv.addEventListener('focus', redraw);
+      cv.addEventListener('blur', redraw);
+    }
+  } else if (cv.getAttribute('role') === 'application' && !zoneEditOn() && !pgMode) {
+    cv.removeAttribute('tabindex');
+    cv.setAttribute('role', 'img');
+    cv.setAttribute('aria-label', 'Colouring page');
+  }
+}
+function cropKey(e) {
+  if (!cropMode || !cropFull || e.ctrlKey || e.metaKey || e.altKey) return;
+  const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key],
+    fw = cropFullW,
+    fh = cropFullH;
+  if (d) {
+    e.preventDefault();
+    cropKb = true;
+    if (!cropPx) cropPx = { x: fw * 0.05, y: fh * 0.05, w: fw * 0.9, h: fh * 0.9 };
+    const st = Math.max(1, Math.round(Math.max(fw, fh) * (e.shiftKey ? 0.05 : 0.01))),
+      dx = d[0] * st,
+      dy = d[1] * st,
+      r = cropPx,
+      MIN = Math.max(16, Math.min(fw, fh) * 0.05);
+    let x0 = r.x,
+      y0 = r.y,
+      x1 = r.x + r.w,
+      y1 = r.y + r.h;
+    if (!cropSel) {
+      const mx = Math.max(-x0, Math.min(fw - x1, dx)),
+        my = Math.max(-y0, Math.min(fh - y1, dy));
+      x0 += mx;
+      x1 += mx;
+      y0 += my;
+      y1 += my;
+    } else if (cropSel === 1) {
+      x0 = Math.max(0, Math.min(x1 - MIN, x0 + dx));
+      y0 = Math.max(0, Math.min(y1 - MIN, y0 + dy));
+    } else {
+      x1 = Math.min(fw, Math.max(x0 + MIN, x1 + dx));
+      y1 = Math.min(fh, Math.max(y0 + MIN, y1 + dy));
+    }
+    cropPx = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    drawCropOverlay();
+  } else if (e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    cropKb = true;
+    cropSel = (cropSel + 1) % 3;
+    drawCropOverlay();
+    sayLive(['The whole box', 'Top-left corner', 'Bottom-right corner'][cropSel]);
+  }
 }
 function cropHit(P) {
   const r = cropPx,
@@ -261,7 +358,8 @@ function cropHit(P) {
 // Undo step. The rectangle is used only when the sections outside it, those not running to the picture's edge, come to
 // at most CROP_OUT of the picture (a screenshot's status text and tab dots; not a drawing round a board in its middle).
 const CROP_OUT = 0.03;
-function autoCropBox() {
+// (bind: Trim it's, which leaves out a spiral binding too, v328; Auto crop's leaves out only the bands)
+function autoCropBox(bind) {
   let fb = ruledBox();
   const out = fb ? frameOutside(fb, true) : null;
   if (fb && out > CROP_OUT) fb = 0;
@@ -291,7 +389,8 @@ function autoCropBox() {
     const rowThr = Math.max(1, W * 0.012),
       colThr = Math.max(1, H * 0.012),
       // (v318.15: the binding or table along an edge isn't the drawing: trimOffer's bands, not counted as ink)
-      eb = trimBands() ? edgeBands : null,
+      // (v328: or the spiral binding, bindingNow)
+      eb = trimEdges(bind),
       et = eb ? Math.ceil(eb.t * H) : 0,
       ebt = eb ? H - 1 - Math.ceil(eb.b * H) : H - 1,
       el = eb ? Math.ceil(eb.l * W) : 0,
@@ -327,9 +426,9 @@ function autoCropBox() {
   y1 = Math.min(pb.y1, y1 + padY);
   return { x0: x0, y0: y0, x1: x1, y1: y1, ruled: !!fb, out: out };
 }
-function autoCrop() {
+function autoCrop(bind) {
   if (!labels || !srcImg) return;
-  const b = autoCropBox();
+  const b = autoCropBox(bind === true);
   if (!b) {
     note('Couldn\u2019t find the drawing \u2014 use Crop to choose it.');
     return;
@@ -349,8 +448,27 @@ function autoCrop() {
     reprocessImg();
   });
 }
+// (v328 review 2) the keyboard, where Crop was opened or closed from it: the picture on opening, Crop's button again
+// once the controls are drawn after (and the picture made again, after Apply), not dropped to the page's top
+function cropFocusBack(had) {
+  if (!had) return;
+  const t0 = Date.now(),
+    go = function () {
+      const a = document.activeElement;
+      if (a && a !== document.body && a.isConnected) return;
+      const b = document.getElementById('sfCrop') || document.getElementById('sfAdjToggle');
+      if (b && b.getClientRects().length && !segBusy) b.focus({ preventScroll: true });
+      else if (Date.now() - t0 < 30000) setTimeout(go, 150);
+    };
+  setTimeout(go, 0);
+}
+function cropHadKb() {
+  const a = document.activeElement;
+  return !!a && (a === cv || (!!ctlEl && ctlEl.contains(a)));
+}
 function enterCrop() {
   if (!srcImg) return;
+  const kb = document.activeElement && document.activeElement.id === 'sfCrop';
   cropMode = true;
   resetZoom();
   cropFull = buildRotatedFull();
@@ -373,15 +491,19 @@ function enterCrop() {
   cropAnchor = null;
   const z = document.getElementById('sfZoomCtl');
   if (z) z.style.display = 'none';
+  cropKeyOn(true);
   drawCropOverlay();
   renderControls();
+  if (kb) cv.focus({ preventScroll: true });
 }
 function applyCrop() {
   if (!(cropPx && cropPx.w > 8 && cropPx.h > 8)) {
     cancelCrop();
     return;
   }
+  const kb = cropHadKb();
   okGeom(function () {
+    cropFocusBack(kb);
     cropRect = {
       x: cropPx.x / cropFullW,
       y: cropPx.y / cropFullH,
@@ -390,14 +512,18 @@ function applyCrop() {
     };
     cropMode = false;
     cropFull = null;
+    cropKeyOn(false);
     const z = document.getElementById('sfZoomCtl');
     if (z) z.style.display = '';
     reprocessImg();
   }, ppOn());
 }
 function cancelCrop() {
+  const kb = cropHadKb();
   cropMode = false;
   cropFull = null;
+  cropKeyOn(false);
+  cropFocusBack(kb);
   const z = document.getElementById('sfZoomCtl');
   if (z) z.style.display = '';
   cv.width = W;
@@ -410,6 +536,32 @@ function cancelCrop() {
 // turned-in corners are filled with the photo's own edge carried outwards, not white, so the grey paper of a
 // photographed page doesn't meet a white wedge that reads as a line and specks (Ben's page tilted 1°: 216 sections
 // became 446). Crop's view keeps white, to show where the photo ends.
+// (v328 review) a crop (fractions of buildRotatedFull's box at tilt t0) for the same part of the photo at tilt t1: its
+// middle carried through the photo, its size kept in the photo's pixels, kept inside the box
+function cropCarry(cr, t0, t1) {
+  const sw = srcImg.width,
+    sh = srcImg.height,
+    box = function (t) {
+      const a = ((rot90 + t) * Math.PI) / 180,
+        c = Math.abs(Math.cos(a)),
+        s = Math.abs(Math.sin(a));
+      return { a: a, w: sw * c + sh * s, h: sw * s + sh * c };
+    },
+    b0 = box(t0),
+    b1 = box(t1),
+    // the middle, from the box's centre, in the old box's pixels; back through the turn to the photo; on to the new
+    cx = (cr.x + cr.w / 2 - 0.5) * b0.w,
+    cy = (cr.y + cr.h / 2 - 0.5) * b0.h,
+    px = cx * Math.cos(-b0.a) - cy * Math.sin(-b0.a),
+    py = cx * Math.sin(-b0.a) + cy * Math.cos(-b0.a),
+    nx = px * Math.cos(b1.a) - py * Math.sin(b1.a),
+    ny = px * Math.sin(b1.a) + py * Math.cos(b1.a),
+    w = Math.min(1, (cr.w * b0.w) / b1.w),
+    h = Math.min(1, (cr.h * b0.h) / b1.h),
+    x = Math.max(0, Math.min(1 - w, nx / b1.w + 0.5 - w / 2)),
+    y = Math.max(0, Math.min(1 - h, ny / b1.h + 0.5 - h / 2));
+  return { x: x, y: y, w: w, h: h };
+}
 function buildRotatedFull(edge) {
   const rad = ((rot90 + tilt) * Math.PI) / 180,
     sw = srcImg.width,
@@ -624,18 +776,28 @@ function processSrcAsync(hide) {
 }
 // the picture as it will be worked on: turned, tilted, cropped, in grey, enlarged when small (v318.14: drawn on a canvas
 // of its own, the picture on the page left as it is until srcCommit)
+// the crop's box in the turned picture (fw x fh), in pixels
+function srcCropBox(fw, fh) {
+  const cr = cropRect || { x: 0, y: 0, w: 1, h: 1 },
+    cx = Math.round(cr.x * fw),
+    cy = Math.round(cr.y * fh);
+  // (no wider than what's left of the photo: rounded up past its edge, the last column was left empty and read as
+  // a line of ink, v296)
+  return {
+    cx: cx,
+    cy: cy,
+    cw: Math.max(8, Math.min(Math.round(cr.w * fw), fw - cx)),
+    ch: Math.max(8, Math.min(Math.round(cr.h * fh), fh - cy)),
+  };
+}
 function srcPrep() {
   if (!srcImg) return null;
   const oc = buildRotatedFull(true),
-    fw = oc.width,
-    fh = oc.height;
-  const cr = cropRect || { x: 0, y: 0, w: 1, h: 1 },
-    cx = Math.round(cr.x * fw),
-    cy = Math.round(cr.y * fh),
-    // (no wider than what's left of the photo: rounded up past its edge, the last column was left empty and read as
-    // a line of ink, v296)
-    cw = Math.max(8, Math.min(Math.round(cr.w * fw), fw - cx)),
-    ch = Math.max(8, Math.min(Math.round(cr.h * fh), fh - cy)),
+    bx = srcCropBox(oc.width, oc.height),
+    cx = bx.cx,
+    cy = bx.cy,
+    cw = bx.cw,
+    ch = bx.ch,
     // a small picture of the person's own (a page downloaded at 400-800 pixels, say) is enlarged to UPSIDE on its long
     // side before its sections are found; not the sample, whose sections are its own (v303)
     up = srcUp ? Math.min(8, MAXSIDE / Math.max(cw, ch), Math.max(1, UPSIDE / Math.max(cw, ch))) : 1;
@@ -669,6 +831,16 @@ function srcPrep() {
       // offers it again; a new picture starts without (resetForNewPicture)
       bands: pgOrig && !pgQ && !cropRect && !rot90 && !tilt ? edgeBandsOf(d, cw, ch) : undefined,
     };
+  // (v328, P6) and on a photo straightened, coloured in or not, for the binding (bindingNow)
+  // (as turned and tilted too; not on a page coloured in, where the colour along an edge read as bands, v318.15)
+  p.bind =
+    cropRect || colour > 0.05
+      ? null
+      : p.bands !== undefined
+        ? p.bands
+        : pgOrig
+          ? edgeBandsOf(d, cw, ch)
+          : null;
   if (up > 1.05) {
     p.W = Math.round(cw * up);
     p.H = Math.round(ch * up);
@@ -678,8 +850,33 @@ function srcPrep() {
   }
   return p;
 }
+// (v327.2, kept in v328) The picture as its sections were found from it, in colour: srcPrep's turn, tilt and crop,
+// drawn at the sections' size (W x H), as RGBA; for the pale-colour reading (paperSecsOf, 82-colour-mode colourOffer)
+// and Tick off from a photo's reference. null without the picture, or when it's no longer the sections' shape.
+function srcRGBA() {
+  if (!srcImg || !W || !H || !labels || labels.length !== W * H) return null;
+  const oc = buildRotatedFull(true),
+    bx = srcCropBox(oc.width, oc.height);
+  if (Math.abs(bx.cw * (srcK || 1) - W) > 2 || Math.abs(bx.ch * (srcK || 1) - H) > 2) {
+    freeCanvas(oc);
+    return null;
+  }
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, W, H);
+  g.drawImage(oc, bx.cx, bx.cy, bx.cw, bx.ch, 0, 0, W, H);
+  freeCanvas(oc);
+  const d = g.getImageData(0, 0, W, H).data;
+  freeCanvas(c);
+  return d;
+}
 // the prepared picture put in place, before its sections are found
 function srcCommit(p) {
+  // (sections found from it: its settings are exact now, srcSettings, 25-source-photo)
+  _srcLegacy = false;
   // (the picture changes shape: the zones can't be placed on the sections found from it)
   zoneGeoLost();
   cv.width = p.W;
@@ -693,6 +890,7 @@ function srcCommit(p) {
   srcK = p.srcK;
   srcDims = p.dims;
   if (p.bands !== undefined) edgeBands = p.bands;
+  bindBands = p.bind || null;
   if (minAuto) minPos = minPosAuto();
 }
 // (v318.15) A sketchbook page photographed as it is keeps its spiral binding and a strip of the table along its
@@ -773,20 +971,135 @@ function edgeBandsOf(d, w, h) {
 }
 // the trim offered on its own line (53-controls-stages): a photo as taken, as it came, not coloured in, and only
 // when Auto crop would then crop (a thin band on a drawing that fills the page leaves "Nothing to trim": autoCrop)
+// (v328: or any photo with a spiral binding found, bindingNow)
 let _trimMemo = null;
 function trimOffer() {
-  if (!trimBands()) return false;
-  if (!_trimMemo || _trimMemo.l !== labels || _trimMemo.c !== comps || _trimMemo.b !== edgeBands) {
+  const e = trimEdges(true);
+  if (!e) return false;
+  if (
+    !_trimMemo ||
+    _trimMemo.l !== labels ||
+    _trimMemo.c !== comps ||
+    _trimMemo.b !== e.k ||
+    _trimMemo.e !== secEdN
+  ) {
     let ok = false;
     try {
-      const b = labels ? autoCropBox() : null;
+      const b = labels ? autoCropBox(true) : null;
       ok = !!b && !(b.x1 - b.x0 >= W * 0.97 && b.y1 - b.y0 >= H * 0.97);
-    } catch (e) {
+    } catch (_) {
       ok = false;
     }
-    _trimMemo = { l: labels, c: comps, b: edgeBands, ok: ok };
+    _trimMemo = { l: labels, c: comps, b: e.k, e: secEdN, ok: ok };
   }
   return _trimMemo.ok;
+}
+// what Trim it leaves out, as fractions of each edge: the bands (trimBands), else the binding's edge; null for none.
+// (k: what they came from, for trimOffer's memo)
+function trimEdges(bind) {
+  if (trimBands()) return Object.assign({ k: edgeBands }, edgeBands);
+  if (!bind) return null;
+  // (a binding: for a picture of the person's own, which Trim it crops)
+  const b = srcImg ? bindingNow() : null;
+  if (!b) return null;
+  const e = { t: 0, b: 0, l: 0, r: 0, k: b };
+  e[b.side] = b.d;
+  return e;
+}
+// the trim's line: the binding said where it is when it's the spiral's
+function trimWords() {
+  const b = trimBands() ? null : bindingNow();
+  return b && b.spiral
+    ? 'The spiral binding along the ' +
+        { l: 'left', r: 'right', t: 'top', b: 'bottom' }[b.side] +
+        ' edge was read as part of the page.'
+    : 'Binding or table at the edge?';
+}
+/* (v328, P1 and P6) A sketchbook's spiral binding, read as part of the page: its loops become sections, which the
+   guide and the print then have and every reading of the page took some of for coloured in. Found by its sections
+   (spiralOf, 10-segment), else as a band along an edge of the photo straightened (edgeBandsOf, found as it's
+   prepared: bindBands, a photo not coloured in); together, 8 of the author's 9 photos (the ninth's bands are on a
+   part-coloured page). Offered as Trim it
+   (trimOffer); until it's trimmed, its sections are left out of every reading (bindingSecs). { side, d, spiral,
+   secs } or null. */
+let bindBands = null,
+  _bindMemo = null;
+const BIND_MIN = 0.015,
+  // (the author's 9 photos: 2.8-3.2% deep; a drawn border of beads, 7%)
+  BIND_DEEP = 0.05;
+// (only for a photo of a page: straightened, kept as photographed, or with a camera's lens; a drawn border of beads
+// on line art or a scan is no binding)
+function bindingPhoto() {
+  return !!pgOrig && !!(pgQ || pgF35 > 0 || pgHint) && !ppOn() && !curSample;
+}
+function bindingNow() {
+  if (!labels || !comps || !W || !H || labels.length !== W * H || !bindingPhoto()) return null;
+  // (and found again after Edit sections, which changes the sections in place: secEdN, 65-edit)
+  const ed = secEdN;
+  if (
+    _bindMemo &&
+    _bindMemo.l === labels &&
+    _bindMemo.c === comps &&
+    _bindMemo.b === bindBands &&
+    _bindMemo.e === ed &&
+    _bindMemo.n === comps.length
+  )
+    return _bindMemo.v;
+  let v = null;
+  try {
+    const sp = spiralOf(labels, W, H, comps.length);
+    // (a binding's holes are close to the edge: a deeper row is a drawing's own)
+    if (sp && sp.d <= BIND_DEEP) v = { side: sp.side, d: sp.d, spiral: true, secs: sp.secs };
+    else if (bindBands) {
+      let side = '',
+        f = 0;
+      ['l', 'r', 't', 'b'].forEach(function (k) {
+        if (bindBands[k] > f) {
+          f = bindBands[k];
+          side = k;
+        }
+      });
+      if (f >= BIND_MIN) v = { side: side, d: f, spiral: false, secs: [] };
+    }
+    if (v) {
+      // (and every section mostly inside it)
+      const inn = secsInBand(v.side, v.d),
+        has = {};
+      v.secs.forEach(function (l) {
+        has[l] = 1;
+      });
+      inn.forEach(function (l) {
+        if (!has[l]) v.secs.push(l);
+      });
+    }
+  } catch (e) {
+    v = null;
+  }
+  _bindMemo = { l: labels, c: comps, b: bindBands, e: ed, n: comps.length, v: v };
+  return v;
+}
+// the sections over half of whose pixels are within d (of the picture) of the side
+function secsInBand(side, d) {
+  const nl = comps.length,
+    tot = new Uint32Array(nl),
+    inn = new Uint32Array(nl),
+    lim = Math.ceil(d * (side === 'l' || side === 'r' ? W : H));
+  for (let y = 0, i = 0; y < H; y++)
+    for (let x = 0; x < W; x++, i++) {
+      const l = labels[i];
+      if (l <= 0 || l >= nl) continue;
+      tot[l]++;
+      if (side === 'l' ? x < lim : side === 'r' ? x >= W - lim : side === 't' ? y < lim : y >= H - lim)
+        inn[l]++;
+    }
+  const out = [];
+  for (let l = 1; l < nl; l++) if (tot[l] && inn[l] * 2 > tot[l]) out.push(l);
+  return out;
+}
+// the binding's sections, for the readings to leave out
+function bindingSecs() {
+  const b = bindingNow();
+  return b ? b.secs : [];
 }
 // (the bands, for a photo they apply to: what autoCropBox leaves out)
 function trimBands() {
@@ -986,6 +1299,8 @@ function keepObj(geo) {
       // it to the count it chose, so the plan is as made after an Undo too, 47-photo-page)
       pp: ppCopy(pp),
       ppN: pp ? limitN : undefined,
+      // (v328: and its photo tones' markers added and held pairs, which a remake clears: ptReset)
+      pt: pp ? ptSaveState() : undefined,
       // (v308: the offer to ignore faint grey marks, as it was for those sections)
       fo: faintOffer,
       // (v318.35: the hatched patches merged in those sections, for Edit sections' note)
@@ -1012,9 +1327,16 @@ function keepObj(geo) {
               pgShape: pgShape,
               // (v308: how coloured that picture was, for the warning)
               col: srcColour,
+              // (v328: the binding's bands found on that picture, bindingNow)
+              bind: bindBands,
               rot90: rot90,
               tilt: tilt,
               crop: cropRect ? Object.assign({}, cropRect) : null,
+              // (v328 review: the picture's size as it came, and Min section size with it: an Undo of a crop had kept
+              // the cropped picture's, the sections counted and the size warnings off)
+              dims: srcDims ? Object.assign({}, srcDims) : null,
+              minPos: minPos,
+              minAuto: minAuto,
               // (the Photo pattern's placement on the picture as it was, the photo it was for, and whether it was still to be
               // placed again, v304)
               phXf: photoXf ? Object.assign({}, photoXf) : null,
@@ -1132,11 +1454,31 @@ function reprocessImg() {
 }
 // (v304: a tilt waiting to be applied has a timer of its own, so a Sensitivity change, or a control on the Plan, no
 // longer drops it; it finds the sections with the settings as they are by then)
-let _imgT = 0;
+let _imgT = 0,
+  // (v328 review: a re-detection asked for and not started yet, for ← Plan to start it first, edToPlan)
+  _segSoon = false;
 function debSeg() {
   if (_imgT) return;
   clearTimeout(reTimer);
-  reTimer = setTimeout(resegment, 80);
+  _segSoon = true;
+  reTimer = setTimeout(function () {
+    _segSoon = false;
+    resegment();
+  }, 80);
+}
+// (v328 review) whether the sections are being found again, or about to be: ← Plan waits for them (edToPlan); the
+// timer's run is started now so it isn't lost
+function segPendingNow() {
+  if (_segSoon || _imgT) {
+    clearTimeout(reTimer);
+    _segSoon = false;
+    if (_imgT) {
+      clearTimeout(_imgT);
+      _imgT = 0;
+      reprocessImg();
+    } else resegment();
+  }
+  return !!segBusy;
 }
 function debImg() {
   clearTimeout(reTimer);

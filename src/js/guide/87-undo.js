@@ -39,8 +39,24 @@ function planPhotoIn(ref) {
       if (e.ref || !e.s || e.s.xf) return;
       e.ref = ref;
       e.s.xf = photoXf ? Object.assign({}, photoXf) : null;
-      e.js = JSON.stringify(e.s);
+      e.js = planHash(e.s);
     });
+}
+// (v328 review 2) a step's snapshot told apart by a fingerprint of its text, not the text kept beside it: at 30,000
+// sections each step had held 1.4 M characters twice over, 71 MB for Undo's 30 steps. Its length and two 32-bit
+// hashes, as labelsSigOf's
+function planHash(s) {
+  const t = JSON.stringify(s),
+    imul = Math.imul,
+    n = t.length;
+  let a = 2166136261 | 0,
+    b = 5381 | 0;
+  for (let i = 0; i < n; i++) {
+    const v = t.charCodeAt(i);
+    a = imul(a ^ v, 16777619);
+    b = (imul(b, 33) + v) | 0;
+  }
+  return t.length + ':' + a + ':' + b;
 }
 function planFilt() {
   try {
@@ -94,7 +110,7 @@ function planSnap() {
     shps = assignData.shps ? Object.assign({}, assignData.shps) : null;
   return {
     s: s,
-    js: JSON.stringify(s),
+    js: planHash(s),
     ref: photoRef,
     filt: planFilt(),
     none: Object.assign({}, _phNone),
@@ -414,8 +430,20 @@ function heldNoteShow(h) {
   if (tabs) {
     const old = document.getElementById('sfHeldNote');
     if (old) old.remove();
+    // (v328 review: one line at a time under the tabs: the others, drawn before this one was up, give way, as
+    // renderControls would have them)
+    let took = false;
+    ctlEl.querySelectorAll('.sfheldnote').forEach(function (n) {
+      n.remove();
+      took = true;
+    });
     tabs.insertAdjacentHTML('afterend', heldNoteHTML());
     heldNoteWire();
+    // (v328 review 2: the rough spots' rings go with their line, and the lines taken come back once this one goes)
+    if (took) {
+      _heldTook = true;
+      positionRough();
+    }
   }
   // (which ones: outlined on the picture for a moment)
   const s = h.secs.slice();
@@ -433,10 +461,21 @@ function heldNoteSet(h) {
   document.getElementById('sfHeldGo').textContent =
     h.secs.length === 1 ? 'Recolour it too' : 'Recolour them too';
 }
+let _heldTook = false;
 function heldNoteClear() {
   _heldNote = null;
   const el = document.getElementById('sfHeldNote');
   if (el) el.remove();
+  if (_heldTook) {
+    _heldTook = false;
+    if (el && sfmode === 'guide' && ctlEl)
+      setTimeout(function () {
+        if (sfmode === 'guide' && !_heldNote) {
+          renderControls();
+          positionRough();
+        }
+      }, 0);
+  }
 }
 // Change colour pins the section (v288): the first time, a line under the tabs says so, with Unpin. One line at a time
 // under the tabs: not beside the kept-sections line or the sample's (the tip queue's rule).
@@ -796,7 +835,9 @@ function roughLineUp() {
   if (sfmode !== 'guide' || _heldNote || _pinNote || paintOn || lockMode || zoneEditOn()) return null;
   // (v307: beside the first-time "Tap a section" line, not after it: a page laid at all went from no line to 56 rough
   // spots on the first change of any kind)
-  if (_toolTip > 0 || _stripTip > 0 || lowLineUp() || sampleNoteHTML()) return null;
+  if (_toolTip > 0 || _stripTip > 0 || lowLineUp() || sampleNoteHTML() || ppShadeLineUp()) return null;
+  // (v328: after Tick off from a photo's line, on opening a guide again)
+  if (tickLineUp()) return null;
   const r = roughNow();
   return r && r.ids.length && r.pairs.length && r.sig !== _roughX ? r : null;
 }
@@ -972,7 +1013,16 @@ function toolsIconOnly() {
   return (window.innerWidth || 0) < 700 || !!(workEl && workEl.classList.contains('sftoolsv'));
 }
 function toolTipHTML() {
-  if (_toolTip < 0 || sfmode !== 'guide' || _heldNote || _pinNote || lowLineUp() || sampleNoteHTML())
+  // (v328 review: and after Shade it like the photo, whose turn the first-time lines wait for)
+  if (
+    _toolTip < 0 ||
+    sfmode !== 'guide' ||
+    _heldNote ||
+    _pinNote ||
+    lowLineUp() ||
+    sampleNoteHTML() ||
+    ppShadeLineUp()
+  )
     return '';
   if (!_toolTip) {
     if (hintSeen('tools') || !hintSeen('tap') || _hNow.tap || !toolsIconOnly()) return '';
@@ -1466,7 +1516,8 @@ function planInit() {
       (tn === 'INPUT' && !/^(range|checkbox|radio|button|submit)$/.test(t.type))
     )
       return;
-    if (dialogOpen() || sheetOpen()) return;
+    // (v328 review: not under Reveal, whose card and share picture are the plan as it was)
+    if (dialogOpen() || sheetOpen() || (root && root.classList.contains('sfrev'))) return;
     e.preventDefault();
     // (Redo: in the plan, and in Edit sections since v311)
     if (redo) toolRedo();

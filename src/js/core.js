@@ -16,6 +16,10 @@ const HARM = {
   custom: 'Custom',
   photo: 'From photo',
 };
+// (v328 review) a colour scheme's name, one of HARM's own: not an object's inherited "toString" or "constructor"
+function harmOk(x) {
+  return Object.prototype.hasOwnProperty.call(HARM, x);
+}
 // most colours each scheme offers. The generator keeps every two colours clearly different (picker.js), so a size is
 // offered while a full collection (the Ohuhu 320 set, a 322-marker one) still fills it that way in about nine rolls
 // of ten, with each colour near its scheme hue: a scheme with more hues has room for more colours; Analogous keeps
@@ -323,8 +327,7 @@ function toastShow(m, ms, html) {
   }
   if (html) t.innerHTML = m;
   else t.textContent = m == null ? '' : String(m);
-  const say = document.getElementById('msSay');
-  if (say) say.textContent = t.textContent;
+  toastSay(t.textContent);
   // (v288: on the guide's Share tab the buttons are at the bottom, so a toast sits just under the pinned picture)
   // (the Share panel itself showing: the Plan, not Colour along or Edit sections after it)
   const sh = document.querySelector('#sfCtl .sftab[data-tab="share"]');
@@ -359,6 +362,12 @@ function toastShow(m, ms, html) {
     t.classList.remove('on');
   }, ms || 3200);
 }
+// (where the keyboard was outside the toast, last: a toast's button gives it back, toastActions)
+let _preToast = null;
+document.addEventListener('focusin', function (e) {
+  const t = e.target;
+  if (t && t !== document.body && !(t.closest && t.closest('#msToast'))) _preToast = t;
+});
 function toastAction(m, label, fn, ms) {
   toastActions(m, [{ label: label, fn: fn }], ms);
 }
@@ -382,15 +391,47 @@ function toastActions(m, acts, ms, html) {
     b.addEventListener(
       'click',
       function () {
+        // (v328 review 2: the keyboard back where it was before the toast's button, not lost with the toast; only
+        // when the keyboard was on it: a tap in Safari leaves it where it was, maybe a text box long ago)
+        const ae0 = document.activeElement,
+          inT =
+            t.contains(ae0) &&
+            (function () {
+              try {
+                return ae0.matches(':focus-visible');
+              } catch (_) {
+                return true;
+              }
+            })(),
+          back = _preToast;
         t.classList.remove('on');
         a.fn();
+        const ae = document.activeElement;
+        if (inT && (!ae || ae === document.body || t.contains(ae)) && back && back.isConnected)
+          try {
+            back.focus({ preventScroll: true });
+          } catch (_) {}
       },
       { once: true },
     );
   });
   // (v318.28) said with its buttons' words, as the toast was when it was the live region ("… Undo")
+  toastSay(t.textContent);
+}
+// (v328 review 2: the same words twice in a row said again, as sayLive does: emptied, then written a moment later)
+function toastSay(w) {
   const say = document.getElementById('msSay');
-  if (say) say.textContent = t.textContent;
+  if (!say) return;
+  if (say.textContent !== w) {
+    clearTimeout(toastSay._t);
+    say.textContent = w;
+    return;
+  }
+  say.textContent = '';
+  clearTimeout(toastSay._t);
+  toastSay._t = setTimeout(function () {
+    say.textContent = w;
+  }, 40);
 }
 // A file for the person to keep. On a phone or tablet it goes to the share sheet (on an iPhone: Save to Files, iCloud
 // Drive, AirDrop or Mail); on a computer, or where files can't be shared, it downloads. Phones only allow sharing
@@ -550,7 +591,7 @@ function cleanSaved(e) {
   if ('thumb' in o) o.thumb = safeThumb(o.thumb);
   if ('done' in o && !(Number.isInteger(o.done) && o.done >= 0)) delete o.done;
   // (v308) a palette's scheme, to open it as that again
-  if ('h' in o && !(typeof o.h === 'string' && HARM[o.h])) delete o.h;
+  if ('h' in o && !(typeof o.h === 'string' && harmOk(o.h))) delete o.h;
   // (when it was saved: a time, or none — a word there showed as "Invalid Date" in the Library, v298)
   if ('ts' in o) {
     const t = Number(o.ts);

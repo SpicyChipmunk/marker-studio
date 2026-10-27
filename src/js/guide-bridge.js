@@ -4,7 +4,7 @@ function sfBlenders() {
   const demo = state.owned.size === 0,
     out = [];
   NOINK.forEach(function (i) {
-    if (!demo && (!isOwned(i) || isDry(i))) return;
+    if ((!demo && (!isOwned(i) || isDry(i))) || (demo && !buyOk(i))) return;
     const c = COLORS[i];
     out.push({
       mkey: mkey(i),
@@ -22,7 +22,8 @@ function sfCollection() {
   const demo = state.owned.size === 0,
     out = [];
   for (let i = 0; i < COLORS.length; i++) {
-    if (NOINK.has(i) || (!demo && (!isOwned(i) || isDry(i)))) continue;
+    // (v328 review: with none owned, the brands you'd buy, as Palette, Random and Match take them)
+    if (NOINK.has(i) || (!demo && (!isOwned(i) || isDry(i))) || (demo && !buyOk(i))) continue;
     const c = COLORS[i];
     out.push({
       mkey: mkey(i),
@@ -531,6 +532,13 @@ function sfSaveDesign(d) {
     // kept aside while it was being written, v298)
     leaveAt = _leaveN;
   if (d.mustExist && !had) return Promise.resolve(null);
+  // (v328 review 2: one waiting in Recently deleted (Put back, a restore of the same guide) goes back there if this
+  // save fails, its stored copy kept: it had been deleted with nothing left but the open copy)
+  const binWas = d.id && !had ? libPendList().find((x) => x.id === id) : null,
+    binBack = function () {
+      if (binWas && !state.saved.some((s) => s.id === id) && !libPendList().some((x) => x.id === id))
+        libPendSet(libPendList().concat([binWas]));
+    };
   if (d.id && !had) libUnpend(id);
   storeErr.last = '';
   // (v323) a guide's first save, in flight until its row is written: firstKeep keeps the row aside if the page goes
@@ -560,7 +568,8 @@ function sfSaveDesign(d) {
             if (prevPl) IDB.put('guide-' + id, prevPl).catch(function () {});
           } else {
             state.saved.splice(j, 1);
-            IDB.del('guide-' + id).catch(function () {});
+            if (binWas) binBack();
+            else IDB.del('guide-' + id).catch(function () {});
           }
           // (the app's own storage is full: said as such, v304)
           storeErr.last = 'QuotaExceededError';
@@ -579,6 +588,7 @@ function sfSaveDesign(d) {
     })
     .catch(function (e) {
       firstDone(id);
+      binBack();
       storeErr.last = (e && e.name) || 'Error';
       return null;
     });
@@ -832,8 +842,9 @@ function sfLeaveApply() {
           if (typeof renderSaved === 'function') renderSaved();
         });
       })
-      .catch(function () {})
-      .then(done),
+      // (v328 review 2: the database not answering, or full: the copy kept for the next start, not thrown away with
+      // the last ticks in it; it goes once put in, or once it can't be, its row changed)
+      .then(done, function () {}),
   );
 }
 sfLeaveApply();
@@ -950,10 +961,14 @@ function finRowShape(row, rec) {
 // (v318.34) withPhotos: the guides' source pictures too (src-<id>), when "Include guide photos" is ticked
 function gatherGuides(withPhotos) {
   var gs = state.saved.filter(function (s) {
-    return s.type === 'guide';
-  });
+      return s.type === 'guide';
+    }),
+    marks = {};
   return Promise.all(
     gs.map(function (s) {
+      // (how far along it is as it's read, for its "backed up" mark, v328 review 2: taken now, a photo of the finished
+      // page added meanwhile changing the row in place)
+      const mk = Math.max(+s.ts || 0, +s.fn || 0);
       return Promise.all([
         IDB.get('guide-' + s.id),
         // (v314: its photo of the finished page, when it has one; one that can't be read is left out, the guide kept)
@@ -986,6 +1001,7 @@ function gatherGuides(withPhotos) {
               : null;
           if (o && finRecOk(r[1])) o.fin = r[1];
           if (o && srcRecOk(r[2])) o.src = r[2];
+          if (o) marks[s.id] = mk;
           return o;
         })
         .catch(function () {
@@ -1020,6 +1036,7 @@ function gatherGuides(withPhotos) {
           return s.id;
         });
       b.missed = b.missedIds.length;
+      b.marks = marks;
       return b;
     })
     .then(function (a) {
@@ -1122,7 +1139,10 @@ function backupAll(btnId) {
         });
         state.saved.forEach(function (s) {
           if (s.type !== 'guide') return;
-          if (ids[s.id] != null) s.bk = Math.max(ids[s.id], now);
+          // (v328 review 2: marked as far as it was when read: one saved while the backup was being made, another
+          // tab's or Continue's, is still to back up; it had been marked by the time the file was made)
+          if (ids[s.id] != null)
+            s.bk = Math.max(1, guides.marks && guides.marks[s.id] != null ? guides.marks[s.id] : ids[s.id]);
           // (not stored here at all: said below, and not counted as still to back up, which no backup can do)
           else if (guides.goneIds.indexOf(s.id) >= 0) s.bk = now;
           else if (!+s.bk) s.bk = 1; /* not in this backup (it couldn't be read): still to back up */
@@ -1184,12 +1204,17 @@ function backupAll(btnId) {
             (guides.missed || gone ? '' : ' ✓');
         return true;
       }
-      function failed() {
+      function failed(big) {
         _btnFlash(bid, label, label, 10);
         var _b = document.getElementById(bid);
         errCard(
           _b && _b.parentNode,
-          'The backup couldn\u2019t be saved on this device. Try again, or copy your markers and palettes as text ' +
+          // (v328 review 2: too big to make, with the guides' photos: said so, as trying again fails the same way)
+          (big && withPhotos
+            ? 'The backup is too big to make on this device with the guides\u2019 photos. Untick <b>Include guide photos</b>' +
+              (bid === 'bkGo' ? ' (in <b>Library \u203a Back up</b>)' : '') +
+              ' and back up again, or copy your markers and palettes as text '
+            : 'The backup couldn\u2019t be saved on this device. Try again, or copy your markers and palettes as text ') +
             (bid === 'backupDownload'
               ? 'below.'
               : bid === 'guidesBackup'
@@ -1201,36 +1226,42 @@ function backupAll(btnId) {
         return false;
       }
       try {
-        blob = new Blob(
-          [
-            JSON.stringify({
-              v: 3,
-              type: 'ms-backup',
-              // (v308: the version that made it, so an older one can say it's from a newer version)
-              app: appVersion(),
-              ts: now,
-              owned: [...state.owned],
-              wish: state.wish,
-              ink: state.ink,
-              // (v318.21: what each marker's cap says, and the setting for the rest: caps.js)
-              cap: state.cap,
-              capDef: state.capDef,
-              capQ: state.capQ,
-              capOffer: state.capOffer,
-              buyBrands: state.buyBrands,
-              saved: state.saved.filter(function (s) {
-                return s.type !== 'guide';
-              }),
-              guides: guides,
-              // (v318 review: the beta's Tester tasks answers, until they're sent; tester.js)
-              tester:
-                typeof window.testerBackup === 'function' ? window.testerBackup() || undefined : undefined,
+        // (v328 review 2: each guide written apart, the file made from the parts: one string of the whole Library,
+        // with its photos, could pass the most a string can hold; the same file as before)
+        const GH = '@@ms-guides-here-' + Date.now().toString(36) + Math.random().toString(36).slice(2) + '@@',
+          head = JSON.stringify({
+            v: 3,
+            type: 'ms-backup',
+            // (v308: the version that made it, so an older one can say it's from a newer version)
+            app: appVersion(),
+            ts: now,
+            owned: [...state.owned],
+            wish: state.wish,
+            ink: state.ink,
+            // (v318.21: what each marker's cap says, and the setting for the rest: caps.js)
+            cap: state.cap,
+            capDef: state.capDef,
+            capQ: state.capQ,
+            capOffer: state.capOffer,
+            buyBrands: state.buyBrands,
+            saved: state.saved.filter(function (s) {
+              return s.type !== 'guide';
             }),
-          ],
-          { type: 'application/json' },
-        );
+            guides: GH,
+            // (v318 review: the beta's Tester tasks answers, until they're sent; tester.js)
+            tester:
+              typeof window.testerBackup === 'function' ? window.testerBackup() || undefined : undefined,
+          }),
+          at = head.indexOf('"' + GH + '"'),
+          parts = [head.slice(0, at), '['];
+        guides.forEach(function (g, i) {
+          if (i) parts.push(',');
+          parts.push(JSON.stringify(g));
+        });
+        parts.push(']', head.slice(at + GH.length + 2));
+        blob = new Blob(parts, { type: 'application/json' });
       } catch (e) {
-        return failed();
+        return failed(true);
       }
       return handOver(blob, fname, {
         title: 'Marker Studio backup',
@@ -1282,7 +1313,7 @@ function markRestored(fts) {
   renderLibStat();
 }
 const RESTORE_FULL =
-  'Couldn\u2019t restore \u2014 this browser\u2019s storage is full, so nothing was changed. Delete a few guides from the Library, then try again.';
+  'Couldn\u2019t restore \u2014 this browser\u2019s storage is full, so nothing was changed. Delete a few guides in the Library and in Recently deleted, then try again.';
 // whether a backup's markers would replace yours, asked first in the app's own dialog (v288): resolves true (use the
 // backup's), false (keep yours), 'add' (yours and the backup's together, v308) or null for Cancel (v289: Escape and the
 // backdrop too), when nothing is restored. Nothing to ask when they're the same, when the backup has none (yours are
@@ -1731,11 +1762,13 @@ function restoreWhy(why) {
       ? RESTORE_FULL
       : why === 'damaged'
         ? RESTORE_DAMAGED
-        : why === 'empty'
-          ? 'That file is empty. Choose the <b>.json</b> file saved by <b>Back up</b>.'
-          : why === 'picture'
-            ? 'That’s a picture, not a backup. Choose the <b>.json</b> file saved by <b>Back up</b>.'
-            : 'That file isn’t a Marker Studio backup. Choose the <b>.json</b> file saved by <b>Back up</b>.';
+        : why === 'none'
+          ? 'That backup is empty \u2014 there\u2019s nothing in it to restore.'
+          : why === 'empty'
+            ? 'That file is empty. Choose the <b>.json</b> file saved by <b>Back up</b>.'
+            : why === 'picture'
+              ? 'That’s a picture, not a backup. Choose the <b>.json</b> file saved by <b>Back up</b>.'
+              : 'That file isn’t a Marker Studio backup. Choose the <b>.json</b> file saved by <b>Back up</b>.';
 }
 // (v308) what a file that didn't read as JSON is: 'empty', 'picture', 'damaged' (a backup or guide file cut short)
 // or 'bad'
@@ -2132,7 +2165,19 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
       }
       // (v308: whatever a backup brought, the Welcome and Home say: the same markers, or yours kept with nothing new,
       // aren't "That backup is empty")
-      if (done) done(collection ? got(0) : null);
+      if (collection) {
+        if (done) done(got(0));
+        return;
+      }
+      // (v328: a guides backup with no guides in it said nothing at all)
+      _btnFlash(bid, label, label, 10);
+      if (cap) cap.textContent = '';
+      if (done) {
+        done(null, 'none');
+        return;
+      }
+      var eb = document.getElementById(bid);
+      errCard(eb && eb.parentNode, restoreWhy('none'));
       return;
     }
     restoreBusy(true);
@@ -2187,7 +2232,7 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
           var fb = document.getElementById(bid);
           errCard(
             fb && fb.parentNode,
-            esc(msg) + ' Delete a few guides from the Library, then restore again.',
+            esc(msg) + ' Delete a few guides in the Library and in Recently deleted, then restore again.',
           );
           return;
         }
@@ -2204,10 +2249,14 @@ function dropKept(id) {
   });
   // (v318.25: and not brought back by the merge with another tab's save, as an empty row once its guide is deleted)
   forgetSaved(id);
-  if (save(true))
+  if (save(true)) {
     IDB.del('guide-' + id).catch(function () {
       return null;
     });
+    // (v328: and its photos, as a guide deleted from the Library: they were left behind, unseen, taking room)
+    IDB.del('fin-' + id).catch(function () {});
+    IDB.del('src-' + id).catch(function () {});
+  }
 }
 // (v314) a guide's photo of its finished page put in from a backup (over one here only when over is set; v315: or
 // when the backup's is newer, as when moving to another device after changing the photo)
@@ -2257,7 +2306,22 @@ function guideAhead(h, b) {
     Object.keys(p)
       .sort()
       .forEach(function (k) {
-        if (k === 'prog' || k === 'tones' || k === 'held' || k === 'dates' || p[k] === undefined) return;
+        // (v328: and Tick off from a photo's printout-or-page answer: not the plan)
+        if (
+          k === 'prog' ||
+          k === 'tones' ||
+          k === 'held' ||
+          k === 'dates' ||
+          k === 'tickRef' ||
+          // (v328 review: and what colouring itself changes: the coloured-in offer taken, Focus mode's section, the
+          // running-low lines closed)
+          k === 'colOffer' ||
+          k === 'focusAt' ||
+          k === 'lowX' ||
+          k === 'visT' ||
+          p[k] === undefined
+        )
+          return;
         if (k === 'out' && p.out && typeof p.out === 'object') {
           const q = {};
           Object.keys(p.out)
@@ -2269,11 +2333,22 @@ function guideAhead(h, b) {
           o.out = q;
           return;
         }
+        // (v328 review 2: a photo-made page's photo tones of the sections coloured, pp.th, grow as it's coloured:
+        // compared below, as the ticks are)
+        if (k === 'pp' && p.pp && typeof p.pp === 'object') {
+          const q = Object.assign({}, p.pp);
+          delete q.th;
+          o.pp = q;
+          return;
+        }
         o[k] = p[k];
       });
     return JSON.stringify(o);
   };
   if (strip(h) !== strip(b)) return false;
+  const bth = b.pp && b.pp.th && typeof b.pp.th === 'object' ? b.pp.th : {},
+    hth = h.pp && h.pp.th && typeof h.pp.th === 'object' ? h.pp.th : {};
+  for (const l in bth) if (JSON.stringify(hth[l]) !== JSON.stringify(bth[l])) return false;
   const hp = new Set(Array.isArray(h.prog) ? h.prog : []),
     ht = h.tones && typeof h.tones === 'object' ? h.tones : {},
     hh = h.held && typeof h.held === 'object' ? h.held : {},
@@ -2741,11 +2816,11 @@ function sfAfterFilter() {
 }
 function sfRenderFilters(el) {
   if (!el) return;
-  const po = state.owned.size
-    ? isOwned
-    : function () {
-        return true;
-      };
+  // (v328 review 2: counted from what the guide plans with: your markers not dry, or with none added the brands you'd
+  // buy, as sfCollection; "Copic 358" had been offered with Only Ohuhu chosen)
+  const po = function (i) {
+    return !NOINK.has(i) && (state.owned.size ? isOwned(i) && !isDry(i) : buyOk(i));
+  };
   fgNormalize();
   const clr = (g, q) =>
     '<button data-q="' + q + '"' + (fgIsAll(g) ? ' style="visibility:hidden"' : '') + '>Clear</button>';

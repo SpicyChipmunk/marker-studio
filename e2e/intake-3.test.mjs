@@ -699,6 +699,19 @@ after(teardown);
         g.lineTo(M + 5 * S, M + j * S);
         g.stroke();
       }
+      // (v328: o.loops, a spiral binding's loops down the left margin, filled with o.loops when it's a colour)
+      // (as a binding's holes are: close to the edge, BIND_DEEP)
+      if (o.loops)
+        for (let k = 0; k < 16; k++) {
+          g.beginPath();
+          g.arc(32, 140 + k * 88, 14, 0, Math.PI * 2);
+          if (o.loops !== true) {
+            g.fillStyle = o.loops;
+            g.fill();
+          }
+          g.lineWidth = 4;
+          g.stroke();
+        }
       const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
       return await new Promise((r) => {
         const f = new FileReader();
@@ -805,6 +818,181 @@ after(teardown);
     assert.equal(await page.locator('#sfColOffer').count(), 0);
     assert.equal(await page.evaluate(() => (__mstest.olSet || []).length), 0, 'its outline goes with it');
     assert.equal(await page.evaluate(() => __mstest.colOffer), null);
+    assert.deepEqual(errors, []);
+  });
+  // (v328, 11.2) Check them: the offer as a draft. A tap leaves an offered section out or adds another; a ticked one
+  // tapped will be unticked; Escape and Cancel apply nothing and keep the offer; Done applies the lot as one Undo step
+  test('Check them: tap to leave out or add, Escape and Cancel keep the offer, Done is one Undo step', async () => {
+    const { page, errors } = await openApp({ width: 820, height: 1180, touch: true });
+    await sampleGuide(page);
+    await page.setInputFiles('#sfFile', await picture(page, { fills: FILLS }));
+    await settle(page);
+    await build(page);
+    await page.waitForFunction(
+      () => /look coloured in already/.test(document.getElementById('msToast')?.textContent || ''),
+      null,
+      { timeout: 20000 },
+    );
+    const at = (cx, cy) =>
+      page.evaluate(
+        ([cx, cy]) => __mstest.labels[(110 + cy * 180 + 90) * __mstest.W + 110 + cx * 180 + 90],
+        [cx, cy],
+      );
+    const plain = await at(2, 2),
+      plain2 = await at(4, 6);
+    await page.click('#sfColor');
+    await page.waitForFunction(() => __mstest.sfmode === 'color');
+    await idle(page);
+    assert.match(
+      await page.textContent('#sfColOffer'),
+      /^3 sections look coloured in already\. Mark them done · Check them$/,
+    );
+    const offered = await page.evaluate(() => __mstest.olSet.slice().sort((a, b) => a - b));
+    assert.equal(offered.length, 3);
+    const sum = () => page.textContent('#sfChkSum');
+    const tapSec = async (l) => {
+      const p = await sectionPoint(page, l);
+      await page.mouse.click(p.x, p.y);
+      await idle(page);
+    };
+    const openCheck = async () => {
+      await page.click('#sfColCk');
+      await idle(page);
+      assert.ok(await page.evaluate(() => !!__mstest.colCheck));
+    };
+    await openCheck();
+    assert.equal(await page.textContent('#sfChk .sfchkhow'), 'Tap a section to add it or leave it out.');
+    assert.equal(await sum(), '3 to tick');
+    assert.deepEqual(await page.$$eval('#sfChkCancel, #sfChkDone', (b) => b.map((x) => x.textContent)), [
+      'Cancel',
+      'Done',
+    ]);
+    assert.equal(await page.locator('#sfColOffer').count(), 0, 'the offer’s line gives way to the check');
+    assert.equal(await ticked(page), 0);
+    // leave one out, add a plain one
+    await tapSec(offered[0]);
+    assert.equal(await sum(), '2 to tick');
+    assert.equal(await page.evaluate(() => __mstest.olSet.length), 2, 'left out: no longer outlined');
+    await tapSec(plain);
+    assert.equal(await sum(), '3 to tick');
+    assert.equal(await ticked(page), 0, 'a draft: nothing ticked yet');
+    // the draft isn't kept: a reload would find the offer as it was
+    assert.equal(
+      JSON.stringify(await page.evaluate(() => __mstest.currentDesignObj().payload)).includes('colCheck'),
+      false,
+    );
+    // Escape: nothing applied, the offer back
+    await page.keyboard.press('Escape');
+    await idle(page);
+    assert.equal(await page.evaluate(() => __mstest.colCheck), null);
+    assert.equal(await ticked(page), 0);
+    assert.equal(await page.isVisible('#sfColOffer'), true);
+    assert.equal(await page.evaluate(() => __mstest.olSet.length), 3, 'the offer outlined again');
+    // Done: the draft applied as one step
+    await openCheck();
+    await tapSec(offered[0]);
+    await tapSec(plain);
+    await page.click('#sfChkDone');
+    await idle(page);
+    assert.equal(await page.evaluate(() => __mstest.colCheck), null);
+    const tickedNow = await page.evaluate(() =>
+      [...__mstest.colored].map((x, i) => (x ? i : 0)).filter((x) => x),
+    );
+    assert.deepEqual(
+      tickedNow,
+      [offered[1], offered[2], plain].sort((a, b) => a - b),
+    );
+    assert.match(await toastOn(page), /^Marked 3 sections done/);
+    assert.equal(await page.evaluate(() => __mstest.colOffer), null, 'the offer taken');
+    assert.equal(await page.locator('#sfColOffer').count(), 0);
+    await page.click('#toastAct');
+    await idle(page);
+    assert.equal(await ticked(page), 0, 'Undo: as it was');
+    assert.equal(await page.isVisible('#sfColOffer'), true, 'and the offer back');
+    // a section ticked already: tapped in the check, it will be unticked; Cancel leaves it ticked
+    await tapSec(plain2);
+    assert.equal(await ticked(page), 1, 'ticked the usual way');
+    await openCheck();
+    await tapSec(plain2);
+    assert.equal(await sum(), '3 to tick · 1 to untick');
+    await page.click('#sfChkCancel');
+    await idle(page);
+    assert.equal(await ticked(page), 1, 'Cancel: nothing changed');
+    await openCheck();
+    await tapSec(plain2);
+    await page.click('#sfChkDone');
+    await idle(page);
+    assert.match(await toastOn(page), /^Marked 3 sections done, unticked 1/);
+    assert.equal(await page.evaluate((l) => __mstest.colored[l], plain2), 0);
+    assert.equal(await ticked(page), 3);
+    await page.click('#toastAct');
+    await idle(page);
+    assert.equal(await page.evaluate((l) => __mstest.colored[l], plain2), 1, 'Undo ticks it again');
+    assert.equal(await ticked(page), 1);
+    // nothing to change: Done is off
+    await openCheck();
+    for (const l of offered) await tapSec(l);
+    assert.equal(await sum(), 'Nothing to change');
+    assert.equal(await page.isDisabled('#sfChkDone'), true);
+    await page.click('#sfChkCancel');
+    assert.deepEqual(errors, []);
+  });
+  // (v328, P1 and P6) a spiral binding read as sections: Trim it says so, and until it's trimmed its loops (coloured
+  // in here) are left out of the offer
+  test('a spiral binding: Trim it names it; untrimmed, its loops aren’t offered as coloured in; trimmed, they’re gone', async () => {
+    const { page, errors } = await openApp({ width: 820, height: 1180, touch: true });
+    await sampleGuide(page);
+    await page.setInputFiles('#sfFile', await picture(page, { fills: FILLS, loops: 'rgb(232,96,96)' }));
+    await settle(page);
+    // (as a camera's photo of the page, kept as photographed: a binding is looked for only in a photo)
+    await page.evaluate(() => {
+      __mstest.pgHint = 'kept';
+      __mstest.renderControls();
+    });
+    const b = await page.evaluate(() => {
+      const s = __mstest.spiralOf(__mstest.labels, __mstest.W, __mstest.H, __mstest.comps.length);
+      return (
+        s && {
+          side: s.side,
+          n: s.secs.length,
+          counted: s.secs.filter((l) => __mstest.countedList().includes(l)).length,
+        }
+      );
+    });
+    assert.equal(b && b.side, 'l', JSON.stringify(b));
+    assert.equal(b.n, 16);
+    assert.ok(b.counted >= 8, 'the loops are sections in the guide: ' + b.counted);
+    assert.equal(
+      await page.textContent('#sfTrimLine'),
+      'The spiral binding along the left edge was read as part of the page. · Trim it',
+    );
+    await build(page);
+    await page.waitForFunction(
+      () => /look coloured in already/.test(document.getElementById('msToast')?.textContent || ''),
+      null,
+      { timeout: 20000 },
+    );
+    assert.match(await toastOn(page), /^3 sections look coloured in already\./, 'the cells, not the loops');
+    // a fresh start, trimmed this time
+    await page.setInputFiles('#sfFile', await picture(page, { fills: FILLS, loops: 'rgb(232,96,96)' }));
+    await settle(page);
+    // (as a camera's photo of the page, kept as photographed: a binding is looked for only in a photo)
+    await page.evaluate(() => {
+      __mstest.pgHint = 'kept';
+      __mstest.renderControls();
+    });
+    await page.click('#sfTrim');
+    await page.waitForFunction(() => !!__mstest.cropRect && !__mstest.segBusy, null, { timeout: 60000 });
+    await idle(page);
+    assert.equal(
+      await page.evaluate(() =>
+        __mstest.spiralOf(__mstest.labels, __mstest.W, __mstest.H, __mstest.comps.length),
+      ),
+      null,
+      'trimmed off',
+    );
+    assert.equal(await page.isVisible('#sfTrimLine'), false);
+    assert.equal(await count(page), 35, 'the cells all there');
     assert.deepEqual(errors, []);
   });
   test('a plain page gets no offer', async () => {

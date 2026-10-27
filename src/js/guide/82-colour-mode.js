@@ -118,12 +118,75 @@ function markBack(was, done) {
 // offer ticks them, and says so with an Undo that puts the ticks back as they were (markBack, as Mark all has).
 // (v323) The toast went in 12 s and never came back: the offer is kept with the guide (colOffer, saved) and Colour
 // along says it too, at the top, with those sections outlined on the picture, until it's taken or closed (colOfferLine)
+// (v328, P2) And the pale colours colourSecs misses (on the author's real page, 63 of 97 found): the sections read
+// against the paper (paperSecsOf, 10-segment: v327.2's, held for offering 28-67 blank sections in a soft shadow, now
+// with the paper grown from section to section: 1-9 on the author's photos, 0-4 missed), once the bloom is over
+// (about a quarter of a second for a 4-megapixel page), so Build takes no longer; colourSecs' alone if it fails.
+// (v328, P1) The spiral binding's sections left out (bindingSecs, 20-image-input): its loops read as coloured.
+// (v328 review: not only on a page with clear colour, chroma: one coloured only in pastels, or a few sections, has
+// none, and the reading built for pastels had never run there. Without chroma by colour only, not by darkness: a
+// black-and-white page's printed greys, or a shadow the growing can't cross, aren't a marker's)
 function colourOffer() {
-  if (!assignData || !chroma) return;
+  if (!assignData || ppOn() || !srcImg) return;
+  const g = loadGen;
+  bloomAfter(function () {
+    setTimeout(function () {
+      // (read from the sections as they are then: a Build again meanwhile has its own)
+      if (g !== loadGen || !assignData) return;
+      const on = {};
+      try {
+        if (chroma)
+          colourSecs().forEach(function (l) {
+            on[l] = 1;
+          });
+      } catch (e) {
+        return;
+      }
+      // (v328 review: the paper's reading in the JOBS worker, as Tick off's is: on a 5-megapixel page it held the page
+      // a third of a second here, twice that and more on an iPad, now every page without clear colour pays it)
+      const lab0 = labels,
+        e0 = secEdN;
+      let pr = null;
+      try {
+        const d = srcRGBA();
+        if (d && labels && comps && d.length === labels.length * 4 && labels.length === W * H)
+          pr = tickJob({
+            step: 'paper',
+            d: d,
+            labels: labels,
+            W: W,
+            H: H,
+            nl: comps.length,
+            list: countedList(),
+            ab: !chroma,
+          });
+      } catch (e) {}
+      (pr || Promise.resolve([]))
+        .catch(function () {
+          return [];
+        })
+        .then(function (ps) {
+          // (and not if the sections were edited meanwhile: a merge changes labels in place)
+          if (g !== loadGen || !assignData || labels !== lab0 || secEdN !== e0) return;
+          (ps || []).forEach(function (l) {
+            on[l] = 1;
+          });
+          colourOfferEnd(on, g);
+        });
+    }, 0);
+  });
+}
+// (the offer made, once the readings are in)
+function colourOfferEnd(on, g) {
+  try {
+    bindingSecs().forEach(function (l) {
+      delete on[l];
+    });
+  } catch (e) {}
   let secs;
   try {
-    secs = colourSecs().filter(function (l) {
-      return assignData.assign[l] && !colored[l];
+    secs = countedList().filter(function (l) {
+      return on[l] && assignData.assign[l] && !colored[l];
     });
   } catch (e) {
     return;
@@ -131,18 +194,19 @@ function colourOffer() {
   const n = secs.length;
   if (!n) return;
   colOffer = secs.slice();
-  const g = loadGen;
-  bloomAfter(function () {
-    if (g !== loadGen || !assignData || !colOfferLeft().length) return;
-    toastAction(
-      n === 1 ? 'One section looks coloured in already.' : n + ' sections look coloured in already.',
-      n === 1 ? 'Tick it' : 'Mark them done',
-      function () {
-        if (g === loadGen) colOfferTake();
-      },
-      12000,
-    );
-  });
+  // (kept with the guide: read after the first save may have been made)
+  guideDirty = true;
+  scheduleAutosave();
+  toastAction(
+    n === 1 ? 'One section looks coloured in already.' : n + ' sections look coloured in already.',
+    n === 1 ? 'Tick it' : 'Mark them done',
+    function () {
+      if (g === loadGen) colOfferTake();
+    },
+    12000,
+  );
+  // (v328 review: read after Colour along was opened: its line there now, not when it's next opened)
+  if (sfmode === 'color' && !focus && !colCheckLive()) colOfferShow();
 }
 // the offer's sections still there and not ticked
 function colOfferLeft() {
@@ -190,19 +254,34 @@ function colOfferTake() {
     sayLive('Ticks as they were');
   });
 }
-// Colour along's line: "12 sections look coloured in already · Mark them done ✕"
+// Colour along's line: "12 sections look coloured in already · Mark them done · Check them ✕"
 function colOfferLine() {
+  if (focus || colCheckLive()) return '';
+  // (v328: Tick off from a photo's offer first, 26-tick)
+  if (tickOfferOn()) return tickOfferLine();
   const n = colOfferLeft().length;
-  if (!n || focus) return '';
+  if (!n) return '';
   return (
     '<div id="sfColOffer" class="sfheldnote" role="status"><span>' +
     (n === 1 ? 'One section looks coloured in already.' : n + ' sections look coloured in already.') +
-    ' <button type="button" id="sfColGo" class="sflink">' +
+    // (the two kept together: wrapped between them, one's tap area lay over the other's)
+    ' <span class="sfoffacts"><button type="button" id="sfColGo" class="sflink">' +
     (n === 1 ? 'Tick it' : 'Mark them done') +
-    '</button></span><button type="button" id="sfColX" class="sfheldx" aria-label="Close">' +
+    '</button> · <button type="button" id="sfColCk" class="sflink">' +
+    (n === 1 ? 'Check it' : 'Check them') +
+    '</button></span></span><button type="button" id="sfColX" class="sfheldx" aria-label="Close">' +
     ic('x') +
     '</button></div>'
   );
+}
+// (v328 review) what the line says: put in again when it changes, as sections are ticked by hand (updateProgress)
+function colOfferSig() {
+  return tickOfferOn() ? 't' + tickLeft().length + '/' + tickBlank().length : 'c' + colOfferLeft().length;
+}
+function colOfferSync() {
+  const el = document.getElementById('sfColOffer');
+  if (!el || sfmode !== 'color' || focus || colCheckLive()) return;
+  if (el.dataset.n !== colOfferSig()) colOfferShow();
 }
 // (the line put in place, and its sections outlined on the picture while no marker's row is open)
 function colOfferShow() {
@@ -210,22 +289,45 @@ function colOfferShow() {
   if (old) old.remove();
   const html = colOfferLine(),
     host = document.getElementById('sfAlHint') || document.querySelector('#sfCtl .sfalongp .sfinfo');
-  if (!html || sfmode !== 'color') return;
+  if (!html || sfmode !== 'color') {
+    // (gone with its last section ticked: its outline with it)
+    if (old && _olOffer && !olRow && !hlKey && !colCheckLive()) outlineSecs(null);
+    // (and Tick off's own line back, with no offer up: 26-tick)
+    tickAlongSync();
+    return;
+  }
   const pane = document.querySelector('#sfCtl .sfalongp');
   if (!pane) return;
   if (host && host.parentNode === pane) host.insertAdjacentHTML('beforebegin', html);
   else pane.insertAdjacentHTML('afterbegin', html);
+  const ln = document.getElementById('sfColOffer');
+  if (ln) ln.dataset.n = colOfferSig();
   const go = document.getElementById('sfColGo'),
+    ck = document.getElementById('sfColCk'),
     x = document.getElementById('sfColX');
-  if (go) go.addEventListener('click', colOfferTake);
+  const tk = tickOfferOn();
+  if (go) go.addEventListener('click', tk ? tickTake : colOfferTake);
+  if (ck)
+    ck.addEventListener('click', function () {
+      if (tk) colCheckOpen({ secs: tickLeft(), blank: tickBlank(), from: 'tick' });
+      else colCheckOpen();
+    });
   if (x)
     x.addEventListener('click', function () {
+      if (tk) {
+        tickOffer = null;
+        colOfferEnd();
+        // (the coloured-in offer, if there's one, has its turn)
+        colOfferShow();
+        return;
+      }
       colOffer = null;
       guideDirty = true;
       scheduleAutosave();
       colOfferEnd();
     });
-  if (!hlKey) outlineSecs(colOfferLeft(), false, true);
+  if (!hlKey) outlineSecs(tk ? tickLeft() : colOfferLeft(), false, true);
+  tickAlongSync();
 }
 function colOfferEnd() {
   const el = document.getElementById('sfColOffer');
@@ -242,12 +344,264 @@ function colOfferEnd() {
   }
   if (olSet && !olRow && !hlKey) outlineSecs(null);
 }
+/* ---- (v328, decisions 11.2 and 11.3) Check them: the offer as a draft ----
+    The offer's line has Check them beside Mark them done. It fits the page, closes a marker's row and says "Tap a
+    section to add it or leave it out"; the offer's sections are outlined and a tap flips whether a section will be
+    done: one offered is left out, any other added, one ticked already will be unticked. Nothing changes until Done,
+    which puts the lot in place as one Undo step; Cancel, Escape (a layer, 95-mount), leaving Colour along or Focus
+    mode, a reload: nothing applied, the offer kept. colCheck: { set: sections to tick, un: ticked ones to untick,
+    blank: ticked ones that look blank in a later photo (Tick off from a photo; dashed, said apart), g: loadGen }. */
+let colCheck = null;
+// (the draft, while it's this guide's as it stands)
+function colCheckLive() {
+  return !!colCheck && colCheck.g === loadGen && !!assignData;
+}
+function colCheckOpen(o) {
+  const secs = (o && o.secs) || colOfferLeft();
+  if ((!secs.length && !(o && o.blank && o.blank.length)) || sfmode !== 'color' || focus || !assignData)
+    return;
+  const set = {};
+  secs.forEach(function (l) {
+    set[l] = 1;
+  });
+  const bl = {};
+  ((o && o.blank) || []).forEach(function (l) {
+    bl[l] = 1;
+  });
+  // (hl: the marker's row that was open, put back by Cancel)
+  colCheck = { set: set, un: {}, blank: bl, g: loadGen, from: (o && o.from) || 'offer', hl: hlKey };
+  hideToast();
+  // (a section's question, Open … · Tick it, would tick outside the draft)
+  hideTip();
+  if (hlKey) alongSet(null);
+  // (a code search's outlines would take the check's place: rowOutline; and full screen hides its Cancel and Done)
+  findForget();
+  if (root.classList.contains('sffull')) exitFull();
+  resetZoom();
+  renderControls();
+  renderGuide();
+  colCheckDraw();
+  sayLive('Tap a section to add it or leave it out');
+  // (Done, or Cancel while there's nothing to change: a ticked section that looks blank only)
+  const dn = document.getElementById('sfChkDone'),
+    cn = document.getElementById('sfChkCancel');
+  try {
+    if (dn && !dn.disabled) dn.focus({ preventScroll: true });
+    else if (cn) cn.focus({ preventScroll: true });
+  } catch (_) {}
+}
+function colCheckIds(o) {
+  return Object.keys(o)
+    .map(Number)
+    .filter(function (l) {
+      return assignData.assign[l];
+    });
+}
+// what Done will do: the sections to tick and those to untick
+function colCheckCounts() {
+  if (!colCheck || !assignData) return { tick: [], un: [] };
+  return {
+    tick: colCheckIds(colCheck.set).filter(function (l) {
+      return !colored[l];
+    }),
+    un: colCheckIds(colCheck.un).filter(function (l) {
+      return colored[l];
+    }),
+  };
+}
+function colCheckSum() {
+  const c = colCheckCounts(),
+    w = [];
+  if (c.tick.length) w.push(c.tick.length + ' to tick');
+  if (c.un.length) w.push(c.un.length + ' to untick');
+  return w.length ? w.join(' · ') : 'Nothing to change';
+}
+// the check's line, in Colour along's panel in place of the list
+// (the ticked ones that look blank, while they're still ticked and not to be unticked: dashed)
+function colCheckBlankN() {
+  return colCheck
+    ? colCheckIds(colCheck.blank).filter(function (l) {
+        return colored[l] && !colCheck.un[l];
+      }).length
+    : 0;
+}
+function colCheckBlankText(nb) {
+  return (
+    (nb === 1
+      ? 'One ticked section doesn’t look coloured in your photo (dashed). '
+      : nb + ' ticked sections don’t look coloured in your photo (dashed). ') + 'Pale markers may not show.'
+  );
+}
+function colCheckHTML() {
+  const nb = colCheckBlankN();
+  return (
+    '<div id="sfChk" class="sfchkline" role="group" aria-label="Check the sections"><p class="sfchkhow">Tap a section to add it or leave it out.</p>' +
+    // (always there, hidden with none dashed: a tap can bring one back, colCheckDraw)
+    '<p id="sfChkBlank" class="sfchkblank"' +
+    (nb ? '>' + colCheckBlankText(nb) : ' hidden>') +
+    '</p>' +
+    // (not a live region: each tap says it, colCheckTap)
+    '<p id="sfChkSum" class="sfchksum">' +
+    colCheckSum() +
+    '</p></div>'
+  );
+}
+function colCheckDraw() {
+  if (!colCheck) return;
+  const on = colCheckIds(colCheck.set).concat(colCheckIds(colCheck.un)),
+    // (v328, 11.3: the ticked sections that look blank in the photo, dashed, while they stay ticked)
+    bl = colCheckIds(colCheck.blank).filter(function (l) {
+      return colored[l] && !colCheck.un[l];
+    });
+  outlineSecs(
+    on.concat(bl),
+    false,
+    true,
+    bl.length
+      ? [
+          { s: on, hex: '#fff' },
+          { s: bl, hex: '#fff', dash: true },
+        ].filter(function (q) {
+          return q.s.length;
+        })
+      : null,
+  );
+  const el = document.getElementById('sfChkSum');
+  if (el) el.textContent = colCheckSum();
+  // (v328 review: the dashed ones' line follows the taps too; gone when none is left dashed)
+  const bk = document.getElementById('sfChkBlank'),
+    nb = bl.length;
+  if (bk) {
+    bk.hidden = !nb;
+    if (nb) bk.textContent = colCheckBlankText(nb);
+  }
+  const c = colCheckCounts(),
+    d = document.getElementById('sfChkDone');
+  if (d) d.disabled = !c.tick.length && !c.un.length;
+}
+function colCheckTap(l) {
+  if (!colCheck || !(l > 0) || !assignData.assign[l]) return;
+  const o = colored[l] ? colCheck.un : colCheck.set,
+    on = !o[l];
+  if (on) o[l] = 1;
+  else delete o[l];
+  colCheckDraw();
+  sayLive(
+    (colored[l] ? (on ? 'Will be unticked' : 'Stays ticked') : on ? 'Added' : 'Left out') +
+      '. ' +
+      colCheckSum(),
+  );
+}
+// Done (apply) or Cancel: the check closed, Colour along as it was
+function colCheckEnd(apply) {
+  const c = colCheck;
+  colCheck = null;
+  if (!c || !assignData) return;
+  if (apply && c.g === loadGen && colCheckApply(c)) {
+    // (Focus mode's button, or on a page that's now finished, Reveal & share's: the one shown)
+    const f = ['sfFocus', 'sfDoneRev', 'sfAlongShare']
+      .map(function (id) {
+        return document.getElementById(id);
+      })
+      .filter(function (e) {
+        return e && e.offsetParent;
+      })[0];
+    try {
+      if (f) f.focus({ preventScroll: true });
+    } catch (_) {}
+    return;
+  }
+  outlineSecs(null);
+  // (renderControls puts the offer's line back, outlined: alongControls)
+  renderControls();
+  // (and the marker's row that was open, as it was)
+  if (c.hl && c.g === loadGen && sfmode === 'color' && !focus) {
+    alongSet(c.hl);
+    // (the list too: it was drawn before the row was open again)
+    renderAlong();
+  }
+  renderGuide();
+  const b = document.getElementById('sfColCk') || document.getElementById('sfFocus');
+  try {
+    if (b) b.focus({ preventScroll: true });
+  } catch (_) {}
+}
+function colCheckApply(c) {
+  const tick = colCheckIds(c.set).filter(function (l) {
+      return !colored[l];
+    }),
+    un = colCheckIds(c.un).filter(function (l) {
+      return colored[l];
+    });
+  if (!tick.length && !un.length) return false;
+  const wasT = {},
+    wasU = {},
+    P = tp(),
+    off = colOffer,
+    g = loadGen;
+  tick.forEach(function (l) {
+    wasT[l] = [colored[l], P[l], heldSh[l] || null];
+    colored[l] = 1;
+    P[l] = 0;
+  });
+  un.forEach(function (l) {
+    wasU[l] = [colored[l], P[l], heldSh[l] || null];
+    colored[l] = 0;
+    P[l] = 0;
+  });
+  // (the offer taken: the coloured-in offer's, or Tick off from a photo's)
+  const offT = tickOffer;
+  if (c.from === 'offer') colOffer = null;
+  else if (c.from === 'tick') tickOffer = null;
+  guideDirty = true;
+  scheduleAutosave();
+  const wasC = celebrated;
+  checkComplete();
+  outlineSecs(null);
+  renderControls();
+  renderGuide();
+  updateProgress();
+  renderFocusMarkers();
+  if (celebrated && !wasC) return true;
+  const said =
+    (tick.length
+      ? tick.length === 1
+        ? 'Ticked 1 section'
+        : 'Marked ' + tick.length + ' sections done'
+      : '') +
+    (un.length
+      ? tick.length
+        ? ', unticked ' + un.length
+        : 'unticked ' + (un.length === 1 ? '1 section' : un.length + ' sections')
+      : '');
+  toastAction(said.charAt(0).toUpperCase() + said.slice(1), 'Undo', function () {
+    if (g !== loadGen || !assignData) return;
+    // (as Mark all's Undo: markBack, each way)
+    markBack(wasT, true);
+    markBack(wasU, false);
+    if (c.from === 'offer') colOffer = off;
+    else if (c.from === 'tick') tickOffer = offT;
+    guideDirty = true;
+    scheduleAutosave();
+    renderGuide();
+    updateProgress();
+    if (sfmode === 'color') {
+      renderFocusMarkers();
+      colOfferShow();
+    }
+    sayLive('Ticks as they were');
+  });
+  return true;
+}
 // how many sections are ticked, or part-way done (a tone ticked): what Reset progress would clear
 function progressCount() {
   if (!assignData || !colored) return 0;
   const pt = tonePart && tonePart._c === colored ? tonePart : null;
   let n = 0;
-  for (let l = 1; l < colored.length; l++) if (colored[l] || (pt && pt[l])) n++;
+  // (v328 review: the guide's sections only: not the ticks kept for sections left out in Edit sections, _gone)
+  assignData.order.forEach(function (l) {
+    if (colored[l] || (pt && pt[l])) n++;
+  });
   return n;
 }
 // Reset progress (⋯ in Colour along) asks first, in the guide's own sheet; it isn't offered with nothing ticked
@@ -277,6 +631,8 @@ function askResetProgress() {
 }
 function resetProgress() {
   if (!assignData) return;
+  // (v328 review: Check them, open, is about the ticks as they were: closed first, its offer kept)
+  if (colCheckLive()) colCheckEnd(false);
   const pc = colored,
     pt = tonePart && tonePart._c === colored ? tonePart : null,
     pcel = celebrated,
@@ -288,6 +644,12 @@ function resetProgress() {
   for (let l = 1; l < pc.length && !any; l++) if (pc[l] || (pt && pt[l])) any = true;
   guideDirty = true;
   colored = new Uint8Array(comps.length);
+  // (the ticks kept for sections left out, for when they're brought back, stay)
+  const inG = {};
+  assignData.order.forEach(function (l) {
+    inG[l] = 1;
+  });
+  for (let l = 1; l < pc.length && l < colored.length; l++) if (pc[l] && !inG[l]) colored[l] = pc[l];
   celebrated = false;
   progAt = { s: 0, e: 0 };
   hlKey = null;
@@ -298,14 +660,24 @@ function resetProgress() {
   if (any)
     toastAction('Progress reset', 'Undo', function () {
       if (g !== loadGen || !assignData || comps.length !== K || pc.length !== K) return;
-      const now = colored;
+      const now = colored,
+        // (v328 review: and the tones ticked since, part-way, kept too)
+        tn = tonePart && tonePart._c === now ? tonePart : null;
+      let pt2 = pt;
       for (let l = 1; l < K; l++)
         if (now[l]) {
           pc[l] = 1;
-          if (pt) pt[l] = 0;
+          if (pt2) pt2[l] = 0;
+        } else if (tn && tn[l]) {
+          if (!pt2) {
+            pt2 = new Uint8Array(K);
+            pt2._c = pc;
+          }
+          pt2[l] |= tn[l];
         }
       colored = pc;
-      tonePart = pt;
+      tonePart = pt2;
+      if (tonePart) tonePart._c = pc;
       celebrated = pcel;
       progAt = pat;
       for (const l in phs) if (!heldSh[l]) heldSet(l, phs[l]);
@@ -424,7 +796,16 @@ function enterColor(paint) {
   updateProgress();
 }
 function exitColor() {
+  // (v328: a check open goes, nothing applied, and its outlines with it)
+  if (colCheck) {
+    colCheck = null;
+    outlineSecs(null);
+  }
   if (focus) focusModal(false);
+  // (v328 review: and a section's tip, its Tick it and Open for Colour along)
+  hideTip();
+  // (the sharp copy's canvas let go: up to 16 MB that an iPad counts, 77-sharp)
+  sharpFree();
   if (_fnOl) {
     _fnOl = false;
     outlineSecs(null);
@@ -452,6 +833,7 @@ let _focK = null,
   _focAt = -1;
 function enterFocus() {
   if (sfmode !== 'color' || !assignData) return;
+  if (colCheck) colCheckEnd(false);
   if (typeof guideWorked === 'function') guideWorked(curId);
   if (_fnOl) {
     _fnOl = false;

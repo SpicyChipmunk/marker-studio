@@ -516,7 +516,9 @@ after(teardown);
     assert.deepEqual(wh, [1080, 1350]);
     await page.waitForSelector('#revShare', { timeout: REV });
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#revShare')]);
-    assert.equal(dl.suggestedFilename(), 'marker-studio-card.png');
+    // (v328 review: named for the guide)
+    assert.match(dl.suggestedFilename(), /^[a-z0-9-]+-card\.png$/);
+    assert.notEqual(dl.suggestedFilename(), 'marker-studio-card.png');
     assert.deepEqual(pngSize(await readFile(await dl.path())), [1080, 1350]);
     // not finished: nothing about finishing
     assert.doesNotMatch(await page.getAttribute('.sfshow', 'aria-label'), /finished/);
@@ -849,7 +851,10 @@ after(teardown);
   });
   // (v308: with Numbers, NO. is the one column, the colouring order: no ORDER "5th" beside it)
   test('the PDF key: NO. drawn as the page’s numbers are, and no ORDER beside it', async () => {
-    const { page, errors } = await openApp({ storage: { 'ms-pdf-labels': 'numbers' } });
+    // (v328: the Labelled page, whose page 1 has the labels; Page to colour's has none)
+    const { page, errors } = await openApp({
+      storage: { 'ms-pdf-labels': 'numbers', 'ms-pdf-what': 'page' },
+    });
     await sampleGuide(page);
     await idle(page);
     const r = await page.evaluate(() => {

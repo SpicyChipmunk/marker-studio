@@ -365,8 +365,10 @@ function mount() {
       }
       return;
     }
+    // (v328 review: not while Check them is open, whose taps are its own, 82-colour-mode)
     if (sfmode !== 'color' || focus) return;
     e.preventDefault();
+    if (colCheckLive()) return;
     const P = evPt(e);
     if (P.x < 0 || P.y < 0 || P.x >= W || P.y >= H) return;
     const l = labels[P.y * W + P.x];
@@ -462,6 +464,18 @@ function mount() {
       zoneEditEnd();
     },
   });
+  // (v328) Check them: Escape is its Cancel, nothing applied
+  addLayer({
+    name: 'check them',
+    order: 34,
+    back: true,
+    isOpen: function () {
+      return shown() && sfmode === 'color' && !focus && colCheckLive();
+    },
+    close: function () {
+      colCheckEnd(false);
+    },
+  });
   // (v306) Colour along's code box: a code in it, or a search run, is cleared first
   addLayer({
     name: 'code box',
@@ -491,7 +505,13 @@ function mount() {
       return tipL >= 0 && !!tipEl;
     },
     close: function () {
+      // (v328 review 2: the keyboard, if it was in the tip, to the picture's tools, not lost with it)
+      const kb = tipEl && tipEl.contains(document.activeElement);
       hideTip();
+      if (kb) {
+        const t = document.getElementById(root.classList.contains('sffull') ? 'sfFullX' : 'sfFull') || null;
+        if (t && t.getClientRects().length) t.focus({ preventScroll: true });
+      }
     },
   });
   // focus mode leaves an Escape from a form field in it alone, as it does its other keys
@@ -599,6 +619,9 @@ function mount() {
         }
         if (ev === 'contextrestored' && assignData && (sfmode === 'guide' || sfmode === 'color'))
           renderGuide();
+        // (v328 review: and Crop and Edit sections, drawn again too)
+        else if (ev === 'contextrestored' && cropMode) drawCropOverlay();
+        else if (ev === 'contextrestored' && sfmode === 'review' && labels) render();
       });
     });
   window.addEventListener('pagehide', function () {
@@ -823,6 +846,15 @@ function collRefresh() {
 function leave() {
   exitFull();
   hideTip();
+  // (v328: Check them's draft isn't kept by going elsewhere, nothing applied; a photo being read says so on its own)
+  if (colCheck) {
+    colCheck = null;
+    outlineSecs(null);
+  }
+  // (and a photo being read ends there, without a word: 26-tick tickStale)
+  _tickRun++;
+  if (_tickBusy) tickBusy(null);
+  tickVisNote();
   if (focus) exitFocus();
   // (Reveal open, or its animation running: its bar stays in the page, hidden, after it closes)
   if (revealF != null || root.classList.contains('sfrev')) endReveal();
@@ -837,6 +869,8 @@ function leave() {
   // (the sharp codes' canvas, up to 12 million pixels when zoomed in, isn't kept while elsewhere: enter() draws it
   // again on return, v296)
   labHiOff();
+  // (v328 review: and the sharp copy's, 77-sharp)
+  sharpFree();
   // (a save waiting its moment is made now: Home, which may be next, then shows the guide as it is, v289)
   if (autoT && !pickPending()) doAutosave(true);
   relWake();

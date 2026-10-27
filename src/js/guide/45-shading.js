@@ -41,12 +41,18 @@ const SH_MINR = 5,
 // where one tone hands over to the next along the shade value (0 = lit .. 1 = deepest shadow), for a zone's shading
 // zs; its Highlight and Shadow sliders move them (at 50% they are 0.34 and 0.60; a paper highlight 0.17). Kept on the
 // zone's tones (t.T2, t.T3: shadeTones).
+// (v328 review: the least of the shade value's range kept for the base, shT2)
+const SH_BASE_MIN = 0.1;
 function shT2(zs) {
   // (paper left white is the brightest part only: about half as much as a lighter marker covers; v318.17: a blender's
   // lift the same)
-  return hiOn(zs) && (zs.hilite === 'paper' || (zs.hilite === 'blender' && blenderOwned()))
-    ? 0.08 + 0.18 * zs.hi
-    : 0.2 + 0.28 * zs.hi;
+  const t =
+    hiOn(zs) && (zs.hilite === 'paper' || (zs.hilite === 'blender' && blenderOwned()))
+      ? 0.08 + 0.18 * zs.hi
+      : 0.2 + 0.28 * zs.hi;
+  // (v328 review: always some base between the two: with both amounts near the top the highlight had run straight
+  // into the shadow, the section's own marker on none of it)
+  return Math.min(t, shT3(zs) - SH_BASE_MIN);
 }
 // (v318.17) whether a shading record's sections have a highlight: shading Light & shadow and its Highlights not None
 // (Shadows only, per zone; shadeMode 'shadow' is the whole picture's, as saved before)
@@ -1063,7 +1069,8 @@ function shadeTidy(V, T) {
       t = 0,
       per = 0;
     const nbN = [0, 0, 0],
-      nbV = [0, 0, 0];
+      nbV = [0, 0, 0],
+      nbU = [0, 0, 0];
     Q[t++] = p;
     Z[p] = z + 8;
     while (h < t) {
@@ -1087,6 +1094,7 @@ function shadeTidy(V, T) {
         const zb = zr >= 8 ? zr - 8 : zr;
         nbN[zb]++;
         nbV[zb] += out[r];
+        if (zr < 8) nbU[zb]++;
       }
     }
     if (t >= minA && !(thin && (2 * t) / Math.max(1, per) < minT)) {
@@ -1100,12 +1108,15 @@ function shadeTidy(V, T) {
       has[l] |= z === 0 ? 1 : 4;
       continue;
     }
-    const nv = Math.round(nbV[bz] / nbN[bz]);
+    // (v328: into a light or shadow patch not looked at yet, as part of it: tidied with it, so a tiny one's pixels,
+    // these with them, all go on into base, none left in the tone they were merged into)
+    const nv = Math.round(nbV[bz] / nbN[bz]),
+      zm = bz !== 1 && nbU[bz] ? bz : bz + 8;
     for (let i = 0; i < t; i++) {
       out[Q[i]] = nv;
-      Z[Q[i]] = bz + 8;
+      Z[Q[i]] = zm;
     }
-    if (bz !== 1) has[l] |= bz === 0 ? 1 : 4;
+    if (bz !== 1 && zm >= 8) has[l] |= bz === 0 ? 1 : 4;
   }
   _tidy = { V: V, vk: shadeVKey, L: L, thin: thin, mm: mm, ti: Array.from(ti), out: out, has: has };
   return _tidy;
@@ -1169,6 +1180,9 @@ function shadeLinesDraw(sh, fade, o) {
     // enlarged picture's srcK-wide lines filled them, v304. Print passes its own)
     t = o.t || Math.max(1, Math.round(Math.max(W, H) / 900)),
     dash = o.dash || 6 * t,
+    // (v328) print's short dashes: on, then off, pixels (the screen's: dash on, dash off)
+    on = o.on || dash,
+    per = on + (o.off || dash),
     ink = o.ink,
     one = o.l != null ? o.l : -2,
     bx = o.box || [0, 0, W - 1, H - 1],
@@ -1206,7 +1220,7 @@ function shadeLinesDraw(sh, fade, o) {
           vc = x >= t && labels[qc] === l && V[qc] ? V[qc] : v,
           vb = labels[qb] === l && V[qb] ? V[qb] : v,
           vd = y >= t && labels[qd] === l && V[qd] ? V[qd] : v;
-        if ((((Math.abs(va - vc) > Math.abs(vb - vd) ? y : x) / dash) | 0) & 1) continue;
+        if ((Math.abs(va - vc) > Math.abs(vb - vd) ? y : x) % per >= on) continue;
         const j = q * 4;
         if (ink) {
           buf[j] = ink[0];
@@ -2354,14 +2368,27 @@ function toneRows(secs) {
   secs.forEach(function (l) {
     const t = shadeSec(l);
     if (!t) return;
+    const z = zoneOf(l),
+      // (v328 review: a section coloured with its kinds as they were, since changed: its row is "as coloured";
+      // review 2: a highlight counted only where it shows (Shadows only holds every coloured section as None), and
+      // the row "as coloured" only when all its sections are: the rows go by their markers, so tones the same
+      // either way share one row)
+      a = zshOf(l),
+      b = zones.length ? zsh(z) : zshMain(),
+      ha = hiOn(a),
+      hb = hiOn(b),
+      hd = a.shadow !== b.shadow || ha !== hb || (ha && a.hilite !== b.hilite);
     let e = by[t.sig];
     if (!e) {
-      e = by[t.sig] = { t: t, n: 0, z: {} };
+      e = by[t.sig] = { t: t, n: 0, z: {}, hd: false, hn: 0 };
       out.push(e);
     }
     e.n++;
-    const z = zoneOf(l);
+    if (hd) e.hn++;
     e.z[z] = (e.z[z] || 0) + 1;
+  });
+  out.forEach(function (e) {
+    e.hd = e.hn > 0 && e.hn === e.n;
   });
   return out.sort(function (a, b) {
     return b.n - a.n;
@@ -2390,8 +2417,19 @@ function toneRowName(x, rows, m) {
         return zoneName(id);
       })
       .join(', '),
-    st = x.t.held ? 'as coloured' : sets ? capLabel(m) + (x.t.set === 1 ? '′' : '') : '';
-  return [st, zDiff || !st ? 'in ' + zn : ''].filter(Boolean).join(' ');
+    held = rows.some(function (r) {
+      return r.hd;
+    }),
+    st =
+      x.t.held || x.hd
+        ? 'as coloured'
+        : sets
+          ? capLabel(m) + (x.t.set === 1 ? '′' : '')
+          : held && !zones.length
+            ? 'as set now'
+            : '';
+  // (no "in Main" on a page without zones)
+  return [st, zDiff || (!st && zones.length) ? 'in ' + zn : ''].filter(Boolean).join(' ');
 }
 // a marker's tones when its zones differ ("H Y26 / paper › B G410 › S G46"): each tone's options, at most two, then
 // "+1 more"; the screen reader hears "highlight Y26 or the paper left white, ...". rows: toneRows'
@@ -2692,8 +2730,20 @@ function ptBaseZs(zs) {
 function ptSamples() {
   const V = shadeField(1);
   if (!V || !photoRef || !photoXf) return null;
+  // (v328 review: and which zones take their tones from the photo, whose sections are the ones sampled: a zone
+  // switched to From the photo had kept Same colour's tones)
   const A = assignData.assign,
-    key = shadeVKey + '|' + _ptAssignSig();
+    key =
+      shadeVKey +
+      '|' +
+      _ptAssignSig() +
+      '|' +
+      zoneIds()
+        .map(function (id) {
+          const z = zsh(id);
+          return id + ':' + (z.on ? 1 : 0) + z.shadow + '/' + z.hilite;
+        })
+        .join(',');
   if (_ptS && _ptS.key === key && _ptS.V === V) return _ptS;
   const g = shadeGeom(),
     X = photoXf,
@@ -3238,7 +3288,7 @@ function _ptGet1() {
   if (shadePStyle && (_ptForce || _ptAutoK !== S.key)) ptAuto(S);
   // (what the markers added were chosen for: the plan, the light, the kinds and amounts, the sets)
   const base = S.key + '|' + _ptZsSig() + '|' + (shadeSets ? 2 : 1) + '|' + shadeMode,
-    kx = ptHash(base),
+    kx = ptHash(_ptKeepSig() + '|' + _ptZsSig() + '|' + (shadeSets ? 2 : 1) + '|' + shadeMode),
     key = function () {
       return (
         base +
@@ -3288,6 +3338,35 @@ function ptNoteHeld(tone) {
     }
   }
   return ch;
+}
+// (v328) what the markers added are kept for, the same in a new session: the light and the plan, without the field's
+// session counters (_flatVer, _zshGeoVer) or the photo's encoding, which change on reopening
+function _ptKeepSig() {
+  const f = function (v) {
+    return (+v || 0).toFixed(4);
+  };
+  return [
+    shadeFromPhoto() ? 'photo' : shadeEdges() ? 'edges' : 'sun',
+    f(shadeSun.x),
+    f(shadeSun.y),
+    f(shadeRound),
+    zones.length && !shadeMain ? 'mflat' : '',
+    photoXf && photoRef
+      ? [f(photoXf.cx), f(photoXf.cy), f(photoXf.sx), f(photoXf.sy), f(photoXf.r), photoRef.w].join(',')
+      : '',
+    _ptAssignSig(),
+    // (and what else the light's field is made from that stays: the sections made flat, each zone's Roundness)
+    shadeFlatList()
+      .sort(function (x, y) {
+        return x - y;
+      })
+      .join(','),
+    zoneIds()
+      .map(function (id) {
+        return f(zsh(id).round);
+      })
+      .join(','),
+  ].join('|');
 }
 // (a short, steady key for a long one)
 function ptHash(s) {
@@ -3372,7 +3451,8 @@ function ptSaveState() {
   const th = {};
   for (const l in _ptHeld) th[l] = [_ptHeld[l].L, _ptHeld[l].S];
   return {
-    tx: _ptX && _ptX.x.length ? { k: _ptX.k, x: _ptX.x.slice() } : undefined,
+    // (v328 review: none added is a choice too, kept: a marker bought since had come in on reopening)
+    tx: _ptX ? { k: _ptX.k, x: _ptX.x.slice() } : undefined,
     th: Object.keys(th).length ? th : undefined,
   };
 }

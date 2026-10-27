@@ -941,8 +941,8 @@ import fs, { readFileSync } from 'node:fs';
     // with bgRule, the background rule; v318.15: 50 with matchAlike, Matching shapes alike; v318.18: 51 with theme;
     // v318.35: 52 with hatchOne, Treat hatching as one section; v323: 54 with colOffer, the coloured-in sections offered as
     // done, and focusAt, the section Focus mode was left on; v327: 56 with shade.sets and shade.pstyle, photo tones'
-    // Two tone sets and the Photo style)
-    assert.equal(n, 56);
+    // Two tone sets and the Photo style; v328: 57 with tickRef, whether Tick off from a photo's photos are printouts)
+    assert.equal(n, 57);
   });
   test('STYLE_FIELDS: where each setting is saved (in the order written) and which ones Undo keeps', () => {
     const core = createApp().__mstest;
@@ -1006,6 +1006,7 @@ import fs, { readFileSync } from 'node:fs';
         'payload.lowX (no undo)',
         'payload.colOffer (no undo)',
         'payload.focusAt (no undo)',
+        'payload.tickRef (no undo)',
         'payload.smp (no undo)',
         'payload.gradArea (no undo)',
         'payload.bgRule (no undo)',

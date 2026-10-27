@@ -1466,6 +1466,7 @@ function ppCheck(o, map) {
   p.f = ['even', 'sharp', 'calm', 'subject'].indexOf(o.f) >= 0 ? o.f : 'even';
   p.n = typeof o.n === 'number' && o.n > 0 && o.n < 10000 ? Math.round(o.n) : 0;
   p.hand = o.hand === 1;
+  p.all = o.all === 1;
   p.paper =
     typeof o.paper === 'string' && Object.prototype.hasOwnProperty.call(PAPERS, o.paper) ? o.paper : paper;
   p.full = o.full === 1;
@@ -1523,6 +1524,7 @@ function ppSave() {
     f: pp.f,
     n: pp.n,
     hand: pp.hand ? 1 : undefined,
+    all: pp.all ? 1 : undefined,
     paper: pp.paper,
     full: pp.full ? 1 : undefined,
     more: pp.more ? 1 : undefined,
@@ -1642,7 +1644,8 @@ function ppSigMode() {
 // before v326 (no sm) is as made only with the very same markers, as v325 had it
 function ppAsMade(pool) {
   if (!pp || !pp.made) return false;
-  if (ppWant(pool) !== pp.n) return false;
+  // (v328 review: at the slider's end, all, a marker bought since doesn't change it either: all was all there was)
+  if (ppWant(pool) !== pp.n && !(pp.all && limitN >= MK_ALL && pp.n <= pool.length)) return false;
   if (!pp.sm) return ppSig(pool) === pp.sig || ppSigOld(pool) === pp.sig;
   if (pp.sm !== ppSigMode()) return false;
   const have = {};
@@ -2040,10 +2043,13 @@ function ppMake(geo, quiet) {
         pp.f !== 'even'
           ? subMap(prep).catch(function (e) {
               if (gen !== _ppGen || !pp) return null;
+              const fn = SUB_NAMES[pp.f] || SUB_NAMES.sharp;
               pp.f = 'even';
-              // (said once the page is made, in place of its usual line: ppSaid)
+              // (said once the page is made, in place of its usual line: ppSaid; v328: the choice it was, and only
+              // where Focus is offered)
               _ppSaid = /not stored/.test(String(e && e.message))
-                ? 'Focus is back on Even: the subject finder isn’t on this device. Choose Sharper subject to download it.'
+                ? 'Focus is back on Even: the subject finder isn’t on this device.' +
+                  (subCan() ? ' Choose ' + fn + ' to download it.' : '')
                 : errNote('Couldn’t find the photo’s subject, so the page is made Even.', 'Focus', e);
               return null;
             })
@@ -2206,6 +2212,8 @@ function ppCommit(r, ch, prep, geo) {
   // (the count it was made for: the one asked for, though fewer may suit the photo, so the plan is as made while
   // Markers in this guide says it: ppWant)
   pp.n = ch.n;
+  // (v328 review: made at the slider's end, all, chosen there)
+  pp.all = !!pp.hand && limitN >= MK_ALL;
   pp.sig = ch.sig;
   pp.sm = ppSigMode();
   // (v326) the colours the markers were chosen for, kept with the page (ppSave), for its markers-to-add line
@@ -2213,6 +2221,7 @@ function ppCommit(r, ch, prep, geo) {
   if (!pp.hand) limitN = ch.n;
   // the Photo pattern's photo: this one, over the whole page
   photoRef = prep.ref;
+  ppRefAsSaved(prep);
   photoXf = { cx: W / 2, cy: H / 2, sx: W / prep.ref.w, sy: H / prep.ref.h, r: 0 };
   _phPlace = 'stretch';
   _phCol = null;
@@ -2380,6 +2389,11 @@ function ppMadeAssign(cl) {
 // the plan isn't as made any more (the markers it may use, or how many, changed since): the count the page would be
 // remade for, else 0
 function ppRemakeFor() {
+  // (v328 review: and only with the photo to make it from, as the other remakes)
+  return srcImg || srcMay() ? ppNotMade() : 0;
+}
+// (the plan not as made: the count it asks for, whether or not the photo is here to make it again)
+function ppNotMade() {
   if (!pp || !pp.made || !assignData || family !== 'photo') return 0;
   const pool = ppPool(),
     n = ppWant(pool);
@@ -2393,25 +2407,30 @@ function ppWant(pool) {
 }
 // (the Plan's Photo pattern, 51-controls-plan) where its colours come from
 function ppPlanLine() {
-  return ppRemakeFor()
+  return ppNotMade()
     ? 'Colours come from your photo, matched to your markers as they are now.'
     : 'Colours come from your photo, as the page was made.';
 }
 // the offer to make the page again, when the plan isn't as made: fewer markers (or others) than it was made for can
 // put one marker on sections side by side, and merged sections can't come apart
 function ppRemakeHTML() {
-  const n = ppRemakeFor();
+  const n = ppNotMade();
   if (!n) return '';
   return (
     '<div class="sfc-note sfc-mt8" id="sfPpRemake">' +
     (n !== pp.n
       ? 'This page was made for ' + pp.n + ' marker' + (pp.n === 1 ? '' : 's') + ', so with ' + n
       : 'Your markers changed since this page was made, so') +
-    ' some sections side by side may share a marker. <button type="button" class="sflink" id="sfPpRemakeGo">Remake page for ' +
-    n +
-    ' marker' +
-    (n === 1 ? '' : 's') +
-    '</button></div>'
+    ' some sections side by side may share a marker.' +
+    // (the Remake only with the photo on this device to make it from)
+    (ppRemakeFor()
+      ? ' <button type="button" class="sflink" id="sfPpRemakeGo">Remake page for ' +
+        n +
+        ' marker' +
+        (n === 1 ? '' : 's') +
+        '</button>'
+      : '') +
+    '</div>'
   );
 }
 // Remake page from the Plan: asked first when there's something to lose (one Undo step), then made again and shown
@@ -2433,20 +2452,29 @@ function ppFromPlan(set) {
     return;
   }
   okGeom(function () {
+    // (v328: the change undone when the photo can't be read, so nothing says the page was made with it, ppLoaded)
+    const was = ppCopy(pp);
     set();
     if (typeof closeSheet === 'function') closeSheet();
     stageGo();
     backToReview();
+    // (v328 review: not when the step it's made over was undone while the photo was read: that Undo was the answer)
+    const snap = _geoSnap;
     ppWithPhoto(function () {
+      if (snap && undoStack[undoStack.length - 1] !== snap) {
+        _geoSnap = null;
+        renderControls();
+        return;
+      }
       ppRemade(false);
-    });
+    }, was);
   }, true);
 }
 // fn once the photo is in memory: now, or when srcLoad has read it (ppLoaded); not at all if it can't be read
 let _ppAfter = null;
-function ppWithPhoto(fn) {
+function ppWithPhoto(fn, was) {
   if (srcImg) return fn();
-  _ppAfter = { fn: fn, gen: loadGen };
+  _ppAfter = { fn: fn, gen: loadGen, was: was };
   srcLoad();
 }
 // (25-source-photo srcLoad: the photo read, or not)
@@ -2454,15 +2482,18 @@ function ppLoaded(ok) {
   const a = _ppAfter;
   _ppAfter = null;
   if (a && ok && a.gen === loadGen && pp && srcImg) a.fn();
-  else if (a && !ok) {
+  else if (a && !ok && a.gen === loadGen) {
     geoCancel();
+    if (a.was && pp) pp = a.was;
     note('Couldn’t read this guide’s photo, so the page wasn’t made again.');
   }
 }
 // (the Print sheet, 90-export) printed on a smaller paper than the page was made for, its smallest sections come out
 // smaller than Detail's: said, with a remake for that paper
 function ppPaperHTML() {
-  if (!pp || !pp.made || paper === pp.paper || pdfWhat !== 'page' || !W || !H) return '';
+  // (v328: Page to colour's page 1 is the same page)
+  if (!pp || !pp.made || paper === pp.paper || (pdfWhat !== 'page' && pdfWhat !== 'colour') || !W || !H)
+    return '';
   const k = ppMmPx(W, H, paper) / ppMmPx(W, H, pp.paper);
   if (k >= 0.95) return '';
   const mm = Math.round(PP_STEPS[pp.d].mm * k * 10) / 10;
@@ -2714,13 +2745,51 @@ function ppBegin(tok, f35) {
 
 // ---- the page step's controls (in Edit sections' place: _renderControls) ----
 // the sections and markers on the page, in words
+// (v328 review) the photo's pixels as the guide saves them: its JPEG read back, as a guide opened again reads it, so
+// the photo tones chosen now are those chosen then (B9; from the canvas's own pixels, 1-7 of 61-67 sections had come
+// out otherwise on reopening). The caches that read it are let go; drawn again if it's on the screen
+function ppRefAsSaved(prep) {
+  const r0 = prep.ref,
+    g0 = loadGen;
+  if (!r0 || !r0.url || r0.saved || typeof Image === 'undefined') return;
+  const im = new Image();
+  im.onload = function () {
+    // (only while the page step shows it: after Build the plan holds this photo, and is left as it is)
+    if (g0 !== loadGen || photoRef !== r0 || sfmode !== 'review') return;
+    let r = null;
+    try {
+      r = photoFromImage(im, r0.url);
+    } catch (_) {}
+    if (!r || r.w !== r0.w || r.h !== r0.h) return;
+    const nr = photoLitSet(r, null);
+    nr.saved = true;
+    photoRef = nr;
+    if (prep.ref === r0) prep.ref = nr;
+    shadeV = null;
+    shadeVKey = '';
+    _ptS = null;
+    _pt = null;
+    _ptMemo = null;
+    _phStats = null;
+  };
+  im.src = r0.url;
+}
+// (v328 review) section l is Subject only's background
+function ppBgSec(l) {
+  return !!(ppOn() && pp.bgs && pp.bgs.indexOf(l) >= 0);
+}
 function ppCountText() {
   if (!comps) return '';
   // (v326: Subject only's background isn't a section to colour)
+  // (v328: the sections Build would take, so not those merged or left out in Edit sections)
   const nb = pp && pp.bgs ? pp.bgs.length : 0,
-    n = comps.length - 1 - nb,
+    n = ppSecN(),
     k = {};
-  if (pp && pp.made) for (const l in pp.made) k[pp.made[l]] = 1;
+  // (and the markers of those sections)
+  if (pp && pp.made)
+    countedList().forEach(function (l) {
+      if (pp.made[l]) k[pp.made[l]] = 1;
+    });
   const m = Object.keys(k).length;
   return (
     n +
@@ -2739,14 +2808,26 @@ function ppCountText() {
 function ppNote(m) {
   if (m) return note(m);
   const l = ppLine();
-  if (comps && comps.length < 3) return note(l);
+  if (comps && ppSecN() < 2) return note(l);
   note(l, true);
+}
+// (v328) the page's sections to colour: not Subject only's background, nor any merged or left out
+function ppSecN() {
+  return comps ? countedList().length : 0;
 }
 // the line under the picture once a page is made
 function ppLine() {
-  // (a guide needs two sections or more, as Build says by waiting: a photo of one colour all over gives one)
-  if (comps && comps.length < 3)
-    return 'This photo is nearly one colour all over, so its page has only one section. Try a finer Detail, or another photo.';
+  // (a guide needs two sections or more, as Build says by waiting: a photo of one colour all over gives one; v328:
+  // or a page made with one marker)
+  if (comps && ppSecN() < 2) {
+    const k = {};
+    if (pp && pp.made) for (const l in pp.made) k[pp.made[l]] = 1;
+    return Object.keys(k).length === 1 && (ppPool().length === 1 || (pp.hand && limitN === 1))
+      ? 'This page has only one section, as it was made with one marker. A page to colour needs two markers or more.'
+      : pp && pp.bgs && pp.bgs.length
+        ? 'The subject came out as only one section. Try a finer Detail, or another Focus.'
+        : 'This photo is nearly one colour all over, so its page has only one section. Try a finer Detail, or another photo.';
+  }
   return 'Colouring page made: ' + ppCountText() + '. Build guide when it looks right.';
 }
 // the markers the page could use, in words: "your 36 markers", "the full Ohuhu range"
@@ -2828,7 +2909,16 @@ const PP_FILL_SHOW = 15,
   PP_MORE_GAIN = 0.45;
 let _ppFill = null; // { key, res (null while it's worked out), cand: the candidates, in ppFillCore's order }
 const _ppTgIds = new WeakMap();
-let _ppTgN = 0;
+// (the colours' own key: their numbers, hashed)
+function ppTgSig(tg) {
+  let h = 5381;
+  const add = function (a) {
+    for (let i = 0; i < a.length; i++) h = ((h << 5) + h + Math.round(a[i] * 100)) | 0;
+  };
+  add(tg.l || []);
+  add(tg.w || []);
+  return (tg.l ? tg.l.length : 0) + ':' + (h >>> 0).toString(36);
+}
 // the candidates: catalogue markers you don't own (any you own, set aside or not, isn't one), from Brands I'd buy's
 // brands, else every brand with your own brands' first (cg 1) and both, so the second list can be worked out
 function ppFillCands() {
@@ -2868,8 +2958,10 @@ function ppFillGet() {
   if (!pool.length) return null;
   const pal = paletteSource === 'saved' || paletteSource === 'generate',
     cand = pal || pp.full ? null : ppFillCands();
+  // (v328 review: by what's in them, not which object: a page made again from the same photo and Detail has the same
+  // colours in a new object, and the job, two marker choices long at a step's cap, had run again each time)
   let tid = _ppTgIds.get(pp.tg);
-  if (!tid) _ppTgIds.set(pp.tg, (tid = ++_ppTgN));
+  if (!tid) _ppTgIds.set(pp.tg, (tid = ppTgSig(pp.tg)));
   // (the markers it could use as made, against those it can now: what newer ones would add. Not the markers it
   // used: a page uses some of its pool, and the rest aren't newer)
   const mk = ppMadePoolKeys(),

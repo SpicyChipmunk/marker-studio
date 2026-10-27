@@ -58,6 +58,7 @@ function srcKind() {
   return pgQ || pgF35 > 0 ? 'photo' : 'scan';
 }
 // the settings the sections were found with, for the payload's `src`; null for a guide with no picture of its own
+let _srcLegacy = false;
 function srcSettings() {
   if (!srcPic()) return _srcSet;
   const r = function (v) {
@@ -66,7 +67,7 @@ function srcSettings() {
   const o = {
     // (v319: 2 marks the crop and corners saved exactly, so srcPlace fits a rebuilt picture by SRC_FIT, not the
     // legacy allowance)
-    v: 2,
+    v: _srcLegacy ? 1 : 2,
     k: srcKind(),
     rot: rot90 || 0,
     tilt: r(tilt || 0),
@@ -175,6 +176,10 @@ function srcDraw(pic) {
   const g = t.getContext('2d');
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'high';
+  // (v328 review: on white, as the picture is read: a JPEG keeps a cut-out PNG's clear parts as black, and a page made
+  // from it again after reopening had a black background)
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, t.width, t.height);
   if (k < 1) drawShrunk(g, pic, t.width, t.height);
   else g.drawImage(pic, 0, 0);
   return t;
@@ -459,6 +464,9 @@ function srcPlace(im, r, set) {
   // picture given up; the settings stay as saved, and a control changed finds the sections again from the picture
   // as before. Further off, it isn't the picture the sections came from)
   const fit = srcFit(set, W, H);
+  // (v328 review: placed by the legacy allowance, its settings are still the rounded ones: saved again as such,
+  // srcSettings, not as exact, or the next opening's 2 px allowance lost the picture)
+  _srcLegacy = !!(p && (p.W !== W || p.H !== H) && !(set && set.v >= 2));
   if (p && (p.W !== W || p.H !== H) && Math.abs(p.W - W) <= fit && Math.abs(p.H - H) <= fit) {
     p.gray = grayUp(p.gray, p.W, p.H, W, H);
     if (p.chroma) p.chroma = grayUp(p.chroma, p.W, p.H, W, H);
@@ -481,6 +489,7 @@ function srcPlace(im, r, set) {
   srcK = p.srcK;
   srcDims = null;
   if (p.bands !== undefined) edgeBands = p.bands;
+  bindBands = p.bind || null;
   // (the picture this guide was saved with: nothing to write again unless it's copied)
   _srcWrote = { id: curId, pic: pgOrig || srcImg };
   return true;

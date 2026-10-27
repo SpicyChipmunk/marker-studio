@@ -371,6 +371,21 @@ function nbOf(assign, q) {
 // (v318.26) The sections left white (whitePins) are left out of every laying, and made white again after it
 // (whiteApply): the one place each pattern, Shuffle, Mood, Blend, the Photo pattern and Recolour them too go through.
 function zoneRun(ids, build) {
+  const t0 = Date.now(),
+    a0 = _adjMs;
+  try {
+    return zoneRun1(ids, build);
+  } finally {
+    // (v328 review 2: how long the laying took, for the Mood pictures: 32-mood-pics, mpSlow, without working out
+    // which sections touch, done once a page. A laying of the plan decides; a Mood picture's only until one has, or
+    // when it's slower)
+    const ms = Date.now() - t0 - (_adjMs - a0);
+    if (!_mpQuiet || !_layMs || _layMs.l !== labels) _layMs = { l: labels, ms: ms };
+    else if (ms > _layMs.ms) _layMs.ms = ms;
+  }
+}
+function zoneRun1(ids, build) {
+  zoneRunFailed = [];
   if (!zones.length) {
     const ok = build(countedList().filter(notWhite)) !== false;
     whiteApply();
@@ -383,8 +398,8 @@ function zoneRun(ids, build) {
         return id !== zoneCur;
       })
       .concat(ids.indexOf(zoneCur) >= 0 ? [zoneCur] : []),
-    parts = {};
-  let ok = true;
+    parts = {},
+    failed = [];
   order.forEach(function (id) {
     // (as it was before this run while zoneWith finds the zone's extent from its sections: the zone laid before left
     // only its own in assignData, so every zone after the first was laid over the whole picture, v304)
@@ -403,6 +418,9 @@ function zoneRun(ids, build) {
         const src = parts[z] ? parts[z].assign : ids.indexOf(z) >= 0 ? null : prev && prev.assign;
         if (src && src[l]) zoneNb[l] = src[l];
       });
+      // (v328 review 2: Build guide, as for the zone being edited: a Temperature none of the markers have now, all of
+      // them instead, so another zone's can't keep the guide from being built)
+      if (zoneAllFallback && palette !== 'all' && !activePool().length) palette = 'all';
       let r;
       try {
         r = build(cl);
@@ -410,17 +428,30 @@ function zoneRun(ids, build) {
         zoneNb = null;
       }
       if (r === false) {
-        ok = false;
+        failed.push(id);
         return;
       }
       parts[id] = assignData;
     });
   });
+  // (v328 review: the zone being edited, or any at the first laying, that couldn't be laid leaves the plan as it was,
+  // not the others merged in and Build half done; review 2: another zone laid again only because the markers changed
+  // keeps what it had, and the rest are laid, as before)
+  zoneRunFailed = failed;
+  if (failed.length && (!prev || failed.indexOf(zoneCur) >= 0)) {
+    assignData = prev;
+    return false;
+  }
   assignData = zoneMerge(prev, parts, all);
   applyLocks();
   whiteApply();
-  return ok;
+  return true;
 }
+// (set by zoneRun: the zones other than the one being edited that couldn't be laid, and kept what they had; laid
+// again when the markers change, or the zone is edited)
+let zoneRunFailed = [],
+  // (set by assignNow, Build guide)
+  zoneAllFallback = false;
 // one assignment from the zones' parts (built now) and the rest of prev (the other zones' sections as they were)
 function zoneMerge(prev, parts, all) {
   const assign = {},
@@ -481,8 +512,9 @@ function zoneAll() {
 }
 // sections that stay in a Random zone among ids while the sections moved come and go: their markers as they are now,
 // to put back after the zone is laid again (a roll isn't taken again because a section left or joined)
+// (v328 review 2: with no zones left too, the last one deleted: Main is then the whole page, and kept as it is)
 function zoneStayRandom(ids, moved) {
-  if (!assignData || !zones.length) return null;
+  if (!assignData) return null;
   const A = assignData.assign,
     B = assignData.base || {},
     stay = {};

@@ -437,9 +437,36 @@ function scanHandle(text, loud) {
   // (the set's size isn't a code: a box's "120 Colors" had added Ohuhu 120, Black)
   let codes = String(text);
   const sizes = [];
+  // (v328 review: only on a line that names the set, its range or says its size: a 120 on a line of its own among a
+  // tray's codes, Ohuhu's Black, had gone from "Honolulu 120 Colors / R014 / 120 / Y28" without a word)
+  const setLine = /\b(honolulu|ohuhu|copic|ciao|sketch|classic|set|colou?rs?|pcs|pieces|count|ct|pack)\b/i;
   new Set(sets.flat().map((i) => (MARKER_SETS[i].n.match(/\d+/) || [''])[0])).forEach(function (z) {
     const was = codes;
-    if (z) codes = codes.replace(new RegExp('(^|[^A-Za-z0-9-])' + z + '(?![A-Za-z0-9])', 'g'), '$1');
+    if (z) {
+      // (v328 review 2: or the size alone on its line, beside a line that names the set or says colours: a box's
+      // "HONOLULU / 120 / COLORS")
+      const parts = codes.split(/(\r?\n)/),
+        lines = parts.filter(function (x, i) {
+          return !(i % 2);
+        }),
+        // (beside a line naming the set that doesn't say the size itself: a tray's lone 120 under "Honolulu 120
+        // Colors" is Black)
+        alone = new RegExp('^\\s*' + z + '\\s*$'),
+        inName = new RegExp('(^|[^A-Za-z0-9-])' + z + '(?![A-Za-z0-9])'),
+        nameNb = function (j) {
+          return j >= 0 && j < lines.length && setLine.test(lines[j]) && !inName.test(lines[j]);
+        };
+      codes = parts
+        .map(function (ln, i) {
+          if (i % 2) return ln;
+          const k = i / 2;
+          if (setLine.test(ln))
+            return ln.replace(new RegExp('(^|[^A-Za-z0-9-])' + z + '(?![A-Za-z0-9])', 'g'), '$1');
+          if (alone.test(ln) && (nameNb(k - 1) || nameNb(k + 1))) return '';
+          return ln;
+        })
+        .join('');
+    }
     // (said as colours, "120 COLORS", it's the set's size for sure: no cap offered)
     if (
       codes !== was &&

@@ -402,15 +402,26 @@ async function canvasesToPDF(cvs, PW, PH, blob, prog, jpg) {
   push('2 0 obj\n<< /Type /Pages /Kids [' + kids + '] /Count ' + nP + ' >>\nendobj\n');
   // (each page's packing started as soon as it's drawn; written in order, one behind)
   let pend = null;
-  for (let i = 0; i <= nP; i++) {
-    let job = null;
-    if (i < nP) {
-      if (prog) prog(i + 1, nP);
-      if (prog || i) await pdfBreath();
-      job = pdfPagePack(typeof cvs[i] === 'function' ? cvs[i]() : cvs[i], !!(jpg && jpg(i)));
+  try {
+    for (let i = 0; i <= nP; i++) {
+      let job = null;
+      if (i < nP) {
+        if (prog) prog(i + 1, nP);
+        if (prog || i) await pdfBreath();
+        job = pdfPagePack(typeof cvs[i] === 'function' ? cvs[i]() : cvs[i], !!(jpg && jpg(i)));
+      }
+      if (pend) {
+        const p0 = pend;
+        pend = job;
+        put(i - 1, await p0);
+      } else pend = job;
     }
-    if (pend) put(i - 1, await pend);
-    pend = job;
+  } catch (e) {
+    // (v328 review 2: a page that failed part-way, at the canvas limit on an iPad: the next page's packing let go
+    // of, and the pictures the pages not drawn yet kept, so Try again has the room it didn't)
+    if (pend && pend.catch) pend.catch(function () {});
+    if (typeof cvs.dispose === 'function') cvs.dispose();
+    throw e;
   }
   function put(i, pk) {
     const w = pk.w,
@@ -505,12 +516,23 @@ let pdfLabels = 'codes',
   // (Tone lines: the dashed lines where one tone hands over to the next, on the colouring page with shading. Its own
   // choice here, not the screen's Show tone lines: on paper they're most sections' only mark, v304)
   pdfToneLines = true,
-  pdfWhat = 'page',
+  // (v328) Page to colour: the page with no labels, then the reference, the shading map, the close-ups and the key.
+  // Labelled page ('page', Page + key before): the codes on the page coloured on. For your own page ('ref', Key +
+  // reference before): no page to colour
+  pdfWhat = 'colour',
+  // (v328) Page to colour's Only the page (11.7's blank copy), not remembered; the shading map (P5), remembered
+  pdfOnly = false,
+  pdfMap = true,
   // (v325: a photo-made page's lines print light grey, to all but go under the colour, unless Darker lines is ticked)
   pdfPpDark = false,
   pdfS = 1;
 // (its light lines: about 40% grey, 2 px at the page's 200 dots an inch, about 0.25 mm)
 const PP_LINE = [152, 154, 152];
+// (v328, decision 12) the tone lines on a page coloured on: thin short dashes, 18% grey, to follow while colouring and
+// all but gone under the ink (0.8 pt, 4 pt dashes, 41% grey before: they showed through). Points: thick, on, off
+const PDF_TONE = { t: 0.5, on: 1.5, off: 2.5, ink: [209, 209, 209] };
+// (v328, P5) the shading map's greys for highlight, base and shadow (shadeZone's 0, 1, 2)
+const PDF_MAP_GREY = [255, 217, 153];
 const LETTER_LANDS = ['US', 'CA', 'MX', 'PH', 'CL', 'CO', 'VE', 'PR'];
 function paperDefault() {
   let ls = [];
@@ -533,7 +555,10 @@ try {
   if (l === 'numbers' || l === 'none') pdfLabels = l;
   pdfDark = localStorage.getItem('ms-pdf-dark') === '1';
   pdfToneLines = localStorage.getItem('ms-pdf-lines') !== '0';
-  pdfWhat = localStorage.getItem('ms-pdf-what') === 'ref' ? 'ref' : 'page';
+  const pw = localStorage.getItem('ms-pdf-what');
+  // (a remembered Page + key stays Labelled page; nothing remembered, Page to colour)
+  pdfWhat = pw === 'ref' || pw === 'page' ? pw : 'colour';
+  pdfMap = localStorage.getItem('ms-pdf-map') !== '0';
   pdfPpDark = localStorage.getItem('ms-pdf-pplines') === '1';
 } catch (_) {
   paper = paperDefault();
@@ -544,8 +569,9 @@ const PRINT_OPTS = [
     'Pages',
     'What to print',
     [
-      ['page', 'Page + key'],
-      ['ref', 'Key + reference'],
+      ['colour', 'Page to colour'],
+      ['page', 'Labelled page'],
+      ['ref', 'For your own page'],
       ['strip', 'Test strip'],
     ],
   ],
@@ -609,7 +635,17 @@ const PRINT_PV = (function () {
       );
     };
   return {
-    page: pg(shape + key(27, 2)),
+    // (v328: the page with no labels and, behind it, the reference)
+    colour: pg(
+      '<rect x="8" y="4" width="18" height="23" rx="1.5" fill="currentColor" opacity=".18"/>' +
+        shape +
+        key(30, 1),
+    ),
+    page: pg(
+      shape +
+        '<text x="15" y="17.5" text-anchor="middle" font-size="6" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor" opacity=".6">R1</text>' +
+        key(27, 2),
+    ),
     // (v318.1: the picture in colour with its codes, then the key)
     ref: pg(
       '<path d="M6 19 C5 11 11 6 16 7 C23 8 25 14 23 19 C21 24 9 25 6 19Z" fill="currentColor" opacity=".35" stroke="currentColor" stroke-width="1.3"/><text x="15" y="17.5" text-anchor="middle" font-size="6" font-family="system-ui,sans-serif" font-weight="700" fill="currentColor">R1</text>' +
@@ -634,7 +670,12 @@ const PRINT_PV = (function () {
   };
 })();
 function printOptVal(k) {
-  return k === 'pwhat' ? pdfWhat : k === 'plabels' ? pdfLabels : paper;
+  return k === 'pwhat' ? pdfWhat : k === 'plabels' ? pdfLab() : paper;
+}
+// (v328) the labels as printed: Page to colour's reference always has them (None would leave no codes anywhere), so a
+// remembered None reads as Codes there
+function pdfLab() {
+  return pdfWhat === 'colour' && pdfLabels === 'none' ? 'codes' : pdfLabels;
 }
 // The Print sheet (Share › Print…), laid out like the swatch chart's: each option over its row of choices and the
 // checkboxes, then a one-line summary that follows the choices over Cancel / Download PDF ("Save PDF" where the
@@ -685,13 +726,19 @@ function openPrint() {
     '</div><div class="sfprtop"><button type="button" id="sfPrThumb" class="sfprthumb" aria-label="Preview the pages"></button>' +
     '<div id="sfPrOrd" class="sfprord"></div></div><div class="sfshhint" id="sfPrWhat">' +
     printWhatNote() +
-    '</div><div class="sfprchk"><label class="sfchk"><input type="checkbox" id="sfPdfDark"' +
+    // (v328: markers soak through copy paper, so whatever's on the back is spoiled)
+    '</div><div class="sfshhint" id="sfPrSide">Print one-sided: markers soak through the paper.</div>' +
+    '<div class="sfprchk"><label class="sfchk" id="sfPdfOnlyL"><input type="checkbox" id="sfPdfOnly"' +
+    (pdfOnly ? ' checked' : '') +
+    '> Only the page</label><label class="sfchk" id="sfPdfDarkL"><input type="checkbox" id="sfPdfDark"' +
     (pdfDark ? ' checked' : '') +
     '> Darker labels</label>' +
     (shadeUse().on
       ? '<label class="sfchk"><input type="checkbox" id="sfPdfLines"' +
         (pdfToneLines ? ' checked' : '') +
-        '> Tone lines</label><div class="sfshhint" id="sfPrShNote">' +
+        '> Faint tone lines on the page</label><label class="sfchk"><input type="checkbox" id="sfPdfMap"' +
+        (pdfMap ? ' checked' : '') +
+        '> Shading map</label><div class="sfshhint" id="sfPrShNote">' +
         printShNote() +
         '</div>'
       : '<label class="sfchk"><input type="checkbox" id="sfPdfBlend"' +
@@ -726,7 +773,7 @@ function openPrint() {
       // (the paper chosen brought into view and focused, so its row is where the keyboard is too)
       const pb = el.querySelector('[data-paper][aria-pressed="true"]') || el.querySelector('[data-paper]');
       if (pb) {
-        pb.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        pb.scrollIntoView({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
         pb.focus({ preventScroll: true });
       }
     } else if (e.target.closest('[data-pr="cancel"]')) closeSheet();
@@ -737,6 +784,8 @@ function openPrint() {
   el.addEventListener('change', function (e) {
     if (e.target.id === 'sfPdfDark') printOptSet('dark', e.target.checked);
     else if (e.target.id === 'sfPdfLines') printOptSet('lines', e.target.checked);
+    else if (e.target.id === 'sfPdfMap') printOptSet('map', e.target.checked);
+    else if (e.target.id === 'sfPdfOnly') printOptSet('only', e.target.checked);
     else if (e.target.id === 'sfPdfPpDark') printOptSet('pplines', e.target.checked);
     else if (e.target.id === 'sfPdfBlend') {
       pdfBlend = e.target.checked;
@@ -766,36 +815,76 @@ function printSummary() {
     esc(pp ? pp[1] : paper) +
     '</button>' +
     ' · ' +
-    (pdfWhat === 'ref'
-      ? 'Key + reference' +
-        (pdfLabels === 'none' ? '' : ' · ' + { codes: 'Codes', numbers: 'Numbers' }[pdfLabels] + ' in colour')
-      : pdfWhat === 'strip'
-        ? 'Test strip'
-        : { codes: 'Codes', numbers: 'Numbers', none: 'No labels' }[pdfLabels]) +
+    (pdfWhat === 'colour'
+      ? pdfOnly
+        ? 'Only the page to colour'
+        : // (the default: only its labels, so the summary stays one line on a small phone)
+          { codes: 'Codes', numbers: 'Numbers' }[pdfLab()]
+      : pdfWhat === 'ref'
+        ? 'For your own page' +
+          (pdfLabels === 'none'
+            ? ''
+            : ' · ' + { codes: 'Codes', numbers: 'Numbers' }[pdfLabels] + ' in colour')
+        : pdfWhat === 'strip'
+          ? 'Test strip'
+          : 'Labelled page · ' + { codes: 'Codes', numbers: 'Numbers', none: 'No labels' }[pdfLabels]) +
     // (v318 review: a wide picture's colouring page is printed on its side, pdfLandFirst; the paper as set by the
     // count just made)
-    (printPic() && n && pdfLandFirst(PX(pdfS < 1 ? 30 : 36)) ? ' · page 1 landscape' : '')
+    (printPic() && n && pdfLandFirst(PX(pdfS < 1 ? 30 : 36)) ? ' · ' + printLand() + ' landscape' : '')
     // (v318.27: the close-ups note, its second line since v284, is under Pages now: printOptsSync, #sfPrWhat)
   );
 }
+// (v328) the pages on their side, from the count just made: page 1, or with Page to colour its reference and the
+// shading map too ("pages 1–3")
+function printLand() {
+  let n = 0;
+  while (n < _pdfKinds.length && _pdfKinds[n] && _pdfKinds[n].land) n++;
+  return n > 1 ? 'pages 1–' + n : 'page 1';
+}
 // (v318.1) whether the PDF's page 1 is the labelled picture: Page + key's to colour on, or Key + reference's in colour
 function printPic() {
-  return pdfWhat === 'page' || (pdfWhat === 'ref' && pdfLabels !== 'none');
+  return pdfWhat === 'colour' || pdfWhat === 'page' || (pdfWhat === 'ref' && pdfLabels !== 'none');
+}
+// (v328) whether this print has the shading map: a shaded guide, the map ticked, a picture printed (not the test
+// strip, nor Only the page)
+function printMap() {
+  return (
+    pdfMap &&
+    pdfWhat !== 'strip' &&
+    !(pdfWhat === 'colour' && pdfOnly) &&
+    shadeUse().on &&
+    // (as the last count laid the pages out: shading that leaves every section flat has no map, shadePrep)
+    (!_pdfKinds.length ||
+      _pdfKinds.some(function (k) {
+        return k.k === 'map';
+      }))
+  );
 }
 // what the Pages choice prints, said under it
 function printWhatNote() {
-  const w = pdfLabels === 'numbers' ? 'numbers' : 'codes';
+  const w = pdfLab() === 'numbers' ? 'numbers' : 'codes',
+    mp = printMap() ? ', the shading map' : '';
+  if (pdfWhat === 'colour')
+    return pdfOnly
+      ? 'Only the page to colour, unlabelled: a blank copy to colour again.'
+      : 'The page to colour, unlabelled; then your picture in colour with dark ' +
+          w +
+          ' to read beside it' +
+          mp +
+          ', and the colour key.';
+  // (v328 review: the shading map named where it's printed, as Page to colour's says)
+  const mt = printMap() ? ', then the shading map and the colour key' : ', then the colour key';
   return pdfWhat === 'ref'
     ? pdfLabels === 'none'
-      ? 'Your picture in colour beside the colour key, for colouring your own page.'
-      : 'Your picture in colour with dark ' +
-        w +
-        ', then the colour key: to read beside the page you’re colouring.'
+      ? 'Your picture in colour beside the colour key' +
+        (printMap() ? ', then the shading map' : '') +
+        ', for colouring your own page.'
+      : 'Your picture in colour with dark ' + w + mt + ': to read beside the page you’re colouring.'
     : pdfWhat === 'strip'
       ? 'A box for each marker to try on your paper first.'
       : pdfLabels === 'none'
-        ? 'Your picture to colour on, unlabelled, then the colour key.'
-        : 'Your picture with ' + (pdfDark ? 'dark ' : 'light ') + w + ' to colour on, then the colour key.';
+        ? 'Your picture to colour on, unlabelled' + mt + '.'
+        : 'Your picture with ' + (pdfDark ? 'dark ' : 'light ') + w + ' to colour on' + mt + '.';
 }
 // what the close-ups hold, for the Print sheet: how many small sections on how many pages, and any too small even there
 // (v318.27: under Pages, with room for the whole note: v289's short form for a small phone's foot is gone)
@@ -803,31 +892,59 @@ function printCloseNote() {
   const pl = function (n, one, more) {
     return n + ' ' + (n === 1 ? one : more);
   };
+  // (v328: on Page to colour, the labels and their dots are on the reference, page 2)
+  const p1 = pdfWhat === 'colour' ? 'page 2' : 'page 1';
   let t = _pdfCloseN
     ? pl(_pdfCloseN, 'small section is', 'small sections are') +
       ' on ' +
       pl(_pdfCloseP, 'close-up page.', 'close-up pages.') +
-      (pdfLabels === 'codes'
+      (pdfLab() === 'codes'
         ? _pdfCloseN === 1
-          ? ' Numbers might fit it on page 1.'
-          : ' Numbers would fit more of them on page 1.'
+          ? ' Numbers might fit it on ' + p1 + '.'
+          : ' Numbers would fit more of them on ' + p1 + '.'
         : '')
     : '';
   if (_pdfLeft)
     t +=
       (t ? ' ' : '') +
       (t ? pl(_pdfLeft, 'more has', 'more have') : pl(_pdfLeft, 'small section has', 'small sections have')) +
-      ' only a dot on page 1: see ' +
+      ' only a dot on ' +
+      p1 +
+      ': see ' +
       (_pdfLeft === 1 ? 'it' : 'them') +
       ' in the app' +
-      (pdfLabels === 'codes' ? ', or print with Numbers.' : '.');
+      (pdfLab() === 'codes' ? ', or print with Numbers.' : '.');
   return t;
 }
 // (the test strip has no picture: its rows are the tones to try)
 function printShNote() {
-  return pdfWhat === 'strip'
-    ? 'Shading is on, so each colour’s row has a box for its tones, as the guide lays them.'
-    : 'Shading is on, so the PDF shows where each tone goes and the key lists each colour’s tones.';
+  if (pdfWhat === 'strip')
+    return 'Shading is on, so each colour’s row has a box for its tones, as the guide lays them.';
+  const mp = printMap();
+  // (v328: Only the page: page 1 alone, no key, reference or map)
+  if (pdfWhat === 'colour' && pdfOnly)
+    return pdfToneLines
+      ? 'Faint dashed lines on the page where one tone hands over to the next.'
+      : 'The page is lines only.';
+  // (v328: For your own page has no page to colour, so no tone lines)
+  if (pdfWhat === 'ref')
+    return mp
+      ? 'Shading is on: the shading map shows where each tone goes, and the key lists each colour’s tones.'
+      : 'Shading is on: your picture in colour shows the tones, and the key lists them.';
+  if (pdfToneLines)
+    return (
+      'Faint dashed lines on the page where one tone hands over to the next' +
+      (mp ? '; the shading map shows them at full strength.' : '; the key lists each colour’s tones.')
+    );
+  // (v328 review: the Labelled page has its small H and S circles still, without the dashed lines; Page to colour's
+  // page is lines only)
+  if (pdfWhat === 'page')
+    return mp
+      ? 'No tone lines: the small circles on the page show where the tones go, and the shading map shows them all.'
+      : 'No tone lines: the small circles on the page show where the tones go, where there’s room.';
+  return mp
+    ? 'The page is lines only: follow the shading map for the tones.'
+    : 'No tone lines or shading map: the tones are only in the colour reference.';
 }
 function printOptsSync() {
   const sc = document.getElementById('sfSheet');
@@ -839,39 +956,54 @@ function printOptsSync() {
     x.setAttribute('aria-pressed', on ? 'true' : 'false');
     if (k === 'plabels') x.disabled = pdfWhat === 'strip';
   });
-  const dk = document.getElementById('sfPdfDark');
+  // (v328: Darker labels only where the labels are on the page coloured on; Only the page only for Page to colour;
+  // None isn't offered for Page to colour, whose reference needs its labels)
+  const dl = document.getElementById('sfPdfDarkL'),
+    dk = document.getElementById('sfPdfDark');
+  if (dl) dl.hidden = pdfWhat !== 'page';
   if (dk) {
     dk.disabled = pdfWhat !== 'page' || pdfLabels === 'none';
     dk.parentNode.classList.toggle('off', dk.disabled);
   }
-  // (only the colouring page has tone lines)
+  const ol = document.getElementById('sfPdfOnlyL');
+  if (ol) ol.hidden = pdfWhat !== 'colour';
+  sc.querySelectorAll('[data-plabels="none"]').forEach(function (x) {
+    x.disabled = pdfWhat === 'strip' || pdfWhat === 'colour';
+  });
+  // (only a page coloured on has tone lines; the map wherever there's a picture)
   const tl = document.getElementById('sfPdfLines');
   if (tl) {
-    tl.disabled = pdfWhat !== 'page';
+    tl.disabled = pdfWhat !== 'page' && pdfWhat !== 'colour';
     tl.parentNode.classList.toggle('off', tl.disabled);
+  }
+  const mpk = document.getElementById('sfPdfMap');
+  if (mpk) {
+    mpk.disabled = pdfWhat === 'strip' || (pdfWhat === 'colour' && pdfOnly);
+    mpk.parentNode.classList.toggle('off', mpk.disabled);
   }
   // (and the light lines, v325)
   const pl = document.getElementById('sfPdfPpDark');
   if (pl) {
-    pl.disabled = pdfWhat !== 'page';
+    pl.disabled = pdfWhat !== 'page' && pdfWhat !== 'colour';
     pl.parentNode.classList.toggle('off', pl.disabled);
   }
   const pph = document.getElementById('sfPrPp');
   if (pph) pph.innerHTML = ppPaperHTML();
-  const shn = document.getElementById('sfPrShNote');
-  if (shn) shn.textContent = printShNote();
   const sm = document.getElementById('sfPrSum');
   if (sm) {
     sm.classList.remove('empty');
     sm.innerHTML = printSummary();
   }
+  // (after the summary's count of the pages: the shading map is said when it prints, printMap)
+  const shn = document.getElementById('sfPrShNote');
+  if (shn) shn.textContent = printShNote();
   // (v318.27) what Pages prints, and under it what the close-ups hold: the close-ups note was the summary's second line
   // in the foot, which with Paper took the phone's first screen. After the summary: its dry run counts the close-ups
   const wn = document.getElementById('sfPrWhat');
   if (wn)
     wn.innerHTML =
       esc(printWhatNote()) +
-      (printPic() && (_pdfCloseN || _pdfLeft)
+      (printPic() && !(pdfWhat === 'colour' && pdfOnly) && (_pdfCloseN || _pdfLeft)
         ? '<br><span class="sfprclose">' + esc(printCloseNote()) + '</span>'
         : '');
   // (after the summary: its dry run noted each page's kind, _pdfKinds)
@@ -888,7 +1020,9 @@ function printThumbSoon() {
   clearTimeout(_prThT);
   const el = document.getElementById('sfPrThumb');
   if (!el) return;
-  const sig = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark].join('|');
+  const sig = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark, pdfOnly, pdfMap].join(
+    '|',
+  );
   el.hidden = pdfWhat === 'strip';
   if (el.hidden || (sig === _prThSig && el.firstChild)) return;
   el.classList.add('wait');
@@ -963,6 +1097,9 @@ let _pv = null;
 function printPreview() {
   const ov = document.getElementById('prevOverlay');
   if (!ov || !assignData || exportPDF.busy || pdfWhat === 'strip' || _pv) return;
+  // (v328 review: its button says what the sheet's does: Print or save PDF on an iPad or iPhone)
+  const pb = document.getElementById('prevPdf');
+  if (pb && typeof swGoLabel === 'function') pb.textContent = swGoLabel();
   let pages = null;
   const keep = [];
   _pdfDry = false;
@@ -1019,7 +1156,9 @@ function pvShow(i) {
   const kd = _pv.kinds[i] || {},
     W0 = {
       pic: 'Your picture',
-      ref: 'Your picture',
+      // (v328: Page to colour's reference, and the shading map)
+      ref: 'Reference',
+      map: 'Shading map',
       close: 'Close-ups',
       key: 'Colour key',
       keymore: 'Colour key',
@@ -1100,7 +1239,8 @@ function printOrder(K) {
   const P = PAPERS[paper] || PAPERS.letter,
     W0 = {
       pic: 'Picture',
-      ref: 'Picture',
+      ref: 'Reference',
+      map: 'Shading map',
       close: 'Close-ups',
       key: 'Key',
       keymore: 'Key',
@@ -1110,16 +1250,19 @@ function printOrder(K) {
     say = function (k) {
       const w = k.lab === 'numbers' ? 'numbers' : 'codes';
       return k.k === 'pic'
-        ? 'your picture ' + (k.lab === 'none' ? 'unlabelled' : 'with ' + w) + (k.land ? ', on its side' : '')
-        : k.k === 'ref'
-          ? 'your picture in colour with ' + w + (k.land ? ', on its side' : '')
-          : k.k === 'close'
-            ? 'close-ups'
-            : k.k === 'refkey'
-              ? 'your picture in colour beside the colour key'
-              : k.k === 'strip'
-                ? 'the test strip'
-                : 'the colour key';
+        ? (k.lab === 'none' ? 'your picture unlabelled, to colour' : 'your picture with ' + w) +
+            (k.land ? ', on its side' : '')
+        : k.k === 'map'
+          ? 'the shading map' + (k.land ? ', on its side' : '')
+          : k.k === 'ref'
+            ? 'your picture in colour with ' + w + (k.land ? ', on its side' : '')
+            : k.k === 'close'
+              ? 'close-ups'
+              : k.k === 'refkey'
+                ? 'your picture in colour beside the colour key'
+                : k.k === 'strip'
+                  ? 'the test strip'
+                  : 'the colour key';
     },
     gs = [];
   K.forEach(function (k, i) {
@@ -1168,7 +1311,7 @@ function printOptSet(k, v) {
   let key, val;
   if (k === 'pwhat') {
     // (the test strip is printed once in a while, so it isn't stored: the app opens next time on the choice before it)
-    pdfWhat = v === 'ref' || v === 'strip' ? v : 'page';
+    pdfWhat = v === 'ref' || v === 'strip' || v === 'page' ? v : 'colour';
     if (pdfWhat !== 'strip') {
       key = 'ms-pdf-what';
       val = pdfWhat;
@@ -1185,6 +1328,13 @@ function printOptSet(k, v) {
     pdfToneLines = !!v;
     key = 'ms-pdf-lines';
     val = pdfToneLines ? '1' : '0';
+  } else if (k === 'map') {
+    pdfMap = !!v;
+    key = 'ms-pdf-map';
+    val = pdfMap ? '1' : '0';
+  } else if (k === 'only') {
+    // (not remembered: a blank copy is printed once in a while)
+    pdfOnly = !!v;
   } else if (k === 'pplines') {
     pdfPpDark = !!v;
     key = 'ms-pdf-pplines';
@@ -1275,7 +1425,7 @@ function pdfLazy(pages, keep) {
   keep.forEach(function (c) {
     if (!last.has(c)) freeCanvas(c);
   });
-  return pages.map(function (P, i) {
+  const out = pages.map(function (P, i) {
     return function () {
       const c = pdfReplay(P.c.ops, P.w, P.h);
       P.c.ops = null;
@@ -1285,6 +1435,17 @@ function pdfLazy(pages, keep) {
       return c;
     };
   });
+  // (v328 review 2: the writing stopped part-way: what the pages left kept, let go)
+  out.dispose = function () {
+    pages.forEach(function (P) {
+      if (P.c) P.c.ops = null;
+    });
+    last.forEach(function (j, a) {
+      freeCanvas(a);
+    });
+    last.clear();
+  };
+  return out;
 }
 // (pp: the paper the PDF was started on, for pages drawn while it is written: Paper can be changed meanwhile, v304)
 function pdfPage(pp, land) {
@@ -1731,7 +1892,14 @@ function pdfArt(coloured, sh, lines) {
     d[j + 3] = 255;
   }
   if (!coloured && sh && lines) {
-    shadeLinesDraw(sh, null, { buf: d, t: lines.t, dash: lines.dash, ink: [150, 150, 150] });
+    shadeLinesDraw(sh, null, {
+      buf: d,
+      t: lines.t,
+      dash: lines.dash,
+      on: lines.on,
+      off: lines.off,
+      ink: lines.ink || [150, 150, 150],
+    });
     // (v308: none under the labels, lines.clear: their boxes; the line art stays)
     (lines.clear || []).forEach(function (b) {
       const x0 = Math.max(0, Math.floor(b[0])),
@@ -1743,7 +1911,132 @@ function pdfArt(coloured, sh, lines) {
     });
   }
   g.putImageData(im, 0, 0);
+  // (v328 review: the ink its lines are, for the close-ups drawn sharp from it: cuSharp)
+  a._ink = ink;
   return a;
+}
+// (v328) the key's shading how-to, as this print shows the tones: shadeHowto speaks of the Labelled page's dashed
+// lines and H and S circles; Page to colour has faint lines (if ticked) and the circles are on its reference, For
+// your own page has neither; the shading map, when printed, shows them all
+// (v328 review) the shading map's legend: no highlight said where there's none (shadows only)
+function pdfMapLegend() {
+  const u = shadeUse();
+  return u.hp || u.hm || u.hb
+    ? 'white: highlight · light grey: base · grey: shadow'
+    : 'light grey: base · grey: shadow · white: paper';
+}
+function pdfHowto() {
+  const re =
+      /(?:The d|D)ashed lines and (?:the )?small (H and S|S) circles on the colouring page show where (each goes|the shadow starts)|The small (H and S|S) circles show where (each goes|the shadow starts), where there\u2019s room/,
+    t = shadeHowto(!pdfToneLines),
+    mp = pdfMap && !(pdfWhat === 'colour' && pdfOnly);
+  if (pdfWhat === 'page') return mp ? t + ' The shading map shows every tone at full strength.' : t;
+  return t.replace(re, function (all, a, b, c, d) {
+    const what = b || d;
+    if (mp)
+      return (
+        'The shading map shows where ' +
+        what +
+        (pdfWhat === 'colour' && pdfToneLines ? ', as do faint dashed lines on the page to colour' : '')
+      );
+    if (pdfWhat === 'colour')
+      return (
+        (pdfToneLines ? 'Faint dashed lines on the page to colour and the' : 'The') +
+        ' small ' +
+        (a || c) +
+        ' circles on the reference show where ' +
+        what
+      );
+    return 'Your picture in colour shows where ' + what;
+  });
+}
+// (v328 review) the key's how-to as printed: For your own page with no labels draws no ☀ on its picture or map
+function pdfHowtoNow() {
+  const t = pdfHowto();
+  return pdfWhat === 'ref' && pdfLabels === 'none'
+    ? t.replace('; the \u2600 marks where the light comes from.', '.')
+    : t;
+}
+// (v328) the tone lines' size on a page coloured on, in the guide's own pixels (the page draws the picture k times as
+// big): PDF_TONE's thin short dashes, at least a pixel each
+function pdfToneSpec(k) {
+  return {
+    // (rounded once, from points to the guide's pixels: rounded to the page's pixels first, a small guide's 0.5 pt
+    // line came out nearly 0.9 pt)
+    t: Math.max(1, Math.round((((PDF_TONE.t * pdfS) / 72) * PDPI) / k)),
+    dash: Math.max(2, Math.round((((PDF_TONE.on * pdfS) / 72) * PDPI) / k)),
+    on: Math.max(1, Math.round((((PDF_TONE.on * pdfS) / 72) * PDPI) / k)),
+    off: Math.max(2, Math.round((((PDF_TONE.off * pdfS) / 72) * PDPI) / k)),
+    ink: PDF_TONE.ink,
+  };
+}
+// (v328, P5) the shading map's picture at the guide's size: the lines as the colouring page's, and in each section
+// its tones as greys (PDF_MAP_GREY: highlight white, base light grey, shadow grey); a flat section all base, the
+// paper and the sections left white white
+function pdfMapArt(sh) {
+  const a = document.createElement('canvas');
+  a.width = W;
+  a.height = H;
+  const g = a.getContext('2d'),
+    im = g.createImageData(W, H),
+    d = im.data,
+    asg = assignData.assign,
+    db = outDebris(),
+    // (the map's lines always dark: nobody colours on it, and a photo-made page's light grey is its shadow's grey)
+    ink = LINE;
+  for (let q = 0, j = 0, n = W * H; q < n; q++, j += 4) {
+    const l = labels[q];
+    let v = 255;
+    if (l === -1 && !(db && db[q])) {
+      d[j] = ink[0];
+      d[j + 1] = ink[1];
+      d[j + 2] = ink[2];
+      d[j + 3] = 255;
+      continue;
+    } else if (l > 0 && asg[l])
+      v =
+        sh && sh.V[q] && sh.tone[l]
+          ? PDF_MAP_GREY[shadeZone(sh.tone[l], (sh.V[q] - 1) / 254)]
+          : PDF_MAP_GREY[1];
+    d[j] = d[j + 1] = d[j + 2] = v;
+    d[j + 3] = 255;
+  }
+  g.putImageData(im, 0, 0);
+  return a;
+}
+// the light's sun where it was placed (pdfSunAt), on a page drawn at the guide's own pixels times k
+function pdfSunDraw(g, sun, k) {
+  const sr = PX(6) / k,
+    sx = sun.x,
+    sy = sun.y;
+  g.lineCap = 'round';
+  g.strokeStyle = '#fff';
+  g.lineWidth = PX(3.2) / k;
+  for (let a = 0; a < 8; a++) {
+    const t = (a * Math.PI) / 4;
+    g.beginPath();
+    g.moveTo(sx + Math.cos(t) * sr * 1.45, sy + Math.sin(t) * sr * 1.45);
+    g.lineTo(sx + Math.cos(t) * sr * 2, sy + Math.sin(t) * sr * 2);
+    g.stroke();
+  }
+  g.beginPath();
+  g.arc(sx, sy, sr + PX(1.2) / k, 0, 6.283);
+  g.fillStyle = '#fff';
+  g.fill();
+  g.strokeStyle = '#666';
+  g.lineWidth = PX(1) / k;
+  for (let a = 0; a < 8; a++) {
+    const t = (a * Math.PI) / 4;
+    g.beginPath();
+    g.moveTo(sx + Math.cos(t) * sr * 1.45, sy + Math.sin(t) * sr * 1.45);
+    g.lineTo(sx + Math.cos(t) * sr * 2, sy + Math.sin(t) * sr * 2);
+    g.stroke();
+  }
+  g.beginPath();
+  g.arc(sx, sy, sr, 0, 6.283);
+  g.fillStyle = '#fff';
+  g.fill();
+  g.stroke();
 }
 // ---- zones on the key's picture, when colours' tones differ by zone (the key's "in Bell" lines): each zone that has
 // such a line outlined in its own colour, with its name, so the lines can be followed on paper (Main is the rest)
@@ -2340,7 +2633,9 @@ function cuSharp(art, cr, dw, dh) {
       oh = Math.max(1, Math.round(dh));
     if (ow * oh > 16e6) return null;
     if (!art._im) art._im = art.getContext('2d').getImageData(0, 0, W, H);
-    const im = sharpPaint(art._im, cr, ow, oh, LINE);
+    // (the lines' own ink: a photo-made page's are light grey, and taken for drawn-over against black, its close-ups
+    // had never been drawn sharp)
+    const im = sharpPaint(art._im, cr, ow, oh, art._ink || LINE);
     if (!im) return null;
     const c = document.createElement('canvas');
     c.width = ow;
@@ -2538,7 +2833,14 @@ function buildPDFPages(dry, lazy) {
     if (pdfWhat === 'strip') return testStripPages(!!dry, !!lazy);
     if (!lazy || dry) return _buildPDF(!!dry);
     _pdfRec = { keep: [] };
-    const pages = _buildPDF(false);
+    let pages;
+    try {
+      pages = _buildPDF(false);
+    } catch (e) {
+      // (v328 review 2: laying out failed part-way, at the canvas limit on an iPad: what it kept let go of)
+      _pdfRec.keep.forEach(freeCanvas);
+      throw e;
+    }
     return pdfLazy(pages, _pdfRec.keep);
   } finally {
     _pdfDry = false;
@@ -2601,13 +2903,21 @@ function _buildPDF(dry) {
       return oneB ? '' : bTag(c.brand) + ' ';
     },
     nMk = mkCount(rows.length, oneB, withShade ? null : 0);
-  const ref = pdfWhat === 'ref',
-    // (v318.1) Key + reference with labels: page 1 is the picture in colour with near-black codes, to read beside
-    // the page being coloured (no one colours on it, so dark: Page + key's light labels are for colouring on), its
-    // small sections in close-ups as Page + key's; with no labels, the one page of reference and key as before
-    refPic = ref && pdfLabels !== 'none',
-    refOne = ref && !refPic,
-    lab = refOne ? 'none' : pdfLabels,
+  // (v328) Page to colour: the reference as For your own page prints it, with the page to colour before it, the same
+  // size and in the same place on the paper; Only the page keeps that page alone
+  const colr = pdfWhat === 'colour',
+    only = colr && pdfOnly,
+    // (v318.1) For your own page with labels: page 1 is the picture in colour with near-black codes, to read beside
+    // the page being coloured (no one colours on it, so dark: the Labelled page's light labels are for colouring on),
+    // its small sections in close-ups as the Labelled page's; with no labels, the one page of reference and key
+    refPic = colr || (pdfWhat === 'ref' && pdfLabels !== 'none'),
+    refOne = pdfWhat === 'ref' && !refPic,
+    lab = refOne ? 'none' : pdfLab(),
+    // (v328, P5) the shading map, after the full-page sheets
+    mapOn = withShade && !only && pdfMap,
+    // (where the reference is, and the page the close-ups start on)
+    refPg = colr ? 2 : 1,
+    closeFirst = (colr ? 1 : 0) + 1 + (mapOn && !refOne ? 1 : 0) + 1,
     nums = lab === 'numbers',
     num = {};
   // (v308: a marker's number is its place in colouring order, lightest first, as the key's ORDER was: with Numbers
@@ -2666,23 +2976,40 @@ function _buildPDF(dry) {
   // (the sections with no room on page 1, and those of them a close-up labels)
   const small = {},
     shown = {};
+  let p0 = null,
+    pMap = null;
   if (!refOne) {
-    const p1 = pdfPage(null, pdfLandFirst(m)),
+    const land1 = pdfLandFirst(m),
+      p1 = pdfPage(null, land1),
       g1 = p1.g,
       // (page 1's own width for the picture and its lines: on its side it's wider than the other pages)
       bw1 = p1.w - 2 * m;
+    // (v328) Page to colour's page to colour, first; the reference's page drawn on it after, in the same place
+    if (colr) {
+      p0 = pdfPage(null, land1);
+      pages.push(dry ? null : p0);
+      _pdfKinds.push({ k: 'pic', lab: 'none', land: p0.w > p0.h, col: false });
+    }
     pages.push(dry ? null : p1);
     // (v318.35: col, the page carries the picture in colour: written as a JPEG, canvasesToPDF)
     _pdfKinds.push({ k: refPic ? 'ref' : 'pic', lab: lab, land: p1.w > p1.h, col: refPic });
+    if (mapOn) {
+      pMap = pdfPage(null, land1);
+      pages.push(dry ? null : pMap);
+      _pdfKinds.push({ k: 'map', land: pMap.w > pMap.h, col: false });
+    }
     g1.font = '500 ' + PX(8) + 'px ' + LFONT;
     // (the picture's place, from the longest the heading's details can be: v320, at the right of the title)
     // (long: the longest they can be, for the estimate; v284 review: the real lines could be longer than it)
     const subParts = function (cl, keyPg, long) {
         return [nWord(assignData.N, 'section'), nMk].concat(
           withShade ? ['shading: H highlight', 'B base', 'S shadow, see the key'] : [],
+          mapOn ? 'shading map on page ' + (closeFirst - 1) : [],
           cl
             ? (cl === 1 ? 'A: a close-up' : 'A–' + pdfLetter(cl - 1) + ': close-ups') +
-                (keyPg > 3 ? ' on pages 2–' + (keyPg - 1) : ' on page 2')
+                (keyPg > closeFirst + 1
+                  ? ' on pages ' + closeFirst + '–' + (keyPg - 1)
+                  : ' on page ' + closeFirst)
             : [],
           nums || keyNums || long
             ? 'numbers: see the colour key on page ' + keyPg
@@ -2690,7 +3017,7 @@ function _buildPDF(dry) {
           lab === 'codes' && !oneB && guideMixed() ? brandKey().replace(/\s{2,}/g, '  ') : [],
         );
       },
-      sub0 = pdfLines(g1, subParts(54, 5, true), pdfHeadW(bw1), 3),
+      sub0 = pdfLines(g1, subParts(54, closeFirst + 3, true), pdfHeadW(bw1), 3),
       top = pdfHeadRule(m, sub0.length) + PX(10),
       bot = p1.h - m - PX(14),
       f1 = pdfFit(bw1, bot - top),
@@ -2802,7 +3129,7 @@ function _buildPDF(dry) {
     } else if (withShade && shadeUse().sun) sun = pdfSunAt(PX(6) / f1.k, null);
     if (!dry) {
       g1.font = '500 ' + PX(8) + 'px ' + LFONT;
-      const keyPg = 2 + closeP,
+      const keyPg = closeFirst + closeP,
         sub = pdfLines(g1, subParts(closeups.length, keyPg), pdfHeadW(bw1), sub0.length);
       pdfHead(g1, nm, sub, m, bw1, m);
       g1.imageSmoothingEnabled = true;
@@ -2813,13 +3140,63 @@ function _buildPDF(dry) {
         refPic,
         sh,
         !refPic &&
-          pdfToneLines && {
-            t: Math.max(1, Math.round(PX(0.8) / f1.k)),
-            dash: Math.max(3, Math.round(PX(4) / f1.k)),
-            clear: pl.boxes.concat(pl.extra || []),
-          },
+          pdfToneLines &&
+          Object.assign(pdfToneSpec(f1.k), { clear: pl.boxes.concat(pl.extra || []) }),
       );
       g1.drawImage(art1, ox, top, f1.w, f1.h);
+      // (v328) the page to colour: the lines only (the codes, the H and S circles and the sun are the reference's),
+      // and the faint tone lines if they're ticked; in the reference's place, so the two sheets lie one over the other
+      if (p0) {
+        const g0 = p0.g;
+        g0.font = '500 ' + PX(8) + 'px ' + LFONT;
+        pdfHead(
+          g0,
+          nm,
+          pdfLines(
+            g0,
+            // (the markers too, as the reference says them: "16 Ohuhu markers")
+            only
+              ? [nWord(assignData.N, 'section'), nMk]
+              : [nWord(assignData.N, 'section'), nMk, 'reference on page 2'].concat(
+                  mapOn ? 'shading map on page 3' : [],
+                  closeups.length
+                    ? 'close-ups ' +
+                        (keyPg > closeFirst + 1
+                          ? 'on pages ' + closeFirst + '–' + (keyPg - 1)
+                          : 'on page ' + closeFirst)
+                    : [],
+                  'colour key on page ' + keyPg,
+                ),
+            pdfHeadW(bw1),
+            sub0.length,
+          ),
+          m,
+          bw1,
+          m,
+        );
+        g0.imageSmoothingEnabled = true;
+        g0.imageSmoothingQuality = 'high';
+        const art0 = pdfArt(false, sh, sh && pdfToneLines && pdfToneSpec(f1.k));
+        g0.drawImage(art0, ox, top, f1.w, f1.h);
+        pdfFree(art0);
+      }
+      // (v328, P5) the shading map: the lines, and each tone a grey, in the same place again
+      if (pMap) {
+        const gm = pMap.g;
+        gm.font = '500 ' + PX(8) + 'px ' + LFONT;
+        pdfHead(gm, 'Shading map', pdfLines(gm, [nm, pdfMapLegend()], pdfHeadW(bw1), sub0.length), m, bw1, m);
+        gm.imageSmoothingEnabled = true;
+        gm.imageSmoothingQuality = 'high';
+        const artM = pdfMapArt(sh);
+        gm.drawImage(artM, ox, top, f1.w, f1.h);
+        pdfFree(artM);
+        if (sun) {
+          gm.save();
+          gm.setTransform(f1.k, 0, 0, f1.k, ox, top);
+          pdfSunDraw(gm, sun, f1.k);
+          gm.restore();
+        }
+      }
       g1.save();
       g1.setTransform(f1.k, 0, 0, f1.k, ox, top);
       pdfPlaceDraw(g1, asg, pl, lo, numOf, PX(1.2) / f1.k, function (l) {
@@ -2884,39 +3261,7 @@ function _buildPDF(dry) {
         });
         g1.textAlign = 'left';
         g1.textBaseline = 'alphabetic';
-        if (sun) {
-          const sr = PX(6) / f1.k,
-            sx = sun.x,
-            sy = sun.y;
-          g1.lineCap = 'round';
-          g1.strokeStyle = '#fff';
-          g1.lineWidth = PX(3.2) / f1.k;
-          for (let a = 0; a < 8; a++) {
-            const t = (a * Math.PI) / 4;
-            g1.beginPath();
-            g1.moveTo(sx + Math.cos(t) * sr * 1.45, sy + Math.sin(t) * sr * 1.45);
-            g1.lineTo(sx + Math.cos(t) * sr * 2, sy + Math.sin(t) * sr * 2);
-            g1.stroke();
-          }
-          g1.beginPath();
-          g1.arc(sx, sy, sr + PX(1.2) / f1.k, 0, 6.283);
-          g1.fillStyle = '#fff';
-          g1.fill();
-          g1.strokeStyle = '#666';
-          g1.lineWidth = PX(1) / f1.k;
-          for (let a = 0; a < 8; a++) {
-            const t = (a * Math.PI) / 4;
-            g1.beginPath();
-            g1.moveTo(sx + Math.cos(t) * sr * 1.45, sy + Math.sin(t) * sr * 1.45);
-            g1.lineTo(sx + Math.cos(t) * sr * 2, sy + Math.sin(t) * sr * 2);
-            g1.stroke();
-          }
-          g1.beginPath();
-          g1.arc(sx, sy, sr, 0, 6.283);
-          g1.fillStyle = '#fff';
-          g1.fill();
-          g1.stroke();
-        }
+        if (sun) pdfSunDraw(g1, sun, f1.k);
       }
       g1.restore();
       // ---- the close-ups: each its part of the picture, magnified, with its labels
@@ -2937,7 +3282,10 @@ function _buildPDF(dry) {
               'Close-ups',
               pdfLines(
                 gc,
-                ['Sections too small to label on page 1, magnified', 'a dot there marks each one'],
+                [
+                  'Sections too small to label on page ' + refPg + ', magnified',
+                  'a dot there marks each one',
+                ],
                 pdfHeadW(bw),
                 2,
               ),
@@ -2972,8 +3320,13 @@ function _buildPDF(dry) {
           // (v323: its lines drawn again at the close-up's size, smooth curves rather than magnified pixel steps,
           // 77-sharp; as before if that can't be done)
           const sh1 = cuSharp(art1, cr, dw, dh);
-          if (sh1) gc.drawImage(sh1, cx, iy, dw, dh);
-          else gc.drawImage(art1, cr[0], cr[1], cr[2] - cr[0], cr[3] - cr[1], cx, iy, dw, dh);
+          if (sh1) {
+            gc.drawImage(sh1, cx, iy, dw, dh);
+            // (let go once drawn: now, or when the page is recorded to be drawn later, _pdfRec, after its page; up to
+            // 24 of these a build, which Safari counts while they wait to be collected; v328 review 2: pdfFree, the
+            // recorded builds' too, every real one)
+            pdfFree(sh1);
+          } else gc.drawImage(art1, cr[0], cr[1], cr[2] - cr[0], cr[3] - cr[1], cx, iy, dw, dh);
           gc.globalAlpha = 1;
           gc.setTransform(kc, 0, 0, kc, cx - cr[0] * kc, iy - cr[1] * kc);
           // (a dot only for a small section still without a label: one labelled on page 1 needs none here)
@@ -2997,7 +3350,9 @@ function _buildPDF(dry) {
               left +
                 (Object.keys(shown).length ? ' more' : '') +
                 (left === 1 ? ' small section has' : ' small sections have') +
-                ' only a dot on page 1: see ' +
+                ' only a dot on page ' +
+                refPg +
+                ': see ' +
                 (left === 1 ? 'it' : 'them') +
                 ' in the app' +
                 (lab === 'codes' ? ', or print with Numbers.' : '.'),
@@ -3070,7 +3425,7 @@ function _buildPDF(dry) {
     g.font = '500 ' + PX(8) + 'px ' + LFONT;
     // (tones that differ by zone: where the zones are)
     const words = (
-      shadeHowto(!pdfToneLines) +
+      pdfHowtoNow() +
       (zIds.length
         ? ' Where a colour’s tones differ by zone, the key has a line for each: the zones are outlined below, and Main is the rest.'
         : '')
@@ -3655,6 +4010,34 @@ function _buildPDF(dry) {
     });
   }
   // ---- footers
+  // (v328, P5) For your own page with no labels: its one page of reference and key, then the shading map
+  if (refOne && mapOn) {
+    const P = pdfPage(),
+      gm = P.g,
+      bwM = P.w - 2 * m,
+      topM = pdfHeadRule(m, 2) + PX(10),
+      fM = pdfFit(bwM, P.h - m - PX(14) - topM),
+      oxM = m + (bwM - fM.w) / 2;
+    pages.push(dry ? null : P);
+    _pdfKinds.push({ k: 'map', land: false, col: false });
+    if (!dry) {
+      gm.font = '500 ' + PX(8) + 'px ' + LFONT;
+      pdfHead(gm, 'Shading map', pdfLines(gm, [nm, pdfMapLegend()], pdfHeadW(bwM), 2), m, bwM, m);
+      gm.imageSmoothingEnabled = true;
+      gm.imageSmoothingQuality = 'high';
+      const artM = pdfMapArt(sh);
+      gm.drawImage(artM, oxM, topM, fM.w, fM.h);
+      pdfFree(artM);
+    }
+  }
+  // (v328) Only the page: the page to colour alone, the rest let go
+  if (only) {
+    pages.slice(1).forEach(function (P) {
+      if (P && !_pdfRec) freeCanvas(P.c);
+    });
+    pages.length = 1;
+    _pdfKinds.length = 1;
+  }
   if (dry) return pages.length;
   // (v320: "Marker Studio" in the serif, the guide's name and "page n of N" on the right, a hairline over them)
   pages.forEach(function (P, i) {
@@ -3767,7 +4150,8 @@ async function _exportPDF() {
   const what = pdfWhat,
     name = curName,
     gen = loadGen,
-    opts = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark];
+    opts = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark, pdfOnly, pdfMap],
+    only = pdfWhat === 'colour' && pdfOnly;
   // (a moment for "Preparing…" to show: the pages are laid out in one go, v287; v320: the headings' serif loaded
   // meanwhile, as the saved image's fonts are)
   await Promise.all([
@@ -3777,18 +4161,27 @@ async function _exportPDF() {
     // (v327: and a guide lit by its photo, just opened, its photo read: 89-show)
     showFonts(),
   ]);
+  // (v328 review: another guide opened in that moment isn't printed under this one's name)
+  if (gen !== loadGen || !assignData) {
+    if (_b) {
+      _b.innerHTML = _o;
+      _b.disabled = false;
+    }
+    note('The guide changed while the PDF was being got ready, so it wasn’t made. Try again.');
+    return;
+  }
   try {
     // (laid out with the choices as they were; the sheet's own, changed meanwhile, put back straight after)
-    const now = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark];
+    const now = [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark, pdfOnly, pdfMap];
     let pages, kinds;
-    [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark] = opts;
+    [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark, pdfOnly, pdfMap] = opts;
     try {
       // (v307) each page drawn in turn, the button saying which (the Print sheet's, opened again meanwhile too)
       pages = buildPDFPages(false, true);
       // (v318.35: the pages in colour as JPEG; the kinds copied, as the sheet's summary re-lays them meanwhile)
       kinds = _pdfKinds.slice();
     } finally {
-      [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark] = now;
+      [pdfWhat, pdfLabels, paper, pdfDark, pdfToneLines, pdfBlend, pdfPpDark, pdfOnly, pdfMap] = now;
     }
     const P = PAPERS[opts[2]] || PAPERS.letter,
       blob = await canvasesToPDF(
@@ -3809,7 +4202,16 @@ async function _exportPDF() {
     // the second had come as "… (1).pdf" on a computer, and an iPad's Save to Files offered to replace the first)
     const fname =
       fileSlug(name, 'colour-guide', 80).toLowerCase() +
-      (what === 'strip' ? '-test-strip' : what === 'ref' ? '-reference' : '') +
+      // (v328: and the Labelled page's and Only the page's, from Page to colour's)
+      (what === 'strip'
+        ? '-test-strip'
+        : what === 'ref'
+          ? '-reference'
+          : what === 'page'
+            ? '-labelled'
+            : only
+              ? '-blank'
+              : '') +
       '.pdf';
     shareOrSave(blob, fname, name || 'Colouring guide', 'PDF', 'PDF downloaded.');
     // (v313: the sample's page printed, not just its test strip: a page being coloured, for Home's Continue card)
@@ -3819,7 +4221,8 @@ async function _exportPDF() {
       scheduleAutosave();
     }
     // (v312.1: once there's a PDF, the way out is Close; Cancel read as throwing it away)
-    const cx = document.querySelector('[data-pr="cancel"]');
+    // (v328 review 2: only on this guide's sheet, not another guide's opened meanwhile)
+    const cx = gen === loadGen ? document.querySelector('[data-pr="cancel"]') : null;
     if (cx) cx.textContent = 'Close';
   } catch (e) {
     const sm = sheetOpen() && document.getElementById('sfPrSum');
@@ -4461,6 +4864,17 @@ function testStripPages(dry, lazy) {
       });
     } else rec.push({ m: r.m, no: no, coats: true });
   });
+  // (v328 review 2: the zones' names and colours as they are now, the pages drawn later: another guide opened while
+  // the PDF is written had named them)
+  rec.forEach(function (x) {
+    if (!x.zones) return;
+    x.zn = x.zones
+      .map(function (id) {
+        return zoneName(id);
+      })
+      .join(', ');
+    x.zc = x.zones.length === 1 ? pdfZoneCol(x.zones[0]) : '#666';
+  });
   // (brand letters only when the strip mixes brands)
   const bs = {};
   rec.forEach(function (x) {
@@ -4599,22 +5013,9 @@ function testStripPages(dry, lazy) {
       F('400', 6);
       g.fillText(pdfTrunc(g, capKeyName(x.m), M(lwid)), M(lx), M(Y0 + 9.1));
       if (x.zones) {
-        g.fillStyle = x.zones.length === 1 ? pdfZoneCol(x.zones[0]) : '#666';
+        g.fillStyle = x.zc;
         F('italic 700', 6);
-        g.fillText(
-          pdfTrunc(
-            g,
-            'in ' +
-              x.zones
-                .map(function (id) {
-                  return zoneName(id);
-                })
-                .join(', '),
-            M(lwid),
-          ),
-          M(lx),
-          M(Y0 + 11.9),
-        );
+        g.fillText(pdfTrunc(g, 'in ' + x.zn, M(lwid)), M(lx), M(Y0 + 11.9));
       }
       if (x.flat && ramp) {
         g.fillStyle = '#999';

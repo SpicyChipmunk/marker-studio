@@ -1170,7 +1170,6 @@ after(teardown);
       await page.$$eval('#sfSheet [role="group"]', (g) => g.map((x) => x.getAttribute('aria-label'))),
       ['What to print', 'Paper size', 'Labels on the picture'],
     );
-    assert.ok((await page.isVisible('#sfPdfDark')) && (await page.isVisible('#sfPdfBlend')));
     // (v318.26: the foot's own buttons; the summary's paper is a link to the Paper choices)
     assert.deepEqual(await page.$$eval('#sfSheet .sfshft > button', (b) => b.map((x) => x.textContent)), [
       'Cancel',
@@ -1186,15 +1185,30 @@ after(teardown);
     };
     // (v284: with any close-ups of small sections, how many and on how many pages; v318.27: said under Pages, #sfPrWhat)
     const CL =
-      '(\\d+ small sections? (is|are) on \\d+ close-up pages?\\.( Numbers would fit more of (it|them) on page 1\\.)?)?$';
+      '(\\d+ small sections? (is|are) on \\d+ close-up pages?\\.( Numbers would fit more of (it|them) on page [12]\\.)?)?$';
+    // (v328) Page to colour to start with: just its labels in the summary, Darker labels hidden
+    assert.equal(await page.getAttribute('[data-pwhat="colour"]', 'aria-pressed'), 'true');
+    assert.ok(!(await page.isVisible('#sfPdfDark')) && (await page.isVisible('#sfPdfBlend')));
     assert.match(await sum(), /^\d+ pages · Letter · Codes$/);
-    assert.match(await what(), new RegExp('to colour on, then the colour key\\.' + CL));
+    assert.match(
+      await what(),
+      new RegExp(
+        '^The page to colour, unlabelled; then your picture in colour with dark codes to read beside it, and the colour key\\.' +
+          CL,
+      ),
+    );
     let [said, real] = await count();
+    assert.equal(said, real, 'Page to colour');
+    await page.click('[data-pwhat="page"]');
+    assert.ok((await page.isVisible('#sfPdfDark')) && (await page.isVisible('#sfPdfBlend')));
+    assert.match(await sum(), /^\d+ pages · Letter · Labelled page · Codes$/);
+    assert.match(await what(), new RegExp('to colour on, then the colour key\\.' + CL));
+    [said, real] = await count();
     assert.equal(said, real, 'Letter, codes');
     await page.click('[data-plabels="numbers"]');
-    assert.match(await sum(), /^\d+ pages · Letter · Numbers$/);
+    assert.match(await sum(), /^\d+ pages · Letter · Labelled page · Numbers$/);
     await page.click('[data-paper="a4"]');
-    assert.match(await sum(), /^\d+ pages · A4 · Numbers$/);
+    assert.match(await sum(), /^\d+ pages · A4 · Labelled page · Numbers$/);
     await page.check('#sfPdfBlend');
     [said, real] = await count();
     assert.equal(said, real, 'A4 with blend companions');
@@ -1203,13 +1217,13 @@ after(teardown);
     assert.equal(said, real, 'A5 with blend companions');
     await page.click('[data-pwhat="ref"]');
     // (v318.1: with labels, the picture in colour with them, then the key)
-    assert.match(await sum(), /^\d+ pages? · A5 · Key \+ reference · Numbers in colour$/);
+    assert.match(await sum(), /^\d+ pages? · A5 · For your own page · Numbers in colour$/);
     assert.match(
       await what(),
       new RegExp('the colour key: to read beside the page you’re colouring\\.' + CL),
     );
     [said, real] = await count();
-    assert.equal(said, real, 'Key + reference');
+    assert.equal(said, real, 'For your own page');
     assert.deepEqual(
       await page.evaluate(() =>
         ['ms-pdf-labels', 'ms-paper', 'ms-pdf-what', 'ms-pdf-blend'].map((k) => localStorage.getItem(k)),

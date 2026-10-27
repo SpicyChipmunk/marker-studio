@@ -246,8 +246,11 @@ async function ppSetFocus(f) {
     renderControls();
     return;
   }
+  // (v328: a guide opened while the download was asked about or under way keeps its own Focus)
+  const g0 = loadGen;
   if (f !== 'even') {
     const need = await subMissing();
+    if (g0 !== loadGen) return;
     if (!need) {
       note('This browser can’t keep the subject finder, so Focus stays on Even.');
       renderControls();
@@ -271,6 +274,7 @@ async function ppSetFocus(f) {
             ' MB</button><button type="button" class="sfghost" data-a="stay">Not now</button>',
           true,
         );
+      if (g0 !== loadGen) return;
       if (a !== 'go' || !pp) {
         renderControls();
         return;
@@ -289,6 +293,7 @@ async function ppSetFocus(f) {
         });
       } catch (e) {
         _subDl = false;
+        if (g0 !== loadGen) return;
         note(
           navigator.onLine === false
             ? 'The connection went, so Focus stays on Even. Connect, then try again.'
@@ -298,7 +303,17 @@ async function ppSetFocus(f) {
         return;
       }
       _subDl = false;
-      if (!pp) return;
+      if (!pp || g0 !== loadGen) {
+        if (g0 !== loadGen) note('The subject finder is downloaded.');
+        return;
+      }
+      // (v328 review: a page being made meanwhile, a Detail chosen, isn't overtaken: Focus is chosen again after)
+      // (v328 review 2: or the page built, or being coloured, meanwhile: not taken back to the page step)
+      if (_ppBusy || sfmode !== 'review' || cropMode || pgMode) {
+        note('The subject finder is downloaded: choose ' + SUB_NAMES[f] + ' again.');
+        renderControls();
+        return;
+      }
     }
   }
   okGeom(
@@ -473,7 +488,17 @@ function ppSubjectBox(prep) {
 // the offer, on the page step: the subject's box under SUB_CROP of the photo (not after a crop to it: under 0.95 of
 // what's left is still offered)
 function ppCropOfferHTML() {
-  if (!pp || pp.f !== 'subject' || !_ppPrep || !_ppPrep.sal || !srcImg || cropMode) return '';
+  // (v328: only from the photo as it's turned and cropped now; a prep from before an Undo is another part of it)
+  if (
+    !pp ||
+    pp.f !== 'subject' ||
+    !_ppPrep ||
+    !_ppPrep.sal ||
+    !srcImg ||
+    cropMode ||
+    _ppPrep.key !== ppPrepKey()
+  )
+    return '';
   const b = ppSubjectBox(_ppPrep);
   if (!b || b.w * b.h >= SUB_CROP) return '';
   return (
@@ -484,8 +509,10 @@ function ppCropOfferHTML() {
 // Crop to the subject: the photo's crop set to the subject's box (one Undo step, as a crop is), and the page made
 // again; its map cropped with it (ppPrepare's _subKeep), not found again
 function ppCropSubject() {
-  if (!pp || _ppBusy || !_ppPrep || !_ppPrep.sal || !srcImg) return;
-  const b = ppSubjectBox(_ppPrep);
+  if (!pp || _ppBusy || !srcImg) return;
+  const pr = ppPrepare();
+  if (!pr || !pr.sal) return;
+  const b = ppSubjectBox(pr);
   if (!b) return;
   const cr = cropRect || { x: 0, y: 0, w: 1, h: 1 };
   okGeom(function () {

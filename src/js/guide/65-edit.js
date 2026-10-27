@@ -37,7 +37,9 @@ function snapBytes(s) {
     ? (s.labels ? (s.labels.z ? s.labels.z.length : s.labels.length) * 4 : 0) +
         (s.ov ? s.ov.length : 0) +
         (s.col ? s.col.length : 0) +
-        (s.comps ? s.comps.length * 48 : 0) +
+        // (v328 review 2: a section's copy measured at about 160 bytes, not 48, and its colour slot too)
+        (s.comps ? s.comps.length * 160 : 0) +
+        (s.sec ? s.sec.length * 8 : 0) +
         (s.keep && s.keep.geo && s.keep.geo.gray ? s.keep.geo.gray.length : 0) +
         // (v318.37: and the picture's colour kept with its grey, X1-3)
         (s.keep && s.keep.geo && s.keep.geo.chroma ? s.keep.geo.chroma.length : 0)
@@ -52,6 +54,7 @@ function snapBytes(s) {
 let secFwd = [];
 // redo: the step Redo puts back on (it keeps what's left to redo)
 function pushUndo(s, redo) {
+  secEdN++;
   s._b = snapBytes(s);
   // (Redo as it was before this edit, kept with it while it's the newest, should it be taken back unmade: popUndo)
   const t = undoStack[undoStack.length - 1];
@@ -70,6 +73,7 @@ function pushUndo(s, redo) {
 }
 // unmade: the edit came to nothing after all (a Split that didn't divide, a turn or crop cancelled): Redo is back
 function popUndo(unmade) {
+  secEdN++;
   const s = undoStack.pop();
   if (s) {
     undoBytes -= s._b;
@@ -171,6 +175,7 @@ function secRedo() {
 }
 // the sections back as step u has them (Undo; Redo, redo)
 function secApply(u, redo) {
+  secEdN++;
   // (a tilt still waiting would redo the picture over what Undo puts back, and clear the steps before it, v304)
   imgCancel();
   if (u.t === 'ov') {
@@ -189,9 +194,15 @@ function secApply(u, redo) {
       pgQ = g.pgQ;
       pgShape = g.pgShape;
       srcColour = g.col === undefined ? null : g.col;
+      if (g.bind !== undefined) bindBands = g.bind;
       rot90 = g.rot90;
       tilt = g.tilt;
       cropRect = g.crop;
+      if ('dims' in g) {
+        srcDims = g.dims ? Object.assign({}, g.dims) : null;
+        minPos = g.minPos;
+        minAuto = !!g.minAuto;
+      }
       // (v325: a photo-made page's photo is the picture itself, turned and cropped as it was: its own, 47-photo-page)
       if (u.keep.pp && g.phRef && g.phXf) photoRef = g.phRef;
       // (the photo back where it was on that picture, still to be placed again only if it was then; a photo chosen
@@ -258,6 +269,7 @@ function secApply(u, redo) {
       // (v325: a photo-made page's settings as they were, 47-photo-page; a step kept before it says nothing)
       if ('pp' in u.keep) pp = ppCopy(u.keep.pp);
       if (pp && typeof u.keep.ppN === 'number') limitN = u.keep.ppN;
+      if (pp && u.keep.pt) ptOpenState(u.keep.pt.tx, u.keep.pt.th);
       if (u.keep.fo !== undefined) faintOffer = u.keep.fo;
       if (u.keep.hm !== undefined) hatchMade = u.keep.hm;
       if (u.keep.hw !== undefined) hatchWould = u.keep.hw;
@@ -589,6 +601,11 @@ function splitAt(startL, pts, quiet) {
 }
 function edgeCut(startL, pts) {
   if (pts.length < 2) return 0;
+  // (v328 review: as Split, Subject only's background isn't cut into: ppBgSec, as pp is this function's points)
+  if (ppBgSec(startL)) {
+    toast('The background stays white with Subject only.', 2600);
+    return 0;
+  }
   snapshotSeg();
   var pp = addAutoClose ? pts.concat([{ x: pts[0].x, y: pts[0].y }]) : pts;
   paintStroke(pp, startL);
@@ -601,6 +618,7 @@ function edgeCut(startL, pts) {
   return 1;
 }
 function restoreSnap() {
+  secEdN++;
   const s = popUndo(true);
   if (!s) return;
   labels = unpackLabels(s.labels);

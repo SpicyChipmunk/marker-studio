@@ -120,10 +120,14 @@ pile.addEventListener('click', (e) => {
   const cell = e.target.closest('.cell');
   if (!cell) return;
   const idx = +cell.dataset.i;
-  const was = state.drawn.slice();
+  const was = state.drawn.slice(),
+    // (v328 review: the keyboard kept in the pile, on the next one, or on Draw with none left)
+    had = document.activeElement === cell,
+    at = [...pile.querySelectorAll('.cell')].indexOf(cell);
   state.drawn = state.drawn.filter((x) => x !== idx);
   save();
   fullRender();
+  focusKept(had, pile, '.cell', at, [drawBtn]);
   // (v319) with Undo, as Remove this one has (the tap is the same removal); its toast takes the place of an earlier
   // Remove or Clear all toast, whose Undo could no longer apply once the pile had changed (Y3-4)
   drawnToast('Removed ' + COLORS[idx].brand + ' ' + capCode(idx), was);
@@ -812,7 +816,12 @@ function pickApply(idx) {
     setSeed(idx == null ? null : mkey(idx));
   } else {
     ensureCustomSize();
-    state.customPal[pickTarget.pos] = idx == null ? null : idx;
+    // (v328 review: a marker already in another slot moves here, that slot taking this one's: never in two at once,
+    // which the card had counted as two and a guide used as one)
+    const pos = pickTarget.pos,
+      j = idx == null ? -1 : state.customPal.indexOf(idx);
+    if (j >= 0 && j !== pos) state.customPal[j] = state.customPal[pos] == null ? null : state.customPal[pos];
+    state.customPal[pos] = idx == null ? null : idx;
     save();
     showCustom();
     chrome();
@@ -920,6 +929,10 @@ function useInGuideGo(idxs, keys, ex, fresh) {
     setMode('sections');
     if (r === 'edits') {
       toast('Build again or discard your section edits first, then Use in a guide.', 7000);
+      return;
+    }
+    if (r === 'busy') {
+      toast('The sections are still being found: a moment, then Use in a guide.', 5000);
       return;
     }
     // (unless the guide has just said, under its tabs, that sections you've coloured were kept)

@@ -1,4 +1,6 @@
 function popAt(l) {
+  // (v328 review 2: the tick's growing ring, left out with Reduce motion on)
+  if (reducedMotion()) return;
   if (!comps || !comps[l] || !cv || !sfView) return;
   var r = cv.getBoundingClientRect(),
     hs = picHost(),
@@ -576,10 +578,11 @@ let olOnce = false,
   olMerge = -1;
 // (v323) the outline is a partly coloured page's offer's (colOfferShow, 82-colour-mode)
 let _olOffer = false;
-function outlineSecs(ls, once, offer) {
+// (v328: groups, drawn so in one go: [{ s, hex, dash }], Check them's)
+function outlineSecs(ls, once, offer, groups) {
   _olOffer = !!offer && !!(ls && ls.length);
   olRow = false;
-  olGroups = null;
+  olGroups = groups || null;
   olSet = ls && ls.length ? ls.slice() : null;
   olKey = '';
   _olDrawn = null;
@@ -827,7 +830,8 @@ function positionOutline() {
       reach = Math.ceil(rad1) + 2;
     // the white-inside-dark ring round sections `set`, for the outline's pixels [ci, ci + cw) × [cj, cj + ch), into g:
     // a mask of the sections over that part and `reach` round it, each ring 16 copies of it moved about, less the mask
-    const paint = function (g, set, hex, ci, cj, cw, ch) {
+    // (v328: dash, the ring broken into dashes: Check them's ticked sections that look blank in a photo)
+    const paint = function (g, set, hex, ci, cj, cw, ch, dash) {
       const ai = Math.max(0, ci - reach),
         aj = Math.max(0, cj - reach),
         lw = Math.min(ow, ci + cw + reach) - ai,
@@ -870,6 +874,21 @@ function positionOutline() {
       };
       const r1 = ring(rad1, 'rgba(0,0,0,.8)'),
         r2 = ring(rad2, hex);
+      if (dash)
+        [r1, r2].forEach(function (o) {
+          // (gaps 5 screen px wide every 12, across at 45°, placed by the whole outline's pixels so parts meet)
+          const oc = o.getContext('2d'),
+            st = 12 * px,
+            b0 = Math.floor((ai + aj - lh) / st) * st;
+          oc.globalCompositeOperation = 'destination-out';
+          oc.lineWidth = 5 * px;
+          oc.beginPath();
+          for (let c = b0; c <= ai + aj + lw + lh; c += st) {
+            oc.moveTo(c - ai - aj, 0);
+            oc.lineTo(c - ai - aj - lh, lh);
+          }
+          oc.stroke();
+        });
       g.save();
       g.beginPath();
       g.rect(ci, cj, cw, ch);
@@ -898,7 +917,7 @@ function positionOutline() {
       g.clearRect(0, 0, ow, oh);
       // (v307: a two-brand search's, each marker's sections in its own colour inside the dark ring)
       (olGroups || [{ s: olSet, hex: '#fff' }]).forEach(function (q) {
-        paint(g, q.s, q.hex, 0, 0, ow, oh);
+        paint(g, q.s, q.hex, 0, 0, ow, oh, q.dash);
       });
     }
     _olDrawn = {
@@ -1173,6 +1192,7 @@ function leaveWhite(l) {
   // (the marker it had; for a stand-in, the marker the guide keeps for it, 97-open)
   whitePins[l] = _origKeys[l] ? _origKeys[l].k : m.mkey;
   whiteApply();
+  _flatVer++;
   guideDirty = true;
   normalizeTones();
   renderGuide();
@@ -1219,6 +1239,9 @@ function colourWhite(l) {
   o.splice(at, 0, l);
   assignData.N = o.length;
   guideDirty = true;
+  // (v328 review: the shading field made again, with this section in it: its key hadn't changed, and the section
+  // stayed flat while its tip and the list named its tones)
+  _flatVer++;
   normalizeTones();
   renderGuide();
   renderControls();

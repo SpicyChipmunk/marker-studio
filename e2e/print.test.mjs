@@ -200,7 +200,7 @@ after(teardown);
     };
   }
   test('labels: Codes, Numbers or None on the colouring page, light grey unless Darker labels is ticked', async () => {
-    const { page, errors } = await openApp();
+    const { page, errors } = await openApp({ storage: { 'ms-pdf-what': 'page' } });
     await sampleGuide(page);
     await sharePrint(page);
     assert.equal(
@@ -306,7 +306,7 @@ after(teardown);
     assert.deepEqual(errors, []);
   });
   test('v284: labels on the colouring page never overlap; a section with no room has a dot there and a label in a close-up; the key has a box to tick and the colouring order', async () => {
-    const { page, errors } = await openApp();
+    const { page, errors } = await openApp({ storage: { 'ms-pdf-what': 'page' } });
     await sampleGuide(page);
     const r = await probe(page);
     const pl = await page.evaluate(() => {
@@ -386,7 +386,7 @@ after(teardown);
     assert.deepEqual(errors, []);
   });
   test('shading marks still work with numbers: H/S circles and tone lines, key keeps its tones', async () => {
-    const { page, errors } = await openApp({ storage: { 'ms-pdf-labels': 'numbers' } });
+    const { page, errors } = await openApp({ storage: { 'ms-pdf-labels': 'numbers', 'ms-pdf-what': 'page' } });
     await sampleGuide(page);
     await page.click('.sftabbtn[data-t="shading"]');
     await page.evaluate(() => __mstest.shadeTo('full'));
@@ -407,7 +407,7 @@ after(teardown);
   // (v318.1) Key + reference is to read beside your own drawing: with labels, page 1 is the picture in colour with
   // near-black codes (its close-ups after it, as Page + key's), then the key; with no labels, one page of reference and key
   test('Key + reference: the picture in colour with near-black codes, then the key; with no labels, a coloured reference beside the key', async () => {
-    const { page, errors } = await openApp();
+    const { page, errors } = await openApp({ storage: { 'ms-pdf-what': 'page' } });
     await sampleGuide(page);
     await sharePrint(page);
     const full = await probe(page, 'page');
@@ -535,8 +535,102 @@ after(teardown);
       await server.close();
     }
   });
-  test('choices are remembered after a reload, and the download is a real PDF', async () => {
+  // (v328, decision 12) Page to colour, the default: the page with no labels (nothing printed in its sections but the
+  // faint tone lines), then the reference in colour with near-black codes, in the same place on the paper; shaded,
+  // the shading map after it, again in the same place, its tones as greys; Only the page alone; None not offered
+  // (the reference needs its labels), Darker labels not shown; tone lines thin, short and 18% grey on the pages
+  // coloured on. Fails on v327.1 (Page + key the default; no reference behind the page; no map; 41% grey lines).
+  test('v328: Page to colour: the page with no labels, then its reference in the same place, then the shading map', async () => {
     const { page, errors } = await openApp();
+    await sampleGuide(page);
+    await page.click('.sftabbtn[data-t="shading"]');
+    await page.evaluate(() => __mstest.shadeTo('full'));
+    await idle(page);
+    await sharePrint(page);
+    assert.equal(await page.getAttribute('[data-pwhat="colour"]', 'aria-pressed'), 'true', 'the default');
+    assert.equal(await page.isDisabled('[data-plabels="none"]'), true, 'None not offered');
+    assert.equal(await page.isVisible('#sfPdfDark'), false, 'Darker labels not shown');
+    assert.equal(await page.isVisible('#sfPdfOnly'), true);
+    assert.equal(
+      await page.textContent('#sfPrSide'),
+      'Print one-sided: markers soak through the paper.',
+    );
+    assert.match(await page.textContent('#sfPrShNote'), /shading map shows them at full strength/);
+    const look = () =>
+      page.evaluate(() => {
+        const P = CanvasRenderingContext2D.prototype,
+          od = P.drawImage,
+          imgs = [];
+        P.drawImage = function (img, x, y, w, h) {
+          if (arguments.length === 5 && img.width === __mstest.W && img.height === __mstest.H) {
+            // (the picture drawn on each page: how many of its pixels are each grey)
+            const d = img.getContext('2d').getImageData(0, 0, img.width, img.height).data,
+              n = {};
+            for (let i = 0; i < d.length; i += 4)
+              if (d[i] === d[i + 1] && d[i] === d[i + 2]) n[d[i]] = (n[d[i]] || 0) + 1;
+            imgs.push({ cv: this.canvas, x, y, w, h, n });
+          }
+          return od.apply(this, arguments);
+        };
+        let cvs;
+        try {
+          cvs = __mstest.buildPDFPages();
+        } finally {
+          P.drawImage = od;
+        }
+        return {
+          kinds: __mstest.pdfKinds.map((k) => k.k),
+          art: imgs
+            .filter((e) => cvs.indexOf(e.cv) >= 0)
+            .map((e) => ({ p: cvs.indexOf(e.cv), box: [e.x, e.y, e.w, e.h].map(Math.round), n: e.n })),
+        };
+      });
+    let r = await look();
+    assert.deepEqual(r.kinds.slice(0, 3), ['pic', 'ref', 'map']);
+    assert.equal(r.kinds[r.kinds.length - 1], r.kinds.includes('keymore') ? 'keymore' : 'key');
+    const at = (p) => r.art.find((e) => e.p === p);
+    assert.deepEqual(at(1).box, at(0).box, 'the reference where the page to colour is');
+    assert.deepEqual(at(2).box, at(0).box, 'the map there too');
+    assert.ok(at(0).n[209] > 100 && !at(0).n[150], 'the faint tone lines, 18% grey: ' + at(0).n[209]);
+    assert.ok(at(2).n[217] > 1000 && at(2).n[153] > 1000, 'the map’s base and shadow greys');
+    const pr = await probe(page);
+    assert.equal(
+      pr.texts.filter((e) => e.p === 0 && !e.id && !/^[A-Z]{1,2}$/.test(e.t)).length,
+      0,
+      'nothing written in the page to colour',
+    );
+    const refLabs = pr.texts.filter((e) => e.p === 1 && !e.id && !/^[A-Z]{1,2}$/.test(e.t));
+    assert.ok(refLabs.length > 50 && refLabs.every((e) => e.fill === '#111111'), 'the reference’s near-black codes');
+    // the map left out
+    await page.uncheck('#sfPdfMap');
+    await idle(page);
+    assert.match(await page.textContent('#sfPrShNote'), /the key lists each colour’s tones/);
+    r = await look();
+    assert.deepEqual(r.kinds.slice(0, 2), ['pic', 'ref']);
+    assert.ok(!r.kinds.includes('map'));
+    await page.check('#sfPdfMap');
+    // Only the page: the page alone
+    await page.check('#sfPdfOnly');
+    await idle(page);
+    assert.match(await page.textContent('#sfPrSum'), /^1 page · .* · Only the page to colour/);
+    r = await look();
+    assert.deepEqual(r.kinds, ['pic']);
+    await page.uncheck('#sfPdfOnly');
+    // the Labelled page: its tone lines the same faint ones, and the map after it
+    await pick(page, '[data-pwhat="page"]');
+    await idle(page);
+    assert.equal(await page.isVisible('#sfPdfDark'), true);
+    r = await look();
+    assert.deepEqual(r.kinds.slice(0, 2), ['pic', 'map']);
+    assert.ok(at(0).n[209] > 100 && !at(0).n[150], 'the Labelled page’s tone lines');
+    // a None chosen for it reads as Codes for Page to colour
+    await pick(page, '[data-plabels="none"]');
+    await pick(page, '[data-pwhat="colour"]');
+    assert.equal(await page.getAttribute('[data-plabels="codes"]', 'aria-pressed'), 'true');
+    assert.deepEqual(errors, []);
+  });
+  test('choices are remembered after a reload, and the download is a real PDF', async () => {
+    const { page, errors } = await openApp({ storage: { 'ms-pdf-what': 'page' } });
     await sampleGuide(page);
     await sharePrint(page);
     await pick(page, '[data-plabels="numbers"]');

@@ -1643,13 +1643,33 @@ function ocrCloserTodo() {
 }
 // a photo's lines that didn't settle into a marker in the list, nor stand beside one that did: where to look closer.
 // Codes misread, and names with no code (a word of four letters or more)
+// (v328 review: each line's codes read once, not again on every check: a batch of 20 photos had held the page about
+// 1.5 s at its end, the check run four times over every line of every photo)
+const _ocrCodeMemo = new Map();
+function ocrCodesOnce(t) {
+  let r = _ocrCodeMemo.get(t);
+  if (!r) {
+    if (_ocrCodeMemo.size > 20000) _ocrCodeMemo.clear();
+    r = ocrCodes(t, '');
+    _ocrCodeMemo.set(t, r);
+  }
+  return r;
+}
 function ocrCloserSpots(p) {
   const listed = new Set(scanList.filter((e) => !e.ask).map((e) => e.i)),
     codeLike = (t) => {
       const k = scanKey(t);
       return k.length >= 2 && k.length <= 7 && /\d/.test(k);
     },
-    settled = (x) => !x.nameOf && ocrCodes(x.text, '').some((c) => listed.has(c.i)),
+    seen = new Map(),
+    settled = (x) => {
+      let v = seen.get(x);
+      if (v === undefined) {
+        v = !x.nameOf && ocrCodesOnce(x.text).some((c) => listed.has(c.i));
+        seen.set(x, v);
+      }
+      return v;
+    },
     ok = p.lines.filter((x) => x.box && settled(x)),
     beside = (x) =>
       ok.some(
@@ -2196,7 +2216,19 @@ function ocrConsent(msg) {
   );
   $('ocrGet').addEventListener('click', ocrGetIt);
   $('ocrNo').addEventListener('click', ocrBack);
-  $('ocrGet').focus({ preventScroll: true });
+  // (v328 review: offline, the keyboard on Not now, Download being disabled; and Download back once online)
+  (off ? $('ocrNo') : $('ocrGet')).focus({ preventScroll: true });
+  if (off) {
+    const on = function () {
+      window.removeEventListener('online', on);
+      const g = $('ocrGet');
+      if (!g || !g.isConnected) return;
+      g.disabled = false;
+      const w = g.parentNode && g.parentNode.querySelector('.ocrwarn');
+      if (w && !msg) w.remove();
+    };
+    window.addEventListener('online', on);
+  }
 }
 async function ocrGetIt() {
   const ctl = new AbortController();
@@ -2220,6 +2252,10 @@ async function ocrGetIt() {
     }, ctl.signal);
     ocrDown = null;
     ocrOk = true;
+    // (v328 review: Scan closed meanwhile: the ready card isn't left in it for next time; review 2: or Cancel tapped
+    // as the last file was being kept, the list it went back to left as it is)
+    if (!$('scanOverlay') || !$('scanOverlay').classList.contains('on')) return;
+    if (ctl.signal.aborted) return ocrBack();
     // (a photo can be chosen only from a tap: the download's took too long to count)
     ocrShow(
       '<div class="ocrh">The reader is ready</div><p class="ocrp">Stored on this device, for offline use. Now photos of your caps: take one, or choose one or several.</p>' +
@@ -2231,10 +2267,15 @@ async function ocrGetIt() {
   } catch (e) {
     ocrDown = null;
     if (ctl.signal.aborted) return ocrBack();
+    // (v328 review: a full device said so: Try again failed the same way every time)
+    const full =
+      e && (e.name === 'QuotaExceededError' || /quota|storage/i.test(String((e && e.message) || '')));
     ocrConsent(
       navigator.onLine === false
-        ? 'The connection went: what’s downloaded is kept. Connect, then try again.'
-        : 'The download didn’t finish: what’s downloaded is kept. Try again.',
+        ? 'The connection went: the files downloaded whole are kept. Connect, then try again.'
+        : full
+          ? 'This device’s storage is full, so the reader couldn’t be kept. Free some space, then try again.'
+          : 'The download didn’t finish: the files downloaded whole are kept. Try again.',
     );
   }
 }
@@ -2298,6 +2339,7 @@ function ocrChosen(files) {
   ocrAnswered = [];
   // (v318.22: Look closer is of this batch's photos only)
   ocrCloserList = [];
+  _ocrCodeMemo.clear();
   ocrClLast = null;
   ocrQ = { files: files, k: 0, n0: ocrPhotos + 1, per: [], stop: false, t0: Date.now() };
   ocrNext();
@@ -2588,6 +2630,8 @@ function ocrStatus(r) {
       (q.stop && !q.halt ? ' · stopped' : '');
     pc = 100;
   }
+  // (v328 review 2: Stop tapped, the reading still going till the worker hears: "Stopping…" kept, not the count)
+  if (r.stop && !r.done && !r.failed) t = 'Stopping…';
   say.textContent = t;
   // (what a screen reader hears: each stage once, not the count as it climbs ten times a second. v318 review: in Scan's
   // card, not in the view rebuilt for each photo, as a live region made with its words isn't heard, "Photo 2 of 19")
@@ -2736,6 +2780,12 @@ function ocrButtons(r) {
       // (the worker told, once it has the photo; else the photo's read ends before it's sent)
       r.stop = true;
       if (ocrW && r.sent) ocrW.postMessage({ t: 'stop' });
+      // (v328 review: said at once, the reader maybe still starting for seconds before it can stop)
+      const st = $('ocrStop'),
+        say = $('ocrSay');
+      if (say) say.textContent = 'Stopping…';
+      // (the button says it too, and keeps the keyboard)
+      if (st) st.textContent = 'Stopping…';
     });
     // (the keyboard's and a screen reader's place: on Stop, the only button, not lost with the one tapped before)
     $('ocrStop').focus({ preventScroll: true });
@@ -2781,6 +2831,7 @@ function ocrButtons(r) {
       ocrRun = null;
       ocrQ = null;
       ocrCloserList = [];
+      _ocrCodeMemo.clear();
       ocrClLast = null;
       ocrHide();
       // (v318.28: as its button counted them, "Undo this photo" with one of a batch read)
@@ -2817,6 +2868,7 @@ function ocrFinish() {
   // (v318.22 debug: Undo this photo goes with the view, and so do the questions it could give back; and Look closer)
   ocrAnswered = [];
   ocrCloserList = [];
+  _ocrCodeMemo.clear();
   ocrClLast = null;
   ocrHide();
   if (many) {
@@ -2892,6 +2944,7 @@ function ocrClose() {
     ocrCl = null;
   }
   ocrCloserList = [];
+  _ocrCodeMemo.clear();
   ocrClLast = null;
   if (ocrDown) ocrDown.ctl.abort();
   ocrDown = null;

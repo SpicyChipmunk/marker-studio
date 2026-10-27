@@ -804,3 +804,63 @@
     flex: none;
   }
 }
+/* (v328) Check them: its line in place of the list while the offer is checked */
+#sfRoot .sfchkline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--card2, rgba(127, 127, 127, 0.08));
+}
+#sfRoot .sfchkline p {
+  margin: 0;
+}
+#sfRoot .sfchkhow {
+  font-weight: 600;
+}
+#sfRoot .sfchkblank,
+#sfRoot .sfchksum {
+  color: var(--sub);
+}
+/* (v328) Tick off from a photo: its line under Colour along's hint, as tight as the hint's own lines, so an upright
+   iPad's first marker row stays above the bar (markers-3) */
+#sfRoot .sftickal {
+  /* (over the More link's tap strip under it, 08-dialogs-match: on a phone, More sits above these words, and its strip
+     had taken the taps on them) */
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0 2px;
+  font-size: var(--t-sm);
+  line-height: 1.4;
+  color: var(--sub);
+}
+/* (taller to tap than the words, its padding not taking the line's room: little above, where the hint's last line and
+   its More are, more below, to the order row's edge) */
+#sfRoot .sftickal .sflink {
+  display: inline-block;
+  min-height: 0;
+  padding: 1px 2px 9px;
+  margin: -1px 0 -9px;
+  font-size: var(--t-sm);
+}
+/* (v328) Colour along's offer line, with Check them beside Mark them done: ✕ kept on its right, the words wrapping
+   round the two links (each still 44 px tall to tap, its padding not taking the line's room) */
+#sfRoot #sfColOffer {
+  flex-wrap: nowrap;
+}
+#sfRoot #sfColOffer > span {
+  flex: 1 1 0;
+  min-width: 0;
+  line-height: 1.5;
+}
+#sfRoot #sfColOffer .sflink {
+  display: inline-block;
+  min-height: 0;
+  padding: 12px 4px;
+  margin: -12px 0;
+}
+#sfRoot #sfColOffer .sfoffacts {
+  white-space: nowrap;
+}

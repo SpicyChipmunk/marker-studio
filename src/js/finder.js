@@ -597,7 +597,14 @@ function renderGrid(more) {
         : '<div class="empty">' +
           (searchStr
             ? 'No markers match \u201c' + esc(searchStr) + '\u201d with the current filters.'
-            : 'No markers match these filters.') +
+            : // (v328 review: every marker owned isn't a filter's doing)
+              state.mode === 'collection' &&
+                state.collView === 'unowned' &&
+                COLORS.every(function (c, i) {
+                  return state.owned.has(mkey(i));
+                })
+              ? 'You own every marker.'
+              : 'No markers match these filters.') +
           '</div>';
     return;
   }
@@ -613,6 +620,12 @@ function renderGrid(more) {
     gridActs(order);
     // (v318.25) the heading counts what's shown: it had said "Showing 601 markers" over 295
     matchHead(order.length, 'marker');
+    // (v328 review: none of them fills a gap, a brand you don't buy or the Colorless Blender: said, not a blank grid)
+    if (!order.length) {
+      results.innerHTML =
+        '<div class="empty">None of these markers fills a gap in your families. Try another Order.</div>';
+      return;
+    }
     results.innerHTML =
       '<div class="rgroup"><div class="pile">' +
       order.map((i, idx) => cellHtml(i, idx + 1)).join('') +
@@ -628,6 +641,11 @@ function renderGrid(more) {
     cellBt = brandsMixedIn(un);
     // (v318.25) the heading counts what's shown (your brands' families, no fluorescents): it had said 601 over 239
     matchHead(un.length, 'marker');
+    if (!gps.length) {
+      results.innerHTML =
+        '<div class="empty">None of these markers completes a family of a brand you buy. Try another brand in Brands I\u2019d buy, or another Order.</div>';
+      return;
+    }
     for (const gp of gps) {
       const rep = families.find((f) => f.name === gp.fam);
       html +=

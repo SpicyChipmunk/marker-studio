@@ -220,13 +220,18 @@ function zoneWire() {
       const kbd = document.activeElement === del,
         id = zoneCur,
         nm = zoneName(id),
-        had = zoneSecs(id).length;
+        had = zoneSecs(id).length,
+        // (v328 review: its sections as moved back to Main, so a Random Main keeps its own as they are)
+        mv = {};
+      zoneSecs(id).forEach(function (l) {
+        mv[l] = 1;
+      });
       zoneEdit = false;
       zoneDelete(id);
       zoneKbSync();
       if (had) {
         planWhy = 'Zone deleted: ' + nm;
-        reassign([0]);
+        reassign([0], mv);
       } else {
         planSync();
         renderControls();

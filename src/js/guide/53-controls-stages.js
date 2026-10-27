@@ -229,6 +229,12 @@ function edBarSync() {
 // back to the plan from Edit sections: as it is when nothing was edited; otherwise asked first
 // newGuide (Home's New colouring guide, v289): Discard edits also opens the photo picker, within the tap (iOS)
 function edToPlan(newGuide) {
+  // (v328 review: not while the sections are being found again: the Plan had opened on the old plan laid over the new
+  // sections, and the guide, stale, was never saved again)
+  if (segPendingNow()) {
+    note('The sections are still being found: a moment, then \u2190 Plan.');
+    return;
+  }
   if (!secEdPending()) {
     // (edits undone by hand: a copy kept for Resume earlier is stale now, v298)
     edSlotDrop();
@@ -487,7 +493,9 @@ function faintWire() {
 // default and saved with the guide. Turning it off (or on) finds the sections again without (with) the merge, one
 // Undo step as Sensitivity is. The note says how many hatched patches the last detection merged, when any.
 function hatchLineHTML() {
-  if (sfmode !== 'review') return '';
+  // (v328 review: and only with the picture's grey to find them from: a guide opened again has it only once Adjust
+  // photo has read the picture, and the switch had flipped with nothing found again)
+  if (sfmode !== 'review' || !gray) return '';
   return (
     '<div id="sfHatchLine" class="sffaint sfc-mt8"><label class="sffaintchk"><input type="checkbox" id="sfHatch"' +
     (hatchOne ? ' checked' : '') +
@@ -730,9 +738,12 @@ function ctlSections() {
           'Page kept as photographed' +
           ' \u00b7 <button class="sflink" id="sfPgAdj">Straighten</button></div>'
         : '') +
-    // (v318.15) the binding or a strip of table along the photo's edge: Auto crop leaves it out
+    // (v318.15) the binding or a strip of table along the photo's edge: Auto crop leaves it out (v328: the spiral
+    // binding said as such: trimWords)
     (trimOffer()
-      ? '<div class="sfpgline sfpghint" id="sfTrimLine">Binding or table at the edge? \u00b7 <button class="sflink" id="sfTrim">Trim it</button></div>'
+      ? '<div class="sfpgline sfpghint" id="sfTrimLine">' +
+        esc(trimWords()) +
+        ' \u00b7 <button class="sflink" id="sfTrim">Trim it</button></div>'
       : '') +
     frameLineHTML() +
     head +
@@ -820,8 +831,12 @@ function ctlSections() {
   frameLineWire();
   faintWire();
   hatchWire();
-  wire('sfAutoCrop', 'click', autoCrop);
-  wire('sfTrim', 'click', autoCrop);
+  wire('sfAutoCrop', 'click', function () {
+    autoCrop();
+  });
+  wire('sfTrim', 'click', function () {
+    autoCrop(true);
+  });
   wire('sfRotL', 'click', function () {
     okGeom(function () {
       rot90 = (rot90 + 270) % 360;
@@ -845,6 +860,9 @@ function ctlSections() {
         const want = el._want;
         el._ok = 1;
         el.value = want;
+        // (v328 review: a crop kept on the same part of the photo: as fractions of the turned picture's box, which
+        // grows and turns with the tilt, it had moved off the drawing)
+        if (cropRect && srcImg) cropRect = cropCarry(cropRect, tilt, want);
         tilt = want;
         var v = document.getElementById('sfTiltVal');
         if (v) v.textContent = tilt.toFixed(1) + '\u00b0';

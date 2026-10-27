@@ -379,6 +379,16 @@ function sharpHide() {
   if (_shEl) _shEl.hidden = true;
   _shCrop = null;
 }
+// (v328 review) hidden and let go: its canvas's pixels and the distance fields, on leaving Colour along or the guide
+// (only ever hidden, they had stayed: up to 16 MB, which an iPad counts against its limit)
+function sharpFree() {
+  sharpHide();
+  if (_shEl) {
+    _shEl.width = _shEl.height = 0;
+  }
+  _shF = null;
+  _shBase = null;
+}
 // the picture moved, or (drawn) was drawn again, in whole (true) or in part ('part'): drawn sharp again once it settles
 function sharpStale(drawn) {
   if (drawn) _shBase = null;

@@ -22,8 +22,17 @@ let _mp = { key: '', pics: {}, seeds: {}, sigs: {}, t: 0, off: false },
 const _mpPtrs = new Set();
 
 // the row is pictures (else Mood's buttons, as before)
+// (v328 review 2) The last laying's time ({ l: labels, ms }, zoneRun): where a laying takes longer than MP_SLOW (No
+// repeats with hundreds of markers on a page of 10,000 sections or more), Mood's buttons as before, not pictures, each
+// of which is a laying on the main thread: five of them had kept taps waiting up to 5 s after every change
+let _layMs = null;
+const MP_SLOW = 700;
+function mpSlow() {
+  return !!_layMs && _layMs.l === labels && _layMs.ms > MP_SLOW;
+}
 function mpShow() {
   return (
+    !mpSlow() &&
     !!labels &&
     !!assignData &&
     family !== 'photo' &&
@@ -122,6 +131,10 @@ function mpSave() {
     planLast: planLast,
     planN: planStack.length,
     planFwdN: planFwd.length,
+    // (v328 review: the notes a palette made leaves: the next Undo step had been named by a mood picture's)
+    planWhy: planWhy,
+    genNote: genNote,
+    genFell: genFell,
   };
 }
 // everything mpSave kept, back as it was
@@ -132,6 +145,9 @@ function mpRestore(s) {
   // (radC's setter makes a copy: the very value, back)
   radC = s.radC;
   assignData = s.assignData;
+  planWhy = s.planWhy;
+  genNote = s.genNote;
+  genFell = s.genFell;
   locks = s.locks;
   anchors = s.anchors;
   _zSig = s.zSig;
@@ -424,6 +440,11 @@ function mpStep() {
   _mp.seeds[k] = seed;
   _mp.sigs[k] = mpSig(cols);
   _mp.pics[k] = cols ? { im: mpImage(cols) } : { none: true };
+  // (that one was slow: no more, and Mood's buttons instead)
+  if (mpSlow()) {
+    renderControls();
+    return;
+  }
   mpPaint();
   // (v310.1: a slow one, as Random on a page of thousands of sections, leaves twice its time free before the next,
   // so taps and scrolling meanwhile aren't kept waiting)

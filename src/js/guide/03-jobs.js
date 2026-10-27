@@ -10,6 +10,7 @@
       'pgf'   a photographed page's corners, from a small copy of the photo (pgWork, 22-straighten; v318.36)
       'ppage' a photo made into a colouring page (ppWork, 47-photo-page; v325)
       'ppfill' the markers that would help that page most (ppFillCore, 47-photo-page; v326)
+      'tick'  a later photo of the page lined up with the guide's picture, then read (tickWork, 26-tick; v328)
     Anywhere there's no worker (an old browser, a page that can't make one) or a job fails, JOBS.run rejects and the
     caller does the work itself, as before. So does a job with no answer in time (jobBudget): the worker is then given
     up on for the session, and anything it sends later is ignored. */
@@ -65,6 +66,8 @@ const JOBS = (function () {
       if (m.k === 'ppage') return ppWork(m);
       // (v326: the markers that would help a photo-made page most, 47-photo-page)
       if (m.k === 'ppfill') return { v: ppFillCore(m) };
+      // (v328: Tick off from a photo, 26-tick)
+      if (m.k === 'tick') return tickWork(m);
       if (m.k === 'lpts') {
         const r = labelPtsCore(new Int32Array(m.buf), m.W, m.H, m.K);
         return {
@@ -122,6 +125,9 @@ const JOBS = (function () {
         '\n' +
         // (v325: the photo-to-page builder's steps, 47-photo-page)
         ppWorkerSrc() +
+        '\n' +
+        // (v328: Tick off from a photo's lining up and reading, 26-tick)
+        tickWorkerSrc() +
         '\n(' +
         main.toString() +
         ')();';
@@ -267,6 +273,13 @@ const JOBS = (function () {
 // 14 s), several times what a computer takes (about 1.5 s there)
 function jobBudget(data, k) {
   if (k === 'ppage') return 8000 + Math.round((data.GW * data.GH) / 500);
+  // (v328: Tick off from a photo, lining up or reading: about 2 and 4 s on a desktop for the author's 3.8-megapixel
+  // guide, more on an iPad)
+  if (k === 'tick') return 15000 + Math.round((data.W * data.H) / 150);
+  // (v328 review: the markers to add, with Use up to 48's two marker choices: the photo's colours by the markers it
+  // may use, 2-4 s on a desktop for 461 colours by 392-800 markers)
+  if (k === 'ppfill' && data.tw && data.pl)
+    return 4000 + Math.round((data.tw.length * (data.pl.length / 3) * (data.mcap ? 1 : 0.1)) / 25);
   const px = data.n || data.w * data.h || data.W * data.H || 0;
   return 4000 + Math.round(px / (k === 'seg' ? 500 : 2000));
 }

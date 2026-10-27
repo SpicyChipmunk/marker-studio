@@ -1405,14 +1405,17 @@ after(teardown);
     );
     await esc(page);
     assert.deepEqual(await layers(page), open({ full: true }));
-    // the ⋯ menu, reached by keyboard behind full screen (a marker picker leaves full screen as it opens)
+    // the ⋯ menu, reached by keyboard behind full screen: it leaves full screen as it opens, as a marker picker does
+    // (v328 review: it had opened under the full-screen picture, unseen, with the keyboard in it)
     await page.focus('#sfMore');
     await page.keyboard.press('Enter');
     await page.waitForSelector('#sfSheet .sfmitem');
-    assert.deepEqual(await layers(page), open({ full: true, sheet: 'menu' }));
+    assert.deepEqual(await layers(page), open({ sheet: 'menu' }));
     await esc(page);
-    assert.deepEqual(await layers(page), open({ full: true }));
+    assert.deepEqual(await layers(page), NONE);
     assert.equal(await active(page), 'sfMore');
+    await page.click('#sfFull');
+    await idle(page);
     // Help over full screen
     await page.focus('#sfFullX');
     await page.evaluate(() => openHelpSheet());
@@ -1618,7 +1621,8 @@ after(teardown);
   // Changed with layers.js (a bug unified): the rename field is reachable by keyboard behind full screen (full screen
   // doesn't hold focus). In v267 Escape there left full screen and kept the rename open, as full screen's Escape didn't
   // leave the name field alone the way the tip's and the sheets' did. Now the field keeps its Escape wherever it is.
-  test('renaming behind full screen: Escape cancels the rename and full screen stays; the next Escape leaves it', async () => {
+  // (v328 review: Rename leaves full screen first, its field was typed into unseen under the picture)
+  test('renaming from full screen: it leaves full screen; Escape cancels the rename', async () => {
     const { page, errors } = await openApp();
     await sampleGuide(page);
     await idle(page);
@@ -1630,13 +1634,11 @@ after(teardown);
     await idle(page);
     assert.equal(await active(page), 'sfGName');
     await page.keyboard.type('x');
-    assert.deepEqual(await layers(page), open({ full: true, renaming: true }));
-    await esc(page);
-    assert.deepEqual(await layers(page), open({ full: true }));
-    assert.equal(await page.textContent('#sfGTitle'), n0, 'the name as it was');
-    assert.equal(await active(page), 'sfRename');
+    assert.deepEqual(await layers(page), open({ renaming: true }));
     await esc(page);
     assert.deepEqual(await layers(page), NONE);
+    assert.equal(await page.textContent('#sfGTitle'), n0, 'the name as it was');
+    assert.equal(await active(page), 'sfRename');
     assert.deepEqual(errors, []);
   });
 }

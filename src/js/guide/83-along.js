@@ -50,6 +50,30 @@ function alongHintSeen() {
 }
 // Colour along's controls (focus mode has its own, in renderControls): the ⓘ line, the list and the bar
 function alongControls() {
+  // (v328) Check them: its line in place of the list, and Cancel | Done in the bar (82-colour-mode)
+  if (colCheck && !colCheckLive()) {
+    colCheck = null;
+    outlineSecs(null);
+  }
+  if (colCheck) {
+    ctlEl.innerHTML =
+      '<div class="sfpane sfalongp sfchkp">' +
+      colCheckHTML() +
+      '</div><div class="sfbar"><button id="sfChkCancel" class="sfghost">Cancel</button><button id="sfChkDone" class="sfprimary"' +
+      (colCheckCounts().tick.length || colCheckCounts().un.length ? '' : ' disabled') +
+      '>Done</button></div>';
+    const cc = document.getElementById('sfChkCancel'),
+      dd = document.getElementById('sfChkDone');
+    if (cc)
+      cc.addEventListener('click', function () {
+        colCheckEnd(false);
+      });
+    if (dd)
+      dd.addEventListener('click', function () {
+        colCheckEnd(true);
+      });
+    return;
+  }
   ctlEl.innerHTML =
     // (v320, D2b/P2) the finished page as a card: when, the title, three numbers, the guide's markers, and Reveal &
     // share with Add a photo of your page in it (the bar's second button is Share & print then); marker strokes
@@ -62,6 +86,8 @@ function alongControls() {
     ' Reveal &amp; share</button><div id="sfFin" class="sffin"></div></div></div>' +
     lowHost('A') +
     alongHint() +
+    // (v328: Coloured on paper? Tick them off from a photo, 26-tick)
+    tickAlongHTML() +
     (zones.length
       ? '<div id="sfAlOrder" class="sfc-segs sfalorder" role="group" aria-label="Colour along goes through">' +
         ctlSeg('whole', 'Whole picture', !alongZones()) +
@@ -162,6 +188,7 @@ function alongControls() {
       if (t) t.focus({ preventScroll: true });
     } catch (_) {}
   });
+  tickAlongWire();
   updateProgress();
   // (v323) a partly coloured page's offer, until taken or closed (82-colour-mode)
   colOfferShow();

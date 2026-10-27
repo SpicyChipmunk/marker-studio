@@ -123,6 +123,8 @@ function openDesignObj(d, id, resumed, quiet, col) {
         note(TOO_COMPLEX);
         return;
       }
+      // (v328: a reload in place keeps the visit's tick count going, 26-tick tickReloaded)
+      const _tickKeep = quiet ? { id: curId, at: _tickAt, add: _tickAdd } : null;
       resetForNewPicture();
       if (resumed) slotClaim();
       pgOrig = null;
@@ -511,6 +513,13 @@ function openDesignObj(d, id, resumed, quiet, col) {
       _edResumed = d.edits === 1;
       sfmode = _edResumed ? 'review' : 'guide';
       if (!quiet) enterWork();
+      // (v328: Tick off from a photo's count of this visit's ticks, and the Plan's line, before the controls are drawn:
+      // not for a reload in place)
+      if (!quiet) tickOpened();
+      else tickReloaded(_tickKeep);
+      // (v328 review: Screens and ink differ stays for the visit it first showed in, not every guide opened after; once
+      // shown it's seen, stripLineHTML)
+      if (!quiet && _stripTip > 0) _stripTip = 0;
       renderControls();
       // (v307: one that goes on into Colour along is painted once, there)
       const _toCol = col && !_edResumed;
@@ -723,6 +732,13 @@ function lptsAhead(pre) {
 let _thenAct = null;
 function openThen(id, act) {
   _thenAct = null;
+  // (v328 review 2: as Continue, once the sections being found are)
+  if (
+    afterSeg(id, function () {
+      openThen(id, act);
+    })
+  )
+    return;
   if (
     assignData &&
     labels &&
@@ -749,7 +765,29 @@ function thenDo(act, id, gen) {
 }
 // Home's Continue: open the guide (in Colour along, as a part-coloured one does) at the marker to pick up
 let _contNext = false;
+// (v328 review 2) The guide open in Edit sections with its sections being found again: what opens it (Continue, the
+// Library) waits for them, as ← Plan does; it had laid the old plan over the new sections
+function afterSeg(id, fn) {
+  if (!(assignData && id != null && id === curId && sfmode === 'review' && segPendingNow())) return false;
+  const g = loadGen,
+    t0 = Date.now(),
+    wait = function () {
+      if (g !== loadGen || curId !== id) return;
+      if (!segBusy) fn();
+      else if (Date.now() - t0 < 60000) setTimeout(wait, 150);
+      else note('The sections are still being found. Open the guide again once they are.');
+    };
+  note('The sections are still being found: the guide opens once they are.');
+  setTimeout(wait, 150);
+  return true;
+}
 function continueGuide(id) {
+  if (
+    afterSeg(id, function () {
+      continueGuide(id);
+    })
+  )
+    return;
   if (assignData && id != null && id === curId && !pgMode && !cropMode && !guideStale() && !secEdPending()) {
     // (painted once: v307)
     if (sfmode !== 'color') {
@@ -763,6 +801,12 @@ function continueGuide(id) {
   openDesign(id, true);
 }
 function openDesign(id, cont) {
+  if (
+    afterSeg(id, function () {
+      openDesign(id, cont);
+    })
+  )
+    return;
   ++loadGen;
   _contNext = false;
   if (
@@ -775,6 +819,17 @@ function openDesign(id, cont) {
     !guideStale() &&
     !secEdPending()
   ) {
+    // (v328 review: a photo being read ends without a word, 26-tick; Check them's draft is the visit's before:
+    // closed, nothing applied, as leaving does)
+    _tickRun++;
+    if (_tickBusy) tickBusy(null);
+    // (the same guide: Tick off's offer kept, as Continue keeps it)
+    if (tickOffer) tickOffer.g = loadGen;
+    if (colCheck) {
+      colCheck = null;
+      outlineSecs(null);
+      if (sfmode === 'color') renderControls();
+    }
     if (sfmode === 'review') {
       sfmode = 'guide';
       secFwdEnd();

@@ -419,7 +419,8 @@ function parseState(raw) {
     v: {
       mode: f('mode', (x) => typeof x === 'string', 'home'),
       palSize: f('palSize', (x) => Number.isInteger(x) && x >= 2 && x <= 16, 4),
-      harmony: f('harmony', (x) => typeof x === 'string' && !!HARM[x], 'complementary'),
+      // (v328 review: its own names only, not an object's, "toString")
+      harmony: f('harmony', (x) => typeof x === 'string' && harmOk(x), 'complementary'),
       tones: mk('tones', TK),
       sats: mk('sats', SK),
       drawn: f('drawn', arr, [], (a) => [...new Set(idxs('drawn', a))]),
@@ -442,7 +443,7 @@ function parseState(raw) {
       palH: arr(v.palH)
         ? v.palH
             .filter((x) => x !== undefined)
-            .map((x) => (typeof x === 'string' && HARM[palHarm(x)] ? x : null))
+            .map((x) => (typeof x === 'string' && harmOk(palHarm(x)) ? x : null))
         : [],
       // (v318.30) the marker each Rainbow was built from, in step with palettes (null: not from one, or not a Rainbow);
       // an older save has none. Read as it is: picker.js (rbSeedLoad) puts it back only where it still fits

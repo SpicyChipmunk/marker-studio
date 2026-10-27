@@ -170,7 +170,8 @@ after(teardown);
     );
   const shop = (page) => page.evaluate(() => ({ ink: { ...state.ink }, wish: state.wish.map((w) => w.k) }));
   test('same code: both brands of a code in one guide get a "2 brands" chip on their rows and a filled amber tag on the labels, the saved image and the PDF (page 1, close-ups and key); not on Reveal’s card', async () => {
-    const { page, errors } = await openApp({ width: 820, height: 1180 });
+    // (v328: the Labelled page, whose page 1 has the labels; Page to colour's has none)
+    const { page, errors } = await openApp({ width: 820, height: 1180, storage: { 'ms-pdf-what': 'page' } });
     await benGuide(page);
     const same = await sameKeys(page);
     for (const c of ['Y26', 'R46', 'RV09'])
@@ -801,7 +802,8 @@ after(teardown);
     assert.deepEqual(errors, []);
   });
   test('PDF close-ups: brand tags in print colours, near-black and white (they were the screen’s)', async () => {
-    const { page, errors } = await openApp({ width: 820, height: 1180 });
+    // (v328: the Labelled page, whose page 1 has the labels; Page to colour's has none)
+    const { page, errors } = await openApp({ width: 820, height: 1180, storage: { 'ms-pdf-what': 'page' } });
     await sampleGuide(page);
     await idle(page);
     await page.evaluate(() => {

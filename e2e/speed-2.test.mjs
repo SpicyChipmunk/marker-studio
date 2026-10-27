@@ -267,7 +267,12 @@ after(teardown);
           P = { letter: [612, 792], a4: [595.28, 841.89] }[localStorage.getItem('ms-paper') || 'letter'] || [
             612, 792,
           ];
-        return Array.from(await t.canvasesToPDF(t.buildPDFPages(false, false), P[0], P[1], false));
+        // (v328: Page to colour, the default, has its reference page in colour: a JPEG, as the download has it)
+        const pages = t.buildPDFPages(false, false),
+          kinds = t.pdfKinds.slice();
+        return Array.from(
+          await t.canvasesToPDF(pages, P[0], P[1], false, null, (i) => !!(kinds[i] && kinds[i].col)),
+        );
       }),
     );
     assert.ok(got.equals(ref), 'the same bytes');
