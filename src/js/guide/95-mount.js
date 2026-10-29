@@ -234,6 +234,15 @@ function mount() {
     '</button></div>' +
     '<div id="sfCtl"></div></div>' +
     '<div id="sfLive" class="sfsr" aria-live="polite"></div><input type="file" id="sfFile" class="fileinput" accept="image/*"><input type="file" id="sfPdfFile" class="fileinput" accept="application/pdf,.pdf"><input type="file" id="sfImpFile" class="fileinput" accept="application/json,.json"><input type="file" id="sfPpFile" class="fileinput" accept="image/*">';
+  // (v329: the guide's spoken line in the body, beside #msSay: inside the guide it went inert with the page while a sheet
+  // or a dialog was open, so what the marker picker said wasn't heard; layers.js modalSync)
+  {
+    const lv = root.querySelector('#sfLive');
+    if (lv) {
+      if (document.querySelector('body > #sfLive')) lv.remove();
+      else document.body.appendChild(lv);
+    }
+  }
   metaEl = document.getElementById('sfMeta');
   root.addEventListener('click', function (e) {
     if (e.target.closest('[data-gomk]') && api.goMarkers) api.goMarkers();

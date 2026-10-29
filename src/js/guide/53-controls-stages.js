@@ -123,6 +123,12 @@ function edBarWire() {
     // (v318 polish: after the screen is drawn, not in the frame's own callback: with the label points already worked
     // out, "Building…" never showed)
     afterPaint(function () {
+      // (v329: the section map's signature first, held for the whole Build: its label points, the texture and the
+      // Build itself read it, once each before, each a pass over every pixel; labelsSigDone below)
+      if (g === loadGen)
+        try {
+          labelsSigWarm(true);
+        } catch (e) {}
       // (v307: the label points worked out in the worker first, while "Building…" shows: lptsReady, 40-render)
       lptsReady().then(function () {
         // (v318.23: what depends on the sections alone, the texture's distances and the mood pictures' lines, in a task
@@ -134,12 +140,8 @@ function edBarWire() {
             if (mpOn()) mpLinesImage();
           } catch (e) {}
         // (v324: and the section map's signature in a task of its own, read for every pixel: about 0.2 s off Build's
-        // own hold on a big photo, slowed 4×)
+        // own hold on a big photo, slowed 4×; v329: worked out at the start instead, and held)
         afterPaint(function () {
-          if (g === loadGen && !assignData)
-            try {
-              labelsSigWarm();
-            } catch (e) {}
           afterPaint(function () {
             // (the first Build of a new picture blooms: 41-bloom.js; v320: so does Build after the sections were
             // changed in Edit sections, the plan laid on them afresh)
@@ -156,6 +158,7 @@ function edBarWire() {
               }
               if (first && assignData && sfmode === 'guide') bloomStart();
             } finally {
+              labelsSigDone();
               if (b.isConnected) {
                 b.disabled = false;
                 b.innerHTML = 'Build guide ' + icNav(1);
@@ -165,7 +168,7 @@ function edBarWire() {
             }
           });
         });
-      });
+      }, labelsSigDone);
     });
   }); // show "Building…" before the work starts
   var _fx = document.getElementById('sfFix');
@@ -672,6 +675,9 @@ function secQuickN() {
 }
 function ctlSections() {
   if (sfmode === 'review' && !assignData && segWarn && !segWarn.ok) _secFullAt = loadGen;
+  // (v329: the sections are being looked at: checked for gaps in the lines, in the background once they're drawn,
+  // 66-gaps)
+  if (sfmode === 'review') afterPaint(gapWant);
   const mv = minPos,
     quick = secQuick(),
     // (the count as it was, so the line and the status bar don't read 0 until the sections are drawn again)
@@ -681,13 +687,16 @@ function ctlSections() {
       (quick
         ? '<div id="sfQuick" class="sfquick"><h3 class="sfedhead" id="sfQuickHead" tabindex="-1">Looks right?</h3><div class="sfc-note sfedline">We found <b id="sfQuickN">' +
           esc(cntTxt) +
-          '</b> to colour, shown in pale colours. The teal <span class="sfc-sw sfc-sw-bg"></span> is background: it stays white.</div></div>'
+          '</b> to colour, shown in pale colours. The teal <span class="sfc-sw sfc-sw-bg"></span> is background: it stays white.</div>' +
+          // (v329: possible gaps in the lines, once the check has found some: Review, 66-gaps)
+          '<div id="sfGapLine" class="sfc-note sfedline" hidden></div></div>'
         : '') +
       '<h3 class="sfedhead" id="sfSecHead" tabindex="-1"' +
       (quick ? ' hidden' : '') +
       '>Edit sections</h3><div class="sfc-note sfedline"' +
       (quick ? ' hidden' : '') +
-      '>Merge, split or add where the lines didn\u2019t come out right.</div>',
+      '>Merge, split or add where the lines didn\u2019t come out right.</div>' +
+      (quick ? '' : '<div id="sfGapLine" class="sfc-note sfedline" hidden></div>'),
     // (v318.32) a guide opened again from the Library (or Resume, or a guide file) has no photo: a saved guide keeps its
     // section map, not the photo (97-open: srcImg = null). Adjust photo had gone from Edit sections without a word
     // (Ben: "the crop tools disappear"); now it stays, and opens to say why, with the picker for a new guide from the
@@ -899,6 +908,8 @@ function ctlSections() {
         editPressed();
       });
   });
+  // (v329: the line for possible gaps, if the check has found any: 66-gaps)
+  gapLineSync();
   setEditMode(editMode);
   editPressed();
   updateUndoUI();

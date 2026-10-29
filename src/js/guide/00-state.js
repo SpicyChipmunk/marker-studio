@@ -28,7 +28,18 @@ const UPSIDE = 1600;
 const LFONT = '"Hanken Grotesk",system-ui,-apple-system,sans-serif';
 
 // ---- loading a picture ----
-let loadGen = 0; // written by: 20-image-input, 97-open
+let loadGen = 0; // written by: 20-image-input (resetForNewPicture), 97-open, 53-controls-stages
+// (v329) a file being opened, the sample too, has a count of its own: loadGen moves only when its picture replaces
+// the guide (resetForNewPicture). A file cancelled (a PDF's page chooser) or that fails left loadGen moved on with the
+// old guide still on screen, so everything stamped with it (Tick off's offer, Colour along's find, a pending Undo
+// check) took the guide for changed. A newer pick, or a guide opened meanwhile, still drops the older pick
+let pickGen = 0;
+function pickNow() {
+  return { p: ++pickGen, g: loadGen };
+}
+function pickLive(t) {
+  return !!t && t.p === pickGen && t.g === loadGen;
+}
 let srcImg = null; // written by: 20-image-input, 22-straighten, 65-edit, 97-open
 let srcUp = false; // a picture of the person's own, enlarged to UPSIDE if smaller; not the sample (20-image-input)
 // how much the picture was enlarged (1: not at all). Min section size (minPx) and the specks of ink cleared

@@ -6,6 +6,8 @@
 function resetForNewPicture() {
   // (v318.14: sections still being found for the picture before go with it)
   segStop();
+  // (v329: and a check for gaps in its lines, 66-gaps)
+  gapReset();
   // (v320: a wait for a photo before this ends; a new photo's own starts again in detect)
   waitEnd();
   // (v318.35: Treat hatching as one section starts again from the picture's own default, pgProceed)
@@ -1576,10 +1578,10 @@ function _loadSample() {
   _smpLoad = true;
   note('Loading sample\u2026');
   smpOpenShow();
-  const gen = ++loadGen;
+  const gen = pickNow();
   var img = new Image();
   img.onload = function () {
-    if (gen !== loadGen) {
+    if (!pickLive(gen)) {
       smpOpenHide();
       return;
     }
@@ -1594,7 +1596,7 @@ function _loadSample() {
   img.onerror = function () {
     _smpLoad = false;
     smpOpenHide();
-    if (gen === loadGen) note('Couldn\u2019t open the sample. Try again.');
+    if (pickLive(gen)) note('Couldn\u2019t open the sample. Try again.');
   };
   var _sv = SAMPLES[si];
   img.src = _sv.slice(0, 5) === 'data:' ? _sv : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(_sv);
@@ -1605,7 +1607,7 @@ function smpOpen(img, gen, nm) {
       note('Couldn\u2019t load the sample. Try again.');
       return;
     }
-    if (gen !== loadGen) return;
+    if (!pickLive(gen)) return;
     resetForNewPicture();
     // (v318.13) the sample keeps Min section size as it was: a clean drawing at its own size, whose smallest real
     // sections are under 1 mm on a page that size (its 166 sections at the default)
@@ -1672,11 +1674,11 @@ function _loadImage(file) {
   _smpLoad = false;
   // (v313: a PDF opens with PDF.js, 21-pdf)
   if (isPdf(file)) {
-    loadPdf(file, ++loadGen);
+    loadPdf(file, pickNow());
     return;
   }
   note('Reading photo\u2026');
-  const gen = ++loadGen;
+  const gen = pickNow();
   // (v320: the wait's steps from the moment the photo is chosen)
   waitBegin(1);
   let url = null;
@@ -1702,7 +1704,7 @@ function _loadImage(file) {
         URL.revokeObjectURL(url);
         url = null;
       }
-      if (gen !== loadGen) return;
+      if (!pickLive(gen)) return;
       if (!img.width || !img.height) {
         waitEnd();
         note('That image looked empty \u2014 try another file.');
@@ -1716,11 +1718,11 @@ function _loadImage(file) {
       } catch (e) {}
       Promise.all([lens, Promise.resolve(dec).catch(function () {})]).then(function (r) {
         const f35 = r[0];
-        if (gen !== loadGen) return;
+        if (!pickLive(gen)) return;
         note('Detecting sections\u2026');
         // (v318 polish: drawn before the work below holds the page, or "Reading photo…" stayed up throughout)
         afterPaint(function () {
-          if (gen !== loadGen) return;
+          if (!pickLive(gen)) return;
           holdTime(
             'New photo: open',
             function () {
@@ -1794,7 +1796,7 @@ function _loadImage(file) {
         URL.revokeObjectURL(url);
         url = null;
       }
-      if (gen !== loadGen) return;
+      if (!pickLive(gen)) return;
       waitEnd();
       note('That file couldn\u2019t be opened as a picture \u2014 try a JPEG or PNG.');
     };
@@ -1803,10 +1805,10 @@ function _loadImage(file) {
   if (url) go(url);
   else {
     fr.onload = function () {
-      if (gen === loadGen) go(fr.result);
+      if (pickLive(gen)) go(fr.result);
     };
     fr.onerror = function () {
-      if (gen !== loadGen) return;
+      if (!pickLive(gen)) return;
       waitEnd();
       note('Couldn’t read that file.');
     };

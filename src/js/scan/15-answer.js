@@ -43,6 +43,8 @@ function scanZoom(e, from) {
     '<button type="button" class="btn-primary" data-a="close">Not now</button></div></div>';
   const end = function (back) {
     o.remove();
+    // (v329: the page live again before focus goes back to it, layers.js)
+    modalSync();
     if (back === false) return;
     const n = scanList.indexOf(e),
       to =

@@ -1462,6 +1462,53 @@ after(teardown);
     assert.equal(await page.evaluate(() => document.activeElement.id), 'savedList');
     assert.deepEqual(errors, []);
   });
+  test('v329: with the Library open the page behind is inert, not hidden by aria-modal: the toast, its Undo and the spoken lines stay live; a dialog over it keeps it inert; closed, nothing is', async () => {
+    const { page, errors } = await openApp({
+      storage: onboarded({
+        [KEY]: appState({ saved: [pal(['Ohuhu|R014'], 2, 'Two'), pal(['Ohuhu|B08'], 1, 'One')] }),
+      }),
+    });
+    await page.focus('#homeLibCard');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#savedOverlay.on');
+    await idle(page);
+    // (inert, or inside something inert)
+    const dead = (sel) =>
+      page.evaluate((s) => {
+        const e = document.querySelector(s);
+        return e ? !!e.closest('[inert]') : null;
+      }, sel);
+    assert.equal(await dead('.wrap'), true, 'the app behind');
+    assert.equal(await dead('#savedOverlay'), false);
+    assert.equal(await page.getAttribute('#savedOverlay', 'aria-modal'), 'false');
+    for (const s of ['#msSay', '#msLive']) assert.equal(await dead(s), false, s + ' live');
+    // a guide deleted: its toast and Undo are reachable, and Undo works with the Library still open
+    await kbDel(page, 2);
+    assert.match(await page.textContent('#msToast'), /Deleted/);
+    assert.equal(await dead('#msToast'), false);
+    assert.match(await page.textContent('#msSay'), /Deleted/);
+    await page.click('#toastAct');
+    await idle(page);
+    assert.equal(await page.evaluate(() => state.saved.some((s) => s.id === 2)), true, 'Undo put it back');
+    assert.ok(await page.isVisible('#savedOverlay.on'), 'the Library still open');
+    // Back up & restore over it: the Library inert under it, live again when it closes, focus back
+    await page.click('#libBkText');
+    await page.waitForSelector('#backupOverlay.on');
+    await idle(page);
+    assert.equal(await dead('#savedOverlay'), true, 'the Library under Back up');
+    assert.equal(await dead('#backupOverlay'), false);
+    await page.keyboard.press('Escape');
+    await idle(page);
+    assert.equal(await dead('#savedOverlay'), false, 'the Library live again');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'libBkText', 'focus back');
+    // closed: nothing inert, aria-modal as it was, focus back on what opened it
+    await page.keyboard.press('Escape');
+    await idle(page);
+    assert.equal(await page.evaluate(() => document.querySelectorAll('[inert]').length), 0);
+    assert.equal(await page.getAttribute('#savedOverlay', 'aria-modal'), 'true');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'homeLibCard');
+    assert.deepEqual(errors, []);
+  });
   test('Colour along with a marker highlighted leaves the Library picture as it was', async () => {
     const { page, errors } = await openApp();
     await sampleGuide(page);

@@ -2940,3 +2940,83 @@ import { core, createApp } from './harness.mjs';
     assert.equal(t.spiralOf(odd, w, h, 114), null);
   });
 }
+
+// ---- v329: possible gaps in the pen lines (66-gaps) ----
+// Section maps made here (ink -1, paper a section): a line that stops just short of another, of the dark beyond the
+// paper, or of the picture's edge (a page cropped to the paper) is offered, where closing it would split one section
+// into two good parts; a wider gap inside the drawing isn't, nor is a page with none
+{
+  const app = createApp(),
+    t = app.__mstest;
+  // W×H paper (section 1), with ink drawn by rect(x0, y0, x1, y1)
+  function page(W, H, rects) {
+    const L = new Int32Array(W * H).fill(1);
+    for (const [x0, y0, x1, y1] of rects)
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) L[y * W + x] = -1;
+    return L;
+  }
+  const W = 400,
+    H = 300,
+    frame = [
+      [40, 40, 360, 44],
+      [40, 256, 360, 260],
+      [40, 40, 44, 260],
+      [356, 40, 360, 260],
+    ];
+  const one = (L, w = W, h = H) => JSON.parse(JSON.stringify(t.gapFind(L, w, h, 120)));
+  test('v329 gaps: a line stopping 2 px short of another is offered, splitting the box in two', () => {
+    // a line down the middle of a box, stopping 2 px above its foot
+    const r = one(page(W, H, [...frame, [198, 44, 202, 254]]));
+    assert.equal(r.lw, 3, 'the line width, from the skeleton');
+    assert.equal(r.res.length, 1);
+    const s = r.res[0];
+    assert.equal(s.edge, false);
+    assert.ok(s.gap > 0.5 && s.gap <= 3, 'gap ' + s.gap);
+    assert.ok(Math.abs(s.x0 - 200) <= 2 && s.y0 >= 252 && s.y1 <= 257, JSON.stringify(s));
+    assert.ok(s.parts[1] > 0.4 * s.parts[0], 'two halves');
+  });
+  test('v329 gaps: a wider gap inside the drawing is not offered (a letter’s opening, a vein’s end), nor a closed box', () => {
+    assert.equal(one(page(W, H, [...frame, [198, 44, 202, 246]])).res.length, 0, '10 px short');
+    assert.equal(one(page(W, H, [...frame, [198, 44, 202, 256]])).res.length, 0, 'closed');
+  });
+  test('v329 gaps: a line stopping short of the dark beyond the paper, and of a cropped page’s edge', () => {
+    // dark beyond the paper's right side (a 12 px strip), a line from the left edge towards it, stopping 10 px short;
+    // two more lines, which reach it, so the pen's width is the lines' (the strip's skeleton is short beside them)
+    const dark = [
+      [W - 12, 0, W, H],
+      [0, 60, W - 12, 64],
+      [0, 236, W - 12, 240],
+    ];
+    let r = one(page(W, H, [...dark, [0, 148, W - 22, 152]]));
+    assert.equal(r.lw, 3);
+    assert.equal(r.res.length, 1);
+    assert.equal(r.res[0].edge, true);
+    assert.ok(Math.abs(r.res[0].gap - 10) <= 1.5, 'gap ' + r.res[0].gap);
+    // too far from the dark (30 px, over 6 line widths): not offered
+    assert.equal(one(page(W, H, [...dark, [0, 148, W - 42, 152]])).res.length, 0);
+    // cropped to the paper: the line runs from the left edge and stops 5 px short of the right one
+    r = one(page(W, H, [[0, 148, W - 5, 152]]));
+    assert.equal(r.res.length, 1);
+    assert.equal(r.res[0].edge, true);
+    assert.ok(r.res[0].x1 === W - 1, JSON.stringify(r.res[0]));
+    // 20 px short of a cropped edge: not (over 2 line widths)
+    assert.equal(one(page(W, H, [[0, 148, W - 20, 152]])).res.length, 0);
+  });
+  test('v329 gaps: a result is for the section map it was found for: another map, an edit or another picture drops it', () => {
+    t.W = W;
+    t.H = H;
+    t.labels = page(W, H, frame);
+    const s = { x0: 200, y0: 254, x1: 200, y1: 256, gap: 2, edge: false, sec: 1, parts: [1, 1] };
+    t.gapR = { k: t.gapKey(), res: [s], lw: 3 };
+    assert.equal(t.gapList().length, 1);
+    t.gapDismiss(s);
+    assert.equal(t.gapList().length, 0, 'dismissed');
+    t.gapR = { k: t.gapKey(), res: [s, { ...s, x0: 100, x1: 100 }], lw: 3 };
+    assert.equal(t.gapList().length, 1, 'still dismissed when found again');
+    t.labelsEdited();
+    assert.equal(t.gapList().length, 0, 'an edit');
+    t.gapR = { k: t.gapKey(), res: [s], lw: 3 };
+    t.labels = page(W, H, frame);
+    assert.equal(t.gapList().length, 0, 'the sections found again');
+  });
+}

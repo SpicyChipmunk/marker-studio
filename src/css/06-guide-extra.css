@@ -1771,6 +1771,16 @@ html.sfsheetsd .mstoast {
 #sfRoot .sfedline {
   margin-bottom: 4px;
 }
+/* v329: a possible gap's choices (66-gaps): Close, Dismiss, Next, Close all, on one line where they fit */
+#sfRoot .sfgapbtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+#sfRoot .sfgapbtns button {
+  min-height: 44px;
+}
 /* v288: "Tap a section…" is about Colours and Pattern, so not shown on Shading and Share (its room kept: switching
    tabs moves nothing, and every tab is as tall as the tallest) */
 #sfRoot [data-tab='shading'] .sfinfo[data-hint='tap'],

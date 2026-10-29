@@ -6,6 +6,10 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v329',
+    t: 'Where a pen line stops just short, so one section should be two, Looks right? says how many possible gaps it found; Review shows each one, and Close joins the line (Undo takes it back). Zoomed in, the Plan’s outlines are drawn sharp, as in Colour along. A big backup, with its guides’ photos, restores on an iPad. With VoiceOver, a message’s Undo or Share can be reached while the Library or another dialog is open.',
+  },
+  {
     v: 'v328',
     t: 'Coloured on paper? A photo of your page ticks off what you’ve done: in Colour along, Tick them off from a photo lines your photo up with the page you made the guide from, or a printout of it, and offers the sections coloured since, with Check them to add or leave any out first. Print’s new Page to colour is the page with no labels to colour on, then your picture in colour with its codes to read beside it, and a shading map with the tones at full strength; the tone lines print faint. The offer for a page coloured in already finds pale colours too, and a spiral binding read as part of the page can be trimmed off.',
   },

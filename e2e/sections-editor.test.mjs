@@ -2,7 +2,10 @@
 // (v320) Tests organised by feature: each block below came from the file named above it, its tests unchanged.
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import {
+  ROOT,
   answerAsks,
   askAnswer,
   asked,
@@ -1070,6 +1073,88 @@ after(teardown);
     await idle(page);
     assert.equal(await page.evaluate(() => __mstest.undoCount), n0, 'undone');
     assert.equal(await page.isVisible('#sfPlanUndo'), n0 > 0);
+    assert.deepEqual(errors, []);
+  });
+}
+
+// ---- v329: possible gaps in the lines (66-gaps) ----
+// e2e/fixtures/gap-page.png: line art drawn for the tests, a grid of boxes where two lines stop 3 px short (of the
+// frame's foot, and of its right side), and an open "C" whose opening is wider than the line (not a gap to close)
+{
+  const ONB = { 'ms-onboarded': '1', 'ms-setup-tip': '1', 'ms-photo-tips': '1' };
+  async function gapPage(page) {
+    const buf = await readFile(join(ROOT, 'e2e', 'fixtures', 'gap-page.png'));
+    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.evaluate(() => SF.pickPhoto())]);
+    await fc.setFiles({ name: 'gap-page.png', mimeType: 'image/png', buffer: buf });
+    await page.waitForSelector('#sfBuild', { state: 'visible', timeout: 60000 });
+    await page.waitForSelector('#sfGapLine:not([hidden])', { timeout: 30000 });
+  }
+  const count = (page) => page.evaluate(() => parseInt(document.getElementById('sfCount').textContent, 10));
+  const line = (page) => page.evaluate(() => document.getElementById('sfGapLine').textContent.trim());
+  test('v329 gaps: the quick step says 2 possible gaps · Review; Review shows them in Edit sections, zoomed to the first; Dismiss, Close, Undo', async () => {
+    const { page, errors } = await openApp({ width: 820, height: 1180, storage: { ...ONB, 'ms-sec-tools': '0' } });
+    await gapPage(page);
+    assert.ok(await page.isVisible('#sfQuick'), 'the quick step');
+    assert.equal(await line(page), '2 possible gaps in the lines, where a section may be two · Review');
+    assert.match(await page.textContent('#sfLive'), /^2 possible gaps in the lines/);
+    const n0 = await count(page);
+    await page.click('#sfGapLine [data-gap="review"]');
+    await idle(page);
+    assert.equal(await page.isVisible('#sfQuick'), false, 'Edit sections');
+    assert.match(
+      await line(page),
+      /^Gap 1 of 2: a line stops just short here\. Close it to make two sections\./,
+    );
+    assert.ok((await page.evaluate(() => __mstest.zoom)) >= 4, 'zoomed to it');
+    assert.equal(
+      await page.evaluate(() => document.activeElement.dataset.gap),
+      'close',
+      'the keyboard on Close',
+    );
+    // Dismiss: the other one shown, alone
+    await page.click('#sfGapLine [data-gap="dismiss"]');
+    await idle(page);
+    assert.match(await line(page), /^Gap 1 of 1:/);
+    assert.equal(await page.locator('#sfGapLine [data-gap="next"]').count(), 0);
+    // Close: one more section, and the line goes
+    await page.click('#sfGapLine [data-gap="close"]');
+    await idle(page);
+    assert.equal(await count(page), n0 + 1, 'the gap closed: two sections');
+    assert.equal(await page.isVisible('#sfGapLine'), false);
+    // Undo: the section as it was; checked again, the gap is back (the one dismissed stays dismissed)
+    await page.keyboard.press('Control+z');
+    await idle(page);
+    assert.equal(await count(page), n0);
+    await page.waitForSelector('#sfGapLine:not([hidden])', { timeout: 30000 });
+    assert.equal(await line(page), '1 possible gap in the lines, where a section may be two · Show');
+    assert.deepEqual(errors, []);
+  });
+  test('v329 gaps: Close all closes both as one Undo step; an edit checks again; none for the sample', async () => {
+    const { page, errors } = await openApp({ width: 820, height: 1180, storage: ONB });
+    await gapPage(page);
+    assert.match(await line(page), /^2 possible gaps .* · Show$/, 'Edit sections: Show');
+    const n0 = await count(page),
+      g0 = await page.evaluate(() => __mstest.gapN.started);
+    await page.click('#sfGapLine [data-gap="show"]');
+    await idle(page);
+    await page.click('#sfGapLine [data-gap="next"]');
+    await idle(page);
+    assert.match(await line(page), /^Gap 2 of 2:/);
+    await page.click('#sfGapLine [data-gap="all"]');
+    await idle(page);
+    assert.equal(await count(page), n0 + 2);
+    assert.equal(await page.isVisible('#sfGapLine'), false);
+    await idle(page, 1200);
+    assert.equal(
+      await page.evaluate(() => __mstest.gapN.started),
+      g0,
+      'not checked again for its own closes',
+    );
+    await page.keyboard.press('Control+z');
+    await idle(page);
+    assert.equal(await count(page), n0, 'one Undo step');
+    await page.waitForSelector('#sfGapLine:not([hidden])', { timeout: 30000 });
+    assert.match(await line(page), /^2 possible gaps/);
     assert.deepEqual(errors, []);
   });
 }

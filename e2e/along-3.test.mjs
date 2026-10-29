@@ -1146,3 +1146,61 @@ after(teardown);
     assert.deepEqual(errors, []);
   });
 }
+// (v329) the Plan too: zoomed in, its outlines drawn sharp over the part on the screen; hidden at once on any change
+// (a stale copy had sat over a paint stroke), fading in again over 0.15 s (at once under Reduce motion); let go in
+// Edit sections
+{
+  test('v329: the Plan, zoomed in: a sharp copy, hidden at once on a change and faded in again; at once under Reduce motion; let go in Edit sections', async () => {
+    const { page, errors } = await openApp({ width: 390, height: 844 });
+    await sampleGuide(page);
+    await idle(page);
+    const sh = () =>
+      page.evaluate(() => {
+        const e = document.getElementById('sfSharp');
+        return e
+          ? { on: !e.hidden, w: e.width, fade: /opacity/.test(e.style.transition), op: e.style.opacity }
+          : { on: false };
+      });
+    await pause(page, 600, 'the sharp copy’s moment');
+    assert.equal((await sh()).on, false, 'none at the fit');
+    for (let i = 0; i < 3; i++) {
+      await page.click('#sfZin');
+      await idle(page);
+    }
+    const shown = () =>
+      until(
+        page,
+        () => !!document.getElementById('sfSharp') && !document.getElementById('sfSharp').hidden,
+        null,
+        'drawn sharp',
+      );
+    await shown();
+    let s = await sh();
+    assert.equal(s.fade, true, 'fades in');
+    assert.equal(s.op, '1');
+    // a change: hidden straight after the picture is drawn again, then back
+    await page.click('#sfSurprise');
+    assert.equal(
+      await page.evaluate(() => document.getElementById('sfSharp').hidden),
+      true,
+      'hidden at once on a change',
+    );
+    await idle(page);
+    await shown();
+    // Reduce motion: no fade
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.click('#sfSurprise');
+    await idle(page);
+    await shown();
+    s = await sh();
+    assert.equal(s.fade, false, 'no fade under Reduce motion');
+    assert.equal(s.op, '1');
+    // Edit sections: hidden and let go
+    await page.click('#sfBack2');
+    await idle(page);
+    s = await sh();
+    assert.equal(s.on, false);
+    assert.equal(s.w, 0, 'its pixels let go');
+    assert.deepEqual(errors, []);
+  });
+}

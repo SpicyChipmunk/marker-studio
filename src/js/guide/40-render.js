@@ -1390,6 +1390,7 @@ function renderGuide() {
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(pvCanvas, 0, 0, hw, hh, 0, 0, W, H);
     positionSun();
+    if (_shEl) sharpHide();
     return;
   }
   tkTrack(dim && revealF == null);
@@ -1581,7 +1582,7 @@ function renderGuide() {
   positionOutline();
   // (v323: Focus mode's side rail, its strip and the page as coloured so far; its sharp copy, drawn again)
   if (focus) focusSide();
-  if (sfmode === 'color' || _shEl) sharpStale(inc ? 'part' : true);
+  if (sfmode === 'color' || sfmode === 'guide' || _shEl) sharpStale(inc ? 'part' : true);
   if (!pickPending()) scheduleAutosave();
 }
 function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tick, fcur, ring) {

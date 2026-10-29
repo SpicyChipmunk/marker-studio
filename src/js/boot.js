@@ -1118,66 +1118,83 @@ if (STORE_BLOCKED) {
 }
 // Library › Import a guide: a guide file opens; a backup is offered as a restore; anything else is said once, by the button
 function importPicked(f, btn) {
-  const fr = new FileReader();
-  fr.onload = function () {
-    let d = null;
-    try {
-      d = JSON.parse(fr.result);
-    } catch (_) {}
-    if (
-      d &&
-      typeof d === 'object' &&
-      (d.type === 'ms-backup' || d.type === 'ms-guides' || Array.isArray(d) || Array.isArray(d.owned))
-    ) {
-      // (asked in the app's own dialog, v288)
-      (window.SF && SF.askBox
-        ? SF.askBox(
-            'This is a backup',
-            'This file is a Marker Studio backup, not a single guide. Restore it?',
-            '<button type="button" class="btn-primary" data-a="go">Restore it</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
-            true,
-          )
-        : Promise.resolve(
-            confirm('This is a Marker Studio backup, not a single guide. Restore it?') ? 'go' : 'stay',
-          )
-      ).then(function (a) {
-        if (a === 'go') restoreAny(f, btn.id);
-      });
-      return;
-    }
-    if (
-      d &&
-      d.payload &&
-      typeof d.payload.lmap === 'string' &&
-      /^data:image\/png;base64,[A-Za-z0-9+/=]{16,}$/.test(d.payload.lmap) &&
-      window.SF &&
-      SF.importFile
-    ) {
-      closeDialog(savedOverlay);
-      SF.importFile(f);
-      return;
-    }
-    // (v308) a photo: offered as a new guide; an empty file, or a guide file or backup cut short, said as such
-    const why = d ? 'bad' : fileTrouble(f, fr.result);
-    if (why === 'picture' && window.SF && SF.photoFile) {
-      SF.askBox(
-        'Make a guide from this photo?',
-        'That\u2019s a photo, not a guide file. Its sections can be found for a new guide.',
-        '<button type="button" class="btn-primary" data-a="go">Make a guide</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
-        true,
-      ).then(function (a) {
-        if (a !== 'go') return;
+  // (v329) a big file: whether it's a backup is told from its start (a backup says what it is first), not by reading
+  // it all; restoreAny then reads it a slice at a time
+  if (f && f.size > RESTORE_BIG && f.slice && typeof Blob !== 'undefined' && Blob.prototype.text) {
+    f.slice(0, 65536)
+      .text()
+      .then(function (t) {
+        if (/^\s*\{/.test(t) && /"type"\s*:\s*"ms-(backup|guides)"/.test(t.slice(0, 6000))) askRestore();
+        else importRead();
+      }, importRead);
+    return;
+  }
+  importRead();
+  function askRestore() {
+    // (asked in the app's own dialog, v288)
+    (window.SF && SF.askBox
+      ? SF.askBox(
+          'This is a backup',
+          'This file is a Marker Studio backup, not a single guide. Restore it?',
+          '<button type="button" class="btn-primary" data-a="go">Restore it</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+          true,
+        )
+      : Promise.resolve(
+          confirm('This is a Marker Studio backup, not a single guide. Restore it?') ? 'go' : 'stay',
+        )
+    ).then(function (a) {
+      if (a === 'go') restoreAny(f, btn.id);
+    });
+  }
+  function importRead() {
+    const fr = new FileReader();
+    fr.onload = function () {
+      let d = null;
+      try {
+        d = JSON.parse(fr.result);
+      } catch (_) {}
+      if (
+        d &&
+        typeof d === 'object' &&
+        (d.type === 'ms-backup' || d.type === 'ms-guides' || Array.isArray(d) || Array.isArray(d.owned))
+      ) {
+        askRestore();
+        return;
+      }
+      if (
+        d &&
+        d.payload &&
+        typeof d.payload.lmap === 'string' &&
+        /^data:image\/png;base64,[A-Za-z0-9+/=]{16,}$/.test(d.payload.lmap) &&
+        window.SF &&
+        SF.importFile
+      ) {
         closeDialog(savedOverlay);
-        SF.photoFile(f);
-      });
-      return;
-    }
-    errCard(btn, importWhy(why, fr.result));
-  };
-  fr.onerror = function () {
-    errCard(btn, 'Couldn\u2019t read that file.');
-  };
-  fr.readAsText(f);
+        SF.importFile(f);
+        return;
+      }
+      // (v308) a photo: offered as a new guide; an empty file, or a guide file or backup cut short, said as such
+      const why = d ? 'bad' : fileTrouble(f, fr.result);
+      if (why === 'picture' && window.SF && SF.photoFile) {
+        SF.askBox(
+          'Make a guide from this photo?',
+          'That\u2019s a photo, not a guide file. Its sections can be found for a new guide.',
+          '<button type="button" class="btn-primary" data-a="go">Make a guide</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+          true,
+        ).then(function (a) {
+          if (a !== 'go') return;
+          closeDialog(savedOverlay);
+          SF.photoFile(f);
+        });
+        return;
+      }
+      errCard(btn, importWhy(why, fr.result));
+    };
+    fr.onerror = function () {
+      errCard(btn, 'Couldn\u2019t read that file.');
+    };
+    fr.readAsText(f);
+  }
 }
 // (v308) why a file picked in Import a guide can't be opened, in words
 function importWhy(why, text) {

@@ -105,9 +105,11 @@ after(teardown);
         o.getAttribute('role'),
         o.getAttribute('aria-modal'),
         document.getElementById(o.getAttribute('aria-labelledby')).textContent,
+        document.querySelector('.wrap').inert,
       ];
     });
-    assert.deepEqual(attrs, ['dialog', 'true', 'How it works']);
+    // (v329: modal by the page behind it made inert, aria-modal "false" while open: layers.js modalSync)
+    assert.deepEqual(attrs, ['dialog', 'false', 'How it works', true]);
     await idle(page);
     assert.equal(await activeId(page), 'hiwNext');
     assert.equal(await seen(page), '1');
@@ -284,9 +286,11 @@ after(teardown);
         o.getAttribute('role'),
         o.getAttribute('aria-modal'),
         document.getElementById(o.getAttribute('aria-labelledby')).textContent,
+        document.querySelector('.wrap').inert,
       ];
     });
-    assert.deepEqual(attrs, ['dialog', 'true', 'Help']);
+    // (v329: modal by the page behind it made inert, aria-modal "false" while open: layers.js modalSync)
+    assert.deepEqual(attrs, ['dialog', 'false', 'Help', true]);
     for (const s of ['Photographing a page', 'Glossary', 'Your data', 'About'])
       assert.ok((await page.textContent('#helpOverlay')).includes(s), s);
     // glossary

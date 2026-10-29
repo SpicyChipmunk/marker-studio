@@ -51,6 +51,8 @@ function openDialog(el) {
 }
 function closeDialog(el) {
   el.classList.remove('on');
+  // (v329: the page live again at once, for focus put back straight after: modalSync below)
+  modalSync();
 }
 // (v308.1) while a dialog or the Library is open, the page under it doesn't scroll: a swipe on the Library could
 // scroll Home behind it instead, and on an iPad that moved Safari's bars and showed a strip of Home at the foot.
@@ -333,4 +335,84 @@ document.addEventListener(
       a.focus();
     }
   });
+})();
+
+// (v329) While a dialog is open (or a guide sheet, or a question made on the fly), the rest of the page is made inert,
+// and the dialog's aria-modal set to "false": in Safari aria-modal hides everything outside the dialog from VoiceOver,
+// so a toast's words weren't spoken and its Undo or Share couldn't be reached (the Library's "Deleted · Undo", Back
+// up's "Your backup is ready · Share"). inert keeps VoiceOver, the keyboard and taps inside the dialog in every
+// browser. Left out: the toast, the spoken lines (#msSay, #msLive, the guide's #sfLive) and a sheet's scrim (its tap
+// closes the sheet), and what's inert already (full screen's, Focus mode's, Reveal's), which is theirs to undo. The top
+// one is the last showing in the page, as topDialog counts it. Run by the watchers below (an overlay's class, the
+// questions added to the body and taken off it), by openSheet and closeSheet (72-frame.js), and by everything that
+// puts focus back itself as it closes, just before: focus doesn't go to an inert element, and the watchers come later.
+let _mInert = [],
+  _mTop = null;
+function modalSync() {
+  const ms = [].filter.call(document.querySelectorAll('[aria-modal="true"],[data-ms-modal]'), function (d) {
+    return (
+      d.isConnected &&
+      (!d.classList.contains('overlay') || d.classList.contains('on')) &&
+      d.getClientRects().length > 0
+    );
+  });
+  const top = ms.length ? ms[ms.length - 1] : null;
+  if (
+    top === _mTop &&
+    _mInert.every(function (c) {
+      return c.isConnected;
+    })
+  )
+    return;
+  _mInert.forEach(function (el) {
+    el.inert = false;
+  });
+  _mInert = [];
+  if (_mTop && _mTop !== top && _mTop.hasAttribute('data-ms-modal')) {
+    _mTop.setAttribute('aria-modal', 'true');
+    _mTop.removeAttribute('data-ms-modal');
+  }
+  _mTop = top;
+  if (!top) return;
+  top.setAttribute('data-ms-modal', '1');
+  top.setAttribute('aria-modal', 'false');
+  // (a sheet that lets taps through to the picture, the marker picker's, names what stays live: data-ms-keep. What holds
+  // it isn't made inert, only what's beside it, down to it)
+  const ks = top.getAttribute('data-ms-keep'),
+    keep = ks ? document.querySelector(ks) : null;
+  const deaden = function (c) {
+    if (
+      c === keep ||
+      c.inert ||
+      // (nor a dialog that isn't open: hidden anyway, and one opening over this would still be inert when its own code
+      // puts focus in it, before the watchers run: Scan's box, over the welcome)
+      (c.classList && c.classList.contains('overlay') && !c.classList.contains('on')) ||
+      /^(SCRIPT|STYLE|LINK|TEMPLATE)$/.test(c.tagName) ||
+      c.id === 'msToast' ||
+      c.id === 'msSay' ||
+      c.id === 'msLive' ||
+      c.id === 'sfLive' ||
+      (c.classList && c.classList.contains('sfscrim'))
+    )
+      return;
+    if (keep && c.contains(keep)) {
+      [].forEach.call(c.children, deaden);
+      return;
+    }
+    c.inert = true;
+    _mInert.push(c);
+  };
+  for (let n = top; n && n !== document.body && n.parentElement; n = n.parentElement)
+    [].forEach.call(n.parentElement.children, function (c) {
+      if (c !== n) deaden(c);
+    });
+}
+// (made after the dialogs' own watchers above, so theirs come first: what had focus is noted before the page goes inert)
+(function () {
+  if (typeof MutationObserver !== 'function') return;
+  const mo = new MutationObserver(modalSync);
+  document.querySelectorAll('.overlay').forEach(function (o) {
+    mo.observe(o, { attributes: true, attributeFilter: ['class'] });
+  });
+  if (document.body) mo.observe(document.body, { childList: true });
 })();

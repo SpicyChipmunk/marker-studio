@@ -2153,3 +2153,54 @@ import fs, { readFileSync } from 'node:fs';
     assert.equal(rel(0), '');
   });
 }
+
+// ---- v329: a big backup read a slice at a time ----
+// backupScan (guide-bridge.js) against JSON.parse: random backups with quotes, backslashes, brackets and "guides" inside
+// text, a "guides" key deeper down, accents, emoji and control characters, compact and indented, read in slices from 1
+// byte to 4 KB. The head (everything but the guides) and each guide come back as the whole file parsed would give them.
+{
+  const _app = createApp(),
+    scan = _app.__eval('backupScan'),
+    plain = (x) => JSON.parse(JSON.stringify(x));
+  let seed = 7;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296,
+    pick = (a) => a[(rnd() * a.length) | 0],
+    strs = ['plain', 'a "quoted" word', 'back\\slash', 'brackets [ ] { } , :', 'é ü ’', '😀', 'tab\tnew\nline', '\\"', 'guides', '"guides":[', '\u0000x'];
+  const val = (d) => {
+    const r = rnd();
+    if (d > 3 || r < 0.3) return pick([1, -2.5e3, true, false, null, pick(strs), 0]);
+    if (r < 0.6) return Array.from({ length: (rnd() * 4) | 0 }, () => val(d + 1));
+    const o = {};
+    for (let k = 0; k < ((rnd() * 4) | 0); k++) o[pick(strs) + k] = val(d + 1);
+    return o;
+  };
+  test('backupScan: a big backup read in slices gives what reading it whole gives', async () => {
+    for (let t = 0; t < 120; t++) {
+      const guides = Array.from({ length: (rnd() * 5) | 0 }, () =>
+        rnd() < 0.9 ? { id: t, payload: val(0), u: 'data:image/jpeg;base64,' + 'QUJD'.repeat((rnd() * 40) | 0) } : val(1),
+      );
+      const d = { v: 3, type: 'ms-backup', ['x' + pick(strs)]: val(1), owned: [pick(strs)], guides, after: val(1) };
+      const txt = JSON.stringify(d, null, pick([undefined, ' ', '\n  ']));
+      for (const SL of [1, 3, 7, 64, 4096]) {
+        const r = await scan(new Blob([txt]), SL);
+        assert.ok(r, 'scanned');
+        const { guides: g0, ...rest } = d;
+        assert.deepEqual(plain(r.head), { ...rest, guides: [] });
+        assert.equal(r.n, g0.length);
+        for (let i = 0; i < r.n; i++) assert.deepEqual(plain(await r.guide(i)), g0[i]);
+      }
+    }
+  });
+  test('backupScan: a "guides" key deeper down or in text is not the list; files that aren’t backups give null', async () => {
+    for (const txt of ['{"a":{"guides":[1,2]},"guides":[{"x":1}]}', '{"s":"\\"guides\\":[","guides":[]}']) {
+      const r = await scan(new Blob([txt]), 3),
+        d = JSON.parse(txt);
+      assert.equal(r.n, d.guides.length);
+      assert.deepEqual(plain(r.head), { ...d, guides: [] });
+    }
+    assert.equal(await scan(new Blob(['{"owned":[]}']), 4), null);
+    assert.equal(await scan(new Blob(['{"guides":[{"x":1}']), 4), null);
+    assert.equal(await scan(new Blob(['[1,2]']), 4), null);
+    assert.equal(await scan(new Blob(['\xff\xd8\xff a photo']), 4), null);
+  });
+}

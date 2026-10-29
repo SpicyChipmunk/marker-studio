@@ -1335,7 +1335,11 @@ function askReplaceMarkers(o) {
   });
   const mine = state.owned.size,
     lose = mine - shared,
-    what = o && Array.isArray(o.guides) && o.guides.length ? 'palettes and guides are' : 'palettes are';
+    // (v329: a big backup's head has guides: [] and the count beside it, _guidesN: backupScan)
+    what =
+      o && ((Array.isArray(o.guides) && o.guides.length) || o._guidesN)
+        ? 'palettes and guides are'
+        : 'palettes are';
   const ask =
     window.SF && SF.askBox
       ? SF.askBox(
@@ -1970,6 +1974,134 @@ function liveSay(m) {
 // done (optional): called with what came back ({markers,palettes,guides}, and guides not added: {dup,bad,full}), or null
 // and why ('bad': not a backup, 'read': unreadable, 'full': storage full, nothing changed; nothing when nothing came
 // back). The caller then says it, instead of the toast and card here.
+// (v329) A big backup read a slice at a time. Read whole, a backup with its guides' photos needed about five times its
+// size in memory (the text, then everything made from it: 990 MB for a 192 MB file, measured), more than an iPad lets
+// a page have. backupScan goes through the file's bytes in slices (JSON's structure is ASCII, and the other bytes of
+// UTF-8 never look like it, so a character split between two slices doesn't matter) and finds the top-level "guides"
+// list and where each of its guides begins and ends. The rest of the file (the markers, palettes and settings) is read
+// as the head, with guides: []; each guide is read by itself when restoreGuideList reaches it. Resolves
+// { head, n, guide(i) }, or null for a file that isn't a backup laid out that way (the whole-file path then says why).
+const RESTORE_BIG = 10e6,
+  RESTORE_SLICE = 4 << 20;
+function backupScan(file, slice) {
+  const SL = slice || RESTORE_SLICE,
+    size = file.size;
+  let depth = 0,
+    inStr = false,
+    esc = false,
+    pos = 0,
+    keyBuf = null,
+    lastKey = '',
+    afterColon = false,
+    arrStart = -1,
+    arrEnd = -1,
+    elStart = -1,
+    inGuides = false,
+    topIsObj = null;
+  const els = [];
+  const bytes = function (b) {
+    for (let i = 0; i < b.length; i++, pos++) {
+      const c = b[i];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (c === 92) esc = true;
+        else if (c === 34) {
+          inStr = false;
+          if (keyBuf) {
+            lastKey = keyBuf.length <= 16 ? String.fromCharCode.apply(null, keyBuf) : '';
+            keyBuf = null;
+          }
+        } else if (keyBuf && keyBuf.length <= 16) keyBuf.push(c);
+        continue;
+      }
+      if (c === 34) {
+        inStr = true;
+        if (depth === 1 && topIsObj && !afterColon) keyBuf = [];
+        if (inGuides && depth === 2 && elStart < 0) elStart = pos;
+        continue;
+      }
+      if (c === 58) {
+        if (depth === 1) afterColon = true;
+        continue;
+      }
+      if (c === 44) {
+        if (depth === 1) afterColon = false;
+        if (inGuides && depth === 2 && elStart >= 0) {
+          els.push([elStart, pos]);
+          elStart = -1;
+        }
+        continue;
+      }
+      if (c === 123 || c === 91) {
+        if (topIsObj === null) topIsObj = c === 123;
+        if (depth === 1 && topIsObj && afterColon && c === 91 && lastKey === 'guides' && arrStart < 0) {
+          arrStart = pos;
+          inGuides = true;
+          depth++;
+          continue;
+        }
+        if (inGuides && depth === 2 && elStart < 0) elStart = pos;
+        depth++;
+        continue;
+      }
+      if (c === 125 || c === 93) {
+        depth--;
+        if (inGuides && depth === 1) {
+          if (elStart >= 0) els.push([elStart, pos]);
+          elStart = -1;
+          inGuides = false;
+          arrEnd = pos;
+        }
+        continue;
+      }
+      // (a number, true, false or null as an element)
+      if (inGuides && depth === 2 && elStart < 0 && c > 32) elStart = pos;
+    }
+  };
+  let off = 0;
+  const step = function () {
+    if (off >= size) return Promise.resolve();
+    const end = Math.min(size, off + SL);
+    return file
+      .slice(off, end)
+      .arrayBuffer()
+      .then(function (buf) {
+        bytes(new Uint8Array(buf));
+        off = end;
+        return step();
+      });
+  };
+  return step().then(function () {
+    if (inStr || depth !== 0 || !topIsObj || arrStart < 0 || arrEnd < 0) return null;
+    return Promise.all([file.slice(0, arrStart + 1).text(), file.slice(arrEnd).text()]).then(function (t) {
+      let head = null;
+      try {
+        head = JSON.parse(t[0] + t[1]);
+      } catch (_) {
+        return null;
+      }
+      if (!head || typeof head !== 'object' || !Array.isArray(head.guides)) return null;
+      return {
+        head: head,
+        n: els.length,
+        guide: function (i) {
+          return file
+            .slice(els[i][0], els[i][1])
+            .text()
+            .then(function (x) {
+              return JSON.parse(x);
+            });
+        },
+      };
+    });
+  });
+}
+// (v329) a big file: the button says what's happening while it's gone through, before "Restoring 1 of 60…"
+function restoreReading(bid) {
+  const b = document.getElementById(bid);
+  if (b) b.textContent = 'Reading the backup…';
+  liveSay('Reading the backup…');
+}
 function restoreAny(file, btnId, done) {
   var bid = btnId || 'guidesRestore',
     b0 = document.getElementById(bid),
@@ -1986,11 +2118,9 @@ function restoreAny(file, btnId, done) {
     restoreBusy(false);
   };
   var fr = new FileReader();
-  fr.onload = function () {
-    var d = null;
-    try {
-      d = JSON.parse(fr.result);
-    } catch (e) {}
+  // (v329: d the file's contents, text its words (or its first 64 KB: why it isn't a backup); lazy, for a big backup,
+  // its guides as backupScan found them, read one at a time)
+  var parsed = function (d, text, lazy) {
     var bad = function (why) {
       fin();
       _btnFlash(bid, label, label, 10);
@@ -2002,7 +2132,7 @@ function restoreAny(file, btnId, done) {
       errCard(b && b.parentNode, restoreWhy(why || 'bad'));
     };
     if (!d || typeof d !== 'object') {
-      bad(d ? 'bad' : fileTrouble(file, fr.result));
+      bad(d ? 'bad' : fileTrouble(file, text));
       return;
     }
     var guides = null,
@@ -2010,8 +2140,8 @@ function restoreAny(file, btnId, done) {
       fts = +d.ts || 0;
     if (d.type === 'ms-backup') {
       collection = true;
-      guides = Array.isArray(d.guides) ? d.guides : [];
-    } else if (d.type === 'ms-guides' && Array.isArray(d.guides)) guides = d.guides;
+      guides = lazy || (Array.isArray(d.guides) ? d.guides : []);
+    } else if (d.type === 'ms-guides' && Array.isArray(d.guides)) guides = lazy || d.guides;
     else if (d.payload && d.payload.lmap) guides = [d];
     else if (Array.isArray(d) || Array.isArray(d.owned)) collection = true;
     else {
@@ -2038,9 +2168,16 @@ function restoreAny(file, btnId, done) {
         restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin);
       });
   };
-  fr.onerror = function () {
+  fr.onload = function () {
+    var d = null;
+    try {
+      d = JSON.parse(fr.result);
+    } catch (e) {}
+    parsed(d, fr.result);
+  };
+  fr.onerror = function (e) {
     fin();
-    errLog('Restoring a backup', fr.error || 'the file couldn’t be read');
+    errLog('Restoring a backup', (e && e.message) || fr.error || 'the file couldn’t be read');
     if (cap) cap.textContent = 'Couldn’t read that file.';
     if (done) {
       done(null, 'read');
@@ -2051,6 +2188,32 @@ function restoreAny(file, btnId, done) {
     var b = document.getElementById(bid);
     errCard(b && b.parentNode, restoreWhy('read'));
   };
+  // (v329) a big file a slice at a time (backupScan); one that isn't a backup laid out as the app writes them is said
+  // from its start, not read whole
+  if (
+    file &&
+    file.size > RESTORE_BIG &&
+    file.slice &&
+    typeof Blob !== 'undefined' &&
+    Blob.prototype.arrayBuffer
+  ) {
+    restoreReading(bid);
+    backupScan(file)
+      .then(function (sc) {
+        if (sc) {
+          sc.head._guidesN = sc.n;
+          return parsed(sc.head, '', { length: sc.n, get: sc.guide });
+        }
+        return file
+          .slice(0, 65536)
+          .text()
+          .then(function (t) {
+            parsed(null, t);
+          });
+      })
+      .catch(fr.onerror);
+    return;
+  }
   fr.readAsText(file);
 }
 // what a restore kept beside the backup's guides ({copies, kept, lost}), in words, each sentence after a space ('' when
@@ -2453,8 +2616,20 @@ function restoreGuideList(guides, _fts, done, prog) {
       if (lost && typeof lostRefresh === 'function') lostRefresh();
       return;
     }
-    var g = guides[i++];
+    var gi = i++;
     if (prog) prog(i, guides.length);
+    // (v329: a big backup's guides are read from the file one at a time, as each is reached: guides.get, backupScan)
+    if (guides.get) {
+      guides.get(gi).then(one, function (e) {
+        errLog('Restoring a backup', e);
+        bad++;
+        next();
+      });
+      return;
+    }
+    one(guides[gi]);
+  }
+  function one(g) {
     if (g && !+g.ts && _fts) g.ts = _fts;
     if (!(g && g.payload && typeof g.payload === 'object')) {
       bad++;

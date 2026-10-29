@@ -3268,6 +3268,8 @@ function render() {
       rgbOut[j + 3] = 255;
     }
   ctx.putImageData(imgData, 0, 0);
+  // (v329: the possible gaps in the lines, while they're shown; checked again after an Undo: 66-gaps)
+  gapRendered();
   const _ct = cnt + ' section' + (cnt === 1 ? '' : 's');
   // (v312.1: after a merge, split, add or leave-out, the new count is said; the count line had been read once only)
   if (_secSayNext) {

@@ -2600,7 +2600,7 @@ function ppLoadImage(file) {
     return;
   }
   note('Reading photo…');
-  const gen = ++loadGen,
+  const gen = pickNow(),
     lens =
       file && file.slice && file.slice(0, 262144).arrayBuffer
         ? file
@@ -2622,7 +2622,7 @@ function ppLoadImage(file) {
         URL.revokeObjectURL(url);
         url = null;
       }
-      if (gen !== loadGen) return;
+      if (!pickLive(gen)) return;
       if (!img.width || !img.height) {
         note('That image looked empty — try another file.');
         return;
@@ -2632,9 +2632,9 @@ function ppLoadImage(file) {
         dec = img.decode ? img.decode() : null;
       } catch (e) {}
       Promise.all([lens, Promise.resolve(dec).catch(function () {})]).then(function (r) {
-        if (gen !== loadGen) return;
+        if (!pickLive(gen)) return;
         afterPaint(function () {
-          if (gen !== loadGen) return;
+          if (!pickLive(gen)) return;
           let tok = 0;
           try {
             tok = resetForNewPicture();
@@ -2653,7 +2653,7 @@ function ppLoadImage(file) {
         URL.revokeObjectURL(url);
         url = null;
       }
-      if (gen !== loadGen) return;
+      if (!pickLive(gen)) return;
       note('That file couldn’t be opened as a picture — try a JPEG or PNG.');
     };
     img.src = src;
@@ -2662,10 +2662,10 @@ function ppLoadImage(file) {
   else {
     const fr = new FileReader();
     fr.onload = function () {
-      if (gen === loadGen) go(fr.result);
+      if (pickLive(gen)) go(fr.result);
     };
     fr.onerror = function () {
-      if (gen === loadGen) note('Couldn’t read that file.');
+      if (pickLive(gen)) note('Couldn’t read that file.');
     };
     fr.readAsDataURL(file);
   }

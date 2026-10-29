@@ -194,7 +194,7 @@ function applyXform() {
   // (v323: Focus mode's ring round a small section)
   if (focus || document.getElementById('sfFocRing')) focusRing();
   // (v323: the sharp copy over the picture moves with it, drawn again once the move settles, 77-sharp)
-  if (sfmode === 'color' || _shEl) sharpStale();
+  if (sfmode === 'color' || sfmode === 'guide' || _shEl) sharpStale();
 }
 function clampPan() {
   const d = viewDims(),

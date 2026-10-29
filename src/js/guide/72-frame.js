@@ -1049,6 +1049,8 @@ function openSheet(o) {
   el.setAttribute('role', 'dialog');
   el.setAttribute('aria-modal', 'true');
   el.setAttribute('aria-labelledby', 'sfSheetT');
+  // (v329: a picker's sheet leaves the picture live, for the taps that move it: layers.js modalSync)
+  if (o.picker) el.setAttribute('data-ms-keep', '#sfView');
   el.innerHTML =
     '<div class="sfshhd"><h2 id="sfSheetT">' +
     esc(o.title || '') +
@@ -1080,6 +1082,8 @@ function openSheet(o) {
     if (sheetO && sheetO.el === el) placeSheet();
   });
   touchRule();
+  // (v329: the page round it inert while it's open, layers.js)
+  modalSync();
   el.addEventListener('keydown', sheetTab);
   const f =
     el.querySelector('[autofocus]') ||
@@ -1137,6 +1141,8 @@ function closeSheet(quiet) {
   const had = S.el.contains(document.activeElement);
   S.el.remove();
   if (S.scrim) S.scrim.remove();
+  // (v329: the page live again before focus goes back to it, layers.js)
+  modalSync();
   document.documentElement.classList.remove('sfsheeton', 'sfsheetsd', 'sfsheetin');
   touchRule();
   if (S.o.restore !== false && S.y1 !== S.y0 && Math.abs(window.scrollY - S.y1) < 2) {

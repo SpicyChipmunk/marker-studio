@@ -9,17 +9,28 @@ let _lmC = null,
 // labelsEdited; anything else that changes it makes a new one), so there it's kept for the same map.
 let _lsC = null,
   // (v324) worked out ahead, in a task of its own just before Build's (labelsSigWarm): taken once, by the next ask
-  // for the same map and sections, then gone (Edit sections and the finder change the map in place)
+  // for the same map and sections, then gone (Edit sections and the finder change the map in place). v329: held
+  // (hold) for the whole of a Build, which reads it four times (its label points, the texture, whether it's a first
+  // Build, the guide's own), until labelsSigDone: nothing changes the map meanwhile, as Build guide is off until it
+  // has run; an edit (labelsEdited, secEdN) drops it all the same
   _lsW = null;
-function labelsSigWarm() {
-  _lsW = labels ? { l: labels, c: comps, W: W, H: H, s: labelsSigOf(labels, W, H) } : null;
+function labelsSigWarm(hold) {
+  _lsW = labels
+    ? { l: labels, c: comps, W: W, H: H, e: secEdN, hold: !!hold, s: labelsSigOf(labels, W, H) }
+    : null;
+}
+function labelsSigDone() {
+  if (_lsW && _lsW.hold) _lsW = null;
 }
 function labelsSig() {
   const keep = sfmode === 'guide' || sfmode === 'color';
   if (keep && _lsC && _lsC.l === labels && _lsC.W === W && _lsC.H === H) return _lsC.s;
   const w = _lsW;
-  _lsW = null;
-  const s = w && w.l === labels && w.c === comps && w.W === W && w.H === H ? w.s : labelsSigOf(labels, W, H);
+  if (!(w && w.hold)) _lsW = null;
+  const s =
+    w && w.l === labels && w.c === comps && w.W === W && w.H === H && (w.e === undefined || w.e === secEdN)
+      ? w.s
+      : labelsSigOf(labels, W, H);
   _lsC = keep ? { l: labels, W: W, H: H, s: s } : null;
   return s;
 }
@@ -148,6 +159,8 @@ function labelsEdited() {
   _lsC = _lsW = null;
   // (v328 review: the sections changed, for those that remember what they read from them: 65-edit secEdN)
   secEdN++;
+  // (v329: and the check for gaps in the lines made again, 66-gaps)
+  gapEdited();
 }
 // share: for a guide file to share, which leaves out a photo the pattern doesn't use (to keep it small). edits: the
 // guide with section edits not built yet (kept when the page is hidden): only sections still there keep their
@@ -656,6 +669,8 @@ function askBox(title, text, btns, yesNo, now) {
       '</div></div>';
     const end = function (a) {
       o.remove();
+      // (v329: the page live again before focus goes back to it, layers.js)
+      modalSync();
       try {
         if (op && op.isConnected && op !== document.body) op.focus({ preventScroll: true });
       } catch (_) {}

@@ -170,6 +170,23 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 
 What recent releases changed that Parts A and B don't already cover.
 
+**New in v329: big backups, a cancelled file, VoiceOver in dialogs, sharp outlines in the Plan, gap suggestions**
+
+- [ ] ★ **A big backup:** Library › Back up with **Include guide photos** ticked › note its size in Files › restore it
+      (a fresh Safari profile, or after Delete all my data) → "Reading the backup…", then "Restoring 1 of …", and every
+      guide comes back. How long did it take? Copy diagnostics after.
+- [ ] ★ **VoiceOver in a dialog:** VoiceOver on › Library › delete a guide → "Deleted …" is spoken, and a swipe
+      reaches **Undo**, which works. Then Back up with **Include guide photos** ticked: if "Your backup is ready ·
+      Share" shows, a swipe reaches **Share**. Swipes don't land on the page behind the Library. In the guide: the ⋯
+      menu open, swipes stay in it; the marker picker open, a tap on another section still moves it.
+- [ ] ★ **Sharp outlines in the Plan:** a built guide, zoom in to ×2 or more: the lines turn sharp a moment after
+      the picture settles, fading in. Shuffle, paint a section, pan: never a moment of old colours over new ones.
+      Is the delay after a change acceptable on the iPad (it may be 1–3 s on a big photo)?
+- [ ] ★ **Possible gaps:** a photo of a page where a line stops just short (of another line, or of the paper's edge)
+      → "N possible gaps in the lines · Review" on Looks right? within a few seconds (how long?). Review → each gap
+      ringed; Close makes two sections, Undo puts it back; Close all; Dismiss. A page cropped to the paper too.
+      Any suggestion that's wrong (not a real gap)? Copy diagnostics after.
+
 **New in v328: Tick off from a photo, Page to colour, Check them, the binding**
 
 - [ ] ★ **A printout coloured on paper** (Part D, untested on real paper): Share & print › Print › **Page to colour**

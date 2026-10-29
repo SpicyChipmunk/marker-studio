@@ -364,7 +364,7 @@ let _shEl = null,
   _shJobT = 0;
 function sharpOn() {
   return !!(
-    sfmode === 'color' &&
+    (sfmode === 'color' || (sfmode === 'guide' && !_bloom && !photoAlign && !dragPreview)) &&
     (focus ? !focusFin : true) &&
     cv &&
     sfView &&
@@ -376,7 +376,10 @@ function sharpOn() {
 function sharpHide() {
   _shGen++;
   clearTimeout(_shJobT);
-  if (_shEl) _shEl.hidden = true;
+  if (_shEl) {
+    _shEl.hidden = true;
+    _shEl.style.opacity = '0';
+  }
   _shCrop = null;
 }
 // (v328 review) hidden and let go: its canvas's pixels and the distance fields, on leaving Colour along or the guide
@@ -397,7 +400,7 @@ function sharpStale(drawn) {
   _shGen++;
   clearTimeout(_shJobT);
   if (!sharpOn()) return sharpHide();
-  if (drawn && (focus || drawn !== 'part')) sharpHide();
+  if (drawn && (focus || drawn !== 'part' || sfmode === 'guide')) sharpHide();
   sharpPlace();
   _shT = setTimeout(sharpDraw, drawn === true && !focus ? 30 : drawn ? 300 : 420);
 }
@@ -413,7 +416,11 @@ function sharpPlace() {
   s.top = cv.offsetTop + 'px';
   s.width = ((c[2] - c[0]) * DW) / W + 'px';
   s.height = ((c[3] - c[1]) * DH) / H + 'px';
-  s.transition = cv.style.transition;
+  // (v329: in the Plan it fades in, sharpDraw: not under Reduce motion, nor in Colour along, as before)
+  s.transition =
+    sfmode === 'guide' && !reducedMotion()
+      ? (cv.style.transition ? cv.style.transition + ', ' : '') + 'opacity .15s'
+      : cv.style.transition;
   s.transform =
     (cv.style.transform || '') + ' translate(' + (c[0] * DW) / W + 'px,' + (c[1] * DH) / H + 'px)';
 }
@@ -502,6 +509,14 @@ function sharpShow(im, crop, ow, oh, host) {
   _shEl.height = oh;
   _shEl.getContext('2d').putImageData(im, 0, 0);
   _shCrop = crop;
+  const was = _shEl.hidden;
   _shEl.hidden = false;
   sharpPlace();
+  // (v329: in the Plan it fades in from hidden over 0.15 s, the stepped picture settling into the sharp one; at once
+  // elsewhere and under Reduce motion: sharpPlace gives it no transition there)
+  if ((was || _shEl.style.opacity === '0') && sfmode === 'guide' && !reducedMotion()) {
+    _shEl.style.opacity = '0';
+    void _shEl.offsetWidth;
+  }
+  _shEl.style.opacity = '1';
 }

@@ -5334,6 +5334,8 @@ function backToReview() {
   sfmode = 'review';
   focus = false;
   hideTip();
+  // (v329: the Plan's sharp copy let go too, 77-sharp)
+  sharpFree();
   closeSwatchPop(false);
   photoAlign = false;
   photoPeek = false;

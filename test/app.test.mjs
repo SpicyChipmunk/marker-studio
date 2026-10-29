@@ -322,6 +322,36 @@ import vm from 'node:vm';
     const s5 = core.labelsSig();
     assert.equal(new Set([s1, s2, s3, s4, s5]).size, 5);
   });
+  test('v329: a Build reads the section map once (the signature held), and an edit meanwhile drops it', () => {
+    core.W = 64;
+    core.H = 48;
+    core.labels = new Int32Array(64 * 48).fill(2);
+    const n0 = core.labelsSigN;
+    core.labelsSigWarm(true);
+    const s1 = core.labelsSig(),
+      s2 = core.labelsSig(),
+      s3 = core.labelsSig();
+    assert.equal(core.labelsSigN - n0, 1, 'one pass over the map for the held signature');
+    assert.ok(s1 === s2 && s2 === s3);
+    // an edit in place, told (labelsEdited): worked out afresh
+    core.labels[99] = 4;
+    core.labelsEdited();
+    const s4 = core.labelsSig();
+    assert.notEqual(s4, s1);
+    assert.equal(core.labelsSigN - n0, 2);
+    // after the Build, not held: a change in place without labelsEdited is still noticed
+    core.labelsSigWarm(true);
+    core.labelsSigDone();
+    core.labels[100] = 5;
+    assert.notEqual(core.labelsSig(), s4);
+    // the old warm (not held) is taken once
+    core.labelsSigWarm();
+    const n1 = core.labelsSigN;
+    core.labelsSig();
+    assert.equal(core.labelsSigN, n1, 'taken from the warm');
+    core.labelsSig();
+    assert.equal(core.labelsSigN, n1 + 1, 'then gone');
+  });
 }
 
 // ---- from text-size.test.mjs ----

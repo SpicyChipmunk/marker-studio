@@ -484,6 +484,23 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     shadeFromPhoto: shadeFromPhoto,
     labelsSig: labelsSig,
+    labelsSigWarm: labelsSigWarm,
+    labelsSigDone: labelsSigDone,
+    labelsEdited: labelsEdited,
+    // (v329: the check for gaps in the lines, 66-gaps)
+    gapFind: gapFind,
+    gapList: gapList,
+    gapDismiss: gapDismiss,
+    get gapR() {
+      return _gapR;
+    },
+    set gapR(v) {
+      _gapR = v;
+    },
+    get gapN() {
+      return _gapN;
+    },
+    gapKey: gapKey,
     stepFaint: stepFaint,
     pgFind: pgFind,
     // (v318.36: the same in the JOBS worker)

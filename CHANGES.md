@@ -3379,3 +3379,55 @@ From v327.1 (v327.2 held and dropped; its paper reading comes back reworked). De
   binding and its offer; `print`, `print-2`: Page to colour, the shading map, Only the page, the names; tests that
   read the labelled page 1 now ask for it).
 
+
+# Changes — v329 (before the beta: big backups, freezes, a cancelled file, VoiceOver, sharp Plan, gap suggestions)
+
+- **A big backup restores on an iPad.** Restoring read the whole file and then made everything in it at once: about
+  five times its size in memory (990 MB for a 192 MB backup with its guides' photos, measured), more than Safari lets
+  a page have. A backup over 10 MB is now read a slice at a time (`backupScan`, guide-bridge.js): its bytes are gone
+  through for where each guide in it begins and ends, the rest (markers, palettes, settings) is read first, and each
+  guide is read only when it's restored (93 MB for the same file; 3 s). The button says "Reading the backup…" while
+  it's gone through. Smaller files restore as before; a big file that isn't a backup is said from its first 64 KB.
+  Import a guide tells a big backup from its start too, where it had read it whole first. Checked against reading
+  it whole on random backups read in slices from 1 byte to 4 KB (`test/data.test.mjs`); restored end to end
+  (`e2e/data-2`).
+- **Build guide holds the screen for less.** A Build read the whole section map four times for its signature (its
+  label points, the texture, whether it's a first Build, the guide's own), each a pass over every pixel: about 0.2 s
+  each on a big photo on an iPad. The signature is now worked out once as Build starts and held until it ends
+  (`labelsSigWarm(true)`, `labelsSigDone`, 60-persist.js); nothing changes the map meanwhile, and an edit drops it all
+  the same. Measured: 1 pass per Build where it was 4 (`test/app.test.mjs`).
+- **A file chosen and then cancelled leaves the open guide be.** Choosing a photo, a PDF or the sample moved the
+  guide's load count (loadGen) at once, so if it then didn't open (Cancel in a PDF's page chooser, a photo that
+  won't decode, a locked or blank PDF, photo-to-page's photo) the guide stayed on screen with its count moved on, and
+  everything stamped with it took it for changed: Tick off's offer went, Colour along's find, a pending Undo check.
+  A pick now has a count of its own (`pickNow`, `pickLive`, 00-state.js); loadGen moves only when the new picture
+  replaces the guide. A newer pick, or a guide opened meanwhile, still drops the older one (`e2e/print-2`).
+- **VoiceOver hears a toast while a dialog is open.** Dialogs were marked aria-modal, which in Safari hides everything
+  outside them from VoiceOver: the toast and its buttons too, so with the Library open "Deleted · Undo" wasn't heard
+  or reachable, nor Back up's "Your backup is ready · Share". Now, as full screen and Focus mode already do, the rest
+  of the page is made inert while a dialog, a guide sheet or a question is open, and aria-modal is "false" on it
+  (`modalSync`, layers.js). Left live: the toast, the spoken lines (#msSay, #msLive, and the guide's #sfLive, moved
+  out of the guide to the page's body so a sheet doesn't silence it), a sheet's dim (its tap closes the sheet) and,
+  under the marker picker, the picture (its taps move the picker). Everything that puts focus back as it closes
+  makes the page live first. `e2e/library` (the Library, a toast's Undo, Back up over it), `e2e/help`, `e2e/shell-2`.
+- **Sharp outlines in the Plan.** Zoomed in on the Plan, the picture's lines showed their steps; Colour along and
+  Focus mode already drew them sharp over the part on the screen (77-sharp.js). The Plan now does too, by the same
+  rule (from 1.3 screen pixels a picture pixel). Any change hides the copy at once, a paint stroke's part-redraws
+  too (a copy left over them had shown the colours from before for about 2 s), and the new one fades in over 0.15 s
+  (at once under Reduce motion). None while the first Build blooms, while a Photo pattern's photo is lined up, or while
+  a slider's preview is dragged; let go on going to Edit sections (`e2e/along-3`).
+- **Possible gaps in the lines, found for you.** A pen line that stops just short of another (or of the paper's
+  edge) leaves two shapes as one section, and nothing said so. Once the sections are found, a check runs in the
+  background, in a worker of its own made for it and ended after it (66-gaps.js, `gapFind`): each line's end, a
+  short look ahead across the paper, and a suggestion only where closing it would split one section into two good
+  parts. Inside the drawing, only a gap narrower than the line, between parts at least 10 line widths across (a
+  letter's opening or a vein's end is wider); towards the dark beyond the paper, up to 6 line widths; towards the
+  picture's own edge (a page cropped to the paper, a scan), up to 2. On Ben's 14 photos and two cropped copies:
+  24 right, 3 wrong (marker texture on one coloured page), 1 doubtful; on the benchmark's 38 pages, 7 right, none
+  wrong. The quick step says "2 possible gaps in the lines, where a section may be two · Review"; Edit sections
+  says the same with Show. Show zooms to the first and marks each with a dashed stroke; "Gap 1 of 2" with Close ·
+  Dismiss · Next · Close all. Close cuts as thick as the pen's line; Close all is one Undo step; dismissed ones stay
+  dismissed for the picture. A result is kept only for the map it was found for (the picture, the map, its edits,
+  its size), checked again after an edit or an Undo; none for a photo made into a page, and none without a worker.
+  `test/segmentation.test.mjs` (made-up pages: inside, to the dark, to a cropped edge, too wide, the result's key),
+  `e2e/sections-editor` (`e2e/fixtures/gap-page.png`, drawn for the tests).

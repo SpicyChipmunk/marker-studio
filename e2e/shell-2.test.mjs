@@ -725,9 +725,18 @@ after(teardown);
         [
           document.getElementById('sfSheet').getAttribute('role'),
           document.getElementById('sfSheet').getAttribute('aria-modal'),
+          document.getElementById('sfWork').inert,
         ].join(),
       ),
-      'dialog,true',
+      // (v329: modal by the page round it made inert, layers.js modalSync)
+      'dialog,false,true',
+    );
+    // (the guide's spoken line and the dim, whose tap closes the sheet, left live)
+    assert.equal(
+      await page.evaluate(() =>
+        ['#sfLive', '.sfscrim', '#msSay'].map((q) => !!document.querySelector(q).closest('[inert]')).join(),
+      ),
+      'false,false,false',
     );
     // header, a scrolling body, a footer
     assert.deepEqual(await page.$$eval('#sfSheet > *', (k) => k.map((x) => x.className)), [

@@ -717,6 +717,8 @@ function finEdClose() {
   if (!E) return;
   _finEd = null;
   E.el.remove();
+  // (v329: the page live again before focus goes back to it, layers.js)
+  modalSync();
   freeCanvas(E.cv);
   try {
     if (E.op && E.op.isConnected && E.op !== document.body) E.op.focus({ preventScroll: true });
@@ -1181,6 +1183,8 @@ function finCardShow(blob) {
     '"><div class="sfedaskbtns"><button type="button" class="sfghost" data-a="close">Close</button><button type="button" class="btn-primary" data-a="share">Share</button></div></div>';
   const end = function () {
     o.remove();
+    // (v329: the page live again before focus goes back to it, layers.js)
+    modalSync();
     // (a minute on: a download Safari asks about first still has it)
     setTimeout(function () {
       URL.revokeObjectURL(url);

@@ -73,7 +73,7 @@ function loadPdf(file, gen) {
   note('Opening the PDF…');
   let doc = null;
   const fail = function (e, what) {
-    if (gen !== loadGen) return;
+    if (!pickLive(gen)) return;
     if (doc)
       try {
         doc.destroy();
@@ -89,14 +89,14 @@ function loadPdf(file, gen) {
     // error, which differs from browser to browser)
     if (navigator.onLine !== false) return said();
     pdfStored().then(function (has) {
-      if (gen !== loadGen) return;
+      if (!pickLive(gen)) return;
       if (has) said();
       else note(PDF_OFFLINE);
     });
   };
   Promise.all([pdfLib(), file.arrayBuffer()])
     .then(function (r) {
-      if (gen !== loadGen) return null;
+      if (!pickLive(gen)) return null;
       return r[0].getDocument({
         data: new Uint8Array(r[1]),
         wasmUrl: pdfUrl('wasm/'),
@@ -108,7 +108,7 @@ function loadPdf(file, gen) {
     .then(function (d) {
       if (!d) return null;
       // (v315: a PDF that opened after another picture was chosen is let go too)
-      if (gen !== loadGen) {
+      if (!pickLive(gen)) {
         try {
           d.destroy();
         } catch (_) {}
@@ -119,14 +119,14 @@ function loadPdf(file, gen) {
       return pdfChoose(d, gen);
     })
     .then(function (n) {
-      if (!n || gen !== loadGen) {
+      if (!n || !pickLive(gen)) {
         // (Cancel: as it was)
         if (doc)
           try {
             doc.destroy();
           } catch (_) {}
         doc = null;
-        if (gen === loadGen) note(metaText());
+        if (pickLive(gen)) note(metaText());
         return null;
       }
       note('Drawing page ' + n + '…');
@@ -141,7 +141,7 @@ function loadPdf(file, gen) {
       } catch (_) {}
       doc = null;
       // (v315: and a page drawn after another picture was chosen, or blank, handed back)
-      if (gen !== loadGen) {
+      if (!pickLive(gen)) {
         freeCanvas(c);
         return;
       }
@@ -256,7 +256,7 @@ function pdfChoose(doc, gen, from) {
     btns,
   ).then(function (a) {
     open = false;
-    if (gen !== loadGen) return 0;
+    if (!pickLive(gen)) return 0;
     if (a === 'next' && n < N) return pdfChoose(doc, gen, n + 1);
     if (a === 'prev' && from > 1) return pdfChoose(doc, gen, Math.max(1, from - PDF_PAGES_MAX));
     const k = parseInt(a, 10);
@@ -265,7 +265,7 @@ function pdfChoose(doc, gen, from) {
   // the small pictures, one after another, while it's open
   let i = from;
   const next = function () {
-    if (!open || i > n || gen !== loadGen) return;
+    if (!open || i > n || !pickLive(gen)) return;
     const at = i++;
     doc
       .getPage(at)

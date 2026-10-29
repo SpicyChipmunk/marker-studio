@@ -474,6 +474,90 @@ after(teardown);
     assert.ok((await page.evaluate(() => __mstest.comps.length)) > 3, 'its rings found');
     assert.deepEqual(errors, []);
   });
+  // (v329) a PDF of n Letter pages, each a ring or two (the same as greyPDF's, in black)
+  function pagesPDF(n) {
+    const circle = (cx, cy, r) => {
+      const k = 0.5523 * r;
+      return `${cx + r} ${cy} m ${cx + r} ${cy + k} ${cx + k} ${cy + r} ${cx} ${cy + r} c ${cx - k} ${cy + r} ${cx - r} ${cy + k} ${cx - r} ${cy} c ${cx - r} ${cy - k} ${cx - k} ${cy - r} ${cx} ${cy - r} c ${cx + k} ${cy - r} ${cx + r} ${cy - k} ${cx + r} ${cy} c S\n`;
+    };
+    const objs = ['<< /Type /Catalog /Pages 2 0 R >>', ''];
+    const kids = [];
+    for (let i = 0; i < n; i++) {
+      const content = '2 w 0 G\n' + circle(306, 396, 250) + circle(306, 396, 60 + 40 * i) + circle(200, 250, 50);
+      objs.push(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+      objs.push(
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents ${objs.length} 0 R /Resources << >> >>`,
+      );
+      kids.push(`${objs.length} 0 R`);
+    }
+    objs[1] = `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${n} >>`;
+    let out = '%PDF-1.4\n';
+    const offs = [];
+    objs.forEach((o, i) => {
+      offs.push(out.length);
+      out += `${i + 1} 0 obj\n${o}\nendobj\n`;
+    });
+    const x = out.length;
+    out +=
+      `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` +
+      offs.map((o) => String(o).padStart(10, '0') + ' 00000 n \n').join('') +
+      `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF\n`;
+    return Buffer.from(out, 'latin1');
+  }
+  test('v329: a file chosen then cancelled, or that fails, leaves the open guide as it was (its load count too); a PDF page, a photo and the sample still open', async () => {
+    const { page, errors } = await openApp({ width: 820, height: 1180 });
+    await sampleGuide(page);
+    await idle(page);
+    const st = () =>
+      page.evaluate(() => ({
+        g: __mstest.loadGen,
+        mode: __mstest.sfmode,
+        built: !!__mstest.assignData,
+        W: __mstest.W,
+      }));
+    const s0 = await st();
+    assert.ok(s0.built && s0.mode === 'guide');
+    // Cancel in a 2-page PDF's page chooser
+    await page.setInputFiles('#sfPdfFile', { name: 'two.pdf', mimeType: 'application/pdf', buffer: pagesPDF(2) });
+    await page.click('[data-a="cancel"]', { timeout: 40000 });
+    await idle(page, 600);
+    assert.deepEqual(await st(), s0, 'Cancel: the guide and its load count as they were');
+    // a photo that won't open, as a colouring page and as photo-to-page
+    const broken = { name: 'broken.jpg', mimeType: 'image/jpeg', buffer: Buffer.from('not a picture at all') };
+    await page.setInputFiles('#sfFile', broken);
+    await page.waitForFunction(() => /couldn.t be opened as a picture/.test(document.body.innerText), null, {
+      timeout: 20000,
+    });
+    await idle(page, 300);
+    assert.deepEqual(await st(), s0, 'a broken photo: as it was');
+    await page.setInputFiles('#sfPpFile', broken);
+    await idle(page, 1500);
+    assert.deepEqual(await st(), s0, 'a broken photo for photo-to-page: as it was');
+    // a broken photo, then a PDF at once: the newer pick wins (its chooser shows)
+    await page.setInputFiles('#sfFile', broken);
+    await page.setInputFiles('#sfPdfFile', { name: 'two.pdf', mimeType: 'application/pdf', buffer: pagesPDF(2) });
+    // page 2 of it opens
+    await page.click('[data-a="2"]', { timeout: 40000 });
+    await page.waitForFunction(
+      (W) => __mstest.W !== W && __mstest.labels && !__mstest.segBusy && __mstest.sfmode === 'review',
+      s0.W,
+      { timeout: 60000 },
+    );
+    const s1 = await st();
+    assert.ok(s1.g > s0.g, 'the PDF page replaced the guide: its load count moved on');
+    assert.equal(s1.built, false);
+    // a photo opens
+    await page.setInputFiles('#sfFile', {
+      name: 'letter-page.png',
+      mimeType: 'image/png',
+      buffer: await readFile(join(ROOT, 'e2e', 'fixtures', 'letter-page.png')),
+    });
+    await page.waitForFunction((g) => __mstest.loadGen > g && __mstest.labels && !__mstest.segBusy, s1.g, {
+      timeout: 60000,
+    });
+    // (the sample opened through its own pick at the start: sampleGuide)
+    assert.deepEqual(errors, []);
+  });
   test('X3 G1: Pages changed while the PDF is written: the file is named for what was written', async () => {
     const { page, errors } = await openApp({ width: 820, height: 1180 });
     await sampleGuide(page);

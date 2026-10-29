@@ -911,6 +911,38 @@ after(teardown);
     assert.equal(back.done, 0, 'the backup’s copy in its place');
     assert.deepEqual(errors, []);
   });
+  test('v329: a backup over 10 MB is read a slice at a time (“Reading the backup…”), and its guide comes back whole', async () => {
+    const { page } = await openApp({ width: 820, height: 1180 });
+    await sampleGuide(page);
+    await saveGuide(page);
+    const [g] = await guides(page);
+    await openLib(page);
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#guidesBackup')]);
+    const d = JSON.parse(await readFile(await dl.path(), 'utf8'));
+    // (past 10 MB with a field the restore leaves alone, inside the guide, so the head stays small)
+    d.guides[0].zPad = 'x'.repeat(11e6);
+    const big = Buffer.from(JSON.stringify(d));
+    assert.ok(big.length > 10e6);
+    // a new device: restored into an empty app
+    const fresh = await openApp({ width: 820, height: 1180 });
+    await welcome(fresh.page);
+    await openLib(fresh.page);
+    await fresh.page.evaluate(() => {
+      window.__said = '';
+      new MutationObserver(() => {
+        const b = document.getElementById('guidesRestore');
+        if (b && /Reading the backup/.test(b.textContent)) window.__said = b.textContent;
+      }).observe(document.body, { subtree: true, childList: true, characterData: true });
+    });
+    const [fc] = await Promise.all([fresh.page.waitForEvent('filechooser'), fresh.page.click('#guidesRestore')]);
+    await fc.setFiles({ name: 'backup.json', mimeType: 'application/json', buffer: big });
+    await until(fresh.page, () => /Restored|restored/.test(document.getElementById('backupCap').textContent), null, 'restored', 60000);
+    assert.match(await fresh.page.evaluate(() => window.__said), /Reading the backup/);
+    const gs = await guides(fresh.page);
+    assert.equal(gs.length, 1);
+    assert.equal(gs[0].name, g.name);
+    assert.deepEqual(fresh.errors, []);
+  });
   test('a lost guide that couldn’t be checked for want of memory is offered again, not put aside for good', async () => {
     const { page, errors } = await openApp({ width: 820, height: 1180 });
     await sampleGuide(page);

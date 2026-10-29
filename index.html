@@ -8926,6 +8926,16 @@ html.sfsheetsd .mstoast {
 #sfRoot .sfedline {
   margin-bottom: 4px;
 }
+/* v329: a possible gap's choices (66-gaps): Close, Dismiss, Next, Close all, on one line where they fit */
+#sfRoot .sfgapbtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+#sfRoot .sfgapbtns button {
+  min-height: 44px;
+}
 /* v288: "Tap a section…" is about Colours and Pattern, so not shown on Shading and Share (its room kept: switching
    tabs moves nothing, and every tab is as tall as the tallest) */
 #sfRoot [data-tab='shading'] .sfinfo[data-hint='tap'],
@@ -15528,7 +15538,7 @@ if (window.__MS_TEST && !window.__MS_MOTION) document.documentElement.classList.
 </defs></svg>
 <div class="ambient" id="ambient"></div><div class="grain"></div>
 <div class="wrap" role="main"><div class="head"><h1 class="title">Marker Studio</h1><div class="set">Ohuhu + Copic · your collection</div></div><nav class="modes" aria-label="Main"><button id="mHome" class="on">Home</button><button id="mSections">Guide</button><button id="mCollection">Markers</button><button id="mPalette">Palette</button></nav><h2 id="screenH" class="sfsr">Home</h2><div id="sfRoot" style="display:none"></div><div id="homeView" style="display:none"><div class="homehub"><div class="homehead"><div class="homesub">Turn a colouring page, or any photo, into a marker-by-number guide, built from the markers you own.</div></div><div id="homeHero" class="homehero" style="display:none"></div><div class="hometop nocont"><div id="homeCont" class="homecont" style="display:none"></div><div class="homeside"><div id="sfResume" class="homeresume" style="display:none"></div><div id="loadNote" class="nudge loadnote" role="status" style="display:none"></div><div id="lostNote" class="nudge loadnote" role="status" style="display:none"></div><button id="homeNew" class="btn-primary homenew">New guide from a colouring page</button><button type="button" id="homePPage" class="btn-primary homenew homenew2 homepp" data-start="ppage">Make a colouring page from any photo</button><div id="homePalNote" class="homepalnote"></div><div class="homegrid"><button class="homecard" data-go="collection"><span class="hcicon hct1" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-swatch-book"/></svg></span><span class="hclabel">Markers</span><span class="hcsub">Your collection</span></button><button class="homecard" data-go="palette"><span class="hcicon hct2" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-palette"/></svg></span><span class="hclabel">Palette</span><span class="hcsub">Build a scheme</span></button>
-<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF, or start from any photo.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v328</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
+<button class="homecard" id="homeLibCard"><span class="hcicon hct3" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-library-big"/></svg></span><span class="hclabel">Library</span><span class="hcsub" id="homeLibSub">Saved work</span></button></div><div id="backupNudge" class="nudge" style="display:none" role="status"></div><ol id="homeHow" class="homehow" aria-label="How it works"><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg></span><span class="hhwt"><b>Photograph a page</b>Or open a PDF, or start from any photo.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-codes"/></svg></span><span class="hhwt"><b>Get your guide</b>Each section is given a code from the markers you own.</span></li><li><span class="hhwi" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-sparkles"/></svg></span><span class="hhwt"><b>Colour along</b>Tick sections off as you go, then print or share the result.</span></li></ol></div></div><div id="sfRecent" class="homerecent" style="display:none"></div><input type="file" id="homeImpFile" class="fileinput" accept="application/json,.json"><div id="appVer" class="homever">v329</div></div></div><div id="emptyOwned" class="emptyowned eobanner" style="display:none"><span>Using every Ohuhu + Copic marker. Add yours to match what you own.</span><button class="sflink" id="eoGo">Add markers</button></div><div class="mkh1"><div id="findWrap" class="optblock" style="display:none"><input id="q" class="search" placeholder="Search code or name…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search markers"></div><div class="optrow" id="ownWrap" style="display:none"><span class="szlbl" id="ownViewLbl">Show</span>
   <div class="segs wide" id="ownView" role="group" aria-labelledby="ownViewLbl"><button data-v="owned">Owned</button><button data-v="unowned">Unowned</button><button data-v="all">All</button><button data-v="wish">To buy</button></div></div></div><div id="presetWrap" style="display:none"><div id="mkAddCard" class="mkaddcard" style="display:none"><h3 class="mkaddh">Add your markers</h3><p class="mkaddp">Guides and palettes use the markers you own. Until you add yours, they use every Ohuhu and Copic marker.</p><div id="mkAddWays"></div></div><button id="buyOpen" class="presethdr scanopen buyopen"><span>Brands I’d buy</span><span class="buysum" id="buySum"></span><span class="presetcar" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></span></button></div><div class="mkh2"><div id="mkDraw" class="mkrow" style="display:none"><button id="mkDrawBtn" class="mkbtn" aria-label="Random marker"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dice-5"/></svg> Random</button><button id="mkMatchBtn" class="mkbtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-target"/></svg> Match a colour</button></div><div class="optrow" id="gapWrap" style="display:none"><span class="szlbl">Order</span>
   <select id="gapSort" class="ordsel" aria-label="Order"><option value="light">Lightest first</option><option value="code">Code order</option><option value="gap">Fill the biggest gaps</option><option value="ramps">Fill gaps between light and dark</option><option value="complete">Finish families</option></select></div><div class="optrow" id="lowWrap" style="display:none"><button type="button" id="lowChip" class="chip lowchip" aria-pressed="false"></button></div><div id="ownHint" class="optblock ownhint" style="display:none"></div></div><div class="palsplit"><div class="palset"><div id="palSavedWrap" class="palsaved" style="display:none"><button type="button" id="palSaved" class="homelink">Saved palettes <span aria-hidden="true">›</span></button></div><div class="optrow" id="harmWrap" style="display:none"><span class="szlbl" id="harmLbl">Harmony</span>
   <div class="segs wide" id="harm" role="group" aria-labelledby="harmLbl"><button data-h="complementary">Complementary</button><button data-h="analogous">Analogous</button><button data-h="triadic">Triadic</button><button data-h="split">Split complementary</button><button data-h="tetradic">Tetradic</button><button data-h="mono">Monochrome</button><button data-h="shadow">Light to shadow</button><button data-h="accent">Analogous + accent</button><button data-h="neutral">Greys + accent</button><span class="segbrk" aria-hidden="true"></span><button data-h="rainbow">Rainbow</button><button data-h="custom">Custom</button><button data-h="photo">Photo</button></div></div><div class="optrow" id="sizeWrap" style="display:none"><span class="szlbl" id="segsLbl">Colours</span>
@@ -18771,6 +18781,8 @@ function openDialog(el) {
 }
 function closeDialog(el) {
   el.classList.remove('on');
+  // (v329: the page live again at once, for focus put back straight after: modalSync below)
+  modalSync();
 }
 // (v308.1) while a dialog or the Library is open, the page under it doesn't scroll: a swipe on the Library could
 // scroll Home behind it instead, and on an iPad that moved Safari's bars and showed a strip of Home at the foot.
@@ -19053,6 +19065,86 @@ document.addEventListener(
       a.focus();
     }
   });
+})();
+
+// (v329) While a dialog is open (or a guide sheet, or a question made on the fly), the rest of the page is made inert,
+// and the dialog's aria-modal set to "false": in Safari aria-modal hides everything outside the dialog from VoiceOver,
+// so a toast's words weren't spoken and its Undo or Share couldn't be reached (the Library's "Deleted · Undo", Back
+// up's "Your backup is ready · Share"). inert keeps VoiceOver, the keyboard and taps inside the dialog in every
+// browser. Left out: the toast, the spoken lines (#msSay, #msLive, the guide's #sfLive) and a sheet's scrim (its tap
+// closes the sheet), and what's inert already (full screen's, Focus mode's, Reveal's), which is theirs to undo. The top
+// one is the last showing in the page, as topDialog counts it. Run by the watchers below (an overlay's class, the
+// questions added to the body and taken off it), by openSheet and closeSheet (72-frame.js), and by everything that
+// puts focus back itself as it closes, just before: focus doesn't go to an inert element, and the watchers come later.
+let _mInert = [],
+  _mTop = null;
+function modalSync() {
+  const ms = [].filter.call(document.querySelectorAll('[aria-modal="true"],[data-ms-modal]'), function (d) {
+    return (
+      d.isConnected &&
+      (!d.classList.contains('overlay') || d.classList.contains('on')) &&
+      d.getClientRects().length > 0
+    );
+  });
+  const top = ms.length ? ms[ms.length - 1] : null;
+  if (
+    top === _mTop &&
+    _mInert.every(function (c) {
+      return c.isConnected;
+    })
+  )
+    return;
+  _mInert.forEach(function (el) {
+    el.inert = false;
+  });
+  _mInert = [];
+  if (_mTop && _mTop !== top && _mTop.hasAttribute('data-ms-modal')) {
+    _mTop.setAttribute('aria-modal', 'true');
+    _mTop.removeAttribute('data-ms-modal');
+  }
+  _mTop = top;
+  if (!top) return;
+  top.setAttribute('data-ms-modal', '1');
+  top.setAttribute('aria-modal', 'false');
+  // (a sheet that lets taps through to the picture, the marker picker's, names what stays live: data-ms-keep. What holds
+  // it isn't made inert, only what's beside it, down to it)
+  const ks = top.getAttribute('data-ms-keep'),
+    keep = ks ? document.querySelector(ks) : null;
+  const deaden = function (c) {
+    if (
+      c === keep ||
+      c.inert ||
+      // (nor a dialog that isn't open: hidden anyway, and one opening over this would still be inert when its own code
+      // puts focus in it, before the watchers run: Scan's box, over the welcome)
+      (c.classList && c.classList.contains('overlay') && !c.classList.contains('on')) ||
+      /^(SCRIPT|STYLE|LINK|TEMPLATE)$/.test(c.tagName) ||
+      c.id === 'msToast' ||
+      c.id === 'msSay' ||
+      c.id === 'msLive' ||
+      c.id === 'sfLive' ||
+      (c.classList && c.classList.contains('sfscrim'))
+    )
+      return;
+    if (keep && c.contains(keep)) {
+      [].forEach.call(c.children, deaden);
+      return;
+    }
+    c.inert = true;
+    _mInert.push(c);
+  };
+  for (let n = top; n && n !== document.body && n.parentElement; n = n.parentElement)
+    [].forEach.call(n.parentElement.children, function (c) {
+      if (c !== n) deaden(c);
+    });
+}
+// (made after the dialogs' own watchers above, so theirs come first: what had focus is noted before the page goes inert)
+(function () {
+  if (typeof MutationObserver !== 'function') return;
+  const mo = new MutationObserver(modalSync);
+  document.querySelectorAll('.overlay').forEach(function (o) {
+    mo.observe(o, { attributes: true, attributeFilter: ['class'] });
+  });
+  if (document.body) mo.observe(document.body, { childList: true });
 })();
 function rgb(hex) {
   let h = hex.slice(1);
@@ -31843,7 +31935,11 @@ function askReplaceMarkers(o) {
   });
   const mine = state.owned.size,
     lose = mine - shared,
-    what = o && Array.isArray(o.guides) && o.guides.length ? 'palettes and guides are' : 'palettes are';
+    // (v329: a big backup's head has guides: [] and the count beside it, _guidesN: backupScan)
+    what =
+      o && ((Array.isArray(o.guides) && o.guides.length) || o._guidesN)
+        ? 'palettes and guides are'
+        : 'palettes are';
   const ask =
     window.SF && SF.askBox
       ? SF.askBox(
@@ -32478,6 +32574,134 @@ function liveSay(m) {
 // done (optional): called with what came back ({markers,palettes,guides}, and guides not added: {dup,bad,full}), or null
 // and why ('bad': not a backup, 'read': unreadable, 'full': storage full, nothing changed; nothing when nothing came
 // back). The caller then says it, instead of the toast and card here.
+// (v329) A big backup read a slice at a time. Read whole, a backup with its guides' photos needed about five times its
+// size in memory (the text, then everything made from it: 990 MB for a 192 MB file, measured), more than an iPad lets
+// a page have. backupScan goes through the file's bytes in slices (JSON's structure is ASCII, and the other bytes of
+// UTF-8 never look like it, so a character split between two slices doesn't matter) and finds the top-level "guides"
+// list and where each of its guides begins and ends. The rest of the file (the markers, palettes and settings) is read
+// as the head, with guides: []; each guide is read by itself when restoreGuideList reaches it. Resolves
+// { head, n, guide(i) }, or null for a file that isn't a backup laid out that way (the whole-file path then says why).
+const RESTORE_BIG = 10e6,
+  RESTORE_SLICE = 4 << 20;
+function backupScan(file, slice) {
+  const SL = slice || RESTORE_SLICE,
+    size = file.size;
+  let depth = 0,
+    inStr = false,
+    esc = false,
+    pos = 0,
+    keyBuf = null,
+    lastKey = '',
+    afterColon = false,
+    arrStart = -1,
+    arrEnd = -1,
+    elStart = -1,
+    inGuides = false,
+    topIsObj = null;
+  const els = [];
+  const bytes = function (b) {
+    for (let i = 0; i < b.length; i++, pos++) {
+      const c = b[i];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (c === 92) esc = true;
+        else if (c === 34) {
+          inStr = false;
+          if (keyBuf) {
+            lastKey = keyBuf.length <= 16 ? String.fromCharCode.apply(null, keyBuf) : '';
+            keyBuf = null;
+          }
+        } else if (keyBuf && keyBuf.length <= 16) keyBuf.push(c);
+        continue;
+      }
+      if (c === 34) {
+        inStr = true;
+        if (depth === 1 && topIsObj && !afterColon) keyBuf = [];
+        if (inGuides && depth === 2 && elStart < 0) elStart = pos;
+        continue;
+      }
+      if (c === 58) {
+        if (depth === 1) afterColon = true;
+        continue;
+      }
+      if (c === 44) {
+        if (depth === 1) afterColon = false;
+        if (inGuides && depth === 2 && elStart >= 0) {
+          els.push([elStart, pos]);
+          elStart = -1;
+        }
+        continue;
+      }
+      if (c === 123 || c === 91) {
+        if (topIsObj === null) topIsObj = c === 123;
+        if (depth === 1 && topIsObj && afterColon && c === 91 && lastKey === 'guides' && arrStart < 0) {
+          arrStart = pos;
+          inGuides = true;
+          depth++;
+          continue;
+        }
+        if (inGuides && depth === 2 && elStart < 0) elStart = pos;
+        depth++;
+        continue;
+      }
+      if (c === 125 || c === 93) {
+        depth--;
+        if (inGuides && depth === 1) {
+          if (elStart >= 0) els.push([elStart, pos]);
+          elStart = -1;
+          inGuides = false;
+          arrEnd = pos;
+        }
+        continue;
+      }
+      // (a number, true, false or null as an element)
+      if (inGuides && depth === 2 && elStart < 0 && c > 32) elStart = pos;
+    }
+  };
+  let off = 0;
+  const step = function () {
+    if (off >= size) return Promise.resolve();
+    const end = Math.min(size, off + SL);
+    return file
+      .slice(off, end)
+      .arrayBuffer()
+      .then(function (buf) {
+        bytes(new Uint8Array(buf));
+        off = end;
+        return step();
+      });
+  };
+  return step().then(function () {
+    if (inStr || depth !== 0 || !topIsObj || arrStart < 0 || arrEnd < 0) return null;
+    return Promise.all([file.slice(0, arrStart + 1).text(), file.slice(arrEnd).text()]).then(function (t) {
+      let head = null;
+      try {
+        head = JSON.parse(t[0] + t[1]);
+      } catch (_) {
+        return null;
+      }
+      if (!head || typeof head !== 'object' || !Array.isArray(head.guides)) return null;
+      return {
+        head: head,
+        n: els.length,
+        guide: function (i) {
+          return file
+            .slice(els[i][0], els[i][1])
+            .text()
+            .then(function (x) {
+              return JSON.parse(x);
+            });
+        },
+      };
+    });
+  });
+}
+// (v329) a big file: the button says what's happening while it's gone through, before "Restoring 1 of 60…"
+function restoreReading(bid) {
+  const b = document.getElementById(bid);
+  if (b) b.textContent = 'Reading the backup…';
+  liveSay('Reading the backup…');
+}
 function restoreAny(file, btnId, done) {
   var bid = btnId || 'guidesRestore',
     b0 = document.getElementById(bid),
@@ -32494,11 +32718,9 @@ function restoreAny(file, btnId, done) {
     restoreBusy(false);
   };
   var fr = new FileReader();
-  fr.onload = function () {
-    var d = null;
-    try {
-      d = JSON.parse(fr.result);
-    } catch (e) {}
+  // (v329: d the file's contents, text its words (or its first 64 KB: why it isn't a backup); lazy, for a big backup,
+  // its guides as backupScan found them, read one at a time)
+  var parsed = function (d, text, lazy) {
     var bad = function (why) {
       fin();
       _btnFlash(bid, label, label, 10);
@@ -32510,7 +32732,7 @@ function restoreAny(file, btnId, done) {
       errCard(b && b.parentNode, restoreWhy(why || 'bad'));
     };
     if (!d || typeof d !== 'object') {
-      bad(d ? 'bad' : fileTrouble(file, fr.result));
+      bad(d ? 'bad' : fileTrouble(file, text));
       return;
     }
     var guides = null,
@@ -32518,8 +32740,8 @@ function restoreAny(file, btnId, done) {
       fts = +d.ts || 0;
     if (d.type === 'ms-backup') {
       collection = true;
-      guides = Array.isArray(d.guides) ? d.guides : [];
-    } else if (d.type === 'ms-guides' && Array.isArray(d.guides)) guides = d.guides;
+      guides = lazy || (Array.isArray(d.guides) ? d.guides : []);
+    } else if (d.type === 'ms-guides' && Array.isArray(d.guides)) guides = lazy || d.guides;
     else if (d.payload && d.payload.lmap) guides = [d];
     else if (Array.isArray(d) || Array.isArray(d.owned)) collection = true;
     else {
@@ -32546,9 +32768,16 @@ function restoreAny(file, btnId, done) {
         restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin);
       });
   };
-  fr.onerror = function () {
+  fr.onload = function () {
+    var d = null;
+    try {
+      d = JSON.parse(fr.result);
+    } catch (e) {}
+    parsed(d, fr.result);
+  };
+  fr.onerror = function (e) {
     fin();
-    errLog('Restoring a backup', fr.error || 'the file couldn’t be read');
+    errLog('Restoring a backup', (e && e.message) || fr.error || 'the file couldn’t be read');
     if (cap) cap.textContent = 'Couldn’t read that file.';
     if (done) {
       done(null, 'read');
@@ -32559,6 +32788,32 @@ function restoreAny(file, btnId, done) {
     var b = document.getElementById(bid);
     errCard(b && b.parentNode, restoreWhy('read'));
   };
+  // (v329) a big file a slice at a time (backupScan); one that isn't a backup laid out as the app writes them is said
+  // from its start, not read whole
+  if (
+    file &&
+    file.size > RESTORE_BIG &&
+    file.slice &&
+    typeof Blob !== 'undefined' &&
+    Blob.prototype.arrayBuffer
+  ) {
+    restoreReading(bid);
+    backupScan(file)
+      .then(function (sc) {
+        if (sc) {
+          sc.head._guidesN = sc.n;
+          return parsed(sc.head, '', { length: sc.n, get: sc.guide });
+        }
+        return file
+          .slice(0, 65536)
+          .text()
+          .then(function (t) {
+            parsed(null, t);
+          });
+      })
+      .catch(fr.onerror);
+    return;
+  }
   fr.readAsText(file);
 }
 // what a restore kept beside the backup's guides ({copies, kept, lost}), in words, each sentence after a space ('' when
@@ -32961,8 +33216,20 @@ function restoreGuideList(guides, _fts, done, prog) {
       if (lost && typeof lostRefresh === 'function') lostRefresh();
       return;
     }
-    var g = guides[i++];
+    var gi = i++;
     if (prog) prog(i, guides.length);
+    // (v329: a big backup's guides are read from the file one at a time, as each is reached: guides.get, backupScan)
+    if (guides.get) {
+      guides.get(gi).then(one, function (e) {
+        errLog('Restoring a backup', e);
+        bad++;
+        next();
+      });
+      return;
+    }
+    one(guides[gi]);
+  }
+  function one(g) {
     if (g && !+g.ts && _fts) g.ts = _fts;
     if (!(g && g.payload && typeof g.payload === 'object')) {
       bad++;
@@ -33404,7 +33671,18 @@ const UPSIDE = 1600;
 const LFONT = '"Hanken Grotesk",system-ui,-apple-system,sans-serif';
 
 // ---- loading a picture ----
-let loadGen = 0; // written by: 20-image-input, 97-open
+let loadGen = 0; // written by: 20-image-input (resetForNewPicture), 97-open, 53-controls-stages
+// (v329) a file being opened, the sample too, has a count of its own: loadGen moves only when its picture replaces
+// the guide (resetForNewPicture). A file cancelled (a PDF's page chooser) or that fails left loadGen moved on with the
+// old guide still on screen, so everything stamped with it (Tick off's offer, Colour along's find, a pending Undo
+// check) took the guide for changed. A newer pick, or a guide opened meanwhile, still drops the older pick
+let pickGen = 0;
+function pickNow() {
+  return { p: ++pickGen, g: loadGen };
+}
+function pickLive(t) {
+  return !!t && t.p === pickGen && t.g === loadGen;
+}
 let srcImg = null; // written by: 20-image-input, 22-straighten, 65-edit, 97-open
 let srcUp = false; // a picture of the person's own, enlarged to UPSIDE if smaller; not the sample (20-image-input)
 // how much the picture was enlarged (1: not at all). Min section size (minPx) and the specks of ink cleared
@@ -38311,6 +38589,8 @@ function render() {
       rgbOut[j + 3] = 255;
     }
   ctx.putImageData(imgData, 0, 0);
+  // (v329: the possible gaps in the lines, while they're shown; checked again after an Undo: 66-gaps)
+  gapRendered();
   const _ct = cnt + ' section' + (cnt === 1 ? '' : 's');
   // (v312.1: after a merge, split, add or leave-out, the new count is said; the count line had been read once only)
   if (_secSayNext) {
@@ -38343,6 +38623,8 @@ function render() {
 function resetForNewPicture() {
   // (v318.14: sections still being found for the picture before go with it)
   segStop();
+  // (v329: and a check for gaps in its lines, 66-gaps)
+  gapReset();
   // (v320: a wait for a photo before this ends; a new photo's own starts again in detect)
   waitEnd();
   // (v318.35: Treat hatching as one section starts again from the picture's own default, pgProceed)
@@ -39913,10 +40195,10 @@ function _loadSample() {
   _smpLoad = true;
   note('Loading sample\u2026');
   smpOpenShow();
-  const gen = ++loadGen;
+  const gen = pickNow();
   var img = new Image();
   img.onload = function () {
-    if (gen !== loadGen) {
+    if (!pickLive(gen)) {
       smpOpenHide();
       return;
     }
@@ -39931,7 +40213,7 @@ function _loadSample() {
   img.onerror = function () {
     _smpLoad = false;
     smpOpenHide();
-    if (gen === loadGen) note('Couldn\u2019t open the sample. Try again.');
+    if (pickLive(gen)) note('Couldn\u2019t open the sample. Try again.');
   };
   var _sv = SAMPLES[si];
   img.src = _sv.slice(0, 5) === 'data:' ? _sv : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(_sv);
@@ -39942,7 +40224,7 @@ function smpOpen(img, gen, nm) {
       note('Couldn\u2019t load the sample. Try again.');
       return;
     }
-    if (gen !== loadGen) return;
+    if (!pickLive(gen)) return;
     resetForNewPicture();
     // (v318.13) the sample keeps Min section size as it was: a clean drawing at its own size, whose smallest real
     // sections are under 1 mm on a page that size (its 166 sections at the default)
@@ -40009,11 +40291,11 @@ function _loadImage(file) {
   _smpLoad = false;
   // (v313: a PDF opens with PDF.js, 21-pdf)
   if (isPdf(file)) {
-    loadPdf(file, ++loadGen);
+    loadPdf(file, pickNow());
     return;
   }
   note('Reading photo\u2026');
-  const gen = ++loadGen;
+  const gen = pickNow();
   // (v320: the wait's steps from the moment the photo is chosen)
   waitBegin(1);
   let url = null;
@@ -40039,7 +40321,7 @@ function _loadImage(file) {
         URL.revokeObjectURL(url);
         url = null;
       }
-      if (gen !== loadGen) return;
+      if (!pickLive(gen)) return;
       if (!img.width || !img.height) {
         waitEnd();
         note('That image looked empty \u2014 try another file.');
@@ -40053,11 +40335,11 @@ function _loadImage(file) {
       } catch (e) {}
       Promise.all([lens, Promise.resolve(dec).catch(function () {})]).then(function (r) {
         const f35 = r[0];
-        if (gen !== loadGen) return;
+        if (!pickLive(gen)) return;
         note('Detecting sections\u2026');
         // (v318 polish: drawn before the work below holds the page, or "Reading photo…" stayed up throughout)
         afterPaint(function () {
-          if (gen !== loadGen) return;
+          if (!pickLive(gen)) return;
           holdTime(
             'New photo: open',
             function () {
@@ -40131,7 +40413,7 @@ function _loadImage(file) {
         URL.revokeObjectURL(url);
         url = null;
       }
-      if (gen !== loadGen) return;
+      if (!pickLive(gen)) return;
       waitEnd();
       note('That file couldn\u2019t be opened as a picture \u2014 try a JPEG or PNG.');
     };
@@ -40140,10 +40422,10 @@ function _loadImage(file) {
   if (url) go(url);
   else {
     fr.onload = function () {
-      if (gen === loadGen) go(fr.result);
+      if (pickLive(gen)) go(fr.result);
     };
     fr.onerror = function () {
-      if (gen !== loadGen) return;
+      if (!pickLive(gen)) return;
       waitEnd();
       note('Couldn’t read that file.');
     };
@@ -40342,7 +40624,7 @@ function loadPdf(file, gen) {
   note('Opening the PDF…');
   let doc = null;
   const fail = function (e, what) {
-    if (gen !== loadGen) return;
+    if (!pickLive(gen)) return;
     if (doc)
       try {
         doc.destroy();
@@ -40358,14 +40640,14 @@ function loadPdf(file, gen) {
     // error, which differs from browser to browser)
     if (navigator.onLine !== false) return said();
     pdfStored().then(function (has) {
-      if (gen !== loadGen) return;
+      if (!pickLive(gen)) return;
       if (has) said();
       else note(PDF_OFFLINE);
     });
   };
   Promise.all([pdfLib(), file.arrayBuffer()])
     .then(function (r) {
-      if (gen !== loadGen) return null;
+      if (!pickLive(gen)) return null;
       return r[0].getDocument({
         data: new Uint8Array(r[1]),
         wasmUrl: pdfUrl('wasm/'),
@@ -40377,7 +40659,7 @@ function loadPdf(file, gen) {
     .then(function (d) {
       if (!d) return null;
       // (v315: a PDF that opened after another picture was chosen is let go too)
-      if (gen !== loadGen) {
+      if (!pickLive(gen)) {
         try {
           d.destroy();
         } catch (_) {}
@@ -40388,14 +40670,14 @@ function loadPdf(file, gen) {
       return pdfChoose(d, gen);
     })
     .then(function (n) {
-      if (!n || gen !== loadGen) {
+      if (!n || !pickLive(gen)) {
         // (Cancel: as it was)
         if (doc)
           try {
             doc.destroy();
           } catch (_) {}
         doc = null;
-        if (gen === loadGen) note(metaText());
+        if (pickLive(gen)) note(metaText());
         return null;
       }
       note('Drawing page ' + n + '…');
@@ -40410,7 +40692,7 @@ function loadPdf(file, gen) {
       } catch (_) {}
       doc = null;
       // (v315: and a page drawn after another picture was chosen, or blank, handed back)
-      if (gen !== loadGen) {
+      if (!pickLive(gen)) {
         freeCanvas(c);
         return;
       }
@@ -40525,7 +40807,7 @@ function pdfChoose(doc, gen, from) {
     btns,
   ).then(function (a) {
     open = false;
-    if (gen !== loadGen) return 0;
+    if (!pickLive(gen)) return 0;
     if (a === 'next' && n < N) return pdfChoose(doc, gen, n + 1);
     if (a === 'prev' && from > 1) return pdfChoose(doc, gen, Math.max(1, from - PDF_PAGES_MAX));
     const k = parseInt(a, 10);
@@ -40534,7 +40816,7 @@ function pdfChoose(doc, gen, from) {
   // the small pictures, one after another, while it's open
   let i = from;
   const next = function () {
-    if (!open || i > n || gen !== loadGen) return;
+    if (!open || i > n || !pickLive(gen)) return;
     const at = i++;
     doc
       .getPage(at)
@@ -43316,6 +43598,8 @@ function finEdClose() {
   if (!E) return;
   _finEd = null;
   E.el.remove();
+  // (v329: the page live again before focus goes back to it, layers.js)
+  modalSync();
   freeCanvas(E.cv);
   try {
     if (E.op && E.op.isConnected && E.op !== document.body) E.op.focus({ preventScroll: true });
@@ -43780,6 +44064,8 @@ function finCardShow(blob) {
     '"><div class="sfedaskbtns"><button type="button" class="sfghost" data-a="close">Close</button><button type="button" class="btn-primary" data-a="share">Share</button></div></div>';
   const end = function () {
     o.remove();
+    // (v329: the page live again before focus goes back to it, layers.js)
+    modalSync();
     // (a minute on: a download Safari asks about first still has it)
     setTimeout(function () {
       URL.revokeObjectURL(url);
@@ -51381,6 +51667,8 @@ function backToReview() {
   sfmode = 'review';
   focus = false;
   hideTip();
+  // (v329: the Plan's sharp copy let go too, 77-sharp)
+  sharpFree();
   closeSwatchPop(false);
   photoAlign = false;
   photoPeek = false;
@@ -56195,6 +56483,7 @@ function renderGuide() {
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(pvCanvas, 0, 0, hw, hh, 0, 0, W, H);
     positionSun();
+    if (_shEl) sharpHide();
     return;
   }
   tkTrack(dim && revealF == null);
@@ -56386,7 +56675,7 @@ function renderGuide() {
   positionOutline();
   // (v323: Focus mode's side rail, its strip and the page as coloured so far; its sharp copy, drawn again)
   if (focus) focusSide();
-  if (sfmode === 'color' || _shEl) sharpStale(inc ? 'part' : true);
+  if (sfmode === 'color' || sfmode === 'guide' || _shEl) sharpStale(inc ? 'part' : true);
   if (!pickPending()) scheduleAutosave();
 }
 function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tick, fcur, ring) {
@@ -65181,7 +65470,7 @@ function ppLoadImage(file) {
     return;
   }
   note('Reading photo…');
-  const gen = ++loadGen,
+  const gen = pickNow(),
     lens =
       file && file.slice && file.slice(0, 262144).arrayBuffer
         ? file
@@ -65203,7 +65492,7 @@ function ppLoadImage(file) {
         URL.revokeObjectURL(url);
         url = null;
       }
-      if (gen !== loadGen) return;
+      if (!pickLive(gen)) return;
       if (!img.width || !img.height) {
         note('That image looked empty — try another file.');
         return;
@@ -65213,9 +65502,9 @@ function ppLoadImage(file) {
         dec = img.decode ? img.decode() : null;
       } catch (e) {}
       Promise.all([lens, Promise.resolve(dec).catch(function () {})]).then(function (r) {
-        if (gen !== loadGen) return;
+        if (!pickLive(gen)) return;
         afterPaint(function () {
-          if (gen !== loadGen) return;
+          if (!pickLive(gen)) return;
           let tok = 0;
           try {
             tok = resetForNewPicture();
@@ -65234,7 +65523,7 @@ function ppLoadImage(file) {
         URL.revokeObjectURL(url);
         url = null;
       }
-      if (gen !== loadGen) return;
+      if (!pickLive(gen)) return;
       note('That file couldn’t be opened as a picture — try a JPEG or PNG.');
     };
     img.src = src;
@@ -65243,10 +65532,10 @@ function ppLoadImage(file) {
   else {
     const fr = new FileReader();
     fr.onload = function () {
-      if (gen === loadGen) go(fr.result);
+      if (pickLive(gen)) go(fr.result);
     };
     fr.onerror = function () {
-      if (gen === loadGen) note('Couldn’t read that file.');
+      if (pickLive(gen)) note('Couldn’t read that file.');
     };
     fr.readAsDataURL(file);
   }
@@ -69473,6 +69762,12 @@ function edBarWire() {
     // (v318 polish: after the screen is drawn, not in the frame's own callback: with the label points already worked
     // out, "Building…" never showed)
     afterPaint(function () {
+      // (v329: the section map's signature first, held for the whole Build: its label points, the texture and the
+      // Build itself read it, once each before, each a pass over every pixel; labelsSigDone below)
+      if (g === loadGen)
+        try {
+          labelsSigWarm(true);
+        } catch (e) {}
       // (v307: the label points worked out in the worker first, while "Building…" shows: lptsReady, 40-render)
       lptsReady().then(function () {
         // (v318.23: what depends on the sections alone, the texture's distances and the mood pictures' lines, in a task
@@ -69484,12 +69779,8 @@ function edBarWire() {
             if (mpOn()) mpLinesImage();
           } catch (e) {}
         // (v324: and the section map's signature in a task of its own, read for every pixel: about 0.2 s off Build's
-        // own hold on a big photo, slowed 4×)
+        // own hold on a big photo, slowed 4×; v329: worked out at the start instead, and held)
         afterPaint(function () {
-          if (g === loadGen && !assignData)
-            try {
-              labelsSigWarm();
-            } catch (e) {}
           afterPaint(function () {
             // (the first Build of a new picture blooms: 41-bloom.js; v320: so does Build after the sections were
             // changed in Edit sections, the plan laid on them afresh)
@@ -69506,6 +69797,7 @@ function edBarWire() {
               }
               if (first && assignData && sfmode === 'guide') bloomStart();
             } finally {
+              labelsSigDone();
               if (b.isConnected) {
                 b.disabled = false;
                 b.innerHTML = 'Build guide ' + icNav(1);
@@ -69515,7 +69807,7 @@ function edBarWire() {
             }
           });
         });
-      });
+      }, labelsSigDone);
     });
   }); // show "Building…" before the work starts
   var _fx = document.getElementById('sfFix');
@@ -70022,6 +70314,9 @@ function secQuickN() {
 }
 function ctlSections() {
   if (sfmode === 'review' && !assignData && segWarn && !segWarn.ok) _secFullAt = loadGen;
+  // (v329: the sections are being looked at: checked for gaps in the lines, in the background once they're drawn,
+  // 66-gaps)
+  if (sfmode === 'review') afterPaint(gapWant);
   const mv = minPos,
     quick = secQuick(),
     // (the count as it was, so the line and the status bar don't read 0 until the sections are drawn again)
@@ -70031,13 +70326,16 @@ function ctlSections() {
       (quick
         ? '<div id="sfQuick" class="sfquick"><h3 class="sfedhead" id="sfQuickHead" tabindex="-1">Looks right?</h3><div class="sfc-note sfedline">We found <b id="sfQuickN">' +
           esc(cntTxt) +
-          '</b> to colour, shown in pale colours. The teal <span class="sfc-sw sfc-sw-bg"></span> is background: it stays white.</div></div>'
+          '</b> to colour, shown in pale colours. The teal <span class="sfc-sw sfc-sw-bg"></span> is background: it stays white.</div>' +
+          // (v329: possible gaps in the lines, once the check has found some: Review, 66-gaps)
+          '<div id="sfGapLine" class="sfc-note sfedline" hidden></div></div>'
         : '') +
       '<h3 class="sfedhead" id="sfSecHead" tabindex="-1"' +
       (quick ? ' hidden' : '') +
       '>Edit sections</h3><div class="sfc-note sfedline"' +
       (quick ? ' hidden' : '') +
-      '>Merge, split or add where the lines didn\u2019t come out right.</div>',
+      '>Merge, split or add where the lines didn\u2019t come out right.</div>' +
+      (quick ? '' : '<div id="sfGapLine" class="sfc-note sfedline" hidden></div>'),
     // (v318.32) a guide opened again from the Library (or Resume, or a guide file) has no photo: a saved guide keeps its
     // section map, not the photo (97-open: srcImg = null). Adjust photo had gone from Edit sections without a word
     // (Ben: "the crop tools disappear"); now it stays, and opens to say why, with the picker for a new guide from the
@@ -70249,6 +70547,8 @@ function ctlSections() {
         editPressed();
       });
   });
+  // (v329: the line for possible gaps, if the check has found any: 66-gaps)
+  gapLineSync();
   setEditMode(editMode);
   editPressed();
   updateUndoUI();
@@ -70264,17 +70564,28 @@ let _lmC = null,
 // labelsEdited; anything else that changes it makes a new one), so there it's kept for the same map.
 let _lsC = null,
   // (v324) worked out ahead, in a task of its own just before Build's (labelsSigWarm): taken once, by the next ask
-  // for the same map and sections, then gone (Edit sections and the finder change the map in place)
+  // for the same map and sections, then gone (Edit sections and the finder change the map in place). v329: held
+  // (hold) for the whole of a Build, which reads it four times (its label points, the texture, whether it's a first
+  // Build, the guide's own), until labelsSigDone: nothing changes the map meanwhile, as Build guide is off until it
+  // has run; an edit (labelsEdited, secEdN) drops it all the same
   _lsW = null;
-function labelsSigWarm() {
-  _lsW = labels ? { l: labels, c: comps, W: W, H: H, s: labelsSigOf(labels, W, H) } : null;
+function labelsSigWarm(hold) {
+  _lsW = labels
+    ? { l: labels, c: comps, W: W, H: H, e: secEdN, hold: !!hold, s: labelsSigOf(labels, W, H) }
+    : null;
+}
+function labelsSigDone() {
+  if (_lsW && _lsW.hold) _lsW = null;
 }
 function labelsSig() {
   const keep = sfmode === 'guide' || sfmode === 'color';
   if (keep && _lsC && _lsC.l === labels && _lsC.W === W && _lsC.H === H) return _lsC.s;
   const w = _lsW;
-  _lsW = null;
-  const s = w && w.l === labels && w.c === comps && w.W === W && w.H === H ? w.s : labelsSigOf(labels, W, H);
+  if (!(w && w.hold)) _lsW = null;
+  const s =
+    w && w.l === labels && w.c === comps && w.W === W && w.H === H && (w.e === undefined || w.e === secEdN)
+      ? w.s
+      : labelsSigOf(labels, W, H);
   _lsC = keep ? { l: labels, W: W, H: H, s: s } : null;
   return s;
 }
@@ -70403,6 +70714,8 @@ function labelsEdited() {
   _lsC = _lsW = null;
   // (v328 review: the sections changed, for those that remember what they read from them: 65-edit secEdN)
   secEdN++;
+  // (v329: and the check for gaps in the lines made again, 66-gaps)
+  gapEdited();
 }
 // share: for a guide file to share, which leaves out a photo the pattern doesn't use (to keep it small). edits: the
 // guide with section edits not built yet (kept when the page is hidden): only sections still there keep their
@@ -70911,6 +71224,8 @@ function askBox(title, text, btns, yesNo, now) {
       '</div></div>';
     const end = function (a) {
       o.remove();
+      // (v329: the page live again before focus goes back to it, layers.js)
+      modalSync();
       try {
         if (op && op.isConnected && op !== document.body) op.focus({ preventScroll: true });
       } catch (_) {}
@@ -73064,6 +73379,755 @@ function setEditMode(m) {
   if (_ac) _ac.style.display = m === 'add' ? 'flex' : 'none';
   if (labels && sfmode === 'review') render();
 }
+/* ---- Possible gaps in the pen lines (v329) ----
+    After the sections are found, a check for places where a line stops just short: of another line (a gap inside the
+    drawing) or of the paper's edge (a line that doesn't quite reach it). Where a short stroke there would split one
+    section into two good-sized parts, it's offered as a suggestion; nothing is changed until the person closes it.
+    The check runs in a worker of its own, made for it and ended after it (it can take seconds on a big photo, and the
+    shared one, JOBS, would hold up the codes and the first save meanwhile): no worker, no suggestions. Its result is
+    kept only while the picture, its section map and its edits are those it was worked out for (gapKey).
+    gapFind is copied into the worker as it stands: everything it uses is inside it. */
+function gapFind(L, W, H, minPart) {
+  const n = W * H;
+  // ink (1), and its skeleton, a line one pixel wide down its middle (Zhang-Suen)
+  const M = new Uint8Array(n);
+  for (let i = 0; i < n; i++) M[i] = L[i] < 0 ? 1 : 0;
+  const Sk = Uint8Array.from(M);
+  {
+    let changed = true;
+    const del = [];
+    while (changed) {
+      changed = false;
+      for (let pass = 0; pass < 2; pass++) {
+        del.length = 0;
+        for (let y = 1; y < H - 1; y++)
+          for (let x = 1; x < W - 1; x++) {
+            const i = y * W + x;
+            if (!Sk[i]) continue;
+            const p2 = Sk[i - W],
+              p3 = Sk[i - W + 1],
+              p4 = Sk[i + 1],
+              p5 = Sk[i + W + 1],
+              p6 = Sk[i + W],
+              p7 = Sk[i + W - 1],
+              p8 = Sk[i - 1],
+              p9 = Sk[i - W - 1];
+            const b = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+            if (b < 2 || b > 6) continue;
+            const a =
+              (!p2 && p3) +
+              (!p3 && p4) +
+              (!p4 && p5) +
+              (!p5 && p6) +
+              (!p6 && p7) +
+              (!p7 && p8) +
+              (!p8 && p9) +
+              (!p9 && p2);
+            if (a !== 1) continue;
+            if (pass === 0 ? p2 * p4 * p6 || p4 * p6 * p8 : p2 * p4 * p8 || p2 * p6 * p8) continue;
+            del.push(i);
+          }
+        if (del.length) changed = true;
+        for (let k = 0; k < del.length; k++) Sk[del[k]] = 0;
+      }
+    }
+  }
+  // the line's width: twice the median distance from the skeleton to the paper (runs across the ink are fooled by a
+  // coloured page)
+  let lw = 3;
+  {
+    const D = new Uint16Array(n);
+    for (let i = 0; i < n; i++) D[i] = M[i] ? 9999 : 0;
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        if (!D[i]) continue;
+        let v = D[i];
+        if (x) v = Math.min(v, D[i - 1] + 1);
+        if (y) v = Math.min(v, D[i - W] + 1);
+        D[i] = v;
+      }
+    for (let y = H - 1; y >= 0; y--)
+      for (let x = W - 1; x >= 0; x--) {
+        const i = y * W + x;
+        if (!D[i]) continue;
+        let v = D[i];
+        if (x < W - 1) v = Math.min(v, D[i + 1] + 1);
+        if (y < H - 1) v = Math.min(v, D[i + W] + 1);
+        D[i] = v;
+      }
+    const ds = [];
+    for (let i = 0; i < n; i += 3) if (Sk[i]) ds.push(D[i]);
+    ds.sort(function (a, b) {
+      return a - b;
+    });
+    if (ds.length) lw = Math.max(1, 2 * ds[(ds.length / 2) | 0] - 1);
+  }
+  // how far a line may stop short: of other ink inside the drawing (gmax), of the dark beyond the paper (emax), of the
+  // picture's own edge, for a page cropped to the paper or a scan (bmax)
+  const gmax = Math.max(6, Math.round(lw * 3)),
+    emax = Math.max(gmax, Math.round(lw * 6)),
+    bmax = Math.max(6, 2 * lw);
+  // the dark beyond the paper: ink joined to the picture's border and at least 0.5% of it. C, its pieces' ids, is
+  // used again below as the floods' stamps
+  const OUT = new Uint8Array(n),
+    C = new Int32Array(n);
+  {
+    const st = new Int32Array(n),
+      sizes = [0],
+      touches = [0];
+    let cid = 0;
+    for (let s0 = 0; s0 < n; s0++) {
+      if (!M[s0] || C[s0]) continue;
+      cid++;
+      let size = 0,
+        touch = false,
+        sp = 0;
+      st[sp++] = s0;
+      C[s0] = cid;
+      while (sp) {
+        const q = st[--sp],
+          qx = q % W,
+          qy = (q / W) | 0;
+        size++;
+        if (qx === 0 || qy === 0 || qx === W - 1 || qy === H - 1) touch = true;
+        if (qy > 0 && M[q - W] && !C[q - W]) {
+          C[q - W] = cid;
+          st[sp++] = q - W;
+        }
+        if (qy < H - 1 && M[q + W] && !C[q + W]) {
+          C[q + W] = cid;
+          st[sp++] = q + W;
+        }
+        if (qx > 0 && M[q - 1] && !C[q - 1]) {
+          C[q - 1] = cid;
+          st[sp++] = q - 1;
+        }
+        if (qx < W - 1 && M[q + 1] && !C[q + 1]) {
+          C[q + 1] = cid;
+          st[sp++] = q + 1;
+        }
+      }
+      sizes.push(size);
+      touches.push(touch ? 1 : 0);
+    }
+    const lim = n * 0.005;
+    for (let i = 0; i < n; i++) {
+      const c = C[i];
+      if (c && touches[c] && sizes[c] > lim) OUT[i] = 1;
+    }
+  }
+  // each line's end: a skeleton pixel with one neighbour, not within 3 px of the picture's edge
+  const nb8 = [-W - 1, -W, -W + 1, -1, 1, W - 1, W, W + 1],
+    back = Math.max(6, Math.round(lw * 3)),
+    cands = [];
+  // (the skeleton's one next pixel from cur, not prev: -1 at a junction or an end; cnt the count)
+  let cnt = 0;
+  const step = function (prev, cur) {
+    let next = -1;
+    cnt = 0;
+    for (let k = 0; k < 8; k++) {
+      const j = cur + nb8[k];
+      if (j !== prev && Sk[j] && Math.abs((j % W) - (cur % W)) <= 1) {
+        cnt++;
+        next = j;
+      }
+    }
+    return next;
+  };
+  for (let y = 3; y < H - 3; y++)
+    for (let x = 3; x < W - 3; x++) {
+      const i = y * W + x;
+      if (!Sk[i]) continue;
+      let c = 0,
+        nx = -1;
+      for (let k = 0; k < 8; k++)
+        if (Sk[i + nb8[k]]) {
+          c++;
+          nx = i + nb8[k];
+        }
+      if (c !== 1) continue;
+      // back along the skeleton, for the line's direction (a junction close by: only if the end's arm is long enough)
+      let prev = i,
+        cur = nx,
+        steps = 1,
+        ok = true;
+      while (steps < back) {
+        const nxt = step(prev, cur);
+        if (cnt !== 1) {
+          ok = cnt > 1 && steps >= lw * 1.5;
+          break;
+        }
+        prev = cur;
+        cur = nxt;
+        steps++;
+      }
+      if (!ok) continue;
+      let dx = x - (cur % W),
+        dy = y - ((cur / W) | 0);
+      const dl = Math.hypot(dx, dy);
+      if (dl < 2) continue;
+      dx /= dl;
+      dy /= dl;
+      // rays in a narrow cone ahead: out of this ink, across paper, into other ink (or off the picture)
+      let best = null;
+      const angs = [0, -0.2, 0.2, -0.4, 0.4];
+      for (let a = 0; a < angs.length; a++) {
+        const cs = Math.cos(angs[a]),
+          sn = Math.sin(angs[a]),
+          ux = dx * cs - dy * sn,
+          uy = dx * sn + dy * cs;
+        let t = 0,
+          inInk = true,
+          start = null,
+          hit = null;
+        while (t < emax + lw * 2 + 2) {
+          t += 0.5;
+          const px = Math.round(x + ux * t),
+            py = Math.round(y + uy * t);
+          if (px < 0 || py < 0 || px >= W || py >= H) {
+            if (start && !inInk)
+              hit = [Math.min(W - 1, Math.max(0, px)), Math.min(H - 1, Math.max(0, py)), t, 1];
+            break;
+          }
+          const v = L[py * W + px];
+          if (inInk) {
+            if (v >= 0) {
+              inInk = false;
+              start = [px, py, t];
+              if (v === 0) break;
+            }
+          } else if (v < 0) {
+            hit = [px, py, t, 0];
+            break;
+          } else if (v === 0) break;
+          if (start && t - start[2] > emax) break;
+        }
+        if (!(start && hit)) continue;
+        const gap = hit[2] - start[2],
+          edge = !!hit[3] || !!OUT[hit[1] * W + hit[0]];
+        if (gap > 0.5 && gap <= (hit[3] ? bmax : edge ? emax : gmax) && (!best || gap < best.gap))
+          best = { x0: start[0], y0: start[1], x1: hit[0], y1: hit[1], gap: gap, edge: edge };
+      }
+      if (best) cands.push(best);
+    }
+  // one per place, the narrowest
+  cands.sort(function (a, b) {
+    return a.gap - b.gap;
+  });
+  const out = [];
+  for (let k = 0; k < cands.length; k++) {
+    const c = cands[k],
+      mx = (c.x0 + c.x1) / 2,
+      my = (c.y0 + c.y1) / 2;
+    if (
+      !out.some(function (d) {
+        return Math.hypot((d.x0 + d.x1) / 2 - mx, (d.y0 + d.y1) / 2 - my) < lw * 3 + 4;
+      })
+    )
+      out.push(c);
+  }
+  // the stroke must cut one section into two parts, each at least 10 line widths across and the smaller at least
+  // minPart pixels and 3% of the section. Its sides are flooded a step at a time: a side that runs dry is a part of its
+  // own, sized; sides meeting are one; when one side is left, it's the rest
+  const res = [],
+    R = Math.max(1, Math.round(lw / 2)),
+    secSize = new Map(),
+    stamp = C.fill(0);
+  for (let i = 0; i < n; i++) if (L[i] > 0) secSize.set(L[i], (secSize.get(L[i]) || 0) + 1);
+  let stampN = 0;
+  for (let k = 0; k < out.length; k++) {
+    const c = out[k],
+      secs = new Map(),
+      bridge = new Set();
+    // (inside the drawing, only a gap narrower than the line: a vein's end or a letter's opening is wider)
+    if (!c.edge && c.gap > 0.9 * lw) continue;
+    let off = false;
+    const len = Math.max(1, Math.ceil(Math.hypot(c.x1 - c.x0, c.y1 - c.y0) * 2));
+    for (let s = 0; s <= len; s++) {
+      const px = Math.round(c.x0 + ((c.x1 - c.x0) * s) / len),
+        py = Math.round(c.y0 + ((c.y1 - c.y0) * s) / len);
+      for (let oy = -R; oy <= R; oy++)
+        for (let ox = -R; ox <= R; ox++) {
+          if (ox * ox + oy * oy > R * R + 1) continue;
+          const qx = px + ox,
+            qy = py + oy;
+          if (qx < 0 || qy < 0 || qx >= W || qy >= H) continue;
+          const q = qy * W + qx;
+          if (L[q] > 0) {
+            bridge.add(q);
+            secs.set(L[q], (secs.get(L[q]) || 0) + 1);
+          } else if (L[q] === 0) off = true;
+        }
+    }
+    if (secs.size !== 1 || off) continue;
+    const sec = secs.keys().next().value,
+      sides = [];
+    bridge.forEach(function (q) {
+      const ds = [-W, W, -1, 1];
+      for (let d = 0; d < 4; d++) {
+        const r = q + ds[d];
+        if (r >= 0 && r < n && L[r] === sec && !bridge.has(r)) sides.push(r);
+      }
+    });
+    const base = stampN,
+      qs = [],
+      sz = [];
+    for (let s = 0; s < sides.length; s++) {
+      const s0 = sides[s];
+      if (stamp[s0] > base) continue;
+      stamp[s0] = base + 1 + qs.length;
+      qs.push([s0]);
+      sz.push(0);
+    }
+    const par = qs.map(function (_, i) {
+        return i;
+      }),
+      find = function (i) {
+        while (par[i] !== i) i = par[i] = par[par[i]];
+        return i;
+      },
+      dried = [],
+      isDry = new Uint8Array(qs.length);
+    let one = false;
+    for (;;) {
+      let live = 0,
+        moved = false;
+      for (let j = 0; j < qs.length; j++) if (!isDry[j] && find(j) === j) live++;
+      if (live <= 1) {
+        one = dried.length === 0;
+        break;
+      }
+      for (let j = 0; j < qs.length; j++) {
+        const Q = qs[j];
+        if (!Q.length) continue;
+        moved = true;
+        for (let st = 0; st < 256 && Q.length; st++) {
+          const q = Q.pop(),
+            qx = q % W;
+          sz[j]++;
+          const ds = [-W, W, -1, 1];
+          for (let d = 0; d < 4; d++) {
+            if ((d === 2 && qx === 0) || (d === 3 && qx === W - 1)) continue;
+            const r = q + ds[d];
+            if (r < 0 || r >= n || bridge.has(r) || L[r] !== sec) continue;
+            if (stamp[r] > base) {
+              const a2 = find(stamp[r] - base - 1),
+                b2 = find(j);
+              if (a2 !== b2) par[a2] = b2;
+              continue;
+            }
+            stamp[r] = base + 1 + j;
+            Q.push(r);
+          }
+        }
+      }
+      for (let j = 0; j < qs.length; j++) {
+        const g0 = find(j);
+        if (g0 !== j || isDry[j]) continue;
+        let dry = true,
+          gs = 0;
+        for (let h = 0; h < qs.length; h++)
+          if (find(h) === g0) {
+            if (qs[h].length) dry = false;
+            gs += sz[h];
+          }
+        if (dry) {
+          isDry[j] = 1;
+          dried.push(gs);
+        }
+      }
+      if (!moved) break;
+    }
+    stampN = base + qs.length + 1;
+    if (one || !dried.length) continue;
+    const total = secSize.get(sec) - bridge.size,
+      parts = dried.slice(),
+      rest =
+        total -
+        parts.reduce(function (a, b) {
+          return a + b;
+        }, 0);
+    if (rest > 0) parts.push(rest);
+    if (parts.length < 2) continue;
+    parts.sort(function (a, b) {
+      return b - a;
+    });
+    const s1 = parts[1];
+    if (s1 < minPart || s1 < total * 0.03 || Math.sqrt(s1) < 10 * lw) continue;
+    res.push({
+      x0: c.x0,
+      y0: c.y0,
+      x1: c.x1,
+      y1: c.y1,
+      gap: c.gap,
+      edge: c.edge,
+      sec: sec,
+      parts: [parts[0], s1],
+    });
+  }
+  return { res: res, lw: lw };
+}
+
+// ---- the check, in its own worker ----
+// _gapR: the latest result, { k: its key, res, lw }; _gapRun: the check under way, { k, wk, t }. Dismissed suggestions
+// (_gapDis: where they were, in picture pixels) stay dismissed for the picture, through edits and checks again
+let _gapR = null,
+  _gapRun = null,
+  _gapT = 0,
+  _gapDis = [],
+  _gapDisG = -1,
+  // (how many checks were started and finished: for the tests)
+  _gapN = { started: 0, done: 0 };
+// (no answer in this long: given up, no suggestions; a 12-megapixel photo takes about 5 s on a computer)
+const GAP_BUDGET = 90000;
+// what a result is for: the picture (loadGen), its section map (the array, replaced when the sections are found
+// again), the edits made to it (secEdN) and its size
+function gapKey() {
+  return { g: loadGen, l: labels, e: secEdN, W: W, H: H };
+}
+function gapSame(a, b) {
+  return !!a && !!b && a.g === b.g && a.l === b.l && a.e === b.e && a.W === b.W && a.H === b.H;
+}
+// the suggestions for the sections as they are now, less those dismissed: [] while none are known
+function gapList() {
+  if (!_gapR || !gapSame(_gapR.k, gapKey())) return [];
+  if (_gapDisG !== loadGen) {
+    _gapDis = [];
+    _gapDisG = loadGen;
+  }
+  const near = Math.max(8, _gapR.lw * 3);
+  return _gapR.res.filter(function (s) {
+    const mx = (s.x0 + s.x1) / 2,
+      my = (s.y0 + s.y1) / 2;
+    return !_gapDis.some(function (d) {
+      return Math.hypot(d[0] - mx, d[1] - my) < near;
+    });
+  });
+}
+function gapDismiss(s) {
+  if (_gapDisG !== loadGen) {
+    _gapDis = [];
+    _gapDisG = loadGen;
+  }
+  _gapDis.push([(s.x0 + s.x1) / 2, (s.y0 + s.y1) / 2]);
+}
+function gapStop() {
+  clearTimeout(_gapT);
+  _gapT = 0;
+  if (!_gapRun) return;
+  clearTimeout(_gapRun.t);
+  try {
+    _gapRun.wk.terminate();
+  } catch (_) {}
+  URL.revokeObjectURL(_gapRun.url);
+  _gapRun = null;
+}
+// Called where the sections are shown to be checked (the quick step, Edit sections): the check started for them if
+// it hasn't been, and isn't under way. Not for a photo made into a page (its lines are the borders between its
+// regions, not pen lines), nor while sections are being found
+function gapWant() {
+  if (!labels || !W || !H || segBusy || ppOn()) return;
+  const k = gapKey();
+  if ((_gapR && gapSame(_gapR.k, k)) || (_gapRun && gapSame(_gapRun.k, k))) return;
+  gapStop();
+  if (typeof Worker !== 'function' || typeof Blob !== 'function' || typeof URL === 'undefined') return;
+  let wk = null,
+    url = null;
+  try {
+    url = URL.createObjectURL(
+      new Blob(
+        [
+          gapFind.toString() +
+            '\nself.onmessage = function (e) { const m = e.data; self.postMessage(gapFind(new Int32Array(m.buf), m.W, m.H, m.mp)); };',
+        ],
+        { type: 'text/javascript' },
+      ),
+    );
+    wk = new Worker(url);
+  } catch (e) {
+    if (url) URL.revokeObjectURL(url);
+    return;
+  }
+  const run = { k: k, wk: wk, t: 0, url: url },
+    end = function () {
+      if (_gapRun !== run) return;
+      clearTimeout(run.t);
+      try {
+        wk.terminate();
+      } catch (_) {}
+      // (the worker's source let go once it's done with: not before, as it may still be loading)
+      URL.revokeObjectURL(url);
+      _gapRun = null;
+    };
+  _gapRun = run;
+  _gapN.started++;
+  run.t = setTimeout(end, GAP_BUDGET);
+  wk.onmessage = function (e) {
+    if (_gapRun !== run) return;
+    end();
+    _gapN.done++;
+    // (kept only if nothing changed meanwhile)
+    if (!gapSame(k, gapKey())) return;
+    _gapR = { k: k, res: (e.data && e.data.res) || [], lw: (e.data && e.data.lw) || 3 };
+    gapShown();
+  };
+  wk.onerror = function (e) {
+    if (e && e.preventDefault) e.preventDefault();
+    end();
+  };
+  const buf = labels.slice().buffer;
+  try {
+    wk.postMessage({ buf: buf, W: W, H: H, mp: Math.max(4 * minPx(), 120) }, [buf]);
+  } catch (e) {
+    end();
+  }
+}
+// the sections were edited (labelsEdited): a check under way is of the map as it was; checked again once the edits
+// stop for a moment, if the sections are still being looked at
+function gapEdited() {
+  gapStop();
+  _gapT = setTimeout(function () {
+    _gapT = 0;
+    if (sfmode === 'review') gapWant();
+  }, 800);
+}
+
+// ---- shown: a line on the quick step (Review) and in Edit sections (Show); then each gap marked on the picture ----
+// _gapShow: the one shown (its place in gapList), -1 when they aren't; _gapSaid: the result last said aloud
+let _gapShow = -1,
+  _gapSaid = null;
+// a new picture: no check under way for the old one, none shown
+function gapReset() {
+  gapStop();
+  _gapShow = -1;
+}
+// a result has come in: its line, and said once (politely, the keyboard left where it is)
+function gapShown() {
+  if (sfmode !== 'review') return;
+  gapLineSync();
+  const n = gapList().length;
+  if (n && _gapSaid !== _gapR) {
+    _gapSaid = _gapR;
+    sayLive(
+      n +
+        ' possible gap' +
+        (n === 1 ? '' : 's') +
+        ' in the lines, where a section may be two. ' +
+        (document.getElementById('sfQuick') ? 'Review to see them.' : 'Show to see them.'),
+    );
+  }
+}
+// the line, as things are (#sfGapLine, in ctlSections: the quick step's or Edit sections'); the keyboard kept on the
+// same choice when it's drawn again
+function gapLineSync() {
+  const el = document.getElementById('sfGapLine');
+  if (!el) return;
+  const L = gapList(),
+    n = L.length,
+    quick = !!el.closest('#sfQuick');
+  if (_gapShow >= n) _gapShow = n - 1;
+  if (quick) _gapShow = -1;
+  const had = el.contains(document.activeElement) ? document.activeElement.getAttribute('data-gap') : null;
+  el.hidden = !n;
+  if (!n) {
+    el.innerHTML = '';
+    return;
+  }
+  const b = function (a, t, cls) {
+    return '<button type="button" class="' + (cls || 'sfghost') + '" data-gap="' + a + '">' + t + '</button>';
+  };
+  el.innerHTML =
+    _gapShow < 0
+      ? '<b>' +
+        n +
+        ' possible gap' +
+        (n === 1 ? '' : 's') +
+        '</b> in the lines, where a section may be two \u00b7 ' +
+        b(quick ? 'review' : 'show', quick ? 'Review' : 'Show', 'sflink')
+      : '<b>Gap ' +
+        (_gapShow + 1) +
+        ' of ' +
+        n +
+        '</b>: a line stops just short here. Close it to make two sections.<div class="sfgapbtns">' +
+        b('close', 'Close', 'btn-primary') +
+        b('dismiss', 'Dismiss') +
+        (n > 1 ? b('next', 'Next') + b('all', 'Close all') : '') +
+        '</div>';
+  if (had) {
+    const f = el.querySelector('[data-gap="' + had + '"]') || el.querySelector('[data-gap]');
+    try {
+      if (f) f.focus({ preventScroll: true });
+    } catch (_) {}
+  }
+}
+// gap i shown: the picture zoomed to it (at least ×4), every gap marked
+function gapGo(i) {
+  const L = gapList();
+  if (!L.length) {
+    _gapShow = -1;
+    gapLineSync();
+    return;
+  }
+  _gapShow = ((i % L.length) + L.length) % L.length;
+  const s = L[_gapShow];
+  centerOn((s.x0 + s.x1) / 2, (s.y0 + s.y1) / 2, Math.max(zoom, 4));
+  render();
+  gapLineSync();
+  sayLive('Gap ' + (_gapShow + 1) + ' of ' + L.length + '.');
+}
+// the sections drawn in Edit sections or the quick step (render, 10-segment): the gaps marked; and if the map has
+// changed since the check (an Undo, a Redo, an edit), its line put away and the check made again once things settle
+function gapRendered() {
+  if (sfmode !== 'review') return;
+  gapDraw();
+  if (_gapR && gapSame(_gapR.k, gapKey())) return;
+  if (_gapRun && gapSame(_gapRun.k, gapKey())) return;
+  const el = document.getElementById('sfGapLine');
+  if (el && !el.hidden) gapLineSync();
+  if (!_gapT) gapEdited();
+}
+// the gaps marked on the picture (render, 10-segment): a dashed stroke where each would be closed, the one shown
+// ringed
+function gapDraw() {
+  if (_gapShow < 0 || sfmode !== 'review' || !ctx) return;
+  const L = gapList();
+  if (!L.length) return;
+  const lw = Math.max(3, _gapR.lw),
+    r = Math.max(16, lw * 5);
+  ctx.save();
+  ctx.lineCap = 'round';
+  L.forEach(function (s, i) {
+    const on = i === _gapShow;
+    ctx.strokeStyle = on ? '#d1361f' : '#e08a1e';
+    ctx.lineWidth = lw;
+    ctx.setLineDash([lw * 1.2, lw]);
+    ctx.beginPath();
+    ctx.moveTo(s.x0, s.y0);
+    ctx.lineTo(s.x1, s.y1);
+    ctx.stroke();
+    if (on) {
+      ctx.setLineDash([]);
+      ctx.lineWidth = Math.max(2, lw * 0.6);
+      ctx.beginPath();
+      ctx.arc((s.x0 + s.x1) / 2, (s.y0 + s.y1) / 2, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  });
+  ctx.restore();
+}
+// a gap closed in the map: a stroke as thick as the pen's line (at least Split's) from just inside the ink at one end
+// to just inside it at the other, through the section it's in. Returns 1 if it made two sections; if not, the map is
+// as it was
+function gapCut(s) {
+  const lw = _gapR ? _gapR.lw : 3,
+    rad = Math.max(cutRad(), Math.round(lw / 2)),
+    dx = s.x1 - s.x0,
+    dy = s.y1 - s.y0,
+    dl = Math.hypot(dx, dy) || 1,
+    ux = dx / dl,
+    uy = dy / dl,
+    ax = s.x0 - ux * rad,
+    ay = s.y0 - uy * rad,
+    bx = s.x1 + ux * rad,
+    by = s.y1 + uy * rad;
+  // (the section it's in now: the one most of the stroke crosses, as a gap closed before may have renumbered it)
+  const tally = new Map(),
+    steps = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay)));
+  for (let k = 0; k <= steps; k++) {
+    const x = Math.round(ax + ((bx - ax) * k) / steps),
+      y = Math.round(ay + ((by - ay) * k) / steps);
+    if (x < 0 || y < 0 || x >= W || y >= H) continue;
+    const v = labels[y * W + x];
+    if (v > 0) tally.set(v, (tally.get(v) || 0) + 1);
+  }
+  let sec = 0,
+    best = 0;
+  tally.forEach(function (c, v) {
+    if (c > best) {
+      best = c;
+      sec = v;
+    }
+  });
+  if (!sec || ppBgSec(sec)) return 0;
+  labelsEdited();
+  const done = [];
+  for (let k = 0; k <= steps; k++) {
+    const cx = Math.round(ax + ((bx - ax) * k) / steps),
+      cy = Math.round(ay + ((by - ay) * k) / steps);
+    for (let oy = -rad; oy <= rad; oy++)
+      for (let ox = -rad; ox <= rad; ox++) {
+        if (ox * ox + oy * oy > rad * rad + 1) continue;
+        const x = cx + ox,
+          y = cy + oy;
+        if (x < 0 || y < 0 || x >= W || y >= H) continue;
+        const q = y * W + x;
+        if (labels[q] === sec) {
+          labels[q] = -1;
+          done.push(q);
+        }
+      }
+  }
+  if (relabelRegion(sec) >= 1) return 1;
+  for (let k = 0; k < done.length; k++) labels[done[k]] = sec;
+  labelsEdited();
+  return 0;
+}
+// Close (one gap) or Close all: one Undo step either way. The suggestions left are kept for the map as it now is, so
+// the check isn't made again for them
+function gapClose(all) {
+  const L = gapList();
+  if (!L.length || segBusy) return;
+  const which = all ? L : [L[Math.max(0, _gapShow)]],
+    res = _gapR.res;
+  snapshotSeg();
+  let made = 0;
+  which.forEach(function (s) {
+    if (gapCut(s)) {
+      made++;
+      res.splice(res.indexOf(s), 1);
+    } else gapDismiss(s);
+  });
+  if (!made) {
+    restoreSnap();
+    note('That gap didn\u2019t divide the section.');
+  } else hasEdits = true;
+  // (its result, less what was closed, for the map now: no new check)
+  gapStop();
+  _gapR.k = gapKey();
+  if (all || !gapList().length) _gapShow = -1;
+  _secSayNext = made > 1 ? made + ' gaps closed: ' : made ? 'Gap closed: ' : '';
+  render();
+  updateUndoUI();
+  gapLineSync();
+  if (_gapShow >= 0) gapGo(_gapShow);
+}
+document.addEventListener('click', function (e) {
+  const b = e.target && e.target.closest ? e.target.closest('#sfGapLine [data-gap]') : null;
+  if (!b || sfmode !== 'review') return;
+  const a = b.getAttribute('data-gap');
+  if (a === 'review') {
+    // (Edit sections opened, with the gaps shown)
+    secFix();
+    gapGo(0);
+    const f = document.querySelector('#sfGapLine [data-gap="close"]');
+    try {
+      if (f) f.focus({ preventScroll: true });
+    } catch (_) {}
+  } else if (a === 'show') gapGo(0);
+  else if (a === 'next') gapGo(_gapShow + 1);
+  else if (a === 'dismiss') {
+    const L = gapList();
+    if (L[_gapShow]) gapDismiss(L[_gapShow]);
+    if (gapList().length) gapGo(_gapShow);
+    else {
+      _gapShow = -1;
+      render();
+      gapLineSync();
+    }
+  } else if (a === 'close') gapClose(false);
+  else if (a === 'all') gapClose(true);
+});
 function evPt(e) {
   const r = cv.getBoundingClientRect();
   return {
@@ -73260,7 +74324,7 @@ function applyXform() {
   // (v323: Focus mode's ring round a small section)
   if (focus || document.getElementById('sfFocRing')) focusRing();
   // (v323: the sharp copy over the picture moves with it, drawn again once the move settles, 77-sharp)
-  if (sfmode === 'color' || _shEl) sharpStale();
+  if (sfmode === 'color' || sfmode === 'guide' || _shEl) sharpStale();
 }
 function clampPan() {
   const d = viewDims(),
@@ -74416,6 +75480,8 @@ function openSheet(o) {
   el.setAttribute('role', 'dialog');
   el.setAttribute('aria-modal', 'true');
   el.setAttribute('aria-labelledby', 'sfSheetT');
+  // (v329: a picker's sheet leaves the picture live, for the taps that move it: layers.js modalSync)
+  if (o.picker) el.setAttribute('data-ms-keep', '#sfView');
   el.innerHTML =
     '<div class="sfshhd"><h2 id="sfSheetT">' +
     esc(o.title || '') +
@@ -74447,6 +75513,8 @@ function openSheet(o) {
     if (sheetO && sheetO.el === el) placeSheet();
   });
   touchRule();
+  // (v329: the page round it inert while it's open, layers.js)
+  modalSync();
   el.addEventListener('keydown', sheetTab);
   const f =
     el.querySelector('[autofocus]') ||
@@ -74504,6 +75572,8 @@ function closeSheet(quiet) {
   const had = S.el.contains(document.activeElement);
   S.el.remove();
   if (S.scrim) S.scrim.remove();
+  // (v329: the page live again before focus goes back to it, layers.js)
+  modalSync();
   document.documentElement.classList.remove('sfsheeton', 'sfsheetsd', 'sfsheetin');
   touchRule();
   if (S.o.restore !== false && S.y1 !== S.y0 && Math.abs(window.scrollY - S.y1) < 2) {
@@ -76535,7 +77605,7 @@ let _shEl = null,
   _shJobT = 0;
 function sharpOn() {
   return !!(
-    sfmode === 'color' &&
+    (sfmode === 'color' || (sfmode === 'guide' && !_bloom && !photoAlign && !dragPreview)) &&
     (focus ? !focusFin : true) &&
     cv &&
     sfView &&
@@ -76547,7 +77617,10 @@ function sharpOn() {
 function sharpHide() {
   _shGen++;
   clearTimeout(_shJobT);
-  if (_shEl) _shEl.hidden = true;
+  if (_shEl) {
+    _shEl.hidden = true;
+    _shEl.style.opacity = '0';
+  }
   _shCrop = null;
 }
 // (v328 review) hidden and let go: its canvas's pixels and the distance fields, on leaving Colour along or the guide
@@ -76568,7 +77641,7 @@ function sharpStale(drawn) {
   _shGen++;
   clearTimeout(_shJobT);
   if (!sharpOn()) return sharpHide();
-  if (drawn && (focus || drawn !== 'part')) sharpHide();
+  if (drawn && (focus || drawn !== 'part' || sfmode === 'guide')) sharpHide();
   sharpPlace();
   _shT = setTimeout(sharpDraw, drawn === true && !focus ? 30 : drawn ? 300 : 420);
 }
@@ -76584,7 +77657,11 @@ function sharpPlace() {
   s.top = cv.offsetTop + 'px';
   s.width = ((c[2] - c[0]) * DW) / W + 'px';
   s.height = ((c[3] - c[1]) * DH) / H + 'px';
-  s.transition = cv.style.transition;
+  // (v329: in the Plan it fades in, sharpDraw: not under Reduce motion, nor in Colour along, as before)
+  s.transition =
+    sfmode === 'guide' && !reducedMotion()
+      ? (cv.style.transition ? cv.style.transition + ', ' : '') + 'opacity .15s'
+      : cv.style.transition;
   s.transform =
     (cv.style.transform || '') + ' translate(' + (c[0] * DW) / W + 'px,' + (c[1] * DH) / H + 'px)';
 }
@@ -76673,8 +77750,16 @@ function sharpShow(im, crop, ow, oh, host) {
   _shEl.height = oh;
   _shEl.getContext('2d').putImageData(im, 0, 0);
   _shCrop = crop;
+  const was = _shEl.hidden;
   _shEl.hidden = false;
   sharpPlace();
+  // (v329: in the Plan it fades in from hidden over 0.15 s, the stepped picture settling into the sharp one; at once
+  // elsewhere and under Reduce motion: sharpPlace gives it no transition there)
+  if ((was || _shEl.style.opacity === '0') && sfmode === 'guide' && !reducedMotion()) {
+    _shEl.style.opacity = '0';
+    void _shEl.offsetWidth;
+  }
+  _shEl.style.opacity = '1';
 }
 // Find next: zoom in on the next section of the highlighted colour still to do, one after another
 let _fnLast = -1;
@@ -90884,6 +91969,15 @@ function mount() {
     '</button></div>' +
     '<div id="sfCtl"></div></div>' +
     '<div id="sfLive" class="sfsr" aria-live="polite"></div><input type="file" id="sfFile" class="fileinput" accept="image/*"><input type="file" id="sfPdfFile" class="fileinput" accept="application/pdf,.pdf"><input type="file" id="sfImpFile" class="fileinput" accept="application/json,.json"><input type="file" id="sfPpFile" class="fileinput" accept="image/*">';
+  // (v329: the guide's spoken line in the body, beside #msSay: inside the guide it went inert with the page while a sheet
+  // or a dialog was open, so what the marker picker said wasn't heard; layers.js modalSync)
+  {
+    const lv = root.querySelector('#sfLive');
+    if (lv) {
+      if (document.querySelector('body > #sfLive')) lv.remove();
+      else document.body.appendChild(lv);
+    }
+  }
   metaEl = document.getElementById('sfMeta');
   root.addEventListener('click', function (e) {
     if (e.target.closest('[data-gomk]') && api.goMarkers) api.goMarkers();
@@ -93058,6 +94152,23 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     shadeFromPhoto: shadeFromPhoto,
     labelsSig: labelsSig,
+    labelsSigWarm: labelsSigWarm,
+    labelsSigDone: labelsSigDone,
+    labelsEdited: labelsEdited,
+    // (v329: the check for gaps in the lines, 66-gaps)
+    gapFind: gapFind,
+    gapList: gapList,
+    gapDismiss: gapDismiss,
+    get gapR() {
+      return _gapR;
+    },
+    set gapR(v) {
+      _gapR = v;
+    },
+    get gapN() {
+      return _gapN;
+    },
+    gapKey: gapKey,
     stepFaint: stepFaint,
     pgFind: pgFind,
     // (v318.36: the same in the JOBS worker)
@@ -96841,6 +97952,8 @@ function scanZoom(e, from) {
     '<button type="button" class="btn-primary" data-a="close">Not now</button></div></div>';
   const end = function (back) {
     o.remove();
+    // (v329: the page live again before focus goes back to it, layers.js)
+    modalSync();
     if (back === false) return;
     const n = scanList.indexOf(e),
       to =
@@ -106132,66 +107245,83 @@ if (STORE_BLOCKED) {
 }
 // Library › Import a guide: a guide file opens; a backup is offered as a restore; anything else is said once, by the button
 function importPicked(f, btn) {
-  const fr = new FileReader();
-  fr.onload = function () {
-    let d = null;
-    try {
-      d = JSON.parse(fr.result);
-    } catch (_) {}
-    if (
-      d &&
-      typeof d === 'object' &&
-      (d.type === 'ms-backup' || d.type === 'ms-guides' || Array.isArray(d) || Array.isArray(d.owned))
-    ) {
-      // (asked in the app's own dialog, v288)
-      (window.SF && SF.askBox
-        ? SF.askBox(
-            'This is a backup',
-            'This file is a Marker Studio backup, not a single guide. Restore it?',
-            '<button type="button" class="btn-primary" data-a="go">Restore it</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
-            true,
-          )
-        : Promise.resolve(
-            confirm('This is a Marker Studio backup, not a single guide. Restore it?') ? 'go' : 'stay',
-          )
-      ).then(function (a) {
-        if (a === 'go') restoreAny(f, btn.id);
-      });
-      return;
-    }
-    if (
-      d &&
-      d.payload &&
-      typeof d.payload.lmap === 'string' &&
-      /^data:image\/png;base64,[A-Za-z0-9+/=]{16,}$/.test(d.payload.lmap) &&
-      window.SF &&
-      SF.importFile
-    ) {
-      closeDialog(savedOverlay);
-      SF.importFile(f);
-      return;
-    }
-    // (v308) a photo: offered as a new guide; an empty file, or a guide file or backup cut short, said as such
-    const why = d ? 'bad' : fileTrouble(f, fr.result);
-    if (why === 'picture' && window.SF && SF.photoFile) {
-      SF.askBox(
-        'Make a guide from this photo?',
-        'That\u2019s a photo, not a guide file. Its sections can be found for a new guide.',
-        '<button type="button" class="btn-primary" data-a="go">Make a guide</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
-        true,
-      ).then(function (a) {
-        if (a !== 'go') return;
+  // (v329) a big file: whether it's a backup is told from its start (a backup says what it is first), not by reading
+  // it all; restoreAny then reads it a slice at a time
+  if (f && f.size > RESTORE_BIG && f.slice && typeof Blob !== 'undefined' && Blob.prototype.text) {
+    f.slice(0, 65536)
+      .text()
+      .then(function (t) {
+        if (/^\s*\{/.test(t) && /"type"\s*:\s*"ms-(backup|guides)"/.test(t.slice(0, 6000))) askRestore();
+        else importRead();
+      }, importRead);
+    return;
+  }
+  importRead();
+  function askRestore() {
+    // (asked in the app's own dialog, v288)
+    (window.SF && SF.askBox
+      ? SF.askBox(
+          'This is a backup',
+          'This file is a Marker Studio backup, not a single guide. Restore it?',
+          '<button type="button" class="btn-primary" data-a="go">Restore it</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+          true,
+        )
+      : Promise.resolve(
+          confirm('This is a Marker Studio backup, not a single guide. Restore it?') ? 'go' : 'stay',
+        )
+    ).then(function (a) {
+      if (a === 'go') restoreAny(f, btn.id);
+    });
+  }
+  function importRead() {
+    const fr = new FileReader();
+    fr.onload = function () {
+      let d = null;
+      try {
+        d = JSON.parse(fr.result);
+      } catch (_) {}
+      if (
+        d &&
+        typeof d === 'object' &&
+        (d.type === 'ms-backup' || d.type === 'ms-guides' || Array.isArray(d) || Array.isArray(d.owned))
+      ) {
+        askRestore();
+        return;
+      }
+      if (
+        d &&
+        d.payload &&
+        typeof d.payload.lmap === 'string' &&
+        /^data:image\/png;base64,[A-Za-z0-9+/=]{16,}$/.test(d.payload.lmap) &&
+        window.SF &&
+        SF.importFile
+      ) {
         closeDialog(savedOverlay);
-        SF.photoFile(f);
-      });
-      return;
-    }
-    errCard(btn, importWhy(why, fr.result));
-  };
-  fr.onerror = function () {
-    errCard(btn, 'Couldn\u2019t read that file.');
-  };
-  fr.readAsText(f);
+        SF.importFile(f);
+        return;
+      }
+      // (v308) a photo: offered as a new guide; an empty file, or a guide file or backup cut short, said as such
+      const why = d ? 'bad' : fileTrouble(f, fr.result);
+      if (why === 'picture' && window.SF && SF.photoFile) {
+        SF.askBox(
+          'Make a guide from this photo?',
+          'That\u2019s a photo, not a guide file. Its sections can be found for a new guide.',
+          '<button type="button" class="btn-primary" data-a="go">Make a guide</button><button type="button" class="sfghost" data-a="stay">Cancel</button>',
+          true,
+        ).then(function (a) {
+          if (a !== 'go') return;
+          closeDialog(savedOverlay);
+          SF.photoFile(f);
+        });
+        return;
+      }
+      errCard(btn, importWhy(why, fr.result));
+    };
+    fr.onerror = function () {
+      errCard(btn, 'Couldn\u2019t read that file.');
+    };
+    fr.readAsText(f);
+  }
 }
 // (v308) why a file picked in Import a guide can't be opened, in words
 function importWhy(why, text) {
@@ -107805,6 +108935,10 @@ function renderHomeNotes() {
 // (not on a fresh install); Help › What's new (v318.32: its own section; it had been in About) lists this version's.
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v329',
+    t: 'Where a pen line stops just short, so one section should be two, Looks right? says how many possible gaps it found; Review shows each one, and Close joins the line (Undo takes it back). Zoomed in, the Plan’s outlines are drawn sharp, as in Colour along. A big backup, with its guides’ photos, restores on an iPad. With VoiceOver, a message’s Undo or Share can be reached while the Library or another dialog is open.',
+  },
   {
     v: 'v328',
     t: 'Coloured on paper? A photo of your page ticks off what you’ve done: in Colour along, Tick them off from a photo lines your photo up with the page you made the guide from, or a printout of it, and offers the sections coloured since, with Check them to add or leave any out first. Print’s new Page to colour is the page with no labels to colour on, then your picture in colour with its codes to read beside it, and a shading map with the tones at full strength; the tone lines print faint. The offer for a page coloured in already finds pale colours too, and a spiral binding read as part of the page can be trimmed off.',
