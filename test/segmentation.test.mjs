@@ -3002,6 +3002,22 @@ import { core, createApp } from './harness.mjs';
     // 20 px short of a cropped edge: not (over 2 line widths)
     assert.equal(one(page(W, H, [[0, 148, W - 20, 152]])).res.length, 0);
   });
+  test('v329 gaps: a picture two-thirds ink (a dark side read as ink) is checked quickly', () => {
+    // (v329 CI: thinning looked at every pixel each pass, and a wide patch takes a pass for each pixel of its
+    // half-width: 13 s for such a picture; now only the pixels at the ink's edge and those beside one taken off)
+    const w = 1200,
+      h = 900,
+      rects = [
+        [0, 0, 800, h],
+        [900, 0, 904, 838],
+        [720, 840, w, 844],
+      ];
+    const t0 = process.cpuUsage(),
+      r = one(page(w, h, rects), w, h),
+      t = process.cpuUsage(t0);
+    assert.ok((t.user + t.system) / 1000 < 3000, 'took ' + Math.round((t.user + t.system) / 1000) + ' ms');
+    assert.ok(Array.isArray(r.res));
+  });
   test('v329 gaps: a result is for the section map it was found for: another map, an edit or another picture drops it', () => {
     t.W = W;
     t.H = H;

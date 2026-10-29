@@ -2380,8 +2380,33 @@ function ppMadeAssign(cl) {
     if (!mine.length) return null;
     for (let i = 0; i < miss.length; i++) {
       const l = miss[i];
-      if (!C.has[l]) return null;
-      assign[l] = nearestInPool([C.lab[l * 3], C.lab[l * 3 + 1], C.lab[l * 3 + 2]], mine);
+      if (C.has[l]) {
+        assign[l] = nearestInPool([C.lab[l * 3], C.lab[l * 3 + 1], C.lab[l * 3 + 2]], mine);
+        continue;
+      }
+      // (v329.1: one too small for the photo to give it a colour: the marker of the section it was cut from, else of
+      // the as-made section whose middle is nearest. It had turned the whole step's colours to tints, and Build to a
+      // plan made afresh, without a word)
+      const f = splitFrom(l);
+      if (f >= 0 && assign[f]) {
+        assign[l] = assign[f];
+        continue;
+      }
+      const c = comps[l];
+      let bd = Infinity,
+        bm = mine[0];
+      if (c)
+        for (let j = 0; j < cl.length; j++) {
+          const o = cl[j],
+            co = comps[o];
+          if (!pp.made[o] || !assign[o] || !co) continue;
+          const d = (co.cx - c.cx) * (co.cx - c.cx) + (co.cy - c.cy) * (co.cy - c.cy);
+          if (d < bd) {
+            bd = d;
+            bm = assign[o];
+          }
+        }
+      assign[l] = bm;
     }
   }
   return { assign: assign, paperS: paperS };
@@ -3323,9 +3348,12 @@ function ppShadeLineWire() {
       renderControls();
       renderGuide();
       ctlRefocus('#sfTab-shading');
-      toastAction('Shaded like the photo.', 'Undo', function () {
-        planUndo();
-      });
+      // (v329.1: the step made here, so the toast's Undo is this step's, and does nothing once another step comes or
+      // another guide is open, as every Plan toast's: planToastUndo. The click's own commit after it then finds the
+      // plan unchanged and adds nothing. Its bare planUndo() had undone whatever came last, in whichever guide)
+      planCommit();
+      toastAction('Shaded like the photo.', 'Undo', planToastUndo(planStack[planStack.length - 1]));
+      planToastMark();
     });
   if (x)
     x.addEventListener('click', function () {
@@ -3440,9 +3468,23 @@ function ctlPhotoPage() {
       if (hi) hi.textContent = 'Smallest section about ' + s.mm + ' mm across on ' + ppPaperName(pp.paper);
       det.setAttribute('aria-valuetext', s.n);
     });
-    // (made again once it's let go: a page takes a second or more, so not while it's dragged)
+    // (made again once it's let go: a page takes a second or more, so not while it's dragged. v329.1: a change that
+    // isn't a drag's, an arrow key's or VoiceOver's swipe, each a change of its own, waits PP_DET_WAIT for the next:
+    // each had made the page again, and the ones while it was being made were lost, the thumb put back)
+    det.addEventListener('pointerdown', function () {
+      _ppDetPtr = true;
+    });
     det.addEventListener('change', function () {
-      ppSetDetail(+det.value);
+      clearTimeout(_ppDetT);
+      if (_ppDetPtr) {
+        _ppDetPtr = false;
+        ppSetDetail(+det.value);
+        return;
+      }
+      const v = +det.value;
+      _ppDetT = setTimeout(function () {
+        ppSetDetail(v);
+      }, PP_DET_WAIT);
     });
   }
   const foc = document.getElementById('sfPpFoc');
@@ -3499,15 +3541,29 @@ function ppPaperName(p) {
   return { letter: 'Letter', a4: 'A4', a5: 'A5', half: 'Half Letter' }[p] || 'Letter';
 }
 // Detail moved: the page made again at step d (asked first when there's something to lose; one Undo step)
+// (v329.1) a Detail step asked for while the page is being made: made once it's done (ppDetNext)
+const PP_DET_WAIT = 400;
+let _ppDetT = 0,
+  _ppDetPtr = false,
+  _ppDetPend = null;
+function ppDetNext() {
+  const d = _ppDetPend;
+  _ppDetPend = null;
+  if (d != null && pp && d !== pp.d && !_ppBusy) ppSetDetail(d);
+}
 function ppSetDetail(d) {
-  if (!pp || d === pp.d || _ppBusy || !srcImg) {
+  if (pp && _ppBusy && srcImg) {
+    _ppDetPend = d;
+    return;
+  }
+  if (!pp || d === pp.d || !srcImg) {
     renderControls();
     return;
   }
   okGeom(
     function () {
       pp.d = d;
-      ppRemade(false);
+      ppRemade(false).then(ppDetNext);
     },
     true,
     function () {

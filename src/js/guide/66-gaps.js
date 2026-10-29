@@ -13,41 +13,92 @@ function gapFind(L, W, H, minPart) {
   for (let i = 0; i < n; i++) M[i] = L[i] < 0 ? 1 : 0;
   const Sk = Uint8Array.from(M);
   {
+    // (v329 CI: only the pixels that can change are looked at, each sub-pass: those at the ink's edge to begin with, then
+    // the neighbours of each pixel taken off. A pixel's answer for a sub-pass changes only when a neighbour does, so the
+    // skeleton is the same as looking at every pixel each time, which took 15 s on a picture whose dark side was read
+    // as ink, a wide patch thinned a pixel a pass. need: bit 1, to look at in the first sub-pass; bit 2, the second)
+    const need = new Uint8Array(n),
+      Q = [[], []],
+      del = [];
+    const mark = function (j) {
+      if (!(need[j] & 1)) {
+        need[j] |= 1;
+        Q[0].push(j);
+      }
+      if (!(need[j] & 2)) {
+        need[j] |= 2;
+        Q[1].push(j);
+      }
+    };
+    for (let y = 1; y < H - 1; y++)
+      for (let x = 1; x < W - 1; x++) {
+        const i = y * W + x;
+        if (
+          Sk[i] &&
+          !(
+            Sk[i - W] &&
+            Sk[i - W + 1] &&
+            Sk[i + 1] &&
+            Sk[i + W + 1] &&
+            Sk[i + W] &&
+            Sk[i + W - 1] &&
+            Sk[i - 1] &&
+            Sk[i - W - 1]
+          )
+        )
+          mark(i);
+      }
     let changed = true;
-    const del = [];
     while (changed) {
       changed = false;
       for (let pass = 0; pass < 2; pass++) {
+        const bit = pass + 1,
+          q = Q[pass];
+        Q[pass] = [];
         del.length = 0;
-        for (let y = 1; y < H - 1; y++)
-          for (let x = 1; x < W - 1; x++) {
-            const i = y * W + x;
-            if (!Sk[i]) continue;
-            const p2 = Sk[i - W],
-              p3 = Sk[i - W + 1],
-              p4 = Sk[i + 1],
-              p5 = Sk[i + W + 1],
-              p6 = Sk[i + W],
-              p7 = Sk[i + W - 1],
-              p8 = Sk[i - 1],
-              p9 = Sk[i - W - 1];
-            const b = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
-            if (b < 2 || b > 6) continue;
-            const a =
-              (!p2 && p3) +
-              (!p3 && p4) +
-              (!p4 && p5) +
-              (!p5 && p6) +
-              (!p6 && p7) +
-              (!p7 && p8) +
-              (!p8 && p9) +
-              (!p9 && p2);
-            if (a !== 1) continue;
-            if (pass === 0 ? p2 * p4 * p6 || p4 * p6 * p8 : p2 * p4 * p8 || p2 * p6 * p8) continue;
-            del.push(i);
-          }
+        for (let k = 0; k < q.length; k++) {
+          const i = q[k];
+          if (!(need[i] & bit)) continue;
+          need[i] &= ~bit;
+          if (!Sk[i]) continue;
+          const p2 = Sk[i - W],
+            p3 = Sk[i - W + 1],
+            p4 = Sk[i + 1],
+            p5 = Sk[i + W + 1],
+            p6 = Sk[i + W],
+            p7 = Sk[i + W - 1],
+            p8 = Sk[i - 1],
+            p9 = Sk[i - W - 1];
+          const b = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+          if (b < 2 || b > 6) continue;
+          const a =
+            (!p2 && p3) +
+            (!p3 && p4) +
+            (!p4 && p5) +
+            (!p5 && p6) +
+            (!p6 && p7) +
+            (!p7 && p8) +
+            (!p8 && p9) +
+            (!p9 && p2);
+          if (a !== 1) continue;
+          if (pass === 0 ? p2 * p4 * p6 || p4 * p6 * p8 : p2 * p4 * p8 || p2 * p6 * p8) continue;
+          del.push(i);
+        }
         if (del.length) changed = true;
         for (let k = 0; k < del.length; k++) Sk[del[k]] = 0;
+        for (let k = 0; k < del.length; k++) {
+          const i = del[k],
+            x = i % W,
+            y = (i / W) | 0;
+          for (let dy = -1; dy <= 1; dy++)
+            for (let dx = -1; dx <= 1; dx++) {
+              const xx = x + dx,
+                yy = y + dy;
+              if (xx < 1 || yy < 1 || xx >= W - 1 || yy >= H - 1) continue;
+              const j = yy * W + xx;
+              if (Sk[j]) mark(j);
+            }
+        }
       }
     }
   }
@@ -528,13 +579,23 @@ function gapShown() {
   const n = gapList().length;
   if (n && _gapSaid !== _gapR) {
     _gapSaid = _gapR;
-    sayLive(
-      n +
-        ' possible gap' +
-        (n === 1 ? '' : 's') +
-        ' in the lines, where a section may be two. ' +
-        (document.getElementById('sfQuick') ? 'Review to see them.' : 'Show to see them.'),
-    );
+    // (not over what was said just before, the step's own "Looks right? We found…": a result that came in quickly
+    // took its place half-said, or had its own taken; said a moment after it instead)
+    const r = _gapR,
+      say = function () {
+        const m = gapList().length;
+        if (sfmode !== 'review' || _gapR !== r || !m) return;
+        sayLive(
+          m +
+            ' possible gap' +
+            (m === 1 ? '' : 's') +
+            ' in the lines, where a section may be two. ' +
+            (document.getElementById('sfQuick') ? 'Review to see them.' : 'Show to see them.'),
+        );
+      },
+      wait = (sayLive.at || 0) + 1500 - Date.now();
+    if (wait > 0) setTimeout(say, wait);
+    else say();
   }
 }
 // the line, as things are (#sfGapLine, in ctlSections: the quick step's or Edit sections'); the keyboard kept on the

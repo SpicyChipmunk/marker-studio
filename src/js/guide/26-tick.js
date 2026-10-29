@@ -581,7 +581,9 @@ function tickRead(ref, pho, labels, W, H, nl, list, done, skip) {
     r = TICK_IN,
     mid = new Uint8Array(n),
     D = new Float32Array(n * 3),
-    LR = new Float32Array(n * 3);
+    // (v329.1: the reference's lightness is only ever asked whether it's over 30, so one byte a pixel, lit: as the
+    // reference's L*, a*, b* in floats, it was 52 MB at 2400 × 1800, the most of the reading's memory in the worker)
+    lit = new Uint8Array(n);
   for (let y = r; y < H - r; y++)
     for (let x = r, i = y * W + r; x < W - r; x++, i++) {
       const l = labels[i];
@@ -611,8 +613,8 @@ function tickRead(ref, pho, labels, W, H, nl, list, done, skip) {
     if (!mid[i]) continue;
     tkLab(ref, i, lin, t3);
     tkLab(pho, i, lin, t4);
+    lit[i] = t3[0] > 30 ? 1 : 0;
     for (let c = 0; c < 3; c++) {
-      LR[i * 3 + c] = t3[c];
       D[i * 3 + c] = t4[c] - t3[c];
     }
   }
@@ -680,7 +682,7 @@ function tickRead(ref, pho, labels, W, H, nl, list, done, skip) {
   const ok = new Uint8Array(n);
   // (not the sections ticked already: coloured in the photo, a background of one colour, half the page, had become
   // the light's change, and every blank section read as coloured)
-  for (let i = 0; i < n; i++) ok[i] = mid[i] && LR[i * 3] > 30 && !done[labels[i]] ? 1 : 0;
+  for (let i = 0; i < n; i++) ok[i] = mid[i] && lit[i] && !done[labels[i]] ? 1 : 0;
   // (and not what's clearly a colour from the start: far, in a*b*, from the page's usual change, the light's cast. A
   // big section coloured, a third of the page, was taken for the light round it, and the blank ones by it then read
   // as coloured: 24 on a printout of the letter page)
@@ -715,14 +717,14 @@ function tickRead(ref, pho, labels, W, H, nl, list, done, skip) {
     mb = c1[1];
   for (let i = 0; i < n; i++)
     if (ok[i] && Math.hypot(D[i * 3 + 1] - ma, D[i * 3 + 2] - mb) >= TICK_CAST) ok[i] = 0;
-  const m1 = tkMeds(D, mid, labels, W, H, ix, kN, cnt, tkLight(D, mid, LR, ok, W, H, TICK_LIGHT)),
+  const m1 = tkMeds(D, mid, labels, W, H, ix, kN, cnt, tkLight(D, mid, ok, W, H, TICK_LIGHT)),
     sus = new Uint8Array(nl);
   read.forEach(function (l) {
     const j = ix[l];
     if (m1.ab[j] >= TICK_SUSPECT * TICK_AB || m1.dl[j] >= TICK_SUSPECT * TICK_DARK) sus[l] = 1;
   });
   for (let i = 0; i < n; i++) if (ok[i] && sus[labels[i]]) ok[i] = 0;
-  const m2 = tkMeds(D, mid, labels, W, H, ix, kN, cnt, tkLight(D, mid, LR, ok, W, H, TICK_LIGHT2)),
+  const m2 = tkMeds(D, mid, labels, W, H, ix, kN, cnt, tkLight(D, mid, ok, W, H, TICK_LIGHT2)),
     on = [],
     blank = [];
   read.forEach(function (l) {
@@ -752,7 +754,7 @@ function tkMed(h, cnt, l, k) {
 }
 // the light's difference between the two pictures: D (the change, CIELAB) smoothed over sigma px of the middles in
 // ok, again and again without those far from it (ok is changed); at a quarter of the size: { F, qw, qh, q }
-function tkLight(D, mid, LR, ok, W, H, sigma) {
+function tkLight(D, mid, ok, W, H, sigma) {
   const q = 4,
     qw = Math.ceil(W / q),
     qh = Math.ceil(H / q),
@@ -1394,6 +1396,7 @@ function tickBusy(m) {
   _tickToast = '';
 }
 // lined up with one reference (k: 'o' the guide's own picture, 'p' as printed): { k, ref, pho, al } or null
+const _tkFit = new WeakMap();
 function tickTry(k, ref, pho) {
   const one = function (p) {
     return tickJob({ step: 'align', ref: ref, W: W, H: H, pho: p.d, pw: p.w, ph: p.h }).then(function (al) {
@@ -1404,7 +1407,13 @@ function tickTry(k, ref, pho) {
   // its drawing put in the guide's drawing's place)
   return (k === 'o' ? one(pho) : Promise.resolve(null)).then(function (r) {
     if (r) return r;
-    const f = tickFit(pho);
+    // (v329.1: the page fitted to the photo once for both tries, the guide's own and the printout: the same photo
+    // and guide, so the same fit, made twice, a picture-sized copy and a few tenths of a second on an iPad)
+    let f = _tkFit.get(pho);
+    if (f === undefined) {
+      f = tickFit(pho);
+      _tkFit.set(pho, f);
+    }
     return f ? one(f) : null;
   });
 }

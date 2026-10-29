@@ -1204,3 +1204,52 @@ after(teardown);
     assert.deepEqual(errors, []);
   });
 }
+
+// (v329.1) a big window's outlines for the sharp copy worked out in the worker, not on the page: the same copy as the
+// page's own working gives
+{
+  test('v329.1: the Plan zoomed in on a big picture: the sharp copy’s outlines come from the worker, the same as the page’s', async () => {
+    const { page, errors } = await openApp({
+      width: 820,
+      height: 1180,
+      storage: { 'ms-onboarded': '1', 'ms-setup-tip': '1', 'ms-photo-tips': '1' },
+    });
+    await page.click('#mSections');
+    await idle(page);
+    await letterGuide(page);
+    await idle(page);
+    const stats = () => page.evaluate(() => JSON.parse(JSON.stringify(__mstest.jobs.stats)).done.sfield || 0);
+    const s0 = await stats();
+    for (let i = 0; i < 2; i++) {
+      await page.click('#sfZin');
+      await idle(page);
+    }
+    const shown = () =>
+      until(
+        page,
+        () => !!document.getElementById('sfSharp') && !document.getElementById('sfSharp').hidden,
+        null,
+        'drawn sharp',
+      );
+    await shown();
+    assert.ok((await stats()) > s0, 'worked out in the worker');
+    const hash = () =>
+      page.evaluate(() => {
+        const c = document.getElementById('sfSharp'),
+          d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+        let h = 7;
+        for (let i = 0; i < d.length; i += 7) h = (Math.imul(h, 31) + d[i]) | 0;
+        return [c.width, c.height, h];
+      });
+    const a = await hash();
+    // the same copy from the page's own working (its field made here, sync)
+    await page.evaluate(() => {
+      __mstest.sharpField(true);
+      __mstest.sharpDraw();
+    });
+    await idle(page, 500);
+    await shown();
+    assert.deepEqual(await hash(), a, 'the same copy');
+    assert.deepEqual(errors, []);
+  });
+}

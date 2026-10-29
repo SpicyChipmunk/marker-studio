@@ -128,9 +128,12 @@ for (const k of [0, 1, 3, 4, 2]) {
   t = Date.now();
   await page.evaluate((v) => {
     const d = document.getElementById('sfPpDet');
+    // (as a drag: its pointer down first, and up after; a change without one waits for the next, v329.1)
+    d.dispatchEvent(new Event('pointerdown', { bubbles: true }));
     d.value = String(v);
     d.dispatchEvent(new Event('input', { bubbles: true }));
     d.dispatchEvent(new Event('change', { bubbles: true }));
+    d.dispatchEvent(new Event('pointerup', { bubbles: true }));
   }, k);
   await ready(k);
   b = await beat();

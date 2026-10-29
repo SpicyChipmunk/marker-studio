@@ -1092,11 +1092,22 @@ after(teardown);
   const count = (page) => page.evaluate(() => parseInt(document.getElementById('sfCount').textContent, 10));
   const line = (page) => page.evaluate(() => document.getElementById('sfGapLine').textContent.trim());
   test('v329 gaps: the quick step says 2 possible gaps · Review; Review shows them in Edit sections, zoomed to the first; Dismiss, Close, Undo', async () => {
-    const { page, errors } = await openApp({ width: 820, height: 1180, storage: { ...ONB, 'ms-sec-tools': '0' } });
+    const { page, errors } = await openApp({
+      width: 820,
+      height: 1180,
+      storage: { ...ONB, 'ms-sec-tools': '0' },
+    });
     await gapPage(page);
     assert.ok(await page.isVisible('#sfQuick'), 'the quick step');
     assert.equal(await line(page), '2 possible gaps in the lines, where a section may be two · Review');
-    assert.match(await page.textContent('#sfLive'), /^2 possible gaps in the lines/);
+    // (said a moment after the step's own line, not over it)
+    await page.waitForFunction(
+      () => /^2 possible gaps in the lines/.test(document.getElementById('sfLive').textContent),
+      null,
+      {
+        timeout: 5000,
+      },
+    );
     const n0 = await count(page);
     await page.click('#sfGapLine [data-gap="review"]');
     await idle(page);

@@ -858,6 +858,8 @@ function focusDone() {
     return;
   }
   guideDirty = true;
+  // (v329.1: set by hand: left as set by the ⋯ menu's Undo of the last tick-off, 82-colour-mode)
+  bulkTouch(l);
   var bits = stepBits(focusPos);
   if (stepDone(l, bits)) {
     stepSet(l, bits, false);
@@ -945,6 +947,8 @@ function focusAllOfColour() {
     }
   });
   progStamp();
+  // (v329.1: for the ⋯ menu's Undo of the last tick-off, 82-colour-mode)
+  bulkKeep(was, null);
   focusSheet = false;
   var nx = nextUndone(focusPos);
   if (nx < 0) finishFocus();

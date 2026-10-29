@@ -51,6 +51,47 @@ function relWake() {
     wakeLock = null;
   }
 }
+// (v329.1) The last tick-off of two or more sections at once (a photo's, the coloured-in offer's, Check them's Done,
+// Mark all), for the ⋯ menu's "Undo the last tick-off": the toast's Undo went with the next toast, and a hand tick
+// made one. Kept while the guide and its sections are those it was made on (loadGen, the labels array, secEdN), until
+// used, another bulk tick or Reset progress; a section tapped by hand since is taken out of it (bulkTouch), so it's
+// left as set. was: as markBack's, the sections ticked; un: those unticked (Check them)
+let _bulk = null;
+function bulkKeep(was, un) {
+  const n = Object.keys(was || {}).length + Object.keys(un || {}).length;
+  _bulk = n >= 2 ? { g: loadGen, l: labels, e: secEdN, was: was || {}, un: un || {} } : null;
+}
+function bulkLive() {
+  if (_bulk && (_bulk.g !== loadGen || _bulk.l !== labels || _bulk.e !== secEdN || !assignData)) _bulk = null;
+  if (_bulk && !Object.keys(_bulk.was).length && !Object.keys(_bulk.un).length) _bulk = null;
+  return _bulk;
+}
+function bulkN() {
+  const b = bulkLive();
+  return b ? Object.keys(b.was).length + Object.keys(b.un).length : 0;
+}
+function bulkTouch(l) {
+  if (!_bulk) return;
+  delete _bulk.was[l];
+  delete _bulk.un[l];
+}
+function bulkUndo() {
+  const b = bulkLive(),
+    n = bulkN();
+  _bulk = null;
+  if (!b) return;
+  markBack(b.was, true);
+  markBack(b.un, false);
+  guideDirty = true;
+  scheduleAutosave();
+  renderGuide();
+  updateProgress();
+  renderFocusMarkers();
+  if (sfmode === 'color') renderControls();
+  const m = 'Ticks as they were before the last tick-off (' + nWord(n, 'section') + ')';
+  sayLive(m);
+  toast(m, 3000);
+}
 // ✓ Mark all coloured / Clear for the open marker (the highlighted one). Clearing says so with an Undo that puts
 // the ticks (and tones part-way done) back, keeping any ticked since
 function markActive(done) {
@@ -71,6 +112,8 @@ function markActive(done) {
       _P[l] = 0;
     }
   });
+  // (v329.1: Mark all, for the ⋯ menu's Undo)
+  if (done) bulkKeep(was, null);
   const wasC = celebrated;
   checkComplete();
   renderGuide();
@@ -231,6 +274,8 @@ function colOfferTake() {
     P[l] = 0;
   });
   const k = secs.length;
+  // (v329.1: for the ⋯ menu's Undo)
+  bulkKeep(was, null);
   colOffer = null;
   colOfferEnd();
   guideDirty = true;
@@ -549,6 +594,8 @@ function colCheckApply(c) {
     colored[l] = 0;
     P[l] = 0;
   });
+  // (v329.1: for the ⋯ menu's Undo)
+  bulkKeep(wasT, wasU);
   // (the offer taken: the coloured-in offer's, or Tick off from a photo's)
   const offT = tickOffer;
   if (c.from === 'offer') colOffer = null;
@@ -631,6 +678,8 @@ function askResetProgress() {
 }
 function resetProgress() {
   if (!assignData) return;
+  // (v329.1: the ⋯ menu's Undo of the last tick-off goes with the ticks)
+  _bulk = null;
   // (v328 review: Check them, open, is about the ticks as they were: closed first, its offer kept)
   if (colCheckLive()) colCheckEnd(false);
   const pc = colored,

@@ -6,6 +6,7 @@ import {
   frames,
   idle,
   longPress,
+  openMenu,
   openApp,
   pause,
   sampleGuide,
@@ -2133,3 +2134,66 @@ test('a 320-wide phone: the list order row keeps its search button', async () =>
   assert.equal(await top('#sfFindOpen'), await top('#sfAlSort [data-v="light"]'), 'one row');
   assert.deepEqual(errors, []);
 });
+
+// (v329.1) the last tick-off of two or more sections at once, undone from the ⋯ menu: after the toast has gone, and
+// after more ticking by hand, which it leaves as set; gone once the sections change
+{
+  test('v329.1: ⋯ › Undo the last tick-off: Mark all undone after a hand tick, which stays; gone after the sections change', async () => {
+    const { page, errors } = await openApp({ width: 820, height: 1180, storage: { 'ms-wake-told': '1' } });
+    await sampleGuide(page);
+    await idle(page);
+    await page.click('#sfColor');
+    await idle(page);
+    // the marker with the most sections
+    const m = await page.evaluate(() => {
+      const t = __mstest,
+        by = {};
+      t.assignData.order.forEach((l) => {
+        const k = t.assignData.assign[l].mkey;
+        (by[k] = by[k] || []).push(l);
+      });
+      const k = Object.keys(by).sort((a, b) => by[b].length - by[a].length)[0];
+      const ls = by[k].slice().sort((a, b) => t.comps[b].area - t.comps[a].area);
+      return { k, ls };
+    });
+    assert.ok(m.ls.length >= 3, 'a marker with 3 sections or more');
+    await page.click(`#sfAlist .sfarow[data-k="${m.k}"] .sfah`);
+    await idle(page);
+    await page.click('#sfMarkAll');
+    await idle(page);
+    const done = () => page.evaluate((ls) => ls.map((l) => __mstest.colored[l] || 0), m.ls);
+    assert.ok((await done()).every(Boolean), 'all marked');
+    // by hand: the biggest unticked, then ticked again
+    const hand = m.ls[0],
+      p = await sectionPoint(page, hand);
+    await page.mouse.click(p.x, p.y);
+    await idle(page);
+    await page.mouse.click(p.x, p.y);
+    await idle(page);
+    assert.equal(await page.evaluate((l) => __mstest.colored[l] || 0, hand), 1, 'ticked again by hand');
+    await openMenu(page);
+    const item = `#sfSheet .sfmitem:text-is("Undo the last tick-off (${m.ls.length - 1} sections)")`;
+    assert.ok(await page.$(item), 'the item, without the one set by hand');
+    await page.click(item);
+    await idle(page);
+    const after = await done();
+    assert.equal(after[0], 1, 'the one set by hand stays');
+    assert.ok(
+      after.slice(1).every((v) => !v),
+      'the rest undone: ' + after,
+    );
+    // gone once used
+    await openMenu(page);
+    assert.equal(await page.$('#sfBulkUndo'), null);
+    await page.keyboard.press('Escape');
+    await idle(page);
+    // a bulk tick again, then the sections change: gone
+    await page.click('#sfMarkAll');
+    await idle(page);
+    await page.evaluate(() => __mstest.labelsEdited());
+    await openMenu(page);
+    assert.equal(await page.$('#sfBulkUndo'), null, 'gone when the sections change');
+    await page.keyboard.press('Escape');
+    assert.deepEqual(errors, []);
+  });
+}

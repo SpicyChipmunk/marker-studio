@@ -503,3 +503,28 @@ test('a saved guide’s pp (v326): its markers added, colours, kind of pool, bac
   assert.equal(odd.add, null);
   assert.equal(odd.tg, null);
 });
+
+// (v329.1) the Detail steps' pages kept and the subject maps go with the picture: a new picture or guide lets them go
+test('v329.1: the pages kept for Detail steps and the subject maps are let go with the picture', () => {
+  const t = core;
+  t.ppMemPut('k1', { pid: 1 }, { lab: new Int32Array(16), R: 3, it: 0 }, 0);
+  t.ppMemPut('k2', { pid: 1 }, { lab: new Int32Array(16), R: 4, it: 0 }, 0);
+  t.subKeep.push({ src: {}, sal: new Float32Array(4) });
+  assert.equal(t.ppMemN, 2);
+  assert.equal(t.subKeep.length, 1);
+  t.assign.resetForNewPicture();
+  assert.equal(t.ppMemN, 0, 'pages let go');
+  assert.equal(t.subKeep.length, 0, 'subject maps let go');
+});
+
+// (v329.1) a photo page's job allowed time for its marker choice too, by the photo's colours and the markers it may
+// use: from the full range a slow iPad had run out of time and lost the worker for the session
+test('v329.1: the photo page job’s time allowed grows with the markers it may choose from', () => {
+  const job = (P) => ({ GW: 2000, GH: 1500, tw: new Float32Array(450), pl: new Float32Array(P * 3) });
+  const full = core.jobBudget(job(720), 'ppage'),
+    small = core.jobBudget(job(120), 'ppage'),
+    none = core.jobBudget({ GW: 2000, GH: 1500 }, 'ppage');
+  assert.equal(none, 14000, 'the page’s own share as before');
+  assert.equal(small, 14000 + 2160);
+  assert.equal(full, 14000 + 12960);
+});

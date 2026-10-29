@@ -11,6 +11,7 @@
       'ppage' a photo made into a colouring page (ppWork, 47-photo-page; v325)
       'ppfill' the markers that would help that page most (ppFillCore, 47-photo-page; v326)
       'tick'  a later photo of the page lined up with the guide's picture, then read (tickWork, 26-tick; v328)
+      'sfield' the sharp copy's outlines for a window of the picture (sharpFieldCore, 77-sharp; v329.1)
     Anywhere there's no worker (an old browser, a page that can't make one) or a job fails, JOBS.run rejects and the
     caller does the work itself, as before. So does a job with no answer in time (jobBudget): the worker is then given
     up on for the session, and anything it sends later is ignored. */
@@ -68,6 +69,11 @@ const JOBS = (function () {
       if (m.k === 'ppfill') return { v: ppFillCore(m) };
       // (v328: Tick off from a photo, 26-tick)
       if (m.k === 'tick') return tickWork(m);
+      // (v329.1: the sharp copy's outlines, 77-sharp)
+      if (m.k === 'sfield') {
+        const r = sharpFieldCore(m.lab, m.small, m.w, m.h, m.X0, m.Y0, m.PW);
+        return { v: r, t: [r.sdf.buffer, r.near.buffer] };
+      }
       if (m.k === 'lpts') {
         const r = labelPtsCore(new Int32Array(m.buf), m.W, m.H, m.K);
         return {
@@ -112,7 +118,7 @@ const JOBS = (function () {
     if (wk || bad) return wk;
     try {
       const src =
-        [rgbPack, _flate, labelPtsCore]
+        [rgbPack, _flate, labelPtsCore, sharpFieldCore, sharpEdt, sharp1d, sharpBlur, sharpNear]
           .map(function (f) {
             return f.toString();
           })
@@ -270,9 +276,17 @@ const JOBS = (function () {
 // (v318.36) A picture's sections (k 'seg'): 4 s and 2 s more for each million pixels (a 2400 × 2400 photo, 15.5 s): the
 // steps take an iPad a second or two there, and a run superseded by a newer one answers at its next step
 // (v325) A photo made into a page (k 'ppage'): 8 s and 2 s for each million pixels of the guide's size (a 2000 × 1500 page,
-// 14 s), several times what a computer takes (about 1.5 s there)
+// 14 s), several times what a computer takes (about 1.5 s there). (v329.1) And the marker choice's share, by the
+// photo's colours and the markers it may use, as 'ppfill''s: from the full range (720 markers, 450 colours) it's about
+// 1.2 s on a computer, where 120 markers take 0.2 s; 13 s more allowed there, 2 s for 120, so a slow iPad doesn't lose
+// the worker for the session on a big collection's first page
 function jobBudget(data, k) {
-  if (k === 'ppage') return 8000 + Math.round((data.GW * data.GH) / 500);
+  if (k === 'ppage')
+    return (
+      8000 +
+      Math.round((data.GW * data.GH) / 500) +
+      (data.tw && data.pl ? Math.round((data.tw.length * (data.pl.length / 3)) / 25) : 0)
+    );
   // (v328: Tick off from a photo, lining up or reading: about 2 and 4 s on a desktop for the author's 3.8-megapixel
   // guide, more on an iPad)
   if (k === 'tick') return 15000 + Math.round((data.W * data.H) / 150);

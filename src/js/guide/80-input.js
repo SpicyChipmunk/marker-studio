@@ -215,6 +215,8 @@ function alongTick(l) {
   // (v328: not while Check them's draft is open: its Done is the one step)
   if (colCheckLive()) return;
   const sp = colored[l] ? null : spreadBegin(l);
+  // (v329.1: set by hand: left as set by the ⋯ menu's Undo of the last tick-off, 82-colour-mode)
+  bulkTouch(l);
   colored[l] ^= 1;
   tp()[l] = 0;
   guideDirty = true;

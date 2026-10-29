@@ -3431,3 +3431,79 @@ From v327.1 (v327.2 held and dropped; its paper reading comes back reworked). De
   its size), checked again after an edit or an Undo; none for a photo made into a page, and none without a worker.
   `test/segmentation.test.mjs` (made-up pages: inside, to the dark, to a cropped edge, too wide, the result's key),
   `e2e/sections-editor` (`e2e/fixtures/gap-page.png`, drawn for the tests).
+  The check's thinning looks only at the pixels that can change (those at the ink's edge, then those beside each
+  one taken off), the same skeleton as looking at every pixel each pass: on a picture whose dark side read as ink,
+  two-thirds of it, the check took 13 s (and held GitHub's test waiting); now 0.3 s, and 2–4 times quicker on Ben's
+  photos, their suggestions the same. Its count is said a moment after the step's own line, not over it.
+
+# Changes — v329.1 (the Fable review's fixes: photo tones and sharp outlines much quicker, less memory, small fixes)
+
+From the four-pass Fable pressure test of v325–v329 (REVIEW-v329-fable.md), built as PLAN-v329.1.md.
+
+- **Shade it's Undo is its own.** The toast after Shade it like the photo called a bare Undo: tapped after another
+  change, it undid that change instead (or, after opening another guide, that guide's last step). The step is now made
+  in the tap and the toast's Undo goes through `planToastUndo`, as every other Plan toast's: it does nothing once
+  another step has come (`e2e/photo-tones`).
+- **The kept Detail pages go with their photo.** A photo-made page keeps its last three Detail steps' pages, each
+  with its own section map (up to 48 MB in all), and the last two subject maps; nothing let them go when another
+  picture or guide was opened. They're cleared with the picture now (resetForNewPicture), which every new picture
+  goes through and a Detail or Focus change doesn't (`test/photo-page.test.mjs`).
+- **A tiny section made in Edit sections keeps the page as made.** On a photo-made page, a section added or split off
+  that's too small for the photo to give it a colour made the whole page step show tints, and Build plan afresh,
+  without a word. It now takes the marker of the section it was cut from, else of the as-made section whose middle
+  is nearest (ppMadeAssign; `e2e/photo-page`).
+- **The Photo style's amounts as they came.** Opening a guide shaded with the Photo style, or an Undo or Redo back
+  to one, made its amounts chosen again on the next draw (the choice's session key was empty), over the ones saved or
+  restored: the same amounts for the same photo, but half a second's work each time, and different ones if the
+  photo had been re-encoded. They're taken as they came now (ptAdopt), until the plan changes. And the amounts'
+  search uses the markers added for this plan, not those left from the plan before (ptKx). The review's other point
+  here, the sliders showing the previous style's amounts straight after Photo, didn't happen when checked in the
+  same task as the tap (both ways in: the row's Photo and Shade it); its test is kept (`e2e/photo-tones`).
+- **Detail by the keyboard or VoiceOver.** Each arrow press (or VoiceOver swipe) on the page step's Detail slider is a
+  change of its own, and each made the page again; the ones while it was being made were dropped and the thumb put
+  back, so three presses from Medium gave Fine, not Very detailed. A change that isn't a drag's now waits 400 ms for
+  the next, and a step asked for while the page is being made is made after it (`e2e/photo-page`; the tests' Detail
+  helpers send a pointer down first, as a drag does).
+- **Undo the last tick-off, in the ⋯ menu.** A photo's Mark them done or Check them's Done can tick a whole page at
+  once, and its Undo lived only in its toast, which the next hand tick's own toast replaced. Colour along's ⋯ menu
+  now has "Undo the last tick-off (N sections)" for the latest tick of two or more sections at once (a photo's, the
+  coloured-in offer's, Check them's, Mark all's, in the list or Focus mode), until it's used, another comes, Reset
+  progress, or the guide or its sections change (loadGen, the labels array, secEdN: by section number, it would
+  have ticked the wrong ones). A section tapped by hand since is taken out of it, so it's left as set (markBack
+  alone would have unticked one unticked and ticked again). Not saved: a reload ends it (`e2e/along-2`).
+- **Photo tones follow the page.** A section's highlight and shadow could be any marker on the page, so one you
+  don't have came in as another section's tone: a marker left on a coloured section since marked dry or unticked,
+  or one added with Try it with these; and the printed key marked every tone as yours, so it never said buy. The
+  page's own markers are tone candidates now only where they're yours, or where the page was made to try others
+  (Use the full range; Try it with these, for the markers it added). The tones kept on coloured sections are still
+  looked up among all the page's markers, so what's on the paper stays. The key's tones take the base rows' rule
+  for ownership, and say buy (`test/photo-tones.test.mjs`).
+- **Tick off from a photo needs less memory.** The reading kept the reference picture's L*, a*, b* in floats for
+  every pixel (52 MB at 2400 × 1800) and only ever asked whether L* was over 30: a one-byte mask now, the same
+  answers. And the guide's page fitted to the photo, made for each try (the guide's own picture, then the
+  printout), is made once per reading: a picture-sized copy and a few tenths of a second less on an iPad. About
+  70 MB less at the reading's peak; the readings are the same (`test/tick.test.mjs`, `e2e/tick`).
+- **Shading like the photo is many times quicker.** Choosing the photo tones worked out every sample's colour
+  difference again for every pair tried (the eight amounts tried, the markers added, each section's pairs), inside
+  the draw: on a Very detailed page about 7 s on a computer, about 38 s with Two tone sets, with the screen held.
+  Each sample's difference from a colour is now worked out the first time it's asked for and kept with the samples
+  (ptDist, ptD): the same numbers added in the same order, so the same tones, extras and error, bit for bit
+  (checked on made-up pages of 600 and 1200 sections, with and without sets). Measured: 600 sections about 7 s →
+  0.6 s; with Two tone sets about 38 s → 1.8 s; 1200 sections, 48 markers, sets 85 s → 5 s. 1.6 MB more while the
+  samples are kept (`test/photo-tones.test.mjs`).
+- **A photo page from the full range gets the time it needs.** The page's job was allowed time for the page only;
+  choosing its markers from the whole range (a tester with no markers added, or Use the full range) takes about
+  1.2 s on a computer where 120 markers take 0.2 s. On a slow iPad the job could run out of time, the page be made
+  again on the page, and the worker be given up on for the session. The job's allowance now grows with the photo's
+  colours × the markers it may use, as the markers-to-add job's does: 13 s more for the full range, 2 s for 120
+  markers. The choice is unchanged. (The review had measured 5–20 s with 20,000 photo colours; the app bins a photo
+  to 500 at most, so the real cost is the second above.) (`test/photo-page.test.mjs`)
+- **Sharp outlines without holding the screen.** The sharp copy's outlines (a distance field of the lines over the
+  window on the screen) were worked out on the page: about a second for a whole small picture, at the first zoom-in
+  after Build and after a pan past the window, and on an iPad (two screen pixels to one) the copy is on at the fit
+  for the sample-sized pages, so after every Build. A window of 300,000 pixels or more now has its field worked out
+  in the shared worker (JOBS 'sfield', `sharpFieldCore`: the field's work on its own, given the window's section map
+  and its small sections), and the copy is drawn when it comes, if the sections are still the same; smaller windows
+  (Focus mode's) as before, and on the page when there's no worker. Colour along and Focus mode's big windows get it
+  too. Still on the page: the window's colours and the picture read (65–115 ms for a whole small picture here). The
+  copy is the same either way (`e2e/along-3`: drawn from the worker's field and then the page's, the same pixels).

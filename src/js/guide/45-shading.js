@@ -2681,6 +2681,9 @@ let _pt = null, // { key, tone: { section: tones or null (flat) }, flat, extras 
   _ptHeld = {}, // { section: { L: mkey or '', S: mkey or '' } }
   _ptX = null, // the markers added: { k: what they were chosen for, x: [mkeys] }
   _ptAutoK = '',
+  // (v329.1) amounts that came in with the plan (a guide opened, an Undo or a Redo): taken for its samples as they
+  // are, not chosen again over them (ptAdopt)
+  _ptAdopt = false,
   _ptForce = false;
 const _ptT = new Map(), // tones objects kept by what they are, so the drawing's caches keep them
   _ptZs = new WeakMap();
@@ -2813,6 +2816,29 @@ function ptGlaze(b, m) {
   }
   return v;
 }
+// (v329.1) each sample's difference from colour c (an L*a*b* array kept as it is: ptLab's, ptGlaze's), kept with the
+// samples (sm, one section's, from ptSamples) for as long as they are: the choice tries the same colours on the same
+// samples again and again (the eight amounts, the markers added, each section's pairs). NaN until asked for (ptD)
+const _ptDC = new WeakMap();
+function ptDist(sm, c) {
+  let m = _ptDC.get(sm);
+  if (!m) {
+    m = new Map();
+    _ptDC.set(sm, m);
+  }
+  let d = m.get(c);
+  if (!d) {
+    d = new Float64Array(sm.length / 4).fill(NaN);
+    m.set(c, d);
+  }
+  return d;
+}
+// (a sample's difference, worked out the first time it's asked for: a tone's only for the samples in its part)
+function ptD(d, sm, i, c) {
+  let v = d[i];
+  if (v !== v) v = d[i] = de2000([sm[i * 4], sm[i * 4 + 1], sm[i * 4 + 2]], c);
+  return v;
+}
 function ptLab(m) {
   return m.lab || (m.lab = hexToLab(m.hex));
 }
@@ -2910,9 +2936,24 @@ function _ptChoose(S, amt, extras) {
     pcost = function (s, c) {
       return s[3] ? s[3] * de2000(mean(s), c) : 0;
     };
-  // the candidates: the page's markers, and the ones added
-  let cand = Object.keys(page).map(function (k) {
+  // the candidates: the page's markers, and the ones added. (v329.1: the page's own only where they're yours, or the
+  // page was made to try others: Use the full range, Try it with these's added. A marker left on a coloured section
+  // since marked dry or unticked, or one of Try it with these's, had become another section's tone, and the key said
+  // nothing of buying it)
+  const own = {};
+  coll.forEach(function (m) {
+    own[m.mkey] = 1;
+  });
+  const tryK = {};
+  if (pp && pp.add)
+    pp.add.forEach(function (k) {
+      tryK[k] = 1;
+    });
+  const pageAll = Object.keys(page).map(function (k) {
     return page[k];
+  });
+  let cand = pageAll.filter(function (m) {
+    return own[m.mkey] || (pp && pp.full) || tryK[m.mkey];
   });
   const bestL = function (gr, s, C) {
       if (!gr.hiP || !s[3]) return null;
@@ -3014,34 +3055,39 @@ function _ptChoose(S, amt, extras) {
       cur -= bg;
     }
   }
-  // a section's samples' error with highlight L and shadow Sm (null: the base there)
+  // a section's samples' error with highlight L and shadow Sm (null: the base there). (v329.1: each sample's
+  // difference from a colour worked out once, ptDist, and kept with the samples: the same numbers added in the same
+  // order, so the same choice, about ten times quicker; with Two tone sets twenty)
   const secCost = function (e, L, Sm) {
     const b = e.b,
       bl = ptLab(b),
       lc = L ? ptLab(L) : bl,
       sc = Sm ? ptGlaze(b, Sm) : bl,
-      sm = e.sm;
+      sm = e.sm,
+      fd = ptDist(sm, bl),
+      ld = ptDist(sm, lc),
+      sd = ptDist(sm, sc);
     let flat = 0,
       tone = 0,
       all = 0;
     for (let i = 0, n = e.part.length; i < n; i++) {
-      const c = [sm[i * 4], sm[i * 4 + 1], sm[i * 4 + 2]],
-        z = e.part[i],
-        f = de2000(c, bl);
+      const z = e.part[i],
+        f = ptD(fd, sm, i, bl);
       if (z === 1) {
         all += f;
         continue;
       }
-      const t = de2000(c, z === 0 ? lc : sc);
+      const t = z === 0 ? ptD(ld, sm, i, lc) : ptD(sd, sm, i, sc);
       flat += f;
       tone += t;
       all += t;
     }
     return { flat: flat, tone: tone, all: all };
   };
+  // (the tones kept on coloured sections looked up among all the page's markers: what's on the paper stays)
   const tone = {},
     byK = {};
-  cand.concat(coll).forEach(function (m) {
+  pageAll.concat(cand, coll).forEach(function (m) {
     byK[m.mkey] = m;
   });
   let err = 0,
@@ -3284,11 +3330,17 @@ function _ptGet1() {
   if (!any) return null;
   const S = ptSamples();
   if (!S) return null;
-  // (the Photo style: its amounts the page's own, tried again when the page or the plan changed)
-  if (shadePStyle && (_ptForce || _ptAutoK !== S.key)) ptAuto(S);
+  // (the Photo style: its amounts the page's own, tried again when the page or the plan changed; v329.1: those that
+  // came in with the plan, a guide opened or an Undo, kept: chosen again, a reopened guide's saved sliders moved
+  // without a word, and an Undo didn't give back what was there)
+  if (shadePStyle && (_ptForce || _ptAutoK !== S.key)) {
+    if (_ptAdopt && !_ptForce) _ptAutoK = S.key;
+    else ptAuto(S);
+  }
+  _ptAdopt = false;
   // (what the markers added were chosen for: the plan, the light, the kinds and amounts, the sets)
   const base = S.key + '|' + _ptZsSig() + '|' + (shadeSets ? 2 : 1) + '|' + shadeMode,
-    kx = ptHash(_ptKeepSig() + '|' + _ptZsSig() + '|' + (shadeSets ? 2 : 1) + '|' + shadeMode),
+    kx = ptKx(),
     key = function () {
       return (
         base +
@@ -3312,6 +3364,14 @@ function _ptGet1() {
   ptNoteHeld(r.tone);
   _pt = { key: key(), coll: coll, tone: r.tone, nFlat: r.nFlat, extras: r.extras };
   return _pt;
+}
+// (what the markers added are chosen for: the plan, the light, the kinds and amounts, the sets)
+function ptKx() {
+  return ptHash(_ptKeepSig() + '|' + _ptZsSig() + '|' + (shadeSets ? 2 : 1) + '|' + shadeMode);
+}
+// the plan's amounts, as they came in with it (a guide opened, an Undo or a Redo: 87-undo planRestore)
+function ptAdopt() {
+  _ptAdopt = true;
 }
 // (sections with ink: what they're coloured with noted, the shadow as it follows until it's on the paper; none
 // without ink). Whether anything changed
@@ -3376,7 +3436,10 @@ function ptHash(s) {
 }
 // The Photo style's amounts: the pair, of PT_HI × PT_LO, that brings the page nearest the photo, by the samples, for
 // Main and each zone that's Matched to the photo; set as their Highlights and Shadows amounts
+// (how many times the amounts were chosen: the tests' count, __mstest.ptAutoN)
+let _ptAutoN = 0;
 function ptAuto(S) {
+  _ptAutoN++;
   S = S || ptSamples();
   _ptAutoK = S ? S.key : '';
   const ids = zoneIds().filter(function (id) {
@@ -3386,8 +3449,10 @@ function ptAuto(S) {
   if (!ids.length) return;
   let best = null,
     bi = [PT_HI0, PT_LO0];
-  // (the markers added chosen once, at the amounts as they are, so each pair isn't a search of your collection)
-  if (S && !(_ptX && !_ptForce)) _ptX = { k: '', x: ptChoose(S.s, null, null).extras };
+  // (the markers added chosen once, at the amounts as they are, so each pair isn't a search of your collection;
+  // v329.1: those kept only if kept for this plan, ptKx, not another's)
+  let X = null;
+  if (S) X = !_ptForce && _ptX && _ptX.k === ptKx() ? _ptX.x : ptChoose(S.s, null, null).extras;
   if (S)
     PT_HI.forEach(function (hi) {
       PT_LO.forEach(function (lo) {
@@ -3395,7 +3460,7 @@ function ptAuto(S) {
         ids.forEach(function (id) {
           amt[id] = [hi, lo];
         });
-        const r = ptChoose(S.s, amt, _ptX ? _ptX.x : null);
+        const r = ptChoose(S.s, amt, X);
         if (best == null || r.err < best) {
           best = r.err;
           bi = [hi, lo];
@@ -3457,6 +3522,7 @@ function ptSaveState() {
   };
 }
 function ptOpenState(tx, th, map) {
+  _ptAdopt = true;
   _pt = null;
   _ptS = null;
   _ptMemo = null;
@@ -3485,4 +3551,5 @@ function ptOpenState(tx, th, map) {
 function ptReset() {
   ptOpenState(null, null);
   _ptAutoK = '';
+  _ptAdopt = false;
 }

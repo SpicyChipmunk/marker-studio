@@ -3654,35 +3654,39 @@ function _buildPDF(dry) {
   }, 0);
   // (v308: never cut short; the name is cut instead. Half Letter's key cut "Process B…" for both B05 and B112)
   X.name = X.code + Math.max(PX(30), codeW + PX(8));
-  // (t: the tones of a row or of one of its lines; none: a marker whose sections are all flat)
-  const cellsOf = function (mm, t) {
-    if (withShade) {
-      if (!t) return [{ t: '— flat, no tones' }, null];
+  // (t: the tones of a row or of one of its lines; none: a marker whose sections are all flat. v329.1: a tone yours as
+  // a base row's is, so a photo tone from a page made with markers you don't own says buy; it had been marked owned)
+  const toneOwned = function (m) {
+      return !state.owned.size || state.owned.has(m.mkey);
+    },
+    cellsOf = function (mm, t) {
+      if (withShade) {
+        if (!t) return [{ t: '— flat, no tones' }, null];
+        return [
+          t.light
+            ? { c: t.light, o: toneOwned(t.light) }
+            : t.paper
+              ? { t: '— leave the paper white' }
+              : // (v318.17: by the row's own tones: a zone with Highlights None has no H. v327.1: photo tones leave
+                // one out where none would be closer to the photo, not for want of a lighter marker: not needed)
+                !t.noHi
+                ? { t: t.photoH ? '— not needed' : '— base is the lightest' }
+                : null,
+          t.dark
+            ? { c: t.dark, o: toneOwned(t.dark) }
+            : t.noShadow
+              ? {
+                  t: t.photoS && shLab(mm)[0] >= 28 ? '— not needed' : 'no shadow (already darkest)',
+                }
+              : { coat: mm, S: t.S },
+        ];
+      }
+      const c = blendCompanions(mm);
       return [
-        t.light
-          ? { c: t.light, o: true }
-          : t.paper
-            ? { t: '— leave the paper white' }
-            : // (v318.17: by the row's own tones: a zone with Highlights None has no H. v327.1: photo tones leave
-              // one out where none would be closer to the photo, not for want of a lighter marker: not needed)
-              !t.noHi
-              ? { t: t.photoH ? '— not needed' : '— base is the lightest' }
-              : null,
-        t.dark
-          ? { c: t.dark, o: true }
-          : t.noShadow
-            ? {
-                t: t.photoS && shLab(mm)[0] >= 28 ? '— not needed' : 'no shadow (already darkest)',
-              }
-            : { coat: mm, S: t.S },
+        c.light ? { c: c.light, o: c.lightOwned } : { dash: 1 },
+        c.dark ? { c: c.dark, o: c.darkOwned } : { dash: 1 },
       ];
-    }
-    const c = blendCompanions(mm);
-    return [
-      c.light ? { c: c.light, o: c.lightOwned } : { dash: 1 },
-      c.dark ? { c: c.dark, o: c.darkOwned } : { dash: 1 },
-    ];
-  };
+    };
   const buyW = function () {
     g.font = '600 ' + PX(7) + 'px ' + LFONT;
     return PX(3) + g.measureText('buy').width;

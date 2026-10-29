@@ -42,32 +42,64 @@ function sharpHolds(F, crop) {
 // the sections it was made for }
 function sharpField(crop) {
   if (!labels || !W || !H) return null;
-  const key = labels.length + ':' + W + 'x' + H + ':' + (typeof labelsSig === 'function' ? labelsSig() : '');
-  if (_shF && _shF.k === key && _shF.lab === labels && sharpHolds(_shF, crop)) return _shF;
+  const key = sharpKey();
+  if (sharpHeld(key, crop)) return _shF;
   const R = sharpRegion(crop),
-    X0 = R.X0,
-    Y0 = R.Y0,
-    w = R.w,
-    h = R.h,
-    n = w * h,
+    inp = sharpFieldIn(R),
+    r = sharpFieldCore(inp.lab, inp.small, R.w, R.h, R.X0, R.Y0, W);
+  _shF = {
+    sdf: r.sdf,
+    near: r.near,
+    X0: R.X0,
+    Y0: R.Y0,
+    w: R.w,
+    h: R.h,
+    k: key,
+    lab: labels,
+    fill: null,
+    base: null,
+  };
+  return _shF;
+}
+// (v329.1) what a field is for: these sections (their signature), at this size
+function sharpKey() {
+  return labels.length + ':' + W + 'x' + H + ':' + (typeof labelsSig === 'function' ? labelsSig() : '');
+}
+// the field kept is for these sections and holds the crop
+function sharpHeld(key, crop) {
+  return !!_shF && _shF.k === key && _shF.lab === labels && sharpHolds(_shF, crop);
+}
+// the window's section map, and which of its pixels are in a small section (under 60 pixels: never shrunk)
+function sharpFieldIn(R) {
+  const n = R.w * R.h,
+    lab = new Int32Array(n),
+    small = new Uint8Array(n);
+  for (let y = 0, p = 0; y < R.h; y++) {
+    const r = (R.Y0 + y) * W + R.X0;
+    for (let x = 0; x < R.w; x++, p++) {
+      const l = labels[r + x];
+      lab[p] = l;
+      if (l >= 0 && comps[l] && comps[l].area < 60) small[p] = 1;
+    }
+  }
+  return { lab: lab, small: small };
+}
+// (v329.1) the field's work, on its own: what it needs passed in (the window's section map, its small sections, where
+// it is in a picture PW wide), so the worker can do it (JOBS 'sfield'). Returns { sdf, near }
+function sharpFieldCore(lab, small, w, h, X0, Y0, PW) {
+  const n = w * h,
     INF = 1e20,
-    // (each window pixel's picture index)
-    gi = function (p) {
-      return (Y0 + ((p / w) | 0)) * W + X0 + (p % w);
-    },
     // squared distances to the nearest line pixel (for the others), and to the nearest pixel not a line (for lines)
     dOut = new Float32Array(n),
     dIn = new Float32Array(n),
     near = new Int32Array(n).fill(-1),
     isLine = new Uint8Array(n);
-  for (let y = 0, p = 0; y < h; y++) {
-    const r = (Y0 + y) * W + X0;
-    for (let x = 0; x < w; x++, p++) isLine[p] = labels[r + x] === -1 ? 1 : 0;
-  }
+  for (let p = 0; p < n; p++) isLine[p] = lab[p] === -1 ? 1 : 0;
   sharpEdt(isLine, 1, dOut, null, w, h);
   sharpEdt(isLine, 0, dIn, near, w, h);
   // (near: window index to picture index)
-  for (let p = 0; p < n; p++) if (near[p] >= 0) near[p] = gi(near[p]);
+  for (let p = 0; p < n; p++)
+    if (near[p] >= 0) near[p] = (Y0 + ((near[p] / w) | 0)) * PW + X0 + (near[p] % w);
   const sdf = new Float32Array(n);
   for (let p = 0; p < n; p++)
     sdf[p] = isLine[p]
@@ -81,16 +113,60 @@ function sharpField(crop) {
   for (let p = 0; p < n; p++) if (isLine[p] && dIn[p] >= 2.25) deep[p] = 1;
   const thick = sharpNear(deep, 2, w, h);
   // (and a small section, the sample's pinholes, never shrinks: smoothed into the lines round it, it was gone)
-  for (let y = 0, p = 0; y < h; y++) {
-    const r = (Y0 + y) * W + X0;
-    for (let x = 0; x < w; x++, p++) {
-      const l = labels[r + x];
-      if (l >= 0 && comps[l] && comps[l].area < 60) sdf[p] = Math.max(sdf[p], bl[p]);
-      else sdf[p] = thick[p] || bl[p] < sdf[p] ? bl[p] : sdf[p];
-    }
+  for (let p = 0; p < n; p++) {
+    if (small[p]) sdf[p] = Math.max(sdf[p], bl[p]);
+    else sdf[p] = thick[p] || bl[p] < sdf[p] ? bl[p] : sdf[p];
   }
-  _shF = { sdf: sdf, near: near, X0: X0, Y0: Y0, w: w, h: h, k: key, lab: labels, fill: null, base: null };
-  return _shF;
+  return { sdf: sdf, near: near };
+}
+// (v329.1) a window this big or bigger has its field worked out in the worker (sharpAsk): about a second for a whole
+// small picture, held the screen at the first zoom-in after Build. Smaller (Focus mode's windows: a few ms) as before
+const SHARP_SYNC = 300000;
+let _shReq = null;
+// the field for the window round a crop asked of the worker, unless it's asked already; drawn when it comes
+function sharpAsk(key, crop) {
+  if (_shReq && _shReq.k === key && sharpHolds(_shReq.R, crop)) return;
+  const R = sharpRegion(crop),
+    inp = sharpFieldIn(R),
+    lab0 = labels,
+    req = { k: key, R: R };
+  _shReq = req;
+  JOBS.run('sfield', { lab: inp.lab, small: inp.small, w: R.w, h: R.h, X0: R.X0, Y0: R.Y0, PW: W }, [
+    inp.lab.buffer,
+    inp.small.buffer,
+  ]).then(
+    function (r) {
+      if (_shReq !== req) return;
+      _shReq = null;
+      if (labels !== lab0 || sharpKey() !== key || !r || !r.sdf) return;
+      _shF = {
+        sdf: r.sdf,
+        near: r.near,
+        X0: R.X0,
+        Y0: R.Y0,
+        w: R.w,
+        h: R.h,
+        k: key,
+        lab: labels,
+        fill: null,
+        base: null,
+      };
+      sharpSoon();
+    },
+    function () {
+      if (_shReq !== req) return;
+      _shReq = null;
+      // (no worker, or it failed: on the page, as before)
+      _shSyncOnly = true;
+      sharpSoon();
+    },
+  );
+}
+let _shSyncOnly = false;
+// (the copy drawn as soon as the field it waited for is here)
+function sharpSoon() {
+  clearTimeout(_shT);
+  if (sharpOn()) _shT = setTimeout(sharpDraw, 0);
 }
 // Felzenszwalb and Huttenlocher's exact distance transform over a w × h window (the feature: isLine === want),
 // columns then rows, keeping (near) the nearest feature as a window index
@@ -391,6 +467,8 @@ function sharpFree() {
   }
   _shF = null;
   _shBase = null;
+  // (v329.1: a field asked of the worker for the copy let go is dropped when it comes)
+  _shReq = null;
 }
 // the picture moved, or (drawn) was drawn again, in whole (true) or in part ('part'): drawn sharp again once it settles
 function sharpStale(drawn) {
@@ -467,6 +545,17 @@ function sharpDraw() {
   if (cap < 1) {
     ow = Math.max(1, Math.round(ow * cap));
     oh = Math.max(1, Math.round(oh * cap));
+  }
+  // (v329.1: a big window's field from the worker first: the copy stays hidden until it comes)
+  {
+    const fk = sharpKey();
+    if (!sharpHeld(fk, crop) && !_shSyncOnly && JOBS.on) {
+      const R = sharpRegion(crop);
+      if (R.w * R.h >= SHARP_SYNC) {
+        sharpAsk(fk, crop);
+        return;
+      }
+    }
   }
   if (!_shBase) {
     try {

@@ -301,8 +301,11 @@ test('the Photo button on the page step: the photo over the page, off when Edit 
   const setD = (v) =>
     page.evaluate((v) => {
       const d = document.getElementById('sfPpDet');
+      // (as a drag: its pointer down first, and up after; a change without one waits for the next, v329.1)
+      d.dispatchEvent(new Event('pointerdown', { bubbles: true }));
       d.value = String(v);
       d.dispatchEvent(new Event('change', { bubbles: true }));
+      d.dispatchEvent(new Event('pointerup', { bubbles: true }));
     }, v);
   const t1 = Date.now();
   await setD(1);
@@ -488,7 +491,9 @@ test('v327.1: a colouring page from any photo is a button, under the colouring p
     const order = await page.evaluate(() => {
       const all = [...document.querySelectorAll('#homeView button')].filter((e) => e.offsetParent);
       return [
-        all.findIndex((e) => /colouring page$/.test(e.textContent.trim()) && !e.dataset.start?.startsWith('pp')),
+        all.findIndex(
+          (e) => /colouring page$/.test(e.textContent.trim()) && !e.dataset.start?.startsWith('pp'),
+        ),
         all.findIndex((e) => e.dataset.start === 'ppage'),
       ];
     });
@@ -500,7 +505,10 @@ test('v327.1: a colouring page from any photo is a button, under the colouring p
     await idle(page);
     assert.equal(await page.textContent('#sfPpPick'), 'Make a colouring page from any photo');
     assert.equal(await page.$('#sfStPp'), null, 'the old line gone');
-    const [fc2] = await Promise.all([page.waitForEvent('filechooser', { timeout: 5000 }), page.click('#sfPpPick')]);
+    const [fc2] = await Promise.all([
+      page.waitForEvent('filechooser', { timeout: 5000 }),
+      page.click('#sfPpPick'),
+    ]);
     assert.ok(fc2);
     assert.deepEqual(errors, []);
     await ctx.close();

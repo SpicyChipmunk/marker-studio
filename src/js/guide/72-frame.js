@@ -1301,6 +1301,10 @@ function openMenu() {
   const inLib = (plan || along) && !!libEntry(),
     g =
       (plan && libEntry() ? it('copy', 'copy', 'Save a copy', 'sfSaveCopy') : '') +
+      // (v329.1: the last tick-off of two or more sections at once, undone: 82-colour-mode bulkUndo)
+      (along && bulkN()
+        ? it('bulkundo', 'undo-2', 'Undo the last tick-off (' + nWord(bulkN(), 'section') + ')', 'sfBulkUndo')
+        : '') +
       (along ? it('reset', 'rotate-ccw', 'Reset progress', 'sfResetP', !progressCount()) : '') +
       (inLib && finHas()
         ? it('finchg', 'camera', 'Change the photo of your page') +
@@ -1350,6 +1354,7 @@ function menuDo(m) {
     if (imp) imp.click();
   } else if (m === 'copy') saveGuide();
   else if (m === 'reset') askResetProgress();
+  else if (m === 'bulkundo') bulkUndo();
   else if (m === 'finadd' || m === 'finchg') finPick(null);
   else if (m === 'finrm') {
     if (curId != null) finRemove(curId);

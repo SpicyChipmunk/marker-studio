@@ -6,6 +6,10 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v329.1',
+    t: 'Shading like the photo is many times quicker on a detailed page, and zooming in no longer holds the screen while the sharp outlines are worked out. Tick off from a photo needs much less memory. Colour along’s ⋯ menu can undo the last tick-off of many sections at once, even after you’ve carried on ticking. Photo tones only use markers you own (or, on a page made to try others, say buy), and the Detail slider works one step at a time with the keyboard and VoiceOver.',
+  },
+  {
     v: 'v329',
     t: 'Where a pen line stops just short, so one section should be two, Looks right? says how many possible gaps it found; Review shows each one, and Close joins the line (Undo takes it back). Zoomed in, the Plan’s outlines are drawn sharp, as in Colour along. A big backup, with its guides’ photos, restores on an iPad. With VoiceOver, a message’s Undo or Share can be reached while the Library or another dialog is open.',
   },

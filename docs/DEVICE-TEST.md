@@ -170,6 +170,17 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 
 What recent releases changed that Parts A and B don't already cover.
 
+**New in v329.1: quicker photo tones and sharp outlines, Undo the last tick-off**
+
+- [ ] ★ **Photo tones, timed:** a photo-made page at Very detailed › Build › Shading › Photo, then tick Two tone sets.
+      How long does each take on the iPad (the review's worst case)? Shuffle once: how long until the picture settles?
+- [ ] ★ **Zooming in the Plan:** after Build, zoom in and pan: taps answer at once; the sharp outlines come a moment
+      later and fade in. The same in Colour along.
+- [ ] **Undo the last tick-off:** Colour along › Mark all on a marker, tick another section by hand, ⋯ › Undo the
+      last tick-off → the Mark all is undone, the hand tick stays.
+- [ ] **Detail by VoiceOver:** on a photo's page step, swipe the Detail slider up two steps → one remake, at the step
+      you stopped on.
+
 **New in v329: big backups, a cancelled file, VoiceOver in dialogs, sharp outlines in the Plan, gap suggestions**
 
 - [ ] ★ **A big backup:** Library › Back up with **Include guide photos** ticked › note its size in Files › restore it

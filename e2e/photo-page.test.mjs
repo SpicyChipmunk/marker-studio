@@ -88,9 +88,12 @@ async function fromHome(page, seed) {
 const detail = (page, v) =>
   page.evaluate((v) => {
     const d = document.getElementById('sfPpDet');
+    // (as a drag: its pointer down first, and up after; a change without one waits for the next, v329.1)
+    d.dispatchEvent(new Event('pointerdown', { bubbles: true }));
     d.value = String(v);
     d.dispatchEvent(new Event('input', { bubbles: true }));
     d.dispatchEvent(new Event('change', { bubbles: true }));
+    d.dispatchEvent(new Event('pointerup', { bubbles: true }));
   }, v);
 const count = (page) => page.evaluate(() => __mstest.comps.length - 1);
 // every section's marker, as the plan laid it, against the page as made
@@ -480,5 +483,55 @@ test('Focus: the subject finder downloaded after asking, the page made with it, 
   await until(page, () => __mstest.pp.f === 'even' && !__mstest.ppBusy, null, 'Even', 60000);
   await idle(page);
   assert.equal((await asked(page)).length, n, 'not asked');
+  assert.deepEqual(errors, []);
+});
+
+// (v329.1) a section made in Edit sections too small for the photo to give it a colour: the page stays as made, the
+// new section with the marker of the as-made section whose middle is nearest (it had turned every colour to tints)
+test('v329.1: a section with no photo colour takes its nearest as-made neighbour’s marker; the page stays as made', async () => {
+  const { page, errors } = await openApp(VIEW);
+  await idle(page);
+  await fromHome(page, 7);
+  const r = await page.evaluate(() => {
+    const t = __mstest,
+      made = t.pp.made,
+      cl = Object.keys(made).map(Number),
+      before = t.ppMadeAssign(cl),
+      a = cl[Math.floor(cl.length / 2)],
+      ca = t.comps[a],
+      L = t.comps.length;
+    // (a section with no pixels: nothing of the photo under it)
+    t.comps.push({ area: 0, cx: ca.cx + 0.5, cy: ca.cy + 0.5 });
+    const after = t.ppMadeAssign(cl.concat([L]));
+    t.comps.pop();
+    return {
+      before: !!before,
+      after: !!after,
+      same: !!after && after.assign[L] && after.assign[L].mkey === before.assign[a].mkey,
+    };
+  });
+  assert.deepEqual(r, { before: true, after: true, same: true });
+  assert.deepEqual(errors, []);
+});
+
+// (v329.1) Detail by the keyboard (or VoiceOver's swipes): each press is a change; the page is made once, for the
+// last, after a moment; a step asked for while one is being made is made after it, the thumb not put back
+test('v329.1: Detail by the keyboard: three presses make the page once, at the third step', async () => {
+  const { page, errors } = await openApp(VIEW);
+  await idle(page);
+  await fromHome(page, 7);
+  const d0 = await page.evaluate(() => __mstest.pp.d);
+  assert.ok(d0 >= 2, 'room for two steps down: ' + d0);
+  const jobs = () => page.evaluate(() => __mstest.jobs.stats.done.ppage || 0);
+  const j0 = await jobs();
+  await page.focus('#sfPpDet');
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  await until(page, () => !__mstest.ppBusy && document.getElementById('sfPpDet'), null, 'settled', 1000);
+  await page.waitForTimeout(700);
+  await until(page, () => !__mstest.ppBusy, null, 'made', 90000);
+  await pageReady(page, d0 - 2);
+  assert.equal(await page.evaluate(() => __mstest.pp.d), d0 - 2, 'the last step asked for');
+  assert.equal((await jobs()) - j0, 1, 'made once');
   assert.deepEqual(errors, []);
 });

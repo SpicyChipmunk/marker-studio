@@ -647,6 +647,9 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get pp() {
       return pp;
     },
+    set pp(v) {
+      pp = v;
+    },
     ppSave: ppSave,
     ppCheck: ppCheck,
     ppBuildCore: ppBuildCore,
@@ -678,9 +681,14 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     ppSubjectShare: ppSubjectShare,
     ppSubjectTargets: ppSubjectTargets,
     ppCropSubject: ppCropSubject,
+    get ptAutoN() {
+      return _ptAutoN;
+    },
     get ppMemN() {
       return _ppMem.size;
     },
+    ppMemPut: ppMemPut,
+    jobBudget: jobBudget,
     get ppTools() {
       return _ppTools;
     },

@@ -113,6 +113,11 @@ function resetForNewPicture() {
   // (v327: a new picture: no photo tones kept)
   ptReset();
   _ppPrep = null;
+  // (v329.1: and the Detail steps' pages kept, and the subject maps: a page's section map each, up to 48 MB, had stayed
+  // for the rest of the session. A Detail or Focus change doesn't come through here, so going back to a step stays
+  // instant for the photo it's on)
+  _ppMem.clear();
+  _subKeep = [];
   _ppGen++;
   _ppBusy = false;
   photoReset();

@@ -1110,6 +1110,8 @@ function planReset() {
   planBtn();
 }
 function planRestore(e, noFilt) {
+  // (v329.1: the photo tones' amounts as they were, not chosen again: 45-shading ptAdopt)
+  ptAdopt();
   const s = e.s;
   layStatReset();
   // (Undo: a line about kept sections spoke of the change undone)

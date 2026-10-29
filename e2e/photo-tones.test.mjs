@@ -178,7 +178,8 @@ test('photo tones: Photo in the Shading row in Rounded’s place, Matched to the
       /^Shaded from the photo: \d+ sections?\. \d+ stays? flat: tones wouldn’t make (them much closer to it|it much closer to the photo)\.$/,
     );
   // (a highlight left out as it wouldn't be closer isn't a lighter marker you lack)
-  const note = () => page.evaluate(() => [...document.querySelectorAll('.sfshnote')].map((e) => e.textContent).join(' '));
+  const note = () =>
+    page.evaluate(() => [...document.querySelectorAll('.sfshnote')].map((e) => e.textContent).join(' '));
   assert.doesNotMatch(await note(), /no lighter marker/);
   // a flat section's tip says why
   const fl = await page.evaluate(() => {
@@ -228,7 +229,9 @@ test('photo tones need the photo’s light: the sun brings Rounded and Same colo
   assert.equal(await page.evaluate(() => __mstest.shadeTidyThin()), false, 'no thin rule with the sun');
   assert.equal(await page.evaluate(() => __mstest.styleVars.shadeShadow), 'photo', 'the choice is kept');
   assert.doesNotMatch(
-    await page.evaluate(() => [...document.querySelectorAll('.sfshnote')].map((e) => e.textContent).join(' ')),
+    await page.evaluate(() =>
+      [...document.querySelectorAll('.sfshnote')].map((e) => e.textContent).join(' '),
+    ),
     /matched to the photo/i,
     'the note says what’s drawn: Same colour',
   );
@@ -422,7 +425,10 @@ test('v327.1: Shade it like the photo, once, after a photo-made page’s Build: 
   assert.ok(await line(), 'offered after Build');
   assert.match(await page.textContent('#sfPpShLine'), /^Shade it like the photo\? .* Shade it$/);
   // (the first-time tap line waits its turn; one line at a time)
-  assert.doesNotMatch(await page.textContent('#sfCtl'), /a section on the picture to change or pin its colour/);
+  assert.doesNotMatch(
+    await page.textContent('#sfCtl'),
+    /a section on the picture to change or pin its colour/,
+  );
   // on every tab: it's under the tabs
   await page.click('.sftabbtn[data-t="pattern"]');
   await idle(page);
@@ -471,5 +477,91 @@ test('v327.1: Shade it like the photo, once, after a photo-made page’s Build: 
   await page.click('#mSections');
   await idle(page, 1500);
   assert.equal(await line(), null, 'not after a reload');
+  assert.deepEqual(errors, []);
+});
+
+test('v329.1: Shade it’s toast Undo is its own step’s: after another change it does nothing', async () => {
+  const { page, errors } = await openApp(VIEW);
+  await idle(page);
+  await own(page, ['Honolulu 120']);
+  await fromHome(page);
+  await built(page);
+  const n0 = await page.evaluate(() => __mstest.planStack.length);
+  await page.click('#sfPpShGo');
+  await idle(page, 1500);
+  assert.equal(await page.evaluate(() => __mstest.planStack.length), n0 + 1, 'one step');
+  assert.match(await page.textContent('#msToast'), /Shaded like the photo\./);
+  // another change, then the toast's Undo (by script: the later step may have put the toast away)
+  await page.click('#sfShade button[data-v]:not(.on)');
+  await idle(page, 1500);
+  const n1 = await page.evaluate(() => __mstest.planStack.length);
+  assert.equal(n1, n0 + 2, 'another style a step of its own');
+  const mode1 = await page.evaluate(() => __mstest.styleVars.shadeMode);
+  await page.evaluate(() => {
+    const b = document.getElementById('toastAct');
+    if (b) b.click();
+  });
+  await idle(page);
+  assert.equal(await page.evaluate(() => __mstest.planStack.length), n1, 'nothing undone');
+  assert.equal(await page.evaluate(() => __mstest.styleVars.shadeMode), mode1, 'the other style stands');
+  assert.deepEqual(errors, []);
+});
+
+test('v329.1: after Photo the Shading sliders show the photo’s own amounts at once (checked: they did); reopened, the saved amounts stay', async () => {
+  const { page, errors } = await openApp(VIEW);
+  await idle(page);
+  await own(page, ['Honolulu 120']);
+  await fromHome(page);
+  await built(page);
+  await shadingTab(page);
+  // (a style with other amounts first, so the panel had them to show)
+  await page.click('#sfShade [data-v="dramatic"]');
+  await idle(page);
+  // (read in the same task as the tap: what the panel shows before anything later draws it again)
+  const now = await page.evaluate(() => [
+    document.querySelector('#sfShade [data-v="photo"]').click(),
+    document.getElementById('sfShHi') && +document.getElementById('sfShHi').value,
+    +document.getElementById('sfShLo').value,
+    __mstest.styleVars.shadeHi,
+    __mstest.styleVars.shadeLo,
+  ]);
+  now.shift();
+  assert.equal(now[1], Math.round(now[3] * 100), 'shadow slider: ' + JSON.stringify(now));
+  if (now[0] != null) assert.equal(now[0], Math.round(now[2] * 100), 'highlight slider');
+  await idle(page, 1500);
+  const amt = await page.evaluate(() => [__mstest.styleVars.shadeHi, __mstest.styleVars.shadeLo]);
+  assert.deepEqual(amt, [now[2], now[3]], 'the draw kept them');
+  // reopened: the saved amounts, not chosen again (once the photo is read and the picture drawn)
+  await until(page, () => __mstest.inLibrary, null, 'saved', 30000);
+  await idle(page, 2500);
+  const id = await page.evaluate(() => __mstest.curId);
+  await page.reload();
+  await idle(page, 2500);
+  await page.evaluate((id) => loadGuide({ id }), id);
+  await page.waitForFunction((id) => __mstest.curId === id && __mstest.assignData, id, { timeout: 15000 });
+  await idle(page, 2000);
+  await until(page, () => !__mstest.shadeWaitsPhoto(), null, 'the photo read', 15000);
+  await page.evaluate(() => __mstest.renderGuide());
+  await idle(page);
+  assert.deepEqual(
+    await page.evaluate(() => [__mstest.styleVars.shadeHi, __mstest.styleVars.shadeLo]),
+    amt,
+    'saved amounts kept',
+  );
+  assert.equal(await page.evaluate(() => __mstest.ptAutoN), 0, 'taken as saved, not chosen again');
+  // an amount moved, then Undo: the amounts as they were, not chosen again
+  await shadingTab(page);
+  const n0 = await page.evaluate(() => __mstest.ptAutoN);
+  await page.evaluate(() => {
+    const e = document.getElementById('sfShLo');
+    e.value = 40;
+    e.dispatchEvent(new Event('input'));
+    e.dispatchEvent(new Event('change'));
+  });
+  await idle(page);
+  await page.evaluate(() => __mstest.assign.planUndo());
+  await idle(page);
+  assert.deepEqual(await page.evaluate(() => [__mstest.styleVars.shadeHi, __mstest.styleVars.shadeLo]), amt);
+  assert.equal(await page.evaluate(() => __mstest.ptAutoN), n0, 'Undo: not chosen again');
   assert.deepEqual(errors, []);
 });
