@@ -19079,13 +19079,18 @@ document.addEventListener(
 let _mInert = [],
   _mTop = null;
 function modalSync() {
-  const ms = [].filter.call(document.querySelectorAll('[aria-modal="true"],[data-ms-modal]'), function (d) {
-    return (
-      d.isConnected &&
-      (!d.classList.contains('overlay') || d.classList.contains('on')) &&
-      d.getClientRects().length > 0
-    );
-  });
+  // (any dialog that's on counts, as topDialog counts it, whether or not it says aria-modal: v329 CI, a question made
+  // over the Library just after it opened was made inert under it, and lost the keyboard)
+  const ms = [].filter.call(
+    document.querySelectorAll('[aria-modal="true"],[data-ms-modal],.overlay.on'),
+    function (d) {
+      return (
+        d.isConnected &&
+        (!d.classList.contains('overlay') || d.classList.contains('on')) &&
+        d.getClientRects().length > 0
+      );
+    },
+  );
   const top = ms.length ? ms[ms.length - 1] : null;
   if (
     top === _mTop &&
@@ -19098,13 +19103,15 @@ function modalSync() {
     el.inert = false;
   });
   _mInert = [];
+  // (aria-modal put back as it was: "true", or none)
   if (_mTop && _mTop !== top && _mTop.hasAttribute('data-ms-modal')) {
-    _mTop.setAttribute('aria-modal', 'true');
+    if (_mTop.getAttribute('data-ms-modal') === '1') _mTop.setAttribute('aria-modal', 'true');
+    else _mTop.removeAttribute('aria-modal');
     _mTop.removeAttribute('data-ms-modal');
   }
   _mTop = top;
   if (!top) return;
-  top.setAttribute('data-ms-modal', '1');
+  top.setAttribute('data-ms-modal', top.getAttribute('aria-modal') === 'true' ? '1' : '0');
   top.setAttribute('aria-modal', 'false');
   // (a sheet that lets taps through to the picture, the marker picker's, names what stays live: data-ms-keep. What holds
   // it isn't made inert, only what's beside it, down to it)

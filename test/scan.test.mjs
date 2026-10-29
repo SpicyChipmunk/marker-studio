@@ -2115,7 +2115,7 @@ import { readFileSync } from 'node:fs';
     assert.ok(sets.length >= 32);
     for (const [n, b, cur, old] of sets) assert.deepEqual([cur, old], [b, b], n);
   });
-  test('a long paste isn’t read twice for its brand: 122 KB in no more than 1.3 times one reading', () => {
+  test('a long paste isn’t read twice for its brand: 122 KB in no more than 1.6 times one reading', () => {
     const s = studio();
     const text = s.ev(
       `let t = ''; const cs = COLORS.map((c) => c.code + ' ' + c.name); while (t.length < 122000) t += cs.join('\\n') + '\\n'; return t;`,
@@ -2139,7 +2139,9 @@ import { readFileSync } from 'node:fs';
     const t1 = cpuMs();
     s.read(text, true);
     const all = cpuMs() - t1;
-    assert.ok(all <= 1.3 * one + 150, 'read ' + one.toFixed(0) + ' ms, handled ' + all.toFixed(0) + ' ms');
+    // (v329: 1.6, was 1.3. Handling it is about 1.1-1.35 times one reading, here and on GitHub, and once 1.46 on a busy
+    // GitHub machine, 4 ms over; read twice, it would be over 2)
+    assert.ok(all <= 1.6 * one + 150, 'read ' + one.toFixed(0) + ' ms, handled ' + all.toFixed(0) + ' ms');
   });
   /* ---- section 6: the sweep that shows the brand (automatic brand only) ---- */
 

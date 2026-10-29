@@ -2029,7 +2029,8 @@ after(teardown);
       true,
       'on the open mode tab: ' + (await active(page)),
     );
-    // focus moved outside the dialog before it closed: left there
+    // focus moved outside the dialog before it closed: left there. (v329: the page behind a dialog is inert, so the
+    // one place outside it the keyboard can go is a toast's button, as Tab takes it: layers.js modalSync)
     await page.focus('#mkMore');
     await page.keyboard.press('Enter');
     await page.evaluate(() => {
@@ -2038,10 +2039,11 @@ after(teardown);
     });
     await page.waitForSelector('#backupOverlay.on');
     await idle(page);
-    await page.evaluate(() => document.getElementById('mkMatchBtn').focus());
+    await page.evaluate(() => toastAction('Done.', 'Undo', function () {}, 8000));
+    await page.focus('#toastAct');
     await esc(page);
     assert.deepEqual(await dialogs(page), []);
-    assert.equal(await active(page), 'mkMatchBtn');
+    assert.equal(await active(page), 'toastAct');
     assert.deepEqual(errors, []);
   });
   test('on a touch screen the dialog’s card takes focus, not its first button', async () => {
