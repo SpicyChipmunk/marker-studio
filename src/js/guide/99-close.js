@@ -9,6 +9,10 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     mpSigNow: mpSigNow,
     mpSig: mpSig,
     planSnap: planSnap,
+    // (v329.3: the notes' Undo and print tests)
+    styleSnap: styleSnap,
+    styleRestore: styleRestore,
+    pdfWrap: pdfWrap,
     layPlan: layPlan,
     get mp() {
       return _mp;
@@ -240,6 +244,8 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       return hlKey;
     },
     buildFocusOrder: buildFocusOrder,
+    // (v329.3) Share › Copy marker list's text
+    markerListText: markerListText,
     goFocus: goFocus,
     renderGuide: renderGuide,
     normalizeTones: normalizeTones,
@@ -315,6 +321,14 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     },
     doUndoSeg: doUndo,
     stepSet: stepSet,
+    // (v329.3) the shading markers laid on the paper, for Random
+    paperNote: paperNote,
+    get paperTones() {
+      return paperTones;
+    },
+    set paperTones(v) {
+      paperTones = v;
+    },
     stepDone: stepDone,
     shadeReq: shadeReq,
     get focusStep() {
@@ -653,6 +667,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     ppSave: ppSave,
     ppCheck: ppCheck,
     ppBuildCore: ppBuildCore,
+    ppWideCore: ppWideCore,
     ppPickCore: ppPickCore,
     ppDe: ppDe,
     ppMmPx: ppMmPx,
@@ -679,10 +694,20 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     ppMadeAssign: ppMadeAssign,
     ppSubjectBox: ppSubjectBox,
     ppSubjectShare: ppSubjectShare,
+    ppFocusTargets: ppFocusTargets,
+    ppSmallSubOK: ppSmallSubOK,
+    subStrays: subStrays,
+    subMapUp: subMapUp,
     ppSubjectTargets: ppSubjectTargets,
     ppCropSubject: ppCropSubject,
     get ptAutoN() {
       return _ptAutoN;
+    },
+    get ptReuseCheck() {
+      return _ptReuseCheck;
+    },
+    set ptReuseCheck(v) {
+      _ptReuseCheck = v;
     },
     get ppMemN() {
       return _ppMem.size;
@@ -695,6 +720,15 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     get subKeep() {
       return _subKeep;
     },
+    subKeepAdd: subKeepAdd,
+    subFromKept: subFromKept,
+    // (v329.3 review: the subject finder's failures and one-at-a-time, the page job's)
+    subMap: subMap,
+    subFailKind: subFailKind,
+    subDownload: subDownload,
+    ppRunFail: ppRunFail,
+    ppFailWords: ppFailWords,
+    ppLabSig: ppLabSig,
     photoRoughAt: photoRoughAt,
     get photoPeek() {
       return photoPeek;
@@ -1560,6 +1594,12 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
       },
       get tickRef() {
         return tickRef;
+      },
+      get notes() {
+        return guideNotes;
+      },
+      set notes(v) {
+        guideNotes = v;
       },
       set tickRef(v) {
         tickRef = v;

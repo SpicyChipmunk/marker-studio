@@ -1040,7 +1040,14 @@ after(teardown);
     assert.equal(await page.textContent('#sfEdAskT'), 'Can’t open this guide');
     assert.equal(
       await page.textContent('#sfEdAskD'),
-      '“' + g.name + '” can’t be opened — its saved section map is damaged.',
+      '“' +
+        g.name +
+        '” can’t be opened — its saved section map is damaged. Or this device is short of memory, which stops it being read too: close other apps and try again.',
+      '(v329.3 review: the map that wouldn’t decode read once more first, and memory named as a cause)',
+    );
+    assert.equal(
+      await page.textContent('#sfEdAsk [data-a="del"]'),
+      'Delete it (kept in Recently deleted)',
     );
     assert.equal(await page.locator('.mserr').count(), 0, 'said once');
     await page.click('#sfEdAsk [data-a="del"]');

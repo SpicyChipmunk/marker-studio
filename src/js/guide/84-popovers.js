@@ -1354,6 +1354,77 @@ function markerListRows() {
       });
   return { base: base, tones: tones };
 }
+// (v329.3) Share › Copy marker list: the markers "The markers on this page" lists (each section's, and with shading on,
+// its highlight and shadow markers), as text to paste with a post: a line a brand, in BRAND_DEFS' order; within a brand
+// by colour family as the Markers grid has them, lighter to darker in each (as Colour along's ramps), the Colorless
+// Blender last; each by the code on your cap. { text, n }: '' and 0 with none
+function markerListText() {
+  if (!assignData) return { text: '', n: 0 };
+  const r = markerListRows(),
+    idx = [];
+  r.base.concat(r.tones).forEach(function (e) {
+    const i = keyIdx(e.m.mkey);
+    if (i != null && idx.indexOf(i) < 0) idx.push(i);
+  });
+  const fp = {},
+    by = {};
+  families.forEach(function (f, k) {
+    fp[f.name] = k;
+  });
+  idx.forEach(function (i) {
+    (by[COLORS[i].brand] = by[COLORS[i].brand] || []).push(i);
+  });
+  const fam = function (i) {
+      return fp[COLORS[i].fam] != null ? fp[COLORS[i].fam] : 999;
+    },
+    order = BRAND_DEFS.map(function (b) {
+      return b.k;
+    }).concat(
+      Object.keys(by).filter(function (b) {
+        return !BRAND_DEFS.some(function (d) {
+          return d.k === b;
+        });
+      }),
+    );
+  const text = order
+    .filter(function (b) {
+      return by[b];
+    })
+    .map(function (b) {
+      const v = by[b].sort(function (x, y) {
+        return (
+          (NOINK.has(x) ? 1 : 0) - (NOINK.has(y) ? 1 : 0) ||
+          fam(x) - fam(y) ||
+          LAB[y][0] - LAB[x][0] ||
+          (capCode(x) < capCode(y) ? -1 : capCode(x) > capCode(y) ? 1 : x - y)
+        );
+      });
+      return b + ': ' + v.map(capCode).join(', ');
+    })
+    .join('\n');
+  return { text: text, n: idx.length };
+}
+function copyMarkerList() {
+  const r = markerListText();
+  if (!r.n) {
+    toast('No markers on this page yet');
+    return;
+  }
+  // (built before the copy, inside the tap: Safari copies only from a tap)
+  copyText(r.text).then(function (ok) {
+    if (ok) {
+      toast('Copied ' + nWord(r.n, 'marker'));
+      return;
+    }
+    askBox(
+      'Couldn’t copy',
+      'Select the list and copy it yourself.\n\n' + r.text,
+      '<button type="button" class="btn-primary" data-a="ok">Done</button>',
+    );
+    const d = document.getElementById('sfEdAskD');
+    if (d) d.style.whiteSpace = 'pre-line';
+  });
+}
 function markerListSheet() {
   if (!assignData) return;
   const r = markerListRows(),

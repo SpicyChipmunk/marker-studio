@@ -6,7 +6,8 @@ function hlPath() {
   return markerPath(secs, secBoxes());
 }
 // Find next: the next section not yet ticked along that path, after the one it showed last (round again at the end)
-function findNext() {
+// (pre: said first, Tick it's "R20 section ticked. ")
+function findNext(pre) {
   if (!hlKey || !assignData) return;
   const path = hlPath(),
     n = path.length;
@@ -16,6 +17,8 @@ function findNext() {
     })
   ) {
     note('Every section of this marker is coloured.');
+    if (pre) sayLive(pre + 'Every section of this marker is coloured.');
+    renderAlong();
     return;
   }
   const from = path.indexOf(_fnLast);
@@ -45,7 +48,42 @@ function findNext() {
   _fnOl = true;
   _fnKey = hlKey;
   outlineSecs([l], true);
-  sayLive('Next section to colour: ' + left + ' of ' + n + ' left.');
+  sayLive((pre || '') + 'Next section to colour: ' + left + ' of ' + n + ' left.');
+  // (Tick it shows beside Find next now)
+  renderAlong();
+}
+// (v329.3 review) Tick it, beside Find next while the section it found is shown: that section ticked, then the next
+// one found. A way to tick one section without aiming at it: VoiceOver's double-tap lands mid-picture, and a small
+// section zoomed in is easy to miss
+function fnShown() {
+  const l = _fnLast;
+  return !!(
+    _fnOl &&
+    hlKey &&
+    hlKey === _fnKey &&
+    assignData &&
+    colored &&
+    l > 0 &&
+    assignData.assign[l] &&
+    !colored[l] &&
+    hlMatch(l) &&
+    !colCheckLive()
+  );
+}
+function fnTick() {
+  // (one shown since it went, the outline taken away: the button goes too)
+  if (!fnShown()) {
+    renderAlong();
+    return;
+  }
+  const l = _fnLast,
+    m = assignData.assign[l];
+  hideTip();
+  alongTick(l, true);
+  if (!colored[l]) return;
+  const said = msay(m) + ' section ticked. ';
+  if (pageDone()) sayLive(said);
+  else findNext(said);
 }
 function jumpToNext() {
   if (!hlKey || !assignData || zoom <= 1) return;
@@ -116,6 +154,22 @@ function editTapAt(P) {
     // (v320: the Colours sheet open, a tap anywhere on the picture closes it, a line or the paper too, as on a section)
     if (focus && focusSheet && !focusFin) {
       focusSheetSet(false);
+      return;
+    }
+    // (v329.3 review: a section left white, or white in the photo, has nothing to tick: said, where the tap had done
+    // nothing, as Plan says it)
+    if (
+      l > 0 &&
+      assignData &&
+      !assignData.assign[l] &&
+      (whitePins[l] !== undefined || (assignData.paper && assignData.paper[l]))
+    ) {
+      toast(
+        whitePins[l] !== undefined
+          ? 'This section is left white, so there’s nothing to colour.'
+          : 'This section stays white: the photo is white there.',
+        2200,
+      );
       return;
     }
     if (l > 0 && assignData && assignData.assign[l]) {
@@ -211,10 +265,13 @@ function editTapAt(P) {
 }
 // a section ticked, or unticked, in Colour along: a tap on one of the open row's (or with none open), or Tick it in the
 // question over another marker's
-function alongTick(l) {
+// (quiet: an untick says nothing; Tick it says its own)
+function alongTick(l, quiet) {
   // (v328: not while Check them's draft is open: its Done is the one step)
   if (colCheckLive()) return;
-  const sp = colored[l] ? null : spreadBegin(l);
+  const sp = colored[l] ? null : spreadBegin(l),
+    // (v329.3 review: what an untick takes away, for its Undo)
+    was = colored[l] ? [colored[l], tp()[l], heldSh[l] || null] : null;
   // (v329.1: set by hand: left as set by the ⋯ menu's Undo of the last tick-off, 82-colour-mode)
   bulkTouch(l);
   colored[l] ^= 1;
@@ -232,6 +289,27 @@ function alongTick(l) {
   updateProgress();
   jumpToNext();
   if (colored[l]) spreadRun(sp);
+  else if (was && !quiet) untickSay(l, was);
+}
+// (v329.3 review) An untick (a bounce, or a tap meant for the neighbour) says so, with an Undo that ticks it again as
+// it was: it had only taken one off the count. Colour along's and Focus mode's (75-focus focusDone)
+function untickSay(l, was) {
+  const m = assignData && assignData.assign[l];
+  if (!m) return;
+  const g = loadGen,
+    lb = labels,
+    o = {};
+  o[l] = was;
+  toastActionHTML(mcodeHTML(m) + ' section unticked', 'Undo', function () {
+    if (g !== loadGen || lb !== labels || !assignData || !assignData.assign[l] || colored[l]) return;
+    markBack(o, false);
+    checkComplete();
+    renderGuide();
+    updateProgress();
+    renderFocusMarkers();
+    if (focus) renderFocusUI();
+    sayLive(msay(m) + ' section ticked again');
+  });
 }
 const MERGE_BG_SAY = 'That’s the background, not a section. To make a section white, use Leave out.';
 // the section a Split or Add stroke is for: the one it runs through furthest, lines not counted (v304: the section it
@@ -338,11 +416,13 @@ function onDown(e) {
     return;
   }
   ptMoved = false;
-  pStart = { x: e.clientX, y: e.clientY, panX: panX, panY: panY };
+  // (v329.3 review: P0, where the finger landed: a tap is taken there, not where it lifted, which a finger rolling as
+  // it leaves moves onto the neighbour of a small section, onUp)
+  const P0 = evPt(e);
+  pStart = { x: e.clientX, y: e.clientY, panX: panX, panY: panY, P0: P0 };
   lpFired = false;
   clearTimeout(lpT);
   if (sfmode === 'color' && !focus && !colCheckLive()) {
-    const P0 = evPt(e);
     lpT = setTimeout(function () {
       if (ptMoved || multi || ptrs.size !== 1) return;
       if (P0.x < 0 || P0.y < 0 || P0.x >= W || P0.y >= H) return;
@@ -555,7 +635,8 @@ function onUp(e) {
     if (lpFired) {
       lpFired = false;
     } else if (before === 1 && !multi) {
-      const P = evPt(e);
+      // (where it landed, as a tap elsewhere is taken: blendStart)
+      const P = blendStart || evPt(e);
       // (v318.22 debug: not a touch the system took back, a palm or an edge swipe)
       if (blendHit >= 0 && !blendMoved && e.type !== 'pointercancel') {
         openAnchorPop(blendHit);
@@ -639,7 +720,7 @@ function onUp(e) {
     lpFired = false;
     if (sfmode === 'color') _holdAt = Date.now();
   } else if (before === 1 && !ptMoved && !multi && e.type !== 'pointercancel') {
-    const P = evPt(e);
+    const P = pStart && pStart.P0 ? pStart.P0 : evPt(e);
     if (P.x >= 0 && P.y >= 0 && P.x < W && P.y < H) editTapAt(P);
   }
   if (ptrs.size === 1) {

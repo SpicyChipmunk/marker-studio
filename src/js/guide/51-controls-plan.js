@@ -1366,6 +1366,10 @@ function ctlPlanShare() {
     ' Save image</button></div><label class="sfchk sfc-check sfc-inline sfc-mt8"><input type="checkbox" id="sfExCodes"' +
     (exCodesNow() ? ' checked' : '') +
     '> Codes on the saved image</label>' +
+    // (v329.3: the page's markers as text, for a post)
+    '<button type="button" id="sfCopyList" class="sfghost sffull sfc-mt8">' +
+    ic('copy') +
+    ' Copy marker list</button>' +
     // (v306: Did any run low?, once the page is finished)
     lowHost('S') +
     '</div><div class="sfgrp"><h3 class="sfglbl">Print</h3><button id="sfPrint" class="sfghost sffull" aria-haspopup="dialog">' +

@@ -469,9 +469,17 @@ copyBtn.addEventListener('click', async () => {
 });
 // (v318.25: how many match, said to screen readers once typing stops; the heading itself isn't live, as ticks change it)
 let searchSayT = 0;
+// (v329.3 review: the grid drawn once a frame, not once a key: each redraw rebuilt every cell, 722 in All, and on an
+// older iPad the first letters of a search came up late. What's typed is kept at once; the mode's looked at as it's
+// drawn)
+let searchRaf = 0;
 searchInput.addEventListener('input', () => {
   searchStr = (searchInput.value || '').trim().toLowerCase();
-  if (state.mode === 'finder' || state.mode === 'collection') renderResults(true);
+  if (!searchRaf)
+    searchRaf = requestAnimationFrame(() => {
+      searchRaf = 0;
+      if (state.mode === 'finder' || state.mode === 'collection') renderResults(true);
+    });
   clearTimeout(searchSayT);
   searchSayT = setTimeout(() => {
     const l = $('matchLbl');
@@ -1231,23 +1239,33 @@ $('satAll').addEventListener('click', () => {
   fgClear('sat');
   filterChanged();
 });
+// (v329.3 review: the same for a family, tone or saturation chip, one redraw a frame however quickly they're tapped;
+// the tap itself is kept at once)
+let filterRaf = 0;
+function filterSoon() {
+  if (!filterRaf)
+    filterRaf = requestAnimationFrame(() => {
+      filterRaf = 0;
+      filterChanged();
+    });
+}
 famsEl.addEventListener('click', (e) => {
   const b = e.target.closest('.chip');
   if (!b) return;
   fgTap('fam', b.dataset.fam);
-  filterChanged();
+  filterSoon();
 });
 tonesEl.addEventListener('click', (e) => {
   const b = e.target.closest('.chip');
   if (!b) return;
   fgTap('tone', b.dataset.tone);
-  filterChanged();
+  filterSoon();
 });
 satsEl.addEventListener('click', (e) => {
   const b = e.target.closest('.chip');
   if (!b) return;
   fgTap('sat', b.dataset.sat);
-  filterChanged();
+  filterSoon();
 });
 brandsEl.addEventListener('click', (e) => {
   const b = e.target.closest('.chip');

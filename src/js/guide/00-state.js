@@ -401,3 +401,7 @@ let pdfBlend = false; // written by: 00-state (just below), 90-export
 try {
   pdfBlend = localStorage.getItem('ms-pdf-blend') === '1';
 } catch (_) {}
+// (v329.3) the shading markers laid on this guide's paper, for Random (90-export paperNote; saved as onPaper)
+let paperTones = new Set(); // written by: 90-export, 60-persist (saveReset), 97-open
+// (v329.3) the guide's notes (the guide's ⋯ menu, Page finished): a few lines, saved with it (05-style-fields), printed under the key
+let guideNotes = ''; // written by: 05-style-fields (open), 72-frame (Notes), 20-image-input (a new picture)

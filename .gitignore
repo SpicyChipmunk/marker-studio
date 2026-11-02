@@ -1,3 +1,8 @@
 node_modules/
 e2e/.artifacts/
 .DS_Store
+tools/subject-train/work/
+tools/subject-train/results/
+tools/subject-train/bench-photos/
+tools/subject-train/.venv/
+__pycache__/

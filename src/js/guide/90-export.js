@@ -1163,6 +1163,8 @@ function pvShow(i) {
       key: 'Colour key',
       keymore: 'Colour key',
       refkey: 'Picture and key',
+      // (v329.3 review: the notes that didn't fit under the key)
+      notes: 'Notes',
     },
     kw = W0[kd.k] || '';
   document.getElementById('prevTitle').textContent = 'Page ' + (i + 1) + ' of ' + n;
@@ -1246,6 +1248,7 @@ function printOrder(K) {
       keymore: 'Key',
       refkey: 'Picture + key',
       strip: 'Test strip',
+      notes: 'Notes',
     },
     say = function (k) {
       const w = k.lab === 'numbers' ? 'numbers' : 'codes';
@@ -1262,7 +1265,9 @@ function printOrder(K) {
                 ? 'your picture in colour beside the colour key'
                 : k.k === 'strip'
                   ? 'the test strip'
-                  : 'the colour key';
+                  : k.k === 'notes'
+                    ? 'your notes'
+                    : 'the colour key';
     },
     gs = [];
   K.forEach(function (k, i) {
@@ -2204,6 +2209,34 @@ function pdfLines(g, parts, max, n) {
   return out.map(function (t) {
     return pdfTrunc(g, t, max);
   });
+}
+// (v329.3) text wrapped at its spaces into at most n lines no wider than max, its line breaks folded into " · " (the
+// last line, and a word too long for a line, cut short if need be): the guide's notes under the key
+function pdfWrap(g, t, max, n) {
+  const words = String(t)
+      .split(/\s*\n\s*/)
+      .filter(Boolean)
+      .join(' · ')
+      .split(/\s+/)
+      .filter(Boolean),
+    out = [];
+  let cur = '';
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i],
+      tt = cur ? cur + ' ' + w : w;
+    if (!cur || g.measureText(tt).width <= max) {
+      cur = tt;
+      continue;
+    }
+    if (out.length === n - 1) {
+      cur = pdfTrunc(g, cur + ' ' + words.slice(i).join(' '), max);
+      break;
+    }
+    out.push(pdfTrunc(g, cur, max));
+    cur = w;
+  }
+  if (cur) out.push(pdfTrunc(g, cur, max));
+  return out;
 }
 function pdfSwatch(g, x, y, sz, hex, owned, round) {
   g.fillStyle = hex;
@@ -4013,6 +4046,47 @@ function _buildPDF(dry) {
       x += w;
     });
   }
+  // ---- (v329.3) the guide's notes (72-frame openNotes), in small type under the key: in its column (beside the picture,
+  // or one of two), 5 lines at most there, or across the page under the shopping list, 3; the last cut short. In the
+  // next column if they don't fit, else on a page of their own (v329.3 review: a page headed "Notes" with the whole of
+  // them across it, not a "Colour key (continued)" holding a few grey lines). Not on Only the page (the pages after
+  // the first are let go below) nor the test strip (its own path)
+  if (guideNotes) {
+    const wide = withBlend && wk.length > 0,
+      lw = wide ? bw : cw,
+      lh = PX(12);
+    y += PX(14);
+    g.font = '500 ' + PX(8.5) + 'px ' + LFONT;
+    let nl = pdfWrap(g, 'Notes: ' + guideNotes, lw, lw < bw * 0.75 ? 5 : 3);
+    if (y + nl.length * lh > pageBot && !wide && col < cols - 1) {
+      col++;
+      y = colTop;
+    }
+    if (y + nl.length * lh > pageBot) {
+      pg = pdfPage();
+      g = pg.g;
+      pages.push(pg);
+      _pdfKinds.push({ k: 'notes' });
+      g.fillStyle = '#111';
+      g.font = '600 ' + PX(14) + 'px ' + PDF_SERIF;
+      g.fillText('Notes', m, m + PX(11));
+      g.font = '500 ' + PX(10) + 'px ' + LFONT;
+      const lh2 = PX(14);
+      nl = pdfWrap(g, guideNotes, bw, 60);
+      g.fillStyle = '#333';
+      nl.forEach(function (t, i) {
+        g.fillText(t, m, m + PX(24) + PX(10) + i * lh2);
+      });
+      y = m + PX(24) + nl.length * lh2;
+    } else {
+      const x = wide ? m : colX();
+      g.fillStyle = '#444';
+      nl.forEach(function (t, i) {
+        g.fillText(t, x, y + PX(9) + i * lh);
+      });
+      y += nl.length * lh;
+    }
+  }
   // ---- footers
   // (v328, P5) For your own page with no labels: its one page of reference and key, then the shading map
   if (refOne && mapOn) {
@@ -4251,8 +4325,40 @@ function progSig() {
   for (let l = 1; l < colored.length; l++) if (colored[l]) s = (s * 31 + l) % 1000000007;
   return progressCount() + ':' + s;
 }
+// (v329.3) The shading markers laid on the paper, for Random's Prefer markers you haven't used yet: each time a tone
+// is ticked (a section's lighter tone 1, its shadow 4; the whole section ticked, all), its marker as the shading has it
+// at that moment is kept, while shading is on. Compared with the tones done when last seen; a guide opened, another
+// one, or its sections edited start the comparison again without keeping anything. Never taken away (an untick, an
+// Undo: the marker was used). Saved in the guide (onPaper), and with the Library row (guideMeta's sx)
+let _paperSnap = null,
+  _paperTok = -1,
+  _paperComps = null;
+function paperNote() {
+  if (!assignData || !colored || !comps || isDemo()) return;
+  const n = colored.length,
+    P = tonePart && tonePart._c === colored ? tonePart : null,
+    cur = new Uint8Array(n);
+  for (let l = 1; l < n; l++) cur[l] = colored[l] ? 7 : P && l < P.length ? P[l] & 7 : 0;
+  if (_paperTok !== _gTok || _paperComps !== comps || !_paperSnap || _paperSnap.length !== n) {
+    _paperTok = _gTok;
+    _paperComps = comps;
+    _paperSnap = cur;
+    return;
+  }
+  if (shadeOn())
+    for (let l = 1; l < n; l++) {
+      const add = cur[l] & ~_paperSnap[l] & 5;
+      if (!add || !assignData.assign[l]) continue;
+      const t = shadeSec(l);
+      if (!t) continue;
+      if (add & 1 && t.light && t.light.mkey) paperTones.add(t.light.mkey);
+      if (add & 4 && t.dark && t.dark.mkey) paperTones.add(t.dark.mkey);
+    }
+  _paperSnap = cur;
+}
 function progStamp() {
   if (!assignData || !colored) return;
+  paperNote();
   const now = Date.now();
   // (v313) when it was last coloured, for Home's Continue card ("Last coloured 3 days ago"); v314.1: only when the ticks
   // changed since the guide opened or was last looked at (opening it, or Colour along, re-stamped it before)
@@ -4273,7 +4379,11 @@ function progStamp() {
 // (v307) how many markers a shaded guide's highlights and shadows take beyond its own colours: none with shading off.
 // "16 markers" said only the colours when shading used 45, on Page finished, Reveal's card, Home and the PDF.
 function shadeExtra() {
-  if (!assignData || !shadeOn()) return 0;
+  return shadeExtraKeys().length;
+}
+// (v329.3) those markers themselves, for the Library row (sx): Random's Prefer markers you haven't used yet counts them
+function shadeExtraKeys() {
+  if (!assignData || !shadeOn()) return [];
   const base = {},
     ex = {};
   assignData.order.forEach(function (l) {
@@ -4286,7 +4396,7 @@ function shadeExtra() {
       if (m && m.mkey && !base[m.mkey]) ex[m.mkey] = 1;
     });
   });
-  return Object.keys(ex).length;
+  return Object.keys(ex);
 }
 // "16 markers", "16 Ohuhu markers", or with shading "16 markers + 29 for shading" (x: shadeExtra(), when known)
 function mkCount(n, brand, x) {

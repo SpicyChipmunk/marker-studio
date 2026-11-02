@@ -236,7 +236,10 @@ function cellHtml(i, rank) {
     cls +
     '" data-i="' +
     i +
-    '" role="button" tabindex="0" aria-label="' +
+    '" role="button" tabindex="0"' +
+    // (v329.3 review: in Markers a cell's a toggle, yours or not, said as one, "selected", not in its words alone)
+    (col ? ' aria-pressed="' + own + '"' : '') +
+    ' aria-label="' +
     esc(
       c.brand +
         ' ' +
@@ -627,16 +630,18 @@ function renderGrid(more) {
       return;
     }
     results.innerHTML =
+      topFiveHTML(order, 'gap') +
       '<div class="rgroup"><div class="pile">' +
       order.map((i, idx) => cellHtml(i, idx + 1)).join('') +
       '</div></div>';
     return;
   }
   if (state.mode === 'collection' && state.collView === 'unowned' && state.gapSort === 'complete') {
-    let html = '',
-      s = 0;
     const gps = completeGroups(m);
     const un = [].concat(...gps.map((g) => g.un));
+    let html = topFiveHTML(un, 'complete'),
+      s = 0,
+      n = 0;
     gridActs(un);
     cellBt = brandsMixedIn(un);
     // (v318.25) the heading counts what's shown (your brands' families, no fluorescents): it had said 601 over 239
@@ -660,8 +665,10 @@ function renderGrid(more) {
         '/' +
         gp.total +
         '</span></div><div class="pile">' +
-        gp.un.map((i) => cellHtml(i)).join('') +
+        // (v329.3 review: numbered on across the families, as the other two rankings, so "the top 5" is the first five)
+        gp.un.map((i, idx) => cellHtml(i, n + idx + 1)).join('') +
         '</div></div>';
+      n += gp.un.length;
       s++;
     }
     results.innerHTML = html;
@@ -678,6 +685,7 @@ function renderGrid(more) {
       return;
     }
     results.innerHTML =
+      topFiveHTML(order, 'ramps') +
       '<div class="rgroup"><div class="pile">' +
       order.map((i, idx) => cellHtml(i, idx + 1)).join('') +
       '</div></div>';

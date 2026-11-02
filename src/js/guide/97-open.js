@@ -70,6 +70,18 @@ function openDesignObj(d, id, resumed, quiet, col) {
     cont = _contNext;
   _contNext = false;
   hideTip();
+  // (v329.3 review: a Library guide whose stored copy is there but has no section map in it is damaged, as one whose
+  // map won't decode: said so, with Restore and Delete, not called a file that isn't a guide)
+  if (
+    d &&
+    id != null &&
+    !resumed &&
+    id !== _justImported &&
+    (typeof d.lmap !== 'string' || !/^data:image\/png;base64,/.test(d.lmap))
+  ) {
+    damagedGuide(id);
+    return;
+  }
   if (!d || typeof d.lmap !== 'string' || !/^data:image\/png;base64,/.test(d.lmap)) {
     // (from the Library, id: its stored copy is missing or unreadable; otherwise a file that isn't a guide)
     // (v318 review: or the browser's storage didn't answer, which a reload may fix: not "missing", which sent people to
@@ -88,7 +100,8 @@ function openDesignObj(d, id, resumed, quiet, col) {
     return;
   }
   note('Opening guide\u2026');
-  const img = new Image();
+  let img = new Image(),
+    tries = 0;
   // (v307) the section map is read first and, with a worker (03-jobs), its label points are worked out there before
   // the open goes on, so the page isn't held up for them; the same ones the page would work out
   img.onload = function () {
@@ -239,6 +252,14 @@ function openDesignObj(d, id, resumed, quiet, col) {
             ? 1
             : 0,
       };
+      // (v329.3) the shading markers already laid on this guide's paper (90-export paperNote)
+      paperTones = new Set(
+        Array.isArray(d.onPaper)
+          ? d.onPaper.filter(function (k) {
+              return typeof k === 'string' && keyIdx(k) != null;
+            })
+          : [],
+      );
       celebrated = false;
       if (d.secStates) {
         for (const k in d.secStates) {
@@ -497,6 +518,11 @@ function openDesignObj(d, id, resumed, quiet, col) {
       lockMode = false;
       normalizeTones();
       curId = id;
+      // (v329.3 review: the first look at what's done already, taken now it's all read: 90-export paperNote)
+      paperNote();
+      // (and an older guide's shading markers on its Library row, as a save would put them: guideShadeSeen, library.js)
+      if (typeof guideShadeSeen === 'function')
+        guideShadeSeen(id, shadeExtraKeys().concat(Array.from(paperTones)));
       libNote();
       // (v315: its photo of the finished page read now, so Put back after a delete always has it)
       finSync(true);
@@ -578,6 +604,10 @@ function openDesignObj(d, id, resumed, quiet, col) {
       curId = null;
       guideDirty = false;
       assignData = null;
+      // (v329.3 review: and none of the guide half opened left on screen: back to the start, where the message shows)
+      labels = null;
+      sfmode = 'guide';
+      showHome();
       // (only a guide just imported, that never opened, is taken out again)
       const imp = id != null && id === _justImported;
       _justImported = null;
@@ -590,7 +620,21 @@ function openDesignObj(d, id, resumed, quiet, col) {
   }
   img.onerror = function () {
     if (gen !== loadGen) return;
-    if (id != null && id !== _justImported) damagedGuide(id);
+    // (v329.3 review: a Library guide's map read once more first: WebKit fails a decode it hasn't the memory for as
+    // it fails a damaged one, as just after making a big guide)
+    if (id != null && id !== _justImported && !tries++) {
+      const on = img.onload,
+        oe = img.onerror;
+      setTimeout(function () {
+        if (gen !== loadGen) return;
+        img = new Image();
+        img.onload = on;
+        img.onerror = oe;
+        img.src = d.lmap;
+      }, 400);
+      return;
+    }
+    if (id != null && id !== _justImported) damagedGuide(id, true);
     else note('Couldn’t read that guide.');
   };
   img.src = d.lmap;
@@ -598,7 +642,8 @@ function openDesignObj(d, id, resumed, quiet, col) {
 // (v308) A Library guide whose stored section map can't be read: one message (it was said twice, with nothing to do),
 // and what can be done: restore it from a backup (the backup's copy then takes its place, guide-bridge.js) or delete it
 // (with Undo, as in the Library)
-function damagedGuide(id) {
+// mem: its map wouldn't decode, which a device short of memory does too (v329.3 review: said, as a reason to try again)
+function damagedGuide(id, mem) {
   const e =
       api.listDesigns &&
       api.listDesigns().find(function (x) {
@@ -609,8 +654,14 @@ function damagedGuide(id) {
   if (typeof guideDamaged === 'function') guideDamaged(id);
   askBox(
     'Can\u2019t open this guide',
-    '\u201c' + nm + '\u201d can\u2019t be opened \u2014 its saved section map is damaged.',
-    '<button type="button" class="btn-primary" data-a="restore">Restore it from a backup</button><button type="button" data-a="del">Delete it</button><button type="button" class="sfghost" data-a="stay">Close</button>',
+    '\u201c' +
+      nm +
+      '\u201d can\u2019t be opened \u2014 its saved section map is damaged.' +
+      (mem
+        ? ' Or this device is short of memory, which stops it being read too: close other apps and try again.'
+        : ''),
+    // (v329.3 review: where a deleted guide goes, said on the button)
+    '<button type="button" class="btn-primary" data-a="restore">Restore it from a backup</button><button type="button" data-a="del">Delete it (kept in Recently deleted)</button><button type="button" class="sfghost" data-a="stay">Close</button>',
     false,
     function (a) {
       // (the file picker opens within the tap, as an iPad needs)

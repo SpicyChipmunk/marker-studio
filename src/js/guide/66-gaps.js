@@ -731,7 +731,10 @@ function gapCut(s) {
   });
   if (!sec || ppBgSec(sec)) return 0;
   labelsEdited();
-  const done = [];
+  // (v329.3 review: its figures as they were, for a cut that doesn't divide it: relabelRegion works them out without
+  // the stroke's pixels, and only a Close whose every gap failed put the whole map back, restoreSnap)
+  const c0 = Object.assign({}, comps[sec]),
+    done = [];
   for (let k = 0; k <= steps; k++) {
     const cx = Math.round(ax + ((bx - ax) * k) / steps),
       cy = Math.round(ay + ((by - ay) * k) / steps);
@@ -750,6 +753,7 @@ function gapCut(s) {
   }
   if (relabelRegion(sec) >= 1) return 1;
   for (let k = 0; k < done.length; k++) labels[done[k]] = sec;
+  Object.assign(comps[sec], c0);
   labelsEdited();
   return 0;
 }
@@ -770,7 +774,11 @@ function gapClose(all) {
   });
   if (!made) {
     restoreSnap();
-    note('That gap didn\u2019t divide the section.');
+    note(
+      which.length > 1
+        ? 'Those gaps didn\u2019t divide their sections.'
+        : 'That gap didn\u2019t divide the section.',
+    );
   } else hasEdits = true;
   // (its result, less what was closed, for the map now: no new check)
   gapStop();

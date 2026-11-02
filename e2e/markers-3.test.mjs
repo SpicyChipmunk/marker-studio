@@ -1487,3 +1487,85 @@ after(teardown);
     assert.deepEqual(errors, []);
   });
 }
+
+// ---- v329.3: To buy's sets and its ideas from your collection ----
+// To buy links to Markers' three rankings (Unowned's Order), which can put their first five on To buy with the
+// ranking's name as the reason; and Sets with markers on your list under it.
+{
+  test('To buy: Ideas from your collection opens a ranking; Add the top 5 to To buy, with Undo; the sets under the list', async () => {
+    const { page, errors } = await openApp({ width: 820, height: 1180 });
+    await welcome(page, 'look');
+    await idle(page);
+    await page.evaluate(() => {
+      presetMkeys(MARKER_SETS.find((x) => x.n === 'Honolulu 72')).forEach((k) => state.owned.add(k));
+      state.wish = [];
+      save();
+    });
+    await page.click('#mCollection');
+    await page.click('#ownView [data-v="wish"]');
+    await idle(page);
+    // the empty list has the ideas too, in the Order menu's own words
+    const labels = await page.evaluate(() => [...document.querySelectorAll('[data-idea]')].map((b) => b.textContent));
+    const opts = await page.evaluate(() => [...document.querySelectorAll('#gapSort option')].map((o) => [o.value, o.textContent]));
+    assert.deepEqual(labels, ['Fill the biggest gaps', 'Fill gaps between light and dark', 'Finish families']);
+    await page.click('[data-idea="complete"]');
+    await idle(page);
+    assert.equal(await page.evaluate(() => state.collView + ' ' + state.gapSort), 'unowned complete');
+    for (const [v, t] of await page.evaluate(() => [...document.querySelectorAll('#gapSort option')].map((o) => [o.value, o.textContent])))
+      if (['gap', 'ramps', 'complete'].includes(v)) assert.ok(labels.includes(t), t);
+    assert.ok(opts.length >= 2);
+    assert.match(await page.textContent('#ownHint'), /Tap one you’ve bought to add it to your collection\./);
+    assert.equal(await page.textContent('.wtop5 .wishall'), 'Add the top 5 to To buy');
+    // (v329.3 review: numbered on across the families, so the top 5 are the five numbered first)
+    const rk = await page.evaluate(() => [...document.querySelectorAll('#results .rankb')].map((b) => +b.textContent));
+    assert.deepEqual(rk.slice(0, 6), [1, 2, 3, 4, 5, 6]);
+    assert.equal(rk.length, new Set(rk).size, 'each number once');
+    await page.click('.wtop5 .wishall');
+    await idle(page);
+    assert.equal(await page.textContent('.wtop5 .wishall'), '✓ The top 5 are on your To buy list');
+    assert.deepEqual(
+      await page.evaluate(() => [...new Set(state.wish.map((w) => w.why))]),
+      ['helps finish a family'],
+    );
+    assert.equal(await page.evaluate(() => state.wish.length), 5);
+    // (review: Undo takes off exactly the five, and keeps one that was on the list before)
+    await page.click('#msToast button:has-text("Undo")');
+    await idle(page);
+    assert.equal(await page.evaluate(() => state.wish.length), 0);
+    const first = await page.evaluate(() => {
+      const k = document.querySelector('#results .cell[data-i]');
+      return k ? mkey(+k.dataset.i) : null;
+    });
+    await page.evaluate((k) => {
+      state.wish.push({ k, why: 'from Markers', ts: 1 });
+      save();
+      fullRender();
+    }, first);
+    await idle(page);
+    await page.click('.wtop5 .wishall');
+    await idle(page);
+    assert.equal(await page.evaluate(() => state.wish.length), 5);
+    await page.click('#msToast button:has-text("Undo")');
+    await idle(page);
+    assert.deepEqual(
+      await page.evaluate(() => state.wish.map((w) => w.k + ' ' + w.why)),
+      [first + ' from Markers'],
+      'the one already on the list stays, with its own reason',
+    );
+    await page.click('.wtop5 .wishall');
+    await idle(page);
+    // To buy: the sets with them
+    await page.click('#ownView [data-v="wish"]');
+    await idle(page);
+    assert.ok(await page.isVisible('.wsets'));
+    assert.match(await page.textContent('.wsets'), /Sets with markers on your list[\s\S]* of your 5 Ohuhu · \d+ new to you/);
+    // with no markers of your own, no ideas
+    await page.evaluate(() => {
+      state.owned.clear();
+      save();
+      renderWish();
+    });
+    assert.equal(await page.locator('[data-idea]').count(), 0);
+    assert.deepEqual(errors, []);
+  });
+}

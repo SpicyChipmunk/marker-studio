@@ -1253,6 +1253,9 @@ function tkAlpha(l) {
 }
 function renderGuide() {
   if (!assignData) return;
+  // (v329.3 review: the shading markers laid on the paper compared from the picture as drawn, in any stage: after an
+  // open or a rebuild the first look is taken here, so a tick's own tones are never that first look, 90-export)
+  paperNote();
   // (v320: a tick's spread under way shows its end first, so what's drawn now is drawn over the finished picture)
   spreadEnd();
   _mixKey = null;
@@ -1601,6 +1604,10 @@ function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tic
   };
   for (let i = 0; i < dirty.length; i++) {
     const l = dirty[i];
+    // (its old code's box redrawn first: v329.3 review, a section emptied by a merge, its box empty, had kept its code
+    // on the canvas until the next full draw)
+    addR(lb[l]);
+    lb[l] = null;
     if (B.x1[l] < 0) continue;
     const bx0 = B.x0[l],
       by0 = B.y0[l],
@@ -1609,8 +1616,6 @@ function renderIncremental(dirty, skey, lkA, colArr, sh, shOK, tex, linesOn, tic
     paintPixels(PX, sh, bx0, by0, bx1, by1, l);
     if (linesOn && shOK[l]) shadeLinesDraw(sh, null, { l: l, box: [bx0, by0, bx1, by1] });
     addR([bx0, by0, bx1, by1]);
-    addR(lb[l]);
-    lb[l] = null;
     if (assign[l] && lkA[l]) {
       const b = secLabel(l, assign[l], tick, false);
       lb[l] = b;

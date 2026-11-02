@@ -82,6 +82,11 @@ function loadPdf(file, gen) {
       note('That PDF is locked with a password, so it can’t be opened here.' + PDF_SHOT);
       return;
     }
+    // (v329.3 review: a page of no size, pdfDraw: as a page that came out blank)
+    if (e && e.name === 'EmptyPage') {
+      note('That PDF page came out blank here.' + PDF_SHOT);
+      return;
+    }
     const said = function () {
       note(errNote((what || 'Couldn’t open that PDF.') + PDF_SHOT, 'Opening a PDF', e));
     };
@@ -158,8 +163,15 @@ function loadPdf(file, gen) {
 }
 // the page drawn on white, its long side `side` px
 function pdfDraw(pg, side) {
-  const v0 = pg.getViewport({ scale: 1 }),
-    k = side / Math.max(v0.width, v0.height),
+  const v0 = pg.getViewport({ scale: 1 });
+  // (v329.3 review: a page box with no width or height has nothing to draw: said as a blank page, loadPdf's fail,
+  // rather than a canvas of no size that PDF.js refuses)
+  if (!(v0.width > 0 && v0.height > 0)) {
+    const e = new Error('empty page');
+    e.name = 'EmptyPage';
+    return Promise.reject(e);
+  }
+  const k = side / Math.max(v0.width, v0.height),
     vp = pg.getViewport({ scale: k }),
     c = document.createElement('canvas');
   c.width = Math.max(1, Math.round(vp.width));

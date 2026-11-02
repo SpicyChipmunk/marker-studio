@@ -1489,7 +1489,7 @@ after(teardown);
     assert.equal(await page.textContent('#sfGTitle'), 'Left By Blur');
     assert.deepEqual(errors, []);
   });
-  test('⋯ opens a menu sheet: New, This guide (Save a copy once saved; Reset progress in Colour along), Help', async () => {
+  test('⋯ opens a menu sheet: New, This guide (Notes; Save a copy once saved; Reset progress in Colour along), Help', async () => {
     const { page, errors } = await openApp();
     await sampleGuide(page);
     assert.equal(await page.locator('#sfRoot [aria-label="More"]').count(), 1, 'the only ⋯ on the screen');
@@ -1497,7 +1497,11 @@ after(teardown);
     assert.equal(await page.textContent('#sfSheetT'), await page.textContent('#sfGTitle'));
     // (v308: the Help group has no heading of its own, which keeps the menu within a phone's room; it is named for screen
     // readers)
-    assert.deepEqual(await page.$$eval('#sfSheet .sfmh', (h) => h.map((x) => x.textContent)), ['New']);
+    // (v329.3: This guide has Notes… whenever a guide is open)
+    assert.deepEqual(await page.$$eval('#sfSheet .sfmh', (h) => h.map((x) => x.textContent)), [
+      'New',
+      'This guide',
+    ]);
     assert.equal(await page.locator('#sfSheet .sfmenu[aria-label="Help"]').count(), 1, 'the Help group');
     // (v308: Send feedback under Help)
     assert.deepEqual(await menuLabels(page), [
@@ -1506,6 +1510,7 @@ after(teardown);
       'Try the sample',
       'Open from Library',
       'Import a guide',
+      'Notes…',
       'Help',
       'Send feedback',
     ]);
@@ -1522,6 +1527,7 @@ after(teardown);
       'Open from Library',
       'Import a guide',
       'Save a copy',
+      'Notes…',
       'Help',
       'Send feedback',
     ]);
@@ -1537,6 +1543,7 @@ after(teardown);
       'Try the sample',
       'Open from Library',
       'Import a guide',
+      'Notes…',
       'Reset progress',
       'Help',
       'Send feedback',
@@ -1567,6 +1574,79 @@ after(teardown);
     await idle(page);
     await menuItem(page, 'Try the sample');
     await page.waitForFunction(() => __mstest.assignData && __mstest.curId == null, null, { timeout: 15000 });
+    assert.deepEqual(errors, []);
+  });
+  test('notes (v329.3): ⋯ › Notes… keeps them with the guide, opened again; a guide file leaves them out; a sample with notes is saved', async () => {
+    const { page, errors } = await openApp();
+    await sampleGuide(page);
+    assert.equal(await page.evaluate(() => __mstest.curId), null, 'the sample, not saved yet');
+    await menuItem(page, 'Notes…');
+    await page.waitForSelector('#sfNotesT', { state: 'visible' });
+    assert.equal(await page.textContent('#sfSheetT'), 'Notes');
+    assert.equal(
+      await page.getAttribute('#sfNotesT', 'placeholder'),
+      'Paper, where the page came from, what to try next time…',
+    );
+    assert.equal(await page.getAttribute('#sfNotesT', 'maxlength'), '500');
+    assert.equal(
+      await page.evaluate(() => getComputedStyle(document.getElementById('sfNotesT')).fontSize),
+      '16px',
+      'no zoom in Safari',
+    );
+    await page.fill('#sfNotesT', 'Bristol smooth\nfrom the spring book  \n\n');
+    await page.click('#sfSheet [data-nt="done"]');
+    await idle(page);
+    assert.equal(await page.locator('#sfSheet').count(), 0, 'Done closes it');
+    assert.equal(await page.evaluate(() => __mstest.styleVars.notes), 'Bristol smooth\nfrom the spring book');
+    // (a sample with notes is a page of one's own: the autosave keeps it)
+    await page.waitForFunction(() => __mstest.inLibrary, null, { timeout: 10000 });
+    const id = await page.evaluate(() => __mstest.curId);
+    // (a guide file leaves them out)
+    assert.equal(await page.evaluate(() => 'notes' in __mstest.currentDesignObj(true).payload), false);
+    // (opened again, they're there; the sample has none)
+    await page.evaluate(() => SF.loadSample());
+    await page.waitForFunction(() => __mstest.assignData && !__mstest.curId, null, { timeout: 10000 });
+    await idle(page);
+    assert.equal(await page.evaluate(() => __mstest.styleVars.notes), '', 'the sample has none');
+    await page.evaluate((a) => SF.openDesign(a), id);
+    await page.waitForFunction((a) => __mstest.curId === a, id);
+    await idle(page);
+    assert.equal(await page.evaluate(() => __mstest.styleVars.notes), 'Bristol smooth\nfrom the spring book');
+    // (opened again, the sheet shows them; cleared, they're gone)
+    await menuItem(page, 'Notes…');
+    await page.waitForSelector('#sfNotesT', { state: 'visible' });
+    assert.equal(await page.inputValue('#sfNotesT'), 'Bristol smooth\nfrom the spring book');
+    await page.fill('#sfNotesT', '   ');
+    await page.keyboard.press('Escape');
+    await idle(page);
+    assert.equal(
+      await page.evaluate(() => __mstest.styleVars.notes),
+      '',
+      'Escape keeps what was typed: spaces are none',
+    );
+    assert.deepEqual(errors, []);
+  });
+  test('notes (v329.3 review): typed and taken out again, the sample stays as it was; the hint is the field’s description', async () => {
+    const { page, errors } = await openApp();
+    await sampleGuide(page);
+    await menuItem(page, 'Notes…');
+    await page.waitForSelector('#sfNotesT', { state: 'visible' });
+    assert.equal(await page.getAttribute('#sfNotesT', 'aria-describedby'), 'sfNotesH');
+    assert.match(await page.textContent('#sfNotesH'), /^Kept with this guide/);
+    await page.type('#sfNotesT', 'x');
+    await page.keyboard.press('Backspace');
+    await page.waitForTimeout(2000); // past the autosave's wait
+    await page.click('#sfSheet [data-nt="done"]');
+    await idle(page);
+    await page.waitForTimeout(2000);
+    assert.equal(await page.evaluate(() => __mstest.curId), null, 'not saved: nothing changed');
+    assert.equal(await page.evaluate(() => __mstest.styleVars.smpTry), 1, 'still the sample tried');
+    // typed and left in, with the sheet still open: saved as typed (the leave save has nothing to go on yet)
+    await menuItem(page, 'Notes…');
+    await page.waitForSelector('#sfNotesT', { state: 'visible' });
+    await page.type('#sfNotesT', 'Bristol');
+    await page.waitForFunction(() => __mstest.inLibrary, null, { timeout: 10000 });
+    assert.equal(await page.locator('#sfSheet').count(), 1, 'the sheet still open');
     assert.deepEqual(errors, []);
   });
   test('renaming a guide is kept when you open another guide and come back', async () => {

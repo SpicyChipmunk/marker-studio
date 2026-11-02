@@ -1504,6 +1504,34 @@ import { readFileSync } from 'node:fs';
     ]);
     assert.equal(E('state.saved = []; usedKeys().size'), 0);
   });
+  test('usedKeys() (v329.3): a worked guide’s shading markers (sx) count too; a built-only guide’s don’t; a row without sx reads as before', () => {
+    const E = appWith().__eval;
+    E(`state.saved = [
+    { id: 1, type: 'guide', name: 'A', keys: ['Ohuhu|R16'], sx: ['Ohuhu|R28', 'Ohuhu|R38'], wk: 1 },
+    { id: 2, type: 'guide', name: 'B', keys: ['Ohuhu|R46'], sx: ['Ohuhu|R210'] },
+    { id: 3, type: 'guide', name: 'C', keys: ['Ohuhu|R013'], done: 2 },
+    { id: 4, type: 'guide', name: 'D', keys: ['Ohuhu|R05'], sx: 'Ohuhu|R412', tn: 1 },
+  ]`);
+    assert.deepEqual(JSON.parse(E('JSON.stringify([...usedKeys()].sort())')), [
+      'Ohuhu|R013',
+      'Ohuhu|R05',
+      'Ohuhu|R16',
+      'Ohuhu|R28',
+      'Ohuhu|R38',
+    ]);
+  });
+  test('guideMeta (v329.3): sx from the save, else kept from the row it replaces; unknown keys and none left out', () => {
+    const E = appWith().__eval;
+    E(`state.saved = [{ id: 9, type: 'guide', name: 'x', keys: [], sx: ['Ohuhu|R28'] }]`);
+    const sx = (d, id) => E(`JSON.stringify(guideMeta(${JSON.stringify(d)}, ${id}).sx || null)`);
+    assert.equal(sx({ name: 'x', n: 1, sx: ['Ohuhu|R16', 'nope|X', 7] }, 1), '["Ohuhu|R16"]');
+    assert.equal(sx({ name: 'x', n: 1 }, 9), '["Ohuhu|R28"]', 'kept: a save that does not work it out');
+    assert.equal(sx({ name: 'x', n: 1, sx: [] }, 9), 'null', 'shading off: none');
+    assert.equal(sx({ name: 'x', n: 1 }, 1), 'null', 'a new row: none');
+    // (and the markers laid on its paper, kept in the guide: a restore has them)
+    assert.equal(sx({ name: 'x', n: 1, payload: { onPaper: ['Ohuhu|R38', 'Ohuhu|R16'] }, sx: ['Ohuhu|R16'] }, 1), '["Ohuhu|R16","Ohuhu|R38"]');
+    assert.equal(sx({ name: 'x', n: 1, payload: { onPaper: ['Ohuhu|R38'] } }, 1), '["Ohuhu|R38"]', 'shading off now, laid before');
+  });
   test('guideMeta: the worked flag is kept from the row it replaces, and set by a ticked or toned section', () => {
     const E = appWith().__eval;
     const meta = (d, id) => E(`guideMeta(${JSON.stringify(d)}, ${id}).wk`);
@@ -1524,5 +1552,221 @@ import { readFileSync } from 'node:fs';
     assert.equal(JSON.parse(raw).rndFresh, 1);
     const b = createApp({ localStorage: memoryStorage({ [a.__eval('KEY')]: raw }) });
     assert.equal(b.__eval('state.rndFresh'), 1);
+  });
+}
+
+// ---- v329.3: how much space the app uses (safety.js), for Help, Send feedback and Copy diagnostics ----
+{
+  const E = createApp().__eval;
+  test('storeWords: under 1 MB, MB to the nearest one (to the nearest 10 from 100), GB from 995 MB', () => {
+    const w = (b) => E(`storeWords(${b})`);
+    assert.equal(w(0), 'under 1 MB');
+    assert.equal(w(999999), 'under 1 MB');
+    assert.equal(w(1.4e6), 'about 1 MB');
+    assert.equal(w(87.6e6), 'about 88 MB');
+    assert.equal(w(143e6), 'about 140 MB');
+    assert.equal(w(994e6), 'about 990 MB');
+    assert.equal(w(995e6), 'about 1 GB');
+    assert.equal(w(999e6), 'about 1 GB');
+    assert.equal(w(1.24e9), 'about 1.2 GB');
+    assert.equal(w(null), '');
+  });
+  test('diagHead: the site storage line before the browser line, only once the browser has said', () => {
+    E('storeUsed = null');
+    assert.ok(!E('diagHead().join("\\n")').includes('Site storage used'));
+    E('storeUsed = 143e6');
+    const h = E('diagHead()'),
+      i = [...h].findIndex((l) => /^Site storage used \(.*\): about 140 MB$/.test(l));
+    assert.ok(i >= 0, JSON.stringify([...h]));
+    assert.match(h[i + 1], /^Browser: /);
+  });
+}
+
+// ---- v329.3: To buy's Sets with markers on your list (shopping.js setAdvice) ----
+{
+  const KEY = 'ohuhu-hb320-picker-v3';
+  const appWithWish = (owned, wish, extra = {}) =>
+    createApp({
+      localStorage: memoryStorage({
+        [KEY]: JSON.stringify({
+          mode: 'collection',
+          ownedSeedV: 2,
+          copicAdd1: 1,
+          libAdj1: 1,
+          setFix1: 1,
+          owned,
+          wish: wish.map((k) => ({ k, why: '', ts: 1 })),
+          saved: [],
+          ...extra,
+        }),
+      }),
+    }).__eval;
+  const members = (E, name) =>
+    JSON.parse(E(`JSON.stringify(setMembers(MARKER_SETS.findIndex((p) => p.n === ${JSON.stringify(name)})))`));
+  const advice = (E) => JSON.parse(E('JSON.stringify(setAdvice())'));
+  test('Sets: the nesting Honolulu sets give a ladder (no set shown when one no bigger has as many of the list)', () => {
+    const E0 = appWithWish(['Ohuhu|R014'], []);
+    const h24 = members(E0, 'Honolulu 24'),
+      h216 = members(E0, 'Honolulu 216'),
+      h320 = members(E0, 'Honolulu 320 (complete set)'),
+      h168 = members(E0, 'Honolulu 168');
+    // a list: one of the 24's, one only the 216 and up have, one only the 320 has
+    const in216 = h216.find((k) => !h168.includes(k)),
+      in320 = h320.find((k) => !h216.includes(k)),
+      in24 = h24.find((k) => k !== 'Ohuhu|R014');
+    const E = appWithWish(['Ohuhu|R014'], [in24, in216, in320]);
+    const r = advice(E);
+    assert.equal(r.length, 1);
+    assert.equal(r[0].b, 'Ohuhu');
+    assert.equal(r[0].total, 3);
+    const names = r[0].sets.map((s) => s.name),
+      has = r[0].sets.map((s) => s.has.length);
+    assert.equal(names[0], 'Honolulu 320 (complete set)');
+    assert.equal(has[0], 3);
+    assert.ok(names.includes('Honolulu 216'));
+    assert.ok(!names.includes('Honolulu 168'), '168 has only as many as the 24, and is bigger');
+    assert.ok(names.includes('Honolulu 24') || has.length === 3);
+    // no set kept is beaten by another kept one (no bigger, with every one of its markers of the list)
+    for (const s of r[0].sets)
+      for (const d of r[0].sets)
+        assert.ok(!(d !== s && d.n <= s.n && (d.n < s.n || d.has.length > s.has.length) && s.has.every((k) => d.has.includes(k))));
+    // new to you: the set's markers you don't own
+    const s320 = r[0].sets[0];
+    assert.equal(s320.nw, h320.length - (h320.includes('Ohuhu|R014') ? 1 : 0));
+  });
+  test('Sets: a marker only a bigger set has still shows that set, though a smaller one has more of the list', () => {
+    const E0 = appWithWish(['Ohuhu|R014'], []);
+    const m = (n) => members(E0, n);
+    const port = m('24 Portrait'),
+      h320 = m('Honolulu 320 (complete set)'),
+      h216 = m('Honolulu 216'),
+      h168 = m('Honolulu 168');
+    const two = port.filter((k) => !h320.includes(k)).slice(0, 2),
+      only216 = h216.filter((k) => !h168.includes(k) && !port.includes(k))[0];
+    assert.equal(two.length, 2);
+    const r = advice(appWithWish(['Ohuhu|R014'], [...two, only216]))[0];
+    const names = r.sets.map((s) => s.name);
+    assert.equal(names[0], '24 Portrait');
+    // a way to get the one the Portrait set hasn't: the smallest set that has it
+    const way = r.sets.filter((s) => s.has.includes(only216));
+    assert.equal(way.length, 1, JSON.stringify(names));
+    const sizes = JSON.parse(E0(`JSON.stringify(MARKER_SETS.map((p, i) => [p.b, setMembers(i)]).filter((x) => x[0] === 'Ohuhu' && x[1].includes(${JSON.stringify(only216)})).map((x) => x[1].length))`));
+    assert.equal(way[0].n, Math.min(...sizes));
+    assert.ok(!names.includes('Honolulu 320 (complete set)'), 'a smaller set has the same markers');
+  });
+  test('Sets: every marker gets a way where a set has it (two gaps, two sets); leftovers and set-less markers named', () => {
+    const E0 = appWithWish(['Ohuhu|R014'], []);
+    const m = (n) => members(E0, n);
+    const h320 = m('Honolulu 320 (complete set)'),
+      skin = m('36 Skin Tones').filter((k) => !h320.includes(k)),
+      blos = m('48 Pastel - Blossoming').filter((k) => !h320.includes(k) && !skin.includes(k)),
+      hon = h320.filter((k) => k !== 'Ohuhu|R014').slice(40, 46);
+    const noSet = JSON.parse(
+      E0(`JSON.stringify(COLORS.map((c, i) => mkey(i)).filter((k) => k.startsWith('Ohuhu|') && !NOINK.has(keyIdx(k)) && !MARKER_SETS.some((p, j) => p.b === 'Ohuhu' && !p.allbrand && setMembers(j).includes(k))).slice(0, 1))`),
+    );
+    const list = [...hon, skin[0], blos[0], ...noSet];
+    const r = advice(appWithWish(['Ohuhu|R014'], list))[0];
+    const shown = new Set(r.sets.flatMap((s) => s.has));
+    assert.ok(shown.has(skin[0]) && shown.has(blos[0]), JSON.stringify(r.sets.map((s) => s.name)));
+    assert.equal(r.sets.length, 3);
+    assert.equal(r.total, list.length);
+    assert.deepEqual(r.noSet, noSet);
+    // every marker of the list is in a row, or named in one of the two lines
+    for (const k of list) assert.ok(shown.has(k) || r.notShown.includes(k) || r.noSet.includes(k), k);
+    const h = appWithWish(['Ohuhu|R014'], list)('setAdviceHTML()');
+    if (noSet.length) assert.match(h, /Not in any set Marker Studio knows: /);
+    // more gaps than rows: three markers only three different specialty sets have, and Honolulu ones
+    const port = m('24 Portrait').filter((k) => !h320.includes(k) && !skin.includes(k) && !blos.includes(k));
+    if (port.length) {
+      const list2 = [...hon, skin[0], blos[0], port[0]];
+      const r2 = advice(appWithWish(['Ohuhu|R014'], list2))[0];
+      const sh2 = new Set(r2.sets.flatMap((s) => s.has));
+      for (const k of list2) assert.ok(sh2.has(k) || r2.notShown.includes(k), k);
+    }
+  });
+  test('Sets: markers you own (a Running-low replacement) and an empty list show none; Brands I’d buy ticked keeps to them', () => {
+    assert.deepEqual(advice(appWithWish(['Ohuhu|R014'], [])), []);
+    assert.deepEqual(advice(appWithWish(['Ohuhu|R014'], ['Ohuhu|R014'])), [], 'already yours: a replacement');
+    const E = appWithWish(['Ohuhu|R014'], ['Copic|B29', 'Ohuhu|Y26'], { buyBrands: ['Ohuhu'] });
+    const r = advice(E);
+    assert.deepEqual(
+      r.map((x) => x.b),
+      ['Ohuhu'],
+    );
+    const E2 = appWithWish(['Ohuhu|R014'], ['Copic|B29', 'Ohuhu|Y26']);
+    assert.deepEqual(
+      advice(E2).map((x) => x.b),
+      ['Ohuhu', 'Copic'],
+      'automatic: your brand first, then a brand on the list',
+    );
+  });
+  test('Sets: the HTML says how many of your list, how many new, the codes (6 then +N more), and the note', () => {
+    const E = appWithWish(['Ohuhu|R014'], ['Ohuhu|Y26']);
+    const h = E('setAdviceHTML()');
+    assert.match(h, /Sets with markers on your list/);
+    assert.match(h, /· 1 of your 1 Ohuhu · \d+ new to you/);
+    assert.match(h, /Has Y26/);
+    assert.match(h, /Set contents as Marker Studio knows them: check what’s sold where you are before you buy\./);
+    assert.equal(E('(state.wish = [], setAdviceHTML())'), '');
+  });
+  test('Sets (review): Brands I’d buy leaving out every marker of the list says so; two brands tag their leftover lines', () => {
+    const E = appWithWish(['Ohuhu|R014'], ['Ohuhu|Y26'], { buyBrands: ['Copic'] });
+    const h = E('setAdviceHTML()');
+    assert.match(h, /Sets with markers on your list/);
+    assert.match(h, /None from the brands you’d buy \(Brands I’d buy\)\./);
+    assert.doesNotMatch(h, /Set contents as Marker Studio knows them/);
+    // nothing left out by the brands: still nothing shown for an empty list
+    assert.equal(appWithWish(['Ohuhu|R014'], [], { buyBrands: ['Copic'] })('setAdviceHTML()'), '');
+    // two brands: each leftover line names its brand
+    const E2 = appWithWish(['Ohuhu|R014'], ['Copic|B29', 'Ohuhu|Y26']);
+    const h2 = E2('setAdviceHTML()');
+    assert.match(h2, /of your 1 Ohuhu/);
+    assert.match(h2, /of your 1 Copic/);
+    const rows = advice(E2);
+    for (const r of rows)
+      if (r.notShown.length || r.noSet.length) assert.match(h2, new RegExp('\\(' + r.b + '\\): '));
+  });
+  test('Ideas (review): To buy’s reasons in its own words; a row saved with a ranking’s name shown in them; only with ink owned', () => {
+    const E = appWithWish(['Ohuhu|R014'], []);
+    assert.match(E('topFiveHTML([0, 1, 2], "complete")'), /Add the top 3 to To buy/);
+    assert.equal(E('ideaWhy("gap")'), 'fills a big gap in your collection');
+    assert.equal(E('ideaWhy("ramps")'), 'fills a gap between light and dark');
+    assert.equal(E('ideaWhy("complete")'), 'helps finish a family');
+    assert.equal(E('wishWhyText("Finish families")'), 'helps finish a family');
+    assert.equal(E('wishWhyText("Fill the biggest gaps")'), 'fills a big gap in your collection');
+    assert.equal(E('wishWhyText("from Markers")'), 'from Markers');
+    assert.equal(E('wishWhyText("")'), 'added by you');
+    assert.match(E('ideasHTML()'), /Ideas from your collection/);
+    assert.equal(appWithWish(['Ohuhu|0'], [])('ideasHTML()'), '', 'the Colorless Blender alone');
+    assert.equal(appWithWish([], [])('ideasHTML()'), '');
+  });
+  test('guideShadeSeen (review): an older row opened with shading gets its shading markers once; a row with sx keeps its own', () => {
+    const E = appWithWish(['Ohuhu|R014'], []);
+    E('state.saved.push({ id: 71, type: "guide", name: "Old" }, { id: 72, type: "guide", name: "New", sx: ["Ohuhu|Y26"] })');
+    E('guideShadeSeen(71, ["Ohuhu|B111", "Ohuhu|B111", "Nope|X1"])');
+    assert.equal(E('JSON.stringify(state.saved.find((s) => s.id === 71).sx)'), '["Ohuhu|B111"]');
+    E('guideShadeSeen(72, ["Ohuhu|B111"])');
+    assert.equal(E('JSON.stringify(state.saved.find((s) => s.id === 72).sx)'), '["Ohuhu|Y26"]');
+    E('guideShadeSeen(71, ["Ohuhu|B114"])');
+    assert.equal(E('JSON.stringify(state.saved.find((s) => s.id === 71).sx)'), '["Ohuhu|B111"]', 'once only');
+    E('guideShadeSeen(73, ["Ohuhu|B114"])');
+    assert.equal(E('state.saved.some((s) => s.id === 73)'), false, 'no row, nothing made');
+  });
+}
+
+// ---- v329.3 review (CC6 I3) ----
+// A Markers cell is a toggle, yours or not, and says so as one (aria-pressed), its words as before; Finder's cells, which
+// copy, aren't toggles. Fails on v329.3 (no aria-pressed).
+{
+  test('v329.3 Markers cells: aria-pressed true when yours, false when not; none in Finder', () => {
+    const a = createApp({ localStorage: memoryStorage() });
+    const E = a.__eval;
+    const i = +E(`COLORS.findIndex((c) => c.brand === 'Copic' && c.code === 'R85')`);
+    E(`state.mode = 'collection'; state.owned = new Set()`);
+    assert.match(E(`cellHtml(${i})`), / aria-pressed="false" aria-label="Copic R85 [^"]*, not owned\. Activate to tick"/);
+    E(`state.owned.add(mkey(${i}))`);
+    assert.match(E(`cellHtml(${i})`), / aria-pressed="true" aria-label="Copic R85 [^"]*, owned\. Activate to untick"/);
+    E(`state.mode = 'finder'`);
+    assert.doesNotMatch(E(`cellHtml(${i})`), /aria-pressed/);
   });
 }

@@ -275,6 +275,8 @@ function currentDesignObj(share, edits) {
         prog: prog,
         tones: tones,
         held: Object.keys(held).length ? held : undefined,
+        // (v329.3: the shading markers laid on the paper, for Random: not in a guide file, whose reader hasn't)
+        onPaper: !share && paperTones.size ? Array.from(paperTones) : undefined,
         dates: progAt.s ? { s: progAt.s, e: progAt.e || undefined, l: progAt.l || undefined } : undefined,
         out: Object.keys(out).length ? out : undefined,
         edits: edits ? 1 : undefined,
@@ -301,16 +303,23 @@ function currentDesignObj(share, edits) {
       { secStates: ssMap },
     ),
   };
+  // (v329.3: the guide's notes are its owner's: a guide file leaves them out)
+  if (share) delete o.payload.notes;
   // (v307: sk, for the Library's row, Home's latest piece says "16 markers + 29 for shading"; the saves hand it on.
   // v307.1: not enumerable, so it's never written into the guide, the autosave copy or a guide file (JSON and the
   // database leave it out), as v307 meant: it was in the guide, 7 bytes more. Not part of the change check: libSig)
-  if (!share)
+  // (v329.3: and sx, those markers themselves, for Random's Prefer markers you haven't used yet: not enumerable either,
+  // so never in the guide, a guide file or a backup; one pass for both)
+  if (!share) {
+    const sxk = shadeExtraKeys();
     Object.defineProperty(o, 'sk', {
-      value: shadeExtra(),
+      value: sxk.length,
       enumerable: false,
       writable: true,
       configurable: true,
     });
+    Object.defineProperty(o, 'sx', { value: sxk, enumerable: false, writable: true, configurable: true });
+  }
   return o;
 }
 // (v318.23) the payload keys this version writes, at the top, in style and in style.shade. Anything else in the stored
@@ -342,6 +351,8 @@ const PL_TOP = [
     'secStates',
     'src',
     'pp',
+    // (v329.3)
+    'onPaper',
   ],
   // (v328 review: visT, a test build's count of a visit's ticks, now counted on the device: 26-tick)
   PL_GONE = ['visT'];
@@ -555,6 +566,7 @@ function stashDirty() {
       keys: d.keys,
       n: d.n,
       sk: d.sk,
+      sx: d.sx,
       payload: d.payload,
       thumb: makeThumb(),
     }),
@@ -774,6 +786,7 @@ function saveOnLeave() {
     keys: d.keys,
     n: d.n,
     sk: d.sk,
+    sx: d.sx,
     payload: d.payload,
   });
 }
@@ -1145,6 +1158,8 @@ function canAuto() {
 // a different guide or picture is being put in place (from resetForNewPicture): what is known about saving the old one ends
 function saveReset() {
   _gTok++;
+  // (v329.3: the shading markers laid on the old guide's paper are its own: 90-export paperNote)
+  paperTones = new Set();
   _libBase = null;
   curSample = false;
   _smpHead = false;
@@ -1315,12 +1330,16 @@ function flushNow() {
       autoT = null;
       return doAutosave(true);
     })
-    .then(function () {
-      return slotOp(function () {});
+    .then(function (ok) {
+      return slotOp(function () {}).then(function () {
+        return ok;
+      });
     })
     .then(
-      function () {
-        return true;
+      // (v329.3 review: false when the open guide's save failed, storage full: a backup says its latest changes
+      // aren't in it; never rejects)
+      function (ok) {
+        return ok !== false;
       },
       function () {
         return true;
@@ -1344,13 +1363,15 @@ function doAutosave(q) {
   }
   try {
     const d = currentDesignObj();
-    if (d) slotSave(d);
+    if (d) slotSave(d, false, true);
   } catch (_) {}
   saveStatus();
   return Promise.resolve(true);
 }
 // edits: the copy is section edits still to be built (keepEdits), which Resume opens in Edit sections
-function slotSave(d, edits) {
+// say: the slot is all that keeps it (no Library save was tried, whose failure says so itself): a write that fails is
+// said (v329.3 review)
+function slotSave(d, edits, say) {
   d.savedId = curId || null;
   const js = JSON.stringify(d) + '|' + guideDirty;
   if (js === _lastAuto) return;
@@ -1370,7 +1391,13 @@ function slotSave(d, edits) {
         return;
       }
       _slotTok = tok;
-      return IDB.put('guide-autosave', d).then(function () {
+      const put = IDB.put('guide-autosave', d);
+      // (v329.3 review: the guide itself not written, before its first Library save: said once for the guide, as the
+      // note below; the next change tries again)
+      put.catch(function (e) {
+        if (say) slotNoteFailed(tok, e);
+      });
+      return put.then(function () {
         _lastAuto = js;
         // (v318 polish: the note Resume is offered from couldn't be written, storage being full to the last byte: said,
         // once for the guide, not left to a Resume that never comes; the next change tries again)
@@ -1397,15 +1424,22 @@ function slotSave(d, edits) {
     });
   });
 }
-function slotNoteFailed(tok) {
+// e: the database write's error, when that is what failed (storage full, or not answering)
+function slotNoteFailed(tok, e) {
   if (_slotWarn === tok) return;
+  // (storage blocked altogether: the banner says so)
+  if (e && typeof STORE_BLOCKED !== 'undefined' && STORE_BLOCKED) return;
   _slotWarn = tok;
-  const say = function () {
-    toast(
-      'This guide isn\u2019t kept for Resume: this browser\u2019s storage is full. Free up space (back up, then delete a few guides in the Library and in Recently deleted) to keep it.',
-      8000,
-    );
-  };
+  const full =
+      !e || e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22,
+    say = function () {
+      toast(
+        full
+          ? 'This guide isn\u2019t kept for Resume: this browser\u2019s storage is full. Free up space (back up, then delete a few guides in the Library and in Recently deleted) to keep it.'
+          : 'This guide isn\u2019t kept for Resume: this browser\u2019s storage isn\u2019t answering. Keep it open here: Marker Studio tries again with your next change.',
+        8000,
+      );
+    };
   // (with the page hidden, as it went away: once it's back, where it can be read)
   if (document.visibilityState !== 'hidden') say();
   else
@@ -1428,12 +1462,15 @@ function libName(e) {
 // what a save would store, minus the name (compared on its own, so a rename in the Library doesn't count as a change)
 function libSig(d) {
   const n = d.name,
-    sk = d.sk;
+    sk = d.sk,
+    sx = d.sx;
   d.name = '';
   d.sk = undefined;
+  d.sx = undefined;
   const s = JSON.stringify(d);
   d.name = n;
   d.sk = sk;
+  d.sx = sx;
   return s;
 }
 // Save into the Library entry when something changed since the last save or since it was opened: guideDirty, or
@@ -1487,6 +1524,7 @@ function libAutosave(q) {
           keys: d.keys,
           n: d.n,
           sk: d.sk,
+          sx: d.sx,
           payload: d.payload,
           thumb: th,
           mustExist: true,
@@ -1525,6 +1563,7 @@ function libAutosave(q) {
       keys: d.keys,
       n: d.n,
       sk: d.sk,
+      sx: d.sx,
       payload: d.payload,
       thumb: makeThumb(),
       mustExist: true,
@@ -1928,7 +1967,8 @@ function saveFailWords(m, nm, open) {
       'Couldn’t save' +
       (nm ? ' “' + nm + '”' : '') +
       ' — this browser’s storage isn’t answering. Reload Marker Studio and try again' +
-      (open ? '; your changes are still open here.' : '.')
+      // (v329.3 review: and the way out that works when a reload doesn't, while the guide is still open)
+      (open ? ', or keep it with Share & print › Guide file; your changes are still open here.' : '.')
     );
   return m;
 }
@@ -1986,6 +2026,7 @@ function firstSave(auto) {
       keys: d.keys,
       n: d.n,
       sk: d.sk,
+      sx: d.sx,
       payload: d.payload,
       thumb: makeThumb(),
       quiet: auto,
@@ -2114,6 +2155,7 @@ function saveCopy() {
           keys: d.keys,
           n: d.n,
           sk: d.sk,
+          sx: d.sx,
           payload: d.payload,
           thumb: makeThumb(),
           quiet: true,

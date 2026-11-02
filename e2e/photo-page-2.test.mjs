@@ -323,7 +323,7 @@ test('the Photo button on the page step: the photo over the page, off when Edit 
   assert.deepEqual(errors, []);
 });
 
-test('Subject only: the background left white and out of the count, kept when Edit sections is used, the crop reusing the subject found, and no clear subject goes back to Even', async () => {
+test('Subject only: the background left white and out of the count, kept when Edit sections is used, the crop reusing the subject found or finding it again when small, and no clear subject goes back to Even', async () => {
   const { page, errors } = await openApp(VIEW);
   await idle(page);
   await own(page, await setKeys(page, 'Honolulu 72'));
@@ -400,11 +400,18 @@ test('Subject only: the background left white and out of the count, kept when Ed
   await idle(page);
   assert.equal(await page.evaluate(() => __mstest.pp.f), 'subject');
   assert.ok(await page.evaluate(() => !!__mstest.ppPrep.sal), 'the map, cropped');
-  assert.equal(await found(), 1, 'not found again for the crop');
+  // (v329.3, decision 103: found again on a crop under half the photo; the kept map cropped for a larger one)
+  const share = await page.evaluate(() => __mstest.cropRect.w * __mstest.cropRect.h),
+    after = share < 0.5 ? 2 : 1;
+  assert.equal(
+    await found(),
+    after,
+    share < 0.5 ? 'found again on the small crop' : 'not found again for the crop',
+  );
   await page.click('#sfPlanUndo');
   await pageReady(page);
   await idle(page);
-  assert.equal(await found(), 1, 'nor for Undo of it');
+  assert.equal(await found(), after, 'not for Undo of it');
   // a map with no clear subject: Even, said
   await page.click('#sfPpFoc [data-v="even"]');
   await until(page, () => __mstest.pp.f === 'even' && !__mstest.ppBusy, null, 'Even', 60000);

@@ -77,7 +77,13 @@ function scanSetGaps(again) {
   return {
     name: top.name,
     p: top.p,
-    miss: top.miss.map((k) => ({ k: k, i: keyIdx(k), code: COLORS[keyIdx(k)].code })),
+    // (v329.3 review: by the code on the cap, as everywhere else in Scan: an older Honolulu 120's owner was sent to find
+    // an R213 for the R6 the tray has. capCodeAny, not capCode: a marker missing isn't yours, so its cap as known, else
+    // as the setting says, caps.js)
+    miss: top.miss.map((k) => {
+      const i = keyIdx(k);
+      return { k: k, i: i, code: capCodeAny(i) };
+    }),
     waiting: top.waiting,
   };
 }

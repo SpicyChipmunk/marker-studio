@@ -1945,6 +1945,65 @@ html.sfsheetsd .mstoast {
   font-weight: 500;
   font-size: var(--t-sm);
 }
+/* (v329.3) the guide's notes under the card's buttons: the first line, cut to one line, and Edit */
+#sfRoot .sffinnotes:empty {
+  display: none;
+}
+#sfRoot .sffinnotes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  min-width: 0;
+}
+#sfRoot .sffinnt {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--sub);
+  font-weight: 500;
+  font-size: var(--t-sm);
+  text-align: left;
+}
+#sfRoot .sffinnotes .sflink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0;
+}
+#sfRoot .sffinnotes .sflink .ic {
+  width: 16px;
+  height: 16px;
+}
+/* (v329.3) the Notes sheet: 16px type (--t-lg) at least, so Safari doesn't zoom in on the field */
+#sfRoot .sfnotesta {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-lg);
+  line-height: 1.4;
+  resize: vertical;
+}
+#sfRoot .sfnotesta:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+#sfRoot .sfnotesh {
+  margin: 10px 2px 0;
+  color: var(--sub);
+  font-weight: 500;
+  font-size: var(--t-sm);
+}
 /* the photo at the left, Your page and its line beside it, the pills under them (a grid: on a phone the pills take the
    whole width under the photo instead of stacking three deep beside it) */
 #sfRoot .sffinhave {

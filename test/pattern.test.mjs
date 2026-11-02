@@ -1467,6 +1467,29 @@ import { readFileSync } from 'node:fs';
     t.assign.planUndo();
     assert.ok(!t.assignData.shp);
   });
+  // (v329.3 review, BB3 M2) which way a Gradient's bands face the light (assignData.lit, and lits by zone) goes with
+  // Undo and Redo too: without it, moving the light after any Undo no longer laid the bands again (gradFollowLight)
+  test('Undo and Redo keep which way the bands face the light (lit, lits)', () => {
+    const { t } = appWith(['Honolulu 48']);
+    page(t, 24, 20);
+    style(t, { limitN: 16 });
+    t.assign.buildGuide();
+    t.assignData.lit = -1;
+    t.assignData.lits = { 0: -1 };
+    // (the same plan: taken in beside it, as shp is)
+    t.assign.planCommit();
+    t.styleVars.dir = -1;
+    t.reassign();
+    t.assignData.lit = 1;
+    t.assignData.lits = { 0: 1 };
+    t.assign.planCommit();
+    t.assign.planUndo();
+    assert.equal(t.assignData.lit, -1, 'kept by Undo');
+    assert.equal(JSON.stringify(t.assignData.lits), '{"0":-1}');
+    t.assign.planRedo();
+    assert.equal(t.assignData.lit, 1, 'kept by Redo');
+    assert.equal(JSON.stringify(t.assignData.lits), '{"0":1}');
+  });
   // ---- Bug 9: Smooth them and the shading's partners ----
 
   test('Smooth them never brings in a marker whose own highlight or shadow is the other brand of a code the guide uses', () => {

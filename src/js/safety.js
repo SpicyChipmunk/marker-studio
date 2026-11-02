@@ -111,16 +111,56 @@ function countWords() {
   }
 }
 // the lines every report starts with
+// (v329.3) how much this site's storage holds (navigator.storage.estimate: the whole site, every app at this address,
+// so Copy diagnostics names it as the site's), read ahead, as Send feedback and Copy diagnostics are made inside the
+// tap and the browser answers later: when the app has opened, when Help or Send feedback opens, after a save fails.
+// Kept in memory only; null where the browser can't say (Safari before 17, a private window)
+let storeUsed = null;
+function storeUsedRead() {
+  try {
+    if (!(navigator.storage && navigator.storage.estimate)) return Promise.resolve(null);
+    return navigator.storage.estimate().then(
+      function (e) {
+        storeUsed = e && e.usage >= 0 ? e.usage : null;
+        return storeUsed;
+      },
+      function () {
+        return null;
+      },
+    );
+  } catch (e) {
+    return Promise.resolve(null);
+  }
+}
+// "under 1 MB", "about 140 MB" (to the nearest 10 from 100), "about 1 GB" / "about 1.2 GB" from 995 MB (which would
+// round to 1000 MB)
+function storeWords(b) {
+  if (b == null || !(b >= 0)) return '';
+  const mb = b / 1e6;
+  if (mb < 1) return 'under 1 MB';
+  if (mb >= 995) return 'about ' + Math.round(mb / 100) / 10 + ' GB';
+  return 'about ' + (mb >= 100 ? Math.round(mb / 10) * 10 : Math.round(mb)) + ' MB';
+}
+function storeLine() {
+  return storeUsed == null
+    ? ''
+    : 'Site storage used (' + (location.host || 'this site') + '): ' + storeWords(storeUsed);
+}
+setTimeout(storeUsedRead, 4000);
 function diagHead() {
   const c = countWords();
-  return [
-    'Marker Studio ' + appVerWords(),
-    'Device: ' + deviceWords(),
-    'Home Screen app: ' + (isStandalone() ? 'yes' : 'no'),
-    'Screen: ' + screenWords(),
-  ]
-    .concat(c ? ['Saved here: ' + c] : [])
-    .concat(['Browser: ' + (navigator.userAgent || '')]);
+  return (
+    [
+      'Marker Studio ' + appVerWords(),
+      'Device: ' + deviceWords(),
+      'Home Screen app: ' + (isStandalone() ? 'yes' : 'no'),
+      'Screen: ' + screenWords(),
+    ]
+      .concat(c ? ['Saved here: ' + c] : [])
+      // (v329.3: before the browser's line, which the report's 900-character cut trims first)
+      .concat(storeLine() ? [storeLine()] : [])
+      .concat(['Browser: ' + (navigator.userAgent || '')])
+  );
 }
 function errStored() {
   try {

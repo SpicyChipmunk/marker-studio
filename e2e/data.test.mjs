@@ -2648,7 +2648,7 @@ after(teardown);
     await idle(page, 1500);
     assert.match(
       await toastText(page),
-      /^Couldn’t save “[^”]+” — this browser’s storage isn’t answering\. Reload Marker Studio and try again; your changes are still open here\.$/,
+      /^Couldn’t save “[^”]+” — this browser’s storage isn’t answering\. Reload Marker Studio and try again, or keep it with Share & print › Guide file; your changes are still open here\.$/,
     );
     assert.equal(await status(), 'Not saved — reload to try again');
     // the database answers again, but now the app's own storage is full: said as full (v304 first draft: still "isn't answering")

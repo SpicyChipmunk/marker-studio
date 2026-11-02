@@ -2870,10 +2870,11 @@ function ptChoose(S, amt, extras) {
   return best;
 }
 function _ptChoose(S, amt, extras) {
+  // (v329.2) what the choice needs from the page, gathered here, so the choice itself (ptChooseCore) reads nothing
+  // else: the step to run it in the background worker later is a small one
   const A = assignData.assign,
     page = {},
-    groups = new Map(),
-    sec = [];
+    secs = [];
   for (const l in A) page[A[l].mkey] = A[l];
   // each section's samples in its tones, by the zone's amounts (as shadeZone hands them over)
   for (const k in S) {
@@ -2883,11 +2884,69 @@ function _ptChoose(S, amt, extras) {
       zid = zones.length ? zoneOf(l) : 0,
       a = amt && amt[zid],
       zz = a ? Object.assign({}, zs, { hi: a[0], lo: a[1] }) : zs,
-      T2 = shT2(zz),
-      T3 = shT3(zz),
-      hiP = zs.hilite === 'photo' && hiOn(zs),
-      shP = zs.shadow === 'photo',
-      sm = S[k],
+      h = _ptHeld[l];
+    secs.push({
+      l: l,
+      b: b,
+      zs: zs,
+      gk: zid + '|' + b.mkey,
+      hiP: zs.hilite === 'photo' && hiOn(zs),
+      shP: zs.shadow === 'photo',
+      T2: shT2(zz),
+      T3: shT3(zz),
+      // (a section with ink keeps what it was coloured with: what it was, and whether its shadow is on the paper)
+      held: !amt && h && inkOn(l) ? { L: h.L, S: h.S, sh: shadowOn(l) } : null,
+    });
+  }
+  // the candidates: the page's markers, and the ones added. (v329.1: the page's own only where they're yours, or the
+  // page was made to try others: Use the full range, Try it with these's added. A marker left on a coloured section
+  // since marked dry or unticked, or one of Try it with these's, had become another section's tone, and the key said
+  // nothing of buying it)
+  const own = {};
+  coll.forEach(function (m) {
+    own[m.mkey] = 1;
+  });
+  const tryK = {};
+  if (pp && pp.add)
+    pp.add.forEach(function (k) {
+      tryK[k] = 1;
+    });
+  const pageAll = Object.keys(page).map(function (k) {
+      return page[k];
+    }),
+    r = ptChooseCore(
+      S,
+      secs,
+      page,
+      pageAll,
+      pageAll.filter(function (m) {
+        return own[m.mkey] || (pp && pp.full) || tryK[m.mkey];
+      }),
+      coll,
+      extras,
+      { sets: shadeSets, minGain: PT_MIN_GAIN, extraN: PT_EXTRA },
+    ),
+    tone = {};
+  // (the tones objects made in the same order as before, so they're numbered alike)
+  r.out.forEach(function (o) {
+    tone[o.l] = o.p ? ptTone(o.b, o.zs, o.p[0], o.p[1], o.set, o.T2, o.T3) : null;
+  });
+  return { tone: tone, err: r.err, nFlat: r.nFlat, extras: r.extras };
+}
+// The choice itself, from what _ptChoose gathers (and the pure helpers: ptLab, ptGlaze, ptLightOK, ptDist, ptD,
+// de2000): secs, each section { l, b (its marker), zs, gk (its group: zone and marker), hiP, shP (its kinds the
+// photo's), T2, T3 (its parts' thresholds), held }; page (the plan's markers by key) and pageAll; cand0 (those that
+// may be tones); coll (the markers that may be added); extras (the added ones' keys, or null: chosen here).
+// Returns { out: [{ l, b, zs, p (null: flat), set, T2, T3 }], err, nFlat, extras }
+function ptChooseCore(S, secs, page, pageAll, cand0, coll, extras, o) {
+  const groups = new Map(),
+    sec = [];
+  secs.forEach(function (x) {
+    const l = x.l,
+      b = x.b,
+      T2 = x.T2,
+      T3 = x.T3,
+      sm = S[l],
       n = sm.length / 4,
       part = new Uint8Array(n),
       sum = [
@@ -2907,14 +2966,14 @@ function _ptChoose(S, amt, extras) {
       s[2] += sm[i * 4 + 2];
       s[3]++;
     }
-    const gk = zid + '|' + b.mkey;
+    const gk = x.gk;
     let gr = groups.get(gk);
     if (!gr) {
       gr = {
         b: b,
-        zs: zs,
-        hiP: hiP,
-        shP: shP,
+        zs: x.zs,
+        hiP: x.hiP,
+        shP: x.shP,
         secs: [],
         sum: [
           [0, 0, 0, 0],
@@ -2925,10 +2984,10 @@ function _ptChoose(S, amt, extras) {
       groups.set(gk, gr);
     }
     for (let z = 0; z < 3; z++) for (let c = 0; c < 4; c++) gr.sum[z][c] += sum[z][c];
-    const e = { l: l, b: b, gr: gr, sm: sm, part: part, sum: sum, T2: T2, T3: T3 };
+    const e = { l: l, b: b, gr: gr, sm: sm, part: part, sum: sum, T2: T2, T3: T3, held: x.held };
     gr.secs.push(e);
     sec.push(e);
-  }
+  });
   const mean = function (s) {
       return s[3] ? [s[0] / s[3], s[1] / s[3], s[2] / s[3]] : null;
     },
@@ -2936,25 +2995,7 @@ function _ptChoose(S, amt, extras) {
     pcost = function (s, c) {
       return s[3] ? s[3] * de2000(mean(s), c) : 0;
     };
-  // the candidates: the page's markers, and the ones added. (v329.1: the page's own only where they're yours, or the
-  // page was made to try others: Use the full range, Try it with these's added. A marker left on a coloured section
-  // since marked dry or unticked, or one of Try it with these's, had become another section's tone, and the key said
-  // nothing of buying it)
-  const own = {};
-  coll.forEach(function (m) {
-    own[m.mkey] = 1;
-  });
-  const tryK = {};
-  if (pp && pp.add)
-    pp.add.forEach(function (k) {
-      tryK[k] = 1;
-    });
-  const pageAll = Object.keys(page).map(function (k) {
-    return page[k];
-  });
-  let cand = pageAll.filter(function (m) {
-    return own[m.mkey] || (pp && pp.full) || tryK[m.mkey];
-  });
+  let cand = cand0.slice();
   const bestL = function (gr, s, C) {
       if (!gr.hiP || !s[3]) return null;
       let best = null,
@@ -2986,7 +3027,7 @@ function _ptChoose(S, amt, extras) {
       });
       return best;
     };
-  // the markers added: as kept, while still yours; else up to PT_EXTRA, each saving PT_EXTRA_MIN of what's left
+  // the markers added: as kept, while still yours; else up to o.extraN (PT_EXTRA), each saving a share of what's left
   let added = [];
   if (extras) {
     const byK = {};
@@ -3015,7 +3056,7 @@ function _ptChoose(S, amt, extras) {
       });
     let cur = 0;
     for (let i = 0; i < G.length; i++) cur += cL[i] + cS[i];
-    for (let r = 0; r < PT_EXTRA && cur > 0; r++) {
+    for (let r = 0; r < o.extraN && cur > 0; r++) {
       let bm = null,
         bg = 0;
       others.forEach(function (m) {
@@ -3085,7 +3126,7 @@ function _ptChoose(S, amt, extras) {
     return { flat: flat, tone: tone, all: all };
   };
   // (the tones kept on coloured sections looked up among all the page's markers: what's on the paper stays)
-  const tone = {},
+  const out = [],
     byK = {};
   pageAll.concat(cand, coll).forEach(function (m) {
     byK[m.mkey] = m;
@@ -3120,7 +3161,7 @@ function _ptChoose(S, amt, extras) {
       ];
     };
     const decide = function (pairs) {
-      // each section: the pair that brings its toned parts nearest, if by PT_MIN_GAIN; else flat
+      // each section: the pair that brings its toned parts nearest, if by o.minGain (PT_MIN_GAIN); else flat
       return gr.secs.map(function (e) {
         let best = -1,
           bc = null;
@@ -3128,7 +3169,7 @@ function _ptChoose(S, amt, extras) {
         pairs.forEach(function (p, i) {
           if (!p[0] && !p[1]) return;
           const c = secCost(e, p[0], p[1]);
-          if (f.flat > 0 && (f.flat - c.tone) / f.flat >= PT_MIN_GAIN && (!bc || c.all < bc.all)) {
+          if (f.flat > 0 && (f.flat - c.tone) / f.flat >= o.minGain && (!bc || c.all < bc.all)) {
             bc = c;
             best = i;
           }
@@ -3162,7 +3203,7 @@ function _ptChoose(S, amt, extras) {
         }
       }
     }
-    if (shadeSets && gr.secs.length > 1) {
+    if (o.sets && gr.secs.length > 1) {
       // (up to two: each section's own best pair a candidate, the two that together save most)
       const cands = [pairs[0]],
         seenP = {};
@@ -3205,10 +3246,10 @@ function _ptChoose(S, amt, extras) {
       let p = x.i >= 0 ? pairs[x.i] : null,
         set = x.i > 0 ? 1 : 0;
       // (a section with ink keeps what it was coloured with)
-      const h = _ptHeld[l];
-      if (!amt && h && inkOn(l)) {
+      const h = x.e.held;
+      if (h) {
         const hl = h.L ? byK[h.L] || null : null,
-          hs = shadowOn(l) ? (h.S ? byK[h.S] || null : null) : p ? p[1] : null;
+          hs = h.sh ? (h.S ? byK[h.S] || null : null) : p ? p[1] : null;
         if ((hl || null) !== (p ? p[0] : null) || hs !== (p ? p[1] : null)) {
           const j = pairs.findIndex(function (q) {
             return q[0] === hl && q[1] === hs;
@@ -3222,14 +3263,12 @@ function _ptChoose(S, amt, extras) {
           }
         }
       }
-      if (!p) {
-        tone[l] = null;
-        nFlat++;
-      } else tone[l] = ptTone(x.e.b, gr.zs, p[0], p[1], set, x.e.T2, x.e.T3);
+      if (!p) nFlat++;
+      out.push({ l: l, b: x.e.b, zs: gr.zs, p: p, set: set, T2: x.e.T2, T3: x.e.T3 });
     });
   });
   return {
-    tone: tone,
+    out: out,
     err: err,
     nFlat: nFlat,
     extras: added.map(function (m) {
@@ -3333,9 +3372,10 @@ function _ptGet1() {
   // (the Photo style: its amounts the page's own, tried again when the page or the plan changed; v329.1: those that
   // came in with the plan, a guide opened or an Undo, kept: chosen again, a reopened guide's saved sliders moved
   // without a word, and an Undo didn't give back what was there)
+  let ar = null;
   if (shadePStyle && (_ptForce || _ptAutoK !== S.key)) {
     if (_ptAdopt && !_ptForce) _ptAutoK = S.key;
-    else ptAuto(S);
+    else ar = ptAuto(S);
   }
   _ptAdopt = false;
   // (what the markers added were chosen for: the plan, the light, the kinds and amounts, the sets)
@@ -3357,13 +3397,38 @@ function _ptGet1() {
     if (ptNoteHeld(_pt.tone)) return _ptGet1();
     return _pt;
   }
-  const keepX = !_ptForce && _ptX && _ptX.k === kx ? _ptX.x : null,
-    r = ptChoose(S.s, null, keepX);
+  const keepX = !_ptForce && _ptX && _ptX.k === kx ? _ptX.x : null;
+  // (v329.2) the amounts' search ended on this very choice: the same amounts, markers added chosen afresh, and no
+  // coloured section keeping its own (the search leaves those out); else chosen here
+  let held = false;
+  if (ar && !keepX)
+    for (const k in S.s)
+      if (_ptHeld[k] && inkOn(+k)) {
+        held = true;
+        break;
+      }
+  const r = ar && !keepX && !held ? ar : ptChoose(S.s, null, keepX);
+  if (_ptReuseCheck && r === ar) {
+    // (the tests' check that the reused choice is the one that would be made)
+    const r2 = ptChoose(S.s, null, keepX);
+    _ptReuseCheck.n++;
+    if (JSON.stringify(ptSig(r2)) !== JSON.stringify(ptSig(r))) _ptReuseCheck.bad++;
+  }
   _ptX = { k: kx, x: r.extras };
   _ptForce = false;
   ptNoteHeld(r.tone);
   _pt = { key: key(), coll: coll, tone: r.tone, nFlat: r.nFlat, extras: r.extras };
   return _pt;
+}
+// (the tests' check of the reused choice: { n, bad } while set, __mstest.ptReuseCheck)
+let _ptReuseCheck = null;
+function ptSig(r) {
+  const o = {};
+  for (const l in r.tone) {
+    const t = r.tone[l];
+    o[l] = t ? [t.light ? t.light.mkey : '', t.dark ? t.dark.mkey : '', t.set, t.T2, t.T3] : null;
+  }
+  return [o, r.err, r.nFlat, r.extras];
 }
 // (what the markers added are chosen for: the plan, the light, the kinds and amounts, the sets)
 function ptKx() {
@@ -3448,29 +3513,86 @@ function ptAuto(S) {
   });
   if (!ids.length) return;
   let best = null,
-    bi = [PT_HI0, PT_LO0];
-  // (the markers added chosen once, at the amounts as they are, so each pair isn't a search of your collection;
-  // v329.1: those kept only if kept for this plan, ptKx, not another's)
-  let X = null;
-  if (S) X = !_ptForce && _ptX && _ptX.k === ptKx() ? _ptX.x : ptChoose(S.s, null, null).extras;
-  if (S)
-    PT_HI.forEach(function (hi) {
-      PT_LO.forEach(function (lo) {
-        const amt = {};
-        ids.forEach(function (id) {
-          amt[id] = [hi, lo];
-        });
-        const r = ptChoose(S.s, amt, X);
-        if (best == null || r.err < best) {
-          best = r.err;
-          bi = [hi, lo];
-        }
-      });
+    bi = [PT_HI0, PT_LO0],
+    br = null;
+  const amtOf = function (hi, lo) {
+    const amt = {};
+    ids.forEach(function (id) {
+      amt[id] = [hi, lo];
     });
+    return amt;
+  };
+  // (v329.2, B1-1) the markers added chosen afresh at each Shadows amount tried: chosen once at the amounts as they
+  // were, they suited a dark part of another size, and the amounts were then chosen as if there were none, lighter
+  // than they should be. Shadows from the heaviest down while each step is nearer, then Highlights once, with the
+  // markers added for the Shadows chosen: measured on the 30 bench photos the same as trying all eight with fresh
+  // markers, at about half the cost; the toned parts' error 13.3% → 14.2% removed at Medium, never worse
+  if (S) {
+    for (let i = PT_LO.length - 1; i >= 0; i--) {
+      const r = ptChoose(S.s, amtOf(PT_HI0, PT_LO[i]), null);
+      if (best != null && r.err >= best) break;
+      best = r.err;
+      bi = [PT_HI0, PT_LO[i]];
+      br = r;
+    }
+    const X = br.extras;
+    PT_HI.forEach(function (hi) {
+      if (hi === PT_HI0) return;
+      const r = ptChoose(S.s, amtOf(hi, bi[1]), X);
+      if (r.err < best) {
+        best = r.err;
+        bi = [hi, bi[1]];
+        br = null;
+      }
+    });
+  }
   ids.forEach(function (id) {
     zshSet(id, 'hi', bi[0]);
     zshSet(id, 'lo', bi[1]);
   });
+  // (its last choice, at the amounts it sets with the markers added chosen afresh: the page's own choice made again,
+  // when nothing makes that one different, _ptGet1)
+  return br;
+}
+// (v329.2) Shading › Photo and Shade it: the photo tones chosen after a paint, with a line saying so beside el (the
+// Shading row, or Shade it's own line): on a detailed page the choice holds the screen up to a second here, 2–4 s on
+// an iPad. after: the rest of the step (the drawing, its Undo step). While it waits, the plan's step isn't recorded
+// by the controls' own listener (planCommit, _ptPend): after records it, with the tones chosen. Anything else done
+// meanwhile (another style, an Undo) is ptStyleCancel's
+let _ptBusyN = 0,
+  _ptPend = false;
+function ptStyleBusy(el, after) {
+  const t = ++_ptBusyN,
+    lg = loadGen;
+  _ptPend = true;
+  let m = null;
+  if (el && el.id === 'sfPpShLine') {
+    el.textContent = 'Shading like the photo…';
+    el.setAttribute('role', 'status');
+  } else if (el) {
+    m = document.createElement('div');
+    m.className = 'sfc-note sfc-mt8';
+    m.id = 'sfPtBusy';
+    m.setAttribute('role', 'status');
+    m.textContent = 'Shading like the photo…';
+    el.insertAdjacentElement('afterend', m);
+  }
+  if (ctlEl) ctlEl.setAttribute('aria-busy', 'true');
+  afterPaint(function () {
+    if (t !== _ptBusyN) return;
+    _ptPend = false;
+    if (ctlEl) ctlEl.removeAttribute('aria-busy');
+    if (m && m.parentNode) m.remove();
+    if (lg === loadGen) after();
+  });
+}
+function ptStyleCancel() {
+  if (!_ptPend) return;
+  _ptBusyN++;
+  _ptPend = false;
+  if (ctlEl) ctlEl.removeAttribute('aria-busy');
+  const m = document.getElementById('sfPtBusy');
+  if (m) m.remove();
 }
 // Photo in the Shading row: shading on, the photo's light, both kinds Matched to the photo in Main and the zones that
 // use the Photo pattern, and the amounts the page's own (chosen afresh: markers bought since come in)

@@ -3,7 +3,8 @@
 // as the worker runs it (ppBuildCore, with its marker choice, ppPickCore).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { core } from './harness.mjs';
+import { core, createApp, memoryStorage } from './harness.mjs';
+import { createHash, webcrypto } from 'node:crypto';
 
 // a made-up photo, w × h RGB: a sky-to-ground gradient, soft blobs and hard-edged shapes in a few colours, a white
 // patch (near-white areas are left white), and noise; seeded, so the same photo every time
@@ -527,4 +528,283 @@ test('v329.1: the photo page job’s time allowed grows with the markers it may 
   assert.equal(none, 14000, 'the page’s own share as before');
   assert.equal(small, 14000 + 2160);
   assert.equal(full, 14000 + 12960);
+});
+
+// (v329.2) the merge step's narrowness test (ppWideCore) gives the exact distance map's answer: a region is wide if
+// some pixel of it is at least minR from every pixel outside its inside (f = 0), on random regions and radii
+test('v329.2: the merge step’s narrowness test matches the exact distance', () => {
+  let s = 11;
+  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let trial = 0; trial < 12; trial++) {
+    const w = 36 + Math.floor(rnd() * 20),
+      h = 28 + Math.floor(rnd() * 20),
+      n = w * h,
+      L = new Int32Array(n);
+    // regions: a few random rectangles and discs over a background, numbered 0..R-1
+    const shapes = [];
+    for (let k = 0; k < 6; k++) shapes.push([rnd() * w, rnd() * h, 2 + rnd() * 9, rnd() < 0.5]);
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        let id = 0;
+        shapes.forEach(function (sh, k) {
+          const inside = sh[3]
+            ? Math.hypot(x - sh[0], y - sh[1]) < sh[2]
+            : Math.abs(x - sh[0]) < sh[2] && Math.abs(y - sh[1]) < sh[2] / 2;
+          if (inside) id = k + 1;
+        });
+        L[y * w + x] = id;
+      }
+    const R = 7,
+      f = new Uint8Array(n);
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const p = y * w + x,
+          a = L[p];
+        f[p] =
+          (x > 0 && L[p - 1] !== a) ||
+          (x < w - 1 && L[p + 1] !== a) ||
+          (y > 0 && L[p - w] !== a) ||
+          (y < h - 1 && L[p + w] !== a)
+            ? 0
+            : 1;
+      }
+    for (const minR of [1.4, 2.9, 3, 4.2, 5.8]) {
+      const got = core.ppWideCore(f, L, R, w, h, minR),
+        want = new Uint8Array(R);
+      for (let p = 0; p < n; p++) {
+        if (!f[p]) continue;
+        let d = Infinity;
+        for (let q = 0; q < n; q++)
+          if (!f[q]) {
+            const dx = (q % w) - (p % w),
+              dy = Math.floor(q / w) - Math.floor(p / w);
+            d = Math.min(d, dx * dx + dy * dy);
+          }
+        if (d >= minR * minR) want[L[p]] = 1;
+      }
+      assert.deepEqual(Array.from(got), Array.from(want), 'trial ' + trial + ', minR ' + minR);
+    }
+  }
+});
+
+// (v329.2) Focus: stray bits of the subject dropped, its colours counted more, the small subject's crop offered only
+// for a subject the right shape, and the map's edges put on the photo's
+test('v329.2: Focus — stray parts, the subject’s colours weighted, the small subject’s crop, the map’s edges', () => {
+  // stray parts: under a tenth of the largest and a hundredth of the photo
+  const w = 100,
+    h = 100,
+    m = new Uint8Array(w * h).fill(1),
+    box = (x0, y0, s) => {
+      for (let y = y0; y < y0 + s; y++) for (let x = x0; x < x0 + s; x++) m[y * w + x] = 0;
+    };
+  box(5, 5, 40); // the subject: 1600 px
+  box(60, 60, 5); // 25 px: a stray
+  box(60, 10, 12); // 144 px: under a tenth of the subject but over 1% of the photo, kept
+  core.subStrays(m, w, h);
+  const sub = (x, y) => m[y * w + x] === 0;
+  assert.ok(sub(20, 20) && sub(65, 15), 'the subject and the part over 1% kept');
+  assert.ok(!sub(62, 62), 'the stray made background');
+  // the colours weighted: the subject's (red, its map 1) count 1 + 3 to the background's (blue, 0) 1
+  const pw = 60,
+    ph = 40,
+    rgb = new Uint8Array(pw * ph * 3),
+    sal = new Float32Array(pw * ph);
+  for (let i = 0; i < pw * ph; i++) {
+    const left = i % pw < pw / 2;
+    rgb.set(left ? [220, 30, 30] : [30, 40, 220], i * 3);
+    sal[i] = left ? 1 : 0;
+  }
+  const t = core.ppFocusTargets({ w: pw, h: ph, rgb, sal, tl: null, tw: null }),
+    ws = Array.from(t.w).sort((a, b) => b - a);
+  assert.equal(ws.length, 2);
+  assert.ok(Math.abs(ws[0] / ws[1] - 4) < 0.01, 'the subject’s colour four times: ' + ws);
+  // the small subject's crop: a 3% disc is offered it, a 3% band across the photo isn't
+  const prep = (fill) => {
+    const s2 = new Float32Array(200 * 150);
+    for (let y = 0; y < 150; y++) for (let x = 0; x < 200; x++) s2[y * 200 + x] = fill(x, y) ? 1 : 0;
+    return { w: 200, h: 150, sal: s2 };
+  };
+  assert.equal(core.ppSmallSubOK(prep((x, y) => Math.hypot(x - 100, y - 75) < 17)), true, 'a small disc');
+  assert.equal(core.ppSmallSubOK(prep((x, y) => y >= 70 && y < 75 && x >= 10 && x < 190)), false, 'a band');
+  assert.equal(core.ppSmallSubOK(prep((x, y) => Math.hypot(x - 100, y - 75) < 60)), false, 'not small');
+  // the map's edges on the photo's: a soft map over a hard edge in the photo comes out nearer the edge
+  const S = 8,
+    mw = 64,
+    mh = 48,
+    mm = new Float32Array(S * S),
+    prgb = new Uint8Array(mw * mh * 3);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) mm[y * S + x] = x < 3 ? 1 : x < 5 ? 0.5 : 0;
+  for (let i = 0; i < mw * mh; i++) prgb.fill(i % mw < mw / 2 ? 230 : 20, i * 3, i * 3 + 3);
+  const soft = core.subMapUp(mm, S, prgb, mw, mh, 0, 0),
+    hard = core.subMapUp(mm, S, prgb, mw, mh, 8, 0.004),
+    // (pixels the 0.5 cut-off puts on the wrong side of the photo's edge)
+    off = (p) => {
+      let e = 0;
+      for (let i = 0; i < mw * mh; i++) if (p[i] >= 0.5 !== i % mw < mw / 2) e++;
+      return e;
+    };
+  assert.ok(
+    hard.every((v) => v >= 0 && v <= 1),
+    'within 0–1',
+  );
+  assert.ok(off(soft) > 0, 'the soft map’s cut-off off the edge');
+  assert.equal(off(hard), 0, 'the filtered map’s on it (from ' + off(soft) + ' pixels off)');
+});
+
+// (v329.3 review) Crop to the subject's re-find: a crop under half the whole photo is found again; half or more, and an
+// Undo back to the whole, take the kept map; a crop made in steps is measured against the photo, not the last kept
+// (resampled) map, so three drags of 70% each are found again once they're under half
+test('v329.3: a crop under half the photo is found again, measured against the whole photo, in steps too', () => {
+  const t = core;
+  t.assign.resetForNewPicture();
+  const src = {},
+    W = 8,
+    H = 8,
+    prep = (x, y, w, h) => ({ w: W, h: H, keep: { src, rot: 0, tilt: 0, rect: { x, y, w, h } } });
+  const whole = Object.assign(prep(0, 0, 1, 1), { sal: new Float32Array(W * H).fill(0.5) });
+  t.subKeepAdd(whole);
+  assert.equal(t.subFromKept(prep(0, 0, 0.7, 0.7)), null, '0.49 of the photo: found again');
+  assert.equal(t.subFromKept(prep(0, 0, 1, 0.5)).length, W * H, 'half: the kept map, resampled');
+  // in steps: 70% of the width each time, the resampled map kept as the app does (ppPrepare)
+  const a = prep(0, 0, 0.7, 1);
+  a.sal = t.subFromKept(a);
+  assert.ok(a.sal, 'first drag (0.7): the kept map');
+  t.subKeepAdd(a);
+  const b = prep(0, 0, 0.49, 1);
+  assert.equal(t.subFromKept(b), null, 'second drag (0.49 of the photo, 0.7 of the last kept map): found again');
+  // Undo back to the whole: the whole's own map
+  assert.equal(t.subFromKept(prep(0, 0, 1, 1)).length, W * H);
+  t.assign.resetForNewPicture();
+});
+
+// (v329.3 review) the subject finder's failures: out of memory and too slow told apart from the rest
+test('v329.3 review: the subject finder’s failures, out of memory or too slow, told apart', () => {
+  const k = core.subFailKind;
+  assert.equal(k(new Error('Out of memory')), 'memory');
+  assert.equal(k(new Error('RangeError: WebAssembly.Memory(): could not allocate memory')), 'memory');
+  assert.equal(k(new Error('Aborted(OOM)')), 'memory');
+  assert.equal(k(new Error('failed to allocate a buffer of size 2097152')), 'memory');
+  assert.equal(k(new Error('timed out')), 'slow');
+  assert.equal(k(new Error('not stored')), '');
+  assert.equal(k(new Error('not stored (damaged)')), '');
+  assert.equal(k(new Error('Can’t create a session')), '');
+  assert.equal(k(Object.assign(new Error('off this launch'), { sub: 'slow' })), 'slow');
+});
+
+// (v329.3 review) the subject finder run with a stand-in worker: a find for another photo waits for the running one
+// (never two models at once); a start that fails for no clear reason has its stored files checked again, the damaged
+// ones let go of and said as not stored; out of memory is kept for the launch, and not tried again
+function subApp(reply) {
+  const st = { made: 0, alive: 0, most: 0, dels: 0 };
+  class FakeWorker {
+    constructor() {
+      st.made++;
+      st.alive++;
+      st.most = Math.max(st.most, st.alive);
+    }
+    postMessage() {
+      setImmediate(() => this.onmessage && this.onmessage({ data: { t: 'error', message: reply } }));
+    }
+    terminate() {
+      if (!this.dead) st.alive--;
+      this.dead = true;
+    }
+  }
+  const cache = {
+    match: async () => ({ arrayBuffer: async () => new ArrayBuffer(8) }),
+    delete: async () => {
+      st.dels++;
+      return true;
+    },
+  };
+  const ss = memoryStorage();
+  const a = createApp({
+    Worker: FakeWorker,
+    caches: { open: async () => cache },
+    crypto: webcrypto,
+    sessionStorage: ss,
+  });
+  return { t: a.__mstest, st, ss };
+}
+const subPrep = () => ({ w: 4, h: 4, rgb: new Uint8Array(48) });
+test('v329.3 review: one find at a time for any photo; a damaged stored model is let go of, as not stored', async () => {
+  const { t, st } = subApp('Can’t create a session: bad model');
+  const p1 = t.subMap(subPrep()),
+    p2 = t.subMap(subPrep());
+  await assert.rejects(p1, /not stored \(damaged\)/);
+  await assert.rejects(p2, /not stored \(damaged\)/);
+  assert.equal(st.made, 2, 'both found, one after the other');
+  assert.equal(st.most, 1, 'never two workers at once');
+  assert.equal(st.alive, 0, 'each ended');
+  assert.equal(st.dels, 6, 'the damaged files let go of each time (ONNX Runtime’s two and the model)');
+});
+test('v329.3 review: a find out of memory is kept for the launch, and the next isn’t tried', async () => {
+  const { t, st, ss } = subApp('RangeError: Out of memory');
+  await assert.rejects(t.subMap(subPrep()), (e) => e.sub === 'memory');
+  assert.equal(ss.getItem('ms-subject-off'), 'memory');
+  await assert.rejects(t.subMap(subPrep()), (e) => e.sub === 'memory');
+  assert.equal(st.made, 1, 'not started again');
+  assert.equal(st.dels, 0, 'the stored files not checked: memory isn’t damage');
+});
+
+// (v329.3 review) the subject finder's download read as it comes: the progress counts up within a file
+test('v329.3 review: the subject finder’s download counts up as it comes', async () => {
+  const bytes = new Uint8Array(3000).map((_, i) => i % 251),
+    h = createHash('sha256').update(bytes).digest('hex'),
+    put = [];
+  const a = createApp({
+    crypto: webcrypto,
+    Response: class {
+      constructor(b) {
+        this.b = b;
+      }
+    },
+    caches: { open: async () => ({ put: async (u, r) => put.push(r.b.length) }) },
+    fetch: async () => {
+      let i = 0;
+      return {
+        ok: true,
+        body: {
+          getReader: () => ({
+            read: async () => (i < 3 ? { done: false, value: bytes.slice(i * 1000, ++i * 1000) } : { done: true }),
+          }),
+        },
+      };
+    },
+  });
+  const seen = [];
+  await a.__mstest.subDownload([{ x: { f: 'm', n: 3000, h }, url: 'u', cache: 'c' }], (n, tot) => seen.push(n + '/' + tot));
+  assert.deepEqual(seen, ['1000/3000', '2000/3000', '3000/3000', '3000/3000']);
+  assert.deepEqual(put, [3000], 'kept whole, once checked');
+});
+
+// (v329.3 review) a page job that fails: made on the page only when the worker never started; over its time, short
+// of memory, or the worker gone meanwhile, said instead
+test('v329.3 review: a page job made on the page only when the worker never started', () => {
+  const f = core.ppRunFail,
+    E = (m) => new Error(m);
+  assert.equal(f(E('superseded'), true, 0), 'pass');
+  assert.equal(f(E('too long'), true, 20000), 'long');
+  assert.equal(f(E('ppage job took too long'), true, 20000), 'long');
+  assert.equal(f(E('timed out'), true, 20000), 'long');
+  assert.equal(f(E('RangeError: Array buffer allocation failed'), true, 5000), 'memory');
+  assert.equal(f(E('Out of memory'), false, 5000), 'memory');
+  assert.equal(f(E('no worker'), true, 0), 'gone', 'it had worked this session');
+  assert.equal(f(E('no worker'), false, 9000), 'gone', 'it took the job, then went');
+  assert.equal(f(E('no worker'), false, 10), 'here', 'it never started');
+  assert.equal(f(E('DataCloneError'), true, 0), 'here');
+  const w = core.ppFailWords;
+  assert.match(w({ pp: 'long' }), /^Couldn’t make this page in time on this device\./);
+  assert.match(w({ pp: 'memory' }), /short of memory/);
+  assert.match(w({ pp: 'gone' }), /reopen Marker Studio/);
+  assert.equal(w(new Error('no photo')), null, 'the caller’s own words');
+});
+
+// (v329.3 review) the marker choice's key follows the markers' colours, so a recoloured marker isn't chosen as it was
+test('v329.3 review: the marker choice’s key changes with a marker’s colour', () => {
+  const s = core.ppLabSig,
+    a = [{ lab: [50, 10, -20] }, { lab: [70, -5, 30] }];
+  assert.equal(s(a), s([{ lab: [50, 10, -20] }, { lab: [70, -5, 30] }]));
+  assert.notEqual(s(a), s([{ lab: [50, 10, -20] }, { lab: [70, -5, 31] }]));
+  assert.equal(s(a), s([{ lab: [50.01, 10, -20] }, { lab: [70, -5, 30] }]), 'to a tenth of a unit');
 });

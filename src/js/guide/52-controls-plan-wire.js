@@ -590,6 +590,8 @@ function ctlWireShare() {
     });
   var _ex = document.getElementById('sfExport');
   if (_ex) _ex.addEventListener('click', exportImage);
+  var _cml = document.getElementById('sfCopyList');
+  if (_cml) _cml.addEventListener('click', copyMarkerList);
   var _exc = document.getElementById('sfExCodes');
   if (_exc)
     _exc.addEventListener('change', function (e) {
@@ -632,12 +634,32 @@ function ctlWireShading() {
       var b = e.target.closest('button');
       if (!b || b.getAttribute('aria-pressed') === 'true') return;
       var v = b.dataset.v;
+      ptStyleCancel();
       if (v === 'off') {
         shadeMode = 'off';
         planWhy = 'Shading: Off';
       } else {
         if (!shPresetApply(v)) return;
         planWhy = 'Shading: ' + b.textContent.trim();
+      }
+      // (v329.2: Photo's tones chosen after a paint, the line saying so meanwhile, ptStyleBusy)
+      if (v === 'photo') {
+        var why = planWhy;
+        planWhy = null;
+        _shd.querySelectorAll('button[aria-pressed]').forEach(function (x) {
+          x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+        });
+        ptStyleBusy(_shd, function () {
+          shadeFlatMode = false;
+          guideDirty = true;
+          gradFollowLight();
+          normalizeTones();
+          renderControls();
+          renderGuide();
+          ctlRefocus('#sfShade [data-v="photo"]');
+          planCommit(why);
+        });
+        return;
       }
       shadeFlatMode = false;
       guideDirty = true;
@@ -904,16 +926,28 @@ function mkCountWire() {
         mkCountSet(v + d);
         mkCountShow();
         return true;
+      },
+      // (v329.3 review) the step that reaches either end disables the button under the finger, and WebKit sends a
+      // disabled button no pointerup or click: the guide is laid at once, as letting go would have (it had stayed as
+      // it was, the count saying one fewer). Its click, where one still comes (Chrome), is let be: _mkUp
+      ends = function () {
+        const cap = mkCap();
+        if (!((d < 0 && Math.min(limitN, cap) <= 2) || (d > 0 && limitN >= cap))) return false;
+        b._mkUp = Date.now();
+        mkHoldStop(true);
+        return true;
       };
     // (a press: one step now, more while it's held; the guide is laid once, when it's let go)
     b.addEventListener('pointerdown', function (e) {
       if (e.button > 0 || b.disabled) return;
       mkHoldStop(false);
       _mkHold = { id: id, moved: step(), t: 0, n: 0 };
+      if (_mkHold.moved && ends()) return;
       const again = function () {
         if (!_mkHold) return;
         if (step()) _mkHold.moved = true;
         else return;
+        if (ends()) return;
         _mkHold.n++;
         _mkHold.t = setTimeout(again, _mkHold.n < 6 ? 250 : 70);
       };

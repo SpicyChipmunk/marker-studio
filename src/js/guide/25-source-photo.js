@@ -436,7 +436,41 @@ function srcPlace(im, r, set) {
     srcK: srcK,
     srcDims: srcDims,
     bands: edgeBands,
+    // (v329.3 review: and the settings it puts in place, all given back when the picture doesn't fit, unfit)
+    pgF35: pgF35,
+    pgShape: pgShape,
+    pgHint: pgHint,
+    rot90: rot90,
+    tilt: tilt,
+    cropRect: cropRect,
+    legacy: _srcLegacy,
   };
+  // (not the picture the sections were found from, or it couldn't be built: left as a guide without one, as before)
+  const unfit = function () {
+    if (srcImg !== im && srcImg !== keep.srcImg) freeCanvas(srcImg);
+    srcImg = keep.srcImg;
+    pgOrig = keep.pgOrig;
+    pgQ = keep.pgQ;
+    srcUp = keep.srcUp;
+    pgF35 = keep.pgF35;
+    pgShape = keep.pgShape;
+    pgHint = keep.pgHint;
+    rot90 = keep.rot90;
+    tilt = keep.tilt;
+    cropRect = keep.cropRect;
+    _srcLegacy = keep.legacy;
+    srcFrom = null;
+    return false;
+  };
+  try {
+    return srcFits(im, r, set, unfit);
+  } catch (e) {
+    unfit();
+    throw e;
+  }
+}
+// (srcPlace's body: the picture built from the settings `set` and put in place when it fits; else unfit())
+function srcFits(im, r, set, unfit) {
   srcFrom = r.kind === 'pdf' || set.k === 'pdf' ? 'pdf' : 'pic';
   pgOrig = srcFrom === 'pdf' ? null : im;
   pgF35 = set.f35 || 0;
@@ -473,16 +507,7 @@ function srcPlace(im, r, set) {
     p.W = W;
     p.H = H;
   }
-  if (!p || p.W !== W || p.H !== H) {
-    // (not the picture the sections were found from: left as a guide without one)
-    if (srcImg !== im && srcImg !== keep.srcImg) freeCanvas(srcImg);
-    srcImg = keep.srcImg;
-    pgOrig = keep.pgOrig;
-    pgQ = keep.pgQ;
-    srcUp = keep.srcUp;
-    srcFrom = null;
-    return false;
-  }
+  if (!p || p.W !== W || p.H !== H) return unfit();
   gray = p.gray;
   chroma = p.chroma || null;
   srcColour = p.colour;

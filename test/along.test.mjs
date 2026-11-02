@@ -706,3 +706,44 @@ import { app, core, createApp, memoryStorage } from './harness.mjs';
     );
   });
 }
+
+// ---- v329.3: Share › Copy marker list ----
+// The page's markers as text: a line a brand (Ohuhu, then Copic), each by colour family then lighter to darker, the
+// Colorless Blender last, each marker once however many sections it has; nothing with no markers.
+{
+  const _app = createApp(),
+    core = _app.__mstest,
+    E = _app.__eval;
+  const key = (b, c) =>
+    E(`(() => { const i = COLORS.findIndex((x) => x.brand === ${JSON.stringify(b)} && x.code === ${JSON.stringify(c)}); return i < 0 ? null : mkey(i); })()`);
+  const sec = (k) => {
+    const i = E(`keyIdx(${JSON.stringify(k)})`);
+    return { mkey: k, hex: E(`COLORS[${i}].hex`), code: E(`COLORS[${i}].code`), brand: E(`COLORS[${i}].brand`) };
+  };
+  test('Copy marker list: a line a brand, by family and lightness, the blender last, each marker once', () => {
+    const ks = [key('Ohuhu', 'R213'), key('Ohuhu', 'Y26'), key('Ohuhu', 'R28'), key('Copic', 'B29'), key('Ohuhu', '0'), key('Ohuhu', 'R213')];
+    assert.ok(ks.every(Boolean), ks.join());
+    const assign = {};
+    ks.forEach((k, j) => (assign[j + 1] = sec(k)));
+    core.assignData = { order: [1, 2, 3, 4, 5, 6], assign, N: 6 };
+    const r = core.markerListText(),
+      lines = r.text.split('\n');
+    assert.equal(r.n, 5);
+    assert.equal(lines.length, 2);
+    assert.match(lines[0], /^Ohuhu: /);
+    assert.match(lines[1], /^Copic: B29$/);
+    const oh = lines[0].slice(7).split(', ');
+    assert.equal(oh.length, 4);
+    assert.equal(oh[oh.length - 1], '0', 'the Colorless Blender last');
+    // the two reds side by side (one family), the lighter first
+    const r1 = oh.indexOf('R28'),
+      r2 = oh.indexOf('R213');
+    assert.equal(Math.abs(r1 - r2), 1);
+    const L = (c) => E(`LAB[COLORS.findIndex((x) => x.brand === 'Ohuhu' && x.code === ${JSON.stringify(c)})][0]`);
+    assert.ok(oh.indexOf(L('R28') >= L('R213') ? 'R28' : 'R213') < oh.indexOf(L('R28') >= L('R213') ? 'R213' : 'R28'));
+  });
+  test('Copy marker list: nothing to copy on a page with no markers', () => {
+    core.assignData = { order: [], assign: {}, N: 0 };
+    assert.deepEqual(JSON.parse(JSON.stringify(core.markerListText())), { text: '', n: 0 });
+  });
+}

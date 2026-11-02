@@ -51,6 +51,10 @@ function createMarkerStudioForm() {
     // Get pre-filled link, type x in every field, Get link › Copy link, and send that link to Claude.
     ['Other brands', 'p'],
     ['Colour most', 'p'],
+    // (v329.3) two quick choices, the same way: two Short answer questions at the very end, titled Shared a guide and
+    // Dark look, NOT required, then a new pre-filled link as above
+    ['Shared a guide', 't'],
+    ['Dark look', 't'],
   ];
 
   var resp = form.createResponse();

@@ -664,6 +664,8 @@ import fs, { readFileSync } from 'node:fs';
     'gradArea',
     'bgRule',
     'hatchOne',
+    // (v329.3: the guide's notes)
+    'notes',
   ];
   const plain = (v) => JSON.parse(JSON.stringify(v));
   // a small guide with every setting away from its default
@@ -799,6 +801,8 @@ import fs, { readFileSync } from 'node:fs';
       bgRule: 0,
       // (v318.35: Treat hatching as one section, on unless turned off)
       hatchOne: true,
+      // (v329.3: no notes)
+      notes: '',
     });
   });
   test('the saved style: its exact text, nesting and order', () => {
@@ -831,6 +835,8 @@ import fs, { readFileSync } from 'node:fs';
       'prog',
       'tones',
       'held',
+      // (v329.3: the shading markers laid on the paper, for Random; undefined here, none laid yet)
+      'onPaper',
       'dates',
       'out',
       'edits',
@@ -872,6 +878,38 @@ import fs, { readFileSync } from 'node:fs';
     assert.equal(f.check({ name: 'x'.repeat(200) }, null).name.length, 80);
     for (const v of [undefined, null, 'Rainbow', 3, true, ['a']])
       assert.equal(f.check(v, null), null, String(v));
+  });
+  test('notes (v329.3): saved in the payload when there are any, left out of a guide file; cleaned on opening; not an Undo step', () => {
+    const { core } = scene();
+    assert.ok(!('notes' in core.currentDesignObj().payload));
+    core.styleVars.notes = 'Bristol paper\nfrom the library book';
+    assert.equal(core.currentDesignObj().payload.notes, 'Bristol paper\nfrom the library book');
+    // (a guide file to send leaves them out, and nothing else changes)
+    const sh = core.currentDesignObj(true);
+    assert.ok(!('notes' in sh.payload));
+    // (Undo's snapshot doesn't keep them, and putting one back leaves them as they are)
+    core.styleRestore(core.styleSnap({}));
+    assert.equal(core.styleVars.notes, 'Bristol paper\nfrom the library book');
+    assert.ok(!('notes' in core.planSnap()));
+    // (opening: text only, control characters but line breaks and tabs taken out, 500 characters at most)
+    const f = [...core.styleFields].find((x) => x.key === 'notes');
+    assert.equal(f.check('a\u0000b\tc\nd\u001b', ''), 'ab\tc\nd');
+    assert.equal(f.check('x'.repeat(600), '').length, 500);
+    for (const v of [undefined, null, 3, true, ['a'], { a: 1 }]) assert.equal(f.check(v, ''), '', String(v));
+  });
+  test('notes on the print (v329.3): wrapped at spaces into 3 lines at most, line breaks folded, the last cut short', () => {
+    const { core } = scene();
+    const wrap = (...a) => [...core.pdfWrap(...a)],
+      g = { measureText: (t) => ({ width: String(t).length }) };
+    assert.deepEqual(wrap(g, 'Notes: one two', 40, 3), ['Notes: one two']);
+    assert.deepEqual(wrap(g, 'aaaa bbbb cccc', 9, 3), ['aaaa bbbb', 'cccc']);
+    assert.deepEqual(wrap(g, 'a\n\nb', 20, 3), ['a · b']);
+    const r = wrap(g, 'aaaa bbbb cccc dddd eeee ffff', 9, 2);
+    assert.equal(r.length, 2);
+    assert.equal(r[0], 'aaaa bbbb');
+    assert.ok(r[1].endsWith('…') && r[1].length <= 9, r[1]);
+    // (a word too long for a line is cut short)
+    assert.ok(wrap(g, 'x'.repeat(30), 9, 3)[0].length <= 9);
   });
   test('the saved style with a photo: its placement, see-through, white areas and lighting correction', () => {
     const { core } = scene();
@@ -941,8 +979,9 @@ import fs, { readFileSync } from 'node:fs';
     // with bgRule, the background rule; v318.15: 50 with matchAlike, Matching shapes alike; v318.18: 51 with theme;
     // v318.35: 52 with hatchOne, Treat hatching as one section; v323: 54 with colOffer, the coloured-in sections offered as
     // done, and focusAt, the section Focus mode was left on; v327: 56 with shade.sets and shade.pstyle, photo tones'
-    // Two tone sets and the Photo style; v328: 57 with tickRef, whether Tick off from a photo's photos are printouts)
-    assert.equal(n, 57);
+    // Two tone sets and the Photo style; v328: 57 with tickRef, whether Tick off from a photo's photos are printouts;
+    // v329.3: 58 with notes, the guide's notes)
+    assert.equal(n, 58);
   });
   test('STYLE_FIELDS: where each setting is saved (in the order written) and which ones Undo keeps', () => {
     const core = createApp().__mstest;
@@ -1011,6 +1050,7 @@ import fs, { readFileSync } from 'node:fs';
         'payload.gradArea (no undo)',
         'payload.bgRule (no undo)',
         'payload.hatchOne (no undo)',
+        'payload.notes (no undo)',
       ],
     );
   });
@@ -2165,7 +2205,19 @@ import fs, { readFileSync } from 'node:fs';
   let seed = 7;
   const rnd = () => (seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296,
     pick = (a) => a[(rnd() * a.length) | 0],
-    strs = ['plain', 'a "quoted" word', 'back\\slash', 'brackets [ ] { } , :', 'é ü ’', '😀', 'tab\tnew\nline', '\\"', 'guides', '"guides":[', '\u0000x'];
+    strs = [
+      'plain',
+      'a "quoted" word',
+      'back\\slash',
+      'brackets [ ] { } , :',
+      'é ü ’',
+      '😀',
+      'tab\tnew\nline',
+      '\\"',
+      'guides',
+      '"guides":[',
+      '\u0000x',
+    ];
   const val = (d) => {
     const r = rnd();
     if (d > 3 || r < 0.3) return pick([1, -2.5e3, true, false, null, pick(strs), 0]);
@@ -2177,9 +2229,18 @@ import fs, { readFileSync } from 'node:fs';
   test('backupScan: a big backup read in slices gives what reading it whole gives', async () => {
     for (let t = 0; t < 120; t++) {
       const guides = Array.from({ length: (rnd() * 5) | 0 }, () =>
-        rnd() < 0.9 ? { id: t, payload: val(0), u: 'data:image/jpeg;base64,' + 'QUJD'.repeat((rnd() * 40) | 0) } : val(1),
+        rnd() < 0.9
+          ? { id: t, payload: val(0), u: 'data:image/jpeg;base64,' + 'QUJD'.repeat((rnd() * 40) | 0) }
+          : val(1),
       );
-      const d = { v: 3, type: 'ms-backup', ['x' + pick(strs)]: val(1), owned: [pick(strs)], guides, after: val(1) };
+      const d = {
+        v: 3,
+        type: 'ms-backup',
+        ['x' + pick(strs)]: val(1),
+        owned: [pick(strs)],
+        guides,
+        after: val(1),
+      };
       const txt = JSON.stringify(d, null, pick([undefined, ' ', '\n  ']));
       for (const SL of [1, 3, 7, 64, 4096]) {
         const r = await scan(new Blob([txt]), SL);
@@ -2202,5 +2263,177 @@ import fs, { readFileSync } from 'node:fs';
     assert.equal(await scan(new Blob(['{"guides":[{"x":1}']), 4), null);
     assert.equal(await scan(new Blob(['[1,2]']), 4), null);
     assert.equal(await scan(new Blob(['\xff\xd8\xff a photo']), 4), null);
+  });
+}
+
+// ---- v329.3 review: backups and restore (FINDINGS-CC5, BB4) ----
+// a restored guide doesn't put an older photo of the finished page over a newer one here, and one it couldn't store is
+// said and not counted as backed up; a Back up reads the guides one at a time and hands each back as a Blob; a marker
+// restore that fails for room tells the open guide its markers again; a database delete or read that aborts settles
+{
+  const KEY = 'ohuhu-hb320-picker-v3';
+  const OWN = ['Ohuhu|R014', 'Ohuhu|Y111', 'Ohuhu|B08'];
+  const st = (extra = {}) =>
+    JSON.stringify({
+      mode: 'home',
+      ownedSeedV: 2,
+      copicAdd1: 1,
+      libAdj1: 1,
+      setFix1: 1,
+      owned: OWN,
+      saved: [],
+      ...extra,
+    });
+  const G5 = { id: 5, type: 'guide', name: 'G', keys: [], W: 10, H: 10, n: 1, ts: 1, bk: 1 };
+  const jpg = (c) => 'data:image/jpeg;base64,' + c.repeat(8);
+  // an app whose guide database is a Map; fail(k): that key's write fails
+  const boot = (json, fail) => {
+    const ls = memoryStorage({ [KEY]: json });
+    const a = createApp({ localStorage: ls, Blob, TextEncoder, TextDecoder });
+    a.__eval(
+      'fullRender=function(){};renderSaved=function(){};renderRecent=function(){};renderBackupNudge=function(){};' +
+        'renderLibStat=function(){};preRestoreRender=function(){}',
+    );
+    const db = new Map(),
+      IDB = a.__eval('IDB');
+    IDB.get = (k) => Promise.resolve(db.get(k));
+    IDB.put = (k, v) => {
+      if (fail && fail(k)) return Promise.reject(new Error('QuotaExceededError'));
+      db.set(k, JSON.parse(JSON.stringify(v)));
+      return Promise.resolve(true);
+    };
+    IDB.del = (k) => (db.delete(k), Promise.resolve(true));
+    a.SF = { checkGuide: () => ({ ok: true, w: 10, h: 10 }) };
+    return { a, ls, db, ev: (s) => a.__eval(s) };
+  };
+  const restore = (a, guides) =>
+    new Promise((res) => a.restoreGuideList(guides, 0, (ok, copies, x) => res({ ok, x: { ...x } })));
+  const backed = (G) => ({ id: 5, name: 'G', W: 10, H: 10, keys: [], n: 1, ts: 5, payload: { lmap: G, a: 2 } });
+  const LM = 'data:image/png;base64,AAAA';
+  test('v329.3 restore: a newer photo of the finished page here stays, and the guide is still to back up', async () => {
+    const { a, db, ev } = boot(st({ saved: [G5] }));
+    db.set('guide-5', { lmap: LM, a: 1 });
+    db.set('fin-5', { u: jpg('B'), w: 4, h: 3, ts: 4 });
+    const g = { ...backed(LM), fin: { u: jpg('C'), w: 4, h: 3, ts: 2 } };
+    const r = await restore(a, [g]);
+    assert.equal(r.ok, 1, 'the guide restored');
+    assert.equal(db.get('guide-5').a, 2, 'the backup’s newer guide');
+    assert.equal(db.get('fin-5').u, jpg('B'), 'the photo taken here since stays');
+    assert.equal(r.x.pmiss, 0);
+    const m = JSON.parse(ev('JSON.stringify(state.saved.find((s) => s.id === 5))'));
+    assert.equal(m.bk, m.ts || 1, 'not marked backed up past the guide itself');
+    // an older photo here is replaced by the backup's
+    db.set('fin-5', { u: jpg('D'), w: 4, h: 3, ts: 1 });
+    db.set('guide-5', { lmap: LM, a: 1 });
+    await restore(a, [{ ...g, ts: 6 }]);
+    assert.equal(db.get('fin-5').u, jpg('C'));
+  });
+  test('v329.3 restore: a photo that couldn’t be stored is said, and the guide isn’t counted as backed up with it', async () => {
+    const { a, db, ev } = boot(st({ saved: [G5] }), (k) => /^(fin|src)-/.test(k));
+    db.set('guide-5', { lmap: LM, a: 1 });
+    const r = await restore(a, [{ ...backed(LM), fin: { u: jpg('C'), w: 4, h: 3, ts: 9 } }]);
+    assert.equal(r.ok, 1);
+    assert.equal(r.x.pmiss, 1);
+    assert.equal(db.has('fin-5'), false);
+    const m = JSON.parse(ev('JSON.stringify(state.saved.find((s) => s.id === 5))'));
+    assert.equal(m.bk, m.ts || 1);
+    assert.equal(
+      a.guidesLeft({ pmiss: 1 }),
+      '1 guide’s photo couldn’t be stored — this browser’s storage is nearly full.',
+    );
+    assert.equal(
+      a.guidesLeft({ full: 1, pmiss: 3 }),
+      '1 guide couldn’t be saved — this browser’s storage is full; 3 guides’ photos couldn’t be stored — this browser’s storage is nearly full.',
+    );
+  });
+  test('v329.3 finFill: put in, the same, newer here, or not stored; a record too big is turned away', async () => {
+    const { a, db } = boot(st({ saved: [G5] }), (k) => k === 'fin-6');
+    const rec = (ts) => ({ u: jpg('E'), w: 4, h: 3, ts });
+    assert.equal(await a.finFill(5, rec(3), false), true);
+    assert.equal(await a.finFill(5, rec(3), false), 'same');
+    assert.equal(await a.finFill(5, rec(2), false), 'here');
+    assert.equal(db.get('fin-5').ts, 3);
+    assert.equal(await a.finFill(6, rec(3), false), false);
+    assert.equal(await a.srcFill(6, rec(3), true), true);
+    assert.equal(a.finRecOk({ u: 'data:image/jpeg;base64,' + 'A'.repeat(9e6), w: 1, h: 1 }), false);
+  });
+  test('v329.3 gatherGuides: one guide read at a time, each handed back as a Blob, and how far it has got', async () => {
+    const gs = [5, 6, 7].map((id) => ({ ...G5, id, name: 'G' + id, bk: 0 }));
+    const { a, db } = boot(st({ saved: gs }));
+    for (const g of gs) db.set('guide-' + g.id, { lmap: LM, a: g.id });
+    db.set('fin-6', { u: jpg('F'), w: 4, h: 3, ts: 2 });
+    const IDB = a.__eval('IDB'),
+      busy = new Set();
+    let most = 0;
+    IDB.get = (k) =>
+      new Promise((res) => {
+        const id = k.replace(/^\D+-/, '');
+        busy.add(id);
+        most = Math.max(most, busy.size);
+        setImmediate(() => {
+          busy.delete(id);
+          res(db.get(k));
+        });
+      });
+    const prog = [];
+    const r = await a.gatherGuides(false, { part: true, prog: (n, of) => prog.push(n + '/' + of) });
+    assert.equal(most, 1, 'one guide at a time');
+    assert.deepEqual(prog, ['1/3', '2/3', '3/3']);
+    assert.equal(r.length, 3);
+    assert.equal(r.tooBig, undefined);
+    const g6 = JSON.parse(await r[1].part.text());
+    assert.equal(r[1].id, 6);
+    assert.equal(g6.payload.a, 6);
+    assert.equal(g6.fin.u, jpg('F'));
+    assert.equal(r[1].payload, undefined, 'not kept as an object');
+    // without opt: the guides as objects, as before
+    const plain = await a.gatherGuides(false);
+    assert.equal(plain[2].payload.a, 7);
+  });
+  test('v329.3 Use the backup’s markers with storage full: the open guide and the caps are told the markers here again', () => {
+    const { a, ls, ev } = boot(st());
+    const before = JSON.stringify(ev('sfCollection()').map((x) => x.mkey));
+    const calls = [];
+    let caps = 0;
+    a.SF = {
+      setCollection: (c) => calls.push(JSON.stringify(c.map((x) => x.mkey))),
+      capChanged: () => caps++,
+    };
+    const set = ls.setItem;
+    ls.setItem = (k, v) => {
+      if (k === KEY) throw new Error('QuotaExceededError');
+      set(k, v);
+    };
+    const backup = { v: 3, type: 'ms-backup', ts: 5, owned: ['Ohuhu|G36'], buyBrands: ['Copic'], cap: {} };
+    assert.deepEqual(JSON.parse(ev(`JSON.stringify(applyCollectionBackup(${JSON.stringify(backup)},5,true))`)), {
+      failed: true,
+    });
+    assert.ok(calls.length >= 1, 'told');
+    assert.equal(calls[calls.length - 1], before, 'the markers here, not the backup’s');
+    assert.ok(caps >= 1, 'the caps told too');
+  });
+  test('v329.3 IDB: a delete or a read whose transaction aborts settles (rejected), not left waiting', async () => {
+    const tx = () => {
+      const t = {
+        objectStore: () => ({ delete() {}, put() {}, get: () => ({}) }),
+        commit() {},
+      };
+      setImmediate(() => t.onabort && t.onabort());
+      return t;
+    };
+    const fake = {
+      open() {
+        const r = {};
+        setImmediate(() => {
+          r.result = { close() {}, transaction: tx };
+          r.onsuccess();
+        });
+        return r;
+      },
+    };
+    const a = createApp({ localStorage: memoryStorage(), indexedDB: fake });
+    const IDB = a.__eval('IDB');
+    await assert.rejects(IDB.del('guide-1'), /delete aborted/);
+    await assert.rejects(IDB.get('guide-1'), /read aborted/);
   });
 }

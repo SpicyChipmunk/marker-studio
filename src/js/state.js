@@ -1341,6 +1341,8 @@ function usedKeys() {
   state.saved.forEach((s) => {
     if (s.type !== 'guide' || !(s.wk || s.done > 0 || s.tn > 0 || s.fn)) return;
     (s.keys || []).forEach((k) => u.add(k));
+    // (v329.3: and its shading's highlight and shadow markers, sx, guide-bridge's guideMeta)
+    (Array.isArray(s.sx) ? s.sx : []).forEach((k) => u.add(k));
   });
   return u;
 }

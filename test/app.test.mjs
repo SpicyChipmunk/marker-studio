@@ -271,6 +271,14 @@ import vm from 'node:vm';
       assert.ok(read(`vendor/pdfjs/${app[1]}/${f}`).length > 1000, f);
     assert.match(read('service-worker.js').toString(), /PDFC='marker-studio-pdfjs-'\+PDFJS/);
   });
+  // v329.3 review (BB4): offline, only a page load is answered with the app; a file that can't be fetched fails as
+  // itself. The optional files are stored past the HTTP cache, as the app's page is
+  test('service worker: the offline fallback is for page loads only; optional files fetched with cache reload', () => {
+    const sw = read('service-worker.js').toString();
+    assert.match(sw, /\.catch\(\(\)=>nav\?caches\.match\('\.\/index\.html'\):Response\.error\(\)\)/);
+    assert.doesNotMatch(sw, /\.catch\(\(\)=>caches\.match\('\.\/index\.html'\)\)/);
+    assert.match(sw, /OPTIONAL\.map\(function\(u\)\{return c\.add\(new Request\(u,\{cache:'reload'\}\)\);\}\)/);
+  });
 }
 
 // ---- from speed.test.mjs ----
@@ -537,7 +545,8 @@ import vm from 'node:vm';
   const _app = createApp(),
     shared = _app;
   // an app whose worker only answers when told to (answer), and says whether it was stopped
-  function withWorker() {
+  // (v329.3 review: st, the app's setTimeout, a late one for a page paused in the background)
+  function withWorker(st = setTimeout) {
     const made = [];
     class FakeWorker {
       constructor() {
@@ -559,7 +568,7 @@ import vm from 'node:vm';
       Worker: FakeWorker,
       URL: { createObjectURL: () => 'blob:jobs' },
       Blob: function () {},
-      setTimeout,
+      setTimeout: st,
       clearTimeout,
     });
     return { jobs: app.__mstest.jobs, made, app };
@@ -638,6 +647,72 @@ import vm from 'node:vm';
     // the saved image, the section map, the label points: by their pictures' sizes
     assert.equal(budget({ w: 2000, h: 1000 }), 5000);
     assert.equal(budget({ W: 1000, H: 1000 }), 4500);
+  });
+  test('v329.3 review: a timer that fires long after it was due (the page paused in the background) gives the jobs their time again; the worker kept', async () => {
+    // (as iOS does to a backgrounded page: no timers run while it's paused, and the overdue one fires on the way back)
+    let late = 0;
+    const st = (fn, ms) => setTimeout(fn, ms + late);
+    const { jobs, made } = withWorker(st);
+    jobs.hang(300);
+    // (both jobs' timers fire 1.6 s late: due at 0.3 and 0.6 s, they fire at 1.9 and 2.2 s; the first, late, times
+    // both again from then, due at 2.2 and 2.5 s)
+    late = 1600;
+    const a = settle(jobs.run('seg', { w: 10, h: 10 })),
+      b = settle(jobs.run('lpts', { W: 2, H: 2 }));
+    late = 0;
+    const wk = made[0];
+    await wait(2000);
+    assert.equal(jobs.on, true, 'not given up on');
+    assert.equal(wk.stopped, false);
+    // answered once it's running again: both kept
+    wk.answer(wk.sent[0].id, 1);
+    wk.answer(wk.sent[1].id, 2);
+    assert.deepEqual(await a, { ok: true, v: 1 });
+    assert.deepEqual(await b, { ok: true, v: 2 });
+    assert.deepEqual(JSON.parse(JSON.stringify(jobs.stats.timedOut)), {});
+    // and a job that then hangs, its timer on time, is given up on as before
+    const c = settle(jobs.run('png', { w: 1, h: 1 }));
+    assert.deepEqual(await c, { ok: false, why: 'timed out' });
+    assert.equal(jobs.on, false);
+    assert.equal(wk.stopped, true);
+  });
+  test('v329.3 review: a photo-made page over its time: that job rejects "took too long", the worker kept; the job behind it timed after it', async () => {
+    const { jobs, made } = withWorker();
+    jobs.hang(200, 'ppage');
+    const a = settle(jobs.run('ppage', { GW: 10, GH: 10 })),
+      t0 = Date.now();
+    jobs.hang(200);
+    // (due at 0.4 s, after the page)
+    const b = settle(jobs.run('lpts', { W: 2, H: 2 }));
+    const wk = made[0];
+    const ra = await a;
+    assert.equal(ra.ok, false);
+    assert.match(ra.why, /too long/);
+    assert.ok(Date.now() - t0 >= 180, 'not before it was due');
+    assert.equal(jobs.on, true, 'the worker kept');
+    assert.equal(wk.stopped, false);
+    // the worker finishes the page (its answer dropped), then the job behind it, past when it was first due: kept
+    await wait(100);
+    wk.answer(wk.sent[0].id, 'late page');
+    await wait(150);
+    wk.answer(wk.sent[1].id, 'pts');
+    assert.deepEqual(await b, { ok: true, v: 'pts' });
+    assert.equal(jobs.on, true);
+    assert.deepEqual(JSON.parse(JSON.stringify(jobs.stats.done)), { lpts: 1 }, 'the dropped answer isn’t counted');
+    assert.deepEqual(JSON.parse(JSON.stringify(jobs.stats.timedOut)), { ppage: 1 });
+    // a page job that never answers, even after its time once more, is the worker stuck: given up on as any other
+    const c = settle(jobs.run('ppfill', { tw: [], pl: [] }));
+    assert.match((await c).why, /too long/);
+    assert.equal(jobs.on, true);
+    await wait(300);
+    assert.equal(jobs.on, false, 'stuck after its time twice over');
+    assert.equal(wk.stopped, true);
+  });
+  test('v329.3 review: a photo-made page with Sharper subject or Simpler background (data.sal) is given its pixels’ time twice', () => {
+    const budget = withWorker().jobs.budget;
+    // a 2000 × 1500 page: 14 s, and 20 s with the subject weighed
+    assert.equal(budget({ GW: 2000, GH: 1500 }, 'ppage'), 14000);
+    assert.equal(budget({ GW: 2000, GH: 1500, sal: new Float32Array(1) }, 'ppage'), 20000);
   });
   test('Tap something white: something already white says so, whatever it is', () => {
     const E = (s) => shared.__eval(s),
@@ -1454,7 +1529,7 @@ import vm from 'node:vm';
     assert.equal(sw.match(/const SUBC='([^']+)'/)[1], 'marker-studio-subject-' + ver);
     assert.match(sw, /x!==SUBC/, 'kept through updates');
     assert.match(sw, /\/vendor\/subject\//, 'never put in the app’s cache');
-    const [, f, n, h] = src.match(/\{ f: '([^']+)', n: (\d+), h: '([0-9a-f]{64})' \}/),
+    const [, f, n, h] = src.match(/\{\s*f: '([^']+)',\s*n: (\d+),\s*h: '([0-9a-f]{64})',?\s*\}/),
       buf = readFileSync(new URL('vendor/subject/' + ver + '/' + f, root));
     assert.equal(buf.length, +n);
     assert.equal(createHash('sha256').update(buf).digest('hex'), h);
@@ -1613,7 +1688,8 @@ import vm from 'node:vm';
     const ids = [...dialogs.matchAll(/<details class="hlpsec" id="(\w+)">/g)].map((m) => m[1]);
     // (v318.32: What's new has its own section, second, so the run starts one later: found by its first id)
     const at = ids.indexOf('helpScan');
-    assert.deepEqual(ids.slice(at, at + 4), ['helpScan', 'helpMore', 'helpTrouble', 'helpGloss']);
+    // (v329.3: Marker basics, after More you can do)
+    assert.deepEqual(ids.slice(at, at + 5), ['helpScan', 'helpMore', 'helpBasics', 'helpTrouble', 'helpGloss']);
     assert.equal(ids[at - 1], 'helpPhoto');
   });
   test('every button or place they name is a real one in the app (the label as it is on screen)', () => {
@@ -1629,6 +1705,16 @@ import vm from 'node:vm';
           assert.ok(elsewhere.includes(step), `${id}: “${step}” isn’t a label in the app`);
       }
     }
+  });
+  test('Marker basics (v329.3): eight lines, and the places it names are real ones in the app', () => {
+    const b = sec('helpBasics');
+    assert.equal((b.match(/<li>/g) || []).length, 8);
+    const names = [...b.matchAll(/<b>([^<]+)<\/b>/g)]
+      .map((m) => m[1].replace(/&amp;/g, '&').trim())
+      .filter((n) => !/[.”]$/.test(n));
+    assert.deepEqual(names, ['Test strip', 'Markers › Print a swatch chart', 'Blender (0)', 'Running low']);
+    for (const n of names) for (const step of n.split(' › ')) assert.ok(elsewhere.includes(step), `“${step}” isn’t a label in the app`);
+    assert.ok(!/flammable|flames/.test(b), 'no safety sentence (Ben, decision 49)');
   });
   test('the README has both lists, and the colour line says where the colours come from (docs, Help)', () => {
     const r = read('README.md');

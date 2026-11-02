@@ -83,8 +83,8 @@ there if you have time, then a few last questions.
 ## How to report a problem
 
 - **Send feedback** is at the foot of Home, in the guide's **⋯** menu, and in **Help › About**. Write what you did, what
-  happened and what you expected, then tap **Send**. Your device, the app's version, any recent errors and how long
-  the slowest steps took this visit (times and picture sizes only) go with it.
+  happened and what you expected, then tap **Send**. Your device, the app's version, how much space the app uses, any
+  recent errors and how long the slowest steps took this visit (times and picture sizes only) go with it.
 - **To add a screenshot,** tap **Share it instead**: it opens a message with the same details, and you can attach the
   screenshot there.
 - When something goes wrong, the message has **Copy details** beside it. **Help › About › Copy diagnostics** copies

@@ -344,6 +344,12 @@ after(teardown);
     assert.match(data, /no account/);
     assert.match(data, /Home Screen/);
     assert.match(data, /Back up/);
+    // (v329.3) how much space it uses, filled in when the browser answers
+    await page.waitForFunction(() => /Marker Studio is using/.test(document.getElementById('helpUsed').textContent));
+    assert.match(
+      await page.textContent('#helpUsed'),
+      /^Marker Studio is using (under 1 MB|about [\d.]+ (MB|GB)) on this device: your guides and photos, the app itself/,
+    );
     // About: the version shown on Home, which is the service worker's version
     await page.click('#helpAbout > summary');
     await idle(page);
@@ -1943,6 +1949,8 @@ after(teardown);
     'Message',
     'Other brands',
     'Colour most',
+    'Shared a guide',
+    'Dark look',
   ];
   const formOf = (n) =>
     'https://docs.google.com/forms/d/e/1FAIpQLSdTEST/viewform?usp=pp_url&' +
@@ -1983,6 +1991,9 @@ after(teardown);
     await page.click('.ttrow[data-k="add"] [data-r="easy"]');
     await page.fill('[data-q="brands"]', 'Copic, Spectrum Noir');
     await page.fill('[data-q="subjects"]', 'People and flowers');
+    // (v329.3: the two quick choices)
+    await page.click('[data-q2="share"][data-v="like"]');
+    await page.click('[data-q2="dark"][data-v="dm"]');
   }
   test('Tester questions: the colours question asks which markers; two new ones, kept and copied', async () => {
     const { page, errors } = await tasks(0);
@@ -1996,12 +2007,15 @@ after(teardown);
       'Which other marker brands do you use?',
       'What do you colour most (people, animals, flowers, patterns…)?',
       'Would you use it for your next page?',
+      'Did you send a guide file to anyone, or open one someone sent you?',
+      'Would a dark look for the app’s screens help you? (Pages stay white.)',
     ]);
     await answer(page);
+    assert.equal(await page.getAttribute('[data-q2="share"][data-v="like"]', 'aria-pressed'), 'true');
     await page.click('#ttCopy');
     await idle(page);
     const t = await page.evaluate(() => window.__copied.pop());
-    assert.match(t, /\nOther brands: Copic, Spectrum Noir\nColour most: People and flowers$/);
+    assert.match(t, /\nOther brands: Copic, Spectrum Noir\nColour most: People and flowers\nShared a guide: No, but I’d like to\nDark look: Don’t mind$/);
     // kept through a reload
     await page.keyboard.press('Escape');
     await idle(page);
@@ -2011,10 +2025,11 @@ after(teardown);
     await homeTasks(page);
     assert.equal(await page.inputValue('[data-q="brands"]'), 'Copic, Spectrum Noir');
     assert.equal(await page.inputValue('[data-q="subjects"]'), 'People and flowers');
+    assert.equal(await page.getAttribute('[data-q2="dark"][data-v="dm"]', 'aria-pressed'), 'true');
     assert.deepEqual(errors, []);
   });
-  test('Tester questions: to v318.25’s form (27 fields) the new answers go in Message; to the new one (29), their own', async () => {
-    for (const n of [27, 29]) {
+  test('Tester questions: to v318.25’s form (27 fields) the new answers go in Message; to v318.26’s (29) and v329.3’s (31), their own', async () => {
+    for (const n of [27, 29, 31]) {
       const { page, errors, posts, warns, ctx } = await tasks(n);
       await answer(page);
       await page.click('#ttSend');
@@ -2024,13 +2039,18 @@ after(teardown);
       assert.equal(p.n, n, 'one entry per field the form has');
       assert.equal(p.Kind, 'Results');
       assert.equal(p['1 Add your markers'], 'Easy');
+      const two = 'Shared a guide: No, but I’d like to\nDark look: Don’t mind';
       if (n === 27) {
-        assert.equal(p.Message, 'Other brands: Copic, Spectrum Noir\nColour most: People and flowers');
+        assert.equal(p.Message, 'Other brands: Copic, Spectrum Noir\nColour most: People and flowers\n' + two);
         assert.equal(p['Other brands'], null);
       } else {
-        assert.equal(p.Message, '');
+        assert.equal(p.Message, n === 29 ? two : '');
         assert.equal(p['Other brands'], 'Copic, Spectrum Noir');
         assert.equal(p['Colour most'], 'People and flowers');
+      }
+      if (n === 31) {
+        assert.equal(p['Shared a guide'], 'No, but I’d like to');
+        assert.equal(p['Dark look'], 'Don’t mind');
       }
       // Send feedback: its own dialog, the words in Message, nothing more
       await page.keyboard.press('Escape');
@@ -2060,7 +2080,7 @@ after(teardown);
     assert.equal(posts.length, 0);
     assert.equal(await page.evaluate(() => window.__shared.length), 1, 'the share sheet');
     assert.equal(warns.length, 1, JSON.stringify(warns));
-    assert.match(warns[0], /RESULTS_FORM has 28 fields; this version sends 27 or 29/);
+    assert.match(warns[0], /RESULTS_FORM has 28 fields; this version sends 27, 29 or 31/);
     assert.deepEqual(errors, []);
   });
 }

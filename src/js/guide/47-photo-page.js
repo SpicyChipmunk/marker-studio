@@ -301,50 +301,43 @@ function ppRegionsCore(q, w, h) {
   }
   return { L: L, mk: Int32Array.from(mk), R: R };
 }
-// the squared distance from each pixel to the nearest pixel where f is 0 (exact, Felzenszwalb and Huttenlocher's two
-// passes of a 1-D lower envelope)
-function ppEdtCore(f, w, h) {
-  const INF = 1e20,
-    d = new Float64Array(w * h),
-    nmax = Math.max(w, h),
-    v = new Int32Array(nmax),
-    z = new Float64Array(nmax + 1),
-    g = new Float64Array(nmax),
-    o = new Float64Array(nmax);
-  for (let i = 0; i < w * h; i++) d[i] = f[i] ? INF : 0;
-  const pass = function (n) {
-    let k = 0;
-    v[0] = 0;
-    z[0] = -INF;
-    z[1] = INF;
-    for (let q = 1; q < n; q++) {
-      let s = (g[q] + q * q - (g[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
-      while (s <= z[k]) {
-        k--;
-        s = (g[q] + q * q - (g[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
-      }
-      k++;
-      v[k] = q;
-      z[k] = s;
-      z[k + 1] = INF;
-    }
-    k = 0;
-    for (let q = 0; q < n; q++) {
-      while (z[k + 1] < q) k++;
-      o[q] = (q - v[k]) * (q - v[k]) + g[v[k]];
-    }
-  };
-  for (let x = 0; x < w; x++) {
-    for (let y = 0; y < h; y++) g[y] = d[y * w + x];
-    pass(h);
-    for (let y = 0; y < h; y++) d[y * w + x] = o[y];
-  }
+// (v329.2) Which regions of L have a pixel at least minR from every pixel where f is 0: the merge step's test of a
+// region's widest inside circle. The same answer as an exact distance map (v329.1 worked one out, Felzenszwalb and
+// Huttenlocher's, and kept each region's largest), for that is all the step asks: a pixel whose nearest 0 is under minR
+// away has it within C = ⌈minR⌉ along both axes, so the distance down each column capped at C, then the nearest along
+// the row within C, finds it; a pixel with none that near is reported wide whatever lies further. Each pixel is
+// looked at only while its region isn't yet known to be wide, and only if its own column could make it so: on the
+// bench about a quarter of the exact map's time, and every page the same (30 photos, with Focus and Subject only)
+function ppWideCore(f, L, R, w, h, minR) {
+  const n = w * h,
+    C = Math.ceil(minR),
+    m2 = minR * minR,
+    cd = new Int32Array(n),
+    wide = new Uint8Array(R);
+  for (let x = 0; x < w; x++) cd[x] = f[x] ? C : 0;
+  for (let p = w; p < n; p++) cd[p] = f[p] ? Math.min(cd[p - w] + 1, C) : 0;
+  for (let p = n - w - 1; p >= 0; p--) if (cd[p + w] + 1 < cd[p]) cd[p] = cd[p + w] + 1;
   for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) g[x] = d[y * w + x];
-    pass(w);
-    for (let x = 0; x < w; x++) d[y * w + x] = o[x];
+    const r = y * w;
+    for (let x = 0; x < w; x++) {
+      const p = r + x,
+        l = L[p];
+      if (wide[l] || cd[p] * cd[p] < m2) continue;
+      const lo = Math.max(0, x - C),
+        hi = Math.min(w - 1, x + C);
+      let ok = true;
+      for (let q = lo; q <= hi; q++) {
+        const dx = q - x,
+          c = cd[r + q];
+        if (dx * dx + c * c < m2) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) wide[l] = 1;
+    }
   }
-  return d;
+  return wide;
 }
 // Merge the regions (L: ids 0..R-1, mk: each one's marker) until none is too small or too narrow:
 //   - two touching regions with the same marker are one region (always, first)
@@ -363,7 +356,8 @@ function ppMergeCore(L, mk0, w, h, pal, o) {
   let mk = mk0,
     R = mk.length,
     minArea = o.minArea;
-  const minR2 = o.minR * o.minR,
+  const sal = o.sal || null,
+    edge = new Uint8Array(n),
     // (union-find over the current ids)
     find = function (par, x) {
       while (par[x] !== x) {
@@ -375,7 +369,9 @@ function ppMergeCore(L, mk0, w, h, pal, o) {
     // the current ids made 0..R-1 again (in order of first appearance), each keeping its root's marker
     relabel = function (par) {
       const map = new Int32Array(R).fill(-1),
-        nm = [];
+        nm = [],
+        ar = new Int32Array(R),
+        sa = sal ? new Float64Array(R) : null;
       let k = 0;
       for (let i = 0; i < n; i++) {
         const r = find(par, L[i]);
@@ -385,13 +381,22 @@ function ppMergeCore(L, mk0, w, h, pal, o) {
           nm.push(mk[r]);
         }
         L[i] = t;
+        ar[t]++;
+        if (sa) sa[t] += sal[i];
       }
       mk = Int32Array.from(nm);
       R = k;
+      area = ar.subarray(0, R);
+      salS = sa ? sa.subarray(0, R) : null;
     },
     // each pair of touching regions and how long their border is (pixels side by side)
+    // (keyed a × KM + b: KM is R while that keeps the keys small integers, and the same order either way, as a Map
+    // keeps the order pairs were first seen; edge: 0 where a pixel touches another region)
     borders = function () {
-      const B = new Map();
+      const B = new Map(),
+        M = R <= 32767 ? R : 4194304;
+      KM = M;
+      edge.fill(1);
       for (let y = 0; y < h; y++)
         for (let x = 0; x < w; x++) {
           const p = y * w + x,
@@ -399,20 +404,28 @@ function ppMergeCore(L, mk0, w, h, pal, o) {
           if (x < w - 1) {
             const b = L[p + 1];
             if (a !== b) {
-              const k = a < b ? a * 4194304 + b : b * 4194304 + a;
+              const k = a < b ? a * M + b : b * M + a;
               B.set(k, (B.get(k) || 0) + 1);
+              edge[p] = edge[p + 1] = 0;
             }
           }
           if (y < h - 1) {
             const b = L[p + w];
             if (a !== b) {
-              const k = a < b ? a * 4194304 + b : b * 4194304 + a;
+              const k = a < b ? a * M + b : b * M + a;
               B.set(k, (B.get(k) || 0) + 1);
+              edge[p] = edge[p + w] = 0;
             }
           }
         }
       return B;
     };
+  let KM = 4194304;
+  // (each id's area, and its Focus sum: worked out here, then by each relabel)
+  let area = new Int32Array(R),
+    salS = sal ? new Float64Array(R) : null;
+  for (let i = 0; i < n; i++) area[L[i]]++;
+  if (sal) for (let i = 0; i < n; i++) salS[L[i]] += sal[i];
   let iters = 0,
     rounds = 0;
   for (;;) {
@@ -423,8 +436,8 @@ function ppMergeCore(L, mk0, w, h, pal, o) {
     for (let i = 0; i < R; i++) par[i] = i;
     let joined = false;
     B.forEach(function (c, k) {
-      const a = Math.floor(k / 4194304),
-        b = k - a * 4194304;
+      const a = Math.floor(k / KM),
+        b = k - a * KM;
       if (mk[a] === mk[b]) {
         const ra = find(par, a),
           rb = find(par, b);
@@ -440,13 +453,10 @@ function ppMergeCore(L, mk0, w, h, pal, o) {
     }
     // (2) the small, then (once none is) the narrow: the widest circle inside each region, from the distance to its
     // edge (worked out only when no region is too small, as it's the slowest step)
-    const area = new Int32Array(R);
-    for (let i = 0; i < n; i++) area[L[i]]++;
     let ma = null;
-    if (o.sal) {
+    if (sal) {
       // (Focus: a region mostly on the subject may be smaller, one mostly off it bigger; never narrower than minR)
-      const s = new Float64Array(R);
-      for (let i = 0; i < n; i++) s[L[i]] += o.sal[i];
+      const s = salS;
       ma = new Float64Array(R);
       for (let r = 0; r < R; r++)
         ma[r] = minArea * (s[r] / Math.max(1, area[r]) > 0.5 ? o.areaK[0] : o.areaK[1]);
@@ -460,26 +470,11 @@ function ppMergeCore(L, mk0, w, h, pal, o) {
         ns++;
       }
     if (!ns) {
-      const edge = new Uint8Array(n);
-      for (let y = 0; y < h; y++)
-        for (let x = 0; x < w; x++) {
-          const p = y * w + x,
-            a = L[p];
-          // (a region's inside: not next to another region; the picture's edge counts as inside, so a region along
-          // it isn't judged narrow for being cut by the frame)
-          edge[p] =
-            (x > 0 && L[p - 1] !== a) ||
-            (x < w - 1 && L[p + 1] !== a) ||
-            (y > 0 && L[p - w] !== a) ||
-            (y < h - 1 && L[p + w] !== a)
-              ? 0
-              : 1;
-        }
-      const D = ppEdtCore(edge, w, h),
-        r2 = new Float64Array(R);
-      for (let i = 0; i < n; i++) if (D[i] > r2[L[i]]) r2[L[i]] = D[i];
+      // (edge, from borders(): a region's inside, not next to another region; the picture's edge counts as inside,
+      // so a region along it isn't judged narrow for being cut by the frame)
+      const wide = ppWideCore(edge, L, R, w, h, o.minR);
       for (let r = 0; r < R; r++)
-        if (mk[r] !== bgK && r2[r] < minR2) {
+        if (mk[r] !== bgK && !wide[r]) {
           small[r] = 1;
           ns++;
         }
@@ -499,8 +494,8 @@ function ppMergeCore(L, mk0, w, h, pal, o) {
       bestN = new Int32Array(R).fill(-1),
       nearBg = bgK >= 0 ? new Int32Array(R).fill(-1) : null;
     B.forEach(function (c, k) {
-      const a = Math.floor(k / 4194304),
-        b = k - a * 4194304;
+      const a = Math.floor(k / KM),
+        b = k - a * KM;
       if (nearBg && (mk[a] === bgK || mk[b] === bgK)) {
         if (mk[a] === bgK && mk[b] !== bgK) nearBg[b] = a;
         else if (mk[b] === bgK && mk[a] !== bgK) nearBg[a] = b;
@@ -711,18 +706,31 @@ function ppPageCore(L, rmk, w, h, GW, GH, fragMin) {
             oy = dy - (ty / 8 - 0.5);
           WT[(ty * 9 + tx) * 25 + (dy + 2) * 5 + dx + 2] = Math.exp(-(ox * ox + oy * oy) * IS2);
         }
+  // (v330: the column's working pixel and eighth found once, not once a row: the same numbers)
+  const cxA = new Int32Array(GW),
+    txA = new Uint8Array(GW);
+  for (let X = 0; X < GW; X++) {
+    const u = (X + 0.5) * sx - 0.5,
+      ix = Math.round(u);
+    cxA[X] = ix < 0 ? 0 : ix >= w ? w - 1 : ix;
+    txA[X] = Math.max(0, Math.min(8, Math.round((u - ix + 0.5) * 8)));
+  }
   for (let Y = 0; Y < GH; Y++) {
     const v = (Y + 0.5) * sy - 0.5,
-      iy = Math.round(v);
+      iy = Math.round(v),
+      cy = iy < 0 ? 0 : iy >= h ? h - 1 : iy,
+      ty = Math.max(0, Math.min(8, Math.round((v - iy + 0.5) * 8))),
+      row = cy * w,
+      Yo = Y * GW,
+      dy0 = cy < 2 ? -cy : -2,
+      dy1 = cy > h - 3 ? h - 1 - cy : 2;
     for (let X = 0; X < GW; X++) {
-      const u = (X + 0.5) * sx - 0.5,
-        ix = Math.round(u),
-        cx = ix < 0 ? 0 : ix >= w ? w - 1 : ix,
-        cy = iy < 0 ? 0 : iy >= h ? h - 1 : iy,
-        c = L[cy * w + cx];
+      const cx = cxA[X],
+        p = row + cx,
+        c = L[p];
       // (the same region all round: no border near)
-      if (inner[cy * w + cx]) {
-        G[Y * GW + X] = c;
+      if (inner[p]) {
+        G[Yo + X] = c;
         continue;
       }
       // (the weights by region, in two small arrays: at most 25 regions)
@@ -730,17 +738,15 @@ function ppPageCore(L, rmk, w, h, GW, GH, fragMin) {
         best = c,
         bw = -1;
       // (the weights from a table: the point's place within its working pixel in eighths, each way)
-      const tx = Math.max(0, Math.min(8, Math.round((u - ix + 0.5) * 8))),
-        ty = Math.max(0, Math.min(8, Math.round((v - iy + 0.5) * 8))),
-        wb = (ty * 9 + tx) * 25;
-      for (let dy = -2; dy <= 2; dy++) {
-        const yy = cy + dy;
-        if (yy < 0 || yy >= h) continue;
-        for (let dx = -2; dx <= 2; dx++) {
-          const xx = cx + dx;
-          if (xx < 0 || xx >= w) continue;
-          const r = L[yy * w + xx],
-            e = WT[wb + (dy + 2) * 5 + dx + 2];
+      const wb = (ty * 9 + txA[X]) * 25,
+        dx0 = cx < 2 ? -cx : -2,
+        dx1 = cx > w - 3 ? w - 1 - cx : 2;
+      for (let dy = dy0; dy <= dy1; dy++) {
+        const yo = (cy + dy) * w + cx,
+          wo = wb + (dy + 2) * 5 + 2;
+        for (let dx = dx0; dx <= dx1; dx++) {
+          const r = L[yo + dx],
+            e = WT[wo + dx];
           let i = 0;
           while (i < nv && vr[i] !== r) i++;
           if (i === nv) {
@@ -754,7 +760,7 @@ function ppPageCore(L, rmk, w, h, GW, GH, fragMin) {
           }
         }
       }
-      G[Y * GW + X] = best;
+      G[Yo + X] = best;
     }
   }
   // the lines: a pixel next to (left, right, above, below) one of another region
@@ -793,35 +799,56 @@ function ppPageCore(L, rmk, w, h, GW, GH, fragMin) {
         y0 = 1e9,
         x1 = -1,
         y1 = -1;
+      // (v330: by runs along the row, not pixel by pixel: the same sections, the same numbers)
       st[sp++] = p;
       lab[p] = S;
       while (sp) {
         const q = st[--sp],
-          x = q % GW,
-          y = (q / GW) | 0;
-        area++;
-        sxx += x;
-        syy += y;
-        if (x < x0) x0 = x;
-        if (x > x1) x1 = x;
+          y = (q / GW) | 0,
+          ro = y * GW,
+          re = ro + GW - 1;
+        let l = q,
+          r = q;
+        while (l > ro && lab[l - 1] === 0) lab[--l] = S;
+        while (r < re && lab[r + 1] === 0) lab[++r] = S;
+        const xl = l - ro,
+          xr = r - ro,
+          len = r - l + 1;
+        area += len;
+        sxx += ((xl + xr) * len) / 2;
+        syy += y * len;
+        if (xl < x0) x0 = xl;
+        if (xr > x1) x1 = xr;
         if (y < y0) y0 = y;
         if (y > y1) y1 = y;
-        if (x === 0 || y === 0 || x === GW - 1 || y === GH - 1) bpx++;
-        if (x > 0 && lab[q - 1] === 0) {
-          lab[q - 1] = S;
-          st[sp++] = q - 1;
+        if (y === 0 || y === GH - 1) bpx += len;
+        else {
+          if (xl === 0) bpx++;
+          if (xr === GW - 1) bpx++;
         }
-        if (x < GW - 1 && lab[q + 1] === 0) {
-          lab[q + 1] = S;
-          st[sp++] = q + 1;
+        if (y > 0) {
+          let i = l - GW;
+          const e = r - GW;
+          while (i <= e) {
+            if (lab[i] === 0) {
+              lab[i] = S;
+              st[sp++] = i;
+              while (i < e && lab[i + 1] === 0) i++;
+            }
+            i++;
+          }
         }
-        if (y > 0 && lab[q - GW] === 0) {
-          lab[q - GW] = S;
-          st[sp++] = q - GW;
-        }
-        if (y < GH - 1 && lab[q + GW] === 0) {
-          lab[q + GW] = S;
-          st[sp++] = q + GW;
+        if (y < GH - 1) {
+          let i = l + GW;
+          const e = r + GW;
+          while (i <= e) {
+            if (lab[i] === 0) {
+              lab[i] = S;
+              st[sp++] = i;
+              while (i < e && lab[i + 1] === 0) i++;
+            }
+            i++;
+          }
         }
       }
       reg.push(G[p]);
@@ -1857,6 +1884,9 @@ function ppSize() {
 function ppTargets(prep) {
   if (pp && pp.f === 'subject' && prep.sal && typeof ppSubjectTargets === 'function')
     return ppSubjectTargets(prep);
+  // (v329.2: Sharper subject and Simpler background choose more for the subject's colours, 48-subject)
+  if (pp && (pp.f === 'sharp' || pp.f === 'calm') && prep.sal && typeof ppFocusTargets === 'function')
+    return ppFocusTargets(prep);
   return { l: prep.tl, w: prep.tw };
 }
 // (each picture object its own number, for the key above: a turn or crop makes a new working picture, not a new photo)
@@ -1896,8 +1926,20 @@ function ppChoose(prep, d) {
       n +
       '|' +
       (n ? 0 : cap) +
-      (pp.f === 'subject' && prep.sal ? '|subject' : ''),
+      (pp.f === 'subject' && prep.sal ? '|subject' : '') +
+      // (v329.2: and Sharper subject's and Simpler background's, whose colours count the subject more)
+      ((pp.f === 'sharp' || pp.f === 'calm') && prep.sal ? '|focus' : '') +
+      // (v329.3 review: and the markers' colours: a marker recoloured in your collection isn't chosen as it was)
+      '|' +
+      ppLabSig(pool),
   };
+}
+// (v329.3 review) the markers' colours as a short key: a hash of their L*a*b*, to a tenth of a unit
+function ppLabSig(list) {
+  let h = 2166136261;
+  for (const m of list)
+    for (let c = 0; c < 3; c++) h = Math.imul(h ^ (Math.round(m.lab[c] * 10) | 0), 16777619) >>> 0;
+  return h.toString(36);
 }
 // (the colours of a list of markers, for the job)
 function ppLabs(list) {
@@ -2002,13 +2044,73 @@ function ppMemPut(k, prep, r, mc) {
   while (_ppMem.size > PP_MEM) _ppMem.delete(_ppMem.keys().next().value);
 }
 // the page made: in the worker (JOBS 'ppage'), or here where there's none
-function ppRun(data) {
+// (v329.3 review: here only when the worker never started. One that ran out of time, or of memory, or died meanwhile
+// isn't followed by the same job on the page's thread, which froze an iPad for 20-40 s or lost the tab: rejected
+// instead, with err.pp 'long', 'memory' or 'gone', and said, ppFailWords. prep: the photo the job is for, not
+// _ppPrep, which may be a newer turn or crop by now)
+function ppRun(data, prep) {
+  const t0 = Date.now();
   return JOBS.run('ppage', data, [data.rgb.buffer]).catch(function (e) {
-    if (e && e.message === 'superseded') throw e;
+    const how = ppRunFail(e, ppJobsUp(), Date.now() - t0);
+    if (how === 'pass') throw e;
+    if (how !== 'here') throw Object.assign(new Error('page job: ' + ((e && e.message) || e)), { pp: how });
     // (the worker's copy went with it: a fresh one for the page)
-    if (!data.rgb.length) data.rgb = _ppPrep.rgb.slice();
+    if (!data.rgb.length) data.rgb = prep.rgb.slice();
     return ppBuildCore(data);
   });
+}
+// (how long a job may wait for a worker that's starting: one whose job is given up on 'no worker' after longer was
+// working on it, and went)
+const PP_START_MS = 2000;
+// (v329.3 review) why a page job failed (e, its error; up: the worker had answered a job this session; ms: how long it
+// waited): 'pass' (superseded), 'long' (over its time: 03-jobs says 'too long', or 'timed out' before), 'memory',
+// 'gone' (the worker went while it was there), else 'here' (none to be had: made on the page)
+function ppRunFail(e, up, ms) {
+  const m = String((e && e.message) || e || '');
+  if (m === 'superseded') return 'pass';
+  if (/too long|timed out/.test(m)) return 'long';
+  if (/memory|allocat/i.test(m)) return 'memory';
+  if (m === 'no worker' && (up || ms > PP_START_MS)) return 'gone';
+  return 'here';
+}
+// (whether the worker has answered any job this session: it started)
+function ppJobsUp() {
+  const s = JOBS.stats;
+  return [s.done, s.failed, s.dropped].some(function (o) {
+    return Object.keys(o).some(function (k) {
+      return o[k] > 0;
+    });
+  });
+}
+// (v329.3 review) a make that failed, in words (null: the caller's own): over its time, short of memory, or the
+// worker gone for this session
+function ppFailWords(e) {
+  const how = e && e.pp;
+  if (how === 'long') {
+    // (what's left to try: a coarser step unless it's the coarsest, Even unless it's on)
+    const opts = [pp && pp.d > 0 ? 'a coarser Detail' : '', pp && pp.f !== 'even' ? 'Even for Focus' : '']
+      .filter(Boolean)
+      .join(' or ');
+    return (
+      'Couldn’t make this page in time on this device. ' +
+      (opts ? 'Try ' + opts + ', or crop the photo.' : 'Crop the photo, then try again.')
+    );
+  }
+  if (how === 'memory')
+    return 'Couldn’t make the page: this device ran short of memory. Close other apps or crop the photo, then try again.';
+  if (how === 'gone')
+    return 'Couldn’t make the page on this device. Close other apps, then reopen Marker Studio and try again.';
+  return null;
+}
+// (v329.3 review) the line under the picture once a page has taken half its time: Detail and Focus said when they're
+// why
+function ppSlowWords() {
+  const fine = pp.d >= 3,
+    foc = pp.f === 'sharp' || pp.f === 'calm' ? SUB_NAMES[pp.f] : '';
+  return (
+    (fine ? 'A fine Detail' + (foc ? ' with ' + foc : '') : 'This page' + (foc ? ' with ' + foc : '')) +
+    ' takes a while on this device: still working…'
+  );
 }
 // Make the page for the open photo at its Detail step, and put it in place (ppCommit). geo: the photo's turn or crop
 // changed (the zones can't follow); quiet: no line under the picture. Resolves true when it's in place, false when a
@@ -2047,10 +2149,20 @@ function ppMake(geo, quiet) {
               pp.f = 'even';
               // (said once the page is made, in place of its usual line: ppSaid; v328: the choice it was, and only
               // where Focus is offered)
-              _ppSaid = /not stored/.test(String(e && e.message))
-                ? 'Focus is back on Even: the subject finder isn’t on this device.' +
-                  (subCan() ? ' Choose ' + fn + ' to download it.' : '')
-                : errNote('Couldn’t find the photo’s subject, so the page is made Even.', 'Focus', e);
+              const msg = String(e && e.message),
+                kind = subFailKind(e);
+              // (v329.3 review: out of memory or too slow said as such, Copy details still told; a damaged stored
+              // copy, let go of by subMap, offered again)
+              if (kind) errLog('Focus', e);
+              _ppSaid = /not stored/.test(msg)
+                ? /damaged/.test(msg)
+                  ? 'Focus is back on Even: the subject finder’s stored copy was damaged.' +
+                    (subCan() ? ' Choose ' + fn + ' to download it again.' : '')
+                  : 'Focus is back on Even: the subject finder isn’t on this device.' +
+                    (subCan() ? ' Choose ' + fn + ' to download it.' : '')
+                : kind
+                  ? SUB_OFF_SAID[kind]
+                  : errNote('Couldn’t find the photo’s subject, so the page is made Even.', 'Focus', e);
               return null;
             })
           : Promise.resolve(null);
@@ -2060,7 +2172,9 @@ function ppMake(geo, quiet) {
           // (v326 Subject only: a subject the finder calls under SUB_FEW of the photo isn't one, Even instead, said)
           if (pp.f === 'subject' && prep.sal && ppSubjectShare(prep) < SUB_FEW) {
             pp.f = 'even';
-            _ppSaid = 'No clear subject found in this photo, so the background stays.';
+            // (v329.2: a small subject, the right shape for it, offered the crop instead, 48-subject ppCropOfferHTML)
+            if (ppSmallSubOK(prep)) _ppSmallSub = prep.key;
+            else _ppSaid = 'No clear subject found in this photo, so the background stays.';
           }
           // (chosen again now the map is in: Subject only's choice has a key of its own, ppChoose)
           ch = ppChoose(prep, pp.d) || ch;
@@ -2076,11 +2190,27 @@ function ppMake(geo, quiet) {
             _ppMem.set(mk, hit);
             return Object.assign({}, hit, { lab: hit.lab.slice() });
           }
-          const jd = ppJobData(prep, pp.d, ch);
-          return ppRun(jd).then(function (r) {
-            ppMemPut(mk, prep, r, jd.minCount);
-            return r;
-          });
+          const jd = ppJobData(prep, pp.d, ch),
+            // (v329.3 review: half its time gone with no answer, said: a slow iPad's fine page had looked stuck)
+            slow = JOBS.on
+              ? setTimeout(
+                  function () {
+                    if (gen === _ppGen && lg === loadGen && pp) note(ppSlowWords());
+                  },
+                  JOBS.budget(jd, 'ppage') / 2,
+                )
+              : 0;
+          return ppRun(jd, prep).then(
+            function (r) {
+              clearTimeout(slow);
+              ppMemPut(mk, prep, r, jd.minCount);
+              return r;
+            },
+            function (e) {
+              clearTimeout(slow);
+              throw e;
+            },
+          );
         })
         .then(function (r) {
           if (!r) return res(false);
@@ -2212,6 +2342,10 @@ function ppCommit(r, ch, prep, geo) {
   // (the count it was made for: the one asked for, though fewer may suit the photo, so the plan is as made while
   // Markers in this guide says it: ppWant)
   pp.n = ch.n;
+  // (v329.3 review: and how many it chose, fewer when no more suit the photo: said by the count line, ctlPhotoPage;
+  // not saved, a guide opened again says it once made again)
+  pp.got = ch.chosen.length;
+  _ppMadeAt = { d: pp.d, f: pp.f, lg: loadGen };
   // (v328 review: made at the slider's end, all, chosen there)
   pp.all = !!pp.hand && limitN >= MK_ALL;
   pp.sig = ch.sig;
@@ -2571,7 +2705,7 @@ function ppWorkerSrc() {
       ppDe,
       ppQuantCore,
       ppRegionsCore,
-      ppEdtCore,
+      ppWideCore,
       ppMergeCore,
       ppThinCore,
       ppPageCore,
@@ -2757,9 +2891,10 @@ function ppBegin(tok, f35) {
       .catch(function (err) {
         if (tok !== loadGen) return;
         _preview = false;
+        // (v329.3 review: over its time or short of memory, said what to try, ppFailWords)
         note(
           errNote(
-            'Couldn’t make a page from that photo. Try it again, or another photo.',
+            ppFailWords(err) || 'Couldn’t make a page from that photo. Try it again, or another photo.',
             'Making a page',
             err,
           ),
@@ -3337,23 +3472,28 @@ function ppShadeLineWire() {
   if (go)
     go.addEventListener('click', function () {
       ppShadeGone();
-      // (as the Shading row's Photo: 52-controls-plan-wire)
+      // (as the Shading row's Photo: 52-controls-plan-wire; v329.2: the tones chosen after a paint, this line saying
+      // so meanwhile, ptStyleBusy)
+      ptStyleCancel();
       if (!shPresetApply('photo')) return;
-      planWhy = 'Shading: Photo';
-      shadeFlatMode = false;
-      guideDirty = true;
-      gradFollowLight();
-      normalizeTones();
-      gTab = 'shading';
-      renderControls();
-      renderGuide();
-      ctlRefocus('#sfTab-shading');
-      // (v329.1: the step made here, so the toast's Undo is this step's, and does nothing once another step comes or
-      // another guide is open, as every Plan toast's: planToastUndo. The click's own commit after it then finds the
-      // plan unchanged and adds nothing. Its bare planUndo() had undone whatever came last, in whichever guide)
-      planCommit();
-      toastAction('Shaded like the photo.', 'Undo', planToastUndo(planStack[planStack.length - 1]));
-      planToastMark();
+      ptStyleBusy(document.getElementById('sfPpShLine'), function () {
+        planWhy = 'Shading: Photo';
+        shadeFlatMode = false;
+        guideDirty = true;
+        gradFollowLight();
+        normalizeTones();
+        gTab = 'shading';
+        renderControls();
+        renderGuide();
+        ctlRefocus('#sfTab-shading');
+        // (v329.1: the step made here, so the toast's Undo is this step's, and does nothing once another step comes
+        // or another guide is open, as every Plan toast's: planToastUndo. v329.2: the click's own commit came while
+        // the tones waited, and didn't record one. Its bare planUndo() had undone whatever came last, in whichever
+        // guide)
+        planCommit();
+        toastAction('Shaded like the photo.', 'Undo', planToastUndo(planStack[planStack.length - 1]));
+        planToastMark();
+      });
     });
   if (x)
     x.addEventListener('click', function () {
@@ -3379,7 +3519,13 @@ function ctlPhotoPage() {
   const d = pp.d,
     st = PP_STEPS[d],
     cntTxt = countEl ? countEl.textContent : '',
-    hand = pp.hand ? ' (set by you)' : '',
+    // (v329.3 review: a count set by hand that the photo couldn't use, said: the markers past those that suit add
+    // nothing, so the page has fewer than asked; not at the slider's end, all, which asks for as many as suit)
+    hand = pp.hand
+      ? pp.got != null && pp.got < pp.n && !pp.all
+        ? ' (' + pp.n + ' set by you: the others don’t suit this photo’s colours)'
+        : ' (set by you)'
+      : '',
     adjust =
       '<button id="sfAdjToggle" class="sfexp sfc-mt12" aria-expanded="' +
       !!showAdjust +
@@ -3575,7 +3721,10 @@ function ppSetDetail(d) {
 // the page made again for a change (Detail, the markers, the paper, a turn or crop: geo), as reprocessImg does it for
 // a colouring page: its Undo step kept already (okGeom), the step drawn again once it's in place
 // (what a make has to say instead of its usual line: Focus gone back to Even, ppMake)
-let _ppSaid = null;
+let _ppSaid = null,
+  // (v329.3 review: the Detail step and Focus of the page in place, so a make that failed for time or memory leaves
+  // the controls as the page is, ppRemade)
+  _ppMadeAt = null;
 function ppSaid() {
   const t = _ppSaid;
   _ppSaid = null;
@@ -3598,8 +3747,13 @@ function ppRemade(geo) {
     })
     .catch(function (err) {
       geoCancel();
+      const words = ppFailWords(err);
+      if (words && pp && _ppMadeAt && _ppMadeAt.lg === loadGen) {
+        pp.d = _ppMadeAt.d;
+        pp.f = _ppMadeAt.f;
+      }
       renderControls();
-      note(errNote('Couldn’t make the page again.', 'Making a page', err));
+      note(errNote(words || 'Couldn’t make the page again.', 'Making a page', err));
       return false;
     });
 }

@@ -170,6 +170,59 @@ In a **Private** Safari tab (fresh each time). For "phone width", put that Safar
 
 What recent releases changed that Parts A and B don't already cover.
 
+**New in v329.3: sets and ideas in To buy, Copy marker list, guide notes, Marker basics, storage, tester questions**
+
+- [ ] ★ **Sets in To buy:** add 5 or so Ohuhu markers you don't own to To buy → "Sets with markers on your list" under
+      the list: the rows make sense (the set with most of your list first, "N new to you"), "Has …" shows your caps'
+      codes, and any leftovers are named. Check one row against the set's real contents.
+- [ ] ★ **Ideas from your collection:** To buy › Fill the biggest gaps → Markers › Unowned in that order; **Add the top
+      5 to To buy** → back in To buy with the five ("fills a big gap in your collection"); Undo in the message takes
+      them off. Finish families: its markers are numbered 1, 2, 3… on across the families.
+- [ ] ★ **Copy marker list:** a shaded guide › Share & print › Copy marker list → "Copied N markers"; paste into Notes
+      or Messages: one line a brand, by colour family, the shading's markers included.
+- [ ] ★ **Notes:** ⋯ › Notes… → type two lines (the keyboard doesn't zoom the page) › Done. Close and reopen the app:
+      still there. Finish a page: the Page finished card shows the first line and Edit. Print › Page to colour → "Notes:
+      …" under the key, not over the picture. Share › Guide file, open it in a Safari tab: no notes.
+- [ ] ★ **Notes with the keyboard up:** ⋯ › Notes… on the iPad, in Safari and from the Home Screen: can you see what
+      you type and reach Done while the keyboard is up (or once it's dismissed)? A long note (all 500 characters) ›
+      Print › Page to colour: where it doesn't fit, a page headed "Notes" with the whole note.
+- [ ] **Undo and notes:** change the plan, write a note, Undo → the plan goes back, the note stays.
+- [ ] **Marker basics:** Help › Marker basics reads well; the places it names (Test strip, Print a swatch chart,
+      Running low) are where it says.
+- [ ] **Storage:** Help › Your data → "Marker Studio is using about N MB on this device…" (a sensible figure; shows a
+      moment after Help opens). Copy diagnostics → "Site storage used (spicychipmunk.github.io): …" before the Browser
+      line.
+- [ ] **Random, shading included:** a shaded guide with some sections coloured; Random with Prefer markers you haven't
+      used yet → its shadow markers aren't preferred.
+- [ ] ★ **After Crop to the subject (Ben's 24 photos):** rate the page made after the crop too, not only the whole
+      photo's: a tight crop is found again, and could come out Even, or offer the crop again.
+- [ ] **Tester tasks:** the two new choices (sent or opened a guide file; a dark look) take a tap each and show as
+      chosen; Send results reaches the form (once the new link is in).
+
+- [ ] **Review fixes (v329.3):** in Colour along, Find next › **Tick it** ticks the shown section (and with VoiceOver on,
+      double-tap the picture: does it tick the right one?); untick a section → the message has Undo; a Paint drag
+      across a coloured section keeps its marker. Put the iPad away for 30 s while a page from a photo is being made,
+      come back: it finishes, and the next page is as quick as before. A page photographed on a check tablecloth shows
+      its corners to check first.
+
+**New in v329.2: a quicker page from a photo, a new subject finder, Focus and photo tones improved**
+
+- [ ] ★ **The new subject finder, timed:** a photo with a clear subject (a pet, a flower) › Focus › Sharper subject ›
+      download it (about 8 MB). How long from the tap until the page is shown, the first time and then on another
+      photo (v329.1's took several seconds more)? The page step answers meanwhile?
+- [ ] ★ **A page from a big photo:** how long until the page shows, and each Detail step after (a little quicker than
+      v329.1: the page's own work is about a fifth less)?
+- [ ] **Waits after picking a photo:** in a fresh visit, make a page from a full-size photo, then Copy diagnostics and
+      note the "Longest waits, this visit" lines. Did the screen hitch after picking? (These decide whether the
+      photo's saved copy and page preparation move to the background after the beta.)
+- [ ] **Subject only on a cat or a flower:** the cut-out's outline follows the fur and the petals; no stray leaves.
+- [ ] **A small subject:** a flower small in a big photo › Subject only → "The subject is too small a part of this
+      photo for Subject only. Crop to the subject" › Crop to the subject → the page with the background white.
+- [ ] **No clear subject:** a beach or sea photo › Sharper subject → its hint says no clear subject was found.
+- [ ] **Shading like the photo:** a Very detailed page › Build › Shading › Photo → "Shading like the photo…" shows,
+      then the tones; Undo takes them back in one step. After a page's first Build, Shade it → the same line, then
+      the shaded Plan.
+
 **New in v329.1: quicker photo tones and sharp outlines, Undo the last tick-off**
 
 - [ ] ★ **Photo tones, timed:** a photo-made page at Very detailed › Build › Shading › Photo, then tick Two tone sets.

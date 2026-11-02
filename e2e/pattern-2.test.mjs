@@ -1089,6 +1089,39 @@ let k=0;for(let x=150;x+${step}<=W-150;x+=${step})for(let y=150;y+${step}<=H-150
     assert.equal(await page.textContent('#sfMkNlbl'), 'all · ' + all);
     assert.deepEqual(errors, []);
   });
+  // (v329.3 review, CC3 M1) the step to either end disables the button under the finger, and WebKit sends it no
+  // pointerup or click: the guide is laid on the press itself. Tapped, not filled in, so the button's own path runs
+  test('a tap on − at 3, or + one short of all, lays the guide at once', async () => {
+    const { page, errors } = await openApp({ width: 820, height: 1180 });
+    await benBlend(page, 999);
+    const all = new Set(Object.values(await keysNow(page))).size;
+    await tab(page, 'colours');
+    await page.evaluate(() => {
+      __mstest.styleVars.limitN = 3;
+      __mstest.reassign();
+    });
+    await idle(page);
+    assert.equal(new Set(Object.values(await keysNow(page))).size, 3);
+    await page.click('#sfMkMinus');
+    await idle(page);
+    assert.equal(await page.textContent('#sfMkNlbl'), '2');
+    assert.equal(await page.isDisabled('#sfMkMinus'), true);
+    assert.equal(new Set(Object.values(await keysNow(page))).size, 2, 'laid with 2');
+    await page.evaluate((n) => {
+      __mstest.styleVars.limitN = n;
+      __mstest.reassign();
+    }, all - 1);
+    await idle(page);
+    const u0 = await page.evaluate(() => __mstest.planStack.length);
+    await page.click('#sfMkPlus');
+    await idle(page);
+    assert.equal(await page.textContent('#sfMkNlbl'), 'all · ' + all);
+    assert.equal(await page.isDisabled('#sfMkPlus'), true);
+    assert.equal(new Set(Object.values(await keysNow(page))).size, all, 'laid with all');
+    // (one step: the press's, none more from a click that still came)
+    assert.equal(await page.evaluate(() => __mstest.planStack.length), u0 + 1);
+    assert.deepEqual(errors, []);
+  });
   // a Blend guide saved by v308.2 (e2e/fixtures/v3082-blend-guide.json: the sample, Ben's 451 markers, 16, laid by
   // v308.2's rule, which used 8): opened, it is exactly as saved, its dots the markers under them; a Plan change lays it
   // by the new rule

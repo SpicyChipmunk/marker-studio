@@ -674,7 +674,11 @@ function lowChip(k) {
     '" aria-pressed="' +
     on +
     '" aria-label="' +
-    esc(c.brand + ' ' + capCode(i) + ' ' + (capName(i) || '') + ', running low') +
+    // (v329.3 review: what a tap does while it's off: "running low, not pressed" had sounded as if it were)
+    esc(
+      (c.brand + ' ' + capCode(i) + ' ' + (capName(i) || '')).trim() +
+        (on ? ', running low' : ', mark as running low'),
+    ) +
     '">' +
     sw +
     esc(nm) +

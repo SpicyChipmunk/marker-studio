@@ -6,8 +6,16 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v329.3',
+    t: 'To buy shows which sets have the most markers on your list, and how many new markers each would bring, and has ideas from your collection: Markers’ rankings of what to buy next, whose top 5 you can add in one go. Share has Copy marker list: the page’s markers as text, ready to paste with a post. Guides can keep notes (the guide’s ⋯ menu, or Page finished): paper, where the page came from, what to try next time, printed under the key. Help has Marker basics, and Your data says how much space the app uses. Random’s Prefer markers you haven’t used yet counts the markers a guide’s shading uses too.',
+  },
+  {
+    v: 'v329.2',
+    t: 'Focus finds the photo’s subject with a new, quicker finder (a one-time download of about 22 MB): its outline follows the photo’s edges, and stray bits mistaken for the subject are left out. Sharper subject and Simpler background choose their markers more for the subject’s colours, and Simpler background keeps less detail behind the subject. When a photo has no clear subject, Focus says so, and Subject only offers to crop to a small one. Shading like the photo matches the photo’s shadows a little better, and shows “Shading like the photo…” while it works. Pages from photos are made a little quicker.',
+  },
+  {
     v: 'v329.1',
-    t: 'Shading like the photo is many times quicker on a detailed page, and zooming in no longer holds the screen while the sharp outlines are worked out. Tick off from a photo needs much less memory. Colour along’s ⋯ menu can undo the last tick-off of many sections at once, even after you’ve carried on ticking. Photo tones only use markers you own (or, on a page made to try others, say buy), and the Detail slider works one step at a time with the keyboard and VoiceOver.',
+    t: 'Shading like the photo is about twice as quick on a detailed page (with Two tone sets three to seven times), and zooming in no longer holds the screen while the sharp outlines are worked out. Tick off from a photo needs much less memory. Colour along’s ⋯ menu can undo the last tick-off of many sections at once, even after you’ve carried on ticking. Photo tones only use markers you own (or, on a page made to try others, say buy), and the Detail slider works one step at a time with the keyboard and VoiceOver.',
   },
   {
     v: 'v329',
@@ -733,6 +741,18 @@ const WHATS_NEW = [
       if (k && typeof keepWords === 'function')
         keepWords(function (t) {
           k.textContent = t;
+        });
+      // (v329.3) how much space it uses, filled when the browser answers (none where it can't say)
+      const u = D.getElementById('helpUsed');
+      if (u && typeof storeUsedRead === 'function')
+        storeUsedRead().then(function (b) {
+          u.textContent =
+            b == null
+              ? ''
+              : 'Marker Studio is using ' +
+                storeWords(b) +
+                ' on this device: your guides and photos, the app itself, and the photo reader and subject finder if you’ve downloaded them.';
+          u.hidden = b == null;
         });
       show(sheet);
     }

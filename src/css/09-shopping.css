@@ -321,3 +321,37 @@ button.wrm {
     flex-basis: 100%;
   }
 }
+/* (v329.3) Sets with markers on your list */
+.wsrow {
+  padding: 6px 0;
+}
+.wsrow + .wsrow {
+  border-top: 1px solid var(--line);
+}
+.wsname {
+  font-weight: 600;
+  color: var(--ink);
+}
+.wsets .wshas,
+.wsets .wsleft,
+.wsets .wsnote {
+  white-space: normal;
+}
+.wsets .wsnote {
+  margin-top: 8px;
+}
+.wsets .wsleft {
+  margin-top: 6px;
+}
+/* (v329.3) To buy's ideas from your collection, and the rankings' Add the top 5 to To buy */
+.wideas {
+  white-space: normal;
+  margin: 14px 0 0;
+  line-height: 1.7;
+}
+.wideas .sflink {
+  font-size: inherit;
+}
+.wtop5 {
+  margin: 4px 0 10px;
+}

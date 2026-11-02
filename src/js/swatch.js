@@ -376,6 +376,11 @@ async function swDownload() {
       P[0],
       P[1],
       true,
+      // (v329.3 review: how far it's got, as a guide's PDF says it: 722 markers are about 19 pages, and an iPad had
+      // shown "Preparing…" alone for several seconds)
+      function (i, n) {
+        if (n > 1) go.textContent = 'Page ' + i + ' of ' + n + '\u2026';
+      },
     );
     pk.share(blob, fname, 'Swatch chart', 'swatch chart', 'Swatch chart downloaded.', function (m) {
       if (m) toast(m);

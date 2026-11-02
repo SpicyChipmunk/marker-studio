@@ -850,7 +850,8 @@ function handClose(go) {
     focusSay();
   }
 }
-function focusDone() {
+// (btn: its own button, which reads Undo on a step done)
+function focusDone(btn) {
   var l = focusCur();
   if (l < 0) return;
   if (handOn()) {
@@ -862,11 +863,16 @@ function focusDone() {
   bulkTouch(l);
   var bits = stepBits(focusPos);
   if (stepDone(l, bits)) {
+    var was = [colored[l], tp()[l], heldSh[l] || null];
     stepSet(l, bits, false);
     // (v328 review: unticked, the page no longer finished: its finishing again celebrated, checkComplete)
     checkComplete();
     renderGuide();
     renderFocusUI();
+    // (v329.3 review: a tap on the picture or Enter unticks it too, which had said nothing: said with an Undo, as
+    // Colour along's untick, 80-input; the button, Undo itself, says it to a screen reader)
+    if (!btn) untickSay(l, was);
+    else if (assignData.assign[l]) sayLive(msay(assignData.assign[l]) + ' section unticked');
     return;
   }
   // (v320: its colour spreads from the tap, or from its label for Done)
@@ -1262,7 +1268,9 @@ function renderFocusUI() {
     else focusIn();
   }
   q('sfFBack', focusBack);
-  q('sfFDone', focusDone);
+  q('sfFDone', function () {
+    focusDone(true);
+  });
   q('sfFSkip', focusSkip);
   q('sfFReveal', revealFromColour);
   var sh = document.getElementById('sfFocSheet'),

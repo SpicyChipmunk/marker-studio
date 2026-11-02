@@ -1,4 +1,4 @@
-const CACHE='marker-studio-v329.1';
+const CACHE='marker-studio-v329.3';
 // (v313) PDF.js, for opening a PDF (vendor/pdfjs/<version>/): a cache of its own, named after its version, which a new
 // release leaves alone, so its 2 MB are downloaded once, not with every update. Stored when the app is installed, as
 // far as it can be (not waiting for it: the app works without it), and kept as it's used.
@@ -7,15 +7,16 @@ const PDFFILES=['pdf.min.mjs','pdf.worker.min.mjs','wasm/jbig2.wasm','wasm/openj
 // (v318) the photo reader (vendor/ocr/<version>/, about 22 MB): downloaded and kept by the page itself, only after its
 // consent card, in a cache of its own (photo-read.js). Here: never stored in the app's cache, and its cache kept
 const OCRC='marker-studio-ocr-1';
-// (v325.1) the subject finder (vendor/subject/<version>/, 4.6 MB), as the photo reader: the page keeps it (48-subject)
-const SUBC='marker-studio-subject-1';
+// (v325.1) the subject finder (vendor/subject/<version>/, 22.3 MB from v329.3), as the photo reader: the page keeps it (48-subject)
+const SUBC='marker-studio-subject-4';
 // (v308) the app is one page, stored once as ./index.html: every load of it (./, ./index.html, any query) is answered
 // from that copy, so an update downloads it once (it had been fetched and kept twice, as ./ and ./index.html)
 const CORE=['./index.html'];
+// (v329.3 review: these too past the browser's HTTP cache, as CORE, so an update can't store an old copy)
 const OPTIONAL=['./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./apple-touch-icon.png','./src/assets/fonts/fraunces-latin-opsz-normal.woff2','./src/assets/fonts/hanken-grotesk-latin-wght-normal.woff2'];
 // (the folder the app is served from, /marker-studio/ on GitHub Pages)
 const APP=(function(){try{return new URL('./',self.location.href).pathname;}catch(e){return '';}})();
-self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(CORE.map(function(u){return new Request(u,{cache:'reload'});})).then(function(){return Promise.allSettled(OPTIONAL.map(function(u){return c.add(u);}));});}).then(()=>self.skipWaiting()));
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(CORE.map(function(u){return new Request(u,{cache:'reload'});})).then(function(){return Promise.allSettled(OPTIONAL.map(function(u){return c.add(new Request(u,{cache:'reload'}));}));});}).then(()=>self.skipWaiting()));
  // (PDF.js: only what isn't stored yet, after the app itself)
  caches.open(PDFC).then(function(c){return Promise.allSettled(PDFFILES.map(function(u){return c.match(u).then(function(h){return h||c.add(u);});}));}).catch(function(){});});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE&&x!==PDFC&&x!==OCRC&&x!==SUBC).map(x=>caches.delete(x)))).then(()=>self.clients.claim()));});
@@ -24,6 +25,7 @@ self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.a
 // (v307) a page load is the app whatever its query (?back=1 …): a page with a query is never stored
 // (v308) the app's own page (this folder, or its index.html) comes from the one copy; another page here (a doc) from the
 // network as before, or the app when offline
+// (v329.3 review: only a page load gets the app when offline; a file that can't be fetched fails as itself, not as HTML)
 self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;
  // (the photo reader's files: straight from the network, as the page asks; it keeps them)
  if(r.url.indexOf('/vendor/ocr/')>=0||r.url.indexOf('/vendor/subject/')>=0)return;
@@ -31,4 +33,4 @@ self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;
  if(r.url.indexOf('/vendor/pdfjs/'+PDFJS+'/')>=0){e.respondWith(caches.open(PDFC).then(function(c){return c.match(r).then(function(h){return h||fetch(r).then(function(res){if(res&&res.ok)c.put(r,res.clone()).catch(function(){});return res;});});}));return;}
  const nav=r.mode==='navigate',u=new URL(r.url),q=nav&&u.search,
  app=nav&&(APP?u.pathname===APP||u.pathname===APP+'index.html':/\/(index\.html)?$/.test(u.pathname)),same=u.origin===self.location.origin||u.origin===new URL(self.location.href).origin;
- e.respondWith((app?caches.match('./index.html'):caches.match(r,nav?{ignoreSearch:true}:undefined)).then(hit=>hit||fetch(r).then(res=>{if(res&&(res.ok||res.type==='opaque')&&!q&&same){const cp=res.clone();caches.open(CACHE).then(c=>c.put(app?'./index.html':r,cp)).catch(()=>{});}return res;}).catch(()=>caches.match('./index.html'))));});
+ e.respondWith((app?caches.match('./index.html'):caches.match(r,nav?{ignoreSearch:true}:undefined)).then(hit=>hit||fetch(r).then(res=>{if(res&&(res.ok||res.type==='opaque')&&!q&&same){const cp=res.clone();caches.open(CACHE).then(c=>c.put(app?'./index.html':r,cp)).catch(()=>{});}return res;}).catch(()=>nav?caches.match('./index.html'):Response.error())));});

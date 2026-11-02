@@ -122,7 +122,7 @@ function paintDot(s, P) {
   if (l > 0 && !s.seen[l]) paintSec(s, l);
 }
 // one section takes the brush and is pinned (a new marker starts its tones afresh, as Change colour does)
-function paintSec(s, l) {
+function paintSec(s, l, force) {
   s.seen[l] = 1;
   const A = assignData.assign,
     m = A[l],
@@ -139,6 +139,13 @@ function paintSec(s, l) {
     return;
   }
   if (m.mkey === b.mkey && locks[l] === b.mkey) return;
+  // (v329.3 review: a section with ink on the paper keeps its marker, as Everywhere, Fill and Shuffle keep it; a drag
+  // went over a ticked one and repainted it unseen. Held back until the stroke ends: a tap on it alone still changes
+  // it, as Change colour does, paintEnd)
+  if (!force && m.mkey !== b.mkey && inkOn(l)) {
+    (s.inked || (s.inked = [])).push(l);
+    return;
+  }
   if (m.mkey !== b.mkey && colored) toneDrop(l);
   A[l] = b;
   locks[l] = b.mkey;
@@ -162,6 +169,12 @@ function paintEnd(tap) {
   if (tap && s.pend) {
     s.pend = false;
     paintDot(s, s.p0);
+  }
+  // (a stroke that went over one section only, a ticked one: a tap on it, which changes it; else they're kept)
+  let kept = s.inked ? s.inked.length : 0;
+  if (tap && kept === 1 && Object.keys(s.seen).length === 1) {
+    paintSec(s, s.inked[0], true);
+    kept = 0;
   }
   if (paintRaf) {
     cancelAnimationFrame(paintRaf);
@@ -194,6 +207,16 @@ function paintEnd(tap) {
       2600,
     );
   }
+  // (not for a stroke a second finger or the system took over: a pinch begun on one)
+  if (kept && tap && !s.skip && assignData)
+    toast(
+      (s.n ? 'Painted ' + nWord(s.n, 'section') + '. ' : '') +
+        (kept === 1
+          ? 'One coloured section kept its marker'
+          : kept + ' coloured sections kept their markers') +
+        ': that ink is on the paper. To change one, tap it.',
+      3600,
+    );
   if (!s.n || !assignData) return;
   const w = 'Painted ' + s.n + ' section' + (s.n === 1 ? '' : 's') + ' with ' + capLabel(s.m);
   normalizeTones();

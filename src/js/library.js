@@ -584,6 +584,22 @@ function guideWorked(id) {
   r.wk = 1;
   save(true);
 }
+// (v329.3 review) a guide opened with shading on whose row has no shading markers (sx) yet: a row saved before v329.3,
+// which a guide already finished never saves again. Its markers put on the row now, as guideMeta would (no date
+// changed), so Random's Prefer markers you haven't used yet counts them (usedKeys). A row that has sx keeps its own
+function guideShadeSeen(id, keys) {
+  if (id == null || !keys || !keys.length) return;
+  var r = state.saved.find(function (s) {
+    return s.id === id && s.type === 'guide';
+  });
+  if (!r || Array.isArray(r.sx)) return;
+  var ks = Array.from(new Set(keys)).filter(function (k) {
+    return typeof k === 'string' && keyIdx(k) != null;
+  });
+  if (!ks.length) return;
+  r.sx = ks.slice(0, COLORS.length);
+  save(true);
+}
 // (v315) the open guide's photo changed in another tab or by a restore: Home's latest piece drawn again (the row's
 // note of it is already saved)
 function homeFinSeen() {
@@ -1561,6 +1577,8 @@ function libDuplicate(id) {
           // (v318.28) the shading's markers beyond its own colours, as the original's ("+ N for shading" on Home): the
           // row is built from what's passed and a new id has no row to take them from
           sk: src.sk,
+          // (v329.3: and which markers, for Random)
+          sx: src.sx,
           thumb: src.thumb || '',
           payload: p,
           quiet: true,

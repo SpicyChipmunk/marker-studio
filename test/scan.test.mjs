@@ -2760,3 +2760,34 @@ import { readFileSync } from 'node:fs';
     assert.equal(a.__eval('scanWaitHTML("mkc")'), '<div class="mkwait" id="mkcWait" hidden></div>');
   });
 }
+
+// ---- v329.3 review (CC6 S1) ----
+// The "all but N are here" card names what's missing by the code on the cap, as the rest of Scan does: with older codes
+// set (or that cap known to be older), an older Honolulu 120's R6, not the R213 it is now. Fails on v329.3 (the code as
+// it is now, always).
+{
+  test('v329.3 gaps: the card names a missing marker by its cap’s code, older or current as known or set', () => {
+    const a = createApp({ localStorage: memoryStorage() });
+    a.__eval(`
+    var T = {};
+    T.keys = presetMkeys(MARKER_SETS.find((p) => p.n === 'Honolulu 120')).filter((k) => !/\\|0$/.test(k));
+    T.gone = T.keys.find((k) => capHasOld(COLORS[keyIdx(k)]));
+    T.read = function (capDef, cap) {
+      scanFind = null; scanGapsSaid.clear(); state.owned = new Set(); state.capDef = capDef; state.cap = cap || {};
+      scanList = T.keys.filter((k) => k !== T.gone).map((k) => ({ i: keyIdx(k), how: '' }));
+      return scanGapCodes(scanSetGaps());
+    };
+  `);
+    const now = a.__eval('COLORS[keyIdx(T.gone)].code'),
+      old = a.__eval('oldCode(COLORS[keyIdx(T.gone)])');
+    assert.notEqual(now, old);
+    assert.equal(a.__eval("T.read('')"), now, 'current codes set: the code sold now');
+    assert.equal(a.__eval("T.read('old')"), old, 'older codes set: the older cap’s code');
+    assert.equal(a.__eval("T.read('old', { [T.gone]: 'new' })"), now, 'known to be a current cap');
+    assert.equal(a.__eval("T.read('', { [T.gone]: 'old' })"), old, 'known to be an older cap');
+    assert.match(
+      a.__eval("T.read('old'); scanGapChoices()[0].head"),
+      new RegExp('^Honolulu 120: all but 1 is here — ' + old + '\\. Not read, or not yours\\?$'),
+    );
+  });
+}

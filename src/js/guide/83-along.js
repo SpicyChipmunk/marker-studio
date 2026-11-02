@@ -83,7 +83,9 @@ function alongControls() {
     '<span class="sfpgtitle">Every section coloured</span><div id="sfDoneSum" class="sfpgsum"></div><div id="sfDoneMk" class="sfpgmk" aria-hidden="true"></div>' +
     '<div class="sfpgacts"><button type="button" id="sfDoneRev" class="sfprimary">' +
     ic('sparkles') +
-    ' Reveal &amp; share</button><div id="sfFin" class="sffin"></div></div></div>' +
+    ' Reveal &amp; share</button><div id="sfFin" class="sffin"></div></div>' +
+    // (v329.3: the guide's notes, a line under the buttons: 24-page-photo finPanel)
+    '<div id="sfFinNt" class="sffinnotes"></div></div>' +
     lowHost('A') +
     alongHint() +
     // (v328: Coloured on paper? Tick them off from a photo, 26-tick)
@@ -404,6 +406,10 @@ function alongRow(e, inDone) {
       (full ? 'Clear' : '<span aria-hidden="true">✓</span> Mark all done') +
       '</button>' +
       (full ? '' : '<button type="button" id="sfFindNext" class="sfedit">Find next</button>') +
+      // (v329.3 review: and Tick it while the section Find next found is shown, 80-input fnTick)
+      (!full && fnShown()
+        ? '<button type="button" id="sfFnTick" class="sfedit"><span aria-hidden="true">✓</span> Tick it</button>'
+        : '') +
       '<button type="button" id="sfBlends" class="sfedit' +
       (bo ? ' on' : '') +
       '" aria-expanded="' +
@@ -516,9 +522,15 @@ function renderAlong() {
 function actsLay(el) {
   const g = el && el.querySelector('.sfacts');
   if (!g) return;
-  const bs = g.querySelectorAll('button');
+  const bs = g.querySelectorAll('button'),
+    n = bs.length;
   g.classList.remove('sfacts2', 'sfacts3');
-  if (bs.length !== 3) return;
+  g.style.display = g.style.gridTemplateColumns = '';
+  bs.forEach(function (b) {
+    b.style.minWidth = '';
+  });
+  // (v329.3 review: four with Tick it, 80-input fnTick: in a row when they fit, else two by two)
+  if (n !== 3 && n !== 4) return;
   g.classList.add('sfactsm');
   let w = 0;
   bs.forEach(function (b) {
@@ -527,8 +539,17 @@ function actsLay(el) {
   g.classList.remove('sfactsm');
   const cs = getComputedStyle(g),
     room = g.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0),
-    gap = parseFloat(cs.columnGap) || 0;
-  g.classList.add(3 * w + 2 * gap <= room + 0.5 ? 'sfacts3' : 'sfacts2');
+    gap = parseFloat(cs.columnGap) || 0,
+    one = n * w + (n - 1) * gap <= room + 0.5;
+  if (n === 3) {
+    g.classList.add(one ? 'sfacts3' : 'sfacts2');
+    return;
+  }
+  g.style.display = 'grid';
+  g.style.gridTemplateColumns = 'repeat(' + (one ? 4 : 2) + ', minmax(0, 1fr))';
+  bs.forEach(function (b) {
+    b.style.minWidth = '0';
+  });
 }
 let _actsW = 0;
 window.addEventListener('resize', function () {
@@ -664,6 +685,7 @@ function alongClick(e) {
     );
     alongReveal();
   } else if (b.id === 'sfFindNext') findNext();
+  else if (b.id === 'sfFnTick') fnTick();
   else if (b.id === 'sfBlends') {
     blendOpen[k] = !blendOpen[k];
     renderAlong();

@@ -402,8 +402,10 @@ function pgFindCore(s, opt) {
   // (v318.35) why the edge fallback's quads were turned down, when they were tried and none was kept
   if (edges) cands[0].edges = edges;
   // (v315) a finished page on a patterned cloth (a check, stripes): the pattern can pass for the page's edge, so a find
-  // there is checked rather than trusted (the corners shown). Only for a photo of a finished page, and only the page found
-  if (opt && opt.coloured && cands[0].tier === 'sure' && cands[0].flick > PG_CLOTH) {
+  // there is checked rather than trusted (the corners shown). Only the page found. (v329.3 review: for the colouring
+  // page's own photo too, not only a finished page's: a sure find on a check cloth had been straightened at once, one
+  // of seven 3% off; plain and wooden tables flicker 0.3-3.2, far under PG_CLOTH)
+  if (cands[0].tier === 'sure' && cands[0].flick > PG_CLOTH) {
     cands[0].tier = 'unsure';
     cands[0].why = 'cloth';
   }
@@ -1426,6 +1428,9 @@ const PG_WHY = {
   unclear: 'One edge of the page is hidden or bent, so check the corners before straightening.',
   none: 'Drag the four corners onto the corners of the page.',
   adjust: 'Drag a corner to move it.',
+  // (v329.3 review: a patterned table round the page, pgFind; as 24-page-photo's FIN_WHY)
+  cloth:
+    'The table’s pattern makes the page’s edges hard to be sure of, so check the corners before straightening.',
 };
 // (v318.32) said after the reason on a fresh photo's corner step: how to put the corners right (U1-3)
 const PG_DRAG = 'Drag the yellow corners onto the page\u2019s corners, then Straighten.';
@@ -1474,9 +1479,10 @@ function pgReset() {
   if (z) z.style.display = '';
 }
 // (v318.13) where an unsure find's corner handles start, in a photo iw x ih: its outline, or on a busy surface the
-// photo's own rectangle 3% in
+// photo's own rectangle 3% in. (v329.3 review: a sure find held back for a patterned cloth, why 'cloth', at its
+// outline: the cloth flickers over PG_BUSY too, but the outline was right, or 3% off, not the 17-30% of marble)
 function pgStartQ(found, iw, ih) {
-  if (!(found.flick > PG_BUSY)) return found.q;
+  if (found.why === 'cloth' || !(found.flick > PG_BUSY)) return found.q;
   const m = 0.03;
   return [
     [iw * m, ih * m],
@@ -1831,12 +1837,23 @@ function pgKey(e) {
     sayLive(['Top left', 'Top right', 'Bottom right', 'Bottom left'][E.sel] + ' corner');
   }
 }
+// (v329.3 review) a corner dragged, kept on the canvas: within the photo and its margin round it (pad), as
+// 24-page-photo's finEdClamp
+function pgClamp(p) {
+  const m = pgEd.pad / pgEd.k,
+    iw = pgOrig ? pgOrig.naturalWidth || pgOrig.width : Infinity,
+    ih = pgOrig ? pgOrig.naturalHeight || pgOrig.height : Infinity;
+  return [Math.max(-m, Math.min(iw + m, p[0])), Math.max(-m, Math.min(ih + m, p[1]))];
+}
 function pgPtr(e, kind) {
   if (!pgEd || pgEd.how === 'reveal') return;
   const P = evCanvas(e),
     k = pgEd.k,
     pad = pgEd.pad;
   if (kind === 'down') {
+    // (v329.3 review: one finger's drag at a time: a second touch meanwhile, a palm resting on the picture, say, is
+    // left alone; it had taken the drag over, pid)
+    if (pgEd.drag >= 0 && e.pointerId !== pgEd.pid) return;
     let bi = -1,
       bd = Math.max(30, cv.width * 0.08);
     pgEd.q.forEach(function (p, i) {
@@ -1852,17 +1869,22 @@ function pgPtr(e, kind) {
     } catch (_) {}
     const p = pgEd.q[bi];
     pgEd.drag = bi;
+    pgEd.pid = e.pointerId;
     pgEd.off = [pad + p[0] * k - P.x, pad + p[1] * k - P.y];
     pgDraw();
     return;
   }
-  if (pgEd.drag < 0) return;
+  // (v329.3 review: only the pointer that started the drag moves or ends it)
+  if (pgEd.drag < 0 || e.pointerId !== pgEd.pid) return;
   if (kind === 'move') {
-    pgEd.q[pgEd.drag] = [(P.x + pgEd.off[0] - pad) / k, (P.y + pgEd.off[1] - pad) / k];
+    // (v329.3 review: and kept within the picture's margin, as the finished-page editor keeps its corners, finEdClamp:
+    // a corner left far outside the photo gave the straightened page a white wedge read as paper)
+    pgEd.q[pgEd.drag] = pgClamp([(P.x + pgEd.off[0] - pad) / k, (P.y + pgEd.off[1] - pad) / k]);
     pgDraw();
     return;
   }
   pgEd.drag = -1;
+  pgEd.pid = null;
   try {
     cv.releasePointerCapture(e.pointerId);
   } catch (_) {}
@@ -2018,9 +2040,13 @@ function pgRefFlat(img, f35) {
       // (in halving steps: a phone photo's noise evened out in Safari too, as when a photo is read, v296)
       drawShrunk(g, img, src.width, src.height);
     }
+    // (v329.3 review: a sure find held back for a patterned cloth, 'cloth', flattened as before: there are no corners
+    // to check here)
     const f = pgFind(src),
       out =
-        f.tier === 'sure' ? pgWarp(src, f.q, pgShapeOf(f.q, src.width, src.height, f35, null).aspect) : null;
+        f.tier === 'sure' || f.why === 'cloth'
+          ? pgWarp(src, f.q, pgShapeOf(f.q, src.width, src.height, f35, null).aspect)
+          : null;
     if (src !== img) freeCanvas(src);
     if (!out) return null;
     out._pgFlat = true;

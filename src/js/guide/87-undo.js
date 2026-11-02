@@ -108,6 +108,10 @@ function planSnap() {
   // it says how the markers were picked, not what the plan is (a step is a change to the plan, planSame)
   const shp = assignData.shp ? 1 : 0,
     shps = assignData.shps ? Object.assign({}, assignData.shps) : null;
+  // (v329.3 review) and which way a Gradient's bands face the light (assignData's lit / lits, gradFollowLight), beside
+  // it likewise: Undo had dropped them, and moving the light no longer laid the bands again
+  const lit = assignData.lit || null,
+    lits = assignData.lits ? Object.assign({}, assignData.lits) : null;
   return {
     s: s,
     js: planHash(s),
@@ -116,6 +120,8 @@ function planSnap() {
     none: Object.assign({}, _phNone),
     shp: shp,
     shps: shps,
+    lit: lit,
+    lits: lits,
     // (v310.2) the markers sections show a stand-in for (dry, or no longer yours: 97-open), beside the plan: Undo
     // back to a plan with stand-ins brings back what the guide keeps for them
     ok: Object.keys(_origKeys).length ? JSON.parse(JSON.stringify(_origKeys)) : null,
@@ -303,6 +309,8 @@ function planLabel1(p, q) {
 // even then, for steps that come thick and fast like paint strokes)
 // (more: kept with the step, as `frame` is for Colour it's)
 function planCommit(why, quiet, more) {
+  // (v329.2: not while Photo's tones wait for a paint, ptStyleBusy: their step records itself, with them)
+  if (_ptPend) return;
   const w = why || planWhy;
   planWhy = null;
   if (planDrag || popCtx || sfmode !== 'guide' || !assignData || !labels) return;
@@ -331,6 +339,8 @@ function planCommit(why, quiet, more) {
     // (the same plan, its markers picked as they are now: v307)
     planLast.shp = cur.shp;
     planLast.shps = cur.shps;
+    planLast.lit = cur.lit;
+    planLast.lits = cur.lits;
     return;
   }
   const prev = planLast;
@@ -1179,6 +1189,8 @@ function planRestore(e, noFilt) {
   assignData = { assign: assign, order: order, N: order.length, base: base };
   if (e.shp) assignData.shp = 1;
   if (e.shps) assignData.shps = Object.assign({}, e.shps);
+  if (e.lit) assignData.lit = e.lit;
+  if (e.lits) assignData.lits = Object.assign({}, e.lits);
   // (Recolour them too's ticks, tones and kept shading, back)
   if (e.ticks && colored) {
     const P = tp();
@@ -1268,6 +1280,8 @@ function planRestore(e, noFilt) {
   planBtn();
 }
 function planUndo() {
+  // (v329.2: Photo's tones still waiting for a paint are let go, ptStyleBusy)
+  ptStyleCancel();
   if (popOpen()) {
     const c = document.getElementById('sfPopCancel');
     if (c) c.click();
@@ -1298,6 +1312,7 @@ function planUndo() {
 // Redo: the step the last Undo took back, as it left the plan; the part-done tones and ticks that step had cleared
 // (which its Undo put back) are cleared again, unless the section has been ticked since
 function planRedo() {
+  ptStyleCancel();
   if (popOpen() || sfmode !== 'guide' || !assignData || !planFwd.length) return;
   clearTimeout(reTimer);
   planDrag = false;

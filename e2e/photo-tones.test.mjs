@@ -517,15 +517,21 @@ test('v329.1: after Photo the Shading sliders show the photo’s own amounts at 
   // (a style with other amounts first, so the panel had them to show)
   await page.click('#sfShade [data-v="dramatic"]');
   await idle(page);
-  // (read in the same task as the tap: what the panel shows before anything later draws it again)
+  // (v329.2: the tap says "Shading like the photo…" at once, and the tones are chosen after a paint: the panel then
+  // drawn once, with the photo's own amounts; read in the task that draws it, before anything later draws it again)
+  const busy = await page.evaluate(() => {
+    document.querySelector('#sfShade [data-v="photo"]').click();
+    const m = document.getElementById('sfPtBusy');
+    return [m && m.textContent, document.querySelector('#sfShade [data-v="photo"]').getAttribute('aria-pressed')];
+  });
+  assert.deepEqual(busy, ['Shading like the photo…', 'true'], 'said at once, Photo pressed');
+  await page.waitForFunction(() => !document.getElementById('sfPtBusy'), null, { timeout: 10000 });
   const now = await page.evaluate(() => [
-    document.querySelector('#sfShade [data-v="photo"]').click(),
     document.getElementById('sfShHi') && +document.getElementById('sfShHi').value,
     +document.getElementById('sfShLo').value,
     __mstest.styleVars.shadeHi,
     __mstest.styleVars.shadeLo,
   ]);
-  now.shift();
   assert.equal(now[1], Math.round(now[3] * 100), 'shadow slider: ' + JSON.stringify(now));
   if (now[0] != null) assert.equal(now[0], Math.round(now[2] * 100), 'highlight slider');
   await idle(page, 1500);

@@ -1,0 +1,7 @@
+scipy==1.18.1
+certifi==2026.7.22
+numpy==2.5.3
+pillow==12.3.0
+onnx==1.23.2
+onnxruntime==1.29.0
+onnxslim==0.1.98

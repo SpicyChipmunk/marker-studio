@@ -69,9 +69,16 @@ Marker Studio isn't affiliated with or endorsed by Ohuhu or Copic.
   under the picture) shows where the guide is light and dark.
 - **Print** (in **Share & print**): the page with its key, the key with a coloured reference, or a **Test strip** to try
   the shading tones on your paper first. **Guide file** saves a guide to keep or send.
+- **Copy marker list** (in **Share & print**) copies the page's markers as text, by colour family, ready to paste with a
+  post.
+- **Notes** (the guide's ⋯ menu, or Page finished): a few lines for the paper, where the page came from or what to try
+  next time. They're printed under the key, kept in backups, and left out of a guide file you send.
 - **In Markers,** press and hold a marker for its details: the markers it **Blends with**, and **Find similar**. **Match
   a colour** finds your nearest marker to a colour you pick, **To buy** keeps a shopping list, and **Print a swatch
-  chart** makes a page of every code to colour in.
+  chart** makes a page of every code to colour in. Under your To buy list, **Sets with markers on your list** shows the
+  sets that have the most markers you want, and how many markers each would add that you don't have. In **Markers ›
+  Unowned**, **Fill the biggest gaps**, **Fill gaps between light and dark** and **Finish families** rank markers to buy;
+  **Add the top 5 to To buy** puts the first five on your list, and To buy links to them.
 - **In the Library,** **Duplicate** a guide to try something else, and **Recently deleted** puts back one you deleted.
 
 The app's **Help › Glossary** explains every pattern, setting and word it uses.

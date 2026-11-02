@@ -29,6 +29,22 @@ import { core, createApp } from './harness.mjs';
 
   test('flags a blank / near-empty image as "faint"', () => {
     setup(PX, 0, [PX]);
+    // (v329.3 review: a blank page is one section, the background, as segment() finds it)
+    core.comps[1].bg = true;
+    assert.equal(core.segQuality().code, 'faint');
+  });
+  test('v329.3 review: a simple page (little ink, few sections) is not "faint"; faint is no section but the background', () => {
+    // the paper round the drawing and one big section (a heart, say): ink 0.5%, two sections in all
+    setup(PX, 500, [PX - 5500, 5000]);
+    core.comps[1].bg = true;
+    assert.equal(core.segQuality().ok, true, JSON.stringify(core.segQuality()));
+    // an apple with its leaf and stem: four sections
+    setup(PX, 800, [PX - 9800, 6000, 2000, 1000]);
+    core.comps[1].bg = true;
+    assert.equal(core.segQuality().ok, true, JSON.stringify(core.segQuality()));
+    // a faint page: the background and a few specks under Min section size, left out of the guide
+    setup(PX, 300, [PX - 306, 2, 2, 2]);
+    core.comps[1].bg = true;
     assert.equal(core.segQuality().code, 'faint');
   });
   test('flags a single-blob (low-contrast) result as "few"', () => {
@@ -1469,6 +1485,8 @@ import { core, createApp } from './harness.mjs';
     t.srcK = 1;
     t.srcDims = null;
     seg(t, 100000, 0, [100000]);
+    // (v329.3 review: the background, as segment() finds a blank page)
+    t.comps[1].bg = true;
     t.enhance = true;
     assert.match(t.segQuality().tip, /raise Sensitivity/);
     t.enhance = false;
@@ -1489,6 +1507,58 @@ import { core, createApp } from './harness.mjs';
       r.every((v, k) => Math.abs(v - want[k]) < 1e-6),
       r.join(' '),
     );
+  });
+  // (v329.3 review) a page on a check cloth: the cloth's pattern can pass for the page's edge, so a sure find there is
+  // checked, the corners shown at the outline found, for the colouring page's own photo as for a finished page's; a
+  // plain table as before. Fails on v329.3 (the guide's photo found sure on the cloth, straightened at once)
+  test('v329.3 review: a page photographed on a check cloth: its corners shown to check, at its outline; on a plain table, trusted', () => {
+    const W = 640,
+      H = 480;
+    // a page (360 x 270, turned by deg, a grid of lines on it) on a red and white check of `check` px, or a plain grey
+    // table (desk)
+    const photo = (o) => {
+      const a = (o.deg * Math.PI) / 180,
+        ca = Math.cos(a),
+        sa = Math.sin(a),
+        d = new Uint8ClampedArray(W * H * 4);
+      let seed = 7;
+      const rnd = () => {
+        seed = (seed * 16807) % 2147483647;
+        return seed / 2147483647;
+      };
+      for (let y = 0; y < H; y++)
+        for (let x = 0; x < W; x++) {
+          const u = (x - W / 2) * ca + (y - H / 2) * sa,
+            v = -(x - W / 2) * sa + (y - H / 2) * ca,
+            du = 180 - Math.abs(u),
+            dv = 135 - Math.abs(v),
+            cov = Math.max(0, Math.min(1, Math.min(du, dv) + 0.5)),
+            red = (Math.floor(x / (o.check || 1)) + Math.floor(y / (o.check || 1))) & 1,
+            desk = o.check ? (red ? [200, 40, 40] : [235, 230, 225]) : [o.desk, o.desk, o.desk],
+            paper = du > 24 && dv > 24 && ((u + 1000) % 36 < 2.5 || (v + 1000) % 36 < 2.5) ? 30 : 245,
+            j = (y * W + x) * 4;
+          for (let c = 0; c < 3; c++)
+            d[j + c] = Math.max(0, Math.min(255, paper * cov + desk[c] * (1 - cov) + (rnd() - 0.5) * 4));
+          d[j + 3] = 255;
+        }
+      return { width: W, height: H, naturalWidth: W, naturalHeight: H, __buf: d, __w: W, __h: H };
+    };
+    const t = createApp().__mstest;
+    for (const o of [
+      { check: 12, deg: 12 },
+      { check: 16, deg: 8 },
+    ]) {
+      const f = t.pgFind(photo(o));
+      assert.equal(f.tier, 'unsure', JSON.stringify(o));
+      assert.equal(f.why, 'cloth');
+      assert.ok(f.flick > t.PG_BUSY, 'the cloth is busy');
+      // (the handles at the outline found, not the photo's rectangle 3% in as on marble)
+      assert.equal(t.pgStartQ(f, W, H), f.q);
+      // (as a finished page's photo has had since v315)
+      assert.equal(t.pgFind(photo(o), { coloured: true }).why, 'cloth');
+    }
+    const plain = t.pgFind(photo({ desk: 120, deg: 12 }));
+    assert.equal(plain.tier, 'sure', 'a plain table as before');
   });
 }
 

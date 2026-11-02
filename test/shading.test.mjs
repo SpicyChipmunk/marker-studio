@@ -207,6 +207,77 @@ import { app, core, createApp } from './harness.mjs';
     );
     core.shadeMode = 'off';
   });
+  test('v329.3: the shading markers laid on the paper are kept as each tone is ticked, while shading is on', () => {
+    const a = mk('B112'),
+      b = mk('R16');
+    core.setCollection([a, mk('B111'), mk('B114'), b]);
+    core.shadeMode = 'full';
+    core.shadeSun = { x: 0, y: 0 };
+    scene4(a, b);
+    core.paperTones = new Set();
+    const kept = () => [...core.paperTones].map((k) => k.split('|')[1]).sort();
+    core.paperNote(); // the first look: what's done already is not "laid now"
+    core.stepSet(1, 4, true); // section 1's shadow only
+    core.paperNote();
+    assert.deepEqual(kept(), ['B114'], 'its shadow marker, not its highlight');
+    core.stepSet(1, 1, true);
+    core.stepSet(1, 2, true);
+    core.paperNote();
+    assert.deepEqual(kept(), ['B111', 'B114'], 'then its highlight');
+    core.stepSet(1, 4, false); // unticked: kept, it was used
+    core.paperNote();
+    assert.deepEqual(kept(), ['B111', 'B114']);
+    // coloured while shading is off: nothing; turned on afterwards: still nothing for that section
+    core.shadeMode = 'off';
+    core.colored[3] = 1;
+    core.paperNote();
+    core.shadeMode = 'full';
+    core.paperNote();
+    assert.deepEqual(kept(), ['B111', 'B114'], 'R16 coloured flat adds nothing');
+    // the sections edited (a new comps): the comparison starts again, nothing kept for what's done already
+    core.comps = core.comps.slice();
+    core.colored[2] = 1;
+    core.paperNote();
+    assert.deepEqual(kept(), ['B111', 'B114']);
+    core.shadeMode = 'off';
+  });
+  test('v329.3 review: after the first look, a tick is kept through the app’s own path (updateProgress), after a rebuild too', () => {
+    const a = mk('B112'),
+      b = mk('R16');
+    core.setCollection([a, mk('B111'), mk('B114'), b]);
+    core.shadeMode = 'full';
+    core.shadeSun = { x: 0, y: 0 };
+    scene4(a, b);
+    core.paperTones = new Set();
+    const kept = () => [...core.paperTones].map((k) => k.split('|')[1]).sort();
+    core.paperNote(); // the first look, as the open (97-open) and renderGuide (40-render) take it
+    core.stepSet(1, 4, true);
+    core.updateProgress(); // as a tick ends
+    assert.deepEqual(kept(), ['B114'], 'the shadow ticked straight after the guide was drawn');
+    // the sections edited (a new comps), drawn again, then the highlight ticked: kept too
+    core.comps = core.comps.slice();
+    core.paperNote(); // drawn again after the rebuild
+    core.stepSet(1, 1, true);
+    core.updateProgress();
+    assert.deepEqual(kept(), ['B111', 'B114'], 'after a rebuild, the next tick’s tone');
+    core.shadeMode = 'off';
+  });
+  test('v329.3 review: Copy marker list has the shading’s highlight and shadow markers, each once', () => {
+    const a = mk('B112'),
+      b = mk('R16');
+    core.setCollection([a, mk('B111'), mk('B114'), b]);
+    core.shadeMode = 'full';
+    core.shadeSun = { x: 0, y: 0 };
+    scene4(a, b);
+    const r = core.markerListText(),
+      codes = r.text.replace(/^Ohuhu: /, '').split(', ');
+    assert.equal(r.text.split('\n').length, 1, 'one brand');
+    for (const c of ['B111', 'B112', 'B114', 'R16']) assert.ok(codes.includes(c), c + ' in ' + r.text);
+    assert.equal(codes.length, new Set(codes).size, 'each once');
+    core.shadeMode = 'off';
+    const flat = core.markerListText().text.replace(/^Ohuhu: /, '').split(', ');
+    assert.ok(!flat.includes('B111') && !flat.includes('B114'), 'shading off: only the sections’ own');
+  });
   test('focus goes colour by colour, finishing each section; 2nd-coat shadows come as a later pass', () => {
     const a = mk('B112'),
       b = mk('R16');

@@ -3483,14 +3483,17 @@ From the four-pass Fable pressure test of v325–v329 (REVIEW-v329-fable.md), bu
   answers. And the guide's page fitted to the photo, made for each try (the guide's own picture, then the
   printout), is made once per reading: a picture-sized copy and a few tenths of a second less on an iPad. About
   70 MB less at the reading's peak; the readings are the same (`test/tick.test.mjs`, `e2e/tick`).
-- **Shading like the photo is many times quicker.** Choosing the photo tones worked out every sample's colour
+- **Shading like the photo is quicker** (v329.2: corrected; "many times quicker" was the unit-test harness's
+  measure, which overstates loops like these). Choosing the photo tones worked out every sample's colour
   difference again for every pair tried (the eight amounts tried, the markers added, each section's pairs), inside
   the draw: on a Very detailed page about 7 s on a computer, about 38 s with Two tone sets, with the screen held.
   Each sample's difference from a colour is now worked out the first time it's asked for and kept with the samples
   (ptDist, ptD): the same numbers added in the same order, so the same tones, extras and error, bit for bit
   (checked on made-up pages of 600 and 1200 sections, with and without sets). Measured: 600 sections about 7 s →
-  0.6 s; with Two tone sets about 38 s → 1.8 s; 1200 sections, 48 markers, sets 85 s → 5 s. 1.6 MB more while the
-  samples are kept (`test/photo-tones.test.mjs`).
+  0.6 s; with Two tone sets about 38 s → 1.8 s; 1200 sections, 48 markers, sets 85 s → 5 s (those in the harness).
+  In the browser, at Very detailed on three of the bench's photos: tapping Photo 0.78–1.22 s → 0.49–0.68 s with the
+  screen held (about 2× quicker), Two tone sets 1.77–3.31 s → 0.26–0.79 s (3–7×). 1.6 MB more while the samples are
+  kept (`test/photo-tones.test.mjs`).
 - **A photo page from the full range gets the time it needs.** The page's job was allowed time for the page only;
   choosing its markers from the whole range (a tester with no markers added, or Use the full range) takes about
   1.2 s on a computer where 120 markers take 0.2 s. On a slow iPad the job could run out of time, the page be made
@@ -3507,3 +3510,202 @@ From the four-pass Fable pressure test of v325–v329 (REVIEW-v329-fable.md), bu
   (Focus mode's) as before, and on the page when there's no worker. Colour along and Focus mode's big windows get it
   too. Still on the page: the window's colours and the picture read (65–115 ms for a whole small picture here). The
   copy is the same either way (`e2e/along-3`: drawn from the worker's field and then the page's, the same pixels).
+
+# Changes — v329.2 (guide from a photo and photo tones: accuracy and speed; a new subject finder)
+
+From the second Fable pressure test of the photo page and photo tones (bench: 15 everyday photos, Medium and Very
+detailed) and three more on Focus and the subject finder; built as PLAN-v329.2.md. The photos stay out of the repo.
+
+- **The photo page's own work is about a fifth quicker, the same pages.** Its fill handles each row's run of pixels at
+  once, and the merge step counts areas as it renumbers, keys its borders by small integers, marks the inside map in
+  the same pass, and asks only whether each region is wide enough (`ppWideCore`, the exact distance map's answer for
+  the one question asked; a unit test checks it against brute force). Bit for bit the pages, sections and markers of
+  v329.1 on all 30 bench runs, with a made-up Focus map and Subject only, and on 82 real Focus jobs. In the worker
+  about 20% less; the wait in the browser, with the photo's preparation and drawing, a little less (the median first
+  page 3.1 → 2.9 s here; Very detailed's Detail step 10–25% quicker on 6 of 7 photos).
+- **Photo tones choose their amounts with the markers added afresh for each** (B1-1): the Shadows amounts from the
+  heaviest down while each step is nearer, the markers added chosen at each, then the Highlights once. Chosen once at
+  the old amounts, they suited a dark part of another size, and the amounts came out lighter than they should. The
+  toned parts' error removed 13.3% → 14.2% at Medium, 12.3% → 12.9% at Very detailed, never worse; heavier shadows
+  win on 27 of 30 runs (looked at: the ammonite better, the sunset and iris about the same). About +60–140 ms a tap.
+  The search's last choice is the page's when nothing makes them differ, so it isn't made twice (12 times on the
+  bench's 15 Photo taps, each the same as one made afresh: `__mstest.ptReuseCheck`).
+- **"Shading like the photo…"** while Shading › Photo's or Shade it's tones are chosen: said at once, the tones after a
+  paint (`ptStyleBusy`); their Undo step recorded once they're chosen; another style, Undo or Redo meanwhile lets the
+  wait go.
+- **The tone choice is a self-contained core** (`ptChooseCore`): `_ptChoose` gathers what it needs from the page and
+  makes the tones objects from its picks, in the same order. The same tones, errors and markers added on all 60 bench
+  choices; a later move into the background worker is a small step.
+- **A new subject finder: TRACER-TE0** (Apache 2.0, Lee, Shin and Han; `vendor/subject/3`, 8.3 MB with its weights
+  stored int8), trained for Marker Studio by `tools/subject-train` (round 3's A3: see below; the bench lines that
+  follow were measured with the authors' own weights, which version 2 held before release). Its map used as it is (u2netp's was stretched
+  from 0 to 1, which made a subject of nothing); its edges put on the photo's by a guided filter in the finder's
+  worker. On the bench: Subject only's cut-outs better on 5 of 15 photos (the pizza without its gingham and board, the
+  whole tabby close up, every pepper, the lilies, the cat in the window without its cushion), worse on 2 (the
+  cormorant loses its branch, the iris is rounder); Sharper subject's pages the same on 12. A map 4.4× quicker in
+  Chromium (0.45 s against 2.0 s; an iPad 2–4× slower). u2netp's folder removed; its cache is let go on update.
+- **Focus:** a stray part of the subject (under a tenth of the largest and 1% of the photo) is background (the flower
+  bed's leaves); Sharper subject and Simpler background choose the markers with the subject's colours counted up to
+  four times (the cormorant's wing and branch a brown and a grey); Simpler background's rest at 2.5× Detail's
+  smallest area (was 1.6×: its background sections 29% fewer, nearly all the slivers gone, for about 2% of its
+  likeness). Under 1% of the photo its subject, the hint says no clear subject was found; between that and 5%,
+  Subject only offers the crop to the subject when its box is the shape for it (no more than 2.5:1), and the crop
+  makes the page Subject only. The hints say "more detail and colour" and "best when the photo has one clear subject".
+- **Training a subject finder of our own:** `tools/subject-train`, a kit run on a PC with an NVIDIA card: Open Images'
+  CC BY photos and hand-drawn masks, where TRACER agrees what the subject is, TRACER-TE0 fine-tuned two ways, checked
+  against held-out photos (outlines, false subjects on scenery, people), exported as the app needs. Its file replaces
+  the authors' weights only if it passes the kit's checks. Round 3's A3 did, and ships (`vendor/subject/3`; version 2,
+  the authors' weights, removed before release, its cache let go): on fresh held-out photos no model had trained on,
+  against the authors' weights, subjects' outline +0.027, small subjects found +6.8 points, false subjects on empty
+  crops −9.9 points; against round 2's A2plus, small subjects found +2.1 points (95% interval +1.1 to +3.3), outline
+  +0.003, every guard held (people, overlap, empty crops). Ben's 24 photos: the same decision on 22; A3 drops the
+  lilies' stray leaves, and offers a crop to a lake strip in one landscape where A2plus found no clear subject (the
+  fresh checks had no scenery photos: round 4 adds them). The same graph and speed as before.
+- **Corrected:** v329.1's photo tones were "many times quicker" in the unit-test harness; in the browser about 2× on
+  the Photo tap and 3–7× with Two tone sets (CHANGES and What's new).
+- Measured and not built: preparing the photo in steps (its longest hold is the photo's first full-size draw, which
+  can't be split), and decoding and shrinking the photo in a worker instead (on an iPad, Safari's hold is 26–45 ms
+  already and the worker's 50–58 ms, its colours 2–3/255 apart; Chrome on a Mac 17–50 ms either way, the first photo
+  of a visit about 0.5 s, mostly its saved copy: moving that and the page's preparation off the page is for after the
+  beta, judged on the iPad's longest waits); a calmer background without the subject map (it simplifies a subject's own texture first, measured
+  harmful on 7 of 12 photos); running both models together (3 of 15 photos gain a thin part).
+
+# Changes — v329.3 (before the beta: sets in To buy, Copy marker list, guide notes, Marker basics, storage, tester form)
+
+From Fable's pressure test of features (decisions 36–52), each item pressure-tested again against the code; built as
+PLAN-v329.3.md.
+
+- **Help › Marker basics:** eight short lines, after More you can do: paper (and inkjet lines smudging), testing on
+  your own paper, lightest first, blending while wet, even colour, flicking, the Colorless Blender as a highlight, and
+  caps. Its places are named as they are on screen (a unit test checks them).
+- **Share › Copy marker list:** the page's markers as text to paste with a post, the same markers as "The markers on
+  this page" (shading's highlight and shadow markers too, while shading is on): a line a brand, each brand by colour
+  family as the Markers grid has them, lighter to darker within one, the Colorless Blender last, by the codes on your
+  caps. Built before the copy, inside the tap (Safari copies only from a tap); where copying is refused, the list
+  opens to select. "No markers on this page yet" with none. Help and the README name it.
+- **Random's Prefer markers you haven't used yet counts a guide's shading markers too** (its highlights and shadows
+  beyond its own colours): the save's shading pass gives them as `sx` beside `sk`, not enumerable (never in the guide,
+  a guide file or a backup), every save path hands it to the Library row, a save that doesn't work it out keeps the
+  row's, Duplicate copies it. Rows from before catch up at their next save. Help's Random line says so. And the
+  markers actually laid (decision 53): each time a tone is ticked while shading is on (a section's highlight, its
+  shadow, or the whole section), its marker as the shading has it at that moment is kept (90-export paperNote, from
+  progStamp, which every way of colouring reaches, Focus mode's single tones included), never taken away (an untick,
+  an Undo); a section coloured flat adds nothing, even after shading is turned on. Saved in the guide (`onPaper`, not in
+  a guide file), so a restore has it at once; the row's `sx` takes both.
+- **Tester tasks: two quick choices** after "Would you use it for your next page?": whether a guide file was sent or
+  opened (for "Use my markers", after the beta) and whether a dark look would help (pages stay white). The form takes
+  27, 29 or 31 fields (the two new ones at the very end, so an older form's Message carries them);
+  `docs/tester-form-setup.gs` and RELEASING say how to add them to the live form.
+- **How much space the app uses:** Help › Your data says "Marker Studio is using about 140 MB on this device: your
+  guides and photos, the app itself, and the photo reader and subject finder if you've downloaded them" (under 1 MB;
+  to the nearest 10 MB from 100; GB from 1,000 MB), and Send feedback, Copy diagnostics and Copy details carry "Site
+  storage used (the site's address): …" before the browser's line (so the report's 900-character cut trims the browser
+  line first). `navigator.storage.estimate()` answers later than a tap allows, so it is read ahead (when the app has
+  opened, when Help or Send feedback opens, after a save fails) and kept in memory; nothing where the browser can't
+  say. Used only, never free: Safari's free figure isn't reliable. The figure is the whole site's (every app at
+  spicychipmunk.github.io), hence the label; a domain of the app's own is on the list before selling. The four
+  places that say what Send feedback sends say so too (its dialog, Help's How to report and Your data, TESTERS.md).
+- **To buy: Sets with markers on your list.** Under the list (above what your guides would have you buy), for each
+  brand on it (Brands I'd buy's rule: ticked, only those; automatic, your brands first), the sets that have the markers
+  you want and don't own: "Honolulu 216 · 4 of your 5 Ohuhu · 96 new to you", with "Has Y26, R213, …" (current codes,
+  6 then "+N more"). A set is left out when another no bigger has every one of the same markers of your list (the
+  Honolulu sets nest), so the rows run from the most of your list down, the smallest set for each, 3 at most a brand;
+  exact ties are both kept. (Not by count alone: then a marker only a big set has was hidden behind a small set with
+  more of the list's other markers.) The rows: the most of your list first; then, while a marker of the list is in no
+  row, the smallest set with the most of those, else the next step of the ladder; 3 at most. What no row has is named
+  ("Not in the sets above: …"), and so are markers in no set the app knows ("Not in any set Marker Studio knows: …"),
+  6 codes then "+N more", the brand named when there are two. A
+  Running-low replacement of a marker you own isn't counted. "Set contents as Marker Studio knows them: check what's
+  sold where you are before you buy." No prices or links; not in the copied list. Help and the README say where it is.
+- **To buy links to Markers' rankings of what to buy next** ("Ideas from your collection: Fill the biggest gaps · Fill
+  gaps between light and dark · Finish families", the Order menu's own words, under the list and with an empty one;
+  none until you've added markers), each opening Markers › Unowned in that order with the search cleared and the
+  filter chips kept. Over each ranking, **Add the top 5 to To buy** (To buy's own add-all, its Undo and its "✓"),
+  the ranking's name as their reason. The three rankings' hint lines now say both actions ("Tap one you've bought
+  to add it to your collection, or Add the top 5 to To buy"): a tap there has always added to your collection.
+  Help and the README name them. A browser test follows the link and the button.
+- **Guide notes:** a few lines of a guide's own (the paper, where the page came from, what to try next time), from the
+  guide's ⋯ menu (**Notes…**, in This guide whenever a guide is open) or the Page finished card (a line under its
+  buttons, once the guide is saved: "Add notes", or the first line and Edit). A sheet titled Notes: up to 500 characters, 16 px so Safari doesn't zoom, and "Kept with this
+  guide on this device and in backups, and printed under the key. A guide file you send leaves them out." Kept as
+  they're typed (so the leave save has them) and saved by the autosave when the sheet closes, however it closes;
+  spaces left at the end go. A setting in STYLE_FIELDS (`payload.notes`, no Undo: an Undo or Redo never changes them;
+  written only when there are any; control characters but line breaks and tabs taken out on opening), so a newer
+  tab's are carried by an older one's save; a guide file leaves them out; a new picture and the sample start with
+  none; Duplicate, backups, Recently deleted and Find lost guides keep them (they're in the payload). A sample given
+  notes is a page of one's own, as a renamed one is. Printed as "Notes: …" in small type under the key (and the
+  shopping list) on Page to colour, the Labelled page and For your own page: in the key's column (beside the picture,
+  5 lines at most) or across the page under the shopping list (3), wrapped at spaces, line breaks folded into " · ",
+  the last line cut short; in the next column or on a page of their own when they don't fit; not on Only the page or
+  the Test strip. Help and the README name them. Unit tests: the saved form, the guide file, Undo, the check, the
+  print's wrapping; a browser test: the sheet, saving the sample, reopening, clearing.
+- **A more accurate subject finder for Focus: TRACER-TE4** (`vendor/subject/4`, 22.3 MB with its weights stored int8,
+  input 448 × 448), trained for Marker Studio by `tools/subject-train` (round 5's C1, decision 102), replacing round 3's
+  A3 (TE0, 8.3 MB). Chosen by the round-5 rule fixed before the run, on fresh held-out photos no model had trained on,
+  against A3: subjects' outline +0.036, small subjects found +4.8 points, people's outline +0.034, false subjects on
+  empty crops −3.1 points, every guard held; the same as the exported file and on full-size photos. The map takes about
+  0.48 s on Ben's iPad (A3 0.14 s), once per photo (kept for every Detail step, Focus mode, crop and Undo). The consent
+  card's size comes from the file (about 22 MB); What's new says "about 22 MB". A device that had version 3 downloads
+  version 4 when Focus is next chosen (cache `marker-studio-subject-4`; the old one let go on update). For Ben's iPad
+  test with his 24 photos, which can veto it.
+- **Crop to the subject finds the subject again on the crop** when the crop is under half the photo (decision 103):
+  it had taken the whole photo's map, enlarged two to ten times, a blur round a small subject's edges. A crop of half
+  or more, an Undo, or a quarter turn still takes the map already found. The same holds for a crop made by hand while
+  Focus is on. One more map (about half a second on Ben's iPad) on that crop only. The Subject only browser test's
+  crop (a third of the photo) now checks the subject is found again, and not for the Undo.
+- **The fresh-eyes review's fixes** (FINDINGS-AW1–3; Ben's decisions D1–D9, one at a time):
+  - Markers › Unowned › Finish families numbers its markers, on across the families, as the other two rankings do, so
+    "Add the top 5" is the five numbered first (D1). The three rankings' hints no longer end "or Add the top 5 to To buy"
+    (the button isn't there with Skin tones or an empty ranking, D2).
+  - Random's Prefer markers you haven't used yet: a guide from before v329.3 opened with shading on gets its shading's
+    markers on its Library row then (no date changed), so a guide already finished, never saved again, counts them too
+    (D3). The shading markers laid on the paper are now first compared as the guide is drawn (any stage), so a tick
+    straight after an open or a rebuild is never the first look.
+  - To buy: with Brands I'd buy leaving out every marker on the list, Sets says "None from the brands you’d buy (Brands
+    I’d buy)." under its heading, instead of vanishing (D6). The reasons the rankings give a marker on To buy are To
+    buy's own descriptive words: "fills a big gap in your collection", "fills a gap between light and dark", "helps
+    finish a family" (rows added by a v329.3 test build show them too, D7). Ideas from your collection shows only once
+    you own a marker with ink (not the Colorless Blender alone).
+  - Print: notes that don't fit under the key go on a page of their own headed **Notes**, the whole of them across the
+    page (no "Notes:"), not a "Colour key (continued)" with a few grey lines; the preview and the page order call it
+    Notes, a screen reader "your notes" (D8). Only the page still leaves them out.
+  - Help › Your data and the diagnostics say "about 1 GB" from 995 MB (it had said "about 1000 MB", D9).
+  - Notes: saved as they're typed (debounced), so a sample's notes outlast Safari letting the page go with the sheet
+    open; typed and taken out again, the guide is as it was (a sample isn't saved for it); the hint under the field is
+    its description for VoiceOver.
+  - Crop to the subject's re-find measures the crop against the whole photo, not the last map kept: a crop made in
+    steps (each kept as a resample) had never got under half and so was never found again.
+  - Tests: the re-find rule (unit), paperNote through the app's own path, the older row's shading markers, Sets with
+    two brands and with Brands I'd buy leaving everything out, the rankings' reasons, Copy marker list with shading;
+    browser tests: Finish families' numbers, Add the top 5's Undo (keeping a marker already on the list), the notes sheet
+    (typed and taken out, saved as typed, its description).
+- **The whole-app review's fixes** (Fable BB1-BB5 and CC1-CC6, before the beta; no dataloss or crash found):
+  - Painting: a Paint drag keeps the markers of sections already coloured ("K coloured sections kept their markers:
+    that ink is on the paper. To change one, tap it."); a single tap still repaints one. Undo and Redo keep which way a
+    gradient faces the light. The marker count's last step to either end is laid at once (Safari dropped the lift on
+    the button it had just disabled). A tap counts where the finger came down. Unticking says so, with Undo. A tap on a
+    section left white in Colour along says why nothing happens. Colour along gains **Tick it** beside Find next (for
+    VoiceOver, and for anyone zoomed in). Close all's "none made" wording; the run-low chip's spoken label.
+  - Jobs: the background worker is no longer given up when the iPad was put away mid-job (a late timer means the page
+    was paused); a photo page that takes too long is given up on its own, the worker kept, with a plain message instead
+    of the page made again on the main thread (the freeze); Focus pages get twice the time; "still working…" after half.
+  - Subject finder: running out of memory or time is said plainly and remembered until the app is next opened (Focus
+    greyed with the reason); one find at a time across photos; a damaged stored copy is found, deleted and offered
+    again; the download shows its progress and a full device says so. A hand-set marker count above what suits the
+    photo says so.
+  - Backups and restore: a restore no longer puts an older finished-page photo over a newer one; a backup with photos
+    is gathered one guide at a time ("Preparing… N of M"), not the whole Library in memory at once; a backup made with
+    storage full, and a restored photo that couldn't be stored, are said; a failed marker restore leaves the open guide
+    as it was; "Add them back" makes thumbnails one at a time; a guide's section map that won't decode is tried again
+    before the damaged-guide dialog (which now names short memory, and "Delete it (kept in Recently deleted)"); save
+    failures name Share & print › Guide file; a Resume copy that couldn't be kept is said; IndexedDB deletes can't hang;
+    offline, only page loads fall back to the app.
+  - Pages and photos: the corner editors follow one finger (a resting palm no longer moves a corner) and keep corners
+    on the photo; a page on a patterned cloth starts with its corners shown to check (both flows); a simple page with
+    few sections is no longer called faint; a PDF page of no size gets the blank-page message; the finished-page photo is
+    decoded before it's drawn; a picture that doesn't fit is put back whole.
+  - Markers and Scan: search and the filter chips redraw once a frame; the gap card names missing markers by the cap's
+    code; the swatch chart PDF counts its pages; cells say yours or not to screen readers (aria-pressed).
+  Tests: JOBS timing, Focus budget, faint and cloth pages, the finder's failures and one-at-a-time, the streamed
+  download, restore's photos, Blob-part backups, IDB aborts, lit/lits through Undo, gap card codes, aria-pressed.
+- Cache bumped to `marker-studio-v329.3`.

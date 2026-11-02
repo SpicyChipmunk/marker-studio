@@ -24,10 +24,16 @@
 
     Nothing here is reset for a new picture or the sample but Scatter: a new picture keeps the style it had
     (resetForNewPicture clears only the flat sections, which belong to the old sections, and puts Scatter back to
-    Polished with no rough spots smoothed: gradScat, gradJit, gradFix, v306). A guide that
+    Polished with no rough spots smoothed: gradScat, gradJit, gradFix, v306; v329.3: and clears the notes). A guide that
     opens takes every setting from its file. The variables' first values (00-state, 45-shading) are the
     same as def, which the unit tests check. */
 
+// (v329.3) a guide's notes: text, with no control characters but line breaks and tabs, up to 500 characters
+function notesClean(v) {
+  return typeof v === 'string'
+    ? v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').slice(0, 500)
+    : '';
+}
 // a number, kept between lo and hi (anything that isn't a finite number gets the default)
 function styleNum(lo, hi) {
   return function (v, d) {
@@ -564,6 +570,18 @@ const STYLE_FIELDS = [
       return hatchOne ? undefined : false;
     },
   },
+  // (v329.3) the guide's notes: a few lines of its own (paper, where the page came from, what to try next time); not an
+  // Undo step, and left out of a guide file (60-persist currentDesignObj)
+  {
+    key: 'notes',
+    in: 'payload',
+    def: '',
+    check: notesClean,
+    undo: false,
+    save: function () {
+      return guideNotes ? guideNotes : undefined;
+    },
+  },
 ];
 // each setting's variable, by its key (x and y are the sun's; setting one keeps the other)
 const STYLE_VAR = {
@@ -878,6 +896,12 @@ const STYLE_VAR = {
   },
   get tickRef() {
     return tickRef;
+  },
+  get notes() {
+    return guideNotes;
+  },
+  set notes(v) {
+    guideNotes = v;
   },
   set tickRef(v) {
     tickRef = v;

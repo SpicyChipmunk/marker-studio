@@ -62,6 +62,8 @@ function resetForNewPicture() {
   colOffer = null;
   focusAt = null;
   smpTry = 0;
+  // (v329.3: the notes were the old guide's)
+  guideNotes = '';
   // (v314: a new guide, the sample too, shares a Gradient's run out by its sections' areas softened: gradArea; v315: the
   // adapting rule, pins bigger than a share counting for nothing, and no two markers too alike in the run; v318:
   // touching sections kept off near twins; v318.10: no near twins picked for the run while other markers will do;

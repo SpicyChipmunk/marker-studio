@@ -460,7 +460,7 @@ test('Focus: the subject finder downloaded after asking, the page made with it, 
   assert.equal(await page.evaluate(async () => (await __mstest.subMissing()).length), 0, 'stored');
   assert.equal(
     await page.textContent('#sfPpFocHint'),
-    'More detail on the photo’s subject, the rest as Even.',
+    'More detail and colour on the photo’s subject, the rest as Even. Best when the photo has one clear subject.',
   );
   const sal = await page.evaluate(() => {
     const s = __mstest.ppPrep.sal;

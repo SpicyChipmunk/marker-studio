@@ -169,6 +169,10 @@ const IDB = (function () {
         rq.onerror = function () {
           rej(rq.error);
         };
+        // (v329.3 review: a transaction that aborts, iOS dropping the connection in the background, settles too)
+        t.onabort = function () {
+          rej(t.error || new Error('read aborted'));
+        };
       });
     });
   }
@@ -182,6 +186,10 @@ const IDB = (function () {
         };
         t.onerror = function () {
           rej(t.error);
+        };
+        // (v329.3 review: an aborted delete rejected, not left hanging: libPurge's _purging waits on it)
+        t.onabort = function () {
+          rej(t.error || new Error('delete aborted'));
         };
       });
     });
@@ -510,6 +518,15 @@ function guideMeta(d, id) {
   // (v307: the markers its shading takes beyond its own colours, for Home's latest piece; as it was when not given)
   const _sk = d.sk !== undefined ? +d.sk : _ex && _ex.sk;
   if (_sk > 0 && _sk < 10000) meta.sk = Math.round(_sk);
+  // (v329.3) the shading's markers themselves, for Random's Prefer markers you haven't used yet (usedKeys): as sk, the
+  // save's own, else the row's (a save that doesn't work it out keeps it); a row from before v329.3 has none until saved
+  // (and those laid on its paper, kept in the guide itself, onPaper (90-export paperNote): so a restore has them)
+  const _sx = d.sx !== undefined ? d.sx : _ex && _ex.sx,
+    _op = _pl && Array.isArray(_pl.onPaper) ? _pl.onPaper : [],
+    _sxs = Array.from(new Set((Array.isArray(_sx) ? _sx : []).concat(_op))).filter(function (k) {
+      return typeof k === 'string' && keyIdx(k) != null;
+    });
+  if (_sxs.length) meta.sx = _sxs.slice(0, COLORS.length);
   // (v306: a copy with section edits still to be built, which Home's latest piece leaves out; 0 once a guide named
   // "… (section edits)" is saved built)
   if (_pl && _pl.edits === 1) meta.eds = 1;
@@ -573,6 +590,7 @@ function sfSaveDesign(d) {
           }
           // (the app's own storage is full: said as such, v304)
           storeErr.last = 'QuotaExceededError';
+          if (typeof storeUsedRead === 'function') storeUsedRead();
           firstDone(id);
           return null;
         }
@@ -913,9 +931,10 @@ function finRecOk(r) {
     !!r &&
     typeof r === 'object' &&
     typeof r.u === 'string' &&
+    // (v329.3 review: the size first, so an oversized record isn't scanned whole)
+    r.u.length < FIN_MAX &&
     // (the whole of it: base64 only, as safeThumb checks a thumbnail; it goes into the page as an <img>'s src)
     /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(r.u) &&
-    r.u.length < FIN_MAX &&
     +r.w > 0 &&
     +r.h > 0
   );
@@ -931,20 +950,33 @@ function srcRecOk(r) {
     !!r &&
     typeof r === 'object' &&
     typeof r.u === 'string' &&
-    /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(r.u) &&
     r.u.length < SRC_MAX &&
+    /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(r.u) &&
     +r.w > 0 &&
     +r.h > 0
   );
 }
-// (v318.34) a guide's source picture put in from a backup, as finFill does its photo of the finished page
+// (v318.34) a guide's source picture put in from a backup, as finFill does its photo of the finished page (and resolves
+// as finFill does)
 function srcFill(id, rec, over) {
-  if (!id || !srcRecOk(rec)) return Promise.resolve();
-  return (over ? Promise.resolve(null) : IDB.get('src-' + id))
-    .then(function (here) {
-      if (!srcRecOk(here) || (+rec.ts || 0) > (+here.ts || 0)) return IDB.put('src-' + id, rec);
-    })
-    .catch(function () {});
+  if (!id || !srcRecOk(rec)) return Promise.resolve(null);
+  return (over ? Promise.resolve(null) : IDB.get('src-' + id)).then(
+    function (here) {
+      if (srcRecOk(here) && !((+rec.ts || 0) > (+here.ts || 0)))
+        return (+rec.ts || 0) === (+here.ts || 0) ? 'same' : 'here';
+      return IDB.put('src-' + id, rec).then(
+        function () {
+          return true;
+        },
+        function () {
+          return false;
+        },
+      );
+    },
+    function () {
+      return null;
+    },
+  );
 }
 // (v318.34) whether a backup takes the guides' source pictures: the tick box in the Library and in Back up & restore
 // (off by default, the backup being far bigger with them; the two show the same choice)
@@ -959,120 +991,155 @@ function finRowShape(row, rec) {
   else delete row.fa;
 }
 // (v318.34) withPhotos: the guides' source pictures too (src-<id>), when "Include guide photos" is ticked
-function gatherGuides(withPhotos) {
+// (v329.3 review) opt.part: each guide is handed back as {id, ts, part}, part a Blob of its JSON, so a Library with its
+// photos is never all held as strings at once (a Safari tab is killed past about 1 GB); opt.prog(n, of) as each is read.
+// The guides are read one at a time for the same reason. A guide too big to write as text: the list's tooBig is set
+function gatherGuides(withPhotos, opt) {
   var gs = state.saved.filter(function (s) {
       return s.type === 'guide';
     }),
-    marks = {};
-  return Promise.all(
-    gs.map(function (s) {
-      // (how far along it is as it's read, for its "backed up" mark, v328 review 2: taken now, a photo of the finished
-      // page added meanwhile changing the row in place)
-      const mk = Math.max(+s.ts || 0, +s.fn || 0);
-      return Promise.all([
-        IDB.get('guide-' + s.id),
-        // (v314: its photo of the finished page, when it has one; one that can't be read is left out, the guide kept)
-        IDB.get('fin-' + s.id).catch(function () {
-          return null;
-        }),
-        withPhotos === true
-          ? IDB.get('src-' + s.id).catch(function () {
-              return null;
-            })
-          : null,
-      ])
-        .then(function (r) {
-          // (v318 review: a guide not stored at all is said apart from one that couldn't be read: backing up again
-          // won't bring it back)
-          if (r[0] == null) return { gone: s.id };
-          const pl = r[0],
-            o = pl
-              ? {
-                  id: s.id,
-                  name: s.name,
-                  W: s.W,
-                  H: s.H,
-                  keys: s.keys,
-                  n: s.n,
-                  ts: s.ts || 0,
-                  thumb: s.thumb || '',
-                  payload: pl,
-                }
-              : null;
-          if (o && finRecOk(r[1])) o.fin = r[1];
-          if (o && srcRecOk(r[2])) o.src = r[2];
-          if (o) marks[s.id] = mk;
-          return o;
-        })
-        .catch(function () {
-          return null;
+    marks = {},
+    asPart = !!(opt && opt.part),
+    prog = opt && typeof opt.prog === 'function' ? opt.prog : null,
+    tooBig = false,
+    a = [];
+  function part(o) {
+    if (!asPart || !o) return o;
+    try {
+      return { id: o.id, ts: o.ts, part: new Blob([JSON.stringify(o)]) };
+    } catch (e) {
+      tooBig = true;
+      return { id: o.id, ts: o.ts, part: null };
+    }
+  }
+  return gs
+    .reduce(function (p, s, i) {
+      return p.then(function () {
+        return one(s).then(function (x) {
+          a[i] = x;
+          if (prog) prog(i + 1, gs.length);
         });
-    }),
-  )
-    .then(function (a) {
-      // (the Library guides that couldn't be read, left out of the backup: said, not "Backed up ✓", v304)
-      var b = a.filter(function (x) {
-        return x && x.gone == null;
       });
-      b.goneNames = gs
-        .filter(function (s, i) {
-          return a[i] && a[i].gone != null;
-        })
-        .map(function (s) {
-          return s.name || 'Guide';
-        });
-      b.goneIds = a
-        .filter(function (x) {
-          return x && x.gone != null;
-        })
-        .map(function (x) {
-          return x.gone;
-        });
-      b.missedIds = gs
-        .filter(function (s, i) {
-          return !a[i];
-        })
-        .map(function (s) {
-          return s.id;
-        });
-      b.missed = b.missedIds.length;
-      b.marks = marks;
-      return b;
-    })
-    .then(function (a) {
-      var m = null;
-      try {
-        m = JSON.parse(localStorage.getItem('ms-guide-auto') || 'null');
-      } catch (e) {}
-      if (
-        !m ||
-        !m.dirty ||
-        (m.savedId != null &&
-          gs.some(function (s) {
-            return s.id === m.savedId;
-          }))
-      )
-        return a;
-      return IDB.get('guide-autosave').then(
-        function (d) {
-          if (d && d.payload && typeof d.payload.lmap === 'string')
-            a.push({
-              name: typeof d.name === 'string' && d.name ? d.name : 'Colouring guide',
-              W: d.W,
-              H: d.H,
-              keys: Array.isArray(d.keys) ? d.keys : [],
-              n: d.n,
-              ts: +m.ts || Date.now(),
-              thumb: '',
-              payload: d.payload,
-            });
-          return a;
-        },
-        function () {
-          return a;
-        },
-      );
+    }, Promise.resolve())
+    .then(function () {
+      return fin(a);
     });
+  function one(s) {
+    // (how far along it is as it's read, for its "backed up" mark, v328 review 2: taken now, a photo of the finished
+    // page added meanwhile changing the row in place)
+    const mk = Math.max(+s.ts || 0, +s.fn || 0);
+    return Promise.all([
+      IDB.get('guide-' + s.id),
+      // (v314: its photo of the finished page, when it has one; one that can't be read is left out, the guide kept)
+      IDB.get('fin-' + s.id).catch(function () {
+        return null;
+      }),
+      withPhotos === true
+        ? IDB.get('src-' + s.id).catch(function () {
+            return null;
+          })
+        : null,
+    ])
+      .then(function (r) {
+        // (v318 review: a guide not stored at all is said apart from one that couldn't be read: backing up again
+        // won't bring it back)
+        if (r[0] == null) return { gone: s.id };
+        const pl = r[0],
+          o = pl
+            ? {
+                id: s.id,
+                name: s.name,
+                W: s.W,
+                H: s.H,
+                keys: s.keys,
+                n: s.n,
+                ts: s.ts || 0,
+                thumb: s.thumb || '',
+                payload: pl,
+              }
+            : null;
+        if (o && finRecOk(r[1])) o.fin = r[1];
+        if (o && srcRecOk(r[2])) o.src = r[2];
+        if (o) marks[s.id] = mk;
+        return part(o);
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+  function fin(a) {
+    return Promise.resolve(a)
+      .then(function (a) {
+        // (the Library guides that couldn't be read, left out of the backup: said, not "Backed up ✓", v304)
+        var b = a.filter(function (x) {
+          return x && x.gone == null;
+        });
+        b.goneNames = gs
+          .filter(function (s, i) {
+            return a[i] && a[i].gone != null;
+          })
+          .map(function (s) {
+            return s.name || 'Guide';
+          });
+        b.goneIds = a
+          .filter(function (x) {
+            return x && x.gone != null;
+          })
+          .map(function (x) {
+            return x.gone;
+          });
+        b.missedIds = gs
+          .filter(function (s, i) {
+            return !a[i];
+          })
+          .map(function (s) {
+            return s.id;
+          });
+        b.missed = b.missedIds.length;
+        b.marks = marks;
+        return b;
+      })
+      .then(function (a) {
+        var m = null;
+        try {
+          m = JSON.parse(localStorage.getItem('ms-guide-auto') || 'null');
+        } catch (e) {}
+        if (
+          !m ||
+          !m.dirty ||
+          (m.savedId != null &&
+            gs.some(function (s) {
+              return s.id === m.savedId;
+            }))
+        )
+          return a;
+        return IDB.get('guide-autosave').then(
+          function (d) {
+            if (d && d.payload && typeof d.payload.lmap === 'string')
+              a.push(
+                part({
+                  name: typeof d.name === 'string' && d.name ? d.name : 'Colouring guide',
+                  W: d.W,
+                  H: d.H,
+                  keys: Array.isArray(d.keys) ? d.keys : [],
+                  n: d.n,
+                  ts: +m.ts || Date.now(),
+                  thumb: '',
+                  payload: d.payload,
+                }),
+              );
+            return a;
+          },
+          function () {
+            return a;
+          },
+        );
+      })
+      .then(function (a) {
+        if (tooBig) a.tooBig = true;
+        return a;
+      });
+  }
 }
 function _btnFlash(id, txt, back, ms) {
   var b = document.getElementById(id);
@@ -1106,10 +1173,24 @@ function backupAll(btnId) {
   }
   // (v318.34: the tick box read before the wait, as the person left it)
   const withPhotos = bkPhotos();
+  // (v329.3 review: the open guide's last changes couldn't be stored, storage full: the file has its stored version)
+  let flushBad = false;
   return Promise.resolve(window.SF && SF.flushSave ? SF.flushSave() : null)
-    .catch(function () {})
+    .then(
+      function (r) {
+        flushBad = r === false;
+      },
+      function () {},
+    )
     .then(function () {
-      return gatherGuides(withPhotos);
+      return gatherGuides(withPhotos, {
+        part: true,
+        // (v329.3 review: how far it has got, on the button, the guides being read one at a time)
+        prog: function (n, of) {
+          const b = document.getElementById(bid);
+          if (b && b.disabled && of > 1) b.textContent = 'Preparing\u2026 ' + n + ' of ' + of;
+        },
+      });
     })
     .then(function (guides) {
       var now = Date.now(),
@@ -1126,13 +1207,17 @@ function backupAll(btnId) {
       // Home's backup card goes away once its backup is made: then a toast says so, and focus (on the card, or dropped
       // while it was busy) moves to what takes its place
       function made(how) {
+        // (v329.3 review: whether its marks were stored: not with this device full, then the reminder comes back)
+        let kept = true;
         try {
           localStorage.setItem(BK_KEY, String(now));
           localStorage.setItem(BK_SIG, sig);
           // (guides it couldn't read make the reminder due at once, v304)
           if (guides.missed) localStorage.setItem(BK_MISS, JSON.stringify(guides.missedIds));
           else localStorage.removeItem(BK_MISS);
-        } catch (e) {}
+        } catch (e) {
+          kept = false;
+        }
         const ids = {};
         guides.forEach(function (g) {
           if (g.id != null) ids[g.id] = g.ts || now;
@@ -1147,7 +1232,8 @@ function backupAll(btnId) {
           else if (guides.goneIds.indexOf(s.id) >= 0) s.bk = now;
           else if (!+s.bk) s.bk = 1; /* not in this backup (it couldn't be read): still to back up */
         });
-        save();
+        // (quiet: what's said below says it)
+        if (!save(true)) kept = false;
         const bb = document.getElementById(bid),
           card = bb && bb.closest('.nudge'),
           fa = document.activeElement,
@@ -1167,7 +1253,12 @@ function backupAll(btnId) {
               (gone === 1 ? 'it won\u2019t' : 'they won\u2019t') +
               ' open from the Library, delete ' +
               (gone === 1 ? 'it' : 'them') +
-              ' there.';
+              ' there.',
+          fullS = kept
+            ? ''
+            : 'This device is full, so Marker Studio may ask you to back up again after you\u2019ve made room.',
+          openS = flushBad ? 'Your latest changes to the open guide aren\u2019t in it yet.' : '',
+          tail = [openS, fullS].filter(Boolean).join(' ');
         if (miss)
           toast(
             'Backed up, but ' +
@@ -1175,15 +1266,25 @@ function backupAll(btnId) {
               ' couldn\u2019t be read and ' +
               (miss === 1 ? 'isn\u2019t' : 'aren\u2019t') +
               ' in it. Reload Marker Studio and back up again before deleting anything.' +
-              (goneW ? ' ' + goneW : ''),
+              (goneW ? ' ' + goneW : '') +
+              (tail ? ' ' + tail : ''),
             10000,
           );
-        else if (gone) toast('Backed up, but ' + goneW, 10000);
+        else if (gone) toast('Backed up, but ' + goneW + (tail ? ' ' + tail : ''), 10000);
+        else if (tail)
+          toast(
+            'Backed up \u2713 \u2014 ' +
+              (fullS
+                ? 'this device is full, so Marker Studio may ask you to back up again after you\u2019ve made room.' +
+                  (openS ? ' ' + openS : '')
+                : 'your latest changes to the open guide aren\u2019t in it yet.'),
+            10000,
+          );
         if (bb && bb.isConnected && bb.getClientRects().length)
           _btnFlash(bid, how === 'share' ? 'Saved ✓' : 'Downloaded ✓', label);
         else {
           _btnFlash(bid, label, label, 10);
-          if (!miss && !gone) toast('Backed up ✓');
+          if (!miss && !gone && !tail) toast('Backed up ✓');
           // (focus follows the card away with guides left out too, v304)
           if (foc) homeCardNext(card);
         }
@@ -1254,9 +1355,11 @@ function backupAll(btnId) {
           }),
           at = head.indexOf('"' + GH + '"'),
           parts = [head.slice(0, at), '['];
+        // (v329.3 review: each guide a Blob already, made as it was read: gatherGuides' part)
+        if (guides.tooBig) return failed(true);
         guides.forEach(function (g, i) {
           if (i) parts.push(',');
-          parts.push(JSON.stringify(g));
+          parts.push(g.part || JSON.stringify(g));
         });
         parts.push(']', head.slice(at + GH.length + 2));
         blob = new Blob(parts, { type: 'application/json' });
@@ -1596,6 +1699,10 @@ function applyCollectionBackup(o, fts, replace) {
       state.capQ = was.capQ;
       state.capOffer = was.capOffer;
       if (typeof buySumSync === 'function') buySumSync();
+      // (v329.3 review: the open guide's markers and the caps' labels told again, as they were: a restore that
+      // failed for room had shown them the backup's)
+      if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
+      capChanged();
       if (savedOverlay.classList.contains('on')) renderSaved();
       return { failed: true };
     },
@@ -1655,8 +1762,8 @@ function applyCollectionBackup(o, fts, replace) {
   }
   if (!same) state.owned = own;
   // (the same markers: the lists merge as for Keep mine, v305)
-  const wr = wishRestore(o, !same, same ? state.owned : null);
-  if (capRestore(o, !same)) capChanged();
+  const wr = wishRestore(o, !same, same ? state.owned : null),
+    capN = capRestore(o, !same);
   // (Brands I'd buy goes with the collection it was chosen for, when the file has it, v304)
   let bb = false;
   if (o && 'buyBrands' in o) {
@@ -1664,13 +1771,17 @@ function applyCollectionBackup(o, fts, replace) {
     if (JSON.stringify(b) !== JSON.stringify(state.buyBrands)) {
       state.buyBrands = b;
       bb = true;
-      if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
-      if (typeof buySumSync === 'function') buySumSync();
     }
   }
   const n = mergeBackupPals(pals);
   if (!save(true)) return back();
   wishChanged();
+  // (v329.3 review: the caps and the open guide told once it's stored, as for Keep mine above)
+  if (capN) capChanged();
+  if (bb) {
+    if (window.SF && SF.setCollection) SF.setCollection(sfCollection());
+    if (typeof buySumSync === 'function') buySumSync();
+  }
   // what's here is all in the file when every palette here has its twin there
   const pk = function (x) {
       return x.id + ':' + (x.ts || 0) + ':' + (x.name || '') + ':' + (x.keys || []).join('.');
@@ -1854,6 +1965,12 @@ function guidesLeft(x) {
         ' couldn’t be checked — this device is short of memory: close other apps or tabs, then restore again',
     );
   if (x.full) p.push(nWord(x.full, 'guide') + ' couldn’t be saved — this browser’s storage is full');
+  // (v329.3 review: a guide restored without its photo, for want of room, is said too)
+  if (x.pmiss)
+    p.push(
+      (x.pmiss === 1 ? '1 guide’s photo' : x.pmiss + ' guides’ photos') +
+        ' couldn’t be stored — this browser’s storage is nearly full',
+    );
   if (!p.length) return '';
   const s = p.join('; ') + '.';
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -2214,6 +2331,8 @@ function restoreAny(file, btnId, done) {
       .catch(fr.onerror);
     return;
   }
+  // (v329.3 review: one past a couple of MB, read whole, says so too: a few seconds on an older iPad)
+  if (file && file.size > 2e6) restoreReading(bid);
   fr.readAsText(file);
 }
 // what a restore kept beside the backup's guides ({copies, kept, lost}), in words, each sentence after a space ('' when
@@ -2302,6 +2421,7 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
         bad: x.bad || 0,
         mem: x.mem || 0,
         full: x.full || 0,
+        pmiss: x.pmiss || 0,
         // (what was kept beside the backup's guides: the Welcome and Home's note say it too, v304)
         copies: copies || 0,
         kept: x.kept || 0,
@@ -2399,7 +2519,11 @@ function restoreGo(d, fts, guides, collection, rep, bid, label, cap, done, fin) 
           );
           return;
         }
-        restoreToast(msg, copies || x.bad || x.kept || x.lost || x.bin || x.ahead ? 7000 : 3500, col);
+        restoreToast(
+          msg,
+          copies || x.bad || x.kept || x.lost || x.bin || x.ahead || x.pmiss ? 7000 : 3500,
+          col,
+        );
       },
       prog,
     );
@@ -2423,23 +2547,38 @@ function dropKept(id) {
 }
 // (v314) a guide's photo of its finished page put in from a backup (over one here only when over is set; v315: or
 // when the backup's is newer, as when moving to another device after changing the photo)
+// (v329.3 review) resolves true when the backup's photo was put in, 'same' when the same one is here already, 'here'
+// when the one here is newer and stays, false when it couldn't be stored (storage full: said in the restore's
+// summary), null when there was nothing to do or the one here couldn't be read
 function finFill(id, rec, over) {
-  if (!id || !finRecOk(rec)) return Promise.resolve();
-  return (over ? Promise.resolve(null) : IDB.get('fin-' + id))
-    .then(function (here) {
-      if (!finRecOk(here) || (+rec.ts || 0) > (+here.ts || 0))
-        return IDB.put('fin-' + id, rec).then(function () {
-          // (the row's note of its shape, for Home: v314.1)
-          finRowShape(
-            state.saved.find(function (s) {
-              return s.id === id;
-            }),
-            rec,
-          );
-          save(true);
-        });
-    })
-    .catch(function () {});
+  if (!id || !finRecOk(rec)) return Promise.resolve(null);
+  return (over ? Promise.resolve(null) : IDB.get('fin-' + id)).then(
+    function (here) {
+      if (finRecOk(here) && !((+rec.ts || 0) > (+here.ts || 0)))
+        return (+rec.ts || 0) === (+here.ts || 0) ? 'same' : 'here';
+      return IDB.put('fin-' + id, rec).then(
+        function () {
+          try {
+            // (the row's note of its shape, for Home: v314.1)
+            finRowShape(
+              state.saved.find(function (s) {
+                return s.id === id;
+              }),
+              rec,
+            );
+            save(true);
+          } catch (_) {}
+          return true;
+        },
+        function () {
+          return false;
+        },
+      );
+    },
+    function () {
+      return null;
+    },
+  );
 }
 function _newGuideId() {
   let id = Date.now();
@@ -2566,7 +2705,9 @@ function restoreGuideList(guides, _fts, done, prog) {
     kept = 0,
     lost = 0,
     bin = 0,
-    ahead = 0;
+    ahead = 0,
+    // (v329.3 review: guides restored whose photo of the finished page or source picture couldn't be stored)
+    pmiss = 0;
   function same(js, lm, ids) {
     var k = 0;
     function step() {
@@ -2611,6 +2752,7 @@ function restoreGuideList(guides, _fts, done, prog) {
           kept: kept,
           lost: lost,
           bin: bin,
+          pmiss: pmiss,
         });
       // (a lost guide left beside the backup's copy is offered on Home, v304)
       if (lost && typeof lostRefresh === 'function') lostRefresh();
@@ -2700,7 +2842,10 @@ function restoreGuideList(guides, _fts, done, prog) {
             Promise.all([
               finFill(isDup === 'ahead' ? _ex.id : isDup, g.fin, false),
               srcFill(isDup === 'ahead' ? _ex.id : isDup, g.src, false),
-            ]).then(next);
+            ]).then(function (r) {
+              if (r[0] === false || r[1] === false) pmiss++;
+              next();
+            });
             return;
           }
           var copy = false,
@@ -2856,10 +3001,15 @@ function restoreGuideList(guides, _fts, done, prog) {
                   if (m) m.bk = finIn ? Math.max(m.ts || 1, +m.fn || 0) : m.ts || 1;
                   // (put in before the guide is opened again, below)
                   // (v318.34: and its source picture, when the backup has one; one here is left when it hasn't)
+                  // (v329.3 review: not over a newer photo of the finished page here, taken since that backup on
+                  // another device: finFill's timestamp check, as for a guide already here)
                   Promise.all([
-                    finIn ? finFill(id, g.fin, true) : Promise.resolve(),
-                    srcRecOk(g.src) ? srcFill(id, g.src, true) : Promise.resolve(),
-                  ]).then(function () {
+                    finIn ? finFill(id, g.fin, false) : Promise.resolve(null),
+                    srcRecOk(g.src) ? srcFill(id, g.src, false) : Promise.resolve(null),
+                  ]).then(function (r) {
+                    if (r[0] === false || r[1] === false) pmiss++;
+                    // (the photo here kept as newer, or the backup's not stored: not counted as backed up)
+                    if (m && finIn && r[0] !== true && r[0] !== 'same') m.bk = m.ts || 1;
                     // (also a guide deleted while open, restored with the same id: the open copy becomes the restored one,
                     // v289; libChanged leaves any other guide alone)
                     if (window.SF && SF.libChanged) SF.libChanged(id, 'replaced');

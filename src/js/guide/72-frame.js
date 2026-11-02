@@ -1305,6 +1305,8 @@ function openMenu() {
       (along && bulkN()
         ? it('bulkundo', 'undo-2', 'Undo the last tick-off (' + nWord(bulkN(), 'section') + ')', 'sfBulkUndo')
         : '') +
+      // (v329.3: the guide's notes, 72-frame openNotes)
+      (plan || along ? it('notes', 'pencil', 'Notes…', 'sfNotesM') : '') +
       (along ? it('reset', 'rotate-ccw', 'Reset progress', 'sfResetP', !progressCount()) : '') +
       (inLib && finHas()
         ? it('finchg', 'camera', 'Change the photo of your page') +
@@ -1355,6 +1357,7 @@ function menuDo(m) {
   } else if (m === 'copy') saveGuide();
   else if (m === 'reset') askResetProgress();
   else if (m === 'bulkundo') bulkUndo();
+  else if (m === 'notes') openNotes();
   else if (m === 'finadd' || m === 'finchg') finPick(null);
   else if (m === 'finrm') {
     if (curId != null) finRemove(curId);
@@ -1365,6 +1368,53 @@ function menuDo(m) {
     if (typeof window.openFeedback === 'function') window.openFeedback();
     else sendFeedback();
   }
+}
+
+/* ---- (v329.3) the guide's notes: a few lines of its own (paper, where the page came from, what to try next time) ----
+    Kept in guideNotes as they're typed (so a leave save while the sheet is open has them), saved by the autosave once
+    the sheet closes, however it closes; not an Undo step (05-style-fields). Printed under the key (90-export) and left
+    out of a guide file (60-persist). A sample with notes is a page of one's own, as a renamed one is (smpTry). */
+function openNotes() {
+  if (!assignData) return;
+  const was = guideNotes,
+    wasDirty = guideDirty,
+    wasSmp = smpTry;
+  const el = openSheet({
+    title: 'Notes',
+    body:
+      '<textarea id="sfNotesT" class="sfnotesta" aria-labelledby="sfSheetT" aria-describedby="sfNotesH" maxlength="500" rows="5" placeholder="Paper, where the page came from, what to try next time…" autofocus>' +
+      esc(guideNotes) +
+      '</textarea>' +
+      '<p class="sfnotesh" id="sfNotesH">Kept with this guide on this device and in backups, and printed under the key. A guide file you send leaves them out.</p>',
+    foot: '<button type="button" class="sfprimary" data-nt="done">Done</button>',
+    fit: true,
+    cleanup: function () {
+      // (spaces and empty lines left at the end go: notes of nothing but spaces are none)
+      guideNotes = guideNotes.replace(/\s+$/, '');
+      if (guideNotes === was) return;
+      guideDirty = true;
+      scheduleAutosave();
+      finPanel();
+      sayLive(guideNotes ? 'Notes saved' : 'Notes cleared');
+    },
+  });
+  const t = el.querySelector('#sfNotesT');
+  if (t)
+    t.addEventListener('input', function () {
+      const v = notesClean(t.value);
+      if (v === guideNotes) return;
+      guideNotes = v;
+      // (v313: a sample with notes is a page of one's own, as a renamed one: Home's Continue card offers it. v329.3
+      // review: only while they differ from what they were: typed and taken out again, the guide is as it was)
+      const ch = v.replace(/\s+$/, '') !== was;
+      guideDirty = ch || wasDirty;
+      smpTry = ch ? 0 : wasSmp;
+      // (saved as they're typed, debounced: a sample has no Library entry for the leave save until its first save)
+      scheduleAutosave();
+    });
+  el.addEventListener('click', function (e) {
+    if (e.target.closest('[data-nt="done"]')) closeSheet();
+  });
 }
 
 /* ---- #8 one-time hints ----

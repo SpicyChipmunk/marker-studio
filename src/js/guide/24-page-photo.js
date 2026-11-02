@@ -192,19 +192,30 @@ function finRead(file, side) {
           rej(e);
           return;
         }
-        const k = Math.min(1, (side || FIN_SIDE) / Math.max(w0, h0)),
-          c = document.createElement('canvas');
-        c.width = Math.max(1, Math.round(w0 * k));
-        c.height = Math.max(1, Math.round(h0 * k));
-        const g = c.getContext('2d');
-        g.imageSmoothingEnabled = true;
-        g.imageSmoothingQuality = 'high';
-        g.fillStyle = '#fff';
-        g.fillRect(0, 0, c.width, c.height);
-        drawShrunk(g, img, c.width, c.height);
-        lens.then(function (f35) {
-          res({ src: c, f35: f35 });
-        });
+        // (v329.3 review: decoded away from the page first, as a new photo is, 20-image-input: a 12-48 megapixel
+        // phone photo had been decoded inside drawShrunk, holding the page; a refusal, or none, goes on as before)
+        let dec = null;
+        try {
+          dec = img.decode ? img.decode() : null;
+        } catch (_) {}
+        Promise.resolve(dec)
+          .catch(function () {})
+          .then(function () {
+            const k = Math.min(1, (side || FIN_SIDE) / Math.max(w0, h0)),
+              c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(w0 * k));
+            c.height = Math.max(1, Math.round(h0 * k));
+            const g = c.getContext('2d');
+            g.imageSmoothingEnabled = true;
+            g.imageSmoothingQuality = 'high';
+            g.fillStyle = '#fff';
+            g.fillRect(0, 0, c.width, c.height);
+            drawShrunk(g, img, c.width, c.height);
+            return lens.then(function (f35) {
+              res({ src: c, f35: f35 });
+            });
+          })
+          .catch(rej);
       };
       img.onerror = function () {
         if (url) URL.revokeObjectURL(url);
@@ -878,6 +889,9 @@ function finEdPtr(e, kind) {
     k = E.k,
     pad = E.pad;
   if (kind === 'down') {
+    // (v329.3 review: one finger's drag at a time: a second touch meanwhile, a palm resting on the photo, say, is
+    // left alone; it had taken the drag over, pid)
+    if (E.drag >= 0 && e.pointerId !== E.pid) return;
     let bi = -1,
       bd = Math.max(32 * P.s, E.cv.width * 0.08);
     E.q.forEach(function (p, i) {
@@ -894,18 +908,21 @@ function finEdPtr(e, kind) {
     } catch (_) {}
     const p = E.q[bi];
     E.drag = bi;
+    E.pid = e.pointerId;
     E.sel = bi;
     E.off = [pad + p[0] * k - P.x, pad + p[1] * k - P.y];
     finEdDraw();
     return;
   }
-  if (E.drag < 0) return;
+  // (v329.3 review: only the pointer that started the drag moves or ends it)
+  if (E.drag < 0 || e.pointerId !== E.pid) return;
   if (kind === 'move') {
     E.q[E.drag] = finEdClamp([(P.x + E.off[0] - pad) / k, (P.y + E.off[1] - pad) / k]);
     finEdDraw();
     return;
   }
   E.drag = -1;
+  E.pid = null;
   try {
     E.cv.releasePointerCapture(e.pointerId);
   } catch (_) {}
@@ -966,6 +983,7 @@ function finPanel() {
       '<button type="button" class="sffinadd" data-fin="add">' +
       ic('camera') +
       ' Add a photo of your page</button><div class="sffinnote">Keep your finished page beside its plan. It stays on this device. On a plain table darker than the paper, it straightens by itself.</div>';
+  finNotes(on);
   if (el._h === h) return;
   el._h = h;
   el.innerHTML = h;
@@ -978,6 +996,27 @@ function finPanel() {
     else if (a === 'turn') finTurn();
     else if (a === 'adjust' && _finLast && _finLast.id === curId)
       finEdit(_finLast.id, _finLast.src, _finLast.q, 'adjust');
+  };
+}
+
+// (v329.3) the guide's notes, a line under the card's buttons: their first line and Edit, or Add notes (72-frame
+// openNotes); none until the page is finished and saved
+function finNotes(on) {
+  const el = document.getElementById('sfFinNt');
+  if (!el) return;
+  const n1 = on && guideNotes ? guideNotes.split('\n')[0].trim() || '…' : '',
+    h = !on
+      ? ''
+      : n1
+        ? '<span class="sffinnt">' +
+          esc(n1) +
+          '</span><button type="button" class="sflink" data-fin="notes" aria-label="Edit notes">Edit</button>'
+        : '<button type="button" class="sflink" data-fin="notes">' + ic('pencil') + ' Add notes</button>';
+  if (el._h === h) return;
+  el._h = h;
+  el.innerHTML = h;
+  el.onclick = function (e) {
+    if (e.target.closest('[data-fin="notes"]')) openNotes();
   };
 }
 

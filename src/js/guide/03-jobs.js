@@ -14,7 +14,9 @@
       'sfield' the sharp copy's outlines for a window of the picture (sharpFieldCore, 77-sharp; v329.1)
     Anywhere there's no worker (an old browser, a page that can't make one) or a job fails, JOBS.run rejects and the
     caller does the work itself, as before. So does a job with no answer in time (jobBudget): the worker is then given
-    up on for the session, and anything it sends later is ignored. */
+    up on for the session, and anything it sends later is ignored. (v329.3 review: but not a photo-made page's job
+    over its time, which rejects 'took too long' with the worker kept; nor any job whose timer fired late because the
+    page was paused, due.) */
 const JOBS = (function () {
   let wk = null,
     bad = false,
@@ -146,6 +148,8 @@ const JOBS = (function () {
         waits.delete(m.id);
         clearTimeout(w.t);
         retime(Date.now());
+        // (v329.3 review: a job already given up on as too long, toolong: the worker free again, nothing more)
+        if (w.gone) return;
         // (v318.36: a section-finding job a newer one took over from is neither: dropped, as the page meant)
         const st = m.err === 'superseded' ? stats.dropped : m.err ? stats.failed : stats.done;
         st[w.k] = (st[w.k] || 0) + 1;
@@ -182,24 +186,55 @@ const JOBS = (function () {
   }
   // a job that hasn’t answered when it’s due: the worker is taken to be stuck (a browser fault, or a job it never
   // finishes), so it’s stopped for the session and this job, and every other one waiting, is done on the
-  // page. Not while the page is hidden, when the browser may pause the worker: it's given its time again
+  // page. Not while the page is hidden, when the browser may pause the worker: it's given its time again.
+  // (v329.3 review: nor when the timer itself fired well after it was due: iOS pauses a backgrounded page and its
+  // worker alike, and on the way back the overdue timer fires at once, the page already visible again; the worker was
+  // paused, not stuck, so every job waiting is given its time again from now, resume.) A photo-made page or its
+  // markers to add ('ppage', 'ppfill') over its time is a worker at work, not stuck: only that job is given up on
+  // ('too long', for the page to say so), and the worker kept, toolong
   function due(id, ms) {
     const w = waits.get(id);
     if (!w) return;
-    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
-      w.t = setTimeout(function () {
-        due(id, ms);
-      }, ms);
-      // (v318.37: due that much later, and so are the jobs behind it, retime)
-      w.d = Date.now() + ms;
-      if (w.d > tail) tail = w.d;
+    const now = Date.now();
+    if ((typeof document !== 'undefined' && document.visibilityState === 'hidden') || now - w.d > 1500) {
+      resume(now);
+      return;
+    }
+    stats.timedOut[w.k] = (stats.timedOut[w.k] || 0) + 1;
+    if ((w.k === 'ppage' || w.k === 'ppfill') && !w.gone) {
+      toolong(w, ms, now);
       return;
     }
     waits.delete(id);
-    stats.timedOut[w.k] = (stats.timedOut[w.k] || 0) + 1;
     errLog('Worker', w.k + ' job gave no answer in ' + ms + ' ms (done on the page from now on)');
     w.rej(new Error('timed out'));
     stop();
+  }
+  // (v329.3 review) the page paused (hidden, or a timer that fired long after it was due): every job waiting is timed
+  // again from now, one after another in the order posted, each with its whole budget (v318.37: so are the jobs behind
+  // it, retime)
+  function resume(now) {
+    waits.forEach(function (w) {
+      w.at = now;
+      w.d = Infinity;
+    });
+    retime(now);
+  }
+  // (v329.3 review) a 'ppage'/'ppfill' job over its time: the caller is told now ('took too long'), but the job stays
+  // in waits, gone, as the worker is still busy with it (the next job only starts once it's done), so it and the jobs
+  // behind it are timed again from now, each after the one ahead. Given its time once more, it is then taken to be
+  // stuck after all (due, as any other job). Its answer, if it comes, is dropped (onmessage)
+  function toolong(w, ms, now) {
+    w.gone = true;
+    errLog('Worker', w.k + ' job took too long (' + ms + ' ms): given up on, the worker kept');
+    w.rej(new Error('took too long'));
+    w.at = now;
+    let behind = false;
+    waits.forEach(function (o) {
+      if (o === w) behind = true;
+      if (behind) o.d = Infinity;
+    });
+    retime(now);
   }
   // (v318.37) a job answered or given up on: the jobs still waiting, in the order they were posted, are due one after
   // another from now (each from the later of its own posting and the one ahead of it being due, plus its budget), and
@@ -279,12 +314,14 @@ const JOBS = (function () {
 // 14 s), several times what a computer takes (about 1.5 s there). (v329.1) And the marker choice's share, by the
 // photo's colours and the markers it may use, as 'ppfill''s: from the full range (720 markers, 450 colours) it's about
 // 1.2 s on a computer, where 120 markers take 0.2 s; 13 s more allowed there, 2 s for 120, so a slow iPad doesn't lose
-// the worker for the session on a big collection's first page
+// the worker for the session on a big collection's first page. (v329.3 review: the pixels' share twice over for Sharper
+// subject or Simpler background, data.sal: the merges weigh each region by the subject and may go round four
+// times for the count)
 function jobBudget(data, k) {
   if (k === 'ppage')
     return (
       8000 +
-      Math.round((data.GW * data.GH) / 500) +
+      (data.sal ? 2 : 1) * Math.round((data.GW * data.GH) / 500) +
       (data.tw && data.pl ? Math.round((data.tw.length * (data.pl.length / 3)) / 25) : 0)
     );
   // (v328: Tick off from a photo, lining up or reading: about 2 and 4 s on a desktop for the author's 3.8-megapixel

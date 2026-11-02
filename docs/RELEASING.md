@@ -78,4 +78,6 @@ older commit going out by mistake.
   the older form those two answers go in Message). To add the two to the live form: two Paragraph questions at the
   very end, titled as above, **not required** (posts are no-cors: a required field left empty is refused without a
   word, and v318.25 leaves them empty); then a pre-filled link with every field "x" goes in `RESULTS_FORM`. Any other
-  count is passed over, with a warning in the console, and both buttons use the share sheet.
+  count is passed over, with a warning in the console, and both buttons use the share sheet. (v329.3) Or 31: two
+  Short answer questions after those, **Shared a guide** and **Dark look** (Tester tasks' two quick choices), also not
+  required; to an older form their answers go in Message too.

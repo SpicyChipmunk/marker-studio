@@ -2069,7 +2069,10 @@ function segQuality() {
     }
   }
   var tinyFrac = N ? tiny / N : 0;
-  if (inkFrac < 0.02 && N < 5)
+  // (v329.3 review: faint when not one section besides the background is in the guide, kept; it had been under five
+  // sections in all, and line art's ink is nearly always under 2% at this size, so a simple page, an apple with its
+  // leaf and stem, was told it may be blank)
+  if (inkFrac < 0.02 && kept === 0)
     return {
       ok: false,
       code: 'faint',

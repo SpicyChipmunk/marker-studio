@@ -1388,18 +1388,24 @@ function addLost(ids) {
       renderBackupNudge();
       renderHomeNotes();
       // each one's picture, drawn from the guide (renderRecent starts the first few; this is for the rest)
-      added.forEach(function (m) {
-        if (window.SF && SF.thumbFor)
-          SF.thumbFor(m.id).then(function (t) {
-            const s = state.saved.find(function (x) {
-              return x.id === m.id;
-            });
-            if (!t || !s || safeThumb(s.thumb)) return;
-            s.thumb = t;
-            if (!save(true, true)) s.thumb = '';
-            libRowChanged(m.id);
-          });
-      });
+      // (v329.3 review: one at a time and the first few only, each a full-size section map decoded: all of them at once
+      // could take more memory than the tab has; the Library draws the rest on later visits)
+      added.slice(0, 8).reduce(function (p, m) {
+        return p.then(function () {
+          if (!(window.SF && SF.thumbFor)) return;
+          return Promise.resolve(SF.thumbFor(m.id))
+            .then(function (t) {
+              const s = state.saved.find(function (x) {
+                return x.id === m.id;
+              });
+              if (!t || !s || safeThumb(s.thumb)) return;
+              s.thumb = t;
+              if (!save(true, true)) s.thumb = '';
+              libRowChanged(m.id);
+            })
+            .catch(function () {});
+        });
+      }, Promise.resolve());
       // (v318 audit: one that couldn't be checked for want of memory said as that, as it's offered again: "couldn't
       // be read", said of it too, sounded final)
       const nb =

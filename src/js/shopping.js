@@ -191,22 +191,104 @@ function wishChipHTML(k, why, inner, cls) {
     '</b></button>'
   );
 }
-function wishAllLabel(pairs) {
+// (v329.3: lb, the button's own words, [to add, all on the list]: Markers' rankings' "Add the top 5 to To buy")
+function wishAllLabel(pairs, lb) {
   return pairs.every(function (p) {
     return isWished(p[0]);
   })
-    ? '✓ All on your To buy list'
-    : 'Add all to To buy';
+    ? lb
+      ? lb[1]
+      : '✓ All on your To buy list'
+    : lb
+      ? lb[0]
+      : 'Add all to To buy';
 }
-function wishAllHTML(pairs) {
-  if (!pairs || pairs.length < 2) return '';
+function wishAllHTML(pairs, lb) {
+  if (!pairs || pairs.length < (lb ? 1 : 2)) return '';
   return (
     ' <button type="button" class="wishall" data-wall="' +
     esc(JSON.stringify(pairs)) +
-    '">' +
-    wishAllLabel(pairs) +
+    '"' +
+    (lb ? ' data-wlb="' + esc(JSON.stringify(lb)) + '"' : '') +
+    '>' +
+    wishAllLabel(pairs, lb) +
     '</button>'
   );
+}
+function wishLb(b) {
+  try {
+    const a = JSON.parse(b.getAttribute('data-wlb') || 'null');
+    return Array.isArray(a) && a.length === 2 ? a : null;
+  } catch (e) {
+    return null;
+  }
+}
+// (v329.3) Markers' three rankings of what to buy next (Markers › Unowned's Order): To buy links to them, and each can
+// put its first five on To buy (finder.js), with a reason in To buy's own descriptive words
+const IDEAS = [
+  ['gap', 'Fill the biggest gaps', 'fills a big gap in your collection'],
+  ['ramps', 'Fill gaps between light and dark', 'fills a gap between light and dark'],
+  ['complete', 'Finish families', 'helps finish a family'],
+];
+function ideaName(g) {
+  const x = IDEAS.find((y) => y[0] === g);
+  return x ? x[1] : '';
+}
+function ideaWhy(g) {
+  const x = IDEAS.find((y) => y[0] === g);
+  return x ? x[2] : '';
+}
+// (a row added by a v329.3 test build carries the ranking's name: shown in the new words)
+function wishWhyText(why) {
+  const x = IDEAS.find((y) => y[1] === why);
+  return x ? x[2] : why || 'added by you';
+}
+// "Add the top 5 to To buy" over a ranking's markers (order: their indexes as shown)
+function topFiveHTML(order, g) {
+  const pairs = order.slice(0, 5).map(function (i) {
+    return [mkey(i), ideaWhy(g)];
+  });
+  return pairs.length
+    ? '<div class="wtop5">' +
+        wishAllHTML(
+          pairs,
+          pairs.length === 5
+            ? ['Add the top 5 to To buy', '✓ The top 5 are on your To buy list']
+            : [
+                'Add the top ' + pairs.length + ' to To buy',
+                '✓ The top ' + pairs.length + ' are on your To buy list',
+              ],
+        ) +
+        '</div>'
+    : '';
+}
+// To buy's line: none until you own a marker with ink (every marker is unowned then; the Colorless Blender alone isn't a collection)
+function ideasHTML() {
+  if (!inkOwned()) return '';
+  return (
+    '<div class="wwhy wideas">Ideas from your collection: ' +
+    IDEAS.map(function (o) {
+      return '<button type="button" class="sflink" data-idea="' + o[0] + '">' + o[1] + '</button>';
+    }).join(' · ') +
+    '</div>'
+  );
+}
+// (a link followed: Markers › Unowned in that order, the search cleared, the filter chips as they are)
+function openIdea(g) {
+  if (!ideaName(g)) return;
+  state.collView = 'unowned';
+  state.gapSort = g;
+  searchInput.value = '';
+  searchStr = '';
+  save();
+  fullRender();
+  setTimeout(function () {
+    const h = document.getElementById('ownHint');
+    if (h && h.offsetParent) {
+      h.setAttribute('tabindex', '-1');
+      h.focus({ preventScroll: false });
+    }
+  }, 0);
 }
 function wishPairs(b) {
   try {
@@ -230,7 +312,7 @@ function wishChanged() {
     } else b.textContent = wishLabel(on);
   });
   document.querySelectorAll('.wishall').forEach(function (b) {
-    b.textContent = wishAllLabel(wishPairs(b));
+    b.textContent = wishAllLabel(wishPairs(b), wishLb(b));
   });
   wishChrome(state.mode === 'collection');
 }
@@ -542,6 +624,169 @@ function wishFocusLater(b) {
     else focusKept(true, v, sel, at, []);
   }, 0);
 }
+/* ---- (v329.3) Sets with markers on your list (decisions 36–37) ----
+   For each brand on To buy (Brands I'd buy's rule, buyPref: ticked, only those; automatic, your brands first), the sets
+   that have the markers on your list you don't own (a Running-low replacement of one you own isn't counted): how many of
+   them each has, and how many markers it would add that you don't have. A set is left out when another, no bigger, has
+   every one of the same markers of your list (the Honolulu sets nest inside each other: 24 in 48 in 72…), so the rows
+   run from the most of your list down, the smallest set for each; at most 3 a brand. Set contents as the app knows them (MARKER_SETS). */
+const _setMem = {};
+function setMembers(i) {
+  return _setMem[i] || (_setMem[i] = setKeys(presetMkeys(MARKER_SETS[i])));
+}
+function setAdvice() {
+  const bp = buyPref(),
+    want = {};
+  let cut = 0;
+  state.wish.forEach(function (w) {
+    const i = keyIdx(w.k);
+    if (i == null || isOwned(i) || NOINK.has(i)) return;
+    const b = COLORS[i].brand;
+    if (bp.strict && !bp.pref.has(b)) {
+      cut++;
+      return;
+    }
+    (want[b] = want[b] || []).push(w.k);
+  });
+  const bi = function (b) {
+      const k = BRAND_DEFS.findIndex((d) => d.k === b);
+      return k < 0 ? 99 : k;
+    },
+    brands = Object.keys(want).sort(function (a, b) {
+      return (bp.pref.has(b) ? 1 : 0) - (bp.pref.has(a) ? 1 : 0) || bi(a) - bi(b);
+    });
+  const out = brands
+    .map(function (b) {
+      const W = new Set(want[b]),
+        cands = [];
+      MARKER_SETS.forEach(function (p, i) {
+        if (p.b !== b || p.allbrand) return;
+        const mem = setMembers(i),
+          has = mem.filter((k) => W.has(k));
+        if (!has.length) return;
+        cands.push({ name: p.n, has: has, n: mem.length, nw: mem.filter((k) => !state.owned.has(k)).length });
+      });
+      // (left out only for a set no bigger that has every one of the same markers: one that has others instead stays,
+      // so a marker only a big set has still shows a way to get it)
+      const keep = cands.filter(function (c) {
+        return !cands.some(function (d) {
+          return (
+            d !== c &&
+            d.n <= c.n &&
+            (d.n < c.n || d.has.length > c.has.length) &&
+            c.has.every(function (k) {
+              return d.has.indexOf(k) >= 0;
+            })
+          );
+        });
+      });
+      const byMost = function (x, y) {
+        return y.has.length - x.has.length || x.n - y.n || (x.name < y.name ? -1 : x.name > y.name ? 1 : 0);
+      };
+      keep.sort(byMost);
+      // the rows: the most of your list first; then, while a marker of the list is in no row yet, the smallest set with
+      // the most of those (a way to get each), else the next most (the ladder); 3 at most
+      const rows = [],
+        inSet = new Set();
+      keep.forEach(function (c) {
+        c.has.forEach((k) => inSet.add(k));
+      });
+      while (rows.length < 3) {
+        const got = new Set();
+        rows.forEach(function (r) {
+          r.has.forEach((k) => got.add(k));
+        });
+        const left = keep.filter((c) => rows.indexOf(c) < 0);
+        if (!left.length) break;
+        const miss = (c) => c.has.filter((k) => !got.has(k)).length;
+        const need = rows.length && left.some((c) => miss(c) > 0);
+        rows.push(
+          need
+            ? left.slice().sort(function (x, y) {
+                return miss(y) - miss(x) || x.n - y.n || byMost(x, y);
+              })[0]
+            : left[0],
+        );
+      }
+      const shown = new Set();
+      rows.forEach(function (r) {
+        r.has.forEach((k) => shown.add(k));
+      });
+      // (named, not dropped: the list's markers no row has, and those in no set the app knows)
+      const notShown = want[b].filter((k) => inSet.has(k) && !shown.has(k)),
+        noSet = want[b].filter((k) => !inSet.has(k));
+      return { b: b, total: W.size, sets: rows, notShown: notShown, noSet: noSet };
+    })
+    .filter(function (r) {
+      return r.sets.length || r.noSet.length;
+    });
+  // (how many markers of the list Brands I'd buy left out: said when no set is left to show)
+  out.cut = cut;
+  return out;
+}
+function setAdviceHTML() {
+  const rows = setAdvice(),
+    codes6 = function (ks) {
+      const c = ks.map(function (k) {
+        const i = keyIdx(k);
+        return i == null ? k : COLORS[i].code;
+      });
+      return c.slice(0, 6).join(', ') + (c.length > 6 ? ' +' + (c.length - 6) + ' more' : '');
+    };
+  if (
+    !rows.some(function (r) {
+      return r.sets.length;
+    })
+  )
+    return rows.cut
+      ? '<div class="gbuy wsets"><div class="gbhead"><b>Sets with markers on your list</b></div>' +
+          '<div class="wwhy wsleft">None from the brands you’d buy (Brands I’d buy).</div></div>'
+      : '';
+  return (
+    '<div class="gbuy wsets"><div class="gbhead"><b>Sets with markers on your list</b></div>' +
+    rows
+      .map(function (r) {
+        const tag = rows.length > 1 ? ' (' + esc(r.b) + ')' : '';
+        return (
+          r.sets
+            .map(function (s) {
+              return (
+                '<div class="wsrow"><div class="wsname">' +
+                esc(s.name) +
+                ' · ' +
+                s.has.length +
+                ' of your ' +
+                r.total +
+                ' ' +
+                esc(r.b) +
+                ' · ' +
+                s.nw +
+                ' new to you</div><div class="wwhy wshas">Has ' +
+                esc(codes6(s.has)) +
+                '</div></div>'
+              );
+            })
+            .join('') +
+          (r.notShown.length
+            ? '<div class="wwhy wsleft">Not in the sets above' +
+              tag +
+              ': ' +
+              esc(codes6(r.notShown)) +
+              '</div>'
+            : '') +
+          (r.noSet.length
+            ? '<div class="wwhy wsleft">Not in any set Marker Studio knows' +
+              tag +
+              ': ' +
+              esc(codes6(r.noSet)) +
+              '</div>'
+            : '')
+        );
+      })
+      .join('') +
+    '<div class="wwhy wsnote">Set contents as Marker Studio knows them: check what’s sold where you are before you buy.</div></div>'
+  );
+}
 function renderWish() {
   const v = document.getElementById('wishView');
   if (!v) return;
@@ -549,6 +794,7 @@ function renderWish() {
   if (!n) {
     v.innerHTML =
       '<div class="wishempty"><b>Your To buy list is empty.</b> Wherever Marker Studio suggests a marker you don’t have, tap <b>+ To buy</b> to add it here: in <b>Match a colour</b>, a marker’s details (press and hold one), and a guide’s blend plan, shading and photo notes. Mark a marker as <b>Running low</b> in its details, then tap <b>+ To buy</b> for a replacement.</div>' +
+      ideasHTML() +
       guideBuysHTML() +
       buyRowHTML();
     return;
@@ -599,7 +845,7 @@ function renderWish() {
               '</b> ' +
               esc(c.name || '') +
               '</div><div class="wwhy">' +
-              esc(o.w.why || 'added by you') +
+              esc(wishWhyText(o.w.why)) +
               (own && ink && !/low|dry/.test(o.w.why || '')
                 ? ' · yours is ' + (ink === 'dry' ? 'dry' : 'running low')
                 : // (v305: one you own with no ink mark, from before ticking took it off, or from a backup)
@@ -625,6 +871,9 @@ function renderWish() {
     '<div class="wishacts"><button type="button" id="wishCopy">Copy list</button>' +
     (navigator.share ? '<button type="button" id="wishShare">Share list</button>' : '') +
     '</div>' +
+    // (v329.3: the sets with the most of your list, under it, and Markers' rankings of what to buy next)
+    setAdviceHTML() +
+    ideasHTML() +
     // (v316: what your guides would have you buy, after your own list: on a phone it had pushed the list off the first
     // screen; just above Brands I'd buy, which changes what it suggests)
     guideBuysHTML() +
@@ -696,6 +945,10 @@ function wishBought(k) {
   v.addEventListener('click', function (e) {
     const t = e.target.closest('button,[data-open]');
     if (!t) return;
+    if (t.dataset.idea) {
+      openIdea(t.dataset.idea);
+      return;
+    }
     // (v318.22 debug: the keyboard on the next row's same button once its row has gone, else the list's first)
     const kept = function (sel) {
       const at = [...v.querySelectorAll(sel)].indexOf(t),

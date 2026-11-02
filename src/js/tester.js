@@ -45,6 +45,9 @@
     'Message',
     'Other brands',
     'Colour most',
+    // (v329.3: two quick choices, at the end so an older form's Message takes them, as v318.26's did)
+    'Shared a guide',
+    'Dark look',
   ];
   const OLD_N = 27;
   const TASKS = [
@@ -135,6 +138,30 @@
     ['yes', 'Yes'],
     ['maybe', 'Maybe'],
     ['no', 'No'],
+  ];
+  // (v329.3) two more quick choices, after Next page: whether guide files are traded (for "Use my markers" on one made
+  // with other markers) and whether a dark look is wanted (decision 50): [answer key, question, choices, form field]
+  const CHOICES = [
+    [
+      'share',
+      'Did you send a guide file to anyone, or open one someone sent you?',
+      [
+        ['yes', 'Yes'],
+        ['like', 'No, but I’d like to'],
+        ['no', 'No'],
+      ],
+      'Shared a guide',
+    ],
+    [
+      'dark',
+      'Would a dark look for the app’s screens help you? (Pages stay white.)',
+      [
+        ['yes', 'Yes'],
+        ['dm', 'Don’t mind'],
+        ['no', 'No'],
+      ],
+      'Dark look',
+    ],
   ];
   const rateWord = function (r) {
     const x = RATES.find(function (y) {
@@ -311,6 +338,9 @@
         if (v) q[x[0]] = v;
       });
     if (NEXT.some((y) => y[0] === (o.q && o.q.next))) q.next = o.q.next;
+    CHOICES.forEach(function (c) {
+      if (c[2].some((y) => y[0] === (o.q && o.q[c[0]]))) q[c[0]] = o.q[c[0]];
+    });
     return {
       id: o.id,
       name: str(o.name, 60),
@@ -394,7 +424,8 @@
       ids.push(d);
       return _;
     });
-    if (ids.length !== FIELDS.length && ids.length !== OLD_N) {
+    // (v329.3: or v318.26's 29, before the form is made again with v329.3's two choices)
+    if (ids.length !== FIELDS.length && ids.length !== OLD_N && ids.length !== OLD_N + 2) {
       if (!warned) {
         warned = true;
         try {
@@ -403,6 +434,8 @@
               ids.length +
               ' fields; this version sends ' +
               OLD_N +
+              ', ' +
+              (OLD_N + 2) +
               ' or ' +
               FIELDS.length +
               '. Send results and Send feedback will use the share sheet.',
@@ -521,6 +554,9 @@
     v['Next page'] = (NEXT.find((y) => y[0] === st.q.next) || ['', ''])[1];
     v['Other brands'] = st.q.brands || '';
     v['Colour most'] = st.q.subjects || '';
+    CHOICES.forEach(function (c) {
+      v[c[3]] = (c[2].find((y) => y[0] === st.q[c[0]]) || ['', ''])[1];
+    });
     return v;
   }
   // the same as text, to copy (or share) when there's no form or no network
@@ -638,7 +674,37 @@
           '</button>'
         );
       }).join('') +
-      '</div></div>';
+      '</div></div>' +
+      CHOICES.map(function (c) {
+        return (
+          '<div class="ttq"><span class="ttql" id="ttQ-' +
+          c[0] +
+          '">' +
+          esc(c[1]) +
+          '</span><div class="ttrate ttnext" role="group" aria-labelledby="ttQ-' +
+          c[0] +
+          '">' +
+          c[2]
+            .map(function (r) {
+              const on = st.q[c[0]] === r[0];
+              return (
+                '<button type="button" data-q2="' +
+                c[0] +
+                '" data-v="' +
+                r[0] +
+                '" aria-pressed="' +
+                on +
+                '"' +
+                (on ? ' class="on"' : '') +
+                '>' +
+                esc(r[1]) +
+                '</button>'
+              );
+            })
+            .join('') +
+          '</div></div>'
+        );
+      }).join('');
     D.getElementById('ttName').value = st.name || '';
     progress();
   }
@@ -725,6 +791,15 @@
       save();
       render();
       refocus('[data-next="' + t.dataset.next + '"]');
+      return;
+    }
+    if (t.dataset.q2 && CHOICES.some((c) => c[0] === t.dataset.q2)) {
+      const k = t.dataset.q2;
+      if (st.q[k] === t.dataset.v) delete st.q[k];
+      else st.q[k] = t.dataset.v;
+      save();
+      render();
+      refocus('[data-q2="' + k + '"][data-v="' + t.dataset.v + '"]');
     }
   });
   ov.addEventListener('input', function (e) {
@@ -918,6 +993,8 @@
   // Send feedback's buttons (safety.js): this dialog when there's a form, else the share sheet as before
   window.openFeedback = function () {
     if (!fov || !formTarget()) return sendFeedback();
+    // (v329.3: the space used, read now for the report the Send tap makes)
+    if (typeof storeUsedRead === 'function') storeUsedRead();
     fbSaid('');
     openDialog(fov);
     setTimeout(function () {
@@ -959,6 +1036,7 @@
         (typeof feedbackErrLines === 'function' ? feedbackErrLines() : '') +
         '\nScreen: ' +
         (typeof screenWords === 'function' ? screenWords() : '') +
+        (typeof storeLine === 'function' && storeLine() ? '\n' + storeLine() : '') +
         (typeof feedbackWaitLines === 'function' ? feedbackWaitLines() : '');
       v.Message =
         typeof feedbackFit === 'function' ? feedbackFit(text, det, 4000) : (text + det).slice(0, 4000);
