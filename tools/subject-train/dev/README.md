@@ -31,3 +31,8 @@ Load weights with `weights_only=True`, and run Python on downloaded folders with
   on after a kill), 6-results again (cached: C1's section identical byte for byte; C1-wide judged, C2's path, NOT FINAL:
   C2-wide), and a forced ship (the app's file and full-size checks). TE4 on the processor needs more than 6 GB at
   batch 4: the cloud stand-in used batch 2 and MALLOC_ARENA_MAX=2.
+- `check_kd.py <kit> [teacher run]` (the kd night, decisions 155-157; MS_KIT_WORK/RESULTS/CONFIG on a round-6 stand-in):
+  the teacher specs, kd_loss against round 6's inline loss, a 'mix:' teacher equal tensor for tensor to 6-results'
+  -mix (and its fingerprint), fit_batch's processor trial step with a teacher, 6-results' pending-iPad verdict and the
+  kd gain share. Stand-in runs on a 2-core machine: OMP_NUM_THREADS=1 (two threads with anything else running made
+  each step ~25x slower).

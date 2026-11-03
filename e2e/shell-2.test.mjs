@@ -1137,6 +1137,7 @@ after(teardown);
     assert.deepEqual(await ids(page, `${pane('share')} button`), [
       'sfReveal',
       'sfExport',
+      'sfCopyList', // (v329.3: Copy marker list)
       'sfPrint',
       'sfPlan',
       'sfAsPal',

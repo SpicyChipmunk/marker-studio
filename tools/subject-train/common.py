@@ -132,6 +132,9 @@ def download(url, dest, tries=5, quiet=False):
         except urllib.error.HTTPError as e:
             if e.code in (403, 404):
                 raise
+            if e.code == 416 and part.exists() and have:      # (the .part is whole: only its rename failed, e.g. a scanner held it;
+                part.replace(dest)                            # the fingerprint check that follows judges it)
+                return dest
             time.sleep(3 * (i + 1))
         except Exception:
             if i == tries - 1:
@@ -175,6 +178,16 @@ def load_tracer(weights=None, arch=None):
     sd = sd.get('model', sd)
     sd = {k.replace('module.', '', 1): v for k, v in sd.items()}
     net.load_state_dict(sd, strict=True)
+    return net
+
+
+def blend_to_stock(net, arch, alpha):
+    """(round 6) A model's weights moved back toward its arch's stock weights by alpha (WiSE-FT), in float32 on the
+    processor: 6-results' -mix candidates and the kd runs' 'mix:' teacher are both made here, so E4kd's teacher is the
+    same weights as the judged E6-mix."""
+    st = load_tracer(arch=arch).state_dict()
+    net.load_state_dict({k: ((1 - alpha) * t.float() + alpha * st[k].float()).to(t.dtype) if t.is_floating_point() else t
+                         for k, t in net.state_dict().items()})
     return net
 
 

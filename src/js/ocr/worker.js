@@ -41,7 +41,10 @@ self.onmessage = async function (ev) {
     if (m.t === 'init') {
       const t0 = Date.now(),
         ort = await import(m.ort);
-      ort.env.wasm.numThreads = 1;
+      // (v329.4) one thread unless the page is cross-origin isolated (a test folder's service worker): then up to four
+      ort.env.wasm.numThreads = self.crossOriginIsolated
+        ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1))
+        : 1;
       ort.env.wasm.wasmBinary = m.wasm;
       reader = await OCR2.create(
         ort,

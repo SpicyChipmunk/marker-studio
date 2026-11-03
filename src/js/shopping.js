@@ -266,11 +266,12 @@ function topFiveHTML(order, g) {
 function ideasHTML() {
   if (!inkOwned()) return '';
   return (
-    '<div class="wwhy wideas">Ideas from your collection: ' +
+    // (v329.4: one idea a line, each a 44px tap: in a sentence their taps had been 20-32px, the lines too close)
+    '<div class="wwhy wideas"><div id="wideasH">Ideas from your collection:</div><ul class="widl" aria-labelledby="wideasH">' +
     IDEAS.map(function (o) {
-      return '<button type="button" class="sflink" data-idea="' + o[0] + '">' + o[1] + '</button>';
-    }).join(' · ') +
-    '</div>'
+      return '<li><button type="button" class="sflink" data-idea="' + o[0] + '">' + o[1] + '</button></li>';
+    }).join('') +
+    '</ul></div>'
   );
 }
 // (a link followed: Markers › Unowned in that order, the search cleared, the filter chips as they are)

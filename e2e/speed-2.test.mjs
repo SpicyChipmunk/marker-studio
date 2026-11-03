@@ -417,7 +417,11 @@ after(teardown);
         'whether Safari keeps it, next',
       );
       // (v308: named as the Library's button is)
-      assert.match(items[4], /Library › Restore brings it back on any iPhone, iPad or computer\./);
+      // (v329.3: the space used is its own item now, so the Restore item is found by its words)
+      assert.ok(
+        items.some((t) => /Library › Restore brings it back on any iPhone, iPad or computer\./.test(t)),
+        'Library › Restore',
+      );
       assert.equal(items.filter((t) => /seven days/.test(t)).length, 1, 'said once');
       // nothing wider than the sheet
       const over = await page.evaluate(() => {

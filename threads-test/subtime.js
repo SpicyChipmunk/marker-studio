@@ -1,0 +1,314 @@
+/* The threads test (v329.4, tools/threads-test; only in the threads-test/ copy of the app, never in the app itself).
+   1 The copy is cross-origin isolated by its service worker from its second load: the first load, before the worker
+     controls the page, is reloaded once (as coi-serviceworker does).
+   2 With ?subtime in the address: a button at the bottom right that times the subject finder inside the app, the
+     app's own way (a fresh helper per photo, ONNX Runtime and the model loaded, one map: 48-subject.js's worker, its
+     own code), with 1 thread and, isolated, 2 and 4; TE-4 (the app's model) and TE-6 (E6-mix, te6.onnx here), five
+     photos in a row each; the outlines with threads checked against one thread's; and Send feedback's way to Google
+     (a post to a form that doesn't exist, so nothing reaches the testers' sheet). */
+(function () {
+  const KEY = 'ms-threads-reload';
+  // (reloaded once, when this copy's own worker controls the page but the page came before it: on a device that has
+  // the app's own worker, that one answered the first load, without the headers)
+  const mine = function () {
+      const c = navigator.serviceWorker && navigator.serviceWorker.controller;
+      return !!c && /\/threads-test\/service-worker\.js$/.test(c.scriptURL);
+    },
+    again = function () {
+      try {
+        if (self.crossOriginIsolated) return sessionStorage.removeItem(KEY);
+        if (mine() && !sessionStorage.getItem(KEY)) {
+          sessionStorage.setItem(KEY, '1');
+          location.reload();
+        }
+      } catch (_) {}
+    };
+  if ('serviceWorker' in navigator) {
+    again();
+    navigator.serviceWorker.addEventListener('controllerchange', again);
+  }
+  if (!/[?&]subtime\b/.test(location.search)) return;
+
+  const MODELS = [
+    { id: 'te4', name: 'TE-4 at 448', url: '../vendor/subject/4/subject-te4.onnx', S: 448 },
+    { id: 'te6', name: 'TE-6 at 576 (E6-mix)', url: 'te6.onnx', S: 576 },
+  ];
+  const ORT = '../vendor/ocr/1/ort.wasm.bundle.min.mjs',
+    WASM = '../vendor/ocr/1/ort-wasm-simd-threaded.wasm',
+    PHOTO = '../src/assets/sample-coloured.webp',
+    ROUNDS = 5,
+    MEAN = [0.485, 0.456, 0.406],
+    STD = [0.229, 0.224, 0.225];
+  const iso = self.crossOriginIsolated === true,
+    cores = navigator.hardwareConcurrency || 0,
+    THREADS = iso ? [1, 2, 4] : [1];
+  const median = (a) => {
+    const s = [...a].sort((x, y) => x - y),
+      n = s.length;
+    return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2;
+  };
+
+  const css = document.createElement('style');
+  css.textContent =
+    '#msThrGo{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));z-index:9999;' +
+    'font:600 15px/1 system-ui,sans-serif;padding:12px 16px;border-radius:10px;border:0;background:#2f6fd6;color:#fff}' +
+    '#msThr{position:fixed;inset:auto 12px 64px 12px;max-width:640px;margin:0 auto;z-index:9999;background:#15151a;color:#e6e9ef;' +
+    'border:1px solid #333;border-radius:12px;padding:14px;font:14px/1.45 system-ui,sans-serif;display:grid;gap:10px;max-height:70vh;overflow:auto}' +
+    '#msThr textarea{width:100%;min-height:11em;box-sizing:border-box;font:12px/1.4 ui-monospace,Menlo,monospace;background:#0b0b0e;color:#e6e9ef;' +
+    'border:1px solid #333;border-radius:6px;padding:8px}#msThr button{font:600 14px system-ui;padding:10px 14px;border-radius:8px;border:0;' +
+    'background:#2f6fd6;color:#fff;justify-self:start}#msThr .row{display:flex;gap:8px;flex-wrap:wrap}#msThr button.q{background:transparent;' +
+    'border:1px solid #444;color:#9cc0ff}';
+  document.head.appendChild(css);
+  const go = document.createElement('button');
+  go.id = 'msThrGo';
+  go.type = 'button';
+  go.textContent = 'Time the subject finder';
+  document.body.appendChild(go);
+  let panel = null;
+  function show() {
+    if (panel) {
+      panel.hidden = !panel.hidden;
+      return;
+    }
+    panel = document.createElement('div');
+    panel.id = 'msThr';
+    panel.innerHTML =
+      '<div><b>Subject finder with threads</b><br>Times the subject finder the app’s way, five photos in a row, with 1 thread and, if this copy is isolated, 2 and 4. It downloads about 85 MB. Open a guide or a photo page first if you like: it runs on top of what’s open. Keep this page open until it says Done, about 3 minutes.</div>' +
+      '<div id="msThrCan"></div>' +
+      '<div class="row"><button type="button" id="msThrStart">Start timing</button><button type="button" class="q" id="msThrClose">Close</button></div>' +
+      '<div id="msThrSay" role="status" aria-live="polite">Not started.</div>' +
+      '<textarea id="msThrTxt" readonly hidden></textarea>' +
+      '<div class="row"><button type="button" class="q" id="msThrCopy" hidden>Copy</button></div>';
+    document.body.appendChild(panel);
+    panel.querySelector('#msThrCan').textContent =
+      'This copy is isolated: ' +
+      (iso ? 'yes' : 'no') +
+      ' · ' +
+      (cores || '?') +
+      ' processor cores · threads to try: ' +
+      THREADS.join(', ');
+    panel.querySelector('#msThrStart').addEventListener('click', run);
+    panel.querySelector('#msThrClose').addEventListener('click', function () {
+      panel.hidden = true;
+    });
+    panel.querySelector('#msThrCopy').addEventListener('click', async function () {
+      const t = panel.querySelector('#msThrTxt');
+      try {
+        await navigator.clipboard.writeText(t.value);
+        this.textContent = 'Copied';
+      } catch (_) {
+        t.focus();
+        t.select();
+        this.textContent = 'Selected: copy it';
+      }
+    });
+  }
+  go.addEventListener('click', show);
+  const say = (t) => (panel.querySelector('#msThrSay').textContent = t);
+  async function bytes(u) {
+    const r = await fetch(u, { cache: 'no-store' });
+    if (!r.ok) throw new Error(u + ' did not download (' + r.status + ')');
+    return await r.arrayBuffer();
+  }
+  // (the photo at the app's working size, as a photo page has it: RGB, at most 1000 px a side)
+  async function photo() {
+    const bm = await createImageBitmap(new Blob([await bytes(PHOTO)]));
+    const k = Math.min(1, 1000 / Math.max(bm.width, bm.height)),
+      c = document.createElement('canvas');
+    c.width = Math.round(bm.width * k);
+    c.height = Math.round(bm.height * k);
+    const g = c.getContext('2d');
+    g.drawImage(bm, 0, 0, c.width, c.height);
+    const d = g.getImageData(0, 0, c.width, c.height).data,
+      rgb = new Uint8Array(c.width * c.height * 3);
+    for (let i = 0, j = 0; i < d.length; i += 4, j += 3) {
+      rgb[j] = d[i];
+      rgb[j + 1] = d[i + 1];
+      rgb[j + 2] = d[i + 2];
+    }
+    return { rgb: rgb, w: c.width, h: c.height };
+  }
+  // (as 48-subject.js's subFind makes the model's input)
+  function input(p, S) {
+    const x = new Float32Array(3 * S * S),
+      w0 = p.w,
+      h0 = p.h,
+      rgb = p.rgb;
+    for (let y = 0; y < S; y++)
+      for (let xx = 0; xx < S; xx++) {
+        const fx = Math.min(w0 - 1, ((xx + 0.5) * w0) / S - 0.5),
+          fy = Math.min(h0 - 1, ((y + 0.5) * h0) / S - 0.5),
+          ix = Math.max(0, Math.floor(fx)),
+          iy = Math.max(0, Math.floor(fy)),
+          tx = Math.max(0, fx - ix),
+          ty = Math.max(0, fy - iy),
+          ix1 = Math.min(w0 - 1, ix + 1),
+          iy1 = Math.min(h0 - 1, iy + 1);
+        for (let c = 0; c < 3; c++) {
+          const v =
+            rgb[(iy * w0 + ix) * 3 + c] * (1 - tx) * (1 - ty) +
+            rgb[(iy * w0 + ix1) * 3 + c] * tx * (1 - ty) +
+            rgb[(iy1 * w0 + ix) * 3 + c] * (1 - tx) * ty +
+            rgb[(iy1 * w0 + ix1) * 3 + c] * tx * ty;
+          x[c * S * S + y * S + xx] = (v / 255 - MEAN[c]) / STD[c];
+        }
+      }
+    return x;
+  }
+  // (one photo the app's way: 48-subject.js's own worker, made as subFind makes it; ms from its start to the map)
+  function onePhoto(ortUrl, wasm, model, threads, S, p) {
+    return new Promise(function (ok) {
+      const t0 = performance.now(),
+        G = globalThis.__msThreadsSub(),
+        src = G.src,
+        wurl = URL.createObjectURL(new Blob([src], { type: 'text/javascript' })),
+        w = new Worker(wurl);
+      let t1 = 0;
+      const end = function (r) {
+        clearTimeout(to);
+        w.terminate();
+        URL.revokeObjectURL(wurl);
+        ok(r);
+      };
+      const to = setTimeout(function () {
+        end({ err: 'no answer in 2 minutes' });
+      }, 120000);
+      w.onerror = function (e) {
+        e.preventDefault();
+        end({ err: e.message || 'the helper failed' });
+      };
+      w.onmessage = function (e) {
+        const d = e.data || {};
+        if (d.t === 'error') return end({ err: d.message });
+        if (d.t === 'ready') {
+          t1 = performance.now();
+          const x = input(p, S),
+            rb = p.rgb.slice().buffer;
+          w.postMessage({ t: 'run', x: x.buffer, S: S, rgb: rb, w: p.w, h: p.h, r: G.r, eps: G.eps }, [
+            x.buffer,
+            rb,
+          ]);
+          return;
+        }
+        if (d.t === 'map') {
+          const t2 = performance.now();
+          end({ all: t2 - t0, load: t1 - t0, map: t2 - t1, y: d.y });
+        }
+      };
+      const wb = wasm.slice(0),
+        mb = model.slice(0);
+      w.postMessage({ t: 'init', ort: ortUrl, wasm: wb, model: mb, threads: threads }, [wb, mb]);
+    });
+  }
+  function side(a, b) {
+    let n = 0;
+    for (let i = 0; i < a.length; i++) if (a[i] >= 0.5 !== b[i] >= 0.5) n++;
+    return n / a.length;
+  }
+  async function formCheck() {
+    // (a form id that doesn't exist: Google answers 404, nothing is recorded anywhere)
+    const b = new FormData();
+    b.append('entry.1', 'threads test');
+    try {
+      await fetch('https://docs.google.com/forms/d/e/threads-test-no-such-form/formResponse', {
+        method: 'POST',
+        mode: 'no-cors',
+        body: b,
+      });
+      return 'sent (the page was told it went)';
+    } catch (e) {
+      return 'FAILED: ' + ((e && e.message) || e);
+    }
+  }
+  async function run() {
+    const btn = panel.querySelector('#msThrStart'),
+      txt = panel.querySelector('#msThrTxt'),
+      lines = [];
+    btn.disabled = true;
+    try {
+      say('Downloading the engine…');
+      const ortUrl = URL.createObjectURL(new Blob([await bytes(ORT)], { type: 'text/javascript' })),
+        wasm = await bytes(WASM),
+        p = await photo();
+      lines.push(
+        'Subject finder with threads (the app’s way: a fresh helper, engine and model loaded, one map; ' +
+          ROUNDS +
+          ' photos in a row; median)',
+      );
+      for (const m of MODELS) {
+        say('Downloading ' + m.name + '…');
+        let model = await bytes(m.url);
+        let base = null;
+        for (const n of THREADS) {
+          const res = [];
+          let err = '',
+            first = null;
+          for (let i = 1; i <= ROUNDS; i++) {
+            say(
+              m.name + ', ' + n + (n === 1 ? ' thread' : ' threads') + ': photo ' + i + ' of ' + ROUNDS + '…',
+            );
+            await new Promise((r) => setTimeout(r, 60));
+            const r = await onePhoto(ortUrl, wasm, model, n, m.S, p);
+            if (r.err) {
+              err = r.err + ' (photo ' + i + ')';
+              break;
+            }
+            if (!first) first = r.y;
+            res.push(r);
+          }
+          const label = m.name + ', ' + n + (n === 1 ? ' thread' : ' threads') + ': ';
+          if (err) {
+            lines.push(label + 'FAILED: ' + err);
+            continue;
+          }
+          const md = (k) => (median(res.map((v) => v[k])) / 1000).toFixed(3);
+          let same = '';
+          if (n === 1) base = first;
+          else if (base)
+            same = '; pixels switching side vs 1 thread ' + (side(first, base) * 100).toFixed(4) + '%';
+          lines.push(
+            label +
+              'per photo ' +
+              md('all') +
+              ' s (load ' +
+              md('load') +
+              ' s, map ' +
+              md('map') +
+              ' s; each ' +
+              res.map((v) => Math.round(v.all)).join(' ') +
+              ' ms)' +
+              same,
+          );
+          txt.value = lines.join('\n');
+          txt.hidden = false;
+        }
+        model = null;
+      }
+      say('Checking Send feedback’s way to Google…');
+      lines.push('Send feedback’s post: ' + (await formCheck()));
+      lines.push(
+        'Isolated ' +
+          iso +
+          '; cores ' +
+          (cores || '?') +
+          '; controlled ' +
+          !!(navigator.serviceWorker && navigator.serviceWorker.controller) +
+          '; standalone ' +
+          !!(navigator.standalone || matchMedia('(display-mode: standalone)').matches) +
+          '; app ' +
+          ((document.getElementById('appVer') || {}).textContent || '?'),
+      );
+      lines.push('Device: ' + navigator.userAgent);
+      say('Done.');
+    } catch (e) {
+      lines.push('Stopped: ' + ((e && e.stack) || e));
+      say('Stopped: ' + ((e && e.message) || e) + '. Copy this to Claude.');
+    } finally {
+      txt.value = lines.join('\n');
+      txt.hidden = false;
+      panel.querySelector('#msThrCopy').hidden = false;
+      btn.disabled = false;
+      btn.textContent = 'Time again';
+    }
+  }
+})();

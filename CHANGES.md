@@ -3709,3 +3709,18 @@ PLAN-v329.3.md.
   Tests: JOBS timing, Focus budget, faint and cloth pages, the finder's failures and one-at-a-time, the streamed
   download, restore's photos, Blob-part backups, IDB aborts, lit/lits through Undo, gap card codes, aria-pressed.
 - Cache bumped to `marker-studio-v329.3`.
+
+# Changes — v329.3, after its first GitHub run
+
+- Tests brought up to v329.3's features: Help's Marker basics, Share's Copy marker list, Help › Your data's space line
+  (the Restore item found by its words), Send feedback's storage line, To buy's "Sets with markers on your list" (the
+  old-words check now looks for v265's label only). Tick off from a photo: the photo is decoded before Tick off is busy
+  with it (the whole-app review), so its test clears the toast of the photo before.
+- The ⋯ menu may rise over the picture's lower edge for its items, up to three quarters of the screen: on a 768 × 1024
+  iPad held upright, Notes… had put Send feedback below its fold.
+- To buy's Ideas from your collection: one a line, each a 44 px tap (in a sentence they had been 20-32 px).
+- The subject finder's and photo reader's workers use up to four threads when the page is cross-origin isolated (one
+  otherwise, as before: the app's own site isn't). `threads-test/` (scripts/threads-test.mjs, tools/threads-test) is a
+  copy of the app made isolated by its own service worker, with a timing of TE-4 and TE-6 inside the app, for Ben's iPad.
+- The subject kit's iPad time for TE5: 1.017 s a photo (Ben's iPad, the speed page).
+

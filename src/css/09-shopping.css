@@ -349,8 +349,18 @@ button.wrm {
   margin: 14px 0 0;
   line-height: 1.7;
 }
+.wideas .widl {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* (v329.4: one a line, a 44px tap each, its words at the left as the line above) */
 .wideas .sflink {
   font-size: inherit;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-align: left;
 }
 .wtop5 {
   margin: 4px 0 10px;

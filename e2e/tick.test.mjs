@@ -109,6 +109,12 @@ const toastOn = (page) =>
   });
 // a photo given to Tick off from a photo: through its button, the corners kept as they are if they're asked for
 async function tickPhoto(page, file, sel = '#sfTickAlGo') {
+  // (v329.3: the photo is decoded before Tick off is busy with it, so a toast from the photo before must not pass for
+  // this one's answer)
+  await page.evaluate(() => {
+    const t = document.getElementById('msToast');
+    if (t) t.textContent = '';
+  });
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click(sel)]);
   await fc.setFiles(file);
   await page.waitForFunction(

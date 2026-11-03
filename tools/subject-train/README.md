@@ -1,5 +1,25 @@
 # Marker Studio subject model: the training run
 
+## Tonight: E4-kd and E5-kd (decisions 155-157; start here)
+
+Round 6 is judged (E4, E6 and E6-mix passed). Tonight trains two smaller models taught by E6-mix, so TE6's better outlines might come at a faster model's speed. Both start from TRACER's own weights with C1's recipe and round 6's additions, and learn half from their labels and half from E6-mix's maps on every photo (E6-mix is made exactly as 6-results made it: E6's weights blended 0.15 back toward stock TE6).
+
+- **E4-kd**: TE4 (448 px), E4's recipe. About **4 hours**.
+- **E5-kd**: TE5 (512 px), D5's late blocks. About **4½ hours**. TE5's weights (126 MB) are downloaded first if they aren't in `work` (fingerprint checked).
+- Then **6-results** (about **2 hours**): judges E4-kd and E5-kd beside round 6's candidates by the same rule (the numbers already measured for the earlier models are reused). TE5 hasn't been timed on the iPad yet, so E5-kd can at best be "PASSES pending the iPad timing"; its app file is then in `results\models` for the timing page.
+
+1. Unzip `ms-tonight.zip` into Downloads, over `ms-subject-train` (replace the files it asks about). It adds this kit's new files, `tonight.bat`, and the new bench scripts inside `grid3`; `work`, `results`, `bench-cache` and the photos stay as they are. Nothing new to install.
+2. Double-click `ms-subject-train\tonight.bat` **by 9 p.m.** It checks everything is in place first (and keeps a copy of round 6's results as `results-round6` on the PC), then, one after the other:
+   1. the one HELD look at X2+cap (about 30 min; don't open `held-look.txt`, Claude reads it);
+   2. E6-mix's subject maps and the photo-to-page builder with them (about 1¼ hours);
+   3. E4-kd, then E5-kd (about 8½ hours: the window shows the training, the batch each run chose with the teacher counted, and the drive-room check, about 4 GB);
+   4. 6-results (about 2 hours);
+   5. the kd models' subject maps and the builder with them (about 1¼ hours);
+   6. everything gathered in `ms-subject-train\tonight-results`.
+
+   About 13-14 hours in all, so it finishes mid-morning. The same overnight cautions as round 6: PC plugged in and not sleeping, Windows Update paused, no clicks inside the window (if its title starts with "Select", press Esc), nothing opened in `work\runs` or `bench-cache\runs`. If the window is gone (a restart), run `tonight.bat` again: every step carries on where it stopped, and the HELD look is never made twice.
+3. When the window says **"All done"**: copy `tonight-results` to the Mac's Claude outputs and tell Claude. That's all, whatever the training's last line said (`results-kd` inside it is 6-results' folder; `s5_train.log` and `tonight-log.txt` say what happened if a run stopped, and Claude says how to carry on).
+
 ## Round 6, part 2: training and results (start here, after part 1 has finished)
 
 1. Unzip this kit over `ms-subject-train` as before, keeping `work` and `results`. Nothing new to install.

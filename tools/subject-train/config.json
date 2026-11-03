@@ -319,11 +319,42 @@
     "seed": 1,
     "on_demand": true,
     "kd": {
-     "teacher": "run:E6",
+     "teacher": "mix:E6:0.15",
      "items": "all",
      "w": 0.5
     },
-    "about": "(decision 126, night 2 only if E6 is better on outline and Ben wants TE4's speed) E4 taught half by its labels, half by E6's maps"
+    "about": "(decision 126; teacher changed by decision 156, after seeing round 6: E6-mix passed) TRACER-TE4 (448) from stock, E4's recipe, taught half by its labels and half by E6-mix's maps on every item: E6's kept weights blended 0.15 toward stock TE6, made by the same code as 6-results' E6-mix; trained by --run E4kd,E5kd"
+   },
+   "E5kd": {
+    "arch": "5",
+    "start": "stock",
+    "train": "decoder+late",
+    "lr": 5e-05,
+    "lr_backbone": 1e-05,
+    "late_blocks": [
+     27,
+     28,
+     29,
+     30,
+     31,
+     32,
+     33,
+     34,
+     35,
+     36,
+     37,
+     38
+    ],
+    "passes": 9,
+    "warmup": 100,
+    "seed": 1,
+    "on_demand": true,
+    "kd": {
+     "teacher": "mix:E6:0.15",
+     "items": "all",
+     "w": 0.5
+    },
+    "about": "(decision 155) TRACER-TE5 (512) from stock, D5's late blocks 27-38, C1's rates (5e-5 / 1e-5), 9 passes, warm-up 100, seed 1, taught as E4kd (half by E6-mix's maps on every item); trained by --run E4kd,E5kd after E4kd"
    }
   },
   "passes": {
@@ -859,7 +890,7 @@
   "threads": 16
  },
  "round6_train": {
-  "about": "Round 6's training additions (decisions 116, 117, 122, 126, 127, 135): runs in this order (a short night costs E4b or C1+, never a judged run); round 3's small_agree photos shown this many times a pass; pasted small subjects as this share of round 3's photos and crops, 0.7-4% of the frame, edges feathered; people_soft true only if Ben's people sheet failed (decision 116's fallback); a blown-up loss starts the pass again once, the line being this many times the run's own pass-1 mean.",
+  "about": "Round 6's training additions (decisions 116, 117, 122, 126, 127, 135): runs in this order (a short night costs E4b or C1+, never a judged run); round 3's small_agree photos shown this many times a pass; pasted small subjects as this share of round 3's photos and crops, 0.7-4% of the frame, edges feathered; people_soft true only if Ben's people sheet failed (decision 116's fallback); a blown-up loss starts the pass again once, the line being this many times the run's own pass-1 mean; the room check keeps room_spare_gb spare.",
   "order": [
    "E4",
    "E6",
@@ -874,10 +905,11 @@
   ],
   "paste_feather": 0.8,
   "people_soft": false,
-  "restart_factor": 3
+  "restart_factor": 3,
+  "room_spare_gb": 1
  },
  "round6_rule": {
-  "about": "Decided before round 6 trained (Ben, decisions 114-136; PLAN-round6 draft 2). Every candidate (E4: the E4/E4b average if kept, E6, their blends toward their untrained weights, E4kd if trained) against C1 on the fresh checks: subjects (round 3's), small subjects (round 6's fresh slice), people (round 3's 800 less the bench's photos), empty crops (round 6's slice). BETTER = a 95% interval wholly above 0 on subjects outline, small found or people outline. Every guard must hold. Flags are shown beside the verdict, never a fail. Every passing candidate side by side; none: C1 stays. Ben decides between passing candidates with the data (decision 115).",
+  "about": "Decided before round 6 trained (Ben, decisions 114-136; PLAN-round6 draft 2). Every candidate (E4: the E4/E4b average if kept, E6, their blends toward their untrained weights, E4kd and E5kd if trained, and their blends by the same alpha rule) against C1 on the fresh checks: subjects (round 3's), small subjects (round 6's fresh slice), people (round 3's 800 less the bench's photos), empty crops (round 6's slice). BETTER = a 95% interval wholly above 0 on subjects outline, small found or people outline. Every guard must hold. Flags are shown beside the verdict, never a fail. Every passing candidate side by side; none: C1 stays. Ben decides between passing candidates with the data (decision 115).",
   "guards": {
    "subjects_bf": -0.003,
    "subjects_iou": -0.005,
@@ -891,6 +923,7 @@
   "ipad_max_s": 2.0,
   "ipad_s": {
    "4": 0.652,
+   "5": 1.017,
    "6": 1.512
   },
   "flag_crops_false": 0.01,
@@ -909,7 +942,8 @@
   "candidates": [
    "E4",
    "E6",
-   "E4kd"
+   "E4kd",
+   "E5kd"
   ],
   "reported": [
    "D5",
@@ -923,6 +957,7 @@
    "TE4-stock",
    "TE6-stock",
    "C1+"
-  ]
+  ],
+  "ipad_pending": "An arch with no time in ipad_s (TE5: decision 155, not yet timed on Ben's iPad) is shown 'pending Ben's iPad timing'; a candidate BETTER with every other guard holding is 'PASSES pending the iPad timing' (neither a pass nor a fail) and is exported so it can be timed."
  }
 }

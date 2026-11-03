@@ -1779,7 +1779,8 @@ after(teardown);
         return b.scrollHeight - b.clientHeight;
       });
     assert.ok(Math.abs(s.bottom - 1024) <= 1, 'at the bottom');
-    assert.ok(items <= 1 && s.height < 520, `sized to its content (${s.height}px)`);
+    // (v329.4: it may rise over the picture's lower edge for its items, up to three quarters of the screen)
+    assert.ok(items <= 1 && s.height <= 768, `sized to its content (${s.height}px, ${items}px hidden)`);
     assert.deepEqual(errors, []);
   });
 }

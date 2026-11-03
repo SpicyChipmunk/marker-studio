@@ -1233,7 +1233,10 @@ function placeSheet() {
     const t = Math.round(Math.max(0, sfView ? sfView.getBoundingClientRect().bottom : 0));
     if (sheetO.o.fit) {
       s.top = 'auto';
-      s.maxHeight = Math.max(0, (window.innerHeight || 0) - t) + 'px';
+      // (v329.4: a sheet that may grow, the ⋯ menu, rises over the picture's lower edge as far as its items need, up to
+      // three quarters of the screen: on a 768 × 1024 iPad held upright Notes… had put Send feedback below its fold)
+      const ih = window.innerHeight || 0;
+      s.maxHeight = Math.max(0, ih - t, sheetO.o.grow ? Math.round(ih * 0.75) : 0) + 'px';
     } else s.top = t + 'px';
     el.classList.remove('sfshside');
   }
@@ -1330,6 +1333,7 @@ function openMenu() {
     body: b,
     foot: '<button type="button" class="sfghost" data-m="close">Close</button>',
     fit: true,
+    grow: true,
   });
   el.classList.add('sfmenush');
   el.addEventListener('click', function (e) {

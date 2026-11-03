@@ -4,22 +4,24 @@
 #   small       round 6's fresh slice (work\round6: never used before), set-apart photos left out
 #   people      round 3's 800 people less the bench's photos (hand-drawn outlines; decision 130)
 #   crops       round 6's fresh empty crops, set-apart crops left out
-# Candidates: E4 (the E4/E4b average if step 5 kept it), E6, each one's blend toward its untrained weights if the alpha
-# rule (decisions 125, 133) picks one, and E4kd if trained. BETTER: an interval wholly above 0 on subjects outline, small
-# found or people outline; then every guard. Flags beside the verdict (never a fail): false subjects on empty crops, and
-# stray people (decision 131). The full-size check (decision 134): each line that made a candidate BETTER, on the photos
-# again at 640 squashed as the app does, mean above 0. Reported only: round 6's fresh people (machine-drawn outlines),
-# round 3's fresh small subjects, round 2's seen checks, D5, D6, E6-p6, E6-avg5, C1-mix25, D6-mix25, E4's two seeds alone,
-# stock TE4 and TE6, C1+. Each model's per-photo numbers are kept (work\cache6, by weights fingerprint): a second run is
-# quick and identical. Exports (the app's 8-bit file) for passing candidates only. Writes results\report.md/.json,
-# results\models, results\sheets.
+# Candidates: E4 (the E4/E4b average if step 5 kept it), E6, E4kd and E5kd once trained (decisions 155-157: TE4 and TE5
+# taught half by E6-mix's maps), each one's blend toward its untrained weights if the alpha rule (decisions 125, 133)
+# picks one. BETTER: an interval wholly above 0 on subjects outline, small found or people outline; then every guard.
+# An arch not yet timed on Ben's iPad (TE5) can at best be 'PASSES pending the iPad timing' (every other guard holding):
+# neither a pass nor a fail. Flags beside the verdict (never a fail): false subjects on empty crops, and stray people
+# (decision 131). The full-size check (decision 134): each line that made a candidate BETTER, on the photos again at 640
+# squashed as the app does, mean above 0. Reported only: round 6's fresh people (machine-drawn outlines), round 3's fresh
+# small subjects, round 2's seen checks, D5, D6, E6-p6, E6-avg5, C1-mix25, D6-mix25, E4's two seeds alone, stock TE4 and
+# TE6, C1+, and each kd model's gain over C1 as a share of E6-mix's. Each model's per-photo numbers are kept
+# (work\cache6, by weights fingerprint): a second run is quick and identical. Exports (the app's 8-bit file) for passing
+# candidates and those pending the iPad timing only. Writes results\report.md/.json, results\models, results\sheets.
 import csv, hashlib, json, shutil, time, zlib
 import numpy as np
 import torch
 from PIL import Image
 import data
 from common import (CFG, WORK, RESULTS, log, fail, mark_done, done, load_tracer, device, R3DIR, read_r2_list,
-                    read_r2_crops, read_r3_list, sha256, STOCK)
+                    read_r2_crops, read_r3_list, sha256, STOCK, blend_to_stock)
 from data import load_prep, crop_img, maps, down, iou, boundary_f, strays, dilate, INP
 import s6_detect
 
@@ -59,12 +61,8 @@ def build_net(v):
         return load_tracer(v)
     if v[0] == 'stock':
         return load_tracer(arch=v[1])
-    if v[0] == 'mix':
-        net = load_tracer(v[1])
-        st = load_tracer(arch=v[2]).state_dict()
-        net.load_state_dict({k: ((1 - v[3]) * t.float() + v[3] * st[k].float()).to(t.dtype) if t.is_floating_point() else t
-                             for k, t in net.state_dict().items()})
-        return net
+    if v[0] == 'mix':          # (common.blend_to_stock: the kd runs' 'mix:' teacher is made by the same code)
+        return blend_to_stock(load_tracer(v[1]), v[2], v[3])
     if v[0] == 'avg':
         nets = [load_tracer(p) for p in v[1:]]
         sds = [n.state_dict() for n in nets]
@@ -166,6 +164,32 @@ def ci(d):
     return float(d.mean()), float(np.percentile(bs, 2.5)), float(np.percentile(bs, 97.5))
 
 
+IPAD_PENDING = 'pending Ben\'s iPad timing'
+
+
+def verdict(better, guards):
+    """'passes' (BETTER somewhere, every guard holds), 'pending' (BETTER, every guard holds but the iPad seconds of an
+    arch not yet timed: None, never a pass or a fail) or 'fails'."""
+    oks = [ok for _, ok in guards]
+    if not better or any(ok is not None and not ok for ok in oks):
+        return 'fails'
+    return 'pending' if any(ok is None for ok in oks) else 'passes'
+
+
+def share_of(da, dr):
+    """A gain over C1 as a share of another's (mean difference / mean difference, the same photos) and its 95%
+    paired-bootstrap interval (both resampled together); nan when the other's gain isn't above 0."""
+    if len(da) == 0 or not dr.mean() > 0:
+        return (float('nan'),) * 3
+    r_ = np.random.default_rng(zlib.crc32(np.ascontiguousarray(np.stack([da, dr]), dtype=np.float64).tobytes()))
+    ix = r_.integers(0, len(da), (NB, len(da)))
+    num, den = da[ix].mean(axis=1), dr[ix].mean(axis=1)
+    rt = num[den > 0] / den[den > 0]
+    if not rt.size:
+        return (float('nan'),) * 3
+    return float(da.mean() / dr.mean()), float(np.percentile(rt, 2.5)), float(np.percentile(rt, 97.5))
+
+
 def pasted_found(net, P1):
     """Pasted 1% subjects found (the kit's pasted check, step 5's own photos)."""
     f = []
@@ -180,6 +204,7 @@ def main():
     if not (done('s5') or (done('s5-E4') and done('s5-E6'))):
         fail('5-train has not finished E4 and E6 (the judged models): run 5-train again, it carries on where it stopped.')
     MISSING = [x for x in CFG['round6_train']['order'] if not done('s5-' + x)]
+    MISSING += [x for x in ('E4kd', 'E5kd') if (WORK / 'runs' / x).exists() and not done('s5-' + x)]   # (a kd night's stopped run, said)
     # (v4) E4 is judged as the average with E4b once E4b is trained (decision 126): never E4 alone in its place
     if done('s5-E4b') and not (WORK / 'runs' / 'E4soup' / 'decision.json').exists():
         fail('E4b is trained but not yet averaged into E4: run 5-train again (about 15 minutes; it skips what is trained), '
@@ -232,7 +257,8 @@ def main():
         CAND['E4'] = runs / 'E4soup' / 'best.pt'
     elif done('s5-E4'):
         CAND['E4'] = runs / 'E4' / 'best.pt'
-    for n in ('E6', 'E4kd'):
+    KD = ('E4kd', 'E5kd')          # (decisions 155-157: taught by E6-mix)
+    for n in ('E6',) + KD:
         if done('s5-' + n) and (runs / n / 'best.pt').exists():
             CAND[n] = runs / n / 'best.pt'
     REP = {'TE4-stock': ('stock', '4'), 'TE6-stock': ('stock', '6'), 'C1-mix25': ('mix', C1, '4', 0.25)}
@@ -279,7 +305,7 @@ def main():
 
     # ---- the blends (decisions 125, 133): alpha on round 2's seen checks only ----
     ALPHA = {}
-    for n in ('E4', 'E6'):
+    for n in ('E4', 'E6') + KD:
         if n not in CAND:
             continue
         arch = arch_of(CAND[n])
@@ -337,8 +363,9 @@ def main():
               PF[n] >= RR['paste_1pct_min']),
              ('Round 2\'s %d hand-checked small subjects: found ≥ C1 %+.0f points (%+.4f)' % (
                  int(HANDS.sum()), 100 * RR['hand_small_found_vs_C1'], hs[0]), bool(HANDS.any()) and hs[0] >= RR['hand_small_found_vs_C1']),
-             ('Under %.1f s a photo on Ben\'s iPad (TE%s: %s s, measured on his iPad with the timing page)' % (
-                 RR['ipad_max_s'], arch, secs), secs is not None and secs < RR['ipad_max_s'])]
+             ('Under %.1f s a photo on Ben\'s iPad (TE%s: %s)' % (RR['ipad_max_s'], arch, '%s s, measured on his iPad with the '
+                                                                  'timing page' % secs if secs is not None else IPAD_PENDING),
+              None if secs is None else bool(secs < RR['ipad_max_s']))]          # (None: not timed yet, never a pass or a fail)
         sp_ = ci(PS[n]['stray'] - PS['C1']['stray']) if PS.get(n) else (float('nan'),) * 3
         s25 = ci(PS[n]['stray25'] - PS['C1']['stray25']) if PS.get(n) else (float('nan'),) * 3
         FLAGS[n] = {'crops': (D['crops_false'], D['crops_false'][0] > RR['flag_crops_false']),
@@ -367,7 +394,10 @@ def main():
                 VER[n].setdefault('full', {})[key] = fd
                 VER[n]['guards'].append(('Full size: %s still above 0 (n %d of %d; mean %+.4f, interval %+.4f to %+.4f; kit photos %+.4f to %+.4f)' % (
                     key, len(fsets[k]), len(SETS[k]), fd[0], fd[1], fd[2], VER[n]['D'][key][1], VER[n]['D'][key][2]), fd[0] > 0 and fd[2] >= 0))
-    passing = [n for n in VER if VER[n]['better'] and all(ok for _, ok in VER[n]['guards'])]
+    VERD = {n: verdict(VER[n]['better'], VER[n]['guards']) for n in VER}
+    passing = [n for n in VER if VERD[n] == 'passes']
+    pending = [n for n in VER if VERD[n] == 'pending']
+    untimed = {VER[n]['arch'] for n in VER if VER[n]['arch'] not in RR['ipad_s']}
 
     # ---- the report ----
     PN = {'subjects_iou': 'Subjects: overlap', 'subjects_bf': 'Subjects: outline', 'small_found': 'Small subjects: found',
@@ -377,24 +407,29 @@ def main():
           'small_iou': ('small', 'iou'), 'people_iou': ('people', 'iou'), 'people_bf': ('people', 'bf'), 'crops_false': ('crops', 'false')}
     c1f = P['C1']['crops']['false'].mean()
     RL = ['# Subject model, round 6: check report', '',
-          '**%s** Ben decides between passing candidates with the data (decision 115), then the iPad build and his 24 photos '
-          '(veto).' % ('Passing: %s.' % ', '.join(passing) if passing else 'No candidate passes: C1 stays.'), '',
+          '**%s%s** Ben decides between passing candidates with the data (decision 115), then the iPad build and his 24 photos '
+          '(veto).' % ('Passing: %s.' % ', '.join(passing) if passing else 'No candidate passes%s.' % ('' if pending else ': C1 stays'),
+                       ' PASSES pending the iPad timing: %s (every other guard holds; its app file is in results\\models for '
+                       'Ben\'s timing page).' % ', '.join(pending) if pending else ''), '',
           'Checks (fresh, judged): subjects %d (round 3\'s), small subjects %d (round 6\'s slice), people %d (round 3\'s, the bench\'s '
           'photos left out), empty crops %d (round 6\'s slice); the check detector set apart %s, crops %d.' % (
               len(SETS['subjects']), len(SETS['small']), len(SETS['people']), len(CROPS['fresh']),
               ', '.join('%s %d' % (k, len(v)) for k, v in aside.items()), len(DC)), '',
           'Small subjects found: the guard is the interval\'s low end at -2 points, fixed in the plan (round 5\'s sliding rule '
           'would have said -2.5 at this many photos): read a near miss with that in mind.', '',
-          'iPad seconds are those measured on Ben\'s iPad (TE4 0.65 s, TE6 1.51 s a photo, as the app does it); an older iPad '
-          'is slower (not measured).', ''] + (
+          'iPad seconds are those measured on Ben\'s iPad (%s a photo, as the app does it); an older iPad is slower (not '
+          'measured).%s' % (', '.join('TE%s %.2f s' % (a, v) for a, v in sorted(RR['ipad_s'].items())), (
+              ' TE%s: %s (a candidate otherwise passing is "PASSES pending the iPad timing").' % (
+                  '/'.join(sorted(untimed)), IPAD_PENDING) if untimed else '')), ''] + (
           ['**Not trained: %s** (5-train stopped or was not finished; E4 and E6, the judged models, are done).' % ', '.join(MISSING), '']
           if MISSING else []) + [
           'A candidate truly no better than C1 shows one of the three "better" lines by luck about 1 time in 14; with E4, E6 and '
-          'their blends judged (partly the same models), roughly 1 in 5 that at least one does. The full-size check, the sheets '
-          'and Ben\'s 24 photos are the backstop.', '']
+          'their blends judged (partly the same models), roughly 1 in 5 that at least one does%s. The full-size check, the sheets '
+          'and Ben\'s 24 photos are the backstop.' % (', and with the kd models too roughly 1 in 4 (they learn from E6-mix, so '
+          'their lines go partly with its own)' if any(k in CAND for k in KD) else ''), '']
     for n in VER:
         V = VER[n]
-        RL += ['## %s minus C1 (fresh checks)%s' % (n, ': PASSES' if n in passing else ''), '',
+        RL += ['## %s minus C1 (fresh checks)%s' % (n, {'passes': ': PASSES', 'pending': ': PASSES pending the iPad timing'}.get(VERD[n], '')), '',
                '| Line | C1 | %s − C1 (95%% interval) |' % n, '|---|---|---|']
         for key in ('subjects_iou', 'subjects_bf', 'small_found', 'small_iou', 'people_iou', 'people_bf', 'crops_false'):
             k, a = KA[key]
@@ -402,8 +437,11 @@ def main():
                                                                           *V['D'][key], ' **better**' if key in V['better'] else ''))
         fc, fs_ = FLAGS[n]['crops'], FLAGS[n]['stray']
         RL += ['', '- Better than C1: %s' % (', '.join(PN[k] for k in V['better']) if V['better'] else 'not shown'),
-               '- Guards: ' + ('all hold' if all(ok for _, ok in V['guards']) else 'not held: ' + '; '.join(l for l, ok in V['guards'] if not ok)),
-               '- Guard lines: ' + '; '.join('%s %s' % (l, 'holds' if ok else '**fails**') for l, ok in V['guards']),
+               '- Guards: ' + ('all hold' if all(ok is not None and ok for _, ok in V['guards']) else
+                               'all hold but the iPad timing (%s)' % IPAD_PENDING if all(ok is None or ok for _, ok in V['guards']) else
+                               'not held: ' + '; '.join(l for l, ok in V['guards'] if ok is not None and not ok)),
+               '- Guard lines: ' + '; '.join('%s %s' % (l, IPAD_PENDING if ok is None else 'holds' if ok else '**fails**')
+                                             for l, ok in V['guards']),
                '- FLAG, empty crops: %+.4f (%+.4f to %+.4f)%s. C1 marks a subject in %.1f%% of empty scenes; +1 point is one more '
                'false subject in 100, +2 points one in 50.' % (*fc[0], ' **flagged** (more than C1 + %.0f point)' % (100 * RR['flag_crops_false'])
                                                                  if fc[1] else ' (within the line)', 100 * c1f),
@@ -412,6 +450,32 @@ def main():
                    len(stray_ids), *fs_[0], ' **flagged** (more than C1 + %.0f points)' % (100 * RR['flag_stray_people']) if fs_[1]
                    else ' (within the line)', 100 * PS['C1']['stray'].mean() if PS.get('C1') else float('nan'), *FLAGS[n]['stray25'][0]),
                '']
+    # (decision 157, reported only: how much of E6-mix's gain each kd model keeps at its own size)
+    ref = 'E6-mix' if 'E6-mix' in P else 'E6' if 'E6' in P else None
+    kdn = [n for n in CAND if n.split('-')[0] in KD and n in P]
+    if kdn and ref:
+        RL += ['## The kd models\' gain over C1 as a share of %s\'s (reported only, decides nothing)' % ref, '',
+               'The kd model minus C1, divided by %s minus C1, on the same fresh photos (1.00 = all of its gain; 95%% interval, '
+               'both resampled together).%s' % (ref, '' if ref == 'E6-mix' else ' (No E6-mix this run: E6 is the reference.)'), '',
+               '| Model | Subjects: outline | People: outline |', '|---|---|---|']
+        for n in kdn:
+            cells = []
+            for k in ('subjects', 'people'):
+                da, dr = P[n][k]['bf'] - P['C1'][k]['bf'], P[ref][k]['bf'] - P['C1'][k]['bf']
+                sh = share_of(da, dr)
+                cells.append('%.2f (%.2f to %.2f); %+.4f of %+.4f' % (*sh, da.mean(), dr.mean()) if sh[0] == sh[0] else
+                             'n/a (%s %+.4f: no gain to share); %+.4f' % (ref, dr.mean(), da.mean()))
+            RL.append('| %s | %s |' % (n, ' | '.join(cells)))
+        for n in KD:
+            tj = runs / n / 'teacher.json'
+            if n in CAND and tj.exists():
+                t_ = json.load(open(tj))
+                same = ('E6-mix' in CAND and t_.get('fingerprint') == fingerprint(CAND['E6-mix']))
+                RL.append('- %s\'s teacher: %s (%s items, weight %.2f)%s.' % (n, t_.get('spec'), t_.get('items'), t_.get('w', 0),
+                          ': the same weights as this report\'s E6-mix' if same else
+                          ': NOT this report\'s E6-mix (%s)' % ('E6 has no blend here: alpha 0' if 'E6-mix' not in CAND else
+                                                                  'its alpha here is %.2f' % ALPHA['E6']['alpha'])))
+        RL.append('')
     RL += ['## Blends (alpha on round 2\'s seen checks only)', '']
     for n, A in ALPHA.items():
         RL.append('- %s: alpha %.2f chosen. ' % (n, A['alpha']) + '; '.join(
@@ -435,15 +499,18 @@ def main():
         '- C1 on the fresh people: overlap %.4f, outline %.4f; round 6\'s people (machine-drawn, reported) outline %.4f; round 3\'s small '
         'found %.3f.' % (P['C1']['people']['iou'].mean(), P['C1']['people']['bf'].mean(), P['C1']['p3']['bf'].mean(),
                          P['C1']['r3small']['found'].mean()), '']
-    rs = [(x, json.load(open(runs / x / 'restarts.json'))) for x in ('E4', 'E6', 'E4b', 'C1+') if (runs / x / 'restarts.json').exists()]
+    rs = [(x, json.load(open(runs / x / 'restarts.json'))) for x in ('E4', 'E6', 'E4b', 'C1+') + KD if (runs / x / 'restarts.json').exists()]
     if rs:
         RL.append('- Passes started again after a loss blow-up: ' + '; '.join('%s pass %s' % (x, ', '.join(str(r['pass']) for r in v)) for x, v in rs))
-    for x in ('E4', 'E6', 'E4b'):
+    for x in ('E4', 'E6', 'E4b') + KD:
         bj = runs / x / 'batch.json'
-        if bj.exists():
+        if bj.exists() and (x not in KD or x in CAND):
             b_ = json.load(open(bj))
             if b_.get('batch') != b_.get('planned'):
                 RL.append('- %s trained with batch %s instead of %s (the card\'s memory).' % (x, b_.get('batch'), b_.get('planned')))
+            elif x in KD:
+                RL.append('- %s trained with batch %s at %s px, as planned (its teacher counted in the memory test).' % (
+                    x, b_.get('batch'), b_.get('input')))
 
     # ---- exports (passing candidates), sheets ----
     mdir, sdir = RESULTS / 'models', RESULTS / 'sheets'
@@ -454,16 +521,16 @@ def main():
                 p.unlink()
             except OSError:
                 pass
-    R = {'passing': passing, 'candidates': list(CAND), 'reported': list(REP), 'soup': sp, 'export': {},
-         'verdict': {n: {'better': V['better'], 'guards': {l: bool(ok) for l, ok in V['guards']},
+    R = {'passing': passing, 'pending_ipad': pending, 'candidates': list(CAND), 'reported': list(REP), 'soup': sp, 'export': {},
+         'verdict': {n: {'verdict': VERD[n], 'better': V['better'], 'guards': {l: (None if ok is None else bool(ok)) for l, ok in V['guards']},
                          'paired': {k: list(v) for k, v in V['D'].items()}, 'full': {k: list(v) for k, v in V.get('full', {}).items()},
                          'flags': {k: {'diff': list(v[0]), 'flagged': bool(v[1])} for k, v in FLAGS[n].items()}} for n, V in VER.items()},
          'alpha': {n: A['alpha'] for n, A in ALPHA.items()}}
     json.dump(R, open(RESULTS / 'report.json', 'w'), indent=1, default=float)
     (RESULTS / 'report.md').write_text('\n'.join(RL) + '\n', encoding='utf-8')          # (written before the exports)
-    if passing:
-        from s6_export import export          # (the app's file, as round 5 made C1's)
-        for n in passing:
+    if passing or pending:
+        from s6_export import export          # (the app's file, as round 5 made C1's; a pending one's, for Ben's timing page)
+        for n in passing + pending:
             try:
                 R['export'][n] = export(n, build_net(CAND[n]).eval(), mdir, [i for i in SETS['subjects'][:16]])
                 RL.append('- %s exported: %s (%.1f MB)' % (n, R['export'][n]['file'], R['export'][n]['mb']))
@@ -501,7 +568,8 @@ def main():
     for f in WORK.glob('runs/*/history.json'):
         shutil.copy(f, RESULTS / 'logs' / ('history-%s.json' % f.parent.name))
     mark_done('s6')
-    log('Step 6 done. Copy the whole "results" folder to your Mac (Documents/Claude outputs) as results-round6, and tell Claude.')
+    log('Step 6 done. Copy the whole "results" folder to your Mac (Documents/Claude outputs) as %s, and tell Claude.' % (
+        'results-kd' if any(k in CAND for k in KD) else 'results-round6'))
 
 
 if __name__ == '__main__':

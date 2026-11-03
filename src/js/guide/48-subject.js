@@ -138,7 +138,11 @@ function subWorkerMain() {
     try {
       if (m.t === 'init') {
         ort = await import(m.ort);
-        ort.env.wasm.numThreads = 1;
+        // (v329.4) one thread unless the page is cross-origin isolated (GitHub Pages can't make it so: a test folder's
+        // service worker does): then up to four, or as many as asked (the threads test's timing)
+        ort.env.wasm.numThreads =
+          m.threads ||
+          (self.crossOriginIsolated ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1)) : 1);
         ort.env.wasm.wasmBinary = m.wasm;
         s = await ort.InferenceSession.create(new Uint8Array(m.model), {
           executionProviders: ['wasm'],

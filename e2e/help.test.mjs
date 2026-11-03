@@ -569,6 +569,7 @@ after(teardown);
       'Photographing a page',
       'Adding markers by code',
       'More you can do',
+      'Marker basics', // (v329.3)
       'If something goes wrong',
       'Glossary',
       'Keyboard and screen readers',
@@ -1050,6 +1051,7 @@ after(teardown);
       'Photographing a page',
       'Adding markers by code',
       'More you can do',
+      'Marker basics', // (v329.3)
       'If something goes wrong',
       'Glossary',
       'Keyboard and screen readers',
@@ -1881,7 +1883,7 @@ after(teardown);
     await page.waitForFunction(() => !document.getElementById('fbOverlay').classList.contains('on'));
     assert.match(
       msgs[0],
-      /^Slow on my iPad\.\n\nNo errors recorded\.\nScreen: [^\n]+\nLongest waits, this visit:\nSections 2345 ms \(2048×1536\)\nBuild 812 ms \(2048×1536\)$/,
+      /^Slow on my iPad\.\n\nNo errors recorded\.\nScreen: [^\n]+\n(?:Site storage used [^\n]+\n)?Longest waits, this visit:\nSections 2345 ms \(2048×1536\)\nBuild 812 ms \(2048×1536\)$/,
     );
     // the longest note, three long errors and eight waits: within the form's 4000, the waits all there
     await page.evaluate(() => {
@@ -1896,7 +1898,7 @@ after(teardown);
     assert.ok(m.length <= 4000, String(m.length));
     assert.match(
       m,
-      /\nScreen: [^\n]+\nLongest waits, this visit:\n(Finding the page and sections \d 300\d ms \(4032×3024\)\n?){8}$/,
+      /\nScreen: [^\n]+\n(?:Site storage used [^\n]+\n)?Longest waits, this visit:\n(Finding the page and sections \d 300\d ms \(4032×3024\)\n?){8}$/,
     );
     assert.ok(m.startsWith('x'.repeat(2000)));
     assert.deepEqual(errors, []);

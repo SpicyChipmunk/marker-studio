@@ -17,6 +17,9 @@
 # trains only when step 6 names it (5b-train-wide, --wide). Each pass also reports a stock-free line: 400 of round 2's
 # seen subjects and its 400 seen people (round 3's validation subjects were chosen where stock TE0 agreed: they favour
 # TE0).
+# Round 6's second night (decisions 155-157): --run E4kd,E5kd trains TE4 and TE5 from stock, each taught half by its
+# labels and half by E6-mix's maps (a 'mix:E6:0.15' teacher: E6's kept weights blended toward stock TE6 by the same code
+# as 6-results' E6-mix), the teacher run at its own size without gradients, and counted in the memory test.
 import csv, gc, itertools, json, math, os, random, shutil, time, sys, traceback
 import numpy as np
 import torch
@@ -24,7 +27,7 @@ import torch.nn.functional as F
 from torch.optim.swa_utils import AveragedModel, get_ema_multi_avg_fn
 from PIL import Image, ImageFilter
 from common import (CFG, WORK, RESULTS, log, fail, mark_done, done, load_tracer, device, MEAN, STD, R2, benchmark,
-                    benchmark_weights, R3DIR, read_r3_list, read_r2_list, download, sha256)
+                    benchmark_weights, R3DIR, read_r3_list, read_r2_list, download, sha256, blend_to_stock)
 import data as _data
 from data import (load_prep, load_label, read_list, read_crops, crop_img, maps, down, iou, boundary_f, api_loss, strays,
                   dilate, SIDE, INP, api_loss_each)
@@ -329,27 +332,105 @@ def is_oom(e):
     return isinstance(e, torch.cuda.OutOfMemoryError) or 'out of memory' in m or 'CUDNN_STATUS' in m or 'CUBLAS_STATUS' in m
 
 
-def fit_batch(net, n, dev, want, params):
+def parse_teacher(spec):
+    """(round 6) A kd teacher: 'start' (the run's own starting weights: decision 116's fallback), 'run:X' (run X's kept
+    weights) or 'mix:X:alpha' (run X's kept weights blended back toward its stock weights by alpha, as 6-results makes
+    X-mix: decision 156's E6-mix). None if it is none of these."""
+    p = str(spec).split(':')
+    if p == ['start']:
+        return ('start',)
+    if len(p) == 2 and p[0] == 'run' and p[1]:
+        return ('run', p[1])
+    if len(p) == 3 and p[0] == 'mix' and p[1]:
+        try:
+            a = float(p[2])
+        except ValueError:
+            return None
+        return ('mix', p[1], a) if 0 < a < 1 else None
+    return None
+
+
+def teacher_weights(x, name):
+    w = WORK / 'runs' / x / 'best.pt'
+    if not (done('s5-' + x) and w.exists()):
+        fail('%s learns from %s, which is not trained here (%s). Send Claude this message.' % (name, x, w))
+    return w
+
+
+def teacher_of(kd, sw, arch, name):
+    """(round 6) The kd run's teacher on the processor, a line saying which it is, and its record (teacher.json:
+    6-results checks a 'mix:' teacher's fingerprint against its own -mix candidate's)."""
+    t = parse_teacher(kd['teacher'])
+    if t is None:
+        fail('%s: kd teacher "%s" is not start, run:X or mix:X:alpha. Send Claude this message.' % (name, kd['teacher']))
+    if t[0] == 'start':
+        net = load_tracer(sw, None if sw else arch)
+        return net, 'its own starting weights', {'spec': 'start'}
+    w = teacher_weights(t[1], name)
+    net = load_tracer(w)
+    ta = str(net.arch)
+    if t[0] == 'run':
+        return net, '%s (work\\runs\\%s\\best.pt, TE%s at %d px)' % (t[1], t[1], ta, net.inp), {
+            'spec': kd['teacher'], 'fingerprint': sha256(w), 'arch': ta, 'input': net.inp}
+    blend_to_stock(net, ta, t[2])          # (the same function, and so the same weights, as 6-results' -mix)
+    return net, '%s-mix (work\\runs\\%s\\best.pt blended %.2f toward stock TE%s, as 6-results makes it; TE%s at %d px)' % (
+        t[1], t[1], t[2], ta, ta, net.inp), {'spec': kd['teacher'], 'fingerprint': 'mix(%s,%s,%g)' % (sha256(w), ta, t[2]),
+                                             'arch': ta, 'input': net.inp}
+
+
+def soft_maps(teacher, x, n):
+    """(round 6) The teacher's maps for a batch: at its own input size, without gradients, in the run's precision
+    (autocast on the card), brought to the student's size n."""
+    with torch.no_grad(), torch.autocast(device_type=x.device.type, enabled=x.device.type == 'cuda'):
+        xt = x if teacher.inp == x.shape[-1] else F.interpolate(x, size=(teacher.inp, teacher.inp), mode='bilinear', align_corners=False)
+        t = teacher(xt)[0].float()
+    if t.shape[-1] != n:
+        t = F.interpolate(t, size=(n, n), mode='bilinear', align_corners=False)
+    return t.clamp(0, 1)
+
+
+def kd_loss(o, ds, y, t, sel, w):
+    """The selected items taught (1 - w) by their labels and w by the teacher's maps t; the rest by their labels."""
+    tt = y.clone()
+    tt[sel] = t
+    wv = sel.float() * float(w)
+    return sum(((1 - wv) * api_loss_each(z, y) + wv * api_loss_each(z, tt)).mean() for z in (o, ds[0], ds[1], ds[2]))
+
+
+def fit_batch(net, n, dev, want, params, teacher=None, kd=None):
     """(round 5) The largest batch (want, then 12, 8, 6) whose forward and backward pass at input n fits in what the card
-    has free (Windows and the desktop hold some of it), with Adam's state added and a fifth kept spare. On the
-    processor: want."""
+    has free (Windows and the desktop hold some of it), with Adam's state added and a fifth kept spare. Round 6, a kd
+    run: the step as the run does it, the teacher's forward first (no gradients, at its own size, the same batch),
+    and what is already on the card (the model, its averaged copy, the teacher) counted too. On the processor: want,
+    after one small trial step the same way (so a kd run's step is known to work before the night)."""
+    def step(b):
+        x = torch.randn(b, 3, n, n, device=dev)
+        y = (torch.rand(b, 1, n, n, device=dev) > 0.5).float()
+        t = soft_maps(teacher, x, n) if teacher is not None else None
+        with torch.autocast(device_type=dev.type, enabled=dev.type == 'cuda'):
+            o, e, ds = net(x)
+        if t is None:
+            loss = api_loss(o, y) + api_loss(ds[0], y) + api_loss(ds[1], y) + api_loss(ds[2], y)
+        else:          # (every item taught, as 'all' does: for a people-only kd run, the most its step can need)
+            loss = kd_loss(o, ds, y, t, torch.ones(b, dtype=torch.bool, device=dev), kd['w'])
+        loss.backward()
+        for p in params:
+            p.grad = None
+
     if dev.type != 'cuda':
+        step(min(want, 2))
+        log('   on the processor: batch %d (no memory test; a trial step%s ran)' % (want, ' with the teacher' if teacher is not None else ''))
         return want
     adam = 2 * 4 * sum(p.numel() for p in params)          # (Adam's two float32 moments, made at the first step)
     for b in [want] + [x for x in STEPS if x < want]:
-        x = y = o = e = ds = loss = None
         try:
             torch.cuda.empty_cache()
             free0, total = torch.cuda.mem_get_info()
             r0 = torch.cuda.memory_reserved()
             torch.cuda.reset_peak_memory_stats()
-            x = torch.randn(b, 3, n, n, device=dev)
-            y = (torch.rand(b, 1, n, n, device=dev) > 0.5).float()
-            with torch.autocast(device_type='cuda'):
-                o, e, ds = net(x)
-            loss = api_loss(o, y) + api_loss(ds[0], y) + api_loss(ds[1], y) + api_loss(ds[2], y)
-            loss.backward()
-            peak = torch.cuda.max_memory_reserved() - r0 + adam
+            step(b)
+            # (the step's own peak, Adam's state, and, with a teacher, what is already held: the three models)
+            peak = torch.cuda.max_memory_reserved() - (0 if teacher is not None else r0) + adam
             ok = peak < 0.8 * (free0 + r0)
         except RuntimeError as err:
             if not is_oom(err):
@@ -357,10 +438,11 @@ def fit_batch(net, n, dev, want, params):
             ok, peak, free0, r0 = False, float('nan'), float('nan'), 0
         for p in params:
             p.grad = None
-        del x, y, o, e, ds, loss
+        gc.collect()
         torch.cuda.empty_cache()
-        log('   memory test, batch %d at %d px: %s' % (b, n, 'fits (needs %.1f GB of %.1f GB free)' % (peak / 1e9, (free0 + r0) / 1e9)
-                                                       if ok else 'too big for this card'))
+        log('   memory test, batch %d at %d px%s: %s' % (
+            b, n, ' with its teacher at %d px' % teacher.inp if teacher is not None else '',
+            'fits (needs %.1f GB of %.1f GB free)' % (peak / 1e9, (free0 + r0) / 1e9) if ok else 'too big for this card'))
         if ok:
             return b
     fail('even batch %d does not fit this graphics card at %d px. Send Claude this window\'s last lines.' % (STEPS[-1], n))
@@ -494,13 +576,13 @@ def run(name, rc, train_ids, crops, V, dev, stock_paste=None, people=(), paste=N
     # run that names one, another model's maps (E4-kd, decision 126); none otherwise
     kd = rc.get('kd') or ({'teacher': 'start', 'items': 'people', 'w': 1.0} if (R6 and people and R6T.get('people_soft')) else None)
     teacher = None
-    if kd:
-        tw = sw if kd['teacher'] == 'start' else start_weights({'start': kd['teacher'], 'name': name})
-        teacher = load_tracer(tw, None if tw else arch).to(dev).eval()
+    if kd:          # (start, run:X or mix:X:alpha; on the card in the run's precision, never trained)
+        teacher, which, trec = teacher_of(kd, sw, arch, name)
+        teacher = teacher.to(dev).eval()
         for p_ in teacher.parameters():
             p_.requires_grad_(False)
-        log('%s: soft targets from %s on %s photos (weight %.2f)' % (name, 'its own starting weights' if kd['teacher'] == 'start'
-                                                                    else kd['teacher'], kd['items'], kd['w']))
+        jsave(dict(trec, items=kd['items'], w=kd['w']), out / 'teacher.json', indent=1)
+        log('%s: soft targets from %s on %s photos (weight %.2f)' % (name, which, kd['items'], kd['w']))
     NIN = net.inp
     nb = len(net.model._blocks)
     if any(k >= nb for k in rc.get('late_blocks', [])):
@@ -527,12 +609,17 @@ def run(name, rc, train_ids, crops, V, dev, stock_paste=None, people=(), paste=N
         bj = out / 'batch.json'
         bjd = json.load(open(bj)) if bj.exists() else {}
         # (a run carried on keeps its batch; after a memory failure, the smaller batch written then, without a new test)
-        BS = bjd['batch'] if bjd and ((out / 'last.pt').exists() or bjd.get('oom')) else fit_batch(net, NIN, dev, T['batch'], dec + bb)
+        kept = bool(bjd and ((out / 'last.pt').exists() or bjd.get('oom')))
+        BS = bjd['batch'] if kept else fit_batch(net, NIN, dev, T['batch'], dec + bb, teacher, kd)
+        log('%s: batch %d at %d px (%s)' % (name, BS, NIN, 'as before it stopped' if kept else 'on the processor: no memory test'
+                                            if dev.type != 'cuda' else 'the memory test, its teacher counted' if teacher is not None
+                                            else 'the memory test'))
         if BS != T['batch']:
             log('%s: batch %d instead of %d (the card\'s memory): %d steps a pass instead of %d, a somewhat stronger fine-tune '
                 'than planned (reported in step 6).' % (name, BS, T['batch'], (len(train_ids) + len(crops)) // BS,
                                                          (len(train_ids) + len(crops)) // T['batch']))
-        jsave({'batch': BS, 'planned': T['batch'], 'arch': arch, 'input': NIN, 'oom': bjd.get('oom', False)}, out / 'batch.json')
+        jsave({'batch': BS, 'planned': T['batch'], 'arch': arch, 'input': NIN, 'oom': bjd.get('oom', False),
+               **({'teacher': kd['teacher']} if kd else {})}, out / 'batch.json')
     ds_ = Photos(train_ids, crops, crops, NIN, people, paste, n_paste)
     dl = torch.utils.data.DataLoader(ds_, batch_size=BS, shuffle=True, drop_last=True,
                                      num_workers=T['workers'], persistent_workers=T['workers'] > 0, pin_memory=dev.type == 'cuda',
@@ -568,22 +655,15 @@ def run(name, rc, train_ids, crops, V, dev, stock_paste=None, people=(), paste=N
     log('%s: %d passes over %d photos and %d empty crops; kept: %s' % (
         name, EP, len(train_ids), len(crops), 'the last %d passes\' averaged weights, averaged' % T['avg_last'] if T.get('avg_last') else 'the best pass'))
     def loss_of(x, y, hf):
+        # (a kd run: the teacher's maps first, so its working memory is let go before the student's forward holds its own;
+        # fit_batch tested the step in this order)
+        sel = None if teacher is None else (hf if kd['items'] == 'people' else torch.ones_like(hf))
+        t = soft_maps(teacher, x if kd['items'] != 'people' else x[sel], NIN) if sel is not None and bool(sel.any()) else None
         with torch.autocast(device_type=dev.type, enabled=dev.type == 'cuda'):
             o, e, ds = net(x)
-        if teacher is None:
+        if t is None:
             return api_loss(o, y) + api_loss(ds[0], y) + api_loss(ds[1], y) + api_loss(ds[2], y)
-        sel = hf if kd['items'] == 'people' else torch.ones_like(hf)
-        if not bool(sel.any()):
-            return api_loss(o, y) + api_loss(ds[0], y) + api_loss(ds[1], y) + api_loss(ds[2], y)
-        with torch.no_grad(), torch.autocast(device_type=dev.type, enabled=dev.type == 'cuda'):
-            xt = x[sel] if teacher.inp == NIN else F.interpolate(x[sel], size=(teacher.inp, teacher.inp), mode='bilinear', align_corners=False)
-            t = teacher(xt)[0].float()
-        if t.shape[-1] != NIN:
-            t = F.interpolate(t, size=(NIN, NIN), mode='bilinear', align_corners=False)
-        tt = y.clone()
-        tt[sel] = t.clamp(0, 1)
-        wv = sel.float() * float(kd['w'])
-        return sum(((1 - wv) * api_loss_each(z, y) + wv * api_loss_each(z, tt)).mean() for z in (o, ds[0], ds[1], ds[2]))
+        return kd_loss(o, ds, y, t, sel, kd['w'])
 
     def pass_once(ep, stop_at, attempt=1):
         """One pass over the photos; a loss blow-up raises BlowUp (round 6) or stops (earlier rounds)."""
@@ -797,7 +877,8 @@ def soup(V, dev):
 
 def main6(dev):
     """Round 6 (decisions 114-136): E4, E6, E4b, C1+ in that order, on round 3's photos plus round 6's people set, pasted
-    small subjects and round 3's small_agree photos once more; each pass measured beside C1."""
+    small subjects and round 3's small_agree photos once more; each pass measured beside C1. With --run (the kd night:
+    E4kd,E5kd) only those, in that order, no soup, .done-s5 left as it is; returns 2 if one of them isn't trained."""
     r6 = WORK / 'round6'
     if '--run' not in sys.argv and (WORK / '.done-s5').exists():
         (WORK / '.done-s5').unlink()          # (round 5's mark: 6-results waits for this round's runs)
@@ -812,7 +893,24 @@ def main6(dev):
         if x not in T['runs'] or not (T['runs'][x].get('on_demand') or x in order):
             fail('%s is not a round-6 run. Send Claude this message.' % x)
     runs = named or order
-    for a in sorted({str(T['runs'][x].get('arch', '0')) for x in runs}):
+    # (round 6, the kd runs: each teacher named rightly and trained, checked before anything starts; a 'mix:' teacher's
+    # stock weights fetched with the runs' own)
+    tarch = set()
+    for x in runs:
+        kd_ = T['runs'][x].get('kd')
+        if not kd_:
+            continue
+        t = parse_teacher(kd_['teacher'])
+        if t is None:
+            fail('%s: kd teacher "%s" is not start, run:X or mix:X:alpha. Nothing has been started. Send Claude this message.' % (
+                x, kd_['teacher']))
+        if t[0] != 'start':
+            if t[1] in runs:
+                fail('%s learns from %s, trained in the same night. Nothing has been started. Send Claude this message.' % (x, t[1]))
+            teacher_weights(t[1], x)
+            if t[0] == 'mix':
+                tarch.add(str(torch.load(WORK / 'runs' / t[1] / 'best.pt', map_location='cpu', weights_only=True).get('arch', '0')))
+    for a in sorted({str(T['runs'][x].get('arch', '0')) for x in runs} | tarch):
         w = WORK / ('TRACER-Efficient-%s.pth' % a)
         if not w.exists():
             log('Downloading TRACER-TE%s weights (%d MB) from the authors\' GitHub release' % (a, CFG['tracer%s_bytes' % a] // 1000000))
@@ -828,11 +926,12 @@ def main6(dev):
     left_ = [x for x in runs if not done('s5-' + x)]
 
     def still(x):
-        full = CFG['tracer%s_bytes' % str(T['runs'][x].get('arch', '0'))] * (int(T['runs'][x].get('passes') or 9) + 4)
+        ps = int(T['runs'][x].get('passes') or 9)
+        full = CFG['tracer%s_bytes' % str(T['runs'][x].get('arch', '0'))] * ((min(ps, 2) if T.get('quick') else ps) + 4)
         d = WORK / 'runs' / x
         have = sum(f.stat().st_size for f in d.glob('*.pt')) if d.exists() else 0
         return max(0, full - have)
-    need = sum(still(x) for x in left_) + (CFG['tracer4_bytes'] if 'E4b' in left_ else 0) + 1e9
+    need = sum(still(x) for x in left_) + (CFG['tracer4_bytes'] if 'E4b' in left_ else 0) + 1e9 * R6T.get('room_spare_gb', 1)
     free = shutil.disk_usage(WORK).free
     if left_ and free < need:
         fail('training %s needs about %.1f GB free on this drive, and it has %.1f GB: free about %.1f GB more. Nothing has '
@@ -917,6 +1016,19 @@ def main6(dev):
             h = WORK / 'runs' / x / f_
             if h.exists():
                 shutil.copy2(h, RESULTS / 'logs' / ('%s-%s' % (f_.split('.')[0], x) + '.json'))
+    if named:          # (the kd night, decisions 155-157: .done-s5 and the soup left as they are)
+        left = [x for x in named if not done('s5-' + x)]
+        trained = [x for x in named if x not in left]
+        if not left:
+            log('Runs done: %s trained. Next: 6-results (it judges them beside round 6\'s candidates).' % ', '.join(named))
+            return 0
+        log('Runs NOT finished: %s %s%s. %s' % (', '.join(left), 'stopped (above)' if stopped else 'not trained',
+                                                 '; %s trained' % ', '.join(trained) if trained else '', (
+            'Next: 6-results can judge %s now; running this again later redoes %s from where it stopped. Tell Claude either '
+            'way (send work\\s5_train.log).' % (', '.join(trained), ', '.join(left))) if trained and not full_ else
+            'Next: free the space named above and run this again.' if full_ else
+            'Next: send Claude this window\'s last lines and work\\s5_train.log; running this again redoes them.'))
+        return 2
     if not named:
         left = [x for x in order if not done('s5-' + x)]
         if not left and soup_bad:
@@ -936,9 +1048,8 @@ def main6(dev):
 
 if __name__ == '__main__':
     dev = device()
-    if R6:
-        main6(dev)
-        sys.exit(0)
+    if R6:          # (exit 0: done; 2: a run named with --run not trained (the last line says why); 1: stopped before training)
+        sys.exit(main6(dev) or 0)
     if R5:
         main5(dev)
         sys.exit(0)

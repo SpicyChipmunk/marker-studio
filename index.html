@@ -14408,8 +14408,18 @@ button.wrm {
   margin: 14px 0 0;
   line-height: 1.7;
 }
+.wideas .widl {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* (v329.4: one a line, a 44px tap each, its words at the left as the line above) */
 .wideas .sflink {
   font-size: inherit;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-align: left;
 }
 .wtop5 {
   margin: 4px 0 10px;
@@ -67497,7 +67507,11 @@ function subWorkerMain() {
     try {
       if (m.t === 'init') {
         ort = await import(m.ort);
-        ort.env.wasm.numThreads = 1;
+        // (v329.4) one thread unless the page is cross-origin isolated (GitHub Pages can't make it so: a test folder's
+        // service worker does): then up to four, or as many as asked (the threads test's timing)
+        ort.env.wasm.numThreads =
+          m.threads ||
+          (self.crossOriginIsolated ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1)) : 1);
         ort.env.wasm.wasmBinary = m.wasm;
         s = await ort.InferenceSession.create(new Uint8Array(m.model), {
           executionProviders: ['wasm'],
@@ -77112,7 +77126,10 @@ function placeSheet() {
     const t = Math.round(Math.max(0, sfView ? sfView.getBoundingClientRect().bottom : 0));
     if (sheetO.o.fit) {
       s.top = 'auto';
-      s.maxHeight = Math.max(0, (window.innerHeight || 0) - t) + 'px';
+      // (v329.4: a sheet that may grow, the ⋯ menu, rises over the picture's lower edge as far as its items need, up to
+      // three quarters of the screen: on a 768 × 1024 iPad held upright Notes… had put Send feedback below its fold)
+      const ih = window.innerHeight || 0;
+      s.maxHeight = Math.max(0, ih - t, sheetO.o.grow ? Math.round(ih * 0.75) : 0) + 'px';
     } else s.top = t + 'px';
     el.classList.remove('sfshside');
   }
@@ -77209,6 +77226,7 @@ function openMenu() {
     body: b,
     foot: '<button type="button" class="sfghost" data-m="close">Close</button>',
     fit: true,
+    grow: true,
   });
   el.classList.add('sfmenush');
   el.addEventListener('click', function (e) {
@@ -97785,11 +97803,12 @@ function topFiveHTML(order, g) {
 function ideasHTML() {
   if (!inkOwned()) return '';
   return (
-    '<div class="wwhy wideas">Ideas from your collection: ' +
+    // (v329.4: one idea a line, each a 44px tap: in a sentence their taps had been 20-32px, the lines too close)
+    '<div class="wwhy wideas"><div id="wideasH">Ideas from your collection:</div><ul class="widl" aria-labelledby="wideasH">' +
     IDEAS.map(function (o) {
-      return '<button type="button" class="sflink" data-idea="' + o[0] + '">' + o[1] + '</button>';
-    }).join(' · ') +
-    '</div>'
+      return '<li><button type="button" class="sflink" data-idea="' + o[0] + '">' + o[1] + '</button></li>';
+    }).join('') +
+    '</ul></div>'
   );
 }
 // (a link followed: Markers › Unowned in that order, the search cleared, the filter chips as they are)
@@ -108420,7 +108439,10 @@ self.onmessage = async function (ev) {
     if (m.t === 'init') {
       const t0 = Date.now(),
         ort = await import(m.ort);
-      ort.env.wasm.numThreads = 1;
+      // (v329.4) one thread unless the page is cross-origin isolated (a test folder's service worker): then up to four
+      ort.env.wasm.numThreads = self.crossOriginIsolated
+        ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1))
+        : 1;
       ort.env.wasm.wasmBinary = m.wasm;
       reader = await OCR2.create(
         ort,

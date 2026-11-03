@@ -1021,7 +1021,8 @@ after(teardown);
     });
   // ---- From v265 ----
   // visible text that still says "shopping list" or a "List" button
-  const OLD = /shopping list|\+ ?List\b|Add all to list|On your list|On list\b|Add to shopping list/i;
+  // (v329.3: "On your list" only as the old label, a line of its own: To buy's "Sets with markers on your list" is new)
+  const OLD = /shopping list|\+ ?List\b|Add all to list|(?:^|\n)On your list\b|On list\b|Add to shopping list/i;
   const oldWords = (page) =>
     page.evaluate((src) => {
       const re = new RegExp(src, 'i'),
