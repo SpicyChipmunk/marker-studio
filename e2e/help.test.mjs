@@ -344,12 +344,19 @@ after(teardown);
     assert.match(data, /no account/);
     assert.match(data, /Home Screen/);
     assert.match(data, /Back up/);
-    // (v329.3) how much space it uses, filled in when the browser answers
-    await page.waitForFunction(() => /Marker Studio is using/.test(document.getElementById('helpUsed').textContent));
-    assert.match(
-      await page.textContent('#helpUsed'),
-      /^Marker Studio is using (under 1 MB|about [\d.]+ (MB|GB)) on this device: your guides and photos, the app itself/,
+    // (v329.3) how much space it uses, filled in when the browser answers; left out where it can't say (GitHub's
+    // WebKit gives no estimate: the line stays hidden, as in a private window)
+    const used = await page.evaluate(() =>
+      Promise.race([storeUsedRead(), new Promise((ok) => setTimeout(() => ok(null), 5000))]),
     );
+    if (used == null) assert.ok(await page.$eval('#helpUsed', (e) => e.hidden), 'no estimate: no line');
+    else {
+      await page.waitForFunction(() => /Marker Studio is using/.test(document.getElementById('helpUsed').textContent));
+      assert.match(
+        await page.textContent('#helpUsed'),
+        /^Marker Studio is using (under 1 MB|about [\d.]+ (MB|GB)) on this device: your guides and photos, the app itself/,
+      );
+    }
     // About: the version shown on Home, which is the service worker's version
     await page.click('#helpAbout > summary');
     await idle(page);
