@@ -663,6 +663,7 @@ function touchRule() {
     !!sheetO ||
     cropMode ||
     pgMode ||
+    fixOn ||
     (sfmode === 'review' && (editMode === 'split' || editMode === 'add')) ||
     (sfmode === 'guide' && photoAlign);
   const v = none ? 'none' : 'pan-y';
@@ -986,7 +987,7 @@ function renderTools() {
   const zc = document.getElementById('sfZoomCtl');
   if (zc && cropMode && zc.style.display === 'none') zc.style.display = '';
   const fb = document.getElementById('sfFull');
-  if (fb) fb.style.display = cropMode ? 'none' : '';
+  if (fb) fb.style.display = cropMode || fixOn ? 'none' : '';
   fitBtn();
   planBtn();
 }

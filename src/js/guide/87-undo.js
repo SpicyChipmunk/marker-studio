@@ -1378,6 +1378,12 @@ function frameTickBack(e) {
 function planBtn() {
   const b = document.getElementById('sfPlanUndo');
   if (!b) return;
+  // (v329.4: Fix the subject's own while it's open, 49-subject-fix)
+  if (fixOn) {
+    fixBtns(b, document.getElementById('sfPlanRedo'));
+    planFit();
+    return;
+  }
   const rev = sfmode === 'review' && !!labels && undoStack.length > 0 && !pgMode && !cropMode,
     on =
       rev ||
@@ -1415,12 +1421,21 @@ function planBtn() {
   planFit();
 }
 function toolUndo() {
+  // (v329.4: Fix the subject's own strokes while it's open, 49-subject-fix)
+  if (fixOn) {
+    fixUndo();
+    return;
+  }
   if (sfmode === 'review') {
     doUndo();
     planBtn();
   } else planUndo();
 }
 function toolRedo() {
+  if (fixOn) {
+    fixRedo();
+    return;
+  }
   if (sfmode === 'review') secRedo();
   else planRedo();
 }

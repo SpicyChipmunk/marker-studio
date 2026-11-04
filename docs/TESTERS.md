@@ -52,7 +52,7 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
 - **Any other photo (new in v325):** a pet, a flower, a sunset. Tap **Make a colouring page from it** (under Choose a
   colouring page; with a guide open, on Home under New guide from a colouring page). The app draws a page of sections from the photo,
   each one of your markers, shown in their colours. **Detail** sets how simple or detailed it is, and **Focus** (v325.1)
-  can keep more detail on the photo's subject, or (v326) leave the background white with **Subject only**. (v327) **Shading › Photo** matches the shading to the photo's own light and dark. With a small
+  can keep more detail on the photo's subject, or (v326) leave the background white with **Subject only**. (v329.4) **Fix the subject**, under Focus, corrects the subject by tapping or dragging on the photo (**Choose the subject** when there is none, with no download needed). (v327) **Shading › Photo** matches the shading to the photo's own light and dark. With a small
   collection it says which few markers would match the photo much better (**Try it with these** to see). Then **Build
   guide** as usual. We'd like to
   hear how long a page takes on your device (Send feedback includes it), and which photos come out well or badly.
@@ -61,7 +61,7 @@ This guide is also in the app, under **Help › Beta tester guide**, and works o
 
 - **No account or sync.** Each device, and the Home Screen app, has its own data. Move it with Back up and Restore.
 - **Some pages come out poorly:** very detailed pages, hatched or already-coloured pages, and faint or broken lines.
-- **Picking one section on the picture needs touch or a mouse.** With a keyboard, use Colour along's list instead.
+- **Picking one section on the picture, and Fix the subject, need touch or a mouse.** With a keyboard, use Colour along's list instead.
 - **A page made from a photo smooths away small features** (eyes, whiskers): a cat is a cat-shaped patchwork, not a
   portrait. Busy backgrounds become many small sections.
 - **It's designed for the iPad** (portrait and landscape) and checked on iPhone-sized screens. Android phones and

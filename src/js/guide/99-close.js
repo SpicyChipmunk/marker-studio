@@ -667,6 +667,46 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     ppSave: ppSave,
     ppCheck: ppCheck,
     ppBuildCore: ppBuildCore,
+    // (v329.4: Fix the subject, 49-subject-fix)
+    fixPieces: fixPieces,
+    fixStep: fixStep,
+    fixNew: fixNew,
+    fixFits: fixFits,
+    fixBase: fixBase,
+    fixCells: fixCells,
+    fixRefine: fixRefine,
+    fixView: fixView,
+    fixCombine: fixCombine,
+    fixAdded: fixAdded,
+    fixEncode: fixEncode,
+    fixDecode: fixDecode,
+    fixKey: fixKey,
+    fixPaint: fixPaint,
+    fixShare: fixShare,
+    fixFoot: fixFoot,
+    fixSave: fixSave,
+    fixLoad: fixLoad,
+    fixWorkerSrc: fixWorkerSrc,
+    fixEnter: fixEnter,
+    fixDone: fixDone,
+    fixCancel: fixCancel,
+    fixUndo: fixUndo,
+    fixRedo: fixRedo,
+    fixWhole: fixWhole,
+    fixDiagLine: fixDiagLine,
+    fixSync: fixSync,
+    fixHandMap: fixHandMap,
+    ppRemade: ppRemade,
+    get fixOn() {
+      return fixOn;
+    },
+    get fx() {
+      return _fx;
+    },
+    get subHand() {
+      return _subHand;
+    },
+    ppSubjectMask: ppSubjectMask,
     ppWideCore: ppWideCore,
     ppPickCore: ppPickCore,
     ppDe: ppDe,
@@ -1775,6 +1815,8 @@ return {
   pickPdfHome: pickPdfHome,
   // (v325: a colouring page from any photo, Home's link: 47-photo-page)
   ppPick: ppPick,
+  // (v329.4: the photo-made page's subject for Copy diagnostics, 49-subject-fix)
+  subjectDiag: fixDiagLine,
   // (v314: the photo of a finished page, from Home and the Library: 24-page-photo)
   finPick: finPick,
   finGet: finGet,

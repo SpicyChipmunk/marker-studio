@@ -2203,3 +2203,43 @@ html.sfsheetsd .mstoast {
 #sfRoot .sfpalnote .mclose {
   flex: none;
 }
+/* (v329.4) Fix the subject: its link under Focus, and the mode's links and Cancel / Done (49-subject-fix) */
+#sfRoot .sffixln .sflink,
+#sfRoot .sffixlinks .sflink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 6px;
+  font-size: var(--t-md);
+}
+#sfRoot .sffixln .sflink {
+  margin-left: -6px;
+}
+#sfRoot .sffixlinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  margin-top: 10px;
+}
+#sfRoot .sffixlinks .sflink:disabled,
+#sfRoot .sffixln .sflink:disabled {
+  color: var(--sub);
+  opacity: 0.5;
+}
+#sfRoot .sffixlinks .sfdot {
+  color: var(--sub);
+}
+#sfRoot .sffixacts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+#sfRoot .sffixacts button {
+  min-height: 44px;
+  padding: 0 14px;
+}
+#sfRoot .sffixacts .sfghost {
+  color: var(--ink);
+}

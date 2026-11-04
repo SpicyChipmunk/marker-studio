@@ -292,10 +292,11 @@ const SUB_OFF_KEY = 'ms-subject-off',
       'This device ran out of memory finding the subject, so the page is made Even. Close other apps and reopen Marker Studio to try Focus again.',
     slow: 'The subject finder took too long on this device, so the page is made Even.',
   },
+  // (v329.4: the other choices no longer greyed meanwhile: they choose the subject by hand, 49-subject-fix)
   SUB_OFF_HINT = {
     memory:
-      'Only Even until Marker Studio is next opened: this device ran out of memory finding the subject. Close other apps before you try again.',
-    slow: 'Only Even until Marker Studio is next opened: the subject finder took too long on this device.',
+      'The subject finder is off until Marker Studio is next opened: this device ran out of memory finding the subject. Other Focus choices now let you choose the subject by hand.',
+    slow: 'The subject finder is off until Marker Studio is next opened: it took too long on this device. Other Focus choices now let you choose the subject by hand.',
   };
 function subFailKind(e) {
   const m = String((e && (e.sub || e.message || e)) || '');
@@ -321,8 +322,12 @@ function subOffSet(k) {
 // (v329.3 review: one at a time for any photo, not only the same one: a find for another prep, a turn or crop made
 // meanwhile, waits for the one running, so there are never two models and their memory at once on an iPad)
 let _subRun = null;
-function subMap(prep) {
+function subMap(prep, finder) {
   if (prep.sal) return Promise.resolve(prep.sal);
+  // (v329.4: a subject chosen by hand from empty: the finder isn't asked, 49-subject-fix; finder: asked all the same,
+  // Use the finder's subject)
+  const own = finder ? null : fixOwnMap(prep);
+  if (own) return Promise.resolve(own);
   if (_subRun && _subRun.prep === prep) return _subRun.p;
   const prev = _subRun ? _subRun.p.catch(function () {}) : Promise.resolve();
   const p = prev.then(async function () {
@@ -438,8 +443,11 @@ async function subFind(prep) {
       ]),
       sal = r.y;
     prep.sal = sal;
-    // (v326: kept for a crop, an Undo of one or a quarter turn, subFromKept)
+    prep.salF = sal;
+    // (v326: kept for a crop, an Undo of one or a quarter turn, subFromKept: the finder's own map)
     subKeepAdd(prep);
+    // (v329.4: read with the guide's subject fixes, 49-subject-fix)
+    fixApply(prep);
     // (for Copy diagnostics: how long finding the subject took here)
     holdAdd('Subject found in the background', Date.now() - t0, w0 + ' × ' + h0);
     return sal;
@@ -463,77 +471,27 @@ async function ppSetFocus(f) {
   }
   // (v328: a guide opened while the download was asked about or under way keeps its own Focus)
   const g0 = loadGen;
-  if (f !== 'even') {
-    const need = await subMissing();
-    if (g0 !== loadGen) return;
-    if (!need) {
-      note('This browser can’t keep the subject finder, so Focus stays on Even.');
-      renderControls();
+  // (v329.4: another Focus chosen: Even's Choose the subject for Subject only goes, 49-subject-fix)
+  fixNoneSet('');
+  // (v329.4: a subject chosen by hand needs no finder; with the finder off this launch, or choosing by hand chosen,
+  // the subject is chosen by hand, 49-subject-fix fixChooseFor)
+  if (f !== 'even' && !fixHandMap() && !fixHaveMap()) {
+    if (subOff() || _subHand) {
+      fixChooseFor(f);
       return;
     }
-    if (need.length) {
-      if (navigator.onLine === false) {
-        note('The subject finder needs the internet the first time: connect, then try again.');
-        renderControls();
-        return;
-      }
-      const mb = subMB(need),
-        a = await askBox(
-          'Find the photo’s subject?',
-          SUB_NAMES[f] +
-            ' finds what your photo is of, on this device: your photo never leaves it. It’s a one-time download of about ' +
-            mb +
-            ' MB, kept for offline use.',
-          '<button type="button" class="btn-primary" data-a="go">Download · ' +
-            mb +
-            ' MB</button><button type="button" class="sfghost" data-a="stay">Not now</button>',
-          true,
-        );
-      if (g0 !== loadGen) return;
-      if (a !== 'go' || !pp) {
-        renderControls();
-        return;
-      }
-      note('Downloading the subject finder…');
-      _subDl = true;
-      // (v329.3 review: the line said again only when its MB changes, as the download now counts up as it comes)
-      let said = -1;
-      try {
-        await subDownload(need, function (n, total) {
-          const got = Math.round(n / 1e6);
-          if (got === said || g0 !== loadGen) return;
-          said = got;
-          // (in the line under the picture only: not a toast for each MB)
-          note('Downloading the subject finder… ' + got + ' of ' + Math.round(total / 1e6) + ' MB', true);
-        });
-      } catch (e) {
-        _subDl = false;
-        if (g0 !== loadGen) return;
-        // (v329.3 review: a full device said so, as the reader's download: Try again failed the same way every time)
-        const full =
-          e && (e.name === 'QuotaExceededError' || /quota|storage/i.test(String((e && e.message) || '')));
-        note(
-          navigator.onLine === false
-            ? 'The connection went, so Focus stays on Even. Connect, then try again.'
-            : full
-              ? 'This device’s storage is full, so the subject finder couldn’t be kept and Focus stays on Even. Free some space, then try again.'
-              : errNote('The subject finder didn’t download, so Focus stays on Even. Try again.', 'Focus', e),
-        );
-        renderControls();
-        return;
-      }
-      _subDl = false;
-      if (!pp || g0 !== loadGen) {
-        if (g0 !== loadGen) note('The subject finder is downloaded.');
-        return;
-      }
-      // (v328 review: a page being made meanwhile, a Detail chosen, isn't overtaken: Focus is chosen again after)
-      // (v328 review 2: or the page built, or being coloured, meanwhile: not taken back to the page step)
-      if (_ppBusy || sfmode !== 'review' || cropMode || pgMode) {
-        note('The subject finder is downloaded: choose ' + SUB_NAMES[f] + ' again.');
-        renderControls();
-        return;
-      }
+    const r = await subGet(f, g0);
+    if (r === 'hand') {
+      if (pp && g0 === loadGen) fixChooseFor(f);
+      return;
+    }
+    if (r !== 'ok') return;
+    // (v328 review: a page being made meanwhile, a Detail chosen, isn't overtaken: Focus is chosen again after)
+    // (v328 review 2: or the page built, or being coloured, meanwhile: not taken back to the page step)
+    if (_ppBusy || fixOn || sfmode !== 'review' || cropMode || pgMode) {
+      note('The subject finder is downloaded: choose ' + SUB_NAMES[f] + ' again.');
+      renderControls();
+      return;
     }
   }
   okGeom(
@@ -547,9 +505,109 @@ async function ppSetFocus(f) {
     },
   );
 }
+// (v329.4) after a note that the finder can't be had: the next Focus choice picks the subject by hand
+const SUB_HAND_SAY = ' Choose a Focus again to pick the subject by hand instead.';
+// The subject finder made ready: 'ok' once it's stored (asked first, the consent card, and downloaded); 'hand' when
+// choosing by hand was chosen there; else 'no' (said why). f: the Focus it's for (its name in the card; v329.4: the
+// card's third button, Choose the subject by hand), or null for the Focus row's Download the subject finder (no third
+// button, nothing said of choosing by hand)
+async function subGet(f, g0) {
+  const fail = function (t) {
+    if (f) _subHand = true;
+    note(f ? t + SUB_HAND_SAY : t);
+    renderControls();
+    return 'no';
+  };
+  const need = await subMissing();
+  if (g0 !== loadGen) return 'no';
+  if (!need) return fail('This browser can’t keep the subject finder, so Focus stays on Even.');
+  if (!need.length) return 'ok';
+  if (navigator.onLine === false)
+    return fail('The subject finder needs the internet the first time: connect, then try again.');
+  const mb = subMB(need),
+    a = await askBox(
+      'Find the photo’s subject?',
+      (f ? SUB_NAMES[f] : 'The subject finder') +
+        ' finds what your photo is of, on this device: your photo never leaves it. It’s a one-time download of about ' +
+        mb +
+        ' MB, kept for offline use.' +
+        (f ? ' Or choose the subject by hand, with no download.' : ''),
+      '<button type="button" class="btn-primary" data-a="go">Download · ' +
+        mb +
+        ' MB</button>' +
+        (f ? '<button type="button" class="sfghost" data-a="hand">Choose the subject by hand</button>' : '') +
+        '<button type="button" class="sfghost" data-a="stay">Not now</button>',
+      true,
+    );
+  if (g0 !== loadGen) return 'no';
+  if (a === 'hand' && pp) {
+    _subHand = true;
+    return 'hand';
+  }
+  if (a !== 'go' || !pp) {
+    renderControls();
+    return 'no';
+  }
+  note('Downloading the subject finder…');
+  _subDl = true;
+  // (v329.3 review: the line said again only when its MB changes, as the download now counts up as it comes)
+  let said = -1;
+  try {
+    await subDownload(need, function (n, total) {
+      const got = Math.round(n / 1e6);
+      if (got === said || g0 !== loadGen) return;
+      said = got;
+      // (in the line under the picture only: not a toast for each MB)
+      note('Downloading the subject finder… ' + got + ' of ' + Math.round(total / 1e6) + ' MB', true);
+    });
+  } catch (e) {
+    _subDl = false;
+    if (g0 !== loadGen) return 'no';
+    // (v329.3 review: a full device said so, as the reader's download: Try again failed the same way every time)
+    const full =
+      e && (e.name === 'QuotaExceededError' || /quota|storage/i.test(String((e && e.message) || '')));
+    if (navigator.onLine === false)
+      return fail('The connection went, so Focus stays on Even. Connect, then try again.');
+    if (full)
+      return fail(
+        'This device’s storage is full, so the subject finder couldn’t be kept and Focus stays on Even. Free some space, then try again.',
+      );
+    if (f) _subHand = true;
+    note(
+      errNote(
+        'The subject finder didn’t download, so Focus stays on Even. Try again.' + (f ? SUB_HAND_SAY : ''),
+        'Focus',
+        e,
+      ),
+    );
+    renderControls();
+    return 'no';
+  }
+  _subDl = false;
+  // (v329.4: downloaded, so the choices go back to the finder)
+  _subHand = false;
+  if (!pp || g0 !== loadGen) {
+    if (g0 !== loadGen) note('The subject finder is downloaded.');
+    return 'no';
+  }
+  return 'ok';
+}
+// (v329.4) the Focus row's Download the subject finder, while choosing by hand: the finder downloaded for later (the
+// subject chosen by hand stays as it is)
+async function subDlAsk() {
+  if (!pp || _subDl) return;
+  const r = await subGet(null, loadGen);
+  if (r === 'ok') {
+    _subHand = false;
+    note('The subject finder is downloaded.');
+    renderControls();
+  }
+}
 // (the page step's Focus row, 47-photo-page ctlPhotoPage): none where the subject finder can't run
 function ppFocusHTML() {
   if (!subCan()) return '';
+  // (v329.4: the hints read the subject with the guide's fixes as they are now, 49-subject-fix)
+  if (_ppPrep && _ppPrep.key === ppPrepKey()) fixSync(_ppPrep);
   const f = pp.f || 'even',
     hint = {
       even: 'The same detail all over the photo.',
@@ -558,18 +616,31 @@ function ppFocusHTML() {
       calm: 'More detail and colour on the photo’s subject, less behind it. Best when the photo has one clear subject.',
       subject: 'Leaves the background white, like a colouring book.',
     };
-  // (v329.2: no subject found, said: Sharper subject is then the Even page, Simpler background a simpler one)
+  // (v329.2: no subject found, said: Sharper subject is then the Even page, Simpler background a simpler one. v329.4:
+  // none chosen by hand, said so)
   if (
     (f === 'sharp' || f === 'calm') &&
     _ppPrep &&
     _ppPrep.sal &&
     _ppPrep.key === ppPrepKey() &&
     ppSubjectShare(_ppPrep) < SUB_NONE
-  )
+  ) {
+    const why = fixHandMap() ? 'No subject chosen' : 'No clear subject found in this photo';
     hint[f] =
       f === 'sharp'
-        ? 'No clear subject found in this photo, so this looks the same as Even.'
-        : 'No clear subject found in this photo, so this makes the whole page simpler.';
+        ? why + ', so this looks the same as Even.'
+        : why + ', so this makes the whole page simpler.';
+  }
+  // (v329.4: choosing by hand this launch, the finder not downloaded: said, with the way to download it)
+  let dl = '';
+  // (pressure test 5: the way to download shown under Even too, or choosing by hand, ended empty, would be the only way
+  // for the rest of the launch)
+  if (_subHand && !subOff()) {
+    if (f !== 'even' && fixHandMap())
+      hint[f] = 'You’re choosing the subject by hand, as the subject finder isn’t downloaded.';
+    dl =
+      '<div class="sffixln"><button type="button" class="sflink" id="sfPpSubDl">Download the subject finder</button></div>';
+  }
   // (v329.3 review: the finder out of memory or too slow this launch, subOff: the choices that need it greyed, and
   // said why, unless this photo's subject is found already)
   const off = subOff() && !(_ppPrep && _ppPrep.sal && _ppPrep.key === ppPrepKey()) ? subOff() : '';
@@ -578,12 +649,16 @@ function ppFocusHTML() {
     '<div class="sfsublbl" id="sfPpFocLbl">Focus</div><div id="sfPpFoc" role="group" aria-labelledby="sfPpFocLbl" class="sfc-segs">' +
     ['even', 'sharp', 'calm', 'subject']
       .map(function (k) {
-        return ctlSeg(k, SUB_NAMES[k], f === k, !srcImg || (!!off && k !== 'even'));
+        // (v329.4: not greyed with the finder off: they choose the subject by hand)
+        return ctlSeg(k, SUB_NAMES[k], f === k, !srcImg);
       })
       .join('') +
     '</div><div class="sfrnghint" id="sfPpFocHint">' +
     hint[f] +
-    '</div>'
+    '</div>' +
+    dl +
+    // (v329.4: Fix the subject, 49-subject-fix)
+    fixLinkHTML(f)
   );
 }
 
@@ -595,14 +670,16 @@ function ppSubjectMask(prep) {
   const n = prep.w * prep.h,
     m = new Uint8Array(n);
   for (let i = 0; i < n; i++) m[i] = prep.sal[i] < SUB_CUT ? 1 : 0;
-  subStrays(m, prep.w, prep.h);
+  // (v329.4: what the user added in Fix the subject, prep.fixAdd, is never a stray)
+  subStrays(m, prep.w, prep.h, prep.fixAdd || null);
   prep._bgm = { sal: prep.sal, m: m };
   return m;
 }
 // (v329.2) the subject's stray parts made background: a separate part under SUB_STRAY of the largest and under
 // SUB_NONE of the photo (on the bench: the flower bed's three leaves and a sliver of lily, and nothing real). m: 1 the
-// background, changed in place
-function subStrays(m, w, h) {
+// background, changed in place. (v329.4) keep: 1 where the user added to the subject (Fix the subject): a part with
+// any of it stays
+function subStrays(m, w, h, keep) {
   const n = w * h,
     lab = new Int32Array(n).fill(-1),
     st = new Int32Array(n),
@@ -631,9 +708,11 @@ function subStrays(m, w, h) {
   }
   if (area.length < 2) return;
   const big = Math.max.apply(null, area),
-    drop = area.map(function (a) {
-      return a < SUB_STRAY * big && a < SUB_NONE * n;
-    });
+    kept = new Uint8Array(area.length);
+  if (keep) for (let p = 0; p < n; p++) if (keep[p] && lab[p] >= 0) kept[lab[p]] = 1;
+  const drop = area.map(function (a, i) {
+    return !kept[i] && a < SUB_STRAY * big && a < SUB_NONE * n;
+  });
   for (let p = 0; p < n; p++) if (lab[p] >= 0 && drop[lab[p]]) m[p] = 1;
 }
 // how much of the photo its subject is (0-1)
@@ -883,9 +962,11 @@ function ppCropSubject() {
 // photo it covers (fractions); w, h; sal }
 let _subKeep = [];
 function subKeepAdd(prep) {
-  if (!prep.sal || !prep.keep) return;
+  // (v329.4: the finder's own map, prep.salF, never one read with the user's fixes)
+  const sal = prep.salF !== undefined ? prep.salF : prep.sal;
+  if (!sal || !prep.keep) return;
   _subKeep = _subKeep.filter(function (k) {
-    return k.sal !== prep.sal;
+    return k.sal !== sal;
   });
   _subKeep.unshift({
     src: prep.keep.src,
@@ -894,13 +975,21 @@ function subKeepAdd(prep) {
     rect: prep.keep.rect,
     w: prep.w,
     h: prep.h,
-    sal: prep.sal,
+    sal: sal,
   });
   _subKeep = _subKeep.slice(0, 2);
 }
+// (v329.4) subFromKept's map, read with the guide's subject fixes (49-subject-fix): ppPrepare sets prep.sal from it
+function subFromKept(prep) {
+  const ks = subFromKept0(prep);
+  if (!ks) return null;
+  prep.salF = ks;
+  prep.sal = ks;
+  return fixApply(prep);
+}
 // a map for a new photo prepared, from one kept: the same source and tilt, and its rect inside the kept one's (in the
 // same turn), or the whole photo in another quarter turn of a kept whole one. null when none fits
-function subFromKept(prep) {
+function subFromKept0(prep) {
   if (!prep.keep) return null;
   const K = prep.keep;
   for (let i = 0; i < _subKeep.length; i++) {

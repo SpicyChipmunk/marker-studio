@@ -1738,7 +1738,7 @@ function positionPeekBtn() {
 let _peekMode = '';
 // (v326) the Photo button's place on a photo-made page's step: its page made, Edit sections closed
 function photoPeekStep() {
-  return sfmode === 'review' && ppOn() && !!pp.made && !_ppTools;
+  return sfmode === 'review' && ppOn() && !!pp.made && !_ppTools && !fixOn;
 }
 /* ---- lining the photo up automatically ----
     For a coloured version of the same page (or the photo the line art was traced from): find the size, turn and

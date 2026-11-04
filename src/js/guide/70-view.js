@@ -193,6 +193,8 @@ function applyXform() {
   if (olSet) positionOutline();
   // (v323: Focus mode's ring round a small section)
   if (focus || document.getElementById('sfFocRing')) focusRing();
+  // (v329.4: Fix the subject's smaller pieces zoomed in, 49-subject-fix)
+  if (fixOn) fixZoomed();
   // (v323: the sharp copy over the picture moves with it, drawn again once the move settles, 77-sharp)
   if (sfmode === 'color' || sfmode === 'guide' || _shEl) sharpStale();
 }

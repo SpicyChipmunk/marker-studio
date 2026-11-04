@@ -1462,6 +1462,8 @@ function ppNew() {
     sm: '',
     tg: null,
     bgs: null,
+    // (v329.4: the subject fixed by hand, 49-subject-fix: its layer encoded, fixEncode)
+    fix: null,
   };
 }
 function ppCopy(o) {
@@ -1540,6 +1542,8 @@ function ppCheck(o, map) {
       });
     p.bgs = b.length ? b : null;
   }
+  // (v329.4: the subject fixed by hand, 49-subject-fix)
+  p.fix = fixLoad(o.fix);
   return p;
 }
 // what's saved with the guide
@@ -1576,6 +1580,8 @@ function ppSave() {
     // shadow, as coloured: 45-shading)
     tx: ptSaveState().tx,
     th: ptSaveState().th,
+    // (v329.4: the subject fixed by hand, 49-subject-fix)
+    fix: fixSave(pp.fix),
   };
 }
 // the markers a photo-made page may use: those the Photo pattern would (photoPool: your markers, or a palette you
@@ -2121,7 +2127,9 @@ function ppMake(geo, quiet) {
     lg = loadGen;
   _ppBusy = true;
   segBusySet(true, false, true);
-  if (!quiet) note('Making the page…');
+  // (v329.4: Done in Fix the subject says what it's making, 49-subject-fix)
+  const fw = fixMakeWord();
+  if (!quiet) note(fw || 'Making the page…');
   return new Promise(function (res, rej) {
     afterPaint(function () {
       let prep, ch;
@@ -2133,6 +2141,9 @@ function ppMake(geo, quiet) {
             ? _ppPrep
             : holdTime('Photo got ready for its page', ppPrepare);
         if (!prep) throw new Error('no photo');
+        // (v329.4: the photo prepared read with the guide's subject fixes as they are now, before the markers' key is
+        // made from its pid, 49-subject-fix)
+        fixSync(prep);
         ch = ppChoose(prep, pp.d);
         if (!ch) throw new Error('no markers');
       } catch (e) {
@@ -2161,8 +2172,14 @@ function ppMake(geo, quiet) {
                   : 'Focus is back on Even: the subject finder isn’t on this device.' +
                     (subCan() ? ' Choose ' + fn + ' to download it.' : '')
                 : kind
-                  ? SUB_OFF_SAID[kind]
-                  : errNote('Couldn’t find the photo’s subject, so the page is made Even.', 'Focus', e);
+                  ? SUB_OFF_SAID[kind] + SUB_HAND_SAY
+                  : errNote(
+                      'Couldn’t find the photo’s subject, so the page is made Even.' + SUB_HAND_SAY,
+                      'Focus',
+                      e,
+                    );
+              // (pressure test 6: as said, the next Focus choice picks the subject by hand, 49-subject-fix)
+              if (!kind && !/not stored/.test(msg)) _subHand = true;
               return null;
             })
           : Promise.resolve(null);
@@ -2174,7 +2191,17 @@ function ppMake(geo, quiet) {
             pp.f = 'even';
             // (v329.2: a small subject, the right shape for it, offered the crop instead, 48-subject ppCropOfferHTML)
             if (ppSmallSubOK(prep)) _ppSmallSub = prep.key;
-            else _ppSaid = 'No clear subject found in this photo, so the background stays.';
+            // (v329.4: none chosen by hand, or one too small, said so; and Choose the subject offered for Subject only
+            // under Even, 49-subject-fix fixNoneSet)
+            else {
+              const sh = ppSubjectShare(prep);
+              _ppSaid = !fixHandMap()
+                ? 'No clear subject found in this photo, so the background stays.'
+                : sh < SUB_NONE
+                  ? 'No subject chosen, so the background stays.'
+                  : 'The subject you chose is too small a part of this photo for Subject only, so the background stays.';
+              fixNoneSet(prep.key);
+            }
           }
           // (chosen again now the map is in: Subject only's choice has a key of its own, ppChoose)
           ch = ppChoose(prep, pp.d) || ch;
@@ -3641,6 +3668,9 @@ function ctlPhotoPage() {
     });
   ppHelpWire();
   wire('sfPpCropGo', 'click', ppCropSubject);
+  // (v329.4: Fix the subject, 49-subject-fix)
+  wire('sfPpFix', 'click', fixEnter);
+  wire('sfPpSubDl', 'click', subDlAsk);
   wire('sfAdjToggle', 'click', function () {
     showAdjust = !showAdjust;
     renderControls();
@@ -3753,7 +3783,9 @@ function ppRemade(geo) {
         pp.f = _ppMadeAt.f;
       }
       renderControls();
-      note(errNote(words || 'Couldn’t make the page again.', 'Making a page', err));
+      // (v329.4: Done's page in Fix the subject: its fixes not applied, still there to try again, 49-subject-fix)
+      const fw = fixFailWords();
+      note(errNote(fw || words || 'Couldn’t make the page again.', 'Making a page', err));
       return false;
     });
 }

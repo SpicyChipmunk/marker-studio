@@ -388,7 +388,17 @@ function onDown(e) {
     }
     if (paintS) paintEnd(false);
     if (zoneS) zoneStrokeEnd(false);
+    if (_fxS) fixStrokeEnd(false);
     multi = true;
+    return;
+  }
+  // (v329.4) Fix the subject: one pointer adds pieces to the subject or takes them away (49-subject-fix)
+  if (fixOn) {
+    ptMoved = false;
+    pStart = null;
+    clearTimeout(lpT);
+    lpFired = false;
+    if (ptrs.size === 1 && !multi) fixStrokeStart(e);
     return;
   }
   // the zone editor: one pointer adds sections to the zone, or takes them out (85-zones-ui)
@@ -541,6 +551,11 @@ function onMove(e) {
     zoneStrokeMove(e);
     return;
   }
+  if (_fxS && _fxS.id === e.pointerId) {
+    fixStrokeMove(e);
+    return;
+  }
+  if (fixOn) return;
   if (sfmode === 'guide' && family === 'blend' && !shadeFlatMode && blendHit >= 0) {
     if (blendStart) {
       const P = evPt(e);
@@ -619,7 +634,8 @@ function onUp(e) {
   } catch (_) {}
   if (paintS && paintS.id === e.pointerId) paintEnd(e.type !== 'pointercancel');
   if (zoneS && zoneS.id === e.pointerId) zoneStrokeEnd(e.type !== 'pointercancel');
-  if (paintActive() || zoneEditOn()) {
+  if (_fxS && _fxS.id === e.pointerId) fixStrokeEnd(e.type !== 'pointercancel');
+  if (paintActive() || zoneEditOn() || fixOn) {
     if (ptrs.size === 1) {
       const rem = [...ptrs.values()][0];
       pStart = { x: rem.x, y: rem.y, panX: panX, panY: panY };

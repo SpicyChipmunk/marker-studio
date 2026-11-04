@@ -3724,3 +3724,20 @@ PLAN-v329.3.md.
   copy of the app made isolated by its own service worker, with a timing of TE-4 and TE-6 inside the app, for Ben's iPad.
 - The subject kit's iPad time for TE5: 1.017 s a photo (Ben's iPad, the speed page).
 
+
+# Changes — v329.4 (Fix the subject; the photo-to-page builder's changes are added at release)
+
+- Fix the subject (docs/PLAN-fix-subject.md): under Focus on the page step, tap or drag on the photo to add parts to
+  the subject or take them away, on pieces that follow the photo's edges (SLIC, our own, in the JOBS worker; finer
+  zoomed in); Done makes the page again with that subject (one Undo step; asked first over section edits), Cancel
+  leaves it. The fixes are a layer over the subject finder's map, saved with the guide and carried through crops and
+  quarter turns; parts added by hand are never dropped as strays; the marker choice and the pages kept follow the
+  subject.
+- Choose the subject: with no subject found, no subject finder (the download card's third button, Choose the subject
+  by hand, kept for the launch), the finder off this launch, or after a failed download, Focus opens choosing by hand,
+  with no download. Use the finder's subject goes back to the finder's, asking it once for a subject chosen by hand.
+- The Focus row: its choices aren't greyed when the finder is off this launch; "No subject chosen…" hints; Subject only
+  gone back to Even offers Choose the subject.
+- Copy diagnostics and Send feedback say how the subject was made (found, fixed by hand and how much, chosen by hand).
+- Help: the beta guide's Fix the subject item and Known limits; What's new.
+- Tests: test/subject-fix.test.mjs, e2e/subject-fix.test.mjs and e2e/subject-fix-2.test.mjs (with their CI times).

@@ -58,6 +58,8 @@ echo 1 done %TIME% (exit %HL%) >> "%LOG%"
 popd
 
 :step2
+rem (already made, when tonight.bat is run again after checks.bat: not judged a second time)
+if exist "%CACHE%\runs\x0c-e6mix\report.md" if exist "%CACHE%\runs\g3-X2-e6mix\report.md" (echo === 2 of 6: already made. & echo 2 already made >> "%LOG%" & goto step2b)
 
 echo.
 echo === 2 of 6: E6-mix's subject maps for the TUNE photos, then the builder with them, X0+cap and X2+cap (about 1 h 15)
@@ -75,6 +77,24 @@ if "%MAPOK%"=="0" call :bench %OPT% --set TUNE %ALL% --x lam=0.1,mu=0.25 --map s
 if "%MAPOK%"=="0" echo    g3-X2-e6mix exit %errorlevel% >> "%LOG%"
 popd
 echo 2 done %TIME% >> "%LOG%"
+
+:step2b
+echo.
+echo === 2b: the filter test (Ben, 2 Nov): E6-mix's maps with the snapping filter off and at half strength, and C1's
+echo     with it off, each against C1 as the app runs it (about 1 h 30)
+echo === 2b %TIME% >> "%LOG%"
+if not exist "%GRID%\x0g\scripts\bench\pp-bench.mjs" (echo    no grid3\x0g: skipped >> "%LOG%" & goto step3)
+pushd "%GRID%\x0g"
+call :bench %OPT% --set TUNE %ALL% --map subject-e6mix --gf 0 --compare x0c-TUNE --map-compare --tag x0g-e6mix-gf0
+echo    x0g-e6mix-gf0 exit %errorlevel% >> "%LOG%"
+call :bench %OPT% --set TUNE %ALL% --map subject-e6mix --gf 4,0.004 --compare x0c-TUNE --map-compare --tag x0g-e6mix-gf4
+echo    x0g-e6mix-gf4 exit %errorlevel% >> "%LOG%"
+call :bench %OPT% --set TUNE %ALL% --map subject-te4 --gf 0 --compare x0c-TUNE --map-compare --tag x0g-c1-gf0
+echo    x0g-c1-gf0 exit %errorlevel% >> "%LOG%"
+popd
+echo 2b done %TIME% >> "%LOG%"
+
+:step3
 
 echo.
 echo === 3 of 6: E4-kd and E5-kd trained (about 8 h 30). The window shows the training; its own log is work\s5_train.log.
@@ -130,7 +150,7 @@ set OUT=%KIT%\tonight-results
 if exist "%OUT%" rmdir /s /q "%OUT%"
 mkdir "%OUT%\runs"
 robocopy "%KIT%\results" "%OUT%\results-kd" /e /njh /njs /nfl /ndl >nul
-for %%R in (g3-X2-HELD x0c-e6mix g3-X2-e6mix x0c-e4kd x0c-e5kd) do if exist "%CACHE%\runs\%%R" robocopy "%CACHE%\runs\%%R" "%OUT%\runs\%%R" /e /xd pics /njh /njs /nfl /ndl >nul
+for %%R in (g3-X2-HELD x0c-e6mix g3-X2-e6mix x0g-e6mix-gf0 x0g-e6mix-gf4 x0g-c1-gf0 x0c-a3 x0c-oval x0c-e4kd x0c-e5kd) do if exist "%CACHE%\runs\%%R" robocopy "%CACHE%\runs\%%R" "%OUT%\runs\%%R" /e /xd pics /njh /njs /nfl /ndl >nul
 copy /y "%CACHE%\runs\LOG.md" "%OUT%\runs\" >nul 2>nul
 copy /y "%~dp0held-look.txt" "%OUT%\" >nul 2>nul
 copy /y "%KIT%\work\s5_train.log" "%OUT%\" >nul 2>nul

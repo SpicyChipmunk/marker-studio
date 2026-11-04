@@ -147,6 +147,14 @@ function storeLine() {
     : 'Site storage used (' + (location.host || 'this site') + '): ' + storeWords(storeUsed);
 }
 setTimeout(storeUsedRead, 4000);
+function subjectDiagLine() {
+  try {
+    const l = window.SF && SF.subjectDiag ? SF.subjectDiag() : '';
+    return l ? [l] : [];
+  } catch (_) {
+    return [];
+  }
+}
 function diagHead() {
   const c = countWords();
   return (
@@ -157,6 +165,8 @@ function diagHead() {
       'Screen: ' + screenWords(),
     ]
       .concat(c ? ['Saved here: ' + c] : [])
+      // (v329.4: a photo-made page's subject: found, fixed by hand or chosen by hand, 49-subject-fix)
+      .concat(subjectDiagLine())
       // (v329.3: before the browser's line, which the report's 900-character cut trims first)
       .concat(storeLine() ? [storeLine()] : [])
       .concat(['Browser: ' + (navigator.userAgent || '')])

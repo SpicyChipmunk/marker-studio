@@ -87,12 +87,15 @@ function _renderControls() {
     pgControls();
     return;
   }
+  // (v329.4: Fix the subject's mode is the page step's own: gone anywhere else, 49-subject-fix)
+  if (fixOn && (sfmode !== 'review' || !ppOn() || cropMode)) fixOff();
   if (sfmode === 'guide') ctlPlan();
   else if (sfmode === 'color') {
     if (focus) ctlFocus();
     else alongControls(); // the marker list: js/guide/83-along.js
   } else if (cropMode) ctlCrop();
   // (v325: a photo-made page's own step, 47-photo-page)
+  else if (fixOn) ctlFix();
   else if (ppOn()) ctlPhotoPage();
   else ctlSections();
 }

@@ -72,6 +72,11 @@ const JOBS = (function () {
       // (v328: Tick off from a photo, 26-tick)
       if (m.k === 'tick') return tickWork(m);
       // (v329.1: the sharp copy's outlines, 77-sharp)
+      // (v329.4: Fix the subject's pieces, 49-subject-fix)
+      if (m.k === 'fixp') {
+        const r = fixPieces(m.rgb, m.w, m.h, m.S);
+        return { v: r, t: [r.L.buffer] };
+      }
       if (m.k === 'sfield') {
         const r = sharpFieldCore(m.lab, m.small, m.w, m.h, m.X0, m.Y0, m.PW);
         return { v: r, t: [r.sdf.buffer, r.near.buffer] };
@@ -136,6 +141,9 @@ const JOBS = (function () {
         '\n' +
         // (v328: Tick off from a photo's lining up and reading, 26-tick)
         tickWorkerSrc() +
+        '\n' +
+        // (v329.4: Fix the subject's pieces, 49-subject-fix)
+        fixWorkerSrc() +
         '\n(' +
         main.toString() +
         ')();';
@@ -201,7 +209,8 @@ const JOBS = (function () {
       return;
     }
     stats.timedOut[w.k] = (stats.timedOut[w.k] || 0) + 1;
-    if ((w.k === 'ppage' || w.k === 'ppfill') && !w.gone) {
+    // (v329.4: and Fix the subject's pieces, 'fixp', a worker at work too, 49-subject-fix)
+    if ((w.k === 'ppage' || w.k === 'ppfill' || w.k === 'fixp') && !w.gone) {
       toolong(w, ms, now);
       return;
     }
@@ -327,6 +336,8 @@ function jobBudget(data, k) {
   // (v328: Tick off from a photo, lining up or reading: about 2 and 4 s on a desktop for the author's 3.8-megapixel
   // guide, more on an iPad)
   if (k === 'tick') return 15000 + Math.round((data.W * data.H) / 150);
+  // (v329.4: Fix the subject's pieces, about half a second on a computer for a 900-pixel photo, more on an iPad)
+  if (k === 'fixp') return 8000 + Math.round(data.n / 100);
   // (v328 review: the markers to add, with Use up to 48's two marker choices: the photo's colours by the markers it
   // may use, 2-4 s on a desktop for 461 colours by 392-800 markers)
   if (k === 'ppfill' && data.tw && data.pl)

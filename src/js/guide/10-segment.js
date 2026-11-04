@@ -3204,6 +3204,8 @@ function render() {
   if (_preview) return;
   // (v328 review: Crop and the corners have their own drawing: sections found again meanwhile aren't drawn over them)
   if (cropMode) return drawCropOverlay();
+  // (v329.4: Fix the subject's own picture, 49-subject-fix)
+  if (fixOn && _fx) return fixDraw();
   if (pgMode && pgEd) return pgDraw();
   _rg = null;
   positionPhoto();

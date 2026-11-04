@@ -6,6 +6,10 @@
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
   {
+    v: 'v329.4',
+    t: 'When Focus picks the wrong subject, or misses part of it, Fix the subject (under Focus) lets you tap or drag on the photo to put it right, and the page is made again with your subject. With no subject finder, or when it finds nothing, you can choose the subject yourself, with no download.',
+  },
+  {
     v: 'v329.3',
     t: 'To buy shows which sets have the most markers on your list, and how many new markers each would bring, and has ideas from your collection: Markers’ rankings of what to buy next, whose top 5 you can add in one go. Share has Copy marker list: the page’s markers as text, ready to paste with a post. Guides can keep notes (the guide’s ⋯ menu, or Page finished): paper, where the page came from, what to try next time, printed under the key. Help has Marker basics, and Your data says how much space the app uses. Random’s Prefer markers you haven’t used yet counts the markers a guide’s shading uses too.',
   },

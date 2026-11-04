@@ -9358,6 +9358,46 @@ html.sfsheetsd .mstoast {
 #sfRoot .sfpalnote .mclose {
   flex: none;
 }
+/* (v329.4) Fix the subject: its link under Focus, and the mode's links and Cancel / Done (49-subject-fix) */
+#sfRoot .sffixln .sflink,
+#sfRoot .sffixlinks .sflink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 6px;
+  font-size: var(--t-md);
+}
+#sfRoot .sffixln .sflink {
+  margin-left: -6px;
+}
+#sfRoot .sffixlinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  margin-top: 10px;
+}
+#sfRoot .sffixlinks .sflink:disabled,
+#sfRoot .sffixln .sflink:disabled {
+  color: var(--sub);
+  opacity: 0.5;
+}
+#sfRoot .sffixlinks .sfdot {
+  color: var(--sub);
+}
+#sfRoot .sffixacts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+#sfRoot .sffixacts button {
+  min-height: 44px;
+  padding: 0 14px;
+}
+#sfRoot .sffixacts .sfghost {
+  color: var(--ink);
+}
 #presetWrap.bottom {
   margin: 26px 2px 0;
   padding-top: 18px;
@@ -15689,7 +15729,7 @@ if (window.__MS_TEST && !window.__MS_MOTION) document.documentElement.classList.
 <div class="overlay" id="matchOverlay" role="dialog" aria-modal="true" aria-labelledby="mtTitle"><div class="mcard"><div class="mhead"><h2 class="mtitle" id="mtTitle">Match a colour</h2><button id="matchClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="msub">Find the closest markers you own to any colour.</div><div class="msrc" role="group" aria-label="Colour source"><button type="button" data-src="photo" class="on" aria-pressed="true">Photo</button><button type="button" data-src="camera" id="matchCamBtn" aria-pressed="false" style="display:none">Camera</button><button type="button" data-src="hex" aria-pressed="false" aria-label="Hex code">Hex</button><button type="button" data-src="screen" id="matchEye" aria-pressed="false" style="display:none">Screen</button></div><div class="mpane" data-pane="photo"><button id="matchPhotoBtn" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10.5" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg><b>Choose a photo</b><span>Then tap or drag on it to sample a colour</span></button><input type="file" id="matchFile" class="fileinput" accept="image/*"><div id="matchPhotoWrap" class="mstage" style="display:none"><canvas id="matchCanvas"></canvas><div id="matchRing" class="mring" style="display:none"></div></div><div class="mhint" id="mPhotoHint" style="display:none">Tap or drag on the photo to sample. <button class="sflink" id="matchPhotoChange">Change photo</button></div><div class="paperrow" id="matchPaperRow" style="display:none"><button id="matchPaper" class="paperbtn" aria-pressed="false" title="Correct the photo’s lighting from something white in it">Tap something white</button><button id="matchLight" class="lightchip" style="display:none" aria-label="Lighting corrected: remove the correction">Lighting corrected <svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="papernote" id="matchPaperNote" role="status"></div></div><div class="mpane" data-pane="camera" style="display:none"><button id="matchCamOff" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><b>Start camera</b><span>Point the ring at a colour to match it live</span></button><div id="matchCamWrap" style="display:none"><div id="matchVideoBox" class="mstage"><video id="matchVideo" playsinline autoplay muted></video><div id="matchReticle" class="mring" style="left:50%;top:50%"></div><div class="mbadge" id="matchLive"><i></i>LIVE</div><div class="mcamctl"><button id="matchTorch" class="mpill" style="display:none">Light</button><button id="matchFreeze" class="mpill primary">Freeze</button></div></div><div class="mhint">Drag the ring onto a colour · pinch to zoom · <button class="sflink" id="matchCamStop">Stop camera</button></div></div><div class="mhint" id="matchCamTip">For the truest match, take a photo and tap something white.</div></div><div class="mpane" data-pane="hex" style="display:none"><div class="mhexrow"><label class="mpick empty" title="Open colour picker" aria-label="Open colour picker"><input type="color" id="matchPicker" value="#7c5cff"></label><input type="text" id="matchHex" placeholder="#RRGGBB" maxlength="12" autocomplete="off" spellcheck="false" aria-label="Hex colour code"></div></div><div class="mpane" data-pane="screen" style="display:none"><button id="matchEyeGo" class="mdrop"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5M17 7l-9.5 9.5L5 19l2.5-2.5"/><path d="M13 6l5 5"/></svg><b>Pick from the screen</b><span>Click anywhere on your screen to sample it</span></button></div><div id="matchResult"></div><div id="matchSay" class="hlpsr" aria-live="polite"></div></div></div>
 
 <div class="overlay" id="buyOverlay" role="dialog" aria-modal="true" aria-labelledby="buyTitle"><div class="ocard dcard buycard"><div class="mhead"><h2 class="mtitle" id="buyTitle">Brands I’d buy</h2><button id="buyClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Where a marker you don’t have would match better, it’s suggested from the brands you choose here: in <b>Match a colour</b>, a guide’s shading and blend plan, the <b>Photo</b> pattern, and To buy’s <b>From your guides</b>.</div><div class="segs wide buymode" id="buyMode" role="group" aria-label="Suggest from"><button type="button" data-m="auto">Your brands first</button><button type="button" data-m="pick">Only these brands</button></div><div class="fams buychips" id="buyChips" role="group" aria-label="Brands"></div><div class="buynote" id="buyNote" aria-live="polite"></div><button id="buyDone" class="btn-primary">Done</button></div></div>
-<div class="overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="ocard dcard hlpcard"><div class="mhead"><h2 class="mtitle" id="helpTitle">Help</h2><button id="helpClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><button id="helpHiw" class="btn-soft hlphiw" data-help="hiw"><span>How it works</span><span class="hlphiwsub">3 quick steps</span></button><details class="hlpsec" id="helpBeta"><summary>Beta tester guide</summary><div class="hlpbody"><p class="hlptasks"><button type="button" class="nb1" id="helpTasks" data-tasks>Tester tasks</button><span>Six things to try, then <b>Send results</b>. Also on Home, under its cards.</span></p><p class="hlpbt">Before you start</p><ul><li>On an iPad or iPhone, open the link in Safari and add it to your Home Screen (Share&nbsp;› Add to Home Screen) <b>before</b> you set up your markers. The Home Screen app has its own storage: what you add in a Safari tab stays in the tab. Set up in a tab already? Back up there, then restore the file in the Home Screen app.</li><li>Back up once a week: <b>Library › Back up</b>. It’s a beta, and a backup file brings everything back.</li></ul><p class="hlpbt">What it covers</p><ul><li>Ohuhu and Copic markers only. <span id="helpRanges">Ohuhu: 364 markers, among them every colour in the Honolulu sets (24 up to the complete 320) and in the 48 Mid-tone, 104 Colors, 36 Skin Tones, 36 Gray Tones, 48 Pastel, 24 Portrait and 6 Skin Tones sets. Other Ohuhu markers with these codes work too. Copic: all 358 markers, by the codes Sketch, Ciao and Classic share.</span></li><li>Colours on screen are approximate: they’re Ohuhu’s and Copic’s own published colours, and screens and inks differ, so some markers look quite different on paper. <b>Markers › Print a swatch chart</b> makes a page to colour in and compare.</li></ul><p class="hlpbt">Pictures</p><ul><li>Clear, closed lines work best: a downloaded colouring page, a scan, or a flat, evenly lit photo of a page (<b>Photographing a page</b>, below).</li><li>A page that came as a PDF: <b>Open the PDF</b>, under <b>Choose a colouring page</b> (with a guide open, <b>⋯ › Open a PDF</b>). If it won’t open, screenshot the page and choose the screenshot.</li><li>Any other photo (a pet, a flower, a sunset): <b>Make a colouring page from any photo</b>, under <b>Choose a colouring page</b> (on Home, under <b>New guide from a colouring page</b>). The app draws a page of sections from the photo, each one of your markers, two side by side never the same; <b>Detail</b> chooses how many and how small (the smallest about 6 mm to 1.5 mm across on the paper); <b>Focus</b> can keep more detail on the photo’s subject (<b>Sharper subject</b>), and less behind it (<b>Simpler background</b>), or leave the background white (<b>Subject only</b>, with <b>Crop to the subject</b> when it’s small), found on this device after a one-time download. The page shows in its markers’ colours; the <b>Photo</b> button under it shows the photo over it. With a small collection, a line says how much of the photo your markers match and which few markers would match much more: add them to <b>To buy</b>, or <b>Try it with these</b> to see the page with them (Colour along and the key say which aren’t yours). After Build, <b>Pattern</b> says the same, and <b>Show the loose matches</b> marks the sections furthest from the photo. With a big collection and a very colourful photo, <b>Use up to 48 markers</b> (twice the step’s) brings back small things of their own colour that 24 can’t cover; <b>Back to 24</b> undoes it. For a more vivid page, raise the photo’s saturation in your phone’s photo editor before choosing it. Its lines print light grey, so they all but go under the colour (<b>Darker lines</b> in Print), and the photo prints small by the key.</li></ul><p class="hlpbt">Known limits</p><ul><li>No account or sync: each device, and the Home Screen app, keeps its own data. Move it with <b>Back up</b> and <b>Restore</b>.</li><li>Very detailed, hatched or already-coloured pages, and faint or broken lines, give poor sections. <b>← Edit sections</b> can merge, split or add them.</li><li>Picking one section on the picture needs touch or a mouse.</li><li>A page made from a photo smooths away small features (eyes, whiskers) at every Detail: a cat is a cat-shaped patchwork, not a portrait. A busy background (waves, leaves) becomes many small sections, and a pale subject on a pale ground can lose some of its outline. <b>Subject only</b> needs a clear subject: a landscape or a garden has none, and stays as it is. Faces haven’t been tried yet.</li></ul><p class="hlpbt">What to try</p><ul><li><b>Tester tasks</b> (above, and on Home): six things to try, each answered Easy, OK, Hard or Didn’t try, with a note if you like. Your answers stay on this device until you tap <b>Send results</b>; you can send again later.</li></ul><p class="hlpbt">How to report</p><ul><li>Tap <b>Send feedback</b> (at the foot of Home, in the guide’s <b>⋯</b> menu, or in <b>About</b>, below). It adds your device, the app’s version, how many markers, guides and palettes you have, how much space the app uses, any recent errors, how long the slowest steps took this visit (times and picture sizes only) and a tester number made on this device (not your name); write what happened. To add a screenshot, use <b>Share it instead</b>.</li><li>When something goes wrong, <b>Copy details</b> beside the message copies what’s needed.</li></ul></div></details><details class="hlpsec" id="helpNews"><summary>What’s new</summary><div class="hlpbody"><div class="hlpwn"><p class="hlpwnt">What’s new in <span id="helpWnVer"></span></p><ul id="helpWnList"></ul></div></div></details><details class="hlpsec" id="helpPhoto"><summary>Photographing a page</summary><div class="hlpbody"><ul><li>Lay the page flat on a table. Smooth out any curl.</li><li>Use even light: daylight near a window, or a bright room. Keep your shadow and your hand off the page, and avoid shiny glare.</li><li>Hold your phone or iPad right above the page, not at an angle, and get all of it in the frame. A bit of table around it is fine.</li><li>Choose the photo you took: one sent by message can come back smaller.</li><li>Taken at an angle? The app finds the page and straightens it. If it isn’t sure, drag the corners, then tap <b>Straighten</b>.</li><li>A sketchbook’s spiral binding along the edge, or (on a page not coloured in yet) a strip of table? <b>Trim it</b> shows above the sections and crops it off (<b>Undo</b> puts it back). Specks of grain or dust in the blank paper round the drawing are cleared for you.</li><li>Clear, dark lines work best. If sections come out wrong, <b>← Edit sections</b> lets you merge, split or add them; if the app warns about the photo, <b>Choose another photo</b> is beside the warning. <b>Min section size</b> starts at about 1 mm on the page.</li><li>Scans and screenshots work too. A colouring page that came as a PDF opens with <b>Open the PDF</b>, under <b>Choose a photo</b>, or <b>⋯ › Open a PDF</b> with a guide open.</li></ul></div></details><details class="hlpsec" id="helpScan"><summary>Adding markers by code</summary><div class="hlpbody"><ul><li><b>Markers › Add markers › Scan or type codes</b> takes codes typed one at a time, or a whole list pasted (from notes, a receipt or a spreadsheet): each line is read, and what’s unclear is asked about before anything is added.</li><li>On an iPad or iPhone, tap the box, then <b>AutoFill › Scan Text</b> on the keyboard, and hold each marker’s cap in view: its code is read with a beep, no need to tap Insert.</li><li>On Android with Gboard (free on Google Play), tap the box, open Gboard’s tools (the four-squares icon on its toolbar) and tap <b>Scan text</b>: photograph one cap and tap <b>Insert</b>; its code is read with a beep.</li><li><b>Photograph your caps</b> (<b>Markers › Add markers</b>, or its card in Scan): photograph each tray from above, caps up, in good light (about half a tray a photo: closer reads more), then choose one photo or all of them. They’re read in turn, and the codes join the list as they’re read, each marker once however many photos it’s in, with boxes on the photo: green for what was read, amber for what to check. <b>Undo</b> takes the photos’ codes back out. Caps without a box weren’t read: <b>Look closer</b> reads them again from the photo at a larger size (a while longer: Stop ends it, keeping what it read), and <b>Undo look closer</b> takes back what it added. The reader works on this device, so your photo never leaves it: a one-time download of about 22 MB, kept for offline use. It needs iPadOS or iOS 16.4 or later, or a current browser. A question’s close-up has <b>Where in the photo?</b> under it: the whole photo with that cap ringed, to find the real marker in your tray.</li><li><b>Older Ohuhu caps</b>: in 2025 Ohuhu gave its markers new codes and names (R6 Rose Red is R213 Pomegranate now). Each marker shows the code on <i>your</i> cap, everywhere in the app: Scan notes it as it reads your caps, <b>Bought ✓</b> on To buy means a new cap, and a marker’s details have <b>My cap says</b> to switch it. Markers Scan hasn’t read follow <b>Markers › ⋯ › Show the codes on older Ohuhu caps</b> (Colour along asks once). Markers’ search finds a marker by the name on its older cap too: <b>Rose Red</b> finds R213. In a guide with two markers that show the same code, an older cap’s R22 and the R22 of now, the older one’s label has a <b>*</b> and the key names both caps.</li><li>Another way to read a tray, on any device: take a photo of the caps, copy all its text (<b>Live Text</b> in Photos on an iPad or iPhone; <b>Google Lens</b> on Android) and paste it into the box (on Android, long-press the box › Paste: its lines stay apart).</li><li>A set’s box or an order email: copy its text and paste it the same way. A set’s name in it (Honolulu 120, Ciao 36 Set A) offers the whole set, to add to the list with a tap. Lost a few of its markers? After adding a set, untick them on the colour chart (<b>Markers › Add markers › Tick colours on a chart</b>).</li><li>A list in a file, a spreadsheet saved as CSV or a text file: <b>Open a list file</b>, under the steps. It’s read as a pasted list is.</li></ul></div></details><details class="hlpsec" id="helpMore"><summary>More you can do</summary><div class="hlpbody"><ul><li><b>Leave white</b>: tap a section, then <b>Leave white</b>, and it stays the paper through every change (<b>Colour it</b> brings its colour back). <b>Pin</b> keeps a section’s marker when you shuffle.</li><li><b>Zones</b>: give part of the picture its own pattern and colours, like a flower against its background. At the end of <b>Pattern</b>, tap <b>Zone</b>, then tap or drag across sections.</li><li><b>Paint</b>: in the <b>Manual</b> pattern, turn on <b>Paint</b> and drag across sections to fill them with one marker.</li><li><b>Shading</b>: lighter and darker markers you own for light and shadow, in one tap (Soft, Dramatic, Rounded or Neuro). <b>Greyscale</b> (the three grey bars under the picture) shows where the guide is light and dark.</li><li><b>Focus mode</b>, in Colour along, zooms to one section at a time. When you’re done, <b>Reveal &amp; share</b> plays your page filling with colour.</li><li><b>Coloured on paper?</b> In Colour along, <b>Tick them off from a photo</b>: photograph your page (the one you made the guide from, or a printout of it) and the sections coloured since are offered to tick. <b>Check them</b> lets you tap a section to add it or leave it out first. Very pale markers may not show in a photo. The photo isn’t kept.</li><li><b>Print</b> (in <b>Share &amp; print</b>): <b>Page to colour</b> is the page with no labels to colour on, then your picture in colour with its codes to read beside it (and a shading map, when it’s shaded), and the key; <b>Only the page</b> prints a blank copy to colour again. <b>Labelled page</b> has the codes on the page; <b>For your own page</b> is the coloured reference and key, to colour a page of your own; a <b>Test strip</b> tries the markers on your paper first. Print one-sided: markers soak through. <b>Guide file</b> saves a guide to keep or send.</li><li><b>Copy marker list</b> (in <b>Share &amp; print</b>) copies the page’s markers as text, by colour family, ready to paste with a post.</li><li><b>Notes</b> (the guide’s ⋯ menu, or Page finished): a few lines for the paper, where the page came from or what to try next time. They’re printed under the key, kept in backups, and left out of a guide file you send.</li><li>In <b>Markers</b>, press and hold a marker for its details: the markers it <b>Blends with</b>, and <b>Find similar</b>. <b>Match a colour</b> finds your nearest marker to a colour you pick; <b>To buy</b> keeps a shopping list; <b>Print a swatch chart</b> makes a page of every code to colour in. Under your To buy list, <b>Sets with markers on your list</b> shows the sets that have the most markers you want, and how many markers each would add that you don’t have. In <b>Markers › Unowned</b>, <b>Fill the biggest gaps</b>, <b>Fill gaps between light and dark</b> and <b>Finish families</b> rank markers to buy; <b>Add the top 5 to To buy</b> puts the first five on your list, and To buy links to them.</li><li><b>Random</b> (in <b>Markers</b>): a marker you wouldn’t have picked, drawn at random from your markers, as a prompt or a challenge. Keep drawing to build a set; <b>Use in a guide</b> takes two or more. <b>Prefer markers you haven’t used yet</b> leaves out the markers of every guide you’ve worked with, shading included: one you’ve ticked or toned a section in, coloured along or used Focus mode in, printed, saved as an image, shared, or added a finished photo to (when they’ve all been used, it says so and draws from all). <b>Draw from these</b>, under the Markers grid, draws from the markers shown.</li><li>In the <b>Library</b>: <b>Duplicate</b> a guide to try something else, and <b>Recently deleted</b> to put back one you deleted.</li></ul></div></details><details class="hlpsec" id="helpBasics"><summary>Marker basics</summary><div class="hlpbody"><ul><li><b>Paper.</b> Smooth, heavy paper made for markers blends best; thin printer paper soaks up ink and feathers. Markers soak through, so put a spare sheet underneath, and print one-sided. Printing at home? Alcohol markers can smudge some inkjet prints’ lines: let the print dry well first, or use a laser printer or a photocopy.</li><li><b>Test first.</b> Paper changes how a marker looks, and screens differ from ink: try your markers on the guide’s <b>Test strip</b> (Share &amp; print › Print…) or a swatch chart (<b>Markers › Print a swatch chart</b>), on the paper you’ll use.</li><li><b>Lightest first.</b> Colour the lightest marker first, then layer the darker ones over it: you can always go darker, but rarely lighter (the Colorless Blender can lift a little). That’s why Colour along lists your markers lightest first.</li><li><b>Blend while it’s wet.</b> Work a second marker into the first while it’s still damp for a soft join; on dry ink it leaves a hard edge.</li><li><b>Even colour.</b> Small circles or overlapping strokes, keeping the edge wet, avoid streaks. A second coat evens out what’s left (the guide’s “2nd coat”).</li><li><b>Flicking.</b> Quick strokes that lift off at the end, from the dark side towards the light, give a soft fade: good for shadows.</li><li><b>The Colorless Blender (0).</b> It has no colour of its own: it softens edges and lifts ink to lighten it. As the shading’s <b>Blender (0)</b> highlight, put it down first, then the base over the whole section.</li><li><b>Caps on.</b> Push each cap on until it clicks: markers dry out when left open. When one runs low, mark it <b>Running low</b> in its details (press and hold it in Markers), and refill it if your markers have refills.</li></ul></div></details><details class="hlpsec" id="helpTrouble"><summary>If something goes wrong</summary><div class="hlpbody"><ul><li><b>The sections are wrong.</b> <b>← Edit sections</b> merges, splits or adds them. A clearer photo helps most (<b>Photographing a page</b>, above).</li><li><b>A colour doesn’t match your marker.</b> The app shows Ohuhu’s and Copic’s own published colours, and screens and inks differ: some markers look quite different on paper. Colour in a swatch chart (<b>Markers › Print a swatch chart</b>) to compare, and tell us which ones, in <b>Send feedback</b>.</li><li><b>Your markers or guides are missing.</b> The Home Screen app and a Safari tab each keep their own: check the other one. Safari also clears a tab’s data after about seven days without a visit. <b>Library › Restore</b> brings back a backup.</li><li><b>A big photo is slow to open.</b> Finding its page and sections can take a few seconds; the app says what it’s doing.</li><li><b>You changed something by mistake.</b> <b>Undo</b> (↶) steps back, and Redo forward again. A section ticked by mistake in Colour along: tap it again to untick it.</li><li><b>Something looks stuck, or an error shows.</b> Close the app and open it again; your work saves itself. Then tap <b>Send feedback</b>, or <b>Copy details</b> beside the message, so we can fix it.</li><li><b>“A new version of Marker Studio is ready.”</b> Tap <b>Reload</b> when you’re ready.</li></ul></div></details><details class="hlpsec" id="helpGloss"><summary>Glossary</summary><div class="hlpbody"><dl class="hlpgl"><dt>Section</dt><dd>One area of the picture, closed in by lines, that you colour with one marker. Its marker code is printed on it.</dd><dt>Background / left out</dt><dd>Parts that stay white. The background is the paper around the drawing. Left-out sections are ones you’ve tapped with <b>Leave out</b> in <b>Edit sections</b>; tap one there again to bring it back. <b>Left white</b>: tap a section, then <b>Leave white</b>. It stays white through Shuffle, Mood and pattern changes, and is out of the key and Colour along. Tap it, then <b>Colour it</b>, to bring its colour back.</dd><dt>Plan</dt><dd>The guide’s main screen: your picture with its <b>Colours</b>, <b>Pattern</b>, <b>Shading</b> and <b>Share &amp; print</b> tabs. <b>Edit sections</b> and <b>Colour along</b> open from it; <b>← Plan</b> brings you back.</dd><dt>Colour pattern</dt><dd>How markers are spread over the page, in <b>Pattern</b>:<ul><li><b>Gradient</b>: colours flow across the page along a path (serpentine, vertical, diagonal, radial or around).</li><li><b>Random</b>: markers scattered over the sections. <b>Main colour</b> gives one colour about 60% of the picture, a second 30% and an accent 10% (tap the bar to choose them); <b>Mixed</b> treats every marker alike, and <b>No repeats</b> gives each section its own.</li><li><b>Blend</b>: tap to drop colour anchors; colours blend between them.</li><li><b>Photo</b>: colours taken from a photo you lay over the page.</li><li><b>Manual</b>: you pick every section’s marker.</li></ul></dd><dt>Flow</dt><dd>The path a <b>Gradient</b>’s colours follow across the page (<b>Pattern › Flow</b>): <b>Serpentine</b> (in rows, back and forth), <b>Vertical</b>, <b>Diagonal</b>, <b>Radial</b> (rings out from a centre), or <b>Around</b> (round a centre, like a clock’s hand; good for mandalas). Radial’s <b>Rings</b> can be <b>Circles</b> or <b>Follow the drawing</b>: out from the section under the centre, a step at a time through the sections touching it, so the colours follow the drawing’s own rings. Drag the centre mark to move where they start.</dd><dt>Matching shapes alike</dt><dd>On a page that looks like a mandala, a tick box under <b>Pattern › Flow</b> (and in <b>Random</b>’s options): the matching shapes in each ring, such as eight petals the same size and shape, take one marker. A pinned or coloured one sets the marker for its ring.</dd><dt>Look</dt><dd>How a <b>Gradient</b> lays its markers along the flow (<b>Pattern › Look</b>): <b>Smooth</b> runs each colour gently into the next; <b>Light to dark</b> lays them in bands, light to dark within each; <b>Auto</b> chooses for the page and says which.</dd><dt>Scatter</dt><dd>How neatly a <b>Gradient</b>’s colours sit (<b>Pattern › Scatter</b>). <b>Polished</b> lays neat bands in flow order; <b>Natural</b>, <b>Textured</b>, <b>Sparkle</b> and <b>Confetti</b> mix them more and more, until it’s confetti close up and a rainbow from afar.</dd><dt>Rough spots</dt><dd>Touching sections of a <b>Gradient</b> whose colours jump. A line under the tabs counts them; <b>Smooth them</b> gives one of each pair a marker the guide isn’t using.</dd><dt>Colours from</dt><dd>Where a guide’s colours come from (<b>Colours › Colours from</b>): <b>Your markers</b>, with Lean towards, Theme and Mood to steer them, or <b>A palette</b>: a few markers used as they are, shown on a card with where it came from. <b>New palette</b> makes one here in the scheme chosen (Analogous, Complementary, Light to shadow…); <b>Change it in Palette</b> opens it on the Palette screen to lock, re-roll or resize, and <b>Use in a guide</b> brings it back; <b>Choose a saved palette</b> takes one from your Library, and <b>Save to Library</b> keeps the one on the card. A palette caps the guide’s count at its size: tick <b>Expand with nearby markers</b> for more. <b>Surprise</b> keeps a palette you chose and surprises the rest.</dd><dt>Mood</dt><dd>Which of your markers a palette or a <b>Gradient</b> draws on (<b>Colours › Mood</b>): <b>Any</b>, <b>Bright</b>, <b>Soft</b>, <b>Pastel</b>, <b>Deep</b> or <b>Earthy</b>.</dd><dt>Lean towards</dt><dd>Which of your markers the colours lean to (<b>Colours › Lean towards</b>): <b>Any</b>, <b>Cool</b> or <b>Warm</b>. Under it, <b>Theme</b>: twelve palettes, from <b>Blossom</b> to <b>Twilight</b>, each with a strip of the colours it takes from your markers; tap the chosen one again for none. With Cool or Warm too, a theme takes that temperature’s colours, and one with next to none of them is greyed. With too few of a theme’s colours in your markers, the nearest are added, and a line says so.</dd><dt>Include</dt><dd>For a <b>Gradient</b> (<b>Colours › Include</b>): whether browns, greys and black, and fluorescents may be used. Each guide, and each zone, keeps its own choice.</dd><dt>Surprise</dt><dd>The <b>✨</b> button by the guide’s name: new colours and a new style in one tap (flow, mood, look, sometimes Random). <b>Undo</b> brings back what you had.</dd><dt>Zone</dt><dd>A part of the picture with its own pattern and colours, like a flower against the background around it. At the end of <b>Pattern</b>, tap <b><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg> Zone</b>, then tap or drag across sections to add them. The chips at the top of <b>Pattern</b> and <b>Colours</b> choose which zone those tabs change; <b>Main</b> is the rest of the picture. With shading on, each zone can be shaded or left flat, with its own roundness, highlights and shadows (<b>Shading</b>, under its chips); the light is the whole picture’s.</dd><dt>Pin</dt><dd>Keeps a section’s marker when you shuffle or change the pattern; a pinned section has a ring around its label. Tap a section, then <b>Pin</b>. Changing a section’s colour pins it too (<b>Unpin</b> lets the plan choose again).</dd><dt>Kept</dt><dd>A section you’ve coloured keeps its marker, whatever you change in the plan: it’s on your paper already. Kept sections have no ring; untick one and the plan can colour it again.</dd><dt>Blend companions</dt><dd>A lighter and a darker marker for each colour, listed in the printed key, for blending. A marker’s details (press and hold it in <b>Markers</b>, or tap it in <b>To buy</b>) show the lighter and darker markers it blends with, under <b>Blends with</b>.</dd><dt>Skin tones</dt><dd>A row in <b>Change colour</b>, when 3 or more of your markers are skin tones: the markers of Ohuhu’s 36 Skin Tones set and a like set of Copic’s, lightest first. Search <b>skin</b> in <b>Markers</b> for the same list.</dd><dt>Shading</dt><dd>Adds light and shadow with lighter and darker markers you own. Choose a style in its row: <b>Soft</b>, <b>Dramatic</b>, <b>Rounded</b> or <b>Neuro</b> each sets the light and the amounts for the whole picture in one tap, or <b>Off</b>. Move a slider after and it says <b>Custom</b>. For shadows only, set <b>Highlights</b> to <b>None</b>: with zones, for the zone chosen. With <b>Blender (0)</b>, put the 0 on the highlight first, then the base over the whole section. On a phone, the finer controls (Roundness, tones, texture) are under <b>More options</b>, as Pattern’s and Colours’ are. <b>Light from</b>: <b>The sun</b> (drag it on the picture to move the light), <b>The edges</b> (each section darker along its lines and in its corners, lighter in its middle, as neurographic drawings are rounded) or, with the Photo pattern, <b>The photo</b> (a style keeps the photo’s light). On a page made from a photo, <b>Photo</b> takes Rounded’s place: Highlights and Shadows <b>From the photo</b>, each marker given the highlight and the shadow that best match the photo’s own light and dark parts (from the page’s markers and at most four of your others), the amounts chosen for the page. A section stays flat where its tones wouldn’t be closer to the photo. <b>Two tone sets per marker</b> goes closer still: a section on its marker’s second set has a prime on its code (E415′), and the key a line for it. A section you’ve started colouring keeps the markers it was coloured with; markers bought since come in when you tap <b>Photo</b> again. Very small specks of highlight and shadow (under about 1.5 mm on the page) are tidied into the tone round them, in every kind of shading.</dd><dt>Highlight / Base / Shadow (H/B/S)</dt><dd>The tones of a shaded section. <b>B</b> is its main marker. <b>H</b> is a lighter one on the side facing the light (or a warmer one, or the paper left white, or the Colorless Blender’s lift, <b>Blender (0)</b>, if you own one, or none for shadows only: <b>Shading › Highlights</b>), <b>S</b> a darker one on the far side (or a cooler or grey one laid over the base: <b>Shading › Shadows</b>). “2nd coat” means going over the base again.</dd><dt>Greyscale</dt><dd>The button with three grey bars under the picture (once called Values). It shows your guide in greys, so you can judge its values: where it’s light and dark, without the colours. It only changes the view.</dd><dt>Colour along</dt><dd>Where you colour your page: the markers are listed lightest first, and you tick off each section as you colour it. Your progress saves itself.</dd><dt>Focus mode</dt><dd>In <b>Colour along</b>. It zooms to one section at a time, colour by colour. Tap <b>✓ Done</b> (or the section) to move on.</dd><dt>Reveal</dt><dd>In <b>Share &amp; print</b>. Plays your page filling with colour, to share as a picture or a clip.</dd><dt>Your page</dt><dd>A photo of your finished page, added from <b>Colour along</b>’s <b>Page finished</b> panel. It’s straightened and kept beside the plan, on this device. Home shows it first; <b>Reveal &amp; share</b> can share the plan and your page together.</dd></dl></div></details><details class="hlpsec" id="helpKeys"><summary>Keyboard and screen readers</summary><div class="hlpbody"><ul><li>Picking a single section on the picture needs touch or a mouse: <b>Change colour</b>, <b>Pin</b>, <b>Leave white</b>, <b>Paint</b> and ticking off one section.</li><li>By keyboard, use <b>Colour along</b>’s list instead: open a marker, then <b>Mark all done</b> or <b>Find next</b>. <b>Focus mode</b> and everything else work by keyboard too.</li><li>In <b>Markers</b>, press <b>Shift+F10</b> on a marker to open its details.</li><li>In <b>Change colour</b>, <b>Tab</b> moves from one row or group of markers to the next, and the arrow keys within it.</li><li>A zone’s sections can be chosen by keyboard: in the zone’s editor, Tab to <b>Choose sections with the keys</b>. The arrow keys then move a ring from section to section, and Space adds the ringed one to the zone or takes it out.</li></ul></div></details><details class="hlpsec" id="helpData"><summary>Your data</summary><div class="hlpbody"><ul><li>Your markers, palettes, guides and photos stay on this device. Nothing is uploaded. (In the beta, <b>Send results</b> and <b>Send feedback</b> send what you write when you tap them, with your device, the app’s version, how many markers, guides and palettes you have and a tester number made on this device. <b>Send feedback</b> adds how much space the app uses, the app’s last few errors and how long its slowest steps took this visit: times and picture sizes, never the picture.)</li><li>There’s no account, no ads and no tracking. The app works offline.</li><li>On iPhone and iPad, Safari deletes a site’s data after about seven days without opening it. On your Home Screen (Share&nbsp;› Add to Home Screen) Marker Studio isn’t cleared like that, but it has its own storage: back up here first, then restore the file there.</li><li id="helpKeep"></li><li id="helpUsed" hidden></li><li>Back up now and then: <b>Library › Back up</b> saves one file with everything. <b>Library › Restore</b> brings it back on any iPhone, iPad or computer.</li><li>In a private window (Private Browsing) everything is deleted when you close it. Use Marker Studio in an ordinary tab, or from your Home Screen.</li><li>A guide missing from your Library may still be stored on this device. <b>Find lost guides</b> looks for any and can add them back.</li></ul><div class="hlplost"><button type="button" id="helpLost" class="btn-soft">Find lost guides</button><div id="helpLostRes" class="hlplostres" role="status"></div></div><p class="hlpwipeh">Leaving the app, or starting again? <b>Delete all my data</b> removes your markers, palettes, guides and photos from this device, and the photo reader and subject finder if you downloaded them.</p><button type="button" id="helpWipe" class="btn-soft hlpwipe">Delete all my data</button></div></details><details class="hlpsec" id="helpAbout"><summary>About</summary><div class="hlpbody"><p class="hlpapp"><b>Marker Studio</b> <span id="helpVer" class="hlpver"></span></p><p>Turns a photo of a colouring page into a marker-by-number guide, using the Ohuhu and Copic markers you own.</p><p>Nothing you add leaves this device. There are no accounts, ads or analytics. It works offline, and the camera is used only when you <b>scan or photograph</b> caps or <b>Match</b> a colour, and photos of caps are read on this device.</p><p>Ohuhu and Copic are trademarks of their owners. Marker Studio isn’t affiliated with or endorsed by Ohuhu or Copic. Colours on screen are approximate — compare with your own swatches. <b>Markers › Print a swatch chart</b> makes a page to colour in.</p><p>Fonts: Fraunces and Hanken Grotesk, under the SIL Open Font License. Icons: Lucide (ISC License), some from Feather (MIT License). PDFs are opened with Mozilla’s PDF.js (Apache License 2.0). The photo reader uses ONNX Runtime (MIT License) and PaddleOCR’s models (Apache License 2.0); the subject finder, ONNX Runtime and TRACER, by Min Seok Lee and Wooseok Shin (Apache License 2.0).</p><p>© 2026 SpicyChipmunk. All rights reserved.</p><div class="hlpfbrow"><button type="button" id="helpFeedback" class="btn-soft hlpfb" data-feedback>Send feedback</button><button type="button" id="helpDiag" class="btn-soft hlpfb" data-diag>Copy diagnostics</button></div></div></details></div></div>
+<div class="overlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="ocard dcard hlpcard"><div class="mhead"><h2 class="mtitle" id="helpTitle">Help</h2><button id="helpClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><button id="helpHiw" class="btn-soft hlphiw" data-help="hiw"><span>How it works</span><span class="hlphiwsub">3 quick steps</span></button><details class="hlpsec" id="helpBeta"><summary>Beta tester guide</summary><div class="hlpbody"><p class="hlptasks"><button type="button" class="nb1" id="helpTasks" data-tasks>Tester tasks</button><span>Six things to try, then <b>Send results</b>. Also on Home, under its cards.</span></p><p class="hlpbt">Before you start</p><ul><li>On an iPad or iPhone, open the link in Safari and add it to your Home Screen (Share&nbsp;› Add to Home Screen) <b>before</b> you set up your markers. The Home Screen app has its own storage: what you add in a Safari tab stays in the tab. Set up in a tab already? Back up there, then restore the file in the Home Screen app.</li><li>Back up once a week: <b>Library › Back up</b>. It’s a beta, and a backup file brings everything back.</li></ul><p class="hlpbt">What it covers</p><ul><li>Ohuhu and Copic markers only. <span id="helpRanges">Ohuhu: 364 markers, among them every colour in the Honolulu sets (24 up to the complete 320) and in the 48 Mid-tone, 104 Colors, 36 Skin Tones, 36 Gray Tones, 48 Pastel, 24 Portrait and 6 Skin Tones sets. Other Ohuhu markers with these codes work too. Copic: all 358 markers, by the codes Sketch, Ciao and Classic share.</span></li><li>Colours on screen are approximate: they’re Ohuhu’s and Copic’s own published colours, and screens and inks differ, so some markers look quite different on paper. <b>Markers › Print a swatch chart</b> makes a page to colour in and compare.</li></ul><p class="hlpbt">Pictures</p><ul><li>Clear, closed lines work best: a downloaded colouring page, a scan, or a flat, evenly lit photo of a page (<b>Photographing a page</b>, below).</li><li>A page that came as a PDF: <b>Open the PDF</b>, under <b>Choose a colouring page</b> (with a guide open, <b>⋯ › Open a PDF</b>). If it won’t open, screenshot the page and choose the screenshot.</li><li>Any other photo (a pet, a flower, a sunset): <b>Make a colouring page from any photo</b>, under <b>Choose a colouring page</b> (on Home, under <b>New guide from a colouring page</b>). The app draws a page of sections from the photo, each one of your markers, two side by side never the same; <b>Detail</b> chooses how many and how small (the smallest about 6 mm to 1.5 mm across on the paper); <b>Focus</b> can keep more detail on the photo’s subject (<b>Sharper subject</b>), and less behind it (<b>Simpler background</b>), or leave the background white (<b>Subject only</b>, with <b>Crop to the subject</b> when it’s small), found on this device after a one-time download. The page shows in its markers’ colours; the <b>Photo</b> button under it shows the photo over it. With a small collection, a line says how much of the photo your markers match and which few markers would match much more: add them to <b>To buy</b>, or <b>Try it with these</b> to see the page with them (Colour along and the key say which aren’t yours). After Build, <b>Pattern</b> says the same, and <b>Show the loose matches</b> marks the sections furthest from the photo. With a big collection and a very colourful photo, <b>Use up to 48 markers</b> (twice the step’s) brings back small things of their own colour that 24 can’t cover; <b>Back to 24</b> undoes it. For a more vivid page, raise the photo’s saturation in your phone’s photo editor before choosing it. Its lines print light grey, so they all but go under the colour (<b>Darker lines</b> in Print), and the photo prints small by the key.</li><li>Focus picked the wrong subject, or missed part of it? Tap <b>Fix the subject</b> under Focus, then tap or drag on the photo: start on the background to add parts, or on the subject to take them away. <b>Done</b> makes the page again with your subject; <b>Cancel</b> leaves it as it was. When there’s no subject (none found, or no subject finder), the link reads <b>Choose the subject</b>. To skip the download altogether, choose <b>Choose the subject by hand</b> when the app offers it.</li></ul><p class="hlpbt">Known limits</p><ul><li>No account or sync: each device, and the Home Screen app, keeps its own data. Move it with <b>Back up</b> and <b>Restore</b>.</li><li>Very detailed, hatched or already-coloured pages, and faint or broken lines, give poor sections. <b>← Edit sections</b> can merge, split or add them.</li><li>Picking one section on the picture, and <b>Fix the subject</b>, need touch or a mouse.</li><li>A page made from a photo smooths away small features (eyes, whiskers) at every Detail: a cat is a cat-shaped patchwork, not a portrait. A busy background (waves, leaves) becomes many small sections, and a pale subject on a pale ground can lose some of its outline. <b>Subject only</b> needs a clear subject: a landscape or a garden has none: choose one yourself with <b>Choose the subject</b>, or the page stays as it is. Faces haven’t been tried yet.</li></ul><p class="hlpbt">What to try</p><ul><li><b>Tester tasks</b> (above, and on Home): six things to try, each answered Easy, OK, Hard or Didn’t try, with a note if you like. Your answers stay on this device until you tap <b>Send results</b>; you can send again later.</li></ul><p class="hlpbt">How to report</p><ul><li>Tap <b>Send feedback</b> (at the foot of Home, in the guide’s <b>⋯</b> menu, or in <b>About</b>, below). It adds your device, the app’s version, how many markers, guides and palettes you have, how much space the app uses, any recent errors, how long the slowest steps took this visit (times and picture sizes only) and a tester number made on this device (not your name); write what happened. To add a screenshot, use <b>Share it instead</b>.</li><li>When something goes wrong, <b>Copy details</b> beside the message copies what’s needed.</li></ul></div></details><details class="hlpsec" id="helpNews"><summary>What’s new</summary><div class="hlpbody"><div class="hlpwn"><p class="hlpwnt">What’s new in <span id="helpWnVer"></span></p><ul id="helpWnList"></ul></div></div></details><details class="hlpsec" id="helpPhoto"><summary>Photographing a page</summary><div class="hlpbody"><ul><li>Lay the page flat on a table. Smooth out any curl.</li><li>Use even light: daylight near a window, or a bright room. Keep your shadow and your hand off the page, and avoid shiny glare.</li><li>Hold your phone or iPad right above the page, not at an angle, and get all of it in the frame. A bit of table around it is fine.</li><li>Choose the photo you took: one sent by message can come back smaller.</li><li>Taken at an angle? The app finds the page and straightens it. If it isn’t sure, drag the corners, then tap <b>Straighten</b>.</li><li>A sketchbook’s spiral binding along the edge, or (on a page not coloured in yet) a strip of table? <b>Trim it</b> shows above the sections and crops it off (<b>Undo</b> puts it back). Specks of grain or dust in the blank paper round the drawing are cleared for you.</li><li>Clear, dark lines work best. If sections come out wrong, <b>← Edit sections</b> lets you merge, split or add them; if the app warns about the photo, <b>Choose another photo</b> is beside the warning. <b>Min section size</b> starts at about 1 mm on the page.</li><li>Scans and screenshots work too. A colouring page that came as a PDF opens with <b>Open the PDF</b>, under <b>Choose a photo</b>, or <b>⋯ › Open a PDF</b> with a guide open.</li></ul></div></details><details class="hlpsec" id="helpScan"><summary>Adding markers by code</summary><div class="hlpbody"><ul><li><b>Markers › Add markers › Scan or type codes</b> takes codes typed one at a time, or a whole list pasted (from notes, a receipt or a spreadsheet): each line is read, and what’s unclear is asked about before anything is added.</li><li>On an iPad or iPhone, tap the box, then <b>AutoFill › Scan Text</b> on the keyboard, and hold each marker’s cap in view: its code is read with a beep, no need to tap Insert.</li><li>On Android with Gboard (free on Google Play), tap the box, open Gboard’s tools (the four-squares icon on its toolbar) and tap <b>Scan text</b>: photograph one cap and tap <b>Insert</b>; its code is read with a beep.</li><li><b>Photograph your caps</b> (<b>Markers › Add markers</b>, or its card in Scan): photograph each tray from above, caps up, in good light (about half a tray a photo: closer reads more), then choose one photo or all of them. They’re read in turn, and the codes join the list as they’re read, each marker once however many photos it’s in, with boxes on the photo: green for what was read, amber for what to check. <b>Undo</b> takes the photos’ codes back out. Caps without a box weren’t read: <b>Look closer</b> reads them again from the photo at a larger size (a while longer: Stop ends it, keeping what it read), and <b>Undo look closer</b> takes back what it added. The reader works on this device, so your photo never leaves it: a one-time download of about 22 MB, kept for offline use. It needs iPadOS or iOS 16.4 or later, or a current browser. A question’s close-up has <b>Where in the photo?</b> under it: the whole photo with that cap ringed, to find the real marker in your tray.</li><li><b>Older Ohuhu caps</b>: in 2025 Ohuhu gave its markers new codes and names (R6 Rose Red is R213 Pomegranate now). Each marker shows the code on <i>your</i> cap, everywhere in the app: Scan notes it as it reads your caps, <b>Bought ✓</b> on To buy means a new cap, and a marker’s details have <b>My cap says</b> to switch it. Markers Scan hasn’t read follow <b>Markers › ⋯ › Show the codes on older Ohuhu caps</b> (Colour along asks once). Markers’ search finds a marker by the name on its older cap too: <b>Rose Red</b> finds R213. In a guide with two markers that show the same code, an older cap’s R22 and the R22 of now, the older one’s label has a <b>*</b> and the key names both caps.</li><li>Another way to read a tray, on any device: take a photo of the caps, copy all its text (<b>Live Text</b> in Photos on an iPad or iPhone; <b>Google Lens</b> on Android) and paste it into the box (on Android, long-press the box › Paste: its lines stay apart).</li><li>A set’s box or an order email: copy its text and paste it the same way. A set’s name in it (Honolulu 120, Ciao 36 Set A) offers the whole set, to add to the list with a tap. Lost a few of its markers? After adding a set, untick them on the colour chart (<b>Markers › Add markers › Tick colours on a chart</b>).</li><li>A list in a file, a spreadsheet saved as CSV or a text file: <b>Open a list file</b>, under the steps. It’s read as a pasted list is.</li></ul></div></details><details class="hlpsec" id="helpMore"><summary>More you can do</summary><div class="hlpbody"><ul><li><b>Leave white</b>: tap a section, then <b>Leave white</b>, and it stays the paper through every change (<b>Colour it</b> brings its colour back). <b>Pin</b> keeps a section’s marker when you shuffle.</li><li><b>Zones</b>: give part of the picture its own pattern and colours, like a flower against its background. At the end of <b>Pattern</b>, tap <b>Zone</b>, then tap or drag across sections.</li><li><b>Paint</b>: in the <b>Manual</b> pattern, turn on <b>Paint</b> and drag across sections to fill them with one marker.</li><li><b>Shading</b>: lighter and darker markers you own for light and shadow, in one tap (Soft, Dramatic, Rounded or Neuro). <b>Greyscale</b> (the three grey bars under the picture) shows where the guide is light and dark.</li><li><b>Focus mode</b>, in Colour along, zooms to one section at a time. When you’re done, <b>Reveal &amp; share</b> plays your page filling with colour.</li><li><b>Coloured on paper?</b> In Colour along, <b>Tick them off from a photo</b>: photograph your page (the one you made the guide from, or a printout of it) and the sections coloured since are offered to tick. <b>Check them</b> lets you tap a section to add it or leave it out first. Very pale markers may not show in a photo. The photo isn’t kept.</li><li><b>Print</b> (in <b>Share &amp; print</b>): <b>Page to colour</b> is the page with no labels to colour on, then your picture in colour with its codes to read beside it (and a shading map, when it’s shaded), and the key; <b>Only the page</b> prints a blank copy to colour again. <b>Labelled page</b> has the codes on the page; <b>For your own page</b> is the coloured reference and key, to colour a page of your own; a <b>Test strip</b> tries the markers on your paper first. Print one-sided: markers soak through. <b>Guide file</b> saves a guide to keep or send.</li><li><b>Copy marker list</b> (in <b>Share &amp; print</b>) copies the page’s markers as text, by colour family, ready to paste with a post.</li><li><b>Notes</b> (the guide’s ⋯ menu, or Page finished): a few lines for the paper, where the page came from or what to try next time. They’re printed under the key, kept in backups, and left out of a guide file you send.</li><li>In <b>Markers</b>, press and hold a marker for its details: the markers it <b>Blends with</b>, and <b>Find similar</b>. <b>Match a colour</b> finds your nearest marker to a colour you pick; <b>To buy</b> keeps a shopping list; <b>Print a swatch chart</b> makes a page of every code to colour in. Under your To buy list, <b>Sets with markers on your list</b> shows the sets that have the most markers you want, and how many markers each would add that you don’t have. In <b>Markers › Unowned</b>, <b>Fill the biggest gaps</b>, <b>Fill gaps between light and dark</b> and <b>Finish families</b> rank markers to buy; <b>Add the top 5 to To buy</b> puts the first five on your list, and To buy links to them.</li><li><b>Random</b> (in <b>Markers</b>): a marker you wouldn’t have picked, drawn at random from your markers, as a prompt or a challenge. Keep drawing to build a set; <b>Use in a guide</b> takes two or more. <b>Prefer markers you haven’t used yet</b> leaves out the markers of every guide you’ve worked with, shading included: one you’ve ticked or toned a section in, coloured along or used Focus mode in, printed, saved as an image, shared, or added a finished photo to (when they’ve all been used, it says so and draws from all). <b>Draw from these</b>, under the Markers grid, draws from the markers shown.</li><li>In the <b>Library</b>: <b>Duplicate</b> a guide to try something else, and <b>Recently deleted</b> to put back one you deleted.</li></ul></div></details><details class="hlpsec" id="helpBasics"><summary>Marker basics</summary><div class="hlpbody"><ul><li><b>Paper.</b> Smooth, heavy paper made for markers blends best; thin printer paper soaks up ink and feathers. Markers soak through, so put a spare sheet underneath, and print one-sided. Printing at home? Alcohol markers can smudge some inkjet prints’ lines: let the print dry well first, or use a laser printer or a photocopy.</li><li><b>Test first.</b> Paper changes how a marker looks, and screens differ from ink: try your markers on the guide’s <b>Test strip</b> (Share &amp; print › Print…) or a swatch chart (<b>Markers › Print a swatch chart</b>), on the paper you’ll use.</li><li><b>Lightest first.</b> Colour the lightest marker first, then layer the darker ones over it: you can always go darker, but rarely lighter (the Colorless Blender can lift a little). That’s why Colour along lists your markers lightest first.</li><li><b>Blend while it’s wet.</b> Work a second marker into the first while it’s still damp for a soft join; on dry ink it leaves a hard edge.</li><li><b>Even colour.</b> Small circles or overlapping strokes, keeping the edge wet, avoid streaks. A second coat evens out what’s left (the guide’s “2nd coat”).</li><li><b>Flicking.</b> Quick strokes that lift off at the end, from the dark side towards the light, give a soft fade: good for shadows.</li><li><b>The Colorless Blender (0).</b> It has no colour of its own: it softens edges and lifts ink to lighten it. As the shading’s <b>Blender (0)</b> highlight, put it down first, then the base over the whole section.</li><li><b>Caps on.</b> Push each cap on until it clicks: markers dry out when left open. When one runs low, mark it <b>Running low</b> in its details (press and hold it in Markers), and refill it if your markers have refills.</li></ul></div></details><details class="hlpsec" id="helpTrouble"><summary>If something goes wrong</summary><div class="hlpbody"><ul><li><b>The sections are wrong.</b> <b>← Edit sections</b> merges, splits or adds them. A clearer photo helps most (<b>Photographing a page</b>, above).</li><li><b>A colour doesn’t match your marker.</b> The app shows Ohuhu’s and Copic’s own published colours, and screens and inks differ: some markers look quite different on paper. Colour in a swatch chart (<b>Markers › Print a swatch chart</b>) to compare, and tell us which ones, in <b>Send feedback</b>.</li><li><b>Your markers or guides are missing.</b> The Home Screen app and a Safari tab each keep their own: check the other one. Safari also clears a tab’s data after about seven days without a visit. <b>Library › Restore</b> brings back a backup.</li><li><b>A big photo is slow to open.</b> Finding its page and sections can take a few seconds; the app says what it’s doing.</li><li><b>You changed something by mistake.</b> <b>Undo</b> (↶) steps back, and Redo forward again. A section ticked by mistake in Colour along: tap it again to untick it.</li><li><b>Something looks stuck, or an error shows.</b> Close the app and open it again; your work saves itself. Then tap <b>Send feedback</b>, or <b>Copy details</b> beside the message, so we can fix it.</li><li><b>“A new version of Marker Studio is ready.”</b> Tap <b>Reload</b> when you’re ready.</li></ul></div></details><details class="hlpsec" id="helpGloss"><summary>Glossary</summary><div class="hlpbody"><dl class="hlpgl"><dt>Section</dt><dd>One area of the picture, closed in by lines, that you colour with one marker. Its marker code is printed on it.</dd><dt>Background / left out</dt><dd>Parts that stay white. The background is the paper around the drawing. Left-out sections are ones you’ve tapped with <b>Leave out</b> in <b>Edit sections</b>; tap one there again to bring it back. <b>Left white</b>: tap a section, then <b>Leave white</b>. It stays white through Shuffle, Mood and pattern changes, and is out of the key and Colour along. Tap it, then <b>Colour it</b>, to bring its colour back.</dd><dt>Plan</dt><dd>The guide’s main screen: your picture with its <b>Colours</b>, <b>Pattern</b>, <b>Shading</b> and <b>Share &amp; print</b> tabs. <b>Edit sections</b> and <b>Colour along</b> open from it; <b>← Plan</b> brings you back.</dd><dt>Colour pattern</dt><dd>How markers are spread over the page, in <b>Pattern</b>:<ul><li><b>Gradient</b>: colours flow across the page along a path (serpentine, vertical, diagonal, radial or around).</li><li><b>Random</b>: markers scattered over the sections. <b>Main colour</b> gives one colour about 60% of the picture, a second 30% and an accent 10% (tap the bar to choose them); <b>Mixed</b> treats every marker alike, and <b>No repeats</b> gives each section its own.</li><li><b>Blend</b>: tap to drop colour anchors; colours blend between them.</li><li><b>Photo</b>: colours taken from a photo you lay over the page.</li><li><b>Manual</b>: you pick every section’s marker.</li></ul></dd><dt>Flow</dt><dd>The path a <b>Gradient</b>’s colours follow across the page (<b>Pattern › Flow</b>): <b>Serpentine</b> (in rows, back and forth), <b>Vertical</b>, <b>Diagonal</b>, <b>Radial</b> (rings out from a centre), or <b>Around</b> (round a centre, like a clock’s hand; good for mandalas). Radial’s <b>Rings</b> can be <b>Circles</b> or <b>Follow the drawing</b>: out from the section under the centre, a step at a time through the sections touching it, so the colours follow the drawing’s own rings. Drag the centre mark to move where they start.</dd><dt>Matching shapes alike</dt><dd>On a page that looks like a mandala, a tick box under <b>Pattern › Flow</b> (and in <b>Random</b>’s options): the matching shapes in each ring, such as eight petals the same size and shape, take one marker. A pinned or coloured one sets the marker for its ring.</dd><dt>Look</dt><dd>How a <b>Gradient</b> lays its markers along the flow (<b>Pattern › Look</b>): <b>Smooth</b> runs each colour gently into the next; <b>Light to dark</b> lays them in bands, light to dark within each; <b>Auto</b> chooses for the page and says which.</dd><dt>Scatter</dt><dd>How neatly a <b>Gradient</b>’s colours sit (<b>Pattern › Scatter</b>). <b>Polished</b> lays neat bands in flow order; <b>Natural</b>, <b>Textured</b>, <b>Sparkle</b> and <b>Confetti</b> mix them more and more, until it’s confetti close up and a rainbow from afar.</dd><dt>Rough spots</dt><dd>Touching sections of a <b>Gradient</b> whose colours jump. A line under the tabs counts them; <b>Smooth them</b> gives one of each pair a marker the guide isn’t using.</dd><dt>Colours from</dt><dd>Where a guide’s colours come from (<b>Colours › Colours from</b>): <b>Your markers</b>, with Lean towards, Theme and Mood to steer them, or <b>A palette</b>: a few markers used as they are, shown on a card with where it came from. <b>New palette</b> makes one here in the scheme chosen (Analogous, Complementary, Light to shadow…); <b>Change it in Palette</b> opens it on the Palette screen to lock, re-roll or resize, and <b>Use in a guide</b> brings it back; <b>Choose a saved palette</b> takes one from your Library, and <b>Save to Library</b> keeps the one on the card. A palette caps the guide’s count at its size: tick <b>Expand with nearby markers</b> for more. <b>Surprise</b> keeps a palette you chose and surprises the rest.</dd><dt>Mood</dt><dd>Which of your markers a palette or a <b>Gradient</b> draws on (<b>Colours › Mood</b>): <b>Any</b>, <b>Bright</b>, <b>Soft</b>, <b>Pastel</b>, <b>Deep</b> or <b>Earthy</b>.</dd><dt>Lean towards</dt><dd>Which of your markers the colours lean to (<b>Colours › Lean towards</b>): <b>Any</b>, <b>Cool</b> or <b>Warm</b>. Under it, <b>Theme</b>: twelve palettes, from <b>Blossom</b> to <b>Twilight</b>, each with a strip of the colours it takes from your markers; tap the chosen one again for none. With Cool or Warm too, a theme takes that temperature’s colours, and one with next to none of them is greyed. With too few of a theme’s colours in your markers, the nearest are added, and a line says so.</dd><dt>Include</dt><dd>For a <b>Gradient</b> (<b>Colours › Include</b>): whether browns, greys and black, and fluorescents may be used. Each guide, and each zone, keeps its own choice.</dd><dt>Surprise</dt><dd>The <b>✨</b> button by the guide’s name: new colours and a new style in one tap (flow, mood, look, sometimes Random). <b>Undo</b> brings back what you had.</dd><dt>Zone</dt><dd>A part of the picture with its own pattern and colours, like a flower against the background around it. At the end of <b>Pattern</b>, tap <b><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg> Zone</b>, then tap or drag across sections to add them. The chips at the top of <b>Pattern</b> and <b>Colours</b> choose which zone those tabs change; <b>Main</b> is the rest of the picture. With shading on, each zone can be shaded or left flat, with its own roundness, highlights and shadows (<b>Shading</b>, under its chips); the light is the whole picture’s.</dd><dt>Pin</dt><dd>Keeps a section’s marker when you shuffle or change the pattern; a pinned section has a ring around its label. Tap a section, then <b>Pin</b>. Changing a section’s colour pins it too (<b>Unpin</b> lets the plan choose again).</dd><dt>Kept</dt><dd>A section you’ve coloured keeps its marker, whatever you change in the plan: it’s on your paper already. Kept sections have no ring; untick one and the plan can colour it again.</dd><dt>Blend companions</dt><dd>A lighter and a darker marker for each colour, listed in the printed key, for blending. A marker’s details (press and hold it in <b>Markers</b>, or tap it in <b>To buy</b>) show the lighter and darker markers it blends with, under <b>Blends with</b>.</dd><dt>Skin tones</dt><dd>A row in <b>Change colour</b>, when 3 or more of your markers are skin tones: the markers of Ohuhu’s 36 Skin Tones set and a like set of Copic’s, lightest first. Search <b>skin</b> in <b>Markers</b> for the same list.</dd><dt>Shading</dt><dd>Adds light and shadow with lighter and darker markers you own. Choose a style in its row: <b>Soft</b>, <b>Dramatic</b>, <b>Rounded</b> or <b>Neuro</b> each sets the light and the amounts for the whole picture in one tap, or <b>Off</b>. Move a slider after and it says <b>Custom</b>. For shadows only, set <b>Highlights</b> to <b>None</b>: with zones, for the zone chosen. With <b>Blender (0)</b>, put the 0 on the highlight first, then the base over the whole section. On a phone, the finer controls (Roundness, tones, texture) are under <b>More options</b>, as Pattern’s and Colours’ are. <b>Light from</b>: <b>The sun</b> (drag it on the picture to move the light), <b>The edges</b> (each section darker along its lines and in its corners, lighter in its middle, as neurographic drawings are rounded) or, with the Photo pattern, <b>The photo</b> (a style keeps the photo’s light). On a page made from a photo, <b>Photo</b> takes Rounded’s place: Highlights and Shadows <b>From the photo</b>, each marker given the highlight and the shadow that best match the photo’s own light and dark parts (from the page’s markers and at most four of your others), the amounts chosen for the page. A section stays flat where its tones wouldn’t be closer to the photo. <b>Two tone sets per marker</b> goes closer still: a section on its marker’s second set has a prime on its code (E415′), and the key a line for it. A section you’ve started colouring keeps the markers it was coloured with; markers bought since come in when you tap <b>Photo</b> again. Very small specks of highlight and shadow (under about 1.5 mm on the page) are tidied into the tone round them, in every kind of shading.</dd><dt>Highlight / Base / Shadow (H/B/S)</dt><dd>The tones of a shaded section. <b>B</b> is its main marker. <b>H</b> is a lighter one on the side facing the light (or a warmer one, or the paper left white, or the Colorless Blender’s lift, <b>Blender (0)</b>, if you own one, or none for shadows only: <b>Shading › Highlights</b>), <b>S</b> a darker one on the far side (or a cooler or grey one laid over the base: <b>Shading › Shadows</b>). “2nd coat” means going over the base again.</dd><dt>Greyscale</dt><dd>The button with three grey bars under the picture (once called Values). It shows your guide in greys, so you can judge its values: where it’s light and dark, without the colours. It only changes the view.</dd><dt>Colour along</dt><dd>Where you colour your page: the markers are listed lightest first, and you tick off each section as you colour it. Your progress saves itself.</dd><dt>Focus mode</dt><dd>In <b>Colour along</b>. It zooms to one section at a time, colour by colour. Tap <b>✓ Done</b> (or the section) to move on.</dd><dt>Reveal</dt><dd>In <b>Share &amp; print</b>. Plays your page filling with colour, to share as a picture or a clip.</dd><dt>Your page</dt><dd>A photo of your finished page, added from <b>Colour along</b>’s <b>Page finished</b> panel. It’s straightened and kept beside the plan, on this device. Home shows it first; <b>Reveal &amp; share</b> can share the plan and your page together.</dd></dl></div></details><details class="hlpsec" id="helpKeys"><summary>Keyboard and screen readers</summary><div class="hlpbody"><ul><li>Picking a single section on the picture needs touch or a mouse: <b>Change colour</b>, <b>Pin</b>, <b>Leave white</b>, <b>Paint</b> and ticking off one section.</li><li>By keyboard, use <b>Colour along</b>’s list instead: open a marker, then <b>Mark all done</b> or <b>Find next</b>. <b>Focus mode</b> and everything else work by keyboard too.</li><li>In <b>Markers</b>, press <b>Shift+F10</b> on a marker to open its details.</li><li>In <b>Change colour</b>, <b>Tab</b> moves from one row or group of markers to the next, and the arrow keys within it.</li><li>A zone’s sections can be chosen by keyboard: in the zone’s editor, Tab to <b>Choose sections with the keys</b>. The arrow keys then move a ring from section to section, and Space adds the ringed one to the zone or takes it out.</li></ul></div></details><details class="hlpsec" id="helpData"><summary>Your data</summary><div class="hlpbody"><ul><li>Your markers, palettes, guides and photos stay on this device. Nothing is uploaded. (In the beta, <b>Send results</b> and <b>Send feedback</b> send what you write when you tap them, with your device, the app’s version, how many markers, guides and palettes you have and a tester number made on this device. <b>Send feedback</b> adds how much space the app uses, the app’s last few errors and how long its slowest steps took this visit: times and picture sizes, never the picture.)</li><li>There’s no account, no ads and no tracking. The app works offline.</li><li>On iPhone and iPad, Safari deletes a site’s data after about seven days without opening it. On your Home Screen (Share&nbsp;› Add to Home Screen) Marker Studio isn’t cleared like that, but it has its own storage: back up here first, then restore the file there.</li><li id="helpKeep"></li><li id="helpUsed" hidden></li><li>Back up now and then: <b>Library › Back up</b> saves one file with everything. <b>Library › Restore</b> brings it back on any iPhone, iPad or computer.</li><li>In a private window (Private Browsing) everything is deleted when you close it. Use Marker Studio in an ordinary tab, or from your Home Screen.</li><li>A guide missing from your Library may still be stored on this device. <b>Find lost guides</b> looks for any and can add them back.</li></ul><div class="hlplost"><button type="button" id="helpLost" class="btn-soft">Find lost guides</button><div id="helpLostRes" class="hlplostres" role="status"></div></div><p class="hlpwipeh">Leaving the app, or starting again? <b>Delete all my data</b> removes your markers, palettes, guides and photos from this device, and the photo reader and subject finder if you downloaded them.</p><button type="button" id="helpWipe" class="btn-soft hlpwipe">Delete all my data</button></div></details><details class="hlpsec" id="helpAbout"><summary>About</summary><div class="hlpbody"><p class="hlpapp"><b>Marker Studio</b> <span id="helpVer" class="hlpver"></span></p><p>Turns a photo of a colouring page into a marker-by-number guide, using the Ohuhu and Copic markers you own.</p><p>Nothing you add leaves this device. There are no accounts, ads or analytics. It works offline, and the camera is used only when you <b>scan or photograph</b> caps or <b>Match</b> a colour, and photos of caps are read on this device.</p><p>Ohuhu and Copic are trademarks of their owners. Marker Studio isn’t affiliated with or endorsed by Ohuhu or Copic. Colours on screen are approximate — compare with your own swatches. <b>Markers › Print a swatch chart</b> makes a page to colour in.</p><p>Fonts: Fraunces and Hanken Grotesk, under the SIL Open Font License. Icons: Lucide (ISC License), some from Feather (MIT License). PDFs are opened with Mozilla’s PDF.js (Apache License 2.0). The photo reader uses ONNX Runtime (MIT License) and PaddleOCR’s models (Apache License 2.0); the subject finder, ONNX Runtime and TRACER, by Min Seok Lee and Wooseok Shin (Apache License 2.0).</p><p>© 2026 SpicyChipmunk. All rights reserved.</p><div class="hlpfbrow"><button type="button" id="helpFeedback" class="btn-soft hlpfb" data-feedback>Send feedback</button><button type="button" id="helpDiag" class="btn-soft hlpfb" data-diag>Copy diagnostics</button></div></div></details></div></div>
 <div class="overlay" id="hiwOverlay" role="dialog" aria-modal="true" aria-labelledby="hiwTitle"><div class="ocard dcard hiwcard"><div class="mhead"><h2 class="mtitle" id="hiwTitle">How it works</h2><button id="hiwClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="hiwtrack" id="hiwTrack"><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH1"><div class="hiwart" data-art="1"></div><div class="hiwstep">Step 1 of 3</div><h3 id="hiwH1">Photograph a colouring page</h3><p>Choose a photo of a line-art page, or try the sample.</p><ul class="hiwtips"><li>Lay the page flat, in even light.</li><li>Get the whole page in the frame.</li><li>Taken at an angle? The app straightens it.</li></ul></section><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH2" aria-hidden="true"><div class="hiwart" data-art="2"></div><div class="hiwstep">Step 2 of 3</div><h3 id="hiwH2">Sections and colours</h3><p>The app finds the sections — the areas you’ll colour — and picks a marker for each, from the markers you own.</p><ul class="hiwtips"><li>Tap a section to change its colour or pin it.</li><li>Try patterns and shading in the Pattern and Shading tabs.</li></ul></section><section class="hiwslide" role="group" aria-roledescription="step" aria-labelledby="hiwH3" aria-hidden="true"><div class="hiwart" data-art="3"></div><div class="hiwstep">Step 3 of 3</div><h3 id="hiwH3">Colour along</h3><p>Tap Colour along and tick sections off as you colour them.</p><ul class="hiwtips"><li>Focus mode zooms to one section at a time and walks you through.</li><li>Finished? Reveal &amp; share shows your page filling with colour.</li></ul></section></div><div class="hlpsr" id="hiwLive" aria-live="polite"></div><div class="hiwnav"><button id="hiwBack" class="hiwback" style="visibility:hidden">Back</button><div class="hiwdots" id="hiwDots" role="group" aria-label="Steps"><button class="hiwdot on" data-i="0" aria-label="Step 1: Photograph a colouring page" aria-current="step"></button><button class="hiwdot" data-i="1" aria-label="Step 2: Sections and colours"></button><button class="hiwdot" data-i="2" aria-label="Step 3: Colour along"></button></div><button data-first id="hiwNext" class="btn-primary hiwnext">Next</button></div></div></div><div class="overlay" id="ttOverlay" role="dialog" aria-modal="true" aria-labelledby="ttTitle"><div class="ocard dcard ttcard"><div class="mhead"><h2 class="mtitle" id="ttTitle" tabindex="-1">Tester tasks</h2><button id="ttClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="dsub">Six things to try, in your own time. Answer each as you go: your answers stay on this device until you tap Send results.</div><div class="ttprog"><div class="ttbar" aria-hidden="true"><i id="ttBarFill"></i></div><span id="ttCount" class="ttcount"></span><button type="button" id="ttSendTop" class="ttsend">Send results</button></div><div id="ttSaid" class="ttsaid" role="status" aria-live="polite"></div><div id="ttList"></div><h3 class="tth">If you have time</h3><div id="ttExtras"></div><h3 class="tth">Last questions</h3><div id="ttQs"></div><label class="ttq"><span class="ttql">Your name <i>(optional, so we know who to thank)</i></span><input id="ttName" class="ttinput" type="text" maxlength="60" autocomplete="name"></label><div class="ttfoot"><button type="button" id="ttSend" class="btn-primary">Send results</button><button type="button" id="ttCopy" class="sflink ttcopy">Copy my answers instead</button></div><p class="ttwhat" id="ttWhat"></p></div></div><div class="overlay" id="fbOverlay" role="dialog" aria-modal="true" aria-labelledby="fbTitle"><div class="ocard dcard fbcard"><div class="mhead"><h2 class="mtitle" id="fbTitle">Send feedback</h2><button id="fbClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><label class="ttq"><span class="ttql">What happened, or what would you like?</span><textarea id="fbText" class="ttnote fbtext" maxlength="3000" rows="6"></textarea></label><div id="fbSaid" class="ttsaid" role="status" aria-live="polite"></div><div class="ttfoot"><button type="button" id="fbSend" class="btn-primary">Send</button><button type="button" id="fbShare" class="sflink ttcopy">Add a screenshot? Share it instead</button></div><p class="ttwhat">Sent with your device and screen size, the app’s version, how many markers, guides and palettes you have, how much space the app uses, the app’s last few errors, how long its slowest steps took this visit (times and picture sizes only) and a tester number made on this device (not your name), to help find what went wrong. Nothing else.</p></div></div>
 <div class="overlay" id="ptOverlay" role="dialog" aria-modal="true" aria-labelledby="ptTitle"><div class="ocard dcard ptcard"><div class="mhead"><h2 class="mtitle" id="ptTitle">Photographing a page</h2><button id="ptClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><p class="dsub">A few things make the sections come out right first time.</p><ul class="pttips"><li><svg class="ptic" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M3 25h26"/><path d="M6 22l5-9h16l-5 9z"/></svg><span><b>Flat.</b> Lay the page on a table and smooth out any curl.</span></li><li><svg class="ptic" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="10" y="3" width="12" height="8" rx="2"/><path d="M16 14v6M13 17.5l3 3 3-3"/><path d="M4 26h24"/></svg><span><b>Right above.</b> Hold your phone or iPad over the middle of the page, not at an angle.</span></li><li><svg class="ptic" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="5"/><path d="M16 3v4M16 25v4M3 16h4M25 16h4M6.8 6.8l2.8 2.8M22.4 22.4l2.8 2.8M6.8 25.2l2.8-2.8M22.4 9.6l2.8-2.8"/></svg><span><b>Even light.</b> Daylight or a bright room, with no shadow from you or your phone, and no shiny glare.</span></li><li><svg class="ptic" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M4 10V4h6M22 4h6v6M28 22v6h-6M10 28H4v-6"/><rect x="9" y="8" width="14" height="16" rx="1"/></svg><span><b>All of it.</b> Get the whole page in the frame. A bit of table round it is fine.</span></li><li><svg class="ptic" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="4" y="6" width="24" height="20" rx="2"/><path d="M4 22l7-7 6 6 4-4 7 7"/><circle cx="21" cy="12" r="2"/></svg><span><b>The original.</b> Choose the photo you took: one sent by message can come back smaller.</span></li></ul><p class="dsub">Taken at an angle anyway? The app finds the page and straightens it.</p><button type="button" id="ptGo" class="btn-primary ptgo" data-first>Choose a photo</button></div></div>
 <div class="overlay prevov" id="prevOverlay" role="dialog" aria-modal="true" aria-labelledby="prevTitle"><div class="ocard prevcard"><div class="mhead prevhead"><h2 class="mtitle" id="prevTitle">Page 1</h2><span class="prevkind" id="prevKind"></span><button type="button" id="prevPdf" class="btn-primary prevpdf">Download PDF</button><button type="button" id="prevClose" class="mclose" aria-label="Close"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button></div><div class="prevstage" id="prevStage" role="img" aria-roledescription="page" aria-label="Page 1"></div><div class="prevfoot"><button type="button" id="prevBack" class="prevnav" aria-label="Page before"><svg class="ic icnav icback" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></button><span class="prevn" id="prevN" aria-hidden="true"></span><button type="button" id="prevNext" class="prevnav" aria-label="Next page"><svg class="ic icnav" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg></button></div></div></div>
@@ -15859,6 +15899,14 @@ function storeLine() {
     : 'Site storage used (' + (location.host || 'this site') + '): ' + storeWords(storeUsed);
 }
 setTimeout(storeUsedRead, 4000);
+function subjectDiagLine() {
+  try {
+    const l = window.SF && SF.subjectDiag ? SF.subjectDiag() : '';
+    return l ? [l] : [];
+  } catch (_) {
+    return [];
+  }
+}
 function diagHead() {
   const c = countWords();
   return (
@@ -15869,6 +15917,8 @@ function diagHead() {
       'Screen: ' + screenWords(),
     ]
       .concat(c ? ['Saved here: ' + c] : [])
+      // (v329.4: a photo-made page's subject: found, fixed by hand or chosen by hand, 49-subject-fix)
+      .concat(subjectDiagLine())
       // (v329.3: before the browser's line, which the report's 900-character cut trims first)
       .concat(storeLine() ? [storeLine()] : [])
       .concat(['Browser: ' + (navigator.userAgent || '')])
@@ -34468,6 +34518,11 @@ const JOBS = (function () {
       // (v328: Tick off from a photo, 26-tick)
       if (m.k === 'tick') return tickWork(m);
       // (v329.1: the sharp copy's outlines, 77-sharp)
+      // (v329.4: Fix the subject's pieces, 49-subject-fix)
+      if (m.k === 'fixp') {
+        const r = fixPieces(m.rgb, m.w, m.h, m.S);
+        return { v: r, t: [r.L.buffer] };
+      }
       if (m.k === 'sfield') {
         const r = sharpFieldCore(m.lab, m.small, m.w, m.h, m.X0, m.Y0, m.PW);
         return { v: r, t: [r.sdf.buffer, r.near.buffer] };
@@ -34532,6 +34587,9 @@ const JOBS = (function () {
         '\n' +
         // (v328: Tick off from a photo's lining up and reading, 26-tick)
         tickWorkerSrc() +
+        '\n' +
+        // (v329.4: Fix the subject's pieces, 49-subject-fix)
+        fixWorkerSrc() +
         '\n(' +
         main.toString() +
         ')();';
@@ -34597,7 +34655,8 @@ const JOBS = (function () {
       return;
     }
     stats.timedOut[w.k] = (stats.timedOut[w.k] || 0) + 1;
-    if ((w.k === 'ppage' || w.k === 'ppfill') && !w.gone) {
+    // (v329.4: and Fix the subject's pieces, 'fixp', a worker at work too, 49-subject-fix)
+    if ((w.k === 'ppage' || w.k === 'ppfill' || w.k === 'fixp') && !w.gone) {
       toolong(w, ms, now);
       return;
     }
@@ -34723,6 +34782,8 @@ function jobBudget(data, k) {
   // (v328: Tick off from a photo, lining up or reading: about 2 and 4 s on a desktop for the author's 3.8-megapixel
   // guide, more on an iPad)
   if (k === 'tick') return 15000 + Math.round((data.W * data.H) / 150);
+  // (v329.4: Fix the subject's pieces, about half a second on a computer for a 900-pixel photo, more on an iPad)
+  if (k === 'fixp') return 8000 + Math.round(data.n / 100);
   // (v328 review: the markers to add, with Use up to 48's two marker choices: the photo's colours by the markers it
   // may use, 2-4 s on a desktop for 461 colours by 392-800 markers)
   if (k === 'ppfill' && data.tw && data.pl)
@@ -38950,6 +39011,8 @@ function render() {
   if (_preview) return;
   // (v328 review: Crop and the corners have their own drawing: sections found again meanwhile aren't drawn over them)
   if (cropMode) return drawCropOverlay();
+  // (v329.4: Fix the subject's own picture, 49-subject-fix)
+  if (fixOn && _fx) return fixDraw();
   if (pgMode && pgEd) return pgDraw();
   _rg = null;
   positionPhoto();
@@ -39160,6 +39223,8 @@ function resetForNewPicture() {
   // (v327: a new picture: no photo tones kept)
   ptReset();
   _ppPrep = null;
+  // (v329.4: Fix the subject's mode and draft go with the old picture)
+  fixOff();
   // (v329.1: and the Detail steps' pages kept, and the subject maps: a page's section map each, up to 48 MB, had stayed
   // for the rest of the session. A Detail or Focus change doesn't come through here, so going back to a step stays
   // instant for the photo it's on)
@@ -63107,7 +63172,7 @@ function positionPeekBtn() {
 let _peekMode = '';
 // (v326) the Photo button's place on a photo-made page's step: its page made, Edit sections closed
 function photoPeekStep() {
-  return sfmode === 'review' && ppOn() && !!pp.made && !_ppTools;
+  return sfmode === 'review' && ppOn() && !!pp.made && !_ppTools && !fixOn;
 }
 /* ---- lining the photo up automatically ----
     For a coloured version of the same page (or the photo the line art was traced from): find the size, turn and
@@ -65072,6 +65137,8 @@ function ppNew() {
     sm: '',
     tg: null,
     bgs: null,
+    // (v329.4: the subject fixed by hand, 49-subject-fix: its layer encoded, fixEncode)
+    fix: null,
   };
 }
 function ppCopy(o) {
@@ -65150,6 +65217,8 @@ function ppCheck(o, map) {
       });
     p.bgs = b.length ? b : null;
   }
+  // (v329.4: the subject fixed by hand, 49-subject-fix)
+  p.fix = fixLoad(o.fix);
   return p;
 }
 // what's saved with the guide
@@ -65186,6 +65255,8 @@ function ppSave() {
     // shadow, as coloured: 45-shading)
     tx: ptSaveState().tx,
     th: ptSaveState().th,
+    // (v329.4: the subject fixed by hand, 49-subject-fix)
+    fix: fixSave(pp.fix),
   };
 }
 // the markers a photo-made page may use: those the Photo pattern would (photoPool: your markers, or a palette you
@@ -65731,7 +65802,9 @@ function ppMake(geo, quiet) {
     lg = loadGen;
   _ppBusy = true;
   segBusySet(true, false, true);
-  if (!quiet) note('Making the page…');
+  // (v329.4: Done in Fix the subject says what it's making, 49-subject-fix)
+  const fw = fixMakeWord();
+  if (!quiet) note(fw || 'Making the page…');
   return new Promise(function (res, rej) {
     afterPaint(function () {
       let prep, ch;
@@ -65743,6 +65816,9 @@ function ppMake(geo, quiet) {
             ? _ppPrep
             : holdTime('Photo got ready for its page', ppPrepare);
         if (!prep) throw new Error('no photo');
+        // (v329.4: the photo prepared read with the guide's subject fixes as they are now, before the markers' key is
+        // made from its pid, 49-subject-fix)
+        fixSync(prep);
         ch = ppChoose(prep, pp.d);
         if (!ch) throw new Error('no markers');
       } catch (e) {
@@ -65771,8 +65847,14 @@ function ppMake(geo, quiet) {
                   : 'Focus is back on Even: the subject finder isn’t on this device.' +
                     (subCan() ? ' Choose ' + fn + ' to download it.' : '')
                 : kind
-                  ? SUB_OFF_SAID[kind]
-                  : errNote('Couldn’t find the photo’s subject, so the page is made Even.', 'Focus', e);
+                  ? SUB_OFF_SAID[kind] + SUB_HAND_SAY
+                  : errNote(
+                      'Couldn’t find the photo’s subject, so the page is made Even.' + SUB_HAND_SAY,
+                      'Focus',
+                      e,
+                    );
+              // (pressure test 6: as said, the next Focus choice picks the subject by hand, 49-subject-fix)
+              if (!kind && !/not stored/.test(msg)) _subHand = true;
               return null;
             })
           : Promise.resolve(null);
@@ -65784,7 +65866,17 @@ function ppMake(geo, quiet) {
             pp.f = 'even';
             // (v329.2: a small subject, the right shape for it, offered the crop instead, 48-subject ppCropOfferHTML)
             if (ppSmallSubOK(prep)) _ppSmallSub = prep.key;
-            else _ppSaid = 'No clear subject found in this photo, so the background stays.';
+            // (v329.4: none chosen by hand, or one too small, said so; and Choose the subject offered for Subject only
+            // under Even, 49-subject-fix fixNoneSet)
+            else {
+              const sh = ppSubjectShare(prep);
+              _ppSaid = !fixHandMap()
+                ? 'No clear subject found in this photo, so the background stays.'
+                : sh < SUB_NONE
+                  ? 'No subject chosen, so the background stays.'
+                  : 'The subject you chose is too small a part of this photo for Subject only, so the background stays.';
+              fixNoneSet(prep.key);
+            }
           }
           // (chosen again now the map is in: Subject only's choice has a key of its own, ppChoose)
           ch = ppChoose(prep, pp.d) || ch;
@@ -67251,6 +67343,9 @@ function ctlPhotoPage() {
     });
   ppHelpWire();
   wire('sfPpCropGo', 'click', ppCropSubject);
+  // (v329.4: Fix the subject, 49-subject-fix)
+  wire('sfPpFix', 'click', fixEnter);
+  wire('sfPpSubDl', 'click', subDlAsk);
   wire('sfAdjToggle', 'click', function () {
     showAdjust = !showAdjust;
     renderControls();
@@ -67363,7 +67458,9 @@ function ppRemade(geo) {
         pp.f = _ppMadeAt.f;
       }
       renderControls();
-      note(errNote(words || 'Couldn’t make the page again.', 'Making a page', err));
+      // (v329.4: Done's page in Fix the subject: its fixes not applied, still there to try again, 49-subject-fix)
+      const fw = fixFailWords();
+      note(errNote(fw || words || 'Couldn’t make the page again.', 'Making a page', err));
       return false;
     });
 }
@@ -67661,10 +67758,11 @@ const SUB_OFF_KEY = 'ms-subject-off',
       'This device ran out of memory finding the subject, so the page is made Even. Close other apps and reopen Marker Studio to try Focus again.',
     slow: 'The subject finder took too long on this device, so the page is made Even.',
   },
+  // (v329.4: the other choices no longer greyed meanwhile: they choose the subject by hand, 49-subject-fix)
   SUB_OFF_HINT = {
     memory:
-      'Only Even until Marker Studio is next opened: this device ran out of memory finding the subject. Close other apps before you try again.',
-    slow: 'Only Even until Marker Studio is next opened: the subject finder took too long on this device.',
+      'The subject finder is off until Marker Studio is next opened: this device ran out of memory finding the subject. Other Focus choices now let you choose the subject by hand.',
+    slow: 'The subject finder is off until Marker Studio is next opened: it took too long on this device. Other Focus choices now let you choose the subject by hand.',
   };
 function subFailKind(e) {
   const m = String((e && (e.sub || e.message || e)) || '');
@@ -67690,8 +67788,12 @@ function subOffSet(k) {
 // (v329.3 review: one at a time for any photo, not only the same one: a find for another prep, a turn or crop made
 // meanwhile, waits for the one running, so there are never two models and their memory at once on an iPad)
 let _subRun = null;
-function subMap(prep) {
+function subMap(prep, finder) {
   if (prep.sal) return Promise.resolve(prep.sal);
+  // (v329.4: a subject chosen by hand from empty: the finder isn't asked, 49-subject-fix; finder: asked all the same,
+  // Use the finder's subject)
+  const own = finder ? null : fixOwnMap(prep);
+  if (own) return Promise.resolve(own);
   if (_subRun && _subRun.prep === prep) return _subRun.p;
   const prev = _subRun ? _subRun.p.catch(function () {}) : Promise.resolve();
   const p = prev.then(async function () {
@@ -67807,8 +67909,11 @@ async function subFind(prep) {
       ]),
       sal = r.y;
     prep.sal = sal;
-    // (v326: kept for a crop, an Undo of one or a quarter turn, subFromKept)
+    prep.salF = sal;
+    // (v326: kept for a crop, an Undo of one or a quarter turn, subFromKept: the finder's own map)
     subKeepAdd(prep);
+    // (v329.4: read with the guide's subject fixes, 49-subject-fix)
+    fixApply(prep);
     // (for Copy diagnostics: how long finding the subject took here)
     holdAdd('Subject found in the background', Date.now() - t0, w0 + ' × ' + h0);
     return sal;
@@ -67832,77 +67937,27 @@ async function ppSetFocus(f) {
   }
   // (v328: a guide opened while the download was asked about or under way keeps its own Focus)
   const g0 = loadGen;
-  if (f !== 'even') {
-    const need = await subMissing();
-    if (g0 !== loadGen) return;
-    if (!need) {
-      note('This browser can’t keep the subject finder, so Focus stays on Even.');
-      renderControls();
+  // (v329.4: another Focus chosen: Even's Choose the subject for Subject only goes, 49-subject-fix)
+  fixNoneSet('');
+  // (v329.4: a subject chosen by hand needs no finder; with the finder off this launch, or choosing by hand chosen,
+  // the subject is chosen by hand, 49-subject-fix fixChooseFor)
+  if (f !== 'even' && !fixHandMap() && !fixHaveMap()) {
+    if (subOff() || _subHand) {
+      fixChooseFor(f);
       return;
     }
-    if (need.length) {
-      if (navigator.onLine === false) {
-        note('The subject finder needs the internet the first time: connect, then try again.');
-        renderControls();
-        return;
-      }
-      const mb = subMB(need),
-        a = await askBox(
-          'Find the photo’s subject?',
-          SUB_NAMES[f] +
-            ' finds what your photo is of, on this device: your photo never leaves it. It’s a one-time download of about ' +
-            mb +
-            ' MB, kept for offline use.',
-          '<button type="button" class="btn-primary" data-a="go">Download · ' +
-            mb +
-            ' MB</button><button type="button" class="sfghost" data-a="stay">Not now</button>',
-          true,
-        );
-      if (g0 !== loadGen) return;
-      if (a !== 'go' || !pp) {
-        renderControls();
-        return;
-      }
-      note('Downloading the subject finder…');
-      _subDl = true;
-      // (v329.3 review: the line said again only when its MB changes, as the download now counts up as it comes)
-      let said = -1;
-      try {
-        await subDownload(need, function (n, total) {
-          const got = Math.round(n / 1e6);
-          if (got === said || g0 !== loadGen) return;
-          said = got;
-          // (in the line under the picture only: not a toast for each MB)
-          note('Downloading the subject finder… ' + got + ' of ' + Math.round(total / 1e6) + ' MB', true);
-        });
-      } catch (e) {
-        _subDl = false;
-        if (g0 !== loadGen) return;
-        // (v329.3 review: a full device said so, as the reader's download: Try again failed the same way every time)
-        const full =
-          e && (e.name === 'QuotaExceededError' || /quota|storage/i.test(String((e && e.message) || '')));
-        note(
-          navigator.onLine === false
-            ? 'The connection went, so Focus stays on Even. Connect, then try again.'
-            : full
-              ? 'This device’s storage is full, so the subject finder couldn’t be kept and Focus stays on Even. Free some space, then try again.'
-              : errNote('The subject finder didn’t download, so Focus stays on Even. Try again.', 'Focus', e),
-        );
-        renderControls();
-        return;
-      }
-      _subDl = false;
-      if (!pp || g0 !== loadGen) {
-        if (g0 !== loadGen) note('The subject finder is downloaded.');
-        return;
-      }
-      // (v328 review: a page being made meanwhile, a Detail chosen, isn't overtaken: Focus is chosen again after)
-      // (v328 review 2: or the page built, or being coloured, meanwhile: not taken back to the page step)
-      if (_ppBusy || sfmode !== 'review' || cropMode || pgMode) {
-        note('The subject finder is downloaded: choose ' + SUB_NAMES[f] + ' again.');
-        renderControls();
-        return;
-      }
+    const r = await subGet(f, g0);
+    if (r === 'hand') {
+      if (pp && g0 === loadGen) fixChooseFor(f);
+      return;
+    }
+    if (r !== 'ok') return;
+    // (v328 review: a page being made meanwhile, a Detail chosen, isn't overtaken: Focus is chosen again after)
+    // (v328 review 2: or the page built, or being coloured, meanwhile: not taken back to the page step)
+    if (_ppBusy || fixOn || sfmode !== 'review' || cropMode || pgMode) {
+      note('The subject finder is downloaded: choose ' + SUB_NAMES[f] + ' again.');
+      renderControls();
+      return;
     }
   }
   okGeom(
@@ -67916,9 +67971,109 @@ async function ppSetFocus(f) {
     },
   );
 }
+// (v329.4) after a note that the finder can't be had: the next Focus choice picks the subject by hand
+const SUB_HAND_SAY = ' Choose a Focus again to pick the subject by hand instead.';
+// The subject finder made ready: 'ok' once it's stored (asked first, the consent card, and downloaded); 'hand' when
+// choosing by hand was chosen there; else 'no' (said why). f: the Focus it's for (its name in the card; v329.4: the
+// card's third button, Choose the subject by hand), or null for the Focus row's Download the subject finder (no third
+// button, nothing said of choosing by hand)
+async function subGet(f, g0) {
+  const fail = function (t) {
+    if (f) _subHand = true;
+    note(f ? t + SUB_HAND_SAY : t);
+    renderControls();
+    return 'no';
+  };
+  const need = await subMissing();
+  if (g0 !== loadGen) return 'no';
+  if (!need) return fail('This browser can’t keep the subject finder, so Focus stays on Even.');
+  if (!need.length) return 'ok';
+  if (navigator.onLine === false)
+    return fail('The subject finder needs the internet the first time: connect, then try again.');
+  const mb = subMB(need),
+    a = await askBox(
+      'Find the photo’s subject?',
+      (f ? SUB_NAMES[f] : 'The subject finder') +
+        ' finds what your photo is of, on this device: your photo never leaves it. It’s a one-time download of about ' +
+        mb +
+        ' MB, kept for offline use.' +
+        (f ? ' Or choose the subject by hand, with no download.' : ''),
+      '<button type="button" class="btn-primary" data-a="go">Download · ' +
+        mb +
+        ' MB</button>' +
+        (f ? '<button type="button" class="sfghost" data-a="hand">Choose the subject by hand</button>' : '') +
+        '<button type="button" class="sfghost" data-a="stay">Not now</button>',
+      true,
+    );
+  if (g0 !== loadGen) return 'no';
+  if (a === 'hand' && pp) {
+    _subHand = true;
+    return 'hand';
+  }
+  if (a !== 'go' || !pp) {
+    renderControls();
+    return 'no';
+  }
+  note('Downloading the subject finder…');
+  _subDl = true;
+  // (v329.3 review: the line said again only when its MB changes, as the download now counts up as it comes)
+  let said = -1;
+  try {
+    await subDownload(need, function (n, total) {
+      const got = Math.round(n / 1e6);
+      if (got === said || g0 !== loadGen) return;
+      said = got;
+      // (in the line under the picture only: not a toast for each MB)
+      note('Downloading the subject finder… ' + got + ' of ' + Math.round(total / 1e6) + ' MB', true);
+    });
+  } catch (e) {
+    _subDl = false;
+    if (g0 !== loadGen) return 'no';
+    // (v329.3 review: a full device said so, as the reader's download: Try again failed the same way every time)
+    const full =
+      e && (e.name === 'QuotaExceededError' || /quota|storage/i.test(String((e && e.message) || '')));
+    if (navigator.onLine === false)
+      return fail('The connection went, so Focus stays on Even. Connect, then try again.');
+    if (full)
+      return fail(
+        'This device’s storage is full, so the subject finder couldn’t be kept and Focus stays on Even. Free some space, then try again.',
+      );
+    if (f) _subHand = true;
+    note(
+      errNote(
+        'The subject finder didn’t download, so Focus stays on Even. Try again.' + (f ? SUB_HAND_SAY : ''),
+        'Focus',
+        e,
+      ),
+    );
+    renderControls();
+    return 'no';
+  }
+  _subDl = false;
+  // (v329.4: downloaded, so the choices go back to the finder)
+  _subHand = false;
+  if (!pp || g0 !== loadGen) {
+    if (g0 !== loadGen) note('The subject finder is downloaded.');
+    return 'no';
+  }
+  return 'ok';
+}
+// (v329.4) the Focus row's Download the subject finder, while choosing by hand: the finder downloaded for later (the
+// subject chosen by hand stays as it is)
+async function subDlAsk() {
+  if (!pp || _subDl) return;
+  const r = await subGet(null, loadGen);
+  if (r === 'ok') {
+    _subHand = false;
+    note('The subject finder is downloaded.');
+    renderControls();
+  }
+}
 // (the page step's Focus row, 47-photo-page ctlPhotoPage): none where the subject finder can't run
 function ppFocusHTML() {
   if (!subCan()) return '';
+  // (v329.4: the hints read the subject with the guide's fixes as they are now, 49-subject-fix)
+  if (_ppPrep && _ppPrep.key === ppPrepKey()) fixSync(_ppPrep);
   const f = pp.f || 'even',
     hint = {
       even: 'The same detail all over the photo.',
@@ -67927,18 +68082,31 @@ function ppFocusHTML() {
       calm: 'More detail and colour on the photo’s subject, less behind it. Best when the photo has one clear subject.',
       subject: 'Leaves the background white, like a colouring book.',
     };
-  // (v329.2: no subject found, said: Sharper subject is then the Even page, Simpler background a simpler one)
+  // (v329.2: no subject found, said: Sharper subject is then the Even page, Simpler background a simpler one. v329.4:
+  // none chosen by hand, said so)
   if (
     (f === 'sharp' || f === 'calm') &&
     _ppPrep &&
     _ppPrep.sal &&
     _ppPrep.key === ppPrepKey() &&
     ppSubjectShare(_ppPrep) < SUB_NONE
-  )
+  ) {
+    const why = fixHandMap() ? 'No subject chosen' : 'No clear subject found in this photo';
     hint[f] =
       f === 'sharp'
-        ? 'No clear subject found in this photo, so this looks the same as Even.'
-        : 'No clear subject found in this photo, so this makes the whole page simpler.';
+        ? why + ', so this looks the same as Even.'
+        : why + ', so this makes the whole page simpler.';
+  }
+  // (v329.4: choosing by hand this launch, the finder not downloaded: said, with the way to download it)
+  let dl = '';
+  // (pressure test 5: the way to download shown under Even too, or choosing by hand, ended empty, would be the only way
+  // for the rest of the launch)
+  if (_subHand && !subOff()) {
+    if (f !== 'even' && fixHandMap())
+      hint[f] = 'You’re choosing the subject by hand, as the subject finder isn’t downloaded.';
+    dl =
+      '<div class="sffixln"><button type="button" class="sflink" id="sfPpSubDl">Download the subject finder</button></div>';
+  }
   // (v329.3 review: the finder out of memory or too slow this launch, subOff: the choices that need it greyed, and
   // said why, unless this photo's subject is found already)
   const off = subOff() && !(_ppPrep && _ppPrep.sal && _ppPrep.key === ppPrepKey()) ? subOff() : '';
@@ -67947,12 +68115,16 @@ function ppFocusHTML() {
     '<div class="sfsublbl" id="sfPpFocLbl">Focus</div><div id="sfPpFoc" role="group" aria-labelledby="sfPpFocLbl" class="sfc-segs">' +
     ['even', 'sharp', 'calm', 'subject']
       .map(function (k) {
-        return ctlSeg(k, SUB_NAMES[k], f === k, !srcImg || (!!off && k !== 'even'));
+        // (v329.4: not greyed with the finder off: they choose the subject by hand)
+        return ctlSeg(k, SUB_NAMES[k], f === k, !srcImg);
       })
       .join('') +
     '</div><div class="sfrnghint" id="sfPpFocHint">' +
     hint[f] +
-    '</div>'
+    '</div>' +
+    dl +
+    // (v329.4: Fix the subject, 49-subject-fix)
+    fixLinkHTML(f)
   );
 }
 
@@ -67964,14 +68136,16 @@ function ppSubjectMask(prep) {
   const n = prep.w * prep.h,
     m = new Uint8Array(n);
   for (let i = 0; i < n; i++) m[i] = prep.sal[i] < SUB_CUT ? 1 : 0;
-  subStrays(m, prep.w, prep.h);
+  // (v329.4: what the user added in Fix the subject, prep.fixAdd, is never a stray)
+  subStrays(m, prep.w, prep.h, prep.fixAdd || null);
   prep._bgm = { sal: prep.sal, m: m };
   return m;
 }
 // (v329.2) the subject's stray parts made background: a separate part under SUB_STRAY of the largest and under
 // SUB_NONE of the photo (on the bench: the flower bed's three leaves and a sliver of lily, and nothing real). m: 1 the
-// background, changed in place
-function subStrays(m, w, h) {
+// background, changed in place. (v329.4) keep: 1 where the user added to the subject (Fix the subject): a part with
+// any of it stays
+function subStrays(m, w, h, keep) {
   const n = w * h,
     lab = new Int32Array(n).fill(-1),
     st = new Int32Array(n),
@@ -68000,9 +68174,11 @@ function subStrays(m, w, h) {
   }
   if (area.length < 2) return;
   const big = Math.max.apply(null, area),
-    drop = area.map(function (a) {
-      return a < SUB_STRAY * big && a < SUB_NONE * n;
-    });
+    kept = new Uint8Array(area.length);
+  if (keep) for (let p = 0; p < n; p++) if (keep[p] && lab[p] >= 0) kept[lab[p]] = 1;
+  const drop = area.map(function (a, i) {
+    return !kept[i] && a < SUB_STRAY * big && a < SUB_NONE * n;
+  });
   for (let p = 0; p < n; p++) if (lab[p] >= 0 && drop[lab[p]]) m[p] = 1;
 }
 // how much of the photo its subject is (0-1)
@@ -68252,9 +68428,11 @@ function ppCropSubject() {
 // photo it covers (fractions); w, h; sal }
 let _subKeep = [];
 function subKeepAdd(prep) {
-  if (!prep.sal || !prep.keep) return;
+  // (v329.4: the finder's own map, prep.salF, never one read with the user's fixes)
+  const sal = prep.salF !== undefined ? prep.salF : prep.sal;
+  if (!sal || !prep.keep) return;
   _subKeep = _subKeep.filter(function (k) {
-    return k.sal !== prep.sal;
+    return k.sal !== sal;
   });
   _subKeep.unshift({
     src: prep.keep.src,
@@ -68263,13 +68441,21 @@ function subKeepAdd(prep) {
     rect: prep.keep.rect,
     w: prep.w,
     h: prep.h,
-    sal: prep.sal,
+    sal: sal,
   });
   _subKeep = _subKeep.slice(0, 2);
 }
+// (v329.4) subFromKept's map, read with the guide's subject fixes (49-subject-fix): ppPrepare sets prep.sal from it
+function subFromKept(prep) {
+  const ks = subFromKept0(prep);
+  if (!ks) return null;
+  prep.salF = ks;
+  prep.sal = ks;
+  return fixApply(prep);
+}
 // a map for a new photo prepared, from one kept: the same source and tilt, and its rect inside the kept one's (in the
 // same turn), or the whole photo in another quarter turn of a kept whole one. null when none fits
-function subFromKept(prep) {
+function subFromKept0(prep) {
   if (!prep.keep) return null;
   const K = prep.keep;
   for (let i = 0; i < _subKeep.length; i++) {
@@ -68334,6 +68520,1429 @@ function subResample(k, w, h, f) {
         m[iy1 * W0 + ix1] * tx * ty;
     }
   return out;
+}
+// ---- (v329.4) Fix the subject (docs/PLAN-fix-subject.md) ----
+// The photo cut into pieces that follow its edges (SLIC, run in the JOBS worker), and the fix itself: a layer of three
+// states over the subject finder's map (0 the finder's, 1 in, 2 out), kept in the photo's own frame (as first shown:
+// unturned, uncropped, at the tilt it was made at), so it follows crops and quarter turns; read with the finder's map
+// as one subject map everywhere (prep.sal).
+
+// ---- the pieces (pure: the JOBS worker runs them, ppWorkerSrc) ----
+// sRGB bytes to L*a*b* (D65), three Float32Arrays
+function fixLab(rgb, n) {
+  const g = new Float32Array(256);
+  for (let i = 0; i < 256; i++) {
+    const v = i / 255;
+    g[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  }
+  const f = function (t) {
+      return t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+    },
+    L = new Float32Array(n),
+    A = new Float32Array(n),
+    B = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const r = g[rgb[i * 3]],
+      gg = g[rgb[i * 3 + 1]],
+      b = g[rgb[i * 3 + 2]],
+      x = f((r * 0.4124 + gg * 0.3576 + b * 0.1805) / 0.95047),
+      y = f(r * 0.2126 + gg * 0.7152 + b * 0.0722),
+      z = f((r * 0.0193 + gg * 0.1192 + b * 0.9505) / 1.08883);
+    L[i] = 116 * y - 16;
+    A[i] = 500 * (x - y);
+    B[i] = 200 * (y - z);
+  }
+  return { L: L, A: A, B: B };
+}
+// the colour gradient's size per pixel (Sobel on L*, a*, b*), for the seeds
+function fixGrad(lab, w, h) {
+  const n = w * h,
+    gr = new Float32Array(n),
+    CH = [lab.L, lab.A, lab.B];
+  for (let c = 0; c < 3; c++) {
+    const C = CH[c];
+    for (let y = 1; y < h - 1; y++)
+      for (let x = 1; x < w - 1; x++) {
+        const p = y * w + x,
+          gx = C[p - w + 1] + 2 * C[p + 1] + C[p + w + 1] - C[p - w - 1] - 2 * C[p - 1] - C[p + w - 1],
+          gy = C[p + w - 1] + 2 * C[p + w] + C[p + w + 1] - C[p - w - 1] - 2 * C[p - w] - C[p - w + 1];
+        gr[p] += (gx * gx + gy * gy) / 64;
+      }
+  }
+  for (let i = 0; i < n; i++) gr[i] = Math.sqrt(gr[i]);
+  return gr;
+}
+// The pieces: SLIC (Achanta et al., TPAMI 2012), written from the paper. Seeds on a grid of step S (moved to the
+// lowest gradient of their 3 x 3), then SFX_PASSES rounds of k-means on (L*, a*, b*, x, y) in a 2S window round each
+// centre, compactness SFX_M; then each 4-connected fragment its own piece and those under a quarter of a cell joined
+// to the neighbour they touch most. (The piece trial, 3 Nov: on 20 bench photos the outlines' border lay within a
+// pixel of a piece's 53% of the time at S = the long side / 30, 73% at / 75; a seeded watershed 6-7 points lower.)
+// Returns { L: Int32Array, the piece of each pixel, n }.
+const SFX_M = 5,
+  SFX_PASSES = 10,
+  SFX_COARSE = 30,
+  SFX_FINE = 75;
+function fixPieces(rgb, w, h, S) {
+  const n = w * h,
+    lab = fixLab(rgb, n),
+    gr = fixGrad(lab, w, h),
+    seeds = [];
+  for (let y = Math.floor(S / 2); y < h; y += S)
+    for (let x = Math.floor(S / 2); x < w; x += S) {
+      let bx = x,
+        by = y,
+        bv = Infinity;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = Math.min(w - 2, Math.max(1, x + dx)),
+            yy = Math.min(h - 2, Math.max(1, y + dy)),
+            v = gr[yy * w + xx];
+          if (v < bv) {
+            bv = v;
+            bx = xx;
+            by = yy;
+          }
+        }
+      seeds.push(bx, by);
+    }
+  const K = seeds.length / 2,
+    C = new Float64Array(K * 5);
+  for (let k = 0; k < K; k++) {
+    const p = seeds[k * 2 + 1] * w + seeds[k * 2];
+    C[k * 5] = lab.L[p];
+    C[k * 5 + 1] = lab.A[p];
+    C[k * 5 + 2] = lab.B[p];
+    C[k * 5 + 3] = seeds[k * 2];
+    C[k * 5 + 4] = seeds[k * 2 + 1];
+  }
+  const lbl = new Int32Array(n).fill(-1),
+    dist = new Float64Array(n),
+    wxy = (SFX_M / S) * (SFX_M / S);
+  for (let it = 0; it < SFX_PASSES; it++) {
+    dist.fill(Infinity);
+    for (let k = 0; k < K; k++) {
+      const cl = C[k * 5],
+        ca = C[k * 5 + 1],
+        cb = C[k * 5 + 2],
+        cx = C[k * 5 + 3],
+        cy = C[k * 5 + 4],
+        x0 = Math.max(0, Math.floor(cx - S)),
+        x1 = Math.min(w - 1, Math.ceil(cx + S)),
+        y0 = Math.max(0, Math.floor(cy - S)),
+        y1 = Math.min(h - 1, Math.ceil(cy + S));
+      for (let y = y0; y <= y1; y++)
+        for (let x = x0; x <= x1; x++) {
+          const p = y * w + x,
+            dl = lab.L[p] - cl,
+            da = lab.A[p] - ca,
+            db = lab.B[p] - cb,
+            dx = x - cx,
+            dy = y - cy,
+            D = dl * dl + da * da + db * db + wxy * (dx * dx + dy * dy);
+          if (D < dist[p]) {
+            dist[p] = D;
+            lbl[p] = k;
+          }
+        }
+    }
+    const acc = new Float64Array(K * 6);
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const p = y * w + x,
+          k = lbl[p];
+        if (k < 0) continue;
+        const o = k * 6;
+        acc[o] += lab.L[p];
+        acc[o + 1] += lab.A[p];
+        acc[o + 2] += lab.B[p];
+        acc[o + 3] += x;
+        acc[o + 4] += y;
+        acc[o + 5]++;
+      }
+    for (let k = 0; k < K; k++) {
+      const c = acc[k * 6 + 5];
+      if (c) for (let j = 0; j < 5; j++) C[k * 5 + j] = acc[k * 6 + j] / c;
+    }
+  }
+  // (a pixel no window reached: the nearest centre's)
+  for (let p = 0; p < n; p++)
+    if (lbl[p] < 0) {
+      const x = p % w,
+        y = (p - x) / w;
+      let bk = 0,
+        bd = Infinity;
+      for (let k = 0; k < K; k++) {
+        const d = (x - C[k * 5 + 3]) * (x - C[k * 5 + 3]) + (y - C[k * 5 + 4]) * (y - C[k * 5 + 4]);
+        if (d < bd) {
+          bd = d;
+          bk = k;
+        }
+      }
+      lbl[p] = bk;
+    }
+  return fixTidy(lbl, w, h, S);
+}
+// each 4-connected fragment a piece, then pieces under a quarter of a cell joined to the neighbour they share most
+// border with (three passes); ids 0..n-1
+function fixTidy(L, w, h, S) {
+  const n = w * h,
+    out = new Int32Array(n).fill(-1),
+    st = new Int32Array(n);
+  let k = 0;
+  for (let p = 0; p < n; p++) {
+    if (out[p] >= 0) continue;
+    const l = L[p];
+    let sp = 0;
+    st[sp++] = p;
+    out[p] = k;
+    while (sp) {
+      const q = st[--sp],
+        x = q % w;
+      if (x > 0 && out[q - 1] < 0 && L[q - 1] === l) {
+        out[q - 1] = k;
+        st[sp++] = q - 1;
+      }
+      if (x < w - 1 && out[q + 1] < 0 && L[q + 1] === l) {
+        out[q + 1] = k;
+        st[sp++] = q + 1;
+      }
+      if (q >= w && out[q - w] < 0 && L[q - w] === l) {
+        out[q - w] = k;
+        st[sp++] = q - w;
+      }
+      if (q + w < n && out[q + w] < 0 && L[q + w] === l) {
+        out[q + w] = k;
+        st[sp++] = q + w;
+      }
+    }
+    k++;
+  }
+  const min = Math.max(4, (S * S) / 4),
+    par = new Int32Array(k),
+    find = function (x) {
+      while (par[x] !== x) x = par[x] = par[par[x]];
+      return x;
+    };
+  for (let i = 0; i < k; i++) par[i] = i;
+  for (let pass = 0; pass < 3; pass++) {
+    const area = new Float64Array(k),
+      touch = new Map();
+    for (let p = 0; p < n; p++) area[find(out[p])]++;
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const p = y * w + x,
+          a = find(out[p]);
+        if (area[a] >= min) continue;
+        const nb = [x < w - 1 ? p + 1 : -1, y < h - 1 ? p + w : -1, x > 0 ? p - 1 : -1, y > 0 ? p - w : -1];
+        for (let j = 0; j < 4; j++) {
+          if (nb[j] < 0) continue;
+          const b = find(out[nb[j]]);
+          if (b === a) continue;
+          const key = a * k + b;
+          touch.set(key, (touch.get(key) || 0) + 1);
+        }
+      }
+    const best = new Map();
+    touch.forEach(function (c, key) {
+      const a = Math.floor(key / k),
+        b = key - a * k,
+        o = best.get(a);
+      if (!o || c > o[1]) best.set(a, [b, c]);
+    });
+    if (!best.size) break;
+    best.forEach(function (o, a) {
+      const ra = find(a),
+        rb = find(o[0]);
+      if (ra !== rb) par[ra] = rb;
+    });
+  }
+  const map = new Int32Array(k).fill(-1);
+  let m = 0;
+  for (let p = 0; p < n; p++) {
+    const r = find(out[p]);
+    if (map[r] < 0) map[r] = m++;
+    out[p] = map[r];
+  }
+  return { L: out, n: m };
+}
+// the grid step for a working picture: coarse (the long side / SFX_COARSE) or fine (/ SFX_FINE)
+function fixStep(w, h, fine) {
+  return Math.max(4, Math.round(Math.max(w, h) / (fine ? SFX_FINE : SFX_COARSE)));
+}
+
+// ---- the layer ----
+// a new layer, in the frame of the photo prepared's source (keep: ppPrepare's { src, rot, tilt, rect }) at a grid
+// gw x gh; complete: everything not marked in is out (a subject chosen from empty: the finder never asked); source:
+// 'finder' (no fix), 'hand' (chosen from empty), 'both' (fixes over the finder's)
+function fixNew(keep, gw, gh, complete) {
+  return {
+    src: keep.src,
+    tilt: keep.tilt || 0,
+    gw: gw,
+    gh: gh,
+    a: new Uint8Array(gw * gh),
+    complete: !!complete,
+  };
+}
+// whether a layer belongs to the photo prepared (the same photo at the same tilt: a crop or a quarter turn keeps it)
+function fixFits(L, keep) {
+  return !!(L && keep && L.src === keep.src && (L.tilt || 0) === (keep.tilt || 0));
+}
+// a place in the photo prepared (u, v: fractions of it) as fractions of the layer's frame: back through the crop
+// (keep.rect, fractions of the turned photo), then the quarter turn (keep.rot, as subFromKept turns a kept map)
+function fixBase(keep, u, v) {
+  const r = keep.rect || { x: 0, y: 0, w: 1, h: 1 },
+    tu = r.x + u * r.w,
+    tv = r.y + v * r.h,
+    t = (((keep.rot || 0) % 360) + 360) % 360;
+  if (t === 90) return [tv, 1 - tu];
+  if (t === 180) return [1 - tu, 1 - tv];
+  if (t === 270) return [1 - tv, tu];
+  return [tu, tv];
+}
+// each pixel of the photo prepared (w x h) to its layer cell; fine: the layer made fine enough first that a cell is
+// at most a pixel of this view (capped at maxW x maxH, the photo's own pixels)
+function fixCells(L, keep, w, h) {
+  const n = w * h,
+    c = new Int32Array(n);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const b = fixBase(keep, (x + 0.5) / w, (y + 0.5) / h),
+        cx = Math.min(L.gw - 1, Math.max(0, Math.floor(b[0] * L.gw))),
+        cy = Math.min(L.gh - 1, Math.max(0, Math.floor(b[1] * L.gh)));
+      c[y * w + x] = cy * L.gw + cx;
+    }
+  return c;
+}
+// the layer's grid made at least as fine as this view's pixels (cells copied, nearest), never past maxW x maxH;
+// returns the layer (a new one when it grew)
+function fixRefine(L, keep, w, h, maxW, maxH) {
+  const r = keep.rect || { x: 0, y: 0, w: 1, h: 1 },
+    t = (((keep.rot || 0) % 360) + 360) % 360,
+    // (this view's pixels across the whole frame)
+    vw = t === 90 || t === 270 ? h / r.h : w / r.w,
+    vh = t === 90 || t === 270 ? w / r.w : h / r.h,
+    gw = Math.min(maxW || Infinity, Math.max(L.gw, Math.ceil(vw))),
+    gh = Math.min(maxH || Infinity, Math.max(L.gh, Math.ceil(vh)));
+  if (gw <= L.gw && gh <= L.gh) return L;
+  const a = new Uint8Array(gw * gh);
+  for (let y = 0; y < gh; y++) {
+    const sy = Math.min(L.gh - 1, Math.floor(((y + 0.5) * L.gh) / gh));
+    for (let x = 0; x < gw; x++)
+      a[y * gw + x] = L.a[sy * L.gw + Math.min(L.gw - 1, Math.floor(((x + 0.5) * L.gw) / gw))];
+  }
+  return { src: L.src, tilt: L.tilt, gw: gw, gh: gh, a: a, complete: L.complete };
+}
+// the layer as it falls on the photo prepared: 0 the finder's, 1 in, 2 out, a pixel each
+function fixView(L, keep, w, h) {
+  const c = fixCells(L, keep, w, h),
+    v = new Uint8Array(w * h);
+  for (let i = 0; i < c.length; i++) v[i] = L.a[c[i]];
+  return v;
+}
+// the subject map read with the layer: in 1, out 0, else the finder's (sal; none, or a complete layer: 0). A fresh
+// array every time, so what's kept from the old map (ppSubjectMask's _bgm, the targets) is made again
+function fixCombine(sal, view, complete) {
+  const n = view.length,
+    out = new Float32Array(n);
+  for (let i = 0; i < n; i++) out[i] = view[i] === 1 ? 1 : view[i] === 2 || complete || !sal ? 0 : sal[i];
+  return out;
+}
+// what the user added, a pixel each (1): subStrays leaves the parts they touch
+function fixAdded(view) {
+  const n = view.length,
+    m = new Uint8Array(n);
+  for (let i = 0; i < n; i++) m[i] = view[i] === 1 ? 1 : 0;
+  return m;
+}
+// the layer for the guide (pp.fix): runs of [value, count] as a string ("v,count;...") and its frame
+function fixEncode(L) {
+  const a = L.a,
+    parts = [];
+  let i = 0;
+  while (i < a.length) {
+    const v = a[i];
+    let j = i + 1;
+    while (j < a.length && a[j] === v) j++;
+    parts.push(v + ',' + (j - i));
+    i = j;
+  }
+  return { src: L.src, tilt: L.tilt, gw: L.gw, gh: L.gh, complete: L.complete, runs: parts.join(';') };
+}
+function fixDecode(e) {
+  if (!e || !e.runs || !(e.gw > 0) || !(e.gh > 0)) return null;
+  const a = new Uint8Array(e.gw * e.gh),
+    parts = e.runs.split(';');
+  let i = 0;
+  for (let k = 0; k < parts.length; k++) {
+    const pc = parts[k].split(','),
+      v = +pc[0],
+      c = +pc[1];
+    if (!(c > 0) || i + c > a.length || !(v >= 0 && v <= 2)) return null;
+    a.fill(v, i, i + c);
+    i += c;
+  }
+  if (i !== a.length) return null;
+  return { src: e.src, tilt: e.tilt || 0, gw: e.gw, gh: e.gh, a: a, complete: !!e.complete };
+}
+// the layer's key (for the marker choice's and the page memory's keys): its frame and contents, FNV-1a, 8 hex; ''
+// for no layer, or one that marks nothing and isn't complete (the finder's map as it is)
+function fixKey(e) {
+  if (!e || (!e.complete && !/(^|;)[12],/.test(e.runs || ''))) return '';
+  const s = [e.src, e.tilt, e.gw, e.gh, e.complete ? 1 : 0, e.runs].join('|');
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return ('0000000' + h.toString(16)).slice(-8);
+}
+// a stroke: every pixel of the pieces touched (ids, in L: the pieces of the photo prepared) set to v (1 in, 2 out) in
+// the layer, through the view's cells
+function fixPaint(L, cells, P, ids, v) {
+  const set = new Set(ids);
+  for (let i = 0; i < P.length; i++) if (set.has(P[i])) L.a[cells[i]] = v;
+  return L;
+}
+// how much of the photo prepared the layer changes from the finder's map (0-1), for Copy diagnostics
+function fixShare(sal, view, complete) {
+  let k = 0;
+  for (let i = 0; i < view.length; i++) {
+    const was = !complete && sal ? sal[i] >= SUB_CUT : false,
+      now = view[i] === 1 ? true : view[i] === 2 ? false : was;
+    if (now !== was) k++;
+  }
+  return view.length ? k / view.length : 0;
+}
+
+// ---- the hooks: the layer read with the finder's map where the map is first set (subFind's result, subFromKept's
+// kept map, or, for a subject chosen from empty, subMap without the finder), and again whenever the guide's layer has
+// changed since (fixSync: ppMake and the Focus row). Never inside a function the bench copies (scripts/bench/lib/pp.mjs)
+// ----
+// the guide's layer, decoded once for each stored one (pp.fix)
+let _fixDec = null;
+function fixLayer() {
+  const e = pp && pp.fix;
+  if (!e) return null;
+  if (_fixDec && _fixDec.e === e) return _fixDec.L;
+  _fixDec = { e: e, L: fixDecode(e) };
+  return _fixDec.L;
+}
+// each photo prepared and layer: its own pid (so the marker choice's key, ppChoose's ck, and the page memory's,
+// ppMemKey, are another for another subject; the same again when a fix is undone)
+const _fixPids = new Map();
+// the photo prepared's subject map read with the guide's layer: prep.salF the finder's own (null when it never ran),
+// prep.sal the two together, prep.fixAdd what the user added (for subStrays), prep.fixKey the layer's key. A layer for
+// another photo is let go of; one for this photo at another tilt too, said (the photo's shape changed). Returns prep.sal
+// (pressure test 1: a layer of fixes over a finder's map not yet made leaves the map unmade, so the finder is still
+// asked, subMap, and its answer read with the layer then, subFind; 2: only the photo prepared now binds or lets go of
+// the guide's layer: a finder answering for an older one, another guide opened meanwhile, leaves it alone)
+function fixApply(prep) {
+  if (!prep) return null;
+  const live = prep === _ppPrep && prep.key === ppPrepKey();
+  if (live) fixBind(prep);
+  const raw = prep.salF !== undefined ? prep.salF : prep.sal || null;
+  let L = pp ? fixLayer() : null;
+  if (L && !fixFits(L, prep.keep)) {
+    if (live) {
+      if (prep.keep && L.src === prep.keep.src)
+        note('Your subject changes were cleared because the photo’s shape changed.');
+      pp.fix = null;
+    }
+    L = null;
+  }
+  if (L && !L.complete && raw === null && prep.salF === undefined) return null;
+  const k = L ? fixKey(pp.fix) : '',
+    pk = prep.key + '|';
+  if (!_fixPids.has(pk)) _fixPids.set(pk, prep.pid);
+  prep.salF = raw;
+  prep.fixKey = k;
+  if (!k) {
+    prep.sal = raw;
+    prep.fixAdd = null;
+    prep.pid = _fixPids.get(pk);
+    return prep.sal;
+  }
+  const v = fixView(L, prep.keep, prep.w, prep.h);
+  prep.sal = fixCombine(raw, v, L.complete);
+  prep.fixAdd = fixAdded(v);
+  if (!_fixPids.has(pk + k)) _fixPids.set(pk + k, ++_ppPid);
+  prep.pid = _fixPids.get(pk + k);
+  return prep.sal;
+}
+// (ppMake and the Focus row) the photo prepared made to agree with the guide's layer, when it doesn't (an Undo, Done,
+// Use the finder's subject): cheap when it does
+function fixSync(prep) {
+  if (!prep || !pp) return;
+  fixBind(prep);
+  const k = pp.fix ? fixKey(pp.fix) : '';
+  if ((prep.fixKey || '') === k && prep.salF !== undefined) return;
+  if (prep.salF === undefined && !prep.sal && !k) return;
+  fixApply(prep);
+}
+// a guide opened again: its saved layer is its own photo's, the first one prepared (the session's number for it)
+function fixBind(prep) {
+  if (pp && pp.fix && pp.fix.src == null && prep && prep.keep)
+    pp.fix = Object.assign({}, pp.fix, { src: prep.keep.src });
+}
+// (subMap) a subject chosen from empty: the map is the layer's alone, the finder never asked (decision 7)
+function fixOwnMap(prep) {
+  fixBind(prep);
+  const L = fixLayer();
+  if (!L || !L.complete || !fixFits(L, prep.keep)) return null;
+  prep.salF = null;
+  return fixApply(prep);
+}
+
+// ---- (the worker: 03-jobs, the 'fixp' job) the pieces' source for the worker ----
+function fixWorkerSrc() {
+  return (
+    'const SFX_M = ' +
+    SFX_M +
+    ', SFX_PASSES = ' +
+    SFX_PASSES +
+    ';\n' +
+    [fixLab, fixGrad, fixPieces, fixTidy]
+      .map(function (f) {
+        return f.toString();
+      })
+      .join('\n')
+  );
+}
+
+// ---- what's saved with the guide (payload.pp.fix): the layer without the session's photo number (src), which a
+// guide opened again takes from its own photo, the first one prepared (fixApply) ----
+function fixSave(e) {
+  if (!e || !e.runs) return undefined;
+  return { tilt: e.tilt || 0, gw: e.gw, gh: e.gh, complete: e.complete ? 1 : undefined, runs: e.runs };
+}
+function fixLoad(o) {
+  if (!o || typeof o !== 'object' || typeof o.runs !== 'string' || o.runs.length > 8000000) return null;
+  const e = {
+    src: null,
+    tilt: typeof o.tilt === 'number' && isFinite(o.tilt) ? o.tilt : 0,
+    gw: o.gw | 0,
+    gh: o.gh | 0,
+    complete: o.complete === 1,
+    runs: o.runs,
+  };
+  if (!(e.gw > 0 && e.gh > 0 && e.gw * e.gh <= 64000000) || !fixDecode(e)) return null;
+  return e;
+}
+
+// ---- the mode (decisions 1-6): the photo with its subject bright and the rest dimmed, the pieces' borders faint;
+// one finger adds pieces to the subject or takes them away (the pixel under the first touch decides which), two
+// fingers zoom and move; the strokes a draft with its own Undo until Done ----
+let fixOn = false,
+  _fx = null,
+  // (the stroke under the finger)
+  _fxS = null,
+  _fxRaf = 0,
+  // (zoom and position kept between visits, for the photo prepared: { key, z, x, y })
+  _fxZoom = null,
+  // (Done's draft while its page is made: back in the mode with it if the page can't be made, ppRemade)
+  _fxRetry = null,
+  _fxFailed = false,
+  // (what the next make says while it works, ppMake)
+  _fxMakeWord = null,
+  // (decision 7b: choosing the subject by hand for this launch, the finder not downloaded: Focus choices go straight
+  // to choosing, 48-subject ppSetFocus)
+  _subHand = false;
+const FIX_UNDO_MAX = 200,
+  FIX_ACCENT = '#b9a8ff';
+function fixMakeWord() {
+  const w = _fxMakeWord;
+  _fxMakeWord = null;
+  return w;
+}
+// the mode can be opened: the page step of a photo-made page, nothing being made
+function fixCanOpen() {
+  return !!(
+    pp &&
+    srcImg &&
+    // (pressure test 8: not while the subject finder downloads, whose end makes the page again)
+    !_subDl &&
+    sfmode === 'review' &&
+    ppOn() &&
+    !_ppBusy &&
+    !cropMode &&
+    !pgMode &&
+    subCan() &&
+    !(root && root.classList.contains('sfrev'))
+  );
+}
+// (the Focus row, 48-subject ppFocusHTML) the way in: with a Focus that uses the subject; "Choose the subject" when
+// there's none
+// (Subject only gone back to Even for want of a clear subject, ppMake: the photo prepared's key, for Choose the
+// subject under Even, which chooses it for Subject only)
+let _fxNone = '';
+function fixNoneSet(k) {
+  _fxNone = k;
+}
+function fixNoneHere() {
+  return !!(
+    pp &&
+    pp.f === 'even' &&
+    _fxNone &&
+    _ppPrep &&
+    _ppPrep.key === ppPrepKey() &&
+    _fxNone === _ppPrep.key
+  );
+}
+function fixLinkHTML(f) {
+  if (!srcImg || !pp) return '';
+  if (f === 'even' && !fixNoneHere()) return '';
+  const pr = _ppPrep && _ppPrep.key === ppPrepKey() ? _ppPrep : null,
+    none = f === 'even' || (pr && (pr.sal ? ppSubjectShare(pr) < SUB_NONE : pr.salF === null));
+  return (
+    '<div class="sffixln"><button type="button" class="sflink" id="sfPpFix"' +
+    (_ppBusy ? ' disabled' : '') +
+    '>' +
+    (none ? 'Choose the subject' : 'Fix the subject') +
+    '</button></div>'
+  );
+}
+// the guide's subject is one chosen by hand from empty (a complete layer) for the photo prepared: no finder needed
+// (pressure test 4: decided from the guide's layer itself, so a guide opened again, nothing prepared yet, needs no
+// finder either)
+function fixHandMap() {
+  if (!pp || !pp.fix || !srcImg) return false;
+  const pr = _ppPrep && _ppPrep.key === ppPrepKey() ? _ppPrep : null;
+  if (pr) fixBind(pr);
+  const e = pp.fix;
+  return !!(e.complete && (e.tilt || 0) === (tilt || 0) && (e.src == null || e.src === _ppSrcId(srcImg)));
+}
+// (pressure test 3) the photo prepared now has a subject map already (the finder's, found before): a Focus needs no
+// finder and no choosing
+function fixHaveMap() {
+  const pr = _ppPrep && _ppPrep.key === ppPrepKey() ? _ppPrep : null;
+  return !!(pr && (pr.salF || pr.sal));
+}
+// (decision 7: 48-subject ppSetFocus) a Focus that needs a subject chosen with no finder (off this launch, not
+// downloaded, choosing by hand chosen): the mode opened empty for it; Done makes the page with that Focus, and ending
+// with no subject keeps the Focus as it was
+function fixChooseFor(f) {
+  if (fixOn || !fixCanOpen()) {
+    renderControls();
+    return;
+  }
+  const prep = ppPrepare();
+  if (!prep) return;
+  fixSync(prep);
+  fixOpen(prep, null, f);
+}
+// the photo's whole frame in its own pixels (as first shown, at its tilt): the finest the layer ever gets
+function fixFrameMax() {
+  const a = ((tilt || 0) * Math.PI) / 180,
+    c = Math.abs(Math.cos(a)),
+    s = Math.abs(Math.sin(a)),
+    sw = srcImg.width,
+    sh = srcImg.height;
+  return [Math.max(1, Math.round(sw * c + sh * s)), Math.max(1, Math.round(sw * s + sh * c))];
+}
+// each view pixel's cells in the layer (those whose middle is in it; the one under its middle when there's none), a
+// range along each of the layer's sides: columns X and rows Y of the view; sw: the view's columns run down the layer
+// (a quarter turn)
+function fixFoot(L, keep, w, h) {
+  const r = keep.rect || { x: 0, y: 0, w: 1, h: 1 },
+    t = (((keep.rot || 0) % 360) + 360) % 360,
+    sw = t === 90 || t === 270,
+    ax = function (n, o, k, flip, G) {
+      const lo = new Int32Array(n),
+        hi = new Int32Array(n);
+      for (let i = 0; i < n; i++) {
+        let a = o + (i / n) * k,
+          b = o + ((i + 1) / n) * k;
+        if (flip) {
+          const t2 = 1 - a;
+          a = 1 - b;
+          b = t2;
+        }
+        let c0 = Math.ceil(a * G - 0.5),
+          c1 = Math.ceil(b * G - 0.5);
+        if (c1 <= c0) {
+          c0 = Math.floor(((a + b) / 2) * G);
+          c1 = c0 + 1;
+        }
+        lo[i] = Math.max(0, Math.min(G - 1, c0));
+        hi[i] = Math.max(lo[i] + 1, Math.min(G, c1));
+      }
+      return { lo: lo, hi: hi };
+    };
+  return {
+    X: ax(w, r.x, r.w, t === 180 || t === 90, sw ? L.gh : L.gw),
+    Y: ax(h, r.y, r.h, t === 180 || t === 270, sw ? L.gw : L.gh),
+    sw: sw,
+  };
+}
+// a piece's pixels (k, of the pieces P) set to v (1 in, 2 out) in the layer, each changed cell recorded (rec: its
+// Undo)
+function fixSetPiece(F, P, k, v, rec) {
+  const a = F.L.a,
+    gw = F.L.gw,
+    ft = F.foot,
+    w = F.w;
+  for (let j = P.start[k]; j < P.start[k + 1]; j++) {
+    const p = P.idx[j],
+      x = p % w,
+      y = (p - x) / w,
+      x0 = ft.sw ? ft.Y.lo[y] : ft.X.lo[x],
+      x1 = ft.sw ? ft.Y.hi[y] : ft.X.hi[x],
+      y0 = ft.sw ? ft.X.lo[x] : ft.Y.lo[y],
+      y1 = ft.sw ? ft.X.hi[x] : ft.Y.hi[y];
+    for (let cy = y0; cy < y1; cy++)
+      for (let c = cy * gw + x0, e = cy * gw + x1; c < e; c++)
+        if (a[c] !== v) {
+          rec.c.push(c);
+          rec.o.push(a[c]);
+          a[c] = v;
+        }
+    F.view[p] = v;
+    F.disp[p] = v === 1 ? 1 : 0;
+  }
+}
+// the subject as the page will read it: the layer over the finder's map, then the strays rule (what was added kept)
+function fixSubOf(F) {
+  const n = F.w * F.h,
+    s = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    const v = F.view[i];
+    s[i] = v === 1 ? 1 : v === 2 || F.L.complete || !F.sal ? 0 : F.sal[i] >= SUB_CUT ? 1 : 0;
+  }
+  return s;
+}
+function fixDisp(F) {
+  const n = F.w * F.h,
+    s = fixSubOf(F),
+    m = new Uint8Array(n),
+    add = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    m[i] = s[i] ? 0 : 1;
+    add[i] = F.view[i] === 1 ? 1 : 0;
+  }
+  subStrays(m, F.w, F.h, add);
+  let k = 0;
+  for (let i = 0; i < n; i++) {
+    F.disp[i] = m[i] ? 0 : 1;
+    k += F.disp[i];
+  }
+  F.share = k / n;
+}
+// the layer read again at every pixel (after a stroke, an Undo, Clear): the view and the subject shown
+function fixReview(F) {
+  const c = F.cells,
+    a = F.L.a;
+  for (let i = 0; i < c.length; i++) F.view[i] = a[c[i]];
+  fixDisp(F);
+}
+// the pieces of the photo prepared (coarse, or fine when zoomed in 2x or more), each piece's pixels listed
+function fixPieceSet(F, r) {
+  const n = F.w * F.h,
+    L = r.L,
+    m = r.n,
+    start = new Int32Array(m + 1),
+    idx = new Int32Array(n),
+    bd = new Uint8Array(n),
+    w = F.w;
+  for (let p = 0; p < n; p++) start[L[p] + 1]++;
+  for (let k = 0; k < m; k++) start[k + 1] += start[k];
+  const at = start.slice(0, m);
+  for (let p = 0; p < n; p++) idx[at[L[p]]++] = p;
+  for (let p = 0; p < n; p++) {
+    const x = p % w;
+    bd[p] = (x < w - 1 && L[p] !== L[p + 1]) || (p + w < n && L[p] !== L[p + w]) ? 1 : 0;
+  }
+  return { L: L, n: m, start: start, idx: idx, bd: bd };
+}
+// the pieces for this zoom: made once each (the JOBS worker; on the page when there's none)
+function fixPiecesFor(F) {
+  const fine = zoom >= 2,
+    k = fine ? 'fine' : 'coarse';
+  F.want = k;
+  if (F.ps[k]) {
+    if (F.pc !== F.ps[k] && !_fxS) {
+      F.pc = F.ps[k];
+      fixQueue();
+    }
+    return;
+  }
+  if (F.asked[k]) return;
+  F.asked[k] = true;
+  const S = fixStep(F.w, F.h, fine),
+    rgb = F.prep.rgb,
+    w = F.w,
+    h = F.h;
+  JOBS.run('fixp', { rgb: rgb, w: w, h: h, S: S, n: w * h })
+    .catch(function (e) {
+      // (pressure test 9: made on the page only where there's no worker at all; a worker that took too long or failed
+      // (memory) isn't followed by the same work on the page's own thread, which would hold the screen)
+      if (!/no worker/.test(String((e && e.message) || e))) throw e;
+      return new Promise(function (res) {
+        afterPaint(function () {
+          res(fixPieces(rgb, w, h, S));
+        });
+      });
+    })
+    .then(function (r) {
+      if (_fx !== F && _fxRetry !== F) return;
+      F.ps[k] = fixPieceSet(F, r);
+      if (F.want === k && !_fxS) F.pc = F.ps[k];
+      if (!F.pc) F.pc = F.ps[k];
+      if (fixOn && _fx === F) {
+        const ld = document.getElementById('sfFixLoad');
+        if (ld) ld.remove();
+        fixQueue();
+      }
+    })
+    .catch(function (e) {
+      errLog('Fix the subject', e);
+      // (asked again on the next zoom; with no pieces at all, said: the mode can't be used meanwhile)
+      F.asked[k] = false;
+      if (fixOn && _fx === F && !F.pc) {
+        const ld = document.getElementById('sfFixLoad');
+        if (ld)
+          ld.textContent =
+            'Couldn’t get the pieces ready on this device. Cancel, then try Fix the subject again.';
+      }
+    });
+}
+// (70-view applyXform) zoomed: the pieces for the new zoom
+function fixZoomed() {
+  if (fixOn && _fx) fixPiecesFor(_fx);
+}
+// the photo as it's made into a page, at the page's size (the mode's own copy, let go of on leaving)
+function fixPhoto(GW, GH) {
+  const z = ppSize(),
+    oc = rot90 || tilt ? buildRotatedFull(false) : null,
+    c = document.createElement('canvas');
+  c.width = GW;
+  c.height = GH;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, GW, GH);
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  if (oc) {
+    g.drawImage(oc, z.cx, z.cy, z.cw, z.ch, 0, 0, GW, GH);
+    freeCanvas(oc);
+  } else g.drawImage(srcImg, z.cx / z.sc, z.cy / z.sc, z.cw / z.sc, z.ch / z.sc, 0, 0, GW, GH);
+  return c;
+}
+// Fix the subject's link: the mode opened for the photo prepared (its subject found first when it hasn't been this
+// session: "Finding the subject…"; none can be: the mode starts empty)
+function fixEnter() {
+  if (fixOn || !fixCanOpen()) return;
+  // (under Even after Subject only found none: chosen for Subject only)
+  if (pp.f === 'even') {
+    if (fixNoneHere()) fixChooseFor('subject');
+    return;
+  }
+  const prep = ppPrepare();
+  if (!prep) return;
+  fixSync(prep);
+  if (prep.salF === undefined && !prep.sal) {
+    // (the finder off this launch, or choosing by hand: not asked, the mode starts empty)
+    if (subOff() || _subHand) {
+      prep.salF = null;
+      fixOpen(prep);
+      return;
+    }
+    const g = loadGen;
+    note('Finding the subject…');
+    _ppBusy = true;
+    renderControls();
+    subMap(prep)
+      .catch(function (e) {
+        errLog('Fix the subject', e);
+        prep.salF = null;
+      })
+      .then(function () {
+        _ppBusy = false;
+        note(metaText());
+        if (g !== loadGen || !pp || prep !== _ppPrep) return;
+        if (prep.salF === undefined) prep.salF = prep.sal || null;
+        fixOpen(prep);
+      });
+    return;
+  }
+  fixOpen(prep);
+}
+// focus: the Focus this is chosen for (fixChooseFor), made with it at Done
+function fixOpen(prep, F0, focus) {
+  if (!fixCanOpen() || prep.GW !== W || prep.GH !== H) return;
+  let F = F0;
+  if (!F) {
+    const raw = focus ? null : prep.salF !== undefined ? prep.salF : prep.sal || null,
+      // (pressure test 11: for a pending Focus, a subject chosen by hand before, too small for Subject only, say, is
+      // where it starts)
+      L0 = fixFits(fixLayer(), prep.keep) && (!focus || fixLayer().complete) ? fixLayer() : null,
+      fm = fixFrameMax();
+    // (decision 7: every empty start, the finder's subject none or missing, is complete: the finder never asked again)
+    let L = L0
+      ? { src: L0.src, tilt: L0.tilt, gw: L0.gw, gh: L0.gh, a: L0.a.slice(), complete: L0.complete }
+      : fixNew(prep.keep, 1, 1, !raw || fixFinderShare(raw) < SUB_NONE);
+    L = fixRefine(L, prep.keep, prep.w, prep.h, fm[0], fm[1]);
+    const n = prep.w * prep.h;
+    F = {
+      prep: prep,
+      key: prep.key,
+      w: prep.w,
+      h: prep.h,
+      sal: raw,
+      L: L,
+      cells: fixCells(L, prep.keep, prep.w, prep.h),
+      foot: fixFoot(L, prep.keep, prep.w, prep.h),
+      view: new Uint8Array(n),
+      disp: new Uint8Array(n),
+      share: 0,
+      undo: [],
+      redo: [],
+      ps: {},
+      asked: {},
+      pc: null,
+      want: 'coarse',
+      focus: focus || null,
+    };
+    fixReview(F);
+    // (what the page has now, for Done's "nothing changed": the subject as the page reads it)
+    F.sub0 = fixSubOf(F);
+    F.choose = F.share < SUB_NONE;
+    F.finder = !!raw && fixFinderShare(raw) >= SUB_NONE;
+    // (Use the finder's subject for a subject chosen by hand when the finder never ran on this photo and could: it's
+    // asked then, fixUseFinder; only once it's known to be stored)
+    F.canAsk = false;
+    if (!raw && L.complete && !focus && !_subHand && !subOff() && subCan() && !prep._fxTried)
+      subMissing().then(function (need) {
+        if (_fx !== F || !need || need.length) return;
+        F.canAsk = true;
+        if (fixOn) renderControls();
+      });
+  }
+  F.photo = fixPhoto(W, H);
+  F.tmp = document.createElement('canvas');
+  F.tmp.width = W;
+  F.tmp.height = H;
+  F.maskC = document.createElement('canvas');
+  F.maskC.width = F.w;
+  F.maskC.height = F.h;
+  F.lineC = document.createElement('canvas');
+  F.lineC.width = F.w;
+  F.lineC.height = F.h;
+  F.z0 = { z: zoom, x: panX, y: panY };
+  _fx = F;
+  fixOn = true;
+  photoPeek = false;
+  hideTip();
+  if (_fxZoom && _fxZoom.key === F.key) {
+    zoom = _fxZoom.z;
+    panX = _fxZoom.x;
+    panY = _fxZoom.y;
+    clampPan();
+    applyXform();
+  } else resetZoom();
+  fixPiecesFor(F);
+  renderControls();
+  positionPeekBtn();
+  fixQueue();
+  ctlRefocus('#sfFixHead');
+}
+// how much of the photo the finder's own map calls its subject
+function fixFinderShare(sal) {
+  let k = 0;
+  for (let i = 0; i < sal.length; i++) if (sal[i] >= SUB_CUT) k++;
+  return sal.length ? k / sal.length : 0;
+}
+// the mode left (Cancel, Done): the view as it was on the page; keep: the draft held for Done's retry
+function fixExit(keep) {
+  const F = _fx;
+  if (_fxS) fixStrokeEnd(false);
+  fixOn = false;
+  _fx = null;
+  if (_fxRaf) {
+    cancelAnimationFrame(_fxRaf);
+    _fxRaf = 0;
+  }
+  if (F) {
+    _fxZoom = { key: F.key, z: zoom, x: panX, y: panY };
+    fixFree(F);
+    if (!keep) F.ps = {};
+    zoom = F.z0.z;
+    panX = F.z0.x;
+    panY = F.z0.y;
+    clampPan();
+    applyXform();
+  }
+  renderControls();
+  render();
+  positionPeekBtn();
+  ctlRefocus('#sfPpFix');
+}
+function fixFree(F) {
+  ['photo', 'tmp', 'maskC', 'lineC'].forEach(function (k) {
+    if (F[k]) freeCanvas(F[k]);
+    F[k] = null;
+  });
+}
+// (a new picture, another stage, 20-image-input and 50-controls) the mode gone, its draft with it
+function fixOff() {
+  if (_fxS) {
+    clearTimeout(_fxS.t);
+    _fxS = null;
+  }
+  if (_fx) fixFree(_fx);
+  if (_fxRetry && _fxRetry !== _fx) fixFree(_fxRetry);
+  fixOn = false;
+  _fx = null;
+  _fxRetry = null;
+}
+function fixCancel() {
+  if (_fx && _fx.asking) return;
+  fixExit(false);
+}
+// Done: nothing changed, nothing made; else asked first when there's something to lose (okGeom: Cancel there keeps
+// the mode and its strokes), the Undo step kept, the layer the guide's, and the page made again with it. A page that
+// can't be made: the layer as it was, back in the mode with the strokes, said (ppRemade)
+function fixDone() {
+  const F = _fx;
+  // (pressure test 7: not while the finder is asked, Use the finder's subject)
+  if (!F || _ppBusy || F.asking) return;
+  if (_fxS) fixStrokeEnd(true);
+  const now = fixSubOf(F);
+  let same = true;
+  for (let i = 0; i < now.length && same; i++) if (now[i] !== F.sub0[i]) same = false;
+  // (a pending Focus with the subject as it was, one chosen by hand: the Focus is still made)
+  if (same && !(F.focus && F.share >= SUB_NONE)) {
+    fixExit(false);
+    return;
+  }
+  // (a Focus chosen with no subject chosen after all: as it was)
+  if (F.focus && F.share < SUB_NONE) {
+    fixExit(false);
+    return;
+  }
+  okGeom(
+    function () {
+      const was = pp.fix,
+        wasF = pp.f,
+        marked =
+          F.L.complete ||
+          F.L.a.some(function (v) {
+            return v !== 0;
+          });
+      pp.fix = marked ? fixEncode(F.L) : null;
+      if (F.focus) pp.f = F.focus;
+      _fxRetry = F;
+      _fxFailed = false;
+      fixExit(true);
+      _fxMakeWord = 'Making the page with your subject…';
+      ppRemade(false).then(function (ok) {
+        const failed = _fxFailed;
+        _fxFailed = false;
+        if (_fxRetry !== F) return;
+        _fxRetry = null;
+        if (ok || !failed || !pp) {
+          F.ps = {};
+          return;
+        }
+        pp.fix = was;
+        pp.f = wasF;
+        const prep = ppPrepare();
+        if (prep && prep.key === F.key) {
+          fixSync(prep);
+          fixOpen(prep, F);
+        }
+      });
+    },
+    true,
+    function () {
+      renderControls();
+    },
+  );
+}
+// (ppRemade's failure) the words when it was Done's page
+function fixFailWords() {
+  if (!_fxRetry) return null;
+  _fxFailed = true;
+  return 'Couldn’t make the page, so your subject fixes weren’t applied. Your fixes are still there to try again.';
+}
+
+// ---- the strokes (80-input: one finger; two fingers pinch, and end a stroke) ----
+function fixPt(e) {
+  const r = cv.getBoundingClientRect(),
+    F = _fx;
+  return {
+    x: Math.floor(((e.clientX - r.left) / r.width) * F.w),
+    y: Math.floor(((e.clientY - r.top) / r.height) * F.h),
+  };
+}
+function fixStrokeStart(e) {
+  const F = _fx;
+  if (!F || !F.pc) return;
+  const P = fixPt(e),
+    s = {
+      id: e.pointerId,
+      p0: P,
+      last: P,
+      sx: e.clientX,
+      sy: e.clientY,
+      pend: true,
+      v: 0,
+      seen: new Uint8Array(F.pc.n),
+      pc: F.pc,
+      rec: { c: [], o: [] },
+      t: 0,
+    };
+  _fxS = s;
+  // (a finger waits a moment, or until it moves, so a second finger landing for a pinch changes nothing: as Paint)
+  if (e.pointerType === 'mouse' || e.pointerType === 'pen') fixGo(s);
+  else
+    s.t = setTimeout(function () {
+      if (_fxS === s) fixGo(s);
+    }, 110);
+}
+function fixGo(s) {
+  if (!s.pend) return;
+  clearTimeout(s.t);
+  s.pend = false;
+  const F = _fx,
+    P = s.p0;
+  if (P.x < 0 || P.y < 0 || P.x >= F.w || P.y >= F.h) {
+    s.v = 0;
+    return;
+  }
+  // (the pixel under the first touch: on the subject, the stroke takes away; else it adds)
+  s.v = F.disp[P.y * F.w + P.x] ? 2 : 1;
+  fixDot(s, P);
+  fixQueue();
+}
+function fixStrokeMove(e) {
+  const s = _fxS;
+  if (!s) return;
+  const P = fixPt(e);
+  if (s.pend) {
+    if (Math.abs(e.clientX - s.sx) + Math.abs(e.clientY - s.sy) <= 6) return;
+    fixGo(s);
+  }
+  if (!s.v) return;
+  const dx = P.x - s.last.x,
+    dy = P.y - s.last.y,
+    n = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy))));
+  for (let i = 1; i <= n; i++)
+    fixDot(s, { x: Math.round(s.last.x + (dx * i) / n), y: Math.round(s.last.y + (dy * i) / n) });
+  s.last = P;
+  fixQueue();
+}
+function fixDot(s, P) {
+  const F = _fx;
+  if (!s.v || P.x < 0 || P.y < 0 || P.x >= F.w || P.y >= F.h) return;
+  const k = s.pc.L[P.y * F.w + P.x];
+  if (s.seen[k]) return;
+  s.seen[k] = 1;
+  fixSetPiece(F, s.pc, k, s.v, s.rec);
+}
+// the stroke over (tap: a touch let go before its moment, which counts)
+function fixStrokeEnd(tap) {
+  const s = _fxS,
+    F = _fx;
+  if (!s) return;
+  _fxS = null;
+  clearTimeout(s.t);
+  if (!F) return;
+  if (tap && s.pend) {
+    s.pend = false;
+    fixGo(s);
+  }
+  if (s.rec.c.length) {
+    F.undo.push({ c: Int32Array.from(s.rec.c), o: Uint8Array.from(s.rec.o), v: s.v });
+    if (F.undo.length > FIX_UNDO_MAX) F.undo.shift();
+    F.redo = [];
+  }
+  fixReview(F);
+  // (the pieces for the zoom now, held back during the stroke)
+  if (F.want && F.ps[F.want]) F.pc = F.ps[F.want];
+  fixQueue();
+  fixPaneSync();
+}
+// Clear and Use the finder's subject: the whole layer, one Undo step
+function fixWhole(empty) {
+  const F = _fx;
+  if (!F) return;
+  if (_fxS) fixStrokeEnd(false);
+  // (pressure test 11: the cells changed only, not two copies of the whole layer: a fine one is millions of cells)
+  const a = F.L.a,
+    c = [],
+    o = [],
+    c0 = F.L.complete;
+  for (let i = 0; i < a.length; i++)
+    if (a[i]) {
+      c.push(i);
+      o.push(a[i]);
+      a[i] = 0;
+    }
+  F.L.complete = !!empty || !F.sal;
+  F.undo.push({ c: Int32Array.from(c), o: Uint8Array.from(o), v: 0, comp: [c0, F.L.complete] });
+  if (F.undo.length > FIX_UNDO_MAX) F.undo.shift();
+  F.redo = [];
+  fixReview(F);
+  fixQueue();
+  fixPaneSync();
+  sayLive(empty ? 'Subject cleared' : 'The finder’s subject back');
+}
+function fixUndo() {
+  const F = _fx;
+  if (!F || !F.undo.length) return;
+  if (_fxS) fixStrokeEnd(false);
+  const u = F.undo.pop(),
+    a = F.L.a;
+  for (let i = u.c.length - 1; i >= 0; i--) a[u.c[i]] = u.o[i];
+  if (u.comp) F.L.complete = u.comp[0];
+  F.redo.push(u);
+  fixReview(F);
+  fixQueue();
+  fixPaneSync();
+}
+function fixRedo() {
+  const F = _fx;
+  if (!F || !F.redo.length) return;
+  if (_fxS) fixStrokeEnd(false);
+  const u = F.redo.pop(),
+    a = F.L.a;
+  for (let i = 0; i < u.c.length; i++) a[u.c[i]] = u.v;
+  if (u.comp) F.L.complete = u.comp[1];
+  F.undo.push(u);
+  fixReview(F);
+  fixQueue();
+  fixPaneSync();
+}
+// (87-undo planBtn) the tool row's Undo and Redo while the mode is open: the draft's
+function fixBtns(b, r) {
+  const F = _fx,
+    on = !!(F && F.undo.length),
+    ron = !!(F && F.redo.length);
+  if (b) {
+    b.style.display = '';
+    b.style.visibility = on ? '' : 'hidden';
+    b.setAttribute('aria-label', 'Undo the last change to the subject');
+    b.title = 'Undo the last change to the subject';
+  }
+  if (r) {
+    r.style.display = ron ? '' : 'none';
+    r.setAttribute('aria-label', 'Redo the change to the subject');
+    r.title = 'Redo the change to the subject';
+  }
+}
+
+// ---- drawing ----
+function fixQueue() {
+  if (_fxRaf) return;
+  _fxRaf = requestAnimationFrame(function () {
+    _fxRaf = 0;
+    if (fixOn && _fx) {
+      fixMasks(_fx);
+      fixDraw();
+    }
+  });
+}
+// the subject (a mask, at the working size) and the lines (its outline in the accent, the pieces' borders faint)
+function fixMasks(F) {
+  const w = F.w,
+    h = F.h,
+    n = w * h,
+    mg = F.maskC.getContext('2d'),
+    lg = F.lineC.getContext('2d'),
+    md = mg.createImageData(w, h),
+    ld = lg.createImageData(w, h),
+    M = md.data,
+    D = ld.data,
+    s = F.disp,
+    bd = F.pc ? F.pc.bd : null;
+  let ac = FIX_ACCENT;
+  try {
+    ac = getComputedStyle(document.documentElement).getPropertyValue('--accent-ink').trim() || FIX_ACCENT;
+  } catch (_) {}
+  const m = /^#([0-9a-f]{6})$/i.exec(ac),
+    ar = m ? parseInt(m[1].slice(0, 2), 16) : 185,
+    agg = m ? parseInt(m[1].slice(2, 4), 16) : 168,
+    ab = m ? parseInt(m[1].slice(4, 6), 16) : 255;
+  for (let p = 0; p < n; p++) {
+    const x = p % w,
+      v = s[p],
+      j = p * 4;
+    if (v) {
+      M[j] = M[j + 1] = M[j + 2] = 255;
+      M[j + 3] = 255;
+    }
+    const e =
+      (x < w - 1 && s[p + 1] !== v) ||
+      (x > 0 && s[p - 1] !== v) ||
+      (p + w < n && s[p + w] !== v) ||
+      (p >= w && s[p - w] !== v);
+    if (e) {
+      D[j] = ar;
+      D[j + 1] = agg;
+      D[j + 2] = ab;
+      D[j + 3] = 255;
+    } else if (bd && bd[p]) {
+      D[j] = D[j + 1] = D[j + 2] = 255;
+      D[j + 3] = 36;
+    }
+  }
+  mg.putImageData(md, 0, 0);
+  lg.putImageData(ld, 0, 0);
+}
+// (10-segment render) the mode's picture: the photo dimmed and a little greyed, its subject bright, the lines over
+function fixDraw() {
+  _rg = null;
+  const F = _fx;
+  if (!F || !F.photo) return;
+  sizeCanvas();
+  if (cv.width !== W || cv.height !== H) {
+    cv.width = W;
+    cv.height = H;
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(F.photo, 0, 0);
+  ctx.fillStyle = 'rgba(30,30,34,0.64)';
+  ctx.fillRect(0, 0, W, H);
+  const tg = F.tmp.getContext('2d');
+  tg.globalCompositeOperation = 'copy';
+  tg.imageSmoothingEnabled = true;
+  tg.drawImage(F.maskC, 0, 0, W, H);
+  tg.globalCompositeOperation = 'source-in';
+  tg.drawImage(F.photo, 0, 0);
+  tg.globalCompositeOperation = 'source-over';
+  ctx.drawImage(F.tmp, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(F.lineC, 0, 0, W, H);
+  ctx.imageSmoothingEnabled = true;
+}
+
+// ---- the mode's pane (50-controls _renderControls), in place of the page step's controls ----
+const FIX_SMALL_SAY =
+  'The subject is too small a part of this photo for Subject only, so the page would be made Even. Crop to the subject after Done instead.';
+function ctlFix() {
+  const F = _fx;
+  if (!F) return;
+  ctlEl.innerHTML =
+    '<div class="sfpane sffixp"><h3 class="sfedhead" id="sfFixHead" tabindex="-1">' +
+    (F.choose ? 'Choose the subject' : 'Fix the subject') +
+    '</h3><div class="sfc-note sfedline" id="sfFixIns">' +
+    (F.choose
+      ? 'Tap or drag on the photo to choose the subject. Start on a part you’ve chosen to take it away again. Use two fingers to zoom and move; zoomed in, the pieces are smaller.'
+      : 'Tap or drag on the photo. Start on the background to add parts to the subject, or start on the subject to take parts away. Use two fingers to zoom and move; zoomed in, the pieces are smaller.') +
+    '</div>' +
+    (F.pc
+      ? ''
+      : '<div class="sfc-note sfc-mt8" id="sfFixLoad" role="status">Getting the pieces ready…</div>') +
+    '<div class="sffixlinks"><button type="button" class="sflink" id="sfFixUndo">Undo</button><span class="sfdot" aria-hidden="true">·</span><button type="button" class="sflink" id="sfFixClear">Clear</button>' +
+    (F.finder || F.canAsk
+      ? '<span class="sfdot" aria-hidden="true">·</span><button type="button" class="sflink" id="sfFixFinder">Use the finder’s subject</button>'
+      : '') +
+    '</div><div class="sffixacts"><button type="button" class="sfghost" id="sfFixCancel">Cancel</button><button type="button" class="sfprimary" id="sfFixDone">Done</button></div>' +
+    '<div class="sfc-note sfc-mt8" id="sfFixSmall" hidden>' +
+    FIX_SMALL_SAY +
+    '</div>' +
+    (hasEdits
+      ? '<div class="sfc-note sfc-mt8" id="sfFixEd">Your section edits will go when you tap Done; Undo brings them back.</div>'
+      : '') +
+    '</div>';
+  const on = function (id, fn) {
+    const b = document.getElementById(id);
+    if (b) b.addEventListener('click', fn);
+  };
+  on('sfFixUndo', fixUndo);
+  on('sfFixClear', function () {
+    fixWhole(true);
+  });
+  on('sfFixFinder', fixUseFinder);
+  on('sfFixCancel', fixCancel);
+  on('sfFixDone', fixDone);
+  fixPaneSync();
+}
+// Use the finder's subject: back to the finder's own map (the layer emptied, one Undo step); for a subject chosen by
+// hand where the finder never ran, the finder is asked first ("Finding the subject…"), once
+function fixUseFinder() {
+  const F = _fx;
+  if (!F || F.asking) return;
+  if (F.finder) {
+    fixWhole(false);
+    return;
+  }
+  if (!F.canAsk) return;
+  const prep = F.prep,
+    s0 = prep.sal;
+  F.asking = true;
+  fixPaneSync();
+  note('Finding the subject…');
+  prep.sal = null;
+  prep.salF = undefined;
+  subMap(prep, true)
+    .then(function () {
+      F.asking = false;
+      F.canAsk = false;
+      note(metaText());
+      if (_fx !== F) return;
+      F.sal = prep.salF;
+      F.finder = !!F.sal && fixFinderShare(F.sal) >= SUB_NONE;
+      if (F.finder) fixWhole(false);
+      else note('No clear subject found in this photo.');
+      renderControls();
+    })
+    .catch(function (e) {
+      F.asking = false;
+      F.canAsk = false;
+      prep._fxTried = true;
+      prep.sal = s0;
+      prep.salF = null;
+      const k = subFailKind(e);
+      if (k) errLog('Fix the subject', e);
+      note(
+        k
+          ? SUB_OFF_SAID[k].replace(', so the page is made Even', '')
+          : errNote('Couldn’t find the photo’s subject.', 'Focus', e),
+      );
+      if (_fx === F) renderControls();
+    });
+}
+// the pane's state without drawing it again: Undo, Clear and the finder's subject as they can be, the small note
+function fixPaneSync() {
+  const F = _fx;
+  if (!F) return;
+  const u = document.getElementById('sfFixUndo'),
+    c = document.getElementById('sfFixClear'),
+    s = document.getElementById('sfFixSmall');
+  if (u) u.disabled = !F.undo.length;
+  const dn = document.getElementById('sfFixDone'),
+    cn = document.getElementById('sfFixCancel'),
+    fd = document.getElementById('sfFixFinder');
+  if (dn) dn.disabled = !!F.asking;
+  if (cn) cn.disabled = !!F.asking;
+  if (fd) fd.disabled = !!F.asking;
+  if (c) c.disabled = F.share === 0 && F.L.complete;
+  if (s) s.hidden = !(pp && (F.focus || pp.f) === 'subject' && F.share >= SUB_NONE && F.share < SUB_FEW);
+  if (typeof planBtn === 'function') planBtn();
+}
+
+// ---- (step 7) Copy diagnostics and Send feedback (safety.js diagHead, through SF.subjectDiag): the photo-made page's
+// subject, one line: found by the finder, fixed by hand (how much of the photo the fixes changed) or chosen by hand;
+// '' when the page has none to speak of ----
+function fixDiagLine() {
+  if (!pp || !srcImg) return '';
+  const pr = _ppPrep && _ppPrep.key === ppPrepKey() ? _ppPrep : null;
+  if (pr) fixBind(pr);
+  const L = fixLayer(),
+    fits = !!(L && pr && fixFits(L, pr.keep));
+  if (L && L.complete && (fits || !pr)) return 'Subject: chosen by hand';
+  if (L && fits && pr.salF) {
+    const n = Math.round(fixShare(pr.salF, fixView(L, pr.keep, pr.w, pr.h), false) * 100);
+    return 'Subject: fixed by hand (' + (n < 1 ? 'under 1' : n) + '% of the photo changed)';
+  }
+  if (L && !pr) return 'Subject: fixed by hand';
+  if (pr && (pr.salF || pr.sal)) return 'Subject: found';
+  return '';
 }
 // Rebuilding the panel replaces every control: never do it under a finger that is dragging a slider (wait for
 // the release), and put keyboard focus back on the same control afterwards.
@@ -68424,12 +70033,15 @@ function _renderControls() {
     pgControls();
     return;
   }
+  // (v329.4: Fix the subject's mode is the page step's own: gone anywhere else, 49-subject-fix)
+  if (fixOn && (sfmode !== 'review' || !ppOn() || cropMode)) fixOff();
   if (sfmode === 'guide') ctlPlan();
   else if (sfmode === 'color') {
     if (focus) ctlFocus();
     else alongControls(); // the marker list: js/guide/83-along.js
   } else if (cropMode) ctlCrop();
   // (v325: a photo-made page's own step, 47-photo-page)
+  else if (fixOn) ctlFix();
   else if (ppOn()) ctlPhotoPage();
   else ctlSections();
 }
@@ -75785,6 +77397,8 @@ function applyXform() {
   if (olSet) positionOutline();
   // (v323: Focus mode's ring round a small section)
   if (focus || document.getElementById('sfFocRing')) focusRing();
+  // (v329.4: Fix the subject's smaller pieces zoomed in, 49-subject-fix)
+  if (fixOn) fixZoomed();
   // (v323: the sharp copy over the picture moves with it, drawn again once the move settles, 77-sharp)
   if (sfmode === 'color' || sfmode === 'guide' || _shEl) sharpStale();
 }
@@ -76556,6 +78170,7 @@ function touchRule() {
     !!sheetO ||
     cropMode ||
     pgMode ||
+    fixOn ||
     (sfmode === 'review' && (editMode === 'split' || editMode === 'add')) ||
     (sfmode === 'guide' && photoAlign);
   const v = none ? 'none' : 'pan-y';
@@ -76879,7 +78494,7 @@ function renderTools() {
   const zc = document.getElementById('sfZoomCtl');
   if (zc && cropMode && zc.style.display === 'none') zc.style.display = '';
   const fb = document.getElementById('sfFull');
-  if (fb) fb.style.display = cropMode ? 'none' : '';
+  if (fb) fb.style.display = cropMode || fixOn ? 'none' : '';
   fitBtn();
   planBtn();
 }
@@ -79774,7 +81389,17 @@ function onDown(e) {
     }
     if (paintS) paintEnd(false);
     if (zoneS) zoneStrokeEnd(false);
+    if (_fxS) fixStrokeEnd(false);
     multi = true;
+    return;
+  }
+  // (v329.4) Fix the subject: one pointer adds pieces to the subject or takes them away (49-subject-fix)
+  if (fixOn) {
+    ptMoved = false;
+    pStart = null;
+    clearTimeout(lpT);
+    lpFired = false;
+    if (ptrs.size === 1 && !multi) fixStrokeStart(e);
     return;
   }
   // the zone editor: one pointer adds sections to the zone, or takes them out (85-zones-ui)
@@ -79927,6 +81552,11 @@ function onMove(e) {
     zoneStrokeMove(e);
     return;
   }
+  if (_fxS && _fxS.id === e.pointerId) {
+    fixStrokeMove(e);
+    return;
+  }
+  if (fixOn) return;
   if (sfmode === 'guide' && family === 'blend' && !shadeFlatMode && blendHit >= 0) {
     if (blendStart) {
       const P = evPt(e);
@@ -80005,7 +81635,8 @@ function onUp(e) {
   } catch (_) {}
   if (paintS && paintS.id === e.pointerId) paintEnd(e.type !== 'pointercancel');
   if (zoneS && zoneS.id === e.pointerId) zoneStrokeEnd(e.type !== 'pointercancel');
-  if (paintActive() || zoneEditOn()) {
+  if (_fxS && _fxS.id === e.pointerId) fixStrokeEnd(e.type !== 'pointercancel');
+  if (paintActive() || zoneEditOn() || fixOn) {
     if (ptrs.size === 1) {
       const rem = [...ptrs.values()][0];
       pStart = { x: rem.x, y: rem.y, panX: panX, panY: panY };
@@ -86667,6 +88298,12 @@ function frameTickBack(e) {
 function planBtn() {
   const b = document.getElementById('sfPlanUndo');
   if (!b) return;
+  // (v329.4: Fix the subject's own while it's open, 49-subject-fix)
+  if (fixOn) {
+    fixBtns(b, document.getElementById('sfPlanRedo'));
+    planFit();
+    return;
+  }
   const rev = sfmode === 'review' && !!labels && undoStack.length > 0 && !pgMode && !cropMode,
     on =
       rev ||
@@ -86704,12 +88341,21 @@ function planBtn() {
   planFit();
 }
 function toolUndo() {
+  // (v329.4: Fix the subject's own strokes while it's open, 49-subject-fix)
+  if (fixOn) {
+    fixUndo();
+    return;
+  }
   if (sfmode === 'review') {
     doUndo();
     planBtn();
   } else planUndo();
 }
 function toolRedo() {
+  if (fixOn) {
+    fixRedo();
+    return;
+  }
   if (sfmode === 'review') secRedo();
   else planRedo();
 }
@@ -96392,6 +98038,46 @@ if (typeof globalThis !== 'undefined' && globalThis.__MS_TEST) {
     ppSave: ppSave,
     ppCheck: ppCheck,
     ppBuildCore: ppBuildCore,
+    // (v329.4: Fix the subject, 49-subject-fix)
+    fixPieces: fixPieces,
+    fixStep: fixStep,
+    fixNew: fixNew,
+    fixFits: fixFits,
+    fixBase: fixBase,
+    fixCells: fixCells,
+    fixRefine: fixRefine,
+    fixView: fixView,
+    fixCombine: fixCombine,
+    fixAdded: fixAdded,
+    fixEncode: fixEncode,
+    fixDecode: fixDecode,
+    fixKey: fixKey,
+    fixPaint: fixPaint,
+    fixShare: fixShare,
+    fixFoot: fixFoot,
+    fixSave: fixSave,
+    fixLoad: fixLoad,
+    fixWorkerSrc: fixWorkerSrc,
+    fixEnter: fixEnter,
+    fixDone: fixDone,
+    fixCancel: fixCancel,
+    fixUndo: fixUndo,
+    fixRedo: fixRedo,
+    fixWhole: fixWhole,
+    fixDiagLine: fixDiagLine,
+    fixSync: fixSync,
+    fixHandMap: fixHandMap,
+    ppRemade: ppRemade,
+    get fixOn() {
+      return fixOn;
+    },
+    get fx() {
+      return _fx;
+    },
+    get subHand() {
+      return _subHand;
+    },
+    ppSubjectMask: ppSubjectMask,
     ppWideCore: ppWideCore,
     ppPickCore: ppPickCore,
     ppDe: ppDe,
@@ -97500,6 +99186,8 @@ return {
   pickPdfHome: pickPdfHome,
   // (v325: a colouring page from any photo, Home's link: 47-photo-page)
   ppPick: ppPick,
+  // (v329.4: the photo-made page's subject for Copy diagnostics, 49-subject-fix)
+  subjectDiag: fixDiagLine,
   // (v314: the photo of a finished page, from Home and the Library: 24-page-photo)
   finPick: finPick,
   finGet: finGet,
@@ -111314,6 +113002,10 @@ function renderHomeNotes() {
 // (not on a fresh install); Help › What's new (v318.32: its own section; it had been in About) lists this version's.
 // (Send feedback, Copy diagnostics and the beta's label: safety.js.)
 const WHATS_NEW = [
+  {
+    v: 'v329.4',
+    t: 'When Focus picks the wrong subject, or misses part of it, Fix the subject (under Focus) lets you tap or drag on the photo to put it right, and the page is made again with your subject. With no subject finder, or when it finds nothing, you can choose the subject yourself, with no download.',
+  },
   {
     v: 'v329.3',
     t: 'To buy shows which sets have the most markers on your list, and how many new markers each would bring, and has ideas from your collection: Markers’ rankings of what to buy next, whose top 5 you can add in one go. Share has Copy marker list: the page’s markers as text, ready to paste with a post. Guides can keep notes (the guide’s ⋯ menu, or Page finished): paper, where the page came from, what to try next time, printed under the key. Help has Marker basics, and Your data says how much space the app uses. Random’s Prefer markers you haven’t used yet counts the markers a guide’s shading uses too.',

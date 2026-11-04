@@ -1,5 +1,5 @@
 {
- "note": "Seconds per test file, for e2e/ci-parts.mjs to share files out evenly. v320: the tests were merged into feature files; each file's time is the sum of the times of the files it came from (GitHub run #67 where its notices listed them, else run 37399741587 from v308; WebKit as Chromium x 2.01 where no WebKit time was known). Refresh from a run page's 'file times' notices now and then.",
+ "note": "Seconds per test file, for e2e/ci-parts.mjs to share files out evenly. v320: the tests were merged into feature files; each file's time is the sum of the times of the files it came from (GitHub run #67 where its notices listed them, else run 37399741587 from v308; WebKit as Chromium x 2.01 where no WebKit time was known). Refresh from a run page's 'file times' notices now and then. v329.4: subject-fix and subject-fix-2 estimated from local Chromium runs (x 1.8 for CI), WebKit x 2.01.",
  "chromium": {
   "along-2.test.mjs": 153.2,
   "along-3.test.mjs": 156.8,
@@ -56,7 +56,9 @@
   "welcome-2.test.mjs": 121.0,
   "welcome.test.mjs": 116.1,
   "zones-2.test.mjs": 131.4,
-  "zones.test.mjs": 96.0
+  "zones.test.mjs": 96.0,
+  "subject-fix.test.mjs": 60.0,
+  "subject-fix-2.test.mjs": 150.0
  },
  "webkit": {
   "along-2.test.mjs": 403.4,
@@ -114,6 +116,8 @@
   "welcome-2.test.mjs": 219.9,
   "welcome.test.mjs": 287.6,
   "zones-2.test.mjs": 702.1,
-  "zones.test.mjs": 191.3
+  "zones.test.mjs": 191.3,
+  "subject-fix.test.mjs": 120.6,
+  "subject-fix-2.test.mjs": 301.5
  }
 }
