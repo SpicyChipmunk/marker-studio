@@ -1,0 +1,1 @@
+det.onnx is a modified version of the PaddleOCR text detection model (changed by SpicyChipmunk, 2026).
