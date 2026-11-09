@@ -23,9 +23,11 @@ Third-party material keeps its own licence:
 - vendor/ocr: ONNX Runtime Web (MIT License) and PaddleOCR's models (Apache
   License 2.0), in the LICENSE files beside them; det.onnx is modified.
 - vendor/subject: a model based on TRACER (Apache License 2.0), in
-  LICENSE-TRACER beside it; subject-te4.onnx is modified. It was trained
+  LICENSE-TRACER beside it; subject-e5kd.onnx is modified. It was trained
   using photos from Open Images (CC BY 2.0) and outlines by Google (CC BY
   4.0).
+- vendor/tap: MobileSAM (Apache License 2.0), in LICENSE-MobileSAM beside
+  it; tap-enc.onnx and tap-dec.onnx are modified (converted to ONNX).
 - "Ohuhu" and "Copic" are trademarks of their respective owners. This project
   is not affiliated with or endorsed by them.
 

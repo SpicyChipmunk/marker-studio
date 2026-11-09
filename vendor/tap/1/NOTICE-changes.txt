@@ -1,0 +1,1 @@
+tap-enc.onnx and tap-dec.onnx are modified versions of MobileSAM (Zhang et al., 2023, "Faster Segment Anything"): exported to ONNX through kornia's SAM, changed by SpicyChipmunk, 2026.
