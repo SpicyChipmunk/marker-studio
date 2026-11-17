@@ -27,7 +27,14 @@ Third-party material keeps its own licence:
   using photos from Open Images (CC BY 2.0) and outlines by Google (CC BY
   4.0).
 - vendor/tap: MobileSAM (Apache License 2.0), in LICENSE-MobileSAM beside
-  it; tap-enc.onnx and tap-dec.onnx are modified (converted to ONNX).
+  it; tap-enc.onnx and tap-dec.onnx are modified (converted to ONNX). And
+  Google's MediaPipe BlazeFace and Face Mesh V2 (Apache License 2.0), in
+  LICENSE-MediaPipe-face beside them; face-det.onnx and face-mesh.onnx are
+  modified (converted to ONNX). And OpenMMLab's CSPNeXt (Apache License 2.0),
+  in LICENSE-OpenMMLab beside it; pet-eyes.onnx and pet-eyes-2.onnx are
+  modified. They were trained using AP-10K by Yu et al. (CC BY 4.0);
+  pet-eyes-2.onnx also using photos from Open Images (CC BY 2.0), chosen with
+  Open Images' boxes and labels by Google (CC BY 4.0).
 - "Ohuhu" and "Copic" are trademarks of their respective owners. This project
   is not affiliated with or endorsed by them.
 

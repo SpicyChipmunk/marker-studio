@@ -1,1 +1,4 @@
 tap-enc.onnx and tap-dec.onnx are modified versions of MobileSAM (Zhang et al., 2023, "Faster Segment Anything"): exported to ONNX through kornia's SAM, changed by SpicyChipmunk, 2026.
+face-det.onnx and face-mesh.onnx are modified versions of Google's MediaPipe BlazeFace (full range) and Face Mesh V2 models: converted from TensorFlow Lite to ONNX with tf2onnx 1.17, weights unchanged, by SpicyChipmunk, 2026.
+pet-eyes.onnx is a modified version of OpenMMLab’s CSPNeXt-m, changed by SpicyChipmunk, 2026.
+pet-eyes-2.onnx is a modified version of OpenMMLab’s CSPNeXt-m, changed by SpicyChipmunk, 2026.
